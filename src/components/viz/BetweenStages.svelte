@@ -5,7 +5,10 @@
   import LoopProgress from '../LoopProgress.svelte';
   import { chapterNumber as chNum, type NavLink } from '../../chapters';
   import { BYTES, OMNI_HIDDEN, VISION_PATCH, VISION_MERGE, AUDIO_FRAMES_PER_SEC, AUDIO_POS_PER_100, CODES_PER_FRAME, SPEECH_OUT_HZ, SAMPLES_PER_FRAME } from '../../numbers';
-  let { prev, next }: { prev?: NavLink; next?: NavLink } = $props();
+  import { lang } from '../../i18n';
+  import type { Deep } from '../../deep';
+  let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
+  const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
 
   const CH_PROC = chNum('09-one-request'), CH_OMNI = chNum('16-omni-models'), CH_STAGES = chNum('17-stages-and-schedulers');
   const CH_GPUS = chNum('19-sharing-gpus'), CH_DISAGG = chNum('28-disaggregation');
@@ -19,19 +22,20 @@
   const FRAME_MS = (SAMPLES_PER_FRAME / SPEECH_OUT_HZ) * 1000;            // 80
 
   type Scene = 'edges' | 'handoff' | 'planes' | 'map' | 'local' | 'cudaipc' | 'shm' | 'remote' | 'layout' | 'coordinator' | 'closing';
-  const steps: { scene: Scene; caption: string }[] = [
-    { scene: 'edges', caption: `Ch. ${CH_STAGES} Step 12 numbered the edges. What crosses them ranges from one token id to ${fmt(IMG_POS * VEC_KB)} KB of embeddings, sent once per request or once per token.` },
-    { scene: 'handoff', caption: `A hand-off has two parts. The data goes somewhere the receiver can read it, and a small notice over ZMQ says where. Once the receiver has read it, an ack lets the sender free the space.` },
-    { scene: 'planes', caption: `Why not send the data itself over ZMQ? A ZMQ message is bytes in CPU memory, so a vector on GPU 0 would leave the GPU, cross the socket and come back. With the notice on its own, the data can take a shorter path.` },
-    { scene: 'map', caption: `SGLang-Omni picks the data's path for each edge from where its two stages sit. There are four cases, from sharing a process to sitting on different machines.` },
-    { scene: 'local', caption: `When two stages share a process, the sender hands over the Python object itself. Nothing is copied and no notice crosses a socket. The receiver must not change the object, since the sender still holds it.` },
-    { scene: 'cudaipc', caption: `When the data is on a GPU and both stages run on GPUs in one machine, the sender passes a handle to its GPU memory. The receiver opens the handle and reads the data, over the link between GPUs if it sits on another.` },
-    { scene: 'shm', caption: `When the data is in CPU memory, or a stage runs on the CPU, the sender writes it once into shared memory. The receiver maps the same memory and reads it in place.` },
-    { scene: 'remote', caption: `When the receiver is on another machine, Mooncake moves the data. Its network cards read the sender's memory and write the receiver's directly, with no copy through either CPU.` },
-    { scene: 'layout', caption: `Qwen3-Omni's default layout, edge by edge. The four GPU-to-GPU edges use CUDA IPC, the edges with a CPU end use shared memory, and no two stages share a process.` },
-    { scene: 'coordinator', caption: `One more process, the coordinator, sits outside the graph. It hands each request to the first stage, merges the text and the sound that come out into one response, and sends an abort to every stage at once.` },
-    { scene: 'closing', caption: `Which path an edge takes depends on where its two stages sit. Ch. ${CH_STAGES} Step 4 put four stages on GPU 0 and the talker alone on GPU 1. Who decides that, and how do stages on one GPU split its memory?` },
+  const steps: { scene: Scene; caption: string; captionZh: string }[] = [
+    { scene: 'edges', caption: `Ch. ${CH_STAGES} Step 12 numbered the edges. What crosses them ranges from one token id to ${fmt(IMG_POS * VEC_KB)} KB of embeddings, sent once per request or once per token.`, captionZh: `Ch. ${CH_STAGES} Step 12 给每条边编了号。跨越它们的东西小到一个 token id，大到 ${fmt(IMG_POS * VEC_KB)} KB 的 embedding，每个 request 发一次或每个 token 发一次。` },
+    { scene: 'handoff', caption: `A hand-off has two parts. The data goes somewhere the receiver can read it, and a small notice over ZMQ says where. Once the receiver has read it, an ack lets the sender free the space.`, captionZh: `一次交接分两部分：数据写到接收方能读到的地方，一条 ZMQ 小通知说明在哪里。接收方读完后，一个 ack 让发送方释放这块空间。` },
+    { scene: 'planes', caption: `Why not send the data itself over ZMQ? A ZMQ message is bytes in CPU memory, so a vector on GPU 0 would leave the GPU, cross the socket and come back. With the notice on its own, the data can take a shorter path.`, captionZh: `为什么不直接用 ZMQ 发数据本身？ZMQ 消息是 CPU 内存里的字节，GPU 0 上的向量就得离开 GPU、过 socket 再回来。通知单独走，数据就能走更短的路径。` },
+    { scene: 'map', caption: `SGLang-Omni picks the data's path for each edge from where its two stages sit. There are four cases, from sharing a process to sitting on different machines.`, captionZh: `SGLang-Omni 根据每条边两端 stage 的位置为数据选路径。共四种情况，从共享一个进程到分处不同机器。` },
+    { scene: 'local', caption: `When two stages share a process, the sender hands over the Python object itself. Nothing is copied and no notice crosses a socket. The receiver must not change the object, since the sender still holds it.`, captionZh: `两个 stage 共享一个进程时，发送方直接交出 Python 对象本身。不复制，也没有通知过 socket。接收方不能改这个对象，因为发送方还持有它。` },
+    { scene: 'cudaipc', caption: `When the data is on a GPU and both stages run on GPUs in one machine, the sender passes a handle to its GPU memory. The receiver opens the handle and reads the data, over the link between GPUs if it sits on another.`, captionZh: `数据在 GPU 上、两个 stage 都在同一台机器的 GPU 上运行时，发送方传一个指向其 GPU 内存的句柄。接收方打开句柄读数据；若在另一块 GPU 上，就走 GPU 间的链路。` },
+    { scene: 'shm', caption: `When the data is in CPU memory, or a stage runs on the CPU, the sender writes it once into shared memory. The receiver maps the same memory and reads it in place.`, captionZh: `数据在 CPU 内存里，或某个 stage 跑在 CPU 上时，发送方把它一次性写入共享内存。接收方映射同一段内存，原地读取。` },
+    { scene: 'remote', caption: `When the receiver is on another machine, Mooncake moves the data. Its network cards read the sender's memory and write the receiver's directly, with no copy through either CPU.`, captionZh: `接收方在另一台机器上时，由 Mooncake 搬数据。它的网卡直接读发送方的内存、写接收方的内存，不经过任何一方的 CPU 复制。` },
+    { scene: 'layout', caption: `Qwen3-Omni's default layout, edge by edge. The four GPU-to-GPU edges use CUDA IPC, the edges with a CPU end use shared memory, and no two stages share a process.`, captionZh: `Qwen3-Omni 的默认布局，逐边看。四条 GPU 到 GPU 的边用 CUDA IPC，一端是 CPU 的边用共享内存，没有两个 stage 共享进程。` },
+    { scene: 'coordinator', caption: `One more process, the coordinator, sits outside the graph. It hands each request to the first stage, merges the text and the sound that come out into one response, and sends an abort to every stage at once.`, captionZh: `图外还有一个进程：coordinator。它把每个 request 交给第一个 stage，把输出的文本和声音合并成一个响应，并向所有 stage 同时发出 abort。` },
+    { scene: 'closing', caption: `Which path an edge takes depends on where its two stages sit. Ch. ${CH_STAGES} Step 4 put four stages on GPU 0 and the talker alone on GPU 1. Who decides that, and how do stages on one GPU split its memory?`, captionZh: `一条边走哪条路径，取决于它两端 stage 的位置。Ch. ${CH_STAGES} Step 4 把四个 stage 放在 GPU 0，talker 独占 GPU 1。这由谁决定？同一块 GPU 上的 stage 怎么分它的内存？` },
   ];
+
 
   let step = $state(0);
   $effect(() => {
@@ -98,7 +102,7 @@
       </defs>
 
       <!-- chapter 17's graph, compact; each edge coloured by colourOf and badged with its number -->
-      {#snippet graph(colourOf: (t: 'shm' | 'ipc') => string, markerOf: (t: 'shm' | 'ipc') => string)}
+      {#snippet graph(colourOf: (kind: 'shm' | 'ipc') => string, markerOf: (kind: 'shm' | 'ipc') => string)}
         {#each EDGES as e, i}
           {@const [mx, my] = mid(e.a, e.b)}
           <path d={edgePath(e.a, e.b)} fill="none" stroke={colourOf(e.t)} stroke-width="1.5" marker-end="url(#{markerOf(e.t)})" />
@@ -115,25 +119,25 @@
       <!-- 1: what crosses each edge, how big, how often -->
       {#if cur.scene === 'edges'}
         {@const rows = [
-          ['1', 'preprocessing → image_encoder', 'the photo, as patches', `${PHOTO} × ${PHOTO} × 3 = ${fmt(PHOTO * PHOTO * 3)} values`, 'once'],
-          ['2', 'preprocessing → audio_encoder', 'the question, as frames', `${Q_SEC} s × ${AUDIO_FRAMES_PER_SEC} = ${fmt(Q_SEC * AUDIO_FRAMES_PER_SEC)} feature frames`, 'once'],
-          ['3', 'preprocessing → thinker', "the prompt's token ids", 'one number per text position', 'once'],
-          ['4', 'image_encoder → thinker', `${IMG_POS} embeddings`, `${IMG_POS} × ${VEC_KB} KB = ${fmt(IMG_POS * VEC_KB)} KB`, 'once'],
-          ['5', 'audio_encoder → thinker', `${AUD_POS} embeddings`, `${AUD_POS} × ${VEC_KB} KB = ${fmt(AUD_POS * VEC_KB)} KB`, 'once'],
-          ['6', 'thinker → decode', 'a token id', 'one number', 'every token'],
-          ['7', 'thinker → talker_ar', "the token's vector", `${fmt(OMNI_HIDDEN)} × ${BYTES} B = ${VEC_KB} KB`, 'every token'],
-          ['8', 'talker_ar → code2wav', 'codes', `${CHUNK} frames × ${CODES_PER_FRAME} = ${CHUNK * CODES_PER_FRAME} numbers`, `every ${CHUNK} frames`],
-          ['9–11', 'the same inputs → talker_ar', 'rows 3–5, for its prompt', 'as rows 3–5', 'once'],
+          ['1', 'preprocessing → image_encoder', t('the photo, as patches', '照片，作为 patch'), t(`${PHOTO} × ${PHOTO} × 3 = ${fmt(PHOTO * PHOTO * 3)} values`, `${PHOTO} × ${PHOTO} × 3 = ${fmt(PHOTO * PHOTO * 3)} 个值`), t('once', '一次')],
+          ['2', 'preprocessing → audio_encoder', t('the question, as frames', '问题，作为帧'), t(`${Q_SEC} s × ${AUDIO_FRAMES_PER_SEC} = ${fmt(Q_SEC * AUDIO_FRAMES_PER_SEC)} feature frames`, `${Q_SEC} s × ${AUDIO_FRAMES_PER_SEC} = ${fmt(Q_SEC * AUDIO_FRAMES_PER_SEC)} 特征帧`), t('once', '一次')],
+          ['3', 'preprocessing → thinker', t("the prompt's token ids", 'prompt 的 token id'), t('one number per text position', '每个文本位置一个数'), t('once', '一次')],
+          ['4', 'image_encoder → thinker', t(`${IMG_POS} embeddings`, `${IMG_POS} 个 embedding`), `${IMG_POS} × ${VEC_KB} KB = ${fmt(IMG_POS * VEC_KB)} KB`, t('once', '一次')],
+          ['5', 'audio_encoder → thinker', t(`${AUD_POS} embeddings`, `${AUD_POS} 个 embedding`), `${AUD_POS} × ${VEC_KB} KB = ${fmt(AUD_POS * VEC_KB)} KB`, t('once', '一次')],
+          ['6', 'thinker → decode', t('a token id', '一个 token id'), t('one number', '一个数'), t('every token', '每个 token')],
+          ['7', 'thinker → talker_ar', t("the token's vector", 'token 的向量'), `${fmt(OMNI_HIDDEN)} × ${BYTES} B = ${VEC_KB} KB`, t('every token', '每个 token')],
+          ['8', 'talker_ar → code2wav', 'codes', t(`${CHUNK} frames × ${CODES_PER_FRAME} = ${CHUNK * CODES_PER_FRAME} numbers`, `${CHUNK} 帧 × ${CODES_PER_FRAME} = ${CHUNK * CODES_PER_FRAME} 个数`), t(`every ${CHUNK} frames`, `每 ${CHUNK} 帧`)],
+          ['9–11', t('the same inputs → talker_ar', '同样的输入 → talker_ar'), t('rows 3–5, for its prompt', '第 3–5 行，作为它的 prompt'), t('as rows 3–5', '同第 3–5 行'), t('once', '一次')],
         ]}
         {@const TX = [16, 48, 214, 372, 580]}
         <g transition:fade={{ duration: 250 }}>
-          <text x="16" y="42" class="rowlabel">what crosses each edge of Ch. {CH_STAGES} Step 12's graph · how big, and how often</text>
+          <text x="16" y="42" class="rowlabel">{t(`what crosses each edge of Ch. ${CH_STAGES} Step 12's graph · how big, and how often`, `Ch. ${CH_STAGES} Step 12 的图，每条边传什么 · 多大、多久一次`)}</text>
           <g in:fade={{ delay: 100, duration: 250 }}>
             {@render graph(() => RED, () => 'bs-arrow-red')}
           </g>
           <g in:fade={{ delay: 500, duration: 250 }}>
-            {#each ['#', 'edge', 'what crosses', 'size', 'how often'] as h, i}
-              <text x={TX[i]} y="208" class="tag strong">{h}</text>
+            {#each [['#', '#'], ['edge', '边'], ['what crosses', '传什么'], ['size', '大小'], ['how often', '频率']] as [h, hz], i}
+              <text x={TX[i]} y="208" class="tag strong">{t(h, hz)}</text>
             {/each}
             <line x1="16" y1="213" x2="704" y2="213" stroke="var(--line)" />
             {#each rows as r, k}
@@ -143,8 +147,8 @@
               {/each}
             {/each}
           </g>
-          <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{VEC_KB} KB: one vector is the thinker's width, {fmt(OMNI_HIDDEN)} numbers of {BYTES} bytes · the photo and the question: Ch. {CH_OMNI} Steps 1 and 2</text>
-          <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">edges 9–11 are not drawn: talker_ar builds its own prompt from the same inputs as the thinker</text>
+          <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t(`${VEC_KB} KB: one vector is the thinker's width, ${fmt(OMNI_HIDDEN)} numbers of ${BYTES} bytes · the photo and the question: Ch. ${CH_OMNI} Steps 1 and 2`, `${VEC_KB} KB：一个向量是 thinker 的宽度，${fmt(OMNI_HIDDEN)} 个 ${BYTES} 字节的数 · 照片与问题见 Ch. ${CH_OMNI} Steps 1 和 2`)}</text>
+          <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('edges 9–11 are not drawn: talker_ar builds its own prompt from the same inputs as the thinker', '边 9–11 未画出：talker_ar 用与 thinker 相同的输入构建自己的 prompt')}</text>
         </g>
       {/if}
 
@@ -160,20 +164,20 @@
         }}
         {@const dataAt = hp <= 0 ? pos.sched : hp === 1 ? pos.out : hp === 2 ? pos.rt : hp <= 5 ? pos.buf : hp <= 8 ? pos.rrt : pos.rin}
         {@const notes = [
-          "the thinker's scheduler has the token's vector ready",
-          '1 · the scheduler puts it in the outbox',
-          '2 · the runtime takes it and looks up the next stage, talker_ar',
-          '3 · the runtime writes the vector where talker_ar can read it',
-          '4 · it sends a small notice over ZMQ saying where the vector is',
-          '4 · it sends a small notice over ZMQ saying where the vector is',
-          "5 · talker_ar's runtime wakes on the notice and reads the vector",
-          '6 · it sends an ack back, so the thinker can reuse that space',
-          '6 · it sends an ack back, so the thinker can reuse that space',
-          "7 · it puts the vector in talker_ar's inbox",
-          "7 · it puts the vector in talker_ar's inbox",
+          t("the thinker's scheduler has the token's vector ready", 'thinker 的 scheduler 已备好这个 token 的向量'),
+          t('1 · the scheduler puts it in the outbox', '1 · scheduler 把它放进 outbox'),
+          t('2 · the runtime takes it and looks up the next stage, talker_ar', '2 · runtime 接过它，查找下一个 stage talker_ar'),
+          t('3 · the runtime writes the vector where talker_ar can read it', '3 · runtime 把向量写到 talker_ar 能读的地方'),
+          t('4 · it sends a small notice over ZMQ saying where the vector is', '4 · 经 ZMQ 发一条小通知，说明向量在哪里'),
+          t('4 · it sends a small notice over ZMQ saying where the vector is', '4 · 经 ZMQ 发一条小通知，说明向量在哪里'),
+          t("5 · talker_ar's runtime wakes on the notice and reads the vector", '5 · talker_ar 的 runtime 被通知唤醒，读取向量'),
+          t('6 · it sends an ack back, so the thinker can reuse that space', '6 · 回一个 ack，thinker 就能复用那块空间'),
+          t('6 · it sends an ack back, so the thinker can reuse that space', '6 · 回一个 ack，thinker 就能复用那块空间'),
+          t("7 · it puts the vector in talker_ar's inbox", '7 · 把向量放进 talker_ar 的 inbox'),
+          t("7 · it puts the vector in talker_ar's inbox", '7 · 把向量放进 talker_ar 的 inbox'),
         ]}
         <g transition:fade={{ duration: 250 }}>
-          <text x="16" y="42" class="rowlabel">one hand-off, edge 7 · thinker to talker_ar, one token's vector</text>
+          <text x="16" y="42" class="rowlabel">{t("one hand-off, edge 7 · thinker to talker_ar, one token's vector", '一次交接，边 7 · thinker 到 talker_ar，一个 token 的向量')}</text>
 
           <!-- the two stages, as Ch. 17 Step 2 drew them -->
           {#each [{ x: SX, n: 'thinker · GPU 0', q: 'outbox' }, { x: RX, n: 'talker_ar · GPU 1', q: 'inbox' }] as st, k}
@@ -181,26 +185,26 @@
             <text x={st.x + 12} y="77" class="boxtitle">{st.n}</text>
             <rect x={st.x + 12} y="86" width={SW - 24} height="76" rx="8" fill="white" stroke="var(--faint)" />
             <text x={st.x + SW / 2} y="103" text-anchor="middle" class="tag strong">runtime</text>
-            <text x={st.x + SW / 2} y="116" text-anchor="middle" class="tag">talks to other stages</text>
+            <text x={st.x + SW / 2} y="116" text-anchor="middle" class="tag">{t('talks to other stages', '与其他 stage 交换数据')}</text>
             {#each [0, 1, 2] as j}
               <rect x={st.x + SW / 2 - 14} y={174 + j * 9} width="28" height="8" rx="2" fill="white" stroke="var(--faint)" />
             {/each}
             <text x={st.x + SW / 2 + (k ? -32 : 32)} y="190" text-anchor={k ? 'end' : 'start'} class="tag strong">{st.q}</text>
             <rect x={st.x + 12} y="216" width={SW - 24} height="84" rx="8" fill="white" stroke="var(--accent)" />
             <text x={st.x + SW / 2} y="236" text-anchor="middle" class="tag strong">scheduler</text>
-            <text x={st.x + SW / 2} y="249" text-anchor="middle" class="tag">its own loop (Ch. {CH_STAGES} Step 2)</text>
+            <text x={st.x + SW / 2} y="249" text-anchor="middle" class="tag">{t(`its own loop (Ch. ${CH_STAGES} Step 2)`, `自己的循环（Ch. ${CH_STAGES} Step 2）`)}</text>
           {/each}
 
           <!-- the control plane: the notice goes right, the ack comes back -->
-          <text x="360" y="92" text-anchor="middle" class="tag strong">control plane · ZMQ</text>
-          <text x="360" y="104" text-anchor="middle" class="tag">small messages (Ch. {CH_PROC} Step 6)</text>
+          <text x="360" y="92" text-anchor="middle" class="tag strong">{t('control plane · ZMQ', '控制平面 · ZMQ')}</text>
+          <text x="360" y="104" text-anchor="middle" class="tag">{t(`small messages (Ch. ${CH_PROC} Step 6)`, `小消息（Ch. ${CH_PROC} Step 6）`)}</text>
           <path d="M {SX + SW + 6} 124 H {RX - 6}" fill="none" stroke="var(--line)" stroke-width="1.4" />
           <path d="M {RX - 6} 140 H {SX + SW + 6}" fill="none" stroke="var(--line)" stroke-width="1.4" stroke-dasharray="3 3" />
-          <text x="360" y="160" text-anchor="middle" class="tag">notice → · ← ack</text>
+          <text x="360" y="160" text-anchor="middle" class="tag">{t('notice → · ← ack', '通知 → · ← ack')}</text>
           {#if hp >= 4 && hp <= 6}
             <g style="transform: translate({hp >= 5 ? RX - 70 : SX + SW + 8}px, 116px); transition: transform 1.1s ease-in-out;" transition:fade={{ duration: 200 }}>
               <rect x="0" y="0" width="62" height="16" rx="8" fill="white" stroke="var(--fg)" />
-              <text x="31" y="11.5" text-anchor="middle" class="tag strong">data ready</text>
+              <text x="31" y="11.5" text-anchor="middle" class="tag strong">{t('data ready', '数据就绪')}</text>
             </g>
           {/if}
           {#if hp >= 7 && hp <= 8}
@@ -211,86 +215,86 @@
           {/if}
 
           <!-- the data plane: somewhere the receiver can read -->
-          <text x="360" y="222" text-anchor="middle" class="tag strong">data plane</text>
-          <text x="360" y="234" text-anchor="middle" class="tag">the data itself</text>
+          <text x="360" y="222" text-anchor="middle" class="tag strong">{t('data plane', '数据平面')}</text>
+          <text x="360" y="234" text-anchor="middle" class="tag">{t('the data itself', '数据本身')}</text>
           <rect x="314" y="246" width="92" height="32" rx="6" fill={hp >= 8 ? 'white' : 'var(--accent-soft)'} stroke="var(--accent)" stroke-dasharray={hp >= 8 ? '4 3' : 'none'} style="transition: fill 0.4s;" />
-          <text x="360" y="292" text-anchor="middle" class="tag">{hp >= 8 ? 'freed for the next one' : 'space the receiver can read'}</text>
+          <text x="360" y="292" text-anchor="middle" class="tag">{hp >= 8 ? t('freed for the next one', '已释放，给下一个用') : t('space the receiver can read', '接收方可读的空间')}</text>
 
           <!-- the vector itself -->
           <g style="transform: translate({dataAt[0]}px, {dataAt[1]}px); transition: transform 1.1s ease-in-out;">
             <rect x="-24" y="-9" width="48" height="18" rx="9" fill="var(--gen)" />
-            <text x="0" y="4" text-anchor="middle" class="tag onbox">vector</text>
+            <text x="0" y="4" text-anchor="middle" class="tag onbox">{t('vector', '向量')}</text>
           </g>
 
           <text x="16" y="342" class="legend"><tspan class="strong">{notes[hp]}</tspan></text>
-          <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">SGLang-Omni's names: DataReadyMessage, DataAckMessage · how the data plane works depends on the edge (step 4)</text>
+          <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t("SGLang-Omni's names: DataReadyMessage, DataAckMessage · how the data plane works depends on the edge (step 4)", 'SGLang-Omni 的命名：DataReadyMessage、DataAckMessage · 数据平面怎么走取决于边（第 4 步）')}</text>
         </g>
       {/if}
 
       <!-- 3: why two planes · the same vector, sent through the socket or by the data plane -->
       {#if cur.scene === 'planes'}
         {@const hop = (x: number, y: number, n: string, f: string, s: string, w = 90) => ({ x, y, n, f, s, w })}
-        {@const top = [hop(16, 92, 'GPU 0 memory', 'var(--accent-soft)', 'var(--accent)'), hop(150, 92, 'CPU memory', 'white', 'var(--fg)'), hop(284, 92, 'ZMQ socket', 'white', 'var(--fg)'), hop(418, 92, 'CPU memory', 'white', 'var(--fg)'), hop(552, 92, 'GPU 1 memory', 'var(--accent-soft)', 'var(--accent)')]}
+        {@const top = [hop(16, 92, t('GPU 0 memory', 'GPU 0 内存'), 'var(--accent-soft)', 'var(--accent)'), hop(150, 92, t('CPU memory', 'CPU 内存'), 'white', 'var(--fg)'), hop(284, 92, 'ZMQ socket', 'white', 'var(--fg)'), hop(418, 92, t('CPU memory', 'CPU 内存'), 'white', 'var(--fg)'), hop(552, 92, t('GPU 1 memory', 'GPU 1 内存'), 'var(--accent-soft)', 'var(--accent)')]}
         <g transition:fade={{ duration: 250 }}>
-          <text x="16" y="42" class="rowlabel">why the notice and the data travel apart · edge 7's vector, two ways</text>
+          <text x="16" y="42" class="rowlabel">{t("why the notice and the data travel apart · edge 7's vector, two ways", '为什么通知和数据分开走 · 边 7 的向量，两条路')}</text>
 
           <g in:fade={{ delay: 100, duration: 250 }}>
-            <text x="16" y="78" class="boxtitle">everything through ZMQ</text>
+            <text x="16" y="78" class="boxtitle">{t('everything through ZMQ', '全部经过 ZMQ')}</text>
             {#each top as h, i}
               <rect x={h.x} y={h.y} width={h.w} height="34" rx="7" fill={h.f} stroke={h.s} />
               <text x={h.x + h.w / 2} y={h.y + 21} text-anchor="middle" class="tag strong">{h.n}</text>
               {#if i < top.length - 1}
                 <path d="M {h.x + h.w + 6} {h.y + 17} H {top[i + 1].x - 6}" fill="none" stroke={RED} stroke-width="1.5" marker-end="url(#bs-arrow-red)" />
-                <text x={(h.x + h.w + top[i + 1].x) / 2} y={h.y + 50} text-anchor="middle" class="tag">{['out of the GPU', 'into the socket', 'out of the socket', 'back to a GPU'][i]}</text>
+                <text x={(h.x + h.w + top[i + 1].x) / 2} y={h.y + 50} text-anchor="middle" class="tag">{[t('out of the GPU', '离开 GPU'), t('into the socket', '进入 socket'), t('out of the socket', '离开 socket'), t('back to a GPU', '回到 GPU')][i]}</text>
               {/if}
             {/each}
-            <text x="16" y="170" class="tag"><tspan class="strong" style:fill={RED}>4 trips</tspan> through CPU memory and the socket, for every token · the encoders' {fmt(IMG_POS * VEC_KB)} KB would take the same 4</text>
+            <text x="16" y="170" class="tag"><tspan class="strong" style:fill={RED}>{t('4 trips', '4 趟')}</tspan>{t(` through CPU memory and the socket, for every token · the encoders' ${fmt(IMG_POS * VEC_KB)} KB would take the same 4`, `：每个 token 都经 CPU 内存和 socket · encoder 的 ${fmt(IMG_POS * VEC_KB)} KB 也要同样 4 趟`)}</text>
           </g>
 
           <g in:fade={{ delay: 700, duration: 250 }}>
-            <text x="16" y="212" class="boxtitle">notice through ZMQ, data on its own path</text>
+            <text x="16" y="212" class="boxtitle">{t('notice through ZMQ, data on its own path', '通知走 ZMQ，数据走自己的路')}</text>
             <rect x="16" y="226" width="90" height="34" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
-            <text x="61" y="247" text-anchor="middle" class="tag strong">GPU 0 memory</text>
+            <text x="61" y="247" text-anchor="middle" class="tag strong">{t('GPU 0 memory', 'GPU 0 内存')}</text>
             <rect x="552" y="226" width="90" height="34" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
-            <text x="597" y="247" text-anchor="middle" class="tag strong">GPU 1 memory</text>
+            <text x="597" y="247" text-anchor="middle" class="tag strong">{t('GPU 1 memory', 'GPU 1 内存')}</text>
             <path d="M 112 243 H 546" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#bs-arrow-ipc)" />
-            <text x="329" y="236" text-anchor="middle" class="tag strong">1 trip, GPU to GPU</text>
+            <text x="329" y="236" text-anchor="middle" class="tag strong">{t('1 trip, GPU to GPU', '1 趟，GPU 到 GPU')}</text>
             <rect x="284" y="276" width="90" height="26" rx="7" fill="white" stroke="var(--fg)" />
             <text x="329" y="293" text-anchor="middle" class="tag strong">ZMQ socket</text>
             <path d="M 112 289 H 278" fill="none" stroke="#b8b4aa" stroke-width="1.2" stroke-dasharray="3 3" />
             <path d="M 380 289 H 546" fill="none" stroke="#b8b4aa" stroke-width="1.2" stroke-dasharray="3 3" marker-end="url(#bs-arrow)" />
-            <text x="195" y="282" text-anchor="middle" class="tag">only the notice</text>
+            <text x="195" y="282" text-anchor="middle" class="tag">{t('only the notice', '只有通知')}</text>
           </g>
 
           <g in:fade={{ delay: 1200 }}>
-            <text x="18" y="330" class="pt">·</text><text x="28" y="330" class="legend">ZMQ carries bytes between processes' CPU memory, which suits a notice of a few fields</text>
-            <text x="18" y="347" class="pt">·</text><text x="28" y="347" class="legend">the notice is the same whatever path the data takes, so each edge can use its own path</text>
+            <text x="18" y="330" class="pt">·</text><text x="28" y="330" class="legend">{t("ZMQ carries bytes between processes' CPU memory, which suits a notice of a few fields", 'ZMQ 在进程间的 CPU 内存里传字节，适合只有几个字段的通知')}</text>
+            <text x="18" y="347" class="pt">·</text><text x="28" y="347" class="legend">{t('the notice is the same whatever path the data takes, so each edge can use its own path', '无论数据走哪条路，通知都一样，所以每条边可用自己的路径')}</text>
           </g>
-          <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">trips counted as whole moves of the data, not to scale · the GPU-to-GPU path is step 6's</text>
+          <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t("trips counted as whole moves of the data, not to scale · the GPU-to-GPU path is step 6's", '趟数按数据的完整移动计，非按比例 · GPU 到 GPU 的路径见第 6 步')}</text>
         </g>
       {/if}
 
       <!-- 4: the map · where the two stages sit picks the data's path -->
       {#if cur.scene === 'map'}
         {@const rows = [
-          { k: 1, where: 'in one process', how: 'a reference', what: 'nothing moves: the receiver gets the same object', eg: 'none by default' },
-          { k: 2, where: 'on GPUs, one machine', how: 'CUDA IPC', what: "the receiver opens the sender's GPU memory", eg: 'edges 4, 5, 7, 8' },
-          { k: 3, where: 'a CPU end, one machine', how: 'shared memory', what: 'CPU memory that both processes map', eg: 'edges 1, 2, 3, 6' },
-          { k: 4, where: 'on two machines', how: 'Mooncake', what: 'network cards copy machine to machine', eg: 'none by default' },
+          { k: 1, where: 'in one process', how: t('a reference', '引用'), what: t('nothing moves: the receiver gets the same object', '什么都不搬：接收方拿到同一个对象'), eg: t('none by default', '默认没有') },
+          { k: 2, where: 'on GPUs, one machine', how: 'CUDA IPC', what: t("the receiver opens the sender's GPU memory", '接收方打开发送方的 GPU 内存'), eg: t('edges 4, 5, 7, 8', '边 4、5、7、8') },
+          { k: 3, where: 'a CPU end, one machine', how: t('shared memory', '共享内存'), what: t('CPU memory that both processes map', '两个进程都映射的 CPU 内存'), eg: t('edges 1, 2, 3, 6', '边 1、2、3、6') },
+          { k: 4, where: 'on two machines', how: 'Mooncake', what: t('network cards copy machine to machine', '网卡在机器间复制'), eg: t('none by default', '默认没有') },
         ]}
         {@const ry = (i: number) => 76 + i * 62}
         <g transition:fade={{ duration: 250 }}>
-          <text x="16" y="42" class="rowlabel">four paths for the data · picked per edge from where its two stages sit</text>
+          <text x="16" y="42" class="rowlabel">{t('four paths for the data · picked per edge from where its two stages sit', '数据的四条路径 · 按每条边两端 stage 的位置来选')}</text>
           <g in:fade={{ delay: 100, duration: 250 }}>
-            {#each ['where the two stages sit', 'the data goes by', 'what happens', 'in Qwen3-Omni'] as h, i}
-              <text x={[16, 216, 330, 600][i]} y="66" class="tag strong">{h}</text>
+            {#each [['where the two stages sit', '两个 stage 在哪'], ['the data goes by', '数据怎么走'], ['what happens', '发生什么'], ['in Qwen3-Omni', 'Qwen3-Omni 中']] as [h, hz], i}
+              <text x={[16, 216, 330, 600][i]} y="66" class="tag strong">{t(h, hz)}</text>
             {/each}
           </g>
           {#each rows as r, i}
             {@const y = ry(i)}
             <g in:fade={{ delay: 300 + i * 300, duration: 250 }}>
               <rect x="16" y={y} width="688" height="52" rx="8" fill="#fbfaf7" stroke="var(--line)" />
-              <text x="28" y={y + 19} class="boxtitle">{r.k} of 4</text>
+              <text x="28" y={y + 19} class="boxtitle">{t(`${r.k} of 4`, `4 之 ${r.k}`)}</text>
               <!-- a small picture of the arrangement -->
               {#if r.k === 1}
                 <rect x="28" y={y + 26} width="150" height="20" rx="5" fill="none" stroke="var(--faint)" stroke-dasharray="3 2" />
@@ -319,8 +323,8 @@
               <text x="600" y={y + 31} class="tag">{r.eg}</text>
             </g>
           {/each}
-          <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">dashed: a process · solid: a machine · the edges are Ch. {CH_STAGES} Step 12's · SGLang-Omni's CommRouter makes the choice</text>
-          <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">the tools are general: SGLang also moves KV cache between servers with Mooncake (chapter {CH_DISAGG})</text>
+          <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t(`dashed: a process · solid: a machine · the edges are Ch. ${CH_STAGES} Step 12's · SGLang-Omni's CommRouter makes the choice`, `虚线：进程 · 实线：机器 · 边见 Ch. ${CH_STAGES} Step 12 · 由 SGLang-Omni 的 CommRouter 选择`)}</text>
+          <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(`the tools are general: SGLang also moves KV cache between servers with Mooncake (chapter ${CH_DISAGG})`, `这些工具是通用的：SGLang 也用 Mooncake 在服务器间搬 KV cache（第 ${CH_DISAGG} 章）`)}</text>
         </g>
       {/if}
 
@@ -472,7 +476,7 @@
         <g transition:fade={{ duration: 250 }}>
           <text x="16" y="42" class="rowlabel">Ch. {CH_STAGES} Step 12's graph, each edge coloured by its path in the default layout</text>
           <g in:fade={{ delay: 100, duration: 250 }}>
-            {@render graph((t) => (t === 'ipc' ? IPC : SHM), (t) => (t === 'ipc' ? 'bs-arrow-ipc' : 'bs-arrow-shm'))}
+            {@render graph((kind) => (kind === 'ipc' ? IPC : SHM), (kind) => (kind === 'ipc' ? 'bs-arrow-ipc' : 'bs-arrow-shm'))}
           </g>
           <g in:fade={{ delay: 600, duration: 250 }}>
             <rect x="16" y="214" width="16" height="10" rx="2" fill={IPC} />
@@ -568,5 +572,5 @@
     </svg>
   </div>
 
-  <StepControls {step} total={steps.length} caption={cur.caption} {prev} {next} onchange={(s) => (step = s)} />
+  <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh} deep={deep?.en[step]} deepZh={deep?.zh[step]} {prev} {next} onchange={(s) => (step = s)} />
 </figure>

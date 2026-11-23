@@ -5,9 +5,12 @@ slug: 21-full-duplex
 import FullDuplex from '../../components/viz/FullDuplex.svelte';
 import { neighbors } from '../../chapters';
 
-<FullDuplex client:load {...neighbors('21-full-duplex')} />
+import { deepFor } from '../../deep';
+export const deep = await deepFor('21-full-duplex');
 
-<details>
+<FullDuplex client:load {...neighbors('21-full-duplex')} deep={deep} />
+
+<details class="i18n-en">
 <summary>Where this chapter's claims come from</summary>
 
 **The models.** SGLang-Omni serves MiniCPM-o 4.5 and PersonaPlex as native full-duplex models on `/v1/realtime` (`docs/developer_reference/full_duplex_interactive_model.md`). MiniCPM-o takes the listener's audio in 1-second units and decides once per unit whether to keep listening or to speak; PersonaPlex works in 80 ms units. Qwen3-Omni runs turn-based, with a voice-activity detector ending turns and interrupting replies. Step 1's two failures are the ones SGLang-Omni's documentation gives for that detector: a pause in the middle of a sentence ends the turn, and speech always interrupts a running reply. A turn-based profile can add Smart Turn, a model that scores whether a pause ends the turn, which addresses the first. Step 1's timelines are illustrative.
@@ -29,5 +32,30 @@ import { neighbors } from '../../chapters';
 **Interruption.** Qwen3-Omni's session graph puts a Silero voice-activity detector in front: 800 ms of silence ends the listener's turn, and speech during a reply sends an interrupt as a `control` operation, which, marked to preempt, cancels the appends in flight. Reply audio is sent at most `max_output_lead_ms` ahead of real time, 1,000 by default.
 
 **The memory.** Step 8's call is Qwen3-Omni's thinker: 1,800 s × 13 positions a second (Ch. 16 Step 2) × 96 KB (Ch. 19 Step 4) = 2.2 GB. GPU 0 of the default layout holds 63.8 GB of weights (Ch. 19 Step 1), leaving 16.2 GB, room for 7 such calls. That is an upper bound: working memory takes part of the rest. MiniCPM-o reserves room for full-length sessions when it starts, 2 by default (`max_sessions`).
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的来源</summary>
+
+**模型。** SGLang-Omni 在 `/v1/realtime` 上把 MiniCPM-o 4.5 和 PersonaPlex 作为原生全双工模型来服务（`docs/developer_reference/full_duplex_interactive_model.md`）。MiniCPM-o 以 1 秒为单位接收听众的音频，每个单元决定一次是继续听还是开口说；PersonaPlex 以 80 ms 为单位工作。Qwen3-Omni 按轮替方式运行，由语音活动检测器结束轮次并打断回复。Step 1 的两种失败正是 SGLang-Omni 文档为该检测器列出的：句子中间的停顿会结束轮次，而语音总是打断正在进行的回复。轮替配置可以加上 Smart Turn，一个为停顿是否结束轮次打分的模型，解决第一种问题。Step 1 的时间线是示意。
+
+**stage。** MiniCPM-o 的全双工流水线（`models/minicpm_o/native_config.py`）有四个 stage：`perception`、`thinker`、`talker` 和 `speech`。每个 1 秒单元是穿过它们的一个 request。
+
+**request 保留什么。** Step 3 的遗忘是第 7 章的规则（Ch. 7 Step 5）：request 结束时，各 stage 为它建立的东西被释放。单元就是 request，所以若无额外机制，每个单元都从零开始。
+
+**为什么 prefix cache 罩不住它。** 第 8 章的 radix tree 匹配的是 token id。session 单元把音频作为占位 id 下的 embedding 携带，这些 id 不能标识音频本身，所以 SGLang-Omni 把这类单元排除在 radix tree 之外（`scheduling/sglang_backend/ar_session.py`）；而 perception 和 vocoder 的状态根本不由它缓存。
+
+**session。** session 由客户端打开、追加、控制、读取和关闭（`scheduling/session.py`、`pipeline/sessions.py`）。open 从上游开始逐个 stage 执行，close 从下游开始。session 由其 id 和一个 open 索引（`SessionIdentity`）命名，所以再次打开同一 id 不会继承上一次 open 保留的东西。Step 4 省略了 `read`，它收集 stage 在两次 append 之间产生的输出。
+
+**每个 stage 保留什么。** perception 的 hook 保存音频编码器的运行状态、上一单元音频的末尾以及任何图像。thinker 和 talker 通过 SGLang 核心的 `SessionController` 保存 KV cache：append 变成一个延续该 session cache 的 request，而不是新开一个。MiniCPM-o 把一个 session 的历史限制在 8,192 个 token，超出就以 `context_exhausted` 关闭它，并把 speech stage 的状态限制在 `speech_state_bytes_per_session`，即 2 GiB。
+
+**hook。** session 操作以普通 request 的形式到达 stage，其元数据携带 `omni_session`。`SessionScheduler` 是单趟 `SimpleScheduler` 的子类，它读取标记并调用该 stage 的 `SessionHooks`：`open`、`append`、`control`、`close` 和 `usage`，外加用于两次 append 之间输出的 `attach_output_stream`，以及把多个 session 的 append 一起跑的 `BatchedSessionHooks.append_batch`。每个 stage 为每个 session 保存一个游标，所以一个 session 的操作按到达顺序执行。thinker 和 talker 则跑 SGLang 自己的 scheduler 循环，由 `ARSessionBridge`（`scheduling/sglang_backend/ar_session.py`）把 open 变成 `SessionController.open`，把 append 变成建立在所存 cache 上的 request，并处理 cancel 和 rewind。
+
+**一次一个单元。** 实时通话通过 `/v1/realtime` 到达服务器。realtime session（`serve/realtime/runtime.py`）缓冲听众的音频，攒满一个完整的 1 秒单元就切出来交出去，等它走完每个 stage 才切下一个。它最多保存 60 s 音频（`max_input_bytes`，16 kHz 16-bit 音频 1,920,000 字节），对再来的 append 回以 `buffer_overflow`。在它后面，`CoordinatorSessions`（`pipeline/sessions.py`，即 Ch. 18 Step 10 的 coordinator）保存打开的 session，每个带一个 pump，也按顺序一次发一个 append；`SessionLimits` 把该队列限制在 16 个 chunk 或 4 MB，session 空闲 300 s 后关闭，操作 30 s 超时。单元不跨 stage 流水线化：单元 1 在 talker 时，单元 2 不会进入 perception。当一个 stage 跑多个副本时，coordinator 还会把每个 session 在其整个生命周期绑定到每个 stage 的一个副本，因为状态保存在那个副本上。Step 7 的 0.8 s 和 1.5 s 是示意；3 分钟由它们推出。
+
+**打断。** Qwen3-Omni 的 session 图在前面放了一个 Silero 语音活动检测器：800 ms 静音结束听众的轮次，回复期间的语音以 `control` 操作发送一个 interrupt，标记为可抢占时，取消正在进行的 append。回复音频最多领先实时 `max_output_lead_ms` 发送，默认 1,000。
+
+**显存。** Step 8 的通话是 Qwen3-Omni 的 thinker：1,800 s × 每秒 13 个位置（Ch. 16 Step 2）× 96 KB（Ch. 19 Step 4）= 2.2 GB。默认布局的 GPU 0 上有 63.8 GB 权重（Ch. 19 Step 1），剩 16.2 GB，够放 7 个这样的通话。这是上界：工作内存会占去剩余的一部分。MiniCPM-o 启动时就为满长度 session 预留空间，默认 2 个（`max_sessions`）。
 
 </details>

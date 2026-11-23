@@ -4,10 +4,12 @@ slug: 03-kv-cache
 ---
 import KVCache from '../../components/viz/KVCache.svelte';
 import { neighbors } from '../../chapters';
+import { deepFor } from '../../deep';
+export const deep = await deepFor('03-kv-cache');
 
-<KVCache client:load {...neighbors('03-kv-cache')} />
+<KVCache client:load {...neighbors('03-kv-cache')} deep={deep} />
 
-<details>
+<details class="i18n-en">
 <summary>Cache size, once</summary>
 
 Per token, per sequence, the cache holds one $k$ and one $v$ for every head in every layer:
@@ -17,5 +19,18 @@ $$
 $$
 
 Llama-3-8B: $2 \cdot 32 \cdot 8 \cdot 128 \cdot 2 = 131{,}072$ bytes, so 128 KB per token, or about 1 GB for an 8k-token context. Grouped-query attention is why $H_{kv} = 8$ rather than the 32 query heads.
+
+</details>
+
+<details class="i18n-zh">
+<summary>cache 的大小，一次算清</summary>
+
+每个 token、每个序列，cache 在每一层的每个 head 里各保存一个 $k$ 和一个 $v$：
+
+$$
+\text{bytes per token} = 2 \cdot L \cdot H_{kv} \cdot d_{head} \cdot \text{bytes per value}
+$$
+
+Llama-3-8B：$2 \cdot 32 \cdot 8 \cdot 128 \cdot 2 = 131{,}072$ 字节，即每个 token 128 KB，8k token 的上下文约 1 GB。之所以 $H_{kv} = 8$ 而不是 32 个 query head，是因为 grouped-query attention。
 
 </details>

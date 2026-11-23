@@ -4,14 +4,25 @@ slug: 11-cuda-graphs
 ---
 import CudaGraphs from '../../components/viz/CudaGraphs.svelte';
 import { neighbors } from '../../chapters';
+import { deepFor } from '../../deep';
+export const deep = await deepFor('11-cuda-graphs');
 
-<CudaGraphs client:load {...neighbors('11-cuda-graphs')} />
+<CudaGraphs client:load {...neighbors('11-cuda-graphs')} deep={deep} />
 
-<details>
+<details class="i18n-en">
 <summary>The launch arithmetic, once</summary>
 
 An eager decode step costs $\max(N_{\text{kernels}} \cdot t_{\text{launch}},\; t_{\text{gpu}}(B))$. With about a thousand launches at roughly 9 µs each, the CPU side is near 9 ms, above the 4.8 ms of GPU work for an 8B model at small batch, so the step is launch-bound until $t_{\text{gpu}}(B)$ grows past it, around $B \approx 550$. A CUDA graph replaces the thousand launches with one, so the step is $t_{\text{gpu}}(B)$ at every batch size.
 
 The graph fixes shapes and addresses, so SGLang's `CudaGraphRunner` captures one graph per batch size in `--cuda-graph-bs` (default up to `--cuda-graph-max-bs`), pads real batches up to the nearest captured size, and keeps static input and output buffers that the scheduler fills before each `replay()`. Only decode is captured: prefill's ragged shapes change every batch. Anything data-dependent inside the step, MoE routing, speculative verification, host syncs, breaks capture; that is the next chapter.
+
+</details>
+
+<details class="i18n-zh">
+<summary>启动开销的算术，只算一次</summary>
+
+eager 模式下，一个 decode 步的耗时是 $\max(N_{\text{kernels}} \cdot t_{\text{launch}},\; t_{\text{gpu}}(B))$。约一千次启动、每次约 9 µs，CPU 一侧接近 9 ms，超过小 batch 下 8B 模型 4.8 ms 的 GPU 工作；所以在 $t_{\text{gpu}}(B)$ 涨过它（约 $B \approx 550$）之前，这一步受启动开销限制。CUDA graph 把一千次启动换成一次，于是任何 batch 大小下，这一步的耗时都是 $t_{\text{gpu}}(B)$。
+
+graph 固定了形状和地址，所以 SGLang 的 `CudaGraphRunner` 为 `--cuda-graph-bs` 里的每个 batch 大小各录一个 graph（默认录到 `--cuda-graph-max-bs`），把真实 batch 补齐到最近的已录大小，并保留静态的输入输出缓冲区，由 scheduler 在每次 `replay()` 之前填入。只录 decode：prefill 长短不齐的形状每个 batch 都在变。步内任何依赖数据的东西——MoE 路由、投机验证、host 同步——都会破坏录制；那是下一章的内容。
 
 </details>

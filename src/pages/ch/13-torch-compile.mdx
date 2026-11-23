@@ -4,10 +4,12 @@ slug: 13-torch-compile
 ---
 import TorchCompile from '../../components/viz/TorchCompile.svelte';
 import { neighbors } from '../../chapters';
+import { deepFor } from '../../deep';
+export const deep = await deepFor('13-torch-compile');
 
-<TorchCompile client:load {...neighbors('13-torch-compile')} />
+<TorchCompile client:load {...neighbors('13-torch-compile')} deep={deep} />
 
-<details>
+<details class="i18n-en">
 <summary>The two halves of one tool, and what each is worth</summary>
 
 `torch.compile` is a front end and a back end. **Dynamo** is the front end: a bytecode interpreter that traces Python into a straight-line FX graph of tensor operations, breaking the graph wherever it meets something it cannot trace. That is the half Ch. 12 Step 11 used — the graph is what you split at the seams. **Inductor** is the default back end: it fuses pointwise and reduction chains into generated Triton kernels, auto-tunes their block sizes, and for matmuls *selects* a backend (cuBLAS, a Triton template, CUTLASS) with prologue and epilogue fusion around it. Matmuls are not generated from scratch.
@@ -15,5 +17,16 @@ import { neighbors } from '../../chapters';
 The fusion arithmetic, for Llama-3-8B in bf16: SiLU's output is $14336 \times 2 = 28$ KB per token per layer, written to HBM and read straight back by the multiply. Fusing removes both trips, $56$ KB per token per layer, $1.8$ MB per token across 32 layers. At batch 256 that is roughly 470 MB against the step's 16 GB weight read — about 3%, or 140 µs of 4.8 ms. Autotuning is worth more at small batch, where a decode matmul is a sliver against a square-tuned library default; SGLang describes `--enable-torch-compile` as accelerating "small models on small batch sizes", and reported gains sit around 5–15% below batch 16. vLLM reports up to 8% from fused SiLU+quantize on an FP8 405B model, which is the same trick paying better once there is a quantise step to absorb.
 
 In SGLang the standalone `--enable-torch-compile` path is flagged as out of maintenance; the live path is the piecewise one from Ch. 12 Step 7, where `--cuda-graph-tc-compiler inductor` turns the back end on for each captured piece. `max-autotune` benchmarks every candidate for every shape, so compilation costs minutes at startup; `--torch-compile-max-bs` caps how many shapes pay it, and the Inductor cache (`TORCHINDUCTOR_CACHE_DIR`) can be shipped to other machines.
+
+</details>
+
+<details class="i18n-zh">
+<summary>一个工具的两半，各值多少</summary>
+
+`torch.compile` 分前端和后端。**Dynamo** 是前端：一个字节码解释器，把 Python trace 成一条直线式的 FX 张量运算图，遇到无法 trace 的地方就把图断开。这就是 Ch. 12 Step 11 用的那一半——在接缝处切开的就是这张图。**Inductor** 是默认后端：把 pointwise 和归约链融合成生成的 Triton kernel，自动调优它们的 block 大小，对 matmul 则*挑选*一个后端（cuBLAS、Triton 模板、CUTLASS），并在其前后做 prologue 和 epilogue 融合。matmul 不是从头生成的。
+
+融合的算术，以 bf16 的 Llama-3-8B 为例：SiLU 的输出是每 token 每层 $14336 \times 2 = 28$ KB，写进 HBM 又被 multiply 直接读回。融合省掉这两趟，每 token 每层 $56$ KB，32 层合计每 token $1.8$ MB。batch 256 时约 470 MB，对比这一步 16 GB 的权重读取——约 3%，即 4.8 ms 里的 140 µs。autotune 在小 batch 下收益更大：decode 的 matmul 相对为方阵调优的库默认值只是一小条；SGLang 把 `--enable-torch-compile` 描述为加速"小模型、小 batch"，报告的收益在 batch 16 以下约 5–15%。vLLM 报告在 FP8 405B 模型上融合 SiLU+quantize 最高有 8%——一旦有 quantize 步骤可以吸收，同一招收益更好。
+
+在 SGLang 里，独立的 `--enable-torch-compile` 路径已标记为不再维护；活跃的路径是 Ch. 12 Step 7 的分段方案，由 `--cuda-graph-tc-compiler inductor` 为每个捕获的 piece 打开后端。`max-autotune` 对每个形状实测每个候选，因此启动时编译要花几分钟；`--torch-compile-max-bs` 限制有多少形状付这个代价，Inductor 缓存（`TORCHINDUCTOR_CACHE_DIR`）可以打包带到别的机器。
 
 </details>

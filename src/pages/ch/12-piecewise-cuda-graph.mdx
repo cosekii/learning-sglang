@@ -4,10 +4,12 @@ slug: 12-piecewise-cuda-graph
 ---
 import PiecewiseGraphs from '../../components/viz/PiecewiseGraphs.svelte';
 import { neighbors } from '../../chapters';
+import { deepFor } from '../../deep';
+export const deep = await deepFor('12-piecewise-cuda-graph');
 
-<PiecewiseGraphs client:load {...neighbors('12-piecewise-cuda-graph')} />
+<PiecewiseGraphs client:load {...neighbors('12-piecewise-cuda-graph')} deep={deep} />
 
-<details>
+<details class="i18n-en">
 <summary>Where the numbers come from</summary>
 
 A prefill step of $n$ tokens costs the GPU $\max(t_{\text{mem}},\; n \cdot t_{\text{tok}})$ — the 4.8 ms weight read from Ch. 4 Step 5, or the compute, whichever is larger. The CPU's side is flat: about a thousand launches at 9 µs each, whatever rides along. So the step is launch-bound while $9\ \text{ms} > n \cdot t_{\text{tok}}$, which for an 8B model at roughly a petaflop is $n < 560$ — the same crossover Ch. 11 Step 4 found on the batch-size axis, because it is the same 9 ms on the other side of the comparison.
@@ -17,5 +19,18 @@ Piecewise replaces those launches with one replay per piece plus eager attention
 A kernel's registers and shared memory do not survive the kernel, and two kernels are two independent launches with no state in common, so a value passing from one to the next has to be written to global memory and read back. That memory is HBM — the GPU's own DRAM, the same place the weights and the KV cache live; the CPU is not involved at any point. (At small sizes some of those reads are caught by the 50 MB L2 rather than reaching HBM, but a prefill-sized activation — `[2048, 14336]` in bf16 is 58 MB — is well past that.)
 
 SGLang builds this with `torch.compile`: `PiecewiseCudaGraphRunner` wraps the model to trigger Dynamo tracing, splits the FX graph at the ops named as split points, and replaces each capturable subgraph with a backend that captures and replays it per rung. `--cuda-graph-tc-compiler` picks what the compiler does with the pieces — `eager` (the default) traces and splits only; `inductor` also generates kernels, which is chapter 13. The prefill rung schedule (`--cuda-graph-bs-prefill`) defaults to 4–32 by 4, 48–256 by 16, 288–512 by 32, 576–1024 by 64, 1280–4096 by 256, then by 512.
+
+</details>
+
+<details class="i18n-zh">
+<summary>这些数字从哪来</summary>
+
+含 $n$ 个 token 的 prefill 步，GPU 耗时 $\max(t_{\text{mem}},\; n \cdot t_{\text{tok}})$——即 Ch. 4 Step 5 的 4.8 ms 权重读取与计算两者取大。CPU 这边是平的：约一千次启动、每次 9 µs，与带多少 token 无关。因此当 $9\ \text{ms} > n \cdot t_{\text{tok}}$ 时，这一步是 launch-bound（启动受限）的；对算力约一 petaflop 的 8B 模型，就是 $n < 560$——这正是 Ch. 11 Step 4 在 batch 大小轴上找到的同一交叉点，因为比较的另一侧同样是那 9 ms。
+
+分段（piecewise）把那些启动换成每段一次 replay 加 eager attention：$33 \times 10\,\mu s + 32 \times 3 \times 9\,\mu s \approx 1.2$ ms。这是单个整模型 graph 成本的六十倍，却无关紧要，因为目标从来不是零——而是 4.8 ms。
+
+kernel 的寄存器和共享内存不会在 kernel 结束后留存，两个 kernel 是两次互不共享状态的独立启动，所以从一个传到下一个的值必须写进全局内存再读回来。那块内存就是 HBM——GPU 自己的 DRAM，权重和 KV cache 也在那里；CPU 全程不参与。（规模小时，其中一些读取会被 50 MB 的 L2 接住而到不了 HBM，但 prefill 规模的激活——bf16 的 `[2048, 14336]` 是 58 MB——远超那个容量。）
+
+SGLang 用 `torch.compile` 实现它：`PiecewiseCudaGraphRunner` 包住模型以触发 Dynamo tracing，在被指定为切分点的 op 处切开 FX graph，并把每个可捕获的子图替换成一个按梯级捕获并 replay 它的 backend。`--cuda-graph-tc-compiler` 决定编译器对这些段做什么——`eager`（默认）只 trace 和切分；`inductor` 还会生成 kernel，那是第 13 章。prefill 的梯级表（`--cuda-graph-bs-prefill`）默认是 4–32 间隔 4、48–256 间隔 16、288–512 间隔 32、576–1024 间隔 64、1280–4096 间隔 256，之后间隔 512。
 
 </details>

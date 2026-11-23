@@ -3,7 +3,10 @@
   import StepControls from '../StepControls.svelte';
   import { chapterNumber as chNum, chapters, type NavLink } from '../../chapters';
   import { W_GB, BW, TFLOPS as FLOPS, GFLOP_PER_TOKEN as GFLOP } from '../../numbers';
-  let { prev, next }: { prev?: NavLink; next?: NavLink } = $props();
+  import { lang } from '../../i18n';
+  import type { Deep } from '../../deep';
+  let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
+  const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
   const CH_DISAGG = chNum('28-disaggregation'), CH_CUDA = chNum('11-cuda-graphs');
 
   // ---- Numbers, same as chapters 4 and 5: Llama-3-8B bf16 on one H100 -------------------------
@@ -49,27 +52,28 @@
     return { worst, ws, we, ttft, total: t, arrival };
   }
   const TL = { x: 104, y: 110, rowH: 26, gapY: 58, pxPerMs: 5.6 };
-  const policies: { mode: Mode; name: string; note: string }[] = [
-    { mode: 'prefill-first', name: 'prefill first', note: 'one prompt, its own step' },
-    { mode: 'chunked', name: `chunked, not mixed · ${CHUNK} per chunk`, note: 'chunk step, decode step, chunk step…' },
-    { mode: 'mixed', name: `chunked, mixed · ${MIX_CHUNK} per chunk`, note: 'every step carries a chunk and all the decodes' },
-  ];
+  const policies = $derived([
+    { mode: 'prefill-first', name: t('prefill first', 'prefill 优先'), note: t('one prompt, its own step', '一个 prompt，单独一步') },
+    { mode: 'chunked', name: t(`chunked, not mixed · ${CHUNK} per chunk`, `切 chunk，不混合 · 每 chunk ${CHUNK} token`), note: t('chunk step, decode step, chunk step…', 'chunk 步、decode 步、chunk 步…') },
+    { mode: 'mixed', name: t(`chunked, mixed · ${MIX_CHUNK} per chunk`, `切 chunk，混合 · 每 chunk ${MIX_CHUNK} token`), note: t('every step carries a chunk and all the decodes', '每步带一个 chunk 和全部 decode') },
+  ] as { mode: Mode; name: string; note: string }[]);
 
   // ---- Script ------------------------------------------------------------------------------------------
   type Scene = 'recap' | 'lists' | 'why' | 'timeline' | 'compare' | 'loop';
-  interface Step { caption: string; scene: Scene; mode?: Mode; foot?: string }
+  interface Step { caption: string; captionZh: string; scene: Scene; mode?: Mode; foot?: string; footZh?: string }
   const CHUNK_FOOT = `SGLang chunks by default (8,192 tokens on an H100) but runs a prompt's chunks back to back · this takes --prefill-decode-interval 1`;
+  const CHUNK_FOOT_ZH = `SGLang 默认切 chunk（H100 上 8,192 token），但一个 prompt 的 chunk 连着跑 · 这需要 --prefill-decode-interval 1`;
   const M = Object.fromEntries((['prefill-first', 'batched', 'chunked', 'mixed'] as Mode[]).map((m) => [m, metrics(timeline(m))])) as Record<Mode, ReturnType<typeof metrics>>;
   const steps: Step[] = [
-    { scene: 'recap', caption: `Ch. 5 Step 9 ended here: a newcomer's prefill stretching everyone's decode step. SGLang doesn't run the two together by default. They split the work into two kinds of batch and pick one each step. That's the scheduler.` },
-    { scene: 'lists', caption: `The engine keeps two lists. <b>Waiting</b>: new requests that need a prefill. <b>Running</b>: conversations mid-answer that need one more token. Each step runs one batch, from one list.` },
-    { scene: 'why', caption: `Same model, two shapes. Prefill: a few sequences, hundreds of tokens each, ragged. Decode: many sequences, one token each, every step. Two shapes, two batches; chapters ${CH_DISAGG} and ${CH_CUDA} show what that unlocks.` },
-    { scene: 'timeline', mode: 'prefill-first', caption: `The default policy: if anyone is waiting, run a prefill batch first. The newcomer's first token comes in ${fmt(M['prefill-first'].ttft)}, but nobody decodes during those ${fmt(M['prefill-first'].ttft)}. An 8k-token prompt, the longest Llama-3-8B takes, freezes everyone for ${fmt(stepMs(8192))}.` },
-    { scene: 'timeline', mode: 'batched', caption: `It gets worse. Waiting prompts are batched into one prefill step, efficient for the GPU and awful for the decoders: three prompts, ${waitingTotal.toLocaleString()} tokens, one ${fmt(M.batched.ttft)} step. Every running conversation freezes for all of it.` },
-    { scene: 'timeline', mode: 'chunked', caption: `Cap the prefill batch. Split prompts into chunks and alternate: a chunk, a decode step, a chunk, a decode step. The freeze is now one chunk long, whatever the prompt's size. The first token arrives a little later.`, foot: CHUNK_FOOT },
-    { scene: 'timeline', mode: 'mixed', caption: `Once prefill comes in chunks, a chunk is small enough to ride inside a decode step, on compute the decodes leave idle. No freeze at all, first token in ${fmt(M.mixed.ttft)}. Sarathi-Serve's idea, vLLM v1's default, SGLang's mixed-chunk option.` },
-    { scene: 'compare', caption: `Same GPU, same prompt, three policies. Prefill-first: fastest first token, worst freeze. Chunked: a bounded freeze. Mixed: none. The chunk size is the knob between the two clocks, and it belongs to the scheduler, not the model.`, foot: CHUNK_FOOT },
-    { scene: 'loop', caption: `Each step the scheduler asks: anyone waiting, and room in the cache? If so, a prefill batch up to the chunk size, plus the decodes if mixing is on. If not, the decode batch. What counts as room is chapter ${chNum('07-kv-memory')}.` },
+    { scene: 'recap', caption: `Ch. 5 Step 9 ended here: a newcomer's prefill stretching everyone's decode step. SGLang doesn't run the two together by default. They split the work into two kinds of batch and pick one each step. That's the scheduler.`, captionZh: `Ch. 5 Step 9 到此：新来者的 prefill 拉长所有人的 decode 步。SGLang 默认不一起跑，而是把工作分成两种 batch，每步选一种。这就是 scheduler。` },
+    { scene: 'lists', caption: `The engine keeps two lists. <b>Waiting</b>: new requests that need a prefill. <b>Running</b>: conversations mid-answer that need one more token. Each step runs one batch, from one list.`, captionZh: `引擎维护两个列表。<b>Waiting</b>：需要 prefill 的新 request。<b>Running</b>：回答到一半、还差一个 token 的对话。每步跑一个 batch，来自其中一个列表。` },
+    { scene: 'why', caption: `Same model, two shapes. Prefill: a few sequences, hundreds of tokens each, ragged. Decode: many sequences, one token each, every step. Two shapes, two batches; chapters ${CH_DISAGG} and ${CH_CUDA} show what that unlocks.`, captionZh: `同一模型，两种形状。Prefill：几条序列，各几百 token，长短不齐。Decode：许多序列，每步各一个 token。两种形状两个 batch；第 ${CH_DISAGG}、${CH_CUDA} 章讲这解锁了什么。` },
+    { scene: 'timeline', mode: 'prefill-first', caption: `The default policy: if anyone is waiting, run a prefill batch first. The newcomer's first token comes in ${fmt(M['prefill-first'].ttft)}, but nobody decodes during those ${fmt(M['prefill-first'].ttft)}. An 8k-token prompt, the longest Llama-3-8B takes, freezes everyone for ${fmt(stepMs(8192))}.`, captionZh: `默认策略：有人等待就先跑 prefill batch。新来者的首个 token 要 ${fmt(M['prefill-first'].ttft)}，但这 ${fmt(M['prefill-first'].ttft)} 里没人 decode。8k token 的 prompt（Llama-3-8B 的上限）会冻结所有人 ${fmt(stepMs(8192))}。` },
+    { scene: 'timeline', mode: 'batched', caption: `It gets worse. Waiting prompts are batched into one prefill step, efficient for the GPU and awful for the decoders: three prompts, ${waitingTotal.toLocaleString()} tokens, one ${fmt(M.batched.ttft)} step. Every running conversation freezes for all of it.`, captionZh: `更糟的是，等待的 prompt 被合进一个 prefill 步：对 GPU 高效，对 decode 却糟糕：三个 prompt、${waitingTotal.toLocaleString()} 个 token、一个 ${fmt(M.batched.ttft)} 的步。所有运行中的对话全程冻结。` },
+    { scene: 'timeline', mode: 'chunked', caption: `Cap the prefill batch. Split prompts into chunks and alternate: a chunk, a decode step, a chunk, a decode step. The freeze is now one chunk long, whatever the prompt's size. The first token arrives a little later.`, captionZh: `给 prefill batch 设上限。把 prompt 切成 chunk 并交替：一个 chunk、一个 decode 步、一个 chunk、一个 decode 步。现在无论 prompt 多大，冻结只有一个 chunk 长。首个 token 稍晚到达。`, foot: CHUNK_FOOT, footZh: CHUNK_FOOT_ZH },
+    { scene: 'timeline', mode: 'mixed', caption: `Once prefill comes in chunks, a chunk is small enough to ride inside a decode step, on compute the decodes leave idle. No freeze at all, first token in ${fmt(M.mixed.ttft)}. Sarathi-Serve's idea, vLLM v1's default, SGLang's mixed-chunk option.`, captionZh: `prefill 一旦切成 chunk，一个 chunk 就小到能搭进 decode 步，用 decode 闲置的算力。完全没有冻结，首个 token 只要 ${fmt(M.mixed.ttft)}。这是 Sarathi-Serve 的想法、vLLM v1 的默认、SGLang 的 mixed-chunk 选项。` },
+    { scene: 'compare', caption: `Same GPU, same prompt, three policies. Prefill-first: fastest first token, worst freeze. Chunked: a bounded freeze. Mixed: none. The chunk size is the knob between the two clocks, and it belongs to the scheduler, not the model.`, captionZh: `同一 GPU、同一 prompt，三种策略。Prefill-first：首个 token 最快，冻结最糟。Chunked：冻结有界。Mixed：无冻结。chunk 大小是两个时钟之间的旋钮，它属于 scheduler，不属于模型。`, foot: CHUNK_FOOT, footZh: CHUNK_FOOT_ZH },
+    { scene: 'loop', caption: `Each step the scheduler asks: anyone waiting, and room in the cache? If so, a prefill batch up to the chunk size, plus the decodes if mixing is on. If not, the decode batch. What counts as room is chapter ${chNum('07-kv-memory')}.`, captionZh: `每步 scheduler 都问：有人等待吗，cache 里有空位吗？若有，组一个不超过 chunk 大小的 prefill batch，若开了 mixing 再加上 decode。若没有，就跑 decode batch。什么算有空位，见第 ${chNum('07-kv-memory')} 章。` },
   ];
 
   let step = $state(0);
@@ -93,7 +97,7 @@
       {#if cur.scene === 'lists'}
         <g transition:fade={{ duration: 250 }}>
           <rect x="24" y="70" width="200" height="220" rx="12" fill="#fbfaf7" stroke="var(--accent)" stroke-dasharray="5 4" />
-          <text x="40" y="92" class="boxtitle">waiting · need a prefill</text>
+          <text x="40" y="92" class="boxtitle">{t('waiting · need a prefill', 'waiting · 需要 prefill')}</text>
           {#each WAITING as p, i}
             <g in:fly={{ y: -6, delay: i * 80, duration: 220 }}>
               <rect x="40" y={106 + i * 30} width="168" height="22" rx="5" fill="white" stroke="var(--line)" />
@@ -101,12 +105,12 @@
               <rect x="96" y={106 + i * 30 + 6} width={p * 0.04} height="10" rx="2" fill="var(--accent)" opacity="0.85" />
             </g>
           {/each}
-          <text x="40" y="216" class="tag">prompt tokens, none processed yet</text>
-          <text x="40" y="266" class="tag">a prefill batch: some of these,</text>
-          <text x="40" y="280" class="tag">all their prompt tokens at once</text>
+          <text x="40" y="216" class="tag">{t('prompt tokens, none processed yet', 'prompt token，一个都没处理')}</text>
+          <text x="40" y="266" class="tag">{t('a prefill batch: some of these,', '一个 prefill batch：其中一些，')}</text>
+          <text x="40" y="280" class="tag">{t('all their prompt tokens at once', '一次跑完全部 prompt token')}</text>
 
           <rect x="496" y="70" width="200" height="220" rx="12" fill="#fbfaf7" stroke="var(--gen)" stroke-dasharray="5 4" />
-          <text x="512" y="92" class="boxtitle">running · need one token</text>
+          <text x="512" y="92" class="boxtitle">{t('running · need one token', 'running · 还差一个 token')}</text>
           {#each [10, 4, 15, 7, 3, 9] as a, i}
             <g in:fly={{ y: -6, delay: i * 60, duration: 220 }}>
               <rect x="512" y={106 + i * 24} width="168" height="18" rx="4" fill="white" stroke="var(--line)" />
@@ -115,22 +119,22 @@
               <rect x={566 + a * 6 + 2} y={106 + i * 24 + 4} width="6" height="10" rx="2" fill="var(--gen)" />
             </g>
           {/each}
-          <text x="512" y="266" class="tag">a decode batch: all of these,</text>
-          <text x="512" y="280" class="tag">one token each</text>
+          <text x="512" y="266" class="tag">{t('a decode batch: all of these,', '一个 decode batch：所有这些，')}</text>
+          <text x="512" y="280" class="tag">{t('one token each', '各一个 token')}</text>
 
           <g in:fade={{ delay: 600 }}>
             <rect x="290" y="130" width="140" height="100" rx="12" fill="white" stroke="var(--fg)" stroke-width="1.5" />
-            <text x="360" y="156" text-anchor="middle" class="slab strong">this step</text>
-            <text x="360" y="178" text-anchor="middle" class="tag">a prefill batch</text>
-            <text x="360" y="192" text-anchor="middle" class="tag strong">or</text>
-            <text x="360" y="206" text-anchor="middle" class="tag">the decode batch</text>
+            <text x="360" y="156" text-anchor="middle" class="slab strong">{t('this step', '本步')}</text>
+            <text x="360" y="178" text-anchor="middle" class="tag">{t('a prefill batch', '一个 prefill batch')}</text>
+            <text x="360" y="192" text-anchor="middle" class="tag strong">{t('or', '或')}</text>
+            <text x="360" y="206" text-anchor="middle" class="tag">{t('the decode batch', 'decode batch')}</text>
             <line x1="230" y1="180" x2="282" y2="180" class="wire" />
             <polygon points="282,174 282,186 290,180" fill="var(--faint)" />
             <line x1="490" y1="180" x2="438" y2="180" class="wire" />
             <polygon points="438,174 438,186 430,180" fill="var(--faint)" />
-            <text x="360" y="262" text-anchor="middle" class="tag">one forward pass, then back here</text>
+            <text x="360" y="262" text-anchor="middle" class="tag">{t('one forward pass, then back here', '一次前向，然后回到这里')}</text>
           </g>
-          <text x="360" y="330" text-anchor="middle" class="legend" in:fade={{ delay: 1200 }}>never both at once, by default. The next step says why.</text>
+          <text x="360" y="330" text-anchor="middle" class="legend" in:fade={{ delay: 1200 }}>{t('never both at once, by default. The next step says why.', '默认从不同时跑两种。下一步讲为什么。')}</text>
         </g>
       {/if}
 
@@ -139,37 +143,37 @@
         {@const cols = [{ w: 44, wide: false }, { w: 44, wide: false }, { w: 150, wide: true }, { w: 44, wide: false }, { w: 44, wide: false }]}
         {@const xs = cols.reduce<number[]>((a, c, i) => { a.push(i === 0 ? 0 : a[i - 1] + cols[i - 1].w + 4); return a; }, [])}
         <g transition:fade={{ duration: 250 }}>
-          <text x="16" y="54" class="rowlabel">Ch. 5 Step 9 · continuous batching, one newcomer joins</text>
+          <text x="16" y="54" class="rowlabel">{t('Ch. 5 Step 9 · continuous batching, one newcomer joins', 'Ch. 5 Step 9 · 连续批处理，一个新来者加入')}</text>
           {#each Array(6) as _, sIdx}
             <text x="120" y={104 + sIdx * 26 + 15} text-anchor="end" class="rowlabel">slot {sIdx + 1}</text>
-            {#each cols as c, t}
-              {@const x = 132 + xs[t]}
+            {#each cols as c, ci}
+              {@const x = 132 + xs[ci]}
               {@const y = 104 + sIdx * 26}
               {#if c.wide && sIdx === 2}
                 <rect {x} {y} width={c.w} height="22" rx="3" fill="var(--accent)" in:fade={{ delay: 300 }} />
-                <text x={x + c.w / 2} y={y + 15} text-anchor="middle" class="steplabel">newcomer's prefill</text>
+                <text x={x + c.w / 2} y={y + 15} text-anchor="middle" class="steplabel">{t("newcomer's prefill", '新来者的 prefill')}</text>
               {:else if c.wide}
                 <rect x={x + 0.5} y={y + 0.5} width={c.w - 1} height="21" rx="3" fill="var(--gen-soft)" stroke="var(--gen)" stroke-opacity="0.5" in:fade={{ delay: 300 }} />
                 <rect x={x + c.w - 9} {y} width="9" height="22" rx="3" fill="var(--gen)" in:fade={{ delay: 300 }} />
               {:else}
-                <rect {x} {y} width={c.w} height="22" rx="3" fill="var(--gen)" opacity="0.85" in:fade={{ delay: t * 60 }} />
+                <rect {x} {y} width={c.w} height="22" rx="3" fill="var(--gen)" opacity="0.85" in:fade={{ delay: ci * 60 }} />
               {/if}
             {/each}
           {/each}
           <g in:fade={{ delay: 800 }}>
             <path d="M {132 + xs[2]} 94 V 88 H {132 + xs[2] + 150} V 94" fill="none" stroke="var(--eos)" stroke-width="1.5" />
-            <text x={132 + xs[2] + 75} y="82" text-anchor="middle" class="tag" fill="var(--eos)">one step, stretched to a prompt's worth of math</text>
+            <text x={132 + xs[2] + 75} y="82" text-anchor="middle" class="tag" fill="var(--eos)">{t("one step, stretched to a prompt's worth of math", '一步被拉长到一个 prompt 的计算量')}</text>
           </g>
           <g in:fade={{ delay: 1400 }}>
             <line x1="500" y1="170" x2="560" y2="170" class="wire" />
             <polygon points="560,163 560,177 572,170" fill="var(--faint)" />
             <rect x="584" y="120" width="116" height="100" rx="12" fill="white" stroke="var(--fg)" stroke-width="1.5" />
-            <text x="642" y="150" text-anchor="middle" class="slab strong small">don't mix</text>
+            <text x="642" y="150" text-anchor="middle" class="slab strong small">{t("don't mix", '不混合')}</text>
             <text x="642" y="172" text-anchor="middle" class="tag">prefill batch</text>
-            <text x="642" y="186" text-anchor="middle" class="tag strong">or</text>
+            <text x="642" y="186" text-anchor="middle" class="tag strong">{t('or', '或')}</text>
             <text x="642" y="200" text-anchor="middle" class="tag">decode batch</text>
           </g>
-          <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote" in:fade={{ delay: 1800 }}>SGLang's default: each step is one kind of batch (vLLM v1 mixes by default) · mixing comes back in step 7, on purpose and bounded</text>
+          <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote" in:fade={{ delay: 1800 }}>{t("SGLang's default: each step is one kind of batch (vLLM v1 mixes by default) · mixing comes back in step 7, on purpose and bounded", 'SGLang 默认：每步只跑一种 batch（vLLM v1 默认混合）· 混合在第 7 步回来，有意且有界')}</text>
         </g>
       {/if}
 
@@ -177,20 +181,20 @@
       {#if cur.scene === 'why'}
         <g transition:fade={{ duration: 250 }}>
           <rect x="24" y="64" width="330" height="232" rx="12" fill="#fbfaf7" stroke="var(--accent)" />
-          <text x="40" y="86" class="boxtitle">a prefill batch</text>
+          <text x="40" y="86" class="boxtitle">{t('a prefill batch', '一个 prefill batch')}</text>
           {#each [18, 27, 11] as n, i}
             <text x="40" y={116 + i * 26} class="cell">seq {i + 1}</text>
             {#each Array(n) as _, t}
               <rect x={82 + t * 9.5} y={105 + i * 26} width="8" height="14" rx="2" fill="var(--accent)" opacity="0.85" in:fade={{ delay: (i * 20 + t) * 10, duration: 100 }} />
             {/each}
           {/each}
-          <text x="40" y="204" class="slab">few sequences · hundreds of tokens each</text>
-          <text x="40" y="222" class="slab">ragged lengths</text>
-          <text x="40" y="254" class="tag">its own attention kernel · compute-bound</text>
-          <text x="40" y="274" class="tag">shapes differ every batch</text>
+          <text x="40" y="204" class="slab">{t('few sequences · hundreds of tokens each', '序列少 · 各几百 token')}</text>
+          <text x="40" y="222" class="slab">{t('ragged lengths', '长短不齐')}</text>
+          <text x="40" y="254" class="tag">{t('its own attention kernel · compute-bound', '专属 attention kernel · 受计算限制')}</text>
+          <text x="40" y="274" class="tag">{t('shapes differ every batch', '每个 batch 形状都不同')}</text>
 
           <rect x="366" y="64" width="330" height="232" rx="12" fill="#fbfaf7" stroke="var(--gen)" />
-          <text x="382" y="86" class="boxtitle">the decode batch</text>
+          <text x="382" y="86" class="boxtitle">{t('the decode batch', 'decode batch')}</text>
           {#each Array(4) as _, col}
             {#each Array(4) as _, row}
               {@const k = col * 4 + row}
@@ -198,14 +202,14 @@
               <rect x={424 + col * 78} y={105 + row * 18} width="8" height="14" rx="2" fill="var(--gen)" opacity="0.85" in:fade={{ delay: k * 40 }} />
             {/each}
           {/each}
-          <text x="382" y="204" class="slab">many sequences · one token each</text>
-          <text x="382" y="222" class="slab">only the batch size changes</text>
-          <text x="382" y="254" class="tag">a different attention kernel · memory-bound</text>
-          <text x="382" y="274" class="tag">one recording per batch size → CUDA graph replay, chapter {CH_CUDA}</text>
+          <text x="382" y="204" class="slab">{t('many sequences · one token each', '序列多 · 各一个 token')}</text>
+          <text x="382" y="222" class="slab">{t('only the batch size changes', '只有 batch 大小变化')}</text>
+          <text x="382" y="254" class="tag">{t('a different attention kernel · memory-bound', '另一个 attention kernel · 受内存限制')}</text>
+          <text x="382" y="274" class="tag">{t(`one recording per batch size → CUDA graph replay, chapter ${CH_CUDA}`, `每个 batch 大小一份录制 → CUDA graph 回放，第 ${CH_CUDA} 章`)}</text>
 
           <g in:fade={{ delay: 900 }}>
-            <text x="360" y="330" text-anchor="middle" class="legend">two shapes → two batches → two fast paths</text>
-            <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">what the split unlocks: separate machines (chapter {CH_DISAGG}), CUDA graphs for decode (chapter {CH_CUDA})</text>
+            <text x="360" y="330" text-anchor="middle" class="legend">{t('two shapes → two batches → two fast paths', '两种形状 → 两个 batch → 两条快路径')}</text>
+            <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(`what the split unlocks: separate machines (chapter ${CH_DISAGG}), CUDA graphs for decode (chapter ${CH_CUDA})`, `拆分解锁：独立机器（第 ${CH_DISAGG} 章）、decode 用 CUDA graph（第 ${CH_CUDA} 章）`)}</text>
           </g>
         </g>
       {/if}
@@ -221,15 +225,15 @@
         {@const ly = rowN + TL.rowH + 66}
         {@const fx = TL.x + (segX[firstIdx] + segs[firstIdx].ms) * TL.pxPerMs - 1}
         <g transition:fade={{ duration: 250 }}>
-          <text x="16" y={TL.y - 52} class="rowlabel">{DECODERS} users decoding · {mode === 'batched' ? `${WAITING.length} prompts waiting` : `a ${PROMPT.toLocaleString()}-token prompt arrives`}</text>
-          <text x="16" y={TL.y - 36} class="rowlabel strong">{mode === 'prefill-first' ? 'prefill first · the prompt gets its own step' : mode === 'batched' ? 'prefill first · three prompts in one prefill step' : mode === 'chunked' ? `chunked prefill, not mixed · chunk step, decode step, chunk step…` : `chunked prefill, mixed · every step carries a chunk and all the decodes`}</text>
-          <text x={TL.x - 10} y={rowN + TL.rowH + 18} text-anchor="end" class="rowlabel">step type</text>
+          <text x="16" y={TL.y - 52} class="rowlabel">{t(`${DECODERS} users decoding · ${mode === 'batched' ? `${WAITING.length} prompts waiting` : `a ${PROMPT.toLocaleString()}-token prompt arrives`}`, `${DECODERS} 个用户在 decode · ${mode === 'batched' ? `${WAITING.length} 个 prompt 在等待` : `一个 ${PROMPT.toLocaleString()} token 的 prompt 到达`}`)}</text>
+          <text x="16" y={TL.y - 36} class="rowlabel strong">{t(mode === 'prefill-first' ? 'prefill first · the prompt gets its own step' : mode === 'batched' ? 'prefill first · three prompts in one prefill step' : mode === 'chunked' ? `chunked prefill, not mixed · chunk step, decode step, chunk step…` : `chunked prefill, mixed · every step carries a chunk and all the decodes`, mode === 'prefill-first' ? 'prefill 优先 · prompt 单独一步' : mode === 'batched' ? 'prefill 优先 · 三个 prompt 合一个 prefill 步' : mode === 'chunked' ? '切 chunk 的 prefill，不混合 · chunk 步、decode 步、chunk 步…' : '切 chunk 的 prefill，混合 · 每步带一个 chunk 和全部 decode')}</text>
+          <text x={TL.x - 10} y={rowN + TL.rowH + 18} text-anchor="end" class="rowlabel">{t('step type', '步类型')}</text>
           <line x1={TL.x} y1={rowN + TL.rowH + 34} x2={TL.x + 104 * TL.pxPerMs} y2={rowN + TL.rowH + 34} stroke="var(--line)" />
           {#each [0, 25, 50, 75, 100] as ms}
             <text x={TL.x + ms * TL.pxPerMs} y={rowN + TL.rowH + 48} text-anchor="middle" class="tag">{ms} ms</text>
           {/each}
-          <text x={TL.x - 10} y={rowA + 17} text-anchor="end" class="rowlabel">everyone else</text>
-          <text x={TL.x - 10} y={rowN + 17} text-anchor="end" class="rowlabel">{mode === 'batched' ? 'newcomers' : 'newcomer'}</text>
+          <text x={TL.x - 10} y={rowA + 17} text-anchor="end" class="rowlabel">{t('everyone else', '其他人')}</text>
+          <text x={TL.x - 10} y={rowN + 17} text-anchor="end" class="rowlabel">{t(mode === 'batched' ? 'newcomers' : 'newcomer', mode === 'batched' ? '新来者们' : '新来者')}</text>
           {#each segs as s, i}
             {@const x = TL.x + segX[i] * TL.pxPerMs}
             {@const w = Math.max(3, s.ms * TL.pxPerMs - 2)}
@@ -240,7 +244,7 @@
                 <rect x={x + w - 5} y={rowA} width="5" height={TL.rowH} rx="2" fill="var(--gen)" />
               {:else}
                 <rect {x} y={rowA} width={w} height={TL.rowH} rx="4" fill="#ece9e2" />
-                {#if w > 40}<text x={x + w / 2} y={rowA + 17} text-anchor="middle" class="tag">frozen</text>{/if}
+                {#if w > 40}<text x={x + w / 2} y={rowA + 17} text-anchor="middle" class="tag">{t('frozen', '冻结')}</text>{/if}
               {/if}
               {#if s.prefill > 0}
                 <rect {x} y={rowN} width={w} height={TL.rowH} rx="4" fill="var(--accent)" opacity="0.9" />
@@ -262,28 +266,28 @@
           {/each}
           <g in:fade={{ delay: firstIdx * 40 + 100 }}>
             <circle cx={fx} cy={rowN + TL.rowH / 2} r="6" fill="white" stroke="var(--fg)" stroke-width="2" />
-            <text x={fx} y={rowN - 8} text-anchor="middle" class="tag strong">first token</text>
+            <text x={fx} y={rowN - 8} text-anchor="middle" class="tag strong">{t('first token', '首个 token')}</text>
           </g>
           <line x1={arrX} y1={rowA - 14} x2={arrX} y2={rowN + TL.rowH + 36} stroke="var(--fg)" stroke-dasharray="3 3" />
-          <text x={arrX} y={rowN + TL.rowH + 48} text-anchor="middle" class="tag strong">{mode === 'batched' ? 'arrive' : 'arrives'}</text>
+          <text x={arrX} y={rowN + TL.rowH + 48} text-anchor="middle" class="tag strong">{t(mode === 'batched' ? 'arrive' : 'arrives', '到达')}</text>
           <g in:fade={{ delay: 300 }}>
             <rect x={TL.x} y={ly - 9} width="26" height="10" rx="2" fill="var(--accent)" /><text x={TL.x + 32} y={ly} class="tag">prefill batch</text>
             <rect x={TL.x + 110} y={ly - 9} width="26" height="10" rx="2" fill="var(--gen)" opacity="0.85" /><text x={TL.x + 142} y={ly} class="tag">decode batch</text>
-            <rect x={TL.x + 230} y={ly - 9} width="26" height="5" rx="1.5" fill="var(--accent)" /><rect x={TL.x + 230} y={ly - 4} width="26" height="5" rx="1.5" fill="var(--gen)" /><text x={TL.x + 262} y={ly} class="tag">mixed batch: a chunk plus every decode, one forward pass</text>
+            <rect x={TL.x + 230} y={ly - 9} width="26" height="5" rx="1.5" fill="var(--accent)" /><rect x={TL.x + 230} y={ly - 4} width="26" height="5" rx="1.5" fill="var(--gen)" /><text x={TL.x + 262} y={ly} class="tag">{t('mixed batch: a chunk plus every decode, one forward pass', '混合 batch：一个 chunk 加全部 decode，一次前向')}</text>
           </g>
           {#if met.worst > 1.5 * tMem}
             <path d="M {gx0} {rowA - 6} V {rowA - 12} H {gx1} V {rowA - 6}" fill="none" stroke="var(--eos)" stroke-width="1.5" in:fade={{ delay: 500 }} />
-            <text x={(gx0 + gx1) / 2} y={rowA - 18} text-anchor="middle" class="tag" fill="var(--eos)" in:fade={{ delay: 500 }}>no token for {fmt(met.worst)}</text>
+            <text x={(gx0 + gx1) / 2} y={rowA - 18} text-anchor="middle" class="tag" fill="var(--eos)" in:fade={{ delay: 500 }}>{t(`no token for ${fmt(met.worst)}`, `${fmt(met.worst)} 没有 token`)}</text>
           {/if}
           <g in:fade={{ delay: 700 }}>
             {#each [
-              { v: fmt(met.worst), l: 'everyone else · longest gap between tokens', bad: met.worst > 2 * tMem },
-              { v: fmt(met.ttft), l: (mode === 'batched' ? 'newcomers' : 'newcomer') + ' · time to first token', bad: false },
-            ] as t, i}
+              { v: fmt(met.worst), l: t('everyone else · longest gap between tokens', '其他人 · token 间最长间隔'), bad: met.worst > 2 * tMem },
+              { v: fmt(met.ttft), l: t((mode === 'batched' ? 'newcomers' : 'newcomer') + ' · time to first token', (mode === 'batched' ? '新来者们' : '新来者') + ' · 首个 token 用时'), bad: false },
+            ] as tile, i}
               {@const x = 90 + i * 300}
-              <rect {x} y="296" width="280" height="64" rx="10" fill="#fbfaf7" stroke={t.bad ? 'var(--eos)' : 'var(--line)'} />
-              <text x={x + 16} y="324" class="tile-value" fill={t.bad ? 'var(--eos)' : 'var(--fg)'}>{t.v}</text>
-              <text x={x + 16} y="346" class="tile-label">{t.l}</text>
+              <rect {x} y="296" width="280" height="64" rx="10" fill="#fbfaf7" stroke={tile.bad ? 'var(--eos)' : 'var(--line)'} />
+              <text x={x + 16} y="324" class="tile-value" fill={tile.bad ? 'var(--eos)' : 'var(--fg)'}>{tile.v}</text>
+              <text x={x + 16} y="346" class="tile-label">{tile.l}</text>
             {/each}
           </g>
         </g>
@@ -295,7 +299,7 @@
         {@const bx = 180}
         {@const bw = 460}
         <g transition:fade={{ duration: 250 }}>
-          <text x="16" y="64" class="rowlabel">same {PROMPT.toLocaleString()}-token prompt, {DECODERS} users decoding</text>
+          <text x="16" y="64" class="rowlabel">{t(`same ${PROMPT.toLocaleString()}-token prompt, ${DECODERS} users decoding`, `同一个 ${PROMPT.toLocaleString()} token 的 prompt，${DECODERS} 个用户在 decode`)}</text>
 
           {#each policies as p, i}
             {@const y = 92 + i * 86}
@@ -303,15 +307,15 @@
             <g in:fly={{ x: -8, delay: i * 200, duration: 300 }}>
               <text x="16" y={y} class="slab strong small">{p.name}</text>
               <text x="272" y={y} class="tag">{p.note}</text>
-              <text x={bx - 8} y={y + 27} text-anchor="end" class="tag">newcomer · first token</text>
+              <text x={bx - 8} y={y + 27} text-anchor="end" class="tag">{t('newcomer · first token', '新来者 · 首个 token')}</text>
               <rect x={bx} y={y + 14} width={(m.ttft / maxMs) * bw} height="18" rx="3" fill="var(--accent)" opacity="0.9" />
               <text x={bx + (m.ttft / maxMs) * bw + 6} y={y + 27} class="num">{fmt(m.ttft)}</text>
-              <text x={bx - 8} y={y + 51} text-anchor="end" class="tag">everyone else · longest gap</text>
+              <text x={bx - 8} y={y + 51} text-anchor="end" class="tag">{t('everyone else · longest gap', '其他人 · 最长间隔')}</text>
               <rect x={bx} y={y + 38} width={Math.max(3, (m.worst / maxMs) * bw)} height="18" rx="3" fill={m.worst > 2 * tMem ? 'var(--eos)' : 'var(--gen)'} opacity="0.9" />
               <text x={bx + Math.max(3, (m.worst / maxMs) * bw) + 6} y={y + 51} class="num">{fmt(m.worst)}</text>
             </g>
           {/each}
-          <text x="16" y="352" class="legend" in:fade={{ delay: 900 }}>the decode step floor is {fmt(tMem)}: a gap of {fmt(tMem)} means nobody noticed the newcomer at all</text>
+          <text x="16" y="352" class="legend" in:fade={{ delay: 900 }}>{t(`the decode step floor is ${fmt(tMem)}: a gap of ${fmt(tMem)} means nobody noticed the newcomer at all`, `decode 步的下限是 ${fmt(tMem)}：间隔为 ${fmt(tMem)} 说明没人察觉新来者`)}</text>
         </g>
       {/if}
 
@@ -323,63 +327,63 @@
               <path d="M 0 0 L 10 5 L 0 10 z" fill="#b8b4aa" />
             </marker>
           </defs>
-          <text x="16" y="52" class="rowlabel">one scheduler step</text>
+          <text x="16" y="52" class="rowlabel">{t('one scheduler step', 'scheduler 的一步')}</text>
           <g in:fly={{ y: 8, duration: 300 }}>
             <rect x="190" y="62" width="340" height="60" rx="12" fill="white" stroke="var(--fg)" stroke-width="1.5" />
-            <text x="360" y="84" text-anchor="middle" class="slab strong small">anyone waiting, and room in the cache?</text>
-            <text x="360" y="101" text-anchor="middle" class="tag">the cache question is chapter {chNum('07-kv-memory')}</text>
-            <text x="360" y="115" text-anchor="middle" class="tag">with an interval N, also: N decode steps since the last prefill</text>
+            <text x="360" y="84" text-anchor="middle" class="slab strong small">{t('anyone waiting, and room in the cache?', '有人等待，且 cache 有空位吗？')}</text>
+            <text x="360" y="101" text-anchor="middle" class="tag">{t(`the cache question is chapter ${chNum('07-kv-memory')}`, `cache 的问题见第 ${chNum('07-kv-memory')} 章`)}</text>
+            <text x="360" y="115" text-anchor="middle" class="tag">{t('with an interval N, also: N decode steps since the last prefill', '若设间隔 N，还要求：上次 prefill 后已有 N 个 decode 步')}</text>
           </g>
           <g in:fly={{ y: 8, delay: 300, duration: 300 }}>
             <path d="M 270 122 V 146" fill="none" stroke="#b8b4aa" stroke-width="1.5" marker-end="url(#arrowhead)" />
-            <text x="278" y="140" class="tag strong">yes</text>
+            <text x="278" y="140" class="tag strong">{t('yes', '是')}</text>
             <rect x="20" y="150" width="436" height="152" rx="12" fill="#fbfaf7" stroke="var(--accent)" />
-            <text x="36" y="172" class="slab strong small">a prefill batch</text>
-            <text x="36" y="190" class="tag">from the waiting list, in policy order:</text>
-            <text x="36" y="204" class="tag">first come · shortest first · longest cached prefix, up to the chunk size</text>
+            <text x="36" y="172" class="slab strong small">{t('a prefill batch', '一个 prefill batch')}</text>
+            <text x="36" y="190" class="tag">{t('from the waiting list, in policy order:', '从 waiting 列表，按策略顺序：')}</text>
+            <text x="36" y="204" class="tag">{t('first come · shortest first · longest cached prefix, up to the chunk size', '先来先服务 · 最短优先 · 最长缓存前缀，不超过 chunk 大小')}</text>
             <!-- mixing off: the prefill batch alone -->
             <rect x="34" y="216" width="198" height="78" rx="8" fill="white" stroke="var(--line)" />
             <rect x="46" y="227" width="18" height="10" rx="2" fill="var(--accent)" />
-            <text x="72" y="236" class="tag strong">mixing off · the default</text>
-            <text x="46" y="256" class="tag">the prefill runs alone</text>
-            <text x="46" y="270" class="tag">the running ones wait a step</text>
+            <text x="72" y="236" class="tag strong">{t('mixing off · the default', '关闭混合 · 默认')}</text>
+            <text x="46" y="256" class="tag">{t('the prefill runs alone', 'prefill 单独跑')}</text>
+            <text x="46" y="270" class="tag">{t('the running ones wait a step', '运行中的等一步')}</text>
             <!-- mixing on: every running request's next token rides along -->
             <rect x="244" y="216" width="198" height="78" rx="8" fill="white" stroke="var(--line)" />
             <rect x="256" y="227" width="18" height="5" rx="1.5" fill="var(--accent)" /><rect x="256" y="232" width="18" height="5" rx="1.5" fill="var(--gen)" />
-            <text x="282" y="236" class="tag strong">mixing on · step 7</text>
-            <text x="256" y="256" class="tag">every running request's next token</text>
-            <text x="256" y="270" class="tag">rides in the same pass</text>
-            <text x="256" y="284" class="tag">the two share the chunk size</text>
+            <text x="282" y="236" class="tag strong">{t('mixing on · step 7', '开启混合 · 第 7 步')}</text>
+            <text x="256" y="256" class="tag">{t("every running request's next token", '每个运行中 request 的下一个 token')}</text>
+            <text x="256" y="270" class="tag">{t('rides in the same pass', '在同一次前向中跑')}</text>
+            <text x="256" y="284" class="tag">{t('the two share the chunk size', '两者共享 chunk 大小')}</text>
           </g>
           <g in:fly={{ y: 8, delay: 600, duration: 300 }}>
             <path d="M 530 92 H 582 V 146" fill="none" stroke="#b8b4aa" stroke-width="1.5" marker-end="url(#arrowhead)" />
-            <text x="590" y="124" class="tag strong">no</text>
+            <text x="590" y="124" class="tag strong">{t('no', '否')}</text>
             <rect x="472" y="150" width="220" height="152" rx="12" fill="#fbfaf7" stroke="var(--gen)" />
-            <text x="488" y="172" class="slab strong small">the decode batch</text>
-            <text x="488" y="190" class="tag">everyone running, one token each</text>
-            <text x="488" y="204" class="tag">finished sequences leave,</text>
-            <text x="488" y="218" class="tag">freeing their cache</text>
-            <text x="488" y="256" class="tag">one recording per batch size →</text>
-            <text x="488" y="270" class="tag">CUDA graph replay, chapter {CH_CUDA}</text>
+            <text x="488" y="172" class="slab strong small">{t('the decode batch', 'decode batch')}</text>
+            <text x="488" y="190" class="tag">{t('everyone running, one token each', '所有运行中，各一个 token')}</text>
+            <text x="488" y="204" class="tag">{t('finished sequences leave,', '完成的序列离开，')}</text>
+            <text x="488" y="218" class="tag">{t('freeing their cache', '释放它们的 cache')}</text>
+            <text x="488" y="256" class="tag">{t('one recording per batch size →', '每个 batch 大小一份录制 →')}</text>
+            <text x="488" y="270" class="tag">{t(`CUDA graph replay, chapter ${CH_CUDA}`, `CUDA graph 回放，第 ${CH_CUDA} 章`)}</text>
           </g>
           <g in:fade={{ delay: 1000 }}>
             <path d="M 120 302 V 329 H 218" fill="none" stroke="#b8b4aa" stroke-width="1.5" marker-end="url(#arrowhead)" />
             <path d="M 582 302 V 329 H 502" fill="none" stroke="#b8b4aa" stroke-width="1.5" marker-end="url(#arrowhead)" />
             <rect x="222" y="314" width="276" height="30" rx="10" fill="var(--fg)" />
-            <text x="360" y="333" text-anchor="middle" class="steplabel big">one forward pass · then back to the top</text>
+            <text x="360" y="333" text-anchor="middle" class="steplabel big">{t('one forward pass · then back to the top', '一次前向 · 然后回到顶部')}</text>
             <path d="M 360 344 V 356 H 708 V 40 H 360 V 58" fill="none" stroke="#b8b4aa" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
           </g>
           <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote" in:fade={{ delay: 1400 }}>SGLang: <tspan class="mono">schedule_policy</tspan>, <tspan class="mono">chunked_prefill_size</tspan>, <tspan class="mono">prefill_decode_interval</tspan>, <tspan class="mono">enable_mixed_chunk</tspan></text>
-          <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote" in:fade={{ delay: 1400 }}>this loop is <tspan class="mono">Scheduler.get_next_batch_to_run()</tspan></text>
+          <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote" in:fade={{ delay: 1400 }}>{t('this loop is', '这个循环就是')} <tspan class="mono">Scheduler.get_next_batch_to_run()</tspan></text>
         </g>
       {/if}
       {#if cur.foot}
-        {#key cur.foot}<text x={W / 2} y={H - 10} text-anchor="middle" class="footnote" in:fade>{cur.foot}</text>{/key}
+        {#key cur.foot}<text x={W / 2} y={H - 10} text-anchor="middle" class="footnote" in:fade>{t(cur.foot ?? '', cur.footZh ?? '')}</text>{/key}
       {/if}
     </svg>
   </div>
 
-  <StepControls {step} total={steps.length} caption={cur.caption} {prev} {next} onchange={(s) => (step = s)} />
+  <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh} deep={deep?.en[step]} deepZh={deep?.zh[step]} {prev} {next} onchange={(s) => (step = s)} />
 </figure>
 
 <style>

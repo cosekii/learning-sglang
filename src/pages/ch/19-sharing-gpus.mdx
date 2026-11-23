@@ -4,10 +4,12 @@ slug: 19-sharing-gpus
 ---
 import SharingGpus from '../../components/viz/SharingGpus.svelte';
 import { neighbors } from '../../chapters';
+import { deepFor } from '../../deep';
+export const deep = await deepFor('19-sharing-gpus');
 
-<SharingGpus client:load {...neighbors('19-sharing-gpus')} />
+<SharingGpus client:load {...neighbors('19-sharing-gpus')} deep={deep} />
 
-<details>
+<details class="i18n-en">
 <summary>Where this chapter's claims come from</summary>
 
 **The layouts.** SGLang-Omni's Qwen3-Omni config (`models/qwen3_omni/config.py`) builds both speech layouts from one function, `_speech_stages(thinker_gpu, talker_gpu, …)`: the default `speech` variant passes `talker_gpu=1`, `speech-colocated` passes `talker_gpu=0`. Every other stage keeps its device. Its placement policy (`models/qwen3_omni/placement.py`) refuses a thinker and talker on one GPU unless the colocated config is used. The design notes (`docs/design/refactor_rfc.md`) say earlier versions rejected same-GPU placement of the speech stages outright.
@@ -23,5 +25,24 @@ import { neighbors } from '../../chapters';
 **The shares.** The numbers in step 3 are `gpu_memory_fraction` in `examples/configs/qwen3_omni_colocated_h100_bf16.yaml`. A share is a fraction of the card's whole memory, not of what is free, so it does not depend on which stage loads first. For the thinker and talker, SGLang's KV cache gets the share minus what the stage itself has already allocated (design notes, PR #430); step 4 works out what the thinker needs for video. The planner (`config/placement.py`) adds up the shares on each GPU and refuses a GPU past its limit, 100% by default. A share is checked at placement and not enforced while serving, unless the stage declares a byte budget, in which case its process's PyTorch allocator is capped so that a stage that outgrows its budget fails itself rather than a neighbour.
 
 **Not covered.** Stages on one GPU are also built one at a time, behind a lock per GPU, so each measures memory after the ones before it have loaded. SGLang-Omni can also run several copies of a stage, or of the whole server, on one GPU (`replica_devices`), optionally sharing one copy of the weights. Its notes on CUDA MPS report 1.4–2.1× the throughput of one copy for two or three copies of a speech-synthesis model on one GPU; they publish no such measurement for Qwen3-Omni, so step 5 is drawn as an illustration.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章论断的出处</summary>
+
+**布局。** SGLang-Omni 的 Qwen3-Omni 配置（`models/qwen3_omni/config.py`）用同一个函数 `_speech_stages(thinker_gpu, talker_gpu, …)` 构建两种语音布局：默认的 `speech` 变体传 `talker_gpu=1`，`speech-colocated` 传 `talker_gpu=0`。其余 stage 的设备不变。放置策略（`models/qwen3_omni/placement.py`）拒绝把 thinker 和 talker 放在一块 GPU 上，除非使用 colocated 配置。设计笔记（`docs/design/refactor_rfc.md`）说早期版本直接拒绝语音 stage 的同 GPU 放置。
+
+**为什么默认两块 GPU。** 步骤 4 和 5 给出两个原因。第二个是 SGLang-Omni 自己测出来的；第一个是从它的数字推算的。步骤 4 是视频测试在单块 H100 上能跑的最低内存。thinker 权重 61.0 GB。thinker 为视频编码器的峰值工作内存留出整卡的 5%（`encoder_mem_reserve`，默认 0.05）。KV cache 装不下整个 request 时，SGLang 不会启动它（Ch. 7 Step 1），而 thinker 接受最长 32,768 token 的 request，按每 token 96 KB 算是 3.1 GB；SGLang-Omni 对 2,496 个视频的基准测试中，Video-MME prompt 平均 13,769 token，最长的接近这个上限。encoder、code2wav 和 talker 按步骤 3 的单 H100 配置分得份额——这是 SGLang-Omni 附带的最小配置——并照该配置留出整卡的 6% 给 CUDA graphs、工作区和峰值。总计 85.7 GB。步骤 3 的配置本身只给 thinker 78%，即 62.4 GB，所以它是为语音合成测试写的，那些 prompt 只有几百 token。SGLang-Omni 的记录也一致：测试从 H20（96 GB）迁到 H100 时（PR #883），笔记说单卡 bf16 配置装不下；带语音回答的视频测试（一次 16 个视频、每个最多 128 帧、bf16）在默认布局下跑在两块 H100 上。直到 PR #430（2026 年 5 月）它都完全拒绝 thinker 和 talker 同 GPU，所以双 GPU 布局也是先出现的。它的单 GPU 配置面向 H20、H200（141 GB）、H100 上的 FP8 权重，以及 H100 上的 bf16 语音合成测试。
+
+**轮流使用。** PR #1235（2026 年 8 月）在 H200 上测了 talker 的放置：一次 8 个 request，thinker 拆到两块 GPU 上，只改变 talker 是与 thinker 的一半共用一块 GPU 还是独占一块。独占时 talker 让 GPU 保持 86% 忙碌（中位数，nvidia-smi utilization：有 kernel 在跑的时间占比）。共享让最慢的十分之一首个声音晚了约一倍（p90 为 2.70 和 2.66 s，对比 1.46 和 1.42 s，各跑两次），整个运行长了 9–16%，停滞时间长了约一倍；PR 指出单次运行 10–30% 的变化在那台机器的噪声范围内，而 p90 和停滞数字远超噪声。一次只跑一个 request 时，独占 GPU 的 talker 首个声音快约 30%，但整体完成晚 14–17%，因为 thinker 的 token 要跨 GPU 传输。同一个 PR 发现 code2wav 只有 9–13% 忙碌，把它挪到了 thinker 的 GPU 上，这就是步骤 1 画的布局。该 PR 的共享情形是 talker 与 thinker 的一半相邻，不是五个 stage 全在一块 GPU 上。NVIDIA 的 MPS（SGLang-Omni 用 `--mps auto` 开启，默认关）让多个进程的 kernel 同时运行而不是轮流；SGLang-Omni 没有发布用它跑 Qwen3-Omni 的测量。
+
+**GB 的口径。** 与第 7 章一样，本章把 H100 算作 80 GB。卡上是 80 GiB，PyTorch 报告为约 85 GB，份额是它报告值的比例。按这个口径，步骤 4 的总计是 87.1 GB 对 85，仍多出 2.1 GB。
+
+**权重。** 参数量从 `Qwen/Qwen3-Omni-30B-A3B-Instruct` checkpoint 的张量形状累加而来：thinker 连同输出层 30.5B，talker 连同 code predictor 3.3B，audio 和 vision encoder 分别 0.65B 和 0.54B，code2wav 0.22B。按每参数 2 字节算是 70.5 GB，即 checkpoint 的大小。
+
+**份额。** 步骤 3 的数字是 `examples/configs/qwen3_omni_colocated_h100_bf16.yaml` 里的 `gpu_memory_fraction`。份额是整卡内存的比例，不是空闲内存的比例，所以不依赖哪个 stage 先加载。对 thinker 和 talker，SGLang 的 KV cache 拿到份额减去该 stage 已分配的部分（设计笔记，PR #430）；步骤 4 算出 thinker 跑视频需要多少。planner（`config/placement.py`）把每块 GPU 上的份额加起来，超过上限（默认 100%）就拒绝。份额只在放置时检查，服务期间不强制执行，除非 stage 声明了字节预算——那样其进程的 PyTorch allocator 会被封顶，超出预算的 stage 自己失败，而不是拖垮邻居。
+
+**没有覆盖的。** 同一块 GPU 上的 stage 也是一个一个构建的，每块 GPU 一把锁，所以每个 stage 都在前面的加载完之后测量内存。SGLang-Omni 还能在一块 GPU 上跑一个 stage 或整个 server 的多个副本（`replica_devices`），可选共享一份权重。它关于 CUDA MPS 的笔记报告：单 GPU 上跑语音合成模型的两三个副本，吞吐是单副本的 1.4–2.1 倍；但没有发布 Qwen3-Omni 的这类测量，所以步骤 5 只作为示意。
 
 </details>

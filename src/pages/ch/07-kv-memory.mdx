@@ -4,10 +4,12 @@ slug: 07-kv-memory
 ---
 import KVMemory from '../../components/viz/KVMemory.svelte';
 import { neighbors } from '../../chapters';
+import { deepFor } from '../../deep';
+export const deep = await deepFor('07-kv-memory');
 
-<KVMemory client:load {...neighbors('07-kv-memory')} />
+<KVMemory client:load {...neighbors('07-kv-memory')} deep={deep} />
 
-<details>
+<details class="i18n-en">
 <summary>The memory arithmetic, once</summary>
 
 Per token, the cache costs $2 \cdot L \cdot H_{kv} \cdot d_{head} \cdot \text{bytes}$, 128 KB for Llama-3-8B in bf16. The batch cap is
@@ -21,5 +23,22 @@ SGLang does not hand the cache all of $\text{HBM} - \text{weights}$: it sizes th
 Reserving the maximum length per request wastes whatever is never written, typically well over half, and fragments as requests finish. Paging with page size $p$ wastes at most $p - 1$ tokens per request and never fragments: a request's cache is a list of page numbers, and the attention kernel gathers through that list. In SGLang, `MHATokenToKVPool` holds the K and V, `TokenToKVPoolAllocator` hands out free slots (page size 1 by default), and `req_to_token` holds the page tables.
 
 Admission (`PrefillAdder`) counts more than the pages a step writes. It sets aside each running request's expected remaining output, $\min(\text{max\_new\_tokens} - \text{written},\ 4096)$ times a ratio that starts at 0.7 and decays to about 0.1 as requests finish early, and it charges a newcomer its prompt plus $\min(\text{max\_new\_tokens},\ 4096)$. Retraction is a separate check: when the running batch's own next step does not fit and nobody is finishing, `retract_decode` sends back the request with the fewest output tokens, to be prefilled again later. Sharing pages across requests is the next chapter.
+
+</details>
+
+<details class="i18n-zh">
+<summary>内存的算术，算一次</summary>
+
+每个 token 的 cache 开销是 $2 \cdot L \cdot H_{kv} \cdot d_{head} \cdot \text{bytes}$，Llama-3-8B 在 bf16 下为 128 KB。batch 上限是
+
+$$
+B_{\max} = \left\lfloor \frac{\text{HBM} - \text{weights}}{\text{context} \times 128\,\text{KB}} \right\rfloor
+$$
+
+SGLang 并不会把全部 $\text{HBM} - \text{weights}$ 都交给 cache：它把池子定为 $f \cdot \text{HBM} - \text{weights}$，其中 $f$ 是 `--mem-fraction-static`（这个模型在一张 H100 上约为 0.83），其余留给 activations 和 CUDA graphs。因此这里池子约 55 GB；stage 上省略了 $f$。
+
+按每个 request 的最大长度预留，会浪费从未写入的部分，通常远超一半，而且 request 结束后会产生碎片。以 page 大小 $p$ 分页，每个 request 最多浪费 $p - 1$ 个 token，且从不产生碎片：一个 request 的 cache 是一串页号，attention kernel 按这串页号收集数据。在 SGLang 中，`MHATokenToKVPool` 存放 K 和 V，`TokenToKVPoolAllocator` 分发空闲槽位（默认 page 大小为 1），`req_to_token` 保存页表。
+
+接纳（`PrefillAdder`）统计的不止一步要写的 page。它为每个运行中的 request 预留预期的剩余输出：$\min(\text{max\_new\_tokens} - \text{written},\ 4096)$ 乘一个比例，该比例从 0.7 起，随着 request 提前结束衰减到约 0.1；对新来者则计入它的 prompt 加上 $\min(\text{max\_new\_tokens},\ 4096)$。撤回是另一项检查：当运行中的 batch 自己的下一步放不下、又没有 request 要结束时，`retract_decode` 退回输出 token 最少的 request，稍后重新 prefill。跨 request 共享 page 是下一章。
 
 </details>

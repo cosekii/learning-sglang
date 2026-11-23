@@ -4,10 +4,12 @@ slug: 10-engine
 ---
 import Engine from '../../components/viz/Engine.svelte';
 import { neighbors } from '../../chapters';
+import { deepFor } from '../../deep';
+export const deep = await deepFor('10-engine');
 
-<Engine client:load {...neighbors('10-engine')} />
+<Engine client:load {...neighbors('10-engine')} deep={deep} />
 
-<details>
+<details class="i18n-en">
 <summary>The loop, once, as code</summary>
 
 ```python
@@ -23,5 +25,24 @@ while True:
 ```
 
 That is `Scheduler.event_loop_normal` in `managers/scheduler.py`. `event_loop_overlap` is the same loop with the CPU work of the next step launched before the current step's result is processed; sampled tokens are left on the GPU and read by the next forward pass directly, which is why the GPU lane stays solid.
+
+</details>
+
+<details class="i18n-zh">
+<summary>这个循环，用代码完整走一遍</summary>
+
+```python
+while True:
+    ingest_requests()                      # 清空 zmq inbox，非阻塞：消息 → Req，waiting_queue.append
+    batch = get_next_batch_to_run()        # 把上一步的 prefill 并入 running，匹配前缀，取 page：
+                                           # 有人在等且 page 够用就组 prefill batch，否则用 running_batch
+    if batch is None:
+        on_idle()
+        continue
+    result = run_batch(batch)              # ScheduleBatch → ForwardBatch → ModelRunner.forward → Sampler
+    process_batch_result(batch, result)    # 追加 token，结束 Req，释放/保留 page，发送 BatchTokenIDOutput
+```
+
+这就是 `managers/scheduler.py` 里的 `Scheduler.event_loop_normal`。`event_loop_overlap` 是同一个循环，只是在处理当前步的结果之前，就发起下一步的 CPU 工作；采样出的 token 留在 GPU 上，由下一次前向传播直接读取，这就是 GPU 那条泳道保持连续的原因。
 
 </details>

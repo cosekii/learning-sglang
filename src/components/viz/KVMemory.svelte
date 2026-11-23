@@ -3,7 +3,10 @@
   import StepControls from '../StepControls.svelte';
   import { chapterNumber as chNum, type NavLink } from '../../chapters';
   import { W_GB, HBM_GB, KB_PER_TOKEN as KB_TOK, BW, TFLOPS as FLOPS, GFLOP_PER_TOKEN as GFLOP } from '../../numbers';
-  let { prev, next }: { prev?: NavLink; next?: NavLink } = $props();
+  import { lang } from '../../i18n';
+  import type { Deep } from '../../deep';
+  let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
+  const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
   const CH_PREFIX = chNum('08-prefix-caching'), CH_DISAGG = chNum('28-disaggregation');
 
   // ---- Numbers, same as before: Llama-3-8B bf16 on one H100 ------------------------------------
@@ -47,16 +50,17 @@
 
   // ---- Script ----------------------------------------------------------------------------------------------
   type Scene = 'room' | 'caps' | 'reserve' | 'alloc' | 'free' | 'closing';
-  interface Step { caption: string; scene: Scene; base?: number[]; alloc?: number[]; owner?: number; name?: string; foot?: string }
+  interface Step { caption: string; captionZh: string; scene: Scene; base?: number[]; alloc?: number[]; owner?: number; name?: string; foot?: string; footZh?: string }
   const POOL_FOOT = `SGLang keeps about 17% of the card for activations and CUDA graphs (--mem-fraction-static, 0.83 here), so its pool is nearer 55 GB`;
+  const POOL_FOOT_ZH = `SGLang 为激活值和 CUDA graphs 保留约 17% 的显存（--mem-fraction-static，此处 0.83），所以池更接近 55 GB`;
   const steps: Step[] = [
-    { scene: 'room', caption: `The scheduler checks for room for KV cache before admitting a new request. ${HBM_GB} GB on the card, ${W_GB} GB of weights, and everything else is room for KV cache. Running requests fill it a token per step.`, foot: POOL_FOOT },
-    { scene: 'caps', caption: `How many fit? Same card, three context lengths. At 2k tokens each, ${capAt(2048)} requests. At 4k, ${capAt(4096)}. At 8k, ${capAt(8192)}. Compute could take ${BALANCE} per step; at these lengths memory never lets it get there.`, foot: POOL_FOOT },
-    { scene: 'reserve', caption: `The naive way: reserve each request's maximum length up front, in one contiguous block. Most never use it, and finished requests leave holes no newcomer fits into. Most of the card, wasted.` },
-    { scene: 'alloc', base: pages0, alloc: allocA, owner: 5, name: 'req 6', caption: `<b>Paging</b>: cut the room into fixed-size pages. A newcomer's cache isn't one block; it's however many pages it needs, taken from anywhere that's free, with the page numbers written in its table. No holes, no pages held in advance.` },
-    { scene: 'free', caption: `When a request finishes, its pages go straight back to the pool. No compaction, nobody else moves. The pool just has more free pages, wherever they happen to be.`, foot: `with prefix caching off · SGLang keeps a finished request's pages in its prefix cache until it needs them (chapter ${CH_PREFIX})` },
-    { scene: 'alloc', base: pages2, alloc: allocB, owner: 6, name: 'req 7', caption: `The next newcomer takes what it needs from those, or any other free pages. Its table lists them, and the attention kernel follows the table. vLLM pages 16 tokens at a time; SGLang, 1.` },
-    { scene: 'closing', caption: `Admission is a count: free pages against pages needed. Yes: admit and write the table. No: wait for a finish. If the running requests themselves run out, one is retracted. Sharing pages: next chapter.` },
+    { scene: 'room', caption: `The scheduler checks for room for KV cache before admitting a new request. ${HBM_GB} GB on the card, ${W_GB} GB of weights, and everything else is room for KV cache. Running requests fill it a token per step.`, captionZh: `scheduler 接纳新 request 前查空间：${HBM_GB} GB 减去权重 ${W_GB} GB，其余归 KV cache。运行中的 request 每步多占一个 token。`, foot: POOL_FOOT, footZh: POOL_FOOT_ZH },
+    { scene: 'caps', caption: `How many fit? Same card, three context lengths. At 2k tokens each, ${capAt(2048)} requests. At 4k, ${capAt(4096)}. At 8k, ${capAt(8192)}. Compute could take ${BALANCE} per step; at these lengths memory never lets it get there.`, captionZh: `能装多少？同一张卡，三种上下文长度：每个 2k token 装 ${capAt(2048)} 个，4k 装 ${capAt(4096)} 个，8k 装 ${capAt(8192)} 个。算力每步可跑 ${BALANCE} 个，但这些长度下内存到不了。`, foot: POOL_FOOT, footZh: POOL_FOOT_ZH },
+    { scene: 'reserve', caption: `The naive way: reserve each request's maximum length up front, in one contiguous block. Most never use it, and finished requests leave holes no newcomer fits into. Most of the card, wasted.`, captionZh: `朴素做法：预先给每个 request 按最大长度预留一整块连续内存。大多用不满，结束的 request 留下新来者放不进的洞。卡上大部分被浪费。` },
+    { scene: 'alloc', base: pages0, alloc: allocA, owner: 5, name: 'req 6', caption: `<b>Paging</b>: cut the room into fixed-size pages. A newcomer's cache isn't one block; it's however many pages it needs, taken from anywhere that's free, with the page numbers written in its table. No holes, no pages held in advance.`, captionZh: `<b>Paging</b>：把空间切成固定大小的 page。新 request 的 cache 不是一整块，而是要多少拿多少，从任意空闲处取，页号写进它的表。没有洞，也不预留。` },
+    { scene: 'free', caption: `When a request finishes, its pages go straight back to the pool. No compaction, nobody else moves. The pool just has more free pages, wherever they happen to be.`, captionZh: `request 结束时，它的 page 直接回到池里。不做整理，谁也不移动。池里只是多了些空闲 page，位置随意。`, foot: `with prefix caching off · SGLang keeps a finished request's pages in its prefix cache until it needs them (chapter ${CH_PREFIX})`, footZh: `关闭 prefix caching · SGLang 把已结束 request 的 page 留在 prefix cache 里，直到需要它们（第 ${CH_PREFIX} 章）` },
+    { scene: 'alloc', base: pages2, alloc: allocB, owner: 6, name: 'req 7', caption: `The next newcomer takes what it needs from those, or any other free pages. Its table lists them, and the attention kernel follows the table. vLLM pages 16 tokens at a time; SGLang, 1.`, captionZh: `下一个新来者从这些或其他空闲 page 里取所需。它的表列出页号，attention kernel 照表读取。vLLM 每页 16 个 token；SGLang 每页 1 个。` },
+    { scene: 'closing', caption: `Admission is a count: free pages against pages needed. Yes: admit and write the table. No: wait for a finish. If the running requests themselves run out, one is retracted. Sharing pages: next chapter.`, captionZh: `接纳是计数：空闲 page 对所需 page。够：接纳并写表。不够：等一个 request 结束。运行中的 request 耗尽 page 时，撤回一个。共享 page：下一章。` },
   ];
 
   let step = $state(0);
@@ -94,10 +98,10 @@
         {@const xUsed = x0 + usedGB * pxPerGB}
         {@const xEnd = BAR.x + BAR.w}
         <g transition:fade={{ duration: 250 }}>
-          <text x={BAR.x} y={BAR.y - 56} class="rowlabel">one H100 · {HBM_GB} GB of HBM</text>
+          <text x={BAR.x} y={BAR.y - 56} class="rowlabel">{t(`one H100 · ${HBM_GB} GB of HBM`, `一块 H100 · ${HBM_GB} GB HBM`)}</text>
           <rect x={BAR.x} y={BAR.y} width={BAR.w} height={BAR.h} rx="8" fill="white" stroke="var(--line)" />
           <rect x={BAR.x} y={BAR.y} width={W_GB * pxPerGB} height={BAR.h} rx="8" fill="var(--accent)" opacity="0.9" />
-          <text x={BAR.x + (W_GB * pxPerGB) / 2} y={BAR.y + 27} text-anchor="middle" class="steplabel">weights {W_GB} GB</text>
+          <text x={BAR.x + (W_GB * pxPerGB) / 2} y={BAR.y + 27} text-anchor="middle" class="steplabel">{t(`weights ${W_GB} GB`, `权重 ${W_GB} GB`)}</text>
           {#each running as ctxK, i}
             {@const xs = x0 + running.slice(0, i).reduce((a, c) => a + seqGB(c * 1024), 0) * pxPerGB}
             {@const w = seqGB(ctxK * 1024) * pxPerGB - 1}
@@ -107,15 +111,15 @@
           <!-- brackets -->
           <g in:fade={{ delay: 1100 }}>
             <path d="M {x0} {BAR.y + BAR.h + 8} V {BAR.y + BAR.h + 16} H {xEnd} V {BAR.y + BAR.h + 8}" fill="none" stroke="var(--fg)" stroke-width="1.5" />
-            <text x={(x0 + xEnd) / 2} y={BAR.y + BAR.h + 32} text-anchor="middle" class="tag strong">room for KV cache · {HBM_GB - W_GB} GB</text>
+            <text x={(x0 + xEnd) / 2} y={BAR.y + BAR.h + 32} text-anchor="middle" class="tag strong">{t(`room for KV cache · ${HBM_GB - W_GB} GB`, `KV cache 的空间 · ${HBM_GB - W_GB} GB`)}</text>
           </g>
           <g in:fade={{ delay: 1600 }}>
             <path d="M {x0} {BAR.y - 8} V {BAR.y - 16} H {xUsed - 2} V {BAR.y - 8}" fill="none" stroke="#0891b2" stroke-width="1.5" />
-            <text x={(x0 + xUsed) / 2} y={BAR.y - 22} text-anchor="middle" class="tag" fill="#0891b2">in use · {usedGB.toFixed(0)} GB, {running.length} requests</text>
+            <text x={(x0 + xUsed) / 2} y={BAR.y - 22} text-anchor="middle" class="tag" fill="#0891b2">{t(`in use · ${usedGB.toFixed(0)} GB, ${running.length} requests`, `已用 · ${usedGB.toFixed(0)} GB，${running.length} 个 request`)}</text>
             <path d="M {xUsed + 2} {BAR.y - 8} V {BAR.y - 16} H {xEnd} V {BAR.y - 8}" fill="none" stroke="var(--gen)" stroke-width="1.5" />
-            <text x={(xUsed + xEnd) / 2} y={BAR.y - 22} text-anchor="middle" class="tag strong" fill="var(--gen)">empty right now · {(HBM_GB - W_GB - usedGB).toFixed(0)} GB</text>
+            <text x={(xUsed + xEnd) / 2} y={BAR.y - 22} text-anchor="middle" class="tag strong" fill="var(--gen)">{t(`empty right now · ${(HBM_GB - W_GB - usedGB).toFixed(0)} GB`, `当前空闲 · ${(HBM_GB - W_GB - usedGB).toFixed(0)} GB`)}</text>
           </g>
-          <text x={BAR.x} y={BAR.y + 110} class="legend" in:fade={{ delay: 2100 }}>each running request grows {KB_TOK} KB per step; the empty part is what newcomers can be admitted into</text>
+          <text x={BAR.x} y={BAR.y + 110} class="legend" in:fade={{ delay: 2100 }}>{t(`each running request grows ${KB_TOK} KB per step; the empty part is what newcomers can be admitted into`, `每个运行中的 request 每步增长 ${KB_TOK} KB；空闲部分用来接纳新 request`)}</text>
         </g>
       {/if}
 
@@ -127,20 +131,20 @@
             {@const n = capAt(ctx)}
             {@const h = 34}
             <g in:fade={{ delay: r * 300 }}>
-              <text x={BAR.x} y={y - 10} class="rowlabel">every request at {ctx / 1024}k tokens of context · {Math.round(seqGB(ctx) * 1000).toLocaleString()} MB each</text>
+              <text x={BAR.x} y={y - 10} class="rowlabel">{t(`every request at ${ctx / 1024}k tokens of context · ${Math.round(seqGB(ctx) * 1000).toLocaleString()} MB each`, `每个 request 上下文 ${ctx / 1024}k token · 各占 ${Math.round(seqGB(ctx) * 1000).toLocaleString()} MB`)}</text>
               <rect x={BAR.x} {y} width={BAR.w} height={h} rx="7" fill="white" stroke="var(--line)" />
               <rect x={BAR.x} {y} width={W_GB * pxPerGB} height={h} rx="7" fill="var(--accent)" opacity="0.9" />
-              <text x={BAR.x + (W_GB * pxPerGB) / 2} y={y + 22} text-anchor="middle" class="steplabel">weights</text>
+              <text x={BAR.x + (W_GB * pxPerGB) / 2} y={y + 22} text-anchor="middle" class="steplabel">{t('weights', '权重')}</text>
               {#each Array(n) as _, i}
                 {@const x = BAR.x + W_GB * pxPerGB + i * seqGB(ctx) * pxPerGB}
                 <rect {x} y={y + 1} width={Math.max(0.8, seqGB(ctx) * pxPerGB - 1)} height={h - 2} fill="#0891b2" opacity={0.55 + 0.35 * (i % 2)} in:fly={{ x: -5, delay: r * 300 + 100 + i * (ctx > 4096 ? 20 : 6), duration: 200 }} />
               {/each}
-              <text x={BAR.x + BAR.w} y={y + h + 16} text-anchor="end" class="legend"><tspan class="strong">{n} requests</tspan> fit</text>
+              <text x={BAR.x + BAR.w} y={y + h + 16} text-anchor="end" class="legend"><tspan class="strong">{t(`${n} requests`, `${n} 个 request`)}</tspan> {t('fit', '装得下')}</text>
             </g>
           {/each}
           <g in:fade={{ delay: 1400 }}>
-            <text x={BAR.x} y="340" class="legend">Ch. 5 Step 4's sweet spot was {BALANCE} requests decoding at once;</text>
-            <text x={BAR.x} y="358" class="legend">even at a short 2k context, this card holds {capAt(2048)}</text>
+            <text x={BAR.x} y="340" class="legend">{t(`Ch. 5 Step 4's sweet spot was ${BALANCE} requests decoding at once;`, `Ch. 5 Step 4 的最佳点是 ${BALANCE} 个 request 同时 decode；`)}</text>
+            <text x={BAR.x} y="358" class="legend">{t(`even at a short 2k context, this card holds ${capAt(2048)}`, `即使上下文短到 2k，这张卡也只装得下 ${capAt(2048)} 个`)}</text>
           </g>
         </g>
       {/if}
@@ -152,19 +156,19 @@
         {@const C = { x: 40, y: 220, w: 640, h: 40 }}
         {@const cpx = C.w / churn.reduce((a, c) => a + c.gb, 0)}
         <g transition:fade={{ duration: 250 }}>
-          <text x={R.x} y={R.y - 14} class="rowlabel">reserve the maximum for everyone · {MAXCTX / 1024}k tokens = {(seqGB(MAXCTX)).toFixed(0)} GB per request</text>
+          <text x={R.x} y={R.y - 14} class="rowlabel">{t(`reserve the maximum for everyone · ${MAXCTX / 1024}k tokens = ${(seqGB(MAXCTX)).toFixed(0)} GB per request`, `给每个 request 预留最大长度 · ${MAXCTX / 1024}k token = ${(seqGB(MAXCTX)).toFixed(0)} GB`)}</text>
           {#each reserved as used, i}
             {@const x = R.x + i * perReq}
             <g in:fly={{ x: -6, delay: i * 120, duration: 250 }}>
               <rect x={x + 1} y={R.y} width={perReq - 2} height={R.h} rx="5" fill="url(#hatch)" stroke="#0891b2" stroke-opacity="0.5" />
               <rect x={x + 1} y={R.y} width={(perReq - 2) * used} height={R.h} rx="5" fill="#0891b2" opacity="0.85" />
-              <text x={x + 4} y={R.y + R.h + 14} class="tag">req {i + 1} · using {(used * MAXCTX / 1024).toFixed(1)}k of {MAXCTX / 1024}k</text>
+              <text x={x + 4} y={R.y + R.h + 14} class="tag">req {i + 1} · {t(`using ${(used * MAXCTX / 1024).toFixed(1)}k of ${MAXCTX / 1024}k`, `已用 ${(used * MAXCTX / 1024).toFixed(1)}k / ${MAXCTX / 1024}k`)}</text>
             </g>
           {/each}
           <g in:fade={{ delay: 800 }}>
-            <rect x={R.x} y={R.y + R.h + 26} width="12" height="12" rx="2" fill="url(#hatch)" stroke="#0891b2" stroke-opacity="0.5" /><text x={R.x + 18} y={R.y + R.h + 36} class="tag">reserved, never written: <tspan class="strong">{Math.round(wasted * 100)}%</tspan> of the cache budget</text>
+            <rect x={R.x} y={R.y + R.h + 26} width="12" height="12" rx="2" fill="url(#hatch)" stroke="#0891b2" stroke-opacity="0.5" /><text x={R.x + 18} y={R.y + R.h + 36} class="tag">{t('reserved, never written: ', '预留却从未写入：')}<tspan class="strong">{Math.round(wasted * 100)}%</tspan> {t('of the cache budget', '的 cache 预算')}</text>
           </g>
-          <text x={C.x} y={C.y - 14} class="rowlabel" in:fade={{ delay: 1300 }}>a while later · requests finished at different times</text>
+          <text x={C.x} y={C.y - 14} class="rowlabel" in:fade={{ delay: 1300 }}>{t('a while later · requests finished at different times', '一段时间后 · request 在不同时间结束')}</text>
           {#each churn as seg, i}
             {@const x = C.x + churn.slice(0, i).reduce((a, c) => a + c.gb, 0) * cpx}
             <g in:fade={{ delay: 1300 + i * 80 }}>
@@ -179,7 +183,7 @@
           <g in:fade={{ delay: 2300 }}>
             <rect x={C.x} y={C.y + C.h + 16} width={1.0 * cpx} height="22" rx="5" fill="none" stroke="var(--eos)" stroke-width="1.5" stroke-dasharray="5 3" />
             <text x={C.x + (1.0 * cpx) / 2} y={C.y + C.h + 31} text-anchor="middle" class="tag" fill="var(--eos)">1 GB</text>
-            <text x={C.x + 1.0 * cpx + 12} y={C.y + C.h + 31} class="legend">← a newcomer needs 1 GB in one piece · <tspan class="strong">{churnFree.toFixed(1)} GB free</tspan>, no hole big enough. Fragmentation.</text>
+            <text x={C.x + 1.0 * cpx + 12} y={C.y + C.h + 31} class="legend">{t('← a newcomer needs 1 GB in one piece ·', '← 新 request 需要一整块 1 GB ·')} <tspan class="strong">{t(`${churnFree.toFixed(1)} GB free`, `空闲 ${churnFree.toFixed(1)} GB`)}</tspan>{t(', no hole big enough. Fragmentation.', '，没有足够大的洞。这就是碎片。')}</text>
           </g>
         </g>
       {/if}
@@ -191,7 +195,7 @@
         {@const owner = cur.owner ?? 0}
         {@const need = alloc.length}
         <g transition:fade={{ duration: 250 }}>
-          <text x={PG.x} y="40" class="rowlabel">the {HBM_GB - W_GB} GB after the weights, cut into pages · {COLS * ROWS} shown of many thousands</text>
+          <text x={PG.x} y="40" class="rowlabel">{t(`the ${HBM_GB - W_GB} GB after the weights, cut into pages · ${COLS * ROWS} shown of many thousands`, `权重之外的 ${HBM_GB - W_GB} GB 切成 page · 数千个中画出 ${COLS * ROWS} 个`)}</text>
 
           <!-- the grid (fades in once; steps 4 → 5 → 6 keep it mounted so nothing replays) -->
           {#each base as o, i}
@@ -221,14 +225,14 @@
           {#each owners.slice(0, cur.scene === 'alloc' && owner === 6 ? 7 : cur.scene === 'alloc' ? 6 : 6) as c, r}
             {@const gone = (cur.scene === 'free' && r === FINISHED && phase >= 1) || (cur.scene === 'alloc' && owner === 6 && r === FINISHED)}
             <rect x="608" y={PG.y + r * 20} width="12" height="12" rx="2" fill={c} opacity={gone ? 0.25 : 0.85} />
-            <text x="626" y={PG.y + r * 20 + 10} class="tag" opacity={gone ? 0.5 : 1}>req {r + 1}{gone ? ' · done' : ''}</text>
+            <text x="626" y={PG.y + r * 20 + 10} class="tag" opacity={gone ? 0.5 : 1}>req {r + 1}{gone ? t(' · done', ' · 结束') : ''}</text>
           {/each}
-          <rect x="608" y={PG.y + 7 * 20} width="12" height="12" rx="2" fill="white" stroke="var(--line)" stroke-dasharray="3 2" /><text x="626" y={PG.y + 7 * 20 + 10} class="tag">free</text>
+          <rect x="608" y={PG.y + 7 * 20} width="12" height="12" rx="2" fill="white" stroke="var(--line)" stroke-dasharray="3 2" /><text x="626" y={PG.y + 7 * 20 + 10} class="tag">{t('free', '空闲')}</text>
 
           {#if cur.scene === 'alloc'}
             <!-- the newcomer: one block, then pages, then gone into the grid -->
             {#if phase >= 1}
-              <text x={PG.x} y={STRIP.y + 16} class="legend" in:fade><tspan class="strong">{cur.name}</tspan> arrives · needs {need} pages</text>
+              <text x={PG.x} y={STRIP.y + 16} class="legend" in:fade><tspan class="strong">{cur.name}</tspan> {t(`arrives · needs ${need} pages`, `到达 · 需要 ${need} 个 page`)}</text>
             {/if}
             {#if phase === 1}
               <rect x={STRIP.x} y={STRIP.y} width={need * (CELL + GAP) - GAP} height={CELL} rx="5" fill={owners[owner]} opacity="0.9" transition:fade={{ duration: 250 }} />
@@ -239,23 +243,23 @@
               {/each}
             {/if}
             {#if phase === 2}
-              <text x={STRIP.x + need * (CELL + GAP) + 10} y={STRIP.y + 16} class="tag" in:fade>split into {need} pages, not one block</text>
+              <text x={STRIP.x + need * (CELL + GAP) + 10} y={STRIP.y + 16} class="tag" in:fade>{t(`split into ${need} pages, not one block`, `拆成 ${need} 个 page，不是一整块`)}</text>
             {/if}
             {#if phase >= 3}
-              <text x={STRIP.x} y={STRIP.y + 16} class="tag" in:fade={{ delay: 400 }}>→ any {need} free pages, wherever they are</text>
+              <text x={STRIP.x} y={STRIP.y + 16} class="tag" in:fade={{ delay: 400 }}>{t(`→ any ${need} free pages, wherever they are`, `→ 任取 ${need} 个空闲 page，位置不限`)}</text>
             {/if}
             {#if phase >= 4}
               <g in:fade>
-                <text x={PG.x - 10} y={PG.y + ROWS * (CELL + GAP) + 26} class="pt">·</text><text x={PG.x} y={PG.y + ROWS * (CELL + GAP) + 26} class="legend"><tspan class="strong">{cur.name}'s page table:</tspan> {alloc.join(', ')}</text>
-                <text x={PG.x - 10} y={PG.y + ROWS * (CELL + GAP) + 48} class="pt">·</text><text x={PG.x} y={PG.y + ROWS * (CELL + GAP) + 48} class="legend">attention reads the cache through this list; nothing needs to be next to anything</text>
+                <text x={PG.x - 10} y={PG.y + ROWS * (CELL + GAP) + 26} class="pt">·</text><text x={PG.x} y={PG.y + ROWS * (CELL + GAP) + 26} class="legend"><tspan class="strong">{t(`${cur.name}'s page table:`, `${cur.name} 的页表：`)}</tspan> {alloc.join(', ')}</text>
+                <text x={PG.x - 10} y={PG.y + ROWS * (CELL + GAP) + 48} class="pt">·</text><text x={PG.x} y={PG.y + ROWS * (CELL + GAP) + 48} class="legend">{t('attention reads the cache through this list; nothing needs to be next to anything', 'attention 照这个列表读 cache；谁也不必挨着谁')}</text>
               </g>
             {/if}
           {:else}
             {#if phase >= 1}
-              <text x={PG.x} y={STRIP.y + 16} class="legend" in:fade><tspan class="strong">req {FINISHED + 1}</tspan> finished · its {freed.length} pages go back to the pool</text>
+              <text x={PG.x} y={STRIP.y + 16} class="legend" in:fade><tspan class="strong">req {FINISHED + 1}</tspan> {t(`finished · its ${freed.length} pages go back to the pool`, `结束 · 它的 ${freed.length} 个 page 回到池里`)}</text>
             {/if}
             {#if phase >= 2}
-              <text x={PG.x} y={PG.y + ROWS * (CELL + GAP) + 26} class="legend" in:fade>{freeOf(pages2).length} free pages now, scattered · nobody else moved</text>
+              <text x={PG.x} y={PG.y + ROWS * (CELL + GAP) + 26} class="legend" in:fade>{t(`${freeOf(pages2).length} free pages now, scattered · nobody else moved`, `现在有 ${freeOf(pages2).length} 个空闲 page，散落各处 · 谁也没移动`)}</text>
             {/if}
           {/if}
         </g>
@@ -275,42 +279,42 @@
           </defs>
           <!-- everything above the footnote, lifted to leave it clear space -->
           <g transform="translate(0 -8)">
-          <text x="40" y="52" class="rowlabel">admitting a newcomer</text>
+          <text x="40" y="52" class="rowlabel">{t('admitting a newcomer', '接纳新 request')}</text>
           <g in:fly={{ y: 8, duration: 300 }}>
             <rect x="40" y="70" width="290" height="56" rx="12" fill="white" stroke="var(--fg)" stroke-width="1.5" />
-            <text x="185" y="94" text-anchor="middle" class="slab strong small">free pages ≥ pages needed?</text>
-            <text x="185" y="114" text-anchor="middle" class="tag">needed: its prompt, plus every answer still to come</text>
+            <text x="185" y="94" text-anchor="middle" class="slab strong small">{t('free pages ≥ pages needed?', '空闲 page ≥ 所需 page？')}</text>
+            <text x="185" y="114" text-anchor="middle" class="tag">{t('needed: its prompt, plus every answer still to come', '所需：它的 prompt，加上还没生成的回答')}</text>
           </g>
           <g in:fly={{ y: 8, delay: 300, duration: 300 }}>
             <path d="M 110 126 V 168" fill="none" stroke="#b8b4aa" stroke-width="1.5" marker-end="url(#kvarrow)" />
-            <text x="118" y="152" class="tag strong" fill="#16a34a">yes</text>
+            <text x="118" y="152" class="tag strong" fill="#16a34a">{t('yes', '是')}</text>
             <rect x="40" y="172" width="290" height="62" rx="12" fill="#fbfaf7" stroke="#16a34a" />
-            <text x="56" y="196" class="slab strong small">admit</text>
-            <text x="56" y="216" class="tag">take any free pages, write the page table</text>
+            <text x="56" y="196" class="slab strong small">{t('admit', '接纳')}</text>
+            <text x="56" y="216" class="tag">{t('take any free pages, write the page table', '任取空闲 page，写页表')}</text>
           </g>
           <g in:fly={{ y: 8, delay: 600, duration: 300 }}>
             <path d="M 250 126 V 148 H 280 V 262" fill="none" stroke="#b8b4aa" stroke-width="1.5" marker-end="url(#kvarrow)" />
-            <text x="258" y="144" class="tag strong" fill="var(--eos)">no</text>
+            <text x="258" y="144" class="tag strong" fill="var(--eos)">{t('no', '否')}</text>
             <rect x="40" y="266" width="290" height="112" rx="12" fill="#fbfaf7" stroke="var(--eos)" />
-            <text x="56" y="290" class="slab strong small">wait</text>
-            <text x="56" y="310" class="tag">until a running request finishes</text>
-            <text x="56" y="326" class="tag">and frees its pages</text>
-            <text x="56" y="346" class="tag">running requests out of pages, nobody finishing?</text>
-            <text x="56" y="362" class="tag"><tspan class="strong">retract</tspan> the one with least output, re-prefill it later</text>
+            <text x="56" y="290" class="slab strong small">{t('wait', '等待')}</text>
+            <text x="56" y="310" class="tag">{t('until a running request finishes', '直到某个运行中的 request 结束')}</text>
+            <text x="56" y="326" class="tag">{t('and frees its pages', '并释放它的 page')}</text>
+            <text x="56" y="346" class="tag">{t('running requests out of pages, nobody finishing?', '运行中的 request 没了 page，又没人结束？')}</text>
+            <text x="56" y="362" class="tag"><tspan class="strong">{t('retract', '撤回')}</tspan> {t('the one with least output, re-prefill it later', '输出最少的那个，之后重新 prefill')}</text>
           </g>
 
           <!-- what a request holds: a list of page numbers -->
           <g in:fade={{ delay: 900 }}>
             <rect x="350" y="70" width="350" height="306" rx="12" fill="#fbfaf7" stroke={owners[6]} />
-            <text x="366" y="94" class="boxtitle">what req 7 holds</text>
-            <text x="366" y="118" class="slab small">not a region of memory, a <tspan class="strong">page table</tspan>:</text>
+            <text x="366" y="94" class="boxtitle">{t('what req 7 holds', 'req 7 持有什么')}</text>
+            <text x="366" y="118" class="slab small">{t('not a region of memory, a ', '不是一块内存区域，而是一张')}<tspan class="strong">{t('page table', '页表')}</tspan>{t(':', '：')}</text>
             {#each allocB as pg, k}
               {@const cx = 366 + k * 38}
               <rect x={cx} y="132" width="32" height="22" rx="5" fill={owners[6]} opacity="0.9" />
               <text x={cx + 16} y="147" text-anchor="middle" class="steplabel">{pg}</text>
               <text x={cx + 16} y="168" text-anchor="middle" class="tag">{k + 1}</text>
             {/each}
-            <text x="366" y="196" class="tag">the same pages, where they actually sit in the pool:</text>
+            <text x="366" y="196" class="tag">{t('the same pages, where they actually sit in the pool:', '同样的 page 在池中的实际位置：')}</text>
             {#each pages3 as o, i}
               {@const x = MX + (i % COLS) * (MC + MG)}
               {@const y = MY + Math.floor(i / COLS) * (MC + MG)}
@@ -318,22 +322,22 @@
               <rect {x} {y} width={MC} height={MC} rx="2" fill={mine ? owners[6] : o < 0 ? 'white' : '#e6e3db'} stroke={mine ? 'none' : o < 0 ? 'var(--line)' : 'none'} opacity={mine ? 0.95 : 1} />
               {#if mine}<text x={x + MC / 2} y={y + MC - 3.5} text-anchor="middle" class="tiny">{allocB.indexOf(i) + 1}</text>{/if}
             {/each}
-            <text x="366" y="318" class="tag">attention walks the list in order;</text>
-            <text x="366" y="332" class="tag">the pages never need to be adjacent</text>
-            <text x="366" y="352" class="tag muted">same page in two lists → chapter {CH_PREFIX}</text>
-            <text x="366" y="366" class="tag muted">a list sent to another GPU → chapter {CH_DISAGG}</text>
+            <text x="366" y="318" class="tag">{t('attention walks the list in order;', 'attention 按顺序走列表；')}</text>
+            <text x="366" y="332" class="tag">{t('the pages never need to be adjacent', 'page 从来不需要相邻')}</text>
+            <text x="366" y="352" class="tag muted">{t(`same page in two lists → chapter ${CH_PREFIX}`, `同一个 page 在两个列表里 → 第 ${CH_PREFIX} 章`)}</text>
+            <text x="366" y="366" class="tag muted">{t(`a list sent to another GPU → chapter ${CH_DISAGG}`, `列表发给另一块 GPU → 第 ${CH_DISAGG} 章`)}</text>
           </g>
           </g>
           <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote" in:fade={{ delay: 1500 }}>SGLang: <tspan class="mono">MHATokenToKVPool</tspan> · <tspan class="mono">TokenToKVPoolAllocator</tspan> · <tspan class="mono">req_to_token</tspan> · <tspan class="mono">PrefillAdder</tspan> · <tspan class="mono">retract_decode</tspan></text>
         </g>
       {/if}
       {#if cur.foot}
-        {#key cur.foot}<text x={W / 2} y={H - 10} text-anchor="middle" class="footnote" in:fade>{cur.foot}</text>{/key}
+        {#key cur.foot}<text x={W / 2} y={H - 10} text-anchor="middle" class="footnote" in:fade>{t(cur.foot ?? '', cur.footZh ?? '')}</text>{/key}
       {/if}
     </svg>
   </div>
 
-  <StepControls {step} total={steps.length} caption={cur.caption} {prev} {next} onchange={(s) => (step = s)} />
+  <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh} deep={deep?.en[step]} deepZh={deep?.zh[step]} {prev} {next} onchange={(s) => (step = s)} />
 </figure>
 
 <style>

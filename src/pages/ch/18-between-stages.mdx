@@ -4,10 +4,12 @@ slug: 18-between-stages
 ---
 import BetweenStages from '../../components/viz/BetweenStages.svelte';
 import { neighbors } from '../../chapters';
+import { deepFor } from '../../deep';
+export const deep = await deepFor('18-between-stages');
 
-<BetweenStages client:load {...neighbors('18-between-stages')} />
+<BetweenStages client:load {...neighbors('18-between-stages')} deep={deep} />
 
-<details>
+<details class="i18n-en">
 <summary>Where this chapter's claims come from</summary>
 
 **The transports.** SGLang-Omni's `CommRouter` (`comm/router.py`) picks a transport for each edge: a plain reference when both stages share a process, Mooncake when the receiver is on another machine, CUDA IPC when the data is on a GPU and both stages run on GPUs in one machine, and shared memory otherwise. CUDA IPC between two GPUs needs the GPUs to reach each other's memory; if they cannot, the router falls back to shared memory. The edge-by-edge transports in step 9 follow these rules for the default speech layout; they were not traced on a running server.
@@ -19,5 +21,20 @@ import { neighbors } from '../../chapters';
 **The 33%.** SGLang-Omni's design notes (PR #496) report that its text-only pipeline, which runs every stage in one process, cut its mean latency by 33% when its stages began passing references instead of going through the relay.
 
 **What is not Omni's own.** CUDA IPC, shared memory and RDMA transfer engines are general tools. SGLang also uses Mooncake to move KV cache between servers in prefill-decode disaggregation (chapter 28). What SGLang-Omni adds is the choice per edge, from where the edge's two stages sit.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章结论的出处</summary>
+
+**传输方式。** SGLang-Omni 的 `CommRouter`（`comm/router.py`）为每条边选择一种传输方式：两个 stage 共享一个进程时用普通引用，接收方在另一台机器上时用 Mooncake，数据在 GPU 上且两个 stage 都运行在同一台机器的 GPU 上时用 CUDA IPC，其余情况用共享内存。两块 GPU 之间的 CUDA IPC 要求 GPU 能访问彼此的内存；如果不能，router 回退到共享内存。第 9 步中逐边的传输方式就是按这些规则对应默认语音布局得出的；没有在运行中的服务器上实测。
+
+**交接过程。** 发送方的 runtime 通过 relay 写入数据，然后通过 ZMQ 发送一条 `DataReadyMessage`，指明 request、两个 stage 以及数据所在位置。接收方读取数据，发送 `DataAckMessage` 让发送方能复用这块空间，并把数据放进自己 scheduler 的 inbox。CUDA IPC 的 relay 在发送方的 GPU 上保留一个固定大小的 slot 池；ack 释放一个 slot。
+
+**数据大小。** 一个向量就是 thinker 的宽度：2,048 个数，bf16 下每个 2 字节。每个 encoder 的 embedding 宽度相同，因为它要占据 thinker prompt 中的一个位置。Qwen3-Omni 还会把几个额外的视觉层传给 thinker，表中没有列出。
+
+**33% 的出处。** SGLang-Omni 的设计笔记（PR #496）报告：它的纯文本流水线把所有 stage 跑在一个进程里，当 stage 之间改为传引用而不走 relay 后，平均延迟降低了 33%。
+
+**哪些不是 Omni 自有的。** CUDA IPC、共享内存和 RDMA 传输引擎都是通用工具。SGLang 在 prefill-decode 分离（chapter 28）中也用 Mooncake 在服务器之间搬运 KV cache。SGLang-Omni 增加的是按边选择：根据一条边两端 stage 的位置来选。
 
 </details>

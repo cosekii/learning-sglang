@@ -4,10 +4,12 @@ slug: 09-one-request
 ---
 import OneRequest from '../../components/viz/OneRequest.svelte';
 import { neighbors } from '../../chapters';
+import { deepFor } from '../../deep';
+export const deep = await deepFor('09-one-request');
 
-<OneRequest client:load {...neighbors('09-one-request')} />
+<OneRequest client:load {...neighbors('09-one-request')} deep={deep} />
 
-<details>
+<details class="i18n-en">
 <summary>The moving parts, once</summary>
 
 `sglang serve` (or the older `python -m sglang.launch_server`) starts three kinds of process. The HTTP server (FastAPI on uvicorn) and the `TokenizerManager` share one process: it accepts connections, applies the chat template, tokenizes, and owns every open response stream. The `Scheduler` runs in its own process, one per GPU, and does nothing but the loop from chapters 6 to 8. The `DetokenizerManager` turns token ids back into text incrementally.
@@ -15,5 +17,16 @@ import { neighbors } from '../../chapters';
 They talk over ZeroMQ PUSH/PULL sockets on `ipc://` Unix domain sockets: `TokenizedGenerateReqInput` in, `BatchTokenIDOutput` to the detokenizer, `BatchStrOutput` back to the server. The scheduler calls `recv_pyobj(zmq.NOBLOCK)` in a loop at the top of each step to drain everything that arrived. Streaming responses are server-sent events, one `data:` line per token in the OpenAI-compatible format.
 
 Open connections live in the server process and cost it a little memory each, not GPU time, so a burst of clients does not slow the loop. The scheduler runs as many requests as the KV pool has room for (chapter 7), capped further by `--max-running-requests`. The rest wait in `Scheduler.waiting_queue` with their connections open, and see a longer wait for the first token rather than an error. Past `--max-queued-requests`, the server answers new requests with 503 instead of queueing them.
+
+</details>
+
+<details class="i18n-zh">
+<summary>各个部件，一次讲清</summary>
+
+`sglang serve`（或旧的 `python -m sglang.launch_server`）启动三种进程。HTTP 服务器（uvicorn 上的 FastAPI）和 `TokenizerManager` 共用一个进程：接受连接、应用聊天模板、分词，并持有每个打开的响应流。`Scheduler` 在自己的进程里运行，每块 GPU 一个，只做第 6 到 8 章的那个循环。`DetokenizerManager` 把 token id 增量地还原成文本。
+
+它们通过 `ipc://` Unix 域套接字上的 ZeroMQ PUSH/PULL 通信：进来的是 `TokenizedGenerateReqInput`，发给 detokenizer 的是 `BatchTokenIDOutput`，回到服务器的是 `BatchStrOutput`。scheduler 在每步开头的循环里调用 `recv_pyobj(zmq.NOBLOCK)`，取走所有已到达的消息。流式响应是 server-sent events，按 OpenAI 兼容格式每个 token 一行 `data:`。
+
+打开的连接保存在服务器进程里，每个只花一点内存，不花 GPU 时间，所以客户端激增不会拖慢循环。KV 池装得下多少 request，scheduler 就跑多少（第 7 章），还受 `--max-running-requests` 进一步限制。其余的在 `Scheduler.waiting_queue` 里等待，连接保持打开，看到的是首个 token 等得更久，而不是报错。超过 `--max-queued-requests` 后，服务器对新请求直接回 503，不再排队。
 
 </details>

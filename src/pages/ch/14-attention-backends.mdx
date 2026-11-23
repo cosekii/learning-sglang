@@ -4,10 +4,12 @@ slug: 14-attention-backends
 ---
 import AttentionBackends from '../../components/viz/AttentionBackends.svelte';
 import { neighbors } from '../../chapters';
+import { deepFor } from '../../deep';
+export const deep = await deepFor('14-attention-backends');
 
-<AttentionBackends client:load {...neighbors('14-attention-backends')} />
+<AttentionBackends client:load {...neighbors('14-attention-backends')} deep={deep} />
 
-<details>
+<details class="i18n-en">
 <summary>The arithmetic, and where the kernels come from</summary>
 
 **What attention reads.** Llama-3-8B keeps, per token per layer, 8 K/V heads × 128 numbers × (k and v) × 2 bytes = 4 KB, and 32 layers make 128 KB per token (Ch. 3 Step 9). A decode step reads every running request's whole cache once, so the attention kernels together move $B \times n \times 128$ KB, against a fixed 16 GB of weights. At $B = 256$ the two are equal at $n \approx 480$; at $n = 4096$ the cache read is 137 GB, 41 ms at 3.35 TB/s against the weights' 4.8.
@@ -21,5 +23,22 @@ import { neighbors } from '../../chapters';
 **The interface.** `sglang/srt/layers/attention/base_attn_backend.py` defines `AttentionBackend`: `init_forward_metadata(forward_batch)`, `forward_extend(q, k, v, layer, forward_batch)`, `forward_decode(...)`, `init_cuda_graph_state(max_bs, ...)`, and the capture/replay hooks that refresh the captured buffers. For a decode batch that fits a captured graph, the runner writes the plan into those buffers and replays; the eager `init_forward_metadata` and forward run only when there is no graph. Recent SGLang splits the plan into a part built outside the graph and a part recorded inside it (`init_forward_metadata_out_graph` / `_in_graph`). `RadixAttention.forward` in `radix_attention.py` does nothing but call `attn_backend.forward(q, k, v, self, forward_batch)`. `attention_registry.py` maps `--attention-backend` names to classes; the docs' feature table (docs.sglang.io, *Attention Backend*) lists per backend the page sizes, cache dtypes, sliding-window and speculative-decoding support. Defaults, from `get_default_attn_backend`: `fa3` on Hopper, `trtllm_mha` on Blackwell, `aiter` on AMD, `flashinfer` on other NVIDIA (falling back to `triton`); for MLA models `fa3` on Hopper and `flashinfer` on Blackwell, with DeepSeek-V3 on Blackwell overridden to `trtllm_mla`. `--prefill-attention-backend` and `--decode-attention-backend` mix two.
 
 **MLA.** DeepSeek-V2/V3 cache one 576-wide vector per token (a 512-wide compressed latent plus 64 dimensions for rotary position) shared by all 128 heads. For decode, each head's key up-projection is folded into its query and its value up-projection into the output projection, so the kernel scores all 128 query heads directly against the cached vector: in effect one shared K/V head, 576 wide for k and 512 for v, and 128 uses of every byte. Prefill can instead expand the latent into per-head k and v and use an ordinary kernel. The decode widths match no MHA kernel, so MLA has its own family: `flashinfer` (MLA mode), `flashmla`, `cutlass_mla`, `trtllm_mla`, and `fa3` / `fa4` for MLA shapes.
+
+</details>
+
+<details class="i18n-zh">
+<summary>这些算术，以及 kernel 从哪里来</summary>
+
+**attention 读什么。** Llama-3-8B 每 token 每层保存 8 个 K/V head × 128 个数 ×（k 和 v）× 2 字节 = 4 KB，32 层合计每 token 128 KB（Ch. 3 Step 9）。一个 decode 步把每个在跑的 request 的整个 cache 读一遍，所以 attention kernel 合计搬 $B \times n \times 128$ KB，对比固定的 16 GB 权重。$B = 256$ 时两者在 $n \approx 480$ 处相等；$n = 4096$ 时 cache 读取为 137 GB，按 3.35 TB/s 要 41 ms，权重只要 4.8 ms。
+
+**为什么它是内存泵。** 一个 head 里一个 query 对一个 key：128 维点积是 256 flops，读 256 字节的 $k$；对 128 维的 $v$ 做缩放累加又是 256 flops、256 字节。每字节 1 flop。H100 的算力带宽比是 $989 \cdot 10^{12} / 3.35 \cdot 10^{12} \approx 295$ flops/字节（Ch. 4 Step 8），所以单 query 的 attention 比平衡点低约 300 倍。grouped-query attention 把它提到 4（每个 K/V head 配 4 个 query head），MLA 的 decode kernel 提到 128。prefill 再把 4 乘上 query tile 的高度 128，得 512：越过平衡点，这就是 prefill attention 受算力限制而 decode attention 不受的原因。不分组的话 128 的 tile 只有 128，仍低于平衡点；实际上相邻 tile 还通过 50 MB 的 L2 共享 K/V。
+
+**FlashAttention。** 写成三个 kernel 时，attention 会把每个 head 的 $n \times n$ 分数矩阵实体化到 HBM：2,000 token 的 prefill 下，S 每 head 8 MB，P 又是 8 MB，各写一次读一次，于是三个 kernel 每 head 搬 34 MB，而 Q、K、V 和输出只有 2 MB。FlashAttention（Dao, Fu, Ermon, Rudra, Ré, 2022）*在线*计算 softmax：一个 kernel 按 chunk 遍历 K 和 V，每行维护滚动的最大值、累计和与输出，分数从不写出，流量就是那 2 MB。舞台上展示了让滚动结果保持精确的那一个恒等式；FlashAttention 设计的其余部分（tile 大小、训练用的反向传播）不在覆盖范围。FlashAttention-2（Dao, 2023）重组了循环，让一个 thread block 拥有一块 query tile 并扫过所有 key，适合 prefill。Flash-Decoding（Dao, Haziza, Massa, Sizov, 2023）在 decode 时把 key 切给多个 block，再用同样的 rescaling 合并它们的部分结果。舞台上它的计时假设 HBM 带宽在 132 个 SM 间均分，8 个忙碌 SM 拉取 8/132；实际上不必所有 SM 就能饱和 HBM，所以未切分 kernel 的 5.3 ms 是上界。FlashAttention-3（Shah, Bikshandi, Zhang, Thakkar, Ramani, Dao, 2024）为 Hopper 重写：producer warp 驱动 TMA（Hopper 的张量内存加速器）加载，两个 consumer warpgroup 交替，让一个的 softmax 与另一个的 matmul 重叠，并支持按 block 缩放的 FP8；它达到 H100 峰值的约 75%，而 FA2 只有约 35%。
+
+**分页的变长 batch。** SGLang 的 pool 是 page 大小 1（Ch. 7 Step 4），所以一个 request 的 K/V 就是按 token 顺序排列的 page 编号列表。batch 通过 `kv_indptr`（每个 request 的切片从哪里开始）和 `kv_indices`（拼接起来的 page 编号）描述给 kernel，这是 CSR 布局；page 更大的 backend 再加 `kv_last_page_len`。这些数组每个 batch 都在 CPU 上于 `init_forward_metadata` 里重建；FlashInfer（Ye et al., 2025）称之为 `plan()`，并借它为每个 request 选择 split-KV 的 chunk 切法，在 SM 之间平衡长短 context。decode 时这些数组放在按最大捕获 batch 定尺寸的 buffer 里，Ch. 11 Step 13 的 graph 因此能回放一个输入每步都变的 kernel。
+
+**接口。** `sglang/srt/layers/attention/base_attn_backend.py` 定义 `AttentionBackend`：`init_forward_metadata(forward_batch)`、`forward_extend(q, k, v, layer, forward_batch)`、`forward_decode(...)`、`init_cuda_graph_state(max_bs, ...)`，以及刷新捕获 buffer 的 capture/replay 钩子。对装得进已捕获 graph 的 decode batch，runner 把 plan 写进那些 buffer 再回放；eager 的 `init_forward_metadata` 和 forward 只在没有 graph 时运行。近期的 SGLang 把 plan 拆成 graph 外构建的部分和录进 graph 内的部分（`init_forward_metadata_out_graph` / `_in_graph`）。`radix_attention.py` 里的 `RadixAttention.forward` 只做一件事：调用 `attn_backend.forward(q, k, v, self, forward_batch)`。`attention_registry.py` 把 `--attention-backend` 的名字映射到类；文档的特性表（docs.sglang.io，*Attention Backend*）逐 backend 列出 page 大小、cache dtype、sliding-window 和 speculative-decoding 支持。默认值来自 `get_default_attn_backend`：Hopper 用 `fa3`，Blackwell 用 `trtllm_mha`，AMD 用 `aiter`，其他 NVIDIA 用 `flashinfer`（回退到 `triton`）；MLA 模型在 Hopper 用 `fa3`、Blackwell 用 `flashinfer`，其中 Blackwell 上的 DeepSeek-V3 被覆盖为 `trtllm_mla`。`--prefill-attention-backend` 和 `--decode-attention-backend` 可以混用两个。
+
+**MLA。** DeepSeek-V2/V3 每 token 缓存一个 576 维向量（512 维压缩 latent 加 64 维 rotary 位置），由全部 128 个 head 共享。decode 时，每个 head 的 key up-projection 折进它的 query，value up-projection 折进输出投影，于是 kernel 让全部 128 个 query head 直接对缓存向量打分：实际上就是一个共享 K/V head，k 宽 576、v 宽 512，每个字节被用 128 次。prefill 则可以把 latent 展开成每 head 的 k 和 v，用普通 kernel。decode 的宽度与任何 MHA kernel 都不匹配，所以 MLA 有自己的家族：`flashinfer`（MLA 模式）、`flashmla`、`cutlass_mla`、`trtllm_mla`，以及支持 MLA 形状的 `fa3` / `fa4`。
 
 </details>

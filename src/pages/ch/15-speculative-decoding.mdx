@@ -4,10 +4,12 @@ slug: 15-speculative-decoding
 ---
 import SpeculativeDecoding from '../../components/viz/SpeculativeDecoding.svelte';
 import { neighbors } from '../../chapters';
+import { deepFor } from '../../deep';
+export const deep = await deepFor('15-speculative-decoding');
 
-<SpeculativeDecoding client:load {...neighbors('15-speculative-decoding')} />
+<SpeculativeDecoding client:load {...neighbors('15-speculative-decoding')} deep={deep} />
 
-<details>
+<details class="i18n-en">
 <summary>Where this chapter's claims come from</summary>
 
 **The acceptance rule.** With greedy decoding a draft token is kept when it equals the token the target would have picked. When sampling, each draft token is kept with probability min(1, p_target / p_draft), and the first rejected position is resampled from a corrected distribution, so the output follows the target's distribution exactly (Leviathan et al., 2023; Chen et al., 2023). Steps 1 to 3 time one request alone and leave out the KV cache read, which is small at this context length (Ch. 4 Step 6). A pass takes as long as the longer of its read and its math (Ch. 4 Step 5), because each layer's math runs while the next layer's weights are being read; five positions' math is 0.08 ms in all, so a pass over five positions still takes the 4.8 ms read.
@@ -19,5 +21,20 @@ import { neighbors } from '../../chapters';
 **DSpark.** Cheng, Yu, Shao, Li, Xiong et al. (DeepSeek-AI and Peking University), *DSpark: Confidence-Scheduled Speculative Decoding with Semi-Autoregressive Generation* (arXiv 2607.05147). Its parallel stage is a DFlash backbone; the sequential stage shown here is its Markov head, a low-rank (rank 256) bias from the previous draft token. The confidence head and the hardware-aware prefix scheduler are its Sections 3.2.1 and 3.2.2. DeepSeek reports 60–85% faster per-user generation on DeepSeek-V4-Flash than its previous one-token MTP drafter.
 
 **The comparison.** Normal decoding's 1 token per target pass is the baseline. Step 8's other numbers are DSpark's Table 1 for a Qwen3-8B target: all three drafters retrained on the same data, a draft length of 7, chain drafting, temperature 1, and the accepted length counting the target's own token. The DFlash paper's own comparison against EAGLE-3 (tree drafting, temperature 0) reports larger gaps; setups differ, so the numbers are not interchangeable.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章结论的出处</summary>
+
+**接受规则。** greedy decode 时，draft token 与 target 会选的 token 相同就保留。采样时，每个 draft token 以 min(1, p_target / p_draft) 的概率保留，第一个被拒绝的位置从修正后的分布重新采样，因此输出严格服从 target 的分布（Leviathan et al., 2023; Chen et al., 2023）。Step 1 到 3 只计时单独一个 request，省略了 KV cache 读取，它在这个上下文长度下很小（Ch. 4 Step 6）。一个 pass 的耗时取读取和计算中较长的那个（Ch. 4 Step 5），因为每层的计算在读下一层权重时进行；5 个 position 的计算总共 0.08 ms，所以处理 5 个 position 的 pass 仍然只花 4.8 ms 的读取时间。
+
+**EAGLE。** EAGLE 用一个 Transformer 层做 draft，读取 target 自己的隐藏状态；EAGLE-3 融合低、中、高三个层的隐藏状态，并在自己的 draft 上训练 head（"training-time test"）。SGLang 用 `--speculative-algorithm EAGLE3` 运行；对 Llama 模型默认 5 个 draft step、每步 4 个分支、验证 8 个 draft token（SGLang 的 speculative decoding 文档）。
+
+**DFlash。** Chen、Liang 和 Liu，*DFlash: Block Diffusion for Flash Speculative Decoding*（ICML 2026，arXiv 2602.06036）。drafter 有 5 层，一个 pass 生成一个 16 position 的 block；5 个 target 层的隐藏状态投影成一个 context 特征，加到每个 draft 层的 key 和 value 上。SGLang 用 `--speculative-algorithm DFLASH` 运行。
+
+**DSpark。** Cheng、Yu、Shao、Li、Xiong 等（DeepSeek-AI 和北京大学），*DSpark: Confidence-Scheduled Speculative Decoding with Semi-Autoregressive Generation*（arXiv 2607.05147）。它的并行 stage 是 DFlash 主干；这里展示的串行 stage 是它的 Markov head，一个来自上一个 draft token 的低秩（rank 256）偏置。confidence head 和感知硬件的 prefix scheduler 分别是其 3.2.1 和 3.2.2 节。DeepSeek 报告在 DeepSeek-V4-Flash 上，单用户生成比之前一次一个 token 的 MTP drafter 快 60–85%。
+
+**对比。** 普通 decode 每个 target pass 得 1 个 token，这是基线。Step 8 的其他数字来自 DSpark 的 Table 1，target 为 Qwen3-8B：三种 drafter 都在同样数据上重新训练，draft 长度 7，链式 draft，temperature 1，接受长度计入 target 自己的 token。DFlash 论文自己与 EAGLE-3 的对比（tree drafting，temperature 0）报告了更大的差距；设置不同，数字不能互换。
 
 </details>

@@ -4,10 +4,12 @@ slug: 06-scheduler
 ---
 import Scheduler from '../../components/viz/Scheduler.svelte';
 import { neighbors } from '../../chapters';
+import { deepFor } from '../../deep';
+export const deep = await deepFor('06-scheduler');
 
-<Scheduler client:load {...neighbors('06-scheduler')} />
+<Scheduler client:load {...neighbors('06-scheduler')} deep={deep} />
 
-<details>
+<details class="i18n-en">
 <summary>The scheduler's arithmetic, once</summary>
 
 A prefill batch of $P$ tokens takes about $P \cdot t_{\text{tok}}$; a decode step takes $t_{\text{step}} \approx t_{\text{mem}}$. With prefill-first, a newcomer gets $\text{TTFT} \approx P\,t_{\text{tok}}$ and everyone else sees a gap of that plus one decode step. Capping prefill batches at $c$ tokens and alternating gives
@@ -19,5 +21,20 @@ $$
 Mixing a chunk of $c \le n^* - B$ into each decode step removes the gap entirely and gives $\text{TTFT} \approx \lceil P/c \rceil \cdot t_{\text{step}}$.
 
 In SGLang, `schedule_policy` orders the waiting list, and the loop above is `Scheduler.get_next_batch_to_run()`, which tries to build a prefill batch first and falls back to the running decode batch. `chunked_prefill_size` caps a prefill batch and is on by default (8,192 tokens on an H100), but a prompt that is partway through its chunks gets its next chunk on the very next step, so on its own it does not shorten the freeze. `--prefill-decode-interval N` runs $N$ decode steps after every prefill batch, and $N = 1$ gives the alternation in step 6. `--enable-mixed-chunk` turns on mixing; the chunk and the decodes then share one budget, so $c$ = `chunked_prefill_size` $- B$.
+
+</details>
+
+<details class="i18n-zh">
+<summary>调度器的算术，一次讲清</summary>
+
+$P$ 个 token 的 prefill 批大约耗时 $P \cdot t_{\text{tok}}$；一个 decode 步耗时 $t_{\text{step}} \approx t_{\text{mem}}$。prefill 优先时，新请求的 $\text{TTFT} \approx P\,t_{\text{tok}}$，其他所有人则看到这段时间再加一个 decode 步的空隙。把 prefill 批限制在 $c$ 个 token 并交替执行，得到
+
+$$
+\text{gap} \approx c\,t_{\text{tok}} + t_{\text{step}}, \qquad \text{TTFT} \approx \lceil P/c \rceil \cdot c\,t_{\text{tok}} + (\lceil P/c \rceil - 1)\, t_{\text{step}}
+$$
+
+在每个 decode 步里混入一个 $c \le n^* - B$ 的 chunk，空隙完全消失，且 $\text{TTFT} \approx \lceil P/c \rceil \cdot t_{\text{step}}$。
+
+在 SGLang 中，`schedule_policy` 决定等待列表的顺序，上面的循环就是 `Scheduler.get_next_batch_to_run()`：先尝试组建 prefill 批，不行就退回正在运行的 decode 批。`chunked_prefill_size` 限制 prefill 批的大小，默认开启（H100 上为 8,192 个 token），但一个正在分块处理的 prompt 会在下一步立刻拿到下一个 chunk，所以单靠它并不能缩短冻结。`--prefill-decode-interval N` 在每个 prefill 批之后运行 $N$ 个 decode 步，$N = 1$ 就是第 6 步的交替。`--enable-mixed-chunk` 开启混合；chunk 和 decode 共享一个预算，因此 $c$ = `chunked_prefill_size` $- B$。
 
 </details>

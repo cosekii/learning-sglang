@@ -4,10 +4,12 @@ slug: 08-prefix-caching
 ---
 import PrefixCaching from '../../components/viz/PrefixCaching.svelte';
 import { neighbors } from '../../chapters';
+import { deepFor } from '../../deep';
+export const deep = await deepFor('08-prefix-caching');
 
-<PrefixCaching client:load {...neighbors('08-prefix-caching')} />
+<PrefixCaching client:load {...neighbors('08-prefix-caching')} deep={deep} />
 
-<details>
+<details class="i18n-en">
 <summary>The prefix arithmetic, once</summary>
 
 Position $i$'s key and value are functions of tokens $1..i$, so two requests can share cache exactly for their longest common prefix $m$ and nothing past it. A shared prefix of $s$ tokens across $r$ requests costs $s$ tokens of cache instead of $r \cdot s$, and a newcomer with an $L$-token prompt prefills $L - m$ tokens:
@@ -17,5 +19,18 @@ $$
 $$
 
 In a chat of $T$ turns with question $q_t$ and answer $a_t$, prefill without caching sums to $\sum_t (q_t + \sum_{u<t}(q_u + a_u))$ and with it to $\sum_t q_t$. SGLang's `RadixCache` is the tree, reference counts pin the pages of running requests, eviction is least-recently-used over unreferenced nodes, and `--schedule-policy lpm` orders the waiting list by matched length. The default policy is `fcfs`, and lpm itself falls back to it past 128 waiting requests; a newcomer's prefix is matched when it is admitted under any policy. Matching works in whole pages, so with page size $p$ up to $p - 1$ tokens at a boundary are prefilled again, and an answer's last token always is, because its k and v were never written.
+
+</details>
+
+<details class="i18n-zh">
+<summary>前缀的算术，一次讲清</summary>
+
+位置 $i$ 的 key 和 value 是 token $1..i$ 的函数，所以两个 request 恰好能共享最长公共前缀 $m$ 的缓存，其后一个 token 也不能共享。$r$ 个 request 共享 $s$ 个 token 的前缀，只需 $s$ 个 token 的缓存而非 $r \cdot s$；一个带 $L$ 个 token prompt 的新请求只需 prefill $L - m$ 个 token：
+
+$$
+\text{TTFT} \approx \max\!\left(t_{\text{mem}},\; (L - m)\,t_{\text{tok}}\right)
+$$
+
+在 $T$ 轮对话中，问题为 $q_t$、回答为 $a_t$，不用缓存时 prefill 总量为 $\sum_t (q_t + \sum_{u<t}(q_u + a_u))$，用了缓存则为 $\sum_t q_t$。SGLang 的 `RadixCache` 就是这棵树：引用计数钉住运行中 request 的页，淘汰在未引用节点上做 LRU，`--schedule-policy lpm` 按匹配长度排列等待列表。默认策略是 `fcfs`，lpm 在等待 request 超过 128 个时也退回 fcfs；新请求无论按哪种策略被接纳，都会做前缀匹配。匹配以整页为单位，所以页大小为 $p$ 时，边界处最多 $p - 1$ 个 token 会被重新 prefill；回答的最后一个 token 总是如此，因为它的 k 和 v 从未写入。
 
 </details>

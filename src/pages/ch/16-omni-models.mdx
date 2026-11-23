@@ -4,10 +4,12 @@ slug: 16-omni-models
 ---
 import OmniModels from '../../components/viz/OmniModels.svelte';
 import { neighbors } from '../../chapters';
+import { deepFor } from '../../deep';
+export const deep = await deepFor('16-omni-models');
 
-<OmniModels client:load {...neighbors('16-omni-models')} />
+<OmniModels client:load {...neighbors('16-omni-models')} deep={deep} />
 
-<details>
+<details class="i18n-en">
 <summary>The running example, and where its numbers come from</summary>
 
 **Qwen3-Omni.** Chapters 16 to 21 follow one model, [Qwen3-Omni](https://huggingface.co/Qwen/Qwen3-Omni-30B-A3B-Instruct), as [SGLang-Omni](https://github.com/sgl-project/sglang-omni) serves it. It reads text, images, audio and video, and answers in text or in speech.
@@ -16,7 +18,16 @@ import { neighbors } from '../../chapters';
 
 </details>
 
-<details>
+<details class="i18n-zh">
+<summary>贯穿的例子，以及数字从哪里来</summary>
+
+**Qwen3-Omni。** 第 16 到 21 章跟随同一个模型 [Qwen3-Omni](https://huggingface.co/Qwen/Qwen3-Omni-30B-A3B-Instruct)，按 [SGLang-Omni](https://github.com/sgl-project/sglang-omni) 服务它的方式来讲解。它读入文本、图像、音频和视频，用文本或语音作答。
+
+**一个采样。** 声音存成波形的高度，按固定速率读取。Qwen3-Omni 以每秒 16,000 个采样读入语音，以每秒 24,000 个写出，这正是 SGLang-Omni 服务器接收和返回的速率。
+
+</details>
+
+<details class="i18n-en">
 <summary>What the stage simplifies, and where each claim comes from</summary>
 
 **The codec.** Qwen3-Omni describes each 80 ms frame of sound with 16 codes of 2,048 values each, and its code-to-sound model writes 1,920 samples per frame (24,000 a second ÷ 12.5 frames). The talker picks code 0; a small code predictor picks codes 1 to 15 one after another. SGLang-Omni runs the code predictor inside the talker's own step, which is why a frame never makes the talker wait.
@@ -26,5 +37,18 @@ import { neighbors } from '../../chapters';
 **What the talker reads.** For each token the engine picks, SGLang-Omni sends the token id to the detokenizer and the token's embedding to the talker. The talker's prompt also carries the engine's view of the photo and the question, which step 3 leaves out. Once the engine's text runs out, the talker reads a pad token each step and carries on.
 
 **The talker's wait.** SGLang-Omni's talker scheduler (`talker_scheduler.py`) holds a decode batch until every request in it has its next input. Steps 5 and 6 draw when tokens arrive and when the engine is busy as an illustration, not a measurement: how often the talker waits depends on how busy the engine is.
+
+</details>
+
+<details class="i18n-zh">
+<summary>图上做了哪些简化，每条说法的出处</summary>
+
+**codec。** Qwen3-Omni 用 16 个 code 描述每 80 ms 的声音帧，每个 code 取 2,048 个值之一；它的 code 转声音模型每帧写出 1,920 个采样（每秒 24,000 ÷ 12.5 帧）。talker 选 code 0；一个小的 code predictor 依次选出 codes 1 到 15。SGLang-Omni 把 code predictor 放在 talker 自己的 step 里运行，所以一帧永远不会让 talker 等待。
+
+**code2wav 的 chunk。** SGLang-Omni 每次交给 code2wav 10 帧（其 Qwen3-Omni 配置里的 `codec_coalesce_frames=10`），每一趟还会重读最多 25 个更早的帧，让 chunk 之间的接缝保持平滑。Step 3 省略了重读。
+
+**talker 读什么。** engine 每选出一个 token，SGLang-Omni 就把 token id 发给 detokenizer，把该 token 的 embedding 发给 talker。talker 的 prompt 还带着 engine 看到的照片和问题，Step 3 省略了这部分。engine 的文本用完后，talker 每步读一个 pad token，继续运行。
+
+**talker 的等待。** SGLang-Omni 的 talker scheduler（`talker_scheduler.py`）会扣住一个 decode batch，直到其中每个 request 都拿到下一个输入。Steps 5 和 6 画出的 token 到达时间和 engine 忙碌时间是示意，不是实测：talker 多久等一次，取决于 engine 有多忙。
 
 </details>

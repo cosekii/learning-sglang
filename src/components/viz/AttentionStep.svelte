@@ -3,8 +3,11 @@
   import { cubicOut } from 'svelte/easing';
   import StepControls from '../StepControls.svelte';
   import type { NavLink } from '../../chapters';
-  import { LAYERS, HEADS, KV_HEADS } from '../../numbers';
-  let { prev, next }: { prev?: NavLink; next?: NavLink } = $props();
+  import { LAYERS, HEADS, KV_HEADS, HEAD_DIM, D_MODEL } from '../../numbers';
+  import { lang } from '../../i18n';
+  import type { Deep } from '../../deep';
+  let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
+  const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
 
   // ---- Data --------------------------------------------------------------------------------
   const tokens = ['The', ' capital', ' of', ' France', ' is', ' Paris'];
@@ -21,29 +24,30 @@
 
   // ---- Script: each step is a complete description of what is on screen ---------------------
   interface Step {
-    caption: string; n: number;
+    caption: string; captionZh: string; n: number;
     x?: boolean; rows?: boolean; rowsFor?: number; flyIn?: boolean;
     attend?: number; scores?: boolean; weights?: boolean; mix?: boolean;
     causal?: boolean; recompute?: boolean; unusedQ?: boolean; tally?: boolean;
     markNew?: boolean;        // highlight the latest token's column as "new"
   }
   const steps: Step[] = [
-    { n: 5, caption: `Same five tokens, one forward pass. This time we watch what one attention layer does with them.` },
-    { n: 5, x: true, caption: `Each token comes in as a vector. Call it x.` },
-    { n: 5, rows: true, caption: `Every token multiplies its own x by three learned matrices and gets a <b>query</b>, a <b>key</b> and a <b>value</b>. No other token is involved yet.` },
-    { n: 5, rows: true, attend: 4, scores: true, caption: `The last token's query gets dotted with every key. A big score means "this one matters to me".` },
-    { n: 5, rows: true, attend: 4, scores: true, weights: true, caption: `Softmax turns the scores into weights that add up to one.` },
-    { n: 5, rows: true, attend: 4, weights: true, mix: true, caption: `Its output is the values, blended by those weights. This is how "is" finds out it's sitting after "capital of France".` },
-    { n: 5, rows: true, causal: true, caption: `Every position does the same thing with its own query, over the keys up to itself. One pass, all five outputs at once.` },
+    { n: 5, caption: `Same five tokens, one forward pass. This time we watch what one attention layer does with them.`, captionZh: `还是这五个 token，一次前向传播。这次看一个 attention 层对它们做了什么。` },
+    { n: 5, x: true, caption: `Each token comes in as a vector. Call it x.`, captionZh: `每个 token 输入时都是一个向量，记作 x。` },
+    { n: 5, rows: true, caption: `Every token multiplies its own x by three learned matrices and gets a <b>query</b>, a <b>key</b> and a <b>value</b>. No other token is involved yet.`, captionZh: `每个 token 用自己的 x 乘三个学好的矩阵，得到一个 <b>query</b>、一个 <b>key</b> 和一个 <b>value</b>。暂时不涉及其他 token。` },
+    { n: 5, rows: true, attend: 4, scores: true, caption: `The last token's query gets dotted with every key. A big score means "this one matters to me".`, captionZh: `最后一个 token 的 query 与每个 key 做点积。分数大意味着"这个对我重要"。` },
+    { n: 5, rows: true, attend: 4, scores: true, weights: true, caption: `Softmax turns the scores into weights that add up to one.`, captionZh: `Softmax 把分数变成权重，加起来等于一。` },
+    { n: 5, rows: true, attend: 4, weights: true, mix: true, caption: `Its output is the values, blended by those weights. This is how "is" finds out it's sitting after "capital of France".`, captionZh: `它的输出就是这些 value 按权重混合的结果。"is" 就是这样知道自己跟在 "capital of France" 后面。` },
+    { n: 5, rows: true, causal: true, caption: `Every position does the same thing with its own query, over the keys up to itself. One pass, all five outputs at once.`, captionZh: `每个位置都用自己的 query 对截至自身的 key 做同样的事。一遍前向，五个输出同时得到。` },
     // Decode step: the layer runs again, and it really does start over. Same three steps as above, on six tokens.
-    { n: 6, flyIn: true, caption: `Decode step. "Paris" joins the sequence, and the layer runs again on all six. From the top.` },
-    { n: 6, x: true, caption: `Six tokens come in as six vectors.` },
-    { n: 6, rows: true, caption: `Every token multiplies its x by the same three matrices. All six of them, from scratch.` },
-    { n: 6, rows: true, recompute: true, markNew: true, caption: `Look at the five old columns. Same x, same matrices, same vectors as last time. Nothing changed, we just computed them again.` },
-    { n: 6, rows: true, markNew: true, attend: 5, weights: true, mix: true, caption: `Paris's query looks at all six keys and blends all six values. It needs every earlier key and value.` },
-    { n: 6, rows: true, markNew: true, unusedQ: true, caption: `The old queries? Their outputs only go on to rebuild the next layer's old x, and from it the same old k and v. Keep every layer's k and v, and nothing reads them.` },
-    { n: 6, rows: true, markNew: true, tally: true, caption: `So each decode step, the new token needs every earlier k and v, and nothing else from the past. We recomputed them all, identically, in every head of every layer. Why not just keep them?` },
+    { n: 6, flyIn: true, caption: `Decode step. "Paris" joins the sequence, and the layer runs again on all six. From the top.`, captionZh: `Decode 步。"Paris" 加入序列，这一层对全部六个 token 重新运行，从头开始。` },
+    { n: 6, x: true, caption: `Six tokens come in as six vectors.`, captionZh: `六个 token 以六个向量的形式输入。` },
+    { n: 6, rows: true, caption: `Every token multiplies its x by the same three matrices. All six of them, from scratch.`, captionZh: `每个 token 都用自己的 x 乘同样的三个矩阵。全部六个，从头算起。` },
+    { n: 6, rows: true, recompute: true, markNew: true, caption: `Look at the five old columns. Same x, same matrices, same vectors as last time. Nothing changed, we just computed them again.`, captionZh: `看那五个旧列。同样的 x、同样的矩阵、和上次一样的向量。什么都没变，只是又算了一遍。` },
+    { n: 6, rows: true, markNew: true, attend: 5, weights: true, mix: true, caption: `Paris's query looks at all six keys and blends all six values. It needs every earlier key and value.`, captionZh: `Paris 的 query 看全部六个 key，混合全部六个 value。它需要之前每一个 key 和 value。` },
+    { n: 6, rows: true, markNew: true, unusedQ: true, caption: `The old queries? Their outputs only go on to rebuild the next layer's old x, and from it the same old k and v. Keep every layer's k and v, and nothing reads them.`, captionZh: `旧的 query 呢？它们的输出只会重建下一层的旧 x，再由它算出同样的旧 k 和 v。只要留住每层的 k 和 v，就没人再读它们。` },
+    { n: 6, rows: true, markNew: true, tally: true, caption: `So each decode step, the new token needs every earlier k and v, and nothing else from the past. We recomputed them all, identically, in every head of every layer. Why not just keep them?`, captionZh: `所以每个 decode 步，新 token 只需要之前所有的 k 和 v，不需要过去的其他东西。我们却在每层每个 head 里把它们原样重算了一遍。为什么不直接留住它们？` },
   ];
+
 
   let step = $state(0);
   $effect(() => {
@@ -96,7 +100,7 @@
         </g>
       {/each}
       {#if cur.markNew}
-        <text x={cols[cur.n - 1].cx} y={ROW.x - 8} text-anchor="middle" class="tag new" in:fade>new</text>
+        <text x={cols[cur.n - 1].cx} y={ROW.x - 8} text-anchor="middle" class="tag new" in:fade>{t('new', '新')}</text>
       {/if}
 
       <!-- x / q / k / v rows -->
@@ -191,12 +195,12 @@
               {/if}
             {/each}
           {/each}
-          <text x={gx + PROMPT_N * G + 14} y={gy + (PROMPT_N - 1) * G + 15} class="tag" in:fade={{ delay: 900 }}>← the row we just watched</text>
+          <text x={gx + PROMPT_N * G + 14} y={gy + (PROMPT_N - 1) * G + 15} class="tag" in:fade={{ delay: 900 }}>{t('← the row we just watched', '← 刚才看的那一行')}</text>
         </g>
       {/if}
 
       {#if cur.recompute}
-        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote" in:fade>Llama also rotates q and k by each token's position (RoPE) · a token's position never changes, so its k is still identical</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote" in:fade>{t(`Llama also rotates q and k by each token's position (RoPE) · a token's position never changes, so its k is still identical`, `Llama 还会按每个 token 的位置旋转 q 和 k（RoPE）· token 的位置不变，所以它的 k 仍然相同`)}</text>
       {/if}
 
       <!-- Tally legend -->
@@ -205,20 +209,20 @@
         <g in:fade={{ duration: 300 }}>
           <rect x="16" y={ly - 10} width="14" height="14" rx="3" fill={COLOR.k[0]} stroke={COLOR.k[1]} />
           <rect x="34" y={ly - 10} width="14" height="14" rx="3" fill={COLOR.v[0]} stroke={COLOR.v[1]} />
-          <text x="58" y={ly + 1} class="legend"><tspan class="strong">needed</tspan> by every future token: k and v of every earlier position. Recomputed this step, identical.</text>
+          <text x="58" y={ly + 1} class="legend"><tspan class="strong">{t('needed', '需要')}</tspan> {t('by every future token: k and v of every earlier position. Recomputed this step, identical.', '每个未来 token 都要用：之前每个位置的 k 和 v。这一步重算了一遍，完全相同。')}</text>
           <rect x="16" y={ly + 20} width="14" height="14" rx="3" fill={COLOR.q[0]} stroke={COLOR.q[1]} opacity="0.5" />
           <line x1="18" y1={ly + 32} x2="28" y2={ly + 22} stroke={COLOR.q[1]} stroke-width="1.5" />
-          <text x="58" y={ly + 31} class="legend"><tspan class="strong">not needed</tspan>: the old queries. Each one was used once, on its own step.</text>
+          <text x="58" y={ly + 31} class="legend"><tspan class="strong">{t('not needed', '不需要')}</tspan>{t(': the old queries. Each one was used once, on its own step.', '：旧的 query。每个只在自己的那一步用过一次。')}</text>
           <rect x="16" y={ly + 50} width="14" height="14" rx="3" fill="white" stroke="var(--gen)" stroke-width="2" />
-          <text x="58" y={ly + 61} class="legend"><tspan class="strong">new</tspan>: q, k, v for the token that just arrived.</text>
-          <text x="16" y={ly + 100} class="legend" in:fade={{ delay: 700 }}>per head, per layer: {PROMPT_N * 2} known vectors recomputed · Llama-3-8B has {KV_HEADS} k, v heads × {LAYERS} layers: {KV_HEADS * LAYERS} times a step</text>
-          <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">a head is one set of the three matrices, drawn here once · Llama-3-8B's {HEADS} query heads share {KV_HEADS} sets of k, v, {HEADS / KV_HEADS} each (chapter 14)</text>
+          <text x="58" y={ly + 61} class="legend"><tspan class="strong">{t('new', '新')}</tspan>{t(': q, k, v for the token that just arrived.', '：刚到的那个 token 的 q、k、v。')}</text>
+          <text x="16" y={ly + 100} class="legend" in:fade={{ delay: 700 }}>{t(`per head, per layer: ${PROMPT_N * 2} known vectors recomputed · Llama-3-8B has ${KV_HEADS} k, v heads × ${LAYERS} layers: ${KV_HEADS * LAYERS} times a step`, `每个 head、每层：重算 ${PROMPT_N * 2} 个已知向量 · Llama-3-8B 有 ${KV_HEADS} 个 k, v head × ${LAYERS} 层：每步 ${KV_HEADS * LAYERS} 次`)}</text>
+          <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(`a head is one set of the three matrices, drawn here once · Llama-3-8B's ${HEADS} query heads share ${KV_HEADS} sets of k, v, ${HEADS / KV_HEADS} each (chapter 14)`, `一个 head 就是这三个矩阵的一组，这里只画一次 · Llama-3-8B 的 ${HEADS} 个 query head 共享 ${KV_HEADS} 组 k, v，每组 ${HEADS / KV_HEADS} 个（第 14 章）`)}</text>
         </g>
       {/if}
     </svg>
   </div>
 
-  <StepControls {step} total={steps.length} caption={cur.caption} {prev} {next} onchange={(s) => (step = s)} />
+  <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh} deep={deep?.en[step]} deepZh={deep?.zh[step]} {prev} {next} onchange={(s) => (step = s)} />
 </figure>
 
 <style>

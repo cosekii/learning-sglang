@@ -4,7 +4,10 @@
   import StepControls from '../StepControls.svelte';
   import type { NavLink } from '../../chapters';
   import { KB_PER_TOKEN, LAYERS, KV_HEADS, HEAD_DIM, BYTES } from '../../numbers';
-  let { prev, next }: { prev?: NavLink; next?: NavLink } = $props();
+  import { lang } from '../../i18n';
+  import type { Deep } from '../../deep';
+  let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
+  const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
 
   // ---- Data --------------------------------------------------------------------------------
   const tokens = ['The', ' capital', ' of', ' France', ' is', ' Paris', '.'];
@@ -21,22 +24,22 @@
 
   // ---- Script -------------------------------------------------------------------------------
   interface Step {
-    caption: string; n: number; cached: number;
+    caption: string; captionZh: string; n: number; cached: number;
     compute?: number[]; flyIn?: boolean; store?: boolean; dropQ?: boolean;
     attend?: number; whyNotQ?: boolean; cost?: boolean; contrast?: boolean;
   }
   const all5 = [0, 1, 2, 3, 4];
   const steps: Step[] = [
-    { n: 5, cached: 0, caption: `Same sequence, same layer. This time we keep what we compute.` },
-    { n: 5, cached: 0, compute: all5, caption: `First step: all five tokens at once. Each gets its q, k and v, exactly as before.` },
-    { n: 5, cached: 5, compute: all5, store: true, dropQ: true, caption: `Attention runs as before. Then, instead of throwing k and v away, we file them. Five slots. The queries were used, so they go.` },
-    { n: 6, cached: 5, compute: [5], flyIn: true, caption: `Decode step. Paris arrives. Only Paris gets an x, a q, a k and a v. One column of work, not six.` },
-    { n: 6, cached: 6, compute: [5], store: true, caption: `Its k and v go into the cache. Slot six.` },
-    { n: 6, cached: 6, compute: [5], attend: 5, caption: `Its query reads every key in the cache and blends every value in the cache. Same result as recomputing, because the cache holds exactly what recomputing would have produced.` },
-    { n: 7, cached: 7, compute: [6], flyIn: true, store: true, attend: 6, caption: `Next token, same routine. One column of compute, one more slot, one read of the whole cache.` },
-    { n: 7, cached: 7, compute: [6], whyNotQ: true, caption: `Why not keep q too? Nobody asks for it later. A query is used on the step it's made, and its output is consumed right there.` },
-    { n: 7, cached: 7, compute: [6], cost: true, caption: `The cache isn't free. Every token keeps a k and a v in each of Llama-3-8B's ${KV_HEADS}&nbsp;k,&nbsp;v&nbsp;heads (Ch. 2 Step 14), in every layer. That's ${KB_PER_TOKEN} KB per token, per sequence.` },
-    { n: 7, cached: 7, compute: [6], cost: true, contrast: true, caption: `Look at the two kinds of step. The first crunched five tokens and wrote five slots. Every step since computes one token and reads the whole cache. Two very different jobs.` },
+    { n: 5, cached: 0, caption: `Same sequence, same layer. This time we keep what we compute.`, captionZh: `同一个序列，同一层。这一次，我们把算出来的东西留下来。` },
+    { n: 5, cached: 0, compute: all5, caption: `First step: all five tokens at once. Each gets its q, k and v, exactly as before.`, captionZh: `第一步：五个 token 一起算。每个都得到自己的 q、k、v，和之前完全一样。` },
+    { n: 5, cached: 5, compute: all5, store: true, dropQ: true, caption: `Attention runs as before. Then, instead of throwing k and v away, we file them. Five slots. The queries were used, so they go.`, captionZh: `Attention 照常运行。然后我们不再把 k 和 v 扔掉，而是把它们存起来。五个槽位。query 已经用过了，所以丢掉。` },
+    { n: 6, cached: 5, compute: [5], flyIn: true, caption: `Decode step. Paris arrives. Only Paris gets an x, a q, a k and a v. One column of work, not six.`, captionZh: `Decode 步。Paris 到了。只有 Paris 得到 x、q、k、v。一列的工作量，不是六列。` },
+    { n: 6, cached: 6, compute: [5], store: true, caption: `Its k and v go into the cache. Slot six.`, captionZh: `它的 k 和 v 进入 cache。第六个槽位。` },
+    { n: 6, cached: 6, compute: [5], attend: 5, caption: `Its query reads every key in the cache and blends every value in the cache. Same result as recomputing, because the cache holds exactly what recomputing would have produced.`, captionZh: `它的 query 读取 cache 里的每个 key，混合每个 value。结果和重算一样，因为 cache 存的正是重算会产生的东西。` },
+    { n: 7, cached: 7, compute: [6], flyIn: true, store: true, attend: 6, caption: `Next token, same routine. One column of compute, one more slot, one read of the whole cache.`, captionZh: `下一个 token，同样的流程。一列计算，多一个槽位，读一遍整个 cache。` },
+    { n: 7, cached: 7, compute: [6], whyNotQ: true, caption: `Why not keep q too? Nobody asks for it later. A query is used on the step it's made, and its output is consumed right there.`, captionZh: `为什么不把 q 也留下来？之后没人再要它。query 只在生成它的那一步被使用，输出当场就被消耗掉。` },
+    { n: 7, cached: 7, compute: [6], cost: true, caption: `The cache isn't free. Every token keeps a k and a v in each of Llama-3-8B's ${KV_HEADS}&nbsp;k,&nbsp;v&nbsp;heads (Ch. 2 Step 14), in every layer. That's ${KB_PER_TOKEN} KB per token, per sequence.`, captionZh: `cache 不是免费的。每个 token 在 Llama-3-8B 每一层的 ${KV_HEADS} 个 k、v head 里各存一个 k 和 v（Ch. 2 Step 14）。也就是每个 token、每个序列 ${KB_PER_TOKEN} KB。` },
+    { n: 7, cached: 7, compute: [6], cost: true, contrast: true, caption: `Look at the two kinds of step. The first crunched five tokens and wrote five slots. Every step since computes one token and reads the whole cache. Two very different jobs.`, captionZh: `看这两种步。第一步算了五个 token、写了五个槽位。之后每一步只算一个 token，却要读整个 cache。两种很不一样的工作。` },
   ];
 
   let step = $state(0);
@@ -83,9 +86,9 @@
         {@const c = allCols[PROMPT_N].x} {@const d = allCols[cur.n - 1].x + allCols[cur.n - 1].w}
         <g in:fade>
           <path d="M {a} 26 V 20 H {b} V 26" fill="none" stroke="var(--accent)" stroke-width="1.5" />
-          <text x={(a + b) / 2} y="14" text-anchor="middle" class="tag strong">first step · five tokens, one pass, writes the cache</text>
+          <text x={(a + b) / 2} y="14" text-anchor="middle" class="tag strong">{t('first step · five tokens, one pass, writes the cache', '第一步 · 五个 token，一遍算完，写入 cache')}</text>
           <path d="M {c} 26 V 20 H {d} V 26" fill="none" stroke="var(--gen)" stroke-width="1.5" />
-          <text x={c} y="14" class="tag strong gen">every step after · one token, reads the whole cache</text>
+          <text x={c} y="14" class="tag strong gen">{t('every step after · one token, reads the whole cache', '之后每步 · 一个 token，读取整个 cache')}</text>
         </g>
       {/if}
 
@@ -101,7 +104,7 @@
       <!-- This step: x / q / k / v for the columns actually computed -->
       {#if cur.compute}
         <g transition:fade={{ duration: 200 }}>
-          <text x="16" y={ROW.x - 10} class="tag">computed this step</text>
+          <text x="16" y={ROW.x - 10} class="tag">{t('computed this step', '本步计算')}</text>
           {#each (['x', 'q', 'k', 'v'] as Row[]) as r, ri}
             <text x="16" y={ROW[r] + 14} class="rowlabel">{r}</text>
             {#each cols as c, i (i)}
@@ -121,7 +124,7 @@
       {/if}
 
       <!-- The cache -->
-      <text x="16" y={CACHE.y - 8} class="rowlabel">KV cache <tspan class="eq">· one layer, one head</tspan></text>
+      <text x="16" y={CACHE.y - 8} class="rowlabel">KV cache <tspan class="eq">{t('· one layer, one head', '· 一层、一个 head')}</tspan></text>
       <rect x="10" y={CACHE.y} width={W - 20} height={CACHE.h} rx="10" fill="#fbfaf7" stroke="var(--line)" stroke-dasharray="5 4" />
       <text x="24" y={CK + 14} class="rowlabel">k</text>
       <text x="24" y={CV + 14} class="rowlabel">v</text>
@@ -156,7 +159,7 @@
           {/each}
           <rect x={outX - 20} y={CV} width="40" height={CH} rx="4" fill="white" stroke={COLOR.v[1]} stroke-width="2" />
           <text x={outX} y={CV + 14} text-anchor="middle" class="cell">out{sub(cur.attend + 1)}</text>
-          <text x={outX} y={CK + 14} text-anchor="middle" class="tag">q{sub(cur.attend + 1)} reads all {cur.cached}</text>
+          <text x={outX} y={CK + 14} text-anchor="middle" class="tag">{t(`q${sub(cur.attend + 1)} reads all ${cur.cached}`, `q${sub(cur.attend + 1)} 读取全部 ${cur.cached} 个`)}</text>
         </g>
       {/if}
 
@@ -171,7 +174,7 @@
               <line x1={c.cx - CW / 2 + 3} y1={CQ + CH - 3} x2={c.cx + CW / 2 - 3} y2={CQ + 3} stroke={COLOR.q[1]} stroke-width="1.5" />
             </g>
           {/each}
-          <text x={outX - 20} y={CQ + 14} class="tag" in:fade={{ delay: 400 }}>used once, never read again</text>
+          <text x={outX - 20} y={CQ + 14} class="tag" in:fade={{ delay: 400 }}>{t('used once, never read again', '只用一次，不再读取')}</text>
         </g>
       {/if}
 
@@ -180,17 +183,17 @@
         <g in:fade>
           <text x="18" y={CACHE.y + CACHE.h + 24} class="pt">·</text><text x="28" y={CACHE.y + CACHE.h + 24} class="legend">
             <tspan class="strong">{cur.cached} tokens × {KB_PER_TOKEN} KB</tspan> = {cacheKB.toLocaleString()} KB
-            <tspan class="muted">   ({LAYERS} layers · {KV_HEADS} k, v heads · {HEAD_DIM} dims · k and v · {BYTES} bytes)</tspan>
+            <tspan class="muted">{t(`   (${LAYERS} layers · ${KV_HEADS} k, v heads · ${HEAD_DIM} dims · k and v · ${BYTES} bytes)`, `   （${LAYERS} 层 · ${KV_HEADS} 个 k、v head · ${HEAD_DIM} 维 · k 和 v · ${BYTES} 字节）`)}</tspan>
           </text>
           <text x="18" y={CACHE.y + CACHE.h + 44} class="pt">·</text><text x="28" y={CACHE.y + CACHE.h + 44} class="legend" in:fade={{ delay: 500 }}>
-            at 8k tokens: <tspan class="strong">{((8192 * KB_PER_TOKEN) / 1024 / 1024).toFixed(0)} GB</tspan>, for one sequence. Keep that number in mind.
+            {t('at 8k tokens: ', '8k token 时：')}<tspan class="strong">{((8192 * KB_PER_TOKEN) / 1024 / 1024).toFixed(0)} GB</tspan>{t(', for one sequence. Keep that number in mind.', '，一个序列。记住这个数。')}
           </text>
         </g>
       {/if}
     </svg>
   </div>
 
-  <StepControls {step} total={steps.length} caption={cur.caption} {prev} {next} onchange={(s) => (step = s)} />
+  <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh} deep={deep?.en[step]} deepZh={deep?.zh[step]} {prev} {next} onchange={(s) => (step = s)} />
 </figure>
 
 <style>

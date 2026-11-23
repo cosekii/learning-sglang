@@ -4,10 +4,12 @@ slug: 02-attention
 ---
 import AttentionStep from '../../components/viz/AttentionStep.svelte';
 import { neighbors } from '../../chapters';
+import { deepFor } from '../../deep';
+export const deep = await deepFor('02-attention');
 
-<AttentionStep client:load {...neighbors('02-attention')} />
+<AttentionStep client:load {...neighbors('02-attention')} deep={deep} />
 
-<details>
+<details class="i18n-en">
 <summary>The math, once</summary>
 
 For one head, with $Q = XW_Q$, $K = XW_K$, $V = XW_V$:
@@ -17,5 +19,18 @@ $$
 $$
 
 $M$ is the causal mask from step 7: $M_{ij} = -\infty$ for $j > i$ and $0$ otherwise, so softmax gives a later key zero weight. Row $i$ of the result only uses row $i$ of $Q$, but every row $\le i$ of $K$ and $V$. That asymmetry is the whole next chapter.
+
+</details>
+
+<details class="i18n-zh">
+<summary>数学，只讲一次</summary>
+
+对一个 head，设 $Q = XW_Q$、$K = XW_K$、$V = XW_V$：
+
+$$
+\mathrm{Attention}(Q, K, V) = \mathrm{softmax}\!\left(\frac{QK^{\top}}{\sqrt{d_k}} + M\right)V
+$$
+
+$M$ 是第 7 步里的因果掩码：当 $j > i$ 时 $M_{ij} = -\infty$，否则为 $0$，于是 softmax 给后面的 key 的权重为零。结果的第 $i$ 行只用到 $Q$ 的第 $i$ 行，但要用到 $K$ 和 $V$ 中所有 $\le i$ 的行。这种不对称就是下一章的全部内容。
 
 </details>

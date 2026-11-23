@@ -4,10 +4,12 @@ slug: 04-prefill-decode
 ---
 import PrefillDecode from '../../components/viz/PrefillDecode.svelte';
 import { neighbors } from '../../chapters';
+import { deepFor } from '../../deep';
+export const deep = await deepFor('04-prefill-decode');
 
-<PrefillDecode client:load {...neighbors('04-prefill-decode')} />
+<PrefillDecode client:load {...neighbors('04-prefill-decode')} deep={deep} />
 
-<details>
+<details class="i18n-en">
 <summary>The arithmetic, once</summary>
 
 A step with $n$ tokens needs roughly $2Pn$ FLOPs for a model with $P$ parameters, and has to read the weights ($2P$ bytes in bf16) plus the cache no matter what $n$ is:
@@ -19,5 +21,20 @@ $$
 They cross at $n^* = \dfrac{\text{FLOP/s}}{\text{bytes/s}}$, the accelerator's ratio of compute to bandwidth. For an H100 SXM that's about $989 \cdot 10^{12} / 3.35 \cdot 10^{12} \approx 300$ tokens per step. Decode runs at $n = 1$ per sequence.
 
 Both are round numbers. The 1 GB input embedding table is only looked up, so a step streams about 15 GB of weights, and SGLang runs the output layer only at a prompt's last position, so a 2,000-token prefill is closer to 29 TFLOP than 32. The two shrink together, so the balance point barely moves. The rates are the datasheet's peaks; real kernels reach less of both.
+
+</details>
+
+<details class="i18n-zh">
+<summary>把账算一次</summary>
+
+对参数量为 $P$ 的模型，处理 $n$ 个 token 的一步大约需要 $2Pn$ FLOP 的计算；而且无论 $n$ 是多少，都必须读出权重（bf16 下为 $2P$ 字节）加上 cache：
+
+$$
+t_{\text{compute}} = \frac{2Pn}{\text{FLOP/s}}, \qquad t_{\text{memory}} = \frac{2P + \text{cache}}{\text{bytes/s}}
+$$
+
+两者相交于 $n^* = \dfrac{\text{FLOP/s}}{\text{bytes/s}}$，即加速器算力与带宽之比。对 H100 SXM，约为 $989 \cdot 10^{12} / 3.35 \cdot 10^{12} \approx 300$ 个 token 每步。Decode 按每个序列 $n = 1$ 运行。
+
+这两个数都是约数。1 GB 的输入 embedding 表只做查表，所以一步实际流式读取约 15 GB 权重；SGLang 又只在 prompt 的最后一个位置运行输出层，所以 2,000-token 的 prefill 更接近 29 TFLOP 而不是 32。两者一起缩小，平衡点几乎不动。这些速率是数据手册的峰值；真实 kernel 两者都达不到。
 
 </details>

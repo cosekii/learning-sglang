@@ -118,7 +118,7 @@ const EXTRACT = `(() => {
 
 const prose = (slug) => {
   const mdx = readFileSync(`src/pages/ch/${slug}.mdx`, 'utf8');
-  const m = mdx.match(/<details>\s*<summary>([\s\S]*?)<\/summary>([\s\S]*?)<\/details>/);
+  const m = mdx.match(/<details[^>]*>\s*<summary>([\s\S]*?)<\/summary>([\s\S]*?)<\/details>/);
   return m ? { summary: m[1].trim(), body: m[2].trim() } : null;
 };
 

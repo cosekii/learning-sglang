@@ -1,5 +1,7 @@
 <script lang="ts">
   // Option A · the loop: forward, pick, append, round and round, the sentence growing above it
+  import { lang, syncLang } from '../../i18n';
+  $effect(() => { syncLang(); });
   const PROMPT = ['The', 'capital', 'of', 'France', 'is'];
   const OUT = ['Paris', '.', 'It', 'is', 'known'];
   const STAGES = ['forward', 'pick', 'append'];
@@ -34,7 +36,7 @@
   <text x="260" y="34" text-anchor="middle" class="sent">
     {#each words as w, i}<tspan class:new={i >= PROMPT.length}>{(i ? ' ' : '') + w}</tspan>{/each}<tspan class="cursor">▍</tspan>
   </text>
-  <text x="260" y="56" text-anchor="middle" class="note">the prompt, then one token per turn of the loop</text>
+  <text x="260" y="56" text-anchor="middle" class="note">{$lang === 'zh' ? '先是 prompt，循环每转一圈加一个 token' : 'the prompt, then one token per turn of the loop'}</text>
 
   <!-- the ring: three arcs, each with its arrow; the one being travelled lights up -->
   {#each STAGES as _, i}
@@ -49,7 +51,7 @@
     <circle cx={x} cy={y} r="34" fill={st === i ? 'var(--accent)' : 'white'} stroke="var(--accent)" stroke-width="1.5" style="transition: fill 250ms;" />
     <text {x} y={y + 4} text-anchor="middle" class="stop" style:fill={st === i ? 'white' : 'var(--fg)'}>{s}</text>
   {/each}
-  <text x={CX} y={CY + 4} text-anchor="middle" class="note">until EOS</text>
+  <text x={CX} y={CY + 4} text-anchor="middle" class="note">{$lang === 'zh' ? '直到 EOS' : 'until EOS'}</text>
 </svg>
 
 <style>

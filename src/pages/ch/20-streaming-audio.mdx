@@ -5,9 +5,12 @@ slug: 20-streaming-audio
 import StreamingAudio from '../../components/viz/StreamingAudio.svelte';
 import { neighbors } from '../../chapters';
 
-<StreamingAudio client:load {...neighbors('20-streaming-audio')} />
+import { deepFor } from '../../deep';
+export const deep = await deepFor('20-streaming-audio');
 
-<details>
+<StreamingAudio client:load {...neighbors('20-streaming-audio')} deep={deep} />
+
+<details class="i18n-en">
 <summary>Where this chapter's claims come from</summary>
 
 **Gaps.** SGLang-Omni's benchmark (`benchmarks/metrics/playback_continuity.py`) replays each streamed request as a player would: each chunk plays from when it arrives or when the last one ends, whichever is later, and the request is scored by its longest underrun, the time the player had nothing to play. It reports how many requests keep that under 50, 100 and 200 ms. Step 1's arrival times are illustrative.
@@ -23,5 +26,24 @@ import { neighbors } from '../../chapters';
 **Chunk size.** With chunks of N frames, the first sound waits for N frames, and once 25 earlier frames exist each window decodes 25 + N frames to send N. SGLang-Omni's default is 10 (`stream_chunk_size=10`); PR #2800, still open, proposes a 4-frame first window (`initial_codec_chunk_frames=4`) followed by windows of 10. On one H200 running every stage, with 16 SeedTTS requests at once, that change alone moved first-sound p95 from 0.61 s to 0.48 s and requests per second from 12.79 to 12.64.
 
 **Not covered.** code2wav records a CUDA graph for each window size it will see (10, 20, 30 and 35 frames), and the talker sends its first 10 frames one at a time and later ones in groups of 10 so that every window lands on one of them; PR #1101 measured the graphs at 9–12% more requests per second on an H200. code2wav can also batch windows from several requests into one call, and it copies each chunk's sound to the CPU while the next window runs.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章的说法从何而来</summary>
+
+**空档。**SGLang-Omni 的基准测试（`benchmarks/metrics/playback_continuity.py`）像播放器一样重放每个流式 request：每个 chunk 从它到达时或上一个结束时开始播放，取较晚者；request 按其最长的空档计分，即播放器无内容可播的时间。它报告有多少 request 把该值控制在 50、100 和 200 ms 以内。第 1 步的到达时间仅为示意。
+
+**非流式。**第 2 步的解码器是最简单的一种，画出来作对比。SGLang-Omni 本身无论如何都逐窗口解码；当 request 要求一次性拿到全部声音时，code2wav 保留每个窗口的声音，最后一次性送出。250 帧是第 16 章的 20 s 回答，每帧 80 ms。第 2 步和第 3 步把 talker 画成每 40 ms 一帧，是实际速度的两倍，每次 code2wav 调用画成 40 ms；两者都仅为示意。
+
+**code2wav 的 stage 内部。**code2wav 的 scheduler 是 `Code2WavScheduler`，构建在 `StreamingVocoderBase` 之上，属于 Ch. 17 Steps 7 and 11 的流式 scheduler。它为每个 request 保留一份状态（`Code2WavStreamState`）：到目前为止收到的帧（`chunks`）和已变成声音的数量（`emitted`）。每次有帧到达，它检查是否攒够了 10 个新帧（`should_decode`）；若是，就解码一个窗口，把新声音作为流消息放进 outbox，由 coordinator 合并进响应（Ch. 18 Step 10），再由服务器以事件形式发出（Ch. 9 Step 9）。talker 的流结束时，`on_stream_done` 解码剩余部分，即使不足 10 帧，送出最后一段和最终结果，并清空状态；被中止的 request 其状态被丢弃，迟到的帧被忽略。第 4 步的 request 有 34 帧，其到达时间仅为示意。
+
+**节奏。**一帧是 80 ms 的声音（每秒 24,000 个采样中的 1,920 个）和 16 个 code，一个来自 talker，15 个来自 code predictor，每一个都是等前一个完成的一步（Ch. 16 Step 3），所以跟上节奏意味着 80 ms 内完成一帧，整个 batch 每步约 5 ms。38% 是 SGLang-Omni 语音合成测试中的平均 real-time factor：一张 H100 上同时 16 个 request，取五次校准运行中最差的一次；它按整个 request 测量，所以显示的是平均节奏，并不能说明没有 chunk 迟到过。
+
+**拼接 chunk。**code2wav 是八层 transformer，每层回看最多 72 帧，后面接卷积把每帧变成 1,920 个采样，所以其输出的每一刻都依赖更早的帧。每次调用对整个窗口跑一遍完整模型，不为下一次保留任何东西——不像 thinker，其 KV cache 把 request 的过去从一步带到下一步。所以每个窗口把最多 25 个更早的帧（`left_context_size=25`）和新帧一起解码，只保留最后 10 × 1,920 个采样（`code2wav_scheduler.py`，`decode_delta`）。第 5 步的波形仅为示意而画。
+
+**chunk 大小。**chunk 为 N 帧时，第一段声音要等 N 帧；一旦存在 25 个更早的帧，每个窗口解码 25 + N 帧只送出 N 帧。SGLang-Omni 默认是 10（`stream_chunk_size=10`）；仍未合并的 PR #2800 提议首窗口 4 帧（`initial_codec_chunk_frames=4`），之后窗口为 10 帧。在一张运行所有 stage 的 H200 上，同时跑 16 个 SeedTTS request，仅这一改动就把首声 p95 从 0.61 s 降到 0.48 s，每秒 request 数从 12.79 变为 12.64。
+
+**未覆盖的内容。**code2wav 为它将遇到的每种窗口大小（10、20、30 和 35 帧）录制一个 CUDA graph，talker 先逐个送出前 10 帧，之后按 10 帧一组送出，使每个窗口都落在其中之一上；PR #1101 测得这些 graph 在 H200 上让每秒 request 数提高 9–12%。code2wav 还能把多个 request 的窗口合并成一次调用（batch），并在下一个窗口运行时把每个 chunk 的声音拷贝到 CPU。
 
 </details>

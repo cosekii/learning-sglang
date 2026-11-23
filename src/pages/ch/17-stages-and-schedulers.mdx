@@ -4,10 +4,12 @@ slug: 17-stages-and-schedulers
 ---
 import StagesSchedulers from '../../components/viz/StagesSchedulers.svelte';
 import { neighbors } from '../../chapters';
+import { deepFor } from '../../deep';
+export const deep = await deepFor('17-stages-and-schedulers');
 
-<StagesSchedulers client:load {...neighbors('17-stages-and-schedulers')} />
+<StagesSchedulers client:load {...neighbors('17-stages-and-schedulers')} deep={deep} />
 
-<details>
+<details class="i18n-en">
 <summary>Where this chapter's claims come from</summary>
 
 **SGLang-Omni.** The stages, their schedulers and their defaults are read from [SGLang-Omni](https://github.com/sgl-project/sglang-omni)'s Qwen3-Omni pipeline and its design notes (`docs/design/refactor_rfc.md`).
@@ -19,5 +21,20 @@ import { neighbors } from '../../chapters';
 **What the talker switches off.** Its configuration turns off overlap scheduling, the radix cache and chunked prefill. The reasons on the stage for the first two are this book's reading of the code: each talker step's input is the frame the step before wrote, and its prompt arrives as vectors rather than token ids. SGLang-Omni's code does not say why chunked prefill is off, so the stage only notes that it is.
 
 **The detokenizer's example.** How Qwen3-Omni's tokenizer splits a particular emoji into tokens is not shown here; the stage only uses one to show a character arriving in two pieces.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的出处</summary>
+
+**SGLang-Omni。** 各 stage、它们的 scheduler 及默认值，读自 [SGLang-Omni](https://github.com/sgl-project/sglang-omni) 的 Qwen3-Omni pipeline 及其设计说明（`docs/design/refactor_rfc.md`）。
+
+**code predictor 的 cache。** code predictor 像任何 decoder 一样保留 cache，但很短：talker 的 hidden state、code 0 和它选出的 code，共 16 个位置，每帧从头开始。里面没有 stage 的 scheduler 需要在步与步之间保留的东西，这是它放在 talker 步内的第二个原因。
+
+**各 scheduler 的名字。** 一次 pass 用 `SimpleScheduler`；它把已在等待的组成 batch（每个 encoder 最多 32 个 request），默认不再等更多。循环用 `OmniScheduler`，它在自己的状态上调用 SGLang 自己的 `Scheduler` 方法，只重写涉及 inbox 或 model runner 的部分；talker 的 `QwenTalkerScheduler` 在此之上加 ready 检查。streaming 在 decode 用 `StreamingDetokenizeScheduler`，在 code2wav 用 `Code2WavScheduler`，各为自己的 stage 而写。
+
+**talker 关掉了什么。** 它的配置关掉 overlap scheduling、radix cache 和 chunked prefill。舞台上给出前两项的理由，是本书对代码的解读：每个 talker 步的输入是上一步写出的帧，而它的 prompt 以向量而非 token id 到达。SGLang-Omni 的代码没说为什么关掉 chunked prefill，所以舞台只注明它被关掉了。
+
+**detokenizer 的例子。** Qwen3-Omni 的 tokenizer 如何把某个特定 emoji 切成 token，这里没有展示；舞台只是用一个来说明一个字符分两片到达。
 
 </details>
