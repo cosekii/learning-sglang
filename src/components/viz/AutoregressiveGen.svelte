@@ -68,12 +68,12 @@
       steps.push({
         phase: round.pick.kind === 'eos' ? 'done' : 'append', seq, round,
         caption: round.pick.kind === 'eos'
-          ? `<b>Stop.</b> Decode the ids back to text. That's inference: tokenize, then forward, pick, append, until EOS.`
+          ? `<b>Stop.</b> Decode ids to text; inference tokenizes once, then repeats forward, pick, and append until EOS.`
           : i === 0
             ? `<b>Append it.</b> The output becomes part of the input, which is all "autoregressive" means.`
             : `Append.`,
         captionZh: round.pick.kind === 'eos'
-          ? `<b>停止。</b>把 id 解码回文本。这就是推理：分词，然后前向、选择、追加，直到 EOS。`
+          ? `<b>停止。</b>把 id 解码回文本；推理先分词，再循环前向、选择、追加，直到 EOS。`
           : i === 0
             ? `<b>追加：</b>把 ␣Paris 接到末尾，下一轮读全部 ${seq.length} 段。边猜边接，直到「结束」，就叫「自回归」。`
             : `把句号接到末尾，${seq.length - 1} 段变 ${seq.length} 段。下一轮仍读全部 ${seq.length} 段。`,
