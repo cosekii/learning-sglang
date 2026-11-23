@@ -46,7 +46,9 @@
           : `Forward pass again, on all ${n}. The first ${prompt.length} get computed from scratch, same as before.`,
         captionZh: i === 0
           ? `<b>前向传播。</b>${n} 个 id 全部输入，输出词表中每个 token 的分数。这是对下一个 token 的一次猜测。`
-          : `再做一次前向，仍是全部 ${n} 个。前 ${prompt.length} 个从头算起，和上次一模一样。`,
+          : i === 1
+            ? `模型没存上次的计算结果，${n} 段只能全部重算。前 ${prompt.length} 段输入没变，算出的结果也不变。`
+            : `再做一次前向，仍是全部 ${n} 个。前 ${prompt.length} 个从头算起，和上次一模一样。`,
       });
       steps.push({
         phase: 'sample', seq, round,
@@ -152,6 +154,13 @@
       {/if}
       {#if step === 4 && $lang === 'zh'}
         <text x="16" y={seqY + tokH + 40} class="note" in:fade>下一轮：上面 {cur.seq.length} 段一起进入模型，再猜一段，直到「结束」</text>
+      {/if}
+      {#if step === 5 && $lang === 'zh'}
+        <text x="18" y={seqY + tokH + 40} class="pt">·</text>
+        <text x="28" y={seqY + tokH + 40} class="note" in:fade>蓝色前 {prompt.length} 段：输入没变，结果相同</text>
+        <text x="18" y={seqY + tokH + 62} class="pt">·</text>
+        <text x="28" y={seqY + tokH + 62} class="note" in:fade>橙色 Paris：新接的 1 段</text>
+        <text x="16" y={modelY + modelH + 26} class="note" in:fade>模型没存上次结果 → {cur.seq.length} 段全部重算</text>
       {/if}
 
       <!-- Model box with wires in and out -->
