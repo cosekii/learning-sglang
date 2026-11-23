@@ -264,6 +264,10 @@
         <text x="16" y={modelY + modelH + 26} class="note" in:fade>最简示例没存上次结果 → 前 {prompt.length} 段只能重算</text>
       {/if}
       {#if step === 6 && $lang === 'zh'}
+        <rect x="460" y="12" width="10" height="10" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="476" y="21" class="note">原输入 5 段</text>
+        <rect x="580" y="12" width="10" height="10" rx="2" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x="596" y="21" class="note">模型选出的 token</text>
         <text x="16" y={seqY + tokH + 40} class="note" in:fade>第 2 轮：只画新结果里可能性最大的 4 段</text>
       {/if}
       {#if step === 7 && $lang === 'zh'}
