@@ -143,7 +143,7 @@
       {#each layout as { t, x, w }, i (i)}
         <g in:fly={enter(i)}>
           <rect {x} y={seqY} width={w} height={tokH} rx="6" fill={fill(t.kind)} stroke={stroke(t.kind)} stroke-width="1.5"
-                class:pulse={cur.phase === 'forward' && !((step === 5 || step === 8) && $lang === 'zh')} style="animation-delay: {i * 60}ms" />
+                class:pulse={cur.phase === 'forward' && !((step === 2 || step === 5 || step === 8) && $lang === 'zh')} style="animation-delay: {i * 60}ms" />
           <text x={x + w / 2} y={seqY + 19} text-anchor="middle" class="tok">{t.text.replace(/^ /, '␣')}</text>
           <text x={x + w / 2} y={seqY + tokH + 14} text-anchor="middle" class="id">{t.id}</text>
         </g>
@@ -152,6 +152,10 @@
         <text x="16" y={seqY + tokH + 40} class="note" in:fade>文字 → 小段（token）→ 整数编号（id）→ 模型猜下一段</text>
         <text x="16" y={seqY + tokH + 62} class="note" in:fade>␣ 表示小段开头的空格 · 每个数字对应正上方的小段</text>
         <text x="16" y={seqY + tokH + 84} class="note" in:fade>编号像学号，事先在对照表里分好；同一小段总是同号</text>
+      {/if}
+      {#if step === 2 && $lang === 'zh'}
+        <rect x="584" y="12" width="10" height="10" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="600" y="21" class="note">蓝框 = 输入的 5 段</text>
       {/if}
       {#if step === 4 && $lang === 'zh'}
         <text x="16" y={seqY + tokH + 40} class="note" in:fade>下一轮：上面 {cur.seq.length} 段一起进入模型，再猜一段，直到「结束」</text>
@@ -188,17 +192,43 @@
 
       <!-- Model box with wires in and out -->
       {#if showModel}
-        <g transition:fade={{ duration: (step === 9 || step === 10) && $lang === 'zh' ? 0 : 250 }}>
-          <path d="M {seqEndX + 4} {seqY + tokH / 2} H {seqEndX + 22} V {seqY + tokH + 24} H {W / 2} V {modelY - 6}"
-                class="wire" class:active={cur.phase === 'forward'} class:neutral-active={(step === 5 || step === 8) && $lang === 'zh'} />
+        <g transition:fade={{ duration: (step === 2 || step === 9 || step === 10) && $lang === 'zh' ? 0 : 250 }}>
+          {#if step === 2 && $lang === 'zh'}
+            {#each layout as { x, w }}
+              <path d="M {x + w / 2} {seqY + tokH + 18} V 108 H {W / 2} V {modelY - 6}"
+                    class="wire active neutral-active" />
+            {/each}
+          {:else}
+            <path d="M {seqEndX + 4} {seqY + tokH / 2} H {seqEndX + 22} V {seqY + tokH + 24} H {W / 2} V {modelY - 6}"
+                  class="wire" class:active={cur.phase === 'forward'} class:neutral-active={(step === 5 || step === 8) && $lang === 'zh'} />
+          {/if}
           <polygon points="{W / 2 - 5},{modelY - 8} {W / 2 + 5},{modelY - 8} {W / 2},{modelY}" fill="var(--muted)" />
-          <rect x={modelX} y={modelY} width={modelW} height={modelH} rx="10" class="model" class:busy={cur.phase === 'forward'} class:neutral-active={(step === 5 || step === 8) && $lang === 'zh'} />
-          <text x={W / 2} y={modelY + 24} text-anchor="middle" class="model-title">transformer</text>
+          <rect x={modelX} y={modelY} width={modelW} height={modelH} rx="10" class="model" class:busy={cur.phase === 'forward'} class:neutral-active={(step === 2 || step === 5 || step === 8) && $lang === 'zh'} />
+          <text x={W / 2} y={modelY + 24} text-anchor="middle" class="model-title">{step === 2 && $lang === 'zh' ? 'transformer（模型）' : 'transformer'}</text>
           <text x={W / 2} y={modelY + 42} text-anchor="middle" class="model-sub">
-            {cur.phase === 'forward' ? t(`processing ${cur.seq.length} tokens…`, `正在处理 ${cur.seq.length} 个 token…`) : t('scores for every vocab token', '词表中每个 token 的分数')}
+            {step === 2 && $lang === 'zh' ? '前向传播：5 个编号一起算一遍' : cur.phase === 'forward' ? t(`processing ${cur.seq.length} tokens…`, `正在处理 ${cur.seq.length} 个 token…`) : t('scores for every vocab token', '词表中每个 token 的分数')}
           </text>
-          <path d="M {W / 2} {modelY + modelH} V {distY - 10}" class="wire" class:active={cur.phase === 'sample'} class:neutral-active={step === 9 && $lang === 'zh'} />
-          <polygon points="{W / 2 - 5},{distY - 12} {W / 2 + 5},{distY - 12} {W / 2},{distY - 4}" fill="var(--muted)" />
+          {#if step === 2 && $lang === 'zh'}
+            <path d="M {W / 2} {modelY + modelH} V 204" class="wire" />
+            <polygon points="{W / 2 - 5},202 {W / 2 + 5},202 {W / 2},208" fill="var(--muted)" />
+          {:else}
+            <path d="M {W / 2} {modelY + modelH} V {distY - 10}" class="wire" class:active={cur.phase === 'sample'} class:neutral-active={step === 9 && $lang === 'zh'} />
+            <polygon points="{W / 2 - 5},{distY - 12} {W / 2 + 5},{distY - 12} {W / 2},{distY - 4}" fill="var(--muted)" />
+          {/if}
+        </g>
+      {/if}
+
+      {#if step === 2 && $lang === 'zh'}
+        <g>
+          <text x={W / 2} y="222" text-anchor="middle" class="model-title">Llama 3 词表：128,000 个普通 + 256 个特殊（含第 2 步「开始」）= 128,256 项</text>
+          <text x={W / 2} y="241" text-anchor="middle" class="note">约 13 万 ≈ 128 所千人小学的人数 · 每项 1 个分数，只画 4 项</text>
+          <text x="210" y="264" class="note">候选小段</text>
+          <text x="410" y="264" class="note">教学示意分数</text>
+          <text x="210" y="286" class="tok">␣Paris</text><text x="410" y="286" class="tok">9.80</text>
+          <text x="210" y="307" class="tok">␣Lyon</text><text x="410" y="307" class="tok">7.00</text>
+          <text x="210" y="328" class="tok">␣a</text><text x="410" y="328" class="tok">6.78</text>
+          <text x="210" y="349" class="tok">␣the</text><text x="410" y="349" class="tok">6.49</text>
+          <text x={W / 2} y="374" text-anchor="middle" class="note">分数越高，越可能成为下一段；下一步把分数变成可能性再选</text>
         </g>
       {/if}
 
