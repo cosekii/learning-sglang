@@ -8,6 +8,7 @@ npx astro dev --background     # then: astro dev stop | astro dev status | astro
 npm run build                  # the type check
 npm run preview
 npm run transcript             # with the dev server up: transcripts + layout checks (ONLY=N for one chapter)
+STEP=5 npm run token-legends   # chapter 1: multi-colour token steps need matching swatches + labels
 npm run mobile                 # with the dev server up: every page and step at 360/390/430 px, flags sideways scroll and clipped captions
 npm run shot -- <outDir> <waitMs> 'name=url' ...   # screenshots
 npm run og                     # re-render public/og.png, the link-preview card, from scripts/og/card.html

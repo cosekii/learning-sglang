@@ -13,6 +13,7 @@
     "shot": "node scripts/shot.mjs",
     "transcript": "node scripts/transcript.mjs",
     "readability": "node scripts/readability.mjs",
+    "token-legends": "node scripts/token-legends.mjs",
     "mobile": "node scripts/mobile.mjs",
     "og": "CLIP=0,0,600,315 node scripts/shot.mjs public 500 \"og=file://$PWD/scripts/og/card.html\""
   },
