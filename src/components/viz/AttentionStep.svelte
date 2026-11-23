@@ -17,6 +17,9 @@
     4: [0.4, 1.9, 0.2, 2.6, 0.9],
     5: [0.3, 1.4, 0.1, 1.8, 0.6, 2.2],
   };
+  // Two illustrative numbers per vector make each displayed score checkable; real q and k have 128.
+  const dotQ = [1, 2];
+  const dotK: [number, number][] = [[0.2, 0.1], [0.5, 0.7], [0.1, 0.05], [0.8, 0.9], [0.3, 0.3]];
   const softmax = (a: number[]) => {
     const m = Math.max(...a); const e = a.map((v) => Math.exp(v - m)); const s = e.reduce((x, y) => x + y, 0);
     return e.map((v) => v / s);
@@ -34,7 +37,7 @@
     { n: 5, intro: true, caption: `Same five tokens, one forward pass. This time we watch what one attention layer does with them.`, captionZh: `还是这五个 token，一起走进模型。打开一个 attention 层：前面的 token 把信息传给后面。` },
     { n: 5, x: true, caption: `Each token comes in as a vector. Call it x.`, captionZh: `每个 token 都变成一排有顺序的数，叫向量，记作 x。` },
     { n: 5, rows: true, caption: `Every token multiplies its own x by three learned matrices and gets a <b>query</b>, a <b>key</b> and a <b>value</b>. No other token is involved yet.`, captionZh: `每个 token 用自己的 x 乘三个学好的矩阵，得到一个 <b>query</b>、一个 <b>key</b> 和一个 <b>value</b>。暂时不涉及其他 token。` },
-    { n: 5, rows: true, attend: 4, scores: true, caption: `The last token's query gets dotted with every key. A big score means "this one matters to me".`, captionZh: `最后一个 token 的 query 与每个 key 做点积。分数大意味着"这个对我重要"。` },
+    { n: 5, rows: true, attend: 4, scores: true, caption: `The last token's query gets dotted with every key. A big score means "this one matters to me".`, captionZh: `点积就是两排数对应相乘，再全部相加。下一步再讲这些分数怎么用。` },
     { n: 5, rows: true, attend: 4, scores: true, weights: true, caption: `Softmax turns the scores into weights that add up to one.`, captionZh: `Softmax 把分数变成权重，加起来等于一。` },
     { n: 5, rows: true, attend: 4, weights: true, mix: true, caption: `Its output is the values, blended by those weights. This is how "is" finds out it's sitting after "capital of France".`, captionZh: `它的输出就是这些 value 按权重混合的结果。"is" 就是这样知道自己跟在 "capital of France" 后面。` },
     { n: 5, rows: true, causal: true, caption: `Every position does the same thing with its own query, over the keys up to itself. One pass, all five outputs at once.`, captionZh: `每个位置都用自己的 query 对截至自身的 key 做同样的事。一遍前向，五个输出同时得到。` },
@@ -50,6 +53,10 @@
 
 
   let step = $state(0);
+  let example = $state(0);
+  function exampleKey(e: KeyboardEvent, i: number) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); example = i; }
+  }
   $effect(() => {
     const q = Number(new URLSearchParams(window.location.search).get('step'));
     if (q >= 1 && q <= steps.length) step = q - 1;
@@ -191,6 +198,9 @@
           {#if cur.scores}
             <text x="16" y={LOW + 16} class="rowlabel">q{sub(cur.attend + 1)} · k<tspan class="sub">j</tspan></text>
             {#each cols.slice(0, cur.attend + 1) as c, i}
+              {#if step === 3 && $lang === 'zh' && example === i}
+                <rect x={c.x - 3} y={LOW - 1} width={c.w + 6} height="25" rx="4" fill={COLOR.k[0]} />
+              {/if}
               <text x={c.cx} y={LOW + 16} text-anchor="middle" class="num" in:fade={{ delay: i * 60 }}>{scores[cur.attend][i].toFixed(1)}</text>
             {/each}
           {/if}
@@ -206,6 +216,25 @@
             <line x1={cols[0].x} y1={BAR_BASE + 0.5} x2={cols[cur.attend].x + cols[cur.attend].w} y2={BAR_BASE + 0.5} stroke="var(--line)" />
           {/if}
         </g>
+      {/if}
+
+      <!-- Chinese concrete view: pick any column to expand its dot product. -->
+      {#if step === 3 && $lang === 'zh'}
+        <g in:fade>
+          <text x="28" y="272" class="slab">点积 = 对应相乘再相加 · 点一列看计算</text>
+          <text x="18" y="294" class="pt">·</text>
+          <text x="28" y="294" class="legend">q₅ 属于最后的 ␣is · 先拿它看一遍，其他位置后面也算</text>
+          <text x="18" y="314" class="pt">·</text>
+          <text x="28" y="314" class="legend">j 表示第几个 key · 自己也算，保留自己的信息</text>
+          <text x="28" y="340" class="num">示意 q₅ = [{dotQ.join(', ')}]　k{sub(example + 1)} = [{dotK[example].map((n) => n.toFixed(1)).join(', ')}]</text>
+          <text x="28" y="366" class="num">{dotQ[0]}×{dotK[example][0].toFixed(1)} + {dotQ[1]}×{dotK[example][1].toFixed(1)} = {(dotQ[0] * dotK[example][0]).toFixed(1)} + {(dotQ[1] * dotK[example][1]).toFixed(1)} = {scores[4][example].toFixed(1)}</text>
+        </g>
+        {#each cols.slice(0, 5) as c, i}
+          <rect x={c.x - 3} y={seqY} width={c.w + 6} height={LOW + 25 - seqY} fill="transparent" class="example-hit"
+                role="button" tabindex="0" aria-label={`看第 ${i + 1} 列的点积计算`}
+                onclick={() => (example = i)} onkeydown={(e) => exampleKey(e, i)} />
+        {/each}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">用 2 个示意数演示 · 真实 q、k 的更多数也照这个算法算</text>
       {/if}
 
       <!-- Causal matrix: who attends to whom in one forward pass -->
@@ -262,6 +291,8 @@
   .tok { font-family: var(--mono); font-size: 12.5px; fill: var(--fg); }
   .cell { font-family: var(--mono); font-size: 10.5px; fill: var(--fg); }
   .cellg { transition: opacity 300ms; }
+  .example-hit { cursor: pointer; }
+  .example-hit:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
   .badge { font-family: var(--mono); font-size: 10px; font-weight: 700; }
   .num { font-family: var(--mono); font-size: 10.5px; fill: var(--fg); }
   .tag.new { fill: var(--gen); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; font-size: 9px; }
