@@ -4,11 +4,11 @@
 
 ## 本轮记录
 
-- 第 1 章第 3 步按 Orca item #3 的主人许可完成术语日常化：caption 和图改用「模型、一起算、候选 token」，后续图内 `transformer` 改为 `model`、`scores for every vocab token` 改为 `a score for every candidate token`，第 10 步 caption 删去 `in the vocabulary`；图结构和其他英文 caption 未动。
-- 易读分 **10→12**，原 12 项 **24→24**，中文桌面冷读洞 **0→0**。独立冷读能复述「模型把 5 个编号一起算，给每个可能接在后面的小段打分」，R2 升为 2；R6 沿用前评，本轮未改动画。
-- `forward pass` 现在第 6 步单独首次出现，全章 12 步 `readability` 均为 0 个机械问题，没有转移术语债。第 4–11 步英文截图逐张复核，未见重叠、出界、截断或不自然的新标签。
-- `build`、第 1 章 `transcript`、全量 `mobile`、`deep-check 01`、第 1 章 `zh-check`、第 3 步 `token-legends` 和全章 `readability` 均通过。
-- 第 1 章现有 **12/12** 步易读满分，章均分 **23.75 / 24**，总洞数为 0；第 2 章仍为 **4/14** 步易读满分。本轮类型：**修旧**。下一普通轮先写 `docs/plan-omni.md`，再依次补齐另外两本新书规划；下次整点轮做第 3 项「复盘自己」。
+- 新建 `docs/plan-omni.md`：全书分 3 部分、13 章，每章列出 slug、标题、hook、核心问题、前置、事实来源和章末衔接。主题从运行图与数据生命周期推进到资源、测量、优化，再落到 Fish S2 Pro、全双工和 Qwen3-Omni 部署。
+- 规划核对 `sglang-omni` 的 `origin/main@5c23e73838`；60 个引用文件全部存在。第 1 本 Ch. 16–21 只作前置引用，新书改讲配置实现、请求绑定、数据释放、实验测量和具体模型落地。独立复核指出并确认修正了 Part 分组、EVAL 路径、Ch. 4 与 Ch. 12 前置、Ch. 10 与旧章重叠这 5 处问题。
+- 自定义规划检查通过：13 章连续编号、3 个 Part、字段齐全、引用路径和进度表 slug 一致；`build`、全量 `transcript`、全量 `deep-check` 和 `git diff --check` 通过。已截取并复核第 1 本 Ch. 17 Step 4 参照页：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-omni-plan/omni-plan-reference.png`。
+- 本轮只写规划，未改教程步骤；易读分、原 12 项、R1 复述和冷读洞均不适用。第 1 章仍为 **12/12** 步易读满分、章均分 **23.75 / 24**；第 2 章仍为 **4/14** 步易读满分、章均分 **23.93 / 24**。
+- 本轮类型：**新书**。下一普通轮写 `docs/plan-ml-sys.md`，再写 `docs/plan-voxt.md`；下次整点轮做第 3 项「复盘自己」。
 
 ## Learning SGLang
 
@@ -46,7 +46,23 @@
 
 ## Learning SGLang Omni
 
-尚无章节，状态：**规划**。`docs/plan-omni.md` 尚未创建，规划后再逐章记录状态和平均分。
+规划完成：`docs/plan-omni.md` 共 3 部分、13 章；尚无已制作章节。
+
+| 章 | slug | 状态 | 平均分 |
+|---|---|---|---:|
+| 01 | 01-config-to-runtime | 规划 | — |
+| 02 | 02-spg-topology | 规划 | — |
+| 03 | 03-request-binding | 规划 | — |
+| 04 | 04-readiness-contracts | 规划 | — |
+| 05 | 05-data-lifetime | 规划 | — |
+| 06 | 06-batching-backpressure | 规划 | — |
+| 07 | 07-shared-gpu-budgets | 规划 | — |
+| 08 | 08-measure-streaming | 规划 | — |
+| 09 | 09-ar-stage-optimization | 规划 | — |
+| 10 | 10-vocoder-optimization | 规划 | — |
+| 11 | 11-fish-s2-pro | 规划 | — |
+| 12 | 12-full-duplex-strategies | 规划 | — |
+| 13 | 13-qwen3-omni-deployment | 规划 | — |
 
 ## Learning ML Systems
 
