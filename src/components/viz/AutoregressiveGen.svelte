@@ -54,12 +54,12 @@
       steps.push({
         phase: 'sample', seq, round,
         caption: i === 0
-          ? `Softmax turns the scores into probabilities. Take the top one, or sample.`
+          ? `Softmax turns the scores into chances. Take the top one, or sample.`
           : round.pick.kind === 'eos'
             ? `This time the top pick is <code>&lt;EOS&gt;</code>. It's a normal token in the vocabulary; the model learned to produce it when done.`
             : `Pick again.`,
         captionZh: i === 0
-          ? `Softmax 把分数变成概率。取最大的，或者采样。`
+          ? `Softmax 把分数变成可能性。取最大的，或者采样。`
           : round.pick.kind === 'eos'
             ? `这次最大的是 <code>&lt;EOS&gt;</code>。它是词表里的普通 token；模型学会了在结束时输出它。`
             : `第 2 轮有了新分数，句号的可能性最大。选中它，下一步接到末尾。`,
