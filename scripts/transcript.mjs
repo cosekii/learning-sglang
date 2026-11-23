@@ -30,7 +30,7 @@ mkdirSync(outDir, { recursive: true });
 
 // ---- the roster, straight from chapters.ts -----------------------------------------------------------------
 const roster = readFileSync('src/chapters.ts', 'utf8');
-const chapters = [...roster.matchAll(/\{\s*part:\s*'(\w+)',\s*slug:\s*'([^']+)',\s*title:\s*(?:'([^']*)'|"([^"]*)"),\s*hook:\s*'([^']*)',\s*ready:\s*(true|false)\s*\}/g)]
+const chapters = [...roster.matchAll(/\{\s*part:\s*'(\w+)',\s*slug:\s*'([^']+)',\s*title:\s*(?:'([^']*)'|"([^"]*)"),\s*hook:\s*'([^']*)',[^}]*?\s*ready:\s*(true|false)\s*\}/g)]
   .map((m, i) => ({ n: i + 1, part: m[1], slug: m[2], title: m[3] ?? m[4], hook: m[5], ready: m[6] === 'true' }))
   .filter((c) => c.ready && (only === null || c.n === only));
 if (!chapters.length) { console.error('no ready chapters matched'); process.exit(1); }
@@ -175,7 +175,7 @@ const workers = Array.from({ length: Math.min(jobs, queue.length) }, async () =>
 await Promise.all(workers);
 
 // the index: one line per chapter
-const all = [...roster.matchAll(/slug:\s*'([^']+)',\s*title:\s*(?:'([^']*)'|"([^"]*)"),\s*hook:\s*'([^']*)',\s*ready:\s*(true|false)/g)]
+const all = [...roster.matchAll(/slug:\s*'([^']+)',\s*title:\s*(?:'([^']*)'|"([^"]*)"),\s*hook:\s*'([^']*)',[^}]*?\s*ready:\s*(true|false)/g)]
   .map((m, i) => ({ n: i + 1, slug: m[1], title: m[2] ?? m[3], hook: m[4], ready: m[5] === 'true' }));
 const index = ['# Transcript', '',
   'Plain text of every ready chapter: each step\'s caption, the text drawn on the stage once it has settled, and the prose under the stage.',
