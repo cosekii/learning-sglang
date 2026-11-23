@@ -32,7 +32,7 @@
   }
   const steps: Step[] = [
     { n: 5, intro: true, caption: `Same five tokens, one forward pass. This time we watch what one attention layer does with them.`, captionZh: `还是这五个 token，一起走进模型。打开一个 attention 层：前面的 token 把信息传给后面。` },
-    { n: 5, x: true, caption: `Each token comes in as a vector. Call it x.`, captionZh: `每个 token 输入时都是一个向量，记作 x。` },
+    { n: 5, x: true, caption: `Each token comes in as a vector. Call it x.`, captionZh: `每个 token 都变成一排有顺序的数，叫向量，记作 x。` },
     { n: 5, rows: true, caption: `Every token multiplies its own x by three learned matrices and gets a <b>query</b>, a <b>key</b> and a <b>value</b>. No other token is involved yet.`, captionZh: `每个 token 用自己的 x 乘三个学好的矩阵，得到一个 <b>query</b>、一个 <b>key</b> 和一个 <b>value</b>。暂时不涉及其他 token。` },
     { n: 5, rows: true, attend: 4, scores: true, caption: `The last token's query gets dotted with every key. A big score means "this one matters to me".`, captionZh: `最后一个 token 的 query 与每个 key 做点积。分数大意味着"这个对我重要"。` },
     { n: 5, rows: true, attend: 4, scores: true, weights: true, caption: `Softmax turns the scores into weights that add up to one.`, captionZh: `Softmax 把分数变成权重，加起来等于一。` },
@@ -95,6 +95,9 @@
         <marker id="intro-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
           <path d="M 0 0 L 6 3 L 0 6 z" fill="var(--accent)" />
         </marker>
+        <marker id="vector-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+          <path d="M 0 0 L 6 3 L 0 6 z" fill={COLOR.x[1]} />
+        </marker>
       </defs>
       <!-- Token row -->
       <text x="16" y={seqY + 18} class="rowlabel">tokens</text>
@@ -117,6 +120,18 @@
       {/if}
       {#if cur.markNew}
         <text x={cols[cur.n - 1].cx} y={ROW.x - 8} text-anchor="middle" class="tag new" in:fade>{t('new', '新')}</text>
+      {/if}
+
+      <!-- Token-to-vector mapping for the first vector explanation -->
+      {#if cur.x && cur.n === PROMPT_N}
+        {#each cols as c, i (i)}
+          <path d="M {c.cx} {seqY + tokH + 12} L {c.cx} {ROW.x - 10}"
+                fill="none" stroke={COLOR.x[1]} stroke-width="1.5" marker-end="url(#vector-arrow)"
+                in:fade={{ delay: 250 + i * 50, duration: 250 }} />
+        {/each}
+        <text x={W / 2} y={ROW.x + 64} text-anchor="middle" class="slab" in:fade={{ delay: 500 }}>
+          {t('each x is an ordered list of numbers', '每个 x 都是一排有顺序的数')}
+        </text>
       {/if}
 
       <!-- x / q / k / v rows -->
