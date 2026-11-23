@@ -27,6 +27,7 @@
     { dist: [{ text: '.', p: 0.71 }, { text: ',', p: 0.15 }, { text: ' and', p: 0.06 }, { text: '!', p: 0.02 }], pick: { text: '.', id: 13, kind: 'gen' } },
     { dist: [{ text: '<EOS>', p: 0.88 }, { text: ' It', p: 0.05 }, { text: ' The', p: 0.03 }, { text: '\\n', p: 0.02 }], pick: { text: '<EOS>', id: 128001, kind: 'eos' } },
   ];
+  const firstScores = [9.80, 7.00, 6.78, 6.49];
 
   // ---- Expand the script into flat steps: each step is a complete state + caption -------------
   type Phase = 'raw' | 'tokenize' | 'forward' | 'sample' | 'append' | 'done' | 'tally';
@@ -115,8 +116,8 @@
 
   const fill = (k: Kind) => (k === 'prompt' ? 'var(--accent-soft)' : k === 'gen' ? 'var(--gen-soft)' : 'var(--eos-soft)');
   const stroke = (k: Kind) => (k === 'prompt' ? 'var(--accent)' : k === 'gen' ? 'var(--gen)' : 'var(--eos)');
-  const showModel = $derived(['forward', 'sample', 'append', 'done'].includes(cur.phase) && !(cur.phase === 'done' && $lang === 'zh'));
-  const showDist = $derived(['sample', 'append', 'done'].includes(cur.phase) && !(cur.phase === 'done' && $lang === 'zh'));
+  const showModel = $derived(['forward', 'sample', 'append', 'done'].includes(cur.phase) && !((step === 3 || cur.phase === 'done') && $lang === 'zh'));
+  const showDist = $derived(['sample', 'append', 'done'].includes(cur.phase) && !((step === 3 || cur.phase === 'done') && $lang === 'zh'));
   const flying = $derived((cur.phase === 'append' || cur.phase === 'done') && !(cur.phase === 'done' && $lang === 'zh'));
   const detok = $derived(cur.seq.filter((t) => t.kind !== 'eos').map((t) => t.text).join(''));
   const generated = $derived(detok.slice(promptText.length));
@@ -153,7 +154,7 @@
         <text x="16" y={seqY + tokH + 62} class="note" in:fade>␣ 表示小段开头的空格 · 每个数字对应正上方的小段</text>
         <text x="16" y={seqY + tokH + 84} class="note" in:fade>编号像学号，事先在对照表里分好；同一小段总是同号</text>
       {/if}
-      {#if step === 2 && $lang === 'zh'}
+      {#if (step === 2 || step === 3) && $lang === 'zh'}
         <rect x="584" y="12" width="10" height="10" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
         <text x="600" y="21" class="note">蓝框 = 输入的 5 段</text>
       {/if}
@@ -192,7 +193,7 @@
 
       <!-- Model box with wires in and out -->
       {#if showModel}
-        <g transition:fade={{ duration: (step === 2 || step === 9 || step === 10) && $lang === 'zh' ? 0 : 250 }}>
+        <g transition:fade={{ duration: (step === 2 || step === 3 || step === 9 || step === 10) && $lang === 'zh' ? 0 : 250 }}>
           {#if step === 2 && $lang === 'zh'}
             {#each layout as { x, w }}
               <path d="M {x + w / 2} {seqY + tokH + 18} V 108 H {W / 2} V {modelY - 6}"
@@ -229,6 +230,36 @@
           <text x="210" y="328" class="tok">␣a</text><text x="410" y="328" class="tok">6.78</text>
           <text x="210" y="349" class="tok">␣the</text><text x="410" y="349" class="tok">6.49</text>
           <text x={W / 2} y="374" text-anchor="middle" class="note">分数越高，越可能成为下一段；下一步把分数变成可能性再选</text>
+        </g>
+      {/if}
+
+      {#if step === 3 && $lang === 'zh' && cur.round}
+        <g>
+          <text x={W / 2} y="112" text-anchor="middle" class="model-title">softmax = 把分数换成可能性的固定规则（完整公式见深入讲解）</text>
+          <text x="16" y="136" class="note">固定数 e≈2.718；分数每差 1，可能性约差 2.718 倍</text>
+          <rect x="480" y="126" width="10" height="10" rx="2" fill="var(--gen)" />
+          <text x="496" y="135" class="note">选中</text>
+          <rect x="552" y="126" width="10" height="10" rx="2" fill="var(--line)" />
+          <text x="568" y="135" class="note">未选</text>
+          <text x="16" y="156" class="note">e^分数 ÷ 全部 128,256 项的 e^分数之和 · 教学示意，不是实测</text>
+          <text x="24" y="176" class="note">候选小段</text>
+          <text x="150" y="176" class="note">第 3 步分数</text>
+          <text x="280" y="176" class="note">可能性（百分比）</text>
+          <text x="430" y="176" class="note">条越长，可能性越大</text>
+          {#each cur.round.dist as d, i}
+            {@const y = 202 + i * 30}
+            {@const chosen = d.text === cur.round.pick.text}
+            <text x="24" y={y} class="tok" class:dim={!chosen}>{d.text.replace(/^ /, '␣')}</text>
+            <text x="150" y={y} class="tok" class:dim={!chosen}>{firstScores[i].toFixed(2)}</text>
+            <text x="230" y={y} class="tok" class:dim={!chosen}>→</text>
+            <text x="280" y={y} class="tok" class:dim={!chosen}>{d.p.toFixed(2)} = {Math.round(d.p * 100)}%</text>
+            <rect x="430" y={y - 14} width={d.p * 260} height="18" rx="3" fill={chosen ? 'var(--gen)' : 'var(--line)'} />
+            {#if chosen}<text x="650" y={y} class="pick">← 选中</text>{/if}
+          {/each}
+          <text x="16" y="326" class="sum">82% + 5% + 4% + 3% + 其余 128,252 项合计 6% = 100%</text>
+          <text x="16" y="350" class="note">要结果固定 → 取最大：本例选 82% 最高的 ␣Paris</text>
+          <text x="16" y="374" class="note">允许结果变化 → 采样：按百分比随机抽；100 次约 82 次 ␣Paris</text>
+          <text x="16" y="394" class="note">下一步：把选中的 ␣Paris 接到原序列末尾</text>
         </g>
       {/if}
 
