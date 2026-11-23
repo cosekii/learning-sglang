@@ -72,7 +72,7 @@
         captionZh: round.pick.kind === 'eos'
           ? `<b>停止。</b>把 id 解码回文本。这就是推理：分词，然后前向、选择、追加，直到 EOS。`
           : i === 0
-            ? `<b>追加。</b>输出变成输入的一部分，这就是"自回归"的全部含义。`
+            ? `<b>追加：</b>把 ␣Paris 接到末尾，下一轮读全部 ${seq.length} 段。边猜边接，直到「结束」，就叫「自回归」。`
             : `追加。`,
       });
     });
@@ -150,6 +150,9 @@
         <text x="16" y={seqY + tokH + 62} class="note" in:fade>␣ 表示小段开头的空格 · 每个数字对应正上方的小段</text>
         <text x="16" y={seqY + tokH + 84} class="note" in:fade>编号像学号，事先在对照表里分好；同一小段总是同号</text>
       {/if}
+      {#if step === 4 && $lang === 'zh'}
+        <text x="16" y={seqY + tokH + 40} class="note" in:fade>下一轮：上面 {cur.seq.length} 段一起进入模型，再猜一段，直到「结束」</text>
+      {/if}
 
       <!-- Model box with wires in and out -->
       {#if showModel}
@@ -170,7 +173,7 @@
       <!-- Next-token distribution -->
       {#if showDist && cur.round}
         <g transition:fade={{ duration: 250 }}>
-          <text x={barLabelX - 60} y={distY + 4} class="label">p(next token | sequence)</text>
+          <text x={barLabelX - 60} y={distY + 4} class="label">{step === 4 ? t('p(next token | sequence)', '上一轮猜下一段的结果') : 'p(next token | sequence)'}</text>
           {#each cur.round.dist as d, i}
             {@const y = distY + 14 + i * (barH + barGap)}
             {@const chosen = d.text === cur.round.pick.text}
