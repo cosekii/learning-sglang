@@ -4,11 +4,11 @@
 
 ## 本轮记录
 
-- 15:01 整点自主优化完成第 3 项「复盘自己」：最近 21 个步骤整改中，R4 有 4 步、R6 有 6 步、手机小字有 10 步记录。R2/R4 已有机械检查，R6 仍须转场冷读；本轮选择旧 `mobile` 漏检的手机实际字号。
-- `mobile.mjs` 现在用计算字号乘 `getScreenCTM()` 的缩放，找出低于 10 CSS px 的可见 SVG 文字。全量保留布局硬门，小字只汇总审计；`ONLY=N STEP=M LANG=zh npm run mobile` 把选中中文步的小字检查变成硬门，默认英文布局检查不变。
-- 真实旧问题负测试通过：第 1 章第 5 步在 360/390/430 px 均以最小 **4.71/5.15/5.73 px** 失败；已修第 3、11 步在三种宽度都通过。360 px 全章审计另标出第 1 章其余 10 步和第 2 章全部 14 步，这些只是待冷读候选，未直接改分或记洞。
-- `node --check`、`build`、第 1 章 `transcript`、全量 `mobile`、`deep-check 01`、第 1 章 `zh-check` 和全章 `readability` 均通过；独立代码审查无必须修问题。截图位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-hourly-review-03/`，已复核第 3 步清晰竖排图和第 5 步现存小字图。
-- 本轮未改教程步骤，易读分、原 12 项和冷读洞不变。下一普通轮写 `docs/plan-ml-sys.md`，再写 `docs/plan-voxt.md`；下次整点轮换做第 1 项「像读者一样从头读一遍」。
+- 新建 `docs/plan-ml-sys.md`：全书分 `inference`、`rl`、`practice` 3 部分、16 章，每章列出 slug、标题、hook、核心问题、前置、事实来源和章末衔接。主线从推理测量与显存走到多卡服务，再跟随 rollout、权重更新、低精度和训推一致性，最后落到多轮智能体、profiling 和显存调试。
+- 规划核对 `Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7`；27 个引用文件全部存在。第 1 本已完成的 KV cache、调度、CUDA Graph 和投机解码只回指；Ch. 22–29 仍不作前置。`mismatch` 的 TODO 实验不得采用，Dynamo 只用于操作实验；INT4 部署范围已按独立审查从「单卡」修正为「单机」。
+- `memory/ai-infra-map.md` 只保留在本机并加入 `.gitignore`，不提交。自定义规划检查通过：16 章连续编号、3 个 Part、字段齐全、引用路径和进度表 slug 一致。
+- `build`、全量 `transcript`、全量 `deep-check`、第 7 章默认等待的 `mobile`、全量 `WAIT=100 mobile` 和 `git diff --check` 通过。默认等待的全量 `mobile` 运行超过 10 分钟后按本轮时限停止；随后用 100ms 等待完成全量布局门。站点代码未改，上一提交 `2265e61` 的默认全量布局门也已通过。已截取并复核第 1 本 Ch. 7 Step 1 参照页：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ml-sys-plan/ml-sys-plan-reference.png`。
+- 本轮只写规划，未改教程步骤；易读分、原 12 项、R1 复述和冷读洞均不适用。第 1 章仍为 **12/12** 步易读满分、章均分 **23.75 / 24**；第 2 章仍为 **4/14** 步易读满分、章均分 **23.93 / 24**。本轮类型：**新书**（规划）。下一普通轮写 `docs/plan-voxt.md`；下次整点轮换做第 1 项「像读者一样从头读一遍」。
 
 ## Learning SGLang
 
@@ -66,7 +66,26 @@
 
 ## Learning ML Systems
 
-尚无章节，状态：**规划**。`docs/plan-ml-sys.md` 尚未创建，规划后再逐章记录状态和平均分。
+规划完成：`docs/plan-ml-sys.md` 共 3 部分、16 章；尚无已制作章节。第 11 章须先补齐训推不一致的原始来源，缺源时先跳过。
+
+| 章 | slug | 状态 | 平均分 |
+|---|---|---|---:|
+| 01 | 01-measure-inference | 规划 | — |
+| 02 | 02-inference-memory-budget | 规划 | — |
+| 03 | 03-hybrid-state-cache | 规划 | — |
+| 04 | 04-gpu-communication | 规划 | — |
+| 05 | 05-distributed-serving | 规划 | — |
+| 06 | 06-slime-rollout-loop | 规划 | — |
+| 07 | 07-weight-updates | 规划 | — |
+| 08 | 08-fsdp2-training-backend | 规划 | — |
+| 09 | 09-fp8-rollout-training | 规划 | — |
+| 10 | 10-int4-qat-rollout | 规划 | — |
+| 11 | 11-train-inference-mismatch | 待补源 | — |
+| 12 | 12-rl-speculative-decoding | 规划 | — |
+| 13 | 13-multi-turn-agent-rl | 规划 | — |
+| 14 | 14-profile-rl-systems | 规划 | — |
+| 15 | 15-memory-snapshot-debugging | 规划 | — |
+| 16 | 16-engineering-practice | 规划 | — |
 
 ## Inside Voxt
 
