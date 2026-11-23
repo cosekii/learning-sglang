@@ -253,6 +253,10 @@
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">「结束」标记怎么出现，第 10 步讲</text>
       {/if}
       {#if step === 5 && $lang === 'zh'}
+        <rect x="460" y="12" width="10" height="10" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="476" y="21" class="note">原输入 5 段</text>
+        <rect x="580" y="12" width="10" height="10" rx="2" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x="596" y="21" class="note">新生成 1 段</text>
         <text x="18" y={seqY + tokH + 40} class="pt">·</text>
         <text x="28" y={seqY + tokH + 40} class="note" in:fade>黑色模型和虚线：第 2 轮正在计算，{cur.seq.length} 段一起输入</text>
         <text x="18" y={seqY + tokH + 62} class="pt">·</text>
