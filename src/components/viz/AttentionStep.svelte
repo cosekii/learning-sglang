@@ -93,6 +93,10 @@
   const hotK = (r: Row, c: number) => r === 'k' && cur.attend !== undefined && (cur.scores || cur.weights) && c <= cur.attend;
   const hotV = (r: Row, c: number) => r === 'v' && cur.mix && cur.attend !== undefined && c <= cur.attend;
   const outX = $derived(seqEndX + 44);
+  const zhTally = $derived(step === 11 && $lang === 'zh');
+  const tallyDenominator = scores[5].reduce((sum, score) => sum + Math.exp(score), 0);
+  const tallyParisExp = Math.exp(scores[5][5]);
+  const tallyRoundedSum = $derived(w.reduce((sum, weight) => sum + Number(weight.toFixed(2)), 0));
 </script>
 
 <figure class="viz">
@@ -160,7 +164,7 @@
             {#each cols.slice(0, rowsFor) as c, i (i)}
               {@const hot = hotQ(r, i) || hotK(r, i) || hotV(r, i)}
               <g in:fly={{ y: -8, delay: (ri * 2 + i) * 45, duration: 250 }}
-                 style:opacity={unused(r, i) ? 0.3 : hotV(r, i) ? 0.35 + 0.65 * w[i] : 1} class="cellg">
+                 style:opacity={unused(r, i) ? 0.3 : hotV(r, i) ? 0.35 + 0.65 * w[i] : 1} class="cellg" class:static={zhTally}>
                 <rect x={c.cx - CW / 2} y={ROW[r]} width={CW} height={CH} rx="4" fill={COLOR[r][0]} stroke={COLOR[r][1]}
                       stroke-width={hot || isNewCol(i) ? 2.5 : 1} class:pulse={cur.recompute && !isNewCol(i)} style="animation-delay: {i * 60}ms" />
                 <text x={c.cx} y={ROW[r] + 14} text-anchor="middle" class="cell">{r}{sub(i + 1)}</text>
@@ -181,10 +185,13 @@
 
       <!-- Blend lines from values to the output cell -->
       {#if cur.mix && cur.attend !== undefined}
-        <g transition:fade={{ duration: 250 }}>
+        <g transition:fade={{ duration: zhTally ? 0 : 250 }}>
           {#each cols.slice(0, cur.attend + 1) as c, i}
             <path d="M {c.cx} {ROW.v + CH} C {c.cx} {ROW.v + 46}, {outX - 6} {ROW.v + 46}, {outX} {ROW.v + CH}"
                   fill="none" stroke={COLOR.v[1]} stroke-width={0.8 + w[i] * 6} opacity="0.55" />
+            {#if zhTally}
+              <text x={c.cx} y={ROW.v + CH + 14} text-anchor="middle" class="num" style:fill={COLOR.v[1]}>×w{sub(i + 1)}</text>
+            {/if}
           {/each}
           <rect x={outX - 20} y={ROW.v} width="40" height={CH} rx="4" fill="white" stroke={COLOR.v[1]} stroke-width="2" />
           <text x={outX} y={ROW.v + 14} text-anchor="middle" class="cell">out{sub(cur.attend + 1)}</text>
@@ -194,26 +201,42 @@
 
       <!-- Lower panel: scores and weights for the attending token -->
       {#if cur.attend !== undefined && (cur.scores || cur.weights)}
-        <g transition:fade={{ duration: 250 }}>
-          {#if cur.scores}
-            <text x="16" y={LOW + 16} class="rowlabel">q{sub(cur.attend + 1)} · k<tspan class="sub">j</tspan></text>
-            {#each cols.slice(0, cur.attend + 1) as c, i}
-              {#if step === 3 && $lang === 'zh' && example === i}
-                <rect x={c.x - 3} y={LOW - 1} width={c.w + 6} height="25" rx="4" fill={COLOR.k[0]} />
-              {/if}
-              <text x={c.cx} y={LOW + 16} text-anchor="middle" class="num" in:fade={{ delay: i * 60 }}>{scores[cur.attend][i].toFixed(1)}</text>
+        <g transition:fade={{ duration: zhTally ? 0 : 250 }}>
+          {#if zhTally}
+            <text x="16" y={LOW + 16} class="rowlabel">分数：q₆ · kⱼ</text>
+            {#each cols as c, i}
+              <text x={c.cx} y={LOW + 16} text-anchor="middle" class="num">{scores[5][i].toFixed(1)}</text>
             {/each}
-          {/if}
-          {#if cur.weights}
-            <text x="16" y={BAR_BASE - 4} class="rowlabel">softmax</text>
-            {#each cols.slice(0, cur.attend + 1) as c, i}
-              {@const h = w[i] * BAR_MAX}
-              <g in:fly={{ y: 10, delay: i * 60, duration: 300 }}>
-                <rect x={c.cx - BAR_W / 2} y={BAR_BASE - h} width={BAR_W} height={h} rx="3" fill={COLOR.k[1]} opacity={0.35 + 0.65 * w[i]} />
-                <text x={c.cx} y={BAR_BASE - h - 6} text-anchor="middle" class="num">{w[i].toFixed(2)}</text>
-              </g>
+            <text x="16" y={LOW + 40} class="rowlabel">权重 wⱼ</text>
+            {#each cols as c, i}
+              <text x={c.cx} y={LOW + 40} text-anchor="middle" class="num">{w[i].toFixed(2)}</text>
             {/each}
-            <line x1={cols[0].x} y1={BAR_BASE + 0.5} x2={cols[cur.attend].x + cols[cur.attend].w} y2={BAR_BASE + 0.5} stroke="var(--line)" />
+            <text x="16" y={LOW + 64} class="legend">共同算法：wⱼ = e^分数 ÷ 六项合计 {tallyDenominator.toFixed(2)} · e = 2.718…；^ 是连乘，如 2^3 = 2×2×2</text>
+            <text x="16" y={LOW + 84} class="legend">显示权重四舍五入，合计 {tallyRoundedSum.toFixed(2)}；未舍入权重合计 = 1</text>
+            <text x="16" y={LOW + 108} class="num">Paris：q₆·k₆ = {scores[5][5].toFixed(1)} → e^{scores[5][5].toFixed(1)} ≈ {tallyParisExp.toFixed(2)}（小数次方不手算，用计算工具）→ w₆ = {tallyParisExp.toFixed(2)} ÷ {tallyDenominator.toFixed(2)} ≈ {w[5].toFixed(2)} → w₆v₆ ≈ {w[5].toFixed(2)} × v₆</text>
+            <text x="16" y={LOW + 132} class="num">out₆ = w₁v₁ + w₂v₂ + w₃v₃ + w₄v₄ + w₅v₅ + w₆v₆</text>
+            <text x="16" y={LOW + 154} class="legend">Σ 表示把 6 项相加；j = 1…6 · 每根绿线：vⱼ 先乘对应的 wⱼ</text>
+          {:else}
+            {#if cur.scores}
+              <text x="16" y={LOW + 16} class="rowlabel">q{sub(cur.attend + 1)} · k<tspan class="sub">j</tspan></text>
+              {#each cols.slice(0, cur.attend + 1) as c, i}
+                {#if step === 3 && $lang === 'zh' && example === i}
+                  <rect x={c.x - 3} y={LOW - 1} width={c.w + 6} height="25" rx="4" fill={COLOR.k[0]} />
+                {/if}
+                <text x={c.cx} y={LOW + 16} text-anchor="middle" class="num" in:fade={{ delay: i * 60 }}>{scores[cur.attend][i].toFixed(1)}</text>
+              {/each}
+            {/if}
+            {#if cur.weights}
+              <text x="16" y={BAR_BASE - 4} class="rowlabel">softmax</text>
+              {#each cols.slice(0, cur.attend + 1) as c, i}
+                {@const h = w[i] * BAR_MAX}
+                <g in:fly={{ y: 10, delay: i * 60, duration: 300 }}>
+                  <rect x={c.cx - BAR_W / 2} y={BAR_BASE - h} width={BAR_W} height={h} rx="3" fill={COLOR.k[1]} opacity={0.35 + 0.65 * w[i]} />
+                  <text x={c.cx} y={BAR_BASE - h - 6} text-anchor="middle" class="num">{w[i].toFixed(2)}</text>
+                </g>
+              {/each}
+              <line x1={cols[0].x} y1={BAR_BASE + 0.5} x2={cols[cur.attend].x + cols[cur.attend].w} y2={BAR_BASE + 0.5} stroke="var(--line)" />
+            {/if}
           {/if}
         </g>
       {/if}
@@ -291,6 +314,7 @@
   .tok { font-family: var(--mono); font-size: 12.5px; fill: var(--fg); }
   .cell { font-family: var(--mono); font-size: 10.5px; fill: var(--fg); }
   .cellg { transition: opacity 300ms; }
+  .cellg.static { transition: none; }
   .example-hit { cursor: pointer; }
   .example-hit:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
   .badge { font-family: var(--mono); font-size: 10px; font-weight: 700; }
