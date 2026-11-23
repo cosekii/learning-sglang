@@ -47,7 +47,7 @@
         captionZh: i === 0
           ? `<b>前向传播。</b>${n} 个 id 全部输入，输出词表中每个 token 的分数。这是对下一个 token 的一次猜测。`
           : i === 1
-            ? `模型没存上次的计算结果，${n} 段只能全部重算。前 ${prompt.length} 段输入没变，算出的结果也不变。`
+            ? `第 2 轮，${n} 段一起进入模型。前 ${prompt.length} 段重算，Paris 第一次作为输入计算。`
             : `第 3 轮，${n} 段一起进入模型。前 ${n - 1} 段是重算，句号第一次算。`,
       });
       steps.push({
@@ -142,7 +142,7 @@
       {#each layout as { t, x, w }, i (i)}
         <g in:fly={enter(i)}>
           <rect {x} y={seqY} width={w} height={tokH} rx="6" fill={fill(t.kind)} stroke={stroke(t.kind)} stroke-width="1.5"
-                class:pulse={cur.phase === 'forward' && !(step === 8 && $lang === 'zh')} style="animation-delay: {i * 60}ms" />
+                class:pulse={cur.phase === 'forward' && !((step === 5 || step === 8) && $lang === 'zh')} style="animation-delay: {i * 60}ms" />
           <text x={x + w / 2} y={seqY + 19} text-anchor="middle" class="tok">{t.text.replace(/^ /, '␣')}</text>
           <text x={x + w / 2} y={seqY + tokH + 14} text-anchor="middle" class="id">{t.id}</text>
         </g>
@@ -157,10 +157,10 @@
       {/if}
       {#if step === 5 && $lang === 'zh'}
         <text x="18" y={seqY + tokH + 40} class="pt">·</text>
-        <text x="28" y={seqY + tokH + 40} class="note" in:fade>蓝色前 {prompt.length} 段：输入没变，结果相同</text>
+        <text x="28" y={seqY + tokH + 40} class="note" in:fade>黑色模型和虚线：第 2 轮正在计算，{cur.seq.length} 段一起输入</text>
         <text x="18" y={seqY + tokH + 62} class="pt">·</text>
-        <text x="28" y={seqY + tokH + 62} class="note" in:fade>橙色 Paris：新接的 1 段</text>
-        <text x="16" y={modelY + modelH + 26} class="note" in:fade>模型没存上次结果 → {cur.seq.length} 段全部重算</text>
+        <text x="28" y={seqY + tokH + 62} class="note" in:fade>蓝框前 {prompt.length} 段：第 2 次作为输入 · 橙框 Paris：第 1 次作为输入</text>
+        <text x="16" y={modelY + modelH + 26} class="note" in:fade>最简示例没存上次结果 → 前 {prompt.length} 段只能重算</text>
       {/if}
       {#if step === 6 && $lang === 'zh'}
         <text x="16" y={seqY + tokH + 40} class="note" in:fade>第 2 轮：只画新结果里可能性最大的 4 段</text>
@@ -183,9 +183,9 @@
       {#if showModel}
         <g transition:fade={{ duration: 250 }}>
           <path d="M {seqEndX + 4} {seqY + tokH / 2} H {seqEndX + 22} V {seqY + tokH + 24} H {W / 2} V {modelY - 6}"
-                class="wire" class:active={cur.phase === 'forward'} class:neutral-active={step === 8 && $lang === 'zh'} />
+                class="wire" class:active={cur.phase === 'forward'} class:neutral-active={(step === 5 || step === 8) && $lang === 'zh'} />
           <polygon points="{W / 2 - 5},{modelY - 8} {W / 2 + 5},{modelY - 8} {W / 2},{modelY}" fill="var(--muted)" />
-          <rect x={modelX} y={modelY} width={modelW} height={modelH} rx="10" class="model" class:busy={cur.phase === 'forward'} class:neutral-active={step === 8 && $lang === 'zh'} />
+          <rect x={modelX} y={modelY} width={modelW} height={modelH} rx="10" class="model" class:busy={cur.phase === 'forward'} class:neutral-active={(step === 5 || step === 8) && $lang === 'zh'} />
           <text x={W / 2} y={modelY + 24} text-anchor="middle" class="model-title">transformer</text>
           <text x={W / 2} y={modelY + 42} text-anchor="middle" class="model-sub">
             {cur.phase === 'forward' ? t(`processing ${cur.seq.length} tokens…`, `正在处理 ${cur.seq.length} 个 token…`) : t('scores for every vocab token', '词表中每个 token 的分数')}
