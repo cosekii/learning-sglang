@@ -110,6 +110,7 @@
   const modelX = W / 2 - 110, modelY = 140, modelW = 220, modelH = 54;
   const distY = 240, barH = 18, barGap = 8, barMaxW = 300, barLabelX = 250;
   const tallyY = 130, tallyRow = 32, tallySz = 22;
+  const tallyGap = $derived($lang === 'zh' ? 44 : tallyRow);
   const counts = rounds.map((_, r) => prompt.length + r);
 
   const fill = (k: Kind) => (k === 'prompt' ? 'var(--accent-soft)' : k === 'gen' ? 'var(--gen-soft)' : 'var(--eos-soft)');
@@ -257,20 +258,37 @@
 
       <!-- Tally: one row of cells per round, aligned under the token each cell recomputed -->
       {#if cur.phase === 'tally'}
-        <g in:fade>
+        <g in:fade={{ duration: $lang === 'zh' ? 0 : 400 }}>
+          {#if $lang === 'zh'}
+            <text x="16" y="110" class="note">1 格 = 这一列在这一轮算 1 次</text>
+            <rect x="270" y="99" width="10" height="10" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="286" y="108" class="note">输入</text>
+            <rect x="340" y="99" width="10" height="10" rx="2" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="356" y="108" class="note">新生成</text>
+            <rect x="440" y="99" width="10" height="10" rx="2" fill="var(--eos-soft)" stroke="var(--eos)" />
+            <text x="456" y="108" class="note">EOS（停止）</text>
+          {/if}
           {#each counts as n, r}
-            {@const y = tallyY + r * tallyRow}
+            {@const y = tallyY + r * tallyGap}
             {#each layout.slice(0, n) as { t, x, w }, c}
               <rect x={x + w / 2 - tallySz / 2} {y} width={tallySz} height={tallySz} rx="4" fill={fill(t.kind)} stroke={stroke(t.kind)}
-                    in:fly={{ y: -8, delay: (r * 8 + c) * 35, duration: 250 }} />
+                    in:fly={$lang === 'zh' ? { duration: 0 } : { y: -8, delay: (r * 8 + c) * 35, duration: 250 }} />
             {/each}
             {@const last = layout[n - 1]}
-            <text x={last.x + last.w / 2 + tallySz / 2 + 10} y={y + 15} class="id" in:fade={{ delay: (r * 8 + n) * 35 }}>{t(`round ${r + 1} · ${n} positions`, `第 ${r + 1} 轮 · ${n} 个位置`)}</text>
+            <text x={last.x + last.w / 2 + tallySz / 2 + 10} y={y + 15} class="id" in:fade={{ duration: $lang === 'zh' ? 0 : 400, delay: $lang === 'zh' ? 0 : (r * 8 + n) * 35 }}>{t(`round ${r + 1} · ${n} positions`, `第 ${r + 1} 轮 · 算 ${n} 格`)}</text>
+            {#if $lang === 'zh'}
+              <text x={last.x + last.w / 2 + tallySz / 2 + 10} y={y + 30} class="id" in:fade={{ duration: 0 }}>{r === 0 ? '→ ␣Paris' : r === 1 ? '→ .' : '→ EOS（停止，不再输入）'}</text>
+            {/if}
           {/each}
-          <g in:fade={{ delay: 900 }}>
-            <text x="16" y={tallyY + rounds.length * tallyRow + 22} class="sum">{t(`${counts.join(' + ')} = ${counts.reduce((a, b) => a + b, 0)} positions computed`, `${counts.join(' + ')} = ${counts.reduce((a, b) => a + b, 0)} 个位置被计算`)}</text>
-            <text x="16" y={tallyY + rounds.length * tallyRow + 44} class="sum">{t(`${rounds.length} tokens produced`, `生成 ${rounds.length} 个 token`)}</text>
-            <text x="16" y={tallyY + rounds.length * tallyRow + 70} class="id">{t(`the ${prompt.length} prompt columns: same input, same output, computed ${rounds.length}×`, `这 ${prompt.length} 个 prompt 列：输入相同，输出相同，算了 ${rounds.length} 遍`)}</text>
+          <g in:fade={{ duration: $lang === 'zh' ? 0 : 400, delay: $lang === 'zh' ? 0 : 900 }}>
+            <text x="16" y={tallyY + rounds.length * tallyGap + 22} class="sum">{t(`${counts.join(' + ')} = ${counts.reduce((a, b) => a + b, 0)} positions computed`, `${counts.join(' + ')} = ${counts.reduce((a, b) => a + b, 0)} 格（每格算 1 次）`)}</text>
+            {#if $lang === 'zh'}
+              <text x="16" y={tallyY + rounds.length * tallyGap + 44} class="sum">第一次算 5 + 1 + 1 = 7 格 · 重算 11 格</text>
+              <text x="16" y={tallyY + rounds.length * tallyGap + 70} class="id">重算 11 格 = 前 5 列各多算 2 次（10 格）+ ␣Paris 再算 1 次（1 格）</text>
+            {:else}
+              <text x="16" y={tallyY + rounds.length * tallyGap + 44} class="sum">{rounds.length} tokens produced</text>
+              <text x="16" y={tallyY + rounds.length * tallyGap + 70} class="id">the {prompt.length} prompt columns: same input, same output, computed {rounds.length}×</text>
+            {/if}
           </g>
         </g>
       {/if}
