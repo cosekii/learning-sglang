@@ -1,7 +1,7 @@
 // Headless Chrome over the DevTools protocol, using Node 22's built-in WebSocket. Shared by shot.mjs and transcript.mjs.
 // Finds the browser in this order: $CHROME, chromium / google-chrome on PATH, then the usual macOS install.
 import { spawn, execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -24,6 +24,12 @@ export const KEYS = {
 
 // Starts a headless browser on `port`. Returns tab() to open a page and close() to shut everything down.
 export async function launch({ port, width = 1440, height = 900 }) {
+  // shutdown() removes the profile only if Chrome exits before Node does, which it usually doesn't,
+  // so each launch also clears profiles left by runs that started over an hour ago (~300 MB each).
+  for (const name of readdirSync(tmpdir())) {
+    const dir = join(tmpdir(), name);
+    try { if (name.startsWith('cdp-') && Date.now() - statSync(dir).mtimeMs > 3600e3) rmSync(dir, { recursive: true, force: true }); } catch {}
+  }
   const profile = mkdtempSync(join(tmpdir(), 'cdp-'));
   // background tabs are throttled by default, which stalls Svelte's transitions: old scenes never leave, new text never fades in.
   // These flags keep every tab running at full speed, so several tabs can render at once.
