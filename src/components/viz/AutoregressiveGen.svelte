@@ -56,7 +56,7 @@
         caption: i === 0
           ? `Softmax turns the scores into probabilities. Take the top one, or sample.`
           : round.pick.kind === 'eos'
-            ? `This time the top pick is <code>&lt;EOS&gt;</code>. It's a normal token in the vocabulary; the model learned to produce it when it's done.`
+            ? `This time the top pick is <code>&lt;EOS&gt;</code>. It's a normal token in the vocabulary; the model learned to produce it when done.`
             : `Pick again.`,
         captionZh: i === 0
           ? `Softmax 把分数变成概率。取最大的，或者采样。`
