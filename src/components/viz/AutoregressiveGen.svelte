@@ -61,7 +61,7 @@
           ? `Softmax 把分数变成概率。取最大的，或者采样。`
           : round.pick.kind === 'eos'
             ? `这次最大的是 <code>&lt;EOS&gt;</code>。它是词表里的普通 token；模型学会了在结束时输出它。`
-            : `再选一次。`,
+            : `第 2 轮有了新分数，句号的可能性最大。选中它，下一步接到末尾。`,
       });
       seq = [...seq, round.pick];
       steps.push({
@@ -162,6 +162,9 @@
         <text x="28" y={seqY + tokH + 62} class="note" in:fade>橙色 Paris：新接的 1 段</text>
         <text x="16" y={modelY + modelH + 26} class="note" in:fade>模型没存上次结果 → {cur.seq.length} 段全部重算</text>
       {/if}
+      {#if step === 6 && $lang === 'zh'}
+        <text x="16" y={seqY + tokH + 40} class="note" in:fade>第 2 轮：只画新结果里可能性最大的 4 段</text>
+      {/if}
 
       <!-- Model box with wires in and out -->
       {#if showModel}
@@ -182,7 +185,7 @@
       <!-- Next-token distribution -->
       {#if showDist && cur.round}
         <g transition:fade={{ duration: 250 }}>
-          <text x={barLabelX - 60} y={distY + 4} class="label">{step === 4 ? t('p(next token | sequence)', '上一轮猜下一段的结果') : 'p(next token | sequence)'}</text>
+          <text x={barLabelX - 60} y={distY + 4} class="label">{step === 4 ? t('p(next token | sequence)', '上一轮猜下一段的结果') : step === 6 ? t('p(next token | sequence)', '下一段的可能性 · 0.71 = 71%') : 'p(next token | sequence)'}</text>
           {#each cur.round.dist as d, i}
             {@const y = distY + 14 + i * (barH + barGap)}
             {@const chosen = d.text === cur.round.pick.text}
