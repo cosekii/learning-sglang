@@ -63,6 +63,15 @@
 - `ONLY=1 STEP=11 npm run readability` 仍报 caption 超过两句，并列出英文新词 `decode`。英文原文不能改，本步尚未达到易读满分，英文阻塞已记入 `docs/ideas.md`，待主人定。
 - 改前截图：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch01-s11-legend/ch01-s11-before-zh.png`；改后截图：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch01-s11-legend/ch01-s11-delivery-zh.png`。
 
+## 第 11 步手机竖排（06:21 轮）
+
+- 改前易读分 **11**，原 12 项 **24**，冷读洞 **0**。390 px 和 360 px 手机仍把 720 宽桌面图整体缩小，图内编号和解码说明难以冷读。
+- 仅为中文第 11 步增加 ≤900 px 的 360×570 竖排图：5 段输入与 2 段新生成、EOS 分两行排列，三色图例、停止、编号查表、按顺序拼接、输出范围和下一步全部保留；字号提高到 12–14 px。桌面、英文图和英文动画未动。
+- 改后易读分仍为 **11**（R1/R2/R3/R5/R6=2，R4=1，受保护英文 caption 超两句），原 12 项仍为 **24**。390 px 与 360 px 独立冷读均为 **0 洞**，能不放大读完文字、id 和箭头，图与 caption 同屏，遮住 caption 也能复述主线。
+- 100ms 与 1400ms 手机截图逐像素一致，第 10→11 步在 100ms 也与交付图一致；中文、英文桌面改前后均逐像素一致。
+- `ONLY=1 STEP=11 npm run readability` 仍报英文 caption 超两句，并列出 `decode`。英文原文不能改，本步尚未达到易读满分，英文阻塞仍记在 `docs/ideas.md`。
+- 改前手机截图：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch01-s11-mobile/ch01-s11-before-mobile-zh.png`；改后手机截图：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch01-s11-mobile/ch01-s11-delivery-mobile-zh.png`。
+
 ## 第 12 步本轮整改
 
 - 改前易读分 **9**：R1=2、R2=2、R3=1、R4=1、R5=2、R6=1；原 12 项 **20**（#2/#4/#5/#11=1），冷读洞 **2**。一格算什么、「输出相同」在哪里体现没有答案，每轮输出和 EOS 不占第 8 个计算格也不直观。

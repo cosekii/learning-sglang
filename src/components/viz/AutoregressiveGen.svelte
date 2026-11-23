@@ -106,6 +106,7 @@
     return () => query.removeEventListener('change', update);
   });
   const phoneForward = $derived(phone && step === 2 && $lang === 'zh');
+  const phoneDone = $derived(phone && step === 10 && $lang === 'zh');
 
   // ---- Geometry (SVG viewBox units; the SVG scales to fill the stage) ---------------------------
   const W = 720, H = 400;
@@ -141,7 +142,7 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox={phoneForward ? '0 0 360 570' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Autoregressive generation, step {step + 1}" class:phone-forward={phoneForward}>
+    <svg viewBox={phoneForward || phoneDone ? '0 0 360 570' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Autoregressive generation, step {step + 1}" class:phone-forward={phoneForward} class:phone-done={phoneDone}>
       {#if phoneForward}
         <text x="16" y="22" class="label">序列（5 个 token）</text>
         <rect x="206" y="12" width="10" height="10" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
@@ -169,6 +170,46 @@
         {/each}
         <text x="180" y="532" text-anchor="middle" class="note">分数越高，越可能成为下一段</text>
         <text x="180" y="554" text-anchor="middle" class="note">下一步：把分数变成可能性再选</text>
+      {:else if phoneDone}
+        <text x="16" y="20" class="label">序列（8 个 token）</text>
+        <rect x="16" y="32" width="10" height="10" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="32" y="41" class="note">输入 5 段</text>
+        <rect x="112" y="32" width="10" height="10" rx="2" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x="128" y="41" class="note">新生成</text>
+        <rect x="204" y="32" width="10" height="10" rx="2" fill="var(--eos-soft)" stroke="var(--eos)" />
+        <text x="220" y="41" class="note">EOS（停止）</text>
+        {#each prompt as tok, i}
+          <rect x={16 + i * 66} y="58" width="64" height="30" rx="6" fill={fill(tok.kind)} stroke={stroke(tok.kind)} stroke-width="1.5" />
+          <text x={48 + i * 66} y="78" text-anchor="middle" class="tok">{tok.text.replace(/^ /, '␣')}</text>
+          <text x={48 + i * 66} y="103" text-anchor="middle" class="id">{tok.id}</text>
+        {/each}
+        <rect x="16" y="122" width="120" height="30" rx="6" fill={fill('gen')} stroke={stroke('gen')} stroke-width="1.5" />
+        <text x="76" y="142" text-anchor="middle" class="tok">{cur.seq[5].text.replace(/^ /, '␣')}</text>
+        <text x="76" y="167" text-anchor="middle" class="id">{cur.seq[5].id}</text>
+        <rect x="146" y="122" width="54" height="30" rx="6" fill={fill('gen')} stroke={stroke('gen')} stroke-width="1.5" />
+        <text x="173" y="142" text-anchor="middle" class="tok">{cur.seq[6].text}</text>
+        <text x="173" y="167" text-anchor="middle" class="id">{cur.seq[6].id}</text>
+        <rect x="210" y="122" width="134" height="30" rx="6" fill={fill('eos')} stroke={stroke('eos')} stroke-width="1.5" />
+        <text x="277" y="142" text-anchor="middle" class="tok">{cur.seq[7].text}</text>
+        <text x="277" y="167" text-anchor="middle" class="id">{cur.seq[7].id}</text>
+        <text x="180" y="191" text-anchor="middle" class="note">红色 EOS 接到末尾：停止，不再计算下一段</text>
+        <text x="180" y="222" text-anchor="middle" class="model-title">解码（decode）：把编号换回文字</text>
+        <text x="180" y="252" text-anchor="middle" class="tok">12366、13</text>
+        <text x="180" y="274" text-anchor="middle" class="note">两个新生成的编号</text>
+        <path d="M 180 284 V 296" stroke="var(--fg)" stroke-width="2" />
+        <polygon points="175,294 185,294 180,302" fill="var(--fg)" />
+        <rect x="70" y="304" width="220" height="38" rx="6" fill="white" stroke="var(--line)" />
+        <text x="180" y="328" text-anchor="middle" class="tok">查第 2 步的同一张对照表</text>
+        <path d="M 180 342 V 354" stroke="var(--fg)" stroke-width="2" />
+        <polygon points="175,352 185,352 180,360" fill="var(--fg)" />
+        <text x="180" y="384" text-anchor="middle" class="tok">␣Paris、.</text>
+        <text x="180" y="406" text-anchor="middle" class="note">按顺序拼回文字</text>
+        <rect x="40" y="422" width="280" height="56" rx="6" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x="180" y="443" text-anchor="middle" class="id">新生成的文字（不含输入和 EOS）</text>
+        <text x="180" y="467" text-anchor="middle" class="tok">"{generated}"</text>
+        <text x="180" y="501" text-anchor="middle" class="note">128001 是 EOS：只负责停止，不放进输出文字</text>
+        <text x="180" y="525" text-anchor="middle" class="note">原输入后接新增文字 = 完整内容；这里只画新增</text>
+        <text x="180" y="549" text-anchor="middle" class="note">下一步：第 12 步把三轮的计算量加起来</text>
       {:else}
       <!-- Row 1: the raw prompt, then the token sequence -->
       <text x="16" y="22" class="label">{cur.phase === 'raw' ? 'prompt' : t(`sequence (${cur.seq.length} tokens)`, `序列（${cur.seq.length} 个 token）`)}</text>
@@ -408,10 +449,10 @@
 </figure>
 
 <style>
-  .phone-forward .label { font-size: 12px; }
-  .phone-forward .note { font-size: 13px; }
-  .phone-forward .id, .phone-forward .model-sub { font-size: 12px; }
-  .phone-forward .note, .phone-forward .id, .phone-forward .model-sub { fill: var(--fg); }
+  .phone-forward .label, .phone-done .label { font-size: 12px; }
+  .phone-forward .note, .phone-done .note { font-size: 13px; }
+  .phone-forward .id, .phone-forward .model-sub, .phone-done .id { font-size: 12px; }
+  .phone-forward .note, .phone-forward .id, .phone-forward .model-sub, .phone-done .note, .phone-done .id { fill: var(--fg); }
   .label { font-size: 11px; fill: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
   .tok { font-family: var(--mono); font-size: 13px; fill: var(--fg); }
   .id { font-family: var(--mono); font-size: 10.5px; fill: var(--muted); }
