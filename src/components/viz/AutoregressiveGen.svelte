@@ -281,6 +281,10 @@
         <text x="28" y={seqY + tokH + 62} class="note" in:fade>下一轮：上面 {cur.seq.length} 段一起进入模型</text>
       {/if}
       {#if step === 8 && $lang === 'zh'}
+        <rect x="460" y="12" width="10" height="10" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="476" y="21" class="note">原输入 5 段</text>
+        <rect x="580" y="12" width="10" height="10" rx="2" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x="596" y="21" class="note">模型选出的 token</text>
         <text x="18" y={seqY + tokH + 40} class="pt">·</text>
         <text x="28" y={seqY + tokH + 40} class="note" in:fade>黑色模型和虚线：第 3 轮正在计算，{cur.seq.length} 段一起输入</text>
         <text x="18" y={seqY + tokH + 62} class="pt">·</text>
