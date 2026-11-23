@@ -25,13 +25,13 @@
   // ---- Script: each step is a complete description of what is on screen ---------------------
   interface Step {
     caption: string; captionZh: string; n: number;
-    x?: boolean; rows?: boolean; rowsFor?: number; flyIn?: boolean;
+    x?: boolean; rows?: boolean; rowsFor?: number; flyIn?: boolean; intro?: boolean;
     attend?: number; scores?: boolean; weights?: boolean; mix?: boolean;
     causal?: boolean; recompute?: boolean; unusedQ?: boolean; tally?: boolean;
     markNew?: boolean;        // highlight the latest token's column as "new"
   }
   const steps: Step[] = [
-    { n: 5, caption: `Same five tokens, one forward pass. This time we watch what one attention layer does with them.`, captionZh: `还是这五个 token，一次前向传播。这次看一个 attention 层对它们做了什么。` },
+    { n: 5, intro: true, caption: `Same five tokens, one forward pass. This time we watch what one attention layer does with them.`, captionZh: `还是这五个 token，一起走进模型。打开一个 attention 层：前面的 token 把信息传给后面。` },
     { n: 5, x: true, caption: `Each token comes in as a vector. Call it x.`, captionZh: `每个 token 输入时都是一个向量，记作 x。` },
     { n: 5, rows: true, caption: `Every token multiplies its own x by three learned matrices and gets a <b>query</b>, a <b>key</b> and a <b>value</b>. No other token is involved yet.`, captionZh: `每个 token 用自己的 x 乘三个学好的矩阵，得到一个 <b>query</b>、一个 <b>key</b> 和一个 <b>value</b>。暂时不涉及其他 token。` },
     { n: 5, rows: true, attend: 4, scores: true, caption: `The last token's query gets dotted with every key. A big score means "this one matters to me".`, captionZh: `最后一个 token 的 query 与每个 key 做点积。分数大意味着"这个对我重要"。` },
@@ -91,6 +91,11 @@
 <figure class="viz">
   <div class="canvas">
     <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Attention per decode step, step {step + 1}">
+      <defs>
+        <marker id="intro-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+          <path d="M 0 0 L 6 3 L 0 6 z" fill="var(--accent)" />
+        </marker>
+      </defs>
       <!-- Token row -->
       <text x="16" y={seqY + 18} class="rowlabel">tokens</text>
       {#each cols as c, i (i)}
@@ -99,6 +104,17 @@
           <text x={c.cx} y={seqY + 18} text-anchor="middle" class="tok">{c.t.replace(/^ /, '␣')}</text>
         </g>
       {/each}
+      {#if cur.intro}
+        {@const last = cols[cols.length - 1]}
+        <g transition:fade={{ duration: 700 }}>
+          {#each cols.slice(0, -1) as c}
+            <path d="M {c.cx} {seqY + tokH + 5} C {c.cx} 105, {last.cx} 105, {last.cx} {seqY + tokH + 8}"
+                  fill="none" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#intro-arrow)" />
+          {/each}
+          <text x={W / 2} y="138" text-anchor="middle" class="boxtitle">{t('one attention layer', '一个 attention 层')}</text>
+          <text x={W / 2} y="164" text-anchor="middle" class="slab">{t('earlier tokens pass information to later ones', '前面的 token 把信息传给后面的 token')}</text>
+        </g>
+      {/if}
       {#if cur.markNew}
         <text x={cols[cur.n - 1].cx} y={ROW.x - 8} text-anchor="middle" class="tag new" in:fade>{t('new', '新')}</text>
       {/if}

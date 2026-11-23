@@ -1,4 +1,4 @@
-// Write a plain-text transcript of every ready chapter: each step's caption, every piece of text drawn
+// Write a plain-text transcript of every ready chapter: each step's English and Chinese captions, every piece of text drawn
 // on the stage once its transitions and phases have settled, and the chapter's <details> prose.
 // The output is transcript/NN-slug.md, one file per chapter, meant for reading and diffing — not editing.
 //
@@ -133,6 +133,11 @@ const transcribe = async (ch) => {
     await sleep(waitMs);
     const s = await page.evaluate(EXTRACT);
     if (s.step !== n) throw new Error(`${ch.slug}: opened step ${n}, the counter says ${s.step}`);
+    await page.evaluate(`document.documentElement.dataset.lang = 'zh'; window.dispatchEvent(new CustomEvent('langchange', { detail: 'zh' }))`);
+    await sleep(200);
+    s.captionZh = await page.evaluate(`document.querySelector('.caption')?.textContent.replace(/\\s+/g, ' ').trim() ?? ''`);
+    if (/[一-龥]/.test(s.caption) || !/[一-龥]/.test(s.captionZh)) throw new Error(`${ch.slug}: bilingual caption extraction failed at step ${n}`);
+    await page.evaluate(`document.documentElement.dataset.lang = 'en'; window.dispatchEvent(new CustomEvent('langchange', { detail: 'en' }))`);
     steps.push(s);
     total = s.total;
   }
@@ -148,6 +153,7 @@ const transcribe = async (ch) => {
     out.push(`## Step ${s.step} of ${s.total}`, '');
     const over = s.capLines > budget ? ` (${s.capLines} lines: OVERFLOWS the ${budget}-line caption budget)` : '';
     out.push(`**Caption${over}.** ${s.caption}`, '');
+    out.push(`**Caption (zh).** ${s.captionZh}`, '');
     if (s.lines.length) { out.push('**On stage.**', ''); for (const l of s.lines) out.push(`- ${l}`); out.push(''); }
     flag('CLIPPED · runs past the edge of the stage.', s.clipped);
     flag('OVERLAP · stage text covering other stage text.', s.overlaps);
@@ -178,7 +184,7 @@ await Promise.all(workers);
 const all = [...roster.matchAll(/slug:\s*'([^']+)',\s*title:\s*(?:'([^']*)'|"([^"]*)"),\s*hook:\s*'([^']*)',[^}]*?\s*ready:\s*(true|false)/g)]
   .map((m, i) => ({ n: i + 1, slug: m[1], title: m[2] ?? m[3], hook: m[4], ready: m[5] === 'true' }));
 const index = ['# Transcript', '',
-  'Plain text of every ready chapter: each step\'s caption, the text drawn on the stage once it has settled, and the prose under the stage.',
+  'Plain text of every ready chapter: each step\'s English and Chinese captions, the text drawn on the stage once it has settled, and the prose under the stage.',
   'Read it to check wording and numbers across chapters without opening the components. It is generated — edit the source, then run',
   '`node scripts/transcript.mjs` against a running dev server (`ONLY=13` for one chapter).', '', '| # | chapter | steps |', '|---|---|---|'];
 for (const c of all.filter((c) => c.ready)) {

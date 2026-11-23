@@ -4,6 +4,7 @@
 //   CLIP=x,y,w,h       captures just that CSS-pixel region, at 2x
 //   SCALE=2            a full-page capture at 2x
 //   PHONE=1            a 390×844 phone viewport (PHONE=360x780 for another size)
+//   LANG=zh            save and reload in Chinese before shooting
 // Finds Chrome itself (see lib/browser.mjs); Node 22+.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -22,6 +23,10 @@ for (const pair of pairs) {
   const eq = pair.indexOf('='); const name = pair.slice(0, eq);
   const [url, keys = ''] = pair.slice(eq + 1).split('|');
   await page.goto(url);
+  if (process.env.LANG) {
+    await page.evaluate(`localStorage.setItem('lang', '${process.env.LANG}')`);
+    await page.goto(url);
+  }
   await sleep(800);
   for (const k of keys.split(',').filter(Boolean)) { await page.press(k); await sleep(150); }
   await sleep(waitMs);

@@ -1,6 +1,6 @@
 # Transcript
 
-Plain text of every ready chapter: each step's caption, the text drawn on the stage once it has settled, and the prose under the stage.
+Plain text of every ready chapter: each step's English and Chinese captions, the text drawn on the stage once it has settled, and the prose under the stage.
 Read it to check wording and numbers across chapters without opening the components. It is generated — edit the source, then run
 `node scripts/transcript.mjs` against a running dev server (`ONLY=13` for one chapter).
 

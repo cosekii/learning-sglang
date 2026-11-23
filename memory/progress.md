@@ -1,21 +1,21 @@
-# 三本书制作进度
+# 四本书制作进度
 
-更新：2026-11-22。分数为 `EVAL.md` 的 24 分制平均分；`—` 表示尚未评分。
+更新：2026-11-22。分数为 `EVAL.md` 原 12 项的 24 分制平均分；`—` 表示尚未评分。原标为「完成」的章节仍需逐步补易读性评分，易读分未满 12 不算新标完成。
 
 ## 本轮记录
 
-- 完成首次校准：第 2 章 **23.64**，第 14 章 **23.62**；27 步全部 ≥20，27 张截图已逐张查看，冷读和评分卡已记录。
-- 修复 `scripts/transcript.mjs` 的 roster 正则，使其兼容 `titleZh`、`hookZh` 等双语字段；第 2、14 章 transcript 已重新生成，内容无 diff。
-- 硬门槛通过：`npm run build`、两章 `transcript`、全量 `mobile`、两章 `deep-check`、两章 `zh-check`。
-- 本轮未改教程内容。已知候选：第 14 章第 12 步的 backend 表与当前 SGLang main 有两处偏差，详见评分卡。
-- 下一单元按优先级写 `docs/plan-omni.md`，然后写 `docs/plan-ml-sys.md`。
+- 新增 `scripts/readability.mjs`，检查中英文 caption 句长、句数和每步新术语；transcript 现在同时记录中文 caption，截图脚本支持 `LANG=zh`。
+- 第 2 章第 1 步：补上「前面的 token 把信息传给后面」的箭头和中文解释；易读分 **7 → 12**，原 12 项 **22 → 23**，冷读洞 **1 → 0**。章均分 **23.71**。
+- 第 2 章第 3 步同时引入 4 个术语，英文第一句 19 词、中文 28 字；需要拆改英文原版才能满分，已记入 `docs/ideas.md` 并标「待主人定」。
+- 硬门槛：`build`、全量 `transcript`、第 1 步 `readability`、第 3 步反向检查、`deep-check 02`、第 2 章 `zh-check`、第 2 章 `mobile` 通过。全量易读扫描覆盖 205 步，现存 179 步有机械检查问题，按轮继续整改；全量 `mobile` 通过。
+- 下一单元继续补已有步骤的易读分；新书规划排在其后。
 
 ## Learning SGLang
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
 | 01 | 01-inference | 完成 | — |
-| 02 | 02-attention | 完成；已校准 | 23.64 |
+| 02 | 02-attention | 易读整改：1/14 步满分 | 23.71 |
 | 03 | 03-kv-cache | 完成 | — |
 | 04 | 04-prefill-decode | 完成 | — |
 | 05 | 05-batching | 完成 | — |
@@ -46,8 +46,12 @@
 
 ## Learning SGLang Omni
 
-尚无章节，状态：**规划**。下一单元创建 `docs/plan-omni.md`，规划后再逐章记录状态和平均分。
+尚无章节，状态：**规划**。`docs/plan-omni.md` 尚未创建，规划后再逐章记录状态和平均分。
 
 ## Learning ML Systems
 
 尚无章节，状态：**规划**。`docs/plan-ml-sys.md` 尚未创建，规划后再逐章记录状态和平均分。
+
+## Inside Voxt
+
+尚无章节，状态：**规划**。`docs/plan-voxt.md` 尚未创建；事实来源只使用 `sglang-omni` 的 `origin/main` 公开代码和文档。
