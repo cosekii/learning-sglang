@@ -75,7 +75,7 @@
           ? `<b>停止。</b>把 id 解码回文本。这就是推理：分词，然后前向、选择、追加，直到 EOS。`
           : i === 0
             ? `<b>追加：</b>把 ␣Paris 接到末尾，下一轮读全部 ${seq.length} 段。边猜边接，直到「结束」，就叫「自回归」。`
-            : `追加。`,
+            : `把句号接到末尾，${seq.length - 1} 段变 ${seq.length} 段。下一轮仍读全部 ${seq.length} 段。`,
       });
     });
     const counts = rounds.map((_, r) => prompt.length + r);
@@ -165,6 +165,12 @@
       {#if step === 6 && $lang === 'zh'}
         <text x="16" y={seqY + tokH + 40} class="note" in:fade>第 2 轮：只画新结果里可能性最大的 4 段</text>
       {/if}
+      {#if step === 7 && $lang === 'zh'}
+        <text x="18" y={seqY + tokH + 40} class="pt">·</text>
+        <text x="28" y={seqY + tokH + 40} class="note" in:fade>橙色句号：新接的第 {cur.seq.length} 段，固定编号是 13</text>
+        <text x="18" y={seqY + tokH + 62} class="pt">·</text>
+        <text x="28" y={seqY + tokH + 62} class="note" in:fade>下一轮：上面 {cur.seq.length} 段一起进入模型</text>
+      {/if}
 
       <!-- Model box with wires in and out -->
       {#if showModel}
@@ -185,7 +191,7 @@
       <!-- Next-token distribution -->
       {#if showDist && cur.round}
         <g transition:fade={{ duration: 250 }}>
-          <text x={barLabelX - 60} y={distY + 4} class="label">{step === 4 ? t('p(next token | sequence)', '上一轮猜下一段的结果') : step === 6 ? t('p(next token | sequence)', '下一段的可能性 · 0.71 = 71%') : 'p(next token | sequence)'}</text>
+          <text x={barLabelX - 60} y={distY + 4} class="label">{step === 4 ? t('p(next token | sequence)', '上一轮猜下一段的结果') : step === 6 ? t('p(next token | sequence)', '下一段的可能性 · 0.71 = 71%') : step === 7 ? t('p(next token | sequence)', '上一轮结果 · 0.71 = 71%') : 'p(next token | sequence)'}</text>
           {#each cur.round.dist as d, i}
             {@const y = distY + 14 + i * (barH + barGap)}
             {@const chosen = d.text === cur.round.pick.text}
