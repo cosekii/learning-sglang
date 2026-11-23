@@ -35,7 +35,7 @@
   function buildSteps(): Step[] {
     const steps: Step[] = [];
     let seq = [...prompt];
-    steps.push({ phase: 'raw', seq: [], caption: `A prompt is just a string.`, captionZh: `prompt 就是一个字符串。` });
+    steps.push({ phase: 'raw', seq: [], caption: `A prompt is just a string.`, captionZh: `prompt 就是你输入的一段文字。` });
     steps.push({ phase: 'tokenize', seq, caption: `Split into tokens, each one an integer id. The model never sees the text, only these numbers.`, captionZh: `切分成 token，每个是一个整数 id。模型看不到文本，只看到这些数字。` });
     rounds.forEach((round, i) => {
       const n = seq.length;
