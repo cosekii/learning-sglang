@@ -36,7 +36,7 @@
     const steps: Step[] = [];
     let seq = [...prompt];
     steps.push({ phase: 'raw', seq: [], caption: `A prompt is just a string.`, captionZh: `prompt 就是你输入的一段文字。` });
-    steps.push({ phase: 'tokenize', seq, caption: `Split into tokens, each one an integer id. The model never sees the text, only these numbers.`, captionZh: `切分成 token，每个是一个整数 id。模型看不到文本，只看到这些数字。` });
+    steps.push({ phase: 'tokenize', seq, caption: `Split into tokens, each one an integer id. The model never sees the text, only these numbers.`, captionZh: `文字切成小段，每段叫 token。每段有固定的整数编号（id），模型只读编号。` });
     rounds.forEach((round, i) => {
       const n = seq.length;
       steps.push({
@@ -145,6 +145,11 @@
           <text x={x + w / 2} y={seqY + tokH + 14} text-anchor="middle" class="id">{t.id}</text>
         </g>
       {/each}
+      {#if cur.phase === 'tokenize' && $lang === 'zh'}
+        <text x="16" y={seqY + tokH + 40} class="note" in:fade>文字 → 小段（token）→ 整数编号（id）→ 模型猜下一段</text>
+        <text x="16" y={seqY + tokH + 62} class="note" in:fade>␣ 表示小段开头的空格 · 每个数字对应正上方的小段</text>
+        <text x="16" y={seqY + tokH + 84} class="note" in:fade>编号像学号，事先在对照表里分好；同一小段总是同号</text>
+      {/if}
 
       <!-- Model box with wires in and out -->
       {#if showModel}
@@ -189,7 +194,7 @@
       {/if}
 
       {#if cur.phase === 'tokenize'}
-        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote" in:fade>{t(`Llama-3's tokenizer also puts <|begin_of_text|> (id 128000) in front · left out here`, `Llama-3 的 tokenizer 还会在前面加上 <|begin_of_text|>（id 128000）· 这里省略`)}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote" in:fade>{t(`Llama-3's tokenizer also puts <|begin_of_text|> (id 128000) in front · left out here`, `实际输入还会在最前面加「开始」标记（id 128000）· 这里省略`)}</text>
       {:else if cur.phase === 'done'}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote" in:fade>{t(`SGLang also stops a request at max_new_tokens (default 128), or at a stop string or token id it names`, `SGLang 还会在 max_new_tokens（默认 128）处停止 request，或在它指定的停止字符串或 token id 处停止`)}</text>
       {/if}
@@ -223,6 +228,7 @@
   .label { font-size: 11px; fill: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
   .tok { font-family: var(--mono); font-size: 13px; fill: var(--fg); }
   .id { font-family: var(--mono); font-size: 10.5px; fill: var(--muted); }
+  .note { font-size: 12px; fill: var(--muted); }
   .sum { font-size: 15px; font-weight: 600; fill: var(--fg); }
   .out { fill: var(--fg); }
   .dim { opacity: 0.45; }
