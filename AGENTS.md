@@ -9,7 +9,8 @@ npm run build                  # the type check
 npm run preview
 npm run transcript             # with the dev server up: transcripts + layout checks (ONLY=N for one chapter)
 STEP=5 npm run token-legends   # chapter 1: multi-colour token steps need matching swatches + labels
-npm run mobile                 # with the dev server up: every page and step at 360/390/430 px, flags sideways scroll and clipped captions
+npm run mobile                 # with the dev server up: every page and step at 360/390/430 px, flags layout breaks and audits small SVG text
+ONLY=N STEP=M LANG=zh npm run mobile  # changed Chinese step: also fail on visible SVG text below 10 CSS px
 npm run shot -- <outDir> <waitMs> 'name=url' ...   # screenshots
 npm run og                     # re-render public/og.png, the link-preview card, from scripts/og/card.html
 ```
@@ -191,7 +192,7 @@ The loop that works: edit the component → `npm run build` (the only type check
 
 ## Phones
 
-Below 900 px the sidebar folds into a top bar with a **Chapters** button, the stage flows at its natural height instead of filling the viewport, the caption may grow past three lines (with a five-line floor so the buttons rarely move), and the progress bar takes its own line with segments that shrink. The SVG scales with the stage width, so stage text gets small but never breaks the page. `npm run mobile` checks every page and step at 360, 390 and 430 px for sideways scroll, clipped captions and controls past the edge; run it after touching the layout, `StepControls.svelte` or `global.css`.
+Below 900 px the sidebar folds into a top bar with a **Chapters** button, the stage flows at its natural height instead of filling the viewport, the caption may grow past three lines (with a five-line floor so the buttons rarely move), and the progress bar takes its own line with segments that shrink. The SVG scales with the stage width, so stage text gets small but never breaks the page. `npm run mobile` checks every page and step at 360, 390 and 430 px for sideways scroll, clipped captions and controls past the edge; run it after touching the layout, `StepControls.svelte` or `global.css`. It also reports visible SVG text below 10 CSS px as an audit. `ONLY=N STEP=M LANG=zh npm run mobile` makes that font-size floor a gate for the Chinese step being repaired; the mechanical proxy does not replace a phone cold-read.
 
 ## Deploy to GitHub Pages
 

@@ -4,11 +4,11 @@
 
 ## 本轮记录
 
-- 新建 `docs/plan-omni.md`：全书分 3 部分、13 章，每章列出 slug、标题、hook、核心问题、前置、事实来源和章末衔接。主题从运行图与数据生命周期推进到资源、测量、优化，再落到 Fish S2 Pro、全双工和 Qwen3-Omni 部署。
-- 规划核对 `sglang-omni` 的 `origin/main@5c23e73838`；60 个引用文件全部存在。第 1 本 Ch. 16–21 只作前置引用，新书改讲配置实现、请求绑定、数据释放、实验测量和具体模型落地。独立复核指出并确认修正了 Part 分组、EVAL 路径、Ch. 4 与 Ch. 12 前置、Ch. 10 与旧章重叠这 5 处问题。
-- 自定义规划检查通过：13 章连续编号、3 个 Part、字段齐全、引用路径和进度表 slug 一致；`build`、全量 `transcript`、全量 `deep-check` 和 `git diff --check` 通过。已截取并复核第 1 本 Ch. 17 Step 4 参照页：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-omni-plan/omni-plan-reference.png`。
-- 本轮只写规划，未改教程步骤；易读分、原 12 项、R1 复述和冷读洞均不适用。第 1 章仍为 **12/12** 步易读满分、章均分 **23.75 / 24**；第 2 章仍为 **4/14** 步易读满分、章均分 **23.93 / 24**。
-- 本轮类型：**新书**。下一普通轮写 `docs/plan-ml-sys.md`，再写 `docs/plan-voxt.md`；下次整点轮做第 3 项「复盘自己」。
+- 15:01 整点自主优化完成第 3 项「复盘自己」：最近 21 个步骤整改中，R4 有 4 步、R6 有 6 步、手机小字有 10 步记录。R2/R4 已有机械检查，R6 仍须转场冷读；本轮选择旧 `mobile` 漏检的手机实际字号。
+- `mobile.mjs` 现在用计算字号乘 `getScreenCTM()` 的缩放，找出低于 10 CSS px 的可见 SVG 文字。全量保留布局硬门，小字只汇总审计；`ONLY=N STEP=M LANG=zh npm run mobile` 把选中中文步的小字检查变成硬门，默认英文布局检查不变。
+- 真实旧问题负测试通过：第 1 章第 5 步在 360/390/430 px 均以最小 **4.71/5.15/5.73 px** 失败；已修第 3、11 步在三种宽度都通过。360 px 全章审计另标出第 1 章其余 10 步和第 2 章全部 14 步，这些只是待冷读候选，未直接改分或记洞。
+- `node --check`、`build`、第 1 章 `transcript`、全量 `mobile`、`deep-check 01`、第 1 章 `zh-check` 和全章 `readability` 均通过；独立代码审查无必须修问题。截图位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-hourly-review-03/`，已复核第 3 步清晰竖排图和第 5 步现存小字图。
+- 本轮未改教程步骤，易读分、原 12 项和冷读洞不变。下一普通轮写 `docs/plan-ml-sys.md`，再写 `docs/plan-voxt.md`；下次整点轮换做第 1 项「像读者一样从头读一遍」。
 
 ## Learning SGLang
 
