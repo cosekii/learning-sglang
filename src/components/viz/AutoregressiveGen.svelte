@@ -43,10 +43,10 @@
       steps.push({
         phase: 'forward', seq, round,
         caption: i === 0
-          ? `<b>Forward pass:</b> all ${n} ids go in, and every vocabulary token gets a score. One guess at what comes next.`
+          ? `<b>Model:</b> all ${n} ids go in, and every candidate token gets a score. One guess at what comes next.`
           : `Forward pass again, on all ${n}. The first ${prompt.length} get computed from scratch, same as before.`,
         captionZh: i === 0
-          ? `<b>前向传播：</b>${n} 个 id 全部输入，词表中每个 token 都得到分数。这是对下一个 token 的一次猜测。`
+          ? `<b>模型：</b>${n} 个 id 全部输入，每个候选 token 都得到分数。这是对下一个 token 的一次猜测。`
           : i === 1
             ? `第 2 轮，${n} 段一起进入模型。前 ${prompt.length} 段重算，Paris 第一次作为输入计算。`
             : `第 3 轮，${n} 段一起进入模型。前 ${n - 1} 段是重算，句号第一次算。`,
@@ -56,12 +56,12 @@
         caption: i === 0
           ? `Softmax turns the scores into chances. Take the top one, or sample.`
           : round.pick.kind === 'eos'
-            ? `This time the top pick is <code>&lt;EOS&gt;</code>. It's a normal token in the vocabulary; the model learned to produce it when done.`
+            ? `This time the top pick is <code>&lt;EOS&gt;</code>. It's a normal token; the model learned to produce it when done.`
             : `Pick again.`,
         captionZh: i === 0
           ? `Softmax 把分数变成可能性。取最大的，或者采样。`
           : round.pick.kind === 'eos'
-            ? `这次最大的是 <code>&lt;EOS&gt;</code>。它是词表里的普通 token；模型学会了在结束时输出它。`
+            ? `这次最大的是 <code>&lt;EOS&gt;</code>。它也是普通 token；模型学会了在结束时输出它。`
             : `第 2 轮有了新分数，句号的可能性最大。选中它，下一步接到末尾。`,
       });
       seq = [...seq, round.pick];
@@ -157,9 +157,9 @@
         <path d="M 306 54 V 190 M 306 122 H 330 V 214 H 180 V 226" fill="none" stroke="var(--fg)" stroke-width="2" />
         <polygon points="175,224 185,224 180,232" fill="var(--fg)" />
         <rect x="40" y="232" width="280" height="54" rx="10" class="model neutral-active" />
-        <text x="180" y="255" text-anchor="middle" class="model-title">transformer（给候选打分的模型）</text>
-        <text x="180" y="277" text-anchor="middle" class="model-sub">前向传播 = 5 个一起算 · 内部见第 2 章</text>
-        <text x="180" y="322" text-anchor="middle" class="model-title">Llama 3 词表 = 128,256 项</text>
+        <text x="180" y="255" text-anchor="middle" class="model-title">模型：给候选小段打分</text>
+        <text x="180" y="277" text-anchor="middle" class="model-sub">5 个编号一起算 · 内部见第 2 章</text>
+        <text x="180" y="322" text-anchor="middle" class="model-title">Llama 3 候选 token = 128,256 项</text>
         <text x="180" y="344" text-anchor="middle" class="note">128,000 普通 + 256 特殊（含第 2 步「开始」）</text>
         <text x="180" y="366" text-anchor="middle" class="note">约 128 所千人小学 · 每项 1 个分数，只画 4 项</text>
         <text x="80" y="396" class="note">候选小段</text>
@@ -318,9 +318,9 @@
           {/if}
           <polygon points="{W / 2 - 5},{modelY - 8} {W / 2 + 5},{modelY - 8} {W / 2},{modelY}" fill="var(--muted)" />
           <rect x={modelX} y={modelY} width={modelW} height={modelH} rx="10" class="model" class:busy={cur.phase === 'forward'} class:neutral-active={(step === 2 || step === 5 || step === 8) && $lang === 'zh'} />
-          <text x={W / 2} y={modelY + 24} text-anchor="middle" class="model-title">{step === 2 && $lang === 'zh' ? 'transformer（模型）' : 'transformer'}</text>
+          <text x={W / 2} y={modelY + 24} text-anchor="middle" class="model-title">{$lang === 'zh' ? '模型' : 'model'}</text>
           <text x={W / 2} y={modelY + 42} text-anchor="middle" class="model-sub">
-            {step === 2 && $lang === 'zh' ? '前向传播：5 个编号一起算一遍' : cur.phase === 'forward' ? t(`processing ${cur.seq.length} tokens…`, `正在处理 ${cur.seq.length} 个 token…`) : t('scores for every vocab token', '词表中每个 token 的分数')}
+            {step === 2 && $lang === 'zh' ? '5 个编号一起算一遍' : cur.phase === 'forward' ? t(`processing ${cur.seq.length} tokens…`, `正在处理 ${cur.seq.length} 个 token…`) : t('a score for every candidate token', '每个候选 token 的分数')}
           </text>
           {#if step === 2 && $lang === 'zh'}
             <path d="M {W / 2} {modelY + modelH} V 204" class="wire" />
@@ -334,7 +334,7 @@
 
       {#if step === 2 && $lang === 'zh'}
         <g>
-          <text x={W / 2} y="222" text-anchor="middle" class="model-title">Llama 3 词表：128,000 个普通 + 256 个特殊（含第 2 步「开始」）= 128,256 项</text>
+          <text x={W / 2} y="222" text-anchor="middle" class="model-title">候选 token：128,000 个普通 + 256 个特殊（含第 2 步「开始」）= 128,256 项</text>
           <text x={W / 2} y="241" text-anchor="middle" class="note">约 13 万 ≈ 128 所千人小学的人数 · 每项 1 个分数，只画 4 项</text>
           <text x="210" y="264" class="note">候选小段</text>
           <text x="410" y="264" class="note">教学示意分数</text>
