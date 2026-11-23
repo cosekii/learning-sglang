@@ -158,6 +158,14 @@
         <rect x="584" y="12" width="10" height="10" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
         <text x="600" y="21" class="note">蓝框 = 输入的 5 段</text>
       {/if}
+      {#if cur.phase === 'done' && $lang === 'zh'}
+        <rect x="360" y="12" width="10" height="10" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="376" y="21" class="note">输入 5 段</text>
+        <rect x="466" y="12" width="10" height="10" rx="2" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x="482" y="21" class="note">新生成</text>
+        <rect x="580" y="12" width="10" height="10" rx="2" fill="var(--eos-soft)" stroke="var(--eos)" />
+        <text x="596" y="21" class="note">EOS（停止）</text>
+      {/if}
       {#if step === 4 && $lang === 'zh'}
         <text x="16" y={seqY + tokH + 40} class="note" in:fade>下一轮：上面 {cur.seq.length} 段一起进入模型，再猜一段，直到「结束」</text>
       {/if}
@@ -286,17 +294,19 @@
         {#if $lang === 'zh'}
           <g in:fade={{ duration: 0 }}>
             <text x={W / 2} y="146" text-anchor="middle" class="model-title">解码（decode）：按第 2 步的对照表，把编号换回文字</text>
-            <text x="150" y="190" text-anchor="middle" class="tok">12366 + 13</text>
-            <text x="150" y="211" text-anchor="middle" class="note">新生成的编号</text>
+            <text x="150" y="190" text-anchor="middle" class="tok">12366、13</text>
+            <text x="150" y="211" text-anchor="middle" class="note">两个新生成的编号</text>
             <text x="270" y="190" text-anchor="middle" class="tok">→</text>
             <text x="360" y="190" text-anchor="middle" class="tok">查对照表</text>
             <text x="450" y="190" text-anchor="middle" class="tok">→</text>
-            <text x="570" y="190" text-anchor="middle" class="tok">␣Paris + .</text>
-            <text x="570" y="211" text-anchor="middle" class="note">拼回文字</text>
+            <text x="570" y="190" text-anchor="middle" class="tok">␣Paris、.</text>
+            <text x="570" y="211" text-anchor="middle" class="note">按顺序拼回文字</text>
             <rect x="210" y="240" width="300" height="58" rx="6" fill="var(--gen-soft)" stroke="var(--gen)" />
             <text x={W / 2} y="261" text-anchor="middle" class="id">新生成的文字（不含输入和 EOS）</text>
             <text x={W / 2} y="284" text-anchor="middle" class="tok">"{generated}"</text>
             <text x={W / 2} y="326" text-anchor="middle" class="note">128001 是 EOS，只负责停止，不放进输出文字</text>
+            <text x={W / 2} y="350" text-anchor="middle" class="note">原输入后接新增文字 = 完整内容；这里只画新增部分</text>
+            <text x={W / 2} y="374" text-anchor="middle" class="note">下一步：第 12 步把三轮的计算量加起来</text>
           </g>
         {:else}
           <g in:fade>
