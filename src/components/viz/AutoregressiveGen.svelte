@@ -43,10 +43,10 @@
       steps.push({
         phase: 'forward', seq, round,
         caption: i === 0
-          ? `<b>Forward pass.</b> All ${n} ids go in, and out comes a score for every token in the vocabulary. One guess at what comes next.`
+          ? `<b>Forward pass:</b> all ${n} ids go in, and every vocabulary token gets a score. One guess at what comes next.`
           : `Forward pass again, on all ${n}. The first ${prompt.length} get computed from scratch, same as before.`,
         captionZh: i === 0
-          ? `<b>前向传播。</b>${n} 个 id 全部输入，输出词表中每个 token 的分数。这是对下一个 token 的一次猜测。`
+          ? `<b>前向传播：</b>${n} 个 id 全部输入，词表中每个 token 都得到分数。这是对下一个 token 的一次猜测。`
           : i === 1
             ? `第 2 轮，${n} 段一起进入模型。前 ${prompt.length} 段重算，Paris 第一次作为输入计算。`
             : `第 3 轮，${n} 段一起进入模型。前 ${n - 1} 段是重算，句号第一次算。`,
