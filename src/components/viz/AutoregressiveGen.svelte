@@ -178,6 +178,9 @@
         <text x="28" y={seqY + tokH + 62} class="note" in:fade>蓝框前 {prompt.length} 段第 3 次 · 橙框 Paris 第 2 次 · 橙框句号第 1 次</text>
         <text x="16" y={modelY + modelH + 26} class="note" in:fade>最简示例没存上次结果 → 前 {cur.seq.length - 1} 段重算；输入没变，结果不变</text>
       {/if}
+      {#if step === 9 && $lang === 'zh'}
+        <text x="16" y={seqY + tokH + 40} class="note" in:fade={{ duration: 0 }}>红色 = EOS（结束标记） · 和 Paris、句号一样，选可能性最大的</text>
+      {/if}
 
       <!-- Model box with wires in and out -->
       {#if showModel}
@@ -190,22 +193,22 @@
           <text x={W / 2} y={modelY + 42} text-anchor="middle" class="model-sub">
             {cur.phase === 'forward' ? t(`processing ${cur.seq.length} tokens…`, `正在处理 ${cur.seq.length} 个 token…`) : t('scores for every vocab token', '词表中每个 token 的分数')}
           </text>
-          <path d="M {W / 2} {modelY + modelH} V {distY - 10}" class="wire" class:active={cur.phase === 'sample'} />
+          <path d="M {W / 2} {modelY + modelH} V {distY - 10}" class="wire" class:active={cur.phase === 'sample'} class:neutral-active={step === 9 && $lang === 'zh'} />
           <polygon points="{W / 2 - 5},{distY - 12} {W / 2 + 5},{distY - 12} {W / 2},{distY - 4}" fill="var(--muted)" />
         </g>
       {/if}
 
       <!-- Next-token distribution -->
       {#if showDist && cur.round}
-        <g transition:fade={{ duration: 250 }}>
-          <text x={barLabelX - 60} y={distY + 4} class="label">{step === 4 ? t('p(next token | sequence)', '上一轮猜下一段的结果') : step === 6 ? t('p(next token | sequence)', '下一段的可能性 · 0.71 = 71%') : step === 7 ? t('p(next token | sequence)', '上一轮结果 · 0.71 = 71%') : 'p(next token | sequence)'}</text>
+        <g transition:fade={{ duration: step === 9 && $lang === 'zh' ? 0 : 250 }}>
+          <text x={barLabelX - 60} y={distY + 4} class="label">{step === 4 ? t('p(next token | sequence)', '上一轮猜下一段的结果') : step === 6 ? t('p(next token | sequence)', '下一段的可能性 · 0.71 = 71%') : step === 7 ? t('p(next token | sequence)', '上一轮结果 · 0.71 = 71%') : step === 9 ? t('p(next token | sequence)', '第 9 步算出下一段的可能性') : 'p(next token | sequence)'}</text>
           {#each cur.round.dist as d, i}
             {@const y = distY + 14 + i * (barH + barGap)}
             {@const chosen = d.text === cur.round.pick.text}
             <text x={barLabelX - 8} y={y + 13} text-anchor="end" class="tok" class:dim={!chosen}>{d.text.replace(/^ /, '␣')}</text>
             <rect x={barLabelX} {y} width={d.p * barMaxW} height={barH} rx="3"
-                  fill={chosen ? stroke(cur.round.pick.kind) : 'var(--line)'} class="bar" />
-            <text x={barLabelX + d.p * barMaxW + 6} y={y + 13} class="id" class:dim={!chosen}>{d.p.toFixed(2)}</text>
+                  fill={chosen ? stroke(cur.round.pick.kind) : 'var(--line)'} class="bar" class:steady={step === 9 && $lang === 'zh'} />
+            <text x={barLabelX + d.p * barMaxW + 6} y={y + 13} class="id" class:dim={!chosen}>{d.p.toFixed(2)}{step === 9 && $lang === 'zh' && chosen ? ` = ${Math.round(d.p * 100)}%` : ''}</text>
           {/each}
           {#if cur.phase === 'sample'}
             <text x={barLabelX + barMaxW + 50} y={distY + 27} class="pick" in:fade>{t('← pick', '← 选中')}</text>
@@ -225,6 +228,9 @@
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote" in:fade>{t(`Llama-3's tokenizer also puts <|begin_of_text|> (id 128000) in front · left out here`, `实际输入还会在最前面加「开始」标记（id 128000）· 这里省略`)}</text>
       {:else if cur.phase === 'done'}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote" in:fade>{t(`SGLang also stops a request at max_new_tokens (default 128), or at a stop string or token id it names`, `SGLang 还会在 max_new_tokens（默认 128）处停止 request，或在它指定的停止字符串或 token id 处停止`)}</text>
+      {:else if step === 9 && $lang === 'zh'}
+        <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote" in:fade={{ duration: 0 }}>全部候选的可能性合计 1；只画最大的 4 项，其余 1 − (0.88 + 0.05 + 0.03 + 0.02) = 0.02</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote" in:fade={{ duration: 0 }}>选中 EOS 后，下一步停止</text>
       {:else if step === 8 && $lang === 'zh'}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote" in:fade>怎么少算，第 12 步先算清重复了多少</text>
       {/if}
@@ -272,6 +278,7 @@
   .model-title { font-size: 14px; font-weight: 600; fill: var(--fg); }
   .model-sub { font-size: 11px; fill: var(--muted); }
   .bar { transition: width 400ms ease-out, fill 300ms; }
+  .bar.steady { transition: none; }
   rect.pulse { animation: pulse 900ms ease-in-out infinite; }
   @keyframes pulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.45 } }
   @keyframes march { to { stroke-dashoffset: -20 } }
