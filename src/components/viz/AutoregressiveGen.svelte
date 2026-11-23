@@ -83,8 +83,8 @@
     const total = counts.reduce((a, b) => a + b, 0);
     steps.push({
       phase: 'tally', seq,
-      caption: `<b>The bill.</b> ${total} positions computed for ${rounds.length} new tokens. The first ${prompt.length} columns got the exact same treatment ${rounds.length} times. What's actually being recomputed?`,
-      captionZh: `<b>算总账。</b>为 ${rounds.length} 个新 token 计算了 ${total} 个位置。前 ${prompt.length} 列被完全相同地处理了 ${rounds.length} 遍。到底在重复计算什么？`,
+      caption: `<b>The bill:</b> ${total} positions computed for ${rounds.length} new tokens. The first ${prompt.length} columns had identical inputs and outputs ${rounds.length} times; what gets recomputed?`,
+      captionZh: `<b>算总账：</b>${rounds.length} 个新 token 共计算 ${total} 个位置。前 ${prompt.length} 列输入、输出都相同，却各算 ${rounds.length} 遍；到底重复算了什么？`,
     });
     return steps;
   }
