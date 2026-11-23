@@ -114,9 +114,9 @@
 
   const fill = (k: Kind) => (k === 'prompt' ? 'var(--accent-soft)' : k === 'gen' ? 'var(--gen-soft)' : 'var(--eos-soft)');
   const stroke = (k: Kind) => (k === 'prompt' ? 'var(--accent)' : k === 'gen' ? 'var(--gen)' : 'var(--eos)');
-  const showModel = $derived(['forward', 'sample', 'append', 'done'].includes(cur.phase));
-  const showDist = $derived(['sample', 'append', 'done'].includes(cur.phase));
-  const flying = $derived(cur.phase === 'append' || cur.phase === 'done');
+  const showModel = $derived(['forward', 'sample', 'append', 'done'].includes(cur.phase) && !(cur.phase === 'done' && $lang === 'zh'));
+  const showDist = $derived(['sample', 'append', 'done'].includes(cur.phase) && !(cur.phase === 'done' && $lang === 'zh'));
+  const flying = $derived((cur.phase === 'append' || cur.phase === 'done') && !(cur.phase === 'done' && $lang === 'zh'));
   const detok = $derived(cur.seq.filter((t) => t.kind !== 'eos').map((t) => t.text).join(''));
   const generated = $derived(detok.slice(promptText.length));
 
@@ -181,10 +181,13 @@
       {#if step === 9 && $lang === 'zh'}
         <text x="16" y={seqY + tokH + 40} class="note" in:fade={{ duration: 0 }}>红色 = EOS（结束标记） · 和 Paris、句号一样，选可能性最大的</text>
       {/if}
+      {#if cur.phase === 'done' && $lang === 'zh'}
+        <text x="16" y={seqY + tokH + 40} class="note" in:fade={{ duration: 0 }}>红色 EOS：接到末尾后停止，不再计算下一段</text>
+      {/if}
 
       <!-- Model box with wires in and out -->
       {#if showModel}
-        <g transition:fade={{ duration: 250 }}>
+        <g transition:fade={{ duration: (step === 9 || step === 10) && $lang === 'zh' ? 0 : 250 }}>
           <path d="M {seqEndX + 4} {seqY + tokH / 2} H {seqEndX + 22} V {seqY + tokH + 24} H {W / 2} V {modelY - 6}"
                 class="wire" class:active={cur.phase === 'forward'} class:neutral-active={(step === 5 || step === 8) && $lang === 'zh'} />
           <polygon points="{W / 2 - 5},{modelY - 8} {W / 2 + 5},{modelY - 8} {W / 2},{modelY}" fill="var(--muted)" />
@@ -200,7 +203,7 @@
 
       <!-- Next-token distribution -->
       {#if showDist && cur.round}
-        <g transition:fade={{ duration: step === 9 && $lang === 'zh' ? 0 : 250 }}>
+        <g transition:fade={{ duration: (step === 9 || step === 10) && $lang === 'zh' ? 0 : 250 }}>
           <text x={barLabelX - 60} y={distY + 4} class="label">{step === 4 ? t('p(next token | sequence)', '上一轮猜下一段的结果') : step === 6 ? t('p(next token | sequence)', '下一段的可能性 · 0.71 = 71%') : step === 7 ? t('p(next token | sequence)', '上一轮结果 · 0.71 = 71%') : step === 9 ? t('p(next token | sequence)', '第 9 步算出下一段的可能性') : 'p(next token | sequence)'}</text>
           {#each cur.round.dist as d, i}
             {@const y = distY + 14 + i * (barH + barGap)}
@@ -218,16 +221,33 @@
 
       <!-- Done: decoded output -->
       {#if cur.phase === 'done'}
-        <g in:fade>
-          <rect x="16" y={modelY + 12} width="200" height="30" rx="6" fill="white" stroke="var(--eos)" />
-          <text x="28" y={modelY + 31} class="id">{t('output:', '输出：')} <tspan class="out">"{generated}"</tspan></text>
-        </g>
+        {#if $lang === 'zh'}
+          <g in:fade={{ duration: 0 }}>
+            <text x={W / 2} y="146" text-anchor="middle" class="model-title">解码（decode）：按第 2 步的对照表，把编号换回文字</text>
+            <text x="150" y="190" text-anchor="middle" class="tok">12366 + 13</text>
+            <text x="150" y="211" text-anchor="middle" class="note">新生成的编号</text>
+            <text x="270" y="190" text-anchor="middle" class="tok">→</text>
+            <text x="360" y="190" text-anchor="middle" class="tok">查对照表</text>
+            <text x="450" y="190" text-anchor="middle" class="tok">→</text>
+            <text x="570" y="190" text-anchor="middle" class="tok">␣Paris + .</text>
+            <text x="570" y="211" text-anchor="middle" class="note">拼回文字</text>
+            <rect x="210" y="240" width="300" height="58" rx="6" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x={W / 2} y="261" text-anchor="middle" class="id">新生成的文字（不含输入和 EOS）</text>
+            <text x={W / 2} y="284" text-anchor="middle" class="tok">"{generated}"</text>
+            <text x={W / 2} y="326" text-anchor="middle" class="note">128001 是 EOS，只负责停止，不放进输出文字</text>
+          </g>
+        {:else}
+          <g in:fade>
+            <rect x="16" y={modelY + 12} width="200" height="30" rx="6" fill="white" stroke="var(--eos)" />
+            <text x="28" y={modelY + 31} class="id">output: <tspan class="out">"{generated}"</tspan></text>
+          </g>
+        {/if}
       {/if}
 
       {#if cur.phase === 'tokenize'}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote" in:fade>{t(`Llama-3's tokenizer also puts <|begin_of_text|> (id 128000) in front · left out here`, `实际输入还会在最前面加「开始」标记（id 128000）· 这里省略`)}</text>
-      {:else if cur.phase === 'done'}
-        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote" in:fade>{t(`SGLang also stops a request at max_new_tokens (default 128), or at a stop string or token id it names`, `SGLang 还会在 max_new_tokens（默认 128）处停止 request，或在它指定的停止字符串或 token id 处停止`)}</text>
+      {:else if cur.phase === 'done' && $lang !== 'zh'}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote" in:fade>SGLang also stops a request at max_new_tokens (default 128), or at a stop string or token id it names</text>
       {:else if step === 9 && $lang === 'zh'}
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote" in:fade={{ duration: 0 }}>全部候选的可能性合计 1；只画最大的 4 项，其余 1 − (0.88 + 0.05 + 0.03 + 0.02) = 0.02</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote" in:fade={{ duration: 0 }}>选中 EOS 后，下一步停止</text>
