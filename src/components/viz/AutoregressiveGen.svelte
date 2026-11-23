@@ -97,6 +97,15 @@
     if (q >= 1 && q <= steps.length) step = q - 1;
   });
   const cur = $derived(steps[step]);
+  let phone = $state(false);
+  $effect(() => {
+    const query = window.matchMedia('(max-width: 900px)');
+    const update = () => (phone = query.matches);
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  });
+  const phoneForward = $derived(phone && step === 2 && $lang === 'zh');
 
   // ---- Geometry (SVG viewBox units; the SVG scales to fill the stage) ---------------------------
   const W = 720, H = 400;
@@ -132,7 +141,35 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Autoregressive generation, step {step + 1}">
+    <svg viewBox={phoneForward ? '0 0 360 570' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Autoregressive generation, step {step + 1}" class:phone-forward={phoneForward}>
+      {#if phoneForward}
+        <text x="16" y="22" class="label">序列（5 个 token）</text>
+        <rect x="206" y="12" width="10" height="10" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="222" y="21" class="note">蓝框 = 输入 5 段</text>
+        {#each prompt as tok, i}
+          {@const y = 40 + i * 34}
+          <rect x="16" {y} width="190" height="28" rx="6" fill={fill(tok.kind)} stroke={stroke(tok.kind)} stroke-width="1.5" />
+          <text x="30" y={y + 19} class="tok">{tok.text.replace(/^ /, '␣')}</text>
+          <text x="230" y={y + 19} class="id">{tok.id}</text>
+          <path d="M 266 {y + 14} H 306" fill="none" stroke="var(--fg)" stroke-width="2" />
+        {/each}
+        <path d="M 306 54 V 190 M 306 122 H 330 V 214 H 180 V 226" fill="none" stroke="var(--fg)" stroke-width="2" />
+        <polygon points="175,224 185,224 180,232" fill="var(--fg)" />
+        <rect x="40" y="232" width="280" height="54" rx="10" class="model neutral-active" />
+        <text x="180" y="255" text-anchor="middle" class="model-title">transformer（给候选打分的模型）</text>
+        <text x="180" y="277" text-anchor="middle" class="model-sub">前向传播 = 5 个一起算 · 内部见第 2 章</text>
+        <text x="180" y="322" text-anchor="middle" class="model-title">Llama 3 词表 = 128,256 项</text>
+        <text x="180" y="344" text-anchor="middle" class="note">128,000 普通 + 256 特殊（含第 2 步「开始」）</text>
+        <text x="180" y="366" text-anchor="middle" class="note">约 128 所千人小学 · 每项 1 个分数，只画 4 项</text>
+        <text x="80" y="396" class="note">候选小段</text>
+        <text x="205" y="396" class="note">示意分数（非实测）</text>
+        {#each rounds[0].dist as d, i}
+          <text x="95" y={422 + i * 25} class="tok">{d.text.replace(/^ /, '␣')}</text>
+          <text x="250" y={422 + i * 25} class="tok">{firstScores[i].toFixed(2)}</text>
+        {/each}
+        <text x="180" y="532" text-anchor="middle" class="note">分数越高，越可能成为下一段</text>
+        <text x="180" y="554" text-anchor="middle" class="note">下一步：把分数变成可能性再选</text>
+      {:else}
       <!-- Row 1: the raw prompt, then the token sequence -->
       <text x="16" y="22" class="label">{cur.phase === 'raw' ? 'prompt' : t(`sequence (${cur.seq.length} tokens)`, `序列（${cur.seq.length} 个 token）`)}</text>
       {#if cur.phase === 'raw'}
@@ -363,6 +400,7 @@
           </g>
         </g>
       {/if}
+      {/if}
     </svg>
   </div>
 
@@ -370,6 +408,10 @@
 </figure>
 
 <style>
+  .phone-forward .label { font-size: 12px; }
+  .phone-forward .note { font-size: 13px; }
+  .phone-forward .id, .phone-forward .model-sub { font-size: 12px; }
+  .phone-forward .note, .phone-forward .id, .phone-forward .model-sub { fill: var(--fg); }
   .label { font-size: 11px; fill: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
   .tok { font-family: var(--mono); font-size: 13px; fill: var(--fg); }
   .id { font-family: var(--mono); font-size: 10.5px; fill: var(--muted); }

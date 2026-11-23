@@ -29,6 +29,14 @@
 - 硬门槛：`build`、第 1 章 `transcript`、全量 `mobile`、`deep-check 01`、第 1 章 `zh-check` 均通过；本步 `readability` 未过。
 - 改前截图：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch01-s03-fix/ch01-s03-before-zh.png`；改后截图：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch01-s03-fix/ch01-s03-after-zh.png`。
 
+## 第 3 步手机竖排（05:51 轮）
+
+- 改前易读分 **9**，原 12 项 **24**，冷读洞 **0**。390 px 手机仍把 720 宽桌面图整体缩小，图内编号和说明难以冷读。
+- 仅为中文第 3 步增加 ≤900 px 的 360×570 竖排图：5 段输入改为 5 行，每行各有一条输入线；说明字号提高到 12–13 px 并加深颜色；模型作用改为「给候选打分」，分数标明「非实测」，模型内部明确留到第 2 章。桌面、英文图和英文动画未动。
+- 第一轮手机冷读指出汇流线、灰字和示意分数等 5 个问题，修后最终冷读洞 **0**。改后易读分仍为 **9**（R2=0、R4=1，均因受保护英文；R6=2），原 12 项仍为 **24**。390 px 最终冷读能不放大读完图内文字和连线，图与 caption 同屏，遮住 caption 也能复述主线；360 px 复核也是 0 洞。100ms 与 1400ms 手机截图逐像素一致，第 2→3 步在 100ms 也与交付图一致；桌面改前后逐像素一致。
+- `ONLY=1 STEP=3 npm run readability` 仍报 3 个英文新词、英文第二句 16 个词和 caption 超两句。英文原文不能改，本步尚未达到易读满分，英文阻塞仍记在 `docs/ideas.md`。
+- 改前手机截图：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch01-s03-mobile/ch01-s03-before-mobile-zh.png`；改后手机截图：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch01-s03-mobile/ch01-s03-delivery-mobile-zh.png`。
+
 ## 第 4 步本轮整改
 
 - 改前易读分 **4**：R1=0、R2=0（`softmax`、`probability` 两个新词）、R3=0、R4=2、R5=1、R6=1（模型、连线和分布同时变化）；原 12 项 **16**（已评 10 项 12 / 20，#10/#12 补核各 2 分），冷读洞 **10**。分数怎样变成概率、0.82 的含义、取最大与采样、省略项和下一步都要读者自行补。
