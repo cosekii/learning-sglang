@@ -292,6 +292,12 @@
         <text x="16" y={modelY + modelH + 26} class="note" in:fade>最简示例没存上次结果 → 前 {cur.seq.length - 1} 段重算；输入没变，结果不变</text>
       {/if}
       {#if step === 9 && $lang === 'zh'}
+        <rect x="360" y="12" width="10" height="10" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="376" y="21" class="note">原输入 5 段</text>
+        <rect x="466" y="12" width="10" height="10" rx="2" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x="482" y="21" class="note">新生成的文字</text>
+        <rect x="580" y="12" width="10" height="10" rx="2" fill="var(--eos-soft)" stroke="var(--eos)" />
+        <text x="596" y="21" class="note">EOS（停止）</text>
         <text x="16" y={seqY + tokH + 40} class="note" in:fade={{ duration: 0 }}>红色 = EOS（结束标记） · 和 Paris、句号一样，选可能性最大的</text>
       {/if}
       {#if cur.phase === 'done' && $lang === 'zh'}
