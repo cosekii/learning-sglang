@@ -304,6 +304,12 @@ $$
 
 DeepSeek-V3 caches one vector per token: 512 numbers of compressed content plus 64 of position (RoPE, Ch. 2 Step 11). k uses all 576 and v only the 512, because position only helps pick the tokens and does not go into the output. All 128 query heads compute against that one vector.
 
+### Model configuration sources
+
+- **MHA · Llama-2-7B:** [Table 1 of the Llama 2 paper](https://arxiv.org/html/2307.09288#S2.T1) marks 7B as not using GQA. Meta's reference code has [defaults](https://github.com/meta-llama/llama/blob/689c7f261b9c5514636ecc3c5fefefcbb3e6eed7/llama/model.py#L20-L24) of `dim = 4096`, `n_heads = 32`, and `n_kv_heads = None`; [Attention](https://github.com/meta-llama/llama/blob/689c7f261b9c5514636ecc3c5fefefcbb3e6eed7/llama/model.py#L200-L205) then uses `n_heads` for K/V too. That gives 32 query heads, 32 K/V heads, and width 4096 ÷ 32 = 128.
+- **GQA · Llama-3-8B:** [Table 3 of the Llama 3 paper](https://arxiv.org/html/2407.21783#S3.T3) lists `Model Dimension = 4096`, `Attention Heads = 32`, and `Key/Value Heads = 8`. Thus 4 query heads share one K/V head, and the width is 4096 ÷ 32 = 128.
+- **MLA · DeepSeek-V3:** the [official config](https://huggingface.co/deepseek-ai/DeepSeek-V3/blob/e815299b0bcbac849fa540c768ef21845365c9eb/config.json) gives `num_attention_heads = 128`, `kv_lora_rank = 512`, and `qk_rope_head_dim = 64`. The [official MLA implementation](https://github.com/deepseek-ai/DeepSeek-V3/blob/9b4e9788e4a3a731f7567338ed15d3ec549ce03b/inference/model.py#L439-L444) caches a 512-wide `kv_cache` and a 64-wide `pe_cache`; [scoring uses both, while the output reads only `kv_cache`](https://github.com/deepseek-ai/DeepSeek-V3/blob/9b4e9788e4a3a731f7567338ed15d3ec549ce03b/inference/model.py#L480-L495). Thus 128 query heads share one cache, k is 512 + 64 = 576 wide, and v is 512 wide.
+
 ### Next
 
 Step 7 multiplies $g$ by the number of queries.

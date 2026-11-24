@@ -4,10 +4,10 @@
 
 ## 本轮记录
 
-- 本轮新书：完成 Learning ML Systems 第 1 章第 2 步，初稿易读 **11/12**、原分 **23/24**、**1 洞**；补上「从请求发出计时」后，最终易读 **12/12**、原分 **24/24**、**0 洞**。R1：「从 request 发出开始计时，首个 token 在 250 ms 出现，这段等待叫 TTFT；后面三个 token 分别在 275、295、325 ms 出现，相邻 token 的间隔叫 ITL，所以三段 ITL 分别是 25、20、30 ms。」
-- 图沿用同一请求的四个时刻，用蓝色箭头逐段标出 ITL，并直接标明计时起点。数字从 `ml-sys/numbers.ts` 推导，双语深入讲解补齐公式、符号和来源。
-- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s02/`。`build`、ML Systems 全章 `transcript`、第 2 步 `readability`、中文手机字号硬门、全章手机布局、`deep-check`、`zh-check` 均通过；zero-to-sglang 中英链接返回 HTTP 200。
-- 本章已制作 **2 步**，**2/2** 步易读满分，章均分 **24.00 / 24**；继续制作第 3 步。本轮类型：**新书**；下一普通轮转为**修旧**。
+- 本轮修旧：完成 Learning SGLang 第 14 章第 6 步。改前易读 **10/12**、原分 **23/24**、**0 洞**；最终易读 **12/12**、原分 **24/24**、**0 洞**。R1：「MHA 是一个 query 配一份 K/V，GQA 是四个共用一份，MLA 是 128 个共用一份；前两种宽度都是 128，可以共用 kernel，MLA 的 576 和 512 需要自己的 kernel。」
+- 双语深入讲解补齐 Llama-2-7B、Llama-3-8B、DeepSeek-V3 的论文、固定版本配置与实现出处；主人允许只精简本步两句英文 caption，中文手机增加可读专版。第 14 章章均分由 **23.62** 升为 **23.69 / 24**。
+- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch14-repair-next/final/`。`build`、本章 `transcript`、第 6 步 `readability`、中文手机字号硬门、全章手机布局、`deep-check 14`、`zh-check` 均通过；所有新增来源链接返回 HTTP 200。
+- 本轮类型：**修旧**；下一普通轮转为**新书**。
 
 ## Learning SGLang
 
@@ -26,7 +26,7 @@
 | 11 | 11-cuda-graphs | 完成 | — |
 | 12 | 12-piecewise-cuda-graph | 完成 | — |
 | 13 | 13-torch-compile | 完成 | — |
-| 14 | 14-attention-backends | 完成；已校准 | 23.62 |
+| 14 | 14-attention-backends | 完成；已校准；第 6 步已修 | 23.69 |
 | 15 | 15-speculative-decoding | 完成 | — |
 | 16 | 16-omni-models | 完成 | — |
 | 17 | 17-stages-and-schedulers | 完成 | — |

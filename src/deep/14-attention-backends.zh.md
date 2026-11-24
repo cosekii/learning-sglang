@@ -304,6 +304,12 @@ $$
 
 DeepSeek-V3 每个 token 只缓存一个向量：512 个数的压缩内容，加 64 个数的位置信息（RoPE，第 2 章第 11 步）。k 用全部 576 个，v 只用那 512 个，因为位置只帮助挑选 token，不进输出。128 个 query head 都对这一个向量计算。
 
+### 模型配置出处
+
+- **MHA · Llama-2-7B：**[Llama 2 论文 Table 1](https://arxiv.org/html/2307.09288#S2.T1) 标明 7B 不用 GQA。Meta 参考实现的[默认参数](https://github.com/meta-llama/llama/blob/689c7f261b9c5514636ecc3c5fefefcbb3e6eed7/llama/model.py#L20-L24)是 `dim = 4096`、`n_heads = 32`、`n_kv_heads = None`；[Attention](https://github.com/meta-llama/llama/blob/689c7f261b9c5514636ecc3c5fefefcbb3e6eed7/llama/model.py#L200-L205) 此时把 K/V head 数设为 `n_heads`。所以 query 和 K/V 都是 32 个 head，宽度为 4096 ÷ 32 = 128。
+- **GQA · Llama-3-8B：**[Llama 3 论文 Table 3](https://arxiv.org/html/2407.21783#S3.T3) 列出 `Model Dimension = 4096`、`Attention Heads = 32`、`Key/Value Heads = 8`。所以 4 个 query head 共享一个 K/V head，宽度为 4096 ÷ 32 = 128。
+- **MLA · DeepSeek-V3：**[官方配置](https://huggingface.co/deepseek-ai/DeepSeek-V3/blob/e815299b0bcbac849fa540c768ef21845365c9eb/config.json)给出 `num_attention_heads = 128`、`kv_lora_rank = 512`、`qk_rope_head_dim = 64`。[官方 MLA 实现](https://github.com/deepseek-ai/DeepSeek-V3/blob/9b4e9788e4a3a731f7567338ed15d3ec549ce03b/inference/model.py#L439-L444)分别缓存 512 维 `kv_cache` 和 64 维 `pe_cache`；[算分用两者，输出只读 `kv_cache`](https://github.com/deepseek-ai/DeepSeek-V3/blob/9b4e9788e4a3a731f7567338ed15d3ec549ce03b/inference/model.py#L480-L495)。所以 128 个 query head 共用一份缓存，k 宽 512 + 64 = 576，v 宽 512。
+
 ### 接下来
 
 第 7 步把 $g$ 再乘上 query 数。

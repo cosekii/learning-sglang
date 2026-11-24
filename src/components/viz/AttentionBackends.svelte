@@ -84,7 +84,7 @@
     bill: `At ${N_PROMPT.toLocaleString()} tokens in bf16, Q, K and V are ${qkvMB.toFixed(1)} MB each per head and S and P ${sMB.toFixed(0)} MB each. The three kernels move ${headMB.toFixed(0)} MB per head, ${promptGB.toFixed(0)} GB per prompt over ${HEADS} heads and ${LAYERS} layers: ${fmtMs(promptGB / BW)} at ${BW} TB/s, for two intermediates nobody keeps.`,
     flash: `Fuse the three kernels. Read K and V a chunk at a time, keep only each row's running max, sum and output, and drop each chunk's scores. S and P never reach HBM: ${headMB.toFixed(0)} MB per head becomes ${(4 * qkvMB).toFixed(0)} MB. FlashAttention, 2022.`,
     map: `The loop stays the same; four things change how it has to be written. Two are handled inside every backend: prefill versus decode, and pages. Two decide which backend runs: the model's head layout and the GPU.`,
-    heads: `The model fixes how many query heads share a K/V head (1, ${GROUP} or ${MLA_HEADS}) and how wide k and v are. A kernel is compiled for one width: MHA and GQA are both ${HD} and share one; MLA's ${MLA_K} and ${MLA_V} need their own.`,
+    heads: `Each model sets its query heads per K/V head: 1, ${GROUP}, or ${MLA_HEADS}. MHA and GQA share one ${HD}-wide kernel; MLA needs a ${MLA_K}/${MLA_V}-wide one.`,
     shapes: `Prefill has a query per prompt token, so a tile of ${TILE_Q} queries × ${GROUP} heads uses each K/V byte ${TILE_Q * GROUP} times, and the math outlasts the read. Decode has one query: ${GROUP} uses, and the read sets the time. So every backend ships two kernels.`,
     split: `At batch 1 a decode layer runs one block per K/V head: ${KV_HEADS} blocks on ${KV_HEADS} of ${SMS} SMs. Cut each head's keys into ${SPLITS} chunks and ${KV_HEADS * SPLITS} blocks read at once, ${SPLITS}× sooner; a merge then combines their partial results.`,
     pages: `Without pages, a request's K and V are consecutive rows, and the kernel computes each row's address. With pages (Ch. 7 Step 4) rows sit anywhere in a pool, so the kernel reads a table of page numbers first: a different kernel.`,
@@ -99,7 +99,7 @@
     bill: `${N_PROMPT.toLocaleString()} token、bf16 时，每 head 的 Q、K、V 各 ${qkvMB.toFixed(1)} MB，S、P 各 ${sMB.toFixed(0)} MB。三个 kernel 每 head 搬 ${headMB.toFixed(0)} MB，${HEADS} head × ${LAYERS} 层、每 prompt 共 ${promptGB.toFixed(0)} GB：按 ${BW} TB/s 需 ${fmtMs(promptGB / BW)}，只为两个没人保留的中间结果。`,
     flash: `融合这三个 kernel。K 和 V 按 chunk 读入，每行只保留滚动最大值、累计和与输出，每个 chunk 的分数随即丢弃。S 和 P 从不进 HBM：每 head ${headMB.toFixed(0)} MB 变成 ${(4 * qkvMB).toFixed(0)} MB。FlashAttention，2022。`,
     map: `循环不变；有四件事改变它的写法。两件在每个 backend 内部处理：prefill 与 decode 之分，以及 page。另两件决定用哪个 backend：模型的 head 布局和 GPU。`,
-    heads: `模型定死了几个 query head 共享一个 K/V head（1、${GROUP} 或 ${MLA_HEADS}），以及 k、v 的宽度。kernel 按一种宽度编译：MHA 和 GQA 都是 ${HD}，共用一个；MLA 的 ${MLA_K} 和 ${MLA_V} 需要自己的。`,
+    heads: `每个模型定下几个 query head 共用一个 K/V head：1、${GROUP} 或 ${MLA_HEADS}。MHA 和 GQA 的 k、v 都宽 ${HD}，共用一个 kernel；MLA 的 k ${MLA_K}、v ${MLA_V} 用自己的。`,
     shapes: `prefill 每个 prompt token 一个 query：${TILE_Q} query × ${GROUP} head 的 tile 把每个 K/V 字节用 ${TILE_Q * GROUP} 次，计算比读取久；decode 仅 1 个 query，用 ${GROUP} 次，读取定时间。故每个 backend 带两个 kernel。`,
     split: `batch 1 的 decode 层每 K/V head 一个 block：${KV_HEADS} 个 block 跑在 ${SMS} 个 SM 的 ${KV_HEADS} 个上。每 head 的 key 切 ${SPLITS} 个 chunk，${KV_HEADS * SPLITS} 个 block 同时读，快 ${SPLITS} 倍；merge 再合并各自的部分结果。`,
     pages: `不用 page 时，request 的 K、V 是连续的行，kernel 自己算每行地址。用 page（Ch. 7 Step 4）时，行可落在 pool 任意位置，kernel 得先读 page 编号表：这是另一个 kernel。`,
@@ -116,6 +116,15 @@
     if (q >= 1 && q <= steps.length) step = q - 1;
   });
   const cur = $derived(steps[step]);
+  let phone = $state(false);
+  $effect(() => {
+    const query = window.matchMedia('(max-width: 900px)');
+    const update = () => (phone = query.matches);
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  });
+  const phoneHeads = $derived(phone && cur.scene === 'heads' && $lang === 'zh');
   const W = 720, H = 400;
 
   // within-step phases, both looping: the online-softmax chunk walk, and the split-KV race
@@ -147,7 +156,7 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Attention backends, step {step + 1}">
+    <svg viewBox={phoneHeads ? '0 0 360 720' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Attention backends, step {step + 1}" class:phone-heads={phoneHeads}>
       <defs>
         <marker id="ab-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
           <path d="M 0 0 L 10 5 L 0 10 z" fill="#b8b4aa" />
@@ -432,7 +441,46 @@
       {/if}
 
       <!-- 6: head layout · how many query heads share each cached K/V head, and how wide they are -->
-      {#if cur.scene === 'heads'}
+      {#if phoneHeads}
+        {@const tileKB = (kw: number, vw: number) => (TILE_K * (kw + vw) * BYTES) / 1024}
+        <text x="180" y="26" text-anchor="middle" class="ph-title">4 之 1：head 布局决定 kernel 宽度</text>
+        <text x="180" y="50" text-anchor="middle">蓝：query head · 橙：缓存的 K/V</text>
+
+        <rect x="8" y="68" width="344" height="130" rx="8" fill="#f4f2ec" />
+        <text x="16" y="92" class="ph-subtitle">MHA · Llama-2-7B</text>
+        <text x="16" y="116">32 个 query head ↔ 32 个 K/V head</text>
+        {#each Array(HEADS) as _, h}
+          <rect x={16 + h * 10} y="126" width="8" height="12" rx="1" fill="var(--accent)" />
+          <rect x={16 + h * 10} y="142" width="8" height="12" rx="1" fill="var(--gen)" />
+        {/each}
+        <text x="16" y="174">每字节用 1 次 · k、v 都宽 {HD}</text>
+        <text x="16" y="192" class="ph-strong">一个 {HD} 宽 kernel</text>
+
+        <rect x="8" y="210" width="344" height="140" rx="8" fill="#f4f2ec" />
+        <text x="16" y="234" class="ph-subtitle">GQA · Llama-3-8B</text>
+        <text x="16" y="258">32 个 query head → 8 个 K/V head</text>
+        {#each Array(HEADS) as _, h}<rect x={16 + h * 10} y="268" width="8" height="12" rx="1" fill="var(--accent)" />{/each}
+        {#each Array(KV_HEADS) as _, g}<rect x={16 + g * 40} y="284" width="38" height="12" rx="2" fill="var(--gen)" />{/each}
+        <text x="16" y="318">4 个 query 共享 1 个 K/V · 每字节用 {GROUP} 次</text>
+        <text x="16" y="340" class="ph-strong">k、v 都宽 {HD} · 同一个 {HD} 宽 kernel</text>
+
+        <rect x="8" y="362" width="344" height="186" rx="8" fill="#f4f2ec" />
+        <text x="16" y="386" class="ph-subtitle">MLA · DeepSeek-V3</text>
+        <text x="16" y="410">128 个 query head → 1 个共享向量</text>
+        {#each Array(MLA_HEADS) as _, h}<rect x={16 + h * 2.5} y="420" width="1" height="12" fill="var(--accent)" />{/each}
+        <rect x="16" y="436" width="318" height="12" rx="2" fill="var(--gen)" />
+        <text x="16" y="470">k {MLA_K} = {MLA_V} 内容 + {MLA_K - MLA_V} 位置</text>
+        <text x="16" y="492">v {MLA_V} = 只用内容，位置不进输出</text>
+        <text x="16" y="514">每字节用 {MLA_HEADS} 次</text>
+        <text x="16" y="536" class="ph-strong">{HD} 宽 kernel 不适用，需自己的 kernel</text>
+
+        <text x="180" y="578" text-anchor="middle" class="ph-title">为什么前两种共用一个 kernel？</text>
+        <text x="16" y="604">它们宽度都 {HD}；共享几个 query 只是数量。</text>
+        <text x="16" y="628">{TILE_K} key 的 K、V：{HD} 宽占 {tileKB(HD, HD)} KB；MLA 占 {tileKB(MLA_K, MLA_V)} KB。</text>
+        <text x="16" y="652">H100 每个 SM 有 {SMEM_KB} KB；宽度变，tile 尺寸也变。</text>
+        <text x="16" y="682" class="ph-foot">每字节使用次数：一个 K/V 字节服务几个 query head</text>
+        <text x="16" y="704" class="ph-foot">（只算一个 token）；MLA 的位置只帮助挑选 token</text>
+      {:else if cur.scene === 'heads'}
         {@const PX = 206}
         {@const P = 6}
         {@const C1 = 420}
@@ -928,4 +976,8 @@
   .focus { font-size: 13px; font-weight: 650; fill: var(--fg); }
   .math { font-size: 11px; color: var(--fg); line-height: 1; }
   .math :global(.katex) { font-size: 1.15em; }
+  .phone-heads text { font-family: var(--sans); font-size: 12px; fill: var(--fg); }
+  .phone-heads .ph-title { font-size: 16px; font-weight: 650; }
+  .phone-heads .ph-subtitle, .phone-heads .ph-strong { font-weight: 650; }
+  .phone-heads .ph-foot { fill: var(--faint); }
 </style>
