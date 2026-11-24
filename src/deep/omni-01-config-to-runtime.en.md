@@ -166,4 +166,4 @@ This step reads static configuration and request-building code; it does not run 
 
 ### Next
 
-Chapter 2 keeps this stage graph and changes the process and GPU assignments to make three deployment maps.
+Chapter 2 first separates the shared `talker_ar` and `code2wav` stages into two processes, moving from six total processes to seven with GPU ids 0 and 1 in the default speech configuration. It then adds one copy of each, making nine total processes with GPU ids 0, 1, and 2.

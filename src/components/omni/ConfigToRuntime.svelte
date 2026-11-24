@@ -34,8 +34,8 @@
     caption: `${COLOCATED_GPU_PROCESS_COUNT} processes use GPU 0; ${COLOCATED_CPU_PROCESS_COUNT} use only CPU. ${COLOCATED_GPU_PROCESS_COUNT} + ${COLOCATED_CPU_PROCESS_COUNT} = ${COLOCATED_PROCESS_COUNT} processes.`,
     captionZh: `${COLOCATED_GPU_PROCESS_COUNT} 个进程用 GPU 0，另外 ${COLOCATED_CPU_PROCESS_COUNT} 个只用 CPU。${COLOCATED_GPU_PROCESS_COUNT} + ${COLOCATED_CPU_PROCESS_COUNT} = ${COLOCATED_PROCESS_COUNT} 个进程。`,
   }, {
-    caption: `${COLOCATED_REQUEST_EDGE_COUNT} hand-offs connect ${COLOCATED_STAGE_COUNT} stages in ${COLOCATED_PROCESS_COUNT} processes. What changes when the process and GPU boxes change?`,
-    captionZh: `${COLOCATED_REQUEST_EDGE_COUNT} 次交接连接 ${COLOCATED_PROCESS_COUNT} 个进程里的 ${COLOCATED_STAGE_COUNT} 个 stage。换掉进程和 GPU 框，会发生什么？`,
+    caption: `${COLOCATED_REQUEST_EDGE_COUNT} hand-offs connect ${COLOCATED_STAGE_COUNT} stages in ${COLOCATED_PROCESS_COUNT} processes. What if talker_ar and code2wav first run separately, then get copies?`,
+    captionZh: `${COLOCATED_STAGE_COUNT} 个 stage 跑在 ${COLOCATED_PROCESS_COUNT} 个进程里，共交接 ${COLOCATED_REQUEST_EDGE_COUNT} 次。先把 talker_ar 和 code2wav 拆开，再各复制一份，会怎样？`,
   }];
   let step = $state(0);
   $effect(() => {

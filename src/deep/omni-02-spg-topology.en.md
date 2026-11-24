@@ -1,13 +1,14 @@
-## Step 1 · Copy two speech processes
+## Step 1 · Split first, then copy two speech processes
 
-> **In one sentence:** The replica configuration keeps seven stages but expands seven one-stage worker processes on two GPUs into nine on three GPUs, allowing copies to serve queued requests in parallel.
+> **In one sentence:** First separate Chapter 1's shared `talker_ar` and `code2wav` stages into two processes, giving the default speech configuration seven total processes and GPU ids 0 and 1. Then add one copy of each, making nine total processes and GPU ids 0, 1, and 2; the copies can serve queued requests in parallel.
 
 ### What the picture shows
 
+- The order is split first, then copy. Chapter 1 put `talker_ar` and `code2wav` in one shared process, giving six processes. The left panel first gives them separate processes: seven total processes and GPU ids 0 and 1 in the default speech configuration. The right panel then adds one copy of each: nine total processes and GPU ids 0, 1, and 2. This compares two configurations; it does not split a running process from Chapter 1.
 - Each white box lists the same five stages with unchanged devices: `preprocessing` and `decode` use CPU; `image_encoder`, `audio_encoder`, and `thinker` use GPU 0.
 - In this example every stage has its own logical process and `tp_size = 1`. One stage copy therefore also means one worker OS process. This is not a general rule for shared processes or tensor parallelism.
-- Blue marks copy 1; orange marks the added copy 2. The default has one `talker_ar` process and one `code2wav` process. The replica configuration has two of each.
-- `talker_ar` copy 1 stays on GPU 1. Its added copy uses GPU 2. `code2wav` copy 1 moves from GPU 0 to GPU 1; its added copy uses GPU 2. The GPU ids visible in the two layouts are therefore `0, 1` and `0, 1, 2`.
+- Blue marks stages unchanged from the preceding layout; orange marks every change. The left panel gives both speech stages their own processes. The right panel highlights the two added copies and the GPU move for `code2wav` copy 1. The default has one `talker_ar` process and one `code2wav` process. The replica configuration has two of each.
+- The left panel marks `talker_ar` with `GPU 0 → GPU 1`: it moves from Chapter 1's shared process on GPU 0 to the default speech configuration's GPU 1. In the right panel, `code2wav` copy 1 moves from the default GPU 0 to GPU 1; its added copy uses GPU 2. The added `talker_ar` copy also uses GPU 2. The GPU ids visible in the two layouts are therefore `0, 1` and `0, 1, 2`.
 
 A **replica** copies a whole logical process. Here that process contains one stage. At admission, the coordinator chooses one copy of each replicated process for a request. The default round-robin policy can assign different requests to different copies.
 

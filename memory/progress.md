@@ -4,10 +4,12 @@
 
 ## 本轮记录
 
-- 本轮修旧：Learning SGLang 第 1 章第 6 步用上下对齐的两轮输入直接画出前 5 段重算、`␣Paris` 第一次输入；中文手机用括线围住换行后的 6 段，避免误读成只输入 Paris。图下补例句中文意思和 `␣` 解释，英文原版未动。
-- 首轮独立冷读发现桌面 2 洞、手机 4 洞；修正后同一冷读者复读桌面和手机均为易读 **12/12**、**0 洞**，独立原分按统一口径复核为 **24/24**。本步原分 **23→24**，章均分 **23.83→23.92**。
-- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch01-s06-visual/final/` 和 `final-checks/`。
-- 本轮类型：**修旧**；下一普通轮转为**新书**。
+- 本轮自主优化：按主人纠正重做 Learning SGLang Omni 第 1 章第 4 步到第 2 章第 1 步的衔接。顺序固定为 **7 个 stage、6 个进程 → 拆开两个语音进程，得到 7 个进程和 GPU 编号 `[0,1]` → 各复制一份，得到 9 个进程和 GPU 编号 `[0,1,2]`**；两章 caption、图、aria-label 和双语深入讲解一致。
+- 顺序专项首轮冷读中，第 2 章为 **9/12、21/24、4 洞**；补齐配置切换、CPU／GPU 区分、换卡和排队机制后为 **10/12、24/24、0 洞**，但 R2、R6 未过门。删去可见 `topology`／`replica` 术语、统一变化高亮后，最终同一冷读者确认两步均 **12/12、24/24、0 洞**，桌面和 390px 手机顺序都通过。
+- `build`、两章 `transcript`、`readability`、`deep-check`、`zh-check`、全章及中文本步 `mobile`（360/390/430 px）、数字断言和 `git diff --check` 均通过；第 1 本 `transcript/01-inference.md` 无 diff。
+- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-hourly-reader-20261124-1500/final/` 和 `checks/`。
+- 自己的 fork `cosekii/learning-sglang` 默认分支为 `tutorials`，GitHub Actions 发布到 `https://cosekii.github.io/learning-sglang/`；首次部署 run `45506790090` 已成功，仓库 homepage 已改为该地址。只推 `origin/tutorials`，不推 `main`，不向原作者仓库推送或开 PR。
+- 本轮类型：**自主优化**；下一普通轮按上次「修旧」之后转为**新书**。
 
 ## Learning SGLang
 

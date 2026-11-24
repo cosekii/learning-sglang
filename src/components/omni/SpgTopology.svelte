@@ -7,7 +7,6 @@
   import {
     QWEN_SPEECH_DEFAULT_STAGE_PROCESSES,
     QWEN_SPEECH_REPLICA2_STAGE_PROCESSES,
-    QWEN_SPEECH_STAGE_TYPE_COUNT,
     QWEN_SPEECH_UNCHANGED_STAGE_COUNT,
     QWEN_SPEECH_DEFAULT_COPY_COUNT,
     QWEN_SPEECH_REPLICA2_COPY_COUNT,
@@ -20,8 +19,8 @@
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
   const steps = [{
-    caption: `When requests queue, copies can serve them in parallel, using one more GPU. The same ${QWEN_SPEECH_STAGE_TYPE_COUNT} stages now run in ${QWEN_SPEECH_REPLICA2_COPY_COUNT} processes instead of ${QWEN_SPEECH_DEFAULT_COPY_COUNT}.`,
-    captionZh: `请求排队时，多份可同时处理，要多用一张 GPU。${QWEN_SPEECH_STAGE_TYPE_COUNT} 个 stage 不变，进程从 ${QWEN_SPEECH_DEFAULT_COPY_COUNT} 个变 ${QWEN_SPEECH_REPLICA2_COPY_COUNT} 个。`,
+    caption: `First, separate talker_ar and code2wav: ${QWEN_SPEECH_DEFAULT_COPY_COUNT} processes total, GPU ids ${QWEN_SPEECH_DEFAULT_GPU_IDS.join(' and ')}. Add one copy of each: ${QWEN_SPEECH_REPLICA2_COPY_COUNT} processes total, GPU ids ${QWEN_SPEECH_REPLICA2_GPU_IDS.join(', ')}.`,
+    captionZh: `先拆开 talker_ar 和 code2wav：共 ${QWEN_SPEECH_DEFAULT_COPY_COUNT} 个进程，GPU 编号 ${QWEN_SPEECH_DEFAULT_GPU_IDS.join('、')}。再各复制一份：共 ${QWEN_SPEECH_REPLICA2_COPY_COUNT} 个进程，GPU 编号 ${QWEN_SPEECH_REPLICA2_GPU_IDS.join('、')}。`,
   }];
   let step = $state(0);
   $effect(() => {
@@ -53,13 +52,13 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Two speech processes are each copied, so seven stages run in nine processes on three GPUs instead of seven on two">
-      <text x={phone ? 15 : 30} y={phone ? 18 : 22} class="tag strong">replica = {t('one whole process, copied', '同一进程再复制一份')}</text>
-      <text x={phone ? 15 : 30} y={phone ? 39 : 43} class="tag">{t('One process per stage here; queued requests can run in parallel.', '每个 stage 一个进程；排队时多份可同时处理。')}</text>
+    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="First separate the speech stages: seven total processes and GPU ids 0 and 1, then add one copy of each: nine total processes and GPU ids 0, 1, and 2">
+      <text x={phone ? 15 : 30} y={phone ? 18 : 22} class="tag strong">copy = {t('one more process for the same stage', '同一个 stage 多一个进程')}</text>
+      <text x={phone ? 15 : 30} y={phone ? 39 : 43} class="tag">{t('Two configs assign GPU positions; → marks a move.', '两种配置指定 GPU 位置；→ 表示换卡。')}</text>
       <rect x={phone ? 15 : 400} y={phone ? 51 : 51} width="11" height="11" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
-      <text x={phone ? 32 : 418} y={phone ? 61 : 61} class="tag">{t('copy 1', '第 1 份')}</text>
+      <text x={phone ? 32 : 418} y={phone ? 61 : 61} class="tag">{t('unchanged', '不变')}</text>
       <rect x={phone ? 105 : 500} y={phone ? 51 : 51} width="11" height="11" rx="2" fill="var(--gen-soft)" stroke="var(--gen)" />
-      <text x={phone ? 122 : 518} y={phone ? 61 : 61} class="tag strong">{t('copy 2 = added', '第 2 份 = 新增')}</text>
+      <text x={phone ? 122 : 518} y={phone ? 61 : 61} class="tag strong">{t('changed', '有变化')}</text>
 
       {#each panels as panel}
         {@const innerX = panel.x + 20}
@@ -68,7 +67,7 @@
         {@const rowY = panel.y + 170}
         {@const boxW = panel.replica2 ? (innerW - 10) / 2 : innerW}
         <rect x={panel.x} y={panel.y} width={panel.w} height={panel.h} rx="12" fill="var(--bg)" stroke="var(--line)" />
-        <text x={innerX} y={panel.y + 22} class="rowlabel">{panel.replica2 ? t('REPLICAS · SAME 7 STAGES', '多副本 · 仍是 7 个 stage') : t('DEFAULT · 7 STAGES', '默认 · 7 个 stage')}</text>
+        <text x={innerX} y={panel.y + 22} class="rowlabel">{panel.replica2 ? t('THEN COPY · SAME 7 STAGES', '再复制 · 仍是 7 个 stage') : t('SPLIT FIRST · 7 STAGES', '先拆开 · 7 个 stage')}</text>
 
         <rect x={innerX} y={otherY} width={innerW} height="120" rx="9" fill="white" stroke="var(--line)" />
         <text x={innerX + 10} y={otherY + 19} class="tag strong">{QWEN_SPEECH_UNCHANGED_STAGE_COUNT} {t('other stages · unchanged', '个其他 stage · 位置不变')}</text>
@@ -83,10 +82,12 @@
             {@const x = innerX + j * (boxW + 10)}
             {@const y = rowY + i * 65}
             {@const added = panel.replica2 && j === 1}
-            <rect {x} {y} width={boxW} height="54" rx="9" fill={added ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={added ? 'var(--gen)' : 'var(--accent)'} stroke-width="1.5" />
+            {@const moved = (!panel.replica2 && stage.stage === 'talker_ar') || (panel.replica2 && stage.stage === 'code2wav' && j === 0)}
+            {@const changed = !panel.replica2 || added || moved}
+            <rect {x} {y} width={boxW} height="54" rx="9" fill={changed ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={changed ? 'var(--gen)' : 'var(--accent)'} stroke-width="1.5" />
             <text x={x + 10} y={y + 17} class="mono strong">{stage.stage}</text>
-            <text x={x + 10} y={y + 34} class="tag strong">{t(`copy ${j + 1}`, `第 ${j + 1} 份`)}{added ? t(' · added', ' · 新增') : ''}</text>
-            <text x={x + 10} y={y + 49} class="tag">{panel.replica2 && stage.stage === 'code2wav' && j === 0 ? 'GPU 0 → GPU 1' : device(copy.gpu)}</text>
+            <text x={x + 10} y={y + 34} class="tag strong">{panel.replica2 ? t(`copy ${j + 1}`, `第 ${j + 1} 份`) : t('own process', '独立进程')}{added ? t(' · added', ' · 新增') : moved && panel.replica2 ? t(' · moved', ' · 换卡') : ''}</text>
+            <text x={x + 10} y={y + 49} class="tag">{moved ? 'GPU 0 → GPU 1' : device(copy.gpu)}</text>
           {/each}
         {/each}
 
@@ -97,8 +98,8 @@
           {panel.replica2 ? QWEN_SPEECH_REPLICA2_GPU_COUNT : QWEN_SPEECH_DEFAULT_GPU_COUNT} {t('GPUs', '张 GPU')} · {t('ids', '编号')} {(panel.replica2 ? QWEN_SPEECH_REPLICA2_GPU_IDS : QWEN_SPEECH_DEFAULT_GPU_IDS).join(', ')}
         </text>
       {/each}
-      <text x={W / 2} y={H - 25} text-anchor="middle" class="footnote">{t('Next: how does a request choose a copy?', '下一步：请求怎样选定一份？')}</text>
-      <text x={W / 2} y={H - 9} text-anchor="middle" class="footnote">{t('A config comparison, not a speed measurement.', '这里只比较配置，没有测速度。')}</text>
+      <text x={W / 2} y={H - 25} text-anchor="middle" class="footnote">{t('2 requests: 1 copy = one by one; 2 copies = at once.', '2 个请求同时来：1 份一个个做，2 份同时做。')}</text>
+      <text x={W / 2} y={H - 9} text-anchor="middle" class="footnote">{t('Next: how does a request choose a copy?', '下一步：请求怎样选定一份？')}</text>
     </svg>
   </div>
   <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh}
