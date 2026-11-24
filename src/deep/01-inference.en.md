@@ -377,3 +377,10 @@ If each column's result were kept after its first computation, the three rounds 
 ### Next
 
 The question on the stage: what part of a column's computation does a later position need? Chapter 2 opens one layer to find it.
+
+### Further reading
+
+- [zero-to-sglang Part I Chapter 1: Introduction to LLM](https://zero-to-sglang.datawhale.cc/eng/part1/Chapter1_Introduction_to_LLM.html)
+- [zero-to-sglang Part I Chapter 2: Introduction to Inference](https://zero-to-sglang.datawhale.cc/eng/part1/Chapter2_Introduction%20to%20Inference.html)
+- [zero-to-sglang Part II Chapter 3: Forward Pass and Generation](https://zero-to-sglang.datawhale.cc/eng/part2/Chapter3_Forward-Pass-and-Generation.html)
+- [zero-to-sglang Part II Chapter 3: Forward Pass and Generation (Code Walkthrough)](https://zero-to-sglang.datawhale.cc/eng/part2/Chapter3_Forward-Pass-and-Generation_code.html)

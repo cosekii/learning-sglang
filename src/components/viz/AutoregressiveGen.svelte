@@ -73,7 +73,7 @@
             ? `<b>Append it.</b> The output becomes part of the input, which is all "autoregressive" means.`
             : `Append.`,
         captionZh: round.pick.kind === 'eos'
-          ? `<b>停止。</b>把 id 解码回文本；推理先分词，再循环前向、选择、追加，直到 EOS。`
+          ? `<b>停止。</b>把 id 解码回文本；推理先分词，再循环计算、选择、追加，直到 EOS。`
           : i === 0
             ? `<b>追加：</b>把 ␣Paris 接到末尾，下一轮读全部 ${seq.length} 段。边猜边接，直到「结束」，就叫「自回归」。`
             : `把句号接到末尾，${seq.length - 1} 段变 ${seq.length} 段。下一轮仍读全部 ${seq.length} 段。`,
@@ -84,7 +84,7 @@
     steps.push({
       phase: 'tally', seq,
       caption: `<b>The bill:</b> ${total} positions computed for ${rounds.length} new tokens. The first ${prompt.length} columns had identical inputs and outputs ${rounds.length} times; what gets recomputed?`,
-      captionZh: `<b>算总账：</b>${rounds.length} 个新 token 共计算 ${total} 个位置。前 ${prompt.length} 列输入、输出都相同，却各算 ${rounds.length} 遍；到底重复算了什么？`,
+      captionZh: `<b>算总账：</b>Paris、句号和 EOS 是 ${rounds.length} 个新 token，共算 ${total} 格。前 ${prompt.length} 列各算 ${rounds.length} 遍；模型里面到底把什么又算了一遍？`,
     });
     return steps;
   }
@@ -107,6 +107,7 @@
   });
   const phoneForward = $derived(phone && step === 2 && $lang === 'zh');
   const phoneDone = $derived(phone && step === 10 && $lang === 'zh');
+  const phoneTally = $derived(phone && step === 11 && $lang === 'zh');
 
   // ---- Geometry (SVG viewBox units; the SVG scales to fill the stage) ---------------------------
   const W = 720, H = 400;
@@ -142,7 +143,7 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox={phoneForward || phoneDone ? '0 0 360 570' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Autoregressive generation, step {step + 1}" class:phone-forward={phoneForward} class:phone-done={phoneDone}>
+    <svg viewBox={phoneForward || phoneDone || phoneTally ? '0 0 360 570' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Autoregressive generation, step {step + 1}" class:phone-forward={phoneForward} class:phone-done={phoneDone} class:phone-tally={phoneTally}>
       {#if phoneForward}
         <text x="16" y="22" class="label">序列（5 个 token）</text>
         <rect x="206" y="12" width="10" height="10" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
@@ -195,7 +196,7 @@
         <text x="180" y="191" text-anchor="middle" class="note">红色 EOS 接到末尾：停止，不再计算下一段</text>
         <text x="180" y="222" text-anchor="middle" class="model-title">解码（decode）：把编号换回文字</text>
         <text x="180" y="252" text-anchor="middle" class="tok">12366、13</text>
-        <text x="180" y="274" text-anchor="middle" class="note">两个新生成的编号</text>
+        <text x="180" y="274" text-anchor="middle" class="note">两个要翻回文字的新编号</text>
         <path d="M 180 284 V 296" stroke="var(--fg)" stroke-width="2" />
         <polygon points="175,294 185,294 180,302" fill="var(--fg)" />
         <rect x="70" y="304" width="220" height="38" rx="6" fill="white" stroke="var(--line)" />
@@ -210,6 +211,41 @@
         <text x="180" y="501" text-anchor="middle" class="note">128001 是 EOS：只负责停止，不放进输出文字</text>
         <text x="180" y="525" text-anchor="middle" class="note">原输入后接新增文字 = 完整内容；这里只画新增</text>
         <text x="180" y="549" text-anchor="middle" class="note">下一步：第 12 步把三轮的计算量加起来</text>
+      {:else if phoneTally}
+        <text x="16" y="20" class="label">第 11 步序列的 8 列</text>
+        <rect x="16" y="32" width="10" height="10" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="32" y="41" class="note">输入</text>
+        <rect x="92" y="32" width="10" height="10" rx="2" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x="108" y="41" class="note">新生成</text>
+        <rect x="188" y="32" width="10" height="10" rx="2" fill="var(--eos-soft)" stroke="var(--eos)" />
+        <text x="204" y="41" class="note">EOS（停止）</text>
+        {#each prompt as tok, i}
+          <rect x={16 + i * 66} y="58" width="64" height="30" rx="6" fill={fill(tok.kind)} stroke={stroke(tok.kind)} stroke-width="1.5" />
+          <text x={48 + i * 66} y="78" text-anchor="middle" class="tok">{tok.text.replace(/^ /, '␣')}</text>
+          <text x={48 + i * 66} y="103" text-anchor="middle" class="id">{tok.id}</text>
+        {/each}
+        {#each cur.seq.slice(5) as tok, i}
+          {@const x = [16, 146, 210][i]}
+          {@const w = [120, 54, 134][i]}
+          <rect {x} y="122" width={w} height="30" rx="6" fill={fill(tok.kind)} stroke={stroke(tok.kind)} stroke-width="1.5" />
+          <text x={x + w / 2} y="142" text-anchor="middle" class="tok">{tok.text.replace(/^ /, '␣')}</text>
+          <text x={x + w / 2} y="167" text-anchor="middle" class="id">{tok.id}</text>
+        {/each}
+        <text x="16" y="190" class="note">␣ = 小段开头的空格</text>
+        <text x="16" y="214" class="note">1 格 = 这一列在这一轮算 1 次</text>
+        {#each counts as n, r}
+          {@const y = 238 + r * 62}
+          <text x="16" y={y + 20} class="note">第 {r + 1} 轮</text>
+          {#each cur.seq.slice(0, n) as tok, c}
+            <rect x={80 + c * 34} {y} width="28" height="28" rx="4" fill={fill(tok.kind)} stroke={stroke(tok.kind)} />
+          {/each}
+          <text x="80" y={y + 42} class="note">算 {n} 格 → {r === 0 ? '␣Paris' : r === 1 ? '.' : 'EOS（停止）'}</text>
+        {/each}
+        <text x="16" y="440" class="sum">5 + 6 + 7 = 18 格</text>
+        <text x="16" y="468" class="note">第一次算：5 + 1 + 1 = 7 格</text>
+        <text x="16" y="492" class="note">重算：10 + 1 = 11 格</text>
+        <text x="16" y="520" class="note">前 5 列各多算 2 次：10 格</text>
+        <text x="16" y="544" class="note">␣Paris 再算 1 次：1 格 · EOS 不再输入</text>
       {:else}
       <!-- Row 1: the raw prompt, then the token sequence -->
       <text x="16" y="22" class="label">{cur.phase === 'raw' ? 'prompt' : t(`sequence (${cur.seq.length} tokens)`, `序列（${cur.seq.length} 个 token）`)}</text>
@@ -400,7 +436,7 @@
           <g in:fade={{ duration: 0 }}>
             <text x={W / 2} y="146" text-anchor="middle" class="model-title">解码（decode）：按第 2 步的对照表，把编号换回文字</text>
             <text x="150" y="190" text-anchor="middle" class="tok">12366、13</text>
-            <text x="150" y="211" text-anchor="middle" class="note">两个新生成的编号</text>
+            <text x="150" y="211" text-anchor="middle" class="note">两个要翻回文字的新编号</text>
             <text x="270" y="190" text-anchor="middle" class="tok">→</text>
             <text x="360" y="190" text-anchor="middle" class="tok">查对照表</text>
             <text x="450" y="190" text-anchor="middle" class="tok">→</text>
@@ -476,10 +512,10 @@
 </figure>
 
 <style>
-  .phone-forward .label, .phone-done .label { font-size: 12px; }
-  .phone-forward .note, .phone-done .note { font-size: 13px; }
-  .phone-forward .id, .phone-forward .model-sub, .phone-done .id { font-size: 12px; }
-  .phone-forward .note, .phone-forward .id, .phone-forward .model-sub, .phone-done .note, .phone-done .id { fill: var(--fg); }
+  .phone-forward .label, .phone-done .label, .phone-tally .label { font-size: 12px; }
+  .phone-forward .note, .phone-done .note, .phone-tally .note { font-size: 13px; }
+  .phone-forward .id, .phone-forward .model-sub, .phone-done .id, .phone-tally .id { font-size: 12px; }
+  .phone-forward .note, .phone-forward .id, .phone-forward .model-sub, .phone-done .note, .phone-done .id, .phone-tally .note, .phone-tally .id { fill: var(--fg); }
   .label { font-size: 11px; fill: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
   .tok { font-family: var(--mono); font-size: 13px; fill: var(--fg); }
   .id { font-family: var(--mono); font-size: 10.5px; fill: var(--muted); }
