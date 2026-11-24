@@ -53,18 +53,16 @@
   <div class="row">
     <div class="buttons">
       <button class="icon" onclick={() => jump(0)} disabled={atStart} title={t('Reset', '重置')}>↺</button>
+      <button class="icon" onclick={() => go(-1)} disabled={atStart} title={t('Previous', '上一步')}>←</button>
+      <button class="icon" onclick={() => go(1)} disabled={atEnd} title={t('Next', '下一步')}>→</button>
+      {#if shownDeep}
+        <button class="deep" class:on={open} onclick={() => toggle()} aria-expanded={open} title={t('Deep dive (D)', '深入讲解（D）')}>{t('Deep dive', '深入讲解')} <kbd>D</kbd></button>
+      {/if}
       {#if prevLink}
         <a class="chapter" href={prevLink.href}><span>← {t(prevLink.title, prevLink.titleZh ?? prevLink.title)}</span></a>
-      {:else}
-        <button class="icon" onclick={() => go(-1)} disabled={atStart} title={t('Previous', '上一步')}>←</button>
       {/if}
       {#if nextLink}
         <a class="chapter next" href={nextLink.href}><span>{t('Next: ', '下一章：')}{t(nextLink.title, nextLink.titleZh ?? nextLink.title)} →</span></a>
-      {:else}
-        <button class="icon" onclick={() => go(1)} disabled={atEnd} title={t('Next', '下一步')}>→</button>
-      {/if}
-      {#if shownDeep}
-        <button class="deep" class:on={open} onclick={() => toggle()} aria-expanded={open} title={t('Deep dive (D)', '深入讲解（D）')}>{t('Deep dive', '深入讲解')} <kbd>D</kbd></button>
       {/if}
     </div>
     <div class="progress" role="tablist">
