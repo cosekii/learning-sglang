@@ -73,3 +73,29 @@ $$\mathrm{TPOT}=\frac{325-250}{4-1}=\frac{75}{3}=25\ \mathrm{ms}$$
 zero-to-sglang 第 1 部分第 5 章 §3.1 用同样的边界：输出 200 个 token 时，扣除首个 token 后按 199 段计算，课程常把单位写成 ms/token。本例的 25 ms 恰好等于第一段 ITL，但另外两段仍是 20、30 ms；请求发出到首个 token 的 250 ms TTFT 没有进入分子。
 
 **接下来。** 首个 token 前的等待和后续平均间隔都已量出；下一步可以量整个回答从头到尾的总时间。
+
+## 第 4 步 · 量请求的完整时间
+
+**一句话。** E2E 总延迟从请求发出算到请求完成，把首个 token 前和后的时间都算进去。
+
+**图上是什么。** 请求在 0 ms 发出，第 1 个 token 在 250 ms 出现，第 4 个也是最后一个 token 在 325 ms 出现，请求随即完成。上方蓝线量完整路线；下方两段分别标出 TTFT 的 250 ms 和首个 token 后的 75 ms。75 ms 仍是第 2 步三段 ITL 的总和，不是只取一段，也不是只加一次平均 TPOT。
+
+**公式与符号。**
+
+$$\mathrm{E2E}=t_{\mathrm{complete}}-t_{\mathrm{request\ sent}}=\mathrm{TTFT}+\sum_{i=2}^{N}\mathrm{ITL}_i$$
+
+- $\mathrm{E2E}$：end-to-end latency，从请求发出到全部完成的总延迟。
+- $t_{\mathrm{request\ sent}}$：请求发出的时刻，图中是 0 ms。
+- $t_{\mathrm{complete}}$：请求完成的时刻；本例把最后一个 token 出现的 325 ms 视为完成时刻。
+- $\mathrm{TTFT}$：第 1 步量出的首 token 前等待，本例为 250 ms。
+- $\sum_{i=2}^{N}\mathrm{ITL}_i$：从第 2 个到第 $N$ 个 token，把所有相邻间隔相加；本例 $N=4$。
+
+**代入图上的数。**
+
+$$\mathrm{E2E}=325-0=325\ \mathrm{ms}$$
+
+$$\mathrm{E2E}=250+(25+20+30)=250+75=325\ \mathrm{ms}$$
+
+zero-to-sglang 第 1 部分第 5 章 §3.1 将 E2E 定义为请求从发出到全部完成的总时长，并用 $\mathrm{E2E}=\mathrm{TTFT}+\text{剩余生成时间}$ 计算。本例沿用同一边界；0、250、325 ms 都是构造教学值，不是本机实测，也没有另列最后 token 之后的处理时间。
+
+**接下来。** 一个请求的完整时间已经量出；下一步把多个请求放在一起，找出其中较慢的请求。

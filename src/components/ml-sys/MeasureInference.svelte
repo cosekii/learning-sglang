@@ -4,7 +4,7 @@
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
-  import { DEMO_REQUEST_SENT_MS, DEMO_FIRST_TOKEN_MS, DEMO_TTFT_MS, DEMO_TTFT_SECONDS, DEMO_TTFT_FRACTION, DEMO_OUTPUT_TOKEN_TIMES_MS, DEMO_ITL_GAPS_MS, DEMO_POST_FIRST_GAP_COUNT, DEMO_TPOT_MS } from '../../ml-sys/numbers';
+  import { DEMO_REQUEST_SENT_MS, DEMO_FIRST_TOKEN_MS, DEMO_TTFT_MS, DEMO_TTFT_SECONDS, DEMO_TTFT_FRACTION, DEMO_OUTPUT_TOKEN_TIMES_MS, DEMO_ITL_GAPS_MS, DEMO_POST_FIRST_GAP_COUNT, DEMO_ITL_TOTAL_MS, DEMO_TPOT_MS, DEMO_LAST_TOKEN_MS, DEMO_E2E_MS } from '../../ml-sys/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
@@ -17,6 +17,9 @@
   }, {
     caption: `TPOT averages the gaps after the first token. It excludes TTFT.`,
     captionZh: `TPOT 是首个 token 后的平均间隔。它不含首个 token 前的 TTFT。`,
+  }, {
+    caption: `E2E latency runs from request sent to completion. Here, ${DEMO_TTFT_MS} ms TTFT plus ${DEMO_ITL_TOTAL_MS} ms afterward gives ${DEMO_E2E_MS} ms.`,
+    captionZh: `E2E 总延迟从发出算到完成。这里共 ${DEMO_TTFT_MS} + ${DEMO_ITL_TOTAL_MS} = ${DEMO_E2E_MS} ms。`,
   }];
   let step = $state(0);
   $effect(() => {
@@ -37,7 +40,7 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={step === 0 ? 'TTFT is the 250 millisecond wait from sending a request to seeing its first token' : step === 1 ? 'ITL is each time gap between neighboring output tokens' : `TPOT is the ${DEMO_TPOT_MS} millisecond average gap after the first token`}>
+    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={step === 0 ? 'TTFT is the 250 millisecond wait from sending a request to seeing its first token' : step === 1 ? 'ITL is each time gap between neighboring output tokens' : step === 2 ? `TPOT is the ${DEMO_TPOT_MS} millisecond average gap after the first token` : `E2E latency is ${DEMO_E2E_MS} milliseconds from request sent to completion`}>
       <defs>
         <marker id="ttft-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
           <path d="M0,0 L8,4 L0,8 z" fill="var(--accent)" />
@@ -76,7 +79,7 @@
         <text x="150" y="365" text-anchor="middle" class="legend">{t('blue = wait for the first token', '蓝色 = 等首个 token 的时间')}</text>
       {/if}
       <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Constructed teaching example, not a local benchmark.', '构造的教学例子，不是本机实测。')}</text>
-      {:else}
+      {:else if step < 3}
       {#if !phone}
         <text x="35" y="34" class="rowlabel">{t('Same request · time since request sent', '同一个请求 · 从请求发出计时')}</text>
         {#each DEMO_OUTPUT_TOKEN_TIMES_MS as time, i}
@@ -121,6 +124,58 @@
           <text x="150" y="464" text-anchor="middle" class="legend">({DEMO_OUTPUT_TOKEN_TIMES_MS[3]} − {DEMO_OUTPUT_TOKEN_TIMES_MS[0]}) ÷ ({DEMO_OUTPUT_TOKEN_TIMES_MS.length} − 1) = {DEMO_TPOT_MS} ms</text>
           <text x="150" y="505" text-anchor="middle" class="legend">{t(`blue = ${DEMO_POST_FIRST_GAP_COUNT} gaps; average does not mean equal`, `蓝色 = ${DEMO_POST_FIRST_GAP_COUNT} 段；平均不代表每段相同`)}</text>
         {/if}
+      {/if}
+      <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Constructed teaching example, not a local benchmark.', '构造的教学例子，不是本机实测。')}</text>
+      {:else}
+      {#if !phone}
+        <text x="35" y="34" class="rowlabel">{t('Same request · how long is the whole wait?', '同一个请求 · 全程要等多久？')}</text>
+        <text x="360" y="55" text-anchor="middle" class="tag strong">E2E = {t('request sent → completion', '请求发出 → 全部完成')} = {DEMO_E2E_MS} ms</text>
+        <line x1="115" y1="72" x2="595" y2="72" stroke="var(--accent)" stroke-width="6" marker-end="url(#ttft-arrow)" />
+        <line x1="115" y1="72" x2="115" y2="100" stroke="var(--accent)" stroke-width="3" />
+        <rect x="40" y="100" width="150" height="90" rx="11" fill="var(--bg)" stroke="var(--line)" />
+        <text x="115" y="137" text-anchor="middle" class="legend strong">{t('request sent', '请求发出')}</text>
+        <text x="115" y="169" text-anchor="middle" class="time">{DEMO_REQUEST_SENT_MS} ms</text>
+        <rect x="285" y="100" width="150" height="90" rx="11" fill="var(--bg)" stroke="var(--line)" />
+        <text x="360" y="137" text-anchor="middle" class="legend strong">token 1</text>
+        <text x="360" y="169" text-anchor="middle" class="time">{DEMO_FIRST_TOKEN_MS} ms</text>
+        <line x1="605" y1="72" x2="605" y2="100" stroke="var(--accent)" stroke-width="3" />
+        <rect x="530" y="100" width="150" height="90" rx="11" fill="var(--bg)" stroke="var(--line)" />
+        <text x="605" y="126" text-anchor="middle" class="legend strong">{t('last token', '末个 token')}</text>
+        <text x="605" y="148" text-anchor="middle" class="legend">{t('request complete', '请求完成')}</text>
+        <text x="605" y="176" text-anchor="middle" class="time">{DEMO_LAST_TOKEN_MS} ms</text>
+        <line x1="115" y1="190" x2="115" y2="220" stroke="var(--accent)" stroke-width="3" />
+        <line x1="360" y1="190" x2="360" y2="220" stroke="var(--accent)" stroke-width="3" />
+        <line x1="605" y1="190" x2="605" y2="220" stroke="var(--accent)" stroke-width="3" />
+        <line x1="115" y1="220" x2="360" y2="220" stroke="var(--accent)" stroke-width="4" />
+        <line x1="360" y1="220" x2="605" y2="220" stroke="var(--accent)" stroke-width="4" />
+        <text x="237" y="249" text-anchor="middle" class="legend strong">TTFT = {DEMO_TTFT_MS} ms</text>
+        <text x="482" y="249" text-anchor="middle" class="legend strong">{t('after token 1', '首个 token 后')} = {DEMO_ITL_TOTAL_MS} ms</text>
+        <rect x="100" y="278" width="520" height="78" rx="14" fill="var(--accent-soft)" />
+        <text x="360" y="309" text-anchor="middle" class="formula small">E2E = {DEMO_LAST_TOKEN_MS} − {DEMO_REQUEST_SENT_MS} = {DEMO_TTFT_MS} + {DEMO_ITL_TOTAL_MS} = {DEMO_E2E_MS} ms</text>
+        <text x="360" y="339" text-anchor="middle" class="legend strong">{DEMO_ITL_TOTAL_MS} ms = {DEMO_ITL_GAPS_MS.join(' + ')} ({t('three ITL gaps', '三段 ITL')})</text>
+      {:else}
+        <text x="20" y="25" class="rowlabel">E2E = {t('request sent → completion', '请求发出 → 全部完成')}</text>
+        <line x1="30" y1="76" x2="30" y2="310" stroke="var(--accent)" stroke-width="5" />
+        <line x1="30" y1="76" x2="45" y2="76" stroke="var(--accent)" stroke-width="3" />
+        <line x1="30" y1="310" x2="45" y2="310" stroke="var(--accent)" stroke-width="3" />
+        <rect x="55" y="45" width="190" height="62" rx="10" fill="var(--bg)" stroke="var(--line)" />
+        <text x="150" y="70" text-anchor="middle" class="legend strong">{t('request sent', '请求发出')}</text>
+        <text x="150" y="95" text-anchor="middle" class="time">{DEMO_REQUEST_SENT_MS} ms</text>
+        <line x1="150" y1="107" x2="150" y2="151" stroke="var(--accent)" stroke-width="4" marker-end="url(#ttft-arrow)" />
+        <text x="166" y="135" class="tag strong">TTFT = {DEMO_TTFT_MS} ms</text>
+        <rect x="55" y="159" width="190" height="62" rx="10" fill="var(--bg)" stroke="var(--line)" />
+        <text x="150" y="184" text-anchor="middle" class="legend strong">token 1</text>
+        <text x="150" y="209" text-anchor="middle" class="time">{DEMO_FIRST_TOKEN_MS} ms</text>
+        <line x1="150" y1="221" x2="150" y2="265" stroke="var(--accent)" stroke-width="4" marker-end="url(#ttft-arrow)" />
+        <text x="166" y="249" class="tag strong">{t('after token 1', '首个 token 后')} = {DEMO_ITL_TOTAL_MS} ms</text>
+        <rect x="55" y="273" width="190" height="74" rx="10" fill="var(--bg)" stroke="var(--line)" />
+        <text x="150" y="298" text-anchor="middle" class="legend strong">{t('last token · complete', '末个 token · 完成')}</text>
+        <text x="150" y="328" text-anchor="middle" class="time">{DEMO_LAST_TOKEN_MS} ms</text>
+        <rect x="20" y="365" width="260" height="82" rx="12" fill="var(--accent-soft)" />
+        <text x="150" y="392" text-anchor="middle" class="formula small">E2E = {DEMO_LAST_TOKEN_MS} − {DEMO_REQUEST_SENT_MS} = {DEMO_E2E_MS} ms</text>
+        <text x="150" y="417" text-anchor="middle" class="legend strong">= TTFT {DEMO_TTFT_MS} + {DEMO_ITL_TOTAL_MS}</text>
+        <text x="150" y="438" text-anchor="middle" class="legend">{DEMO_ITL_TOTAL_MS} ms = {DEMO_ITL_GAPS_MS.join(' + ')} ({t('three ITL gaps', '三段 ITL')})</text>
+        <text x="150" y="470" text-anchor="middle" class="legend">{t('blue = measured time spans', '蓝色 = 量出的时间段')}</text>
       {/if}
       <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Constructed teaching example, not a local benchmark.', '构造的教学例子，不是本机实测。')}</text>
       {/if}

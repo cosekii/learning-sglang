@@ -73,3 +73,29 @@ $$\mathrm{TPOT}=\frac{325-250}{4-1}=\frac{75}{3}=25\ \mathrm{ms}$$
 Zero-to-sglang Part I Chapter 5 §3.1 uses the same boundary: with 200 output tokens, it divides the post-first-token generation time by 199 and writes the unit as ms/token. This example's 25 ms average happens to equal the first ITL gap, but the other gaps remain 20 and 30 ms. The 250 ms TTFT from request sent to first token is not in the numerator.
 
 **Next.** The wait before the first token and the later average gap are both measured. The next step can measure the whole answer from start to finish.
+
+## Step 4 · Measure the whole request
+
+**One sentence.** E2E latency runs from request sent to request complete, including the time before and after the first token.
+
+**What the picture shows.** The request is sent at 0 ms, token 1 appears at 250 ms, and token 4, the last token, appears at 325 ms. The request then completes. The upper blue line measures the whole route; the lower two spans show 250 ms of TTFT and 75 ms after token 1. That 75 ms is still the sum of Step 2's three ITL gaps, not one gap or one average TPOT added once.
+
+**Formula and symbols.**
+
+$$\mathrm{E2E}=t_{\mathrm{complete}}-t_{\mathrm{request\ sent}}=\mathrm{TTFT}+\sum_{i=2}^{N}\mathrm{ITL}_i$$
+
+- $\mathrm{E2E}$: end-to-end latency, the total delay from sending a request until it completes.
+- $t_{\mathrm{request\ sent}}$: the request-sent time, 0 ms in the picture.
+- $t_{\mathrm{complete}}$: the completion time; this example treats the last token's arrival at 325 ms as completion.
+- $\mathrm{TTFT}$: the wait before token 1 measured in Step 1, 250 ms here.
+- $\sum_{i=2}^{N}\mathrm{ITL}_i$: add every neighboring-token gap from token 2 through token $N$; here $N=4$.
+
+**Substitute the picture's numbers.**
+
+$$\mathrm{E2E}=325-0=325\ \mathrm{ms}$$
+
+$$\mathrm{E2E}=250+(25+20+30)=250+75=325\ \mathrm{ms}$$
+
+Zero-to-sglang Part I Chapter 5 §3.1 defines E2E as the total time from request sent to completion and calculates $\mathrm{E2E}=\mathrm{TTFT}+\text{remaining generation time}$. This example uses the same boundary. The 0, 250 and 325 ms values are constructed teaching values, not local measurements; no processing time after the last token is separately included.
+
+**Next.** One request's whole time is now measured. The next step puts several requests together to find the slower ones.

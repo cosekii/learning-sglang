@@ -13,7 +13,7 @@ export const deep = await deepFor('ml-sys-01-measure-inference');
 <details class="i18n-en">
 <summary>Where this chapter's claims come from</summary>
 
-The 250 ms value is a constructed example from [zero-to-sglang Part I Chapter 5: Introduction to Benchmark](https://zero-to-sglang.datawhale.cc/eng/part1/Chapter5_Introduction_to_Benchmark.html), §3.1. The later token times are constructed additions to that example, not measurements from this computer. The TTFT and ITL definitions follow the same section and *Inference Engineering* §1.4: TTFT runs from sending a request until its first output token arrives, and ITL is the gap between neighboring output tokens. TPOT follows the course's post-first-token boundary: divide the ITL total by the number of gaps, not by all output tokens.
+The 250 ms value is a constructed example from [zero-to-sglang Part I Chapter 5: Introduction to Benchmark](https://zero-to-sglang.datawhale.cc/eng/part1/Chapter5_Introduction_to_Benchmark.html), §3.1. The later token times are constructed additions to that example, not measurements from this computer. The TTFT and ITL definitions follow the same section and *Inference Engineering* §1.4: TTFT runs from sending a request until its first output token arrives, and ITL is the gap between neighboring output tokens. TPOT follows the course's post-first-token boundary: divide the ITL total by the number of gaps, not by all output tokens. E2E latency follows the course boundary from request sent to completion: subtract the endpoints, or add TTFT to all post-first-token gaps.
 
 Course baseline: `datawhalechina/zero-to-sglang@bcf0cd82b9d1a058e5211d56431f14efd99eaf12`.
 
@@ -22,7 +22,7 @@ Course baseline: `datawhalechina/zero-to-sglang@bcf0cd82b9d1a058e5211d56431f14ef
 <details class="i18n-zh">
 <summary>本章说法的出处</summary>
 
-250 ms 来自 [zero-to-sglang 第 1 部分第 5 章：Benchmark 入门](https://zero-to-sglang.datawhale.cc/ch/part1/%E7%AC%AC5%E7%AB%A0_Benchmark%E5%85%A5%E9%97%A8.html) §3.1 的构造例子。后续 token 时刻是在这个例子上补写的教学值，不是本机实测。TTFT 和 ITL 的定义按同一节与《Inference Engineering》§1.4：TTFT 是从发出请求到收到首个输出 token 的时间，ITL 是相邻输出 token 的间隔。TPOT 按课程的首个 token 后边界：用 ITL 总和除以间隔段数，而不是除以全部输出 token 数。
+250 ms 来自 [zero-to-sglang 第 1 部分第 5 章：Benchmark 入门](https://zero-to-sglang.datawhale.cc/ch/part1/%E7%AC%AC5%E7%AB%A0_Benchmark%E5%85%A5%E9%97%A8.html) §3.1 的构造例子。后续 token 时刻是在这个例子上补写的教学值，不是本机实测。TTFT 和 ITL 的定义按同一节与《Inference Engineering》§1.4：TTFT 是从发出请求到收到首个输出 token 的时间，ITL 是相邻输出 token 的间隔。TPOT 按课程的首个 token 后边界：用 ITL 总和除以间隔段数，而不是除以全部输出 token 数。E2E 总延迟也按课程边界，从请求发出算到完成：可以直接减去首尾时刻，也可以把 TTFT 和首个 token 后的全部间隔相加。
 
 课程基线：`datawhalechina/zero-to-sglang@bcf0cd82b9d1a058e5211d56431f14efd99eaf12`。
 

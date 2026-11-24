@@ -4,12 +4,11 @@
 
 ## 本轮记录
 
-- 本轮自主优化：按主人纠正重做 Learning SGLang Omni 第 1 章第 4 步到第 2 章第 1 步的衔接。顺序固定为 **7 个 stage、6 个进程 → 拆开两个语音进程，得到 7 个进程和 GPU 编号 `[0,1]` → 各复制一份，得到 9 个进程和 GPU 编号 `[0,1,2]`**；两章 caption、图、aria-label 和双语深入讲解一致。
-- 顺序专项首轮冷读中，第 2 章为 **9/12、21/24、4 洞**；补齐配置切换、CPU／GPU 区分、换卡和排队机制后为 **10/12、24/24、0 洞**，但 R2、R6 未过门。删去可见 `topology`／`replica` 术语、统一变化高亮后，最终同一冷读者确认两步均 **12/12、24/24、0 洞**，桌面和 390px 手机顺序都通过。
-- `build`、两章 `transcript`、`readability`、`deep-check`、`zh-check`、全章及中文本步 `mobile`（360/390/430 px）、数字断言和 `git diff --check` 均通过；第 1 本 `transcript/01-inference.md` 无 diff。
-- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-hourly-reader-20261124-1500/final/` 和 `checks/`。
-- 自己的 fork `cosekii/learning-sglang` 默认分支为 `tutorials`，GitHub Actions 发布到 `https://cosekii.github.io/learning-sglang/`；首次部署 run `45506790090` 已成功，仓库 homepage 已改为该地址。只推 `origin/tutorials`，不推 `main`，不向原作者仓库推送或开 PR。
-- 本轮类型：**自主优化**；下一普通轮按上次「修旧」之后转为**新书**。
+- 本轮新书：Learning ML Systems 第 1 章新增第 4 步 E2E 总延迟。沿用同一构造请求，画出 `325 − 0 = 250 + (25 + 20 + 30) = 325 ms`，明确首 token 后三段 ITL 都要计入，不能只加一次平均 TPOT；数字由 `src/ml-sys/numbers.ts` 推导。
+- 首轮独立冷读为 **11/12、22/24、0 洞**，手机漏标「三段 ITL」。补齐标签并把桌面标题改成「全程要等多久」后，同一冷读者复读为 **12/12、23/24、0 洞**，通过硬门；桌面原分 24，手机 #1 的动机项仍扣 1 分，本章平均分 **24 → 23.75**。
+- `build`、本章 `transcript`、第 4 步 `readability`、本章三种宽度的中英手机布局、中文手机字号硬门、`deep-check 01`、`zh-check`、数字断言和 `git diff --check` 均通过；zero-to-sglang 中英课程链接均返回 HTTP 200；第 1 本 `transcript/01-inference.md` 无 diff。
+- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s04-20261124-1515/final/` 和 `checks/`。
+- 本轮类型：**新书**；下一普通轮转为**修旧**。
 
 ## Learning SGLang
 
@@ -67,11 +66,11 @@
 
 ## Learning ML Systems
 
-规划完成：`docs/plan-ml-sys.md` 共 3 部分、16 章；第 1 章已制作 3 步。第 11 章须先补齐训推不一致的原始来源，缺源时先跳过。
+规划完成：`docs/plan-ml-sys.md` 共 3 部分、16 章；第 1 章已制作 4 步。第 11 章须先补齐训推不一致的原始来源，缺源时先跳过。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
-| 01 | 01-measure-inference | 在做第 4 步；前 3 步易读满分 | 24.00 |
+| 01 | 01-measure-inference | 在做第 5 步；前 4 步易读满分 | 23.75 |
 | 02 | 02-inference-memory-budget | 规划 | — |
 | 03 | 03-hybrid-state-cache | 规划 | — |
 | 04 | 04-gpu-communication | 规划 | — |
