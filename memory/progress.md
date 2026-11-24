@@ -4,11 +4,11 @@
 
 ## 本轮记录
 
-- 本轮新书：Learning ML Systems 第 1 章新增第 4 步 E2E 总延迟。沿用同一构造请求，画出 `325 − 0 = 250 + (25 + 20 + 30) = 325 ms`，明确首 token 后三段 ITL 都要计入，不能只加一次平均 TPOT；数字由 `src/ml-sys/numbers.ts` 推导。
-- 首轮独立冷读为 **11/12、22/24、0 洞**，手机漏标「三段 ITL」。补齐标签并把桌面标题改成「全程要等多久」后，同一冷读者复读为 **12/12、23/24、0 洞**，通过硬门；桌面原分 24，手机 #1 的动机项仍扣 1 分，本章平均分 **24 → 23.75**。
-- `build`、本章 `transcript`、第 4 步 `readability`、本章三种宽度的中英手机布局、中文手机字号硬门、`deep-check 01`、`zh-check`、数字断言和 `git diff --check` 均通过；zero-to-sglang 中英课程链接均返回 HTTP 200；第 1 本 `transcript/01-inference.md` 无 diff。
-- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s04-20261124-1515/final/` 和 `checks/`。
-- 本轮类型：**新书**；下一普通轮转为**修旧**。
+- 本轮修旧：Learning SGLang 第 1 章第 5 步。中文桌面改用整组括线，明确 6 段一起进入模型，补例句意思和 `␣` 解释；中文手机新增大字专版。英文原文和英文桌面画面未动。
+- 改前桌面专项冷读 **11/12、2 洞**，中文手机三种宽度各有 28 个 SVG 小字，硬门失败。最终独立冷读的桌面、390 px 和 360 px 手机均为 **12/12、0 洞**；原分维持 **24/24**，章均分 **23.92**。
+- `build`、本章 `transcript`、第 5 步 `readability`、三种宽度的中文手机硬门、`deep-check 01`、本章 `zh-check`、`token-legends`、中英截图和 `git diff --check` 均通过。
+- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch01-s05-mobile-20261124-1528/final/` 和 `checks/`。
+- 本轮类型：**修旧**；下一普通轮转为**新书**。
 
 ## Learning SGLang
 

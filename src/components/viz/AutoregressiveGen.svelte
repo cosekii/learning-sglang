@@ -106,6 +106,7 @@
     return () => query.removeEventListener('change', update);
   });
   const phoneForward = $derived(phone && step === 2 && $lang === 'zh');
+  const phoneAppendFirst = $derived(phone && step === 4 && $lang === 'zh');
   const repeatForward = $derived(step === 5 && $lang === 'zh');
   const phoneRepeat = $derived(phone && repeatForward);
   const phoneAppend = $derived(phone && step === 7 && $lang === 'zh');
@@ -146,8 +147,32 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox={phoneAppend ? '0 0 360 440' : phoneForward || phoneRepeat || phoneDone || phoneTally ? '0 0 360 570' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Autoregressive generation, step {step + 1}" class:phone-forward={phoneForward} class:phone-repeat={phoneRepeat} class:phone-append={phoneAppend} class:phone-done={phoneDone} class:phone-tally={phoneTally}>
-      {#if phoneRepeat}
+    <svg viewBox={phoneAppendFirst || phoneAppend ? '0 0 360 440' : phoneForward || phoneRepeat || phoneDone || phoneTally ? '0 0 360 570' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Autoregressive generation, step {step + 1}" class:phone-forward={phoneForward} class:phone-repeat={phoneRepeat} class:phone-append={phoneAppend || phoneAppendFirst} class:phone-done={phoneDone} class:phone-tally={phoneTally}>
+      {#if phoneAppendFirst}
+        <text x="16" y="22" class="label">把 ␣Paris 接到末尾：5 段变 6 段</text>
+        <rect x="16" y="32" width="10" height="10" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="32" y="41" class="note">原输入 5 段</text>
+        <rect x="180" y="32" width="10" height="10" rx="2" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x="196" y="41" class="note">新生成 1 段</text>
+        {#each prompt as tok, i}
+          <rect x={16 + i * 66} y="58" width="64" height="30" rx="6" fill={fill(tok.kind)} stroke={stroke(tok.kind)} stroke-width="1.5" />
+          <text x={48 + i * 66} y="78" text-anchor="middle" class="tok">{tok.text.replace(/^ /, '␣')}</text>
+          <text x={48 + i * 66} y="103" text-anchor="middle" class="id">{tok.id}</text>
+        {/each}
+        <rect x="16" y="122" width="120" height="30" rx="6" fill={fill('gen')} stroke={stroke('gen')} stroke-width="1.5" />
+        <text x="76" y="142" text-anchor="middle" class="tok">␣Paris</text>
+        <text x="76" y="167" text-anchor="middle" class="id">12366</text>
+        <text x="150" y="142" class="note">← 新接的第 6 段</text>
+        <path d="M 8 52 V 182 H 352 V 52 M 180 182 V 202" fill="none" stroke="var(--fg)" stroke-width="2" />
+        <polygon points="175,200 185,200 180,208" fill="var(--fg)" />
+        <rect x="40" y="212" width="280" height="66" rx="10" class="model neutral-active" />
+        <text x="180" y="238" text-anchor="middle" class="model-title">括线里的 6 段一起进入模型</text>
+        <text x="180" y="264" text-anchor="middle" class="model-sub">下一轮再猜一段，不只读 ␣Paris</text>
+        <text x="180" y="318" text-anchor="middle" class="note">边猜边接，直到「结束」，就叫自回归</text>
+        <text x="180" y="350" text-anchor="middle" class="note">例句意思：法国的首都是巴黎</text>
+        <text x="180" y="380" text-anchor="middle" class="note">␣ = 小段开头的空格</text>
+        <text x="180" y="426" text-anchor="middle" class="footnote">「结束」标记怎么出现，第 10 步讲</text>
+      {:else if phoneRepeat}
         <text x="16" y="20" class="label">第 1 轮输入：5 段，各算 1 次</text>
         <rect x="16" y="32" width="10" height="10" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
         <text x="32" y="41" class="note">原输入 5 段</text>
@@ -368,7 +393,8 @@
         <text x="476" y="21" class="note">原输入 5 段</text>
         <rect x="580" y="12" width="10" height="10" rx="2" fill="var(--gen-soft)" stroke="var(--gen)" />
         <text x="596" y="21" class="note">新生成 1 段</text>
-        <text x="16" y={seqY + tokH + 40} class="note" in:fade>下一轮：上面 {cur.seq.length} 段作为一整组进入模型，再猜一段，直到「结束」</text>
+        <text x="16" y={modelY + 22} class="note">例句意思：法国的首都是巴黎</text>
+        <text x="16" y={modelY + 44} class="note">␣ = 小段开头的空格</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">「结束」标记怎么出现，第 10 步讲</text>
       {/if}
 
@@ -421,6 +447,8 @@
               <path d="M {x + w / 2} {seqY + tokH + 18} V 108 H {W / 2} V {modelY - 6}"
                     class="wire active neutral-active" />
             {/each}
+          {:else if step === 4 && $lang === 'zh'}
+            <path d="M {layout[0].x} 92 V 98 H {seqEndX} V 92 M {W / 2} 98 V {modelY - 6}" class="wire" />
           {:else if step === 7 && $lang === 'zh'}
             <path d="M {layout[0].x} 92 V 96 H {seqEndX} V 92 M {W / 2} 96 V {modelY - 6}" class="wire" />
           {:else}
@@ -431,7 +459,7 @@
           <rect x={modelX} y={modelY} width={modelW} height={modelH} rx="10" class="model" class:busy={cur.phase === 'forward'} class:neutral-active={(step === 2 || step === 5 || step === 8) && $lang === 'zh'} />
           <text x={W / 2} y={modelY + 24} text-anchor="middle" class="model-title">{$lang === 'zh' ? '模型' : 'model'}</text>
           <text x={W / 2} y={modelY + 42} text-anchor="middle" class="model-sub">
-            {step === 2 && $lang === 'zh' ? '5 个编号一起算一遍' : cur.phase === 'forward' ? t(`processing ${cur.seq.length} tokens…`, `正在处理 ${cur.seq.length} 个 token…`) : t('a score for every candidate token', '每个候选 token 的分数')}
+            {step === 2 && $lang === 'zh' ? '5 个编号一起算一遍' : step === 4 && $lang === 'zh' ? '6 段一起进入模型，再猜下一段' : cur.phase === 'forward' ? t(`processing ${cur.seq.length} tokens…`, `正在处理 ${cur.seq.length} 个 token…`) : t('a score for every candidate token', '每个候选 token 的分数')}
           </text>
           {#if step === 2 && $lang === 'zh'}
             <path d="M {W / 2} {modelY + modelH} V 204" class="wire" />
@@ -590,6 +618,7 @@
   .phone-forward .label, .phone-repeat .label, .phone-append .label, .phone-done .label, .phone-tally .label { font-size: 12px; }
   .phone-forward .note, .phone-repeat .note, .phone-append .note, .phone-done .note, .phone-tally .note { font-size: 13px; }
   .phone-forward .id, .phone-forward .model-sub, .phone-repeat .id, .phone-repeat .model-sub, .phone-append .id, .phone-append .model-sub, .phone-done .id, .phone-tally .id { font-size: 12px; }
+  .phone-append .footnote { font-size: 12px; }
   .phone-forward .note, .phone-forward .id, .phone-forward .model-sub, .phone-repeat .note, .phone-repeat .id, .phone-repeat .model-sub, .phone-append .note, .phone-append .id, .phone-append .model-sub, .phone-done .note, .phone-done .id, .phone-tally .note, .phone-tally .id { fill: var(--fg); }
   .label { font-size: 11px; fill: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
   .tok { font-family: var(--mono); font-size: 13px; fill: var(--fg); }
