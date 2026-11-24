@@ -426,3 +426,8 @@ That is what chapter 3 stores: 128 KB per token, written once, read every step a
 
 - [zero-to-sglang Part I Chapter 1: Introduction to LLM](https://zero-to-sglang.datawhale.cc/eng/part1/Chapter1_Introduction_to_LLM.html)
 - [zero-to-sglang Part I Chapter 2: Introduction to Inference](https://zero-to-sglang.datawhale.cc/eng/part1/Chapter2_Introduction%20to%20Inference.html)
+- [zero-to-sglang Part I Chapter 4: KV Cache: The Core Data Structure of Inference](https://zero-to-sglang.datawhale.cc/eng/part1/Chapter4_KV%20Cache%20The%20Core%20Data%20Structure%20of%20Inference.html)
+- [zero-to-sglang Part II Chapter 3: Forward Pass and Generation](https://zero-to-sglang.datawhale.cc/eng/part2/Chapter3_Forward-Pass-and-Generation.html)
+- [zero-to-sglang Part II Chapter 3: Forward Pass and Generation (Code Walkthrough)](https://zero-to-sglang.datawhale.cc/eng/part2/Chapter3_Forward-Pass-and-Generation_code.html)
+- [zero-to-sglang Part II Chapter 4: KV Cache Optimization](https://zero-to-sglang.datawhale.cc/eng/part2/Chapter4_KV-Cache-Optimization.html)
+- [zero-to-sglang Part II Chapter 4: KV Cache Optimization (Code Walkthrough)](https://zero-to-sglang.datawhale.cc/eng/part2/Chapter4_KV-Cache-Optimization_code.html)

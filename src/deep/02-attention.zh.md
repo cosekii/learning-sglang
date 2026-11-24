@@ -464,3 +464,8 @@ $$
 
 - [zero-to-sglang 第 1 部分第 1 章：LLM 入门](https://zero-to-sglang.datawhale.cc/ch/part1/%E7%AC%AC1%E7%AB%A0_LLM%E5%85%A5%E9%97%A8.html)
 - [zero-to-sglang 第 1 部分第 2 章：推理入门](https://zero-to-sglang.datawhale.cc/ch/part1/%E7%AC%AC2%E7%AB%A0_%E6%8E%A8%E7%90%86%E5%85%A5%E9%97%A8.html)
+- [zero-to-sglang 第 1 部分第 4 章：推理的核心数据结构：KV Cache](https://zero-to-sglang.datawhale.cc/ch/part1/%E7%AC%AC4%E7%AB%A0_%E6%8E%A8%E7%90%86%E7%9A%84%E6%A0%B8%E5%BF%83%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%85%A5%E9%97%A8.html)
+- [zero-to-sglang 第 2 部分第 3 章：前向与生成](https://zero-to-sglang.datawhale.cc/ch/part2/%E7%AC%AC3%E7%AB%A0_%E5%89%8D%E5%90%91%E4%B8%8E%E7%94%9F%E6%88%90.html)
+- [zero-to-sglang 第 2 部分第 3 章：前向与生成（代码走读）](https://zero-to-sglang.datawhale.cc/ch/part2/%E7%AC%AC3%E7%AB%A0_%E5%89%8D%E5%90%91%E4%B8%8E%E7%94%9F%E6%88%90_%E4%BB%A3%E7%A0%81.html)
+- [zero-to-sglang 第 2 部分第 4 章：KV Cache 优化](https://zero-to-sglang.datawhale.cc/ch/part2/%E7%AC%AC4%E7%AB%A0_KVCache%E4%BC%98%E5%8C%96.html)
+- [zero-to-sglang 第 2 部分第 4 章：KV Cache 优化（代码走读）](https://zero-to-sglang.datawhale.cc/ch/part2/%E7%AC%AC4%E7%AB%A0_KVCache%E4%BC%98%E5%8C%96_%E4%BB%A3%E7%A0%81.html)
