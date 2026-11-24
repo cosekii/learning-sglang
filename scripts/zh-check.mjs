@@ -6,6 +6,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { launch, sleep } from './lib/browser.mjs';
+import { roster } from './lib/roster.mjs';
 
 const base = 'http://localhost:4321/learning-sglang';
 const book = process.env.BOOK || 'sglang';
@@ -18,10 +19,14 @@ if (shotDir) mkdirSync(shotDir, { recursive: true });
 // The roster, read from the built site's sidebar so this script does not duplicate chapters.ts.
 const browser = await launch({ port: 9300 + Math.floor(Math.random() * 500) });
 const page = await browser.tab();
-const firstPath = book === 'omni' ? '/omni/ch/01-config-to-runtime/' : book === 'ml-sys' ? '/ml-sys/ch/01-measure-inference/' : '/';
-await page.goto(`${base}${firstPath}`);
+const firstChapter = roster.find((chapter) => chapter.book === book && chapter.ready);
+if (!firstChapter) throw new Error(`no ready ${book} chapter`);
+await page.goto(`${base}${bookPrefix}/ch/${firstChapter.slug}/`);
 const slugs = await page.evaluate(`[...document.querySelectorAll('.sidebar li a')].map(a => a.getAttribute('href').split('/ch/')[1].replace(/\\/$/, ''))`);
-const targets = slugs.filter((s) => !only.length || only.includes(s.slice(0, 2)) || only.includes(String(parseInt(s.slice(0, 2), 10))));
+const targets = slugs.filter((slug) => {
+  const n = roster.find((chapter) => chapter.book === book && chapter.slug === slug)?.n;
+  return !only.length || only.includes(String(n)) || only.includes(String(n).padStart(2, '0'));
+});
 
 let failures = 0;
 for (const slug of targets) {

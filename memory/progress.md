@@ -4,10 +4,10 @@
 
 ## 本轮记录
 
-- 本轮修旧：完成 Learning SGLang 第 2 章第 9 步中文整改，易读 **11→12**、原分 **22→24**、冷读 **2→0**。R1：「Paris 加入后，六个 token 各自变成一串有顺序的数，前五串还是原来的，只有 Paris 的那一串是新的。」
-- 中文图补齐六个 `token → x` 箭头、前五个 x 与第 2 步相同、橙色新 x₆；手机改为六行大字对应图，深入讲解补齐固定结构。英文 caption、图和深入讲解未改，英文截图逐字节相同。
-- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch02-s09-fix/`。`build`、第 2 章 `transcript`、第 9 步 `readability`、中文手机字号硬门、全章手机布局、`deep-check 02`、第 2 章 `zh-check` 均通过。
-- 第 2 章现为 **7/14** 步易读满分，章均分 **23.64 / 24**；第 3 步仍待主人定。本轮类型：**修旧**；下一普通轮转为**新书**，做 **Inside Voxt**。
+- 本轮新书：完成 Inside Voxt 第 1 章第 1 步，易读 **12/12**、原分 **24/24**、冷读 **0 洞**。R1：「两次听写会拿到不同的标签，第一次的结果跟 A，第二次的结果跟 B，所以不会混在一起。」
+- 图用两次听写、两个不同 session ID 和两份结果讲清归属；A、B 是教学代称，2 是构造数量。中文手机改为纵向对应图，双语深入讲解附公开源码行号，并说明 `run` 与后台例外。
+- 第四本书已接入共用布局、首页、双语深入讲解和检查脚本。截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch01-s01/`。`build`、Voxt `transcript`、全章手机布局、中文手机字号、`readability`、`deep-check`、`zh-check` 均通过；第 1 本回归通过，transcript 哈希不变。
+- 本章已制作 **1 步**，章均分 **24.00 / 24**；继续制作第 2 步完整路线。本轮类型：**新书**；下一普通轮转为**修旧**，下次新书轮转做 **Learning SGLang Omni**。
 
 ## Learning SGLang
 
@@ -88,23 +88,23 @@
 
 ## Inside Voxt
 
-规划完成：`docs/plan-voxt.md` 共 3 部分、16 章；尚无已制作章节。事实来源只使用 `sglang-omni` 的 `origin/main` 公开代码和文档。
+规划完成：`docs/plan-voxt.md` 共 3 部分、16 章；第 1 章已制作 1 步。事实来源只使用 `sglang-omni` 的 `origin/main` 公开代码和文档。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
-| 01 | 01-one-dictation | 规划 | — |
-| 02 | 02-helper-permissions-hotkeys | 规划 | — |
-| 03 | 03-microphone-to-voice-frames | 规划 | — |
-| 04 | 04-speech-recognition-routes | 规划 | — |
-| 05 | 05-language-model-connection | 规划 | — |
-| 06 | 06-compose-and-cleanup | 规划 | — |
-| 07 | 07-deliver-text-safely | 规划 | — |
-| 08 | 08-personal-dictionary | 规划 | — |
-| 09 | 09-history-retry-retention | 规划 | — |
-| 10 | 10-file-transcription | 规划 | — |
-| 11 | 11-models-and-app-updates | 规划 | — |
-| 12 | 12-meeting-capture-modes | 规划 | — |
-| 13 | 13-meeting-live-and-final | 规划 | — |
-| 14 | 14-meeting-speaker-labels | 规划 | — |
-| 15 | 15-meeting-summary-and-export | 规划 | — |
-| 16 | 16-logs-tests-and-evaluation | 规划 | — |
+| 01 | one-dictation | 在做第 2 步；第 1 步易读满分 | 24.00 |
+| 02 | helper-permissions-hotkeys | 规划 | — |
+| 03 | microphone-to-voice-frames | 规划 | — |
+| 04 | speech-recognition-routes | 规划 | — |
+| 05 | language-model-connection | 规划 | — |
+| 06 | compose-and-cleanup | 规划 | — |
+| 07 | deliver-text-safely | 规划 | — |
+| 08 | personal-dictionary | 规划 | — |
+| 09 | history-retry-retention | 规划 | — |
+| 10 | file-transcription | 规划 | — |
+| 11 | models-and-app-updates | 规划 | — |
+| 12 | meeting-capture-modes | 规划 | — |
+| 13 | meeting-live-and-final | 规划 | — |
+| 14 | meeting-speaker-labels | 规划 | — |
+| 15 | meeting-summary-and-export | 规划 | — |
+| 16 | logs-tests-and-evaluation | 规划 | — |

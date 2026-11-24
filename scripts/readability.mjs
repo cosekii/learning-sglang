@@ -5,6 +5,7 @@
 //        BOOK=omni ONLY=1 STEP=1 npm run readability   gate one Omni step
 // Regenerate a chapter first with ONLY=N npm run transcript so its Chinese captions are present.
 import { readdirSync, readFileSync } from 'node:fs';
+import { roster, transcriptPath } from './lib/roster.mjs';
 
 const only = process.env.ONLY ? Number(process.env.ONLY) : null;
 const onlyStep = process.env.STEP ? Number(process.env.STEP) : null;
@@ -53,8 +54,9 @@ const clean = (s) => s.replace(/<[^>]+>/g, '').replace(/[`*_]/g, '').replace(/\s
 const sentences = (s, zh = false) => clean(s).split(zh ? /(?<=[。！？!?])/ : /(?<=[.!?])(?:["']?)\s+/).map((s) => s.trim()).filter(Boolean);
 const enWords = (s) => clean(s).match(/[A-Za-z0-9]+(?:['’_-][A-Za-z0-9]+)*/g) ?? [];
 const zhChars = (s) => clean(s).match(/[\u3400-\u9fff]|[A-Za-z]+(?:['’_-][A-Za-z]+)*|\d+(?:\.\d+)?/g) ?? [];
+const chapterByTranscript = new Map(roster.map((chapter) => [transcriptPath(chapter), chapter]));
 const files = readdirSync('transcript', { recursive: true }).map(String)
-  .filter((f) => /(^|\/)\d\d-.*\.md$/.test(f))
+  .filter((f) => chapterByTranscript.has(f))
   .sort((a, b) => Number(a.includes('/')) - Number(b.includes('/')) || a.localeCompare(b));
 const book = process.env.BOOK || (only === null ? 'all' : 'sglang');
 const seen = new Set(plainWords);
@@ -62,8 +64,9 @@ let failures = 0;
 let checked = 0;
 
 for (const file of files) {
-  const chapter = Number(file.match(/(?:^|\/)(\d\d)-/)?.[1]);
-  const fileBook = file.startsWith('omni/') ? 'omni' : file.startsWith('ml-sys/') ? 'ml-sys' : 'sglang';
+  const meta = chapterByTranscript.get(file);
+  const chapter = meta.n;
+  const fileBook = meta.book;
   const text = readFileSync(`transcript/${file}`, 'utf8');
   const blocks = text.split(/^## Step /m).slice(1);
   for (const block of blocks) {

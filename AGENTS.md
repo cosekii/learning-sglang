@@ -11,7 +11,7 @@ npm run transcript             # with the dev server up: transcripts + layout ch
 STEP=5 npm run token-legends   # chapter 1: multi-colour token steps need matching swatches + labels
 npm run mobile                 # with the dev server up: every page and step at 360/390/430 px, flags layout breaks and audits small SVG text
 ONLY=N STEP=M LANG=zh npm run mobile  # changed Chinese step: also fail on visible SVG text below 10 CSS px
-BOOK=omni ONLY=1 npm run transcript   # new-book roster; BOOK=ml-sys selects ML Systems; the same filter works in mobile/readability/zh-check/deep-check
+BOOK=omni ONLY=1 npm run transcript   # new-book roster; BOOK=ml-sys or BOOK=voxt selects another book; the same filter works in mobile/readability/zh-check/deep-check
 npm run shot -- <outDir> <waitMs> 'name=url' ...   # screenshots
 npm run og                     # re-render public/og.png, the link-preview card, from scripts/og/card.html
 ```

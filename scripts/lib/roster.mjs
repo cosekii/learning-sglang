@@ -11,6 +11,7 @@ export const roster = [
   ...readBook('src/chapters.ts', 'sglang', ''),
   ...readBook('src/omni/chapters.ts', 'omni', '/omni'),
   ...readBook('src/ml-sys/chapters.ts', 'ml-sys', '/ml-sys'),
+  ...readBook('src/voxt/chapters.ts', 'voxt', '/voxt'),
 ];
 
 export const chapterUrl = (chapter) => `${chapter.prefix}/ch/${chapter.slug}/`;
