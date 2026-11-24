@@ -8,14 +8,15 @@
 //
 // usage: node scripts/mobile.mjs [baseUrl]        (default http://localhost:4321/learning-sglang)
 //   WIDTHS=360,390,430   phone widths to check (CSS px, 844 tall)
-//   ONLY=13              one chapter by number
+//   ONLY=13              one first-book chapter by number
+//   BOOK=omni ONLY=1     one Omni chapter
 //   ONLY=13 STEP=5       gate one step's layout and rendered SVG font sizes
 //   LANG=zh              check the Chinese layer (default: en)
 //   MIN_FONT=10          rendered font-size floor in CSS px
 //   WAIT=ms              settle time per step (default 900; layout does not wait on the within-step animations)
 // Needs a dev or preview server on baseUrl and Node 22+; finds Chrome itself (see lib/browser.mjs).
-import { readFileSync } from 'node:fs';
 import { launch, sleep } from './lib/browser.mjs';
+import { chapterUrl, selectedChapters } from './lib/roster.mjs';
 
 const base = (process.argv[2] ?? 'http://localhost:4321/learning-sglang').replace(/\/$/, '');
 const widths = (process.env.WIDTHS ?? '360,390,430').split(',').map(Number);
@@ -29,10 +30,7 @@ if (onlyStep !== null && (only === null || !Number.isInteger(onlyStep) || onlySt
   process.exit(1);
 }
 
-const roster = readFileSync('src/chapters.ts', 'utf8');
-const chapters = [...roster.matchAll(/slug:\s*'([^']+)',[\s\S]*?ready:\s*(true|false)/g)]
-  .map((m, i) => ({ n: i + 1, slug: m[1], ready: m[2] === 'true' }))
-  .filter((c) => c.ready && (only === null || c.n === only));
+const chapters = selectedChapters();
 
 // Runs in the page. Returns the step counter and every layout break it can see.
 const CHECK = `(() => {
@@ -95,7 +93,7 @@ for (const w of widths) {
     const hits = [];
     const fontNotes = [];
     for (let n = onlyStep ?? 1, total = onlyStep ?? 1; n <= total; n++) {
-      await open(`${base}/ch/${ch.slug}/?step=${n}`);
+      await open(`${base}${chapterUrl(ch)}?step=${n}`);
       const r = await page.evaluate(CHECK);
       if (onlyStep === null) total = r.total || 1;
       for (const o of r.out) hits.push(`step ${n} · ${o}`);

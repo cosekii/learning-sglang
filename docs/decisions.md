@@ -9,3 +9,4 @@ Agent 先读这里；定过的不再问。
 - 深入讲解质量契约（用户反馈后定）：每个公式符号首次出现就定义并回指来源；step 之间衔接、符号链一致；用 slide 上的实际数字讲清公式怎么算。详见 docs/deep-dive.md。
 - 最终目测由用户来做；agent 交付本地可跑的成品 + 该看的地方，不替用户宣称测试通过。
 - 深入讲解第二版（2026-11-04 定）：界面改为右侧整屏抽屉（D 开关、Esc 关、开关状态跨步跨页保留）；内容搬到 `src/deep/<slug>.{zh,en}.md`，KaTeX 排公式；每步固定结构（一句话 / 图上是什么 / 公式 + 符号表 / 代入图上的数 / 说明 / 接下来）；旧内容逐条核实再搬。第 2 章是标杆，用户看过试点后说「可以跑」。
+- 新书站点结构（2026-11-23）：共用 `Chapter.astro`，由 frontmatter 的 `book` 选择书目数据。第 1 本仍用 `src/chapters.ts` 和 `/ch/...`；Omni 用 `src/omni/chapters.ts` 和 `/omni/ch/...`，组件与数字分别在 `src/components/omni/`、`src/omni/numbers.ts`，深入讲解文件加 `omni-` 前缀。检查命令用 `BOOK=omni ONLY=1` 选新书；首页列四本书，尚未制作的 ML Systems、Voxt 标「规划中」。

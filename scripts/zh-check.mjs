@@ -2,12 +2,14 @@
 // Flags captions with no Chinese (missing captionZh) and captions taller than the 3-line box (clipped),
 // stage text that runs past the SVG edge or overlaps other stage text, a missing/hidden prose pair,
 // and a toggle that does not switch back to English.
-// usage: node scripts/zh-check.mjs [screenshotDir]   ONLY=1,2 limits chapters; WAIT=ms settles phases (default 3500); needs the dev server.
+// usage: node scripts/zh-check.mjs [screenshotDir]   ONLY=1,2 limits chapters; BOOK=omni checks Omni; WAIT=ms settles phases (default 3500); needs the dev server.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { launch, sleep } from './lib/browser.mjs';
 
 const base = 'http://localhost:4321/learning-sglang';
+const book = process.env.BOOK || 'sglang';
+const bookPrefix = book === 'omni' ? '/omni' : '';
 const only = (process.env.ONLY ?? '').split(',').map((s) => s.trim()).filter(Boolean);
 const stepWait = Number(process.env.WAIT) || 3500;   // let within-step phases settle so all stage text is present
 const shotDir = process.argv[2];
@@ -16,13 +18,13 @@ if (shotDir) mkdirSync(shotDir, { recursive: true });
 // The roster, read from the built site's sidebar so this script does not duplicate chapters.ts.
 const browser = await launch({ port: 9300 + Math.floor(Math.random() * 500) });
 const page = await browser.tab();
-await page.goto(`${base}/`);
+await page.goto(book === 'omni' ? `${base}/omni/ch/01-config-to-runtime/` : `${base}/`);
 const slugs = await page.evaluate(`[...document.querySelectorAll('.sidebar li a')].map(a => a.getAttribute('href').split('/ch/')[1].replace(/\\/$/, ''))`);
 const targets = slugs.filter((s) => !only.length || only.includes(s.slice(0, 2)) || only.includes(String(parseInt(s.slice(0, 2), 10))));
 
 let failures = 0;
 for (const slug of targets) {
-  const url = `${base}/ch/${slug}/`;
+  const url = `${base}${bookPrefix}/ch/${slug}/`;
   await page.goto(url);
   await page.evaluate(`localStorage.setItem('lang', 'zh')`);
   await page.goto(url);

@@ -5,6 +5,7 @@ import 'katex/dist/katex.min.css';
 import '../styles/global.css';
 import '../styles/stage.css';
 import { chapters, parts } from '../chapters';
+import { omniChapters, omniParts } from '../omni/chapters';
 import { site } from '../site';
 import interUrl from '@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url';
 import monoUrl from '@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2?url';
@@ -12,20 +13,27 @@ import monoUrl from '@fontsource-variable/jetbrains-mono/files/jetbrains-mono-la
 // MDX passes frontmatter both spread and as `frontmatter`; accept either.
 const fm = (Astro.props as any).frontmatter ?? Astro.props;
 const slug: string | undefined = fm.slug;
-const idx = chapters.findIndex((c) => c.slug === slug);
-const chapter = idx >= 0 ? chapters[idx] : undefined;
-const title: string = fm.title ?? chapter?.title ?? site.name;
+const isOmni = fm.book === 'omni';
+const bookChapters = isOmni ? omniChapters : chapters;
+const bookParts = isOmni ? omniParts : parts;
+const bookName = isOmni ? 'Learning SGLang Omni' : site.name;
+const bookTagline = isOmni ? 'How configuration becomes a running multimodal request.' : site.tagline;
+const bookTaglineZh = isOmni ? '配置怎样变成运行中的多模态请求。' : site.taglineZh;
+const chapterHref = (s: string) => `${base}/${isOmni ? 'omni/' : ''}ch/${s}/`;
+const idx = bookChapters.findIndex((c) => c.slug === slug);
+const chapter = idx >= 0 ? bookChapters[idx] : undefined;
+const title: string = fm.title ?? chapter?.title ?? bookName;
 const titleZh: string = chapter?.titleZh ?? title;
 const hook: string | undefined = fm.hook ?? chapter?.hook;
 const hookZh: string | undefined = chapter?.hookZh;
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const pad = (n: number) => String(n).padStart(2, '0');
-const prev = idx > 0 ? chapters[idx - 1] : undefined;
-const next = idx >= 0 ? chapters[idx + 1] : undefined;
+const prev = idx > 0 ? bookChapters[idx - 1] : undefined;
+const next = idx >= 0 ? bookChapters[idx + 1] : undefined;
 // what a shared link shows: the home page is the site alone, a chapter its title and hook; one card image for all (npm run og)
-const pageTitle = chapter ? `${title} · ${site.name}` : site.name;
-const pageTitleZh = chapter ? `${titleZh} · ${site.name}` : site.name;
-const description = chapter ? `Chapter ${idx + 1} of ${site.name}. ${hook ?? ''}`.trim() : `${site.tagline} An illustrated guide, one picture per chapter.`;
+const pageTitle = chapter ? `${title} · ${bookName}` : bookName;
+const pageTitleZh = chapter ? `${titleZh} · ${bookName}` : bookName;
+const description = chapter ? `Chapter ${idx + 1} of ${bookName}. ${hook ?? ''}`.trim() : `${site.tagline} An illustrated guide, one picture per chapter.`;
 const pageUrl = new URL(Astro.url.pathname, Astro.site);
 const image = new URL(`${base}/og.png`, Astro.site);
 ---
@@ -73,22 +81,22 @@ const image = new URL(`${base}/og.png`, Astro.site);
     <div class="shell">
       <nav class="sidebar">
         <div class="brandrow">
-          <a class="brand" href={`${base}/`}>{site.name}</a>
+          <a class="brand" href={`${base}/`}>{bookName}</a>
           <button class="lang-toggle" onclick="window.__toggleLang()" aria-label="Switch language / 切换语言">
             <span class="i18n-en">中文</span><span class="i18n-zh">English</span>
           </button>
           <button class="menu" type="button" aria-expanded="false" aria-controls="navbody"><span class="i18n-en">Chapters</span><span class="i18n-zh">章节</span></button>
         </div>
         <div class="navbody" id="navbody">
-        <p class="tagline"><span class="i18n-en">{site.tagline}</span><span class="i18n-zh">{site.taglineZh}</span></p>
-        {parts.map((p) => (
+        <p class="tagline"><span class="i18n-en">{bookTagline}</span><span class="i18n-zh">{bookTaglineZh}</span></p>
+        {bookParts.map((p) => (
           <div class="part">
             <div class="part-title"><span class="i18n-en">{p.title}</span><span class="i18n-zh">{p.titleZh}</span></div>
             <ol>
-              {chapters.map((c, i) => c.part === p.id && (
+              {bookChapters.map((c, i) => c.part === p.id && (
                 <li class:list={[{ current: c.slug === slug, soon: !c.ready }]}>
                   {c.ready
-                    ? <a href={`${base}/ch/${c.slug}/`}><span class="n">{pad(i + 1)}</span><span class="i18n-en">{c.title}</span><span class="i18n-zh">{c.titleZh}</span></a>
+                    ? <a href={chapterHref(c.slug)}><span class="n">{pad(i + 1)}</span><span class="i18n-en">{c.title}</span><span class="i18n-zh">{c.titleZh}</span></a>
                     : <span><span class="n">{pad(i + 1)}</span><span class="i18n-en">{c.title}</span><span class="i18n-zh">{c.titleZh}</span></span>}
                 </li>
               ))}
@@ -129,8 +137,8 @@ const image = new URL(`${base}/og.png`, Astro.site);
               </div>
             </div>
             <nav class="chapter-nav" aria-label="chapters">
-              {prev && (prev.ready ? <a href={`${base}/ch/${prev.slug}/`}>← <span class="i18n-en">{prev.title}</span><span class="i18n-zh">{prev.titleZh}</span></a> : <span>← <span class="i18n-en">{prev.title}</span><span class="i18n-zh">{prev.titleZh}</span></span>)}
-              {next && (next.ready ? <a href={`${base}/ch/${next.slug}/`}><span class="i18n-en">{next.title}</span><span class="i18n-zh">{next.titleZh}</span> →</a> : <span><span class="i18n-en">{next.title}</span><span class="i18n-zh">{next.titleZh}</span> <em><span class="i18n-en">soon</span><span class="i18n-zh">即将上线</span></em> →</span>)}
+              {prev && (prev.ready ? <a href={chapterHref(prev.slug)}>← <span class="i18n-en">{prev.title}</span><span class="i18n-zh">{prev.titleZh}</span></a> : <span>← <span class="i18n-en">{prev.title}</span><span class="i18n-zh">{prev.titleZh}</span></span>)}
+              {next && (next.ready ? <a href={chapterHref(next.slug)}><span class="i18n-en">{next.title}</span><span class="i18n-zh">{next.titleZh}</span> →</a> : <span><span class="i18n-en">{next.title}</span><span class="i18n-zh">{next.titleZh}</span> <em><span class="i18n-en">soon</span><span class="i18n-zh">即将上线</span></em> →</span>)}
             </nav>
           </header>
           <slot />

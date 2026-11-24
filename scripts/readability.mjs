@@ -1,7 +1,8 @@
 // Mechanical part of EVAL.md §0: caption length and first-use terminology.
 // Reads generated transcripts in chapter order. R1/R3/R5/R6 still need the screenshot cold-read.
 // usage: npm run readability                 audit every ready chapter
-//        ONLY=2 STEP=1 npm run readability   gate one changed step
+//        ONLY=2 STEP=1 npm run readability   gate one changed first-book step
+//        BOOK=omni ONLY=1 STEP=1 npm run readability   gate one Omni step
 // Regenerate a chapter first with ONLY=N npm run transcript so its Chinese captions are present.
 import { readdirSync, readFileSync } from 'node:fs';
 
@@ -52,18 +53,22 @@ const clean = (s) => s.replace(/<[^>]+>/g, '').replace(/[`*_]/g, '').replace(/\s
 const sentences = (s, zh = false) => clean(s).split(zh ? /(?<=[。！？!?])/ : /(?<=[.!?])(?:["']?)\s+/).map((s) => s.trim()).filter(Boolean);
 const enWords = (s) => clean(s).match(/[A-Za-z0-9]+(?:['’_-][A-Za-z0-9]+)*/g) ?? [];
 const zhChars = (s) => clean(s).match(/[\u3400-\u9fff]|[A-Za-z]+(?:['’_-][A-Za-z]+)*|\d+(?:\.\d+)?/g) ?? [];
-const files = readdirSync('transcript').filter((f) => /^\d\d-.*\.md$/.test(f)).sort();
+const files = readdirSync('transcript', { recursive: true }).map(String)
+  .filter((f) => /(^|\/)\d\d-.*\.md$/.test(f))
+  .sort((a, b) => Number(a.startsWith('omni/')) - Number(b.startsWith('omni/')) || a.localeCompare(b));
+const book = process.env.BOOK || (only === null ? 'all' : 'sglang');
 const seen = new Set(plainWords);
 let failures = 0;
 let checked = 0;
 
 for (const file of files) {
-  const chapter = Number(file.slice(0, 2));
+  const chapter = Number(file.match(/(?:^|\/)(\d\d)-/)?.[1]);
+  const fileBook = file.startsWith('omni/') ? 'omni' : 'sglang';
   const text = readFileSync(`transcript/${file}`, 'utf8');
   const blocks = text.split(/^## Step /m).slice(1);
   for (const block of blocks) {
     const step = Number(block.match(/^(\d+)/)?.[1]);
-    const selected = (only === null || chapter === only) && (onlyStep === null || step === onlyStep);
+    const selected = (book === 'all' || book === fileBook) && (only === null || chapter === only) && (onlyStep === null || step === onlyStep);
     const caption = clean(block.match(/^\*\*Caption(?:\s*\([^)]*\))?\.\*\*\s*(.+)$/m)?.[1] ?? '');
     const zh = clean(block.match(/^\*\*Caption \(zh\)\.\*\*\s*(.+)$/m)?.[1] ?? '');
     const stage = block.split(/^## Prose/m)[0];

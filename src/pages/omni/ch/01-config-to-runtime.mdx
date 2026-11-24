@@ -1,0 +1,29 @@
+---
+layout: ../../../layouts/Chapter.astro
+book: omni
+slug: 01-config-to-runtime
+---
+import ConfigToRuntime from '../../../components/omni/ConfigToRuntime.svelte';
+import { omniNeighbors } from '../../../omni/chapters';
+import { deepFor } from '../../../deep';
+export const deep = await deepFor('omni-01-config-to-runtime');
+
+<ConfigToRuntime client:load {...omniNeighbors('01-config-to-runtime')} deep={deep} />
+
+<details class="i18n-en">
+<summary>Where this chapter's claims come from</summary>
+
+The five fractions come from `examples/configs/qwen3_omni_colocated_h100_bf16.yaml` in SGLang-Omni. The model's colocated placement puts these five GPU stages on one card; `preprocessing` and `decode` are separate CPU stages and do not appear in this GPU budget. The 6% is the unassigned remainder, not a separate reserve field and not a measurement of live memory use.
+
+Source revision: `sglang-omni origin/main@34961b7df8fbd050d8e1e1bc9d82fbd165eb8566`.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的出处</summary>
+
+五个比例来自 SGLang-Omni 的 `examples/configs/qwen3_omni_colocated_h100_bf16.yaml`。模型的 colocated placement 把这五个 GPU stage 放在同一张卡上；`preprocessing` 和 `decode` 是另外的 CPU stage，不占这份 GPU 预算。6% 是尚未分配的余额，不是单独的 reserve 字段，也不是运行时的实测显存占用。
+
+来源版本：`sglang-omni origin/main@34961b7df8fbd050d8e1e1bc9d82fbd165eb8566`。
+
+</details>

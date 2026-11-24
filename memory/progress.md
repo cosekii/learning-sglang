@@ -4,10 +4,10 @@
 
 ## 本轮记录
 
-- 本轮修旧：完成 Learning SGLang 第 2 章第 3 步的中文冷读和补评，未改教程。R1 只能复述为「每个 token 的 x 变成 q、k、v，但我说不清它们是什么。」易读分 **3/12**，原 12 项 **20/24**，冷读 **8 洞**；逐项分数和八类洞已写入评分卡。
-- 章均分因本次重评从 **23.93** 调整为 **23.64 / 24**，不是教程改动造成的退步。第 1 章仍为 **12/12** 步易读满分、均分 **23.75 / 24**；第 2 章仍为 **4/14** 步易读满分。
-- 截图：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch02-s03-fix/ch02-s03-before-zh.png`、`ch02-s03-before-en.png`。`build`、第 2 章 `transcript`、`deep-check 02`、第 2 章 `zh-check` 通过；`readability` 仍有 3 个问题，中文手机硬门在 360/390/430 px 各有 30 个 SVG 文字低于 10 CSS px，未通过。
-- 完整修复需要拆步、后续重编号和手机图整改；英文原文受保护，已保留在 `docs/ideas.md` 标「待主人定」。本轮只提交评估记录，不把第 3 步标成完成。本轮类型：**修旧**；下一普通轮转为**新书**。
+- 本轮新书：完成 Learning SGLang Omni 第 1 章第 1 步，易读 **12/12**、原 12 项 **24/24**、冷读 **0 洞**。R1：「五个 stage 在同一张卡上共分 94% 显存，还剩 6%。」本章继续制作第 2 步。
+- 新书已接入共用章节布局、独立书目与侧边栏、双语深入讲解和五类检查脚本；首页列出四本书。第 1 本英文教程、URL 和 transcript 未改。
+- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-omni-ch01-s01/`。`build`、Omni `transcript`、中英手机硬门、`readability`、`deep-check`、`zh-check` 均通过；浏览器实数 94 个蓝格和 6 个空格，三个相关 URL 均返回 200。
+- 未启动 H100 实测；94% / 6% 是 `34961b7df8fbd050d8e1e1bc9d82fbd165eb8566` 配置声明预算的静态核算。本轮类型：**新书**；下一普通轮转为**修旧**。
 
 ## Learning SGLang
 
@@ -45,11 +45,11 @@
 
 ## Learning SGLang Omni
 
-规划完成：`docs/plan-omni.md` 共 3 部分、13 章；尚无已制作章节。
+规划完成：`docs/plan-omni.md` 共 3 部分、13 章；第 1 章已制作 1 步。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
-| 01 | 01-config-to-runtime | 规划 | — |
+| 01 | 01-config-to-runtime | 在做第 2 步；第 1 步易读满分 | 24.00 |
 | 02 | 02-spg-topology | 规划 | — |
 | 03 | 03-request-binding | 规划 | — |
 | 04 | 04-readiness-contracts | 规划 | — |
