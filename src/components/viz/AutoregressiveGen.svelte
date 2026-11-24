@@ -106,6 +106,8 @@
     return () => query.removeEventListener('change', update);
   });
   const phoneForward = $derived(phone && step === 2 && $lang === 'zh');
+  const repeatForward = $derived(step === 5 && $lang === 'zh');
+  const phoneRepeat = $derived(phone && repeatForward);
   const phoneAppend = $derived(phone && step === 7 && $lang === 'zh');
   const phoneDone = $derived(phone && step === 10 && $lang === 'zh');
   const phoneTally = $derived(phone && step === 11 && $lang === 'zh');
@@ -144,8 +146,37 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox={phoneAppend ? '0 0 360 440' : phoneForward || phoneDone || phoneTally ? '0 0 360 570' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Autoregressive generation, step {step + 1}" class:phone-forward={phoneForward} class:phone-append={phoneAppend} class:phone-done={phoneDone} class:phone-tally={phoneTally}>
-      {#if phoneAppend}
+    <svg viewBox={phoneAppend ? '0 0 360 440' : phoneForward || phoneRepeat || phoneDone || phoneTally ? '0 0 360 570' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Autoregressive generation, step {step + 1}" class:phone-forward={phoneForward} class:phone-repeat={phoneRepeat} class:phone-append={phoneAppend} class:phone-done={phoneDone} class:phone-tally={phoneTally}>
+      {#if phoneRepeat}
+        <text x="16" y="20" class="label">第 1 轮输入：5 段，各算 1 次</text>
+        <rect x="16" y="32" width="10" height="10" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="32" y="41" class="note">原输入 5 段</text>
+        <rect x="180" y="32" width="10" height="10" rx="2" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x="196" y="41" class="note">新生成 1 段</text>
+        {#each prompt as tok, i}
+          <rect x={16 + i * 66} y="58" width="64" height="30" rx="6" fill={fill(tok.kind)} stroke={stroke(tok.kind)} stroke-width="1.5" />
+          <text x={48 + i * 66} y="78" text-anchor="middle" class="tok">{tok.text.replace(/^ /, '␣')}</text>
+          <text x={48 + i * 66} y="103" text-anchor="middle" class="id">{tok.id}</text>
+        {/each}
+        <text x="16" y="140" class="label">第 2 轮输入：同样 5 段 + ␣Paris</text>
+        {#each prompt as tok, i}
+          <rect x={16 + i * 66} y="156" width="64" height="30" rx="6" fill={fill(tok.kind)} stroke={stroke(tok.kind)} stroke-width="1.5" />
+          <text x={48 + i * 66} y="176" text-anchor="middle" class="tok">{tok.text.replace(/^ /, '␣')}</text>
+          <text x={48 + i * 66} y="201" text-anchor="middle" class="id">{tok.id}</text>
+        {/each}
+        <rect x="16" y="220" width="120" height="30" rx="6" fill={fill('gen')} stroke={stroke('gen')} stroke-width="1.5" />
+        <text x="76" y="240" text-anchor="middle" class="tok">␣Paris</text>
+        <text x="76" y="265" text-anchor="middle" class="id">12366</text>
+        <text x="150" y="240" class="note">← 第 1 次作为输入</text>
+        <path d="M 8 148 V 282 H 352 V 148 M 180 282 V 310" fill="none" stroke="var(--fg)" stroke-width="2" />
+        <polygon points="175,308 185,308 180,316" fill="var(--fg)" />
+        <rect x="40" y="320" width="280" height="70" rx="10" class="model neutral-active" />
+        <text x="180" y="347" text-anchor="middle" class="model-title">括线里的 6 段一起进入模型</text>
+        <text x="180" y="375" text-anchor="middle" class="model-sub">前 5 段第 2 次算 · Paris 第 1 次算</text>
+        <text x="180" y="425" text-anchor="middle" class="note">例句意思：法国的首都是巴黎</text>
+        <text x="180" y="453" text-anchor="middle" class="note">␣ = 小段开头的空格</text>
+        <text x="180" y="481" text-anchor="middle" class="note">本例没存第 1 轮结果，前 5 段不能跳过</text>
+      {:else if phoneAppend}
         <text x="16" y="22" class="label">把句号接到末尾：6 段变 7 段</text>
         <rect x="16" y="32" width="10" height="10" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
         <text x="32" y="41" class="note">原输入 5 段</text>
@@ -274,6 +305,30 @@
         <text x="16" y="492" class="note">重算：10 + 1 = 11 格</text>
         <text x="16" y="520" class="note">前 5 列各多算 2 次：10 格</text>
         <text x="16" y="544" class="note">␣Paris 再算 1 次：1 格 · EOS 不再输入</text>
+      {:else if repeatForward}
+        <text x="16" y="22" class="label">第 1 轮输入：5 段，各算 1 次</text>
+        <rect x="460" y="12" width="10" height="10" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="476" y="21" class="note">原输入 5 段</text>
+        <rect x="580" y="12" width="10" height="10" rx="2" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x="596" y="21" class="note">新生成 1 段</text>
+        {#each layout.slice(0, prompt.length) as { t, x, w }}
+          <rect {x} y="44" width={w} height="30" rx="6" fill={fill(t.kind)} stroke={stroke(t.kind)} stroke-width="1.5" />
+          <text x={x + w / 2} y="63" text-anchor="middle" class="tok">{t.text.replace(/^ /, '␣')}</text>
+          <text x={x + w / 2} y="88" text-anchor="middle" class="id">{t.id}</text>
+        {/each}
+        <text x="16" y="130" class="label">第 2 轮输入：同样 5 段 + ␣Paris，共 6 段</text>
+        {#each layout as { t, x, w }}
+          <rect {x} y="150" width={w} height="30" rx="6" fill={fill(t.kind)} stroke={stroke(t.kind)} stroke-width="1.5" />
+          <text x={x + w / 2} y="169" text-anchor="middle" class="tok">{t.text.replace(/^ /, '␣')}</text>
+          <text x={x + w / 2} y="194" text-anchor="middle" class="id">{t.id}</text>
+        {/each}
+        <path d="M 16 210 V 224 H {seqEndX} V 210 M {W / 2} 224 V 242" fill="none" stroke="var(--fg)" stroke-width="2" />
+        <polygon points="{W / 2 - 5},240 {W / 2 + 5},240 {W / 2},248" fill="var(--fg)" />
+        <rect x={modelX} y="252" width={modelW} height="64" rx="10" class="model neutral-active" />
+        <text x={W / 2} y="278" text-anchor="middle" class="model-title">上面 6 段一起进入模型</text>
+        <text x={W / 2} y="302" text-anchor="middle" class="model-sub">前 5 段第 2 次算 · ␣Paris 第 1 次算</text>
+        <text x="16" y="348" class="note">例句意思：法国的首都是巴黎 · ␣ = 小段开头的空格</text>
+        <text x="16" y="374" class="note">本例没存第 1 轮结果，所以前 5 段不能跳过</text>
       {:else}
       <!-- Row 1: the raw prompt, then the token sequence -->
       <text x="16" y="22" class="label">{cur.phase === 'raw' ? 'prompt' : t(`sequence (${cur.seq.length} tokens)`, `序列（${cur.seq.length} 个 token）`)}</text>
@@ -316,17 +371,7 @@
         <text x="16" y={seqY + tokH + 40} class="note" in:fade>下一轮：上面 {cur.seq.length} 段作为一整组进入模型，再猜一段，直到「结束」</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">「结束」标记怎么出现，第 10 步讲</text>
       {/if}
-      {#if step === 5 && $lang === 'zh'}
-        <rect x="460" y="12" width="10" height="10" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
-        <text x="476" y="21" class="note">原输入 5 段</text>
-        <rect x="580" y="12" width="10" height="10" rx="2" fill="var(--gen-soft)" stroke="var(--gen)" />
-        <text x="596" y="21" class="note">新生成 1 段</text>
-        <text x="18" y={seqY + tokH + 40} class="pt">·</text>
-        <text x="28" y={seqY + tokH + 40} class="note" in:fade>黑色模型和虚线：第 2 轮正在计算，{cur.seq.length} 段一起输入</text>
-        <text x="18" y={seqY + tokH + 62} class="pt">·</text>
-        <text x="28" y={seqY + tokH + 62} class="note" in:fade>蓝框前 {prompt.length} 段：第 2 次作为输入 · 橙框 Paris：第 1 次作为输入</text>
-        <text x="16" y={modelY + modelH + 26} class="note" in:fade>最简示例没存上次结果 → 前 {prompt.length} 段只能重算</text>
-      {/if}
+
       {#if step === 6 && $lang === 'zh'}
         <rect x="460" y="12" width="10" height="10" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
         <text x="476" y="21" class="note">原输入 5 段</text>
@@ -542,10 +587,10 @@
 </figure>
 
 <style>
-  .phone-forward .label, .phone-append .label, .phone-done .label, .phone-tally .label { font-size: 12px; }
-  .phone-forward .note, .phone-append .note, .phone-done .note, .phone-tally .note { font-size: 13px; }
-  .phone-forward .id, .phone-forward .model-sub, .phone-append .id, .phone-append .model-sub, .phone-done .id, .phone-tally .id { font-size: 12px; }
-  .phone-forward .note, .phone-forward .id, .phone-forward .model-sub, .phone-append .note, .phone-append .id, .phone-append .model-sub, .phone-done .note, .phone-done .id, .phone-tally .note, .phone-tally .id { fill: var(--fg); }
+  .phone-forward .label, .phone-repeat .label, .phone-append .label, .phone-done .label, .phone-tally .label { font-size: 12px; }
+  .phone-forward .note, .phone-repeat .note, .phone-append .note, .phone-done .note, .phone-tally .note { font-size: 13px; }
+  .phone-forward .id, .phone-forward .model-sub, .phone-repeat .id, .phone-repeat .model-sub, .phone-append .id, .phone-append .model-sub, .phone-done .id, .phone-tally .id { font-size: 12px; }
+  .phone-forward .note, .phone-forward .id, .phone-forward .model-sub, .phone-repeat .note, .phone-repeat .id, .phone-repeat .model-sub, .phone-append .note, .phone-append .id, .phone-append .model-sub, .phone-done .note, .phone-done .id, .phone-tally .note, .phone-tally .id { fill: var(--fg); }
   .label { font-size: 11px; fill: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
   .tok { font-family: var(--mono); font-size: 13px; fill: var(--fg); }
   .id { font-family: var(--mono); font-size: 10.5px; fill: var(--muted); }
