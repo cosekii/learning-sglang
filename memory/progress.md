@@ -7,7 +7,7 @@
 - 新建 `docs/z2s-map.md`：按课程目录逐章覆盖 Part 0 两章、Part I 五章、Part II 十章、Part III 五章、Part IV 三章，共 **25 章**。Part II 第 2–6、8–10 章的代码篇与正文一起核对；每章记录对应教程、已覆盖、课程更清楚的 §、缺口、不一致和改进编号。
 - 课程基线为 `zero-to-sglang@bcf0cd82b9d1a058e5211d56431f14efd99eaf12`，教程基线为 `07933b8`。Learning ML Systems 和第 1 本 Ch. 22–29 均只记「仅规划」，没有写成已覆盖；mini 与当前 SGLang 的实现差异未核码处都标「待核」。
 - `docs/ideas.md` 新增 **35 条**相互链接的改进，按效果大、改动小排列。优先记录第 6 章 mixed 停顿、第 7 章碎片、第 8 章释放和第 9 章 SSE 的口径，再补关键机制与未制作章节的规划。第 1 本改进默认只落中文层；英文原版需要同步的地方逐项标「待主人定」。
-- 自定义检查通过：25 章顺序与课程目录一致，35 个改进编号均有一一对应的定义，无缺失或闲置编号。`build`、全量 `transcript`、全量 `deep-check`、全量 `WAIT=100 mobile` 和 `git diff --check` 通过。已截取并复核第 1 本 Ch. 1 Step 1 参照页：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-z2s-map/z2s-map-reference.png`。
+- 自定义检查通过：25 章顺序与课程目录一致，35 个改进编号均有一一对应的定义，无缺失或闲置编号。独立复核后修正了教学状态与 mini 实现的边界、SGLang 请求返回路径的待核范围、中文 Prose 的改动口径和一处漏字。`build`、全量 `transcript`、全量 `deep-check`、全量 `WAIT=100 mobile` 和 `git diff --check` 通过。已截取并复核第 1 本 Ch. 1 Step 1 参照页：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-z2s-map/z2s-map-reference.png`。
 - 本轮只写对照规划和改进清单，未改教程步骤；易读分、原 12 项、R1 复述和冷读洞均不适用。第 1 章仍为 **12/12** 步易读满分、章均分 **23.75 / 24**；第 2 章仍为 **4/14** 步易读满分、章均分 **23.93 / 24**。本轮类型：**参考资料规划**（优先级 3b，不改变新旧交替状态）；下一普通轮仍按上一轮「新书」转为**修旧**，先复核第 2 章第 3 步的记录。
 
 ## Learning SGLang
