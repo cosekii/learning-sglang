@@ -40,3 +40,42 @@
 ### 接下来
 
 后面几步把更多配置字段接到 stage、进程、设备和请求路线图。
+
+## 第 2 步 · 七个 stage，六个进程
+
+> **一句话：** 这份配置把 `talker_ar` 和 `code2wav` 放进同一个进程，所以七个 stage 只启动六个 stage 进程。
+
+### 图上是什么
+
+- 左边是模型拓扑里的七个 stage，顺序与源码构造顺序相同。
+- 右边每框是一个 stage 进程。前五个进程各装一个 stage；蓝框里的 `talker_ar` 进程装两个 stage。
+- `CPU` 表示该进程没有 stage 分到 GPU；`GPU 0` 表示框里的 stage 都使用第 1 步的同一块 GPU。
+- 这里只数 stage 进程，不把启动它们的父进程算进去，也没有在本机启动模型。
+
+### 代入图上的数
+
+前五个进程各装一个 stage，最后一个进程装两个：
+
+$$1 + 1 + 1 + 1 + 1 + 2 = 7\ \text{个 stage}$$
+
+$$5 + 1 = 6\ \text{个 stage 进程}$$
+
+这里减少的一个进程来自两 stage 合住，不是少了一个 stage。第 1 步的五份 GPU 显存预算仍然都在：`code2wav` 只是改与 `talker_ar` 同住的进程，仍留在 GPU 0。
+
+### 配置怎样变成进程
+
+`COLOCATED_SPEECH_PROCESSES` 先给每个 stage 指定 `process` 名字；其中 `code2wav` 与 `talker_ar` 都写成 `talker_ar`。topology 按这个名字分组，同组 stage 进入一个 `StageWorkerProcessSpec`，runner 为每组创建一个 stage 进程。
+
+### 边界与出处
+
+以下来源位于 `sglang-omni origin/main@34961b7df8fbd050d8e1e1bc9d82fbd165eb8566`：
+
+- 七 stage 及其构造顺序：`sglang_omni/models/qwen3_omni/config.py:268-302`。
+- 默认进程名单与 `code2wav` 合入 `talker_ar`：`sglang_omni/models/qwen3_omni/config.py:305-318`。
+- 同卡配置把 `thinker_gpu` 和 `talker_gpu` 都设为 0：`sglang_omni/models/qwen3_omni/config.py:499-521`；`preprocessing`、`decode` 的构造函数没有 `gpu` 参数，见 `sglang_omni/models/qwen3_omni/config.py:57-87`、`sglang_omni/models/qwen3_omni/config.py:192-199`。
+- 按 `process` 名字组成进程组：`sglang_omni/config/topology.py:365-382`。
+- 每组生成一个进程规格：`sglang_omni/pipeline/mp_runner.py:244-260`；每个规格启动一个子进程：`sglang_omni/pipeline/stage_workers.py:422-456`。
+
+### 接下来
+
+下一张图把同一份配置里的设备分组展开，看哪些部署旋钮可以独立调整。

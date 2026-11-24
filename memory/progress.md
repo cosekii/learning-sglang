@@ -4,10 +4,10 @@
 
 ## 本轮记录
 
-- 本轮修旧：完成 Learning SGLang 第 2 章第 5 步的中文易读整改，易读 **10→12**、原分 **20→24**、冷读 **4→0**。R1：「Softmax 先把分数变成正数，再除以五个正数的总和，得到每列占的份额，下一步按这些份额混合五列 value。」
-- 中文图补齐 Softmax 计算链、权重含义、France 算例、权重求和与下一步用途；360/390/430 px 手机改用同内容的大字专版。英文 caption、图和深入讲解未改，英文改前后截图逐字节相同。
-- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch02-s05-fix/`。`build`、第 2 章 `transcript`、第 5 步 `readability`、中文手机硬门、全章手机布局、`deep-check 02`、第 2 章 `zh-check` 均通过；第 4→5 步在 100/1400 ms 等待后的截图逐字节相同。
-- 第 2 章现为 **5/14** 步易读满分，章均分 **23.64 / 24**；第 3 步仍待主人定，其他未评步继续逐轮补评。本轮类型：**修旧**；下一普通轮转为**新书**。
+- 本轮新书：完成 Learning SGLang Omni 第 1 章第 2 步，易读 **12/12**、原 12 项 **24/24**、冷读 **0 洞**。R1：「七个 stage 在六个进程里跑，因为 talker_ar 和 code2wav 共用一个，另外五个各用一个，所以 5＋1＝6。」
+- 图把七个 stage 映射到六个 stage 进程，蓝框标出 `talker_ar` 与 `code2wav` 共用进程；四个进程使用 GPU 0，两个只用 CPU。数字从 `src/omni/numbers.ts` 推导，出处固定到 `sglang-omni origin/main@34961b7df8fbd050d8e1e1bc9d82fbd165eb8566`。
+- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-omni-ch01-s02/`。`build`、Omni `transcript`、全章手机布局、中文手机字号、`readability`、`deep-check`、`zh-check` 均通过；中英桌面、中文手机及双语深入讲解截图已检查。
+- 本章已制作 **2 步**，均易读满分，章均分 **24.00 / 24**；继续制作第 3 步。本轮类型：**新书**；下一普通轮转为**修旧**，下次新书轮转做 **Learning ML Systems**。
 
 ## Learning SGLang
 
@@ -45,11 +45,11 @@
 
 ## Learning SGLang Omni
 
-规划完成：`docs/plan-omni.md` 共 3 部分、13 章；第 1 章已制作 1 步。
+规划完成：`docs/plan-omni.md` 共 3 部分、13 章；第 1 章已制作 2 步。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
-| 01 | 01-config-to-runtime | 在做第 2 步；第 1 步易读满分 | 24.00 |
+| 01 | 01-config-to-runtime | 在做第 3 步；前 2 步易读满分 | 24.00 |
 | 02 | 02-spg-topology | 规划 | — |
 | 03 | 03-request-binding | 规划 | — |
 | 04 | 04-readiness-contracts | 规划 | — |

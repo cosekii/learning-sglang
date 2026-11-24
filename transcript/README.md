@@ -27,4 +27,4 @@ Read it to check wording and numbers across chapters without opening the compone
 | sglang | 19 | [Sharing GPUs](19-sharing-gpus.md) | 6 |
 | sglang | 20 | [Streaming audio decode](20-streaming-audio.md) | 6 |
 | sglang | 21 | [Full duplex](21-full-duplex.md) | 8 |
-| omni | 01 | [From config to a runtime graph](omni/01-config-to-runtime.md) | 1 |
+| omni | 01 | [From config to a runtime graph](omni/01-config-to-runtime.md) | 2 |
