@@ -4,10 +4,10 @@
 
 ## 本轮记录
 
-- 本轮修旧：补评 Learning SGLang 第 2 章第 11 步，易读 **—→8/12**、原分 **24→21/24**、冷读 **0→3 洞**。R1：「Paris 加进来后，前面五列用的数和计算方法没变，所以又算了一遍，答案还是一样。」
-- 三个洞是 RoPE 没有大白话、旧 q 没有等号且比较对象不清、手机图过小。中英文 caption 都是 3 句；中文可独立修图和 caption，但英文原文受保护，完整通过 `readability` 仍需主人允许把英文 caption 并为两句。本轮未改教程，未提交未过门的改版。
-- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch02-repair-next/`。`build`、第 2 章 `transcript`、`deep-check 02`、第 2 章 `zh-check` 通过；第 11 步 `readability` 与中文手机字号硬门未过。
-- 第 2 章现为 **8/14** 步易读满分，章均分 **23.43 / 24**；第 3、11 步待主人定。本轮类型：**修旧**；下一普通轮转为**新书**。
+- 本轮新书：完成 Learning ML Systems 第 1 章第 2 步，初稿易读 **11/12**、原分 **23/24**、**1 洞**；补上「从请求发出计时」后，最终易读 **12/12**、原分 **24/24**、**0 洞**。R1：「从 request 发出开始计时，首个 token 在 250 ms 出现，这段等待叫 TTFT；后面三个 token 分别在 275、295、325 ms 出现，相邻 token 的间隔叫 ITL，所以三段 ITL 分别是 25、20、30 ms。」
+- 图沿用同一请求的四个时刻，用蓝色箭头逐段标出 ITL，并直接标明计时起点。数字从 `ml-sys/numbers.ts` 推导，双语深入讲解补齐公式、符号和来源。
+- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s02/`。`build`、ML Systems 全章 `transcript`、第 2 步 `readability`、中文手机字号硬门、全章手机布局、`deep-check`、`zh-check` 均通过；zero-to-sglang 中英链接返回 HTTP 200。
+- 本章已制作 **2 步**，**2/2** 步易读满分，章均分 **24.00 / 24**；继续制作第 3 步。本轮类型：**新书**；下一普通轮转为**修旧**。
 
 ## Learning SGLang
 
@@ -65,11 +65,11 @@
 
 ## Learning ML Systems
 
-规划完成：`docs/plan-ml-sys.md` 共 3 部分、16 章；第 1 章已制作 1 步。第 11 章须先补齐训推不一致的原始来源，缺源时先跳过。
+规划完成：`docs/plan-ml-sys.md` 共 3 部分、16 章；第 1 章已制作 2 步。第 11 章须先补齐训推不一致的原始来源，缺源时先跳过。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
-| 01 | 01-measure-inference | 在做第 2 步；第 1 步易读满分 | 24.00 |
+| 01 | 01-measure-inference | 在做第 3 步；前 2 步易读满分 | 24.00 |
 | 02 | 02-inference-memory-budget | 规划 | — |
 | 03 | 03-hybrid-state-cache | 规划 | — |
 | 04 | 04-gpu-communication | 规划 | — |

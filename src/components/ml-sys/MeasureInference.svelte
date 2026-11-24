@@ -4,13 +4,16 @@
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
-  import { DEMO_REQUEST_SENT_MS, DEMO_FIRST_TOKEN_MS, DEMO_TTFT_MS, DEMO_TTFT_SECONDS, DEMO_TTFT_FRACTION } from '../../ml-sys/numbers';
+  import { DEMO_REQUEST_SENT_MS, DEMO_FIRST_TOKEN_MS, DEMO_TTFT_MS, DEMO_TTFT_SECONDS, DEMO_TTFT_FRACTION, DEMO_OUTPUT_TOKEN_TIMES_MS, DEMO_ITL_GAPS_MS } from '../../ml-sys/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
   const steps = [{
     caption: `One request waits ${DEMO_TTFT_MS} ms for its first token. That wait is called TTFT.`,
     captionZh: `一个请求等 ${DEMO_TTFT_MS} ms 才看到首个 token。这段等待叫 TTFT。`,
+  }, {
+    caption: `After the first token, measure each gap between neighboring tokens. Each gap is called ITL.`,
+    captionZh: `首个 token 后，量相邻两个 token 的间隔。每段间隔叫 ITL。`,
   }];
   let step = $state(0);
   $effect(() => {
@@ -26,17 +29,18 @@
     return () => query.removeEventListener('change', update);
   });
   const cur = $derived(steps[step]);
-  const W = $derived(phone ? 300 : 720), H = $derived(phone ? 390 : 400);
+  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 0 ? 390 : 500) : 400);
 </script>
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="TTFT is the 250 millisecond wait from sending a request to seeing its first token">
+    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={step === 0 ? 'TTFT is the 250 millisecond wait from sending a request to seeing its first token' : 'ITL is each time gap between neighboring output tokens'}>
       <defs>
         <marker id="ttft-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
           <path d="M0,0 L8,4 L0,8 z" fill="var(--accent)" />
         </marker>
       </defs>
+      {#if step === 0}
       {#if !phone}
         <text x="35" y="34" class="rowlabel">{t('One request · one wait to measure', '一个请求 · 先量第一段等待')}</text>
         <rect x="40" y="75" width="170" height="88" rx="12" fill="var(--bg)" stroke="var(--line)" />
@@ -69,6 +73,42 @@
         <text x="150" y="365" text-anchor="middle" class="legend">{t('blue = wait for the first token', '蓝色 = 等首个 token 的时间')}</text>
       {/if}
       <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Constructed teaching example, not a local benchmark.', '构造的教学例子，不是本机实测。')}</text>
+      {:else}
+      {#if !phone}
+        <text x="35" y="34" class="rowlabel">{t('Same request · time since request sent', '同一个请求 · 从请求发出计时')}</text>
+        {#each DEMO_OUTPUT_TOKEN_TIMES_MS as time, i}
+          {@const x = 35 + i * 180}
+          <rect x={x} y="95" width="110" height="80" rx="11" fill="var(--bg)" stroke="var(--line)" />
+          <text x={x + 55} y="123" text-anchor="middle" class="legend strong">token {i + 1}</text>
+          <text x={x + 55} y="154" text-anchor="middle" class="time">{time} ms</text>
+          {#if i < DEMO_ITL_GAPS_MS.length}
+            <line x1={x + 110} y1="135" x2={x + 170} y2="135" stroke="var(--accent)" stroke-width="5" marker-end="url(#ttft-arrow)" />
+            <text x={x + 145} y="75" text-anchor="middle" class="tag strong">{DEMO_ITL_GAPS_MS[i]} ms</text>
+          {/if}
+        {/each}
+        <rect x="110" y="215" width="500" height="108" rx="14" fill="var(--accent-soft)" />
+        <text x="360" y="254" text-anchor="middle" class="formula small">{t('ITL = next token time − previous token time', 'ITL = 后一个时刻 − 前一个时刻')}</text>
+        <text x="360" y="292" text-anchor="middle" class="legend strong">{t('Gap 3:', '第 3 段：')} {DEMO_OUTPUT_TOKEN_TIMES_MS[3]} − {DEMO_OUTPUT_TOKEN_TIMES_MS[2]} = {DEMO_ITL_GAPS_MS[2]} ms</text>
+        <line x1="190" y1="351" x2="240" y2="351" stroke="var(--accent)" stroke-width="5" />
+        <text x="255" y="356" class="legend">{t('blue = each gap called ITL', '蓝色 = 每段叫 ITL 的间隔')}</text>
+      {:else}
+        <text x="20" y="25" class="rowlabel">{t('Time since request sent', '从请求发出计时')}</text>
+        {#each DEMO_OUTPUT_TOKEN_TIMES_MS as time, i}
+          {@const y = 42 + i * 90}
+          <rect x="45" y={y} width="170" height="48" rx="10" fill="var(--bg)" stroke="var(--line)" />
+          <text x="130" y={y + 20} text-anchor="middle" class="legend strong">token {i + 1}</text>
+          <text x="130" y={y + 40} text-anchor="middle" class="time">{time} ms</text>
+          {#if i < DEMO_ITL_GAPS_MS.length}
+            <line x1="130" y1={y + 48} x2="130" y2={y + 82} stroke="var(--accent)" stroke-width="5" marker-end="url(#ttft-arrow)" />
+            <text x="147" y={y + 71} class="tag strong">{DEMO_ITL_GAPS_MS[i]} ms</text>
+          {/if}
+        {/each}
+        <text x="150" y="405" text-anchor="middle" class="legend strong">{t('ITL = next time − previous time', 'ITL = 后一个时刻 − 前一个时刻')}</text>
+        <text x="150" y="435" text-anchor="middle" class="legend">{t('Gap 3:', '第 3 段：')} {DEMO_OUTPUT_TOKEN_TIMES_MS[3]} − {DEMO_OUTPUT_TOKEN_TIMES_MS[2]} = {DEMO_ITL_GAPS_MS[2]} ms</text>
+        <text x="150" y="465" text-anchor="middle" class="legend">{t('blue = each gap called ITL', '蓝色 = 每段叫 ITL 的间隔')}</text>
+      {/if}
+      <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Constructed teaching example, not a local benchmark.', '构造的教学例子，不是本机实测。')}</text>
+      {/if}
     </svg>
   </div>
   <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh}
