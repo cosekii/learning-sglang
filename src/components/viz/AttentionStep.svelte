@@ -43,7 +43,7 @@
     { n: 5, rows: true, causal: true, caption: `Every position does the same thing with its own query, over the keys up to itself. One pass, all five outputs at once.`, captionZh: `每个位置都用自己的 query 对截至自身的 key 做同样的事。一遍前向，五个输出同时得到。` },
     // Decode step: the layer runs again, and it really does start over. Same three steps as above, on six tokens.
     { n: 6, flyIn: true, caption: `Decode step. "Paris" joins the sequence, and the layer runs again on all six. From the top.`, captionZh: `Decode 步。"Paris" 加入序列，这一层对全部六个 token 重新运行，从头开始。` },
-    { n: 6, x: true, caption: `Six tokens come in as six vectors.`, captionZh: `六个 token 以六个向量的形式输入。` },
+    { n: 6, x: true, caption: `Six tokens come in as six vectors.`, captionZh: `六个 token 各变成一排数，得到 x₁ 到 x₆。前五个 x 没变，只有 x₆ 是新的。` },
     { n: 6, rows: true, caption: `Every token multiplies its x by the same three matrices. All six of them, from scratch.`, captionZh: `每个 token 都用自己的 x 乘同样的三个矩阵。全部六个，从头算起。` },
     { n: 6, rows: true, recompute: true, markNew: true, caption: `Look at the five old columns. Same x, same matrices, same vectors as last time. Nothing changed, we just computed them again.`, captionZh: `看那五个旧列。同样的 x、同样的矩阵、和上次一样的向量。什么都没变，只是又算了一遍。` },
     { n: 6, rows: true, markNew: true, attend: 5, weights: true, mix: true, caption: `Paris's query looks at all six keys and blends all six values. It needs every earlier key and value.`, captionZh: `Paris 的 query 看全部六个 key，混合全部六个 value。它需要之前每一个 key 和 value。` },
@@ -96,6 +96,7 @@
   const zhTally = $derived(step === 11 && $lang === 'zh');
   const zhWeights = $derived(step === 4 && $lang === 'zh');
   const zhMix = $derived(step === 5 && $lang === 'zh');
+  const zhSix = $derived(step === 8 && $lang === 'zh');
   let phone = $state(false);
   $effect(() => {
     const query = window.matchMedia('(max-width: 900px)');
@@ -106,6 +107,7 @@
   });
   const phoneWeights = $derived(phone && zhWeights);
   const phoneMix = $derived(phone && zhMix);
+  const phoneSix = $derived(phone && zhSix);
   const expScores = $derived(cur.attend !== undefined ? scores[cur.attend].map((score) => Math.exp(score)) : []);
   const expTotal = $derived(expScores.reduce((sum, value) => sum + value, 0));
   const tallyDenominator = scores[5].reduce((sum, score) => sum + Math.exp(score), 0);
@@ -115,8 +117,22 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox={phoneMix ? '0 0 360 580' : phoneWeights ? '0 0 360 550' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Attention per decode step, step {step + 1}" class:phone-weights={phoneWeights} class:phone-mix={phoneMix}>
-      {#if phoneMix}
+    <svg viewBox={phoneSix ? '0 0 360 430' : phoneMix ? '0 0 360 580' : phoneWeights ? '0 0 360 550' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Attention per decode step, step {step + 1}" class:phone-weights={phoneWeights} class:phone-mix={phoneMix} class:phone-six={phoneSix}>
+      {#if phoneSix}
+        <text x="180" y="28" text-anchor="middle" class="ph-title">6 个 token → 6 个向量 x</text>
+        <text x="180" y="58" text-anchor="middle">每个 x 都是一排有顺序的数</text>
+        <text x="290" y="82" text-anchor="middle" class="ph-faint">与第 2 步比</text>
+        {#each cols as c, i}
+          <rect x="18" y={94 + i * 46} width="130" height="32" rx="5" fill={i === PROMPT_N ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={i === PROMPT_N ? 'var(--gen)' : 'var(--accent)'} stroke-width="1.5" />
+          <text x="83" y={115 + i * 46} text-anchor="middle">{c.t.replace(/^ /, '␣')}</text>
+          <text x="176" y={115 + i * 46} text-anchor="middle">→</text>
+          <rect x="205" y={94 + i * 46} width="48" height="32" rx="5" fill={i === PROMPT_N ? 'var(--gen-soft)' : COLOR.x[0]} stroke={i === PROMPT_N ? 'var(--gen)' : COLOR.x[1]} stroke-width="1.5" />
+          <text x="229" y={115 + i * 46} text-anchor="middle">x{sub(i + 1)}</text>
+          <text x="290" y={115 + i * 46} text-anchor="middle" class:new-x={i === PROMPT_N}>{i === PROMPT_N ? '新' : '相同'}</text>
+        {/each}
+        <text x="180" y="394" text-anchor="middle">x₁—x₅ 没变；x₆ 是 ␣Paris 的向量</text>
+        <text x="180" y="418" text-anchor="middle" class="ph-faint">一个 token 对应一个 x</text>
+      {:else if phoneMix}
         <text x="180" y="26" text-anchor="middle" class="ph-title">每列先乘权重，再把五份相加</text>
         {#each cols as c, i}
           {@const x = 42 + i * 69}
@@ -169,6 +185,9 @@
         <marker id="vector-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
           <path d="M 0 0 L 6 3 L 0 6 z" fill={COLOR.x[1]} />
         </marker>
+        <marker id="vector-arrow-new" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+          <path d="M 0 0 L 6 3 L 0 6 z" fill="var(--gen)" />
+        </marker>
       </defs>
       <!-- Token row -->
       <text x="16" y={seqY + 18} class="rowlabel">tokens</text>
@@ -194,15 +213,20 @@
       {/if}
 
       <!-- Token-to-vector mapping for the first vector explanation -->
-      {#if cur.x && cur.n === PROMPT_N}
+      {#if cur.x && (cur.n === PROMPT_N || zhSix)}
         {#each cols as c, i (i)}
           <path d="M {c.cx} {seqY + tokH + 12} L {c.cx} {ROW.x - 10}"
-                fill="none" stroke={COLOR.x[1]} stroke-width="1.5" marker-end="url(#vector-arrow)"
-                in:fade={{ delay: 250 + i * 50, duration: 250 }} />
+                fill="none" stroke={zhSix && i === PROMPT_N ? 'var(--gen)' : COLOR.x[1]} stroke-width="1.5" marker-end={zhSix && i === PROMPT_N ? 'url(#vector-arrow-new)' : 'url(#vector-arrow)'}
+                in:fade={{ delay: zhSix ? 0 : 250 + i * 50, duration: zhSix ? 0 : 250 }} />
         {/each}
-        <text x={W / 2} y={ROW.x + 64} text-anchor="middle" class="slab" in:fade={{ delay: 500 }}>
+        <text x={W / 2} y={ROW.x + 64} text-anchor="middle" class="slab" in:fade={{ delay: zhSix ? 0 : 500, duration: zhSix ? 0 : 250 }}>
           {t('each x is an ordered list of numbers', '每个 x 都是一排有顺序的数')}
         </text>
+        {#if zhSix}
+          <text x={(cols[0].cx + cols[PROMPT_N - 1].cx) / 2} y={ROW.x + 112} text-anchor="middle" class="slab">x₁—x₅：和第 2 步相同</text>
+          <text x={cols[PROMPT_N].cx} y={ROW.x + 112} text-anchor="middle" class="slab new-x">x₆：新的</text>
+          <text x={W / 2} y={ROW.x + 158} text-anchor="middle" class="legend">6 个 token → 6 个 x，一个 token 对应一个 x</text>
+        {/if}
       {/if}
 
       <!-- x / q / k / v rows -->
@@ -211,7 +235,7 @@
           <text x="16" y={ROW.x + 14} class="rowlabel">x</text>
           {#each cols as c, i (i)}
             <g in:fly={{ y: -8, delay: i * 50, duration: 250 }}>
-              <rect x={c.cx - CW / 2} y={ROW.x} width={CW} height={CH} rx="4" fill={COLOR.x[0]} stroke={COLOR.x[1]} />
+              <rect x={c.cx - CW / 2} y={ROW.x} width={CW} height={CH} rx="4" fill={zhSix && i === PROMPT_N ? 'var(--gen-soft)' : COLOR.x[0]} stroke={zhSix && i === PROMPT_N ? 'var(--gen)' : COLOR.x[1]} />
               <text x={c.cx} y={ROW.x + 14} text-anchor="middle" class="cell">x{sub(i + 1)}</text>
             </g>
           {/each}
@@ -414,6 +438,10 @@
   .phone-mix .ph-title { font-family: var(--sans); font-size: 16px; font-weight: 650; }
   .phone-mix .ph-value { font-weight: 700; }
   .phone-mix .ph-foot { fill: var(--faint); }
+  .phone-six text { font-family: var(--mono); font-size: 12px; fill: var(--fg); }
+  .phone-six .ph-title { font-family: var(--sans); font-size: 16px; font-weight: 650; }
+  .phone-six .ph-faint { fill: var(--faint); }
+  .new-x { fill: var(--gen) !important; }
   .tag.new { fill: var(--gen); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; font-size: 9px; }
   rect.pulse { animation: pulse 700ms ease-in-out 2; }
   @keyframes pulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.3 } }

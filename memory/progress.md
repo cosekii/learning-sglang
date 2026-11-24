@@ -4,17 +4,17 @@
 
 ## 本轮记录
 
-- 本轮新书：完成 Learning ML Systems 第 1 章第 1 步，易读 **12/12**、原 12 项 **24/24**、冷读 **0 洞**。R1：「我发出请求后，等了 250 毫秒，也就是 1/4 秒，才看到回答的第一个 token，这段等待叫 TTFT。」
-- 图用 `0 ms → 250 ms` 标出首个 token 前的等待，蓝色只表示 TTFT；250 ms 是 zero-to-sglang 的构造教学值，不冒充实测。新书已接入共用布局、首页、双语深入讲解和全部检查脚本，第 1 本 transcript 哈希不变。
-- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s01/`。`build`、ML Systems `transcript`、全章手机布局、中文手机字号、`readability`、`deep-check`、`zh-check` 均通过；中英桌面、中文手机、首页及深入讲解截图已检查。
-- 本章已制作 **1 步**，易读满分，章均分 **24.00 / 24**；继续制作第 2 步。本轮类型：**新书**；下一普通轮转为**修旧**，下次新书轮转做 **Inside Voxt**。
+- 本轮修旧：完成 Learning SGLang 第 2 章第 9 步中文整改，易读 **11→12**、原分 **22→24**、冷读 **2→0**。R1：「Paris 加入后，六个 token 各自变成一串有顺序的数，前五串还是原来的，只有 Paris 的那一串是新的。」
+- 中文图补齐六个 `token → x` 箭头、前五个 x 与第 2 步相同、橙色新 x₆；手机改为六行大字对应图，深入讲解补齐固定结构。英文 caption、图和深入讲解未改，英文截图逐字节相同。
+- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch02-s09-fix/`。`build`、第 2 章 `transcript`、第 9 步 `readability`、中文手机字号硬门、全章手机布局、`deep-check 02`、第 2 章 `zh-check` 均通过。
+- 第 2 章现为 **7/14** 步易读满分，章均分 **23.64 / 24**；第 3 步仍待主人定。本轮类型：**修旧**；下一普通轮转为**新书**，做 **Inside Voxt**。
 
 ## Learning SGLang
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
 | 01 | 01-inference | 完成：12/12 步易读满分 | 23.75 |
-| 02 | 02-attention | 易读整改：6/14 步满分；第 3 步待主人定 | 23.64 |
+| 02 | 02-attention | 易读整改：7/14 步满分；第 3 步待主人定 | 23.64 |
 | 03 | 03-kv-cache | 完成 | — |
 | 04 | 04-prefill-decode | 完成 | — |
 | 05 | 05-batching | 完成 | — |
