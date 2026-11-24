@@ -4,17 +4,17 @@
 
 ## 本轮记录
 
-- 本轮新书：完成 Learning SGLang Omni 第 1 章第 2 步，易读 **12/12**、原 12 项 **24/24**、冷读 **0 洞**。R1：「七个 stage 在六个进程里跑，因为 talker_ar 和 code2wav 共用一个，另外五个各用一个，所以 5＋1＝6。」
-- 图把七个 stage 映射到六个 stage 进程，蓝框标出 `talker_ar` 与 `code2wav` 共用进程；四个进程使用 GPU 0，两个只用 CPU。数字从 `src/omni/numbers.ts` 推导，出处固定到 `sglang-omni origin/main@34961b7df8fbd050d8e1e1bc9d82fbd165eb8566`。
-- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-omni-ch01-s02/`。`build`、Omni `transcript`、全章手机布局、中文手机字号、`readability`、`deep-check`、`zh-check` 均通过；中英桌面、中文手机及双语深入讲解截图已检查。
-- 本章已制作 **2 步**，均易读满分，章均分 **24.00 / 24**；继续制作第 3 步。本轮类型：**新书**；下一普通轮转为**修旧**，下次新书轮转做 **Learning ML Systems**。
+- 本轮修旧：完成 Learning SGLang 第 2 章第 6 步的中文易读整改，易读 **4→12**、原分 **16→24**、冷读 **6→0**。R1：「把五列 value 分别乘上自己的权重，再全部相加，就得到 ␣is 的 out₅，其中 ␣France 的权重 0.53 最大，所以贡献最多。」
+- 中文图展开 `权重 → 每列先乘 → 五份相加 → out₅`，解释 `Σ/wⱼ/vⱼ/j` 和绿线；caption 删除图中支撑不足的位置结论。360/390/430 px 手机改用同内容的大字专版。英文截图与改前逐字节相同，英文 caption、图和深入讲解未改。
+- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch02-s06-fix/`。`build`、第 2 章 `transcript`、第 6 步 `readability`、中文手机字号硬门、全章手机布局、`deep-check 02`、第 2 章 `zh-check` 均通过。
+- 第 2 章现为 **6/14** 步易读满分，章均分 **23.64 / 24**；第 3 步仍待主人定，其他未评步继续逐轮补评。本轮类型：**修旧**；下一普通轮转为**新书**，做 **Learning ML Systems**。
 
 ## Learning SGLang
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
 | 01 | 01-inference | 完成：12/12 步易读满分 | 23.75 |
-| 02 | 02-attention | 易读整改：5/14 步满分；第 3 步待主人定 | 23.64 |
+| 02 | 02-attention | 易读整改：6/14 步满分；第 3 步待主人定 | 23.64 |
 | 03 | 03-kv-cache | 完成 | — |
 | 04 | 04-prefill-decode | 完成 | — |
 | 05 | 05-batching | 完成 | — |

@@ -39,7 +39,7 @@
     { n: 5, rows: true, caption: `Every token multiplies its own x by three learned matrices and gets a <b>query</b>, a <b>key</b> and a <b>value</b>. No other token is involved yet.`, captionZh: `每个 token 用自己的 x 乘三个学好的矩阵，得到一个 <b>query</b>、一个 <b>key</b> 和一个 <b>value</b>。暂时不涉及其他 token。` },
     { n: 5, rows: true, attend: 4, scores: true, caption: `The last token's query gets dotted with every key. A big score means "this one matters to me".`, captionZh: `点积就是两排数对应相乘，再全部相加。下一步再讲这些分数怎么用。` },
     { n: 5, rows: true, attend: 4, scores: true, weights: true, caption: `Softmax turns the scores into weights that add up to one.`, captionZh: `Softmax 把分数换成权重。每列的权重表示它占多少，合起来是 1。` },
-    { n: 5, rows: true, attend: 4, weights: true, mix: true, caption: `Its output is the values, blended by those weights. This is how "is" finds out it's sitting after "capital of France".`, captionZh: `它的输出就是这些 value 按权重混合的结果。"is" 就是这样知道自己跟在 "capital of France" 后面。` },
+    { n: 5, rows: true, attend: 4, weights: true, mix: true, caption: `Its output is the values, blended by those weights. This is how "is" finds out it's sitting after "capital of France".`, captionZh: `每列 value 先乘自己的权重，再把五份相加。␣France 的权重最大，贡献也最大。` },
     { n: 5, rows: true, causal: true, caption: `Every position does the same thing with its own query, over the keys up to itself. One pass, all five outputs at once.`, captionZh: `每个位置都用自己的 query 对截至自身的 key 做同样的事。一遍前向，五个输出同时得到。` },
     // Decode step: the layer runs again, and it really does start over. Same three steps as above, on six tokens.
     { n: 6, flyIn: true, caption: `Decode step. "Paris" joins the sequence, and the layer runs again on all six. From the top.`, captionZh: `Decode 步。"Paris" 加入序列，这一层对全部六个 token 重新运行，从头开始。` },
@@ -95,6 +95,7 @@
   const outX = $derived(seqEndX + 44);
   const zhTally = $derived(step === 11 && $lang === 'zh');
   const zhWeights = $derived(step === 4 && $lang === 'zh');
+  const zhMix = $derived(step === 5 && $lang === 'zh');
   let phone = $state(false);
   $effect(() => {
     const query = window.matchMedia('(max-width: 900px)');
@@ -104,6 +105,7 @@
     return () => query.removeEventListener('change', update);
   });
   const phoneWeights = $derived(phone && zhWeights);
+  const phoneMix = $derived(phone && zhMix);
   const expScores = $derived(cur.attend !== undefined ? scores[cur.attend].map((score) => Math.exp(score)) : []);
   const expTotal = $derived(expScores.reduce((sum, value) => sum + value, 0));
   const tallyDenominator = scores[5].reduce((sum, score) => sum + Math.exp(score), 0);
@@ -113,8 +115,29 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox={phoneWeights ? '0 0 360 550' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Attention per decode step, step {step + 1}" class:phone-weights={phoneWeights}>
-      {#if phoneWeights}
+    <svg viewBox={phoneMix ? '0 0 360 580' : phoneWeights ? '0 0 360 550' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Attention per decode step, step {step + 1}" class:phone-weights={phoneWeights} class:phone-mix={phoneMix}>
+      {#if phoneMix}
+        <text x="180" y="26" text-anchor="middle" class="ph-title">每列先乘权重，再把五份相加</text>
+        {#each cols as c, i}
+          {@const x = 42 + i * 69}
+          <rect x={x - 31} y="44" width="62" height="32" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x={x} y="65" text-anchor="middle">{c.t.replace(/^ /, '␣')}</text>
+          <text x={x} y="112" text-anchor="middle">{w[i].toFixed(2)}</text>
+          <text x={x} y="142" text-anchor="middle" class="ph-value">× v{sub(i + 1)}</text>
+          {#if i < 4}<text x={x + 34.5} y="142" text-anchor="middle" class="ph-title">+</text>{/if}
+          <path d="M {x} 158 C {x} 196, 180 184, 180 220" fill="none" stroke={COLOR.v[1]} stroke-width={1 + w[i] * 5} opacity="0.65" />
+        {/each}
+        <rect x="140" y="220" width="80" height="34" rx="6" fill="white" stroke={COLOR.v[1]} stroke-width="2" />
+        <text x="180" y="242" text-anchor="middle" class="ph-value">out₅</text>
+        <text x="180" y="286" text-anchor="middle">out₅ 是 ␣is 在这个 attention 层的输出</text>
+        <text x="180" y="332" text-anchor="middle">out₅ = 0.06×v₁ + 0.26×v₂</text>
+        <text x="180" y="360" text-anchor="middle">+ 0.05×v₃ + 0.53×v₄ + 0.10×v₅</text>
+        <text x="18" y="408">Σ = 把 5 项相加；j = 第几列</text>
+        <text x="18" y="446">绿线：value 先乘权重，再送入 out₅</text>
+        <text x="18" y="484">␣France 的权重 0.53 最大</text>
+        <text x="18" y="514">所以它的 value 贡献最多</text>
+        <text x="180" y="560" text-anchor="middle" class="ph-foot">权重来自第 5 步；图中数已四舍五入</text>
+      {:else if phoneWeights}
         <text x="180" y="26" text-anchor="middle" class="ph-title">Softmax：分数 → 权重</text>
         {#each cols as c, i}
           {@const x = 48 + i * 66}
@@ -222,23 +245,23 @@
 
       <!-- Blend lines from values to the output cell -->
       {#if cur.mix && cur.attend !== undefined}
-        <g transition:fade={{ duration: zhTally ? 0 : 250 }}>
+        <g transition:fade={{ duration: zhTally || zhMix ? 0 : 250 }}>
           {#each cols.slice(0, cur.attend + 1) as c, i}
             <path d="M {c.cx} {ROW.v + CH} C {c.cx} {ROW.v + 46}, {outX - 6} {ROW.v + 46}, {outX} {ROW.v + CH}"
                   fill="none" stroke={COLOR.v[1]} stroke-width={0.8 + w[i] * 6} opacity="0.55" />
-            {#if zhTally}
+            {#if zhTally || zhMix}
               <text x={c.cx} y={ROW.v + CH + 14} text-anchor="middle" class="num" style:fill={COLOR.v[1]}>×w{sub(i + 1)}</text>
             {/if}
           {/each}
           <rect x={outX - 20} y={ROW.v} width="40" height={CH} rx="4" fill="white" stroke={COLOR.v[1]} stroke-width="2" />
           <text x={outX} y={ROW.v + 14} text-anchor="middle" class="cell">out{sub(cur.attend + 1)}</text>
-          <text x={outX} y={ROW.v - 8} text-anchor="middle" class="tag">Σ wⱼ vⱼ</text>
+          <text x={outX} y={ROW.v - 8} text-anchor="middle" class="tag">{zhMix ? '␣is 的输出' : 'Σ wⱼ vⱼ'}</text>
         </g>
       {/if}
 
       <!-- Lower panel: scores and weights for the attending token -->
       {#if cur.attend !== undefined && (cur.scores || cur.weights)}
-        <g transition:fade={{ duration: zhTally || zhWeights ? 0 : 250 }}>
+        <g transition:fade={{ duration: zhTally || zhWeights || zhMix ? 0 : 250 }}>
           {#if zhTally}
             <text x="16" y={LOW + 16} class="rowlabel">分数：q₆ · kⱼ</text>
             {#each cols as c, i}
@@ -253,6 +276,21 @@
             <text x="16" y={LOW + 108} class="num">Paris：q₆·k₆ = {scores[5][5].toFixed(1)} → e^{scores[5][5].toFixed(1)} ≈ {tallyParisExp.toFixed(2)}（小数次方不手算，用计算工具）→ w₆ = {tallyParisExp.toFixed(2)} ÷ {tallyDenominator.toFixed(2)} ≈ {w[5].toFixed(2)} → w₆v₆ ≈ {w[5].toFixed(2)} × v₆</text>
             <text x="16" y={LOW + 132} class="num">out₆ = w₁v₁ + w₂v₂ + w₃v₃ + w₄v₄ + w₅v₅ + w₆v₆</text>
             <text x="16" y={LOW + 154} class="legend">Σ 表示把 6 项相加；j = 1…6 · 每根绿线：vⱼ 先乘对应的 wⱼ</text>
+          {:else if zhMix}
+            <text x="16" y={LOW + 16} class="rowlabel">权重 wⱼ</text>
+            {#each cols as c, i}
+              <text x={c.cx} y={LOW + 16} text-anchor="middle" class="num">{w[i].toFixed(2)}</text>
+              <text x={c.cx} y={LOW + 46} text-anchor="middle" class="num">{w[i].toFixed(2)}×v{sub(i + 1)}</text>
+            {/each}
+            <text x="16" y={LOW + 46} class="rowlabel">先乘</text>
+            <text x="16" y={LOW + 76} class="rowlabel">再相加</text>
+            <text x="96" y={LOW + 76} class="num">out₅ = 0.06×v₁ + 0.26×v₂ + 0.05×v₃ + 0.53×v₄ + 0.10×v₅</text>
+            <text x="18" y={LOW + 104} class="pt">·</text>
+            <text x="28" y={LOW + 104} class="legend">Σ wⱼvⱼ = 把 5 个 wⱼ×vⱼ 相加；j 表示第几列</text>
+            <text x="18" y={LOW + 130} class="pt">·</text>
+            <text x="28" y={LOW + 130} class="legend">绿线：这列 value 先乘对应权重，再送入 out₅</text>
+            <text x="18" y={LOW + 156} class="pt">·</text>
+            <text x="28" y={LOW + 156} class="legend">␣France 的权重 0.53 最大，所以它的 value 贡献最多</text>
           {:else}
             {#if cur.scores}
               <text x="16" y={LOW + 16} class="rowlabel">q{sub(cur.attend + 1)} · k<tspan class="sub">j</tspan></text>
@@ -372,6 +410,10 @@
   .num { font-family: var(--mono); font-size: 10.5px; fill: var(--fg); }
   .phone-weights text { font-family: var(--mono); font-size: 12px; fill: var(--fg); }
   .phone-weights .ph-title { font-family: var(--sans); font-size: 16px; font-weight: 650; }
+  .phone-mix text { font-family: var(--mono); font-size: 12px; fill: var(--fg); }
+  .phone-mix .ph-title { font-family: var(--sans); font-size: 16px; font-weight: 650; }
+  .phone-mix .ph-value { font-weight: 700; }
+  .phone-mix .ph-foot { fill: var(--faint); }
   .tag.new { fill: var(--gen); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; font-size: 9px; }
   rect.pulse { animation: pulse 700ms ease-in-out 2; }
   @keyframes pulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.3 } }
