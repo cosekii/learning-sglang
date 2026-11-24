@@ -421,3 +421,8 @@ $$
 $$
 
 That is what chapter 3 stores: 128 KB per token, written once, read every step after.
+
+### Further reading
+
+- [zero-to-sglang Part I Chapter 1: Introduction to LLM](https://zero-to-sglang.datawhale.cc/eng/part1/Chapter1_Introduction_to_LLM.html)
+- [zero-to-sglang Part I Chapter 2: Introduction to Inference](https://zero-to-sglang.datawhale.cc/eng/part1/Chapter2_Introduction%20to%20Inference.html)

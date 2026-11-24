@@ -459,3 +459,8 @@ $$
 $$
 
 这就是第 3 章要存的东西：每个 token 128 KB，存一次，以后每步直接读。
+
+### 延伸阅读
+
+- [zero-to-sglang 第 1 部分第 1 章：LLM 入门](https://zero-to-sglang.datawhale.cc/ch/part1/%E7%AC%AC1%E7%AB%A0_LLM%E5%85%A5%E9%97%A8.html)
+- [zero-to-sglang 第 1 部分第 2 章：推理入门](https://zero-to-sglang.datawhale.cc/ch/part1/%E7%AC%AC2%E7%AB%A0_%E6%8E%A8%E7%90%86%E5%85%A5%E9%97%A8.html)
