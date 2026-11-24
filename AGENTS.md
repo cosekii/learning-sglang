@@ -197,4 +197,4 @@ Below 900 px the sidebar folds into a top bar with a **Chapters** button, the st
 
 ## Deploy to GitHub Pages
 
-`astro.config.mjs` sets `site` to `https://wilsonzheng0327.github.io` and `base` to `/learning-sglang`; every internal link reads `import.meta.env.BASE_URL`, so the site works under that subpath. `.github/workflows/deploy.yml` builds with `withastro/action` on every push to `main` and publishes with `actions/deploy-pages`. One-time setup: the repo must be public (or on a paid plan) and Pages must be set to "GitHub Actions" as its source.
+`astro.config.mjs` sets `site` to `https://cosekii.github.io` and `base` to `/learning-sglang`; every internal link reads `import.meta.env.BASE_URL`, so the site works under that subpath. `.github/workflows/deploy.yml` builds with `withastro/action` on every push to `tutorials` and publishes to `https://cosekii.github.io/learning-sglang/` with `actions/deploy-pages`. The fork's default branch is `tutorials`, and Pages uses "GitHub Actions" as its source. Do not push or open pull requests to the original author's repository.
