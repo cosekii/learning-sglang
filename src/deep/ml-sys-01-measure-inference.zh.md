@@ -47,3 +47,29 @@ $$\mathrm{ITL}_4=325-295=30\ \mathrm{ms}$$
 zero-to-sglang 第 1 部分第 5 章 §3.1 与《Inference Engineering》§1.4 都把 ITL 定义为相邻输出 token 的时间间隔。第 2 至第 4 个时刻是在同一构造请求上补写的教学值，不是本机实测；三段间隔不必一样长。
 
 **接下来。** 三段间隔已经分别量出；下一步把它们合成一个平均值。
+
+## 第 3 步 · 求首个 token 后的平均间隔
+
+**一句话。** TPOT 把首个 token 后的各段 ITL 合成一个平均值。
+
+**图上是什么。** 同一个请求仍有 250、275、295、325 ms 四个时刻，以及 25、20、30 ms 三段蓝色 ITL。本步把三段间隔一起取平均；首末时刻也算出同一个结果。TPOT 不含第 1 步的 TTFT，平均也不表示三段间隔变得一样长。
+
+**公式与符号。**
+
+$$\mathrm{TPOT}=\frac{\sum_{i=2}^{N}\mathrm{ITL}_i}{N-1}=\frac{t_N-t_1}{N-1}\quad(N\ge2)$$
+
+- $\mathrm{TPOT}$：time per output token；本例是首个 token 之后，每段相邻输出间隔的平均值。
+- $N$：输出 token 的总数，本例为 4；$N-1$ 才是首个 token 后的间隔数。
+- $\mathrm{ITL}_i$：第 2 步量出的第 $i$ 个 token 与前一个 token 的间隔。
+- $t_1$、$t_N$：第 1 个和最后一个输出 token 的时刻，本例分别为 250、325 ms。
+- $\sum_{i=2}^{N}$：从第 2 个 token 到第 $N$ 个 token，把各段 ITL 加起来。
+
+**代入图上的数。**
+
+$$\mathrm{TPOT}=\frac{25+20+30}{4-1}=\frac{75}{3}=25\ \mathrm{ms}$$
+
+$$\mathrm{TPOT}=\frac{325-250}{4-1}=\frac{75}{3}=25\ \mathrm{ms}$$
+
+zero-to-sglang 第 1 部分第 5 章 §3.1 用同样的边界：输出 200 个 token 时，扣除首个 token 后按 199 段计算，课程常把单位写成 ms/token。本例的 25 ms 恰好等于第一段 ITL，但另外两段仍是 20、30 ms；请求发出到首个 token 的 250 ms TTFT 没有进入分子。
+
+**接下来。** 首个 token 前的等待和后续平均间隔都已量出；下一步可以量整个回答从头到尾的总时间。

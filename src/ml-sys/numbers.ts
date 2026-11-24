@@ -8,3 +8,6 @@ export const DEMO_TTFT_FRACTION = `1/${1000 / DEMO_TTFT_MS}`;
 // The same constructed request continues with three uneven inter-token gaps.
 export const DEMO_OUTPUT_TOKEN_TIMES_MS = [DEMO_FIRST_TOKEN_MS, 275, 295, 325];
 export const DEMO_ITL_GAPS_MS = DEMO_OUTPUT_TOKEN_TIMES_MS.slice(1).map((time, i) => time - DEMO_OUTPUT_TOKEN_TIMES_MS[i]);
+export const DEMO_POST_FIRST_GAP_COUNT = DEMO_ITL_GAPS_MS.length;
+export const DEMO_ITL_TOTAL_MS = DEMO_ITL_GAPS_MS.reduce((sum, gap) => sum + gap, 0);
+export const DEMO_TPOT_MS = DEMO_ITL_TOTAL_MS / DEMO_POST_FIRST_GAP_COUNT;

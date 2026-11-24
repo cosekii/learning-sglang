@@ -4,10 +4,10 @@
 
 ## 本轮记录
 
-- 本轮修旧：完成 Learning SGLang 第 1 章第 11→12 步数量口径整改。两步独立冷读均为易读 **12/12**、**0 洞**，主 session 原分均为 **24/24**。
-- 第 11 步明确「两个要翻回文字的新编号」，第 12 步明确 Paris、句号和 EOS 共 3 个新 token；第 12 步补中文手机总账专图，保留 18 格与 7+11 格分解。英文截图逐字节不变。
-- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch01-s11-s12-counts/`。`build`、本章 `transcript`、全章 `readability`、第 11、12 步中文手机字号硬门、两步 `token-legends`、`deep-check 01`、`zh-check` 均通过；全量手机检查在 360、390、430 px 无布局破坏，另报告 588 个非阻断小字审计项；中英 8 个课程链接均返回 HTTP 200。
-- 本轮类型：**修旧**；下一普通轮转为**新书**。
+- 本轮新书：完成 Learning ML Systems 第 1 章第 3 步 TPOT。独立冷读易读 **12/12**、**0 洞**，主 session 与独立原分复核均为 **24/24**。
+- 同一构造请求的 4 个 token 形成 3 段 ITL；图保留 `(25 + 20 + 30) ÷ 3 = 25 ms` 和 `(325 − 250) ÷ (4 − 1) = 25 ms`，明确排除 TTFT，平均不代表每段相同。
+- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s03/`。`build`、本章 `transcript`、本章三种宽度的中英手机布局、第 3 步中文手机字号硬门、`readability`、`deep-check 01`、`zh-check` 均通过；全站手机检查在 360、390、430 px 无布局破坏，另报告 588 个非阻断小字审计项；zero-to-sglang 中英课程链接均返回 HTTP 200。
+- 本轮类型：**新书**；下一普通轮转为**修旧**。
 
 ## Learning SGLang
 
@@ -65,11 +65,11 @@
 
 ## Learning ML Systems
 
-规划完成：`docs/plan-ml-sys.md` 共 3 部分、16 章；第 1 章已制作 2 步。第 11 章须先补齐训推不一致的原始来源，缺源时先跳过。
+规划完成：`docs/plan-ml-sys.md` 共 3 部分、16 章；第 1 章已制作 3 步。第 11 章须先补齐训推不一致的原始来源，缺源时先跳过。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
-| 01 | 01-measure-inference | 在做第 3 步；前 2 步易读满分 | 24.00 |
+| 01 | 01-measure-inference | 在做第 4 步；前 3 步易读满分 | 24.00 |
 | 02 | 02-inference-memory-budget | 规划 | — |
 | 03 | 03-hybrid-state-cache | 规划 | — |
 | 04 | 04-gpu-communication | 规划 | — |

@@ -47,3 +47,29 @@ $$\mathrm{ITL}_4=325-295=30\ \mathrm{ms}$$
 Zero-to-sglang Part I Chapter 5 §3.1 and *Inference Engineering* §1.4 both define ITL as the time gap between adjacent output tokens. The second through fourth times are constructed additions to the same teaching request, not local measurements. The gaps do not have to be equal.
 
 **Next.** The three gaps are now measured separately. The next step combines them into one average.
+
+## Step 3 · Average the gaps after the first token
+
+**One sentence.** TPOT combines the ITL gaps after the first token into one average.
+
+**What the picture shows.** The same request keeps its four token times of 250, 275, 295 and 325 ms, and its three blue ITL gaps of 25, 20 and 30 ms. This step averages all three gaps; the first and last token times give the same result. TPOT excludes Step 1's TTFT, and averaging does not make the three gaps equal.
+
+**Formula and symbols.**
+
+$$\mathrm{TPOT}=\frac{\sum_{i=2}^{N}\mathrm{ITL}_i}{N-1}=\frac{t_N-t_1}{N-1}\quad(N\ge2)$$
+
+- $\mathrm{TPOT}$: time per output token; in this example, the average gap between neighboring outputs after the first token.
+- $N$: the total number of output tokens, 4 here; $N-1$ is the number of gaps after the first token.
+- $\mathrm{ITL}_i$: the gap between output token $i$ and its predecessor, measured in Step 2.
+- $t_1$ and $t_N$: the first and last output token times, 250 and 325 ms here.
+- $\sum_{i=2}^{N}$: add the ITL gaps from token 2 through token $N$.
+
+**Substitute the picture's numbers.**
+
+$$\mathrm{TPOT}=\frac{25+20+30}{4-1}=\frac{75}{3}=25\ \mathrm{ms}$$
+
+$$\mathrm{TPOT}=\frac{325-250}{4-1}=\frac{75}{3}=25\ \mathrm{ms}$$
+
+Zero-to-sglang Part I Chapter 5 §3.1 uses the same boundary: with 200 output tokens, it divides the post-first-token generation time by 199 and writes the unit as ms/token. This example's 25 ms average happens to equal the first ITL gap, but the other gaps remain 20 and 30 ms. The 250 ms TTFT from request sent to first token is not in the numerator.
+
+**Next.** The wait before the first token and the later average gap are both measured. The next step can measure the whole answer from start to finish.
