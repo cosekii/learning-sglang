@@ -119,3 +119,51 @@ $$4 + 2 = 6\ \text{个进程}$$
 ### 接下来
 
 下一步沿 stage 之间的连接跟一条请求，看这些进程怎样组成请求路线。
+
+## 第 4 步 · 11 次交接，只有 1 次留在同进程
+
+> **一句话：** 一个同时输入图像和音频、输出文本和声音的请求有 11 次 stage 交接；它们经过六个进程，只有 `talker_ar → code2wav` 留在同一进程。
+
+### 图上是什么
+
+- 本例同时有图像和音频输入，并要求输出声音，所以主图和下方列出的 11 条 stage 连接都会用到。
+- 实线框是 stage，虚线框是第 2 步的六个进程。`talker_ar` 共用进程里装着 `talker_ar` 和 `code2wav` 两个 stage。
+- 主图画出 8 次交接。下方另列进入 `talker_ar` 的 3 次输入交接，分别来自 `preprocessing`、`image_encoder` 和 `audio_encoder`。
+- 10 次灰色交接跨进程：主图 7 次，加上下方 3 次。橙色的 `talker_ar → code2wav` 留在它们的共用进程里。
+- 箭头表示数据依赖，不承诺严格先后。一条箭头可以同时代表完成后的数据和生成中逐片送出的数据；本步不数消息条数。
+
+### 代入图上的数
+
+| 交接 | 次数 |
+|---|---:|
+| 主图 | 8 |
+| 下方另列的输入交接 | 3 |
+| 合计 | 11 |
+| 跨进程：主图 7 次 + 下方 3 次 | 10 |
+| `talker_ar` 进程内：`talker_ar → code2wav` | 1 |
+
+$$8 + 3 = 11\ \text{次交接}$$
+
+$$10 + 1 = 11\ \text{次交接}$$
+
+进程仍是六个，stage 仍是七个。这次进程内交接不会抹掉独立的 `code2wav` stage。
+
+### 请求怎样选择这些路线
+
+`preprocessing` 可以把输入交给两个 encoder、`thinker` 和 `talker_ar`。每个实际启用的 encoder 都可以把结果交给 `thinker` 和 `talker_ar`。`thinker` 把完成数据交给 `decode`；需要声音时，它生成中的文本流也交给 `talker_ar`。随后 `talker_ar` 把数据交给 `code2wav`。
+
+图里的例子用上所有分支。没有图像、没有音频输入或不要求音频输出的请求，会省掉对应分支。这里没有 `decode → talker_ar` 这条边。`decode` 输出文本，`code2wav` 输出声音；coordinator 等两边完成后合并结果，本图没有画 coordinator。
+
+### 边界与出处
+
+本步只读静态配置和请求构造代码，没有运行模型，也不把箭头当成全局执行顺序。以下来源位于 `sglang-omni origin/main@5b00b2968cfa19cbd04b7305d18f5bb8cc557de2`：
+
+- YAML 选择 colocated speech pipeline：`examples/configs/qwen3_omni_colocated_h100_bf16.yaml:3-20`；七个 stage 的构造见 `sglang_omni/models/qwen3_omni/config.py:268-302`，colocated 进程分配见 `sglang_omni/models/qwen3_omni/config.py:305-318`、`sglang_omni/models/qwen3_omni/config.py:499-520`。
+- preprocessing 的候选去向与按请求裁剪：`sglang_omni/models/qwen3_omni/config.py:57-87`、`sglang_omni/models/qwen3_omni/request_builders.py:248-261`、`sglang_omni/models/qwen3_omni/request_builders.py:556-606`。
+- encoder 输出去往 `thinker` 和 `talker_ar`：`sglang_omni/models/qwen3_omni/config.py:90-99`、`sglang_omni/models/qwen3_omni/config.py:157-164`、`sglang_omni/models/qwen3_omni/config.py:218-224`、`sglang_omni/models/qwen3_omni/request_builders.py:207-215`、`sglang_omni/models/qwen3_omni/request_builders.py:264-275`。
+- thinker 输出去往 `decode` 和 `talker_ar`：`sglang_omni/models/qwen3_omni/config.py:167-188`、`sglang_omni/models/qwen3_omni/request_builders.py:200-204`、`sglang_omni/models/qwen3_omni/request_builders.py:1162-1204`。
+- `talker_ar → code2wav`：`sglang_omni/models/qwen3_omni/config.py:236-253`；输出模态选择：`sglang_omni/models/qwen3_omni/request_builders.py:138-171`、`sglang_omni/models/qwen3_omni/request_builders.py:229-261`。
+
+### 接下来
+
+第 2 章保留这张 stage 图，换掉进程和 GPU 分配，组成三种部署图。

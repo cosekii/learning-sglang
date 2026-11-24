@@ -119,3 +119,51 @@ This step reads one colocated configuration; it does not start the model locally
 ### Next
 
 The next step follows one request along the stage connections to show how these processes form a request route.
+
+## Step 4 · Eleven hand-offs, one inside a shared process
+
+> **In one line:** For a request with image and audio input and text and sound output, eleven stage hand-offs connect seven stages in six processes; only `talker_ar → code2wav` stays inside one process.
+
+### On the stage
+
+- The example has both image and audio input and asks for sound output. That choice activates all eleven stage connections shown or listed here.
+- A solid box is a stage; a dashed box is one of Step 2's six processes. The shared `talker_ar` process contains both `talker_ar` and `code2wav`.
+- The main drawing shows eight hand-offs. The footnote names three more input hand-offs into `talker_ar`: one each from `preprocessing`, `image_encoder` and `audio_encoder`.
+- Ten gray hand-offs cross a process boundary: seven in the main drawing and the three listed below it. The orange `talker_ar → code2wav` hand-off stays inside their shared process.
+- An arrow is a data dependency, not a promise about strict timing. One arrow can cover both final data and pieces sent while a stage is still generating; this step does not count messages.
+
+### The numbers on the stage
+
+| Hand-offs | Count |
+|---|---:|
+| Main drawing | 8 |
+| Additional input hand-offs listed below | 3 |
+| Total | 11 |
+| Cross-process: 7 shown + 3 below | 10 |
+| Inside `talker_ar`: `talker_ar → code2wav` | 1 |
+
+$$8 + 3 = 11\ \text{hand-offs}$$
+
+$$10 + 1 = 11\ \text{hand-offs}$$
+
+The process count is still six, and the stage count is still seven. The single internal hand-off does not remove the logical `code2wav` stage.
+
+### How the request selects these routes
+
+`preprocessing` can send inputs to both encoders, `thinker` and `talker_ar`. Each active encoder can send its result to both `thinker` and `talker_ar`. `thinker` sends final data to `decode`; when sound is requested, its generating text stream also goes to `talker_ar`. `talker_ar` then feeds `code2wav`.
+
+The pictured example uses every branch. Requests without an image, without audio input, or without audio output omit the corresponding branches. There is no `decode → talker_ar` edge. `decode` produces text and `code2wav` produces sound; the coordinator merges the completed results, which this diagram does not draw.
+
+### Scope and sources
+
+This step reads static configuration and request-building code; it does not run the model or claim a global execution order. Sources on `sglang-omni origin/main@5b00b2968cfa19cbd04b7305d18f5bb8cc557de2`:
+
+- The YAML selects the colocated speech pipeline: `examples/configs/qwen3_omni_colocated_h100_bf16.yaml:3-20`; the seven stages are constructed at `sglang_omni/models/qwen3_omni/config.py:268-302`, with the colocated process assignment at `sglang_omni/models/qwen3_omni/config.py:305-318`, `sglang_omni/models/qwen3_omni/config.py:499-520`.
+- Preprocessing candidates and request-dependent pruning: `sglang_omni/models/qwen3_omni/config.py:57-87`, `sglang_omni/models/qwen3_omni/request_builders.py:248-261`, `sglang_omni/models/qwen3_omni/request_builders.py:556-606`.
+- Encoder outputs to `thinker` and `talker_ar`: `sglang_omni/models/qwen3_omni/config.py:90-99`, `sglang_omni/models/qwen3_omni/config.py:157-164`, `sglang_omni/models/qwen3_omni/config.py:218-224`, `sglang_omni/models/qwen3_omni/request_builders.py:207-215`, `sglang_omni/models/qwen3_omni/request_builders.py:264-275`.
+- Thinker outputs to `decode` and `talker_ar`: `sglang_omni/models/qwen3_omni/config.py:167-188`, `sglang_omni/models/qwen3_omni/request_builders.py:200-204`, `sglang_omni/models/qwen3_omni/request_builders.py:1162-1204`.
+- `talker_ar → code2wav`: `sglang_omni/models/qwen3_omni/config.py:236-253`; output-modality selection: `sglang_omni/models/qwen3_omni/request_builders.py:138-171`, `sglang_omni/models/qwen3_omni/request_builders.py:229-261`.
+
+### Next
+
+Chapter 2 keeps this stage graph and changes the process and GPU assignments to make three deployment maps.

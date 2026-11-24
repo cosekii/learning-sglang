@@ -4,10 +4,10 @@
 
 ## 本轮记录
 
-- 本轮修旧：完成 Learning SGLang 第 2 章第 1 步的数字动机整改。易读 **12/12**，原分 **23→24/24**，最终 **0 洞**；本章均分 **23.43→23.50**。
-- 中文图先用三轮方格复盘第 1 章的 `18 = 7 + 11`，再打开模型里的 attention；去掉章首未解释的 `decode` 和「层」，把每轮第一次算的蓝格放在末尾。新增中文手机大字专版，英文第 1 步截图改前后逐字节相同。
-- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch02-s01-motivation/final/`。`build`、本章 `transcript`、第 1 步 `readability`、中文手机字号硬门、全章中英手机布局、`deep-check 02`、`zh-check` 均通过；本地目标页返回 HTTP 200。第 3、11 步仍等主人决定，其余步小字仍是既有审计项。
-- 本轮类型：**修旧**；下一普通轮转为**新书**。
+- 本轮新书：完成 Learning SGLang Omni 第 1 章第 4 步。独立冷读易读 **12/12**、**0 洞**，主 session 原分 **24/24**；本章 4 步完成，均分 **24.00**。
+- 新图用图像和音频输入、文本和声音输出的具体请求，画出 8 次主要交接并另列 3 次输入交接：`8 + 3 = 11`，其中 `7 + 3 = 10` 次跨进程，`talker_ar → code2wav` 1 次留在共用进程内。箭头只表示数据流向。
+- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-omni-ch01-s04/final/`。`build`、本章 `transcript`、第 4 步 `readability`、中文手机字号硬门、全章中英手机布局、`deep-check 01`、`zh-check` 均通过；本地目标页返回 HTTP 200，第 1 本受保护 transcript 的 SHA-256 未变。
+- 本轮类型：**新书**；下一普通轮转为**修旧**。
 
 ## Learning SGLang
 
@@ -45,11 +45,11 @@
 
 ## Learning SGLang Omni
 
-规划完成：`docs/plan-omni.md` 共 3 部分、13 章；第 1 章已制作 3 步。
+规划完成：`docs/plan-omni.md` 共 3 部分、13 章；第 1 章已制作 4 步并完成。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
-| 01 | 01-config-to-runtime | 在做第 4 步；前 3 步易读满分 | 24.00 |
+| 01 | 01-config-to-runtime | 完成：4/4 步易读满分 | 24.00 |
 | 02 | 02-spg-topology | 规划 | — |
 | 03 | 03-request-binding | 规划 | — |
 | 04 | 04-readiness-contracts | 规划 | — |

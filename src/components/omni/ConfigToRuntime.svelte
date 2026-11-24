@@ -14,6 +14,12 @@
     COLOCATED_CPU_PROCESS_GROUPS,
     COLOCATED_GPU_PROCESS_COUNT,
     COLOCATED_CPU_PROCESS_COUNT,
+    COLOCATED_MAIN_REQUEST_EDGES,
+    COLOCATED_REQUEST_EDGE_COUNT,
+    COLOCATED_MAIN_REQUEST_EDGE_COUNT,
+    COLOCATED_OMITTED_REQUEST_EDGE_COUNT,
+    COLOCATED_CROSS_PROCESS_EDGE_COUNT,
+    COLOCATED_INTERNAL_EDGE_COUNT,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -27,6 +33,9 @@
   }, {
     caption: `${COLOCATED_GPU_PROCESS_COUNT} processes use GPU 0; ${COLOCATED_CPU_PROCESS_COUNT} use only CPU. ${COLOCATED_GPU_PROCESS_COUNT} + ${COLOCATED_CPU_PROCESS_COUNT} = ${COLOCATED_PROCESS_COUNT} processes.`,
     captionZh: `${COLOCATED_GPU_PROCESS_COUNT} 个进程用 GPU 0，另外 ${COLOCATED_CPU_PROCESS_COUNT} 个只用 CPU。${COLOCATED_GPU_PROCESS_COUNT} + ${COLOCATED_CPU_PROCESS_COUNT} = ${COLOCATED_PROCESS_COUNT} 个进程。`,
+  }, {
+    caption: `${COLOCATED_REQUEST_EDGE_COUNT} hand-offs connect ${COLOCATED_STAGE_COUNT} stages in ${COLOCATED_PROCESS_COUNT} processes. What changes when the process and GPU boxes change?`,
+    captionZh: `${COLOCATED_REQUEST_EDGE_COUNT} 次交接连接 ${COLOCATED_PROCESS_COUNT} 个进程里的 ${COLOCATED_STAGE_COUNT} 个 stage。换掉进程和 GPU 框，会发生什么？`,
   }];
   let step = $state(0);
   $effect(() => {
@@ -42,7 +51,7 @@
     query.addEventListener('change', update);
     return () => query.removeEventListener('change', update);
   });
-  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step > 0 ? 580 : 520) : 400);
+  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 1 || step === 2 ? 580 : 520) : 400);
   const cells = Array.from({ length: 100 }, (_, i) => ({ used: i < COLOCATED_USED_PERCENT }));
   const rowY = (i: number) => (phone ? 85 : 100) + i * (phone ? 32 : 36);
   const gridX = $derived(phone ? 90 : 460), gridY = $derived(phone ? 280 : 80);
@@ -51,11 +60,53 @@
   const singleStageProcessCount = COLOCATED_PROCESS_GROUPS.filter((group) => group.stages.length === 1).length;
   const stageY = (i: number) => 82 + i * 40;
   const processY = (i: number) => 230 + i * 34;
+  type RouteNode = { name: string; x: number; y: number; w: number; h: number; device: string };
+  const desktopRoute: RouteNode[] = [
+    { name: 'preprocessing', x: 16, y: 140, w: 100, h: 52, device: 'CPU' },
+    { name: 'image_encoder', x: 162, y: 84, w: 100, h: 52, device: 'GPU 0' },
+    { name: 'audio_encoder', x: 162, y: 210, w: 100, h: 52, device: 'GPU 0' },
+    { name: 'thinker', x: 308, y: 140, w: 100, h: 52, device: 'GPU 0' },
+    { name: 'decode', x: 454, y: 72, w: 100, h: 52, device: 'CPU' },
+    { name: 'talker_ar', x: 454, y: 192, w: 100, h: 52, device: 'GPU 0' },
+    { name: 'code2wav', x: 602, y: 192, w: 100, h: 52, device: 'GPU 0' },
+  ];
+  const phoneRoute: RouteNode[] = [
+    { name: 'preprocessing', x: 100, y: 70, w: 100, h: 34, device: 'CPU' },
+    { name: 'image_encoder', x: 15, y: 130, w: 125, h: 34, device: 'GPU 0' },
+    { name: 'audio_encoder', x: 160, y: 130, w: 125, h: 34, device: 'GPU 0' },
+    { name: 'thinker', x: 100, y: 195, w: 100, h: 34, device: 'GPU 0' },
+    { name: 'decode', x: 15, y: 260, w: 125, h: 34, device: 'CPU' },
+    { name: 'talker_ar', x: 160, y: 260, w: 125, h: 34, device: 'GPU 0' },
+    { name: 'code2wav', x: 160, y: 325, w: 125, h: 34, device: 'GPU 0' },
+  ];
+  const routeNodes = $derived(phone ? phoneRoute : desktopRoute);
+  const routeNode = (name: string) => routeNodes.find((node) => node.name === name)!;
+  const sharedRouteBox = $derived.by(() => {
+    const talker = routeNode('talker_ar');
+    const code2wav = routeNode('code2wav');
+    return {
+      x: Math.min(talker.x, code2wav.x) - 6,
+      y: Math.min(talker.y, code2wav.y) - 26,
+      w: Math.max(talker.x + talker.w, code2wav.x + code2wav.w) - Math.min(talker.x, code2wav.x) + 12,
+      h: Math.max(talker.y + talker.h, code2wav.y + code2wav.h) - Math.min(talker.y, code2wav.y) + 46,
+    };
+  });
+  const routePath = (from: string, to: string) => {
+    const a = routeNode(from), b = routeNode(to);
+    if (phone) {
+      const ax = a.x + a.w / 2, ay = a.y + a.h;
+      const bx = b.x + b.w / 2, by = b.y;
+      return `M ${ax} ${ay + 8} C ${ax} ${(ay + by) / 2}, ${bx} ${(ay + by) / 2}, ${bx} ${by - 6}`;
+    }
+    const ax = a.x + a.w, ay = a.y + a.h / 2;
+    const bx = b.x, by = b.y + b.h / 2;
+    return `M ${ax + 9} ${ay} C ${ax + 20} ${ay}, ${bx - 30} ${by}, ${bx - 24} ${by} L ${bx - 10} ${by}`;
+  };
 </script>
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={step === 0 ? "Five GPU stages declare 94 percent of one card's memory budget" : step === 1 ? 'Seven stages run in six processes; talker_ar and code2wav share one' : `${COLOCATED_GPU_PROCESS_COUNT} processes use GPU 0 and ${COLOCATED_CPU_PROCESS_COUNT} use only CPU`}>
+    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={step === 0 ? "Five GPU stages declare 94 percent of one card's memory budget" : step === 1 ? 'Seven stages run in six processes; talker_ar and code2wav share one' : step === 2 ? `${COLOCATED_GPU_PROCESS_COUNT} processes use GPU 0 and ${COLOCATED_CPU_PROCESS_COUNT} use only CPU` : `${COLOCATED_REQUEST_EDGE_COUNT} hand-offs connect ${COLOCATED_STAGE_COUNT} stages in ${COLOCATED_PROCESS_COUNT} processes`}>
       {#if step === 0}
       <text x={phone ? 20 : 35} y="30" class="rowlabel">{t('Review · first book, Ch.19 Step 3', '复习 · 第 1 本 Ch.19 Step 3')}</text>
       <text x={phone ? 20 : 35} y="50" class="tag">{t(phone ? 'config file = startup list' : 'config file = the program’s startup list', '配置文件 = 程序启动时读的清单')}</text>
@@ -134,7 +185,7 @@
         <text x={W / 2} y="538" text-anchor="middle" class="legend strong">{singleStageProcessCount} + 1 = {COLOCATED_PROCESS_COUNT} {t('processes', '个进程')}</text>
       {/if}
       <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(`This counts only the ${COLOCATED_PROCESS_COUNT} stage processes above.`, `这里只数上面 ${COLOCATED_PROCESS_COUNT} 个 stage 进程。`)}</text>
-      {:else}
+      {:else if step === 2}
       <text x={phone ? 16 : 20} y="26" class="rowlabel">{t(phone ? 'Step 2 · device = GPU or CPU' : `Same ${COLOCATED_PROCESS_COUNT} processes as Step 2 · device = GPU or CPU`, phone ? `第 2 步 · 设备 = GPU 或 CPU` : `第 2 步的 ${COLOCATED_PROCESS_COUNT} 个进程 · 设备 = GPU 或 CPU`)}</text>
       <rect x={phone ? 12 : 20} y={phone ? 48 : 52} width={phone ? 276 : 420} height={phone ? 282 : 278} rx="10" fill="var(--bg)" stroke="var(--accent)" stroke-width="2" />
       <text x={phone ? 24 : 36} y={phone ? 72 : 78} class="rowlabel">GPU 0 · {t('one card', '同一张卡')}</text>
@@ -154,6 +205,43 @@
       {/each}
       <text x={W / 2} y={phone ? 532 : 360} text-anchor="middle" class="legend strong">{COLOCATED_GPU_PROCESS_COUNT} + {COLOCATED_CPU_PROCESS_COUNT} = {COLOCATED_PROCESS_COUNT} {t('processes', '个进程')}</text>
       <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('One box is one process; the shared process still counts once.', '一框一个进程；共用进程仍只算一次。')}</text>
+      {:else}
+      <defs>
+        <marker id="route-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+          <path d="M0,0 L7,3.5 L0,7 z" fill="var(--muted)" />
+        </marker>
+        <marker id="route-inside-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+          <path d="M0,0 L7,3.5 L0,7 z" fill="var(--gen)" />
+        </marker>
+      </defs>
+      <text x={W / 2} y="24" text-anchor="middle" class="rowlabel">{t('Example: image + audio in; text + sound out', '例：图像和音频输入，文本和声音输出')}</text>
+      <text x={W / 2} y="44" text-anchor="middle" class="tag">{t('arrow = data hand-off · dashed box = one process', '箭头 = 交接数据 · 虚线框 = 一个进程')}</text>
+      {#each COLOCATED_MAIN_REQUEST_EDGES as edge}
+        <path d={routePath(edge.from, edge.to)} fill="none" stroke={edge.from === 'talker_ar' ? 'var(--gen)' : 'var(--muted)'} stroke-width={edge.from === 'talker_ar' ? 2 : 1.4} marker-end={edge.from === 'talker_ar' ? 'url(#route-inside-arrow)' : 'url(#route-arrow)'} />
+      {/each}
+      {#each routeNodes.filter((node) => node.name !== 'talker_ar' && node.name !== 'code2wav') as node}
+        <rect x={node.x - 6} y={node.y - 20} width={node.w + 12} height={node.h + 28} rx="9" fill="none" stroke="var(--faint)" stroke-dasharray="4 3" />
+        {#if !phone}<text x={node.x + 2} y={node.y - 7} class="tag">{t('process', '进程')} · {node.device}</text>{/if}
+      {/each}
+      <rect x={sharedRouteBox.x} y={sharedRouteBox.y} width={sharedRouteBox.w} height={sharedRouteBox.h} rx="9" fill="none" stroke="var(--faint)" stroke-dasharray="4 3" />
+      {#if !phone}<text x={sharedRouteBox.x + 6} y={sharedRouteBox.y + 17} class="tag strong">{t('shared process', '共用进程')} · GPU 0</text>{/if}
+      {#each routeNodes as node}
+        <rect x={node.x} y={node.y} width={node.w} height={node.h} rx="8" fill="white" stroke="var(--line)" />
+        <text x={node.x + node.w / 2} y={node.y + (phone ? 14 : 32)} text-anchor="middle" class="mono strong">{node.name}</text>
+        {#if phone}<text x={node.x + node.w / 2} y={node.y + 28} text-anchor="middle" class="tag">{node.device}</text>{/if}
+      {/each}
+      <text x={W / 2} y={phone ? 405 : 300} text-anchor="middle" class="legend strong">{t(`${COLOCATED_MAIN_REQUEST_EDGE_COUNT} shown + ${COLOCATED_OMITTED_REQUEST_EDGE_COUNT} below = ${COLOCATED_REQUEST_EDGE_COUNT} hand-offs`, `主图 ${COLOCATED_MAIN_REQUEST_EDGE_COUNT} 条 + 下列 ${COLOCATED_OMITTED_REQUEST_EDGE_COUNT} 条 = ${COLOCATED_REQUEST_EDGE_COUNT} 次交接`)}</text>
+      <line x1={phone ? 30 : 170} x2={phone ? 55 : 200} y1={phone ? 429 : 325} y2={phone ? 429 : 325} stroke="var(--muted)" stroke-width="1.4" />
+      <text x={phone ? 65 : 210} y={phone ? 433 : 329} class="legend">{t(`${COLOCATED_CROSS_PROCESS_EDGE_COUNT} cross processes = ${COLOCATED_MAIN_REQUEST_EDGE_COUNT - COLOCATED_INTERNAL_EDGE_COUNT} shown + ${COLOCATED_OMITTED_REQUEST_EDGE_COUNT} below`, `${COLOCATED_CROSS_PROCESS_EDGE_COUNT} 次跨进程 = 主图 ${COLOCATED_MAIN_REQUEST_EDGE_COUNT - COLOCATED_INTERNAL_EDGE_COUNT} 次 + 下列 ${COLOCATED_OMITTED_REQUEST_EDGE_COUNT} 次`)}</text>
+      <line x1={phone ? 30 : 170} x2={phone ? 55 : 200} y1={phone ? 452 : 350} y2={phone ? 452 : 350} stroke="var(--gen)" stroke-width="2" />
+      <text x={phone ? 65 : 210} y={phone ? 456 : 354} class="legend">{t(`${COLOCATED_INTERNAL_EDGE_COUNT} inside the shared talker_ar process`, `${COLOCATED_INTERNAL_EDGE_COUNT} 次留在 talker_ar 进程内`)}</text>
+      {#if phone}
+        <text x={W / 2} y={H - 42} text-anchor="middle" class="footnote">{t('3 more input hand-offs to talker_ar:', '另外 3 条输入交接都到 talker_ar：')}</text>
+        <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">preprocessing · image_encoder · audio_encoder</text>
+      {:else}
+        <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('3 more input hand-offs to talker_ar: preprocessing, image_encoder, audio_encoder', '另外 3 条输入交接都到 talker_ar：preprocessing、image_encoder、audio_encoder')}</text>
+      {/if}
+      <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Arrows show data flow, not strict timing.', '箭头表示数据流向，不代表严格先后。')}</text>
       {/if}
     </svg>
   </div>
