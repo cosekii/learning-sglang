@@ -4,17 +4,17 @@
 
 ## 本轮记录
 
-- 本轮新书：完成 Inside Voxt 第 1 章第 2 步。最终易读 **12/12**、原分 **24/24**、**0 洞**。R1：「我按一下键，这句话就挂着 A 标签，从声音变成文字，再把『嗯』去掉，最后显示出来并保存。」
-- 把 session A 放上按键、helper、声音变文字、整理、显示和保存的完整路线；用同一句展示整理前后，写清结果小窗的条件及历史保存原话和整理结果。公开基线为 `sglang-omni@14014b833299c6158a5daa88e1e0740cf7efe606`，与本轮 `origin/main` 一致。
-- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch01-s02/final/`。`build`、本章 `transcript`、第 2 步 `readability`、中文手机字号硬门、全章中英手机布局、`deep-check 01`、`zh-check` 均通过；本地目标页返回 HTTP 200。
-- 本轮类型：**新书**；下一普通轮转为**修旧**。
+- 本轮修旧：完成 Learning SGLang 第 2 章第 1 步的数字动机整改。易读 **12/12**，原分 **23→24/24**，最终 **0 洞**；本章均分 **23.43→23.50**。
+- 中文图先用三轮方格复盘第 1 章的 `18 = 7 + 11`，再打开模型里的 attention；去掉章首未解释的 `decode` 和「层」，把每轮第一次算的蓝格放在末尾。新增中文手机大字专版，英文第 1 步截图改前后逐字节相同。
+- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch02-s01-motivation/final/`。`build`、本章 `transcript`、第 1 步 `readability`、中文手机字号硬门、全章中英手机布局、`deep-check 02`、`zh-check` 均通过；本地目标页返回 HTTP 200。第 3、11 步仍等主人决定，其余步小字仍是既有审计项。
+- 本轮类型：**修旧**；下一普通轮转为**新书**。
 
 ## Learning SGLang
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
 | 01 | 01-inference | 完成：12/12 步易读满分 | 23.75 |
-| 02 | 02-attention | 易读整改：8/14 步满分；第 3、11 步待主人定 | 23.43 |
+| 02 | 02-attention | 易读整改：8/14 步满分；第 3、11 步待主人定 | 23.50 |
 | 03 | 03-kv-cache | 完成 | — |
 | 04 | 04-prefill-decode | 完成 | — |
 | 05 | 05-batching | 完成 | — |

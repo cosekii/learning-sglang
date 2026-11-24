@@ -13,7 +13,7 @@ export const parts: Part[] = [
 export interface Chapter { slug: string; title: string; hook: string; ready: boolean; part: string; titleZh: string; hookZh: string }
 export const chapters: Chapter[] = [
   { part: 'loop', slug: '01-inference', title: 'Bare-minimum inference', hook: 'One function, called in a loop.', titleZh: '最简推理', hookZh: '一个函数，循环调用。', ready: true },
-  { part: 'loop', slug: '02-attention', title: 'Attention, per decode step', hook: 'What a new token needs from the past.', titleZh: '每个 decode 步的 attention', hookZh: '新 token 需要从过去拿到什么。', ready: true },
+  { part: 'loop', slug: '02-attention', title: 'Attention, per decode step', hook: 'What a new token needs from the past.', titleZh: '每生成一个新 token 时的 attention', hookZh: '新 token 需要从过去拿到什么。', ready: true },
   { part: 'loop', slug: '03-kv-cache', title: 'KV cache', hook: 'Keep k and v. Drop q.', titleZh: 'KV cache', hookZh: '留下 k 和 v，丢掉 q。', ready: true },
   { part: 'loop', slug: '04-prefill-decode', title: 'Prefill vs decode', hook: 'Two very different workloads.', titleZh: 'Prefill 与 decode', hookZh: '两种截然不同的负载。', ready: true },
   { part: 'loop', slug: '05-batching', title: 'Batching & continuous batching', hook: 'Sharing a GPU between users.', titleZh: '批处理与连续批处理', hookZh: '多个用户共享一块 GPU。', ready: true },

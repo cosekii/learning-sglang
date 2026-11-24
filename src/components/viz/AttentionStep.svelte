@@ -12,6 +12,11 @@
   // ---- Data --------------------------------------------------------------------------------
   const tokens = ['The', ' capital', ' of', ' France', ' is', ' Paris'];
   const PROMPT_N = 5;
+  const introCounts = [PROMPT_N, PROMPT_N + 1, PROMPT_N + 2];
+  const introFirst = [PROMPT_N, 1, 1];
+  const introTotal = introCounts.reduce((sum, n) => sum + n, 0);
+  const introFirstTotal = introFirst.reduce((sum, n) => sum + n, 0);
+  const introRecomputed = introTotal - introFirstTotal;
   // Made-up but plausible attention scores (q · k) for the attending token against each key.
   const scores: Record<number, number[]> = {
     4: [0.4, 1.9, 0.2, 2.6, 0.9],
@@ -34,7 +39,7 @@
     markNew?: boolean;        // highlight the latest token's column as "new"
   }
   const steps: Step[] = [
-    { n: 5, intro: true, caption: `Same five tokens, one forward pass. This time we watch what one attention layer does with them.`, captionZh: `还是这五个 token，一起走进模型。打开一个 attention 层：前面的 token 把信息传给后面。` },
+    { n: 5, intro: true, caption: `Same five tokens, one forward pass. This time we watch what one attention layer does with them.`, captionZh: `上一章没存旧结果，18 格有 11 格是重算。打开模型里的 attention，找哪些不用再算。` },
     { n: 5, x: true, caption: `Each token comes in as a vector. Call it x.`, captionZh: `每个 token 都变成一排有顺序的数，叫向量，记作 x。` },
     { n: 5, rows: true, caption: `Every token multiplies its own x by three learned matrices and gets a <b>query</b>, a <b>key</b> and a <b>value</b>. No other token is involved yet.`, captionZh: `每个 token 用自己的 x 乘三个学好的矩阵，得到一个 <b>query</b>、一个 <b>key</b> 和一个 <b>value</b>。暂时不涉及其他 token。` },
     { n: 5, rows: true, attend: 4, scores: true, caption: `The last token's query gets dotted with every key. A big score means "this one matters to me".`, captionZh: `点积就是两排数对应相乘，再全部相加。下一步再讲这些分数怎么用。` },
@@ -94,6 +99,7 @@
   const hotV = (r: Row, c: number) => r === 'v' && cur.mix && cur.attend !== undefined && c <= cur.attend;
   const outX = $derived(seqEndX + 44);
   const zhTally = $derived(step === 11 && $lang === 'zh');
+  const zhIntro = $derived(step === 0 && $lang === 'zh');
   const zhWeights = $derived(step === 4 && $lang === 'zh');
   const zhMix = $derived(step === 5 && $lang === 'zh');
   const zhSix = $derived(step === 8 && $lang === 'zh');
@@ -106,6 +112,7 @@
     query.addEventListener('change', update);
     return () => query.removeEventListener('change', update);
   });
+  const phoneIntro = $derived(phone && zhIntro);
   const phoneWeights = $derived(phone && zhWeights);
   const phoneMix = $derived(phone && zhMix);
   const phoneSix = $derived(phone && zhSix);
@@ -119,8 +126,41 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox={phoneRecompute ? '0 0 360 440' : phoneSix ? '0 0 360 430' : phoneMix ? '0 0 360 580' : phoneWeights ? '0 0 360 550' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Attention per decode step, step {step + 1}" class:phone-weights={phoneWeights} class:phone-mix={phoneMix} class:phone-six={phoneSix} class:phone-recompute={phoneRecompute}>
-      {#if phoneRecompute}
+    <svg viewBox={phoneIntro ? '0 0 360 450' : phoneRecompute ? '0 0 360 440' : phoneSix ? '0 0 360 430' : phoneMix ? '0 0 360 580' : phoneWeights ? '0 0 360 550' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Attention per decode step, step {step + 1}" class:phone-intro={phoneIntro} class:phone-weights={phoneWeights} class:phone-mix={phoneMix} class:phone-six={phoneSix} class:phone-recompute={phoneRecompute}>
+      {#if phoneIntro}
+        <defs>
+          <marker id="phone-intro-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+            <path d="M 0 0 L 6 3 L 0 6 z" fill="var(--accent)" />
+          </marker>
+        </defs>
+        <text x="180" y="26" text-anchor="middle" class="ph-title">没存旧结果：18 格里有 11 格重算</text>
+        <text x="180" y="52" text-anchor="middle">第 1 章第 12 步的示例 · 1 格 = 算 1 个位置</text>
+        {#each introCounts as n, r}
+          {@const y = 86 + r * 34}
+          <text x="14" y={y + 4}>第 {r + 1} 轮</text>
+          {#each Array(n) as _, c}
+            <rect x={72 + c * 24} y={y - 14} width="20" height="20" rx="3" fill={c < n - introFirst[r] ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={c < n - introFirst[r] ? 'var(--gen)' : 'var(--accent)'} />
+          {/each}
+          <text x="252" y={y + 4}>{n} 格</text>
+        {/each}
+        <rect x="18" y="178" width="14" height="14" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="40" y="190">第一次算 {introFirstTotal} 格</text>
+        <rect x="190" y="178" width="14" height="14" rx="3" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x="212" y="190">重算 {introRecomputed} 格</text>
+        <text x="180" y="224" text-anchor="middle" class="ph-strong">5 + 6 + 7 = {introTotal} = {introFirstTotal} + {introRecomputed}</text>
+        <line x1="16" y1="246" x2="344" y2="246" stroke="var(--line)" />
+        <text x="180" y="276" text-anchor="middle" class="ph-title">模型里一个叫 attention 的部分</text>
+        {@const phoneTokens = [{ t: 'The', x: 12, w: 42 }, { t: '␣capital', x: 60, w: 78 }, { t: '␣of', x: 144, w: 48 }, { t: '␣France', x: 198, w: 80 }, { t: '␣is', x: 284, w: 64 }]}
+        {#each phoneTokens as token}
+          <rect x={token.x} y="296" width={token.w} height="30" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x={token.x + token.w / 2} y="316" text-anchor="middle">{token.t}</text>
+        {/each}
+        {#each phoneTokens.slice(0, -1) as token}
+          <path d="M {token.x + token.w / 2} 331 C {token.x + token.w / 2} 366, 316 366, 316 334" fill="none" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#phone-intro-arrow)" />
+        {/each}
+        <text x="180" y="398" text-anchor="middle">前面的 token 把信息传给后面的 token</text>
+        <text x="180" y="430" text-anchor="middle" class="ph-strong">接下来：找哪些旧结果不用再算</text>
+      {:else if phoneRecompute}
         <text x="180" y="26" text-anchor="middle" class="ph-title">每个 x 都重新算 q、k、v</text>
         <text x="180" y="54" text-anchor="middle">矩阵 = 学好的数字表，三张表各算 q、k、v</text>
         <text x="53" y="82" text-anchor="middle" class="ph-faint">token</text>
@@ -215,23 +255,52 @@
         </marker>
       </defs>
       <!-- Token row -->
-      <text x="16" y={seqY + 18} class="rowlabel">tokens</text>
-      {#each cols as c, i (i)}
-        <g in:fly={cur.flyIn && i === cols.length - 1 ? { y: -30, duration: 450, easing: cubicOut } : { duration: 0 }}>
-          <rect x={c.x} y={seqY} width={c.w} height={tokH} rx="6" fill={i < PROMPT_N ? 'var(--accent-soft)' : 'var(--gen-soft)'} stroke={i < PROMPT_N ? 'var(--accent)' : 'var(--gen)'} stroke-width="1.5" />
-          <text x={c.cx} y={seqY + 18} text-anchor="middle" class="tok">{c.t.replace(/^ /, '␣')}</text>
-        </g>
-      {/each}
-      {#if cur.intro}
-        {@const last = cols[cols.length - 1]}
-        <g transition:fade={{ duration: 700 }}>
-          {#each cols.slice(0, -1) as c}
-            <path d="M {c.cx} {seqY + tokH + 5} C {c.cx} 105, {last.cx} 105, {last.cx} {seqY + tokH + 8}"
-                  fill="none" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#intro-arrow)" />
+      {#if zhIntro}
+        <text x="20" y="26" class="boxtitle">第 1 章第 12 步：没存旧结果，3 轮共算 {introTotal} 格</text>
+        <text x="20" y="50" class="legend">1 格 = 一个 token 位置在这一轮算 1 次</text>
+        {#each introCounts as n, r}
+          {@const y = 82 + r * 34}
+          <text x="20" y={y + 4} class="legend">第 {r + 1} 轮</text>
+          {#each Array(n) as _, c}
+            <rect x={86 + c * 24} y={y - 14} width="20" height="20" rx="3" fill={c < n - introFirst[r] ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={c < n - introFirst[r] ? 'var(--gen)' : 'var(--accent)'} />
           {/each}
-          <text x={W / 2} y="138" text-anchor="middle" class="boxtitle">{t('one attention layer', '一个 attention 层')}</text>
-          <text x={W / 2} y="164" text-anchor="middle" class="slab">{t('earlier tokens pass information to later ones', '前面的 token 把信息传给后面的 token')}</text>
-        </g>
+          <text x="270" y={y + 4} class="legend">{n} 格</text>
+        {/each}
+        <rect x="380" y="65" width="14" height="14" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="404" y="77" class="legend">第一次算 {introFirst.join(' + ')} = {introFirstTotal} 格</text>
+        <rect x="380" y="99" width="14" height="14" rx="3" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x="404" y="111" class="legend">重算 {introCounts[1] - introFirst[1]} + {introCounts[2] - introFirst[2]} = {introRecomputed} 格</text>
+        <text x="380" y="151" class="sum">{introCounts.join(' + ')} = {introTotal} = {introFirstTotal} + {introRecomputed} 格</text>
+        <line x1="20" y1="184" x2="700" y2="184" stroke="var(--line)" />
+        <text x={W / 2} y="214" text-anchor="middle" class="boxtitle">模型里一个叫 attention 的部分，找哪些旧结果不用再算</text>
+        {@const last = cols[cols.length - 1]}
+        {#each cols as c}
+          <rect x={c.x} y="234" width={c.w} height={tokH} rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5" />
+          <text x={c.cx} y="252" text-anchor="middle" class="tok">{c.t.replace(/^ /, '␣')}</text>
+        {/each}
+        {#each cols.slice(0, -1) as c}
+          <path d="M {c.cx} 267 C {c.cx} 318, {last.cx} 318, {last.cx} 270" fill="none" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#intro-arrow)" />
+        {/each}
+        <text x={W / 2} y="356" text-anchor="middle" class="slab">attention：前面的 token 把信息传给后面的 token</text>
+      {:else}
+        <text x="16" y={seqY + 18} class="rowlabel">tokens</text>
+        {#each cols as c, i (i)}
+          <g in:fly={cur.flyIn && i === cols.length - 1 ? { y: -30, duration: 450, easing: cubicOut } : { duration: 0 }}>
+            <rect x={c.x} y={seqY} width={c.w} height={tokH} rx="6" fill={i < PROMPT_N ? 'var(--accent-soft)' : 'var(--gen-soft)'} stroke={i < PROMPT_N ? 'var(--accent)' : 'var(--gen)'} stroke-width="1.5" />
+            <text x={c.cx} y={seqY + 18} text-anchor="middle" class="tok">{c.t.replace(/^ /, '␣')}</text>
+          </g>
+        {/each}
+        {#if cur.intro}
+          {@const last = cols[cols.length - 1]}
+          <g transition:fade={{ duration: 700 }}>
+            {#each cols.slice(0, -1) as c}
+              <path d="M {c.cx} {seqY + tokH + 5} C {c.cx} 105, {last.cx} 105, {last.cx} {seqY + tokH + 8}"
+                    fill="none" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#intro-arrow)" />
+            {/each}
+            <text x={W / 2} y="138" text-anchor="middle" class="boxtitle">{t('one attention layer', '一个 attention 层')}</text>
+            <text x={W / 2} y="164" text-anchor="middle" class="slab">{t('earlier tokens pass information to later ones', '前面的 token 把信息传给后面的 token')}</text>
+          </g>
+        {/if}
       {/if}
       {#if zhRecompute}
         <text x={(cols[0].cx + cols[PROMPT_N - 1].cx) / 2} y={ROW.x - 8} text-anchor="middle" class="tag">前 5 列：再算</text>
@@ -474,6 +543,9 @@
   .example-hit:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
   .badge { font-family: var(--mono); font-size: 10px; font-weight: 700; }
   .num { font-family: var(--mono); font-size: 10.5px; fill: var(--fg); }
+  .phone-intro text { font-family: var(--sans); font-size: 12px; fill: var(--fg); }
+  .phone-intro .ph-title { font-size: 16px; font-weight: 650; }
+  .phone-intro .ph-strong { font-weight: 650; }
   .phone-weights text { font-family: var(--mono); font-size: 12px; fill: var(--fg); }
   .phone-weights .ph-title { font-family: var(--sans); font-size: 16px; font-weight: 650; }
   .phone-mix text { font-family: var(--mono); font-size: 12px; fill: var(--fg); }
