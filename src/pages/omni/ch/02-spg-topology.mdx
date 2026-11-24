@@ -1,0 +1,29 @@
+---
+layout: ../../../layouts/Chapter.astro
+book: omni
+slug: 02-spg-topology
+---
+import SpgTopology from '../../../components/omni/SpgTopology.svelte';
+import { omniNeighbors } from '../../../omni/chapters';
+import { deepFor } from '../../../deep';
+export const deep = await deepFor('omni-02-spg-topology');
+
+<SpgTopology client:load {...omniNeighbors('02-spg-topology')} deep={deep} />
+
+<details class="i18n-en">
+<summary>Where this chapter's claims come from</summary>
+
+Step 1 reads the shipped Qwen3-Omni replica configuration and the model's placement code in SGLang-Omni. It counts configured stage copies and GPUs; it does not measure latency or throughput.
+
+Source revision: `sglang-omni origin/main@48ee40b2563492de95efc952a0c7470db087d8a9`. The deep dive lists the exact files and lines.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的出处</summary>
+
+第 1 步读取 SGLang-Omni 自带的 Qwen3-Omni 多副本配置和模型 placement 代码，只数配置里的 stage 份数和 GPU 数量，没有测量延迟或吞吐量。
+
+源码版本：`sglang-omni origin/main@48ee40b2563492de95efc952a0c7470db087d8a9`。精确文件和行号见深入讲解。
+
+</details>

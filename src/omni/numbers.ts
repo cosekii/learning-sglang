@@ -46,3 +46,34 @@ export const COLOCATED_OMITTED_REQUEST_EDGE_COUNT = COLOCATED_REQUEST_EDGE_COUNT
 const processNameForStage = (stage: string) => COLOCATED_PROCESS_GROUPS.find((group) => (group.stages as readonly string[]).includes(stage))?.name;
 export const COLOCATED_INTERNAL_EDGE_COUNT = COLOCATED_REQUEST_EDGES.filter((edge) => processNameForStage(edge.from) === processNameForStage(edge.to)).length;
 export const COLOCATED_CROSS_PROCESS_EDGE_COUNT = COLOCATED_REQUEST_EDGE_COUNT - COLOCATED_INTERNAL_EDGE_COUNT;
+
+// Default Qwen speech stages and the shipped replica2 overrides on sglang-omni origin/main.
+// At this revision each stage has its own process and one TP rank.
+export const QWEN_SPEECH_DEFAULT_STAGE_PROCESSES = [
+  { stage: 'preprocessing', gpu: null },
+  { stage: 'image_encoder', gpu: 0 },
+  { stage: 'audio_encoder', gpu: 0 },
+  { stage: 'thinker', gpu: 0 },
+  { stage: 'decode', gpu: null },
+  { stage: 'talker_ar', gpu: 1 },
+  { stage: 'code2wav', gpu: 0 },
+] as const;
+export const QWEN_SPEECH_REPLICA2_DEVICES = {
+  talker_ar: [1, 2],
+  code2wav: [1, 2],
+} as const;
+export const QWEN_SPEECH_REPLICA2_STAGE_PROCESSES = QWEN_SPEECH_DEFAULT_STAGE_PROCESSES.flatMap(({ stage, gpu }) => {
+  if (stage === 'talker_ar' || stage === 'code2wav') {
+    return QWEN_SPEECH_REPLICA2_DEVICES[stage].map((replicaGpu, replica) => ({ stage, gpu: replicaGpu, replica }));
+  }
+  return [{ stage, gpu, replica: 0 }];
+});
+const gpuIds = (processes: readonly { gpu: number | null }[]) => Array.from(new Set(processes.flatMap(({ gpu }) => gpu === null ? [] : [gpu]))).sort((a, b) => a - b);
+export const QWEN_SPEECH_STAGE_TYPE_COUNT = QWEN_SPEECH_DEFAULT_STAGE_PROCESSES.length;
+export const QWEN_SPEECH_UNCHANGED_STAGE_COUNT = QWEN_SPEECH_DEFAULT_STAGE_PROCESSES.filter(({ stage }) => stage !== 'talker_ar' && stage !== 'code2wav').length;
+export const QWEN_SPEECH_DEFAULT_COPY_COUNT = QWEN_SPEECH_DEFAULT_STAGE_PROCESSES.length;
+export const QWEN_SPEECH_REPLICA2_COPY_COUNT = QWEN_SPEECH_REPLICA2_STAGE_PROCESSES.length;
+export const QWEN_SPEECH_DEFAULT_GPU_IDS = gpuIds(QWEN_SPEECH_DEFAULT_STAGE_PROCESSES);
+export const QWEN_SPEECH_REPLICA2_GPU_IDS = gpuIds(QWEN_SPEECH_REPLICA2_STAGE_PROCESSES);
+export const QWEN_SPEECH_DEFAULT_GPU_COUNT = QWEN_SPEECH_DEFAULT_GPU_IDS.length;
+export const QWEN_SPEECH_REPLICA2_GPU_COUNT = QWEN_SPEECH_REPLICA2_GPU_IDS.length;

@@ -8,7 +8,7 @@ export const omniParts: Part[] = [
 
 export const omniChapters: Chapter[] = [
   { part: 'runtime', slug: '01-config-to-runtime', title: 'From config to a runtime graph', hook: 'Turn a list of choices into a running request route.', titleZh: '从配置到运行图', hookZh: '把一张选择清单变成运行中的请求路线。', ready: true },
-  { part: 'runtime', slug: '02-spg-topology', title: 'Stage–Process–GPU topology', hook: 'Three deployment maps from one stage graph.', titleZh: 'Stage–Process–GPU 拓扑', hookZh: '同一张 stage 图变成三张部署图。', ready: false },
+  { part: 'runtime', slug: '02-spg-topology', title: 'Stage–Process–GPU topology', hook: 'Copy two speech processes and place them on GPUs.', titleZh: 'Stage–Process–GPU 拓扑', hookZh: '复制两个语音进程，摆到 GPU 上。', ready: true },
   { part: 'runtime', slug: '03-request-binding', title: 'Request binding and exit', hook: 'Choose a replica, finish or abort, then release ownership.', titleZh: '请求绑定与退出', hookZh: '选定副本，完成或取消，再释放所有权。', ready: false },
   { part: 'runtime', slug: '04-readiness-contracts', title: 'Three readiness contracts', hook: 'When may the next stage start, and when must the upstream wait?', titleZh: '三种就绪规则', hookZh: '下游何时开始，上游何时必须等？', ready: false },
   { part: 'runtime', slug: '05-data-lifetime', title: 'Data references and reclamation', hook: 'Publish, read, acknowledge and release.', titleZh: '数据引用与回收', hookZh: '发布、读取、确认和释放。', ready: false },
