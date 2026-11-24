@@ -38,7 +38,7 @@
     { n: 5, x: true, caption: `Each token comes in as a vector. Call it x.`, captionZh: `每个 token 都变成一排有顺序的数，叫向量，记作 x。` },
     { n: 5, rows: true, caption: `Every token multiplies its own x by three learned matrices and gets a <b>query</b>, a <b>key</b> and a <b>value</b>. No other token is involved yet.`, captionZh: `每个 token 用自己的 x 乘三个学好的矩阵，得到一个 <b>query</b>、一个 <b>key</b> 和一个 <b>value</b>。暂时不涉及其他 token。` },
     { n: 5, rows: true, attend: 4, scores: true, caption: `The last token's query gets dotted with every key. A big score means "this one matters to me".`, captionZh: `点积就是两排数对应相乘，再全部相加。下一步再讲这些分数怎么用。` },
-    { n: 5, rows: true, attend: 4, scores: true, weights: true, caption: `Softmax turns the scores into weights that add up to one.`, captionZh: `Softmax 把分数变成权重，加起来等于一。` },
+    { n: 5, rows: true, attend: 4, scores: true, weights: true, caption: `Softmax turns the scores into weights that add up to one.`, captionZh: `Softmax 把分数换成权重。每列的权重表示它占多少，合起来是 1。` },
     { n: 5, rows: true, attend: 4, weights: true, mix: true, caption: `Its output is the values, blended by those weights. This is how "is" finds out it's sitting after "capital of France".`, captionZh: `它的输出就是这些 value 按权重混合的结果。"is" 就是这样知道自己跟在 "capital of France" 后面。` },
     { n: 5, rows: true, causal: true, caption: `Every position does the same thing with its own query, over the keys up to itself. One pass, all five outputs at once.`, captionZh: `每个位置都用自己的 query 对截至自身的 key 做同样的事。一遍前向，五个输出同时得到。` },
     // Decode step: the layer runs again, and it really does start over. Same three steps as above, on six tokens.
@@ -94,6 +94,18 @@
   const hotV = (r: Row, c: number) => r === 'v' && cur.mix && cur.attend !== undefined && c <= cur.attend;
   const outX = $derived(seqEndX + 44);
   const zhTally = $derived(step === 11 && $lang === 'zh');
+  const zhWeights = $derived(step === 4 && $lang === 'zh');
+  let phone = $state(false);
+  $effect(() => {
+    const query = window.matchMedia('(max-width: 900px)');
+    const update = () => (phone = query.matches);
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  });
+  const phoneWeights = $derived(phone && zhWeights);
+  const expScores = $derived(cur.attend !== undefined ? scores[cur.attend].map((score) => Math.exp(score)) : []);
+  const expTotal = $derived(expScores.reduce((sum, value) => sum + value, 0));
   const tallyDenominator = scores[5].reduce((sum, score) => sum + Math.exp(score), 0);
   const tallyParisExp = Math.exp(scores[5][5]);
   const tallyRoundedSum = $derived(w.reduce((sum, weight) => sum + Number(weight.toFixed(2)), 0));
@@ -101,7 +113,32 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Attention per decode step, step {step + 1}">
+    <svg viewBox={phoneWeights ? '0 0 360 550' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Attention per decode step, step {step + 1}" class:phone-weights={phoneWeights}>
+      {#if phoneWeights}
+        <text x="180" y="26" text-anchor="middle" class="ph-title">Softmax：分数 → 权重</text>
+        {#each cols as c, i}
+          {@const x = 48 + i * 66}
+          <rect x={x - 30} y="44" width="60" height="30" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x={x} y="64" text-anchor="middle">{c.t.replace(/^ /, '␣')}</text>
+          <text x={x} y="122" text-anchor="middle">{scores[4][i].toFixed(1)}</text>
+          <text x={x} y="174" text-anchor="middle">{expScores[i].toFixed(2)}</text>
+          {@const h = w[i] * 90}
+          <rect x={x - 15} y={424 - h} width="30" height={h} rx="3" fill={COLOR.k[1]} opacity={0.35 + 0.65 * w[i]} />
+          <text x={x} y={416 - h} text-anchor="middle">{w[i].toFixed(2)}</text>
+        {/each}
+        <text x="16" y="102">第 4 步的分数</text>
+        <text x="16" y="154">先变成正数（e^分数）</text>
+        <text x="16" y="204">e = 2.718…；^ 表示几次方</text>
+        <text x="16" y="230">2^3 = 2×2×2；小数次方用计算工具</text>
+        <text x="16" y="260">五个正数合计 = {expTotal.toFixed(2)}</text>
+        <text x="16" y="288">权重 = 自己的正数 ÷ {expTotal.toFixed(2)}</text>
+        <text x="16" y="318">权重表示每列占多少</text>
+        <line x1="16" y1="424" x2="344" y2="424" stroke="var(--line)" />
+        <text x="16" y="456">␣France：{expScores[3].toFixed(2)} ÷ {expTotal.toFixed(2)}，约为 {w[3].toFixed(2)}</text>
+        <text x="16" y="482">图中数四舍五入</text>
+        <text x="16" y="506">0.06 + 0.26 + 0.05 + 0.53 + 0.10 = 1.00</text>
+        <text x="16" y="540">下一步：按这些权重混合五列 value</text>
+      {:else}
       <defs>
         <marker id="intro-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
           <path d="M 0 0 L 6 3 L 0 6 z" fill="var(--accent)" />
@@ -201,7 +238,7 @@
 
       <!-- Lower panel: scores and weights for the attending token -->
       {#if cur.attend !== undefined && (cur.scores || cur.weights)}
-        <g transition:fade={{ duration: zhTally ? 0 : 250 }}>
+        <g transition:fade={{ duration: zhTally || zhWeights ? 0 : 250 }}>
           {#if zhTally}
             <text x="16" y={LOW + 16} class="rowlabel">分数：q₆ · kⱼ</text>
             {#each cols as c, i}
@@ -227,15 +264,28 @@
               {/each}
             {/if}
             {#if cur.weights}
-              <text x="16" y={BAR_BASE - 4} class="rowlabel">softmax</text>
+              {#if zhWeights}
+                <text x="16" y={LOW + 42} class="rowlabel">变正数 e^分数</text>
+                {#each cols.slice(0, cur.attend + 1) as c, i}
+                  <text x={c.cx} y={LOW + 42} text-anchor="middle" class="num">{expScores[i].toFixed(2)}</text>
+                {/each}
+                <text x="16" y={LOW + 66} class="legend">五个正数合计 = {expTotal.toFixed(2)} · 权重 = 自己的正数 ÷ {expTotal.toFixed(2)}</text>
+                <text x="16" y={LOW + 86} class="legend">e = 2.718… · ^ 表示几次方，如 2^3 = 2×2×2 · 小数次方用计算工具</text>
+              {/if}
+              <text x="16" y={BAR_BASE - 4} class="rowlabel">{zhWeights ? '权重 wⱼ' : 'softmax'}</text>
               {#each cols.slice(0, cur.attend + 1) as c, i}
-                {@const h = w[i] * BAR_MAX}
-                <g in:fly={{ y: 10, delay: i * 60, duration: 300 }}>
+                {@const h = w[i] * (zhWeights ? 34 : BAR_MAX)}
+                <g in:fly={zhWeights ? { duration: 0 } : { y: 10, delay: i * 60, duration: 300 }}>
                   <rect x={c.cx - BAR_W / 2} y={BAR_BASE - h} width={BAR_W} height={h} rx="3" fill={COLOR.k[1]} opacity={0.35 + 0.65 * w[i]} />
                   <text x={c.cx} y={BAR_BASE - h - 6} text-anchor="middle" class="num">{w[i].toFixed(2)}</text>
                 </g>
               {/each}
               <line x1={cols[0].x} y1={BAR_BASE + 0.5} x2={cols[cur.attend].x + cols[cur.attend].w} y2={BAR_BASE + 0.5} stroke="var(--line)" />
+              {#if zhWeights}
+                <text x="16" y={H - 24} class="num">␣France：{expScores[3].toFixed(2)} ÷ {expTotal.toFixed(2)}，约为 {w[3].toFixed(2)}（图中数四舍五入）</text>
+                <text x={W - 16} y={H - 24} text-anchor="end" class="num">0.06 + 0.26 + 0.05 + 0.53 + 0.10 = 1.00</text>
+                <text x={W / 2} y={H - 6} text-anchor="middle" class="legend">下一步：按这些权重混合五列 value</text>
+              {/if}
             {/if}
           {/if}
         </g>
@@ -302,6 +352,7 @@
           <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(`a head is one set of the three matrices, drawn here once · Llama-3-8B's ${HEADS} query heads share ${KV_HEADS} sets of k, v, ${HEADS / KV_HEADS} each (chapter 14)`, `一个 head 就是这三个矩阵的一组，这里只画一次 · Llama-3-8B 的 ${HEADS} 个 query head 共享 ${KV_HEADS} 组 k, v，每组 ${HEADS / KV_HEADS} 个（第 14 章）`)}</text>
         </g>
       {/if}
+      {/if}
     </svg>
   </div>
 
@@ -319,6 +370,8 @@
   .example-hit:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
   .badge { font-family: var(--mono); font-size: 10px; font-weight: 700; }
   .num { font-family: var(--mono); font-size: 10.5px; fill: var(--fg); }
+  .phone-weights text { font-family: var(--mono); font-size: 12px; fill: var(--fg); }
+  .phone-weights .ph-title { font-family: var(--sans); font-size: 16px; font-weight: 650; }
   .tag.new { fill: var(--gen); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; font-size: 9px; }
   rect.pulse { animation: pulse 700ms ease-in-out 2; }
   @keyframes pulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.3 } }
