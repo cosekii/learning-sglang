@@ -256,6 +256,12 @@ $$
 
 序列现在是 791、6864、315、9822、374、12366、13。
 
+### 源码依据与教学边界
+
+本页下方「同一个循环，用代码写」用 `ids.append(next_id)` 把选中的编号接到末尾。[zero-to-sglang 第 2 部分第 3 章代码篇 §4.2](https://github.com/datawhalechina/zero-to-sglang/blob/bcf0cd82b9d1a058e5211d56431f14efd99eaf12/course-material/ch/part2/%E7%AC%AC3%E7%AB%A0_%E5%89%8D%E5%90%91%E4%B8%8E%E7%94%9F%E6%88%90_%E4%BB%A3%E7%A0%81.md) 的无 KV Cache 教学循环也用 `torch.cat` 追加，再把完整前缀交给下一轮；这正好支持本图的「下一轮读全部 7 段」。
+
+真实 SGLang 同样先追加输出，再用缓存避免整段重算。固定版本 [`sgl-project/sglang@ba76f34`](https://github.com/sgl-project/sglang/commit/ba76f34b85a4b77d765ab96a82e3cc6eb804cb96) 的 decode 提交路径把 `next_token_id` 加入 `req.output_ids`（[`batch_result_processor.py:1230-1249`](https://github.com/sgl-project/sglang/blob/ba76f34b85a4b77d765ab96a82e3cc6eb804cb96/python/sglang/srt/managers/scheduler_components/batch_result_processor.py#L1230-L1249)）；`Req.refresh_fill_ids` 维护 `origin_input_ids + output_ids`（[`schedule_batch.py:1150-1171`](https://github.com/sgl-project/sglang/blob/ba76f34b85a4b77d765ab96a82e3cc6eb804cb96/python/sglang/srt/managers/schedule_batch.py#L1150-L1171)）。实际 batch 只取 `prefix_len` 后的输入（[`schedule_batch.py:2414-2417`](https://github.com/sgl-project/sglang/blob/ba76f34b85a4b77d765ab96a82e3cc6eb804cb96/python/sglang/srt/managers/schedule_batch.py#L2414-L2417)），不要把本章的无缓存示例当成真实 decode 的整段重算。
+
 ### 每轮都是同样三步
 
 | 轮 | 前向 | 选择 | 追加 | 序列长度 |
@@ -264,7 +270,7 @@ $$
 | 2 | 第 6 步 | 第 7 步 | 第 8 步 | 6 → 7 |
 | 3 | 第 9 步 | 第 10 步 | 第 11 步（停止） | 7 |
 
-轮与轮之间唯一的区别是序列长度。
+这三轮都重复「前向、选择、追加」，每轮输入都比上一轮多 1 个 id。第 3 轮选中 EOS 后停止，不再追加。
 
 ### 接下来
 

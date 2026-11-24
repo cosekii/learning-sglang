@@ -76,7 +76,7 @@
           ? `<b>停止。</b>把 id 解码回文本；推理先分词，再循环计算、选择、追加，直到 EOS。`
           : i === 0
             ? `<b>追加：</b>把 ␣Paris 接到末尾，下一轮读全部 ${seq.length} 段。边猜边接，直到「结束」，就叫「自回归」。`
-            : `把句号接到末尾，${seq.length - 1} 段变 ${seq.length} 段。下一轮仍读全部 ${seq.length} 段。`,
+            : `把句号接到末尾，${seq.length - 1} 段变 ${seq.length} 段。普通句号不等于整段结束，所以下一轮仍读全部 ${seq.length} 段。`,
       });
     });
     const counts = rounds.map((_, r) => prompt.length + r);
@@ -106,6 +106,7 @@
     return () => query.removeEventListener('change', update);
   });
   const phoneForward = $derived(phone && step === 2 && $lang === 'zh');
+  const phoneAppend = $derived(phone && step === 7 && $lang === 'zh');
   const phoneDone = $derived(phone && step === 10 && $lang === 'zh');
   const phoneTally = $derived(phone && step === 11 && $lang === 'zh');
 
@@ -143,8 +144,35 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox={phoneForward || phoneDone || phoneTally ? '0 0 360 570' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Autoregressive generation, step {step + 1}" class:phone-forward={phoneForward} class:phone-done={phoneDone} class:phone-tally={phoneTally}>
-      {#if phoneForward}
+    <svg viewBox={phoneAppend ? '0 0 360 440' : phoneForward || phoneDone || phoneTally ? '0 0 360 570' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Autoregressive generation, step {step + 1}" class:phone-forward={phoneForward} class:phone-append={phoneAppend} class:phone-done={phoneDone} class:phone-tally={phoneTally}>
+      {#if phoneAppend}
+        <text x="16" y="22" class="label">把句号接到末尾：6 段变 7 段</text>
+        <rect x="16" y="32" width="10" height="10" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="32" y="41" class="note">原输入 5 段</text>
+        <rect x="158" y="32" width="10" height="10" rx="2" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x="174" y="41" class="note">模型选出的 token</text>
+        {#each prompt as tok, i}
+          <rect x={16 + i * 66} y="58" width="64" height="30" rx="6" fill={fill(tok.kind)} stroke={stroke(tok.kind)} stroke-width="1.5" />
+          <text x={48 + i * 66} y="78" text-anchor="middle" class="tok">{tok.text.replace(/^ /, '␣')}</text>
+          <text x={48 + i * 66} y="103" text-anchor="middle" class="id">{tok.id}</text>
+        {/each}
+        <rect x="16" y="122" width="120" height="30" rx="6" fill={fill('gen')} stroke={stroke('gen')} stroke-width="1.5" />
+        <text x="76" y="142" text-anchor="middle" class="tok">␣Paris</text>
+        <text x="76" y="167" text-anchor="middle" class="id">12366</text>
+        <rect x="146" y="122" width="54" height="30" rx="6" fill={fill('gen')} stroke={stroke('gen')} stroke-width="1.5" />
+        <text x="173" y="142" text-anchor="middle" class="tok">.</text>
+        <text x="173" y="167" text-anchor="middle" class="id">13</text>
+        <text x="210" y="140" class="note">← 新接的第 7 段</text>
+        <text x="16" y="194" class="note">第 7 步选中句号：0.71 = 71%，可能性最大</text>
+        <path d="M 16 216 V 228 H 344 V 216 M 180 228 V 250" fill="none" stroke="var(--fg)" stroke-width="2" />
+        <polygon points="175,248 185,248 180,256" fill="var(--fg)" />
+        <rect x="40" y="260" width="280" height="66" rx="10" class="model neutral-active" />
+        <text x="180" y="286" text-anchor="middle" class="model-title">下一轮：上面 7 段一起进入模型</text>
+        <text x="180" y="312" text-anchor="middle" class="model-sub">读完整序列，不只读句号</text>
+        <text x="180" y="360" text-anchor="middle" class="note">791、6864、315、9822、374、12366、13</text>
+        <text x="180" y="388" text-anchor="middle" class="note">本章最简示例没存旧结果，所以下一轮全部重算</text>
+        <text x="180" y="420" text-anchor="middle" class="note">普通句号不等于整段结束；下一步继续猜</text>
+      {:else if phoneForward}
         <text x="16" y="22" class="label">序列（5 个 token）</text>
         <rect x="206" y="12" width="10" height="10" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
         <text x="222" y="21" class="note">蓝框 = 输入 5 段</text>
@@ -348,6 +376,8 @@
               <path d="M {x + w / 2} {seqY + tokH + 18} V 108 H {W / 2} V {modelY - 6}"
                     class="wire active neutral-active" />
             {/each}
+          {:else if step === 7 && $lang === 'zh'}
+            <path d="M {layout[0].x} 92 V 96 H {seqEndX} V 92 M {W / 2} 96 V {modelY - 6}" class="wire" />
           {:else}
             <path d="M {seqEndX + 4} {seqY + tokH / 2} H {seqEndX + 22} V {seqY + tokH + 24} H {W / 2} V {modelY - 6}"
                   class="wire" class:active={cur.phase === 'forward'} class:neutral-active={(step === 5 || step === 8) && $lang === 'zh'} />
@@ -512,10 +542,10 @@
 </figure>
 
 <style>
-  .phone-forward .label, .phone-done .label, .phone-tally .label { font-size: 12px; }
-  .phone-forward .note, .phone-done .note, .phone-tally .note { font-size: 13px; }
-  .phone-forward .id, .phone-forward .model-sub, .phone-done .id, .phone-tally .id { font-size: 12px; }
-  .phone-forward .note, .phone-forward .id, .phone-forward .model-sub, .phone-done .note, .phone-done .id, .phone-tally .note, .phone-tally .id { fill: var(--fg); }
+  .phone-forward .label, .phone-append .label, .phone-done .label, .phone-tally .label { font-size: 12px; }
+  .phone-forward .note, .phone-append .note, .phone-done .note, .phone-tally .note { font-size: 13px; }
+  .phone-forward .id, .phone-forward .model-sub, .phone-append .id, .phone-append .model-sub, .phone-done .id, .phone-tally .id { font-size: 12px; }
+  .phone-forward .note, .phone-forward .id, .phone-forward .model-sub, .phone-append .note, .phone-append .id, .phone-append .model-sub, .phone-done .note, .phone-done .id, .phone-tally .note, .phone-tally .id { fill: var(--fg); }
   .label { font-size: 11px; fill: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
   .tok { font-family: var(--mono); font-size: 13px; fill: var(--fg); }
   .id { font-family: var(--mono); font-size: 10.5px; fill: var(--muted); }

@@ -239,6 +239,12 @@ Step 8 appends `.` to the sequence.
 
 The sequence is now 791, 6864, 315, 9822, 374, 12366, 13.
 
+### Source and teaching boundary
+
+The page's "same loop, in code" section uses `ids.append(next_id)` to add the picked id. The no-KV-cache teaching loop in [zero-to-sglang Part II Chapter 3, code walkthrough §4.2](https://github.com/datawhalechina/zero-to-sglang/blob/bcf0cd82b9d1a058e5211d56431f14efd99eaf12/course-material/eng/part2/Chapter3_Forward-Pass-and-Generation_code.md) likewise appends with `torch.cat` before passing the whole prefix to the next round. That is the model behind this stage's "read all 7 next".
+
+SGLang also appends the output first, but its cache avoids recomputing the whole prefix. In pinned revision [`sgl-project/sglang@ba76f34`](https://github.com/sgl-project/sglang/commit/ba76f34b85a4b77d765ab96a82e3cc6eb804cb96), the decode commit path extends `req.output_ids` with `next_token_id` ([`batch_result_processor.py:1230-1249`](https://github.com/sgl-project/sglang/blob/ba76f34b85a4b77d765ab96a82e3cc6eb804cb96/python/sglang/srt/managers/scheduler_components/batch_result_processor.py#L1230-L1249)), and `Req.refresh_fill_ids` maintains `origin_input_ids + output_ids` ([`schedule_batch.py:1150-1171`](https://github.com/sgl-project/sglang/blob/ba76f34b85a4b77d765ab96a82e3cc6eb804cb96/python/sglang/srt/managers/schedule_batch.py#L1150-L1171)). A real batch takes only the input after `prefix_len` ([`schedule_batch.py:2414-2417`](https://github.com/sgl-project/sglang/blob/ba76f34b85a4b77d765ab96a82e3cc6eb804cb96/python/sglang/srt/managers/schedule_batch.py#L2414-L2417)); this chapter's whole-prefix loop is the no-cache teaching simplification.
+
 ### The same three steps every round
 
 | Round | Forward | Pick | Append | Sequence length |
@@ -247,7 +253,7 @@ The sequence is now 791, 6864, 315, 9822, 374, 12366, 13.
 | 2 | Step 6 | Step 7 | Step 8 | 6 → 7 |
 | 3 | Step 9 | Step 10 | Step 11 (stop) | 7 |
 
-The only thing that differs between rounds is the length of the sequence.
+These three rounds repeat the same forward, pick, and append loop, with one more input id each round. Round 3 stops after picking EOS instead of appending it.
 
 ### Next
 
