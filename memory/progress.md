@@ -4,10 +4,10 @@
 
 ## 本轮记录
 
-- 本轮修旧：完成 Learning SGLang 第 14 章第 6 步。改前易读 **10/12**、原分 **23/24**、**0 洞**；最终易读 **12/12**、原分 **24/24**、**0 洞**。R1：「MHA 是一个 query 配一份 K/V，GQA 是四个共用一份，MLA 是 128 个共用一份；前两种宽度都是 128，可以共用 kernel，MLA 的 576 和 512 需要自己的 kernel。」
-- 双语深入讲解补齐 Llama-2-7B、Llama-3-8B、DeepSeek-V3 的论文、固定版本配置与实现出处；主人允许只精简本步两句英文 caption，中文手机增加可读专版。第 14 章章均分由 **23.62** 升为 **23.69 / 24**。
-- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch14-repair-next/final/`。`build`、本章 `transcript`、第 6 步 `readability`、中文手机字号硬门、全章手机布局、`deep-check 14`、`zh-check` 均通过；所有新增来源链接返回 HTTP 200。
-- 本轮类型：**修旧**；下一普通轮转为**新书**。
+- 本轮新书：完成 Inside Voxt 第 1 章第 2 步。最终易读 **12/12**、原分 **24/24**、**0 洞**。R1：「我按一下键，这句话就挂着 A 标签，从声音变成文字，再把『嗯』去掉，最后显示出来并保存。」
+- 把 session A 放上按键、helper、声音变文字、整理、显示和保存的完整路线；用同一句展示整理前后，写清结果小窗的条件及历史保存原话和整理结果。公开基线为 `sglang-omni@14014b833299c6158a5daa88e1e0740cf7efe606`，与本轮 `origin/main` 一致。
+- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch01-s02/final/`。`build`、本章 `transcript`、第 2 步 `readability`、中文手机字号硬门、全章中英手机布局、`deep-check 01`、`zh-check` 均通过；本地目标页返回 HTTP 200。
+- 本轮类型：**新书**；下一普通轮转为**修旧**。
 
 ## Learning SGLang
 
@@ -88,11 +88,11 @@
 
 ## Inside Voxt
 
-规划完成：`docs/plan-voxt.md` 共 3 部分、16 章；第 1 章已制作 1 步。事实来源只使用 `sglang-omni` 的 `origin/main` 公开代码和文档。
+规划完成：`docs/plan-voxt.md` 共 3 部分、16 章；第 1 章已制作 2 步。事实来源只使用 `sglang-omni` 的 `origin/main` 公开代码和文档。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
-| 01 | one-dictation | 在做第 2 步；第 1 步易读满分 | 24.00 |
+| 01 | one-dictation | 在做第 3 步；前 2 步易读满分 | 24.00 |
 | 02 | helper-permissions-hotkeys | 规划 | — |
 | 03 | microphone-to-voice-frames | 规划 | — |
 | 04 | speech-recognition-routes | 规划 | — |
