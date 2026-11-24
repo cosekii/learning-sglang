@@ -4,10 +4,11 @@
 
 ## 本轮记录
 
-- 本轮修旧：Learning SGLang 第 2 章补上 zero-to-sglang 第 1 部分第 1、2 章的中英课程链接，四个链接均返回 HTTP 200。
-- 第 7 步独立冷读补评为易读 **8/12**、独立原分复核 **22/24**，桌面 **4 洞**、360 px 手机 **6 洞**。格子含义、五个输出、不能看后文的理由和「前向」未答清，手机另有两项显示洞。英文首句 16 词，完整过门须最小精简受保护英文；本轮不提交未过门的步骤改版，已列入 `docs/ideas.md` 和 Orca #8 待主人定。
-- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch02-s07/`。`build`、`deep-check 02`、`zh-check` 均通过；全站手机检查在 360、390、430 px 无布局破坏，另报告 588 个非阻断小字审计项。
-- 本轮类型：**修旧**；下一普通轮转为**新书**。
+- 本轮新书：Inside Voxt 第 1 章新增第 3 步「迟到结果的检查」，对照 `sglang-omni@48ee40b2563492de95efc952a0c7470db087d8a9`。
+- 主图用同一布局比较晚到的 A 与 B：A 显示在自己的结果小窗并保存，不写进 B；B 显示在打字位置或自己的结果小窗。双语深入讲解补清前台与后台 `run` 的更新路径。
+- 第 3 步最终独立冷读为易读 **12/12**、原分 **24/24**、**0 洞**。构建、本章硬门和截图均通过；全站手机检查无布局破坏，仍有 588 个非阻断小字审计项。
+- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch01-s03/final/` 和 `final-checks/`。
+- 本轮类型：**新书**；下一普通轮转为**修旧**。
 
 ## Learning SGLang
 
@@ -88,11 +89,11 @@
 
 ## Inside Voxt
 
-规划完成：`docs/plan-voxt.md` 共 3 部分、16 章；第 1 章已制作 2 步。事实来源只使用 `sglang-omni` 的 `origin/main` 公开代码和文档。
+规划完成：`docs/plan-voxt.md` 共 3 部分、16 章；第 1 章已制作 3 步。事实来源只使用 `sglang-omni` 的 `origin/main` 公开代码和文档。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
-| 01 | one-dictation | 在做第 3 步；前 2 步易读满分 | 24.00 |
+| 01 | one-dictation | 在做第 4 步；前 3 步易读满分 | 24.00 |
 | 02 | helper-permissions-hotkeys | 规划 | — |
 | 03 | microphone-to-voice-frames | 规划 | — |
 | 04 | speech-recognition-routes | 规划 | — |

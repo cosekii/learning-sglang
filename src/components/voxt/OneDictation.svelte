@@ -14,6 +14,9 @@
   }, {
     caption: 'One key press starts session A; its sentence becomes text on screen and in history.',
     captionZh: '按一下键启动 session A，这句话变成文字，显示并保存。',
+  }, {
+    caption: "Late A appears in A's result window and is saved. B appears where you type or in B's result window.",
+    captionZh: '晚到的 A 显示在自己的结果小窗，也保存下来。B 显示在打字位置或自己的结果小窗。',
   }];
   const route = [
     { name: 'YOU PRESS', nameZh: '你按一下', detail: 'one key', detailZh: '一个键' },
@@ -38,15 +41,19 @@
   });
   const cur = $derived(steps[step]);
   const demoDictations = Array.from({ length: DEMO_DICTATION_COUNT }, (_, i) => i + 1);
+  const gateRows = [{ id: 'A', ok: false }, { id: 'B', ok: true }];
   const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 0 ? 440 : 640) : 390);
 </script>
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={step === 0 ? 'Two dictations get two different session IDs so their results stay with the right dictation' : 'A hotkey starts session A, then the sentence passes through helper, recognition, cleanup, delivery and history'}>
+    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={step === 0 ? 'Two dictations get two different session IDs so their results stay with the right dictation' : step === 1 ? 'A hotkey starts session A, then the sentence passes through helper, recognition, cleanup, delivery and history' : "Late session A goes to its own result window and saved results, while B goes where you type or to B's result window"}>
       <defs>
         <marker id="session-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
           <path d="M0,0 L8,4 L0,8 z" fill="var(--muted)" />
+        </marker>
+        <marker id="current-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 z" fill="var(--accent)" />
         </marker>
       </defs>
       {#if step === 0}
@@ -86,7 +93,7 @@
           <text x="150" y="391" text-anchor="middle" class="formula">A ≠ B</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('A and B stand for two different real session IDs.', 'A、B 代表两个不同的真实 session ID。')}</text>
-      {:else}
+      {:else if step === 1}
         <text x={W / 2} y={phone ? 28 : 34} text-anchor="middle" class="title">{t('ONE SENTENCE · ONE TAG', '一句话 · 一个标签')}</text>
         <rect x={W / 2 - 66} y={phone ? 44 : 52} width="132" height="32" rx="16" fill="var(--accent-soft)" />
         <text x={W / 2} y={phone ? 65 : 74} text-anchor="middle" class="session">session ID = A</text>
@@ -119,6 +126,69 @@
         <text x={phone ? 70 : 207} y={phone ? 578 : 307} class="route-detail">{t("= this sentence's session ID", '= 这句话的 session ID')}</text>
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('Text stays here by choice or if insertion fails.', '你选小窗，或贴不进去时，文字留在这里。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('This succeeded; clean-up and history are on.', '这次听写成功，并开启了整理和历史。')}</text>
+      {:else}
+        <text x={W / 2} y={phone ? 24 : 28} text-anchor="middle" class="title">{t(phone ? 'LATE A STAYS WITH A' : 'LATE A STAYS WITH A, NOT B', phone ? '晚到的 A 留在 A' : '晚到的 A 留在 A，不写进 B')}</text>
+        {#if phone}
+          <text x="150" y="46" text-anchor="middle" class="title">{t('NOT B', '不写进 B')}</text>
+        {/if}
+        <text x={W / 2} y={phone ? 69 : 55} text-anchor="middle" class="route-detail">{t('A starts first → B starts later', 'A 先开始 → B 后开始')}</text>
+        <text x={W / 2} y={phone ? 89 : 75} text-anchor="middle" class="route-detail">{t('A is tidying text; its result arrives late', 'A 正在整理文字，结果稍后才到')}</text>
+        {#each gateRows as row, i}
+          {#if !phone}
+            {@const y = 100 + i * 125}
+            <rect x="20" {y} width="180" height="88" rx="12" fill={row.ok ? 'var(--accent-soft)' : 'var(--bg)'} stroke={row.ok ? 'var(--accent)' : 'var(--line)'} />
+            <text x="110" y={y + 28} text-anchor="middle" class={row.ok ? 'session' : 'label'}>session {row.id}</text>
+            <text x="110" y={y + 52} text-anchor="middle" class="route-detail">{row.ok ? t('current result', '当前结果') : t('late result', '晚到的结果')}</text>
+            {#if !row.ok}
+              <text x="110" y={y + 75} text-anchor="middle" class="route-detail">{t("→ A's window + saved results", '→ A 的结果小窗 + 保存记录')}</text>
+            {/if}
+            <line x1="200" y1={y + 44} x2="245" y2={y + 44} stroke="var(--muted)" stroke-width="2" marker-end="url(#session-arrow)" />
+            <rect x="255" {y} width="210" height="88" rx="12" fill="var(--bg)" stroke="var(--line)" />
+            <text x="360" y={y + 23} text-anchor="middle" class="route-name">{t('SAME SESSION?', '同一个 session 吗？')}</text>
+            <text x="360" y={y + 50} text-anchor="middle" class={row.ok ? 'check yes' : 'check no'}>{row.id} {row.ok ? '=' : '≠'} B</text>
+            <text x="360" y={y + 73} text-anchor="middle" class={row.ok ? 'check yes' : 'check no'}>{row.ok ? t('write into B', '写进 B') : t('keep out of B', '不写进 B')}</text>
+            {#if row.ok}
+              <line x1="465" y1={y + 44} x2="515" y2={y + 44} stroke="var(--accent)" stroke-width="3" marker-end="url(#current-arrow)" />
+            {:else}
+              <line x1="465" y1={y + 44} x2="495" y2={y + 44} stroke="var(--muted)" stroke-width="2" />
+              <path d="M500 {y + 36} l16 16 M516 {y + 36} l-16 16" stroke="var(--eos)" stroke-width="3" />
+            {/if}
+            <rect x="525" {y} width="170" height="88" rx="12" fill={row.ok ? 'var(--accent-soft)' : 'var(--bg)'} stroke={row.ok ? 'var(--accent)' : 'var(--line)'} stroke-dasharray={row.ok ? undefined : '5 4'} />
+            <text x="610" y={y + 23} text-anchor="middle" class="route-name">{t("B'S RESULT", 'B 这次的结果')}</text>
+            <text x="610" y={y + 47} text-anchor="middle" class="route-detail">{t('typing spot or result window', '打字位置或结果小窗')}</text>
+            <text x="610" y={y + 70} text-anchor="middle" class="route-detail">{row.ok ? t('B’s text appears', '显示 B 的文字') : t('no A here', 'A 写不进来')}</text>
+          {:else}
+            {@const y = 105 + i * 245}
+            <rect x="35" {y} width="230" height="46" rx="11" fill={row.ok ? 'var(--accent-soft)' : 'var(--bg)'} stroke={row.ok ? 'var(--accent)' : 'var(--line)'} />
+            <text x="150" y={y + 18} text-anchor="middle" class={row.ok ? 'session' : 'label'}>session {row.id}</text>
+            <text x="150" y={y + 37} text-anchor="middle" class="route-detail">{row.ok ? t('current result', '当前结果') : t('late → result window + saved results', '晚到 → 结果小窗 + 保存记录')}</text>
+            <line x1="150" y1={y + 46} x2="150" y2={y + 58} stroke="var(--muted)" stroke-width="2" marker-end="url(#session-arrow)" />
+            <rect x="35" y={y + 62} width="230" height="64" rx="11" fill="var(--bg)" stroke="var(--line)" />
+            <text x="150" y={y + 84} text-anchor="middle" class="route-name">{t('SAME SESSION?', '同一个 session 吗？')}</text>
+            <text x="150" y={y + 110} text-anchor="middle" class={row.ok ? 'check yes' : 'check no'}>{row.id} {row.ok ? '=' : '≠'} B · {row.ok ? t('write into B', '写进 B') : t('keep out of B', '不写进 B')}</text>
+            {#if row.ok}
+              <line x1="150" y1={y + 126} x2="150" y2={y + 146} stroke="var(--accent)" stroke-width="3" marker-end="url(#current-arrow)" />
+            {:else}
+              <line x1="150" y1={y + 126} x2="150" y2={y + 134} stroke="var(--muted)" stroke-width="2" />
+              <path d="M142 {y + 134} l16 16 M158 {y + 134} l-16 16" stroke="var(--eos)" stroke-width="3" />
+            {/if}
+            <rect x="35" y={y + 150} width="230" height="60" rx="11" fill={row.ok ? 'var(--accent-soft)' : 'var(--bg)'} stroke={row.ok ? 'var(--accent)' : 'var(--line)'} stroke-dasharray={row.ok ? undefined : '5 4'} />
+            <text x="150" y={y + 169} text-anchor="middle" class="route-name">{t("B'S RESULT", 'B 这次的结果')}</text>
+            <text x="150" y={y + 187} text-anchor="middle" class="route-detail">{t('typing spot or result window', '打字位置或结果小窗')}</text>
+            <text x="150" y={y + 203} text-anchor="middle" class="route-detail">{row.ok ? t('B’s text appears', '显示 B 的文字') : t('no A here', 'A 写不进来')}</text>
+          {/if}
+        {/each}
+        {#if !phone}
+          <text x="360" y="338" text-anchor="middle" class="route-detail"><tspan fill="var(--eos)">× {t('A keeps out of B', 'A 不写进 B')}</tspan><tspan dx="24" fill="var(--accent)">✓ {t('B writes into B', 'B 写进 B')}</tspan></text>
+          <text x="360" y="352" text-anchor="middle" class="footnote">{t("Both rows show B's result. You can choose the result window.", '两行都是 B 这次的结果；你可选结果小窗。')}</text>
+          <text x="360" y="368" text-anchor="middle" class="footnote">{t('If insertion fails, text stays in the window.', '能贴就到打字位置，贴不进去就留在结果小窗。')}</text>
+          <text x="360" y="384" text-anchor="middle" class="footnote">{t('Clean-up succeeds and saving is on in this example.', '本例整理成功，并开启保存记录。')}</text>
+        {:else}
+          <text x="150" y="574" text-anchor="middle" class="route-detail"><tspan fill="var(--eos)">× {t('A keeps out of B', 'A 不写进 B')}</tspan><tspan dx="18" fill="var(--accent)">✓ {t('B writes into B', 'B 写进 B')}</tspan></text>
+          <text x="150" y="594" text-anchor="middle" class="footnote">{t("Both rows show B's result. You can choose the window.", '两行都是 B 这次的结果；你可选结果小窗。')}</text>
+          <text x="150" y="612" text-anchor="middle" class="footnote">{t('If insertion fails, text stays in the window.', '能贴就到打字位置，贴不进去就留在结果小窗。')}</text>
+          <text x="150" y="630" text-anchor="middle" class="footnote">{t('Clean-up succeeds and saving is on in this example.', '本例整理成功，并开启保存记录。')}</text>
+        {/if}
       {/if}
     </svg>
   </div>
@@ -135,8 +205,11 @@
   .route-name { font-size: 11px; font-weight: 700; fill: var(--fg); }
   .route-detail { font-size: 11px; fill: var(--fg); }
   .route-tag { font-family: var(--mono); font-size: 13px; font-weight: 700; fill: var(--accent); }
+  .check { font-family: var(--mono); font-size: 14px; font-weight: 700; }
+  .check.yes { fill: var(--accent); }
+  .check.no { fill: var(--eos); }
   @media (max-width: 600px) {
     .title { font-size: 14px; }
-    .label, .session, .rowlabel, .footnote, .route-name, .route-detail { font-size: 12px; }
+    .label, .session, .rowlabel, .footnote, .route-name, .route-detail, .check { font-size: 12px; }
   }
 </style>

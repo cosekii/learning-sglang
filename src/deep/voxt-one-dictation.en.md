@@ -99,3 +99,58 @@ Public baseline: `sglang-omni@14014b833299c6158a5daa88e1e0740cf7efe606`. Paths a
 - Starting creates a run with a new ID: `Voxt/internal/session/manager.go:193-235`.
 - `run.main` joins recording, recognition, clean-up and delivery: `Voxt/internal/session/run.go:174-176,235-258`.
 - The history entry uses this run's ID, and its delivery field distinguishes insertion from the answer card: `Voxt/internal/session/run.go:446-460,476-484`.
+
+## Step 3 · Late A does not write into B
+
+> **In one line:** Late A appears in its own result window and is saved; it does not write into B's result.
+
+### On the stage
+
+- Time order: A starts first, B starts later; A is tidying text, and its result arrives late.
+- First row: `A ≠ B`, so A does not write into B. A appears in its own result window and its saved results.
+- Second row: `B = B`, so B writes into its own result.
+- Both rows show B's result on the right. You can choose the result window. Text also stays there if insertion where you type fails.
+- In this example, clean-up succeeds and saving is on. “Saved results” are the history you can view later.
+
+### The check
+
+$$
+\operatorname{write}(r,c) \iff r=c
+$$
+
+| Symbol | Meaning | Where it comes from |
+|---|---|---|
+| $r$ | The `run` carrying this result, the object for one dictation | The result's session |
+| $c$ | The `run` that owns this dictation's result now | B in this step |
+| $\operatorname{write}(r,c)$ | Whether the result can update B's result | The current path's identity check |
+
+Equality means the same `run`, not merely the same string attached to a result.
+
+### The numbers on the stage
+
+| Result's $r$ | Current $c$ | Same? | B's result |
+|---|---|---|---|
+| A | B | No | Do not write A |
+| B | B | Yes | Write B |
+
+A and B remain teaching stand-ins. The picture has no timing or performance numbers; its arrows show only a constructed arrival order.
+
+### The check in the source
+
+“B's result” is the teaching name for the current session's result, represented by the foreground snapshot. `Manager.update` receives the result's `run`. The current path requires `m.cur == r` and an unfinished run before updating and publishing the foreground snapshot. Otherwise it returns `false` without changing B's result. `Manager.end` performs the corresponding current-or-background identity check.
+
+A can register through `Background` while it composes text. It then updates its own `r.own` and publishes through `backgroundPub`, not B's foreground snapshot. Its history also uses A's own run ID. This example keeps Step 2's premises: clean-up succeeds and history is on. Late A therefore appears in its own result window and is saved rather than discarded.
+
+### Next
+
+Add cancellation to the same route: after A is cancelled, where do its late recognition or clean-up results stop?
+
+### Source
+
+Public baseline: `sglang-omni@48ee40b2563492de95efc952a0c7470db087d8a9`. Paths are relative to that repository.
+
+- A new session becomes the current run: `Voxt/internal/session/manager.go:193-235`.
+- Registering current and background runs: `Voxt/internal/session/manager.go:238-253`.
+- `Manager.update` identity checks, completion checks and publication paths: `Voxt/internal/session/manager.go:341-375`.
+- The corresponding checks in `Manager.end`: `Voxt/internal/session/manager.go:378-417`.
+- History uses this run's ID: `Voxt/internal/session/run.go:446-460`.

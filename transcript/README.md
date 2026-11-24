@@ -29,4 +29,4 @@ Read it to check wording and numbers across chapters without opening the compone
 | sglang | 21 | [Full duplex](21-full-duplex.md) | 8 |
 | omni | 01 | [From config to a runtime graph](omni/01-config-to-runtime.md) | 4 |
 | ml-sys | 01 | [Measure one inference request](ml-sys/01-measure-inference.md) | 3 |
-| voxt | 01 | [The journey of one sentence](voxt/one-dictation.md) | 2 |
+| voxt | 01 | [The journey of one sentence](voxt/one-dictation.md) | 3 |

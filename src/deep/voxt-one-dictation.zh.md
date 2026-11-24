@@ -99,3 +99,58 @@ $$
 - 快捷键启动后创建带新 ID 的 `run`：`Voxt/internal/session/manager.go:193-235`。
 - `run.main` 串起录音、识别、整理与交付：`Voxt/internal/session/run.go:174-176,235-258`。
 - 历史记录使用本次 `run` 的 ID，交付记录区分插入和答案卡：`Voxt/internal/session/run.go:446-460,476-484`。
+
+## 第 3 步 · 晚到的 A 不写进 B
+
+> **一句话：** 晚到的 A 显示在自己的结果小窗并保存下来，不写进 B 这次的结果。
+
+### 图上是什么
+
+- 时间顺序：A 先开始，B 后开始；A 正在整理文字，结果稍后才到。
+- 第一行：`A ≠ B`，A 不写进 B。A 显示在自己的结果小窗，并存进保存记录。
+- 第二行：`B = B`，B 写进自己这次的结果。
+- 两行右侧都是 B 这次的结果。你可选结果小窗；打字位置贴不进去时，文字也留在结果小窗。
+- 本例整理成功，并开启保存记录。「保存记录」就是以后能查看的历史。
+
+### 检查规则
+
+$$
+\operatorname{write}(r,c) \iff r=c
+$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $r$ | 带来这次结果的 `run`，也就是一次听写的运行对象 | 结果所属的 session |
+| $c$ | 此刻掌管这次结果的 `run` | 本步中是 B |
+| $\operatorname{write}(r,c)$ | 结果能否更新 B 这次的结果 | 当前路径的身份检查 |
+
+这里的等号表示「同一个 `run`」，不是只比较结果上附着的字符串。
+
+### 代入图上的数
+
+| 结果的 $r$ | 当前的 $c$ | 是否相同 | B 这次的结果 |
+|---|---|---|---|
+| A | B | 否 | 不写入 A |
+| B | B | 是 | 写入 B |
+
+A、B 仍是教学代称。图中没有耗时或性能数字，先后箭头只表示构造的到达顺序。
+
+### 源码里的检查
+
+「B 这次的结果」是当前 session 结果的教学叫法，对应前台 snapshot。`Manager.update` 收到结果所属的 `run` 后，当前路径要求 `m.cur == r` 且这个 `run` 尚未结束，才更新并发布前台 snapshot；否则返回 `false`，不改 B 这次的结果。`Manager.end` 也做当前或后台身份检查。
+
+正在整理文字的 A 可以通过 `Background` 登记为后台运行。此后它更新自己的 `r.own` 并走 `backgroundPub`，不是 B 的前台 snapshot；历史也使用 A 自己的 `run` ID。图中 A 沿用第 2 步的成功、整理和历史前提，所以晚到的 A 显示在自己的结果小窗并保存下来，并非被丢弃。
+
+### 接下来
+
+把取消放进同一条路线：A 被取消后，迟到的识别或整理结果在哪里停下？
+
+### 源码出处
+
+公开基线：`sglang-omni@48ee40b2563492de95efc952a0c7470db087d8a9`，路径均相对该仓库。
+
+- 新 session 成为当前 `run`：`Voxt/internal/session/manager.go:193-235`。
+- 当前与后台运行的登记：`Voxt/internal/session/manager.go:238-253`。
+- `Manager.update` 的身份、结束检查和两条发布路径：`Voxt/internal/session/manager.go:341-375`。
+- `Manager.end` 的同类检查：`Voxt/internal/session/manager.go:378-417`。
+- 历史使用本次 `run` 的 ID：`Voxt/internal/session/run.go:446-460`。
