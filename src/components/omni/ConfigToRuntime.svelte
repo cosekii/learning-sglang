@@ -10,6 +10,10 @@
     COLOCATED_PROCESS_GROUPS,
     COLOCATED_STAGE_COUNT,
     COLOCATED_PROCESS_COUNT,
+    COLOCATED_GPU_PROCESS_GROUPS,
+    COLOCATED_CPU_PROCESS_GROUPS,
+    COLOCATED_GPU_PROCESS_COUNT,
+    COLOCATED_CPU_PROCESS_COUNT,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -20,6 +24,9 @@
   }, {
     caption: `The ${COLOCATED_STAGE_COUNT} stages run in ${COLOCATED_PROCESS_COUNT} processes. talker_ar and code2wav share one.`,
     captionZh: `${COLOCATED_STAGE_COUNT} 个 stage 跑在 ${COLOCATED_PROCESS_COUNT} 个进程里。talker_ar 和 code2wav 共用一个。`,
+  }, {
+    caption: `${COLOCATED_GPU_PROCESS_COUNT} processes use GPU 0; ${COLOCATED_CPU_PROCESS_COUNT} use only CPU. ${COLOCATED_GPU_PROCESS_COUNT} + ${COLOCATED_CPU_PROCESS_COUNT} = ${COLOCATED_PROCESS_COUNT} processes.`,
+    captionZh: `${COLOCATED_GPU_PROCESS_COUNT} 个进程用 GPU 0，另外 ${COLOCATED_CPU_PROCESS_COUNT} 个只用 CPU。${COLOCATED_GPU_PROCESS_COUNT} + ${COLOCATED_CPU_PROCESS_COUNT} = ${COLOCATED_PROCESS_COUNT} 个进程。`,
   }];
   let step = $state(0);
   $effect(() => {
@@ -35,7 +42,7 @@
     query.addEventListener('change', update);
     return () => query.removeEventListener('change', update);
   });
-  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 1 ? 580 : 520) : 400);
+  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step > 0 ? 580 : 520) : 400);
   const cells = Array.from({ length: 100 }, (_, i) => ({ used: i < COLOCATED_USED_PERCENT }));
   const rowY = (i: number) => (phone ? 85 : 100) + i * (phone ? 32 : 36);
   const gridX = $derived(phone ? 90 : 460), gridY = $derived(phone ? 280 : 80);
@@ -48,7 +55,7 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={step === 0 ? "Five GPU stages declare 94 percent of one card's memory budget" : 'Seven stages run in six processes; talker_ar and code2wav share one'}>
+    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={step === 0 ? "Five GPU stages declare 94 percent of one card's memory budget" : step === 1 ? 'Seven stages run in six processes; talker_ar and code2wav share one' : `${COLOCATED_GPU_PROCESS_COUNT} processes use GPU 0 and ${COLOCATED_CPU_PROCESS_COUNT} use only CPU`}>
       {#if step === 0}
       <text x={phone ? 20 : 35} y="30" class="rowlabel">{t('Review · first book, Ch.19 Step 3', '复习 · 第 1 本 Ch.19 Step 3')}</text>
       <text x={phone ? 20 : 35} y="50" class="tag">{t(phone ? 'config file = startup list' : 'config file = the program’s startup list', '配置文件 = 程序启动时读的清单')}</text>
@@ -71,7 +78,7 @@
       <rect x={gridX + cell * 5 + 12} y={phone ? 455 : 340} width="12" height="12" rx="2" fill="white" stroke="var(--faint)" />
       <text x={gridX + cell * 5 + 30} y={phone ? 465 : 350} class="tag strong">{t(`unassigned: ${COLOCATED_FREE_PERCENT}%`, `未分：${COLOCATED_FREE_PERCENT}%`)}</text>
       <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Unassigned in this file, not measured free memory.', '配置文件未分配，不代表实际空闲。')}</text>
-      {:else}
+      {:else if step === 1}
       <defs>
         <marker id="process-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
           <path d="M0,0 L7,3.5 L0,7 z" fill="var(--muted)" />
@@ -127,6 +134,26 @@
         <text x={W / 2} y="538" text-anchor="middle" class="legend strong">{singleStageProcessCount} + 1 = {COLOCATED_PROCESS_COUNT} {t('processes', '个进程')}</text>
       {/if}
       <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(`This counts only the ${COLOCATED_PROCESS_COUNT} stage processes above.`, `这里只数上面 ${COLOCATED_PROCESS_COUNT} 个 stage 进程。`)}</text>
+      {:else}
+      <text x={phone ? 16 : 20} y="26" class="rowlabel">{t(phone ? 'Step 2 · device = GPU or CPU' : `Same ${COLOCATED_PROCESS_COUNT} processes as Step 2 · device = GPU or CPU`, phone ? `第 2 步 · 设备 = GPU 或 CPU` : `第 2 步的 ${COLOCATED_PROCESS_COUNT} 个进程 · 设备 = GPU 或 CPU`)}</text>
+      <rect x={phone ? 12 : 20} y={phone ? 48 : 52} width={phone ? 276 : 420} height={phone ? 282 : 278} rx="10" fill="var(--bg)" stroke="var(--accent)" stroke-width="2" />
+      <text x={phone ? 24 : 36} y={phone ? 72 : 78} class="rowlabel">GPU 0 · {t('one card', '同一张卡')}</text>
+      <text x={phone ? 276 : 424} y={phone ? 72 : 78} text-anchor="end" class="tag strong">{COLOCATED_GPU_PROCESS_COUNT} {t('processes', '个进程')}</text>
+      {#each COLOCATED_GPU_PROCESS_GROUPS as group, i}
+        <rect x={phone ? 24 : 36} y={(phone ? 86 : 92) + i * (phone ? 58 : 56)} width={phone ? 252 : 388} height="46" rx="7" fill="var(--bg)" stroke="var(--accent)" />
+        <text x={phone ? 36 : 50} y={(phone ? 86 : 92) + i * (phone ? 58 : 56) + 18} class="tag strong">{t('process', '进程')}: {group.name}</text>
+        <text x={phone ? 36 : 50} y={(phone ? 86 : 92) + i * (phone ? 58 : 56) + 36} class="mono">{group.stages.length > 1 ? 'stages' : 'stage'}: {group.stages.join(' + ')}</text>
+      {/each}
+      <rect x={phone ? 12 : 460} y={phone ? 346 : 52} width={phone ? 276 : 240} height={phone ? 160 : 278} rx="10" fill="var(--bg)" stroke="var(--line)" />
+      <text x={phone ? 24 : 476} y={phone ? 370 : 78} class="rowlabel">{t('CPU only', '只用 CPU')}</text>
+      <text x={phone ? 276 : 684} y={phone ? 370 : 78} text-anchor="end" class="tag strong">{COLOCATED_CPU_PROCESS_COUNT} {t('processes', '个进程')}</text>
+      {#each COLOCATED_CPU_PROCESS_GROUPS as group, i}
+        <rect x={phone ? 24 : 476} y={(phone ? 386 : 110) + i * (phone ? 52 : 80)} width={phone ? 252 : 208} height="46" rx="7" fill="var(--bg)" stroke="var(--line)" />
+        <text x={phone ? 36 : 490} y={(phone ? 386 : 110) + i * (phone ? 52 : 80) + 18} class="tag strong">{t('process', '进程')}: {group.name}</text>
+        <text x={phone ? 36 : 490} y={(phone ? 386 : 110) + i * (phone ? 52 : 80) + 36} class="mono">stage: {group.stages[0]}</text>
+      {/each}
+      <text x={W / 2} y={phone ? 532 : 360} text-anchor="middle" class="legend strong">{COLOCATED_GPU_PROCESS_COUNT} + {COLOCATED_CPU_PROCESS_COUNT} = {COLOCATED_PROCESS_COUNT} {t('processes', '个进程')}</text>
+      <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('One box is one process; the shared process still counts once.', '一框一个进程；共用进程仍只算一次。')}</text>
       {/if}
     </svg>
   </div>

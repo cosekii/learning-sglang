@@ -4,10 +4,10 @@
 
 ## 本轮记录
 
-- 本轮修旧：完成 Learning SGLang 第 2 章第 10 步中文整改，易读 **11→12**、原分 **22→24**、冷读 **2→0**。R1：「六个位置各用自己的那排数，算出三排新数；前五列是再算一遍，第六列是第一次算，总共算出十八排新数。」
-- 中文图标出前五列重算和第六列第一次算，用第 6 列展开三个公式，解释矩阵与三个 W，并写出 `6×3=18`；手机改为六行大字对应图。双语深入讲解补齐固定结构。
-- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch02-s08-fix/`。`build`、第 2 章 `transcript`、第 10 步 `readability`、中文手机字号硬门、全章手机布局、`deep-check 02`、第 2 章 `zh-check` 均通过；英文图与 caption 未改，英文截图和 transcript 哈希不变。
-- 第 2 章现为 **8/14** 步易读满分，章均分 **23.64 / 24**；第 3 步仍待主人定。本轮类型：**修旧**；下一普通轮转为**新书**，做 **Learning SGLang Omni**。
+- 本轮新书：完成 Learning SGLang Omni 第 1 章第 3 步，初稿易读 **11/12**、原分 **23/24**、**1 洞**；补写「设备 = GPU 或 CPU」后，最终易读 **12/12**、原分 **24/24**、**0 洞**。R1：「六个干活的小组里，四个一起用同一张 GPU 卡，另外两个只用 CPU，合起来还是六个。」
+- 图把第 2 步的六个进程按设备分组：四个共用一块 GPU 0，两个只用 CPU；`talker_ar` 的两个 stage 仍只算一个进程。数量从 `numbers.ts` 推导，双语深入讲解补齐配置来源和逐步衔接。
+- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-omni-ch01-s03/`。`build`、Omni 全章 `transcript`、第 3 步 `readability`、中文手机字号硬门、全章手机布局、`deep-check`、`zh-check` 均通过；第 1 本 transcript 哈希不变。
+- 本章已制作 **3 步**，**3/3** 步易读满分，章均分 **24.00 / 24**；继续制作第 4 步。本轮类型：**新书**；下一普通轮转为**修旧**。
 
 ## Learning SGLang
 
@@ -45,11 +45,11 @@
 
 ## Learning SGLang Omni
 
-规划完成：`docs/plan-omni.md` 共 3 部分、13 章；第 1 章已制作 2 步。
+规划完成：`docs/plan-omni.md` 共 3 部分、13 章；第 1 章已制作 3 步。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
-| 01 | 01-config-to-runtime | 在做第 3 步；前 2 步易读满分 | 24.00 |
+| 01 | 01-config-to-runtime | 在做第 4 步；前 3 步易读满分 | 24.00 |
 | 02 | 02-spg-topology | 规划 | — |
 | 03 | 03-request-binding | 规划 | — |
 | 04 | 04-readiness-contracts | 规划 | — |

@@ -78,4 +78,44 @@ Sources on `sglang-omni origin/main@34961b7df8fbd050d8e1e1bc9d82fbd165eb8566`:
 
 ### Next
 
-The next diagram expands the same configuration's device groups to show which deployment controls can change independently.
+The next diagram groups Step 2's six processes into GPU and CPU-only groups.
+
+## Step 3 · Four processes use GPU, two use only CPU
+
+> **In one line:** Step 2's six processes split by device: four use GPU 0 and two use only CPU, still six in total.
+
+### On the stage
+
+- Here, a device means a GPU or CPU; this step groups Step 2's six processes by that one distinction.
+- The blue group contains four processes using the same GPU 0 as Step 1. `GPU 0` identifies that one card; it does not mean four cards.
+- `preprocessing` and `decode` in the gray group have no GPU setting and run only on CPU.
+- One box still represents one process. The `talker_ar` box lists both `talker_ar` and `code2wav`, but counts once.
+- Blue marks the group and processes using GPU 0; gray marks the CPU-only group and processes.
+
+### The numbers on the stage
+
+| Device | Processes | Count |
+|---|---|---:|
+| GPU 0 | `image_encoder`, `audio_encoder`, `thinker`, `talker_ar` | 4 |
+| CPU only | `preprocessing`, `decode` | 2 |
+
+$$4 + 2 = 6\ \text{processes}$$
+
+This counts processes, not stages. The four GPU processes hold five GPU stages because `talker_ar` holds two; each CPU process holds one stage.
+
+### How the configuration chooses devices
+
+The colocated configuration sets both `thinker_gpu` and `talker_gpu` to 0. `image_encoder`, `audio_encoder`, `thinker` and `code2wav` use `thinker_gpu`; `talker_ar` uses `talker_gpu`. All five stages therefore land on GPU 0. The `preprocessing` and `decode` constructors have no `gpu` parameter. Topology then resolves a device for each process group from Step 2.
+
+### Scope and sources
+
+This step reads one colocated configuration; it does not start the model locally or measure CPU and GPU use. Sources on `sglang-omni origin/main@34961b7df8fbd050d8e1e1bc9d82fbd165eb8566`:
+
+- Device arguments for all seven stages: `sglang_omni/models/qwen3_omni/config.py:268-302`.
+- Both GPU arguments set to 0: `sglang_omni/models/qwen3_omni/config.py:499-521`.
+- The two CPU-stage constructors have no `gpu` parameter: `sglang_omni/models/qwen3_omni/config.py:57-87`, `sglang_omni/models/qwen3_omni/config.py:192-199`.
+- Process grouping and per-group GPU resolution: `sglang_omni/config/topology.py:365-382`.
+
+### Next
+
+The next step follows one request along the stage connections to show how these processes form a request route.

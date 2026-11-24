@@ -20,3 +20,7 @@ export const COLOCATED_PROCESS_GROUPS = [
 ] as const;
 export const COLOCATED_STAGE_COUNT = COLOCATED_PROCESS_GROUPS.reduce((sum, group) => sum + group.stages.length, 0);
 export const COLOCATED_PROCESS_COUNT = COLOCATED_PROCESS_GROUPS.length;
+export const COLOCATED_GPU_PROCESS_GROUPS = COLOCATED_PROCESS_GROUPS.filter((group) => group.device === 'GPU 0');
+export const COLOCATED_CPU_PROCESS_GROUPS = COLOCATED_PROCESS_GROUPS.filter((group) => group.device === 'CPU');
+export const COLOCATED_GPU_PROCESS_COUNT = COLOCATED_GPU_PROCESS_GROUPS.length;
+export const COLOCATED_CPU_PROCESS_COUNT = COLOCATED_CPU_PROCESS_GROUPS.length;

@@ -78,4 +78,44 @@ $$5 + 1 = 6\ \text{个 stage 进程}$$
 
 ### 接下来
 
-下一张图把同一份配置里的设备分组展开，看哪些部署旋钮可以独立调整。
+下一张图把第 2 步的六个进程按 GPU 和 CPU 分组。
+
+## 第 3 步 · 四个进程用 GPU，两个只用 CPU
+
+> **一句话：** 第 2 步的六个进程按设备分组后，四个使用 GPU 0，两个只用 CPU，合计仍是六个。
+
+### 图上是什么
+
+- 这里的「设备」指 GPU 或 CPU；本步只按这一件事把第 2 步的六个进程分组。
+- 蓝框中有四个进程，都使用第 1 步的同一块 GPU 0；`GPU 0` 是这块卡的编号，不是四块卡。
+- 灰框中的 `preprocessing` 和 `decode` 没有 GPU 设置，只在 CPU 上运行。
+- 一框仍是一个进程。`talker_ar` 框里虽然列了 `talker_ar` 和 `code2wav` 两个 stage，也只算一个进程。
+- 蓝色只标出使用 GPU 0 的组和进程；灰色标出只用 CPU 的组和进程。
+
+### 代入图上的数
+
+| 设备 | 进程 | 进程数 |
+|---|---|---:|
+| GPU 0 | `image_encoder`、`audio_encoder`、`thinker`、`talker_ar` | 4 |
+| 只用 CPU | `preprocessing`、`decode` | 2 |
+
+$$4 + 2 = 6\ \text{个进程}$$
+
+这里数的是进程，不是 stage。四个 GPU 进程共装五个 GPU stage，因为 `talker_ar` 进程装两个；两个 CPU 进程各装一个 stage。
+
+### 配置怎样决定设备
+
+同一份 colocated 配置把 `thinker_gpu` 和 `talker_gpu` 都设为 0。`image_encoder`、`audio_encoder`、`thinker` 和 `code2wav` 使用 `thinker_gpu`，`talker_ar` 使用 `talker_gpu`，所以它们都落到 GPU 0。`preprocessing` 和 `decode` 的构造函数没有 `gpu` 参数。topology 再按第 2 步的进程分组，为每组解析设备。
+
+### 边界与出处
+
+本步仍只读一份 colocated 配置，没有在本机启动模型或测量 CPU、GPU 占用。以下来源位于 `sglang-omni origin/main@34961b7df8fbd050d8e1e1bc9d82fbd165eb8566`：
+
+- 七个 stage 的设备参数：`sglang_omni/models/qwen3_omni/config.py:268-302`。
+- 两个 GPU 参数都设为 0：`sglang_omni/models/qwen3_omni/config.py:499-521`。
+- 两个 CPU stage 的构造函数没有 `gpu` 参数：`sglang_omni/models/qwen3_omni/config.py:57-87`、`sglang_omni/models/qwen3_omni/config.py:192-199`。
+- 按进程分组并解析整组 GPU：`sglang_omni/config/topology.py:365-382`。
+
+### 接下来
+
+下一步沿 stage 之间的连接跟一条请求，看这些进程怎样组成请求路线。
