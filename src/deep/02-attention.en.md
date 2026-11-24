@@ -280,6 +280,12 @@ A "decode step" is the forward pass that produces each new token during generati
 
 > **In one line:** each position multiplies by Step 3's three matrices again: 6 positions, 18 vectors.
 
+### On the stage
+
+- The six columns match the six tokens. Each column contains its own $x$, q, k and v; the computation never uses another position's $x$.
+- The Chinese stage expands column 6: $x_6$ multiplies $W_Q$, $W_K$ and $W_V$, giving $q_6$, $k_6$ and $v_6$.
+- Purple, cyan and green still mean q, k and v. Orange `␣Paris` is the token added in Step 8.
+
 ### Formula
 
 Exactly Step 3:
@@ -288,7 +294,33 @@ $$
 q_j = W_Q\,x_j,\qquad k_j = W_K\,x_j,\qquad v_j = W_V\,x_j,\qquad j = 1 \dots 6
 $$
 
-The matrices have not changed (trained weights are fixed during inference), and neither have the first 5 $x_j$ (Step 9), so the first 5 columns must come out exactly as in Step 3. Step 11 marks this.
+| Symbol | What it is | Size | From |
+|---|---|---|---|
+| $j$ | token position, counted from 1 to 6 | — | Step 8's six positions |
+| $x_j$ | position $j$'s input vector | 4,096 numbers | Step 9 |
+| $W_Q, W_K, W_V$ | three weight matrices shared by every position | 128 × 4,096 each | Step 3; fixed during inference |
+| $q_j, k_j, v_j$ | position $j$'s query, key and value | 128 numbers each | this step |
+
+A matrix here is a learned table of numbers. $W_Q$, $W_K$ and $W_V$ are three different tables, used to compute q, k and v. Each row multiplies $x_j$ entry by entry and sums the products to give one number; 128 rows give a vector of 128 numbers.
+
+### The numbers on the stage
+
+| Position $j$ | token | Input | Three vectors computed here |
+|---:|---|---|---|
+| 1 | `The` | $x_1$ | $q_1, k_1, v_1$ |
+| 2 | `␣capital` | $x_2$ | $q_2, k_2, v_2$ |
+| 3 | `␣of` | $x_3$ | $q_3, k_3, v_3$ |
+| 4 | `␣France` | $x_4$ | $q_4, k_4, v_4$ |
+| 5 | `␣is` | $x_5$ | $q_5, k_5, v_5$ |
+| 6 | `␣Paris` | $x_6$ | $q_6, k_6, v_6$ |
+
+Each column computes 3 vectors, so the total is $6\times3=18$. Columns 1–5 are computed again; column 6 is computed for the first time.
+
+The matrices have not changed (trained weights are fixed during inference), and neither have the first 5 $x_j$ (Step 9), so the first 5 columns must come out exactly as in Step 3.
+
+### Next
+
+Step 11 compares the first 5 columns with Step 3's results and marks which vectors have not changed.
 
 ## Step 11 · The five old columns are identical
 

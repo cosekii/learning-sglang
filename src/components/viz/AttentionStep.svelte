@@ -97,6 +97,7 @@
   const zhWeights = $derived(step === 4 && $lang === 'zh');
   const zhMix = $derived(step === 5 && $lang === 'zh');
   const zhSix = $derived(step === 8 && $lang === 'zh');
+  const zhRecompute = $derived(step === 9 && $lang === 'zh');
   let phone = $state(false);
   $effect(() => {
     const query = window.matchMedia('(max-width: 900px)');
@@ -108,6 +109,7 @@
   const phoneWeights = $derived(phone && zhWeights);
   const phoneMix = $derived(phone && zhMix);
   const phoneSix = $derived(phone && zhSix);
+  const phoneRecompute = $derived(phone && zhRecompute);
   const expScores = $derived(cur.attend !== undefined ? scores[cur.attend].map((score) => Math.exp(score)) : []);
   const expTotal = $derived(expScores.reduce((sum, value) => sum + value, 0));
   const tallyDenominator = scores[5].reduce((sum, score) => sum + Math.exp(score), 0);
@@ -117,8 +119,31 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox={phoneSix ? '0 0 360 430' : phoneMix ? '0 0 360 580' : phoneWeights ? '0 0 360 550' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Attention per decode step, step {step + 1}" class:phone-weights={phoneWeights} class:phone-mix={phoneMix} class:phone-six={phoneSix}>
-      {#if phoneSix}
+    <svg viewBox={phoneRecompute ? '0 0 360 440' : phoneSix ? '0 0 360 430' : phoneMix ? '0 0 360 580' : phoneWeights ? '0 0 360 550' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Attention per decode step, step {step + 1}" class:phone-weights={phoneWeights} class:phone-mix={phoneMix} class:phone-six={phoneSix} class:phone-recompute={phoneRecompute}>
+      {#if phoneRecompute}
+        <text x="180" y="26" text-anchor="middle" class="ph-title">每个 x 都重新算 q、k、v</text>
+        <text x="180" y="54" text-anchor="middle">矩阵 = 学好的数字表，三张表各算 q、k、v</text>
+        <text x="53" y="82" text-anchor="middle" class="ph-faint">token</text>
+        <text x="128" y="82" text-anchor="middle" class="ph-faint">x</text>
+        <text x="200" y="82" text-anchor="middle" class="ph-faint">q</text>
+        <text x="256" y="82" text-anchor="middle" class="ph-faint">k</text>
+        <text x="312" y="82" text-anchor="middle" class="ph-faint">v</text>
+        {#each cols as c, i}
+          <rect x="12" y={94 + i * 42} width="82" height="30" rx="5" fill={i === PROMPT_N ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={i === PROMPT_N ? 'var(--gen)' : 'var(--accent)'} />
+          <text x="53" y={114 + i * 42} text-anchor="middle">{c.t.replace(/^ /, '␣')}</text>
+          <text x="103" y={114 + i * 42} text-anchor="middle">→</text>
+          <rect x="112" y={94 + i * 42} width="32" height="30" rx="4" fill={COLOR.x[0]} stroke={COLOR.x[1]} />
+          <text x="128" y={114 + i * 42} text-anchor="middle">x{sub(i + 1)}</text>
+          <text x="160" y={114 + i * 42} text-anchor="middle">→</text>
+          {#each (['q', 'k', 'v'] as Row[]) as r, ri}
+            <rect x={178 + ri * 56} y={94 + i * 42} width="44" height="30" rx="4" fill={COLOR[r][0]} stroke={COLOR[r][1]} />
+            <text x={200 + ri * 56} y={114 + i * 42} text-anchor="middle">{r}{sub(i + 1)}</text>
+          {/each}
+        {/each}
+        <text x="180" y="362" text-anchor="middle" class="ph-title">{cur.n} 个位置 × 3 = {cur.n * 3} 个向量</text>
+        <text x="180" y="392" text-anchor="middle">每一列都乘第 3 步同样的三个矩阵</text>
+        <text x="180" y="422" text-anchor="middle" class="ph-faint">前 5 列重算；第 6 列第一次算</text>
+      {:else if phoneSix}
         <text x="180" y="28" text-anchor="middle" class="ph-title">6 个 token → 6 个向量 x</text>
         <text x="180" y="58" text-anchor="middle">每个 x 都是一排有顺序的数</text>
         <text x="290" y="82" text-anchor="middle" class="ph-faint">与第 2 步比</text>
@@ -208,7 +233,10 @@
           <text x={W / 2} y="164" text-anchor="middle" class="slab">{t('earlier tokens pass information to later ones', '前面的 token 把信息传给后面的 token')}</text>
         </g>
       {/if}
-      {#if cur.markNew}
+      {#if zhRecompute}
+        <text x={(cols[0].cx + cols[PROMPT_N - 1].cx) / 2} y={ROW.x - 8} text-anchor="middle" class="tag">前 5 列：再算</text>
+        <text x={cols[PROMPT_N].cx} y={ROW.x - 8} text-anchor="middle" class="tag new">第 6 列：第一次算</text>
+      {:else if cur.markNew}
         <text x={cols[cur.n - 1].cx} y={ROW.x - 8} text-anchor="middle" class="tag new" in:fade>{t('new', '新')}</text>
       {/if}
 
@@ -394,6 +422,20 @@
         </g>
       {/if}
 
+      {#if zhRecompute}
+        <g in:fade={{ duration: 250 }}>
+          <text x="16" y={LOW + 16} class="slab">拿第 6 列看：一个 x 算出 q、k、v</text>
+          <text x="28" y={LOW + 52} class="num" style:fill={COLOR.q[1]}>q₆ = W_Q x₆</text>
+          <text x="28" y={LOW + 82} class="num" style:fill={COLOR.k[1]}>k₆ = W_K x₆</text>
+          <text x="28" y={LOW + 112} class="num" style:fill={COLOR.v[1]}>v₆ = W_V x₆</text>
+          <text x="280" y={LOW + 40} class="legend">矩阵 = 一张学好的数字表</text>
+          <text x="280" y={LOW + 64} class="legend">W_Q / W_K / W_V：三张表，分别算 q / k / v</text>
+          <text x="280" y={LOW + 94} class="legend">每个位置只用自己的 x，六列都这样算</text>
+          <text x="280" y={LOW + 130} class="slab">{cur.n} 个位置 × 3 = {cur.n * 3} 个向量</text>
+          <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">前 5 列重算；第 6 列第一次算 · 下一步检查哪些结果没变</text>
+        </g>
+      {/if}
+
       {#if cur.recompute}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote" in:fade>{t(`Llama also rotates q and k by each token's position (RoPE) · a token's position never changes, so its k is still identical`, `Llama 还会按每个 token 的位置旋转 q 和 k（RoPE）· token 的位置不变，所以它的 k 仍然相同`)}</text>
       {/if}
@@ -441,6 +483,9 @@
   .phone-six text { font-family: var(--mono); font-size: 12px; fill: var(--fg); }
   .phone-six .ph-title { font-family: var(--sans); font-size: 16px; font-weight: 650; }
   .phone-six .ph-faint { fill: var(--faint); }
+  .phone-recompute text { font-family: var(--mono); font-size: 12px; fill: var(--fg); }
+  .phone-recompute .ph-title { font-family: var(--sans); font-size: 16px; font-weight: 650; }
+  .phone-recompute .ph-faint { fill: var(--faint); }
   .new-x { fill: var(--gen) !important; }
   .tag.new { fill: var(--gen); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; font-size: 9px; }
   rect.pulse { animation: pulse 700ms ease-in-out 2; }
