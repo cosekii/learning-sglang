@@ -58,4 +58,60 @@ Sources on `sglang-omni origin/main@48ee40b2563492de95efc952a0c7470db087d8a9`:
 
 ### Next
 
-Chapter 3 shows how a request chooses a replica, keeps that binding, and releases it.
+The next step puts two speech stages in one process to distinguish grouping from copying. Chapter 3 then shows how a request chooses a replica, keeps that binding, and releases it.
+
+## Step 2 · Two stages share one process
+
+> **In one line:** `talker_ar` and `code2wav` each keep one stage and one scheduler, but move from two separate processes into one process named `talker_ar`. Their hand-off can use the in-process path.
+
+### What the picture shows
+
+- Both panels show the same `talker_ar → code2wav` route, drawing only these two of the seven stages. The stage and scheduler inside each blue box remain.
+- Orange outlines mark process boundaries. The left panel has two, labeled `process: talker_ar` and `process: code2wav`. The hand-off crosses processes.
+- The right panel has one orange outline labeled `process: talker_ar`. Each blue box keeps its own stage name, with no stage merged or copied. The hand-off can use the in-process path.
+- Both panels end with `2 stages · 2 schedulers`, while the process count changes from two to one. GPU positions are omitted because grouping alone does not assign them.
+
+### Formula
+
+$$S=2,\qquad C=2$$
+
+$$P=|\{\text{distinct process names}\}|$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $S$ | Number of stages drawn | This step's `talker_ar` and `code2wav` |
+| $C$ | Number of schedulers, one constructed per stage | Per-stage construction in `stage_workers.py` |
+| $P$ | Number of OS processes for these non-TP stages | Count of distinct `StageConfig.process` names |
+
+### The numbers on the stage
+
+The left panel has two distinct process names, while the right has one:
+
+$$P_{\text{separate}}=|\{\texttt{talker\_ar},\texttt{code2wav}\}|=2$$
+
+$$P_{\text{shared}}=|\{\texttt{talker\_ar}\}|=1$$
+
+Thus $S:2\to2$, $C:2\to2$, and $P:2\to1$. These are counts from configuration expansion, not performance measurements.
+
+### How this differs from copying
+
+Step 1 copied a whole process, adding stage copies. This step assigns the same process name to two existing stages, changing only their process membership. The stage list, one scheduler per stage, and the route remain.
+
+Non-TP stages in one process share a Python heap, an asyncio event loop, and a local dispatch path. The picture says the path is available because the source selects `local_object` only when its conditions hold. This step does not claim that every payload uses one transport or that grouping improves speed.
+
+### Scope and sources
+
+This step covers only non-TP process grouping, not tensor parallelism or GPU placement. The real default and colocated speech configurations also change GPU positions, so this picture intentionally omits GPUs instead of attributing those changes to grouping.
+
+Sources on `sglang-omni origin/main@92d72512197f9a0a4ef0583f8ea789cf50f316be`:
+
+- [Same-name non-TP stages share an OS process and local path: `docs/basic_usage/process_topology.md:30-42`](https://github.com/sgl-project/sglang-omni/blob/92d72512197f9a0a4ef0583f8ea789cf50f316be/docs/basic_usage/process_topology.md#L30-L42).
+- [The two default process names and colocated `code2wav` joining `talker_ar`: `sglang_omni/models/qwen3_omni/config.py:305-318`](https://github.com/sgl-project/sglang-omni/blob/92d72512197f9a0a4ef0583f8ea789cf50f316be/sglang_omni/models/qwen3_omni/config.py#L305-L318).
+- [Grouping by process name: `sglang_omni/config/topology.py:365-382`](https://github.com/sgl-project/sglang-omni/blob/92d72512197f9a0a4ef0583f8ea789cf50f316be/sglang_omni/config/topology.py#L365-L382).
+- [One worker spec per group containing all member stages: `sglang_omni/pipeline/mp_runner.py:253-270`](https://github.com/sgl-project/sglang-omni/blob/92d72512197f9a0a4ef0583f8ea789cf50f316be/sglang_omni/pipeline/mp_runner.py#L253-L270).
+- [One scheduler constructed for each stage: `sglang_omni/pipeline/stage_workers.py:1043-1051`](https://github.com/sgl-project/sglang-omni/blob/92d72512197f9a0a4ef0583f8ea789cf50f316be/sglang_omni/pipeline/stage_workers.py#L1043-L1051).
+- [Conditions for same-process `local_object` hand-off: `sglang_omni/pipeline/stage/runtime.py:2000-2034`](https://github.com/sgl-project/sglang-omni/blob/92d72512197f9a0a4ef0583f8ea789cf50f316be/sglang_omni/pipeline/stage/runtime.py#L2000-L2034).
+
+### Next
+
+The next step shows how tensor parallelism lets one stage use multiple GPUs. Chapter 3 then follows how a request chooses and releases a replica.

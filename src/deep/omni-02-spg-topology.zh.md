@@ -58,4 +58,60 @@ YAML 给 `talker_ar` 和 `code2wav` 两个进程组都设置 `num_replicas: 2`�
 
 ### 接下来
 
-第 3 章讲请求怎样选定一个副本、一直使用它，最后释放绑定。
+下一步把两个语音 stage 放进同一个进程，看共用进程和复制进程有什么区别。第 3 章再讲请求怎样选定一个副本、一直使用它，最后释放绑定。
+
+## 第 2 步 · 两个 stage 共用一个进程
+
+> **一句话：** `talker_ar` 和 `code2wav` 仍各有一个 stage 和一个 scheduler，只是从两个独立进程改到同一个名为 `talker_ar` 的进程，交接可以使用进程内路径。
+
+### 图上是什么
+
+- 左右两边是同一条 `talker_ar → code2wav` 路线，只画全部 7 个 stage 中的这 2 个。蓝框里的 stage 和 scheduler 都保留。
+- 橙框是进程边界。左图有两个橙框，分别写 `process: talker_ar` 和 `process: code2wav`；两个 stage 之间是跨进程交接。
+- 右图只有一个橙框，里面写 `process: talker_ar`。两个蓝框仍各写自己的 stage 名，没有合并或复制 stage；交接可以使用进程内路径。
+- 两边底部都是 `2 stages · 2 schedulers`，进程数从 2 变成 1。本图不画 GPU 位置；进程分组本身不决定 GPU 编号。
+
+### 公式
+
+$$S=2,\qquad C=2$$
+
+$$P=|\{\text{不同的 process 名}\}|$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $S$ | 本图画出的 stage 数 | 本步的 `talker_ar`、`code2wav` |
+| $C$ | scheduler 数；每个 stage 各构造一个 | `stage_workers.py` 的逐 stage 构造 |
+| $P$ | 非 TP stage 的 OS 进程数 | 不同 `StageConfig.process` 名的数量 |
+
+### 代入图上的数
+
+左图有两个不同的进程名，右图只剩一个：
+
+$$P_{\text{separate}}=|\{\texttt{talker\_ar},\texttt{code2wav}\}|=2$$
+
+$$P_{\text{shared}}=|\{\texttt{talker\_ar}\}|=1$$
+
+所以 $S:2\to2$，$C:2\to2$，$P:2\to1$。这些只是配置展开后的数量，不是性能实测。
+
+### 这和复制有什么不同
+
+第 1 步复制整个进程，会增加 stage 份数；本步给两个已有 stage 填相同的进程名，只改变它们的进程归属。stage 名单、每个 stage 的一份 scheduler 和二者的路线都保留。
+
+同进程的非 TP stage 共用 Python heap、asyncio event loop 和 local dispatch path。图里写「可用」，是因为源码还会在满足条件时选择 `local_object`；这里不声称每次 payload 交接都走同一种传输，也不声称分组一定提速。
+
+### 边界与出处
+
+本步只讲非 TP 进程分组，不讲张量并行或 GPU placement。真实的默认语音配置和 colocated 配置还改变了 GPU 位置，所以本图有意不画 GPU，避免把设备变化算到进程分组头上。
+
+以下来源位于 `sglang-omni origin/main@92d72512197f9a0a4ef0583f8ea789cf50f316be`：
+
+- [同名非 TP stage 共用 OS 进程和本地路径：`docs/basic_usage/process_topology.md:30-42`](https://github.com/sgl-project/sglang-omni/blob/92d72512197f9a0a4ef0583f8ea789cf50f316be/docs/basic_usage/process_topology.md#L30-L42)。
+- [两个默认进程名，以及 colocated 配置把 `code2wav` 改到 `talker_ar`：`sglang_omni/models/qwen3_omni/config.py:305-318`](https://github.com/sgl-project/sglang-omni/blob/92d72512197f9a0a4ef0583f8ea789cf50f316be/sglang_omni/models/qwen3_omni/config.py#L305-L318)。
+- [按进程名分组：`sglang_omni/config/topology.py:365-382`](https://github.com/sgl-project/sglang-omni/blob/92d72512197f9a0a4ef0583f8ea789cf50f316be/sglang_omni/config/topology.py#L365-L382)。
+- [每组生成一个包含全部成员 stage 的 worker spec：`sglang_omni/pipeline/mp_runner.py:253-270`](https://github.com/sgl-project/sglang-omni/blob/92d72512197f9a0a4ef0583f8ea789cf50f316be/sglang_omni/pipeline/mp_runner.py#L253-L270)。
+- [每个 stage 分别构造 scheduler：`sglang_omni/pipeline/stage_workers.py:1043-1051`](https://github.com/sgl-project/sglang-omni/blob/92d72512197f9a0a4ef0583f8ea789cf50f316be/sglang_omni/pipeline/stage_workers.py#L1043-L1051)。
+- [`local_object` 的同进程交接条件：`sglang_omni/pipeline/stage/runtime.py:2000-2034`](https://github.com/sgl-project/sglang-omni/blob/92d72512197f9a0a4ef0583f8ea789cf50f316be/sglang_omni/pipeline/stage/runtime.py#L2000-L2034)。
+
+### 接下来
+
+下一步看一个 stage 怎样通过张量并行使用多张 GPU；第 3 章再讲请求怎样选定并释放一个副本。

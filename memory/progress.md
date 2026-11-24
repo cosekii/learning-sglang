@@ -4,11 +4,11 @@
 
 ## 本轮记录
 
-- 本轮修旧：Learning SGLang 第 1 章第 5 步。中文桌面改用整组括线，明确 6 段一起进入模型，补例句意思和 `␣` 解释；中文手机新增大字专版。英文原文和英文桌面画面未动。
-- 改前桌面专项冷读 **11/12、2 洞**，中文手机三种宽度各有 28 个 SVG 小字，硬门失败。最终独立冷读的桌面、390 px 和 360 px 手机均为 **12/12、0 洞**；原分维持 **24/24**，章均分 **23.92**。
-- `build`、本章 `transcript`、第 5 步 `readability`、三种宽度的中文手机硬门、`deep-check 01`、本章 `zh-check`、`token-legends`、中英截图和 `git diff --check` 均通过。
-- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch01-s05-mobile-20261124-1528/final/` 和 `checks/`。
-- 本轮类型：**修旧**；下一普通轮转为**新书**。
+- 本轮新书：Learning SGLang Omni 第 2 章新增第 2 步「共用进程」。同一组 `talker_ar → code2wav` 从两个进程改成一个，stage、scheduler 和路线都保留；图只讲非 TP 进程分组，不画 GPU，也不声称提速。
+- 第 1 步图尾改问共用进程，与实际下一步衔接。第 2 步最终独立冷读为易读 **12/12**、原分 **24/24**、**0 洞**，中英桌面及 360/390 px 手机均通过；本章两步均分 **24.00**。
+- `build`、本章 `transcript`、两步 `readability`、两步中文手机硬门、全站手机布局回归、`deep-check 02`、本章 `zh-check`、六个来源链接、页面 HTTP 200、键盘双向翻页、双语截图和 `git diff --check` 均通过。
+- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-omni-ch02-s02-20261124-1539/final/` 和 `checks/`。
+- 本轮类型：**新书**；下一普通轮转为**修旧**。
 
 ## Learning SGLang
 
@@ -46,12 +46,12 @@
 
 ## Learning SGLang Omni
 
-规划完成：`docs/plan-omni.md` 共 3 部分、13 章；第 1 章已制作 4 步并完成，第 2 章已制作第 1 步。
+规划完成：`docs/plan-omni.md` 共 3 部分、13 章；第 1 章已制作 4 步并完成，第 2 章已制作第 1、2 步。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
 | 01 | 01-config-to-runtime | 完成：4/4 步易读满分 | 24.00 |
-| 02 | 02-spg-topology | 在做第 2 步；第 1 步易读满分 | 24.00 |
+| 02 | 02-spg-topology | 在做第 3 步；第 1、2 步易读满分 | 24.00 |
 | 03 | 03-request-binding | 规划 | — |
 | 04 | 04-readiness-contracts | 规划 | — |
 | 05 | 05-data-lifetime | 规划 | — |
