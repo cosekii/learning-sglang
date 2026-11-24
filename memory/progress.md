@@ -4,17 +4,17 @@
 
 ## 本轮记录
 
-- 本轮新书：完成 Learning SGLang Omni 第 1 章第 3 步，初稿易读 **11/12**、原分 **23/24**、**1 洞**；补写「设备 = GPU 或 CPU」后，最终易读 **12/12**、原分 **24/24**、**0 洞**。R1：「六个干活的小组里，四个一起用同一张 GPU 卡，另外两个只用 CPU，合起来还是六个。」
-- 图把第 2 步的六个进程按设备分组：四个共用一块 GPU 0，两个只用 CPU；`talker_ar` 的两个 stage 仍只算一个进程。数量从 `numbers.ts` 推导，双语深入讲解补齐配置来源和逐步衔接。
-- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-omni-ch01-s03/`。`build`、Omni 全章 `transcript`、第 3 步 `readability`、中文手机字号硬门、全章手机布局、`deep-check`、`zh-check` 均通过；第 1 本 transcript 哈希不变。
-- 本章已制作 **3 步**，**3/3** 步易读满分，章均分 **24.00 / 24**；继续制作第 4 步。本轮类型：**新书**；下一普通轮转为**修旧**。
+- 本轮修旧：补评 Learning SGLang 第 2 章第 11 步，易读 **—→8/12**、原分 **24→21/24**、冷读 **0→3 洞**。R1：「Paris 加进来后，前面五列用的数和计算方法没变，所以又算了一遍，答案还是一样。」
+- 三个洞是 RoPE 没有大白话、旧 q 没有等号且比较对象不清、手机图过小。中英文 caption 都是 3 句；中文可独立修图和 caption，但英文原文受保护，完整通过 `readability` 仍需主人允许把英文 caption 并为两句。本轮未改教程，未提交未过门的改版。
+- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch02-repair-next/`。`build`、第 2 章 `transcript`、`deep-check 02`、第 2 章 `zh-check` 通过；第 11 步 `readability` 与中文手机字号硬门未过。
+- 第 2 章现为 **8/14** 步易读满分，章均分 **23.43 / 24**；第 3、11 步待主人定。本轮类型：**修旧**；下一普通轮转为**新书**。
 
 ## Learning SGLang
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
 | 01 | 01-inference | 完成：12/12 步易读满分 | 23.75 |
-| 02 | 02-attention | 易读整改：8/14 步满分；第 3 步待主人定 | 23.64 |
+| 02 | 02-attention | 易读整改：8/14 步满分；第 3、11 步待主人定 | 23.43 |
 | 03 | 03-kv-cache | 完成 | — |
 | 04 | 04-prefill-decode | 完成 | — |
 | 05 | 05-batching | 完成 | — |
