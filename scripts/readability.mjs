@@ -55,7 +55,7 @@ const enWords = (s) => clean(s).match(/[A-Za-z0-9]+(?:['’_-][A-Za-z0-9]+)*/g) 
 const zhChars = (s) => clean(s).match(/[\u3400-\u9fff]|[A-Za-z]+(?:['’_-][A-Za-z]+)*|\d+(?:\.\d+)?/g) ?? [];
 const files = readdirSync('transcript', { recursive: true }).map(String)
   .filter((f) => /(^|\/)\d\d-.*\.md$/.test(f))
-  .sort((a, b) => Number(a.startsWith('omni/')) - Number(b.startsWith('omni/')) || a.localeCompare(b));
+  .sort((a, b) => Number(a.includes('/')) - Number(b.includes('/')) || a.localeCompare(b));
 const book = process.env.BOOK || (only === null ? 'all' : 'sglang');
 const seen = new Set(plainWords);
 let failures = 0;
@@ -63,7 +63,7 @@ let checked = 0;
 
 for (const file of files) {
   const chapter = Number(file.match(/(?:^|\/)(\d\d)-/)?.[1]);
-  const fileBook = file.startsWith('omni/') ? 'omni' : 'sglang';
+  const fileBook = file.startsWith('omni/') ? 'omni' : file.startsWith('ml-sys/') ? 'ml-sys' : 'sglang';
   const text = readFileSync(`transcript/${file}`, 'utf8');
   const blocks = text.split(/^## Step /m).slice(1);
   for (const block of blocks) {

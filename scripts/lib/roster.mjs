@@ -10,11 +10,12 @@ function readBook(file, book, prefix) {
 export const roster = [
   ...readBook('src/chapters.ts', 'sglang', ''),
   ...readBook('src/omni/chapters.ts', 'omni', '/omni'),
+  ...readBook('src/ml-sys/chapters.ts', 'ml-sys', '/ml-sys'),
 ];
 
 export const chapterUrl = (chapter) => `${chapter.prefix}/ch/${chapter.slug}/`;
 export const pagePath = (chapter) => `src/pages${chapter.prefix}/ch/${chapter.slug}.mdx`;
-export const transcriptPath = (chapter) => chapter.book === 'omni' ? `omni/${chapter.slug}.md` : `${chapter.slug}.md`;
+export const transcriptPath = (chapter) => chapter.prefix ? `${chapter.prefix.slice(1)}/${chapter.slug}.md` : `${chapter.slug}.md`;
 
 export function selectedChapters() {
   const only = process.env.ONLY ? Number(process.env.ONLY) : null;

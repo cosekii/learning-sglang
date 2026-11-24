@@ -138,7 +138,7 @@ const transcribe = async (ch) => {
   }
   await page.close();
 
-  const component = (readFileSync(pagePath(ch), 'utf8').match(/(components\/[\w/]+\.svelte)/) ?? [])[1];
+  const component = (readFileSync(pagePath(ch), 'utf8').match(/(components\/[\w/-]+\.svelte)/) ?? [])[1];
   const out = [];
   out.push(`# ${String(ch.n).padStart(2, '0')} · ${ch.title}`, '', ch.hook, '');
   out.push(`Source: \`${pagePath(ch)}\`${component ? ` · \`src/${component}\`` : ''}`);

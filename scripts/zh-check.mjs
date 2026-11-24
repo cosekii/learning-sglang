@@ -9,7 +9,7 @@ import { launch, sleep } from './lib/browser.mjs';
 
 const base = 'http://localhost:4321/learning-sglang';
 const book = process.env.BOOK || 'sglang';
-const bookPrefix = book === 'omni' ? '/omni' : '';
+const bookPrefix = book === 'sglang' ? '' : `/${book}`;
 const only = (process.env.ONLY ?? '').split(',').map((s) => s.trim()).filter(Boolean);
 const stepWait = Number(process.env.WAIT) || 3500;   // let within-step phases settle so all stage text is present
 const shotDir = process.argv[2];
@@ -18,7 +18,8 @@ if (shotDir) mkdirSync(shotDir, { recursive: true });
 // The roster, read from the built site's sidebar so this script does not duplicate chapters.ts.
 const browser = await launch({ port: 9300 + Math.floor(Math.random() * 500) });
 const page = await browser.tab();
-await page.goto(book === 'omni' ? `${base}/omni/ch/01-config-to-runtime/` : `${base}/`);
+const firstPath = book === 'omni' ? '/omni/ch/01-config-to-runtime/' : book === 'ml-sys' ? '/ml-sys/ch/01-measure-inference/' : '/';
+await page.goto(`${base}${firstPath}`);
 const slugs = await page.evaluate(`[...document.querySelectorAll('.sidebar li a')].map(a => a.getAttribute('href').split('/ch/')[1].replace(/\\/$/, ''))`);
 const targets = slugs.filter((s) => !only.length || only.includes(s.slice(0, 2)) || only.includes(String(parseInt(s.slice(0, 2), 10))));
 

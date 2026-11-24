@@ -4,10 +4,10 @@
 
 ## 本轮记录
 
-- 本轮修旧：完成 Learning SGLang 第 2 章第 6 步的中文易读整改，易读 **4→12**、原分 **16→24**、冷读 **6→0**。R1：「把五列 value 分别乘上自己的权重，再全部相加，就得到 ␣is 的 out₅，其中 ␣France 的权重 0.53 最大，所以贡献最多。」
-- 中文图展开 `权重 → 每列先乘 → 五份相加 → out₅`，解释 `Σ/wⱼ/vⱼ/j` 和绿线；caption 删除图中支撑不足的位置结论。360/390/430 px 手机改用同内容的大字专版。英文截图与改前逐字节相同，英文 caption、图和深入讲解未改。
-- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch02-s06-fix/`。`build`、第 2 章 `transcript`、第 6 步 `readability`、中文手机字号硬门、全章手机布局、`deep-check 02`、第 2 章 `zh-check` 均通过。
-- 第 2 章现为 **6/14** 步易读满分，章均分 **23.64 / 24**；第 3 步仍待主人定，其他未评步继续逐轮补评。本轮类型：**修旧**；下一普通轮转为**新书**，做 **Learning ML Systems**。
+- 本轮新书：完成 Learning ML Systems 第 1 章第 1 步，易读 **12/12**、原 12 项 **24/24**、冷读 **0 洞**。R1：「我发出请求后，等了 250 毫秒，也就是 1/4 秒，才看到回答的第一个 token，这段等待叫 TTFT。」
+- 图用 `0 ms → 250 ms` 标出首个 token 前的等待，蓝色只表示 TTFT；250 ms 是 zero-to-sglang 的构造教学值，不冒充实测。新书已接入共用布局、首页、双语深入讲解和全部检查脚本，第 1 本 transcript 哈希不变。
+- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s01/`。`build`、ML Systems `transcript`、全章手机布局、中文手机字号、`readability`、`deep-check`、`zh-check` 均通过；中英桌面、中文手机、首页及深入讲解截图已检查。
+- 本章已制作 **1 步**，易读满分，章均分 **24.00 / 24**；继续制作第 2 步。本轮类型：**新书**；下一普通轮转为**修旧**，下次新书轮转做 **Inside Voxt**。
 
 ## Learning SGLang
 
@@ -65,11 +65,11 @@
 
 ## Learning ML Systems
 
-规划完成：`docs/plan-ml-sys.md` 共 3 部分、16 章；尚无已制作章节。第 11 章须先补齐训推不一致的原始来源，缺源时先跳过。
+规划完成：`docs/plan-ml-sys.md` 共 3 部分、16 章；第 1 章已制作 1 步。第 11 章须先补齐训推不一致的原始来源，缺源时先跳过。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
-| 01 | 01-measure-inference | 规划 | — |
+| 01 | 01-measure-inference | 在做第 2 步；第 1 步易读满分 | 24.00 |
 | 02 | 02-inference-memory-budget | 规划 | — |
 | 03 | 03-hybrid-state-cache | 规划 | — |
 | 04 | 04-gpu-communication | 规划 | — |

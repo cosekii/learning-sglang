@@ -1,0 +1,29 @@
+---
+layout: ../../../layouts/Chapter.astro
+book: ml-sys
+slug: 01-measure-inference
+---
+import MeasureInference from '../../../components/ml-sys/MeasureInference.svelte';
+import { mlSysNeighbors } from '../../../ml-sys/chapters';
+import { deepFor } from '../../../deep';
+export const deep = await deepFor('ml-sys-01-measure-inference');
+
+<MeasureInference client:load {...mlSysNeighbors('01-measure-inference')} deep={deep} />
+
+<details class="i18n-en">
+<summary>Where this chapter's claims come from</summary>
+
+The 250 ms value is a constructed example from [zero-to-sglang Part I Chapter 5: Introduction to Benchmark](https://zero-to-sglang.datawhale.cc/eng/part1/Chapter5_Introduction_to_Benchmark.html), §3.1. It is not a measurement from this computer. The TTFT definition follows *Inference Engineering* §1.4: the time from sending a request until its first output token arrives.
+
+Course baseline: `datawhalechina/zero-to-sglang@bcf0cd82b9d1a058e5211d56431f14efd99eaf12`.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的出处</summary>
+
+250 ms 来自 [zero-to-sglang 第 1 部分第 5 章：Benchmark 入门](https://zero-to-sglang.datawhale.cc/ch/part1/%E7%AC%AC5%E7%AB%A0_Benchmark%E5%85%A5%E9%97%A8.html) §3.1 的构造例子，不是本机实测。TTFT 的定义按《Inference Engineering》§1.4：从发出请求到收到首个输出 token 的时间。
+
+课程基线：`datawhalechina/zero-to-sglang@bcf0cd82b9d1a058e5211d56431f14efd99eaf12`。
+
+</details>

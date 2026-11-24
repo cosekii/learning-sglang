@@ -7,12 +7,13 @@ import { readFileSync, existsSync } from 'node:fs';
 import { pagePath, selectedChapters, transcriptPath } from './lib/roster.mjs';
 
 const only = process.argv[2];
-if (process.env.BOOK === 'omni') {
+const book = process.env.BOOK || 'sglang';
+if (book !== 'sglang') {
   if (only) process.env.ONLY = String(Number(only));
   let bad = 0;
   for (const chapter of selectedChapters()) {
     const errs = [];
-    const deepSlug = `omni-${chapter.slug}`;
+    const deepSlug = `${book}-${chapter.slug}`;
     const steps = (readFileSync(`transcript/${transcriptPath(chapter)}`, 'utf8').match(/^## Step /gm) ?? []).length;
     for (const lang of ['en', 'zh']) {
       const file = `src/deep/${deepSlug}.${lang}.md`;
@@ -22,11 +23,11 @@ if (process.env.BOOK === 'omni') {
     }
     const mdx = readFileSync(pagePath(chapter), 'utf8');
     if (!mdx.includes(`deepFor('${deepSlug}')`) || !/ deep=\{deep\}/.test(mdx)) errs.push('MDX does not load and pass deep');
-    const component = mdx.match(/components\/[\w/]+\.svelte/)?.[0];
+    const component = mdx.match(/components\/[\w/-]+\.svelte/)?.[0];
     const source = component ? readFileSync(`src/${component}`, 'utf8') : '';
     if (!/deep=\{deep\?\.en\[step\]\} deepZh=\{deep\?\.zh\[step\]\}/.test(source)) errs.push('component does not pass bilingual deep sections');
-    if (errs.length) { bad++; console.log(`FAIL omni ${chapter.slug}\n  ${errs.join('\n  ')}`); }
-    else console.log(`ok   omni ${chapter.slug} (${steps} steps)`);
+    if (errs.length) { bad++; console.log(`FAIL ${book} ${chapter.slug}\n  ${errs.join('\n  ')}`); }
+    else console.log(`ok   ${book} ${chapter.slug} (${steps} steps)`);
   }
   process.exit(bad ? 1 : 0);
 }
