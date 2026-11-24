@@ -4,11 +4,11 @@
 
 ## 本轮记录
 
-- 新建 `docs/plan-ml-sys.md`：全书分 `inference`、`rl`、`practice` 3 部分、16 章，每章列出 slug、标题、hook、核心问题、前置、事实来源和章末衔接。主线从推理测量与显存走到多卡服务，再跟随 rollout、权重更新、低精度和训推一致性，最后落到多轮智能体、profiling 和显存调试。
-- 规划核对 `Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7`；27 个引用文件全部存在。第 1 本已完成的 KV cache、调度、CUDA Graph 和投机解码只回指；Ch. 22–29 仍不作前置。`mismatch` 的 TODO 实验不得采用，Dynamo 只用于操作实验；INT4 部署范围已按独立审查从「单卡」修正为「单机」。
-- `memory/ai-infra-map.md` 只保留在本机并加入 `.gitignore`，不提交。自定义规划检查通过：16 章连续编号、3 个 Part、字段齐全、引用路径和进度表 slug 一致。
-- `build`、全量 `transcript`、全量 `deep-check`、第 7 章默认等待的 `mobile`、全量 `WAIT=100 mobile` 和 `git diff --check` 通过。默认等待的全量 `mobile` 运行超过 10 分钟后按本轮时限停止；随后用 100ms 等待完成全量布局门。站点代码未改，上一提交 `2265e61` 的默认全量布局门也已通过。已截取并复核第 1 本 Ch. 7 Step 1 参照页：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ml-sys-plan/ml-sys-plan-reference.png`。
-- 本轮只写规划，未改教程步骤；易读分、原 12 项、R1 复述和冷读洞均不适用。第 1 章仍为 **12/12** 步易读满分、章均分 **23.75 / 24**；第 2 章仍为 **4/14** 步易读满分、章均分 **23.93 / 24**。本轮类型：**新书**（规划）。下一普通轮写 `docs/plan-voxt.md`；下次整点轮换做第 1 项「像读者一样从头读一遍」。
+- 新建 `docs/plan-voxt.md`：全书分 `dictation`、`desktop`、`meetings` 3 部分、16 章，每章列出 slug、标题、hook、核心问题、前置、事实来源和章末衔接。主线跟一句话走过按键、音频、ASR、语言模型和文本交付，再扩展到词典、历史、文件转写、双轨会议和证据检查。
+- 规划只核对 `sglang-omni origin/main@42b5b8cc1a71c8eacfad66ce49b6bf8bd9a4003e` 的公开代码和文档，不使用本机日志、未提交文件或其他 worktree。当前语言模型 API 与已移除的本地语言模型严格分开；历史与录音保存期、外部 ASR、会议分人样本和真机未测范围均设有来源限制。
+- 自定义规划检查通过：16 章连续编号、3 个 Part、字段齐全，63 个公开来源路径都存在于固定提交，进度表 slug 一致。独立复核后修正了词典效果保证、重试录音到期清理、会议 WAV 保留策略和纠正失败后的总结回退。
+- `build`、全量 `transcript`、全量 `deep-check`、全量 `WAIT=100 mobile` 和 `git diff --check` 通过。已截取并复核第 1 本 Ch. 16 Step 1 参照页：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-plan/voxt-plan-reference.png`。
+- 本轮只写规划，未改教程步骤；易读分、原 12 项、R1 复述和冷读洞均不适用。第 1 章仍为 **12/12** 步易读满分、章均分 **23.75 / 24**；第 2 章仍为 **4/14** 步易读满分、章均分 **23.93 / 24**。本轮类型：**新书**（规划）。三份新书规划已齐全；下一普通轮转为**修旧**，按易读分选最低步，当前先复核第 2 章第 3 步的记录。
 
 ## Learning SGLang
 
@@ -89,4 +89,23 @@
 
 ## Inside Voxt
 
-尚无章节，状态：**规划**。`docs/plan-voxt.md` 尚未创建；事实来源只使用 `sglang-omni` 的 `origin/main` 公开代码和文档。
+规划完成：`docs/plan-voxt.md` 共 3 部分、16 章；尚无已制作章节。事实来源只使用 `sglang-omni` 的 `origin/main` 公开代码和文档。
+
+| 章 | slug | 状态 | 平均分 |
+|---|---|---|---:|
+| 01 | 01-one-dictation | 规划 | — |
+| 02 | 02-helper-permissions-hotkeys | 规划 | — |
+| 03 | 03-microphone-to-voice-frames | 规划 | — |
+| 04 | 04-speech-recognition-routes | 规划 | — |
+| 05 | 05-language-model-connection | 规划 | — |
+| 06 | 06-compose-and-cleanup | 规划 | — |
+| 07 | 07-deliver-text-safely | 规划 | — |
+| 08 | 08-personal-dictionary | 规划 | — |
+| 09 | 09-history-retry-retention | 规划 | — |
+| 10 | 10-file-transcription | 规划 | — |
+| 11 | 11-models-and-app-updates | 规划 | — |
+| 12 | 12-meeting-capture-modes | 规划 | — |
+| 13 | 13-meeting-live-and-final | 规划 | — |
+| 14 | 14-meeting-speaker-labels | 规划 | — |
+| 15 | 15-meeting-summary-and-export | 规划 | — |
+| 16 | 16-logs-tests-and-evaluation | 规划 | — |
