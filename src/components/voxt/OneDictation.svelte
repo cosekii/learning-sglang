@@ -17,6 +17,9 @@
   }, {
     caption: "Late A appears in A's result window and is saved. B appears where you type or in B's result window.",
     captionZh: '晚到的 A 显示在自己的结果小窗，也保存下来。B 显示在打字位置或自己的结果小窗。',
+  }, {
+    caption: 'Cancel A while it recognizes or tidies. Late results stay off screen; its saved result is empty.',
+    captionZh: '取消 A，晚到结果不显示。保存记录写着已取消，结果为空。',
   }];
   const route = [
     { name: 'YOU PRESS', nameZh: '你按一下', detail: 'one key', detailZh: '一个键' },
@@ -42,18 +45,25 @@
   const cur = $derived(steps[step]);
   const demoDictations = Array.from({ length: DEMO_DICTATION_COUNT }, (_, i) => i + 1);
   const gateRows = [{ id: 'A', ok: false }, { id: 'B', ok: true }];
-  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 0 ? 440 : 640) : 390);
+  const cancelSources = [
+    { name: 'SOUND → WORDS', nameZh: '声音 → 文字', detail: 'late “um, hi”', detailZh: '晚到的“嗯，你好”' },
+    { name: 'TIDY WORDS', nameZh: '整理文字', detail: 'late “Hi!”', detailZh: '晚到的“你好！”' },
+  ];
+  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 0 ? 440 : step === 3 ? 560 : 640) : 390);
 </script>
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={step === 0 ? 'Two dictations get two different session IDs so their results stay with the right dictation' : step === 1 ? 'A hotkey starts session A, then the sentence passes through helper, recognition, cleanup, delivery and history' : "Late session A goes to its own result window and saved results, while B goes where you type or to B's result window"}>
+    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={step === 0 ? 'Two dictations get two different session IDs so their results stay with the right dictation' : step === 1 ? 'A hotkey starts session A, then the sentence passes through helper, recognition, cleanup, delivery and history' : step === 2 ? "Late session A goes to its own result window and saved results, while B goes where you type or to B's result window" : 'Cancelling session A stops late text, and its saved record has no result text'}>
       <defs>
         <marker id="session-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
           <path d="M0,0 L8,4 L0,8 z" fill="var(--muted)" />
         </marker>
         <marker id="current-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
           <path d="M0,0 L8,4 L0,8 z" fill="var(--accent)" />
+        </marker>
+        <marker id="cancel-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 z" fill="var(--eos)" />
         </marker>
       </defs>
       {#if step === 0}
@@ -126,7 +136,7 @@
         <text x={phone ? 70 : 207} y={phone ? 578 : 307} class="route-detail">{t("= this sentence's session ID", '= 这句话的 session ID')}</text>
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('Text stays here by choice or if insertion fails.', '你选小窗，或贴不进去时，文字留在这里。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('This succeeded; clean-up and history are on.', '这次听写成功，并开启了整理和历史。')}</text>
-      {:else}
+      {:else if step === 2}
         <text x={W / 2} y={phone ? 24 : 28} text-anchor="middle" class="title">{t(phone ? 'LATE A STAYS WITH A' : 'LATE A STAYS WITH A, NOT B', phone ? '晚到的 A 留在 A' : '晚到的 A 留在 A，不写进 B')}</text>
         {#if phone}
           <text x="150" y="46" text-anchor="middle" class="title">{t('NOT B', '不写进 B')}</text>
@@ -189,6 +199,69 @@
           <text x="150" y="612" text-anchor="middle" class="footnote">{t('If insertion fails, text stays in the window.', '能贴就到打字位置，贴不进去就留在结果小窗。')}</text>
           <text x="150" y="630" text-anchor="middle" class="footnote">{t('Clean-up succeeds and saving is on in this example.', '本例整理成功，并开启保存记录。')}</text>
         {/if}
+      {:else}
+        {#if !phone}
+          <text x="360" y="28" text-anchor="middle" class="title">{t('CANCEL A · LATE RESULTS STOP', '取消 A · 晚到的结果停下')}</text>
+          <rect x="270" y="46" width="180" height="44" rx="12" fill="var(--bg)" stroke="var(--eos)" stroke-width="2" />
+          <text x="360" y="67" text-anchor="middle" class="cancel-title">{t('YOU PRESS CANCEL', '你按取消键')}</text>
+          <text x="360" y="84" text-anchor="middle" class="route-detail">{t('while recognizing or tidying', '识别或整理时')}</text>
+          <line x1="360" y1="90" x2="360" y2="116" stroke="var(--eos)" stroke-width="2" marker-end="url(#cancel-arrow)" />
+          {#each cancelSources as source, i}
+            {@const y = 126 + i * 86}
+            <rect x="20" {y} width="190" height="68" rx="12" fill="var(--bg)" stroke="var(--line)" />
+            <text x="115" y={y + 25} text-anchor="middle" class="route-name">{t(source.name, source.nameZh)}</text>
+            <text x="115" y={y + 50} text-anchor="middle" class="route-detail">{t(source.detail, source.detailZh)}</text>
+            <line x1="210" y1={y + 34} x2="260" y2={y + 34} stroke="var(--muted)" stroke-width="2" marker-end="url(#session-arrow)" />
+          {/each}
+          <rect x="270" y="126" width="180" height="146" rx="12" fill="var(--bg)" stroke="var(--eos)" stroke-width="2" />
+          <text x="360" y="154" text-anchor="middle" class="cancel-title">{t('A = CANCELLED', 'A = 已取消')}</text>
+          <text x="360" y="202" text-anchor="middle" class="cancel-x">×</text>
+          <text x="360" y="235" text-anchor="middle" class="route-name">{t('late results stop', '晚到的结果停下')}</text>
+          <line x1="450" y1="194" x2="480" y2="194" stroke="var(--eos)" stroke-width="2" />
+          <path d="M489 186 l16 16 M505 186 l-16 16" stroke="var(--eos)" stroke-width="3" />
+          <rect x="525" y="150" width="170" height="88" rx="12" fill="var(--bg)" stroke="var(--line)" />
+          <text x="610" y="174" text-anchor="middle" class="route-name">{t('YOU SEE TEXT', '看到文字')}</text>
+          <text x="610" y="197" text-anchor="middle" class="route-detail">{t('typing spot or result window', '打字位置或结果小窗')}</text>
+          <text x="610" y="222" text-anchor="middle" class="check no">{t('× no late A result', '× 没有晚到的 A 结果')}</text>
+          <line x1="360" y1="272" x2="360" y2="288" stroke="var(--muted)" stroke-width="2" marker-end="url(#session-arrow)" />
+          <text x="375" y="287" class="route-detail">{t('save cancellation', '保存取消状态')}</text>
+          <rect x="250" y="296" width="220" height="50" rx="12" fill="var(--bg)" stroke="var(--line)" />
+          <text x="360" y="316" text-anchor="middle" class="route-name">{t('SAVED RECORD', '保存记录')}</text>
+          <text x="360" y="336" text-anchor="middle" class="route-detail">{t('A · cancelled · result: empty', 'A · 已取消 · 结果文字：空')}</text>
+          <text x="360" y="364" text-anchor="middle" class="footnote">{t('Next: which program receives the cancel key?', '接下来：哪个程序接收取消键？')}</text>
+          <text x="360" y="380" text-anchor="middle" class="footnote">{t('This example has a saved record.', '本例有这条保存记录。')}</text>
+        {:else}
+          <text x="150" y="24" text-anchor="middle" class="title">{t('CANCEL A', '取消 A')}</text>
+          <text x="150" y="44" text-anchor="middle" class="title">{t('LATE RESULTS STOP', '晚到的结果停下')}</text>
+          <rect x="60" y="60" width="180" height="44" rx="12" fill="var(--bg)" stroke="var(--eos)" stroke-width="2" />
+          <text x="150" y="81" text-anchor="middle" class="cancel-title">{t('YOU PRESS CANCEL', '你按取消键')}</text>
+          <text x="150" y="98" text-anchor="middle" class="route-detail">{t('while recognizing or tidying', '识别或整理时')}</text>
+          {#each cancelSources as source, i}
+            {@const x = 15 + i * 140}
+            <rect {x} y="128" width="130" height="72" rx="12" fill="var(--bg)" stroke="var(--line)" />
+            <text x={x + 65} y="153" text-anchor="middle" class="route-name">{t(source.name, source.nameZh)}</text>
+            <text x={x + 65} y="178" text-anchor="middle" class="route-detail">{t(source.detail, source.detailZh)}</text>
+            <line x1={x + 65} y1="200" x2={100 + i * 100} y2="226" stroke="var(--muted)" stroke-width="2" marker-end="url(#session-arrow)" />
+          {/each}
+          <rect x="50" y="236" width="200" height="96" rx="12" fill="var(--bg)" stroke="var(--eos)" stroke-width="2" />
+          <text x="150" y="260" text-anchor="middle" class="cancel-title">{t('A = CANCELLED', 'A = 已取消')}</text>
+          <text x="150" y="294" text-anchor="middle" class="cancel-x">×</text>
+          <text x="150" y="319" text-anchor="middle" class="route-name">{t('late results stop', '晚到的结果停下')}</text>
+          <line x1="110" y1="332" x2="86" y2="356" stroke="var(--eos)" stroke-width="2" />
+          <path d="M72 358 l16 16 M88 358 l-16 16" stroke="var(--eos)" stroke-width="3" />
+          <line x1="190" y1="332" x2="220" y2="380" stroke="var(--muted)" stroke-width="2" marker-end="url(#session-arrow)" />
+          <text x="220" y="366" text-anchor="middle" class="route-detail">{t('save cancellation', '保存取消状态')}</text>
+          <rect x="15" y="390" width="130" height="100" rx="12" fill="var(--bg)" stroke="var(--line)" />
+          <text x="80" y="416" text-anchor="middle" class="route-name">{t('YOU SEE TEXT', '看到文字')}</text>
+          <text x="80" y="440" text-anchor="middle" class="route-detail">{t('typing spot or window', '打字位置或小窗')}</text>
+          <text x="80" y="468" text-anchor="middle" class="check no">{t('× no late result', '× 没有晚到的结果')}</text>
+          <rect x="155" y="390" width="130" height="100" rx="12" fill="var(--bg)" stroke="var(--line)" />
+          <text x="220" y="416" text-anchor="middle" class="route-name">{t('SAVED RECORD', '保存记录')}</text>
+          <text x="220" y="442" text-anchor="middle" class="route-detail">{t('A: cancelled', 'A：已取消')}</text>
+          <text x="220" y="468" text-anchor="middle" class="route-detail">{t('result: empty', '结果文字：空')}</text>
+          <text x="150" y="534" text-anchor="middle" class="footnote">{t('Next: which program receives the cancel key?', '接下来：哪个程序接收取消键？')}</text>
+          <text x="150" y="550" text-anchor="middle" class="footnote">{t('This example has a saved record.', '本例有这条保存记录。')}</text>
+        {/if}
       {/if}
     </svg>
   </div>
@@ -205,6 +278,8 @@
   .route-name { font-size: 11px; font-weight: 700; fill: var(--fg); }
   .route-detail { font-size: 11px; fill: var(--fg); }
   .route-tag { font-family: var(--mono); font-size: 13px; font-weight: 700; fill: var(--accent); }
+  .cancel-title { font-size: 12px; font-weight: 700; fill: var(--eos); }
+  .cancel-x { font-size: 34px; font-weight: 600; fill: var(--eos); }
   .check { font-family: var(--mono); font-size: 14px; font-weight: 700; }
   .check.yes { fill: var(--accent); }
   .check.no { fill: var(--eos); }

@@ -4,11 +4,11 @@
 
 ## 本轮记录
 
-- 本轮修旧：Learning SGLang 第 2 章深入讲解补齐中英 zero-to-sglang 延伸阅读，各 7 个链接，覆盖 LLM、推理、KV Cache、前向与生成及两篇代码走读；14 个在线 URL 均返回 HTTP 200。
-- 第 8 步独立冷读补评为易读 **9/12**、原分 **22/24**，桌面 **2 洞**、手机共 **3 洞**。主流程的 decode 术语、整组重跑图示和手机小字仍须整改；英文 caption 有 3 句，受保护原文不获允许就不能过完整硬门，因此未提交步骤改版。
-- `build`、本章 `transcript`、`deep-check 02`、`zh-check` 通过；全章三种手机宽度无布局破坏，既有 27 步次小字仅审计。第 8 步 `readability` 仍有 1 个既有英文句数问题，中文手机字号硬门仍失败，均记入评分卡与 `docs/ideas.md`。
-- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch02-s08-links-20261124-1111/final/` 和 `checks/`。
-- 本轮类型：**修旧**；下一普通轮转为**新书**，按三本新书轮换制作下一步。
+- 本轮新书：Inside Voxt 第 1 章新增第 4 步，画清 A 在识别或整理时被取消后，晚到的最终结果不进入打字位置或结果小窗；保存记录标记已取消，`Result` 为空，识别原话可能仍在。最终独立冷读为易读 **12/12**、原分 **24/24**、**0 洞**，本章 4 步完成。
+- 第 4 步源码基线为 `sglang-omni@48ee40b2563492de95efc952a0c7470db087d8a9`；已核对识别与整理返回后的取消检查、历史写入条件和 `TestCancel`。提交前 `origin/main` 前进到 `e90af0b9ca88bcae1d2710b8ab044a95d47898d8`，本步引用的 session 源码和测试与该基线无差异。页面来源说明与中英深入讲解同步更新。
+- `build`、Voxt 本章 `transcript`、第 4 步 `readability`、本章三种手机宽度、中文手机字号硬门、`deep-check 01`、`zh-check` 均通过；中英桌面、中文手机顶部与底部及双语深入讲解截图均已打开检查，本地目标页返回 HTTP 200。
+- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch01-s04/final/` 和 `final-checks/`。
+- 本轮类型：**新书**；下一普通轮转为**修旧**。
 
 ## Learning SGLang
 
@@ -89,11 +89,11 @@
 
 ## Inside Voxt
 
-规划完成：`docs/plan-voxt.md` 共 3 部分、16 章；第 1 章已制作 3 步。事实来源只使用 `sglang-omni` 的 `origin/main` 公开代码和文档。
+规划完成：`docs/plan-voxt.md` 共 3 部分、16 章；第 1 章已制作 4 步并完成。事实来源只使用 `sglang-omni` 的 `origin/main` 公开代码和文档。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
-| 01 | one-dictation | 在做第 4 步；前 3 步易读满分 | 24.00 |
+| 01 | one-dictation | 完成：4/4 步易读满分 | 24.00 |
 | 02 | helper-permissions-hotkeys | 规划 | — |
 | 03 | microphone-to-voice-frames | 规划 | — |
 | 04 | speech-recognition-routes | 规划 | — |

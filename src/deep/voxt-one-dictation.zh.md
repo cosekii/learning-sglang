@@ -154,3 +154,58 @@ A、B 仍是教学代称。图中没有耗时或性能数字，先后箭头只�
 - `Manager.update` 的身份、结束检查和两条发布路径：`Voxt/internal/session/manager.go:341-375`。
 - `Manager.end` 的同类检查：`Voxt/internal/session/manager.go:378-417`。
 - 历史使用本次 `run` 的 ID：`Voxt/internal/session/run.go:446-460`。
+
+## 第 4 步 · 取消后，晚到的结果停下
+
+> **一句话：** A 识别或整理时被取消，晚到的结果不会显示在打字位置或结果小窗；本例保存记录中的 A 是已取消，结果文字为空。
+
+### 图上是什么
+
+- 你取消 A：本步只讲识别或整理时的取消。
+- 左边两个框是两种可分别发生的情况，不要求同时发生：识别结果晚到，或整理结果晚到。
+- 中间红框：A 已取消，晚到的结果在这里停下。
+- 右侧：打字位置和结果小窗都没有晚到的 A 结果。
+- 保存记录：A 的状态是已取消，`Result`（最终结果字段）为空。本例开启历史，录音长度也达到保存条件。
+
+### 取消后的结果
+
+$$
+C_A=\mathrm{true}\quad\Longrightarrow\quad D_A=\mathrm{stopped},\qquad R_A=\mathrm{empty}
+$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $C_A$ | A 的取消标记 | `Manager.Cancel` 设置 `r.cancelled` |
+| $D_A$ | 晚到结果的交付 | 识别或整理返回后的取消检查 |
+| $R_A$ | 保存记录里的 `Result` | 取消结束时的 snapshot |
+| $\mathrm{stopped}$ | 不插入文字，也不把结果显示在结果小窗 | 本步要说明的去向 |
+| $\mathrm{empty}$ | 空字符串，不是识别原话也为空 | 本例尚未交付最终结果 |
+
+### 代入图上的两种情况
+
+| 晚到的是什么 | 返回后先检查什么 | 显示 A 的最终结果 | 保存的 `Result` |
+|---|---|---|---|
+| 识别出的「嗯，你好」 | `r.cancelled` | 否 | 空 |
+| 整理出的「你好！」 | `r.cancelled` | 否 | 空 |
+
+图中没有耗时或性能数字。两种文字都是构造例子，用来说明识别和整理两条路都先检查取消状态。
+
+### 源码里的两道检查
+
+`Manager.Cancel` 找到仍在运行的 A 后，设置 `r.cancelled`，再取消它的 context。识别返回后，`run.listen` 先检查这个标记；已取消就调用 `endCancelled` 并返回，不继续写入识别原话或进入整理。整理返回后，`transcribe` 也先检查同一标记；已取消就结束，不把整理结果交给 `finish` 交付。
+
+`endCancelled` 通过 `Manager.end` 把状态设为 `Cancelled`。开启历史且录音达到最小长度时，`keep` 写入状态为 `cancelled` 的记录。记录里的 `Result` 来自取消时的 snapshot，本例为空；如果取消发生在整理阶段，`RawText` 可以保留此前识别出的原话，所以「结果文字为空」不等于「识别原话也为空」。录音是否保留及其期限不在这步展开。
+
+### 接下来
+
+第 2 步的 helper 接收按键。取消键怎样到达 helper，权限又在哪些地方检查？
+
+### 源码出处
+
+公开基线：`sglang-omni@48ee40b2563492de95efc952a0c7470db087d8a9`，路径均相对该仓库。
+
+- 取消仍在运行的当前或后台 session：`Voxt/internal/session/manager.go:256-289`。
+- 识别返回后的取消检查，位于写入识别原话之前：`Voxt/internal/session/run_listen.go:397-417`。
+- 整理返回后的取消检查，位于交付之前：`Voxt/internal/session/cleanup.go:35-77`。
+- 取消结束、最小录音长度与历史写入：`Voxt/internal/session/run.go:398-414,446-460,510-529`。
+- 测试覆盖录音、识别和整理时取消，不粘贴文字；够长的录音留下已取消记录，过短则不留：`Voxt/internal/session/session_test.go:294-344`。

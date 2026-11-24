@@ -154,3 +154,58 @@ Public baseline: `sglang-omni@48ee40b2563492de95efc952a0c7470db087d8a9`. Paths a
 - `Manager.update` identity checks, completion checks and publication paths: `Voxt/internal/session/manager.go:341-375`.
 - The corresponding checks in `Manager.end`: `Voxt/internal/session/manager.go:378-417`.
 - History uses this run's ID: `Voxt/internal/session/run.go:446-460`.
+
+## Step 4 · Cancellation stops late results
+
+> **In one line:** If you cancel A during recognition or clean-up, its late result does not appear where you type or in the result window. In this example, A's saved record says cancelled and its `Result` is empty.
+
+### On the stage
+
+- You cancel A: this step covers cancellation only during recognition or clean-up.
+- The two boxes on the left are alternatives, not events that must happen together: a late recognition result or a late clean-up result.
+- The red box in the center marks A cancelled. Late results stop here.
+- On the right, no late A result appears where you type or in the result window.
+- The saved record marks A cancelled and leaves `Result`, the final-result field, empty. This example has history on and a recording long enough to keep.
+
+### The result after cancellation
+
+$$
+C_A=\mathrm{true}\quad\Longrightarrow\quad D_A=\mathrm{stopped},\qquad R_A=\mathrm{empty}
+$$
+
+| Symbol | Meaning | Where it comes from |
+|---|---|---|
+| $C_A$ | A's cancellation flag | `Manager.Cancel` sets `r.cancelled` |
+| $D_A$ | Delivery of the late result | The cancellation check after recognition or clean-up returns |
+| $R_A$ | `Result` in the saved record | The snapshot when cancellation ends the run |
+| $\mathrm{stopped}$ | No insertion and no final result in the result window | The outcome this step explains |
+| $\mathrm{empty}$ | The empty string; it says nothing about the recognized original text | No final result has been delivered in this example |
+
+### The two cases on the stage
+
+| What arrives late | What the code checks after it returns | Show A's final result | Saved `Result` |
+|---|---|---|---|
+| Recognized “um, hi” | `r.cancelled` | No | Empty |
+| Cleaned “Hi!” | `r.cancelled` | No | Empty |
+
+The picture has no timing or performance numbers. Both texts are constructed examples showing that recognition and clean-up check the cancellation flag after they return.
+
+### The two checks in the source
+
+`Manager.Cancel` finds the live A, sets `r.cancelled`, and cancels its context. After recognition returns, `run.listen` checks that flag. A cancelled run calls `endCancelled` and returns before storing the recognized text or entering clean-up. After clean-up returns, `transcribe` checks the same flag. A cancelled run ends before passing the cleaned result to `finish` for delivery.
+
+`endCancelled` uses `Manager.end` to set the state to `Cancelled`. With history on and a recording that meets the minimum length, `keep` writes an entry with status `cancelled`. Its `Result` comes from the snapshot at cancellation and is empty in this example. If cancellation happens during clean-up, `RawText` can retain the previously recognized original. Empty result text therefore does not mean empty recognized text. This step does not cover whether the recording is retained or for how long.
+
+### Next
+
+Step 2's helper receives key events. How does the cancel key reach the helper, and where do permission checks happen?
+
+### Source
+
+Public baseline: `sglang-omni@48ee40b2563492de95efc952a0c7470db087d8a9`. Paths are relative to that repository.
+
+- Cancelling a live current or background session: `Voxt/internal/session/manager.go:256-289`.
+- The post-recognition cancellation check before storing recognized text: `Voxt/internal/session/run_listen.go:397-417`.
+- The post-clean-up cancellation check before delivery: `Voxt/internal/session/cleanup.go:35-77`.
+- Cancellation, minimum recording length and history writes: `Voxt/internal/session/run.go:398-414,446-460,510-529`.
+- Tests cover cancellation while recording, recognizing and composing. Nothing is pasted; a long enough recording leaves a cancelled entry, while a shorter one leaves none: `Voxt/internal/session/session_test.go:294-344`.
