@@ -4,10 +4,10 @@
 
 ## 本轮记录
 
-- 05:10 修旧 Learning SGLang 第 2 章第 7 步：中文图补齐有色格／×、五个输出、value 的选择和输出去向；新增中文手机大字图，并缩短图与 caption，360 px 也能完整读到两句话。
-- 同一独立冷读者的中文桌面／手机最终均 **12/12、24/24、0 洞**；100／1400 ms 截图逐字节相同。总表易读分 **8→11**，原分 **22→24**，唯一剩余项是受保护英文首句 16 词，英文原文和图未改。
-- `build`、本章 `transcript`、本步中文手机字号、全章中英手机布局、`deep-check 02`、本章 `zh-check`、静态截图和 `git diff --check` 通过；`readability` 只剩上述英文句长问题。全站改用静态预览以 `WAIT=100` 复核，三种宽度无布局破坏，另有 615 个小字视图仅作审计；dev 默认全量检查超时已停止。
-- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-repair-20261125-0510/final/` 和 `checks/`。本轮类型：**修旧**；下一普通轮做 **新书**，下次整点仍轮换第 2 项「向好的范例学」。
+- 05:50 新书 Learning SGLang Omni 第 4 章第 1 步：用 image-only 请求讲 two-source one-shot fan-in，0/2、1/2 等结果到齐，2/2 才由 thinker 把请求交给 scheduler；补齐中英主图、手机图、深入讲解和固定版本源码出处。
+- 独立源码核查纠正了初版「图 + 声音只需两份」的错误：speech 路线还应等 preprocessing。终稿中文桌面／手机及英文冷读均 **12/12、24/24、0 洞**；360／390／430 px 中文与 390 px 英文截图无截断或重叠。
+- `build`、本章 `transcript`、本步 `readability`、`deep-check 04`、`zh-check`、本步中文手机布局与字号、100／1400 ms 静态截图逐字节一致和 `git diff --check` 均通过；双语深入讲解抽屉已断言展开并截图核对。
+- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-omni-ch04-s01-20261125-0550/final/` 和 `checks/`。本轮类型：**新书**；下一普通轮做 **修旧**，下次整点仍轮换第 2 项「向好的范例学」。
 
 ## Learning SGLang
 
@@ -45,14 +45,14 @@
 
 ## Learning SGLang Omni
 
-规划完成：`docs/plan-omni.md` 共 3 部分、13 章；第 1 章已制作 4 步并完成，第 2、3 章各已制作 3 步并完成。
+规划完成：`docs/plan-omni.md` 共 3 部分、13 章；第 1 章已制作 4 步并完成，第 2、3 章各已制作 3 步并完成，第 4 章已制作 1 步。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
 | 01 | 01-config-to-runtime | 完成：4/4 步易读满分 | 24.00 |
 | 02 | 02-spg-topology | 完成：3/3 步易读满分 | 24.00 |
 | 03 | 03-request-binding | 完成：3/3 步易读满分 | 24.00 |
-| 04 | 04-readiness-contracts | 规划 | — |
+| 04 | 04-readiness-contracts | 在做第 2 步；第 1 步易读满分 | 24.00 |
 | 05 | 05-data-lifetime | 规划 | — |
 | 06 | 06-batching-backpressure | 规划 | — |
 | 07 | 07-shared-gpu-budgets | 规划 | — |

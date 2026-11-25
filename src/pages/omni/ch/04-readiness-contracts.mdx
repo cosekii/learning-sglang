@@ -1,0 +1,29 @@
+---
+layout: ../../../layouts/Chapter.astro
+book: omni
+slug: 04-readiness-contracts
+---
+import ReadinessContracts from '../../../components/omni/ReadinessContracts.svelte';
+import { omniNeighbors } from '../../../omni/chapters';
+import { deepFor } from '../../../deep';
+export const deep = await deepFor('omni-04-readiness-contracts');
+
+<ReadinessContracts client:load {...omniNeighbors('04-readiness-contracts')} deep={deep} />
+
+<details class="i18n-en">
+<summary>Where this chapter's claims come from</summary>
+
+Step 1 constructs an image-only request A in the speech topology. Its expected sources are `image_encoder` and `preprocessing`. The image result arrives first and is buffered; preprocessing arrives second, resolves the expected-source set and completes the fan-in. The snapshots 0/2, 1/2 and 2/2 count arrived payloads for this teaching example, not seconds or throughput. The figure covers dispatch after a one-shot fan-in into `thinker`, not the start of prefill. Streams, per-step feedback and data release come later.
+
+Source revision: `sglang-omni origin/main@91d06c70b00746c0b2b84db12a318240db360f1d`. The deep dive lists the exact files and lines.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的出处</summary>
+
+第 1 步构造 speech 路线里只有图的请求 A，应等 `image_encoder` 和 `preprocessing` 两份结果。image 的完整结果先到并存下，preprocessing 随后到达，确定应等来源并补齐两路输入。0/2、1/2、2/2 数的是这个教学例子里已经到达的结果，不是等待秒数或吞吐量。本图只讲 one-shot 汇聚后交给 scheduler，不表示 prefill 已开始；流、逐步反馈和数据释放留到后面。
+
+源码版本：`sglang-omni origin/main@91d06c70b00746c0b2b84db12a318240db360f1d`。精确文件和行号见深入讲解。
+
+</details>

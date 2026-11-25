@@ -95,3 +95,8 @@ export const REQUEST_BINDING_PROCESS_NAME = 'talker_ar';
 export const REQUEST_BINDING_REPLICA_COUNT = 2;
 export const REQUEST_BINDING_REQUEST_IDS = ['A', 'B', 'C'] as const;
 export const REQUEST_BINDING_ASSIGNMENTS = REQUEST_BINDING_REQUEST_IDS.map((_, index) => index % REQUEST_BINDING_REPLICA_COUNT);
+
+// One image-only speech request; the image result arrives before preprocessing.
+export const READINESS_ONE_SHOT_INPUTS = ['image_encoder', 'preprocessing'] as const;
+export const READINESS_ONE_SHOT_REQUIRED_COUNT = READINESS_ONE_SHOT_INPUTS.length;
+export const READINESS_ONE_SHOT_ARRIVED_COUNTS = [0, 1, READINESS_ONE_SHOT_REQUIRED_COUNT] as const;
