@@ -52,7 +52,7 @@
     { n: 6, rows: true, caption: `Every token multiplies its x by the same three matrices. All six of them, from scratch.`, captionZh: `每个 token 都用自己的 x 乘同样的三个矩阵。全部六个，从头算起。` },
     { n: 6, rows: true, recompute: true, markNew: true, caption: `Look at the five old columns. Same x, same matrices, same vectors as last time. Nothing changed, we just computed them again.`, captionZh: `前五个 x 和三张数字表没变。却又重算出和第 3 步一样的 q、k、v。` },
     { n: 6, rows: true, markNew: true, attend: 5, weights: true, mix: true, caption: `Paris's query looks at all six keys and blends all six values. It needs every earlier key and value.`, captionZh: `Paris 的 query 看全部六个 key，混合全部六个 value。它需要之前每一个 key 和 value。` },
-    { n: 6, rows: true, markNew: true, unusedQ: true, caption: `The old queries? Their outputs only go on to rebuild the next layer's old x, and from it the same old k and v. Keep every layer's k and v, and nothing reads them.`, captionZh: `旧的 query 呢？它们的输出只会重建下一层的旧 x，再由它算出同样的旧 k 和 v。只要留住每层的 k 和 v，就没人再读它们。` },
+    { n: 6, rows: true, markNew: true, unusedQ: true, caption: `The old queries? Their outputs only go on to rebuild the next layer's old x, and from it the same old k and v. Keep every layer's k and v, and nothing reads them.`, captionZh: `旧 q 只用于旧输出，旧输出又会还原旧 k、v。留下每层的旧 k、v，旧 q 就没用了。` },
     { n: 6, rows: true, markNew: true, tally: true, caption: `So each decode step, the new token needs every earlier k and v, and nothing else from the past. We recomputed them all, identically, in every head of every layer. Why not just keep them?`, captionZh: `所以每个 decode 步，新 token 只需要之前所有的 k 和 v，不需要过去的其他东西。我们却在每层每个 head 里把它们原样重算了一遍。为什么不直接留住它们？` },
   ];
 
@@ -108,6 +108,7 @@
   const zhDecode = $derived(step === 7 && $lang === 'zh');
   const zhSix = $derived(step === 8 && $lang === 'zh');
   const zhRecompute = $derived(step === 9 && $lang === 'zh');
+  const zhUnusedQ = $derived(step === 12 && $lang === 'zh');
   let phone = $state(false);
   $effect(() => {
     const query = window.matchMedia('(max-width: 900px)');
@@ -125,6 +126,7 @@
   const phoneSix = $derived(phone && zhSix);
   const phoneRecompute = $derived(phone && zhRecompute);
   const phoneSame = $derived(phone && zhSame);
+  const phoneUnusedQ = $derived(phone && zhUnusedQ);
   const expScores = $derived(cur.attend !== undefined ? scores[cur.attend].map((score) => Math.exp(score)) : []);
   const expTotal = $derived(expScores.reduce((sum, value) => sum + value, 0));
   const tallyDenominator = scores[5].reduce((sum, score) => sum + Math.exp(score), 0);
@@ -134,8 +136,33 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox={phoneProject ? '0 0 360 560' : phoneSame ? '0 0 360 500' : phoneDecode ? '0 0 360 500' : phoneIntro ? '0 0 360 450' : phoneRecompute ? '0 0 360 440' : phoneSix ? '0 0 360 430' : phoneCausal ? '0 0 360 520' : phoneMix ? '0 0 360 580' : phoneWeights ? '0 0 360 550' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Attention per decode step, step {step + 1}" class:phone-project={phoneProject} class:phone-same={phoneSame} class:phone-decode={phoneDecode} class:phone-intro={phoneIntro} class:phone-weights={phoneWeights} class:phone-mix={phoneMix} class:phone-causal={phoneCausal} class:phone-six={phoneSix} class:phone-recompute={phoneRecompute}>
-      {#if phoneDecode}
+    <svg viewBox={phoneProject ? '0 0 360 560' : phoneUnusedQ ? '0 0 360 510' : phoneSame ? '0 0 360 500' : phoneDecode ? '0 0 360 500' : phoneIntro ? '0 0 360 450' : phoneRecompute ? '0 0 360 440' : phoneSix ? '0 0 360 430' : phoneCausal ? '0 0 360 520' : phoneMix ? '0 0 360 580' : phoneWeights ? '0 0 360 550' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Attention per decode step, step {step + 1}" class:phone-project={phoneProject} class:phone-same={phoneSame} class:phone-decode={phoneDecode} class:phone-intro={phoneIntro} class:phone-weights={phoneWeights} class:phone-mix={phoneMix} class:phone-causal={phoneCausal} class:phone-six={phoneSix} class:phone-recompute={phoneRecompute} class:phone-kv={phoneUnusedQ}>
+      {#if phoneUnusedQ}
+        <defs>
+          <marker id="phone-old-q-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+            <path d="M 0 0 L 7 3.5 L 0 7 z" fill="var(--muted)" />
+          </marker>
+        </defs>
+        <text x="180" y="26" text-anchor="middle" class="ph-title">旧 q 的下游，只会重建旧 k、v</text>
+        <text x="180" y="50" text-anchor="middle">拿第 1 个旧位置看；其余旧位置也一样</text>
+        {#each [
+          { y: 68, title: '旧 q₁', body: '第 7 步：算自己的旧 out₁', color: COLOR.q },
+          { y: 150, title: '旧 out₁', body: '继续过本层剩下的计算', color: COLOR.x },
+          { y: 232, title: '下一层的旧 x₁', body: '输入和上一轮相同', color: COLOR.x },
+          { y: 314, title: '下一层的旧 k₁、v₁', body: '结果也和上一轮相同', color: COLOR.k },
+        ] as card, i}
+          <rect x="45" y={card.y} width="270" height="58" rx="7" fill={card.color[0]} stroke={card.color[1]} />
+          <text x="180" y={card.y + 24} text-anchor="middle" class="ph-strong">{card.title}</text>
+          <text x="180" y={card.y + 46} text-anchor="middle">{card.body}</text>
+          {#if i < 3}
+            <line x1="180" y1={card.y + 60} x2="180" y2={card.y + 78} stroke="var(--muted)" stroke-width="2" marker-end="url(#phone-old-q-arrow)" />
+          {/if}
+        {/each}
+        <line x1="18" y1="392" x2="342" y2="392" stroke="var(--line)" />
+        <text x="180" y="420" text-anchor="middle" class="ph-strong">留下每层旧 k、v，q₆ 仍能算 out₆</text>
+        <text x="180" y="450" text-anchor="middle">旧 q₁…q₅、旧 out₁…out₅ 不再读</text>
+        <text x="180" y="490" text-anchor="middle" class="ph-faint">下一章：怎样留下并直接读旧 k、v</text>
+      {:else if phoneDecode}
         <defs>
           <marker id="phone-decode-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
             <path d="M 0 0 L 7 3.5 L 0 7 z" fill="var(--muted)" />
@@ -351,6 +378,35 @@
         <text x="16" y="482">图中数四舍五入</text>
         <text x="16" y="506">0.06 + 0.26 + 0.05 + 0.53 + 0.10 = 1.00</text>
         <text x="16" y="540">下一步：按这些权重混合五列 value</text>
+      {:else if zhUnusedQ}
+        <defs>
+          <marker id="old-q-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+            <path d="M 0 0 L 8 4 L 0 8 z" fill="var(--muted)" />
+          </marker>
+        </defs>
+        <text x="20" y="26" class="kv-title">旧 q 的下游，只会重建相同的旧 k、v</text>
+        <text x="20" y="50" class="legend">拿第 1 个旧位置看；q₂—q₅ 也走同样的链</text>
+        {#each [
+          { x: 20, w: 130, title: '旧 q₁', body: '第 7 步：算旧 out₁', color: COLOR.q },
+          { x: 205, w: 130, title: '旧 out₁', body: '继续过本层计算', color: COLOR.x },
+          { x: 390, w: 130, title: '下一层的旧 x₁', body: '输入和上一轮相同', color: COLOR.x },
+          { x: 575, w: 125, title: '下一层的旧 k₁、v₁', body: '结果也和上一轮相同', color: COLOR.k },
+        ] as card, i}
+          <rect x={card.x} y="88" width={card.w} height="80" rx="8" fill={card.color[0]} stroke={card.color[1]} />
+          <text x={card.x + card.w / 2} y="119" text-anchor="middle" class="slab">{card.title}</text>
+          <text x={card.x + card.w / 2} y="148" text-anchor="middle" class="legend">{card.body}</text>
+          {#if i < 3}
+            <line x1={card.x + card.w + 8} y1="128" x2={card.x + card.w + 47} y2="128" stroke="var(--muted)" stroke-width="2" marker-end="url(#old-q-arrow)" />
+          {/if}
+        {/each}
+        <text x="177" y="112" text-anchor="middle" class="tag">算出</text>
+        <text x="362" y="112" text-anchor="middle" class="tag">送往下一层</text>
+        <text x="547" y="112" text-anchor="middle" class="tag">三张数字表</text>
+        <rect x="20" y="210" width="680" height="142" rx="9" fill="var(--bg)" stroke="var(--line)" />
+        <text x="40" y="240" class="slab">留下每层的旧 k、v 后，第 12 步仍然能算：</text>
+        <text x="40" y="278" class="sum">q₆ 读取旧 k₁…k₅、旧 v₁…v₅ → out₆</text>
+        <text x="40" y="318" class="legend">旧 q₁…q₅、旧 out₁…out₅ 不再读；这条重算链可以不走</text>
+        <text x={W / 2} y="390" text-anchor="middle" class="footnote">k、v 要按层分别留下；下一章讲怎样留下并直接读</text>
       {:else if zhDecode}
         <defs>
           <marker id="decode-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
@@ -794,7 +850,12 @@
   .phone-same .ph-strong { font-weight: 650; }
   .phone-same .ph-faint { fill: var(--faint); }
   .phone-same .ph-mono { font-family: var(--mono); }
+  .phone-kv text { font-family: var(--sans); font-size: 12px; fill: var(--fg); }
+  .phone-kv .ph-title { font-size: 16px; font-weight: 650; }
+  .phone-kv .ph-strong { font-weight: 650; }
+  .phone-kv .ph-faint { fill: var(--faint); }
   .new-x { fill: var(--gen) !important; }
+  .kv-title { font-size: 16px; font-weight: 650; fill: var(--fg); }
   .tag.new { fill: var(--gen); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; font-size: 9px; }
   rect.pulse { animation: pulse 700ms ease-in-out 2; }
   @keyframes pulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.3 } }
