@@ -127,3 +127,13 @@ export const LIFETIME_WAITING_COUNT = LIFETIME_RESULT_IDS.length - LIFETIME_SLOT
 
 // DataRef's current wire format; data_ref.py accepts only this version.
 export const LIFETIME_DATA_REF_WIRE_VERSION = 1;
+
+// A SimpleScheduler teaching example: two requests are ready, one arrives at 6 ms.
+// The five-ms collection budget is a counterfactual, not a shipped model default.
+export const BATCH_WAIT_MAX_SIZE = 4;
+export const BATCH_WAIT_READY_IDS = ['A', 'B'] as const;
+export const BATCH_WAIT_LATE_ID = 'C';
+export const BATCH_WAIT_LATE_MS = 6;
+export const BATCH_WAIT_ACTIVE_MS = 5;
+export const BATCH_WAIT_ADDED_MS = BATCH_WAIT_ACTIVE_MS;
+export const BATCH_WAIT_EMPTY_SLOTS = BATCH_WAIT_MAX_SIZE - BATCH_WAIT_READY_IDS.length;

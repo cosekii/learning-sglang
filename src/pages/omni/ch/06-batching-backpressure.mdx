@@ -1,0 +1,29 @@
+---
+layout: ../../../layouts/Chapter.astro
+book: omni
+slug: 06-batching-backpressure
+---
+import BatchingBackpressure from '../../../components/omni/BatchingBackpressure.svelte';
+import { omniNeighbors } from '../../../omni/chapters';
+import { deepFor } from '../../../deep';
+export const deep = await deepFor('omni-06-batching-backpressure');
+
+<BatchingBackpressure client:load {...omniNeighbors('06-batching-backpressure')} deep={deep} />
+
+<details class="i18n-en">
+<summary>Where this chapter's claims come from</summary>
+
+Step 1 constructs a `SimpleScheduler` collection example with four batch slots. A and B are queued at 0 ms; C arrives at 6 ms. With `max_batch_wait_ms=0`, the scheduler takes A and B without waiting for the two empty slots. In the counterfactual five-ms panel, the collection deadline expires at 5 ms, before C arrives, so A and B enter compute five ms later. The timelines omit compute time and every other delay. The five-ms budget is not a shipped MiniCPM-o default or a recommendation.
+
+Source revision for the chapter: `sglang-omni origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`. The deep dive lists the exact files and lines.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的出处</summary>
+
+第 1 步构造一个四格 `SimpleScheduler` 收集例子。A、B 在 0 ms 已入队，C 在 6 ms 才到。`max_batch_wait_ms=0` 时，scheduler 直接拿走 A、B，不等另外两个空位。在对照的 5 ms 面板里，收集截止时间是 5 ms，仍早于 C 到达，因此 A、B 晚 5 ms 进入计算。时间线不画计算耗时和其他等待。5 ms 不是 MiniCPM-o 的出厂默认值，也不是推荐配置。
+
+本章源码版本：`sglang-omni origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`。精确文件和行号见深入讲解。
+
+</details>
