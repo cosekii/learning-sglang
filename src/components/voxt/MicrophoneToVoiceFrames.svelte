@@ -18,6 +18,9 @@
     VOXT_DEMO_TAIL_BYTES,
     VOXT_DEMO_TAIL_SAMPLES,
     VOXT_DEMO_TOTAL_SAMPLES,
+    VOXT_HIGH_PASS_CLEAR_HZ,
+    VOXT_HIGH_PASS_HUM_HZ,
+    VOXT_HIGH_PASS_HUM_RATIO,
   } from '../../voxt/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -34,6 +37,9 @@
   }, {
     caption: 'The kept history recording stays unchanged. Processing changes a separate copy for the speech model.',
     captionZh: '保留的历史录音不变。处理只改送给识别模型的副本。',
+  }, {
+    caption: 'A high-pass filter reduces slow hum in the model copy. The saved recording does not change.',
+    captionZh: '高通滤波减弱副本里的低沉嗡声。保存的录音不变。',
   }];
   const ariaLabels = [{
     en: 'The helper cuts one second of continuous sound into ten ordered audio frames, each holding 100 milliseconds',
@@ -47,6 +53,9 @@
   }, {
     en: 'One recording takes two paths. The kept history preserves the original sound. A separate copy changes during processing for the speech model.',
     zh: '同一段录音走两条路。保留的历史录音原样不动，另一份副本经过处理后送给识别模型。',
+  }, {
+    en: 'A high-pass filter reduces a slow 50 Hz hum in the model copy while a faster 200 Hz sound stays the same. Hz means vibrations each second.',
+    zh: '高通滤波把模型副本里每秒振动 50 次的低沉嗡声减弱，每秒振动 200 次的声音保持不变。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -63,7 +72,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(step === 0 ? (phone ? 590 : 380) : step === 2 ? (phone ? 450 : 340) : step === 3 ? (phone ? 475 : 370) : (phone ? 515 : 330));
+  const H = $derived(step === 0 ? (phone ? 590 : 380) : step === 2 ? (phone ? 450 : 340) : step === 3 ? (phone ? 475 : 370) : step === 4 ? (phone ? 480 : 420) : (phone ? 515 : 330));
   const frames = Array.from({ length: VOXT_CAPTURE_FRAME_COUNT }, (_, i) => ({
     seq: i,
     start: i * VOXT_CAPTURE_FRAME_MS,
@@ -73,6 +82,11 @@
     const x = i / 120;
     const envelope = 0.3 + 0.7 * Math.sin(Math.PI * x) ** 2;
     const y = base + envelope * (27 * Math.sin(x * Math.PI * 14) + 13 * Math.sin(x * Math.PI * 34));
+    return `${i ? 'L' : 'M'}${(x * width).toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  const sine = (width: number, base: number, amplitude: number, cycles: number) => Array.from({ length: 161 }, (_, i) => {
+    const x = i / 160;
+    const y = base + amplitude * Math.sin(x * Math.PI * 2 * cycles);
     return `${i ? 'L' : 'M'}${(x * width).toFixed(1)},${y.toFixed(1)}`;
   }).join(' ');
   const partialLayout = $derived(Array.from({ length: VOXT_DEMO_FULL_FRAME_COUNT + 1 }, (_, i) => {
@@ -190,7 +204,7 @@
       <rect x={phone ? 165 : 414} y={phone ? 403 : 296} width="12" height="12" rx="2" fill="var(--gen-soft)" stroke="var(--gen)" />
       <text x={phone ? 185 : 434} y={phone ? 414 : 307} class="detail">{t('final partial frame', '末尾不足帧')}</text>
       <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Public test example; the last frame is shorter, not padded.', '公开测试示例；最后一帧更短，不补齐。')}</text>
-      {:else}
+      {:else if step === 3}
       <text x={W / 2} y={phone ? 25 : 30} text-anchor="middle" class="title">{t('ONE RECORDING, TWO COPIES', '同一段录音，分成两份')}</text>
       <text x={W / 2} y={phone ? 49 : 55} text-anchor="middle" class="subtitle">{t('copy = the same sound in separate storage', '副本 = 同一段声音，另存一份')}</text>
       <rect x={phone ? 45 : 250} y={phone ? 70 : 80} width={phone ? 210 : 220} height={phone ? 60 : 70} rx="10" fill="var(--bg)" stroke="var(--line)" />
@@ -218,6 +232,29 @@
       {/if}
       <text x={W / 2} y={phone ? 414 : 328} text-anchor="middle" class="formula">{t('ORIGINAL STAYS · COPY CHANGES', '原件不动 · 副本处理')}</text>
       <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Processing is on here; keeping audio is a separate setting.', '图中开启处理；是否保存录音由另一项设置决定。')}</text>
+      {:else}
+      <text x={W / 2} y={phone ? 25 : 30} text-anchor="middle" class="title">{t('HIGH-PASS REDUCES LOW HUM', '高通滤波减弱低沉嗡声')}</text>
+      <text x={W / 2} y={phone ? 47 : 53} text-anchor="middle" class="subtitle">{t('high-pass = reduces slow vibrations', '高通 = 减弱振动慢的声音')}</text>
+      <text x={W / 2} y={phone ? 68 : 75} text-anchor="middle" class="definition">{t('Hz = vibrations each second', 'Hz = 每秒振动多少次')}</text>
+      <text x={W / 2} y={phone ? 96 : 103} text-anchor="middle" class="label">{VOXT_HIGH_PASS_HUM_HZ} Hz {t('hum', '低沉嗡声')}</text>
+      <text x={phone ? 75 : 190} y={phone ? 119 : 126} text-anchor="middle" class="detail">{t('BEFORE', '处理前')}</text>
+      <text x={phone ? 225 : 530} y={phone ? 119 : 126} text-anchor="middle" class="detail">{t('AFTER', '处理后')}</text>
+      <line x1={phone ? 20 : 80} y1={phone ? 161 : 168} x2={phone ? 130 : 300} y2={phone ? 161 : 168} stroke="var(--line)" />
+      <line x1={phone ? 170 : 420} y1={phone ? 161 : 168} x2={phone ? 280 : 640} y2={phone ? 161 : 168} stroke="var(--line)" />
+      <g transform={`translate(${phone ? 20 : 80} 0)`}><path d={sine(phone ? 110 : 220, phone ? 161 : 168, 34, 3)} fill="none" stroke="var(--accent)" stroke-width="2.5" /></g>
+      <g transform={`translate(${phone ? 170 : 420} 0)`}><path d={sine(phone ? 110 : 220, phone ? 161 : 168, 34 * VOXT_HIGH_PASS_HUM_RATIO, 3)} fill="none" stroke="var(--accent)" stroke-width="2.5" /></g>
+      <line x1={phone ? 137 : 330} y1={phone ? 161 : 168} x2={phone ? 158 : 390} y2={phone ? 161 : 168} stroke="var(--muted)" stroke-width="2" marker-end="url(#byte-arrow)" />
+      <text x={phone ? 225 : 530} y={phone ? 211 : 218} text-anchor="middle" class="cut">{t('hum becomes smaller', '嗡声变小')}</text>
+      <text x={W / 2} y={phone ? 280 : 263} text-anchor="middle" class="label">{VOXT_HIGH_PASS_CLEAR_HZ} Hz {t('sound', '声音')}</text>
+      <text x={phone ? 75 : 190} y={phone ? 303 : 286} text-anchor="middle" class="detail">{t('BEFORE', '处理前')}</text>
+      <text x={phone ? 225 : 530} y={phone ? 303 : 286} text-anchor="middle" class="detail">{t('AFTER', '处理后')}</text>
+      <line x1={phone ? 20 : 80} y1={phone ? 355 : 328} x2={phone ? 130 : 300} y2={phone ? 355 : 328} stroke="var(--line)" />
+      <line x1={phone ? 170 : 420} y1={phone ? 355 : 328} x2={phone ? 280 : 640} y2={phone ? 355 : 328} stroke="var(--line)" />
+      <g transform={`translate(${phone ? 20 : 80} 0)`}><path d={sine(phone ? 110 : 220, phone ? 355 : 328, 25, 10)} fill="none" stroke="var(--accent)" stroke-width="2.5" /></g>
+      <g transform={`translate(${phone ? 170 : 420} 0)`}><path d={sine(phone ? 110 : 220, phone ? 355 : 328, 25, 10)} fill="none" stroke="var(--accent)" stroke-width="2.5" /></g>
+      <line x1={phone ? 137 : 330} y1={phone ? 355 : 328} x2={phone ? 158 : 390} y2={phone ? 355 : 328} stroke="var(--muted)" stroke-width="2" marker-end="url(#byte-arrow)" />
+      <text x={phone ? 225 : 530} y={phone ? 410 : 378} text-anchor="middle" class="cut">{t('same sound', '声音不变')}</text>
+      <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Public response; both sides share one scale.', '按公开响应绘制；处理前后同一尺度。')}</text>
       {/if}
     </svg>
   </div>

@@ -31,3 +31,10 @@ export const VOXT_DEMO_TOTAL_SAMPLES = 3300;
 export const VOXT_DEMO_FULL_FRAME_COUNT = Math.floor(VOXT_DEMO_TOTAL_SAMPLES / VOXT_CAPTURE_FRAME_SAMPLES);
 export const VOXT_DEMO_TAIL_SAMPLES = VOXT_DEMO_TOTAL_SAMPLES % VOXT_CAPTURE_FRAME_SAMPLES;
 export const VOXT_DEMO_TAIL_BYTES = VOXT_DEMO_TAIL_SAMPLES * VOXT_PCM_BYTES_PER_SAMPLE;
+
+// Public high-pass defaults and response test. Wave shapes are constructed from this response.
+export const VOXT_HIGH_PASS_CORNER_HZ = 80;
+export const VOXT_HIGH_PASS_HUM_HZ = 50;
+export const VOXT_HIGH_PASS_CLEAR_HZ = 200;
+export const VOXT_HIGH_PASS_HUM_RESPONSE_DB = -16.4;
+export const VOXT_HIGH_PASS_HUM_RATIO = 10 ** (VOXT_HIGH_PASS_HUM_RESPONSE_DB / 20);

@@ -201,3 +201,54 @@ Public baseline: `sglang-omni@6d8ed2dcf70da1b021bb14b62239a3add428636c`; paths a
 - File processing leaves input `pcm` unchanged for history: `Voxt/internal/session/run_audio.go:261-269`; implementation: `Voxt/internal/dsp/level.go:125-169`.
 - History WAV writes `r.pcm.bytes()`: `Voxt/internal/session/run.go:545-554`.
 - The public documentation describes the recording as the microphone signal before high-pass, gain and silence trimming: `Voxt/docs/dictation-collection.md:37-40`.
+
+## Step 5 · High-pass reduces low hum
+
+> **In one line:** The default high-pass reduces a 50 Hz hum in the model copy by about 16.4 dB while a 200 Hz sound stays almost unchanged; the original recording in history bypasses this change.
+
+### On the stage
+
+- `Hz` counts vibrations each second. A 50 Hz wave vibrates slowly and can represent mains hum. A 200 Hz wave vibrates faster.
+- A high-pass does not delete every frequency below a hard boundary. It reduces slower vibrations by a frequency-dependent response. The default corner is 80 Hz, where the response is about −3 dB.
+- Before and after waves share the same time and amplitude scales. The 50 Hz output uses the public response of about −16.4 dB. The 200 Hz response is close to 1, so the stage draws the same wave.
+- Both blue waves belong to Step 4's model copy. The amber history recording does not enter this processing path.
+
+### Formula
+
+The public test reports the amplitude change in decibels. Convert that change to an amplitude ratio:
+
+$$
+G=10^{D/20}
+$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $D$ | Response at one frequency, in decibels | Public `TestHighPassResponse` |
+| $G$ | Output amplitude divided by input amplitude | Decibel conversion; the code's `Response` returns 1 for 0 dB |
+
+### The numbers on the stage
+
+| Quantity | Calculation | Result |
+|---|---|---:|
+| Amplitude ratio at 50 Hz | $10^{-16.4/20}$ | About 0.151 |
+| Relative output height | $1\times0.151$ | About 15.1% of the input |
+| Response at 200 Hz | Public test range −0.05 to 0.01 dB | Close to 1; drawn unchanged |
+
+At the default 80 Hz corner, the response is about −3 dB, so $10^{-3/20}\approx0.708$. The filter changes gradually rather than deleting everything below 80 Hz.
+
+### Scope
+
+The sine waves illustrate amplitude response. This step does not expand the fourth-order Butterworth design, biquads or initial 20 ms state. The implementation keeps filter state across streaming chunks so chunked output matches whole-recording processing.
+
+### Next
+
+After the low hum falls, VAD checks which 20 ms slices contain speech. Detection runs before gain so that gain cannot move its thresholds.
+
+### Sources
+
+Public baseline: `sglang-omni@6d8ed2dcf70da1b021bb14b62239a3add428636c`; paths are relative to that repository.
+
+- High-pass before detection, the default 80 Hz corner and frequency responses: `Voxt/internal/dsp/doc.go:6-24`.
+- Default corner: `Voxt/internal/dsp/params.go:5-10,41-50`.
+- Fourth-order filter, response function and new-slice output: `Voxt/internal/dsp/highpass.go:65-106`.
+- Public test for about −16.4 dB at 50 Hz, −3 dB at 80 Hz and nearly unchanged 200 Hz audio: `Voxt/internal/dsp/dsp_test.go:12-44`.
