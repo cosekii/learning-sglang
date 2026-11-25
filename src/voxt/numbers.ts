@@ -54,3 +54,9 @@ export const VOXT_QUIET_GAIN_RATIO = 10 ** (VOXT_QUIET_GAIN_DB / 20);
 // Public limiter default; the crossing peak is constructed.
 export const VOXT_LIMITER_CEILING_DB = -1;
 export const VOXT_LIMITER_CEILING_RATIO = 10 ** (VOXT_LIMITER_CEILING_DB / 20);
+
+// ASR route map: one constructed second of already-captured PCM, one selected route.
+export const VOXT_ASR_ROUTE_COUNT = 3;
+export const VOXT_ASR_DEMO_SECONDS = 1;
+export const VOXT_PCM_BYTES_PER_SECOND = VOXT_CAPTURE_SAMPLE_RATE * VOXT_PCM_BYTES_PER_SAMPLE;
+export const VOXT_ASR_DEMO_BYTES = VOXT_ASR_DEMO_SECONDS * VOXT_PCM_BYTES_PER_SECOND;

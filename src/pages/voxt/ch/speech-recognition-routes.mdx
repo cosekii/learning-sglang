@@ -1,0 +1,29 @@
+---
+layout: ../../../layouts/Chapter.astro
+book: voxt
+slug: speech-recognition-routes
+---
+import SpeechRecognitionRoutes from '../../../components/voxt/SpeechRecognitionRoutes.svelte';
+import { voxtNeighbors } from '../../../voxt/chapters';
+import { deepFor } from '../../../deep';
+export const deep = await deepFor('voxt-speech-recognition-routes');
+
+<SpeechRecognitionRoutes client:load {...voxtNeighbors('speech-recognition-routes')} deep={deep} />
+
+<details class="i18n-en">
+<summary>Where this chapter's claims come from</summary>
+
+Step 1 uses the public provider interfaces to map three alternatives: local Omni, a configured ASR API and macOS system dictation. Its one-second, 32,000-byte recording is a constructed example derived from the capture format in Chapter 3; only the selected service receives it. An API hosted at a loopback address also stays on this Mac.
+
+Source revision: `sglang-omni@0e641996a0c269601d03f1cb29d3f46d7cb345a6`. The deep dive lists exact files and lines.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的出处</summary>
+
+第 1 步按公开 provider 接口画出三种选择：本机 Omni、配置的 ASR API 和 macOS 系统听写。1 秒、32,000 字节录音是沿用第 3 章采集格式构造的例子；只有选中的服务收到它。API 地址指向 loopback 时，声音也留在本机。
+
+源码版本：`sglang-omni@0e641996a0c269601d03f1cb29d3f46d7cb345a6`。精确文件和行号见深入讲解。
+
+</details>
