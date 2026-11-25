@@ -1,14 +1,15 @@
 # 第 3 章评分卡 · From microphone to audio frames
 
 日期：2026-11-25。评分办法：`EVAL.md` 易读性 R1–R6 与原 12 项，每项 0 / 1 / 2。
-第 1 步材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/voxt-ch03-s01-20261125-0353/final/`；第 2 步材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch03-s02-20261125-0710/final/`；检查日志在各自相邻的 `checks/`。冷读者没有编程前置知识，只读主图、累计 transcript 和前两章 transcript。
+第 1 步材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/voxt-ch03-s01-20261125-0353/final/`；第 2 步材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch03-s02-20261125-0710/final/`；第 3 步材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch03-s03-20261125-0950/checks/`。冷读者没有编程前置知识，只读主图、累计 transcript 和前两章 transcript。
 
 | 步 | 易读分 /12 | R1 小学生复述 | 分数 /24 | 冷读者洞数 | 最差的两条 | 日期 |
 |---|---:|---|---:|---:|---|---|
 | 1 | 12 | 助手程序把连续声音按每 100 毫秒一小段切开，所以 1 秒会变成 10 小段。 | 23 | 0 | #1 动机 1；其余各项 2 | 2026-11-25 |
 | 2 | 12 | 有个声音的数 16,383，一个字节装不下，除以 256 后，先装余数 255，再装 63。 | 23 | 0 | #1 动机 1；其余各项 2 | 2026-11-25 |
+| 3 | 12 | 两个大框装满后，剩下的 100 个样本也装进停止时的短帧，不会丢掉。 | 24 | 0 | 各项 2 | 2026-11-25 |
 
-**当前平均：23 / 24；最低：23；总洞数：0；2/2 个已制作步骤易读满分。** 本章继续制作第 3 步。
+**当前平均：23.33 / 24；最低：23；总洞数：0；3/3 个已制作步骤易读满分。** 本章继续制作第 4 步。
 
 ## 第 1 步冷读与检查
 
@@ -30,3 +31,10 @@
 - 公开基线为 `sglang-omni@f6827ed1907e392fd67d5f13fa315c016e2056e8`。`PCMFramer.swift:33-47,77-87` 给出默认值、整数转换和 little-endian 保存；`HotkeyRecognizerTests.swift:474-488` 直接核对 `0.5 → 16383`、字节 `FF 3F` 和完整帧 3,200 字节。
 - 最终 `build`（31 页）、本章 `transcript`、本步 `readability`、本步中英三种宽度手机布局与中文字号硬门、全站三种宽度手机布局、`deep-check 03`、本章 `zh-check`、数字与固定源码断言、`git diff --check` 均通过。全站另有 **615** 个既有小字视图仅作审计。浏览器实测第 1→2 步导航、caption、aria-label、静态画面、D/Esc 抽屉，以及中英 360／390／430 px 滚到底部且无横向溢出；本地目标页 HTTP 200。
 - 中英桌面、遮 caption、手机底部和深入讲解截图均已打开检查。未运行 Voxt 产品测试或真人儿童试读；R6 依据静态终态，浏览器另确认等待前后截图一致。
+
+## 第 3 步冷读与检查
+
+- 换视角自检只读中英桌面、手机截图和累计 transcript：易读 **12/12**、原分 **24/24**、**0 洞**。小学生复述为「两个大框装满后，剩下的 100 个样本也装进停止时的短帧，不会丢掉」。报告：`checks/cold-read.md`。
+- 3,300 个样本来自公开测试，主图拆成 `1,600 + 1,600 + 100`；尾帧与完整帧同横向比例，`100 × 2 = 200` 字节复用第 2 步规则。蓝色和橙色分别标完整帧与末尾不足帧，脚注说明尾帧不补齐。
+- 公开基线为 `sglang-omni origin/main@6d8ed2dcf70da1b021bb14b62239a3add428636c`。`PCMFramer.swift:59-87`、`Capture.swift:552-568` 和 `HotkeyRecognizerTests.swift:474-488` 支撑完整帧、`flush()`、尾帧字节与偏移。
+- `build`、本章 `transcript`、本步 `readability`、中文步三种宽度手机布局与字号、`deep-check 03`、本章 `zh-check` 和 `git diff --check` 均通过。中英桌面及手机截图已打开检查；本轮不跑全站回归或 Voxt 产品测试。

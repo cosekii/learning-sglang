@@ -5,13 +5,19 @@
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
   import {
+    VOXT_CAPTURE_FRAME_BYTES,
     VOXT_CAPTURE_FRAME_COUNT,
     VOXT_CAPTURE_FRAME_MS,
+    VOXT_CAPTURE_FRAME_SAMPLES,
     VOXT_BYTE_STATES,
     VOXT_DEMO_AUDIO_MS,
+    VOXT_DEMO_FULL_FRAME_COUNT,
     VOXT_DEMO_HIGH_BYTE,
     VOXT_DEMO_LOW_BYTE,
     VOXT_DEMO_PCM_VALUE,
+    VOXT_DEMO_TAIL_BYTES,
+    VOXT_DEMO_TAIL_SAMPLES,
+    VOXT_DEMO_TOTAL_SAMPLES,
   } from '../../voxt/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -22,6 +28,19 @@
   }, {
     caption: 'Each sound measurement is stored in two bytes. The remainder byte goes first.',
     captionZh: '每次声音测量存成 2 个字节。装余数的字节先放。',
+  }, {
+    caption: 'When sound stops, the remaining 100 samples still form a final frame.',
+    captionZh: '声音停了，剩下的 100 个样本也装成最后一帧。',
+  }];
+  const ariaLabels = [{
+    en: 'The helper cuts one second of continuous sound into ten ordered audio frames, each holding 100 milliseconds',
+    zh: 'helper 把一秒连续声音按顺序切成十段音频帧，每段装 100 毫秒',
+  }, {
+    en: 'One sound measurement in whole-number form, 16383, is split into 63 groups of 256 and remainder 255. Remainder byte 255 is stored first, then group byte 63.',
+    zh: '一次声音测量的整数形式 16383 拆成 63 组 256，余下 255。装余数的字节 255 先存，装组数的字节 63 后存。',
+  }, {
+    en: 'A total of 3300 samples fills two frames of 1600 samples. At stop, the remaining 100 samples form a final partial frame of 200 bytes.',
+    zh: '共 3300 个样本，先装满两个各有 1600 个样本的帧。停止时，剩下的 100 个样本也装成最后一帧，占 200 个字节。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -38,7 +57,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(step === 0 ? (phone ? 590 : 380) : (phone ? 515 : 330));
+  const H = $derived(step === 0 ? (phone ? 590 : 380) : step === 2 ? (phone ? 450 : 340) : (phone ? 515 : 330));
   const frames = Array.from({ length: VOXT_CAPTURE_FRAME_COUNT }, (_, i) => ({
     seq: i,
     start: i * VOXT_CAPTURE_FRAME_MS,
@@ -50,13 +69,25 @@
     const y = base + envelope * (27 * Math.sin(x * Math.PI * 14) + 13 * Math.sin(x * Math.PI * 34));
     return `${i ? 'L' : 'M'}${(x * width).toFixed(1)},${y.toFixed(1)}`;
   }).join(' ');
+  const partialLayout = $derived(Array.from({ length: VOXT_DEMO_FULL_FRAME_COUNT + 1 }, (_, i) => {
+    const full = i < VOXT_DEMO_FULL_FRAME_COUNT;
+    const width = phone ? 220 : 240;
+    return {
+      full,
+      seq: i,
+      samples: full ? VOXT_CAPTURE_FRAME_SAMPLES : VOXT_DEMO_TAIL_SAMPLES,
+      bytes: full ? VOXT_CAPTURE_FRAME_BYTES : VOXT_DEMO_TAIL_BYTES,
+      x: phone ? 25 : 40 + i * 260,
+      y: phone ? 95 + i * 80 : 115,
+      width: full ? width : width * VOXT_DEMO_TAIL_SAMPLES / VOXT_CAPTURE_FRAME_SAMPLES,
+      height: phone ? 60 : 90,
+    };
+  }));
 </script>
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={step === 0
-      ? t('The helper cuts one second of continuous sound into ten ordered audio frames, each holding 100 milliseconds', 'helper 把一秒连续声音按顺序切成十段音频帧，每段装 100 毫秒')
-      : t('One sound measurement in whole-number form, 16383, is split into 63 groups of 256 and remainder 255. Remainder byte 255 is stored first, then group byte 63.', '一次声音测量的整数形式 16383 拆成 63 组 256，余下 255。装余数的字节 255 先存，装组数的字节 63 后存。')}>
+    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={t(ariaLabels[step].en, ariaLabels[step].zh)}>
       <defs>
         <marker id="frame-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
           <path d="M0,0 L8,4 L0,8 z" fill="var(--accent)" />
@@ -95,7 +126,7 @@
         <text x={x + (phone ? 65 : 30)} y={y + (phone ? 32 : 40)} text-anchor="middle" class="frame-time">{frame.start}–{frame.end} ms</text>
       {/each}
       <text x={W / 2} y={H - (phone ? 14 : 16)} text-anchor="middle" class="footnote">{t(`Constructed waveform; the default frame lasts ${VOXT_CAPTURE_FRAME_MS} ms.`, `波形是示意图；默认每帧 ${VOXT_CAPTURE_FRAME_MS} ms。`)}</text>
-      {:else}
+      {:else if step === 1}
       <text x={W / 2} y={phone ? 25 : 30} text-anchor="middle" class="title">{t('ONE SOUND MEASUREMENT = TWO BYTES', '一次声音测量 = 两个字节')}</text>
       <text x={W / 2} y={phone ? 50 : 54} text-anchor="middle" class="definition">{t('byte = a box holding 0–255 · 0 through 255 = 256 values', '字节 = 能存 0–255 的格子 · 共 256 种数')}</text>
 
@@ -127,6 +158,29 @@
       <text x={W / 2} y={phone ? 464 : 281} text-anchor="middle" class="label">{t('BYTE ORDER IN THE FRAME: 255 → 63', '这次测量在帧里的字节顺序：255 → 63')}</text>
       <rect x={W / 2 - 80} y={phone ? 482 : 299} width="12" height="12" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
       <text x={W / 2 - 60} y={phone ? 493 : 310} class="detail">{t('blue = stored bytes', '蓝色 = 存好的字节')}</text>
+      {:else}
+      <text x={W / 2} y={phone ? 25 : 30} text-anchor="middle" class="title">{t('STOP KEEPS THE LAST PARTIAL FRAME', '停止时，末尾不足一帧也保留')}</text>
+      <text x={W / 2} y={phone ? 48 : 55} text-anchor="middle" class="subtitle">{t(`${VOXT_DEMO_TOTAL_SAMPLES.toLocaleString('en-US')} samples · ${VOXT_CAPTURE_FRAME_SAMPLES.toLocaleString('en-US')} fill one frame`, `共 ${VOXT_DEMO_TOTAL_SAMPLES.toLocaleString('en-US')} 个样本 · 每 ${VOXT_CAPTURE_FRAME_SAMPLES.toLocaleString('en-US')} 个装满一帧`)}</text>
+      <text x={W / 2} y={phone ? 76 : 88} text-anchor="middle" class="formula">{VOXT_DEMO_TOTAL_SAMPLES.toLocaleString('en-US')} = {VOXT_CAPTURE_FRAME_SAMPLES.toLocaleString('en-US')} + {VOXT_CAPTURE_FRAME_SAMPLES.toLocaleString('en-US')} + {VOXT_DEMO_TAIL_SAMPLES}</text>
+      {#each partialLayout as frame}
+        <rect x={frame.x} y={frame.y} width={frame.width} height={frame.height} rx="7" fill={frame.full ? 'var(--accent-soft)' : 'var(--gen-soft)'} stroke={frame.full ? 'var(--accent)' : 'var(--gen)'} stroke-width={frame.full ? 1.5 : 2.5} />
+        {#if frame.full}
+          <text x={frame.x + frame.width / 2} y={frame.y + (phone ? 19 : 27)} text-anchor="middle" class="label">{t(`FULL FRAME ${frame.seq}`, `完整帧 ${frame.seq}`)}</text>
+          <text x={frame.x + frame.width / 2} y={frame.y + (phone ? 39 : 52)} text-anchor="middle" class="detail">{frame.samples.toLocaleString('en-US')} {t('samples', '个样本')}</text>
+          <text x={frame.x + frame.width / 2} y={frame.y + (phone ? 54 : 73)} text-anchor="middle" class="detail">{frame.bytes.toLocaleString('en-US')} {t('bytes', '个字节')}</text>
+        {:else}
+          <text x={frame.x + (phone ? 30 : 27)} y={frame.y + (phone ? 15 : 23)} class="label amber">{t(`FINAL FRAME ${frame.seq}`, `最后一帧 ${frame.seq}`)}</text>
+          <text x={frame.x + (phone ? 30 : 27)} y={frame.y + (phone ? 35 : 48)} class="detail">{frame.samples} {t('samples', '个样本')}</text>
+          <text x={frame.x + (phone ? 30 : 27)} y={frame.y + (phone ? 52 : 70)} class="detail">{frame.bytes} {t('bytes', '个字节')}</text>
+        {/if}
+      {/each}
+      <text x={W / 2} y={phone ? 346 : 241} text-anchor="middle" class="cut amber">{t('STOP → flush sends the leftover', '停止 → flush 送出剩下的样本')}</text>
+      <text x={W / 2} y={phone ? 378 : 272} text-anchor="middle" class="formula">{VOXT_DEMO_TAIL_SAMPLES} {t('samples', '个样本')} × 2 {t('bytes', '个字节')} = {VOXT_DEMO_TAIL_BYTES} {t('bytes', '个字节')}</text>
+      <rect x={phone ? 36 : 191} y={phone ? 403 : 296} width="12" height="12" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
+      <text x={phone ? 56 : 211} y={phone ? 414 : 307} class="detail">{t('full frames', '完整帧')}</text>
+      <rect x={phone ? 165 : 414} y={phone ? 403 : 296} width="12" height="12" rx="2" fill="var(--gen-soft)" stroke="var(--gen)" />
+      <text x={phone ? 185 : 434} y={phone ? 414 : 307} class="detail">{t('final partial frame', '末尾不足帧')}</text>
+      <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Public test example; the last frame is shorter, not padded.', '公开测试示例；最后一帧更短，不补齐。')}</text>
       {/if}
     </svg>
   </div>
@@ -147,6 +201,7 @@
   .small-formula { font-family: var(--mono); font-size: 15px; font-weight: 650; fill: var(--fg); }
   .number { font-family: var(--mono); font-size: 27px; font-weight: 700; fill: var(--fg); }
   .order { font-size: 12px; font-weight: 700; fill: var(--fg); }
+  .amber { fill: var(--gen); }
   .footnote { font-size: 10.5px; }
   @media (max-width: 600px) {
     .title { font-size: 13px; }

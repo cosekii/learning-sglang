@@ -120,3 +120,53 @@ $$
 - 输入限制、乘以 32,767 并转成 `Int16`：`Voxt/helper/Sources/VoxtNewHelperKit/PCMFramer.swift:40-47`。
 - 逐样本转换为 little-endian 字节：`Voxt/helper/Sources/VoxtNewHelperKit/PCMFramer.swift:77-87`。
 - `0.5 → 16383`、字节 `FF 3F` 和完整帧 3,200 字节的公开测试：`Voxt/helper/Tests/VoxtNewHelperKitTests/HotkeyRecognizerTests.swift:474-488`。
+
+## 第 3 步 · 停止时送出末尾不足帧
+
+> **一句话：** 3,300 个样本先装满两个 1,600 样本的帧；停止时，`flush()` 把剩下的 100 个样本原样送成 200 字节的最后一帧，不丢弃，也不补齐。
+
+### 图上是什么
+
+- 本例直接使用公开测试的 3,300 个样本。前两个蓝框各占 1,600 个样本，也就是第 2 步算出的 3,200 字节。
+- 橙色窄框是末尾不足帧。它和完整帧使用相同的横向比例：100 是 1,600 的十六分之一，所以橙框宽度也是蓝框的十六分之一。
+- `flush` 在这里指停止采集时，把还没凑满一帧的剩余样本送出。最后一帧仍有自己的顺序编号 `seq = 2`，起点是样本偏移 `offset = 3200`，也就是前面两帧共有的样本数。
+- 最后一帧只装实际剩下的 100 个样本，不在末尾加空白样本。因此它是 200 字节，时长为 6.25 ms，而不是完整帧的 100 ms。
+
+### 公式
+
+$$
+F=\left\lfloor\frac{N}{S}\right\rfloor,\qquad R=N-F\times S,\qquad B=2R
+$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $N$ | 输入样本总数 | 公开测试的 3,300 |
+| $S$ | 一个完整帧的样本数 | 默认 16,000 Hz × 100 ms = 1,600 |
+| $F$ | 完整帧数 | 本步计算 |
+| $R$ | 停止时剩余的样本数 | 本步计算 |
+| $B$ | 最后一帧的字节数 | 第 2 步的每样本 2 字节 |
+
+### 代入图上的数
+
+| 要算的量 | 算式 | 结果 |
+|---|---|---:|
+| 完整帧数 | $\lfloor3{,}300/1{,}600\rfloor$ | 2 帧 |
+| 剩余样本 | $3{,}300-2\times1{,}600$ | 100 个 |
+| 最后一帧字节数 | $100\times2$ | 200 字节 |
+| 最后一帧起点 | $2\times1{,}600$ | 样本偏移 3,200 |
+| 最后一帧时长 | $100/16{,}000$ 秒 | 0.00625 秒 = 6.25 ms |
+
+公开测试检查的就是这两个完整帧和最后的 200 字节。若停止时已经没有剩余样本，`flush()` 不会再造一个空帧。
+
+### 接下来
+
+所有样本都已按顺序变成帧。下一步看同一段录音为什么既能为历史保留原样，又能给识别模型一份可处理的副本。
+
+### 源码出处
+
+公开基线：`sglang-omni@6d8ed2dcf70da1b021bb14b62239a3add428636c`，路径均相对该仓库。
+
+- 攒满 1,600 个样本就形成完整帧：`Voxt/helper/Sources/VoxtNewHelperKit/PCMFramer.swift:33-37,59-61`。
+- `flush()` 只发送剩余样本；帧编号、样本偏移和字节生成：`Voxt/helper/Sources/VoxtNewHelperKit/PCMFramer.swift:70-87`。
+- 停止时先发送已转换数据和末尾不足帧：`Voxt/helper/Sources/VoxtNewHelper/Capture.swift:552-568`。
+- 3,300 样本、两个完整帧、200 字节尾帧和偏移 3,200 的公开测试：`Voxt/helper/Tests/VoxtNewHelperKitTests/HotkeyRecognizerTests.swift:474-488`。

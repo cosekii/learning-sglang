@@ -120,3 +120,53 @@ Public baseline: `sglang-omni@f6827ed1907e392fd67d5f13fa315c016e2056e8`; paths a
 - Input clamp, multiplication by 32,767 and `Int16` conversion: `Voxt/helper/Sources/VoxtNewHelperKit/PCMFramer.swift:40-47`.
 - Per-sample little-endian byte conversion: `Voxt/helper/Sources/VoxtNewHelperKit/PCMFramer.swift:77-87`.
 - Public test for `0.5 → 16383`, bytes `FF 3F` and 3,200 bytes per full frame: `Voxt/helper/Tests/VoxtNewHelperKitTests/HotkeyRecognizerTests.swift:474-488`.
+
+## Step 3 · Stop emits the partial final frame
+
+> **In one line:** Three thousand three hundred samples fill two 1,600-sample frames; at stop, `flush()` emits the remaining 100 samples as a 200-byte final frame without dropping or padding them.
+
+### On the stage
+
+- This example uses the public test's 3,300 samples. Each blue box holds 1,600 samples, or the 3,200 bytes derived in Step 2.
+- The narrow amber box is the partial final frame. It uses the same horizontal scale as the full frames: 100 is one sixteenth of 1,600, so its width is one sixteenth of a blue box.
+- Here, `flush` means emitting leftover samples when capture stops before they fill a frame. The final frame still has sequence number `seq = 2` and starts at sample offset `offset = 3200`, after the samples in the two full frames.
+- The final frame holds only the 100 remaining samples. It adds no blank samples, so it occupies 200 bytes and lasts 6.25 ms rather than a full frame's 100 ms.
+
+### Formula
+
+$$
+F=\left\lfloor\frac{N}{S}\right\rfloor,\qquad R=N-F\times S,\qquad B=2R
+$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $N$ | Total input samples | The public test's 3,300 |
+| $S$ | Samples in a full frame | Default 16,000 Hz × 100 ms = 1,600 |
+| $F$ | Number of full frames | Calculated in this step |
+| $R$ | Samples left at stop | Calculated in this step |
+| $B$ | Bytes in the final frame | Two bytes per sample from Step 2 |
+
+### The numbers on the stage
+
+| Quantity | Calculation | Result |
+|---|---|---:|
+| Full frames | $\lfloor3{,}300/1{,}600\rfloor$ | 2 frames |
+| Remaining samples | $3{,}300-2\times1{,}600$ | 100 samples |
+| Final-frame bytes | $100\times2$ | 200 bytes |
+| Final-frame start | $2\times1{,}600$ | Sample offset 3,200 |
+| Final-frame duration | $100/16{,}000$ seconds | 0.00625 seconds = 6.25 ms |
+
+The public test checks these two full frames and the final 200 bytes. If no samples remain at stop, `flush()` does not invent an empty frame.
+
+### Next
+
+Every sample has now joined an ordered frame. Next, see how the same recording can stay unchanged for history while a separate copy changes for the speech model.
+
+### Sources
+
+Public baseline: `sglang-omni@6d8ed2dcf70da1b021bb14b62239a3add428636c`; paths are relative to that repository.
+
+- Full frames form at 1,600 samples: `Voxt/helper/Sources/VoxtNewHelperKit/PCMFramer.swift:33-37,59-61`.
+- `flush()` emits only the leftovers; sequence numbers, sample offsets and byte generation: `Voxt/helper/Sources/VoxtNewHelperKit/PCMFramer.swift:70-87`.
+- Stop sends converted buffers and the partial final frame first: `Voxt/helper/Sources/VoxtNewHelper/Capture.swift:552-568`.
+- Public test for 3,300 samples, two full frames, a 200-byte tail and offset 3,200: `Voxt/helper/Tests/VoxtNewHelperKitTests/HotkeyRecognizerTests.swift:474-488`.
