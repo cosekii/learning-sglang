@@ -35,12 +35,12 @@ Source: `zero-to-sglang/course-material/ch/part3/第4章_横向扩展.md:19-34`.
 
 ## Step 2 · All-reduce gives every GPU the same total
 
-**One sentence.** Four GPUs hold different two-number tensors; SUM all-reduce adds matching positions and returns `[16, 20]` to every GPU.
+**One sentence.** Four GPUs hold different four-number tensors; SUM all-reduce adds matching positions and returns `[10,10,10,10]` to every GPU.
 
 ### On the stage
 
 - The four blue boxes are different local tensors, not four copies of one input.
-- The center adds by position: $1+3+5+7=16$ in the first column and $2+4+6+8=20$ in the second.
+- The center adds by position: every column computes $1+2+3+4=10$, so all four positions contain 10.
 - The orange panel shows GPU 0–3 holding the same complete result afterward. Color separates local inputs from reduced outputs.
 
 ### Formula and symbols
@@ -51,15 +51,15 @@ $$y_j=\sum_{r=0}^{N-1}x_{r,j}$$
 |---|---|---|
 | $N$ | Number of participating GPUs | Constructed here: 4 |
 | $r$ | GPU index | 0–3 in this step |
-| $j$ | Tensor column | 0 or 1 here |
+| $j$ | Tensor column | 0–3 here |
 | $x_{r,j}$ | Column $j$ on GPU $r$ | Local tensors on the stage |
 | $y_j$ | Sum of column $j$ across all GPUs | Calculated in this step |
 
 ### The numbers on the stage
 
-$$y_0=1+3+5+7=16,\qquad y_1=2+4+6+8=20$$
+$$y_j=1+2+3+4=10,\qquad j\in\{0,1,2,3\}$$
 
-Every GPU therefore receives $y=[16,20]$. `Reduce` returns the total to one destination; `all-reduce` returns it to every participant. Other reductions exist, including MAX, but this chapter uses SUM and does not expand them.
+Every GPU therefore receives $y=[10,10,10,10]$. `Reduce` returns the total to one destination; `all-reduce` returns it to every participant. Other reductions exist, including MAX, but this chapter uses SUM and does not expand them.
 
 ### Next
 
@@ -119,12 +119,12 @@ $$y=\operatorname{all\_reduce}_{\mathrm{SUM}}(x_0,x_1,x_2,x_3)$$
 | Symbol | Meaning | Source |
 |---|---|---|
 | $x_r$ | Input tensor on rank $r$ | Steps 2 and 3 |
-| $y$ | Sum returned to every rank | Step 2: $[16,20]$ |
+| $y$ | Sum returned to every rank | Step 2: $[10,10,10,10]$ |
 | $\operatorname{all\_reduce}_{\mathrm{SUM}}$ | Collective that adds matching positions and returns the result to every participant | Step 2 |
 
 ### The numbers on the stage
 
-The four ranks input $[1,2]$, $[3,4]$, $[5,6]$ and $[7,8]$, so every rank receives $y=[16,20]$. `tensor` in the code is the current process's local input, not four inputs inside one process.
+The four ranks input $[1,1,1,1]$, $[2,2,2,2]$, $[3,3,3,3]$ and $[4,4,4,4]$, so every rank receives $y=[10,10,10,10]$. `tensor` in the code is the current process's local input, not four inputs inside one process.
 
 Initialization selects this backend with `backend="nccl"`. NCCL is NVIDIA's GPU collective-communication library. Other backends are outside this chapter, and Ring is not presented as the choice for every run.
 
@@ -168,3 +168,40 @@ The right panel has no bandwidth or time measurement. A route label names the in
 The next step splits the tensor into chunks and follows those chunks through one all-reduce algorithm.
 
 Sources: `Awesome-ML-SYS-Tutorial/torch/nccl/readme.md:99-145`; `zero-to-sglang/course-material/ch/part1/第3章_GPU入门.md:97-108,300-312`; `Inference Engineering §3.3.1`.
+
+## Step 6 · Ring finishes all-reduce in two three-round phases
+
+**One sentence.** This teaching Ring uses three Reduce-Scatter rounds to leave one reduced chunk per GPU, then three All-Gather rounds to share all four.
+
+### On the stage
+
+- GPUs 0 → 1 → 2 → 3 → 0 form a ring. Each round sends one chunk to a neighbor.
+- Each input tensor has $S$ payload bytes, split into chunks A, B, C and D of $S/4$ bytes each.
+- The left panel shows the end of Reduce-Scatter: matching positions have been added, and each GPU keeps one reduced chunk containing 10.
+- The right panel shows the end of All-Gather: the chunks continue around the ring until every GPU holds `[10,10,10,10]`.
+- Both panels show end states rather than replaying every round. Orange marks reduced chunks and their delivery.
+
+### Formula and symbols
+
+$$R=2(N-1),\qquad B_{\mathrm{rank}}=R\times\frac{S}{N}=\frac{2(N-1)S}{N}$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $N$ | GPUs in the ring | Step 3: 4 |
+| $S$ | Payload bytes in one input tensor | Defined in this step |
+| $R$ | Total transfer rounds across both phases | $N-1$ rounds per Ring phase |
+| $B_{\mathrm{rank}}$ | Total payload sent by one GPU | One $S/N$ chunk sent per round |
+
+### The numbers on the stage
+
+$$R=2\times(4-1)=6,\qquad B_{\mathrm{rank}}=6\times\frac{S}{4}=1.5S$$
+
+By symmetry, each GPU also receives $1.5S$; all four GPUs send $4\times1.5S=6S$ in total. These counts cover tensor payload only, excluding headers, retransmissions and implementation details. They are not elapsed times.
+
+Step 2's four positions become the four chunks, so each position computes $1+2+3+4=10$. This chapter covers Ring only, not Tree, SHARP or NCCL's actual algorithm selection.
+
+### Next
+
+If the rounds and payload stay fixed, how can a path change the wait? The next step holds the Ring fixed and changes only a link.
+
+Sources: `Awesome-ML-SYS-Tutorial/torch/nccl/readme.md:55-64`; `Awesome-ML-SYS-Tutorial/torch/torch-distributed/readme.md:926-950`; `Awesome-ML-SYS-Tutorial/torch/torch-distributed/complete-allreduce.svg:5-45`.

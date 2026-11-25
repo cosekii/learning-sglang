@@ -23,6 +23,8 @@ Step 4 follows the PyTorch NCCL setup and SUM call in `Awesome-ML-SYS-Tutorial/t
 
 Step 5 expands the `NV#` and `SYS` legend from `Awesome-ML-SYS-Tutorial/torch/nccl/readme.md:99-145`. The two route examples come from different reported machines; their labels alone do not establish a speedup.
 
+Step 6 uses the chapter's constructed four-position tensors as four Ring chunks. The two phases and `2(N−1)` rounds follow `torch-distributed/readme.md:926-950` and its local `complete-allreduce.svg`; per-rank payload is derived under the stated one-chunk-per-round teaching schedule, not measured on hardware.
+
 </details>
 
 <details class="i18n-zh">
@@ -37,5 +39,7 @@ Step 5 expands the `NV#` and `SYS` legend from `Awesome-ML-SYS-Tutorial/torch/nc
 第 4 步依据 `Awesome-ML-SYS-Tutorial/torch/nccl/readme.md:41-53` 和 `torch-distributed/readme.md:160-175,286-292`，区分 `torch.distributed` 接口与 NCCL GPU 通信后端，不声称每次运行固定选择某种算法。
 
 第 5 步展开 `Awesome-ML-SYS-Tutorial/torch/nccl/readme.md:99-145` 的 `NV#` 和 `SYS` 图例。两条路径来自不同的输出示例，标签本身不能推出加速比。
+
+第 6 步把本章构造的四格张量分成四个 Ring 分块。两个阶段和 `2(N−1)` 轮依据 `torch-distributed/readme.md:926-950` 及其 `complete-allreduce.svg`；每卡发送量按「每轮发送一块」的教学日程推导，不是硬件实测。
 
 </details>

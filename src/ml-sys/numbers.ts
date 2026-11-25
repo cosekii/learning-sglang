@@ -91,6 +91,9 @@ export const COMM_EXAMPLE_TOTAL_ADDED_MS = COMM_EXAMPLE_TOTAL_AFTER_MS - COMM_EX
 
 // Constructed four-GPU sum used throughout the communication chapter.
 export const COMM_WORLD_SIZE = 4;
-export const COMM_PARTIAL_TENSORS = [[1, 2], [3, 4], [5, 6], [7, 8]];
-export const COMM_REDUCED_TENSOR = [0, 1].map((column) => COMM_PARTIAL_TENSORS.reduce((sum, tensor) => sum + tensor[column], 0));
-export const COMM_TENSOR_TEXT = (tensor: number[]) => `[${tensor.join(', ')}]`;
+export const COMM_PARTIAL_TENSORS = [1, 2, 3, 4].map((value) => Array(COMM_WORLD_SIZE).fill(value));
+export const COMM_REDUCED_TENSOR = COMM_PARTIAL_TENSORS[0].map((_, column) => COMM_PARTIAL_TENSORS.reduce((sum, tensor) => sum + tensor[column], 0));
+export const COMM_TENSOR_TEXT = (tensor: number[]) => `[${tensor.join(',')}]`;
+export const COMM_RING_PHASE_STEPS = COMM_WORLD_SIZE - 1;
+export const COMM_RING_TOTAL_STEPS = 2 * COMM_RING_PHASE_STEPS;
+export const COMM_RING_PER_RANK_SEND_TENSORS = COMM_RING_TOTAL_STEPS / COMM_WORLD_SIZE;

@@ -4,7 +4,7 @@
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
-  import { COMM_EXAMPLE_COMPUTE_BEFORE_MS, COMM_EXAMPLE_COMPUTE_AFTER_MS, COMM_EXAMPLE_WAIT_BEFORE_MS, COMM_EXAMPLE_WAIT_AFTER_MS, COMM_EXAMPLE_TOTAL_BEFORE_MS, COMM_EXAMPLE_TOTAL_AFTER_MS, COMM_EXAMPLE_COMPUTE_SAVED_MS, COMM_EXAMPLE_WAIT_ADDED_MS, COMM_EXAMPLE_TOTAL_ADDED_MS, COMM_WORLD_SIZE, COMM_PARTIAL_TENSORS, COMM_REDUCED_TENSOR, COMM_TENSOR_TEXT } from '../../ml-sys/numbers';
+  import { COMM_EXAMPLE_COMPUTE_BEFORE_MS, COMM_EXAMPLE_COMPUTE_AFTER_MS, COMM_EXAMPLE_WAIT_BEFORE_MS, COMM_EXAMPLE_WAIT_AFTER_MS, COMM_EXAMPLE_TOTAL_BEFORE_MS, COMM_EXAMPLE_TOTAL_AFTER_MS, COMM_EXAMPLE_COMPUTE_SAVED_MS, COMM_EXAMPLE_WAIT_ADDED_MS, COMM_EXAMPLE_TOTAL_ADDED_MS, COMM_WORLD_SIZE, COMM_PARTIAL_TENSORS, COMM_REDUCED_TENSOR, COMM_TENSOR_TEXT, COMM_RING_PHASE_STEPS, COMM_RING_TOTAL_STEPS, COMM_RING_PER_RANK_SEND_TENSORS } from '../../ml-sys/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
@@ -12,8 +12,8 @@
     caption: `Compute halves to ${COMM_EXAMPLE_COMPUTE_AFTER_MS} ms, but communication grows from ${COMM_EXAMPLE_WAIT_BEFORE_MS} ms to ${COMM_EXAMPLE_WAIT_AFTER_MS} ms. Total time rises by ${COMM_EXAMPLE_TOTAL_ADDED_MS} ms.`,
     captionZh: `计算从 ${COMM_EXAMPLE_COMPUTE_BEFORE_MS} ms 减到 ${COMM_EXAMPLE_COMPUTE_AFTER_MS} ms，通信却从 ${COMM_EXAMPLE_WAIT_BEFORE_MS} ms 增到 ${COMM_EXAMPLE_WAIT_AFTER_MS} ms。总时间多了 ${COMM_EXAMPLE_TOTAL_ADDED_MS} ms。`,
   }, {
-    caption: `Each GPU computes a two-number tensor. All-reduce adds the four tensors and gives every GPU ${COMM_TENSOR_TEXT(COMM_REDUCED_TENSOR)}.`,
-    captionZh: `每张卡算出自己的两格张量。all-reduce 求和，让四张卡都得到 ${COMM_TENSOR_TEXT(COMM_REDUCED_TENSOR)}。`,
+    caption: `Each GPU computes a four-number tensor. All-reduce adds them and gives every GPU ${COMM_TENSOR_TEXT(COMM_REDUCED_TENSOR)}.`,
+    captionZh: `每张卡算出自己的四格张量。all-reduce 求和，让四卡都得到 ${COMM_TENSOR_TEXT(COMM_REDUCED_TENSOR)}。`,
   }, {
     caption: `One process drives each GPU in this example. Rank names the process; world size counts all ${COMM_WORLD_SIZE}.`,
     captionZh: `这个例子里，一个进程管一张 GPU。rank 是进程编号，world size 是总数 ${COMM_WORLD_SIZE}。`,
@@ -23,6 +23,9 @@
   }, {
     caption: 'NVLink connects GPUs. SYS crosses PCIe and the interconnect between NUMA nodes.',
     captionZh: 'NVLink 连接 GPU。SYS 还经过 PCIe 和 NUMA 节点间连线。',
+  }, {
+    caption: `Reduce-Scatter takes ${COMM_RING_PHASE_STEPS} rounds. All-Gather takes ${COMM_RING_PHASE_STEPS} more, giving every GPU all four chunks.`,
+    captionZh: `前 ${COMM_RING_PHASE_STEPS} 轮算出分块，后 ${COMM_RING_PHASE_STEPS} 轮发齐。每卡最后都有 4 块。`,
   }];
   let step = $state(0);
   $effect(() => {
@@ -38,7 +41,7 @@
     return () => query.removeEventListener('change', update);
   });
   const cur = $derived(steps[step]);
-  const W = $derived(phone ? 300 : 720), H = $derived(phone ? 510 : 410);
+  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 5 ? 560 : 510) : 410);
   const barScale = 22;
 </script>
 
@@ -79,14 +82,14 @@
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Teaching values, not a local benchmark.', '构造的教学数值，不是本机实测。')}</text>
       {:else if step === 1}
         <text x={phone ? 18 : 36} y="30" class="title">{t('All-reduce · add, then give everyone the total', 'all-reduce · 求和，再发回每卡')}</text>
-        <text x={phone ? 18 : 36} y="55" class="label">{t('a tensor is a row of numbers · two numbers here', '张量就是一排数 · 这里每份有 2 格')}</text>
+        <text x={phone ? 18 : 36} y="55" class="label">{t('a tensor is a row of numbers · four numbers here', '张量就是一排数 · 这里每份有 4 格')}</text>
         {#if !phone}
           {#each COMM_PARTIAL_TENSORS as tensor, i}
             <rect x={25 + i * 172} y="86" width="150" height="82" rx="11" fill="var(--accent-soft)" stroke="var(--accent)" />
             <text x={100 + i * 172} y="115" text-anchor="middle" class="small strong">GPU {i}</text>
             <text x={100 + i * 172} y="148" text-anchor="middle" class="tensor">{COMM_TENSOR_TEXT(tensor)}</text>
           {/each}
-          <text x="360" y="198" text-anchor="middle" class="result">{COMM_PARTIAL_TENSORS.map(COMM_TENSOR_TEXT).join(' + ')} = {COMM_TENSOR_TEXT(COMM_REDUCED_TENSOR)}</text>
+          <text x="360" y="198" text-anchor="middle" class="result">{t('1 + 2 + 3 + 4 = 10 · the same sum in all 4 positions', '每一格都是 1 + 2 + 3 + 4 = 10，共 4 格')}</text>
           <line x1="360" y1="214" x2="360" y2="245" stroke="var(--gen)" stroke-width="3" />
           <path d="M360,249 l-8,-13 h16 z" fill="var(--gen)" />
           <rect x="40" y="260" width="640" height="91" rx="13" fill="var(--gen-soft)" stroke="var(--gen)" />
@@ -101,8 +104,8 @@
             <text x={81 + (i % 2) * 137} y={103 + Math.floor(i / 2) * 85} text-anchor="middle" class="small strong">GPU {i}</text>
             <text x={81 + (i % 2) * 137} y={132 + Math.floor(i / 2) * 85} text-anchor="middle" class="tensor">{COMM_TENSOR_TEXT(tensor)}</text>
           {/each}
-          <text x="150" y="267" text-anchor="middle" class="result">1 + 3 + 5 + 7 = 16</text>
-          <text x="150" y="291" text-anchor="middle" class="result">2 + 4 + 6 + 8 = 20</text>
+          <text x="150" y="267" text-anchor="middle" class="result">1 + 2 + 3 + 4 = 10</text>
+          <text x="150" y="291" text-anchor="middle" class="result">{t('all 4 positions sum to 10', '4 格求和都是 10')}</text>
           <rect x="18" y="312" width="264" height="121" rx="12" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="150" y="339" text-anchor="middle" class="small strong">{t('every GPU receives', '每张 GPU 都得到')}</text>
           <text x="150" y="374" text-anchor="middle" class="tensor">{COMM_TENSOR_TEXT(COMM_REDUCED_TENSOR)}</text>
@@ -260,6 +263,64 @@
           <text x="150" y="437" text-anchor="middle" class="small">{t('host CPUs and memory', '主机里的 CPU 和内存')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Route labels come from nvidia-smi topo -m.', '路径标签来自 nvidia-smi topo -m 的输出示例。')}</text>
+      {:else if step === 5}
+        <text x={phone ? 18 : 36} y="30" class="title">Ring all-reduce · 4 GPUs · {COMM_RING_TOTAL_STEPS} rounds</text>
+        <text x={phone ? 18 : 36} y="55" class="label">{t('S = input tensor bytes · split into 4 chunks of S/4', 'S = 一份输入张量的字节数 · 分成 4 块，每块 S/4')}</text>
+        {#if !phone}
+          <rect x="25" y="82" width="320" height="250" rx="13" fill="var(--bg)" stroke="var(--line)" />
+          <text x="185" y="108" text-anchor="middle" class="section">1 · Reduce-Scatter</text>
+          <text x="185" y="132" text-anchor="middle" class="small">{t('add matching chunks · keep one per GPU', '对应分块求和 · 每卡留下一块')}</text>
+          <path d="M170,177 H207" stroke="var(--gen)" stroke-width="2" /><path d="M212,177 l-10,-6 v12 z" fill="var(--gen)" />
+          <path d="M270,200 V227" stroke="var(--gen)" stroke-width="2" /><path d="M270,232 l-6,-10 h12 z" fill="var(--gen)" />
+          <path d="M215,257 H178" stroke="var(--gen)" stroke-width="2" /><path d="M173,257 l10,-6 v12 z" fill="var(--gen)" />
+          <path d="M115,235 V208" stroke="var(--gen)" stroke-width="2" /><path d="M115,203 l-6,10 h12 z" fill="var(--gen)" />
+          {#each COMM_PARTIAL_TENSORS as _, i}
+            <rect x={i === 0 || i === 3 ? 60 : 215} y={i < 2 ? 155 : 235} width="110" height="45" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x={i === 0 || i === 3 ? 115 : 270} y={i < 2 ? 174 : 254} text-anchor="middle" class="small strong">GPU {i} · {String.fromCharCode(65 + i)}</text>
+            <text x={i === 0 || i === 3 ? 115 : 270} y={i < 2 ? 192 : 272} text-anchor="middle" class="small">= 10</text>
+          {/each}
+          <text x="185" y="311" text-anchor="middle" class="small">{COMM_RING_PHASE_STEPS} {t('rounds · one reduced chunk each', '轮 · 每卡一个归约分块')}</text>
+
+          <rect x="375" y="82" width="320" height="250" rx="13" fill="var(--bg)" stroke="var(--line)" />
+          <text x="535" y="108" text-anchor="middle" class="section">2 · All-Gather</text>
+          <text x="535" y="132" text-anchor="middle" class="small">{t('share the reduced chunks with every GPU', '把归约分块发给每张卡')}</text>
+          <path d="M520,177 H557" stroke="var(--gen)" stroke-width="2" /><path d="M562,177 l-10,-6 v12 z" fill="var(--gen)" />
+          <path d="M620,200 V227" stroke="var(--gen)" stroke-width="2" /><path d="M620,232 l-6,-10 h12 z" fill="var(--gen)" />
+          <path d="M565,257 H528" stroke="var(--gen)" stroke-width="2" /><path d="M523,257 l10,-6 v12 z" fill="var(--gen)" />
+          <path d="M465,235 V208" stroke="var(--gen)" stroke-width="2" /><path d="M465,203 l-6,10 h12 z" fill="var(--gen)" />
+          {#each COMM_PARTIAL_TENSORS as _, i}
+            <rect x={i === 0 || i === 3 ? 400 : 555} y={i < 2 ? 155 : 235} width="130" height="45" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x={i === 0 || i === 3 ? 465 : 620} y={i < 2 ? 174 : 254} text-anchor="middle" class="small strong">GPU {i}</text>
+            <text x={i === 0 || i === 3 ? 465 : 620} y={i < 2 ? 193 : 273} text-anchor="middle" class="ringtensor">{COMM_TENSOR_TEXT(COMM_REDUCED_TENSOR)}</text>
+          {/each}
+          <text x="535" y="311" text-anchor="middle" class="small">{COMM_RING_PHASE_STEPS} {t('more rounds · all 4 chunks each', '轮 · 每卡集齐 4 块')}</text>
+          <text x="360" y="358" text-anchor="middle" class="result">2 × (4 − 1) = {COMM_RING_TOTAL_STEPS} {t('rounds · each GPU sends S/4 per round', '轮 · 每卡每轮发送 S/4')}</text>
+          <text x="360" y="383" text-anchor="middle" class="result">{t('sent per GPU', '每卡发送')} = {COMM_RING_TOTAL_STEPS} × S/4 = {COMM_RING_PER_RANK_SEND_TENSORS}S</text>
+        {:else}
+          <rect x="18" y="70" width="264" height="188" rx="12" fill="var(--bg)" stroke="var(--line)" />
+          <text x="150" y="94" text-anchor="middle" class="section">1 · Reduce-Scatter</text>
+          <text x="150" y="115" text-anchor="middle" class="small">{t('add · keep one chunk per GPU', '求和 · 每卡留下一块')}</text>
+          {#each COMM_PARTIAL_TENSORS as _, i}
+            <rect x={i === 0 || i === 3 ? 28 : 158} y={i < 2 ? 125 : 185} width="114" height="48" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x={i === 0 || i === 3 ? 85 : 215} y={i < 2 ? 146 : 206} text-anchor="middle" class="small strong">GPU {i} · {String.fromCharCode(65 + i)}</text>
+            <text x={i === 0 || i === 3 ? 85 : 215} y={i < 2 ? 165 : 225} text-anchor="middle" class="small">= 10</text>
+          {/each}
+          <text x="150" y="249" text-anchor="middle" class="small">0→1→2→3→0 · {COMM_RING_PHASE_STEPS} {t('rounds', '轮')}</text>
+
+          <rect x="18" y="268" width="264" height="188" rx="12" fill="var(--bg)" stroke="var(--line)" />
+          <text x="150" y="292" text-anchor="middle" class="section">2 · All-Gather</text>
+          <text x="150" y="313" text-anchor="middle" class="small">{t('share all 4 chunks', '把 4 块发给每卡')}</text>
+          {#each COMM_PARTIAL_TENSORS as _, i}
+            <rect x={i === 0 || i === 3 ? 28 : 158} y={i < 2 ? 323 : 383} width="114" height="48" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x={i === 0 || i === 3 ? 85 : 215} y={i < 2 ? 342 : 402} text-anchor="middle" class="small strong">GPU {i}</text>
+            <text x={i === 0 || i === 3 ? 85 : 215} y={i < 2 ? 362 : 422} text-anchor="middle" class="ringtensor">{COMM_TENSOR_TEXT(COMM_REDUCED_TENSOR)}</text>
+          {/each}
+          <text x="150" y="447" text-anchor="middle" class="small">{t('same ring', '同一个环')} · +{COMM_RING_PHASE_STEPS} {t('rounds', '轮')}</text>
+          <text x="150" y="482" text-anchor="middle" class="result">2 × (4 − 1) = {COMM_RING_TOTAL_STEPS} {t('rounds', '轮')}</text>
+          <text x="150" y="507" text-anchor="middle" class="result">{COMM_RING_TOTAL_STEPS} × S/4 = {COMM_RING_PER_RANK_SEND_TENSORS}S</text>
+          <text x="150" y="531" text-anchor="middle" class="small">{t('sent by each GPU in total', '每张卡总共发送的张量字节数')}</text>
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Teaching ring; payload only, not a time forecast.', '教学 Ring；只算张量载荷，不预测耗时。')}</text>
       {/if}
     </svg>
   </div>
@@ -275,11 +336,13 @@
   .total { font-family: var(--mono); font-size: 18px; font-weight: 700; fill: var(--fg); }
   .tensor { font-family: var(--mono); font-size: 18px; font-weight: 700; fill: var(--fg); }
   .code { font-family: var(--mono); font-size: 15px; fill: var(--fg); }
+  .ringtensor { font-family: var(--mono); font-size: 12px; font-weight: 650; fill: var(--fg); }
   .result { font-family: var(--mono); font-size: 15px; font-weight: 650; fill: var(--fg); }
   @media (max-width: 600px) {
     .title { font-size: 16px; }
     .label, .small { font-size: 12px; }
     .section, .total, .tensor { font-size: 15px; }
+    .ringtensor { font-size: 10.5px; }
     .result { font-size: 13px; }
   }
 </style>
