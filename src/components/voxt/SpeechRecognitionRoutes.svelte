@@ -11,6 +11,12 @@
     VOXT_ASR_FILE_SECONDS,
     VOXT_ASR_FILE_WAV_BYTES,
     VOXT_ASR_ROUTE_COUNT,
+    VOXT_ASR_SPLIT_MAX_SECONDS,
+    VOXT_ASR_SPLIT_PAUSE_MS,
+    VOXT_ASR_SPLIT_PIECE_COUNT,
+    VOXT_ASR_SPLIT_QUIET_MS,
+    VOXT_ASR_SPLIT_SEARCH_SECONDS,
+    VOXT_ASR_SPLIT_SECONDS,
     VOXT_ASR_STREAM_CALLS,
     VOXT_ASR_STREAM_SENDS,
     VOXT_PCM_BYTES_PER_SECOND,
@@ -28,6 +34,9 @@
   }, {
     caption: 'Streaming recognition revises a draft as sound arrives. The final result replaces the draft.',
     captionZh: '流式识别边收声音边改草稿。最终文字取代草稿。',
+  }, {
+    caption: 'Oversized audio is cut in a quiet part of the last quarter. Both pieces fit the upload limit.',
+    captionZh: '超长录音在最后四分之一的安静处切开。两块都不超过上传上限。',
   }];
   const ariaLabels = [{
     en: 'One second of sound is 32000 bytes. A chooser selects one of three recognition routes: local Omni on this Mac, a configured remote ASR API, or macOS system dictation through the helper.',
@@ -38,6 +47,9 @@
   }, {
     en: 'Three sends produce three replaceable whole-text drafts: Good, Good mor, Good morning. Finish produces one final Good morning. The drafts are not appended together.',
     zh: '三次发送产生三份可替换的完整草稿：Good、Good mor、Good morning。结束后产生一份最终 Good morning。草稿不是逐句拼接。',
+  }, {
+    en: 'A ten-second recording exceeds a nine-second upload limit. The algorithm searches the last quarter, from 6.75 to 9 seconds, for the quietest 100 milliseconds. It cuts inside a 300-millisecond pause at 8.5 seconds, producing two pieces.',
+    zh: '十秒录音超过九秒上传上限。算法在六点七五到九秒的最后四分之一里寻找最安静的一百毫秒，在八点五秒开始的三百毫秒停顿中切开，得到两块。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -157,6 +169,39 @@
       <text x={W / 2} y={phone ? 444 : 276} text-anchor="middle" class="label amber">FINISH → {t('FINAL TEXT', '最终文字')}</text>
       <text x={W / 2} y={phone ? 477 : 309} text-anchor="middle" class="result">“Good morning.”</text>
       <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t(`${VOXT_ASR_STREAM_SENDS} Send calls + 1 Finish = ${VOXT_ASR_STREAM_CALLS} calls in this example.`, `本例 ${VOXT_ASR_STREAM_SENDS} 次 Send + 1 次 Finish = ${VOXT_ASR_STREAM_CALLS} 次调用。`)}</text>
+      {:else if step === 3}
+      {@const left = phone ? 20 : 40}
+      {@const track = phone ? 260 : 640}
+      <text x={W / 2} y="27" text-anchor="middle" class="title">{t('SPLIT AN OVERSIZED UPLOAD AT A QUIET PLACE', '超长上传 · 在安静处切开')}</text>
+      <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('last quarter = the final 1/4 of the 9-second budget', '最后四分之一 = 9 秒上限的最后 1/4')}</text>
+      <text x={W / 2} y="74" text-anchor="middle" class="label">{VOXT_ASR_SPLIT_SECONDS} s {t('RECORDING', '录音')} · {t('LIMIT', '上限')} {VOXT_ASR_SPLIT_MAX_SECONDS} s</text>
+      <rect x={left + track * 0.675} y="91" width={track * 0.225} height="82" fill="var(--accent-soft)" />
+      <text x={left + track * 0.7875} y="87" text-anchor="middle" class="detail">{t('SEARCH HERE', '在这里找安静处')}</text>
+      <line x1={left} y1="133" x2={left + track} y2="133" stroke="var(--line)" />
+      {#each Array.from({ length: 81 }, (_, i) => i) as i}
+        {@const seconds = i / 80 * VOXT_ASR_SPLIT_SECONDS}
+        {@const quiet = seconds >= 8.5 && seconds <= 8.8}
+        {@const height = quiet ? 2 : 12 + (i * 11 % 34)}
+        <line x1={left + track * i / 80} y1={133 - height / 2} x2={left + track * i / 80} y2={133 + height / 2} stroke={quiet ? 'var(--muted)' : 'var(--accent)'} stroke-width={phone ? 2 : 4} stroke-linecap="round" />
+      {/each}
+      <rect x={left + track * 0.85} y="105" width={track * 0.03} height="56" fill="none" stroke="var(--gen)" stroke-width="2" />
+      <line x1={left + track * 0.865} y1="98" x2={left + track * 0.865} y2="169" stroke="var(--gen)" stroke-width="2" stroke-dasharray="4 3" />
+      <line x1={left + track * 0.9} y1="96" x2={left + track * 0.9} y2="166" stroke="var(--muted)" stroke-dasharray="3 3" />
+      <text x={left} y="194" class="detail">0 s</text>
+      <text x={left + track * 0.675} y="194" text-anchor="middle" class="detail">{VOXT_ASR_SPLIT_SEARCH_SECONDS} s</text>
+      <text x={left + track * 0.9} y={phone ? 229 : 194} text-anchor="middle" class="detail">9 s · {t('LIMIT', '上限')}</text>
+      <text x={left + track} y="194" text-anchor="end" class="detail">10 s</text>
+      <text x={W / 2} y={phone ? 255 : 218} text-anchor="middle" class="detail amber">{t(`CUT INSIDE ${VOXT_ASR_SPLIT_PAUSE_MS} ms PAUSE · 8.5–8.8 s`, `在 ${VOXT_ASR_SPLIT_PAUSE_MS} ms 停顿里切开 · 8.5–8.8 秒`)}</text>
+      <text x={W / 2} y={phone ? 275 : 238} text-anchor="middle" class="detail">{t(`find the quietest ${VOXT_ASR_SPLIT_QUIET_MS} ms`, `寻找最安静的 ${VOXT_ASR_SPLIT_QUIET_MS} ms`)}</text>
+      <line x1={W / 2} y1={phone ? 285 : 248} x2={W / 2} y2={phone ? 302 : 263} stroke="var(--muted)" stroke-width="2" marker-end="url(#asr-route-arrow)" />
+      <rect x={phone ? 35 : 65} y={phone ? 310 : 280} width={phone ? 230 : 270} height="92" rx="9" fill="var(--bg)" stroke="var(--line)" />
+      <text x={phone ? 150 : 200} y={phone ? 338 : 310} text-anchor="middle" class="label">{t('PIECE 1', '第 1 块')}</text>
+      <text x={phone ? 150 : 200} y={phone ? 369 : 347} text-anchor="middle" class="result">0 s → {t('pause', '停顿')}</text>
+      <rect x={phone ? 35 : 385} y={phone ? 420 : 280} width={phone ? 230 : 270} height="92" rx="9" fill="var(--bg)" stroke="var(--line)" />
+      <text x={phone ? 150 : 520} y={phone ? 448 : 310} text-anchor="middle" class="label">{t('PIECE 2', '第 2 块')}</text>
+      <text x={phone ? 150 : 520} y={phone ? 479 : 347} text-anchor="middle" class="result">{t('pause', '停顿')} → 10 s</text>
+      <text x={W / 2} y={phone ? 550 : 410} text-anchor="middle" class="cut">{VOXT_ASR_SPLIT_PIECE_COUNT} {t('PIECES · EACH FITS THE 9-SECOND LIMIT', '块 · 每块都不超过 9 秒上限')}</text>
+      <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Public test fixture; the exact cut depends on sound energy.', '公开测试例；实际切点由声音能量决定。')}</text>
       {/if}
     </svg>
   </div>

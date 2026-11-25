@@ -156,3 +156,58 @@ Public baseline: same as Step 1.
 - Streaming capability check: `Voxt/internal/session/run_audio.go:18-22`.
 - `Finish` and partial, final or error events: `Voxt/internal/session/run_audio.go:176-225`.
 - Stream interface and event contract: `Voxt/internal/asr/asr.go:107-177`.
+
+## Step 4 · Split oversized audio at a quiet place
+
+> **In one line:** When a file upload exceeds its limit, `SplitPCM` finds the quietest 100 ms in the current piece's last quarter and cuts inside a pause.
+
+### On the stage
+
+- This example comes from a public test: ten seconds of sound, a nine-second per-piece limit and a 300 ms pause at 8.5 seconds.
+- The blue region is the last quarter of the nine-second budget, from 6.75 through 9 seconds. Restricting the search to this region prevents a very short first piece.
+- “Quietest 100 ms” means the interval with the lowest sound energy. The code sums squared PCM samples; a smaller sum is quieter.
+- Orange marks the pause and cut. The test requires a cut inside the pause, not one fixed timestamp for every recording.
+- Two pieces result. The remainder starts at the cut, so no sound is copied or lost; both pieces fit the nine-second limit.
+
+### Formula
+
+$$
+L=\frac{M}{4},\qquad S=M-L=\frac{3M}{4}
+$$
+
+| Symbol | Meaning | Where it comes from |
+|---|---|---|
+| $L$ | Search-range duration | Last quarter of the current piece's limit |
+| $M$ | Maximum current-piece duration | Test's nine-second PCM allowance |
+| $S$ | Search-range start | $M-L$ |
+
+The implementation works in bytes, not seconds. This test's PCM has a fixed byte rate, so the stage shows equivalent times. Its quiet window is $R/10\times2$ bytes; at 16 kHz and PCM16, that is exactly 100 ms.
+
+### The numbers on the stage
+
+| Quantity | Calculation | Result |
+|---|---|---:|
+| Search-range length | $9/4$ | 2.25 seconds |
+| Search-range start | $9-2.25$ | 6.75 seconds |
+| Pause range | $8.5$ through $8.5+0.3$ | 8.5–8.8 seconds |
+| Resulting pieces | Public test assertion | 2 pieces |
+
+Without a pause, the code still cuts at an allowed boundary rather than extending a piece indefinitely. Once the remainder fits, the loop stops and that remainder becomes the final piece.
+
+### Actual uploads and scope
+
+`TranscribeInPieces` compares the 44-byte WAV header plus PCM against the upload limit. When splitting is needed, it subtracts those 44 bytes from the PCM allowance. A smaller user limit wins. Step 2's WAV calculation therefore affects how much sound fits here.
+
+These are file-upload pieces created after the stop, not the streaming frames in Step 3 or a universal provider policy. Other formats and recordings already within the limit go through as one request.
+
+### Next
+
+The split preserves all sound and makes each piece uploadable. Next, the pieces are recognised in order and their text is joined in the same order.
+
+### Sources
+
+Public baseline: same as Step 1.
+
+- Last-quarter search, 100 ms quiet window and split loop: `Voxt/internal/asr/split.go:12-45`.
+- Ten-second, nine-second-limit and 8.5-second-pause test: `Voxt/internal/asr/split_test.go:13-33`.
+- WAV-header allowance and piece-transcription entry: `Voxt/internal/asr/split.go:47-65`.

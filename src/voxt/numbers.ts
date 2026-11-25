@@ -70,3 +70,12 @@ export const VOXT_ASR_FILE_WAV_BYTES = VOXT_ASR_FILE_PCM_BYTES + VOXT_WAV_HEADER
 // Constructed stream: three audio sends, then one finish call.
 export const VOXT_ASR_STREAM_SENDS = 3;
 export const VOXT_ASR_STREAM_CALLS = VOXT_ASR_STREAM_SENDS + 1;
+
+// Public SplitPCM test: ten seconds, a nine-second limit and a pause at 8.5 s.
+export const VOXT_ASR_SPLIT_SECONDS = 10;
+export const VOXT_ASR_SPLIT_MAX_SECONDS = 9;
+export const VOXT_ASR_SPLIT_PAUSE_START_MS = 8500;
+export const VOXT_ASR_SPLIT_PAUSE_MS = 300;
+export const VOXT_ASR_SPLIT_QUIET_MS = 100;
+export const VOXT_ASR_SPLIT_SEARCH_SECONDS = VOXT_ASR_SPLIT_MAX_SECONDS * 3 / 4;
+export const VOXT_ASR_SPLIT_PIECE_COUNT = 2;
