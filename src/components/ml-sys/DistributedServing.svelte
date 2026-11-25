@@ -18,6 +18,9 @@
   }, {
     caption: `TP splits one model's math across ${DYNAMO_TP_SIZE} workers. This config places ${DYNAMO_TP_PER_NODE} workers on each node.`,
     captionZh: `TP 把同一模型的计算分给 ${DYNAMO_TP_SIZE} 个 worker。每节点 ${DYNAMO_TP_PER_NODE} 个。`,
+  }, {
+    caption: `Each node waits for its ${DYNAMO_TP_PER_NODE} local workers. If readiness never arrives, inspect the SGLang worker logs.`,
+    captionZh: `每个启动器先等本机 ${DYNAMO_TP_PER_NODE} 个 worker。没等到就绪，就查 SGLang worker 日志。`,
   }];
   let step = $state(0);
   $effect(() => {
@@ -33,7 +36,7 @@
     return () => query.removeEventListener('change', update);
   });
   const cur = $derived(steps[step]);
-  const W = $derived(phone ? 300 : 720), H = $derived(phone ? 520 : 400);
+  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 3 ? 650 : 520) : (step === 3 ? 460 : 400));
 </script>
 
 <figure class="viz">
@@ -157,6 +160,53 @@
           <text x="150" y="451" text-anchor="middle" class="code">--tensor-parallel-size {DYNAMO_TP_SIZE}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Blue = one TP worker; ranks are unique across nodes.', '蓝色 = 一个 TP worker；rank 跨节点不重复。')}</text>
+      {:else if step === 3}
+        <text x={phone ? 18 : 36} y="30" class="title">{t('Check first, then wait for readiness', '先检查配置，再等 worker 就绪')}</text>
+        <text x={phone ? 18 : 36} y="55" class="label">{t('preflight = checks before starting the workers', 'preflight = 启动 worker 前的检查')}</text>
+        {#if !phone}
+          {#each [
+            { x: 40, text: 'same model', textZh: '同一模型' },
+            { x: 258, text: 'compatible versions', textZh: '版本兼容' },
+            { x: 476, text: 'meeting address reachable', textZh: '会合地址可达' },
+          ] as check}
+            <rect x={check.x} y="74" width="204" height="38" rx="9" fill="var(--panel)" stroke="var(--line)" />
+            <text x={check.x + 102} y="99" text-anchor="middle" class="small">✓ {t(check.text, check.textZh)}</text>
+          {/each}
+          {#each DYNAMO_TP_RANKS_BY_NODE as ranks, node}
+            {@const x = 40 + node * 340}
+            <rect x={x} y="132" width="300" height="160" rx="13" fill="var(--bg)" stroke="var(--line)" />
+            <text x={x + 20} y="160" class="section">NODE {node}</text>
+            {#each ranks as rank, i}
+              <rect x={x + 15 + i * 69} y="178" width="60" height="48" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+              <text x={x + 45 + i * 69} y="208" text-anchor="middle" class="result">r{rank} ✓</text>
+            {/each}
+            <text x={x + 150} y="260" text-anchor="middle" class="small strong">{DYNAMO_TP_PER_NODE} {t('local workers ready', '个本机 worker 就绪')}</text>
+            <line x1={x + 150} y1="292" x2={x + 150} y2="316" stroke={node === 0 ? 'var(--gen)' : 'var(--accent)'} stroke-width="3" marker-end={node === 0 ? 'url(#serve-arrow-orange)' : 'url(#serve-arrow-blue)'} />
+            <rect x={x} y="326" width="300" height="64" rx="11" fill={node === 0 ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={node === 0 ? 'var(--gen)' : 'var(--accent)'} />
+            <text x={x + 150} y="353" text-anchor="middle" class="result">{node === 0 ? `HTTP :${DYNAMO_HTTP_PORT}` : 'in=none'}</text>
+            <text x={x + 150} y="377" text-anchor="middle" class="small">{node === 0 ? t('starts after local ready', '本机就绪后启动') : t('workers join the TP group', 'worker 加入 TP 组')}</text>
+          {/each}
+          <text x="360" y="416" text-anchor="middle" class="result">{DYNAMO_TP_PER_NODE} local + {DYNAMO_TP_PER_NODE} local = {DYNAMO_TP_SIZE} {t('workers must start', '个 worker 都要启动')}</text>
+        {:else}
+          {#each ['same model', 'compatible versions', 'meeting address reachable'] as check, i}
+            <rect x="20" y={72 + i * 36} width="260" height="30" rx="8" fill="var(--panel)" stroke="var(--line)" />
+            <text x="150" y={92 + i * 36} text-anchor="middle" class="small">✓ {t(check, ['同一模型', '版本兼容', '会合地址可达'][i])}</text>
+          {/each}
+          {#each DYNAMO_TP_RANKS_BY_NODE as ranks, node}
+            {@const y = 194 + node * 156}
+            <rect x="20" y={y} width="260" height="140" rx="12" fill="var(--bg)" stroke={node === 0 ? 'var(--gen)' : 'var(--accent)'} />
+            <text x="150" y={y + 26} text-anchor="middle" class="section">NODE {node}</text>
+            {#each ranks as rank, i}
+              <rect x={31 + i * 61} y={y + 42} width="52" height="42" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+              <text x={57 + i * 61} y={y + 69} text-anchor="middle" class="result">r{rank} ✓</text>
+            {/each}
+            <text x="150" y={y + 112} text-anchor="middle" class="small">{DYNAMO_TP_PER_NODE} ready → {node === 0 ? `HTTP :${DYNAMO_HTTP_PORT}` : 'in=none'}</text>
+          {/each}
+          <text x="150" y="535" text-anchor="middle" class="result">{DYNAMO_TP_PER_NODE} + {DYNAMO_TP_PER_NODE} = {DYNAMO_TP_SIZE} {t('workers must start', '个 worker 都要启动')}</text>
+          <text x="150" y="567" text-anchor="middle" class="small">{t('a ready log is not a response yet', '就绪日志还不等于请求成功')}</text>
+        {/if}
+        <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('Old guide: initialization failure may exit silently.', '旧版指南提醒：初始化失败可能静默退出。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Check worker logs; ready is not a response.' : 'Check worker processes and logs; a ready log is not a response.', '检查 worker 进程与日志；就绪不等于请求成功。')}</text>
       {/if}
     </svg>
   </div>

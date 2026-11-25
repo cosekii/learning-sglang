@@ -119,3 +119,39 @@ dynamo-run in=none out=sglang --model-path <model> \
 Where does the HTTP input appear while all eight workers start? The next step combines local readiness checks with log-based debugging.
 
 Sources: `Awesome-ML-SYS-Tutorial/sglang/nvidia-dynamo/dynamo.md:97-106`; `lib/llm/src/engines/sglang/worker.rs:283-343` and `lib/llm/src/engines/sglang/sglang_inc.py:79-89` at `ai-dynamo/dynamo@670661f6`; `zero-to-sglang/course-material/ch/part3/第4章_横向扩展.md:19-34`.
+
+## Step 4 · Preflight checks and local readiness
+
+**One sentence.** Check the model, versions and meeting address first; each node then waits for four local workers, with worker processes and logs guiding failures.
+
+### On the stage
+
+- The top row is the `preflight`, checks before startup: use one model, keep software versions compatible and reach the shared `dist-init-addr`. This is an experiment checklist, not a check that Dynamo performs automatically.
+- Each node retains Step 3's four TP workers. Labels `r0 ✓` through `r7 ✓` mark workers that have signaled readiness.
+- Node 0 enters HTTP input after local readiness. Node 1 stays at `in=none` while its workers join the same TP group.
+- The bottom records the old guide's limitation: if an SGLang worker fails during initialization, `dynamo-run` may exit silently. Without readiness, inspect worker processes and logs instead of watching only the HTTP port.
+
+### Formula and symbols
+
+$$N_{\mathrm{ready},0}=|R_0|=4,\qquad N_{\mathrm{ready},1}=|R_1|=4$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $R_0,R_1$ | TP rank sets on the two nodes | Step 3 |
+| $N_{\mathrm{ready},0}$ | Ready local workers on node 0 | Readiness check in this step |
+| $N_{\mathrm{ready},1}$ | Ready local workers on node 1 | Readiness check in this step |
+| $|R_r|$ | Number of ranks in set $R_r$ | Step 3: four in each set |
+
+### The numbers on the stage
+
+$$N_{\mathrm{TP}}=N_{\mathrm{ready},0}+N_{\mathrm{ready},1}=4+4=8$$
+
+At the fixed commit, the source says that these SGLang workers must all start together. Each node's `SgLangWorker::start` waits for every ready notification in its local `process_group`; node 0 runs `Input::Http` only after `make_engine` returns. Its HTTP log therefore proves that its local startup path reached HTTP, but it does not prove that the other node can answer a request correctly.
+
+Zero-to-sglang's deployment chapters check the model, hardware and version before inspecting processes, logs and a minimal request. This chapter applies that order to the multi-node experiment without treating a single-node recipe as multi-node validation.
+
+### Next
+
+After checking processes and readiness logs, send a minimal HTTP request to test the whole path.
+
+Sources: `Awesome-ML-SYS-Tutorial/sglang/nvidia-dynamo/dynamo.md:130-132`; `lib/llm/src/engines/sglang/worker.rs:305-343` and `launch/dynamo-run/src/lib.rs:253-270,407-443` at `ai-dynamo/dynamo@670661f6`; `zero-to-sglang/course-material/ch/part4/第1章_用Cookbook部署SGLang.md:17-24,48-98`.

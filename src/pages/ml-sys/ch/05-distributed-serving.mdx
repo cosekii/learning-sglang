@@ -19,6 +19,8 @@ Step 2 follows the two public multi-node commands at `dynamo.md:97-106`, replaci
 
 Step 3 derives four workers per node from the public `--tensor-parallel-size 8` and `--num-nodes 2`. The fixed `worker.rs:305-324` computes `tp_size_per_node`, assigns contiguous global TP ranks to each node and starts one subprocess per rank. This describes the example's eight-worker configuration, not a recommended size for other models or machines.
 
+Step 4 separates a recommended preflight from guarantees made by the software. The model and shared-address checks come from the public config; compatible-version and process/log checks follow zero-to-sglang's deployment recipe. The fixed source starts the whole TP group together and waits for each node's local ready notifications. The old guide warns at `dynamo.md:130-132` that an SGLang initialization failure may make `dynamo-run` exit silently; this chapter does not generalize that warning to every Dynamo version.
+
 The command and log examples describe an old guide. This chapter keeps their version boundary and replaces machine-specific paths and addresses with placeholders rather than presenting them as reusable defaults.
 
 </details>
@@ -31,6 +33,8 @@ The command and log examples describe an old guide. This chapter keeps their ver
 第 2 步依据 `dynamo.md:97-106` 的两条公开多节点命令，把本机模型路径和 IP 换成占位符。`in=http` 运行 HTTP 输入，`in=none` 让引擎继续运行而不再开用户输入（`launch/dynamo-run/src/lib.rs:407-443`）。第 246–250 行还会把非 0 节点强制设为 `Input::None`。共同节点设置经 `lib/llm/src/engines/sglang/subprocess.rs:59-65` 和 `sglang_inc.py:43-48` 传给 SGLang。
 
 第 3 步用公开的 `--tensor-parallel-size 8` 和 `--num-nodes 2` 推出每节点 4 个 worker。固定版本 `worker.rs:305-324` 计算 `tp_size_per_node`，给每个节点分配连续的全局 TP rank，并为每个 rank 启动一个子进程。这里只描述示例的 8-worker 配置，不把它推荐给其他模型或机器。
+
+第 4 步把建议的 preflight 与软件保证分开。模型和共同地址检查来自公开配置；版本兼容、进程与日志检查沿用 zero-to-sglang 的部署顺序。固定源码要求整组 TP worker 一起启动，并等待每个节点的本机 ready 通知。旧指南在 `dynamo.md:130-132` 提醒 SGLang 初始化失败可能让 `dynamo-run` 静默退出；本章不把这条限制推广到所有 Dynamo 版本。
 
 这些命令和日志来自旧版操作记录。本章保留版本边界，把机器相关路径和地址换成占位符，不把它们写成可照搬的默认值。
 

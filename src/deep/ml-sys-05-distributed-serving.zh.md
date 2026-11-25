@@ -119,3 +119,39 @@ dynamo-run in=none out=sglang --model-path <model> \
 8 个 worker 启动时，HTTP 入口在哪一步才出现？下一步把本机就绪检查和日志排障放在一起。
 
 来源：`Awesome-ML-SYS-Tutorial/sglang/nvidia-dynamo/dynamo.md:97-106`；`ai-dynamo/dynamo@670661f6` 的 `lib/llm/src/engines/sglang/worker.rs:283-343`、`lib/llm/src/engines/sglang/sglang_inc.py:79-89`；`zero-to-sglang/course-material/ch/part3/第4章_横向扩展.md:19-34`。
+
+## 第 4 步 · 启动前检查与本机就绪
+
+**一句话。** 先核对模型、版本和会合地址；每个节点再等待本机 4 个 worker 就绪，异常时检查 worker 进程和日志。
+
+### 图上是什么
+
+- 顶部三项是 `preflight`，即启动前检查：两边使用同一模型，软件版本兼容，并且能连到共同的 `dist-init-addr`。这是实验核对单，不是 Dynamo 自动完成的检查。
+- 两台节点各保留第 3 步的 4 个 TP worker。`r0 ✓` 到 `r7 ✓` 表示对应 worker 已发出就绪信号。
+- node 0 在本机 worker 就绪后进入 HTTP 输入；node 1 保持 `in=none`，其 worker 加入同一个 TP 组。
+- 底部提醒旧版指南的限制：SGLang worker 初始化失败时，`dynamo-run` 可能静默退出。因此没有 ready 时要检查 worker 进程与日志，不能只看 HTTP 端口。
+
+### 公式与符号
+
+$$N_{\mathrm{ready},0}=|R_0|=4,\qquad N_{\mathrm{ready},1}=|R_1|=4$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $R_0,R_1$ | 两个节点上的 TP rank 集合 | 第 3 步 |
+| $N_{\mathrm{ready},0}$ | node 0 已就绪的本机 worker 数 | 本步就绪检查 |
+| $N_{\mathrm{ready},1}$ | node 1 已就绪的本机 worker 数 | 本步就绪检查 |
+| $|R_r|$ | 集合 $R_r$ 中的 rank 数 | 第 3 步，每集合 4 个 |
+
+### 代入图上的数
+
+$$N_{\mathrm{TP}}=N_{\mathrm{ready},0}+N_{\mathrm{ready},1}=4+4=8$$
+
+固定版本源码注明这些 SGLang worker 必须一起启动。每个节点的 `SgLangWorker::start` 逐一等待本机 `process_group` 的 ready 通知；node 0 的 `make_engine` 返回后才运行 `Input::Http`。因此，node 0 的 HTTP 日志说明它的本地启动路径已经走到 HTTP，不能单独证明另一个节点能正确回答请求。
+
+zero-to-sglang 的部署章节建议先核对模型、硬件与版本，再检查服务进程、日志和最小请求。本章把这套顺序用于多节点实验，但不把单节点 recipe 当成多节点验证结果。
+
+### 接下来
+
+进程和就绪日志检查完后，下一步发出最小 HTTP 请求，验证整条路径真的可用。
+
+来源：`Awesome-ML-SYS-Tutorial/sglang/nvidia-dynamo/dynamo.md:130-132`；`ai-dynamo/dynamo@670661f6` 的 `lib/llm/src/engines/sglang/worker.rs:305-343`、`launch/dynamo-run/src/lib.rs:253-270,407-443`；`zero-to-sglang/course-material/ch/part4/第1章_用Cookbook部署SGLang.md:17-24,48-98`。
