@@ -4,6 +4,8 @@
 
 ## 本轮记录
 
+- 12:50 完成 Inside Voxt 第 4 章全部 7 步：三条识别路线、文件型整段识别、流式整份草稿替换、安静处分块、按序合并、本机 Omni 预览后的 Final、原话交接。全章 **7/7 步易读 12/12**，平均 **23.86/24**，**0 内容洞、0 最终显示洞**；第 1 步仅原 #1 动机为 1。
+- 逐步提交并推送；`build`、本章 `transcript`、全章 `readability`、中英三种宽度本章 `mobile`、逐步中文字号、`deep-check 04`、本章 `zh-check` 和 `git diff --check` 通过。独立冷读 subagent 因 API key 不可用未运行，最终由主线程换视角冷读 28 张中英桌面／手机图。最终图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch04-20261125-1230/final/`、`checks/`。本轮只跑本章检查，未跑全站回归、真实 ASR 或性能测试。本轮类型：**新书**；下一普通轮按交替规则修旧。
 - 12:24 修旧 Learning SGLang 第 2 章第 3 步：主图收束为「x 经过三张数字表，变成 q、k、v 三排分工不同的数」，乘加算例收进深入讲解，并保留 `W_Q/W_K/W_V` 与三张表的对应，避免后续步骤出现未解释记号。中文易读 **11→12/12**，原分 **24/24**，**0 内容洞、0 本步显示洞**；全章中文 **14/14 步易读满分**。第 3 步整步按英文 R2、R4 记 **10/12**，只剩受保护英文问题。
 - `build`、本章 `transcript`、本章中英 `mobile`、目标中文步字号、`deep-check 02`、本章 `zh-check` 和 `git diff --check` 通过；全章 `readability` 中文 0 问题，保留 9 个受保护英文机械问题。独立 subagent 因 API key 不可用未运行，主线程换视角顺序冷读 14 张中文桌面图和 14 张 390 px 手机图；既有小字仅按规则审计，不算本轮新增失败。提交 `d2d2279`、`a99fe5f` 已推送。最终图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch02-r4-20261125-1210/final/`、`checks/`。本轮只跑本章检查，未跑全站回归。本轮类型：**修旧**；下一普通轮做新书。
 - 12:00 整点自主优化第 3 项「复盘自己」：最近评分卡反复靠人工冷读发现手机小字、截断和 SVG 文字出界；`mobile.mjs` 新增可见文字与所属 SVG 的实际左右边界比较，`ONLY=N` 选中章设为硬门，全站运行只汇总审计。重注 Omni 第 5 章修复前的英文脚注，旧内容被检出 **25 px** 出界，当前终稿为 **0**。
@@ -114,14 +116,14 @@
 
 ## Inside Voxt
 
-规划完成：`docs/plan-voxt.md` 共 3 部分、16 章；第 1 章已制作 4 步并完成，第 2 章已制作 3 步并完成，第 3 章已制作 8 步并完成。事实来源只使用 `sglang-omni` 的 `origin/main` 公开代码和文档。
+规划完成：`docs/plan-voxt.md` 共 3 部分、16 章；第 1 章已制作 4 步并完成，第 2 章已制作 3 步并完成，第 3 章已制作 8 步并完成，第 4 章已制作 7 步并完成。事实来源只使用 `sglang-omni` 的 `origin/main` 公开代码和文档。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
 | 01 | one-dictation | 完成：4/4 步易读满分 | 24.00 |
 | 02 | helper-permissions-hotkeys | 完成：3/3 步易读满分 | 24.00 |
 | 03 | microphone-to-voice-frames | 完成：8/8 步易读满分 | 23.75 |
-| 04 | speech-recognition-routes | 规划 | — |
+| 04 | speech-recognition-routes | 完成：7/7 步易读满分 | 23.86 |
 | 05 | language-model-connection | 规划 | — |
 | 06 | compose-and-cleanup | 规划 | — |
 | 07 | deliver-text-safely | 规划 | — |
