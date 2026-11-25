@@ -2,7 +2,7 @@
   import { fade, fly } from 'svelte/transition';
   import StepControls from '../StepControls.svelte';
   import { chapterNumber as chNum, type NavLink } from '../../chapters';
-  import { W_GB, HBM_GB, KB_PER_TOKEN as KB_TOK, BW, TFLOPS as FLOPS, GFLOP_PER_TOKEN as GFLOP } from '../../numbers';
+  import { W_GB, HBM_GB, KB_PER_TOKEN as KB_TOK, BW, TFLOPS as FLOPS, GFLOP_PER_TOKEN as GFLOP, VLLM_PAGE_TOKENS, SGLANG_PAGE_TOKENS } from '../../numbers';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -59,7 +59,7 @@
     { scene: 'reserve', caption: `The naive way: reserve each request's maximum length up front, in one contiguous block. Most never use it, and finished requests leave holes no newcomer fits into. Most of the card, wasted.`, captionZh: `朴素做法：预先给每个 request 按最大长度预留一整块连续内存。大多用不满，结束的 request 留下新来者放不进的洞。卡上大部分被浪费。` },
     { scene: 'alloc', base: pages0, alloc: allocA, owner: 5, name: 'req 6', caption: `<b>Paging</b>: cut the room into fixed-size pages. A newcomer's cache isn't one block; it's however many pages it needs, taken from anywhere that's free, with the page numbers written in its table. No holes, no pages held in advance.`, captionZh: `<b>Paging</b>：把空间切成固定大小的 page。req 6 取 5 个 page，页号写进页表。` },
     { scene: 'free', caption: `When a request finishes, its pages go straight back to the pool. No compaction, nobody else moves. The pool just has more free pages, wherever they happen to be.`, captionZh: `request 结束时，它的 page 直接回到池里。不做整理，谁也不移动。池里只是多了些空闲 page，位置随意。`, foot: `with prefix caching off · SGLang keeps a finished request's pages in its prefix cache until it needs them (chapter ${CH_PREFIX})`, footZh: `关闭 prefix caching · SGLang 把已结束 request 的 page 留在 prefix cache 里，直到需要它们（第 ${CH_PREFIX} 章）` },
-    { scene: 'alloc', base: pages2, alloc: allocB, owner: 6, name: 'req 7', caption: `The next newcomer takes what it needs from those, or any other free pages. Its table lists them, and the attention kernel follows the table. vLLM pages 16 tokens at a time; SGLang, 1.`, captionZh: `req 7 从空闲 page 取走 8 个，页号写进页表。attention 照表读；vLLM（另一推理引擎）默认每页 16 个 token，SGLang 默认每页 1 个。` },
+    { scene: 'alloc', base: pages2, alloc: allocB, owner: 6, name: 'req 7', caption: `The next newcomer takes what it needs from those, or any other free pages. Its table lists them, and the attention kernel follows the table. vLLM pages ${VLLM_PAGE_TOKENS} tokens at a time; SGLang, ${SGLANG_PAGE_TOKENS}.`, captionZh: `req 7 从空闲 page 取走 8 个，页号写进页表。attention 照表读；对照取 vLLM v0.10.1（CUDA）的每页 ${VLLM_PAGE_TOKENS} token 与 SGLang 的 ${SGLANG_PAGE_TOKENS}。` },
     { scene: 'closing', caption: `Admission is a count: free pages against pages needed. Yes: admit and write the table. No: wait for a finish. If the running requests themselves run out, one is retracted. Sharing pages: next chapter.`, captionZh: `接纳是计数：空闲 page 对所需 page。够：接纳并写表。不够：等一个 request 结束。运行中的 request 耗尽 page 时，撤回一个。共享 page：下一章。` },
   ];
 
@@ -194,6 +194,9 @@
         {@const alloc = cur.scene === 'alloc' ? cur.alloc! : []}
         {@const owner = cur.owner ?? 0}
         {@const need = alloc.length}
+        {@const tokenCount = need * SGLANG_PAGE_TOKENS}
+        {@const vllmPages = Math.ceil(tokenCount / VLLM_PAGE_TOKENS)}
+        {@const vllmSlots = vllmPages * VLLM_PAGE_TOKENS}
         <g transition:fade={{ duration: 250 }}>
           <text x={PG.x} y="40" class="rowlabel desktop-only">{t(`the ${HBM_GB - W_GB} GB after the weights, cut into pages · ${COLS * ROWS} shown of many thousands`, step === 5 ? `权重之外的 ${HBM_GB - W_GB} GB 教学容量 · 画出 ${COLS * ROWS} 个 page` : `${HBM_GB - W_GB} GB ÷ ${KB_TOK} KB ≈ 49 万个 page · 画出 ${COLS * ROWS} 个`)}</text>
           {#if step === 3 && $lang === 'zh'}<text x={PG.x} y="40" class="rowlabel phone-only">{HBM_GB - W_GB} GB ÷ {KB_TOK} KB ≈ 49 万个 page · 画出 {COLS * ROWS} 个</text>{/if}
@@ -257,15 +260,27 @@
             {/if}
             {#if phase >= 4}
               <g in:fade>
-                <text x={PG.x - 10} y={PG.y + ROWS * (CELL + GAP) + 26} class="pt">·</text><text x={PG.x} y={PG.y + ROWS * (CELL + GAP) + 26} class="legend"><tspan class="strong">{t(`${cur.name}'s page table:`, `${cur.name} 的页表：`)}</tspan> {alloc.join(', ')}</text>
-                <text x={PG.x - 10} y={PG.y + ROWS * (CELL + GAP) + (step === 5 ? 54 : 48)} class="pt desktop-only">·</text><text x={PG.x} y={PG.y + ROWS * (CELL + GAP) + (step === 5 ? 54 : 48)} class="legend desktop-only">{t('attention reads the cache through this list; nothing needs to be next to anything', 'attention 照这个列表读 cache；谁也不必挨着谁')}</text>
+                <text x={PG.x - 10} y={PG.y + ROWS * (CELL + GAP) + (step === 5 ? 24 : 26)} class="pt">·</text><text x={PG.x} y={PG.y + ROWS * (CELL + GAP) + (step === 5 ? 24 : 26)} class="legend"><tspan class="strong">{t(`${cur.name}'s page table:`, `${cur.name} 的页表：`)}</tspan> {alloc.join(', ')}</text>
+                <text x={PG.x - 10} y={PG.y + ROWS * (CELL + GAP) + 48} class="pt desktop-only">·</text><text x={PG.x} y={PG.y + ROWS * (CELL + GAP) + 48} class="legend desktop-only">{t('attention reads the cache through this list; nothing needs to be next to anything', 'attention 照这个列表读 cache；谁也不必挨着谁')}</text>
                 {#if step === 3 && $lang === 'zh'}
                   <text x={PG.x - 10} y={PG.y + ROWS * (CELL + GAP) + 54} class="pt phone-only">·</text><text x={PG.x} y={PG.y + ROWS * (CELL + GAP) + 54} class="legend phone-only">attention 照表读；page 不必相邻</text>
                   <text x={PG.x} y={PG.y + ROWS * (CELL + GAP) + 82} class="legend">从左上起，页号 = 20 × 行 + 列（行、列从 0 数）</text>
                   <text x={PG.x} y={PG.y + ROWS * (CELL + GAP) + 110} class="legend">req 6 有 5 token；1 page 装 1 token，所以要 5 page</text>
                 {/if}
-                {#if step === 5}<text x={PG.x - 10} y={PG.y + ROWS * (CELL + GAP) + 54} class="pt phone-only">·</text><text x={PG.x} y={PG.y + ROWS * (CELL + GAP) + 54} class="legend phone-only">{t('attention reads the table; pages need not touch', 'attention 照表读；page 不必相邻')}</text>{/if}
-                {#if step === 5 && $lang === 'zh'}<text x={PG.x - 10} y={PG.y + ROWS * (CELL + GAP) + 82} class="pt">·</text><text x={PG.x} y={PG.y + ROWS * (CELL + GAP) + 82} class="legend">1 page：vLLM 默认 16 个 token · SGLang 默认 1 个</text>{/if}
+                {#if step === 5}<text x={PG.x - 10} y={PG.y + ROWS * (CELL + GAP) + 48} class="pt phone-only">·</text><text x={PG.x} y={PG.y + ROWS * (CELL + GAP) + 48} class="legend phone-only">{t('attention reads the table; pages need not touch', 'attention 照表读；page 不必相邻')}</text>{/if}
+                {#if step === 5}
+                  <text x={PG.x} y="342" class="legend">{t(`${tokenCount} tokens → vLLM 0.10.1: ${vllmPages} page`, `${tokenCount} token → vLLM 0.10.1：${vllmPages} page`)}</text>
+                  <rect x={PG.x - 4} y="352" width={vllmSlots * 12 + 4} height="28" rx="3" fill="none" stroke={owners[owner]} />
+                  {#each Array(vllmSlots) as _, k}
+                    <rect x={PG.x + k * 12} y="356" width="10" height="20" rx="1" fill={k < tokenCount ? owners[owner] : 'url(#hatch)'} stroke={owners[owner]} />
+                  {/each}
+                  <text x={PG.x} y="392" class="legend">{t(`${vllmSlots} slots: ${tokenCount} used, ${vllmSlots - tokenCount} empty · CUDA`, `${vllmSlots} 格：装 ${tokenCount}，空 ${vllmSlots - tokenCount} · CUDA`)}</text>
+                  <text x="430" y="342" class="legend">{t(`SGLang: ${need} pages`, `SGLang：${need} page`)}</text>
+                  {#each Array(need) as _, k}
+                    <rect x={430 + k * 12} y="356" width="10" height="20" rx="1" fill={owners[owner]} stroke={owners[owner]} />
+                  {/each}
+                  <text x="430" y="392" class="legend">{t(`${need} pages · 0 empty`, `${need} page · 0 空格`)}</text>
+                {/if}
               </g>
             {/if}
           {:else}

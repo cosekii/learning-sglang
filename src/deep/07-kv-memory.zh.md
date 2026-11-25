@@ -257,13 +257,14 @@ SGLang 默认开着 prefix caching：request 结束后，它的 page 留作 cach
 
 ## 第 6 步 · 下一个新来者，以及 page 多大
 
-> **一句话：** req 7 要 8 个 page，取到的恰好都是 req 5 刚还的；page 大小是一页装几个 token，vLLM 默认 16，SGLang 默认 1。
+> **一句话：** req 7 要 8 个 page，取到的恰好都是 req 5 刚还的；page 大小是一页装几个 token，本例对照 vLLM v0.10.1（CUDA）未设置时的 16 和 SGLang 默认的 1。
 
 ### 图上是什么
 
 - 同一个网格，起点是第 5 步结束时的状态（41 个空闲）。
 - 「req 7 到达 · 需要 8 个 page」，一整块深青色，拆成 8 个 page，一次一个飞进网格。
-- 底下三行：req 7 的页表 1, 17, 29, 44, 45, 61, 77, 114；attention 照表读 cache；vLLM 默认一页 16 个 token，SGLang 默认一页 1 个。
+- 底下两行：req 7 的页表 1, 17, 29, 44, 45, 61, 77, 114；attention 照表读 cache。
+- 底部用同样的 8 个 token 对照 page 大小：vLLM v0.10.1（CUDA）未设置时一页 16 格，本例装 8 格、空 8 格；SGLang 默认一页 1 格，本例用 8 页，没有空格。斜线格也在 vLLM 那一页里，不是可分给其他 request 的空闲 page。
 - 右边图例：req 1–7，req 5 仍标「· 结束」。手机只保留 req 7 和空闲两项，其余 request 的颜色沿用前几步。
 
 ### 代入图上的数
@@ -306,13 +307,15 @@ $$
 
 | | $p$ | 一页 | 64 GB 里有多少页 |
 |---|---|---|---|
-| [vLLM 默认](https://docs.vllm.ai/en/stable/api/vllm/config/cache/) | 16 | 16 × 128 KB = 2,048 KB | 约 3.05 万 |
+| [vLLM v0.10.1 · CUDA 未设置](https://github.com/vllm-project/vllm/blob/aab549870df50edf0512f0a59b574f692f546465/vllm/platforms/cuda.py#L136-L138) | 16 | 16 × 128 KB = 2,048 KB | 约 3.05 万 |
 | SGLang 默认 | 1 | 128 KB | 约 48.8 万 |
 
 单位逐个展开：$m_{kv}=128\times1{,}024$ B $=131{,}072$ B；64 GB $=64\times10^9$ B。所以：
 
 - vLLM：64 × 10⁹ ÷ (16 × 131,072) ≈ 30,518 页。
 - SGLang：64 × 10⁹ ÷ 131,072 ≈ 488,281 页。
+
+同样 64 GB，vLLM 的页数是 SGLang 的 $1/16$；反过来说，SGLang 的页数约是它的 16 倍。
 
 第 1 步已经说明 SGLang 实际给池子的约 55 GB；这里的页数是用 64 GB 教学容量估算，不是实际池的精确页数。图上的 120 格只是其中一小部分。SGLang 在 CUDA 上 [`--page-size`](https://docs.sglang.io/docs/advanced_features/server_arguments) 不设时取 1，由源码 [`arg_groups/overrides.py` 的 `_page_size_default`](https://github.com/sgl-project/sglang/blob/v0.5.18/python/sglang/srt/arg_groups/overrides.py) 决定。
 
