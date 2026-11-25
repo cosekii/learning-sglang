@@ -99,3 +99,28 @@ $$\mathrm{E2E}=250+(25+20+30)=250+75=325\ \mathrm{ms}$$
 Zero-to-sglang Part I Chapter 5 §3.1 defines E2E as the total time from request sent to completion and calculates $\mathrm{E2E}=\mathrm{TTFT}+\text{remaining generation time}$. This example uses the same boundary. The 0, 250 and 325 ms values are constructed teaching values, not local measurements; no processing time after the last token is separately included.
 
 **Next.** One request's whole time is now measured. The next step puts several requests together to find the slower ones.
+
+## Step 5 · Sort requests to find P50 and the slowest
+
+**One sentence.** Sort 100 requests by E2E latency to read P50 at the middle position while keeping the slowest request visible.
+
+**What the picture shows.** Each blue bar is one request's E2E latency: the first 51 bars are 200 ms, the next 48 are 300 ms, and the last is 2000 ms. The cards below identify requests 50 and 100. The slowest request's 2000 ms is ten times P50.
+
+**Formula and symbols.** This step calls the latency at the 50% position P50:
+
+$$L_{(1)}\le L_{(2)}\le\cdots\le L_{(N)},\qquad r=\lceil0.50N\rceil,\qquad \mathrm{P50}=L_{(r)}$$
+
+- $L_{(i)}$: the E2E latency of request $i$ after sorting; Step 4 defines each request's measurement.
+- $N$: the number of requests, $51+48+1=100$ here.
+- $r$: the position halfway through the queue; $\lceil\ \rceil$ rounds up to an integer.
+- $\mathrm{P50}$: the latency at position $r$, not an average across the requests.
+
+**Substitute the picture's numbers.**
+
+$$\mathrm{P50}=L_{(\lceil0.50\times100\rceil)}=L_{(50)}=200\ \mathrm{ms}$$
+
+$$L_{(100)}=2000\ \mathrm{ms}=10\times200\ \mathrm{ms}=10\times\mathrm{P50}$$
+
+Another common method averages the waits at positions 50 and 51. Both are 200 ms here, so that method also gives 200 ms. The groups of 51, 48 and 1 form a constructed distribution based on the scenario in zero-to-sglang Part I Chapter 5 §5.2: 99 requests within 100–300 ms and one request taking 2 s. These are not local measurements. Course §5.1 and *Inference Engineering* §1.4.1 both place P50 halfway through sorted requests. Other datasets and tools may interpolate P50; this step does not cover those methods.
+
+**Next.** The middle position is now visible. The next step inspects request 99 to examine a longer wait.

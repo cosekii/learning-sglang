@@ -13,3 +13,16 @@ export const DEMO_ITL_TOTAL_MS = DEMO_ITL_GAPS_MS.reduce((sum, gap) => sum + gap
 export const DEMO_TPOT_MS = DEMO_ITL_TOTAL_MS / DEMO_POST_FIRST_GAP_COUNT;
 export const DEMO_LAST_TOKEN_MS = DEMO_OUTPUT_TOKEN_TIMES_MS[DEMO_OUTPUT_TOKEN_TIMES_MS.length - 1];
 export const DEMO_E2E_MS = DEMO_LAST_TOKEN_MS - DEMO_REQUEST_SENT_MS;
+
+// A constructed 100-request distribution for nearest-rank P50, not a local benchmark.
+export const DEMO_E2E_GROUPS = [
+  { requests: 51, latencyMs: 200 },
+  { requests: 48, latencyMs: 300 },
+  { requests: 1, latencyMs: 2000 },
+];
+export const DEMO_SORTED_E2E_MS = DEMO_E2E_GROUPS.flatMap(({ requests, latencyMs }) => Array(requests).fill(latencyMs));
+export const DEMO_PERCENTILE_REQUEST_COUNT = DEMO_SORTED_E2E_MS.length;
+export const DEMO_P50_RANK = Math.ceil(0.50 * DEMO_PERCENTILE_REQUEST_COUNT);
+export const DEMO_P50_MS = DEMO_SORTED_E2E_MS[DEMO_P50_RANK - 1];
+export const DEMO_SLOWEST_E2E_MS = DEMO_SORTED_E2E_MS[DEMO_PERCENTILE_REQUEST_COUNT - 1];
+export const DEMO_SLOWEST_OVER_P50 = DEMO_SLOWEST_E2E_MS / DEMO_P50_MS;
