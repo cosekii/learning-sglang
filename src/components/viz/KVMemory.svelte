@@ -57,7 +57,7 @@
     { scene: 'room', caption: `The scheduler checks for room for KV cache before admitting a new request. ${HBM_GB} GB on the card, ${W_GB} GB of weights, and everything else is room for KV cache. Running requests fill it a token per step.`, captionZh: `scheduler 接纳新 request 前查空间：${HBM_GB} GB 减去权重 ${W_GB} GB，其余归 KV cache。运行中的 request 每步多占一个 token。`, foot: POOL_FOOT, footZh: POOL_FOOT_ZH },
     { scene: 'caps', caption: `How many fit? Same card, three context lengths. At 2k tokens each, ${capAt(2048)} requests. At 4k, ${capAt(4096)}. At 8k, ${capAt(8192)}. Compute could take ${BALANCE} per step; at these lengths memory never lets it get there.`, captionZh: `能装多少？同一张卡，三种上下文长度：每个 2k token 装 ${capAt(2048)} 个，4k 装 ${capAt(4096)} 个，8k 装 ${capAt(8192)} 个。算力每步可跑 ${BALANCE} 个，但这些长度下内存到不了。`, foot: POOL_FOOT, footZh: POOL_FOOT_ZH },
     { scene: 'reserve', caption: `The naive way: reserve each request's maximum length up front, in one contiguous block. Most never use it, and finished requests leave holes no newcomer fits into. Most of the card, wasted.`, captionZh: `朴素做法：预先给每个 request 按最大长度预留一整块连续内存。大多用不满，结束的 request 留下新来者放不进的洞。卡上大部分被浪费。` },
-    { scene: 'alloc', base: pages0, alloc: allocA, owner: 5, name: 'req 6', caption: `<b>Paging</b>: cut the room into fixed-size pages. A newcomer's cache isn't one block; it's however many pages it needs, taken from anywhere that's free, with the page numbers written in its table. No holes, no pages held in advance.`, captionZh: `<b>Paging</b>：把空间切成固定大小的 page。新 request 的 cache 不是一整块，而是要多少拿多少，从任意空闲处取，页号写进它的表。没有洞，也不预留。` },
+    { scene: 'alloc', base: pages0, alloc: allocA, owner: 5, name: 'req 6', caption: `<b>Paging</b>: cut the room into fixed-size pages. A newcomer's cache isn't one block; it's however many pages it needs, taken from anywhere that's free, with the page numbers written in its table. No holes, no pages held in advance.`, captionZh: `<b>Paging</b>：把空间切成固定大小的 page。req 6 取 5 个 page，页号写进页表。` },
     { scene: 'free', caption: `When a request finishes, its pages go straight back to the pool. No compaction, nobody else moves. The pool just has more free pages, wherever they happen to be.`, captionZh: `request 结束时，它的 page 直接回到池里。不做整理，谁也不移动。池里只是多了些空闲 page，位置随意。`, foot: `with prefix caching off · SGLang keeps a finished request's pages in its prefix cache until it needs them (chapter ${CH_PREFIX})`, footZh: `关闭 prefix caching · SGLang 把已结束 request 的 page 留在 prefix cache 里，直到需要它们（第 ${CH_PREFIX} 章）` },
     { scene: 'alloc', base: pages2, alloc: allocB, owner: 6, name: 'req 7', caption: `The next newcomer takes what it needs from those, or any other free pages. Its table lists them, and the attention kernel follows the table. vLLM pages 16 tokens at a time; SGLang, 1.`, captionZh: `req 7 从空闲 page 取走 8 个，页号写进页表。attention 照表读；vLLM（另一推理引擎）默认每页 16 个 token，SGLang 默认每页 1 个。` },
     { scene: 'closing', caption: `Admission is a count: free pages against pages needed. Yes: admit and write the table. No: wait for a finish. If the running requests themselves run out, one is retracted. Sharing pages: next chapter.`, captionZh: `接纳是计数：空闲 page 对所需 page。够：接纳并写表。不够：等一个 request 结束。运行中的 request 耗尽 page 时，撤回一个。共享 page：下一章。` },
@@ -84,7 +84,7 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg class:step-six={step === 5} viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="KV memory, step {step + 1}">
+    <svg class:step-four={step === 3 && $lang === 'zh'} class:step-six={step === 5} viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="KV memory, step {step + 1}">
       <defs>
         <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
           <rect width="6" height="6" fill="#e0f2fe" />
@@ -195,7 +195,8 @@
         {@const owner = cur.owner ?? 0}
         {@const need = alloc.length}
         <g transition:fade={{ duration: 250 }}>
-          <text x={PG.x} y="40" class="rowlabel desktop-only">{t(`the ${HBM_GB - W_GB} GB after the weights, cut into pages · ${COLS * ROWS} shown of many thousands`, step === 5 ? `权重之外的 ${HBM_GB - W_GB} GB 教学容量 · 画出 ${COLS * ROWS} 个 page` : `权重之外的 ${HBM_GB - W_GB} GB 切成 page · 数千个中画出 ${COLS * ROWS} 个`)}</text>
+          <text x={PG.x} y="40" class="rowlabel desktop-only">{t(`the ${HBM_GB - W_GB} GB after the weights, cut into pages · ${COLS * ROWS} shown of many thousands`, step === 5 ? `权重之外的 ${HBM_GB - W_GB} GB 教学容量 · 画出 ${COLS * ROWS} 个 page` : `${HBM_GB - W_GB} GB ÷ ${KB_TOK} KB ≈ 49 万个 page · 画出 ${COLS * ROWS} 个`)}</text>
+          {#if step === 3 && $lang === 'zh'}<text x={PG.x} y="40" class="rowlabel phone-only">{HBM_GB - W_GB} GB ÷ {KB_TOK} KB ≈ 49 万个 page · 画出 {COLS * ROWS} 个</text>{/if}
           {#if step === 5}<text x={PG.x} y="40" class="rowlabel phone-only">{t(`${HBM_GB - W_GB} GB in pages · ${COLS * ROWS} shown`, `${HBM_GB - W_GB} GB 切成 page · 画出 ${COLS * ROWS} 个`)}</text>{/if}
 
           <!-- the grid (fades in once; steps 4 → 5 → 6 keep it mounted so nothing replays) -->
@@ -234,6 +235,7 @@
             <!-- the newcomer: one block, then pages, then gone into the grid -->
             {#if phase >= 1}
               <text x={PG.x} y={STRIP.y + 16} class="legend desktop-only" in:fade><tspan class="strong">{cur.name}</tspan> {t(`arrives · needs ${need} pages`, `到达 · 需要 ${need} 个 page`)}</text>
+              {#if step === 3 && $lang === 'zh'}<text x={PG.x} y={STRIP.y + 16} class="legend phone-only" in:fade><tspan class="strong">{cur.name}</tspan>：{need} 个 page</text>{/if}
               {#if step === 5}<text x={PG.x} y={STRIP.y + 16} class="legend phone-only" in:fade><tspan class="strong">{cur.name}</tspan>{t(`: ${need} pages`, `：${need} 个 page`)}</text>{/if}
             {/if}
             {#if phase === 1}
@@ -246,15 +248,22 @@
             {/if}
             {#if phase === 2}
               <text x={STRIP.x + need * (CELL + GAP) + 10} y={STRIP.y + 16} class="tag desktop-only" in:fade>{t(`split into ${need} pages, not one block`, `拆成 ${need} 个 page，不是一整块`)}</text>
+              {#if step === 3 && $lang === 'zh'}<text x={STRIP.x + need * (CELL + GAP) + 10} y={STRIP.y + 16} class="tag phone-only" in:fade>拆成 {need} 个 page</text>{/if}
             {/if}
             {#if phase >= 3}
               <text x={STRIP.x} y={STRIP.y + 16} class="tag desktop-only" in:fade={{ delay: 400 }}>{t(`→ any ${need} free pages, wherever they are`, `→ 任取 ${need} 个空闲 page，位置不限`)}</text>
+              {#if step === 3 && $lang === 'zh'}<text x={STRIP.x} y={STRIP.y + 16} class="tag phone-only" in:fade={{ delay: 400 }}>→ 任取 {need} 个空闲 page</text>{/if}
               {#if step === 5}<text x={STRIP.x} y={STRIP.y + 16} class="tag phone-only" in:fade={{ delay: 400 }}>{t(`→ any ${need} free pages`, `→ 任取 ${need} 个空闲 page`)}</text>{/if}
             {/if}
             {#if phase >= 4}
               <g in:fade>
                 <text x={PG.x - 10} y={PG.y + ROWS * (CELL + GAP) + 26} class="pt">·</text><text x={PG.x} y={PG.y + ROWS * (CELL + GAP) + 26} class="legend"><tspan class="strong">{t(`${cur.name}'s page table:`, `${cur.name} 的页表：`)}</tspan> {alloc.join(', ')}</text>
                 <text x={PG.x - 10} y={PG.y + ROWS * (CELL + GAP) + (step === 5 ? 54 : 48)} class="pt desktop-only">·</text><text x={PG.x} y={PG.y + ROWS * (CELL + GAP) + (step === 5 ? 54 : 48)} class="legend desktop-only">{t('attention reads the cache through this list; nothing needs to be next to anything', 'attention 照这个列表读 cache；谁也不必挨着谁')}</text>
+                {#if step === 3 && $lang === 'zh'}
+                  <text x={PG.x - 10} y={PG.y + ROWS * (CELL + GAP) + 54} class="pt phone-only">·</text><text x={PG.x} y={PG.y + ROWS * (CELL + GAP) + 54} class="legend phone-only">attention 照表读；page 不必相邻</text>
+                  <text x={PG.x} y={PG.y + ROWS * (CELL + GAP) + 82} class="legend">从左上起，页号 = 20 × 行 + 列（行、列从 0 数）</text>
+                  <text x={PG.x} y={PG.y + ROWS * (CELL + GAP) + 110} class="legend">req 6 有 5 token；1 page 装 1 token，所以要 5 page</text>
+                {/if}
                 {#if step === 5}<text x={PG.x - 10} y={PG.y + ROWS * (CELL + GAP) + 54} class="pt phone-only">·</text><text x={PG.x} y={PG.y + ROWS * (CELL + GAP) + 54} class="legend phone-only">{t('attention reads the table; pages need not touch', 'attention 照表读；page 不必相邻')}</text>{/if}
                 {#if step === 5 && $lang === 'zh'}<text x={PG.x - 10} y={PG.y + ROWS * (CELL + GAP) + 82} class="pt">·</text><text x={PG.x} y={PG.y + ROWS * (CELL + GAP) + 82} class="legend">1 page：vLLM 默认 16 个 token · SGLang 默认 1 个</text>{/if}
               </g>
@@ -354,8 +363,9 @@
   .legend.muted, .legend .muted { fill: var(--muted); font-weight: 400; }
   .phone-only { display: none; }
   @media (max-width: 900px) {
-    .step-six .desktop-only, .step-six .past-key { display: none; }
-    .step-six .phone-only { display: inline; }
+    .step-four .desktop-only, .step-four .past-key, .step-six .desktop-only, .step-six .past-key { display: none; }
+    .step-four .phone-only, .step-six .phone-only { display: inline; }
+    .step-four .rowlabel, .step-four .legend, .step-four .tag, .step-four .pt,
     .step-six .rowlabel, .step-six .legend, .step-six .tag, .step-six .pt { font-size: 23px; }
   }
 </style>
