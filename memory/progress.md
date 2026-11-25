@@ -4,10 +4,10 @@
 
 ## 本轮记录
 
-- 06:40 修旧 Learning SGLang 第 7 章第 6 步：把 vLLM 与 SGLang 的 page 大小从一行文字改成同 8 token 对照，画出 vLLM 一页 16 格装 8 空 8、SGLang 八页各装 1 格；中文深入讲解补同样 64 GB 的页数 1/16 与 16 倍关系。事实审查后将 16 限定为 **vLLM v0.10.1 · CUDA · 未设置**，并换用固定 commit 源码；受保护英文未改。
-- 同一独立冷读者的中文易读 **10→11**、完整中英易读 **9→10**、原分 **22→23**，中文洞保持 **0**；遮住 caption 也能复述对照。R2 仍因两个新概念未满分，R4 仍受保护英文三句未过，英文深入讲解旧矛盾也未动，本步不标完成。
-- `build`、`WAIT=7000` 本章 `transcript`、`deep-check 07`、本章 `zh-check`、本步中英三种宽度手机布局和中文字号、页数比例断言及 `git diff --check` 通过；`readability` 仍只报受保护英文 R4 三句。全站手机检查结果记录在日志。
-- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch07-s06-repair-20261125-0640/final/` 和 `checks/`。本轮类型：**修旧**；下一普通轮做 **新书**，下次整点仍轮换第 2 项「向好的范例学」。
+- 07:10 新书 Inside Voxt 第 3 章第 2 步：主图用 `16,383 ÷ 256 = 63 余 255` 讲一次声音测量怎样变成两个有序字节，画出 `16,383 > 255` 和帧内顺序 `255 → 63`；PCM16 LE、sample、`0.5 → 16,383` 与完整帧 3,200 字节收进双语深入讲解，事实固定在公开源码 commit。
+- 初版独立模拟冷读为中英 **6/12**；第一次修订后两位读者均 **11/12、0 洞**，R2 仍因术语过多扣分。第二次把主图新术语压到只剩「字节」，最终再换两位读者，中英文均 **12/12、0 洞**、可见原项满分，遮 caption 也能复述。主线程原分 **23/24**，本步完成。
+- `build`、本章 `transcript`、本步 `readability`、`deep-check 03`、本章 `zh-check`、本步中英及全站三种宽度手机检查、中文字号硬门、数字与固定源码断言、浏览器导航和抽屉检查、HTTP 200、`git diff --check` 通过；全站 615 个既有小字视图仅作审计。
+- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch03-s02-20261125-0710/final/` 和 `checks/`。本轮类型：**新书**；下一普通轮做 **修旧**，下次整点仍轮换第 2 项「向好的范例学」。
 
 ## Learning SGLang
 
@@ -88,13 +88,13 @@
 
 ## Inside Voxt
 
-规划完成：`docs/plan-voxt.md` 共 3 部分、16 章；第 1 章已制作 4 步并完成，第 2 章已制作 3 步并完成，第 3 章已制作 1 步。事实来源只使用 `sglang-omni` 的 `origin/main` 公开代码和文档。
+规划完成：`docs/plan-voxt.md` 共 3 部分、16 章；第 1 章已制作 4 步并完成，第 2 章已制作 3 步并完成，第 3 章已制作 2 步。事实来源只使用 `sglang-omni` 的 `origin/main` 公开代码和文档。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
 | 01 | one-dictation | 完成：4/4 步易读满分 | 24.00 |
 | 02 | helper-permissions-hotkeys | 完成：3/3 步易读满分 | 24.00 |
-| 03 | microphone-to-voice-frames | 在做第 2 步；第 1 步易读满分 | 23.00 |
+| 03 | microphone-to-voice-frames | 在做第 3 步；第 1–2 步易读满分 | 23.00 |
 | 04 | speech-recognition-routes | 规划 | — |
 | 05 | language-model-connection | 规划 | — |
 | 06 | compose-and-cleanup | 规划 | — |
