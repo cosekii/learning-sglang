@@ -406,3 +406,70 @@ Line numbers refer to `origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`.
 ### Next
 
 Step 8 follows an accepted response. The router's `DirectResponseBody` lets downstream consumers pull frames without adding a body pump or application queue.
+
+## Step 8 · Downstream consumers pull response frames
+
+> **In one sentence:** While the body is active, each downstream `poll_frame()` makes the router's response adapter poll upstream once, returning at most one frame without adding an application queue.
+
+### What the picture shows
+
+- Read `poll_frame()` as “ask for the next frame.” Orange arrows point from client to router and then worker as read demand travels upstream. Blue arrows carry response data in the opposite direction.
+- The teaching example has three frames. Frame one has reached the client, while two remain upstream. These are HTTP body data frames, not the mel audio frames from Step 4.
+- `DirectResponseBody` wraps the worker's `reqwest::Body` inside the downstream `axum::Body`. It retains the request lease from Step 7 but starts no extra body pump, application queue or relay task.
+- When downstream polls the router, the adapter directly polls its inner body. The result can be `Pending`, one data frame, EOF or an error; this loop does not gather several frames per invocation.
+- If downstream is not polling, this adapter does not poll its inner body by itself. Read demand travels back toward the upstream producer, providing response backpressure.
+
+### Work through the numbers
+
+Let downstream poll count be $P=1$. This adapter makes the same number of upstream polls, $P=1$. Returned data-frame count $F$ satisfies:
+
+$$P=1\quad\Longrightarrow\quad 0\leq F\leq1$$
+
+Let $Q$ denote application queues owned by this adapter:
+
+$$Q=0$$
+
+The teaching example has total frame count $T=3$ and delivered count $D=1$, leaving upstream count $U$:
+
+$$U=T-D=3-1=2$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $P$ | One downstream poll in this example | One constructed invocation |
+| $F$ | Data frames returned by that poll | Zero for `Pending`, one for a ready data frame |
+| $Q$ | Application queues added by this response adapter | Zero in the direct-body structure |
+| $T$ | Total data frames in the teaching example | Three constructed frames |
+| $D$ | Frames delivered downstream | Frame one in the figure |
+| $U$ | Frames still upstream | Three minus one gives two |
+
+$Q=0$ describes this adapter's structure. It is not a latency measurement or a claim that the whole network stack has no buffering. $0\leq F\leq1$ constrains one `poll_frame()` invocation, not the full response length.
+
+### How the code forwards a poll
+
+After receiving the upstream response, the router preserves its status and sanitized headers. It calls `DirectResponseBody::new(body, lease, metrics)` and constructs a downstream `Response<axum::Body>`. No separate task first reads the entire response into memory.
+
+While active, `DirectResponseBody.poll_frame()` invokes `Pin::new(inner).poll_frame(cx)` once. Inner `Pending` becomes outer `Pending`; one inner data frame becomes one downstream frame. EOF and upstream errors enter terminal handling.
+
+Terminal handling drops both the inner body and request lease. Normal EOF, upstream error and downstream cancellation therefore release Step 7's admission resources and record the corresponding body termination.
+
+### Backpressure does not remove every buffer
+
+The HTTP framework, TCP sockets, operating system and worker internals can still buffer data. This step establishes only that the router response adapter adds no body pump, application queue or relay task. $Q=0$ does not mean system-wide zero-copy or immediate worker suspension.
+
+This path also does not describe classified uploads. Requests requiring body-owned routing facts use a separate bounded buffering budget. The coordinator `stream_queue` from Step 7 belongs to another layer. This figure covers only Rust router response-body relay.
+
+### Boundaries and sources
+
+Three frames illustrate call flow; they are not throughput measurements. A poll need not return data: `Pending` is normal when upstream is not ready. This adapter treats trailers as an upstream protocol error. HTTP runtime and network behavior determine the actual waiting and propagation granularity.
+
+- `docs/basic_usage/omni_router.md:240-251`: permit lifetime and direct request/response backpressure without a body pump, application queue or extra relay task.
+- `sglang_omni_router/src/http_relay/mod.rs:219-233`: wrap the upstream body in `DirectResponseBody` and construct the downstream response.
+- `sglang_omni_router/src/http_relay/response_body.rs:16-35`: inner body, request lease and terminal state owned by the adapter.
+- `sglang_omni_router/src/http_relay/response_body.rs:38-72`: release the inner body and lease during termination and drop.
+- `sglang_omni_router/src/http_relay/response_body.rs:75-101`: one inner poll per downstream poll, with data, `Pending`, EOF and error branches.
+
+Line numbers refer to `origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`.
+
+### Next
+
+The chapter connects two capacity controls. Router or worker boundaries bound new admissions, while downstream consumers pull accepted HTTP responses frame by frame. A deployment still needs target-workload measurements for each capacity and separate monitoring of 429, 503, response termination and worker queues.

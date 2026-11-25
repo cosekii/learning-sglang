@@ -63,6 +63,12 @@
     ADMISSION_FREE_PERMITS,
     ADMISSION_ROUTER_STATUS,
     ADMISSION_COORDINATOR_STATUS,
+    RELAY_TEACHING_FRAME_COUNT,
+    RELAY_DELIVERED_FRAME_COUNT,
+    RELAY_UPSTREAM_FRAME_COUNT,
+    RELAY_POLL_COUNT,
+    RELAY_MAX_FRAMES_PER_POLL,
+    RELAY_ADAPTER_QUEUE_COUNT,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -88,6 +94,9 @@
   }, {
     caption: 'Both limits are full, so C gets an immediate error. Router admission returns 429; a full coordinator returns 503.',
     captionZh: '两处容量都满，C 会立刻收到错误。Router 拒绝是 429；coordinator 满了是 503。',
+  }, {
+    caption: 'While active, each downstream poll triggers one upstream poll. A poll returns at most one frame; this adapter adds no queue.',
+    captionZh: '传输中，下游 poll 会转成一次上游 poll。每次最多交出一帧，中间转接框不排队。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -103,7 +112,7 @@
     query.addEventListener('change', update);
     return () => query.removeEventListener('change', update);
   });
-  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 2 ? 610 : step === 4 || step === 6 ? 820 : step === 5 ? 700 : 680) : step === 2 ? 460 : step >= 4 ? 500 : step > 0 ? 450 : 410);
+  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 2 ? 610 : step === 4 || step === 6 ? 820 : step === 5 || step === 7 ? 700 : 680) : step === 2 ? 460 : step >= 4 ? 500 : step > 0 ? 450 : 410);
   const panels = $derived([
     { x: phone ? 15 : 20, y: phone ? 82 : 86, wait: 0 },
     { x: phone ? 15 : 375, y: phone ? 330 : 86, wait: BATCH_WAIT_ACTIVE_MS },
@@ -131,6 +140,15 @@
     { x: phone ? 15 : 20, y: phone ? 82 : 92, kind: 'router', title: t('ROUTER · before worker dispatch', 'ROUTER · 发往 worker 之前') },
     { x: phone ? 15 : 375, y: phone ? 400 : 92, kind: 'coordinator', title: t('COORDINATOR · before pipeline submit', 'COORDINATOR · 交给 pipeline 之前') },
   ]);
+  const relayNodes = $derived([
+    { title: 'WORKER', subtitle: 'reqwest::Body', detail: t(`${RELAY_UPSTREAM_FRAME_COUNT} frames still upstream`, `${RELAY_UPSTREAM_FRAME_COUNT} 帧仍在上游`) },
+    { title: 'ROUTER', subtitle: 'DirectResponseBody', detail: t(`own app queue = ${RELAY_ADAPTER_QUEUE_COUNT}`, `自己的应用队列 = ${RELAY_ADAPTER_QUEUE_COUNT}`) },
+    { title: 'CLIENT', subtitle: t('downstream consumer', '下游消费者'), detail: t(`frame ${RELAY_DELIVERED_FRAME_COUNT} delivered`, `已收到第 ${RELAY_DELIVERED_FRAME_COUNT} 帧`) },
+  ].map((node, index) => ({
+    ...node,
+    x: phone ? 30 : 20 + index * 245,
+    y: phone ? 100 + index * 160 : 130,
+  })));
 </script>
 
 <figure class="viz">
@@ -352,6 +370,36 @@
       <text x={W / 2} y={phone ? 750 : 446} text-anchor="middle" class="tag strong">{t('429 and 503 come from different boundaries; do not interchange them.', '429 与 503 来自不同边界，不能互换。')}</text>
       <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{t('Caps two and requests A, B, C are teaching values, not deployment defaults.', '上限 2 和 A、B、C 都是教学值，不是部署默认值。')}</text>
       <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Next: an accepted response applies backpressure one frame at a time.', '下一步：已接收的响应怎样逐帧施加背压。')}</text>
+      {:else if step === 7}
+      <text x={phone ? 15 : 20} y="20" class="tag strong">poll_frame() = {t('ask for the next frame', '来取下一帧')}</text>
+      <text x={phone ? 15 : 20} y="44" class="tag">{phone ? t('Blue: response data · orange: read demand', '蓝色：响应数据 · 橙色：读取请求') : t('Blue: response data → · orange: ← read demand', '蓝色：响应数据 → · 橙色：← 读取请求')}</text>
+      <text x={phone ? 15 : 20} y="66" class="tag">{t('Teaching example: three frames, with frame one already delivered', '教学例子：三帧数据，第 1 帧已交给下游')}</text>
+      {#each relayNodes as node}
+        <rect x={node.x} y={node.y} width={phone ? 240 : 190} height="120" rx="10" fill={node.title === 'ROUTER' ? 'var(--accent-soft)' : 'var(--bg)'} stroke={node.title === 'ROUTER' ? 'var(--accent)' : 'var(--line)'} stroke-width={node.title === 'ROUTER' ? 2 : 1} />
+        <text x={node.x + 14} y={node.y + 27} class="rowlabel">{node.title}</text>
+        <text x={node.x + 14} y={node.y + 54} class="mono strong">{node.subtitle}</text>
+        <text x={node.x + 14} y={node.y + 82} class="tag">{node.detail}</text>
+        {#if node.title === 'ROUTER'}
+          <text x={node.x + 14} y={node.y + 103} class="tag">poll_frame() → inner.poll_frame()</text>
+        {/if}
+      {/each}
+      {#if phone}
+        <path d="M85 224 V252" stroke="var(--accent)" stroke-width="2" marker-end="url(#batch-arrow)" />
+        <path d="M85 384 V412" stroke="var(--accent)" stroke-width="2" marker-end="url(#batch-arrow)" />
+        <path d="M215 256 V228" stroke="var(--gen)" stroke-width="2" marker-end="url(#batch-arrow-gen)" />
+        <path d="M215 416 V388" stroke="var(--gen)" stroke-width="2" marker-end="url(#batch-arrow-gen)" />
+      {:else}
+        <path d="M214 170 H257" stroke="var(--accent)" stroke-width="2" marker-end="url(#batch-arrow)" />
+        <path d="M459 170 H502" stroke="var(--accent)" stroke-width="2" marker-end="url(#batch-arrow)" />
+        <path d="M261 220 H218" stroke="var(--gen)" stroke-width="2" marker-end="url(#batch-arrow-gen)" />
+        <path d="M506 220 H463" stroke="var(--gen)" stroke-width="2" marker-end="url(#batch-arrow-gen)" />
+      {/if}
+      <text x={W / 2} y={phone ? 570 : 316} text-anchor="middle" class="mono strong">{RELAY_POLL_COUNT} {t('downstream poll', '次下游 poll')} → {RELAY_POLL_COUNT} {t('upstream poll', '次上游 poll')} → ≤ {RELAY_MAX_FRAMES_PER_POLL} {t('data frame', '帧数据')}</text>
+      <text x={W / 2} y={phone ? 596 : 344} text-anchor="middle" class="tag">{RELAY_TEACHING_FRAME_COUNT} {t('frames', '帧')} = {RELAY_DELIVERED_FRAME_COUNT} {t('delivered', '帧已交付')} + {RELAY_UPSTREAM_FRAME_COUNT} {t('upstream', '帧在上游')}</text>
+      <text x={W / 2} y={phone ? 624 : 374} text-anchor="middle" class="tag strong">{t('No body pump · no application queue · no extra relay task', '不加 body pump · 不加应用队列 · 不加转发任务')}</text>
+      <text x={W / 2} y={phone ? 650 : 402} text-anchor="middle" class="tag">{t('Queue zero covers this adapter; socket and worker buffers can remain.', '队列是 0 只指这个转接框；socket 和 worker 仍可缓冲。')}</text>
+      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{t('This is response relay, not classified-upload buffering or a worker-stage queue.', '这里只讲响应转发，不讲分类上传缓冲或 worker 内部队列。')}</text>
+      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Chapter summary: bound new admissions and relay accepted responses directly.', '本章收束：限制新请求准入，已接收响应直接逐帧转发。')}</text>
       {/if}
     </svg>
   </div>

@@ -406,3 +406,70 @@ coordinator 对可选 `stream_queue` 另有一条容易混淆的要求：若调�
 ### 接下来
 
 第 8 步看已接收请求的响应：router 的 `DirectResponseBody` 由下游逐帧拉取，不另建 body pump 或应用队列。
+
+## 第 8 步 · 响应帧由下游逐次拉取
+
+> **一句话：** 传输尚未终止时，下游每调用一次 `poll_frame()`，router 的响应 adapter（转接框）就向上游调用一次；一次最多交出一帧，自己不另建应用队列。
+
+### 图上是什么
+
+- `poll_frame()` 可以读成「来取下一帧」。橙色箭头从 client 指向 router、再指向 worker，表示读取请求向上游传；蓝色箭头反向表示响应数据向下游返回。
+- 教学例子共有三帧，第 1 帧已交给 client，另外两帧仍在上游。这里的帧是 HTTP body data frame，不是第 4 步的 mel 音频帧。
+- 中间的 `DirectResponseBody` 包装 worker 的 `reqwest::Body`，再装进下游 `axum::Body`。它持有第 7 步的 request lease，但不启动额外 body pump、应用队列或 relay task。
+- 下游调用 router 的 `poll_frame()` 时，adapter 直接调用内部 body 的 `poll_frame()`。返回值可以是 `Pending`、一个数据帧、EOF 或错误；一次调用不会由这个循环主动聚集多帧。
+- 如果下游此刻不 poll，这个 adapter 也不会自行向内部 body 再 poll 一次。读取需求因此沿相反方向传回上游，形成响应路径的背压。
+
+### 代入图上的数
+
+设下游调用次数为 $P=1$，本 adapter 对应的上游调用次数也是 $P=1$。一次返回的数据帧数 $F$ 满足：
+
+$$P=1\quad\Longrightarrow\quad 0\leq F\leq1$$
+
+图中 adapter 自己维护的应用队列数记为 $Q$：
+
+$$Q=0$$
+
+教学例子的总帧数为 $T=3$，已交付帧数为 $D=1$，仍在上游的帧数为 $U$：
+
+$$U=T-D=3-1=2$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $P$ | 本例的一次下游 poll | 教学构造的一次调用 |
+| $F$ | 这次 poll 返回的数据帧数 | `Pending` 为 0，一个就绪数据帧为 1 |
+| $Q$ | 这个响应 adapter 自己增加的应用队列数 | 直接 body 结构没有该队列，记为 0 |
+| $T$ | 教学例子的总数据帧数 | 构造的三帧 |
+| $D$ | 已交给下游的帧数 | 图中第 1 帧 |
+| $U$ | 仍在上游的帧数 | 3 减 1，得到 2 |
+
+$Q=0$ 是对这个 adapter 结构的描述，不是测量出来的延迟，也不表示整个网络栈没有任何缓冲。$0\leq F\leq1$ 只约束一次 `poll_frame()` 调用，不限制一条完整响应有多少帧。
+
+### 代码怎样直接转发 poll
+
+router 收到上游响应后，保留状态码和清理后的 headers，用 `DirectResponseBody::new(body, lease, metrics)` 包装上游 body，再构造下游 `Response<axum::Body>`。这条路径没有另开任务先把全部响应读进内存。
+
+`DirectResponseBody.poll_frame()` 在尚未终止时，对 `inner` 调用一次 `Pin::new(inner).poll_frame(cx)`。若内部返回 `Pending`，它也返回 `Pending`；若返回一个数据 frame，它把这个 frame 交给下游；若返回 EOF 或上游错误，就进入终止处理。
+
+终止处理会 drop 内部 body 和 request lease。正常 EOF、上游错误与下游取消因此都能释放第 7 步的准入资源，同时记录相应的 body termination。
+
+### 背压不等于所有缓冲消失
+
+HTTP 框架、TCP socket、操作系统和 worker 内部仍可能缓冲数据。本步只保证这个 router 响应 adapter 没再添加一套 body pump、应用队列和 relay task，不能把 $Q=0$ 扩大成「系统零拷贝」或「worker 立刻停产」。
+
+这条路径也不描述分类上传。需要按 body 内容分类的请求仍有独立的有界缓冲预算；第 7 步提到的 coordinator `stream_queue` 又属于另一层。本图只对应 Rust router 的响应 body 转发。
+
+### 边界与出处
+
+本步用三帧解释调用关系，不是实测吞吐，也不承诺每次 poll 都有数据。上游尚未就绪时，`Pending` 是正常结果；出现 trailers 时，这个 adapter 按上游协议错误处理。backpressure 的传播粒度和实际等待还取决于 HTTP 运行时与网络。
+
+- `docs/basic_usage/omni_router.md:240-251`：许可生命周期，以及 request/response body 不使用 body pump、应用队列或额外 relay task 的直接背压。
+- `sglang_omni_router/src/http_relay/mod.rs:219-233`：把上游 body 包装成 `DirectResponseBody`，再构造下游响应。
+- `sglang_omni_router/src/http_relay/response_body.rs:16-35`：adapter 持有内部 body、request lease 和终止状态。
+- `sglang_omni_router/src/http_relay/response_body.rs:38-72`：终止时释放内部 body 与 lease，以及 drop 时的处理。
+- `sglang_omni_router/src/http_relay/response_body.rs:75-101`：一次下游 poll 对应一次内部 poll，以及数据、`Pending`、EOF 和错误分支。
+
+行号对应 `origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`。
+
+### 接下来
+
+本章把两类容量控制连起来：新请求在 router 或 worker 边界受到准入限制，已接收的 HTTP 响应由下游逐帧拉取。部署时仍需按目标负载测量各层容量，并分别监控 429、503、响应终止和 worker 队列。

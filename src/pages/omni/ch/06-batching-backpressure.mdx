@@ -27,6 +27,8 @@ Step 6 quotes, rather than reruns, the historical H200 FIFO comparison in `batch
 
 Step 7 constructs two independent admission examples with cap two and active A and B. At the router, C cannot acquire a permit, so `RouterOverloaded` becomes HTTP 429 before worker dispatch. At the coordinator, two requests already meet `max_in_flight`, so C raises `QueueFullError` before pipeline submit and the OpenAI error mapping returns HTTP 503. Router permits and worker-load guards remain held through response EOF, upstream error or downstream cancellation. These teaching caps are not deployment defaults, and the two status codes belong to different boundaries.
 
+Step 8 constructs three HTTP body frames, with frame one delivered and two upstream. While the body is active, each downstream `DirectResponseBody.poll_frame()` invokes the inner `reqwest::Body` poll once and returns `Pending`, one data frame, EOF or an error. The adapter adds no body pump, application queue or extra relay task, and releases its request lease on termination. Zero adapter-owned queues does not eliminate socket, HTTP-runtime or worker buffering. This response-relay path is separate from classified-upload buffering and worker-stage queues.
+
 Source revision for the chapter: `sglang-omni origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`. The deep dive lists the exact files and lines.
 
 </details>
@@ -47,6 +49,8 @@ Source revision for the chapter: `sglang-omni origin/main@21a6d229c3d2075da5e978
 第 6 步引用而非重跑 `batch.md` 和 PR #2271 的历史 H200 FIFO 对照。在 SeedTTS EN 前 200 条、客户端并发 16、零等待、剔除 50 条预热、混合参考音频重复三次的条件下，B1 与 B8 平均吞吐为 4.100 和 5.652 requests/s。相对 B1 的派生提升为 37.9%。结果属于历史代码 `89e60d0bf216bacd0e072d79f969550469614662` 和当时的受控环境，不是当前主线 benchmark 或普遍最优结论；当前 MiniCPM-o Code2Wav 上限为 16，实现也已改变。
 
 第 7 步构造两个独立准入例子，上限都是 2，A、B 仍在处理。Router 中 C 获取不到许可，`RouterOverloaded` 在发往 worker 前映射为 HTTP 429。Coordinator 中两条请求已经达到 `max_in_flight`，C 在 pipeline submit 前抛出 `QueueFullError`，OpenAI 错误映射返回 HTTP 503。Router 许可和 worker load guard 持有到响应 EOF、上游错误或下游取消。教学上限不是部署默认值，两个状态码属于不同边界。
+
+第 8 步构造三个 HTTP body 数据帧，第 1 帧已交付，两帧仍在上游。传输未结束时，下游每次调用 `DirectResponseBody.poll_frame()`，adapter 就调用一次内部 `reqwest::Body` 的 poll，并返回 `Pending`、一个数据帧、EOF 或错误。它不增加 body pump、应用队列或额外 relay task，并在终止时释放 request lease。adapter 自己的队列是 0，不代表 socket、HTTP 运行时或 worker 没有缓冲。这条响应转发路径与分类上传缓冲、worker 内部队列分开。
 
 本章源码版本：`sglang-omni origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`。精确文件和行号见深入讲解。
 
