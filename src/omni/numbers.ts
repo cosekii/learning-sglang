@@ -137,3 +137,10 @@ export const BATCH_WAIT_LATE_MS = 6;
 export const BATCH_WAIT_ACTIVE_MS = 5;
 export const BATCH_WAIT_ADDED_MS = BATCH_WAIT_ACTIVE_MS;
 export const BATCH_WAIT_EMPTY_SLOTS = BATCH_WAIT_MAX_SIZE - BATCH_WAIT_READY_IDS.length;
+
+// Two visible AR rows make one completion and refill visible; this is not a model default.
+export const AR_TEACHING_MAX_RUNNING = 2;
+export const AR_ROUND_ONE_RUNNING_IDS = ['A', 'B'] as const;
+export const AR_ROUND_ONE_WAITING_IDS = ['C'] as const;
+export const AR_ROUND_TWO_RUNNING_IDS = ['B', 'C'] as const;
+export const AR_ROUND_ONE_WAITING_COUNT = AR_ROUND_ONE_WAITING_IDS.length;

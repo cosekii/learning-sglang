@@ -50,3 +50,62 @@ $$E=B-N=4-2=2$$
 ### 接下来
 
 第 2 步换成自回归生成：请求不会只计算一次就结束，running batch 会保留未完成请求，并在空位出现后补入等待者。
+
+## 第 2 步 · running batch 会跨轮保留请求
+
+> **一句话：** A、B 未完成时会一起进入下一轮；A 结束后，等待中的 C 才能在请求行数和 token 预算都允许时补入。
+
+### 图上是什么
+
+- 本例把 `max_running_requests` 设为 2，方便看清补位。第 1 轮的 `running_batch` 有 A、B，`waiting_queue` 有 C。
+- A、B 各产生下一个 token 后仍未结束，就会继续参与后续轮次。图中让 A 在第 1 轮后结束，B 仍未结束。
+- 第 2 轮保留 B，并把 C 从等待队列补进 A 空出的行。两条蓝色请求再次一起前进一步。
+- 蓝色始终表示 running row，橙色表示 waiting request，灰色表示 finished。C 从橙色变为蓝色，表示所属集合改变，不是请求内容改变。
+- 最下面的 `generation_batch_policy.py` 只负责构造和校验配置。真正的队列状态与补位循环属于 `OmniScheduler`。
+
+### 代入图上的数
+
+设请求行数上限为 $R=2$。第 1 轮运行数为 $U_1=2$，因此可补入的空行数为：
+
+$$F_1=R-U_1=2-2=0$$
+
+A 结束后、C 补入前，运行数变为 $U_2=1$：
+
+$$F_2=R-U_2=2-1=1$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $R$ | running batch 的请求行数上限 | 教学构造的 2 行 |
+| $U_1$ | 第 1 轮的运行请求数 | A、B 两条 |
+| $F_1$ | 第 1 轮可供 C 使用的空行 | 2 减 2，得到 0 |
+| $U_2$ | A 结束后剩余的运行请求数 | 只剩 B |
+| $F_2$ | A 结束后的空行数 | 2 减 1，得到 1 |
+
+$F_2=1$ 只说明请求行数不再挡住 C。实际准入还要检查 token/KV 预算和其他调度条件，所以图写「显存允许时补入」，不把空行当作充分条件。
+
+### 与一次性收集的差别
+
+第 1 步的 `SimpleScheduler` 对一批输入调用一次 `batch_fn`，逐项返回结果。AR 请求则要在多轮 prefill/decode 中前进。`OmniScheduler` 因此同时保存 `waiting_queue` 和 `running_batch`，并在每轮重新判断可否接纳 prefill。
+
+这种让未完成请求留在运行集合、结束请求释放位置、等待请求补位的做法叫 continuous batching。这里的「continuous」描述调度集合跨轮延续，不表示 GPU 永不空闲，也不表示每条请求同时只执行一个 kernel。
+
+### 配置助手不执行排队
+
+`build_generation_batch_overrides()` 归一化 `max_running_requests`，在未显式给出时让 `cuda_graph_max_bs` 和 `torch_compile_max_bs` 跟随它，并构造 CUDA Graph batch ladder。`validate_generation_batch_policy()` 再检查正值、graph 上限和 model buffer 是否覆盖运行上限。
+
+这些函数创建并校验 `ServerArgs`。它们没有 `waiting_queue.append`、`running_batch.reqs` 或逐轮调度循环，不能把配置助手画成实际排队者。MiniCPM-o talker 工厂当前传入的运行上限为 32，并另设 `max_total_tokens = 32 * max_seq_len`；本图的两行不是这份默认值。
+
+### 边界与出处
+
+本步只画正常的完成与补位，不展开 priority、preemption、session 行复用、chunked prefill 或可选 prefill coalescing。当前 `OmniScheduler` 确实还有按配置启用的 prefill 等待窗口，不能从本图推出「AR 永远不会主动等待」。
+
+- `sglang_omni/scheduling/omni_scheduler.py:566-617`：从 model runner 读取运行上限，初始化 `waiting_queue` 和 `running_batch`。
+- `sglang_omni/scheduling/omni_scheduler.py:2764-2805`：判断 running batch 是否接受 prefill，并同时检查可分配请求数。
+- `sglang_omni/scheduling/generation_batch_policy.py:229-290`：构造运行、CUDA Graph 和 torch.compile 的 batch 配置；`363-461`：校验这些限制。
+- `sglang_omni/models/minicpm_o/stages.py:251-307`：MiniCPM-o talker 使用 32 的默认运行上限并调用配置校验。
+
+行号对应 `origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`。
+
+### 接下来
+
+第 3 步回到一次性工作，看 `ReferenceEncodeService` 怎样只取队列里已经存在的编码请求，以及为什么只调大上限还不足以启用 batch。

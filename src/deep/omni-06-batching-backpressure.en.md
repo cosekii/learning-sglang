@@ -50,3 +50,62 @@ Line numbers refer to `origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`.
 ### Next
 
 Step 2 switches to autoregressive generation. A request stays in the running batch across many compute rounds, and a waiting request can take a row when another request finishes.
+
+## Step 2 · A running batch keeps requests across rounds
+
+> **In one sentence:** A and B stay together while unfinished; after A finishes, C can take its row when both request capacity and token memory permit.
+
+### What the picture shows
+
+- This example sets `max_running_requests` to two so that a refill is visible. In round 1, `running_batch` contains A and B while `waiting_queue` contains C.
+- A and B each produce another token. Unfinished requests continue into later rounds. The example finishes A after round 1 and keeps B unfinished.
+- Round 2 retains B and moves C from the waiting queue into A's row. The two blue requests advance together again.
+- Blue marks a running row, orange a waiting request and grey a finished request. C changes from orange to blue because its scheduling set changes.
+- The bottom label separates responsibilities. `generation_batch_policy.py` builds and validates configuration; `OmniScheduler` owns the queues and scheduling loop.
+
+### Work through the numbers
+
+Let the request-row cap be $R=2$. Round 1 has $U_1=2$ running requests, leaving:
+
+$$F_1=R-U_1=2-2=0$$
+
+After A finishes and before C joins, the running count is $U_2=1$:
+
+$$F_2=R-U_2=2-1=1$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $R$ | Request-row cap of the running batch | Two constructed teaching rows |
+| $U_1$ | Running requests in round 1 | Requests A and B |
+| $F_1$ | Free rows available to C in round 1 | Two minus two, giving zero |
+| $U_2$ | Running requests after A finishes | Only B remains |
+| $F_2$ | Free rows after A finishes | Two minus one, giving one |
+
+$F_2=1$ removes only the request-row obstacle. Admission also checks token/KV capacity and other scheduling conditions. The figure therefore says that C joins if memory allows; a free row alone is insufficient.
+
+### How this differs from one-shot collection
+
+Step 1's `SimpleScheduler` invokes `batch_fn` once for a collection and returns each result. An AR request advances through many prefill/decode rounds. `OmniScheduler` consequently retains both `waiting_queue` and `running_batch`, then checks whether each pass can admit a prefill.
+
+This pattern is continuous batching: unfinished requests remain in the running set, completed requests release rows, and waiting requests refill them. Continuous describes the scheduling set across rounds. It does not promise a busy GPU at every instant or one GPU kernel per request.
+
+### The policy helper does not run the queue
+
+`build_generation_batch_overrides()` normalizes `max_running_requests`. Unless explicitly overridden, `cuda_graph_max_bs` and `torch_compile_max_bs` inherit it, and the helper constructs the CUDA Graph batch ladder. `validate_generation_batch_policy()` checks positive limits and whether graph and model-buffer capacities cover the running cap.
+
+These helpers create and validate `ServerArgs`. They contain no `waiting_queue.append`, `running_batch.reqs` or round-by-round scheduling loop. MiniCPM-o's talker factory currently passes a running cap of 32 and sets `max_total_tokens = 32 * max_seq_len`; the figure's two rows do not depict that default.
+
+### Boundaries and sources
+
+This step covers normal completion and refill. It omits priority, preemption, session row reuse, chunked prefill and optional prefill coalescing. The current `OmniScheduler` has configurable prefill waiting windows, so this figure does not claim that AR never waits deliberately.
+
+- `sglang_omni/scheduling/omni_scheduler.py:566-617`: read the running cap from the model runner and initialize `waiting_queue` and `running_batch`.
+- `sglang_omni/scheduling/omni_scheduler.py:2764-2805`: test whether the running batch admits prefill and whether requests remain allocatable.
+- `sglang_omni/scheduling/generation_batch_policy.py:229-290`: construct running, CUDA Graph and torch.compile batch settings; `363-461`: validate those limits.
+- `sglang_omni/models/minicpm_o/stages.py:251-307`: MiniCPM-o talker's default running cap of 32 and policy validation.
+
+Line numbers refer to `origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`.
+
+### Next
+
+Step 3 returns to one-shot work. `ReferenceEncodeService` drains only requests already in its queue, and a larger cap enables batching only when the hook supports it.
