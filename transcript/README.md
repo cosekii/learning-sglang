@@ -31,7 +31,7 @@ Read it to check wording and numbers across chapters without opening the compone
 | omni | 02 | [Stage–Process–GPU layout](omni/02-spg-topology.md) | 3 |
 | omni | 03 | [Request binding and exit](omni/03-request-binding.md) | 3 |
 | omni | 04 | [Three waiting rules](omni/04-readiness-contracts.md) | 4 |
-| omni | 05 | [Data references and reclamation](omni/05-data-lifetime.md) | 4 |
+| omni | 05 | [Data references and reclamation](omni/05-data-lifetime.md) | 5 |
 | ml-sys | 01 | [Measure one inference request](ml-sys/01-measure-inference.md) | 7 |
 | ml-sys | 02 | [The full GPU memory budget](ml-sys/02-inference-memory-budget.md) | 2 |
 | ml-sys | 03 | [Prefix state in hybrid models](ml-sys/03-hybrid-state-cache.md) | 6 |

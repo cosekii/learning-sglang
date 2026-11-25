@@ -169,3 +169,45 @@ Line numbers refer to `origin/main@0e641996a0c269601d03f1cb29d3f46d7cb345a6`.
 ### Next
 
 Step 5 returns to the sender: match the ACK's `object_id` to pending, finish the operation, and remove the lifetime record.
+
+## Step 5 · ACK completes operations before the record disappears
+
+> **In one sentence:** The sender completes pending's ACK future by `object_id`, then its watcher notifies and awaits each operation before removing the record; each backend controls its own resource reclamation.
+
+### What the picture shows
+
+- The first box receives `DataAck(A)`. `ack_transfer()` uses A to find `pending[A]`; a successful ACK completes that record's ACK future.
+- The second box is `watch_pending()` on its normal path. It calls `mark_receiver_done()` for every operation, then awaits `wait_for_completion()` for each one.
+- In the third box, `pending: no A` means that the lifetime record has been removed. “Backend may reclaim” is not an animation of immediate universal deletion. Each concrete operation handles its SHM block, CUDA slot or other backend resource.
+- The bottom line states that the generic layer has no universal `release()` method. Its interface provides put/get/cleanup/close and operation-completion notifications; concrete relays own resource semantics.
+
+### The normal completion chain
+
+| Order | Action | Result |
+|---|---|---|
+| 1 | `ack_transfer()` looks up pending by `ack.object_id` | Finds this transfer's waiting record |
+| 2 | A successful ACK completes `pending.ack` | The watcher can continue |
+| 3 | Each `op.mark_receiver_done()` | Tells the concrete operation that the receiver finished reading |
+| 4 | Each `op.wait_for_completion()` | Waits for concrete backend completion |
+| 5 | `pending.pop(object_id)` | Removes the sender's lifetime record |
+| 6 | If a KV lease exists, `lease.release()` | Releases that additional lease |
+
+A stale ACK whose pending record no longer exists is ignored. A failed ACK stores an exception in `pending.ack` instead of running the successful path.
+
+### Failure and retention boundaries
+
+The ordinary failure path calls `mark_receiver_failed()` and waits for operation completion. A KV transfer marked `retain_pending_on_failure` keeps its pending record if no receiver terminal has arrived, because the peer may still read and its resources cannot be released early.
+
+The figure's “backend may reclaim” therefore describes normal completion permission. It does not promise immediate, identical memory release in every backend or failure case.
+
+### Source references
+
+- `sglang_omni/pipeline/stage/runtime.py:539-557`: `DataAckMessage` receipt and `ack_transfer()` entry.
+- `sglang_omni/comm/engine.py:930-971`: pending lookup by `object_id`, stale-ACK handling and ACK-future completion or failure; `1210-1224`: normal operation completion; `1260-1268`: pending removal and optional lease release; `1225-1259` and `1290-1313`: failure and retention paths.
+- `sglang_omni/comm/relay/base.py:91-153`: generic relay and operation interfaces, with no universal `release()`.
+
+Line numbers refer to `origin/main@0e641996a0c269601d03f1cb29d3f46d7cb345a6`.
+
+### Next
+
+The chapter's answer is now complete. DataRef locates data, pending tracks the read, and the ACK/operation chain postpones reclamation until after reading. A slow reader retains resources longer; the next chapter uses queues and backpressure to connect stages running at different speeds.

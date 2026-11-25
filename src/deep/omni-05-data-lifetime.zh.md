@@ -169,3 +169,45 @@ SHM 使用 `put_chunks_async()`，其他 relay 使用 `put_async()`。两种 put
 ### 接下来
 
 第 5 步回到发送方：按 ACK 的 `object_id` 找到 pending，完成 operation，再删除生命周期记录。
+
+## 第 5 步 · ACK 让 operation 收尾，记录才可删除
+
+> **一句话：** 发送方按 `object_id` 完成 pending 的 ACK future，watcher 再通知并等待各个 operation 收尾，最后删除记录；具体后端决定怎样回收资源。
+
+### 图上是什么
+
+- 第 1 格收到 `DataAck(A)`。`ack_transfer()` 用 A 找到 `pending[A]`，成功 ACK 会把这张记录里的 ACK future 置为完成。
+- 第 2 格是 `watch_pending()` 的正常路径：先对每个 operation 调 `mark_receiver_done()`，再逐个 `wait_for_completion()`。
+- 第 3 格的 `pending: no A` 表示生命周期记录已删除。「后端可以回收」不是统一的立即释放动画；SHM block、CUDA slot 或其他资源由具体后端 operation 处理。
+- 最下面强调通用层没有统一 `release()` 方法。通用接口提供 put/get/cleanup/close 和 operation 完成通知，具体资源语义留在 relay 实现里。
+
+### 正常完成链
+
+| 顺序 | 动作 | 结果 |
+|---|---|---|
+| 1 | `ack_transfer()` 按 `ack.object_id` 查 pending | 找到这次传输的等待记录 |
+| 2 | 成功 ACK 完成 `pending.ack` | watcher 可以继续 |
+| 3 | 每个 `op.mark_receiver_done()` | 通知具体 operation：接收方已读完 |
+| 4 | 每个 `op.wait_for_completion()` | 等待具体后端收尾 |
+| 5 | `pending.pop(object_id)` | 删除发送方生命周期记录 |
+| 6 | 若有 KV lease，执行 `lease.release()` | 释放这项额外租约 |
+
+收到找不到 pending 的 stale ACK 时直接忽略。失败 ACK 则把异常写入 `pending.ack`，不会让正常成功链假装通过。
+
+### 失败与保留边界
+
+普通失败路径调用 `mark_receiver_failed()` 并等待 operation 收尾。若 KV 传输标记了 `retain_pending_on_failure`，且尚未收到 receiver terminal，watcher 会保留 pending，因为对端仍可能读取，不能过早释放资源。
+
+因此，本章图的「后端可以回收」只描述正常通用路径允许收尾，不承诺所有后端、所有失败场景都立即释放同一块内存。
+
+### 源码出处
+
+- `sglang_omni/pipeline/stage/runtime.py:539-557`：接收 `DataAckMessage` 并进入 `ack_transfer()`。
+- `sglang_omni/comm/engine.py:930-971`：按 `object_id` 匹配 pending、忽略 stale ACK、完成或失败 ACK future；`1210-1224`：正常 operation 完成链；`1260-1268`：删除 pending 和释放可选 lease；`1225-1259`、`1290-1313`：失败与保留路径。
+- `sglang_omni/comm/relay/base.py:91-153`：relay 与 operation 的通用接口，没有统一 `release()`。
+
+行号对应 `origin/main@0e641996a0c269601d03f1cb29d3f46d7cb345a6`。
+
+### 接下来
+
+现在可以回答章首问题：DataRef 帮读者找数据，pending 帮发送方等读取结束，ACK 和 operation 完成链把可回收时间推迟到读取之后。若读者比发送方慢，资源会被占用更久；下一章用队列和背压解释怎样连接快慢不同的 stage。

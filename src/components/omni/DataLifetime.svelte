@@ -20,6 +20,9 @@
   }, {
     caption: 'The receiver uses the DataRef to get and rebuild the payload. It acknowledges the finished read before scheduling the payload.',
     captionZh: '接收方照 DataRef 取回并还原数据。读完后先回 ACK，再把数据交给 scheduler。',
+  }, {
+    caption: 'The sender matches the ack by object id and finishes the operation. It removes the pending record so backend resources can be reclaimed.',
+    captionZh: '发送方按 object id 找到等待记录，让写入操作收尾。随后删掉记录，后端资源才可回收。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -192,7 +195,7 @@
       {/if}
       <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{t('The pending key is object_id; the DataRef still has no ACK state.', 'pending 用 object_id 对应数据；DataRef 里仍没有 ACK 状态。')}</text>
       <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Next: the receiver gets the bytes, rebuilds the payload and acknowledges.', '下一步：接收方取字节、还原数据，再回 ACK。')}</text>
-      {:else}
+      {:else if step === 3}
       <text x={phone ? 15 : 20} y="20" class="tag strong">ACK = {t('receipt: the data-plane read has finished', '回执：数据平面已经读完')}</text>
       <text x={phone ? 15 : 20} y="45" class="tag">{t('Receiver: parse DataRef → GET and wait → rebuild → ACK → scheduler', '接收方：解析 DataRef → GET 并等待 → 还原 → ACK → scheduler')}</text>
       {#if !phone}
@@ -258,6 +261,65 @@
       {/if}
       <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{t('ACK means the read ended, not that downstream computation finished.', 'ACK 只表示读取结束，不表示下游计算完成。')}</text>
       <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Next: the sender matches this ACK to pending[A] and finishes the operation.', '下一步：发送方用 ACK 找到 pending[A]，让操作收尾。')}</text>
+      {:else}
+      <text x={phone ? 15 : 20} y="20" class="tag strong">{t('Normal sender path: match ACK → finish operation → remove pending', '发送方正常路径：匹配 ACK → 操作收尾 → 删除 pending')}</text>
+      <text x={phone ? 15 : 20} y="45" class="tag">{t('Each concrete RelayOperation handles its own backend resource', '每种 RelayOperation 自己处理后端的资源')}</text>
+      {#if !phone}
+        <path d="M225 180 H252" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
+        <path d="M462 180 H490" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
+        <rect x="20" y="80" width="205" height="220" rx="12" fill="white" stroke="var(--accent)" stroke-width="2" />
+        <text x="35" y="108" class="rowlabel">1 · {t('MATCH', '匹配')}</text>
+        <text x="122" y="142" text-anchor="middle" class="mono strong">DataAck(A)</text>
+        <text x="122" y="174" text-anchor="middle" class="mono">success = true</text>
+        <path d="M122 191 V215" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
+        <rect x="43" y="222" width="159" height="46" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="122" y="250" text-anchor="middle" class="mono">pending[A] found</text>
+
+        <rect x="257" y="80" width="205" height="220" rx="12" fill="var(--bg)" stroke="var(--line)" />
+        <text x="272" y="108" class="rowlabel">2 · {t('FINISH', '收尾')}</text>
+        <text x="360" y="140" text-anchor="middle" class="mono strong">watch_pending</text>
+        <rect x="279" y="157" width="161" height="43" rx="7" fill="white" stroke="var(--accent)" />
+        <text x="360" y="184" text-anchor="middle" class="mono">mark_receiver_done</text>
+        <path d="M360 200 V221" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
+        <rect x="279" y="228" width="161" height="43" rx="7" fill="white" stroke="var(--accent)" />
+        <text x="360" y="255" text-anchor="middle" class="mono">wait_for_completion</text>
+
+        <rect x="495" y="80" width="205" height="220" rx="12" fill="var(--bg)" stroke="var(--line)" />
+        <text x="510" y="108" class="rowlabel">3 · {t('CLEAR', '清除记录')}</text>
+        <rect x="518" y="127" width="159" height="52" rx="7" fill="white" stroke="var(--faint)" stroke-dasharray="4 3" />
+        <text x="597" y="158" text-anchor="middle" class="mono">pending: no A</text>
+        <text x="597" y="211" text-anchor="middle" class="tag strong">{t('record removed', '记录已删除')}</text>
+        <rect x="518" y="232" width="159" height="40" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="597" y="257" text-anchor="middle" class="tag strong">{t('backend may reclaim', '后端可以回收')}</text>
+
+        <rect x="20" y="320" width="680" height="30" rx="7" fill="white" stroke="var(--line)" />
+        <text x="360" y="340" text-anchor="middle" class="tag strong">{t('A is complete only after its operations finish · no universal release() call', 'A 的 operations 完成后才收尾 · 通用层没有统一 release()')}</text>
+      {:else}
+        <path d="M150 190 V215" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
+        <path d="M150 340 V365" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
+        <rect x="15" y="70" width="270" height="120" rx="10" fill="white" stroke="var(--accent)" stroke-width="2" />
+        <text x="30" y="94" class="rowlabel">1 · {t('MATCH', '匹配')} · DataAck(A)</text>
+        <text x="150" y="126" text-anchor="middle" class="mono">success = true</text>
+        <rect x="40" y="141" width="220" height="32" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="150" y="162" text-anchor="middle" class="mono">pending[A] found</text>
+
+        <rect x="15" y="220" width="270" height="120" rx="10" fill="var(--bg)" stroke="var(--line)" />
+        <text x="30" y="244" class="rowlabel">2 · {t('FINISH', '收尾')} · watch_pending</text>
+        <text x="150" y="277" text-anchor="middle" class="mono">mark_receiver_done</text>
+        <text x="150" y="309" text-anchor="middle" class="mono">wait_for_completion</text>
+
+        <rect x="15" y="370" width="270" height="120" rx="10" fill="var(--bg)" stroke="var(--line)" />
+        <text x="30" y="394" class="rowlabel">3 · {t('CLEAR', '清除记录')}</text>
+        <rect x="40" y="408" width="220" height="32" rx="6" fill="white" stroke="var(--faint)" stroke-dasharray="4 3" />
+        <text x="150" y="429" text-anchor="middle" class="mono">pending: no A</text>
+        <text x="150" y="465" text-anchor="middle" class="tag strong">{t('backend may reclaim', '后端可以回收')}</text>
+
+        <rect x="15" y="515" width="270" height="55" rx="7" fill="white" stroke="var(--line)" />
+        <text x="150" y="539" text-anchor="middle" class="tag strong">{t('operations finish before completion', 'operations 完成后才收尾')}</text>
+        <text x="150" y="560" text-anchor="middle" class="tag">{t('no universal release() call', '通用层没有统一 release()')}</text>
+      {/if}
+      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{t('A slow reader holds backend resources longer; reclamation is backend-specific.', '读者越慢，后端资源占用越久；具体回收方式由后端决定。')}</text>
+      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Next chapter: how queues and backpressure connect stages at different speeds.', '下一章：队列和背压怎样连接快慢不同的 stage。')}</text>
       {/if}
     </svg>
   </div>

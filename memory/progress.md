@@ -73,7 +73,7 @@
 | 02 | 02-spg-topology | 完成：3/3 步易读满分 | 24.00 |
 | 03 | 03-request-binding | 完成：3/3 步易读满分 | 24.00 |
 | 04 | 04-readiness-contracts | 完成：4/4 步易读满分 | 24.00 |
-| 05 | 05-data-lifetime | 制作中：4/5 步；已做步文本自检 12/12、24/24，章末集中冷读 | — |
+| 05 | 05-data-lifetime | 制作中：5/5 步；已做步文本自检 12/12、24/24，章末集中冷读 | — |
 | 06 | 06-batching-backpressure | 规划 | — |
 | 07 | 07-shared-gpu-budgets | 规划 | — |
 | 08 | 08-measure-streaming | 规划 | — |
