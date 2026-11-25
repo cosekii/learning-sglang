@@ -1,0 +1,29 @@
+---
+layout: ../../../layouts/Chapter.astro
+book: ml-sys
+slug: 05-distributed-serving
+---
+import DistributedServing from '../../../components/ml-sys/DistributedServing.svelte';
+import { mlSysNeighbors } from '../../../ml-sys/chapters';
+import { deepFor } from '../../../deep';
+export const deep = await deepFor('ml-sys-05-distributed-serving');
+
+<DistributedServing client:load {...mlSysNeighbors('05-distributed-serving')} deep={deep} />
+
+<details class="i18n-en">
+<summary>Where this chapter's claims come from</summary>
+
+Step 1 subtracts the three timestamps in the public startup log at `Awesome-ML-SYS-Tutorial/sglang/nvidia-dynamo/dynamo.md:79-83`. It is a single-node example, not a multi-node measurement or a startup-time target. The logged sequence agrees with the fixed Dynamo source: `SgLangWorker::start` waits for worker readiness before the HTTP input runs (`lib/llm/src/engines/sglang/worker.rs:341-343`; `launch/dynamo-run/src/lib.rs:407-410`, commit `670661f6fa85f6ffc77433d21b363285d6cec32f`).
+
+The command and log examples describe an old guide. This chapter keeps their version boundary and replaces machine-specific paths and addresses with placeholders rather than presenting them as reusable defaults.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的出处</summary>
+
+第 1 步对 `Awesome-ML-SYS-Tutorial/sglang/nvidia-dynamo/dynamo.md:79-83` 的三条公开启动日志做时间相减。它是单节点例子，不是多节点实测，也不是启动耗时目标。固定版本 Dynamo 源码的顺序与日志一致：`SgLangWorker::start` 先等 worker 就绪，再运行 HTTP 输入（`lib/llm/src/engines/sglang/worker.rs:341-343`；`launch/dynamo-run/src/lib.rs:407-410`，提交 `670661f6fa85f6ffc77433d21b363285d6cec32f`）。
+
+这些命令和日志来自旧版操作记录。本章保留版本边界，把机器相关路径和地址换成占位符，不把它们写成可照搬的默认值。
+
+</details>

@@ -97,3 +97,10 @@ export const COMM_TENSOR_TEXT = (tensor: number[]) => `[${tensor.join(',')}]`;
 export const COMM_RING_PHASE_STEPS = COMM_WORLD_SIZE - 1;
 export const COMM_RING_TOTAL_STEPS = 2 * COMM_RING_PHASE_STEPS;
 export const COMM_RING_PER_RANK_SEND_TENSORS = COMM_RING_TOTAL_STEPS / COMM_WORLD_SIZE;
+
+// Public Dynamo startup log in Awesome-ML-SYS nvidia-dynamo/dynamo.md:79-83.
+// Microseconds are relative to the first log line; this is a single-node example.
+export const DYNAMO_LOG_READY_US = 21_600_474;
+export const DYNAMO_LOG_HTTP_US = 22_447_965;
+export const DYNAMO_READY_TO_HTTP_US = DYNAMO_LOG_HTTP_US - DYNAMO_LOG_READY_US;
+export const DYNAMO_HTTP_PORT = 8080;
