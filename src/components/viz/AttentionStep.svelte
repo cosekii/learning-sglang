@@ -45,7 +45,7 @@
     { n: 5, rows: true, attend: 4, scores: true, caption: `The last token's query gets dotted with every key. A big score means "this one matters to me".`, captionZh: `点积就是两排数对应相乘，再全部相加。下一步再讲这些分数怎么用。` },
     { n: 5, rows: true, attend: 4, scores: true, weights: true, caption: `Softmax turns the scores into weights that add up to one.`, captionZh: `Softmax 把分数换成权重。每列的权重表示它占多少，合起来是 1。` },
     { n: 5, rows: true, attend: 4, weights: true, mix: true, caption: `Its output is the values, blended by those weights. This is how "is" finds out it's sitting after "capital of France".`, captionZh: `每列 value 先乘自己的权重，再把五份相加。␣France 的权重最大，贡献也最大。` },
-    { n: 5, rows: true, causal: true, caption: `Every position does the same thing with its own query, over the keys up to itself. One pass, all five outputs at once.`, captionZh: `每个位置都用自己的 query 对截至自身的 key 做同样的事。一遍前向，五个输出同时得到。` },
+    { n: 5, rows: true, causal: true, caption: `Every position does the same thing with its own query, over the keys up to itself. One pass, all five outputs at once.`, captionZh: `每行只看自己和前面的 key，算一份输出。不能偷看后面。` },
     // Decode step: the layer runs again, and it really does start over. Same three steps as above, on six tokens.
     { n: 6, flyIn: true, caption: `Decode step. "Paris" joins the sequence, and the layer runs again on all six. From the top.`, captionZh: `Decode 步。"Paris" 加入序列，这一层对全部六个 token 重新运行，从头开始。` },
     { n: 6, x: true, caption: `Six tokens come in as six vectors.`, captionZh: `六个 token 各变成一排数，得到 x₁ 到 x₆。前五个 x 没变，只有 x₆ 是新的。` },
@@ -103,6 +103,7 @@
   const zhProject = $derived(step === 2 && $lang === 'zh');
   const zhWeights = $derived(step === 4 && $lang === 'zh');
   const zhMix = $derived(step === 5 && $lang === 'zh');
+  const zhCausal = $derived(step === 6 && $lang === 'zh');
   const zhSix = $derived(step === 8 && $lang === 'zh');
   const zhRecompute = $derived(step === 9 && $lang === 'zh');
   let phone = $state(false);
@@ -117,6 +118,7 @@
   const phoneProject = $derived(phone && zhProject);
   const phoneWeights = $derived(phone && zhWeights);
   const phoneMix = $derived(phone && zhMix);
+  const phoneCausal = $derived(phone && zhCausal);
   const phoneSix = $derived(phone && zhSix);
   const phoneRecompute = $derived(phone && zhRecompute);
   const expScores = $derived(cur.attend !== undefined ? scores[cur.attend].map((score) => Math.exp(score)) : []);
@@ -128,7 +130,7 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox={phoneProject ? '0 0 360 560' : phoneIntro ? '0 0 360 450' : phoneRecompute ? '0 0 360 440' : phoneSix ? '0 0 360 430' : phoneMix ? '0 0 360 580' : phoneWeights ? '0 0 360 550' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Attention per decode step, step {step + 1}" class:phone-project={phoneProject} class:phone-intro={phoneIntro} class:phone-weights={phoneWeights} class:phone-mix={phoneMix} class:phone-six={phoneSix} class:phone-recompute={phoneRecompute}>
+    <svg viewBox={phoneProject ? '0 0 360 560' : phoneIntro ? '0 0 360 450' : phoneRecompute ? '0 0 360 440' : phoneSix ? '0 0 360 430' : phoneCausal ? '0 0 360 520' : phoneMix ? '0 0 360 580' : phoneWeights ? '0 0 360 550' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Attention per decode step, step {step + 1}" class:phone-project={phoneProject} class:phone-intro={phoneIntro} class:phone-weights={phoneWeights} class:phone-mix={phoneMix} class:phone-causal={phoneCausal} class:phone-six={phoneSix} class:phone-recompute={phoneRecompute}>
       {#if phoneProject}
         <text x="180" y="26" text-anchor="middle" class="ph-title">一个 x 算出 q、k、v</text>
         <text x="180" y="52" text-anchor="middle">5 个 token → x₁、x₂、x₃、x₄、x₅</text>
@@ -187,6 +189,36 @@
         <rect x="34" y="386" width="14" height="14" rx="3" fill={COLOR.x[0]} stroke={COLOR.x[1]} />
         <text x="180" y="398" text-anchor="middle">灰色：前面的 token 把信息传给后面的 token</text>
         <text x="180" y="430" text-anchor="middle" class="ph-strong">接下来：找哪些旧结果不用再算</text>
+      {:else if phoneCausal}
+        <text x="180" y="26" text-anchor="middle" class="ph-title">五个位置，各算一份输出</text>
+        <text x="180" y="52" text-anchor="middle">行是自己的 query · 列是要看的 key</text>
+        {#each Array(PROMPT_N) as _, j}
+          <text x={67 + j * 42} y="82" text-anchor="middle">k{sub(j + 1)}</text>
+        {/each}
+        {#each Array(PROMPT_N) as _, i}
+          {@const y = 94 + i * 42}
+          <text x="34" y={y + 27} text-anchor="middle">q{sub(i + 1)}</text>
+          {#each Array(PROMPT_N) as _, j}
+            {#if j <= i}
+              <rect x={46 + j * 42} y={y} width="39" height="39" rx="5" fill={i === PROMPT_N - 1 ? COLOR.k[1] : COLOR.k[0]} stroke={COLOR.k[1]} />
+            {:else}
+              <text x={65.5 + j * 42} y={y + 27} text-anchor="middle" class="ph-faint">×</text>
+            {/if}
+          {/each}
+          <rect x="274" y={y + 3} width="70" height="33" rx="5" fill="white" stroke={i === PROMPT_N - 1 ? COLOR.k[1] : 'var(--line)'} stroke-width={i === PROMPT_N - 1 ? 2 : 1} />
+          <text x="309" y={y + 25} text-anchor="middle">out{sub(i + 1)}</text>
+        {/each}
+        <rect x="18" y="318" width="14" height="14" rx="3" fill={COLOR.k[0]} stroke={COLOR.k[1]} />
+        <text x="42" y="330">有色格：允许看</text>
+        <text x="174" y="330" class="ph-faint">×：后面的 key，不能看</text>
+        <text x="180" y="350" text-anchor="middle" class="ph-faint">深色行：第 4–6 步的 q₅ → out₅</text>
+        <line x1="18" y1="364" x2="342" y2="364" stroke="var(--line)" />
+        <text x="180" y="386" text-anchor="middle" class="ph-strong">每行都照第 4–6 步计算</text>
+        <text x="180" y="410" text-anchor="middle">有色列的 query、key 比分数，再变权重</text>
+        <text x="180" y="434" text-anchor="middle">按权重混合有色列的 value，得到 out</text>
+        <text x="180" y="458" text-anchor="middle">五份输出各回各位，继续本层后面的计算</text>
+        <text x="180" y="482" text-anchor="middle">看到后面，就是提前看下一个 token 的答案</text>
+        <text x="180" y="506" text-anchor="middle">五份位置输出，不是五个新 token</text>
       {:else if phoneRecompute}
         <text x="180" y="26" text-anchor="middle" class="ph-title">每个 x 都重新算 q、k、v</text>
         <text x="180" y="54" text-anchor="middle">矩阵 = 学好的数字表，三张表各算 q、k、v</text>
@@ -269,6 +301,39 @@
         <text x="16" y="482">图中数四舍五入</text>
         <text x="16" y="506">0.06 + 0.26 + 0.05 + 0.53 + 0.10 = 1.00</text>
         <text x="16" y="540">下一步：按这些权重混合五列 value</text>
+      {:else if zhCausal}
+        <text x="20" y="26" class="boxtitle">五个位置，各算一份输出</text>
+        <text x="20" y="50" class="legend">行是自己的 query · 列是要看的 key · 每行只许看自己和前面</text>
+        <text x="700" y="26" text-anchor="end" class="legend">深色行：第 4–6 步的 q₅ → out₅</text>
+        {#each Array(PROMPT_N) as _, j}
+          <text x={95 + j * 44} y="82" text-anchor="middle" class="cell">k{sub(j + 1)}</text>
+        {/each}
+        {#each Array(PROMPT_N) as _, i}
+          {@const y = 96 + i * 44}
+          <text x="54" y={y + 27} text-anchor="middle" class="cell">q{sub(i + 1)}</text>
+          {#each Array(PROMPT_N) as _, j}
+            {#if j <= i}
+              <rect x={74 + j * 44} y={y} width="41" height="41" rx="5" fill={i === PROMPT_N - 1 ? COLOR.k[1] : COLOR.k[0]} stroke={COLOR.k[1]} />
+            {:else}
+              <text x={94.5 + j * 44} y={y + 28} text-anchor="middle" class="legend">×</text>
+            {/if}
+          {/each}
+          <text x="326" y={y + 27} text-anchor="middle" class="slab">→</text>
+          <rect x="350" y={y + 4} width="66" height="33" rx="5" fill="white" stroke={i === PROMPT_N - 1 ? COLOR.k[1] : 'var(--line)'} stroke-width={i === PROMPT_N - 1 ? 2 : 1} />
+          <text x="383" y={y + 26} text-anchor="middle" class="cell">out{sub(i + 1)}</text>
+        {/each}
+        <rect x="450" y="92" width="250" height="224" rx="8" fill="var(--accent-soft)" stroke="var(--line)" />
+        <text x="466" y="120" class="slab">每行都照第 4–6 步计算</text>
+        <text x="466" y="150" class="legend">① query 和有色列的 key 比分数</text>
+        <text x="466" y="180" class="legend">② 分数变成权重</text>
+        <text x="466" y="210" class="legend">③ 按权重混合有色列的 value</text>
+        <text x="466" y="240" class="legend">④ 得到这一行的 out</text>
+        <text x="466" y="278" class="legend">五份输出各回自己的位置</text>
+        <text x="466" y="300" class="legend">继续过本层剩下的计算</text>
+        <rect x="20" y="334" width="14" height="14" rx="3" fill={COLOR.k[0]} stroke={COLOR.k[1]} />
+        <text x="44" y="346" class="legend">有色格：允许看</text>
+        <text x="174" y="346" class="legend">×：后面的 key，不能看</text>
+        <text x={W / 2} y="382" text-anchor="middle" class="footnote">看到后面 = 提前看下一个 token 的答案 · 五份位置输出，不是五个新 token</text>
       {:else if zhProject}
         <text x="16" y="24" class="slab">每个 x 经过三张数字表，变成 q、k、v</text>
         <text x="16" y="46" class="legend">q、k、v 都是一排数；每个位置只用自己的 x，其他 token 还没参与</text>
@@ -619,6 +684,10 @@
   .phone-mix .ph-title { font-family: var(--sans); font-size: 16px; font-weight: 650; }
   .phone-mix .ph-value { font-weight: 700; }
   .phone-mix .ph-foot { fill: var(--faint); }
+  .phone-causal text { font-family: var(--sans); font-size: 12px; fill: var(--fg); }
+  .phone-causal .ph-title { font-size: 16px; font-weight: 650; }
+  .phone-causal .ph-strong { font-weight: 650; }
+  .phone-causal .ph-faint { fill: var(--faint); }
   .phone-six text { font-family: var(--mono); font-size: 12px; fill: var(--fg); }
   .phone-six .ph-title { font-family: var(--sans); font-size: 16px; font-weight: 650; }
   .phone-six .ph-faint { fill: var(--faint); }
