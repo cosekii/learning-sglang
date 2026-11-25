@@ -21,6 +21,8 @@
     VOXT_ASR_SPLIT_SECONDS,
     VOXT_ASR_STREAM_CALLS,
     VOXT_ASR_STREAM_SENDS,
+    VOXT_OMNI_FIRST_DECODE_MS,
+    VOXT_OMNI_PREVIEW_TIMES_MS,
     VOXT_PCM_BYTES_PER_SECOND,
     VOXT_WAV_HEADER_BYTES,
   } from '../../voxt/numbers';
@@ -42,6 +44,9 @@
   }, {
     caption: 'Pieces are recognised in order. Adjacent English words are joined with one space.',
     captionZh: '各块按顺序识别。英文相邻文字之间补一个空格。',
+  }, {
+    caption: 'By default, local Omni updates drafts about every second. It recognises the whole recording again after the stop.',
+    captionZh: '默认本机 Omni 约每秒更新草稿。停止后，它重新识别完整录音。',
   }];
   const ariaLabels = [{
     en: 'One second of sound is 32000 bytes. A chooser selects one of three recognition routes: local Omni on this Mac, a configured remote ASR API, or macOS system dictation through the helper.',
@@ -58,6 +63,9 @@
   }, {
     en: 'Piece one is recognised first as Good. Piece two is recognised next as morning. JoinText inserts one space between the English results, yielding Good morning in recording order.',
     zh: '第一块先识别为 Good，第二块随后识别为 morning。JoinText 在两份英文结果之间补一个空格，按录音顺序得到 Good morning。',
+  }, {
+    en: 'With LiveResult off, local Qwen3-ASR starts decoding about 100 milliseconds after audible sound, then updates about every second. In this three-second example drafts appear at 0.1, 1.1 and 2.1 seconds. After the stop, Final recognises the whole recording again.',
+    zh: 'LiveResult 关闭时，本机 Qwen3-ASR 在可闻声音后约一百毫秒开始解码，随后约每秒更新。本例三秒录音在零点一、一点一和二点一秒出现草稿。停止后，Final 重新识别完整录音。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -226,6 +234,26 @@
       <text x={W / 2} y={phone ? 397 : 274} text-anchor="middle" class="label amber">{t('JOINED FINAL TEXT', '合并后的文字')}</text>
       <text x={W / 2} y={phone ? 430 : 307} text-anchor="middle" class="result">“Good morning.”</text>
       <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{VOXT_ASR_JOIN_PIECE_COUNT} {t('pieces', '块')} · {VOXT_ASR_JOIN_INSERTED_SPACES} {t('inserted space', '个补充空格')}</text>
+      {:else if step === 5}
+      <text x={W / 2} y="27" text-anchor="middle" class="title">{t('LOCAL OMNI · PREVIEW, THEN FINAL', '本机 Omni · 先预览，再最终识别')}</text>
+      <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('default Qwen3-ASR route · LiveResult off', '默认 Qwen3-ASR 路线 · LiveResult 关闭')}</text>
+      <rect x={phone ? 35 : 180} y="72" width={phone ? 230 : 360} height="58" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
+      <text x={W / 2} y="96" text-anchor="middle" class="label">{t('AUDIBLE SOUND STARTS · 3-SECOND EXAMPLE', '可闻声音开始 · 本例录 3 秒')}</text>
+      <text x={W / 2} y="118" text-anchor="middle" class="detail">{t(`first decode after about ${VOXT_OMNI_FIRST_DECODE_MS} ms`, `约 ${VOXT_OMNI_FIRST_DECODE_MS} ms 后开始第一次解码`)}</text>
+      {#each draftText as text, i}
+        {@const x = phone ? 35 : 30 + i * 230}
+        {@const y = phone ? 150 + i * 80 : 160}
+        <rect x={x} y={y} width={phone ? 230 : 200} height="65" rx="9" fill="var(--bg)" stroke="var(--line)" />
+        <text x={x + (phone ? 115 : 100)} y={y + 22} text-anchor="middle" class="detail">+{VOXT_OMNI_PREVIEW_TIMES_MS[i] / 1000} s · {t('DRAFT', '草稿')} {i + 1}</text>
+        <text x={x + (phone ? 115 : 100)} y={y + 49} text-anchor="middle" class="result">“{text}”</text>
+      {/each}
+      <text x={W / 2} y={phone ? 399 : 278} text-anchor="middle" class="cut">{t('ABOUT EVERY 1 SECOND · THE DRAFT CAN CHANGE', '约每 1 秒更新 · 草稿可以变化')}</text>
+      <line x1={W / 2} y1={phone ? 405 : 288} x2={W / 2} y2={phone ? 420 : 305} stroke="var(--muted)" stroke-width="2" marker-end="url(#asr-route-arrow)" />
+      <rect x={phone ? 35 : 150} y={phone ? 427 : 315} width={phone ? 230 : 420} height="90" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
+      <text x={W / 2} y={phone ? 450 : 340} text-anchor="middle" class="label amber">STOP · 3 s → FINAL</text>
+      <text x={W / 2} y={phone ? 480 : 370} text-anchor="middle" class="result">“Good morning.”</text>
+      <text x={W / 2} y={phone ? 501 : 393} text-anchor="middle" class="detail">{t('recognise the whole recording again', '重新识别完整录音')}</text>
+      <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Decode schedule, not a measured-latency promise.', '这是解码节拍，不是实测延迟承诺。')}</text>
       {/if}
     </svg>
   </div>

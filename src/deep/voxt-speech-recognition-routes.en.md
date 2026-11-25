@@ -265,3 +265,59 @@ Public baseline: same as Step 1.
 
 - Ordered recognition, blank omission, error return and joining: `Voxt/internal/asr/split.go:47-80`.
 - English spaces and scripts without spaces: `Voxt/internal/asr/split.go:83-107`.
+
+## Step 6 · Local Omni follows drafts with a Final
+
+> **In one line:** Local Qwen3-ASR updates its preview about every second; with `LiveResult` off, the stop still triggers a Final over the whole recording rather than adopting the draft directly.
+
+### On the stage
+
+- This step covers only local Omni from Step 1, using Qwen3-ASR's default `LiveResult: false` route. It does not apply these details to every ASR provider.
+- The first decode starts about 100 ms after audible sound, then updates about once per second. The starting point is detected audible sound, not the hotkey press.
+- This constructed recording again says “Good morning.” for three seconds. Its three drafts appear at 0.1, 1.1 and 2.1 seconds; they are previews, not three final results.
+- At the three-second stop, orange Final recognises the complete recording and supplies the result. Step 3 established that drafts can change; the new fact here is the default local route's final full listen.
+
+### Formula
+
+$$
+t_i=t_0+0.1+i\times1\quad(i=0,1,2)
+$$
+
+| Symbol | Meaning | Where it comes from |
+|---|---|---|
+| $t_i$ | Time of preview $i+1$ in this example | Constructed from the public cadence |
+| $t_0$ | First audible-sound time | Set to zero in this example |
+| $0.1$ | Initial decode delay in seconds | `FirstDecode = 100 ms` |
+| $1$ | Later decode interval in seconds | `DecodeInterval = 1 s` |
+| $i$ | Zero-based preview index | This example's 0, 1 and 2 |
+
+### The numbers on the stage
+
+| Quantity | Calculation | Result |
+|---|---|---:|
+| First draft | $0+0.1+0\times1$ | About 0.1 seconds |
+| Second draft | $0+0.1+1\times1$ | About 1.1 seconds |
+| Third draft | $0+0.1+2\times1$ | About 2.1 seconds |
+| Final input | Stop time minus recording start | The whole 3 seconds |
+
+These times describe scheduling, not measured recognition latency. Audible-sound detection, server queues and model speed all affect when real drafts appear.
+
+### Why preview failure need not lose Final
+
+`Send` queues audio for the preview and also appends PCM to `s.audio`. A late or failed preview can stop while the audio needed by Final remains. Default `Finish` starts `finalPass`, whose success emits `EventFinal` last.
+
+For long recordings with pieces already finalised in the background, Final recognises only the remaining tail and joins it with those pieces. This short example has no such pieces, so its input is the whole three seconds. With `LiveResult` enabled, eligible realtime text can become the result directly, with fallback after failure; the main stage does not expand that optional switch.
+
+### Next
+
+Whether recognition used a file, a stream or local Final, the route must eventually deliver recognized speech. The next step shows where that raw text stops and which questions belong to the next chapter.
+
+### Sources
+
+Public baseline: same as Step 1.
+
+- 100 ms first decode and one-second interval: `Voxt/internal/omni/models.go:157-166`.
+- `Send` stores Final audio and queues the preview: `Voxt/internal/omni/live.go:221-265`.
+- Default `Finish` starts Final: `Voxt/internal/omni/live.go:368-393`.
+- Final tail, joining and final event: `Voxt/internal/omni/live_final.go:11-18,39-56,80-82`.
+- `LiveResult` switch: `Voxt/internal/settings/settings.go:163-167`.

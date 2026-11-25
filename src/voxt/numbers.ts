@@ -83,3 +83,12 @@ export const VOXT_ASR_SPLIT_PIECE_COUNT = 2;
 // The two non-empty English results need one inserted separator.
 export const VOXT_ASR_JOIN_PIECE_COUNT = VOXT_ASR_SPLIT_PIECE_COUNT;
 export const VOXT_ASR_JOIN_INSERTED_SPACES = VOXT_ASR_JOIN_PIECE_COUNT - 1;
+
+// Public Qwen3-ASR preview cadence applied to the constructed three-second recording.
+export const VOXT_OMNI_FIRST_DECODE_MS = 100;
+export const VOXT_OMNI_DECODE_INTERVAL_MS = 1000;
+export const VOXT_OMNI_PREVIEW_COUNT = 3;
+export const VOXT_OMNI_PREVIEW_TIMES_MS = Array.from(
+  { length: VOXT_OMNI_PREVIEW_COUNT },
+  (_, i) => VOXT_OMNI_FIRST_DECODE_MS + i * VOXT_OMNI_DECODE_INTERVAL_MS,
+);
