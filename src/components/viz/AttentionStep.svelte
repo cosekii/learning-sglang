@@ -130,7 +130,7 @@
       {#if phoneIntro}
         <defs>
           <marker id="phone-intro-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-            <path d="M 0 0 L 6 3 L 0 6 z" fill="var(--accent)" />
+            <path d="M 0 0 L 6 3 L 0 6 z" fill={COLOR.x[1]} />
           </marker>
         </defs>
         <text x="180" y="26" text-anchor="middle" class="ph-title">没存旧结果：18 格里有 11 格重算</text>
@@ -152,13 +152,14 @@
         <text x="180" y="276" text-anchor="middle" class="ph-title">模型里一个叫 attention 的部分</text>
         {@const phoneTokens = [{ t: 'The', x: 12, w: 42 }, { t: '␣capital', x: 60, w: 78 }, { t: '␣of', x: 144, w: 48 }, { t: '␣France', x: 198, w: 80 }, { t: '␣is', x: 284, w: 64 }]}
         {#each phoneTokens as token}
-          <rect x={token.x} y="296" width={token.w} height="30" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <rect x={token.x} y="296" width={token.w} height="30" rx="5" fill={COLOR.x[0]} stroke={COLOR.x[1]} />
           <text x={token.x + token.w / 2} y="316" text-anchor="middle">{token.t}</text>
         {/each}
         {#each phoneTokens.slice(0, -1) as token}
-          <path d="M {token.x + token.w / 2} 331 C {token.x + token.w / 2} 366, 316 366, 316 334" fill="none" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#phone-intro-arrow)" />
+          <path d="M {token.x + token.w / 2} 331 C {token.x + token.w / 2} 366, 316 366, 316 334" fill="none" stroke={COLOR.x[1]} stroke-width="1.5" marker-end="url(#phone-intro-arrow)" />
         {/each}
-        <text x="180" y="398" text-anchor="middle">前面的 token 把信息传给后面的 token</text>
+        <rect x="34" y="386" width="14" height="14" rx="3" fill={COLOR.x[0]} stroke={COLOR.x[1]} />
+        <text x="180" y="398" text-anchor="middle">灰色：前面的 token 把信息传给后面的 token</text>
         <text x="180" y="430" text-anchor="middle" class="ph-strong">接下来：找哪些旧结果不用再算</text>
       {:else if phoneRecompute}
         <text x="180" y="26" text-anchor="middle" class="ph-title">每个 x 都重新算 q、k、v</text>
@@ -245,7 +246,7 @@
       {:else}
       <defs>
         <marker id="intro-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-          <path d="M 0 0 L 6 3 L 0 6 z" fill="var(--accent)" />
+          <path d="M 0 0 L 6 3 L 0 6 z" fill={zhIntro ? COLOR.x[1] : 'var(--accent)'} />
         </marker>
         <marker id="vector-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
           <path d="M 0 0 L 6 3 L 0 6 z" fill={COLOR.x[1]} />
@@ -275,13 +276,14 @@
         <text x={W / 2} y="214" text-anchor="middle" class="boxtitle">模型里一个叫 attention 的部分，找哪些旧结果不用再算</text>
         {@const last = cols[cols.length - 1]}
         {#each cols as c}
-          <rect x={c.x} y="234" width={c.w} height={tokH} rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5" />
+          <rect x={c.x} y="234" width={c.w} height={tokH} rx="6" fill={COLOR.x[0]} stroke={COLOR.x[1]} stroke-width="1.5" />
           <text x={c.cx} y="252" text-anchor="middle" class="tok">{c.t.replace(/^ /, '␣')}</text>
         {/each}
         {#each cols.slice(0, -1) as c}
-          <path d="M {c.cx} 267 C {c.cx} 318, {last.cx} 318, {last.cx} 270" fill="none" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#intro-arrow)" />
+          <path d="M {c.cx} 267 C {c.cx} 318, {last.cx} 318, {last.cx} 270" fill="none" stroke={COLOR.x[1]} stroke-width="1.5" marker-end="url(#intro-arrow)" />
         {/each}
-        <text x={W / 2} y="356" text-anchor="middle" class="slab">attention：前面的 token 把信息传给后面的 token</text>
+        <rect x="162" y="343" width="14" height="14" rx="3" fill={COLOR.x[0]} stroke={COLOR.x[1]} />
+        <text x={W / 2} y="356" text-anchor="middle" class="slab">灰色：前面的 token 把信息传给后面的 token</text>
       {:else}
         <text x="16" y={seqY + 18} class="rowlabel">tokens</text>
         {#each cols as c, i (i)}

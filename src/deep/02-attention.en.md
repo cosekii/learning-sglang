@@ -7,6 +7,19 @@
 - Five blue boxes: the 5 tokens cut in Ch. 1 Step 2, `The`, `␣capital`, `␣of`, `␣France`, `␣is`.
 - Only tokens so far. The next steps grow rows of x, q, k and v under them.
 
+### Substitute the chapter's numbers
+
+Ch. 1 Step 12 gives the motivating count: three rounds process 5, 6 and 7 token positions without saving earlier results.
+
+| Round | Positions processed | First computation | Recomputed |
+|---|---:|---:|---:|
+| 1 | 5 | 5 prompt positions | 0 |
+| 2 | 6 | 1 for `␣Paris` | the first 5 |
+| 3 | 7 | 1 for the full stop | the first 5 plus `␣Paris`, 6 total |
+| Total | $5+6+7=18$ | $5+1+1=7$ | $5+6=11$ |
+
+A cell counts one token position processed in one round, not a distinct token or a FLOP. These numbers belong to Ch. 1's teaching example, which saves no earlier results; they do not mean SGLang must always recompute this way.
+
 ### Background
 
 Llama-3-8B is a stack of 32 layers with identical structure. Each layer first does **attention** (each token gathers information from other tokens), then an MLP (each token transformed on its own). The "forward pass" of Ch. 1 Step 3 sends the 5 tokens through all 32 layers.
