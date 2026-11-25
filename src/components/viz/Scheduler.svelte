@@ -66,7 +66,7 @@
   const M = Object.fromEntries((['prefill-first', 'batched', 'chunked', 'mixed'] as Mode[]).map((m) => [m, metrics(timeline(m))])) as Record<Mode, ReturnType<typeof metrics>>;
   const steps: Step[] = [
     { scene: 'recap', caption: `Ch. 5 Step 9 ended here: a newcomer's prefill stretching everyone's decode step. SGLang doesn't run the two together by default. They split the work into two kinds of batch and pick one each step. That's the scheduler.`, captionZh: `Ch. 5 Step 9 的新来者拉长了 decode 步。SGLang 默认每步只选 prefill 或 decode batch。` },
-    { scene: 'lists', caption: `The engine keeps two lists. <b>Waiting</b>: new requests that need a prefill. <b>Running</b>: conversations mid-answer that need one more token. Each step runs one batch, from one list.`, captionZh: `引擎维护两个列表。<b>Waiting</b>：需要 prefill 的新 request。<b>Running</b>：回答到一半、还差一个 token 的对话。每步跑一个 batch，来自其中一个列表。` },
+    { scene: 'lists', caption: `The engine keeps two lists. <b>Waiting</b>: new requests that need a prefill. <b>Running</b>: conversations mid-answer that need one more token. Each step runs one batch, from one list.`, captionZh: `<b>Waiting</b> 放等待 prefill 的 request；<b>Running</b> 放继续出 token 的 request。每步只从一个列表组 batch。` },
     { scene: 'why', caption: `Same model, two shapes. Prefill: a few sequences, hundreds of tokens each, ragged. Decode: many sequences, one token each, every step. Two shapes, two batches; chapters ${CH_DISAGG} and ${CH_CUDA} show what that unlocks.`, captionZh: `同一模型，两种形状。Prefill：几条序列，各几百 token，长短不齐。Decode：许多序列，每步各一个 token。两种形状两个 batch；第 ${CH_DISAGG}、${CH_CUDA} 章讲这解锁了什么。` },
     { scene: 'timeline', mode: 'prefill-first', caption: `The default policy: if anyone is waiting, run a prefill batch first. The newcomer's first token comes in ${fmt(M['prefill-first'].ttft)}, but nobody decodes during those ${fmt(M['prefill-first'].ttft)}. An 8k-token prompt, the longest Llama-3-8B takes, freezes everyone for ${fmt(stepMs(8192))}.`, captionZh: `默认策略：有人等待就先跑 prefill batch。新来者的首个 token 要 ${fmt(M['prefill-first'].ttft)}，但这 ${fmt(M['prefill-first'].ttft)} 里没人 decode。8k token 的 prompt（Llama-3-8B 的上限）会冻结所有人 ${fmt(stepMs(8192))}。` },
     { scene: 'timeline', mode: 'batched', caption: `It gets worse. Waiting prompts are batched into one prefill step, efficient for the GPU and awful for the decoders: three prompts, ${waitingTotal.toLocaleString()} tokens, one ${fmt(M.batched.ttft)} step. Every running conversation freezes for all of it.`, captionZh: `更糟的是，等待的 prompt 被合进一个 prefill 步：对 GPU 高效，对 decode 却糟糕：三个 prompt、${waitingTotal.toLocaleString()} 个 token、一个 ${fmt(M.batched.ttft)} 的步。所有运行中的对话全程冻结。` },
@@ -96,14 +96,15 @@
     return () => query.removeEventListener('change', update);
   });
   const phoneRecap = $derived(phone && step === 0 && $lang === 'zh');
+  const phoneLists = $derived(phone && step === 1 && $lang === 'zh');
   const phoneMixed = $derived(phone && step === 6 && $lang === 'zh');
   const phoneCompare = $derived(phone && step === 7 && $lang === 'zh');
-  const phoneCustom = $derived(phoneRecap || phoneMixed || phoneCompare);
+  const phoneCustom = $derived(phoneRecap || phoneLists || phoneMixed || phoneCompare);
 </script>
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox={phoneRecap ? '0 0 360 400' : phoneMixed ? '0 0 360 550' : phoneCompare ? '0 0 360 500' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="The scheduler, step {step + 1}" class:phone-custom={phoneCustom}>
+    <svg viewBox={phoneRecap ? '0 0 360 400' : phoneLists ? '0 0 360 570' : phoneMixed ? '0 0 360 550' : phoneCompare ? '0 0 360 500' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="The scheduler, step {step + 1}" class:phone-custom={phoneCustom}>
 
       {#if phoneRecap}
         <text x="180" y="28" text-anchor="middle" class="ph-title">新来者让这一步变长</text>
@@ -124,6 +125,37 @@
         <text x="267" y="321" text-anchor="middle" class="ph-strong">decode batch</text>
         <text x="267" y="345" text-anchor="middle">每人出 token</text>
         <text x="180" y="386" text-anchor="middle" class="ph-strong">SGLang 默认每步二选一</text>
+      {/if}
+
+      {#if phoneLists}
+        <text x="180" y="28" text-anchor="middle" class="ph-title">两个列表，每步选一个</text>
+        <rect x="16" y="52" width="328" height="174" rx="10" fill="#fbfaf7" stroke="var(--accent)" stroke-dasharray="5 4" />
+        <text x="32" y="80" class="ph-strong">waiting · 等待 prefill</text>
+        {#each [7, 8, 9] as req, i}
+          <rect x={32 + i * 100} y="98" width="88" height="34" rx="6" fill="white" stroke="var(--line)" />
+          <text x={76 + i * 100} y="120" text-anchor="middle">req {req}</text>
+        {/each}
+        <text x="32" y="158">新 prompt 或后续 prefill</text>
+        <text x="32" y="184">蓝条：还要处理的 prompt token</text>
+        <rect x="32" y="198" width="180" height="10" rx="3" fill="var(--accent)" />
+        <rect x="16" y="246" width="328" height="174" rx="10" fill="#fbfaf7" stroke="var(--gen)" stroke-dasharray="5 4" />
+        <text x="32" y="274" class="ph-strong">running · 继续出 token</text>
+        {#each [1, 2, 3, 4, 5, 6] as req, i}
+          <rect x={28 + i * 51} y="292" width="45" height="34" rx="6" fill="white" stroke="var(--line)" />
+          <text x={50 + i * 51} y="314" text-anchor="middle">{req}</text>
+        {/each}
+        <text x="32" y="352">prompt 已处理，回答还没结束</text>
+        <text x="32" y="378">每个 decode 步各出一个 token</text>
+        <rect x="32" y="392" width="180" height="10" rx="3" fill="var(--gen)" />
+        <path d="M 16 140 H 7 V 490 H 30" fill="none" stroke="var(--line)" stroke-width="2" />
+        <path d="M 344 334 H 353 V 490 H 330" fill="none" stroke="var(--line)" stroke-width="2" />
+        <rect x="36" y="452" width="136" height="76" rx="9" fill="white" stroke="var(--accent)" />
+        <text x="104" y="482" text-anchor="middle" class="ph-strong">prefill batch</text>
+        <text x="104" y="508" text-anchor="middle">从 waiting 选</text>
+        <rect x="188" y="452" width="136" height="76" rx="9" fill="white" stroke="var(--gen)" />
+        <text x="256" y="482" text-anchor="middle" class="ph-strong">decode batch</text>
+        <text x="256" y="508" text-anchor="middle">从 running 选</text>
+        <text x="180" y="556" text-anchor="middle" class="ph-strong">本步二选一，跑完再回来选</text>
       {/if}
 
       {#if phoneMixed}
@@ -180,7 +212,7 @@
       {#if !phoneCustom && cur.scene === 'lists'}
         <g transition:fade={{ duration: 250 }}>
           <rect x="24" y="70" width="200" height="220" rx="12" fill="#fbfaf7" stroke="var(--accent)" stroke-dasharray="5 4" />
-          <text x="40" y="92" class="boxtitle">{t('waiting · need a prefill', 'waiting · 需要 prefill')}</text>
+          <text x="40" y="92" class="boxtitle">{t('waiting · need a prefill', 'waiting · 等待 prefill')}</text>
           {#each WAITING as p, i}
             <g in:fly={{ y: -6, delay: i * 80, duration: 220 }}>
               <rect x="40" y={106 + i * 30} width="168" height="22" rx="5" fill="white" stroke="var(--line)" />
@@ -188,9 +220,9 @@
               <rect x="96" y={106 + i * 30 + 6} width={p * 0.04} height="10" rx="2" fill="var(--accent)" opacity="0.85" />
             </g>
           {/each}
-          <text x="40" y="216" class="tag">{t('prompt tokens, none processed yet', 'prompt token，一个都没处理')}</text>
-          <text x="40" y="266" class="tag">{t('a prefill batch: some of these,', '一个 prefill batch：其中一些，')}</text>
-          <text x="40" y="280" class="tag">{t('all their prompt tokens at once', '一次跑完全部 prompt token')}</text>
+          <text x="40" y="216" class="tag">{t('prompt tokens, none processed yet', '新 prompt，或还没算完的 prompt')}</text>
+          <text x="40" y="266" class="tag">{t('a prefill batch: some of these,', 'scheduler 从这里选 prefill batch，')}</text>
+          <text x="40" y="280" class="tag">{t('all their prompt tokens at once', '新的来这里，后续 prefill 回来')}</text>
 
           <rect x="496" y="70" width="200" height="220" rx="12" fill="#fbfaf7" stroke="var(--gen)" stroke-dasharray="5 4" />
           <text x="512" y="92" class="boxtitle">{t('running · need one token', 'running · 还差一个 token')}</text>

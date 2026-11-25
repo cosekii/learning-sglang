@@ -56,7 +56,7 @@ $$
 
 ### 图上是什么
 
-- 左边蓝色虚线框「waiting · 需要 prefill」：req 7、8、9，蓝条长度和 prompt 长度成比例（1,200、2,600、800 个 token）。框里注明「prompt token，一个都没处理」「一个 prefill batch：其中一些，一次跑完全部 prompt token」。
+- 左边蓝色虚线框「waiting · 等待 prefill」：req 7、8、9，蓝条长度和 prompt 长度成比例（1,200、2,600、800 个 token）。waiting 不只放刚到的新 request：第 6 步没算完的后续 prefill，以及第 7 章撤回后要重算的 request，也回来等待。
 - 右边橙色虚线框「running · 还差一个 token」：req 1–6，每条浅橙色是已有的 token，末端实心小块是下一个要出的 token。「一个 decode batch：所有这些，各一个 token」。
 - 中间的框「本步」：一个 prefill batch，或 decode batch；下面「一次前向，然后回到这里」。
 - 说明行：「默认从不同时跑两种。下一步讲为什么。」
@@ -65,15 +65,16 @@ $$
 
 | 列表 | 放什么 | 下一次前向要做的 | 这种 batch 的 $n$ |
 |---|---|---|---|
-| waiting | prompt 还没过模型的 request；它们的 K、V 还不在 KV cache 里（第 3 章） | prefill：对整个 prompt 做一次前向 | 选中的 prompt 长度之和 |
+| waiting | 等待新的或后续 prefill 的 request；新来者的 K、V 还不在 KV cache 里，续块已有一部分（第 3、6 步） | prefill：处理本次选中的 prompt token | 本步预算内选中的 token 数之和 |
 | running | 回答到一半的 request；已有的 token 都在 cache 里 | decode：每条再出 1 个 token | 正在运行的条数，也就是第 5 章的 $B$ |
 
 ### 一个 request 的路线
 
 1. 到达，进 waiting。
-2. 被选进某个 prefill batch，prompt 跑完，拿到第一个 token，移到 running。
-3. 每个 decode 步出一个 token。
-4. 输出结束 token（第 1 章的 EOS）后离开 running。
+2. 被选进某个 prefill batch；若 prompt 没算完，回 waiting 等后续 prefill。
+3. prompt 跑完，拿到第一个 token，移到 running。
+4. 每个 decode 步出一个 token；若被撤回，也回 waiting，之后重新 prefill。
+5. 输出结束 token（第 1 章的 EOS）后离开 running。
 
 ### 接下来
 
