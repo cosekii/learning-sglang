@@ -21,6 +21,8 @@
     VOXT_HIGH_PASS_CLEAR_HZ,
     VOXT_HIGH_PASS_HUM_HZ,
     VOXT_HIGH_PASS_HUM_RATIO,
+    VOXT_LIMITER_CEILING_DB,
+    VOXT_LIMITER_CEILING_RATIO,
     VOXT_QUIET_GAIN_DB,
     VOXT_QUIET_GAIN_RATIO,
     VOXT_VAD_FRAME_MS,
@@ -51,6 +53,9 @@
   }, {
     caption: 'Gain raises this quiet voice by 7 dB. Its wave becomes about 2.24 times taller.',
     captionZh: '增益把这次较轻的说话声提高 7 dB。波形高度约变成 2.24 倍。',
+  }, {
+    caption: 'The limiter turns down peaks that cross the safety ceiling. This peak lands at −1 dBFS.',
+    captionZh: '限幅器把越界尖峰降到 −1 dBFS 上限。',
   }];
   const ariaLabels = [{
     en: 'The helper cuts one second of continuous sound into ten ordered audio frames, each holding 100 milliseconds',
@@ -73,6 +78,9 @@
   }, {
     en: 'Gain means making sound stronger. This quiet voice receives 7 decibels of gain, so its wave becomes about 2.24 times taller on the same scale.',
     zh: '增益是让声音变强。这次较轻的说话声增加 7 分贝，按同一尺度画，波形高度约变成 2.24 倍。',
+  }, {
+    en: 'A limiter turns down a peak that crosses the safety ceiling. A constructed high peak crosses the orange line before processing and touches the minus one dBFS ceiling afterwards.',
+    zh: '限幅器把越过安全上限的尖峰调低。构造尖峰在处理前越过橙线，处理后刚好到 −1 dBFS 上限。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -89,7 +97,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(step === 0 ? (phone ? 590 : 380) : step === 2 ? (phone ? 450 : 340) : step === 3 ? (phone ? 475 : 370) : step === 4 ? (phone ? 480 : 420) : step === 5 ? (phone ? 445 : 335) : step === 6 ? (phone ? 320 : 300) : (phone ? 515 : 330));
+  const H = $derived(step === 0 ? (phone ? 590 : 380) : step === 2 ? (phone ? 450 : 340) : step === 3 ? (phone ? 475 : 370) : step === 4 ? (phone ? 480 : 420) : step === 5 ? (phone ? 445 : 335) : step === 6 ? (phone ? 320 : 300) : (phone ? 340 : 320));
   const frames = Array.from({ length: VOXT_CAPTURE_FRAME_COUNT }, (_, i) => ({
     seq: i,
     start: i * VOXT_CAPTURE_FRAME_MS,
@@ -106,6 +114,7 @@
     const y = base + amplitude * Math.sin(x * Math.PI * 2 * cycles);
     return `${i ? 'L' : 'M'}${(x * width).toFixed(1)},${y.toFixed(1)}`;
   }).join(' ');
+  const spike = (width: number, base: number, height: number) => `M0,${base} L${width / 2 - 18},${base} L${width / 2},${base - height} L${width / 2 + 18},${base} L${width},${base}`;
   const vadPanels = $derived([1, VOXT_VAD_ONSET_FRAMES].map((count, i) => ({
     count,
     x: phone ? 25 : 40 + i * 350,
@@ -298,7 +307,7 @@
       {/each}
       <text x={W / 2} y={phone ? 400 : 290} text-anchor="middle" class="formula">{VOXT_VAD_ONSET_MS} ms ÷ {VOXT_VAD_FRAME_MS} ms = {VOXT_VAD_ONSET_FRAMES} {t('slices in a row', '个连续小段')}</text>
       <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Constructed slices; public detector defaults.', '构造示例；采用公开检测器默认值。')}</text>
-      {:else}
+      {:else if step === 6}
       <text x={W / 2} y={phone ? 25 : 30} text-anchor="middle" class="title">{t('GAIN RAISES QUIET SPEECH', '增益让较轻的说话声变响')}</text>
       <text x={W / 2} y={phone ? 47 : 53} text-anchor="middle" class="subtitle">{t('gain = makes sound stronger · dB = a sound-level unit', '增益 = 让声音变强 · dB = 分贝，音量单位')}</text>
       <text x={W / 2} y={phone ? 69 : 75} text-anchor="middle" class="definition">+{VOXT_QUIET_GAIN_DB} dB ≈ {VOXT_QUIET_GAIN_RATIO.toFixed(2)} × {t('wave height', '波形高度')}</text>
@@ -311,6 +320,21 @@
       <line x1={phone ? 137 : 330} y1="175" x2={phone ? 158 : 390} y2="175" stroke="var(--muted)" stroke-width="2" marker-end="url(#byte-arrow)" />
       <text x={phone ? 225 : 530} y="240" text-anchor="middle" class="cut">+{VOXT_QUIET_GAIN_DB} dB · {t('louder', '更响')}</text>
       <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Public gain value; constructed waves share one scale.', '增益数值来自公开测试；波形同尺度构造。')}</text>
+      {:else}
+      <text x={W / 2} y={phone ? 25 : 30} text-anchor="middle" class="title">{t('LIMITER TURNS DOWN CROSSING PEAKS', '限幅器调低越过上限的尖峰')}</text>
+      <text x={W / 2} y={phone ? 47 : 53} text-anchor="middle" class="subtitle">{t('0 dBFS = full scale (maximum)', '0 dBFS = 满幅（最大刻度）')}</text>
+      <text x={W / 2} y={phone ? 69 : 75} text-anchor="middle" class="definition">{VOXT_LIMITER_CEILING_DB} dBFS ≈ {VOXT_LIMITER_CEILING_RATIO.toFixed(2)} × {t('full scale', '满幅')}</text>
+      <text x={phone ? 75 : 190} y="125" text-anchor="middle" class="detail">{t('BEFORE', '处理前')}</text>
+      <text x={phone ? 225 : 530} y="125" text-anchor="middle" class="detail">{t('AFTER', '处理后')}</text>
+      <line x1={phone ? 20 : 80} y1="190" x2={phone ? 130 : 300} y2="190" stroke="var(--gen)" stroke-dasharray="4 3" />
+      <line x1={phone ? 170 : 420} y1="190" x2={phone ? 280 : 640} y2="190" stroke="var(--gen)" stroke-dasharray="4 3" />
+      <text x={phone ? 130 : 300} y="185" text-anchor="end" class="detail amber">{t('CEILING', '上限')}</text>
+      <text x={phone ? 280 : 640} y="185" text-anchor="end" class="detail amber">{t('CEILING', '上限')}</text>
+      <g transform={`translate(${phone ? 20 : 80} 0)`}><path d={spike(phone ? 110 : 220, 225, 60)} fill="none" stroke="var(--accent)" stroke-width="2.5" /></g>
+      <g transform={`translate(${phone ? 170 : 420} 0)`}><path d={spike(phone ? 110 : 220, 225, 35)} fill="none" stroke="var(--accent)" stroke-width="2.5" /></g>
+      <line x1={phone ? 137 : 330} y1="225" x2={phone ? 158 : 390} y2="225" stroke="var(--muted)" stroke-width="2" marker-end="url(#byte-arrow)" />
+      <text x={phone ? 225 : 530} y="275" text-anchor="middle" class="cut">{t('peak at the ceiling', '尖峰降到上限')}</text>
+      <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Public ceiling; constructed peak; same scale.', '公开默认上限；尖峰同尺度构造。')}</text>
       {/if}
     </svg>
   </div>

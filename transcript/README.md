@@ -35,4 +35,4 @@ Read it to check wording and numbers across chapters without opening the compone
 | ml-sys | 02 | [The full GPU memory budget](ml-sys/02-inference-memory-budget.md) | 2 |
 | voxt | 01 | [The journey of one sentence](voxt/one-dictation.md) | 4 |
 | voxt | 02 | [Hotkeys and permissions](voxt/helper-permissions-hotkeys.md) | 3 |
-| voxt | 03 | [From microphone to audio frames](voxt/microphone-to-voice-frames.md) | 7 |
+| voxt | 03 | [From microphone to audio frames](voxt/microphone-to-voice-frames.md) | 8 |

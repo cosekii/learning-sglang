@@ -1,7 +1,7 @@
 # 第 3 章评分卡 · From microphone to audio frames
 
 日期：2026-11-25。评分办法：`EVAL.md` 易读性 R1–R6 与原 12 项，每项 0 / 1 / 2。
-第 1 步材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/voxt-ch03-s01-20261125-0353/final/`；第 2 步材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch03-s02-20261125-0710/final/`；第 3 步材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch03-s03-20261125-0950/checks/`；第 4 步材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch03-s04-20261125-0954/checks/`；第 5 步材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch03-s05-20261125-0958/checks/`；第 6 步材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch03-s06-20261125-1002/checks/`；第 7 步材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch03-s07-gain-20261125-1011/checks/`。冷读者没有编程前置知识，只读主图、累计 transcript 和前两章 transcript。
+第 1 步材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/voxt-ch03-s01-20261125-0353/final/`；第 2 步材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch03-s02-20261125-0710/final/`；第 3 步材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch03-s03-20261125-0950/checks/`；第 4 步材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch03-s04-20261125-0954/checks/`；第 5 步材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch03-s05-20261125-0958/checks/`；第 6 步材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch03-s06-20261125-1002/checks/`；第 7 步材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch03-s07-gain-20261125-1011/checks/`；第 8 步材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch03-s08-20261125-1015/checks/`。冷读者没有编程前置知识，只读主图、累计 transcript 和前两章 transcript。
 
 | 步 | 易读分 /12 | R1 小学生复述 | 分数 /24 | 冷读者洞数 | 最差的两条 | 日期 |
 |---|---:|---|---:|---:|---|---|
@@ -12,8 +12,9 @@
 | 5 | 12 | 高通让每秒振动 50 次的嗡声变小，每秒振动 200 次的声音不变，只改模型副本。 | 24 | 0 | 各项 2 | 2026-11-25 |
 | 6 | 12 | 连续三个 20 ms 的较响小段合起来 60 ms 才开始说话段，一次短按键声不够。 | 24 | 0 | 各项 2 | 2026-11-25 |
 | 7 | 12 | 增益把太轻的声音变响；这次增加 7 分贝后，波形大约变成原来的 2.24 倍高。 | 24 | 0 | 各项 2 | 2026-11-25 |
+| 8 | 12 | 限幅器把太高的尖峰拉低；原来越过橙线的尖峰，处理后刚好到 −1 dBFS 上限。 | 24 | 0 | 各项 2 | 2026-11-25 |
 
-**当前平均：23.71 / 24；最低：23；总洞数：0；7/7 个已制作步骤易读满分。** 本章继续制作第 8 步。
+**当前平均：23.75 / 24；最低：23；总洞数：0；8/8 步易读满分。** 本章完成。
 
 ## 第 1 步冷读与检查
 
@@ -72,4 +73,12 @@
 - 最终换视角自检：易读 **12/12**、原分 **24/24**、**0 洞**。小学生复述为「增益把太轻的声音变响；这次增加 7 分贝后，波形大约变成原来的 2.24 倍高」。报告：`checks/cold-read.md`。
 - 主图用同一尺度对比处理前后波形，`+7 dB ≈ 2.24 × 波形高度` 把分贝换成可见比例；脚注区分公开增益数值与构造波形。深入讲解代入 quiet 例的四项限制，说明正常、过响和纯噪声范围。
 - 公开基线 `6d8ed2d` 的 `params.go:20-56,95-119`、`dsp_test.go:98-120,172-212` 和 `level.go:125-169,172-210` 支撑默认值、7 dB 结果及文件／流式行为。
+- 最终 `build`、本章 `transcript`、本步 `readability`、中文步三种宽度手机布局与字号、`deep-check 03`、本章 `zh-check` 和 `git diff --check` 均通过。中英桌面及手机最终截图已打开检查；未跑全站回归或 Voxt 产品测试。
+
+## 第 8 步冷读与检查
+
+- 首张英文手机图的脚注左右被裁，缩成 `Public ceiling; constructed peak; same scale.` 后完整显示；首个中文 caption 在「调低」中间换行，改成一句「限幅器把越界尖峰降到 −1 dBFS 上限。」后手机单行显示。
+- 最终换视角自检：易读 **12/12**、原分 **24/24**、**0 洞**。小学生复述为「限幅器把太高的尖峰拉低；原来越过橙线的尖峰，处理后刚好到 −1 dBFS 上限」。报告：`checks/cold-read.md`。
+- 主图用 `0 dBFS = 满幅（最大刻度）` 和 `−1 dBFS ≈ 0.89 × 满幅` 解释单位，以橙线和同尺度尖峰对比越界与到顶；脚注区分公开默认上限和构造尖峰。深入讲解给出逐样本公式、50 ms 恢复与文件／流式范围。
+- 公开基线 `6d8ed2d` 的 `params.go:30-38,41-56`、`level.go:11-38,125-169,241-268` 和 `dsp_test.go:248-287` 支撑默认上限、逐样本限幅与公开测试边界。
 - 最终 `build`、本章 `transcript`、本步 `readability`、中文步三种宽度手机布局与字号、`deep-check 03`、本章 `zh-check` 和 `git diff --check` 均通过。中英桌面及手机最终截图已打开检查；未跑全站回归或 Voxt 产品测试。

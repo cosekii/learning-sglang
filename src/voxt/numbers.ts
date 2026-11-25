@@ -50,3 +50,7 @@ export const VOXT_QUIET_SPEECH_DB = -30;
 export const VOXT_TARGET_SPEECH_DB = -23;
 export const VOXT_QUIET_GAIN_DB = VOXT_TARGET_SPEECH_DB - VOXT_QUIET_SPEECH_DB;
 export const VOXT_QUIET_GAIN_RATIO = 10 ** (VOXT_QUIET_GAIN_DB / 20);
+
+// Public limiter default; the crossing peak is constructed.
+export const VOXT_LIMITER_CEILING_DB = -1;
+export const VOXT_LIMITER_CEILING_RATIO = 10 ** (VOXT_LIMITER_CEILING_DB / 20);

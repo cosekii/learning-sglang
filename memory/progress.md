@@ -4,6 +4,8 @@
 
 ## 本轮记录
 
+- 10:19 完成 Inside Voxt 第 3 章第 3–8 步：3,300 个样本的尾帧、历史原件与模型副本、50／200 Hz 高通、连续三个 20 ms 小段的 VAD 起点、轻声增加 7 dB、−1 dBFS 限幅。全章 **8/8 步易读 12/12**，平均 **23.75/24**，**0 冷读洞**。
+- 逐步 `build`、本章 `transcript`、逐步 `readability`、中文目标步 `mobile`、`deep-check 03`、本章 `zh-check` 和 `git diff --check` 通过；最终全章 `readability` 为 8 步、0 机械问题。各步双语桌面和手机图均已打开检查，路径见评分卡；第 8 步材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch03-s08-20261125-1015/checks/`。本轮只跑本章检查，未跑全站回归或 Voxt 产品测试。本轮类型：**新书**；下一普通轮按交替规则修旧。
 - 09:45 完成 Learning SGLang Omni 第 4 章第 3–4 步：默认五段可用 chunk 可提前构建，流结束可豁免；逐步 decode 需要当前步 feedback 和下一段 thinker 文字，文字流结束后才可用 pad 补文字。本章 4/4 步均为易读 **12/12**、原分 **24/24**、**0 冷读洞**。
 - `build`、本章 `transcript`、逐步 `readability`、中文步及 Omni 全书 `mobile`、`deep-check 04`、本章 `zh-check`、静态图一致性和双语抽屉断言通过。第 3 步截图：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-omni-ch04-s03-20261125-0935/final/`；第 4 步截图：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-omni-ch04-s04-20261125-0943/final/`。本轮只跑本章检查，未跑全站回归。
 - 09:30 主人指出只署 Wilson Zheng 不符合当前贡献：主页、章节侧栏、README 和链接预览卡改为「原教程 Wilson Zheng；扩展 cosekii 与 learning-sglang」，网页仓库链接和预览卡地址改指 `cosekii/learning-sglang`。教程内容与评分不变。
@@ -100,13 +102,13 @@
 
 ## Inside Voxt
 
-规划完成：`docs/plan-voxt.md` 共 3 部分、16 章；第 1 章已制作 4 步并完成，第 2 章已制作 3 步并完成，第 3 章已制作 2 步。事实来源只使用 `sglang-omni` 的 `origin/main` 公开代码和文档。
+规划完成：`docs/plan-voxt.md` 共 3 部分、16 章；第 1 章已制作 4 步并完成，第 2 章已制作 3 步并完成，第 3 章已制作 8 步并完成。事实来源只使用 `sglang-omni` 的 `origin/main` 公开代码和文档。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
 | 01 | one-dictation | 完成：4/4 步易读满分 | 24.00 |
 | 02 | helper-permissions-hotkeys | 完成：3/3 步易读满分 | 24.00 |
-| 03 | microphone-to-voice-frames | 在做第 3 步；第 1–2 步易读满分 | 23.00 |
+| 03 | microphone-to-voice-frames | 完成：8/8 步易读满分 | 23.75 |
 | 04 | speech-recognition-routes | 规划 | — |
 | 05 | language-model-connection | 规划 | — |
 | 06 | compose-and-cleanup | 规划 | — |

@@ -381,3 +381,64 @@ Public baseline: `sglang-omni@6d8ed2dcf70da1b021bb14b62239a3add428636c`; paths a
 - Four quiet-gain limits and the loud-speech branch: `Voxt/internal/dsp/params.go:95-119`.
 - Public quiet-case inputs and 7 dB result: `Voxt/internal/dsp/dsp_test.go:98-120`.
 - File gain measurement and streaming behavior: `Voxt/internal/dsp/level.go:125-169,172-210`; silence receives no boost: `Voxt/internal/dsp/dsp_test.go:172-212`.
+
+## Step 8 · The limiter holds the peak ceiling
+
+> **In one line:** After gain, the limiter reduces any sample that would cross the default −1 dBFS ceiling, so the constructed peak lands at about 0.891 of full scale rather than above it.
+
+### On the stage
+
+- The orange line is the sample-peak safety ceiling, not the target average speech level from Step 7. Zero dBFS is full scale; −1 dBFS is slightly below it.
+- The isolated peak is constructed. Before and after share one scale: the left peak crosses the orange line, while the right peak touches it.
+- The right peak remains pointed. The limiter reduces its multiplier rather than drawing a flat clip across the waveform top.
+- This is still the model copy. The unchanged history recording from Step 4 is not redrawn.
+
+### Formula
+
+Convert the ceiling $C$ from dBFS to PCM16 amplitude $A$:
+
+$$
+A=32{,}768\times10^{C/20}
+$$
+
+The limiter carries an amplitude multiplier $g$. Before each sample it moves $g$ back toward 1. If the gained input sample $x$ would cross the ceiling, it reduces the multiplier and emits $y$:
+
+$$
+g\leftarrow\frac{A}{|x|}\quad\text{when }|x|g>A,\qquad y=xg
+$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $C$ | Sample-peak ceiling | Default −1 dBFS |
+| $A$ | Ceiling in PCM16 amplitude units | Calculated in this step |
+| $x$ | Input sample after the level gain | Current model-copy sample |
+| $g$ | Limiter's current amplitude multiplier | Starts at 1 and recovers toward 1 |
+| $y$ | Limited output sample | Calculated in this step |
+
+### The numbers on the stage
+
+| Quantity | Calculation | Result |
+|---|---|---:|
+| Default ceiling | Public default | −1 dBFS |
+| Ceiling as a fraction of full scale | $10^{-1/20}$ | About 0.891× |
+| Ceiling in PCM16 amplitude units | $32{,}768\times10^{-1/20}$ | About 29,205 |
+| Recovery time constant | Public default | 50 ms |
+
+The peak heights are illustrative, not measurements from a public audio fixture. The public tests separately verify that file and stream outputs stay within the ceiling for full-scale square waves and gained speech.
+
+### Scope
+
+The limiter has no look-ahead: it lowers the multiplier when a sample would cross, then recovers over the default 50 ms release. The stage shows only the crossing instant, not that recovery. File recognition applies its whole-recording gain and then limits each sample; streaming smooths its gain and applies the same per-sample ceiling.
+
+### Next
+
+The model copy has now passed high-pass, voice detection, gain and limiting, while the original recording remains on the history path. The next chapter follows file and streaming recognition as they receive this sound and turn it into text.
+
+### Sources
+
+Public baseline: `sglang-omni@6d8ed2dcf70da1b021bb14b62239a3add428636c`; paths are relative to that repository.
+
+- Default −1 dBFS ceiling and 50 ms release: `Voxt/internal/dsp/params.go:30-38,41-56`.
+- Per-sample ceiling conversion, reduction and recovery: `Voxt/internal/dsp/level.go:11-38`.
+- File gain followed by limiting: `Voxt/internal/dsp/level.go:125-169`; streaming gain followed by limiting: `Voxt/internal/dsp/level.go:241-268`.
+- File and stream peaks stay within the ceiling: `Voxt/internal/dsp/dsp_test.go:248-287`.
