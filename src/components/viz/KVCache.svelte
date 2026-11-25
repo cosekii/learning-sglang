@@ -8,10 +8,12 @@
   import type { Deep } from '../../deep';
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
+  const motion = (params: { duration?: number; delay?: number; y?: number; easing?: typeof cubicOut }) => ($lang === 'zh' ? { duration: 0 } : params);
 
   // ---- Data --------------------------------------------------------------------------------
   const tokens = ['The', ' capital', ' of', ' France', ' is', ' Paris', '.'];
   const PROMPT_N = 5, MAX_N = tokens.length;
+  const TOKEN_BYTES = KB_PER_TOKEN * 1024, LONG_TOKENS = 8192, LONG_RATIO = Math.round(LONG_TOKENS / MAX_N);
   const scores: Record<number, number[]> = {
     5: [0.3, 1.4, 0.1, 1.8, 0.6, 2.2],
     6: [0.2, 1.1, 0.1, 1.5, 0.5, 1.9, 0.8],
@@ -38,7 +40,7 @@
     { n: 6, cached: 6, compute: [5], attend: 5, caption: `Its query reads every key in the cache and blends every value in the cache. Same result as recomputing, because the cache holds exactly what recomputing would have produced.`, captionZh: `q₆ 读 6 个 key，再混合 6 个 value。旧 k、v 不用重算，结果不变。` },
     { n: 7, cached: 7, compute: [6], flyIn: true, store: true, attend: 6, caption: `Next token, same routine. One column of compute, one more slot, one read of the whole cache.`, captionZh: `下一个 token 还是只算 1 列、写 1 格。q₇ 读取全部 7 个 key 和 value。` },
     { n: 7, cached: 7, compute: [6], whyNotQ: true, caption: `Why not keep q too? Nobody asks for it later. A query is used on the step it's made, and its output is consumed right there.`, captionZh: `旧 q 以后没人读，所以不占 cache。每个 q 只在自己的那一步用一次。` },
-    { n: 7, cached: 7, compute: [6], cost: true, caption: `The cache isn't free. Every token keeps a k and a v in each of Llama-3-8B's ${KV_HEADS}&nbsp;k,&nbsp;v&nbsp;heads (Ch. 2 Step 14), in every layer. That's ${KB_PER_TOKEN} KB per token, per sequence.`, captionZh: `每个 token 存 ${KB_PER_TOKEN} KiB，7 个共 ${7 * KB_PER_TOKEN} KiB。8,192 个约是 7 个的 1,170 倍，共 1 GiB。` },
+    { n: 7, cached: 7, compute: [6], cost: true, caption: `The cache isn't free. Every token keeps a k and a v in each of Llama-3-8B's ${KV_HEADS}&nbsp;k,&nbsp;v&nbsp;heads (Ch. 2 Step 14), in every layer. That's ${KB_PER_TOKEN} KB per token, per sequence.`, captionZh: `每个 token 存 ${TOKEN_BYTES.toLocaleString()} 字节。${LONG_TOKENS.toLocaleString()} 个 token 的 cache 约是 7 个的 ${LONG_RATIO.toLocaleString()} 倍。` },
     { n: 7, cached: 7, compute: [6], cost: true, contrast: true, caption: `Look at the two kinds of step. The first crunched five tokens and wrote five slots. Every step since computes one token and reads the whole cache. Two very different jobs.`, captionZh: `第一次算 5 个、写 5 格。以后每步算 1 个、写 1 格，读完全部 cache。` },
   ];
 
@@ -88,7 +90,7 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox={phoneCustom ? '0 0 360 620' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="The KV cache, step {step + 1}" class:phone-custom={phoneCustom}>
+    <svg viewBox={phoneCustom ? '0 0 360 620' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="The KV cache, step {step + 1}" class:phone-custom={phoneCustom} class:no-motion={$lang === 'zh'}>
       {#snippet phoneTokens(n: number, y: number)}
         {@const start = 180 - (n * 46 - 8) / 2}
         {#each Array(n) as _, i}
@@ -201,8 +203,9 @@
         {@render phoneCompute([5], 125)}
         <text x="180" y="303" text-anchor="middle">数字是权重；线越粗，value 贡献越多</text>
         {@render phoneCache(6, 335, 5, false)}
-        <text x="180" y="525" text-anchor="middle">6 个权重合起来是 1</text>
-        <text x="180" y="565" text-anchor="middle">out₆ 与重算旧 k、v 的结果相同</text>
+        <text x="180" y="510" text-anchor="middle">分数与上章第 12 步相同</text>
+        <text x="180" y="545" text-anchor="middle">权重保留两位小数，显示值合计 1.01</text>
+        <text x="180" y="580" text-anchor="middle">原值合计 = 1；out₆ 与重算相同</text>
       {:else if phoneCustom && step === 6}
         <text x="180" y="30" text-anchor="middle" class="ph-title">新 token 还是走这 3 件事</text>
         <text x="180" y="55" text-anchor="middle">① 算 1 列　② 写第 7 格　③ 读 7 组 k、v</text>
@@ -210,8 +213,9 @@
         {@render phoneCompute([6], 125)}
         <text x="180" y="303" text-anchor="middle">第 7 格已写入；数字是 q₇ 的权重</text>
         {@render phoneCache(7, 335, 6, false)}
-        <text x="180" y="525" text-anchor="middle">计算仍是 1 列，读取从 6 组变成 7 组</text>
-        <text x="180" y="565" text-anchor="middle">下一步：旧 q 要不要也留下？</text>
+        <text x="180" y="510" text-anchor="middle">示意分数经 softmax 得权重</text>
+        <text x="180" y="545" text-anchor="middle">20.37 = 7 个 e^分数之和</text>
+        <text x="180" y="580" text-anchor="middle">␣Paris：e^1.9 ÷ 20.37 ≈ 0.33；其余同分母</text>
       {:else if phoneCustom && step === 7}
         <text x="180" y="30" text-anchor="middle" class="ph-title">旧 q 不再读取，不占 cache</text>
         <text x="180" y="55" text-anchor="middle">留下 k、v；划掉只用过一次的 q</text>
@@ -226,20 +230,21 @@
         <text x="180" y="565" text-anchor="middle">下一步：这些格子占多少显存？</text>
       {:else if phoneCustom && step === 8}
         <text x="180" y="30" text-anchor="middle" class="ph-title">1 个 token 的 cache 有多大？</text>
-        <text x="180" y="55" text-anchor="middle">全模型：32 层，每层 8 个 KV head</text>
-        <rect x="20" y="78" width="320" height="112" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
-        <text x="180" y="108" text-anchor="middle">每个 head：128 个数 × k、v 两份</text>
-        <text x="180" y="137" text-anchor="middle">× 2 字节 × 8 head × 32 层</text>
-        <text x="180" y="169" text-anchor="middle" class="ph-strong">= 131,072 B = 128 KiB</text>
-        <text x="180" y="229" text-anchor="middle">本例 7 token</text>
-        <text x="180" y="260" text-anchor="middle" class="ph-strong">7 × 128 KiB = 896 KiB</text>
-        <rect x="20" y="294" width="320" height="130" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
-        <text x="180" y="325" text-anchor="middle">8,192 token</text>
-        <text x="180" y="355" text-anchor="middle">8,192 × 128 KiB = 1,048,576 KiB</text>
-        <text x="180" y="394" text-anchor="middle" class="ph-strong">= 1 GiB</text>
-        <text x="180" y="474" text-anchor="middle">8,192 ÷ 7 ≈ 1,170</text>
-        <text x="180" y="505" text-anchor="middle">token 数约 1,170 倍，cache 也约 1,170 倍</text>
-        <text x="180" y="565" text-anchor="middle">KiB、GiB 按 1,024 进制换算</text>
+        <text x="180" y="55" text-anchor="middle">字节（B）是存储单位；本例每个数用 2 B</text>
+        <rect x="20" y="78" width="320" height="150" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="180" y="108" text-anchor="middle">每个 head 有 {HEAD_DIM} 个数（上章第 3 步）</text>
+        <text x="180" y="137" text-anchor="middle">{KV_HEADS} 个 KV head、{LAYERS} 层（上章第 14 步）</text>
+        <text x="180" y="169" text-anchor="middle">{HEAD_DIM} × {BYTES} B × k、v × {KV_HEADS} head × {LAYERS} 层</text>
+        <text x="180" y="205" text-anchor="middle" class="ph-strong">= {TOKEN_BYTES.toLocaleString()} B / token</text>
+        <text x="180" y="267" text-anchor="middle">本例 {MAX_N} token</text>
+        <text x="180" y="300" text-anchor="middle" class="ph-strong">{MAX_N} × {TOKEN_BYTES.toLocaleString()} B = {(MAX_N * TOKEN_BYTES).toLocaleString()} B</text>
+        <rect x="20" y="334" width="320" height="112" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x="180" y="366" text-anchor="middle">{LONG_TOKENS.toLocaleString()} token</text>
+        <text x="180" y="398" text-anchor="middle">{LONG_TOKENS.toLocaleString()} × {TOKEN_BYTES.toLocaleString()} B = {(LONG_TOKENS * TOKEN_BYTES).toLocaleString()} B</text>
+        <text x="180" y="430" text-anchor="middle" class="ph-strong">cache 也随 token 数增加</text>
+        <text x="180" y="490" text-anchor="middle">{LONG_TOKENS.toLocaleString()} ÷ {MAX_N} ≈ {LONG_RATIO.toLocaleString()}</text>
+        <text x="180" y="525" text-anchor="middle">token 数约 {LONG_RATIO.toLocaleString()} 倍，cache 也约 {LONG_RATIO.toLocaleString()} 倍</text>
+        <text x="180" y="575" text-anchor="middle" class="ph-foot">每个数占 2 B 是本例模型的设定</text>
       {:else if phoneCustom && step === 9}
         <text x="180" y="30" text-anchor="middle" class="ph-title">第一次和以后每步，工作不一样</text>
         <text x="180" y="55" text-anchor="middle">同一个 cache，两种读写方式</text>
@@ -261,7 +266,7 @@
       {#if cur.contrast}
         {@const a = allCols[0].x} {@const b = allCols[PROMPT_N - 1].x + allCols[PROMPT_N - 1].w}
         {@const c = allCols[PROMPT_N].x} {@const d = allCols[cur.n - 1].x + allCols[cur.n - 1].w}
-        <g in:fade>
+        <g in:fade={motion({})}>
           <path d="M {a} 26 V 20 H {b} V 26" fill="none" stroke="var(--accent)" stroke-width="1.5" />
           <text x={(a + b) / 2} y="14" text-anchor="middle" class="tag strong">{t('first step · five tokens, one pass, writes the cache', '第一步 · 五个 token，一遍算完，写入 cache')}</text>
           <path d="M {c} 26 V 20 H {d} V 26" fill="none" stroke="var(--gen)" stroke-width="1.5" />
@@ -277,7 +282,7 @@
       <!-- Token row -->
       <text x="16" y={seqY + 18} class="rowlabel">tokens</text>
       {#each cols as c, i (i)}
-        <g in:fly={cur.flyIn && i === cols.length - 1 ? { y: -30, duration: 450, easing: cubicOut } : { duration: 0 }}>
+        <g in:fly={motion(cur.flyIn && i === cols.length - 1 ? { y: -30, duration: 450, easing: cubicOut } : { duration: 0 })}>
           <rect x={c.x} y={seqY} width={c.w} height={tokH} rx="6" fill={i < PROMPT_N ? 'var(--accent-soft)' : 'var(--gen-soft)'} stroke={i < PROMPT_N ? 'var(--accent)' : 'var(--gen)'} stroke-width="1.5" />
           <text x={c.cx} y={seqY + 18} text-anchor="middle" class="tok">{c.t.replace(/^ /, '␣')}</text>
         </g>
@@ -285,20 +290,20 @@
 
       <!-- This step: x / q / k / v for the columns actually computed -->
       {#if cur.compute}
-        <g transition:fade={{ duration: 200 }}>
+        <g transition:fade={motion({ duration: 200 })}>
           <text x="16" y={ROW.x - 10} class="tag">{t('computed this step', '本步计算')}</text>
           {#each (['x', 'q', 'k', 'v'] as Row[]) as r, ri}
             <text x="16" y={ROW[r] + 14} class="rowlabel">{r}</text>
             {#each cols as c, i (i)}
               {#if computed(i)}
-                <g in:fly={{ y: -8, delay: (ri * 2 + i) * 45, duration: 250 }} class="cellg"
+                <g in:fly={motion({ y: -8, delay: (ri * 2 + i) * 45, duration: 250 })} class="cellg"
                    style:opacity={r === 'q' && cur.dropQ ? 0.25 : 1}>
                   <rect x={c.cx - CW / 2} y={ROW[r]} width={CW} height={CH} rx="4" fill={COLOR[r][0]} stroke={COLOR[r][1]}
                         stroke-width={r === 'q' && cur.attend === i ? 2.5 : 1} />
                   <text x={c.cx} y={ROW[r] + 14} text-anchor="middle" class="cell">{r}{sub(i + 1)}</text>
                 </g>
               {:else if isDecode}
-                <rect x={c.cx - CW / 2} y={ROW[r]} width={CW} height={CH} rx="4" fill="none" stroke="var(--line)" stroke-dasharray="3 3" in:fade />
+                <rect x={c.cx - CW / 2} y={ROW[r]} width={CW} height={CH} rx="4" fill="none" stroke="var(--line)" stroke-dasharray="3 3" in:fade={motion({})} />
               {/if}
             {/each}
           {/each}
@@ -310,7 +315,7 @@
       <rect x="10" y={CACHE.y} width={W - 20} height={CACHE.h} rx="10" fill="#fbfaf7" stroke="var(--line)" stroke-dasharray="5 4" />
       <text x="24" y={CK + 14} class="rowlabel">k</text>
       <text x="24" y={CV + 14} class="rowlabel">v</text>
-      {#each allCols as c, s}
+      {#each allCols.slice(0, $lang === 'zh' ? cur.n : MAX_N) as c, s}
         {#if s >= cur.cached}
           <rect x={c.cx - CW / 2} y={CK} width={CW} height={CH} rx="4" fill="none" stroke="var(--line)" stroke-dasharray="3 3" />
           <rect x={c.cx - CW / 2} y={CV} width={CW} height={CH} rx="4" fill="none" stroke="var(--line)" stroke-dasharray="3 3" />
@@ -318,14 +323,14 @@
       {/each}
       {#each Array(cur.cached) as _, s (s)}
         {@const c = allCols[s]}
-        <g in:fly={{ y: ROW.k - CK, delay: s * 40, duration: 500, easing: cubicOut }}>
+        <g in:fly={motion({ y: ROW.k - CK, delay: s * 40, duration: 500, easing: cubicOut })}>
           {#if cur.attend !== undefined && w[s] !== undefined}
-            <text x={c.cx} y={CK - 5} text-anchor="middle" class="num" in:fade={{ delay: s * 60 }}>{w[s].toFixed(2)}</text>
+            <text x={c.cx} y={CK - 5} text-anchor="middle" class="num" in:fade={motion({ delay: s * 60 })}>{w[s].toFixed(2)}</text>
           {/if}
           <rect x={c.cx - CW / 2} y={CK} width={CW} height={CH} rx="4" fill={COLOR.k[0]} stroke={COLOR.k[1]} stroke-width={cur.attend !== undefined ? 2 : 1} />
           <text x={c.cx} y={CK + 14} text-anchor="middle" class="cell">k{sub(s + 1)}</text>
         </g>
-        <g in:fly={{ y: ROW.v - CV, delay: s * 40 + 60, duration: 500, easing: cubicOut }} class="cellg"
+        <g in:fly={motion({ y: ROW.v - CV, delay: s * 40 + 60, duration: 500, easing: cubicOut })} class="cellg"
            style:opacity={cur.attend !== undefined && w[s] !== undefined ? 0.35 + 0.65 * w[s] : 1}>
           <rect x={c.cx - CW / 2} y={CV} width={CW} height={CH} rx="4" fill={COLOR.v[0]} stroke={COLOR.v[1]} />
           <text x={c.cx} y={CV + 14} text-anchor="middle" class="cell">v{sub(s + 1)}</text>
@@ -335,7 +340,7 @@
       <!-- Blend: cached values -> output for the attending token -->
       {#if cur.attend !== undefined}
         {#if $lang === 'zh'}<text x="16" y={CK - 5} class="tag">权重</text>{/if}
-        <g transition:fade={{ duration: 250 }}>
+        <g transition:fade={motion({ duration: 250 })}>
           {#each allCols.slice(0, cur.cached) as c, s}
             <path d="M {c.cx} {CV + CH} C {c.cx} {CV + 40}, {outX - 6} {CV + 40}, {outX} {CV + CH}"
                   fill="none" stroke={COLOR.v[1]} stroke-width={0.8 + w[s] * 6} opacity="0.55" />
@@ -346,31 +351,47 @@
         </g>
       {/if}
 
+      {#if $lang === 'zh' && cur.attend !== undefined}
+        {#if step === 5}
+          <text x={W / 2} y="374" text-anchor="middle" class="footnote">分数与上章第 12 步相同；权重保留两位小数</text>
+          <text x={W / 2} y="390" text-anchor="middle" class="footnote">显示值合计 1.01；未舍入权重合计 = 1</text>
+        {:else}
+          <text x={W / 2} y="374" text-anchor="middle" class="footnote">示意分数经 softmax 得权重；20.37 = 7 个 e^分数之和</text>
+          <text x={W / 2} y="390" text-anchor="middle" class="footnote">␣Paris：e^1.9 ÷ 20.37 ≈ 0.33；其余权重也用 20.37</text>
+        {/if}
+      {/if}
+
       <!-- Why not q: a ghost row that would never be read -->
       {#if cur.whyNotQ}
-        <g transition:fade={{ duration: 250 }}>
+        <g transition:fade={motion({ duration: 250 })}>
           <text x="24" y={CQ + 14} class="rowlabel" opacity="0.6">q</text>
           {#each allCols.slice(0, cur.cached) as c, s}
-            <g in:fade={{ delay: s * 40 }} opacity="0.5">
+            <g in:fade={motion({ delay: s * 40 })} opacity="0.5">
               <rect x={c.cx - CW / 2} y={CQ} width={CW} height={CH} rx="4" fill={COLOR.q[0]} stroke={COLOR.q[1]} stroke-dasharray="3 3" />
               <text x={c.cx} y={CQ + 14} text-anchor="middle" class="cell">q{sub(s + 1)}</text>
               <line x1={c.cx - CW / 2 + 3} y1={CQ + CH - 3} x2={c.cx + CW / 2 - 3} y2={CQ + 3} stroke={COLOR.q[1]} stroke-width="1.5" />
             </g>
           {/each}
-          <text x={outX - 20} y={CQ + 14} class="tag" in:fade={{ delay: 400 }}>{t('used once, never read again', '只用一次，不再读取')}</text>
+          <text x={outX - 20} y={CQ + 14} class="tag" in:fade={motion({ delay: 400 })}>{t('used once, never read again', '只用一次，不再读取')}</text>
         </g>
       {/if}
 
       <!-- Cost readout -->
-      {#if cur.cost}
-        <g in:fade>
-          <text x="18" y={CACHE.y + CACHE.h + 24} class="pt">·</text><text x="28" y={CACHE.y + CACHE.h + 24} class="legend">
-            <tspan class="strong">{cur.cached} tokens × {KB_PER_TOKEN} {t('KB', 'KiB')}</tspan> = {cacheKB.toLocaleString()} {t('KB', 'KiB')}
-            <tspan class="muted">{t(`   (${LAYERS} layers · ${KV_HEADS} k, v heads · ${HEAD_DIM} dims · k and v · ${BYTES} bytes)`, `   （${LAYERS} 层 · ${KV_HEADS} 个 k、v head · ${HEAD_DIM} 维 · k 和 v · ${BYTES} 字节）`)}</tspan>
-          </text>
-          <text x="18" y={CACHE.y + CACHE.h + 44} class="pt">·</text><text x="28" y={CACHE.y + CACHE.h + 44} class="legend" in:fade={{ delay: 500 }}>
-            {t('at 8k tokens: ', '8k token 时：')}<tspan class="strong">{((8192 * KB_PER_TOKEN) / 1024 / 1024).toFixed(0)} {t('GB', 'GiB')}</tspan>{t(', for one sequence. Keep that number in mind.', '，一个序列。记住这个数。')}
-          </text>
+      {#if cur.cost && ($lang !== 'zh' || !cur.contrast)}
+        <g in:fade={motion({})}>
+          {#if $lang === 'zh'}
+            <text x="18" y="356" class="pt">·</text><text x="28" y="356" class="legend">字节（B）是存储单位；本例每个数用 {BYTES} B，其他因子来自上章第 3、14 步</text>
+            <text x="18" y="374" class="pt">·</text><text x="28" y="374" class="legend">每 token：{HEAD_DIM} 个数 × {BYTES} B × k、v × {KV_HEADS} head × {LAYERS} 层 = <tspan class="strong">{TOKEN_BYTES.toLocaleString()} B</tspan></text>
+            <text x="18" y="392" class="pt">·</text><text x="28" y="392" class="legend">{cur.cached} 个：{cur.cached} × {TOKEN_BYTES.toLocaleString()} B = <tspan class="strong">{(cur.cached * TOKEN_BYTES).toLocaleString()} B</tspan>；{LONG_TOKENS.toLocaleString()} ÷ {MAX_N} ≈ {LONG_RATIO.toLocaleString()}</text>
+          {:else}
+            <text x="18" y={CACHE.y + CACHE.h + 24} class="pt">·</text><text x="28" y={CACHE.y + CACHE.h + 24} class="legend">
+              <tspan class="strong">{cur.cached} tokens × {KB_PER_TOKEN} {t('KB', 'KiB')}</tspan> = {cacheKB.toLocaleString()} {t('KB', 'KiB')}
+              <tspan class="muted">{t(`   (${LAYERS} layers · ${KV_HEADS} k, v heads · ${HEAD_DIM} dims · k and v · ${BYTES} bytes)`, `   （${LAYERS} 层 · ${KV_HEADS} 个 k、v head · ${HEAD_DIM} 维 · k 和 v · ${BYTES} 字节）`)}</tspan>
+            </text>
+            <text x="18" y={CACHE.y + CACHE.h + 44} class="pt">·</text><text x="28" y={CACHE.y + CACHE.h + 44} class="legend" in:fade={motion({ delay: 500 })}>
+              {t('at 8k tokens: ', '8k token 时：')}<tspan class="strong">{((8192 * KB_PER_TOKEN) / 1024 / 1024).toFixed(0)} {t('GB', 'GiB')}</tspan>{t(', for one sequence. Keep that number in mind.', '，一个序列。记住这个数。')}
+            </text>
+          {/if}
         </g>
       {/if}
       {/if}
@@ -385,10 +406,12 @@
   .tok { font-family: var(--mono); font-size: 12.5px; fill: var(--fg); }
   .cell { font-family: var(--mono); font-size: 10.5px; fill: var(--fg); }
   .cellg { transition: opacity 300ms; }
+  .no-motion .cellg { transition: none; }
   .num { font-family: var(--mono); font-size: 10px; fill: var(--fg); }
   .tag.strong { fill: var(--accent); font-weight: 600; }
   .tag.strong.gen { fill: var(--gen); }
   .legend .muted, .legend.muted { fill: var(--muted); }
+  .canvas > svg.phone-custom { height: 520px; }
   .phone-custom text { font-family: var(--sans); font-size: 12px; fill: var(--fg); }
   .phone-custom .ph-title { font-size: 16px; font-weight: 650; }
   .phone-custom .ph-strong { font-weight: 650; }
