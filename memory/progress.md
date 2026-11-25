@@ -4,6 +4,9 @@
 
 ## 本轮记录
 
+- 09:10 主人反馈主页只露出 Learning SGLang：新增共享四本书目录，左侧固定显示四本书入口，主页正文列出四本书全部章节；章节页保留本书目录，并核对 30 个已完成章节后加上 19 组双向跨书相关链接。侧栏滚动位置改为按书保存，教程 caption、图和 transcript 未改。
+- 独立审查通过；次级导航文字在普通、当前书和悬停背景的对比度均 ≥4.78:1。`build`、全量 `transcript`、全站 `mobile`、93 个中文手机导航视图、31 页链接与双向关系、四书代表章 `zh-check` / `deep-check` 和 `git diff --check` 通过；全站手机无布局断裂，612 个小字视图仅审计。教程步骤评分不变；全量 `readability` 仍报告 370 条既有机械问题，本轮未改教程。
+- 截图：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-four-books-20261125-0910/home-zh-final.png`、`related-zh-final.png` 和 `home-phone-open-zh-final.png`。本轮类型：**修旧**；下一普通轮做新书的下一步，下次整点轮换第 3 项「复盘自己」。
 - 09:00 整点自主优化第 2 项「向好的范例学」：重读 zero-to-sglang 第 1 部分第 5 章，对照 Learning ML Systems 第 1 章的 7 步 transcript、深入讲解和评分卡。课程用「先定延迟目标 → 看分布 → 只数达标请求 → 再算有效吞吐」连接 Goodput 与 Throughput；现有第 7 步明确不展开 Goodput，已把未来新增第 8 步的具体图、算式和边界记为 Z26，并同步对照表。
 - 本轮只更新想法、对照表和记忆，不改教程；既有 7/7 步保持易读 **12/12**、原分 **24/24**、**0 冷读洞**。参考截图：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ml-sys-ch01-s07-20261124-2130/final/mlsys-ch01-s07-zh.png`；本地第 7 步 HTTP 200。本轮类型：**自主优化**；下一普通轮按交替规则修旧，下次整点轮换第 3 项「复盘自己」。
 - 08:30 制作 Learning ML Systems 第 2 章第 2 步：用同一份 78 GB 预算说明启动保留的 CUDA Graph 缓冲与运行临时结果共用 11.7 GB 动态余量；主图只保留一个新术语，深入讲解补全公式、源码边界和延伸阅读。

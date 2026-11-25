@@ -1,21 +1,22 @@
 ---
 import Chapter from '../layouts/Chapter.astro';
-import { chapters, parts } from '../chapters';
+import { books, bookHref, chapterHref } from '../books';
 import { site } from '../site';
 import HomeLoop from '../components/home/HomeLoop.svelte';
-const base = import.meta.env.BASE_URL.replace(/\/$/, '');
-const ready = chapters.filter((c) => c.ready).length;
+const chapters = books[0].chapters;
+const ready = books.flatMap((book) => book.chapters).filter((c) => c.ready).length;
+const total = books.reduce((sum, book) => sum + book.chapters.length, 0);
 const pad = (n: number) => String(n).padStart(2, '0');
 ---
 <Chapter title={site.name}>
   <section class="hero">
     <div class="intro">
-      <p class="kicker"><span class="i18n-en">an illustrated guide · {ready} of {chapters.length} chapters</span><span class="i18n-zh">图解教程 · 已完成 {ready}/{chapters.length} 章</span></p>
+      <p class="kicker"><span class="i18n-en">four illustrated books · {ready} of {total} chapters</span><span class="i18n-zh">四本图解书 · 已完成 {ready}/{total} 章</span></p>
       <h1>{site.name}</h1>
       <p class="sub"><span class="i18n-en">{site.tagline}</span><span class="i18n-zh">{site.taglineZh}</span></p>
       <p class="by"><span class="i18n-en">Written and drawn by <a href={site.author.url}>{site.author.name}</a>.</span><span class="i18n-zh">由 <a href={site.author.url}>{site.author.name}</a> 撰写并绘制。</span></p>
       <div class="cta">
-        <a class="start" href={`${base}/ch/${chapters[0].slug}/`}><span class="i18n-en">Start at chapter 1 →</span><span class="i18n-zh">从第 1 章开始 →</span></a>
+        <a class="start" href={chapterHref(books[0], chapters[0].slug)}><span class="i18n-en">Start at chapter 1 →</span><span class="i18n-zh">从第 1 章开始 →</span></a>
         <a class="star" href={site.repo} target="_blank" rel="noopener">
           <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
           <span class="i18n-en">Star on GitHub</span><span class="i18n-zh">在 GitHub 点星</span>
@@ -31,31 +32,30 @@ const pad = (n: number) => String(n).padStart(2, '0');
   <section class="toc" id="books">
     <h2><span class="i18n-en">Four books</span><span class="i18n-zh">四本书</span></h2>
     <ol>
-      <li><a href={`${base}/ch/${chapters[0].slug}/`}><span class="n">01</span><span class="t">Learning SGLang</span><span class="h"><span class="i18n-en">The inference engine, from one token to many GPUs.</span><span class="i18n-zh">从一个 token 到多块 GPU 的推理引擎。</span></span></a></li>
-      <li><a href={`${base}/omni/ch/01-config-to-runtime/`}><span class="n">02</span><span class="t">Learning SGLang Omni</span><span class="h"><span class="i18n-en">How multimodal requests run.</span><span class="i18n-zh">多模态请求怎样运行。</span></span></a></li>
-      <li><a href={`${base}/ml-sys/ch/01-measure-inference/`}><span class="n">03</span><span class="t">Learning ML Systems</span><span class="h"><span class="i18n-en">Measure waits, memory and weight paths.</span><span class="i18n-zh">测量等待、显存和权重路径。</span></span></a></li>
-      <li><a href={`${base}/voxt/ch/one-dictation/`}><span class="n">04</span><span class="t">Inside Voxt</span><span class="h"><span class="i18n-en">Follow one spoken sentence through the app.</span><span class="i18n-zh">跟一句话走完整个 app。</span></span></a></li>
+      {books.map((book, i) => (
+        <li><a href={bookHref(book)}><span class="n">{pad(i + 1)}</span><span class="t">{book.name}</span><span class="h"><span class="i18n-en">{book.homeHook}</span><span class="i18n-zh">{book.homeHookZh}</span></span></a></li>
+      ))}
     </ol>
   </section>
 
-  {parts.map((p) => (
+  {books.map((book) => book.parts.map((p) => (
     <section class="toc">
-      <h2><span class="i18n-en">{p.title}</span><span class="i18n-zh">{p.titleZh}</span></h2>
+      <h2><a href={bookHref(book)}>{book.name}</a> · <span class="i18n-en">{p.title}</span><span class="i18n-zh">{p.titleZh}</span></h2>
       <p class="blurb"><span class="i18n-en">{p.blurb}</span><span class="i18n-zh">{p.blurbZh}</span></p>
       <ol>
-        {chapters.map((c, i) => c.part === p.id && (
+        {book.chapters.map((c, i) => c.part === p.id && (
           <li class:list={[{ soon: !c.ready }]}>
             {c.ready
-              ? <a href={`${base}/ch/${c.slug}/`}><span class="n">{pad(i + 1)}</span><span class="t"><span class="i18n-en">{c.title}</span><span class="i18n-zh">{c.titleZh}</span></span><span class="h"><span class="i18n-en">{c.hook}</span><span class="i18n-zh">{c.hookZh}</span></span></a>
+              ? <a href={chapterHref(book, c.slug)}><span class="n">{pad(i + 1)}</span><span class="t"><span class="i18n-en">{c.title}</span><span class="i18n-zh">{c.titleZh}</span></span><span class="h"><span class="i18n-en">{c.hook}</span><span class="i18n-zh">{c.hookZh}</span></span></a>
               : <span class="dim"><span class="n">{pad(i + 1)}</span><span class="t"><span class="i18n-en">{c.title}</span><span class="i18n-zh">{c.titleZh}</span></span><span class="h"><span class="i18n-en">{c.hook}</span><span class="i18n-zh">{c.hookZh}</span></span><em><span class="i18n-en">soon</span><span class="i18n-zh">即将上线</span></em></span>}
           </li>
         ))}
       </ol>
     </section>
-  ))}
+  )))}
 
   <footer class="foot">
-    <span><span class="i18n-en">Numbers throughout are for Llama-3-8B in bf16 on one H100 unless a chapter says otherwise.</span><span class="i18n-zh">除章节另有说明外，全书数字均基于单块 H100 上的 Llama-3-8B bf16。</span></span>
+    <span><span class="i18n-en">Numbers in Learning SGLang are for Llama-3-8B in bf16 on one H100 unless a chapter says otherwise.</span><span class="i18n-zh">除章节另有说明外，Learning SGLang 的数字均基于单块 H100 上的 Llama-3-8B bf16。</span></span>
     <span><span class="i18n-en">Built with Astro and Svelte · <a href={site.repo}>source</a></span><span class="i18n-zh">由 Astro 与 Svelte 构建 · <a href={site.repo}>源码</a></span></span>
   </footer>
 </Chapter>

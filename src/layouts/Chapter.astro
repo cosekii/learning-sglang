@@ -4,10 +4,7 @@ import '@fontsource-variable/jetbrains-mono';
 import 'katex/dist/katex.min.css';
 import '../styles/global.css';
 import '../styles/stage.css';
-import { chapters, parts } from '../chapters';
-import { omniChapters, omniParts } from '../omni/chapters';
-import { mlSysChapters, mlSysParts } from '../ml-sys/chapters';
-import { voxtChapters, voxtParts } from '../voxt/chapters';
+import { books, bookFor, bookHref, chapterHref as hrefForChapter, relatedFor } from '../books';
 import { site } from '../site';
 import interUrl from '@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url';
 import monoUrl from '@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2?url';
@@ -15,17 +12,13 @@ import monoUrl from '@fontsource-variable/jetbrains-mono/files/jetbrains-mono-la
 // MDX passes frontmatter both spread and as `frontmatter`; accept either.
 const fm = (Astro.props as any).frontmatter ?? Astro.props;
 const slug: string | undefined = fm.slug;
-const isOmni = fm.book === 'omni';
-const isMlSys = fm.book === 'ml-sys';
-const isVoxt = fm.book === 'voxt';
-const bookChapters = isOmni ? omniChapters : isMlSys ? mlSysChapters : isVoxt ? voxtChapters : chapters;
-const bookParts = isOmni ? omniParts : isMlSys ? mlSysParts : isVoxt ? voxtParts : parts;
-const bookName = isOmni ? 'Learning SGLang Omni' : isMlSys ? 'Learning ML Systems' : isVoxt ? 'Inside Voxt' : site.name;
-const bookTagline = isOmni ? 'How configuration becomes a running multimodal request.' : isMlSys ? 'Measure the waits, memory and weight paths in ML systems.' : isVoxt ? 'Follow spoken sentences through a Mac dictation app.' : site.tagline;
-const bookTaglineZh = isOmni ? '配置怎样变成运行中的多模态请求。' : isMlSys ? '测量 ML 系统里的等待、显存和权重路径。' : isVoxt ? '跟着语音走完 Mac 听写 app。' : site.taglineZh;
-const chapterHref = (s: string) => `${base}/${isOmni ? 'omni/' : isMlSys ? 'ml-sys/' : isVoxt ? 'voxt/' : ''}ch/${s}/`;
+const currentBook = bookFor(fm.book);
+const { chapters: bookChapters, name: bookName, tagline: bookTagline, taglineZh: bookTaglineZh } = currentBook;
+const chapterHref = (s: string) => hrefForChapter(currentBook, s);
 const idx = bookChapters.findIndex((c) => c.slug === slug);
 const chapter = idx >= 0 ? bookChapters[idx] : undefined;
+const related = chapter ? relatedFor(currentBook.id, chapter.slug) : [];
+const sidebarBooks = chapter ? [currentBook] : books;
 const title: string = fm.title ?? chapter?.title ?? bookName;
 const titleZh: string = chapter?.titleZh ?? title;
 const hook: string | undefined = fm.hook ?? chapter?.hook;
@@ -83,7 +76,7 @@ const image = new URL(`${base}/og.png`, Astro.site);
       })();
     </script>
     <div class="shell">
-      <nav class="sidebar">
+      <nav class="sidebar" data-book={chapter ? currentBook.id : 'home'}>
         <div class="brandrow">
           <a class="brand" href={`${base}/`}>{bookName}</a>
           <button class="lang-toggle" onclick="window.__toggleLang()" aria-label="Switch language / 切换语言">
@@ -93,20 +86,45 @@ const image = new URL(`${base}/og.png`, Astro.site);
         </div>
         <div class="navbody" id="navbody">
         <p class="tagline"><span class="i18n-en">{bookTagline}</span><span class="i18n-zh">{bookTaglineZh}</span></p>
-        {bookParts.map((p) => (
-          <div class="part">
-            <div class="part-title"><span class="i18n-en">{p.title}</span><span class="i18n-zh">{p.titleZh}</span></div>
-            <ol>
-              {bookChapters.map((c, i) => c.part === p.id && (
-                <li class:list={[{ current: c.slug === slug, soon: !c.ready }]}>
-                  {c.ready
-                    ? <a href={chapterHref(c.slug)}><span class="n">{pad(i + 1)}</span><span class="i18n-en">{c.title}</span><span class="i18n-zh">{c.titleZh}</span></a>
-                    : <span><span class="n">{pad(i + 1)}</span><span class="i18n-en">{c.title}</span><span class="i18n-zh">{c.titleZh}</span></span>}
-                </li>
-              ))}
-            </ol>
+        <div class="book-switcher">
+          <div class="part-title"><span class="i18n-en">Four books</span><span class="i18n-zh">四本书</span></div>
+          {books.map((book) => (
+            <a class:list={[{ current: chapter && book.id === currentBook.id }]} href={bookHref(book)}>
+              <span>{book.navName}</span><span class="book-count">{book.chapters.filter((c) => c.ready).length}/{book.chapters.length}</span>
+            </a>
+          ))}
+        </div>
+        {sidebarBooks.map((sidebarBook) => (
+          <div class="book-group">
+            {!chapter && <a class="book-nav-title" href={bookHref(sidebarBook)}>{sidebarBook.name}<span>{sidebarBook.chapters.filter((c) => c.ready).length}/{sidebarBook.chapters.length}</span></a>}
+            {sidebarBook.parts.map((p) => (
+              <div class="part">
+                <div class="part-title"><span class="i18n-en">{p.title}</span><span class="i18n-zh">{p.titleZh}</span></div>
+                <ol>
+                  {sidebarBook.chapters.map((c, i) => c.part === p.id && (
+                    <li class:list={[{ current: c.slug === slug, soon: !c.ready }]}>
+                      {c.ready
+                        ? <a href={hrefForChapter(sidebarBook, c.slug)}><span class="n">{pad(i + 1)}</span><span class="i18n-en">{c.title}</span><span class="i18n-zh">{c.titleZh}</span></a>
+                        : <span><span class="n">{pad(i + 1)}</span><span class="i18n-en">{c.title}</span><span class="i18n-zh">{c.titleZh}</span></span>}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            ))}
           </div>
         ))}
+        {related.length > 0 && (
+          <div class="related-links">
+            <div class="part-title"><span class="i18n-en">Across the books</span><span class="i18n-zh">跨书相关章节</span></div>
+            {related.map((r) => (
+              <a href={r.href}>
+                <span class="related-label"><span class="i18n-en">{r.label}</span><span class="i18n-zh">{r.labelZh}</span></span>
+                <span class="related-target">{r.book.navName} · <span class="i18n-en">Ch. {r.number}</span><span class="i18n-zh">第 {r.number} 章</span></span>
+                <span class="related-title"><span class="i18n-en">{r.chapter.title}</span><span class="i18n-zh">{r.chapter.titleZh}</span></span>
+              </a>
+            ))}
+          </div>
+        )}
         <div class="hints"><kbd>←</kbd> <kbd>→</kbd> <span class="i18n-en">step</span><span class="i18n-zh">切换步骤</span></div>
         <p class="byline"><span class="i18n-en">by</span><span class="i18n-zh">作者</span> <a href={site.author.url}>{site.author.name}</a></p>
         <a class="repo" href={site.repo} target="_blank" rel="noopener">
@@ -120,14 +138,15 @@ const image = new URL(`${base}/og.png`, Astro.site);
           const nav = document.querySelector('.sidebar');
           const menu = nav.querySelector('.menu');
           menu.addEventListener('click', () => menu.setAttribute('aria-expanded', String(nav.classList.toggle('open'))));
-          // Keep the sidebar where the reader left it across page loads. Runs before first paint, so it never jumps.
+          // Keep each book's sidebar where the reader left it. Runs before first paint, so it never jumps.
           // Only where the sidebar is its own scroll box: on a phone it is not, and scrollIntoView would scroll the page.
           if (!matchMedia('(min-width: 901px)').matches) return;
+          const scrollKey = `sidebar-scroll-${nav.dataset.book}`;
           let saved = null;
-          try { saved = sessionStorage.getItem('sidebar-scroll'); } catch {}
+          try { saved = sessionStorage.getItem(scrollKey); } catch {}
           if (saved !== null) nav.scrollTop = +saved;
           else nav.querySelector('li.current')?.scrollIntoView({ block: 'center' });
-          addEventListener('pagehide', () => { try { sessionStorage.setItem('sidebar-scroll', String(nav.scrollTop)); } catch {} });
+          addEventListener('pagehide', () => { try { sessionStorage.setItem(scrollKey, String(nav.scrollTop)); } catch {} });
         })();
       </script>
       {chapter ? (
