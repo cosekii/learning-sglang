@@ -52,7 +52,7 @@
     { n: 6, rows: true, caption: `Every token multiplies its x by the same three matrices. All six of them, from scratch.`, captionZh: `每个 token 都用自己的 x 乘同样的三个矩阵。全部六个，从头算起。` },
     { n: 6, rows: true, recompute: true, markNew: true, caption: `Look at the five old columns. Same x, same matrices, same vectors as last time. Nothing changed, we just computed them again.`, captionZh: `前五个 x 和三张数字表没变。却又重算出和第 3 步一样的 q、k、v。` },
     { n: 6, rows: true, markNew: true, attend: 5, weights: true, mix: true, caption: `Paris's query looks at all six keys and blends all six values. It needs every earlier key and value.`, captionZh: `Paris 的 query 看全部六个 key，混合全部六个 value。它需要之前每一个 key 和 value。` },
-    { n: 6, rows: true, markNew: true, unusedQ: true, caption: `The old queries? Their outputs only go on to rebuild the next layer's old x, and from it the same old k and v. Keep every layer's k and v, and nothing reads them.`, captionZh: `旧 q 只用于旧输出，旧输出又会还原旧 k、v。留下每层的旧 k、v，旧 q 就没用了。` },
+    { n: 6, rows: true, markNew: true, unusedQ: true, caption: `The old queries? Their outputs only go on to rebuild the next layer's old x, and from it the same old k and v. Keep every layer's k and v, and nothing reads them.`, captionZh: `旧 q 只算旧输出，旧输出到下一层又重算旧 k、v。留下每层旧 k、v，旧 q 就没用了。` },
     { n: 6, rows: true, markNew: true, tally: true, caption: `So each decode step, the new token needs every earlier k and v, and nothing else from the past. We recomputed them all, identically, in every head of every layer. Why not just keep them?`, captionZh: `新 token 要用全部旧 k、v，不用旧 q。每层都在重算旧 k、v，为什么不直接留下？` },
   ];
 
@@ -138,7 +138,7 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox={phoneConclusion ? '0 0 360 570' : phoneProject ? '0 0 360 560' : phoneUnusedQ ? '0 0 360 510' : phoneSame ? '0 0 360 500' : phoneDecode ? '0 0 360 500' : phoneIntro ? '0 0 360 450' : phoneRecompute ? '0 0 360 440' : phoneSix ? '0 0 360 430' : phoneCausal ? '0 0 360 520' : phoneMix ? '0 0 360 580' : phoneWeights ? '0 0 360 550' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Attention per decode step, step {step + 1}" class:phone-project={phoneProject} class:phone-same={phoneSame} class:phone-decode={phoneDecode} class:phone-intro={phoneIntro} class:phone-weights={phoneWeights} class:phone-mix={phoneMix} class:phone-causal={phoneCausal} class:phone-six={phoneSix} class:phone-recompute={phoneRecompute} class:phone-kv={phoneUnusedQ || phoneConclusion}>
+    <svg viewBox={phoneConclusion ? '0 0 360 570' : phoneProject ? '0 0 360 560' : phoneUnusedQ ? '0 0 360 550' : phoneSame ? '0 0 360 500' : phoneDecode ? '0 0 360 500' : phoneIntro ? '0 0 360 450' : phoneRecompute ? '0 0 360 440' : phoneSix ? '0 0 360 430' : phoneCausal ? '0 0 360 520' : phoneMix ? '0 0 360 580' : phoneWeights ? '0 0 360 550' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Attention per decode step, step {step + 1}" class:phone-project={phoneProject} class:phone-same={phoneSame} class:phone-decode={phoneDecode} class:phone-intro={phoneIntro} class:phone-weights={phoneWeights} class:phone-mix={phoneMix} class:phone-causal={phoneCausal} class:phone-six={phoneSix} class:phone-recompute={phoneRecompute} class:phone-kv={phoneUnusedQ || phoneConclusion}>
       {#if phoneConclusion}
         <text x="180" y="26" text-anchor="middle" class="ph-title">新 token 从过去只要旧 k、v</text>
         <text x="180" y="52" text-anchor="middle">拿第 12 步的 ␣Paris 看</text>
@@ -164,7 +164,7 @@
             <path d="M 0 0 L 7 3.5 L 0 7 z" fill="var(--muted)" />
           </marker>
         </defs>
-        <text x="180" y="26" text-anchor="middle" class="ph-title">旧 q 的下游，只会重建旧 k、v</text>
+        <text x="180" y="26" text-anchor="middle" class="ph-title">旧 q 的下游，只会重算旧 k、v</text>
         <text x="180" y="50" text-anchor="middle">拿第 1 个旧位置看；其余旧位置也一样</text>
         {#each [
           { y: 68, title: '旧 q₁', body: '第 7 步：算自己的旧 out₁', color: COLOR.q },
@@ -180,9 +180,10 @@
           {/if}
         {/each}
         <line x1="18" y1="392" x2="342" y2="392" stroke="var(--line)" />
-        <text x="180" y="420" text-anchor="middle" class="ph-strong">留下每层旧 k、v，q₆ 仍能算 out₆</text>
-        <text x="180" y="450" text-anchor="middle">旧 q₁…q₅、旧 out₁…out₅ 不再读</text>
-        <text x="180" y="490" text-anchor="middle" class="ph-faint">下一章：怎样留下并直接读旧 k、v</text>
+        <text x="180" y="420" text-anchor="middle" class="ph-strong">q₆、k₁…k₆、v₁…v₆ → out₆</text>
+        <text x="180" y="450" text-anchor="middle">新算 q₆、k₆、v₆；过去只给旧 k、v</text>
+        <text x="180" y="480" text-anchor="middle">旧 q、旧 out 不再读</text>
+        <text x="180" y="520" text-anchor="middle" class="ph-faint">下一章：怎样留下并直接读旧 k、v</text>
       {:else if phoneDecode}
         <defs>
           <marker id="phone-decode-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
@@ -439,7 +440,7 @@
             <path d="M 0 0 L 8 4 L 0 8 z" fill="var(--muted)" />
           </marker>
         </defs>
-        <text x="20" y="26" class="kv-title">旧 q 的下游，只会重建相同的旧 k、v</text>
+        <text x="20" y="26" class="kv-title">旧 q 的下游，只会重算相同的旧 k、v</text>
         <text x="20" y="50" class="legend">拿第 1 个旧位置看；q₂—q₅ 也走同样的链</text>
         {#each [
           { x: 20, w: 130, title: '旧 q₁', body: '第 7 步：算旧 out₁', color: COLOR.q },
