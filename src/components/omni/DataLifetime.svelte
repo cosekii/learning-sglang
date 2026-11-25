@@ -197,7 +197,7 @@
       <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Next: the receiver gets the bytes, rebuilds the payload and acknowledges.', '下一步：接收方取字节、还原数据，再回 ACK。')}</text>
       {:else if step === 3}
       <text x={phone ? 15 : 20} y="20" class="tag strong">ACK = {t('receipt: the data-plane read has finished', '回执：数据平面已经读完')}</text>
-      <text x={phone ? 15 : 20} y="45" class="tag">{t('Receiver: parse DataRef → GET and wait → rebuild → ACK → scheduler', '接收方：解析 DataRef → GET 并等待 → 还原 → ACK → scheduler')}</text>
+      <text x={phone ? 15 : 20} y="45" class="tag">{phone ? t('Receiver: parse → GET → rebuild → ACK', '接收方：解析 → 读取 → 还原 → ACK') : t('Receiver: parse DataRef → GET and wait → rebuild → ACK → scheduler', '接收方：解析 DataRef → GET 并等待 → 还原 → ACK → scheduler')}</text>
       {#if !phone}
         <path d="M170 180 H192" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
         <path d="M345 180 H367" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
