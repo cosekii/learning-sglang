@@ -53,7 +53,7 @@
     { n: 6, rows: true, recompute: true, markNew: true, caption: `Look at the five old columns. Same x, same matrices, same vectors as last time. Nothing changed, we just computed them again.`, captionZh: `前五个 x 和三张数字表没变。却又重算出和第 3 步一样的 q、k、v。` },
     { n: 6, rows: true, markNew: true, attend: 5, weights: true, mix: true, caption: `Paris's query looks at all six keys and blends all six values. It needs every earlier key and value.`, captionZh: `Paris 的 query 看全部六个 key，混合全部六个 value。它需要之前每一个 key 和 value。` },
     { n: 6, rows: true, markNew: true, unusedQ: true, caption: `The old queries? Their outputs only go on to rebuild the next layer's old x, and from it the same old k and v. Keep every layer's k and v, and nothing reads them.`, captionZh: `旧 q 只算旧输出，旧输出到下一层又重算旧 k、v。留下每层旧 k、v，旧 q 就没用了。` },
-    { n: 6, rows: true, markNew: true, tally: true, caption: `So each decode step, the new token needs every earlier k and v, and nothing else from the past. We recomputed them all, identically, in every head of every layer. Why not just keep them?`, captionZh: `新 token 要用全部旧 k、v，不用旧 q。每层都在重算旧 k、v，为什么不直接留下？` },
+    { n: 6, rows: true, markNew: true, tally: true, caption: `So each decode step, the new token needs every earlier k and v, and nothing else from the past. We recomputed them all, identically, in every head of every layer. Why not just keep them?`, captionZh: `新 token 要用全部旧 k、v，不用旧 q。每层、每组 k、v 都在重算，为什么不直接留下？` },
   ];
 
 
@@ -152,11 +152,11 @@
         <text x="180" y="237" text-anchor="middle">新 q₆：这次新算，不是旧信息</text>
         <text x="180" y="280" text-anchor="middle">旧 q₁…q₅ 不在输入里</text>
         <rect x="15" y="320" width="330" height="160" rx="9" fill="var(--bg)" stroke="var(--line)" />
-        <text x="180" y="348" text-anchor="middle" class="ph-strong">每层却重算同样的旧 k、v</text>
-        <text x="180" y="382" text-anchor="middle">第 1 层：旧 k、v 又算一遍</text>
-        <text x="180" y="414" text-anchor="middle">第 2 层：旧 k、v 又算一遍</text>
-        <text x="180" y="446" text-anchor="middle">……每一层都这样</text>
-        <text x="180" y="514" text-anchor="middle" class="ph-strong">5 个旧位置 × 2（k、v）= 10 排旧数</text>
+        <text x="180" y="348" text-anchor="middle" class="ph-strong">每层有多组 k、v；这里画一组</text>
+        <text x="180" y="382" text-anchor="middle">第 1 层：这组旧 k、v 又算一遍</text>
+        <text x="180" y="414" text-anchor="middle">第 2 层：这组旧 k、v 又算一遍</text>
+        <text x="180" y="446" text-anchor="middle">……每层、每组都这样</text>
+        <text x="180" y="514" text-anchor="middle" class="ph-strong">每组 k、v：5 个旧位置 × 2 = 10 排旧数</text>
         <text x="180" y="550" text-anchor="middle" class="ph-faint">下一章：留下旧 k、v，下次直接读</text>
       {:else if phoneUnusedQ}
         <defs>
@@ -423,7 +423,7 @@
         <text x="300" y="220" text-anchor="middle" class="slab">out₆</text>
         <text x="40" y="318" class="legend">旧 q₁…q₅：不在输入里</text>
         <rect x="370" y="80" width="330" height="250" rx="9" fill="var(--bg)" stroke="var(--line)" />
-        <text x="390" y="110" class="slab">每层却重算同样的旧 k、v</text>
+        <text x="390" y="110" class="slab">每层有多组 k、v；这里画一组</text>
         {#each ['第 1 层', '第 2 层', '每一层'] as layer, i}
           {@const y = 132 + i * 60}
           <text x="390" y={y + 27} class="legend">{layer}</text>
@@ -432,7 +432,7 @@
           <rect x="580" y={y} width="90" height="44" rx="6" fill={COLOR.v[0]} stroke={COLOR.v[1]} />
           <text x="625" y={y + 27} text-anchor="middle" class="legend">旧 v₁…₅</text>
         {/each}
-        <text x={W / 2} y="362" text-anchor="middle" class="sum">5 个旧位置 × 2（k、v）= 10 排旧数，每层都重算</text>
+        <text x={W / 2} y="362" text-anchor="middle" class="sum">每层、每组 k、v：5 个旧位置 × 2 = 10 排旧数</text>
         <text x={W / 2} y="390" text-anchor="middle" class="footnote">下一章：把旧 k、v 留下来，下次直接读</text>
       {:else if zhUnusedQ}
         <defs>
