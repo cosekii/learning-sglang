@@ -4,13 +4,16 @@
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
-  import { LIFETIME_RESULT_IDS, LIFETIME_SLOT_COUNT, LIFETIME_WAITING_COUNT } from '../../omni/numbers';
+  import { LIFETIME_DATA_REF_WIRE_VERSION, LIFETIME_RESULT_IDS, LIFETIME_SLOT_COUNT, LIFETIME_WAITING_COUNT } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
   const steps = [{
     caption: "One space cannot hold results A and B together. B must wait until A's reader finishes.",
     captionZh: '一格放不下 A、B 两份结果。等 A 的读者读完，B 才能用这一格。',
+  }, {
+    caption: 'A DataRef is a descriptor, not the payload. It names the object, transport and buffer used to fetch it.',
+    captionZh: 'DataRef 是找数据的小卡片，不带数据本身。卡片写明数据名字、走哪条路、在哪里。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -35,7 +38,13 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={t('Thinker produces results A and B for talker_ar, but this teaching example has only one storage space. Reusing the space for B while talker_ar is still reading A gives the reader the wrong result. Keeping A until the reader finishes makes B wait and preserves the correct read.', 'thinker 要给 talker_ar 两份结果 A、B，本例只有一格存储空间。talker_ar 还在读 A 时就把这格改放 B，会读到错误结果。让 B 等 A 读完再用这格，读取结果才正确。')}>
+    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={t('A result remains available while its receiver reads. A DataRef locates the payload, and the sender tracks the acknowledgement and operation completion.', '结果在接收方读取期间保持可用。DataRef 用来找到数据，发送方跟踪回执和操作完成。')}>
+      <defs>
+        <marker id="lifetime-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+          <path d="M0,0 L8,4 L0,8 Z" fill="var(--accent)" />
+        </marker>
+      </defs>
+      {#if step === 0}
       <text x={phone ? 15 : 20} y="20" class="tag strong">{t('Example: one space, two results; talker_ar is still reading A', '示例：一格空间、两份结果；talker_ar 还在读 A')}</text>
       <rect x={phone ? 15 : 20} y="33" width="10" height="10" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
       <text x={phone ? 31 : 36} y="42" class="tag">{t('result being read', '正在读的结果')}</text>
@@ -66,6 +75,60 @@
       {/each}
       <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{t('The diagram covers safe reuse, not a particular transport or pool size.', '本图只讲何时能安全复用，不限定传输方式或池子大小。')}</text>
       <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Next: how does the reader find A, and how does the owner know it finished?', '下一步：读者怎样找到 A，主人又怎样知道它读完了？')}</text>
+      {:else if step === 1}
+      <text x={phone ? 15 : 20} y="20" class="tag strong">DataRef = {t('a small descriptor for finding a payload', '找数据的小卡片')}</text>
+      <text x={phone ? 15 : 20} y="45" class="tag">{t('Example: object A · SHM transport · payload stays in the backend', '示例：数据 A · SHM 传输 · 数据本体留在后端')}</text>
+      {#if !phone}
+        <rect x="20" y="85" width="210" height="205" rx="12" fill="var(--bg)" stroke="var(--line)" />
+        <text x="35" y="112" class="rowlabel">{t('SENDER BACKEND', '发送方后端')}</text>
+        <rect x="45" y="140" width="160" height="82" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="125" y="174" text-anchor="middle" class="mono strong">{t('payload A', '数据 A')}</text>
+        <text x="125" y="198" text-anchor="middle" class="tag">{t('tensor bytes', 'tensor 字节')}</text>
+        <text x="125" y="255" text-anchor="middle" class="tag">{t('large data stays here', '大块数据留在这里')}</text>
+        <path d="M230 185 H270" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
+
+        <rect x="275" y="65" width="195" height="250" rx="10" fill="white" stroke="var(--accent)" stroke-width="2" />
+        <text x="292" y="94" class="mono strong">DataRef</text>
+        <text x="292" y="126" class="mono">version = {LIFETIME_DATA_REF_WIRE_VERSION}</text>
+        <text x="292" y="158" class="mono">object_id = {LIFETIME_RESULT_IDS[0]}</text>
+        <text x="292" y="190" class="mono">transport = SHM</text>
+        <text x="292" y="222" class="mono">buffer = info + length</text>
+        <line x1="292" y1="241" x2="453" y2="241" stroke="var(--line)" />
+        <text x="372" y="269" text-anchor="middle" class="tag strong">{t('descriptor only', '只有说明')}</text>
+        <text x="372" y="292" text-anchor="middle" class="tag">{t('no tensor bytes here', '这里没有 tensor 字节')}</text>
+        <path d="M470 185 H510" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
+
+        <rect x="515" y="85" width="185" height="205" rx="12" fill="var(--bg)" stroke="var(--line)" />
+        <text x="532" y="112" class="rowlabel">talker_ar</text>
+        <text x="607" y="158" text-anchor="middle" class="tag strong">{t('can find object A', '能找到数据 A')}</text>
+        <text x="607" y="190" text-anchor="middle" class="tag">{t('choose SHM', '选择 SHM')}</text>
+        <text x="607" y="218" text-anchor="middle" class="tag">{t('use buffer info', '使用 buffer 信息')}</text>
+        <text x="607" y="255" text-anchor="middle" class="tag">{t('reading comes next', '读取在下一步')}</text>
+      {:else}
+        <rect x="35" y="68" width="230" height="98" rx="10" fill="var(--bg)" stroke="var(--line)" />
+        <text x="50" y="92" class="rowlabel">{t('SENDER BACKEND', '发送方后端')}</text>
+        <rect x="60" y="105" width="180" height="40" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="150" y="130" text-anchor="middle" class="mono strong">{t('payload A · stays here', '数据 A · 留在这里')}</text>
+        <path d="M150 166 V194" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
+
+        <rect x="40" y="200" width="220" height="218" rx="10" fill="white" stroke="var(--accent)" stroke-width="2" />
+        <text x="55" y="228" class="mono strong">DataRef</text>
+        <text x="55" y="258" class="mono">version = {LIFETIME_DATA_REF_WIRE_VERSION}</text>
+        <text x="55" y="288" class="mono">object_id = {LIFETIME_RESULT_IDS[0]}</text>
+        <text x="55" y="318" class="mono">transport = SHM</text>
+        <text x="55" y="348" class="mono">buffer = info + length</text>
+        <line x1="55" y1="366" x2="245" y2="366" stroke="var(--line)" />
+        <text x="150" y="395" text-anchor="middle" class="tag strong">{t('descriptor · no tensor bytes', '只有说明 · 没有 tensor 字节')}</text>
+        <path d="M150 418 V448" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
+
+        <rect x="35" y="455" width="230" height="112" rx="10" fill="var(--bg)" stroke="var(--line)" />
+        <text x="50" y="480" class="rowlabel">talker_ar</text>
+        <text x="150" y="510" text-anchor="middle" class="tag strong">{t('find A · choose SHM', '找到 A · 选择 SHM')}</text>
+        <text x="150" y="539" text-anchor="middle" class="tag">{t('use buffer info to fetch', '用 buffer 信息取数据')}</text>
+      {/if}
+      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{t('DataRef has no reader count or ACK state; other fields reconstruct tensors.', 'DataRef 没有读者计数或 ACK 状态；其他字段用于还原 tensor。')}</text>
+      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Next: publishing adds a separate pending record on the sender.', '下一步：发布时，发送方另加一张等待回执的记录。')}</text>
+      {/if}
     </svg>
   </div>
   <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh}

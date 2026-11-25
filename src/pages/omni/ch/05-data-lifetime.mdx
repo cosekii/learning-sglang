@@ -15,7 +15,9 @@ export const deep = await deepFor('omni-05-data-lifetime');
 
 Step 1 constructs two results, A and B, with one illustrative storage space. `talker_ar` is still reading A when B becomes available. Reusing the space immediately would replace A before its reader finishes; keeping A readable makes B wait. The one-space pool is a teaching device, not a configured SGLang-Omni limit. This step covers safe reuse, not a particular transport, allocation algorithm or performance claim.
 
-Source revision for the chapter: `sglang-omni origin/main@0e641996a0c269601d03f1cb29d3f46d7cb345a6`. The deep dive distinguishes this teaching example from the implementation mechanism introduced in the next step.
+Step 2 constructs a version-1 DataRef for object A using SHM. Its `object_id`, `transport` and `buffer` identify the object, select a relay and carry backend read information. The tensor bytes remain in the backend. DataRef contains neither a reader count nor ACK state; fan-out uses separate per-target lifecycles. The figure omits the other reconstruction fields and the direct same-process and PyTorch CUDA IPC bypasses.
+
+Source revision for the chapter: `sglang-omni origin/main@0e641996a0c269601d03f1cb29d3f46d7cb345a6`. The deep dive lists the exact files and lines.
 
 </details>
 
@@ -24,6 +26,8 @@ Source revision for the chapter: `sglang-omni origin/main@0e641996a0c269601d03f1
 
 第 1 步构造 A、B 两份结果和一格示意空间。B 已能写入时，`talker_ar` 还在读 A。现在复用这一格会提前盖掉 A；让 A 保持可读，B 就必须等待。一格只是教学例子，不是 SGLang-Omni 的配置上限。本步只讲安全复用，不限定传输方式、分配算法，也不涉及性能。
 
-本章源码版本：`sglang-omni origin/main@0e641996a0c269601d03f1cb29d3f46d7cb345a6`。深入讲解区分这个教学例子与下一步介绍的实现机制。
+第 2 步为数据 A 构造第 1 版 DataRef，传输方式固定为 SHM。`object_id`、`transport` 和 `buffer` 分别标识对象、选择 relay、保存后端读取信息。tensor 字节仍留在后端。DataRef 不含读者计数或 ACK 状态；fan-out 按 target 使用独立生命周期。图中省略其他还原字段，也不展开同进程和直接 PyTorch CUDA IPC 旁路。
+
+本章源码版本：`sglang-omni origin/main@0e641996a0c269601d03f1cb29d3f46d7cb345a6`。精确文件和行号见深入讲解。
 
 </details>

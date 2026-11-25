@@ -124,3 +124,6 @@ export const READINESS_FEEDBACK_SNAPSHOTS = [
 export const LIFETIME_RESULT_IDS = ['A', 'B'] as const;
 export const LIFETIME_SLOT_COUNT = 1;
 export const LIFETIME_WAITING_COUNT = LIFETIME_RESULT_IDS.length - LIFETIME_SLOT_COUNT;
+
+// DataRef's current wire format; data_ref.py accepts only this version.
+export const LIFETIME_DATA_REF_WIRE_VERSION = 1;

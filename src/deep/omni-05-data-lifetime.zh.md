@@ -39,3 +39,50 @@ $$W=N-S=2-1=1$$
 ### 接下来
 
 第 2 步回答：数据在另一个进程或设备时，一个 DataRef 怎样让读者找到它。
+
+## 第 2 步 · DataRef 是找数据的小卡片
+
+> **一句话：** DataRef 用 `object_id`、`transport` 和 `buffer` 描述怎样找到数据，tensor 字节仍留在后端，不装进这张卡片。
+
+### 图上是什么
+
+- 左框是发送方后端，蓝色大块是数据 A 的 tensor 字节。中间白框是 DataRef，右框是接收方 `talker_ar`。
+- 本例的卡片有四行：`version = 1` 是线格式版本，`object_id = A` 是数据对象的名字，`transport = SHM` 指定传输后端，`buffer = info + length` 保存后端返回的读取信息和字节长度。
+- 卡片和数据之间的箭头表示「描述这份数据」，不是把 tensor 字节复制进卡片。卡片到接收方的箭头表示读者拿到描述后可以找到 A。
+- 图只列出找数据最需要看的字段。`kind`、`layout`、`header`、`tensors` 等字段继续描述数据种类、布局和 tensor 还原方式，不在这张简图里展开。
+
+### 卡片字段怎样接起来
+
+| 字段 | 本例 | 读者用它做什么 |
+|---|---|---|
+| `version` | 1 | 按第 1 版线格式解析卡片 |
+| `object_id` | A | 确认要读的数据对象 |
+| `transport` | SHM | 选择 SHM relay |
+| `buffer.info` | 后端返回的信息 | 找到后端里的数据 |
+| `buffer.length` | 数据的字节长度 | 准备足够的接收空间 |
+
+`BackendRef` 的 `length` 来自 relay 操作的 `op.metadata["transfer_info"]["size"]`。所以 `length` 是后端报告的字节数，不是 tensor 个数，也不是本例另造的容量。
+
+### DataRef 没有什么
+
+DataRef 的字段里没有 reader 数、引用计数或 ACK 状态。它只是一个可序列化的数据描述符，不应被画成会自动跟踪所有读者的智能指针。发送方在发布时另建生命周期记录，下一步专门讲这张记录。
+
+同一数据要发给多个 target 时，发送路径逐 target 调用，每个 target 有自己的发送与 Pending/ACK 生命周期；这不是一个 DataRef 自带的多读者引用计数。
+
+### transport 从哪里来
+
+Router 在创建 DataRef 之前按两端位置和数据设备选路。普通 payload 可以使用 `LOCAL_OBJECT`、`MOONCAKE`、`CUDA_IPC` 或 `SHM`；完整 payload 还会扫描 tensor 设备，纯 CPU 走 SHM，不支持的组合会报错。本例固定画 SHM，只讲卡片如何记录选择结果，不展开四种数据平面。
+
+`LOCAL_OBJECT` 是同进程旁路，没有 relay。直接 PyTorch CUDA IPC 也不进入后面的通用 get/ACK 链，因此本章的后续图只针对通用 relay 路径。
+
+### 源码出处
+
+- `sglang_omni/comm/data_ref.py:117-133`：DataRef 字段；`40-67`：`TensorMeta`；`70-99`：`BackendRef` 和字节长度；`135-216`：线格式、版本 1 与字段校验。
+- `sglang_omni/comm/router.py:215-252`：普通 payload 选路；`263-299`：relay 创建与 `LOCAL_OBJECT` 无 relay；`301-320`：tensor 设备扫描。
+- `sglang_omni/pipeline/stage/runtime.py:774-790`：直接 PyTorch CUDA IPC 旁路；`1939-1954`：逐 target 发送。
+
+以上行号对应 `origin/main@0e641996a0c269601d03f1cb29d3f46d7cb345a6`。
+
+### 接下来
+
+第 3 步把这张卡片发布给读者，同时在发送方建立一张等待 ACK 的 `PendingTransfer` 记录。
