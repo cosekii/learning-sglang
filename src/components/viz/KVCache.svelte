@@ -36,7 +36,7 @@
     { n: 6, cached: 5, compute: [5], flyIn: true, caption: `Decode step. Paris arrives. Only Paris gets an x, a q, a k and a v. One column of work, not six.`, captionZh: `␣Paris 到了，只算它的 1 列；旧 5 列不重算。` },
     { n: 6, cached: 6, compute: [5], store: true, caption: `Its k and v go into the cache. Slot six.`, captionZh: `它的 k、v 写进第 6 格。` },
     { n: 6, cached: 6, compute: [5], attend: 5, caption: `Its query reads every key in the cache and blends every value in the cache. Same result as recomputing, because the cache holds exactly what recomputing would have produced.`, captionZh: `q₆ 读 6 个 key，再混合 6 个 value。旧 k、v 不用重算，结果不变。` },
-    { n: 7, cached: 7, compute: [6], flyIn: true, store: true, attend: 6, caption: `Next token, same routine. One column of compute, one more slot, one read of the whole cache.`, captionZh: `下一个 token，同样的流程。一列计算，多一个槽位，读一遍整个 cache。` },
+    { n: 7, cached: 7, compute: [6], flyIn: true, store: true, attend: 6, caption: `Next token, same routine. One column of compute, one more slot, one read of the whole cache.`, captionZh: `下一个 token 还是只算 1 列、写 1 格。q₇ 读取全部 7 个 key 和 value。` },
     { n: 7, cached: 7, compute: [6], whyNotQ: true, caption: `Why not keep q too? Nobody asks for it later. A query is used on the step it's made, and its output is consumed right there.`, captionZh: `为什么不把 q 也留下来？之后没人再要它。query 只在生成它的那一步被使用，输出当场就被消耗掉。` },
     { n: 7, cached: 7, compute: [6], cost: true, caption: `The cache isn't free. Every token keeps a k and a v in each of Llama-3-8B's ${KV_HEADS}&nbsp;k,&nbsp;v&nbsp;heads (Ch. 2 Step 14), in every layer. That's ${KB_PER_TOKEN} KB per token, per sequence.`, captionZh: `cache 不是免费的。每个 token 在 Llama-3-8B 每一层的 ${KV_HEADS} 个 k、v head 里各存一个 k 和 v（Ch. 2 Step 14）。也就是每个 token、每个序列 ${KB_PER_TOKEN} KB。` },
     { n: 7, cached: 7, compute: [6], cost: true, contrast: true, caption: `Look at the two kinds of step. The first crunched five tokens and wrote five slots. Every step since computes one token and reads the whole cache. Two very different jobs.`, captionZh: `看这两种步。第一步算了五个 token、写了五个槽位。之后每一步只算一个 token，却要读整个 cache。两种很不一样的工作。` },
@@ -83,7 +83,7 @@
     query.addEventListener('change', update);
     return () => query.removeEventListener('change', update);
   });
-  const phoneCustom = $derived(phone && $lang === 'zh' && step <= 5);
+  const phoneCustom = $derived(phone && $lang === 'zh' && step <= 6);
 </script>
 
 <figure class="viz">
@@ -203,6 +203,15 @@
         {@render phoneCache(6, 335, 5, false)}
         <text x="180" y="525" text-anchor="middle">6 个权重合起来是 1</text>
         <text x="180" y="565" text-anchor="middle">out₆ 与重算旧 k、v 的结果相同</text>
+      {:else if phoneCustom && step === 6}
+        <text x="180" y="30" text-anchor="middle" class="ph-title">新 token 还是走这 3 件事</text>
+        <text x="180" y="55" text-anchor="middle">① 算 1 列　② 写第 7 格　③ 读 7 组 k、v</text>
+        {@render phoneTokens(7, 75)}
+        {@render phoneCompute([6], 125)}
+        <text x="180" y="303" text-anchor="middle">第 7 格已写入；数字是 q₇ 的权重</text>
+        {@render phoneCache(7, 335, 6, false)}
+        <text x="180" y="525" text-anchor="middle">计算仍是 1 列，读取从 6 组变成 7 组</text>
+        <text x="180" y="565" text-anchor="middle">下一步：旧 q 要不要也留下？</text>
       {:else}
       <!-- Contrast brackets: first step vs every step after -->
       {#if cur.contrast}
