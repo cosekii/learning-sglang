@@ -360,8 +360,8 @@
           <text x="150" y="466" text-anchor="middle" class="small">= {DEMO_TTFT_MS} + {DEMO_ITL_TOTAL_MS} = {DEMO_E2E_MS} ms</text>
           <text x="150" y="496" text-anchor="middle" class="small">{DEMO_ITL_TOTAL_MS} ms = {DEMO_ITL_GAPS_MS.join(' + ')} ms</text>
         {/if}
-        <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t(phone ? 'Client timers do not locate the wait.' : 'Client timers do not split network, queue, prefill or TP waits.', phone ? '客户端计时找不到等待在哪一段。' : '客户端计时分不清网络、排队、prefill 和 TP 各等多久。')}</text>
-        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Chapter 1 example times, not a Dynamo measurement.', '第 1 章的构造时间，不是 Dynamo 实测。')}</text>
+        <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t(phone ? 'Next: slime repeats answers → training → new weights' : 'Next: how does slime connect answers, training and new weights in a loop?', phone ? '下一章：slime 怎样重复回答 → 训练 → 新权重？' : '下一章：slime 怎样连成回答、训练和新权重的循环？')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Ch. 1 example times; client timers cannot locate waits.' : 'Chapter 1 example times; client timers cannot locate internal waits.', '第 1 章构造时间；客户端计时找不到内部等待。')}</text>
       {/if}
     </svg>
   </div>

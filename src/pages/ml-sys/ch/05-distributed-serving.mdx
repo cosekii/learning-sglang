@@ -25,7 +25,7 @@ Step 5 adapts the public chat request at `dynamo.md:85-95` into a capped connect
 
 Step 6 follows the fixed request pipeline rather than inferring an architecture from the guide's performance claim. `launch/dynamo-run/src/input/http.rs:85-104` links preprocessing, the backend and engine. `worker.rs:425-443,588-758` sends token IDs to rank 0's scheduler and returns scheduler output to the response path. Nonzero nodes receive work from the leader through PyTorch distributed (`launch/dynamo-run/src/lib.rs:235-250`). The figure deliberately omits serialization, socket buffering and HTTP chunking.
 
-Step 7 reuses Chapter 1's constructed timestamps and formulas to place TTFT, ITL and E2E at the client boundary. Four tokens fit the adapted request's eight-token cap. These are not Dynamo measurements. Without internal timestamps or tracing, the client measurements cannot assign time to network, queue, prefill or TP communication.
+Step 7 reuses Chapter 1's constructed timestamps and formulas to place TTFT, ITL and E2E at the client boundary. Four tokens fit the adapted request's eight-token cap. These are not Dynamo measurements. Without internal timestamps or tracing, the client measurements cannot assign time to network, queue, prefill or TP communication. The closing question follows slime's generation, training and weight-update sequence at `Awesome-ML-SYS-Tutorial/rlhf/slime/code-walk-through/readme.md:71-81`.
 
 The command and log examples describe an old guide. This chapter keeps their version boundary and replaces machine-specific paths and addresses with placeholders rather than presenting them as reusable defaults.
 
@@ -46,7 +46,7 @@ The command and log examples describe an old guide. This chapter keeps their ver
 
 第 6 步沿固定版本的请求管线画图，不从指南的性能描述反推架构。`launch/dynamo-run/src/input/http.rs:85-104` 串联 preprocessor、backend 和 engine；`worker.rs:425-443,588-758` 把 token ID 交给 rank 0 的 scheduler，再把 scheduler 输出送回响应路径。非 0 节点通过 leader 的 PyTorch distributed 路径接收工作（`launch/dynamo-run/src/lib.rs:235-250`）。图里故意不展开序列化、socket 缓冲和 HTTP 分块。
 
-第 7 步复用第 1 章的构造时刻和公式，把 TTFT、ITL 和 E2E 放在客户端边界。4 个 token 没超过适配请求的上限 8，这些都不是 Dynamo 实测。没有内部时间戳或 tracing，客户端测量不能把耗时分给网络、排队、prefill 或 TP 通信。
+第 7 步复用第 1 章的构造时刻和公式，把 TTFT、ITL 和 E2E 放在客户端边界。4 个 token 没超过适配请求的上限 8，这些都不是 Dynamo 实测。没有内部时间戳或 tracing，客户端测量不能把耗时分给网络、排队、prefill 或 TP 通信。章末问题沿用 `Awesome-ML-SYS-Tutorial/rlhf/slime/code-walk-through/readme.md:71-81` 的生成、训练和权重更新顺序。
 
 这些命令和日志来自旧版操作记录。本章保留版本边界，把机器相关路径和地址换成占位符，不把它们写成可照搬的默认值。
 

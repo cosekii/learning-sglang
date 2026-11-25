@@ -273,4 +273,4 @@ Locating a wait inside the service requires timestamps or tracing at the relevan
 
 The service can now start, answer and report client-side waits. The next chapter adds a training process beside it to show how answers, training and new weights form one slime loop.
 
-Sources: Chapter 1 Steps 1, 2 and 4 in this book; `DEMO_*` and `DYNAMO_SMOKE_MAX_TOKENS` in `src/ml-sys/numbers.ts`; the timing boundaries in zero-to-sglang Part I Chapter 5 §3.1.
+Sources: Chapter 1 Steps 1, 2 and 4 in this book; `DEMO_*` and `DYNAMO_SMOKE_MAX_TOKENS` in `src/ml-sys/numbers.ts`; the timing boundaries in zero-to-sglang Part I Chapter 5 §3.1; the generation, training and weight-update sequence in `Awesome-ML-SYS-Tutorial/rlhf/slime/code-walk-through/readme.md:71-81`.

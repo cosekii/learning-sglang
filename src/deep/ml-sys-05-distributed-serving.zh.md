@@ -273,4 +273,4 @@ $$\mathrm{E2E}=325-0=250+75=325\ \mathrm{ms}$$
 
 这条服务路径已经能启动、回答并计时。下一章在服务旁边加入训练进程，看回答、训练和新权重怎样组成 slime 的一轮循环。
 
-来源：本书第 1 章第 1、2、4 步；`src/ml-sys/numbers.ts` 的 `DEMO_*` 与 `DYNAMO_SMOKE_MAX_TOKENS`；zero-to-sglang 第 1 部分第 5 章 §3.1 的计时边界。
+来源：本书第 1 章第 1、2、4 步；`src/ml-sys/numbers.ts` 的 `DEMO_*` 与 `DYNAMO_SMOKE_MAX_TOKENS`；zero-to-sglang 第 1 部分第 5 章 §3.1 的计时边界；`Awesome-ML-SYS-Tutorial/rlhf/slime/code-walk-through/readme.md:71-81` 的生成、训练和权重更新顺序。

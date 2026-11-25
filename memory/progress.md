@@ -4,6 +4,8 @@
 
 ## 本轮记录
 
+- 15:38 完成 Learning ML Systems 第 5 章全部 7 步：公开启动日志、双节点入口、8 个 TP worker、就绪检查、短请求、请求往返和客户端计时。全章 **7/7 步易读 12/12**，中英原分均 **24/24**，平均 **24.00/24**，**0 内容洞、0 最终显示洞**。
+- 逐步提交并推送；主线程逐张冷读 42 张双语桌面、手机和深入讲解终稿。`build`、本章 `transcript`、全章 `readability`、中英三种宽度 `mobile`、`deep-check 05`、本章 `zh-check` 和 `git diff --check` 通过。材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch05-20261125-1510/final/`、`checks/`。本轮只跑本章检查，未跑全站回归。本轮类型：**做新书**；下一章是 `06-slime-rollout-loop`。
 - 15:01 修旧 Learning SGLang 第 6 章全部 9 步：统一 waiting 的新到、续块和撤回后重算，区分槽位／KV 接纳与本轮 token 预算，并补齐第 1–6、9 步中文手机大字图。全章中文 **9/9 步易读 12/12**，原分平均 **23.78/24**，**0 中文内容洞、0 最终显示洞**。第 1、7 步原 #1 各为 1；整步易读第 1–4 步为 11/12、第 5–9 步为 10/12，剩余是受保护英文 R4，第 7 步另有两个既有英文洞。
 - 教程改动逐步提交并推送，最后教程提交 `290886b`。终验冷读发现第 2 步手机连接线形成白色块状残留，删除多余线后复查通过。`build`、本章 `transcript`、本章中文三种宽度 `mobile`、整改步字号、`deep-check 06`、本章 `zh-check` 和 `git diff --check` 通过；`readability` 中文 0 问题，保留 14 个受保护英文机械问题。独立冷读 subagent 因 API key 不可用未运行，主线程换视角逐张冷读 18 张中文桌面／手机图。材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch06-repair-20261125-1440/final/`、`checks/`。本轮只跑本章检查，未跑全站回归。本轮类型：**修旧**；下一普通轮做新书。
 - 14:05 完成 Learning ML Systems 第 4 章全部 7 步：通信代价、SUM all-reduce、进程组、NCCL、物理链路、Ring 和拓扑导致的依赖等待。全章 **7/7 步易读 12/12**，中英原分均 **24/24**，平均 **24.00/24**，**0 内容洞、0 最终显示洞**。
@@ -99,7 +101,7 @@
 
 ## Learning ML Systems
 
-规划完成：`docs/plan-ml-sys.md` 共 3 部分、16 章；第 1 章已制作 7 步并完成，第 2 章已制作 2 步并完成，第 3 章已制作 6 步并完成，第 4 章已制作 7 步并完成。第 11 章须先补齐训推不一致的原始来源，缺源时先跳过。
+规划完成：`docs/plan-ml-sys.md` 共 3 部分、16 章；第 1 章已制作 7 步并完成，第 2 章已制作 2 步并完成，第 3 章已制作 6 步并完成，第 4 章已制作 7 步并完成，第 5 章已制作 7 步并完成。第 11 章须先补齐训推不一致的原始来源，缺源时先跳过。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
@@ -107,7 +109,7 @@
 | 02 | 02-inference-memory-budget | 完成：2/2 步易读满分 | 24.00 |
 | 03 | 03-hybrid-state-cache | 完成：6/6 步易读满分 | 24.00 |
 | 04 | 04-gpu-communication | 完成：7/7 步易读满分 | 24.00 |
-| 05 | 05-distributed-serving | 规划 | — |
+| 05 | 05-distributed-serving | 完成：7/7 步易读满分 | 24.00 |
 | 06 | 06-slime-rollout-loop | 规划 | — |
 | 07 | 07-weight-updates | 规划 | — |
 | 08 | 08-fsdp2-training-backend | 规划 | — |
