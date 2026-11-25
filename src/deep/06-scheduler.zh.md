@@ -89,8 +89,9 @@ $$
 - 左框「一个 prefill batch」：seq 1–3，各 18、27、11 个蓝色方块。方块代表 token；真实 prompt 有几百到几千个 token，图上画少了。
 - 左框文字：「序列少 · 各几百 token」「长短不齐」「专属 attention kernel · 受计算限制」「每个 batch 形状都不同」。
 - 右框「decode batch」：seq 1–16，各 1 个橙色方块。
-- 右框文字：「序列多 · 各一个 token」「只有 batch 大小变化」「另一个 attention kernel · 受内存限制」「每个 batch 大小一份录制 → CUDA graph 回放，第 11 章」。
-- 说明行「两种形状 → 两个 batch → 两条快路径」；脚注：拆分解锁独立机器（第 28 章）和 decode 用的 CUDA graph（第 11 章）。
+- 右框文字：「序列多 · 各一个 token」「只有 batch 大小变化」「另一个 attention kernel · 受内存限制」「每个 batch 大小一份录制 → 回放，第 11 章」。
+- 说明行「两种形状 → 两个 batch → 两条快路径」；脚注：拆分解锁独立机器（第 28 章）和 decode 的录制回放（第 11 章）。主流程先不引入 CUDA graph 这个名字，下面的「名词」再解释。
+- 中文手机图把两种形状排成上下两张大字卡：蓝卡画三条不同长度的 prompt，橙卡画八条序列各出一个 token；底部仍连到两条快路径。
 
 ### 用第 4 章第 8 步的分界点来看
 

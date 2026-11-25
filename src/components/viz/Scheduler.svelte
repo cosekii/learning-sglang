@@ -67,7 +67,7 @@
   const steps: Step[] = [
     { scene: 'recap', caption: `Ch. 5 Step 9 ended here: a newcomer's prefill stretching everyone's decode step. SGLang doesn't run the two together by default. They split the work into two kinds of batch and pick one each step. That's the scheduler.`, captionZh: `Ch. 5 Step 9 的新来者拉长了 decode 步。SGLang 默认每步只选 prefill 或 decode batch。` },
     { scene: 'lists', caption: `The engine keeps two lists. <b>Waiting</b>: new requests that need a prefill. <b>Running</b>: conversations mid-answer that need one more token. Each step runs one batch, from one list.`, captionZh: `<b>Waiting</b> 放等待 prefill 的 request；<b>Running</b> 放继续出 token 的 request。每步只从一个列表组 batch。` },
-    { scene: 'why', caption: `Same model, two shapes. Prefill: a few sequences, hundreds of tokens each, ragged. Decode: many sequences, one token each, every step. Two shapes, two batches; chapters ${CH_DISAGG} and ${CH_CUDA} show what that unlocks.`, captionZh: `同一模型，两种形状。Prefill：几条序列，各几百 token，长短不齐。Decode：许多序列，每步各一个 token。两种形状两个 batch；第 ${CH_DISAGG}、${CH_CUDA} 章讲这解锁了什么。` },
+    { scene: 'why', caption: `Same model, two shapes. Prefill: a few sequences, hundreds of tokens each, ragged. Decode: many sequences, one token each, every step. Two shapes, two batches; chapters ${CH_DISAGG} and ${CH_CUDA} show what that unlocks.`, captionZh: `同一模型有两种形状：prefill 算几条长序列，decode 让许多序列每步各出一个 token。两种 batch 各有快路径，第 ${CH_DISAGG}、${CH_CUDA} 章再讲。` },
     { scene: 'timeline', mode: 'prefill-first', caption: `The default policy: if anyone is waiting, run a prefill batch first. The newcomer's first token comes in ${fmt(M['prefill-first'].ttft)}, but nobody decodes during those ${fmt(M['prefill-first'].ttft)}. An 8k-token prompt, the longest Llama-3-8B takes, freezes everyone for ${fmt(stepMs(8192))}.`, captionZh: `默认策略：有人等待就先跑 prefill batch。新来者的首个 token 要 ${fmt(M['prefill-first'].ttft)}，但这 ${fmt(M['prefill-first'].ttft)} 里没人 decode。8k token 的 prompt（Llama-3-8B 的上限）会冻结所有人 ${fmt(stepMs(8192))}。` },
     { scene: 'timeline', mode: 'batched', caption: `It gets worse. Waiting prompts are batched into one prefill step, efficient for the GPU and awful for the decoders: three prompts, ${waitingTotal.toLocaleString()} tokens, one ${fmt(M.batched.ttft)} step. Every running conversation freezes for all of it.`, captionZh: `更糟的是，等待的 prompt 被合进一个 prefill 步：对 GPU 高效，对 decode 却糟糕：三个 prompt、${waitingTotal.toLocaleString()} 个 token、一个 ${fmt(M.batched.ttft)} 的步。所有运行中的对话全程冻结。` },
     { scene: 'timeline', mode: 'chunked', caption: `Cap the prefill batch. Split prompts into chunks and alternate: a chunk, a decode step, a chunk, a decode step. The freeze is now one chunk long, whatever the prompt's size. The first token arrives a little later.`, captionZh: `给 prefill batch 设上限。把 prompt 切成 chunk 并交替：一个 chunk、一个 decode 步、一个 chunk、一个 decode 步。现在无论 prompt 多大，冻结只有一个 chunk 长。首个 token 稍晚到达。`, foot: CHUNK_FOOT, footZh: CHUNK_FOOT_ZH },
@@ -97,14 +97,15 @@
   });
   const phoneRecap = $derived(phone && step === 0 && $lang === 'zh');
   const phoneLists = $derived(phone && step === 1 && $lang === 'zh');
+  const phoneWhy = $derived(phone && step === 2 && $lang === 'zh');
   const phoneMixed = $derived(phone && step === 6 && $lang === 'zh');
   const phoneCompare = $derived(phone && step === 7 && $lang === 'zh');
-  const phoneCustom = $derived(phoneRecap || phoneLists || phoneMixed || phoneCompare);
+  const phoneCustom = $derived(phoneRecap || phoneLists || phoneWhy || phoneMixed || phoneCompare);
 </script>
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox={phoneRecap ? '0 0 360 400' : phoneLists ? '0 0 360 570' : phoneMixed ? '0 0 360 550' : phoneCompare ? '0 0 360 500' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="The scheduler, step {step + 1}" class:phone-custom={phoneCustom}>
+    <svg viewBox={phoneRecap ? '0 0 360 400' : phoneLists ? '0 0 360 570' : phoneWhy ? '0 0 360 500' : phoneMixed ? '0 0 360 550' : phoneCompare ? '0 0 360 500' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="The scheduler, step {step + 1}" class:phone-custom={phoneCustom}>
 
       {#if phoneRecap}
         <text x="180" y="28" text-anchor="middle" class="ph-title">新来者让这一步变长</text>
@@ -156,6 +157,27 @@
         <text x="256" y="482" text-anchor="middle" class="ph-strong">decode batch</text>
         <text x="256" y="508" text-anchor="middle">从 running 选</text>
         <text x="180" y="556" text-anchor="middle" class="ph-strong">本步二选一，跑完再回来选</text>
+      {/if}
+
+      {#if phoneWhy}
+        <text x="180" y="28" text-anchor="middle" class="ph-title">同一模型，两种计算形状</text>
+        <rect x="16" y="52" width="328" height="184" rx="10" fill="#fbfaf7" stroke="var(--accent)" />
+        <text x="32" y="80" class="ph-strong">prefill batch · 处理 prompt</text>
+        <text x="32" y="110">几条序列，每条几百 token</text>
+        {#each [140, 220, 92] as w, i}
+          <text x="32" y={140 + i * 24}>seq {i + 1}</text>
+          <rect x="82" y={128 + i * 24} width={w} height="15" rx="3" fill="var(--accent)" opacity="0.85" />
+        {/each}
+        <text x="32" y="216">长短不齐 · 受计算限制 · 形状常变</text>
+        <rect x="16" y="256" width="328" height="164" rx="10" fill="#fbfaf7" stroke="var(--gen)" />
+        <text x="32" y="284" class="ph-strong">decode batch · 继续回答</text>
+        <text x="32" y="314">许多序列，每步各出一个 token</text>
+        {#each Array(8) as _, i}
+          <rect x={32 + i * 36} y="332" width="24" height="24" rx="4" fill="var(--gen)" opacity="0.85" />
+        {/each}
+        <text x="32" y="386">受内存限制 · 只有 batch 大小变化</text>
+        <text x="180" y="450" text-anchor="middle" class="ph-strong">两种形状 → 两个 batch → 两条快路径</text>
+        <text x="180" y="478" text-anchor="middle">独立机器见第 {CH_DISAGG} 章；录制回放见第 {CH_CUDA} 章</text>
       {/if}
 
       {#if phoneMixed}
@@ -320,11 +342,11 @@
           <text x="382" y="204" class="slab">{t('many sequences · one token each', '序列多 · 各一个 token')}</text>
           <text x="382" y="222" class="slab">{t('only the batch size changes', '只有 batch 大小变化')}</text>
           <text x="382" y="254" class="tag">{t('a different attention kernel · memory-bound', '另一个 attention kernel · 受内存限制')}</text>
-          <text x="382" y="274" class="tag">{t(`one recording per batch size → CUDA graph replay, chapter ${CH_CUDA}`, `每个 batch 大小一份录制 → CUDA graph 回放，第 ${CH_CUDA} 章`)}</text>
+          <text x="382" y="274" class="tag">{t(`one recording per batch size → CUDA graph replay, chapter ${CH_CUDA}`, `每个 batch 大小一份录制 → 回放，第 ${CH_CUDA} 章`)}</text>
 
           <g in:fade={{ delay: 900 }}>
             <text x="360" y="330" text-anchor="middle" class="legend">{t('two shapes → two batches → two fast paths', '两种形状 → 两个 batch → 两条快路径')}</text>
-            <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(`what the split unlocks: separate machines (chapter ${CH_DISAGG}), CUDA graphs for decode (chapter ${CH_CUDA})`, `拆分解锁：独立机器（第 ${CH_DISAGG} 章）、decode 用 CUDA graph（第 ${CH_CUDA} 章）`)}</text>
+            <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(`what the split unlocks: separate machines (chapter ${CH_DISAGG}), CUDA graphs for decode (chapter ${CH_CUDA})`, `拆分解锁：独立机器（第 ${CH_DISAGG} 章）、decode 的录制回放（第 ${CH_CUDA} 章）`)}</text>
           </g>
         </g>
       {/if}
