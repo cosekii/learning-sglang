@@ -10,6 +10,8 @@
     VOXT_ASR_FILE_PCM_BYTES,
     VOXT_ASR_FILE_SECONDS,
     VOXT_ASR_FILE_WAV_BYTES,
+    VOXT_ASR_JOIN_INSERTED_SPACES,
+    VOXT_ASR_JOIN_PIECE_COUNT,
     VOXT_ASR_ROUTE_COUNT,
     VOXT_ASR_SPLIT_MAX_SECONDS,
     VOXT_ASR_SPLIT_PAUSE_MS,
@@ -37,6 +39,9 @@
   }, {
     caption: 'Oversized audio is cut in a quiet part of the last quarter. Both pieces fit the upload limit.',
     captionZh: '超长录音在最后四分之一的安静处切开。两块都不超过上传上限。',
+  }, {
+    caption: 'Pieces are recognised in order. Adjacent English words are joined with one space.',
+    captionZh: '各块按顺序识别。英文相邻文字之间补一个空格。',
   }];
   const ariaLabels = [{
     en: 'One second of sound is 32000 bytes. A chooser selects one of three recognition routes: local Omni on this Mac, a configured remote ASR API, or macOS system dictation through the helper.',
@@ -50,6 +55,9 @@
   }, {
     en: 'A ten-second recording exceeds a nine-second upload limit. The algorithm searches the last quarter, from 6.75 to 9 seconds, for the quietest 100 milliseconds. It cuts inside a 300-millisecond pause at 8.5 seconds, producing two pieces.',
     zh: '十秒录音超过九秒上传上限。算法在六点七五到九秒的最后四分之一里寻找最安静的一百毫秒，在八点五秒开始的三百毫秒停顿中切开，得到两块。',
+  }, {
+    en: 'Piece one is recognised first as Good. Piece two is recognised next as morning. JoinText inserts one space between the English results, yielding Good morning in recording order.',
+    zh: '第一块先识别为 Good，第二块随后识别为 morning。JoinText 在两份英文结果之间补一个空格，按录音顺序得到 Good morning。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -202,6 +210,22 @@
       <text x={phone ? 150 : 520} y={phone ? 479 : 347} text-anchor="middle" class="result">{t('pause', '停顿')} → 10 s</text>
       <text x={W / 2} y={phone ? 550 : 410} text-anchor="middle" class="cut">{VOXT_ASR_SPLIT_PIECE_COUNT} {t('PIECES · EACH FITS THE 9-SECOND LIMIT', '块 · 每块都不超过 9 秒上限')}</text>
       <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Public test fixture; the exact cut depends on sound energy.', '公开测试例；实际切点由声音能量决定。')}</text>
+      {:else if step === 4}
+      <text x={W / 2} y="27" text-anchor="middle" class="title">{t('RECOGNISE IN ORDER · JOIN IN ORDER', '按顺序识别 · 按顺序接回文字')}</text>
+      <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('join = put the text back in recording order', '合并 = 按录音顺序把文字接回来')}</text>
+      <rect x={phone ? 35 : 55} y="80" width={phone ? 230 : 250} height="95" rx="9" fill="var(--bg)" stroke="var(--line)" />
+      <text x={phone ? 150 : 180} y="107" text-anchor="middle" class="label">{t('1 · RECOGNISE FIRST', '1 · 先识别第 1 块')}</text>
+      <text x={phone ? 150 : 180} y="148" text-anchor="middle" class="result">“Good”</text>
+      <line x1={phone ? 150 : 310} y1={phone ? 180 : 127} x2={phone ? 150 : 345} y2={phone ? 200 : 127} stroke="var(--muted)" stroke-width="2" marker-end="url(#asr-route-arrow)" />
+      <rect x={phone ? 35 : 415} y={phone ? 210 : 80} width={phone ? 230 : 250} height="95" rx="9" fill="var(--bg)" stroke="var(--line)" />
+      <text x={phone ? 150 : 540} y={phone ? 237 : 107} text-anchor="middle" class="label">{t('2 · RECOGNISE NEXT', '2 · 再识别第 2 块')}</text>
+      <text x={phone ? 150 : 540} y={phone ? 278 : 148} text-anchor="middle" class="result">“morning.”</text>
+      <text x={W / 2} y={phone ? 337 : 211} text-anchor="middle" class="cut">{t('KEEP THIS ORDER · ADD ONE ENGLISH SPACE', '保持这个顺序 · 英文之间补一个空格')}</text>
+      <line x1={W / 2} y1={phone ? 348 : 224} x2={W / 2} y2={phone ? 365 : 241} stroke="var(--muted)" stroke-width="2" marker-end="url(#asr-route-arrow)" />
+      <rect x={phone ? 35 : 160} y={phone ? 372 : 250} width={phone ? 230 : 400} height="76" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
+      <text x={W / 2} y={phone ? 397 : 274} text-anchor="middle" class="label amber">{t('JOINED FINAL TEXT', '合并后的文字')}</text>
+      <text x={W / 2} y={phone ? 430 : 307} text-anchor="middle" class="result">“Good morning.”</text>
+      <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{VOXT_ASR_JOIN_PIECE_COUNT} {t('pieces', '块')} · {VOXT_ASR_JOIN_INSERTED_SPACES} {t('inserted space', '个补充空格')}</text>
       {/if}
     </svg>
   </div>

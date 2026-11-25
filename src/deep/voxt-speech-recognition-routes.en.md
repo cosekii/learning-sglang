@@ -211,3 +211,57 @@ Public baseline: same as Step 1.
 - Last-quarter search, 100 ms quiet window and split loop: `Voxt/internal/asr/split.go:12-45`.
 - Ten-second, nine-second-limit and 8.5-second-pause test: `Voxt/internal/asr/split_test.go:13-33`.
 - WAV-header allowance and piece-transcription entry: `Voxt/internal/asr/split.go:47-65`.
+
+## Step 5 · Join piece text in recording order
+
+> **In one line:** Pieces are recognised one at a time and non-empty results go to `JoinText` in order; English receives a space, while scripts such as Chinese do not gain a forced space.
+
+### On the stage
+
+- Piece one returns “Good” before piece two returns “morning.” The code waits for each result before starting the next, so recognition cannot reorder them.
+- `JoinText` combines non-empty text in recording order. It does not reorder the words or recognise the audio again.
+- English uses spaces between words, so this boundary receives one space and becomes “Good morning.”
+- Orange marks the joined text. It is the file recognition's final text, not a replaceable streaming draft from Step 3.
+
+### Formula
+
+$$
+J=p_1\mathbin{\oplus_s}p_2
+$$
+
+| Symbol | Meaning | Where it comes from |
+|---|---|---|
+| $J$ | Joined text | `JoinText`'s return value |
+| $p_1$ | First piece's non-empty text | This example's “Good” |
+| $p_2$ | Second piece's non-empty text | This example's “morning.” |
+| $\oplus_s$ | Concatenate with a boundary-dependent separator | `JoinText`; here $s$ is one space |
+
+The separator is not always a space. No extra space is inserted next to Chinese, Japanese, Korean or other listed scripts written without spaces, or full-width punctuation. Existing whitespace is not duplicated.
+
+### The numbers on the stage
+
+| Quantity | Calculation | Result |
+|---|---|---:|
+| Non-empty text parts | Step 4's two pieces each return one | 2 parts |
+| English boundaries | $2-1$ | 1 boundary |
+| Inserted spaces | One at this English boundary | 1 space |
+| Joined text | $\text{Good}+\text{space}+\text{morning.}$ | Good morning. |
+
+A piece whose trimmed result is empty never enters `texts`, so it creates no extra separator. The remaining non-empty results stay in recording order.
+
+### Errors and scope
+
+If any piece returns an error, `TranscribeInPieces` returns that error immediately rather than presenting earlier pieces as a complete success. On success it also accumulates duration and keeps language and model information; the stage only shows text joining.
+
+This is the file-upload `TranscribeInPieces` route. Local Omni has separate `joinParts` and live-piece behavior, so this English-space example is not a universal text-processing rule.
+
+### Next
+
+The file route has now split and rejoined its recording. Next, return to local Omni from Step 1 and see why a full Final follows its live drafts.
+
+### Sources
+
+Public baseline: same as Step 1.
+
+- Ordered recognition, blank omission, error return and joining: `Voxt/internal/asr/split.go:47-80`.
+- English spaces and scripts without spaces: `Voxt/internal/asr/split.go:83-107`.

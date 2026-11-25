@@ -79,3 +79,7 @@ export const VOXT_ASR_SPLIT_PAUSE_MS = 300;
 export const VOXT_ASR_SPLIT_QUIET_MS = 100;
 export const VOXT_ASR_SPLIT_SEARCH_SECONDS = VOXT_ASR_SPLIT_MAX_SECONDS * 3 / 4;
 export const VOXT_ASR_SPLIT_PIECE_COUNT = 2;
+
+// The two non-empty English results need one inserted separator.
+export const VOXT_ASR_JOIN_PIECE_COUNT = VOXT_ASR_SPLIT_PIECE_COUNT;
+export const VOXT_ASR_JOIN_INSERTED_SPACES = VOXT_ASR_JOIN_PIECE_COUNT - 1;
