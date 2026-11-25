@@ -32,7 +32,7 @@ Read it to check wording and numbers across chapters without opening the compone
 | omni | 03 | [Request binding and exit](omni/03-request-binding.md) | 3 |
 | omni | 04 | [Three waiting rules](omni/04-readiness-contracts.md) | 2 |
 | ml-sys | 01 | [Measure one inference request](ml-sys/01-measure-inference.md) | 7 |
-| ml-sys | 02 | [The full GPU memory budget](ml-sys/02-inference-memory-budget.md) | 1 |
+| ml-sys | 02 | [The full GPU memory budget](ml-sys/02-inference-memory-budget.md) | 2 |
 | voxt | 01 | [The journey of one sentence](voxt/one-dictation.md) | 4 |
 | voxt | 02 | [Hotkeys and permissions](voxt/helper-permissions-hotkeys.md) | 3 |
 | voxt | 03 | [From microphone to audio frames](voxt/microphone-to-voice-frames.md) | 2 |

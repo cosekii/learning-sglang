@@ -4,6 +4,9 @@
 
 ## 本轮记录
 
+- 08:30 制作 Learning ML Systems 第 2 章第 2 步：用同一份 78 GB 预算说明启动保留的 CUDA Graph 缓冲与运行临时结果共用 11.7 GB 动态余量；主图只保留一个新术语，深入讲解补全公式、源码边界和延伸阅读。
+- 最终中英独立冷读在正常和遮住 caption 两种阅读下均为 **12/12、0 内容洞**，原 12 项 **24/24**。`build`、本章 `transcript`、本章及中文目标步 `mobile`、本步 `readability`、`deep-check 02`、`zh-check` 和 `git diff --check` 均通过；未跑全站手机回归。
+- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ml-ch02-s02-20261125-0830/final/` 和 `checks/`。本轮类型：**新书**；下一普通轮按交替规则修旧，下次整点仍轮换第 2 项「向好的范例学」。
 - 08:10 修旧 Learning SGLang 第 6 章第 7 步：15 个混合步改为依次淡入，再显示首个 token、图例和数字卡；直接加载不再叠上 recap 淡出。中文图补「每步约 300 token，300 − 64 = 236」，解释 chunk 从 512 变为 236。
 - 浏览器按实际 opacity 每 40 ms 采样，直接加载和 Step 6→7 的可见并发动画峰值均为 **1**，后者测到 18 个元素且结束无残留。独立成人模拟冷读中文 **12/12、0 内容洞、0 显示洞**；整步易读 **9→10/12**，原 12 项 **23/24**。受保护英文仍有 R4 两项机械失败及既有的 1 个内容洞、1 个手机显示洞，整步不标完成。
 - `build`、本章 `transcript`、本步中文 `mobile`、`deep-check 06`、本章 `zh-check`、英文画布像素一致性和 `git diff --check` 均通过；`readability` 只余英文首句 22 词、caption 超过两句。
@@ -65,12 +68,12 @@
 
 ## Learning ML Systems
 
-规划完成：`docs/plan-ml-sys.md` 共 3 部分、16 章；第 1 章已制作 7 步并完成，第 2 章已制作 1 步。第 11 章须先补齐训推不一致的原始来源，缺源时先跳过。
+规划完成：`docs/plan-ml-sys.md` 共 3 部分、16 章；第 1 章已制作 7 步并完成，第 2 章已制作 2 步并完成。第 11 章须先补齐训推不一致的原始来源，缺源时先跳过。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
 | 01 | 01-measure-inference | 完成：7/7 步易读满分 | 24.00 |
-| 02 | 02-inference-memory-budget | 在做第 2 步；第 1 步易读满分 | 24.00 |
+| 02 | 02-inference-memory-budget | 完成：2/2 步易读满分 | 24.00 |
 | 03 | 03-hybrid-state-cache | 规划 | — |
 | 04 | 04-gpu-communication | 规划 | — |
 | 05 | 05-distributed-serving | 规划 | — |

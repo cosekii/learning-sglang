@@ -71,3 +71,55 @@ SGLang 在分布式初始化后、模型装入前读取 `pre_model_load_memory`�
 ### 接下来
 
 接下来的问题是：激活和 CUDA Graph capture 实际会使用动态余量里的哪些空间？
+
+## 第 2 步 · 动态余量由谁使用
+
+**一句话。** 动态余量是静态分配外的预算，CUDA Graph 缓冲和激活都从这里占用空间，不是另一块可以分给 KV 的空闲显存。
+
+### 图上是什么
+
+- 顶部仍是第 1 步的 78 GB 预算：模型约 60 GB、KV 6.3 GB、动态余量 11.7 GB。动态余量从 23.4 GB 减到 11.7 GB，恰好减半。
+- 左侧是启动时的 CUDA Graph 录制：把 GPU 计算步骤记录下来，之后重放。图中的 `buffers` 是 CUDA Graph 的 `graph buffers`（缓冲），留着装这些计算的输入输出，运行时仍在；本步沿用第 1 步排除 LoRA 的范围，不展开特殊的提前分配。
+- 右侧是运行时算 token。图中的「临时的中间结果」叫 `activations`（激活），随模型和 batch 等配置变化。
+- 灰色斜线都标动态余量：顶部是预算，下两框是其中两类用途；蓝色只表示 KV。两项灰框的宽度不表示实测字节数。
+
+### 公式与符号
+
+设动态余量为 $R$，CUDA Graph 缓冲为 $G$，激活为 $A$。两项同时存活时，至少要满足：
+
+$$G+A\le R=(1-0.85)\times78$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $R$ | 静态分配外的动态余量 | 第 1 步，$(1-f)P$ |
+| $G$ | CUDA Graph 录制使用的缓冲 | 本步左图；没有实测数值 |
+| $A$ | 前向计算的中间结果 | 本步右图；没有实测数值 |
+
+图中的 $G+A\le R$ 是预算要求，不是 allocator 强制执行的分类配额。其他动态开销没有画入，所以满足这条式子也不保证一定不会 OOM。
+
+### 代入图上的数
+
+$$R=(1-0.85)\times78=11.7\ \mathrm{GB}$$
+
+因此本例画出 $G+A\le11.7\ \mathrm{GB}$。源码没有给这个教学例子的 $G$、$A$ 分项测量值，本步不编造两项各是多少 GB；11.7 GB 本身也是由约数预算算出的，不是独立内存池的实测容量。
+
+### 源码顺序与边界
+
+SGLang 依次装入模型、初始化 KV pool，再初始化并录制 CUDA Graph。`CudaGraphRunner` 为 capture 分配输入缓冲；graph capture 失败和运行中的动态分配失败都可能遇到显存不足。它们不同于第 1 步 KV 尺寸算不出正数时的启动配置错误。
+
+以下来源位于 `sglang@4fa3482`：
+
+- [显存账包含权重、KV pool、activations 和 CUDA Graph buffers：`python/sglang/srt/server_args.py:1227-1238`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/server_args.py#L1227-L1238)。
+- [模型、KV pool、device graph 的初始化顺序：`python/sglang/srt/model_executor/model_runner.py:567-569,673-677,709-713`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner.py#L673-L713)。
+- [capture 的输入缓冲和显存不足处理：`python/sglang/srt/model_executor/cuda_graph_runner.py:624-655`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L624-L655)。
+- [参数文档建议 OOM 时调小静态比例：`python/sglang/srt/server_args.py:4227-4232`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/server_args.py#L4227-L4232)。
+
+本步只讲两类动态用途，不给出各项实测值，也不讨论其他临时分配、多模态 encoder 预留、显存复用或 allocator 细节。
+
+### 延伸阅读
+
+- [zero-to-sglang 第 1 部分第 4 章：推理的核心数据结构](https://zero-to-sglang.datawhale.cc/ch/part1/%E7%AC%AC4%E7%AB%A0_%E6%8E%A8%E7%90%86%E7%9A%84%E6%A0%B8%E5%BF%83%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%85%A5%E9%97%A8.html) §4 比较了 KV cache 的长期占用和激活的临时占用。
+
+### 接下来
+
+下一步的问题是：KV pool 不够时，请求一定会让进程 OOM 吗？

@@ -71,3 +71,55 @@ Sources use `Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7` a
 ### Next
 
 The next question is: which parts of this headroom do activations and CUDA Graph capture actually use?
+
+## Step 2 · What uses dynamic headroom
+
+**One sentence.** Dynamic headroom is a budget outside static allocation, shared by CUDA Graph buffers and activations rather than spare memory available for KV.
+
+### What the diagram shows
+
+- The top keeps Step 1's 78 GB budget: about 60 GB for model loading, 6.3 GB for KV and 11.7 GB for dynamic headroom. Headroom falls from 23.4 to 11.7 GB, exactly half.
+- The left panel shows CUDA Graph capture at startup: record GPU steps once, then replay them. The panel's `buffers` are CUDA Graph `graph buffers`; they retain those computations' input and output data, so they remain at runtime. This step keeps Step 1's no-LoRA scope and excludes special preallocation paths.
+- The right panel shows token computation at runtime. Its temporary, intermediate results are called `activations`; their size varies with the model, batch and other configuration.
+- Gray hatching marks dynamic headroom throughout: an allowance at the top and two uses below. Blue marks only KV. The gray shapes' widths are not measured byte counts.
+
+### Formula and symbols
+
+Let $R$ be dynamic headroom, $G$ be CUDA Graph buffers and $A$ be activations. When both are live, they must at least satisfy:
+
+$$G+A\le R=(1-0.85)\times78$$
+
+| Symbol | Meaning | Origin |
+|---|---|---|
+| $R$ | Dynamic headroom outside static allocation | Step 1, $(1-f)P$ |
+| $G$ | Buffers used by CUDA Graph capture | Left panel; no measured value |
+| $A$ | Intermediate results from forward passes | Right panel; no measured value |
+
+The displayed $G+A\le R$ is a budget requirement, not a category quota enforced by the allocator. Other dynamic overhead is omitted, so this inequality alone cannot guarantee freedom from OOM.
+
+### Substitute the diagram's numbers
+
+$$R=(1-0.85)\times78=11.7\ \mathrm{GB}$$
+
+The example therefore shows $G+A\le11.7\ \mathrm{GB}$. The source does not measure $G$ and $A$ for this teaching example, so this step assigns no invented GB values to them. The 11.7 GB total also comes from rounded accounting; it is not the measured capacity of a separate memory pool.
+
+### Source order and scope
+
+SGLang loads the model, initializes the KV pool, then initializes and captures CUDA Graphs. `CudaGraphRunner` allocates input buffers for capture. Both capture failure and runtime dynamic-allocation failure can encounter insufficient memory. They differ from Step 1's startup configuration error when KV sizing produces no positive token capacity.
+
+Sources use `sglang@4fa3482`:
+
+- [The memory account includes weights, KV pool, activations and CUDA Graph buffers: `python/sglang/srt/server_args.py:1227-1238`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/server_args.py#L1227-L1238).
+- [Model, KV-pool and device-graph initialization order: `python/sglang/srt/model_executor/model_runner.py:567-569,673-677,709-713`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner.py#L673-L713).
+- [Capture input buffers and insufficient-memory handling: `python/sglang/srt/model_executor/cuda_graph_runner.py:624-655`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L624-L655).
+- [The parameter help recommends a smaller static fraction for OOM: `python/sglang/srt/server_args.py:4227-4232`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/server_args.py#L4227-L4232).
+
+This step covers only two dynamic uses. It does not provide measured shares or cover other temporary allocations, multimodal encoder reserves, memory reuse or allocator details.
+
+### Further reading
+
+- [zero-to-sglang Part I Chapter 4: KV Cache — The Core Data Structure of Inference](https://zero-to-sglang.datawhale.cc/eng/part1/Chapter4_KV%20Cache%20The%20Core%20Data%20Structure%20of%20Inference.html) §4 contrasts persistent KV-cache occupancy with temporary activations.
+
+### Next
+
+The next question is: does an insufficient KV pool necessarily make the process OOM?
