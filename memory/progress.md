@@ -4,6 +4,8 @@
 
 ## 本轮记录
 
+- 09:00 整点自主优化第 2 项「向好的范例学」：重读 zero-to-sglang 第 1 部分第 5 章，对照 Learning ML Systems 第 1 章的 7 步 transcript、深入讲解和评分卡。课程用「先定延迟目标 → 看分布 → 只数达标请求 → 再算有效吞吐」连接 Goodput 与 Throughput；现有第 7 步明确不展开 Goodput，已把未来新增第 8 步的具体图、算式和边界记为 Z26，并同步对照表。
+- 本轮只更新想法、对照表和记忆，不改教程；既有 7/7 步保持易读 **12/12**、原分 **24/24**、**0 冷读洞**。参考截图：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ml-sys-ch01-s07-20261124-2130/final/mlsys-ch01-s07-zh.png`；本地第 7 步 HTTP 200。本轮类型：**自主优化**；下一普通轮按交替规则修旧，下次整点轮换第 3 项「复盘自己」。
 - 08:30 制作 Learning ML Systems 第 2 章第 2 步：用同一份 78 GB 预算说明启动保留的 CUDA Graph 缓冲与运行临时结果共用 11.7 GB 动态余量；主图只保留一个新术语，深入讲解补全公式、源码边界和延伸阅读。
 - 最终中英独立冷读在正常和遮住 caption 两种阅读下均为 **12/12、0 内容洞**，原 12 项 **24/24**。`build`、本章 `transcript`、本章及中文目标步 `mobile`、本步 `readability`、`deep-check 02`、`zh-check` 和 `git diff --check` 均通过；未跑全站手机回归。
 - 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ml-ch02-s02-20261125-0830/final/` 和 `checks/`。本轮类型：**新书**；下一普通轮按交替规则修旧，下次整点仍轮换第 2 项「向好的范例学」。
