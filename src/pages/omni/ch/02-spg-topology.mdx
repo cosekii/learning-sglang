@@ -13,17 +13,17 @@ export const deep = await deepFor('omni-02-spg-topology');
 <details class="i18n-en">
 <summary>Where this chapter's claims come from</summary>
 
-Step 1 reads the shipped Qwen3-Omni replica configuration and the model's placement code in SGLang-Omni. It counts configured stage copies and GPUs; it does not measure latency or throughput. Step 2 compares the default and colocated process names for `talker_ar` and `code2wav`, without drawing their different GPU placements.
+Step 1 reads the shipped Qwen3-Omni replica configuration and the model's placement code in SGLang-Omni. It counts configured stage copies and GPUs; it does not measure latency or throughput. Step 2 compares the default and colocated process names for `talker_ar` and `code2wav`, without drawing their different GPU placements. Step 3 uses a minimal `thinker` example with `tp_size = 2` and `gpu = [0, 1]`; it counts logical stages, TP processes and GPUs without measuring memory or latency.
 
-Step 1 source revision: `sglang-omni origin/main@48ee40b2563492de95efc952a0c7470db087d8a9`. Step 2 source revision: `sglang-omni origin/main@92d72512197f9a0a4ef0583f8ea789cf50f316be`. The deep dive lists the exact files and lines.
+Step 1 source revision: `sglang-omni origin/main@48ee40b2563492de95efc952a0c7470db087d8a9`. Step 2 source revision: `sglang-omni origin/main@92d72512197f9a0a4ef0583f8ea789cf50f316be`. Step 3 source revision: `sglang-omni origin/main@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`. The deep dive lists the exact files and lines.
 
 </details>
 
 <details class="i18n-zh">
 <summary>本章说法的出处</summary>
 
-第 1 步读取 SGLang-Omni 自带的 Qwen3-Omni 多副本配置和模型 placement 代码，只数配置里的 stage 份数和 GPU 数量，没有测量延迟或吞吐量。第 2 步比较默认与 colocated 配置里 `talker_ar` 和 `code2wav` 的进程名，不画两种配置不同的 GPU 位置。
+第 1 步读取 SGLang-Omni 自带的 Qwen3-Omni 多副本配置和模型 placement 代码，只数配置里的 stage 份数和 GPU 数量，没有测量延迟或吞吐量。第 2 步比较默认与 colocated 配置里 `talker_ar` 和 `code2wav` 的进程名，不画两种配置不同的 GPU 位置。第 3 步使用 `tp_size = 2`、`gpu = [0, 1]` 的最小 `thinker` 例子，数逻辑 stage、TP 进程和 GPU，不测量显存或延迟。
 
-第 1 步源码版本：`sglang-omni origin/main@48ee40b2563492de95efc952a0c7470db087d8a9`。第 2 步源码版本：`sglang-omni origin/main@92d72512197f9a0a4ef0583f8ea789cf50f316be`。精确文件和行号见深入讲解。
+第 1 步源码版本：`sglang-omni origin/main@48ee40b2563492de95efc952a0c7470db087d8a9`。第 2 步源码版本：`sglang-omni origin/main@92d72512197f9a0a4ef0583f8ea789cf50f316be`。第 3 步源码版本：`sglang-omni origin/main@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`。精确文件和行号见深入讲解。
 
 </details>

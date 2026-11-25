@@ -18,6 +18,11 @@
     COLOCATED_SPEECH_SCHEDULER_COUNT,
     COLOCATED_SPEECH_SEPARATE_PROCESS_COUNT,
     COLOCATED_SPEECH_SHARED_PROCESS_COUNT,
+    TP_EXAMPLE_SIZE,
+    TP_EXAMPLE_STAGE_COUNT,
+    TP_EXAMPLE_GPU_IDS,
+    TP_EXAMPLE_PROCESS_COUNT,
+    TP_EXAMPLE_GPU_COUNT,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -28,6 +33,9 @@
   }, {
     caption: `Put talker_ar and code2wav in one process. Keep two stages and two schedulers; their hand-off can stay inside.`,
     captionZh: `把 talker_ar 和 code2wav 放进同一个进程。stage 和 scheduler 仍各有两个，交接可留在进程内。`,
+  }, {
+    caption: `tp_size = ${TP_EXAMPLE_SIZE} and gpu = [0, 1] make two processes share one stage's work. Each uses one GPU on the same request.`,
+    captionZh: `tp_size = ${TP_EXAMPLE_SIZE}、gpu = [0, 1] 让两个进程一起做一个 stage 的活儿。它们各用一张 GPU，处理同一个请求。`,
   }];
   let step = $state(0);
   $effect(() => {
@@ -43,7 +51,7 @@
     query.addEventListener('change', update);
     return () => query.removeEventListener('change', update);
   });
-  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 1 ? 810 : 850) : 480);
+  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 0 ? 850 : step === 1 ? 810 : 790) : 480);
   const panels = $derived(phone ? [
     { x: 15, y: 75, w: 270, h: 350, replica2: false },
     { x: 15, y: 440, w: 270, h: 350, replica2: true },
@@ -58,6 +66,13 @@
     { x: 20, y: 90, w: 325, h: 300, shared: false },
     { x: 375, y: 90, w: 325, h: 300, shared: true },
   ]);
+  const tpPanels = $derived(phone ? [
+    { x: 15, y: 100, w: 270, h: 290, tp: false },
+    { x: 15, y: 410, w: 270, h: 290, tp: true },
+  ] : [
+    { x: 20, y: 105, w: 325, h: 300, tp: false },
+    { x: 375, y: 105, w: 325, h: 300, tp: true },
+  ]);
   const otherStages = QWEN_SPEECH_DEFAULT_STAGE_PROCESSES.filter(({ stage }) => stage !== 'talker_ar' && stage !== 'code2wav');
   const replicated = QWEN_SPEECH_DEFAULT_STAGE_PROCESSES.filter(({ stage }) => stage === 'talker_ar' || stage === 'code2wav');
   const copies = (stage: string) => QWEN_SPEECH_REPLICA2_STAGE_PROCESSES.filter((process) => process.stage === stage);
@@ -66,7 +81,7 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={step === 0 ? 'First separate the speech stages: seven total processes and GPU ids 0 and 1, then add one copy of each: nine total processes and GPU ids 0, 1, and 2' : t('Two stages and two schedulers stay unchanged while two separate processes become one shared process', '两个 stage 和两个 scheduler 不变，两个独立进程变成一个共用进程')}>
+    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={step === 0 ? 'First separate the speech stages: seven total processes and GPU ids 0 and 1, then add one copy of each: nine total processes and GPU ids 0, 1, and 2' : step === 1 ? t('Two stages and two schedulers stay unchanged while two separate processes become one shared process', '两个 stage 和两个 scheduler 不变，两个独立进程变成一个共用进程') : t('tp_size two keeps one thinker stage and one request, while two processes on two GPUs share the work', 'tp_size 为 2 时，仍是一个 thinker stage 和同一个请求；两个进程各用一张 GPU，一起算')}>
       {#if step === 0}
       <text x={phone ? 15 : 30} y={phone ? 18 : 22} class="tag strong">copy = {t('one more process for the same stage', '同一个 stage 多一个进程')}</text>
       <text x={phone ? 15 : 30} y={phone ? 39 : 43} class="tag">{t('Two configs assign GPU positions; → marks a move.', '两种配置指定 GPU 位置；→ 表示换卡。')}</text>
@@ -115,7 +130,7 @@
       {/each}
       <text x={W / 2} y={H - 25} text-anchor="middle" class="footnote">{t('2 requests: 1 copy = one by one; 2 copies = at once.', '2 个请求同时来：1 份一个个做，2 份同时做。')}</text>
       <text x={W / 2} y={H - 9} text-anchor="middle" class="footnote">{t('Next: what changes when stages share a process?', '下一步：两个 stage 共用进程会怎样？')}</text>
-      {:else}
+      {:else if step === 1}
       <defs>
         <marker id="group-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
           <path d="M0,0 L7,3.5 L0,7 Z" fill="var(--muted)" />
@@ -167,6 +182,53 @@
       {/each}
       <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('Grouping changes process boundaries, not the stage list.', '分组只改进程边界，stage 名单不变。')}</text>
       <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Next: how can one stage use more than one GPU?', '下一步：一个 stage 怎样用多张 GPU？')}</text>
+      {:else}
+      <defs>
+        <marker id="tp-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+          <path d="M0,0 L7,3.5 L0,7 Z" fill="var(--muted)" />
+        </marker>
+      </defs>
+      <text x={phone ? 15 : 30} y="22" class="tag strong">TP = {t('processes computing one stage together', '多个进程一起做一个 stage 的活儿')}</text>
+      <text x={phone ? 15 : 30} y="44" class="tag">tp_size = {t('cooperating process count for one stage', '一起做一个 stage 活儿的进程数')}</text>
+      <rect x={phone ? 15 : 30} y="59" width="11" height="11" rx="2" fill="var(--gen-soft)" stroke="var(--gen)" />
+      <text x={phone ? 32 : 48} y="69" class="tag strong">{t('process + GPU', '进程 + GPU')}</text>
+      <rect x={phone ? 145 : 235} y="59" width="11" height="11" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
+      <text x={phone ? 162 : 253} y="69" class="tag strong">{t('stage + scheduler', 'stage + scheduler')}</text>
+
+      {#each tpPanels as panel}
+        {@const innerX = panel.x + 18}
+        {@const innerW = panel.w - 36}
+        {@const cardW = (innerW - 10) / 2}
+        {@const centerX = panel.x + panel.w / 2}
+        <rect x={panel.x} y={panel.y} width={panel.w} height={panel.h} rx="12" fill="var(--bg)" stroke="var(--line)" />
+        <text x={innerX} y={panel.y + 23} class="rowlabel">tp_size = {panel.tp ? TP_EXAMPLE_SIZE : 1} · gpu = {panel.tp ? '[0, 1]' : '0'}</text>
+        <rect x={centerX - 85} y={panel.y + 42} width="170" height="34" rx="9" fill="white" stroke="var(--line)" />
+        <text x={centerX} y={panel.y + 64} text-anchor="middle" class="legend strong">{t('request A · same input', '同一个请求 A')}</text>
+
+        {#each (panel.tp ? TP_EXAMPLE_GPU_IDS : [0]) as gpu, j}
+          {@const x = panel.tp ? innerX + j * (cardW + 10) : centerX - cardW / 2}
+          {@const targetX = x + cardW / 2}
+          {#if !panel.tp || j === 0}
+            <line x1={centerX} y1={panel.y + 76} x2={targetX} y2={panel.y + 96} stroke="var(--muted)" stroke-width="1.4" marker-end="url(#tp-arrow)" />
+          {/if}
+          <rect {x} y={panel.y + 100} width={cardW} height="120" rx="9" fill="var(--gen-soft)" fill-opacity="0.35" stroke="var(--gen)" stroke-width="1.6" />
+          <text x={x + 8} y={panel.y + 119} class="tag strong">{t('process', '进程')} {j + 1} · GPU {gpu}</text>
+          <rect x={x + 7} y={panel.y + 130} width={cardW - 14} height="50" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.3" />
+          <text x={x + 14} y={panel.y + 149} class="mono strong">thinker</text>
+          <text x={x + 14} y={panel.y + 167} class="tag">{t('stage + scheduler', 'stage + scheduler')}</text>
+          <text x={x + 8} y={panel.y + 203} class="tag strong">{t('request A', '请求 A')}</text>
+        {/each}
+
+        {#if panel.tp}
+          <line x1={innerX + cardW / 2} y1={panel.y + 220} x2={innerX + cardW / 2} y2={panel.y + 230} stroke="var(--muted)" />
+          <line x1={innerX + cardW / 2} y1={panel.y + 230} x2={innerX + cardW + 10 + cardW / 2} y2={panel.y + 230} stroke="var(--muted)" marker-end="url(#tp-arrow)" />
+          <line x1={innerX + cardW + 10 + cardW / 2} y1={panel.y + 220} x2={innerX + cardW + 10 + cardW / 2} y2={panel.y + 230} stroke="var(--muted)" />
+        {/if}
+        <text x={centerX} y={panel.y + 250} text-anchor="middle" class="tag strong">{panel.tp ? t('process 1 shares work · compute together', '进程 1 分活 · 两个进程一起算') : t('same request · one process computes', '同一个请求 · 一个进程算')}</text>
+        <text x={centerX} y={panel.y + 274} text-anchor="middle" class="legend strong">{panel.tp ? t(`${TP_EXAMPLE_STAGE_COUNT} stage · ${TP_EXAMPLE_PROCESS_COUNT} processes · ${TP_EXAMPLE_GPU_COUNT} GPUs`, `${TP_EXAMPLE_STAGE_COUNT} 个 stage · ${TP_EXAMPLE_PROCESS_COUNT} 个进程 · ${TP_EXAMPLE_GPU_COUNT} 张 GPU`) : t('1 stage · 1 process · 1 GPU', '1 个 stage · 1 个进程 · 1 张 GPU')}</text>
+      {/each}
+      <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('Same request on every GPU; not different request copies.', '每张 GPU 都算同一个请求，不是各算不同请求。')}</text>
+      <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Next: Step 1 made copies; which copy takes a request?', '下一步：第 1 步有多份进程，请求该去哪一份？')}</text>
       {/if}
     </svg>
   </div>

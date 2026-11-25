@@ -82,3 +82,10 @@ export const QWEN_SPEECH_DEFAULT_GPU_IDS = gpuIds(QWEN_SPEECH_DEFAULT_STAGE_PROC
 export const QWEN_SPEECH_REPLICA2_GPU_IDS = gpuIds(QWEN_SPEECH_REPLICA2_STAGE_PROCESSES);
 export const QWEN_SPEECH_DEFAULT_GPU_COUNT = QWEN_SPEECH_DEFAULT_GPU_IDS.length;
 export const QWEN_SPEECH_REPLICA2_GPU_COUNT = QWEN_SPEECH_REPLICA2_GPU_IDS.length;
+
+// A minimal tensor-parallel layout: one logical stage, one process per rank.
+export const TP_EXAMPLE_SIZE = 2;
+export const TP_EXAMPLE_STAGE_COUNT = 1;
+export const TP_EXAMPLE_GPU_IDS = Array.from({ length: TP_EXAMPLE_SIZE }, (_, rank) => rank);
+export const TP_EXAMPLE_PROCESS_COUNT = TP_EXAMPLE_SIZE;
+export const TP_EXAMPLE_GPU_COUNT = TP_EXAMPLE_GPU_IDS.length;

@@ -115,3 +115,63 @@ $$P_{\text{shared}}=|\{\texttt{talker\_ar}\}|=1$$
 ### 接下来
 
 下一步看一个 stage 怎样通过张量并行使用多张 GPU；第 3 章再讲请求怎样选定并释放一个副本。
+
+## 第 3 步 · 一个 stage 用上两张 GPU
+
+> **一句话：** `thinker` 仍是一个逻辑 stage；`tp_size = 2`、`gpu = [0, 1]` 把它展开成两个 rank 进程，各用一张 GPU，一起处理同一个请求。
+
+### 图上是什么
+
+- 左右两边都只有 `thinker` 一个逻辑 stage 和请求 A。左图 `tp_size = 1`，一个进程使用 GPU 0；右图 `tp_size = 2`，两个进程分别使用 GPU 0、1。这个拓扑背后，每个 rank 各存一部分模型权重；权重是模型已经学好、计算时要用的数字。
+- 橙框是 OS 进程，蓝框里的 stage 和 scheduler 都保留。scheduler 负责安排这个进程的计算工作。右边蓝框写了两次 `thinker`，但它们是同一个逻辑 stage 的两个 rank，不是两个 stage，也不是第 1 步的两个独立副本。**rank** 是 TP 组内的进程编号。
+- 请求 A 先交给进程 1，也就是 rank 0。进程 1 再把同一份工作分给另一个 rank；两个 rank 对同一批输入做各自的局部计算，并在模型计算中交换部分结果。图下的箭头表示分活与一起算，不表示只在最后通信一次。
+- 每个 rank 各有一个 OS 进程、一个 scheduler 和一套 model runner。这个最小例子只有一个 TP 进程组、一个副本，并且每个 rank 使用一张不同的 GPU。
+
+### 公式
+
+$$S=1,\qquad P=C=T,\qquad |G|=T,\qquad T=\texttt{tp\_size}$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $S$ | 逻辑 stage 数 | 本步只有 `thinker` |
+| $T$ | 一个 TP 组的 rank 数 | 配置 `stages.thinker.tp_size` |
+| $P$ | 这个 TP 组的 OS 进程数 | 每 rank 展开一个进程 |
+| $C$ | scheduler 数 | 每 rank 各构造一个 |
+| $G$ | 这个 TP 组使用的 GPU 编号集合 | 配置 `stages.thinker.gpu` |
+
+这些等式只描述本步的单组、单副本例子。$P$ 不是完整模型所有进程的总数，$|G|$ 也不是完整服务使用的全部 GPU 数。
+
+### 代入图上的数
+
+左图：
+
+$$T=1,\qquad S=1,\qquad P=C=1,\qquad G=\{0\}$$
+
+右图：
+
+$$T=2,\qquad S=1,\qquad P=C=2,\qquad G=\{0,1\}$$
+
+所以逻辑 stage 仍是 1，进程和 scheduler 都从 1 变 2，GPU 编号从 `{0}` 变 `{0, 1}`。这些数由配置展开得到，不是性能实测。
+
+### 这和复制有什么不同
+
+第 1 步复制整个独立进程，不同副本可以处理不同请求。本步把一个 TP stage 的权重和计算分到多个 rank，它们共同处理同一个请求。两种配置都会增加进程，不能只看进程数判断用了哪一种。
+
+本图不声称显存恰好减半或速度翻倍。权重切分有模型结构约束，其他状态和缓冲区也不一定平分；TP 还需要跨 rank 通信。这里只讲拓扑，不测量显存或延迟。
+
+### 边界与出处
+
+配置先让一个 TP stage 独占一个逻辑进程，再把这个逻辑进程展开成 $T$ 个 OS 进程；`tp_size > 1` 时，`gpu` 必须给出 $T$ 个不同的 GPU 编号。拓扑层允许声明 TP，但具体 stage 的模型实现也必须支持它。本例选用有 TP 入口的 Qwen3-Omni `thinker`，不把同一个例子套到所有 stage。
+
+以下来源位于 `sglang-omni origin/main@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`，另有其固定的 SGLang 版本：
+
+- [`tp_size` 默认值与范围：`sglang_omni/config/schema.py:405-438`](https://github.com/sgl-project/sglang-omni/blob/52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84/sglang_omni/config/schema.py#L405-L438)；[TP 的 GPU 列表校验：同文件 `:511-529`](https://github.com/sgl-project/sglang-omni/blob/52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84/sglang_omni/config/schema.py#L511-L529)。
+- [TP stage 独占 logical process：`sglang_omni/config/schema.py:1294-1305`](https://github.com/sgl-project/sglang-omni/blob/52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84/sglang_omni/config/schema.py#L1294-L1305)；[逐 rank 进程名：`sglang_omni/config/topology.py:365-397`](https://github.com/sgl-project/sglang-omni/blob/52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84/sglang_omni/config/topology.py#L365-L397)。
+- [rank、GPU 和 leader 的展开：`sglang_omni/pipeline/mp_runner.py:449-530`](https://github.com/sgl-project/sglang-omni/blob/52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84/sglang_omni/pipeline/mp_runner.py#L449-L530)；[每 rank 启动独立进程：`stage_workers.py:422-477`](https://github.com/sgl-project/sglang-omni/blob/52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84/sglang_omni/pipeline/stage_workers.py#L422-L477)。
+- [每 rank 构造 stage：`stage_workers.py:886-903`](https://github.com/sgl-project/sglang-omni/blob/52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84/sglang_omni/pipeline/stage_workers.py#L886-L903) 和 [scheduler：同文件 `:1043-1052`](https://github.com/sgl-project/sglang-omni/blob/52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84/sglang_omni/pipeline/stage_workers.py#L1043-L1052)；[rank 0 对外交接并分发工作：`docs/developer_reference/config.md:369-381`](https://github.com/sgl-project/sglang-omni/blob/52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84/docs/developer_reference/config.md#L369-L381)。
+- [`thinker` 接收并传递 `tp_size`：`sglang_omni/models/qwen3_omni/stages.py:1230-1237,1287-1288`](https://github.com/sgl-project/sglang-omni/blob/52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84/sglang_omni/models/qwen3_omni/stages.py#L1230-L1237)；[固定的 `sglang==0.5.23`：`pyproject.toml:23-36`](https://github.com/sgl-project/sglang-omni/blob/52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84/pyproject.toml#L23-L36)。
+- SGLang `v0.5.23`（commit `297e54fd105e974cdf401e5b4d20253a22c16f90`）的 [ColumnParallelLinear 按 `tp_size` 分权重：`python/sglang/srt/layers/linear.py:469-499`](https://github.com/sgl-project/sglang/blob/297e54fd105e974cdf401e5b4d20253a22c16f90/python/sglang/srt/layers/linear.py#L469-L499) 和 [RowParallelLinear 的局部计算与 all-reduce：同文件 `:1751-1756,1784-1811`](https://github.com/sgl-project/sglang/blob/297e54fd105e974cdf401e5b4d20253a22c16f90/python/sglang/srt/layers/linear.py#L1751-L1811)。本步不展开各层具体切法。
+
+### 接下来
+
+第 3 章回到第 1 步的多个独立副本：请求怎样选定一份、一直绑定它，并在完成或取消后释放绑定。

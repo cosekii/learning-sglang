@@ -4,12 +4,12 @@
 
 ## 本轮记录
 
-- 本轮修旧：Learning ML Systems 第 1 章第 4 步，手机顶部补回桌面已有的「同一个请求 · 全程要等多久？」，让读者先知道这张图在量什么，再读 E2E 的起点、终点和算式。
-- 独立冷读复核易读 **12/12**、原分 **23→24/24**、**0 洞**；手机原 #1 恢复 2 分，章均分 **23.75→24.00**。桌面 caption、数值和深入讲解均未改。
-- `build`、本章 `transcript`、本步 `readability`、本章三种宽度的中英手机布局、本步中文手机字号、`deep-check 01`、`zh-check`、数字断言、课程链接和 `git diff --check` 均通过；中英桌面、中文手机和双语深入讲解截图均已打开核对。
-- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-repair-20261124-1622/mlsys/final/` 和 `checks/`。
+- 本轮新书：Learning SGLang Omni 第 2 章第 3 步，用 `tp_size = 2`、`gpu = [0, 1]` 对照一个 stage 的一个进程／GPU 与两个 rank 进程／GPU，保持同一个请求；深入讲解补全展开规则、调度器职责和固定源码出处。
+- 首轮独立冷读为 **10/12、22/24、3 洞**；把权重移出主图并补白话定义、说明 scheduler 和逻辑进程展开关系、改掉「合算」后，最终复核为 **12/12、24/24、0 洞**。本章 3 步均易读满分，章均分保持 **24.00**。
+- `build`、本章 `transcript`、本步 `readability`、全站及本步中英 `mobile`、`deep-check 02`、`zh-check`、数字断言、13 个来源链接、键盘翻页和 `git diff --check` 均通过；中英桌面、手机和双语深入讲解截图均已打开核对。
+- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-omni-ch02-s03-20261124-1633/final/` 和 `checks/`。未启动多 GPU 模型或测量显存、延迟。
 - 第 1 本第 14 章第 9、11、12 步仍受保护英文长句阻挡，第 12 步另有 backend 时效性问题；未提交半成品，已记入 `docs/ideas.md` 的「待主人定」。
-- 本轮类型：**修旧**；下一普通轮转为**新书**。
+- 本轮类型：**新书**；下一普通轮转为**修旧**。
 
 ## Learning SGLang
 
@@ -47,12 +47,12 @@
 
 ## Learning SGLang Omni
 
-规划完成：`docs/plan-omni.md` 共 3 部分、13 章；第 1 章已制作 4 步并完成，第 2 章已制作第 1、2 步。
+规划完成：`docs/plan-omni.md` 共 3 部分、13 章；第 1 章已制作 4 步并完成，第 2 章已制作 3 步并完成。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
 | 01 | 01-config-to-runtime | 完成：4/4 步易读满分 | 24.00 |
-| 02 | 02-spg-topology | 在做第 3 步；第 1、2 步易读满分 | 24.00 |
+| 02 | 02-spg-topology | 完成：3/3 步易读满分 | 24.00 |
 | 03 | 03-request-binding | 规划 | — |
 | 04 | 04-readiness-contracts | 规划 | — |
 | 05 | 05-data-lifetime | 规划 | — |
