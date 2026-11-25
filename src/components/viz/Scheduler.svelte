@@ -68,7 +68,7 @@
     { scene: 'recap', caption: `Ch. 5 Step 9 ended here: a newcomer's prefill stretching everyone's decode step. SGLang doesn't run the two together by default. They split the work into two kinds of batch and pick one each step. That's the scheduler.`, captionZh: `Ch. 5 Step 9 的新来者拉长了 decode 步。SGLang 默认每步只选 prefill 或 decode batch。` },
     { scene: 'lists', caption: `The engine keeps two lists. <b>Waiting</b>: new requests that need a prefill. <b>Running</b>: conversations mid-answer that need one more token. Each step runs one batch, from one list.`, captionZh: `<b>Waiting</b> 放等待 prefill 的 request；<b>Running</b> 放继续出 token 的 request。每步只从一个列表组 batch。` },
     { scene: 'why', caption: `Same model, two shapes. Prefill: a few sequences, hundreds of tokens each, ragged. Decode: many sequences, one token each, every step. Two shapes, two batches; chapters ${CH_DISAGG} and ${CH_CUDA} show what that unlocks.`, captionZh: `两种形状：prefill 算几条长序列；decode 让许多序列每步各出一个 token。两种 batch 各有快路径，第 ${CH_DISAGG}、${CH_CUDA} 章再讲。` },
-    { scene: 'timeline', mode: 'prefill-first', caption: `The default policy: if anyone is waiting, run a prefill batch first. The newcomer's first token comes in ${fmt(M['prefill-first'].ttft)}, but nobody decodes during those ${fmt(M['prefill-first'].ttft)}. An 8k-token prompt, the longest Llama-3-8B takes, freezes everyone for ${fmt(stepMs(8192))}.`, captionZh: `默认策略：有人等待就先跑 prefill batch。新来者的首个 token 要 ${fmt(M['prefill-first'].ttft)}，但这 ${fmt(M['prefill-first'].ttft)} 里没人 decode。8k token 的 prompt（Llama-3-8B 的上限）会冻结所有人 ${fmt(stepMs(8192))}。` },
+    { scene: 'timeline', mode: 'prefill-first', caption: `The default policy: if anyone is waiting, run a prefill batch first. The newcomer's first token comes in ${fmt(M['prefill-first'].ttft)}, but nobody decodes during those ${fmt(M['prefill-first'].ttft)}. An 8k-token prompt, the longest Llama-3-8B takes, freezes everyone for ${fmt(stepMs(8192))}.`, captionZh: `有人等待就先跑 prefill：新来者 ${fmt(M['prefill-first'].ttft)} 拿到首个 token，其他人暂停 decode。8k prompt 会把最长间隔拉到 ${fmt(stepMs(8192))}。` },
     { scene: 'timeline', mode: 'batched', caption: `It gets worse. Waiting prompts are batched into one prefill step, efficient for the GPU and awful for the decoders: three prompts, ${waitingTotal.toLocaleString()} tokens, one ${fmt(M.batched.ttft)} step. Every running conversation freezes for all of it.`, captionZh: `更糟的是，等待的 prompt 被合进一个 prefill 步：对 GPU 高效，对 decode 却糟糕：三个 prompt、${waitingTotal.toLocaleString()} 个 token、一个 ${fmt(M.batched.ttft)} 的步。所有运行中的对话全程冻结。` },
     { scene: 'timeline', mode: 'chunked', caption: `Cap the prefill batch. Split prompts into chunks and alternate: a chunk, a decode step, a chunk, a decode step. The freeze is now one chunk long, whatever the prompt's size. The first token arrives a little later.`, captionZh: `给 prefill batch 设上限。把 prompt 切成 chunk 并交替：一个 chunk、一个 decode 步、一个 chunk、一个 decode 步。现在无论 prompt 多大，冻结只有一个 chunk 长。首个 token 稍晚到达。`, foot: CHUNK_FOOT, footZh: CHUNK_FOOT_ZH },
     { scene: 'timeline', mode: 'mixed', caption: `Once prefill comes in chunks, a chunk is small enough to ride inside a decode step, on compute the decodes leave idle. No freeze at all, first token in ${fmt(M.mixed.ttft)}. Sarathi-Serve's idea, vLLM v1's default, SGLang's mixed-chunk option.`, captionZh: `chunk 搭进 decode 步，其他人每步都出 token。最长间隔由 ${fmt(tMem)} 增至 ${fmt(M.mixed.worst)}，新来者的首个 token 要 ${fmt(M.mixed.ttft)}。` },
@@ -98,14 +98,15 @@
   const phoneRecap = $derived(phone && step === 0 && $lang === 'zh');
   const phoneLists = $derived(phone && step === 1 && $lang === 'zh');
   const phoneWhy = $derived(phone && step === 2 && $lang === 'zh');
+  const phoneTimeline = $derived(phone && step >= 3 && step <= 5 && $lang === 'zh');
   const phoneMixed = $derived(phone && step === 6 && $lang === 'zh');
   const phoneCompare = $derived(phone && step === 7 && $lang === 'zh');
-  const phoneCustom = $derived(phoneRecap || phoneLists || phoneWhy || phoneMixed || phoneCompare);
+  const phoneCustom = $derived(phoneRecap || phoneLists || phoneWhy || phoneTimeline || phoneMixed || phoneCompare);
 </script>
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox={phoneRecap ? '0 0 360 400' : phoneLists ? '0 0 360 570' : phoneWhy ? '0 0 360 500' : phoneMixed ? '0 0 360 550' : phoneCompare ? '0 0 360 500' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="The scheduler, step {step + 1}" class:phone-custom={phoneCustom}>
+    <svg viewBox={phoneRecap ? '0 0 360 400' : phoneLists ? '0 0 360 570' : phoneWhy ? '0 0 360 500' : phoneTimeline ? (mode === 'chunked' ? '0 0 360 560' : '0 0 360 360') : phoneMixed ? '0 0 360 550' : phoneCompare ? '0 0 360 500' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="The scheduler, step {step + 1}" class:phone-custom={phoneCustom}>
 
       {#if phoneRecap}
         <text x="180" y="28" text-anchor="middle" class="ph-title">新来者让这一步变长</text>
@@ -178,6 +179,38 @@
         <text x="32" y="386">受内存限制 · 只有 batch 大小变化</text>
         <text x="180" y="450" text-anchor="middle" class="ph-strong">两种形状 → 两个 batch → 两条快路径</text>
         <text x="180" y="478" text-anchor="middle">独立机器见第 {CH_DISAGG} 章；录制回放见第 {CH_CUDA} 章</text>
+      {/if}
+
+      {#if phoneTimeline}
+        {@const mid = segs.filter((s) => s.prefill > 0)}
+        {@const summaryY = 190 + (mid.length - 1) * 56}
+        <text x="180" y="28" text-anchor="middle" class="ph-title">{mode === 'prefill-first' ? 'prefill 优先：先算新 prompt' : mode === 'batched' ? '三个 prompt 合成一个 prefill 步' : '切 chunk，并与 decode 交替'}</text>
+        <text x="180" y="52" text-anchor="middle">64 个用户在 decode · {mode === 'batched' ? '三个 prompt 共 4,600 token' : '新 prompt 有 2,000 token'}</text>
+        <rect x="16" y="66" width="16" height="12" rx="2" fill="var(--accent)" />
+        <text x="40" y="77">prefill：其他人等待</text>
+        <rect x="190" y="66" width="16" height="12" rx="2" fill="var(--gen)" />
+        <text x="214" y="77">decode：出 token</text>
+        <text x="140" y="110" text-anchor="middle" class="ph-strong">prefill token</text>
+        <text x="272" y="110" text-anchor="middle" class="ph-strong">decode</text>
+        {#each mid as s, i}
+          {@const y = 126 + i * 56}
+          <text x="16" y={y + 21}>{mode === 'chunked' ? `第 ${i + 1} 块` : '新 prompt'}</text>
+          <rect x="80" y={y} width="120" height="32" rx="5" fill="var(--accent)" />
+          <text x="140" y={y + 21} text-anchor="middle" class="ph-onblue">{mode === 'prefill-first' ? '2,000' : mode === 'batched' ? '4,600' : s.label}</text>
+          <rect x="216" y={y} width="112" height="32" rx="5" fill="var(--gen)" opacity="0.85" />
+          <text x="272" y={y + 21} text-anchor="middle">各出 token</text>
+          {#if i === mid.length - 1}<circle cx="200" cy={y + 16} r="6" fill="white" stroke="var(--fg)" stroke-width="2" />{/if}
+        {/each}
+        <text x="180" y={summaryY} text-anchor="middle">白圈：新来者的首个 token</text>
+        <rect x="16" y={summaryY + 14} width="328" height={mode === 'chunked' ? 108 : 134} rx="9" fill="#fbfaf7" stroke="var(--line)" />
+        <text x="30" y={summaryY + 42} class="ph-strong">其他人最长间隔 {fmt(met.worst)}</text>
+        <text x="30" y={summaryY + 68}>= prefill {fmt(mid[0].ms)} + decode {fmt(tMem)}</text>
+        <text x="30" y={summaryY + 94}>新来者首个 token {fmt(met.ttft)}</text>
+        {#if mode === 'prefill-first'}<text x="30" y={summaryY + 122}>8k prompt：最长间隔 {fmt(stepMs(8192))}</text>{/if}
+        {#if mode === 'chunked'}
+          <text x="180" y="520" text-anchor="middle">SGLang 默认连续跑同一 prompt 的 chunk</text>
+          <text x="180" y="546" text-anchor="middle">交替需 --prefill-decode-interval 1</text>
+        {/if}
       {/if}
 
       {#if phoneMixed}

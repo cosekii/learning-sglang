@@ -126,6 +126,7 @@ $$
 - 「步类型」色条：每一步是哪种 batch（蓝 = prefill batch，橙 = decode batch，上蓝下橙 = 混合 batch）。
 - 上方红色括号「37 ms 没有 token」。
 - 两个数字块：「其他人 · token 间最长间隔」37 ms（红框），「新来者 · 首个 token 用时」32 ms。
+- 中文手机图把这一步拆成蓝、橙两列：蓝块是 2,000 个 prefill token，期间其他人等待；白圈标出新来者的首个 token，橙块才让其他人继续出 token。底部直接写出 37 ms = 32 ms + 4.8 ms。
 
 ### 公式
 
