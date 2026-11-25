@@ -97,3 +97,41 @@ $$S_t=U(S_{t-1},x_t)$$
 既然历史位置没有自动留下副本，就在选定位置主动抄一份 state，形成 checkpoint。
 
 来源：`Awesome-ML-SYS-Tutorial/engineer/hybrid-prefix-cache/readme.md:93-165`；llama.cpp `7e4c0a96880dae4fc4268ad441f8a6446bd5460a` 的 `src/llama-memory-recurrent.cpp:170-189`、`common/common.h:970-975`。
+
+## 第 4 步 · 从最近的可用 checkpoint 重放
+
+**一句话。** checkpoint 主动保存某个位置的整份 state；新请求从不超过匹配末尾的最新副本恢复，再算到新的 prompt 末尾。
+
+### 图上是什么
+
+- 蓝线是新旧请求相同的 5,514 个 token。橙色段是新 prompt 末尾前的重放范围，红色旧尾部副本越过了匹配位置，不能使用。
+- 5,514 是理想的续算位置，但这里没有 state 副本。最新可用副本在 4,536，所以引擎先恢复该点，再处理到 5,558。
+- 位置间距不按 token 数成比例。1,022 是图上位置相减的结果；原文日志写「约 1,020 个重算 token」，两者口径不同，本步不把约数改成精确等式。
+
+### 公式与符号
+
+$$D=E-M,\qquad C\approx E-P,\qquad P\le M$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $E$ | 新 prompt 的末尾位置 | 日志例，5,558 |
+| $M$ | 新旧请求的共同前缀末尾 | 日志例，5,514 |
+| $P$ | 最新可用 checkpoint 的位置 | 日志例，4,536 |
+| $D$ | 新尾部包含的 token 数 | $E-M$ |
+| $C$ | 从 checkpoint 到末尾的重算量 | $E-P$ 的近似 |
+
+### 代入图上的数
+
+$$D=5{,}558-5{,}514=44$$
+
+$$5{,}558-4{,}536=1{,}022\ \text{个位置}\quad\Longrightarrow\quad C\approx1{,}020\ \text{个 token}$$
+
+因此约 1,020 个重算 token 中只有 44 个属于新尾部，约 $1{,}020-44=976$ 个是已经走过的位置。llama.cpp 恢复时从后往前找 checkpoint，并拒绝 `cur.pos_max > pos_next` 的点；这就是旧尾部副本不能用的源码依据。
+
+原文对 `num_batch` 与回退距离的精确关系保留了两处未解释之处。本步只使用日志、位置减法和已核对的恢复条件，不把「约等于一个 batch」写成普遍定律。
+
+### 接下来
+
+全注意力本来可以在 5,514 裁剪，recurrent state 却要到 4,536 恢复。下一步看 hybrid 模型怎样让两类 layer 对齐。
+
+来源：`Awesome-ML-SYS-Tutorial/engineer/hybrid-prefix-cache/readme.md:139-165,202-221,385-458`；llama.cpp `7e4c0a96880dae4fc4268ad441f8a6446bd5460a` 的 `tools/server/server-context.cpp:3253-3288`。

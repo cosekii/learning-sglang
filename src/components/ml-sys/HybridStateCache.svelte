@@ -4,7 +4,7 @@
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
-  import { HYBRID_SYSTEM_TOKENS, HYBRID_NUM_BATCH_DEFAULT, HYBRID_NUM_BATCH_TUNED, HYBRID_SHORT_WAIT_DEFAULT_S, HYBRID_SHORT_WAIT_TUNED_S, HYBRID_WAIT_SAVED_S, HYBRID_WAIT_RATIO, HYBRID_RECOMPUTE_DEFAULT_MIN, HYBRID_RECOMPUTE_DEFAULT_MAX, HYBRID_RECOMPUTE_TUNED_MIN, HYBRID_RECOMPUTE_TUNED_MAX, HYBRID_COLD_DEFAULT_S, HYBRID_COLD_TUNED_S, HYBRID_COLD_EXTRA_S, HYBRID_USER_TOKENS, HYBRID_PROMPT_TOKENS, HYBRID_FULL_ATTENTION_NEW_TOKENS } from '../../ml-sys/numbers';
+  import { HYBRID_SYSTEM_TOKENS, HYBRID_NUM_BATCH_DEFAULT, HYBRID_NUM_BATCH_TUNED, HYBRID_SHORT_WAIT_DEFAULT_S, HYBRID_SHORT_WAIT_TUNED_S, HYBRID_WAIT_SAVED_S, HYBRID_WAIT_RATIO, HYBRID_RECOMPUTE_DEFAULT_MIN, HYBRID_RECOMPUTE_DEFAULT_MAX, HYBRID_RECOMPUTE_TUNED_MIN, HYBRID_RECOMPUTE_TUNED_MAX, HYBRID_COLD_DEFAULT_S, HYBRID_COLD_TUNED_S, HYBRID_COLD_EXTRA_S, HYBRID_USER_TOKENS, HYBRID_PROMPT_TOKENS, HYBRID_FULL_ATTENTION_NEW_TOKENS, HYBRID_LOG_MATCH_TOKENS, HYBRID_LOG_END_TOKENS, HYBRID_LOG_CHECKPOINT_TOKENS, HYBRID_LOG_REPLAY_POSITIONS, HYBRID_LOG_RECOMPUTE_APPROX, HYBRID_LOG_NEW_TOKENS, HYBRID_LOG_EXTRA_APPROX } from '../../ml-sys/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
@@ -17,6 +17,9 @@
   }, {
     caption: `A recurrent state is one fixed-size summary, updated by every token. Once the old tail joins it, token ${HYBRID_SYSTEM_TOKENS.toLocaleString()}’s version was not saved.`,
     captionZh: `recurrent state 是一份定长摘要，每个 token 都更新它。旧 user 并入后，第 ${HYBRID_SYSTEM_TOKENS.toLocaleString()} 个 token 时的摘要没有另存。`,
+  }, {
+    caption: `A checkpoint copies the whole state at one position. Restore at ${HYBRID_LOG_CHECKPOINT_TOKENS.toLocaleString()} and replay about ${HYBRID_LOG_RECOMPUTE_APPROX.toLocaleString()} tokens to reach ${HYBRID_LOG_END_TOKENS.toLocaleString()}.`,
+    captionZh: `checkpoint 把某个位置的整份 state 抄下来。从 ${HYBRID_LOG_CHECKPOINT_TOKENS.toLocaleString()} 恢复，再重放约 ${HYBRID_LOG_RECOMPUTE_APPROX.toLocaleString()} 个 token 到 ${HYBRID_LOG_END_TOKENS.toLocaleString()}。`,
   }];
   let step = $state(0);
   $effect(() => {
@@ -150,7 +153,7 @@
           <text x="150" y="409" text-anchor="middle" class="small">{t('blue = reuse · orange = compute', '蓝 = 复用 · 橙 = 计算')}</text>
         {/if}
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('Block widths are schematic.', '色块宽度是示意。')}</text>
-      {:else}
+      {:else if step === 2}
         {#if !phone}
           <text x="38" y="30" class="title">{t('Recurrent state · one running summary', 'recurrent state · 一份不断更新的摘要')}</text>
           <text x="38" y="55" class="label">{t('fixed-size state · every token updates the same copy', '定长 state · 每个 token 都更新同一份')}</text>
@@ -207,8 +210,71 @@
           <text x="150" y="374" text-anchor="middle" class="small">{t('current state already includes old 40', '当前 state 已包含旧 40')}</text>
         {/if}
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('Earlier states require separately saved copies.', '更早的 state 需要另外保存副本。')}</text>
+      {:else}
+        {#if !phone}
+          <text x="38" y="30" class="title">{t('Checkpoint · copy the whole state at one position', 'checkpoint · 抄下某个位置的整份 state')}</text>
+          <text x="38" y="55" class="label">{t('restore the newest copy that does not pass the token match', '恢复不越过 token 匹配位置的最新副本')}</text>
+          <line x1="50" y1="140" x2="430" y2="140" stroke="var(--accent)" stroke-width="7" />
+          <line x1="430" y1="140" x2="670" y2="140" stroke="var(--gen)" stroke-width="7" />
+          <text x="50" y="169" text-anchor="middle" class="small">0</text>
+
+          <path d="M192 103 h16 v25 l-8 -5 -8 5 z" fill="var(--fg)" />
+          <text x="200" y="89" text-anchor="middle" class="small strong">{t('saved state', '已存 state')}</text>
+          <line x1="200" y1="129" x2="200" y2="151" stroke="var(--fg)" stroke-width="2" />
+          <text x="200" y="169" text-anchor="middle" class="batch">{HYBRID_LOG_CHECKPOINT_TOKENS.toLocaleString()}</text>
+
+          <line x1="430" y1="104" x2="430" y2="153" stroke="var(--accent)" stroke-width="3" />
+          <text x="430" y="89" text-anchor="middle" class="small strong">{t('match ends · no copy', '匹配结束 · 没有副本')}</text>
+          <text x="430" y="169" text-anchor="middle" class="batch">{HYBRID_LOG_MATCH_TOKENS.toLocaleString()}</text>
+
+          <text x="490" y="124" text-anchor="middle" class="small">{HYBRID_LOG_NEW_TOKENS} {t('new', '新增')}</text>
+          <path d="M563 122 l14 14 M577 122 l-14 14" stroke="var(--eos)" stroke-width="3" />
+          <text x="570" y="99" text-anchor="middle" class="small unavailable">{t('old-tail copy', '旧尾部副本')}</text>
+          <text x="570" y="169" text-anchor="middle" class="small unavailable">{t('rejected', '不可用')}</text>
+          <text x="570" y="190" text-anchor="middle" class="small">{t('after match', '越过匹配')}</text>
+
+          <line x1="660" y1="119" x2="660" y2="153" stroke="var(--fg)" stroke-width="2" />
+          <text x="660" y="99" text-anchor="middle" class="small strong">{t('new end', '新末尾')}</text>
+          <text x="660" y="169" text-anchor="middle" class="batch">{HYBRID_LOG_END_TOKENS.toLocaleString()}</text>
+
+          <line x1="200" y1="215" x2="660" y2="215" stroke="var(--gen)" stroke-width="4" />
+          <path d="M660,215 l-13,-8 v16 z" fill="var(--gen)" />
+          <text x="430" y="246" text-anchor="middle" class="result">{HYBRID_LOG_END_TOKENS.toLocaleString()} − {HYBRID_LOG_CHECKPOINT_TOKENS.toLocaleString()} = {HYBRID_LOG_REPLAY_POSITIONS.toLocaleString()} {t('positions', '个位置')}</text>
+          <text x="430" y="274" text-anchor="middle" class="small">{t('log: about', '日志：约')} {HYBRID_LOG_RECOMPUTE_APPROX.toLocaleString()} {t('recomputed tokens', '个重算 token')}</text>
+          <text x="430" y="299" text-anchor="middle" class="small">{HYBRID_LOG_NEW_TOKENS} {t('new', '新增')} + ≈{HYBRID_LOG_EXTRA_APPROX} {t('revisited', '个重走')}</text>
+          <rect x="90" y="316" width="540" height="43" rx="10" fill="var(--bg)" stroke="var(--line)" />
+          <text x="360" y="343" text-anchor="middle" class="small strong">{t('restore at 4,536 · replay through 5,558', '从 4,536 恢复 · 重放到 5,558')}</text>
+        {:else}
+          <text x="18" y="27" class="title">{t('Checkpoint', 'checkpoint')}</text>
+          <text x="18" y="51" class="small">{t('a copy of the whole state at one position', '某个位置的整份 state 副本')}</text>
+          <text x="18" y="76" class="small strong">{t('match: first 5,514 tokens same', '匹配：前 5,514 个 token 相同')}</text>
+
+          <line x1="25" y1="136" x2="175" y2="136" stroke="var(--accent)" stroke-width="6" />
+          <line x1="175" y1="136" x2="275" y2="136" stroke="var(--gen)" stroke-width="6" />
+          <text x="25" y="160" text-anchor="middle" class="small">0</text>
+          <path d="M63 104 h14 v22 l-7 -5 -7 5 z" fill="var(--fg)" />
+          <text x="70" y="94" text-anchor="middle" class="small">{t('saved', '已存')}</text>
+          <text x="70" y="181" text-anchor="middle" class="batch">{HYBRID_LOG_CHECKPOINT_TOKENS.toLocaleString()}</text>
+          <line x1="175" y1="107" x2="175" y2="148" stroke="var(--accent)" stroke-width="3" />
+          <text x="165" y="98" text-anchor="middle" class="small">{t('no copy', '无副本')}</text>
+          <text x="175" y="160" text-anchor="middle" class="batch">{HYBRID_LOG_MATCH_TOKENS.toLocaleString()}</text>
+          <text x="230" y="105" text-anchor="middle" class="small">{HYBRID_LOG_NEW_TOKENS} {t('new', '新增')}</text>
+          <path d="M218 127 l14 14 M232 127 l-14 14" stroke="var(--eos)" stroke-width="3" />
+          <text x="225" y="181" text-anchor="middle" class="small unavailable">{t('old copy ×', '旧副本 ×')}</text>
+          <text x="225" y="202" text-anchor="middle" class="small">{t('after match', '越过匹配')}</text>
+          <text x="275" y="160" text-anchor="middle" class="batch">{HYBRID_LOG_END_TOKENS.toLocaleString()}</text>
+
+          <line x1="70" y1="224" x2="270" y2="224" stroke="var(--gen)" stroke-width="4" />
+          <path d="M270,224 l-12,-7 v14 z" fill="var(--gen)" />
+          <text x="150" y="253" text-anchor="middle" class="result">{HYBRID_LOG_END_TOKENS.toLocaleString()} − {HYBRID_LOG_CHECKPOINT_TOKENS.toLocaleString()} = {HYBRID_LOG_REPLAY_POSITIONS.toLocaleString()}</text>
+          <text x="150" y="280" text-anchor="middle" class="small">≈{HYBRID_LOG_RECOMPUTE_APPROX.toLocaleString()} {t('recomputed tokens in log', '个重算 token（日志）')}</text>
+          <text x="150" y="304" text-anchor="middle" class="small">{HYBRID_LOG_NEW_TOKENS} {t('new', '新增')} + ≈{HYBRID_LOG_EXTRA_APPROX} {t('revisited', '个重走')}</text>
+          <text x="150" y="341" text-anchor="middle" class="small strong">{t('restore newest usable copy', '恢复最新可用副本')}</text>
+          <text x="150" y="366" text-anchor="middle" class="small">{t('then replay to the new prompt end', '再重放到新 prompt 末尾')}</text>
+        {/if}
+        <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('Positions are schematic; 1,022 is position arithmetic.', '位置间距是示意；1,022 是位置算式。')}</text>
       {/if}
-      <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{step === 0 ? t('Selected article measurements; not this computer.', '选自原文实测，不是本机实测。') : step === 1 ? t('Simplified article example; Ch. 8 Steps 2–3 covers matching.', '原文简化例；匹配见 Ch. 8 Steps 2–3。') : t('llama.cpp: previous per-token states are not preserved here.', 'llama.cpp：这里没有保存此前的逐 token state。')}</text>
+      <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{step === 0 ? t('Selected article measurements; not this computer.', '选自原文实测，不是本机实测。') : step === 1 ? t('Simplified article example; Ch. 8 Steps 2–3 covers matching.', '原文简化例；匹配见 Ch. 8 Steps 2–3。') : step === 2 ? t('llama.cpp: previous per-token states are not preserved here.', 'llama.cpp：这里没有保存此前的逐 token state。') : t('Logged article example; recomputation stays approximate.', '原文日志例；重算 token 保留约数。')}</text>
     </svg>
   </div>
   <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh}

@@ -97,3 +97,41 @@ Gated DeltaNet also erases and gates information during its update. This chapter
 The engine can explicitly copy the state at selected positions. The next step calls each copy a checkpoint and replays from the newest usable one.
 
 Sources: `Awesome-ML-SYS-Tutorial/engineer/hybrid-prefix-cache/readme.md:93-165`; llama.cpp `7e4c0a96880dae4fc4268ad441f8a6446bd5460a`, `src/llama-memory-recurrent.cpp:170-189` and `common/common.h:970-975`.
+
+## Step 4 · Replay from the newest usable checkpoint
+
+**One sentence.** A checkpoint saves the whole state at one position; a new request restores the newest copy that does not pass the match, then computes to the new prompt end.
+
+### On the stage
+
+- The blue line marks 5,514 matching tokens. Orange marks replay to the new prompt end. The red old-tail checkpoint passes the match and cannot be used.
+- Position 5,514 would be the ideal resume point, but no state copy exists there. The newest usable copy is at 4,536, so processing resumes there and continues to 5,558.
+- Distances are schematic. Subtracting positions gives 1,022, while the article's log says about 1,020 recomputed tokens. This step keeps the logged value approximate.
+
+### Formula and symbols
+
+$$D=E-M,\qquad C\approx E-P,\qquad P\le M$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $E$ | End position of the new prompt | Logged example: 5,558 |
+| $M$ | End of the common prefix | Logged example: 5,514 |
+| $P$ | Newest usable checkpoint position | Logged example: 4,536 |
+| $D$ | Tokens in the new tail | $E-M$ |
+| $C$ | Approximate recomputation from checkpoint to end | Approximation of $E-P$ |
+
+### The numbers on the stage
+
+$$D=5{,}558-5{,}514=44$$
+
+$$5{,}558-4{,}536=1{,}022\ \text{positions}\quad\Longrightarrow\quad C\approx1{,}020\ \text{tokens}$$
+
+Only 44 of the roughly 1,020 recomputed tokens belong to the new tail. About $1{,}020-44=976$ revisit earlier positions. During restore, llama.cpp searches checkpoints in reverse and rejects any with `cur.pos_max > pos_next`, which rules out the old-tail copy.
+
+The article documents two unresolved gaps in its exact `num_batch` reconstruction. This step uses only the log, position subtraction and the verified restore condition; it does not turn “about one batch” into a universal law.
+
+### Next
+
+Full attention could truncate at 5,514, while recurrent state must restore at 4,536. The next step aligns both layer kinds in one hybrid model.
+
+Sources: `Awesome-ML-SYS-Tutorial/engineer/hybrid-prefix-cache/readme.md:139-165,202-221,385-458`; llama.cpp `7e4c0a96880dae4fc4268ad441f8a6446bd5460a`, `tools/server/server-context.cpp:3253-3288`.
