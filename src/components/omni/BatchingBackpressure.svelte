@@ -24,6 +24,18 @@
     REFERENCE_ENCODER_LATE_ID,
     REFERENCE_ENCODER_FIRST_BATCH_COUNT,
     REFERENCE_ENCODER_EMPTY_SLOTS,
+    AUDIO_BATCH_MAX_SIZE,
+    AUDIO_BATCH_WAIT_MS,
+    AUDIO_MAX_MEL_FRAMES,
+    AUDIO_FULL_CHUNK_MEL_FRAMES,
+    AUDIO_FULL_CHUNK_COUNT,
+    AUDIO_A_MEL_FRAMES,
+    AUDIO_B_MEL_FRAMES,
+    AUDIO_C_MEL_FRAMES,
+    AUDIO_AB_MEL_FRAMES,
+    AUDIO_ABC_MEL_FRAMES,
+    AUDIO_REMAINING_MEL_FRAMES,
+    AUDIO_OVERFLOW_MEL_FRAMES,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -37,6 +49,9 @@
   }, {
     caption: 'A, B and C are already queued, so one encoder call takes all three. D arrives too late for this call.',
     captionZh: 'A、B、C 都已在队列，一次 encoder 调用就带走三条。D 到得晚，只能等下一次。',
+  }, {
+    caption: 'A and B use 21,000 frames. C crosses the 24,000-frame budget, so it waits despite free slots.',
+    captionZh: 'A、B 已占 21000 帧，C 会超过 24000 帧预算。条数没满，C 也等下一批。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -52,7 +67,7 @@
     query.addEventListener('change', update);
     return () => query.removeEventListener('change', update);
   });
-  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 2 ? 610 : 680) : step === 1 ? 450 : step === 2 ? 460 : 410);
+  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 2 ? 610 : 680) : step === 2 ? 460 : step > 0 ? 450 : 410);
   const panels = $derived([
     { x: phone ? 15 : 20, y: phone ? 82 : 86, wait: 0 },
     { x: phone ? 15 : 375, y: phone ? 330 : 86, wait: BATCH_WAIT_ACTIVE_MS },
@@ -60,6 +75,10 @@
   const arPanels = $derived([
     { x: phone ? 15 : 20, y: phone ? 82 : 86, title: t('ROUND 1 · A and B unfinished', '第 1 轮 · A、B 未完成'), running: AR_ROUND_ONE_RUNNING_IDS, waiting: AR_ROUND_ONE_WAITING_IDS },
     { x: phone ? 15 : 375, y: phone ? 340 : 86, title: t('ROUND 2 · A finished', '第 2 轮 · A 已结束'), running: AR_ROUND_TWO_RUNNING_IDS, waiting: [] },
+  ]);
+  const costPanels = $derived([
+    { x: phone ? 15 : 20, y: phone ? 82 : 86, accepted: true, title: t('THIS BATCH · A + B fit', '这一批 · A + B 装得下') },
+    { x: phone ? 15 : 375, y: phone ? 330 : 86, accepted: false, title: t('TRY ADDING C · over budget', '试着加入 C · 超出预算') },
   ]);
 </script>
 
@@ -174,6 +193,38 @@
       <text x={W / 2} y={phone ? 544 : 404} text-anchor="middle" class="tag strong">{phone ? t('Default: one per call · batching needs hook support', '默认一次一条；batch 还需要 hook 支持') : t('Three results need three encode calls with the shipped cap of one; batching also requires hook support.', '出厂上限为 1 时，三条结果要三次 encode；启用 batch 还需要 hook 支持。')}</text>
       <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{t('This service drains ready requests; it does not retain an AR running batch.', '这个服务只取现成请求，不保留 AR 的 running batch。')}</text>
       <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Next: a cost budget can leave a large request for the next batch.', '下一步：成本预算怎样把大请求留给下一批。')}</text>
+      {:else if step === 3}
+      <text x={phone ? 15 : 20} y="20" class="tag strong">SimpleScheduler · max_batch_cost = {t('a second limit beside request count', '条数之外的第二个上限')}</text>
+      <text x={phone ? 15 : 20} y="44" class="tag">{phone ? t('MiniCPM-o audio: cap 8 · wait 0 ms', 'MiniCPM-o 音频：上限 8 条 · 等待 0 ms') : `MiniCPM-o audio_encoder · max_batch_size = ${AUDIO_BATCH_MAX_SIZE} · max_batch_wait_ms = ${AUDIO_BATCH_WAIT_MS}`}</text>
+      <text x={phone ? 15 : 20} y="66" class="tag">max_batch_mel_frames = {AUDIO_MAX_MEL_FRAMES} · {t('mel frame = one small sound column', 'mel 帧 = 一小格声音特征')}</text>
+      {#each costPanels as panel}
+        {@const barW = phone ? 238 : 280}
+        {@const scale = panel.accepted ? AUDIO_MAX_MEL_FRAMES : AUDIO_ABC_MEL_FRAMES}
+        <rect x={panel.x} y={panel.y} width={phone ? 270 : 325} height="222" rx="12" fill="var(--bg)" stroke={panel.accepted ? 'var(--accent)' : 'var(--gen)'} stroke-width={panel.accepted ? 2 : 1} />
+        <text x={panel.x + 14} y={panel.y + 25} class="rowlabel">{panel.title}</text>
+        <text x={panel.x + 14} y={panel.y + 49} class="tag">{panel.accepted ? t('2 / 8 request slots used', '用了 2 / 8 个请求位置') : t('3 ≤ 8 · request count still fits', '3 ≤ 8 · 条数仍然装得下')}</text>
+        <rect x={panel.x + 16} y={panel.y + 65} width={barW * AUDIO_A_MEL_FRAMES / scale} height="46" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <rect x={panel.x + 16 + barW * AUDIO_A_MEL_FRAMES / scale} y={panel.y + 65} width={barW * AUDIO_B_MEL_FRAMES / scale} height="46" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+        {#if !panel.accepted}
+          <rect x={panel.x + 16 + barW * AUDIO_AB_MEL_FRAMES / scale} y={panel.y + 65} width={barW * AUDIO_C_MEL_FRAMES / scale} height="46" rx="5" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <path d="M{panel.x + 16 + barW * AUDIO_MAX_MEL_FRAMES / scale} {panel.y + 58} V{panel.y + 120}" stroke="var(--gen)" stroke-width="2" stroke-dasharray="4 3" />
+          <text x={panel.x + 16 + barW * AUDIO_MAX_MEL_FRAMES / scale} y={panel.y + 137} text-anchor="middle" class="tag strong">{AUDIO_MAX_MEL_FRAMES} {t('limit', '上限')}</text>
+        {:else}
+          <rect x={panel.x + 16 + barW * AUDIO_AB_MEL_FRAMES / scale} y={panel.y + 65} width={barW * AUDIO_REMAINING_MEL_FRAMES / scale} height="46" rx="3" fill="white" stroke="var(--faint)" stroke-dasharray="3 3" />
+          <text x={panel.x + 16} y={panel.y + 137} class="tag">{AUDIO_REMAINING_MEL_FRAMES} {t('frames left · not enough for C', '帧剩余 · 装不下 C')}</text>
+        {/if}
+        <text x={panel.x + 16 + barW * AUDIO_A_MEL_FRAMES / scale / 2} y={panel.y + 94} text-anchor="middle" class="mono strong">A · {AUDIO_A_MEL_FRAMES}</text>
+        <text x={panel.x + 16 + barW * (AUDIO_A_MEL_FRAMES + AUDIO_B_MEL_FRAMES / 2) / scale} y={panel.y + 94} text-anchor="middle" class="mono strong">B · {AUDIO_B_MEL_FRAMES}</text>
+        {#if !panel.accepted}
+          <text x={panel.x + 16 + barW * (AUDIO_AB_MEL_FRAMES + AUDIO_C_MEL_FRAMES / 2) / scale} y={panel.y + 94} text-anchor="middle" class="mono strong">C · {AUDIO_C_MEL_FRAMES}</text>
+        {/if}
+        <text x={panel.x + (phone ? 135 : 162)} y={panel.y + 169} text-anchor="middle" class="mono strong">{panel.accepted ? `${AUDIO_A_MEL_FRAMES} + ${AUDIO_B_MEL_FRAMES} = ${AUDIO_AB_MEL_FRAMES}` : `${AUDIO_AB_MEL_FRAMES} + ${AUDIO_C_MEL_FRAMES} = ${AUDIO_ABC_MEL_FRAMES}`}</text>
+        <text x={panel.x + (phone ? 135 : 162)} y={panel.y + 198} text-anchor="middle" class="tag strong">{panel.accepted ? t(`collect A + B · ${AUDIO_REMAINING_MEL_FRAMES} frames left`, `收集 A + B · 还剩 ${AUDIO_REMAINING_MEL_FRAMES} 帧`) : t('keep C in pending_messages · stop', 'C 留回 pending_messages · 停止收集')}</text>
+      {/each}
+      <text x={W / 2} y={phone ? 586 : 340} text-anchor="middle" class="mono strong">{AUDIO_ABC_MEL_FRAMES} − {AUDIO_MAX_MEL_FRAMES} = {AUDIO_OVERFLOW_MEL_FRAMES} {t('frames too many', '帧超出')}</text>
+      <text x={W / 2} y={phone ? 612 : 366} text-anchor="middle" class="tag">{AUDIO_FULL_CHUNK_COUNT} × {AUDIO_FULL_CHUNK_MEL_FRAMES} = {AUDIO_MAX_MEL_FRAMES} · {t('the real budget admits eight full 30-second chunks', '真实预算可容纳八段完整的 30 秒音频')}</text>
+      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{t('A, B and C use teaching costs; 15,000 + 6,000 + 6,000 is not a benchmark.', 'A、B、C 是教学成本；15000 + 6000 + 6000 不是实测数据。')}</text>
+      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Next: streaming chunks need a different batch path from one-shot requests.', '下一步：流式 chunk 需要不同于一次性请求的成批路径。')}</text>
       {/if}
     </svg>
   </div>

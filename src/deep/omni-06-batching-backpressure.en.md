@@ -162,3 +162,66 @@ Line numbers refer to `origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`.
 ### Next
 
 Step 4 adds a mel-frame cost to each request. A request can wait for the next batch even when the request-count cap has room, if admitting it would exceed the cost budget.
+
+## Step 4 · The frame budget can fill before the request count
+
+> **In one sentence:** A and B cost 21,000 frames and C would raise the total to 27,000; three requests fit the count cap of eight, but C still waits for the next batch.
+
+### What the picture shows
+
+- The top line shows MiniCPM-o `audio_encoder`'s real configuration: at most eight requests, zero deliberate collection delay and at most 24,000 charged mel frames per batch.
+- A mel frame is one small column of sound features. This budget limits the batch's accounted work rather than merely counting requests.
+- The teaching example charges A for five full windows and B and C for two each. At 3,000 frames per full window, their costs are 15,000, 6,000 and 6,000.
+- The left panel collects A and B for 21,000 frames, leaving 3,000. The right panel tries C, reaching 27,000 and crossing the dashed 24,000-frame limit.
+- The scheduler returns C to the head of `pending_messages` and ends this collection. Both the request-count and frame-cost limits must pass.
+
+### Work through the numbers
+
+Let a full window's charged frames be $F=3000$. A, B and C contain five, two and two charged windows:
+
+$$C_A=5F=15000,\qquad C_B=2F=6000,\qquad C_C=2F=6000$$
+
+Collecting only A and B gives:
+
+$$C_{AB}=C_A+C_B=15000+6000=21000\leq24000$$
+
+Adding C would give:
+
+$$C_{ABC}=C_{AB}+C_C=21000+6000=27000>24000$$
+
+The overflow is:
+
+$$O=C_{ABC}-24000=27000-24000=3000$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $F$ | Charged frames in one full audio window | 3,000 frames in the current configuration comment |
+| $C_A,C_B,C_C$ | Scheduling costs of the three teaching requests | Five, two and two full windows times 3,000 |
+| $C_{AB}$ | Combined cost of A and B | 15,000 plus 6,000 |
+| $C_{ABC}$ | Hypothetical cost of all three | 21,000 plus 6,000 |
+| $O$ | Frames by which three would exceed the budget | 27,000 minus 24,000 |
+
+The five, two and two windows are teaching values. The real budget equals $8\times3000=24000$ full-window frames. This does not mean every eight short requests fill it, or that frame count is strictly proportional to latency.
+
+### Where the cost comes from
+
+`request_mel_frame_cost()` builds the encoder request. A request that skips encoding costs zero; every other request is charged its window count times the maximum window frames. Charging full windows deliberately bounds work after cross-request padding instead of summing only valid sound lengths.
+
+`create_encoder_executor()` passes this function to `SimpleScheduler` as `request_cost_fn` and passes `max_batch_mel_frames` as `max_batch_cost`. During actual batch compute, inputs of different lengths are padded to the batch's largest frame count before one encoder call.
+
+The collection loop checks both `len(batch) < max_batch_size` and `batch_cost + msg_cost <= max_batch_cost`. When count passes but cost fails, `appendleft()` retains the next item in pending. The scheduler does not skip it to search for a smaller later request.
+
+### Boundaries and sources
+
+The first message enters the batch before later messages undergo the overflow check. A single request whose own cost exceeds the budget can therefore run alone rather than becoming stuck forever. The figure omits that branch, and the cost budget is not an exact memory or FLOP measurement.
+
+- `sglang_omni/models/minicpm_o/config.py:57-70`: current audio-encoder cap of eight, zero delay and 24,000-frame budget.
+- `sglang_omni/models/minicpm_o/stages.py:166-202`: full-window cost function and its connection to `SimpleScheduler`.
+- `sglang_omni/scheduling/simple_scheduler.py:148-197`: count and cost caps, with `appendleft()` and collection exit on overflow.
+- `sglang_omni/models/minicpm_o/audio_encoder_batching.py:85-112`: cross-request padding and one batched encoder call.
+
+Line numbers refer to `origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`.
+
+### Next
+
+Step 5 contrasts Code2Wav's one-shot batch with streaming-vocoder coalescing across requests. Both can compute work for multiple requests together, but their message paths differ.

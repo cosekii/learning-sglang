@@ -19,6 +19,8 @@ Step 2 constructs two running rows. A and B occupy both rows in round 1, so C wa
 
 Step 3 constructs a batch-capable `ReferenceEncodeService` with cap four and zero delay. A, B and C are ready, so non-blocking collection takes all three and leaves one slot empty. D arrives afterward and belongs to the next collection. The shipped defaults remain cap one and zero delay; a larger cap enables this path only when `hook.can_encode_batch()` also succeeds. One batch call returns separate outcomes to the three requests.
 
+Step 4 uses MiniCPM-o's real audio-encoder configuration: request cap eight, zero collection delay and 24,000 charged mel frames. The teaching requests cost five, two and two full 3,000-frame windows. A and B fit at 21,000 frames; adding C would reach 27,000, so `SimpleScheduler` puts C back at the head of `pending_messages` even though three requests are below the count cap. The real budget admits eight full 30-second chunks. These teaching costs are not benchmark observations, and the budget is not a precise FLOP or memory measurement.
+
 Source revision for the chapter: `sglang-omni origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`. The deep dive lists the exact files and lines.
 
 </details>
@@ -31,6 +33,8 @@ Source revision for the chapter: `sglang-omni origin/main@21a6d229c3d2075da5e978
 第 2 步构造两行 running batch。第 1 轮 A、B 占满两行，C 等待。该轮后 A 结束，B 继续留在 `running_batch`；token 显存也允许时，C 补进空行。两行上限只是教学构造。MiniCPM-o talker 工厂当前传入 `max_running_requests=32`，这张小图没有描绘 32 行。`generation_batch_policy.py` 构造并校验 server args；`OmniScheduler` 持有 `waiting_queue`、`running_batch` 并执行准入。可选的 prefill 凑批不在本步展开。
 
 第 3 步构造一个支持批处理的 `ReferenceEncodeService`，上限为 4，等待为 0。A、B、C 已就绪，非阻塞收集一次带走三条，留下一个空位。D 随后才到，属于下一次收集。出厂默认值仍是上限 1、等待 0；只有 `hook.can_encode_batch()` 也通过，调大上限才会启用这条路径。一次批量调用把三份结果分别交还三条请求。
+
+第 4 步使用 MiniCPM-o audio encoder 的真实配置：请求上限 8、零收集等待、24000 个计费 mel 帧。教学请求分别计 5、2、2 个完整的 3000 帧窗口。A、B 合计 21000 帧，可以同批；再加 C 会达到 27000 帧，因此即使三条低于请求数上限，`SimpleScheduler` 仍把 C 放回 `pending_messages` 队首。真实预算可容纳八段完整的 30 秒音频。这些教学成本不是实测结果，预算也不是精确的 FLOP 或显存测量。
 
 本章源码版本：`sglang-omni origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`。精确文件和行号见深入讲解。
 
