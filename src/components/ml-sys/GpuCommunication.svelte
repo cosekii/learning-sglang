@@ -53,7 +53,7 @@
     <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={$lang === 'zh' ? cur.captionZh : cur.caption}>
       {#if step === 0}
         <text x={phone ? 18 : 36} y="30" class="title">{t('More GPUs can still finish later', 'GPU 更多，总时间也可能更长')}</text>
-        <text x={phone ? 18 : 36} y="55" class="label">{t('constructed example · same work · same millisecond scale', '构造示例 · 同一份计算 · 同一把毫秒标尺')}</text>
+        <text x={phone ? 18 : 36} y="55" class="label">{t('constructed example · same work · same scale', '构造示例 · 同一份计算 · 同一把毫秒标尺')}</text>
         {#if !phone}
           {#each [{ x: 40, gpus: 4, compute: COMM_EXAMPLE_COMPUTE_BEFORE_MS, wait: COMM_EXAMPLE_WAIT_BEFORE_MS, total: COMM_EXAMPLE_TOTAL_BEFORE_MS }, { x: 380, gpus: 8, compute: COMM_EXAMPLE_COMPUTE_AFTER_MS, wait: COMM_EXAMPLE_WAIT_AFTER_MS, total: COMM_EXAMPLE_TOTAL_AFTER_MS }] as row}
             <rect x={row.x} y="82" width="300" height="196" rx="13" fill="var(--bg)" stroke="var(--line)" />
@@ -84,7 +84,7 @@
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Teaching values, not a local benchmark.', '构造的教学数值，不是本机实测。')}</text>
       {:else if step === 1}
-        <text x={phone ? 18 : 36} y="30" class="title">{t('All-reduce · add, then give everyone the total', 'all-reduce · 求和，再发回每卡')}</text>
+        <text x={phone ? 18 : 36} y="30" class="title">{t('All-reduce · add, then share', 'all-reduce · 求和，再发回每卡')}</text>
         <text x={phone ? 18 : 36} y="55" class="label">{t('a tensor is a row of numbers · four numbers here', '张量就是一排数 · 这里每份有 4 格')}</text>
         {#if !phone}
           {#each COMM_PARTIAL_TENSORS as tensor, i}
@@ -117,8 +117,8 @@
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Constructed values; the operation is SUM.', '构造数值；这里的归约操作是求和。')}</text>
       {:else if step === 2}
-        <text x={phone ? 18 : 36} y="30" class="title">{t('One process group · four GPU workers', '一个进程组 · 四个 GPU 工作者')}</text>
-        <text x={phone ? 18 : 36} y="55" class="label">{t('rank = process number · world size = process count', 'rank = 进程编号 · world size = 进程总数')}</text>
+        <text x={phone ? 18 : 36} y="30" class="title">{t('One process group · four GPUs', '一个进程组 · 四个 GPU 工作者')}</text>
+        <text x={phone ? 18 : 36} y="55" class="label">{t('rank = process # · world size = process count', 'rank = 进程编号 · world size = 进程总数')}</text>
         {#if !phone}
           <rect x="40" y="72" width="640" height="264" rx="15" fill="var(--bg)" stroke="var(--accent)" stroke-dasharray="7 5" />
           <text x="58" y="96" class="small strong">{t('process group', '进程组')}</text>
@@ -149,10 +149,10 @@
           <text x="150" y="440" text-anchor="middle" class="result">world size = {COMM_WORLD_SIZE}</text>
           <text x="150" y="477" text-anchor="middle" class="small">{t('one process per GPU in this example', '本例：一个进程对应一张 GPU')}</text>
         {/if}
-        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('The one-process-per-GPU mapping is an example, not a requirement.', '一进程一卡是本例安排，不是唯一做法。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('One process per GPU is an example, not a rule.', '一进程一卡是本例安排，不是唯一做法。')}</text>
       {:else if step === 3}
-        <text x={phone ? 18 : 36} y="30" class="title">{t('Follow one call into the NCCL backend', '跟着一次调用走进 NCCL 后端')}</text>
-        <text x={phone ? 18 : 36} y="55" class="label">{t('NCCL = NVIDIA’s GPU collective-communication library', 'NCCL = NVIDIA 的 GPU 集合通信库')}</text>
+        <text x={phone ? 18 : 36} y="30" class="title">{t('Follow the call into NCCL', '跟着一次调用走进 NCCL 后端')}</text>
+        <text x={phone ? 18 : 36} y="55" class="label">{t("NCCL = NVIDIA's GPU communication library", 'NCCL = NVIDIA 的 GPU 集合通信库')}</text>
         {#if !phone}
           <rect x="42" y="86" width="155" height="226" rx="13" fill="var(--bg)" stroke="var(--line)" />
           <text x="120" y="113" text-anchor="middle" class="small strong">{t('all participants call', '所有参与者都调用')}</text>
@@ -196,7 +196,7 @@
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('PyTorch selects the NCCL backend with backend="nccl".', 'PyTorch 用 backend="nccl" 选择 NCCL 后端。')}</text>
       {:else if step === 4}
         <text x={phone ? 18 : 36} y="30" class="title">{t('The tensor crosses physical links', '张量要走实际的硬件链路')}</text>
-        <text x={phone ? 18 : 36} y="55" class="label">{t('two reported examples · not two choices on one machine', '两份实际输出示例 · 不是同一台机器的两个选项')}</text>
+        <text x={phone ? 18 : 36} y="55" class="label">{t('two reported examples · different machines', '两份实际输出示例 · 不是同一台机器的两个选项')}</text>
         {#if !phone}
           <rect x="35" y="82" width="310" height="254" rx="13" fill="var(--bg)" stroke="var(--line)" />
           <text x="190" y="112" text-anchor="middle" class="section">NV18</text>
@@ -325,8 +325,8 @@
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Teaching ring; payload only, not a time forecast.', '教学 Ring；只算张量载荷，不预测耗时。')}</text>
       {:else if step === 6}
-        <text x={phone ? 18 : 36} y="30" class="title">{t('A slower link delays the rounds behind it', '一条链路变慢，后面的轮次就要等')}</text>
-        <text x={phone ? 18 : 36} y="55" class="label">{t('topology = map of GPU links · same Ring, S and 6 rounds', '拓扑 = GPU 链路图 · 两边的 Ring、S 和 6 轮相同')}</text>
+        <text x={phone ? 18 : 36} y="30" class="title">{t('A slower link delays later rounds', '一条链路变慢，后面的轮次就要等')}</text>
+        <text x={phone ? 18 : 36} y="55" class="label">{t('topology = GPU link map · same Ring and S', '拓扑 = GPU 链路图 · 两边的 Ring、S 和 6 轮相同')}</text>
         {#if !phone}
           <rect x="35" y="82" width="650" height="120" rx="13" fill="var(--bg)" stroke="var(--line)" />
           <text x="55" y="108" class="small strong">{t('baseline · each dependent round takes t', '对照路径 · 每段相关轮次都花 t')}</text>
@@ -366,8 +366,8 @@
           <text x="150" y="420" text-anchor="middle" class="small">{t('same 6 rounds and tensor S', '两边都是同样的 6 轮和张量 S')}</text>
           <text x="150" y="448" text-anchor="middle" class="small">{t('only the transfer path changes', '只改变传输路径')}</text>
         {/if}
-        <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t("Next: how does a service send requests to this Ring's GPUs?", '下一章：服务怎样把请求分给 Ring 上的 GPU？')}</text>
-        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Simplified dependent-chain model, not an NCCL timing forecast.', '简化的相关链模型，不是 NCCL 耗时预测。')}</text>
+        <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t("Next: how do requests reach this Ring's GPUs?", '下一章：服务怎样把请求分给 Ring 上的 GPU？')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Simplified dependency model, not an NCCL timing forecast.', '简化的相关链模型，不是 NCCL 耗时预测。')}</text>
       {/if}
     </svg>
   </div>
