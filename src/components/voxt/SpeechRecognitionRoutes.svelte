@@ -102,7 +102,7 @@
         </marker>
       </defs>
       {#if step === 0}
-      <text x={W / 2} y="27" text-anchor="middle" class="title">{t('ONE RECORDING · CHOOSE ONE RECOGNITION ROUTE', '同一段录音 · 选一条识别路线')}</text>
+      <text x={W / 2} y="27" text-anchor="middle" class="title">{t('ONE RECORDING · CHOOSE ONE ROUTE', '同一段录音 · 选一条识别路线')}</text>
       <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('ASR = speech recognition: sound becomes words', 'ASR = 语音识别：把声音听成文字')}</text>
 
       <rect x={phone ? 45 : 250} y="70" width={phone ? 210 : 220} height="75" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2" />
@@ -171,7 +171,7 @@
       <text x={phone ? 150 : 530} y={phone ? 431 : 277} text-anchor="middle" class="result">“Good morning.”</text>
       <text x={phone ? 150 : 530} y={phone ? 455 : 304} text-anchor="middle" class="detail">{t('one result after the stop', '停止后返回一份结果')}</text>
       <text x={W / 2} y={phone ? 510 : 363} text-anchor="middle" class="cut">{t('STOP → ONE UPLOAD → ONE FINAL RESULT', '停止 → 一次上传 → 一份最终结果')}</text>
-      <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t(`Constructed ${VOXT_ASR_FILE_SECONDS}-second example; OpenAI-compatible WAV upload.`, `构造的 ${VOXT_ASR_FILE_SECONDS} 秒例子；OpenAI 兼容接口上传 WAV。`)}</text>
+      <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t(`${VOXT_ASR_FILE_SECONDS} s example · OpenAI-compatible WAV upload.`, `构造的 ${VOXT_ASR_FILE_SECONDS} 秒例子；OpenAI 兼容接口上传 WAV。`)}</text>
       {:else if step === 2}
       <text x={W / 2} y="27" text-anchor="middle" class="title">{t('STREAMING · DRAFTS CAN CHANGE', '流式识别 · 草稿可以变化')}</text>
       <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('stream = recognise while sound is still arriving', '流式 = 声音还在送来，识别已经开始')}</text>
@@ -186,7 +186,7 @@
           <line x1={phone ? 150 : x + 200} y1={phone ? y + 78 : 119} x2={phone ? 150 : x + 225} y2={phone ? y + 91 : 119} stroke="var(--muted)" stroke-width="2" marker-end="url(#asr-route-arrow)" />
         {/if}
       {/each}
-      <text x={W / 2} y={phone ? 373 : 190} text-anchor="middle" class="cut">{t('EACH NEW DRAFT REPLACES THE LAST · NOT AN EXTRA SENTENCE', '每份新草稿替换上一份 · 不是多加一句话')}</text>
+      <text x={W / 2} y={phone ? 373 : 190} text-anchor="middle" class="cut">{t('NEW DRAFT REPLACES OLD', '每份新草稿替换上一份 · 不是多加一句话')}</text>
       <line x1={W / 2} y1={phone ? 385 : 205} x2={W / 2} y2={phone ? 414 : 240} stroke="var(--muted)" stroke-width="2" marker-end="url(#asr-route-arrow)" />
       <rect x={phone ? 35 : 180} y={phone ? 420 : 250} width={phone ? 230 : 360} height="82" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
       <text x={W / 2} y={phone ? 444 : 276} text-anchor="middle" class="label amber">FINISH → {t('FINAL TEXT', '最终文字')}</text>
@@ -195,7 +195,7 @@
       {:else if step === 3}
       {@const left = phone ? 20 : 40}
       {@const track = phone ? 260 : 640}
-      <text x={W / 2} y="27" text-anchor="middle" class="title">{t('SPLIT AN OVERSIZED UPLOAD AT A QUIET PLACE', '超长上传 · 在安静处切开')}</text>
+      <text x={W / 2} y="27" text-anchor="middle" class="title">{t('SPLIT OVERSIZED AUDIO AT A QUIET PLACE', '超长上传 · 在安静处切开')}</text>
       <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('last quarter = the final 1/4 of the 9-second budget', '最后四分之一 = 9 秒上限的最后 1/4')}</text>
       <text x={W / 2} y="74" text-anchor="middle" class="label">{VOXT_ASR_SPLIT_SECONDS} s {t('RECORDING', '录音')} · {t('LIMIT', '上限')} {VOXT_ASR_SPLIT_MAX_SECONDS} s</text>
       <rect x={left + track * 0.675} y="91" width={track * 0.225} height="82" fill="var(--accent-soft)" />
@@ -224,7 +224,7 @@
       <text x={phone ? 150 : 520} y={phone ? 448 : 310} text-anchor="middle" class="label">{t('PIECE 2', '第 2 块')}</text>
       <text x={phone ? 150 : 520} y={phone ? 479 : 347} text-anchor="middle" class="result">{t('pause', '停顿')} → 10 s</text>
       <text x={W / 2} y={phone ? 550 : 410} text-anchor="middle" class="cut">{VOXT_ASR_SPLIT_PIECE_COUNT} {t('PIECES · EACH FITS THE 9-SECOND LIMIT', '块 · 每块都不超过 9 秒上限')}</text>
-      <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Public test fixture; the exact cut depends on sound energy.', '公开测试例；实际切点由声音能量决定。')}</text>
+      <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Public test fixture · cut depends on sound energy.', '公开测试例；实际切点由声音能量决定。')}</text>
       {:else if step === 4}
       <text x={W / 2} y="27" text-anchor="middle" class="title">{t('RECOGNISE IN ORDER · JOIN IN ORDER', '按顺序识别 · 按顺序接回文字')}</text>
       <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('join = put the text back in recording order', '合并 = 按录音顺序把文字接回来')}</text>
@@ -263,7 +263,7 @@
       <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Decode schedule, not a measured-latency promise.', '这是解码节拍，不是实测延迟承诺。')}</text>
       {:else if step === 6}
       <text x={W / 2} y="27" text-anchor="middle" class="title">{t('THE ASR ROUTE HANDS OVER RAW TEXT', '识别路线交出原话')}</text>
-      <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('raw text = recognised words before language-model cleanup', '原话 = 识别出来、尚未由语言模型整理的文字')}</text>
+      <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('raw text = recognised words before cleanup', '原话 = 识别出来、尚未由语言模型整理的文字')}</text>
       <rect x={phone ? 35 : 55} y="90" width={phone ? 230 : 260} height="130" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" />
       <text x={phone ? 150 : 185} y="120" text-anchor="middle" class="label amber">{t('ONE RECOGNITION RESULT', '一份识别结果')}</text>
       <text x={phone ? 150 : 185} y="158" text-anchor="middle" class="result">“Good morning.”</text>
