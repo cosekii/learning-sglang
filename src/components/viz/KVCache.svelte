@@ -35,7 +35,7 @@
     { n: 5, cached: 5, compute: all5, store: true, dropQ: true, caption: `Attention runs as before. Then, instead of throwing k and v away, we file them. Five slots. The queries were used, so they go.`, captionZh: `5 个 k、v 存进 cache；q 用完就丢。` },
     { n: 6, cached: 5, compute: [5], flyIn: true, caption: `Decode step. Paris arrives. Only Paris gets an x, a q, a k and a v. One column of work, not six.`, captionZh: `␣Paris 到了，只算它的 1 列；旧 5 列不重算。` },
     { n: 6, cached: 6, compute: [5], store: true, caption: `Its k and v go into the cache. Slot six.`, captionZh: `它的 k、v 写进第 6 格。` },
-    { n: 6, cached: 6, compute: [5], attend: 5, caption: `Its query reads every key in the cache and blends every value in the cache. Same result as recomputing, because the cache holds exactly what recomputing would have produced.`, captionZh: `它的 query 读取 cache 里的每个 key，混合每个 value。结果和重算一样，因为 cache 存的正是重算会产生的东西。` },
+    { n: 6, cached: 6, compute: [5], attend: 5, caption: `Its query reads every key in the cache and blends every value in the cache. Same result as recomputing, because the cache holds exactly what recomputing would have produced.`, captionZh: `q₆ 读 6 个 key，再混合 6 个 value。旧 k、v 不用重算，结果不变。` },
     { n: 7, cached: 7, compute: [6], flyIn: true, store: true, attend: 6, caption: `Next token, same routine. One column of compute, one more slot, one read of the whole cache.`, captionZh: `下一个 token，同样的流程。一列计算，多一个槽位，读一遍整个 cache。` },
     { n: 7, cached: 7, compute: [6], whyNotQ: true, caption: `Why not keep q too? Nobody asks for it later. A query is used on the step it's made, and its output is consumed right there.`, captionZh: `为什么不把 q 也留下来？之后没人再要它。query 只在生成它的那一步被使用，输出当场就被消耗掉。` },
     { n: 7, cached: 7, compute: [6], cost: true, caption: `The cache isn't free. Every token keeps a k and a v in each of Llama-3-8B's ${KV_HEADS}&nbsp;k,&nbsp;v&nbsp;heads (Ch. 2 Step 14), in every layer. That's ${KB_PER_TOKEN} KB per token, per sequence.`, captionZh: `cache 不是免费的。每个 token 在 Llama-3-8B 每一层的 ${KV_HEADS} 个 k、v head 里各存一个 k 和 v（Ch. 2 Step 14）。也就是每个 token、每个序列 ${KB_PER_TOKEN} KB。` },
@@ -83,7 +83,7 @@
     query.addEventListener('change', update);
     return () => query.removeEventListener('change', update);
   });
-  const phoneCustom = $derived(phone && $lang === 'zh' && step <= 4);
+  const phoneCustom = $derived(phone && $lang === 'zh' && step <= 5);
 </script>
 
 <figure class="viz">
@@ -194,6 +194,15 @@
         <text x="180" y="475" text-anchor="middle">现在 6 个位置都有 k、v</text>
         <text x="180" y="515" text-anchor="middle">q₆ 不入仓，下一步用它读仓库</text>
         <text x="180" y="580" text-anchor="middle" class="ph-foot">先写入当前 k、v，attention 才能看见自己</text>
+      {:else if phoneCustom && step === 5}
+        <text x="180" y="30" text-anchor="middle" class="ph-title">q₆ 读 6 个 key，混合 6 个 value</text>
+        <text x="180" y="55" text-anchor="middle">旧结果直接取出来，不再重算</text>
+        {@render phoneTokens(6, 75)}
+        {@render phoneCompute([5], 125)}
+        <text x="180" y="303" text-anchor="middle">数字是权重；线越粗，value 贡献越多</text>
+        {@render phoneCache(6, 335, 5, false)}
+        <text x="180" y="525" text-anchor="middle">6 个权重合起来是 1</text>
+        <text x="180" y="565" text-anchor="middle">out₆ 与重算旧 k、v 的结果相同</text>
       {:else}
       <!-- Contrast brackets: first step vs every step after -->
       {#if cur.contrast}
@@ -272,6 +281,7 @@
 
       <!-- Blend: cached values -> output for the attending token -->
       {#if cur.attend !== undefined}
+        {#if $lang === 'zh'}<text x="16" y={CK - 5} class="tag">权重</text>{/if}
         <g transition:fade={{ duration: 250 }}>
           {#each allCols.slice(0, cur.cached) as c, s}
             <path d="M {c.cx} {CV + CH} C {c.cx} {CV + 40}, {outX - 6} {CV + 40}, {outX} {CV + CH}"
