@@ -81,4 +81,4 @@ npm install
 npm run dev     # http://localhost:4321/learning-sglang/
 ```
 
-Built with Astro, Svelte, and KaTeX. Written and drawn by [Wilson Zheng](https://github.com/WilsonZheng0327).
+Built with Astro, Svelte, and KaTeX. Original tutorial written and drawn by [Wilson Zheng](https://github.com/WilsonZheng0327). Expanded into four books by [cosekii](https://github.com/cosekii) and learning-sglang.

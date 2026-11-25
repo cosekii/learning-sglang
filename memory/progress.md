@@ -4,6 +4,8 @@
 
 ## 本轮记录
 
+- 09:30 主人指出只署 Wilson Zheng 不符合当前贡献：主页、章节侧栏、README 和链接预览卡改为「原教程 Wilson Zheng；扩展 cosekii 与 learning-sglang」，网页仓库链接和预览卡地址改指 `cosekii/learning-sglang`。教程内容与评分不变。
+- `build`、`og`、31 页署名与链接断言、93 个手机署名视图和 `git diff --check` 通过；360/390/430 px 均能看到完整署名，无横向溢出。截图：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-attribution-20261125-0930/home-zh.png`；预览图：`public/og.png`。本轮类型：**修旧**；下一普通轮做新书的下一整章。
 - 09:10 主人反馈主页只露出 Learning SGLang：新增共享四本书目录，左侧固定显示四本书入口，主页正文列出四本书全部章节；章节页保留本书目录，并核对 30 个已完成章节后加上 19 组双向跨书相关链接。侧栏滚动位置改为按书保存，教程 caption、图和 transcript 未改。
 - 独立审查通过；次级导航文字在普通、当前书和悬停背景的对比度均 ≥4.78:1。`build`、全量 `transcript`、全站 `mobile`、93 个中文手机导航视图、31 页链接与双向关系、四书代表章 `zh-check` / `deep-check` 和 `git diff --check` 通过；全站手机无布局断裂，612 个小字视图仅审计。教程步骤评分不变；全量 `readability` 仍报告 370 条既有机械问题，本轮未改教程。
 - 截图：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-four-books-20261125-0910/home-zh-final.png`、`related-zh-final.png` 和 `home-phone-open-zh-final.png`。本轮类型：**修旧**；下一普通轮做新书的下一步，下次整点轮换第 3 项「复盘自己」。

@@ -14,7 +14,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
       <p class="kicker"><span class="i18n-en">four illustrated books · {ready} of {total} chapters</span><span class="i18n-zh">四本图解书 · 已完成 {ready}/{total} 章</span></p>
       <h1>{site.name}</h1>
       <p class="sub"><span class="i18n-en">{site.tagline}</span><span class="i18n-zh">{site.taglineZh}</span></p>
-      <p class="by"><span class="i18n-en">Written and drawn by <a href={site.author.url}>{site.author.name}</a>.</span><span class="i18n-zh">由 <a href={site.author.url}>{site.author.name}</a> 撰写并绘制。</span></p>
+      <p class="by"><span class="i18n-en">Original tutorial by <a href={site.originalAuthor.url}>{site.originalAuthor.name}</a>. Expanded into four books by <a href={site.expandedBy.owner.url}>{site.expandedBy.owner.name}</a> and {site.expandedBy.agent.name}.</span><span class="i18n-zh">原教程由 <a href={site.originalAuthor.url}>{site.originalAuthor.name}</a> 撰写并绘制；<a href={site.expandedBy.owner.url}>{site.expandedBy.owner.name}</a> 与 {site.expandedBy.agent.name} 扩展为四本书。</span></p>
       <div class="cta">
         <a class="start" href={chapterHref(books[0], chapters[0].slug)}><span class="i18n-en">Start at chapter 1 →</span><span class="i18n-zh">从第 1 章开始 →</span></a>
         <a class="star" href={site.repo} target="_blank" rel="noopener">

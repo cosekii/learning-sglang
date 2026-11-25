@@ -10,3 +10,4 @@ Agent 先读这里；定过的不再问。
 - 最终目测由用户来做；agent 交付本地可跑的成品 + 该看的地方，不替用户宣称测试通过。
 - 深入讲解第二版（2026-11-04 定）：界面改为右侧整屏抽屉（D 开关、Esc 关、开关状态跨步跨页保留）；内容搬到 `src/deep/<slug>.{zh,en}.md`，KaTeX 排公式；每步固定结构（一句话 / 图上是什么 / 公式 + 符号表 / 代入图上的数 / 说明 / 接下来）；旧内容逐条核实再搬。第 2 章是标杆，用户看过试点后说「可以跑」。
 - 新书站点结构（2026-11-23）：共用 `Chapter.astro`，由 frontmatter 的 `book` 选择书目数据。第 1 本仍用 `src/chapters.ts` 和 `/ch/...`；Omni 用 `src/omni/chapters.ts` 和 `/omni/ch/...`，ML Systems 用 `src/ml-sys/chapters.ts` 和 `/ml-sys/ch/...`。组件与数字分别放在各书目录下，深入讲解文件加书名前前缀。检查命令用 `BOOK=omni` 或 `BOOK=ml-sys` 选新书；首页列四本书；Voxt 用 `src/voxt/chapters.ts` 和 `/voxt/ch/...`，检查命令用 `BOOK=voxt`。
+- 署名与源码（2026-11-25 主人定）：原教程作者保留 Wilson Zheng；现有四本书的扩展署名 cosekii 与 learning-sglang。网页仓库链接指向 `cosekii/learning-sglang`。
