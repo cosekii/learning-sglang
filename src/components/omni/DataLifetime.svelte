@@ -83,7 +83,7 @@
         <text x={panel.x + 175} y={panel.y + 200} text-anchor="middle" class="tag">{wrong ? t('wanted A · reads B', '要读 A · 却读到 B') : t('reads A · then B may enter', '读完 A · B 才能进')}</text>
       {/each}
       <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{phone ? t('Safe reuse only; no specific transport or pool size.', '本图只讲何时能安全复用，不限定传输方式或池子大小。') : t('The diagram covers safe reuse, not a particular transport or pool size.', '本图只讲何时能安全复用，不限定传输方式或池子大小。')}</text>
-      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Next: finding A and knowing the read finished.', '下一步：读者怎样找到 A，主人又怎样知道它读完了？') : t('Next: how does the reader find A, and how does the owner know it finished?', '下一步：读者怎样找到 A，主人又怎样知道它读完了？')}</text>
+      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Next: finding A and knowing the read finished.', '下一步：读者怎样找到 A，发送方怎样知道它读完了？') : t('Next: how does the reader find A, and how does the owner know it finished?', '下一步：读者怎样找到 A，发送方怎样知道它读完了？')}</text>
       {:else if step === 1}
       <text x={phone ? 15 : 20} y="20" class="tag strong">DataRef = {t('a small descriptor for finding a payload', '找数据的小卡片')}</text>
       <text x={phone ? 15 : 20} y="45" class="tag">{phone ? t('Object A · SHM · payload stays in the backend', '示例：数据 A · SHM 传输 · 数据本体留在后端') : t('Example: object A · SHM transport · payload stays in the backend', '示例：数据 A · SHM 传输 · 数据本体留在后端')}</text>
@@ -98,7 +98,7 @@
 
         <rect x="275" y="65" width="195" height="250" rx="10" fill="white" stroke="var(--accent)" stroke-width="2" />
         <text x="292" y="94" class="mono strong">DataRef</text>
-        <text x="292" y="126" class="mono">version = {LIFETIME_DATA_REF_WIRE_VERSION}</text>
+        <text x="292" y="126" class="mono">version = {LIFETIME_DATA_REF_WIRE_VERSION} · {t('format', '格式')}</text>
         <text x="292" y="158" class="mono">object_id = {LIFETIME_RESULT_IDS[0]}</text>
         <text x="292" y="190" class="mono">transport = SHM</text>
         <text x="292" y="222" class="mono">buffer = info + length</text>
@@ -122,7 +122,7 @@
 
         <rect x="40" y="200" width="220" height="218" rx="10" fill="white" stroke="var(--accent)" stroke-width="2" />
         <text x="55" y="228" class="mono strong">DataRef</text>
-        <text x="55" y="258" class="mono">version = {LIFETIME_DATA_REF_WIRE_VERSION}</text>
+        <text x="55" y="258" class="mono">version = {LIFETIME_DATA_REF_WIRE_VERSION} · {t('format', '格式')}</text>
         <text x="55" y="288" class="mono">object_id = {LIFETIME_RESULT_IDS[0]}</text>
         <text x="55" y="318" class="mono">transport = SHM</text>
         <text x="55" y="348" class="mono">buffer = info + length</text>

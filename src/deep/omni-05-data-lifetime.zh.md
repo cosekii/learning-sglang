@@ -26,9 +26,9 @@ $$W=N-S=2-1=1$$
 
 ### 为什么等待能保住正确读取
 
-读者需要的不只是「曾经有过 A」，而是「我读取期间，A 仍在原来的位置」。若主人在读取结束前复用位置，旧位置的内容就不再等于读者要读的 A。让 B 等待，就是把「位置可以改写」推迟到「A 的读取已经结束」之后。
+读者需要的不只是「曾经有过 A」，而是「我读取期间，A 仍在原来的位置」。若发送方在读取结束前复用位置，旧位置的内容就不再等于读者要读的 A。让 B 等待，就是把「位置可以改写」推迟到「A 的读取已经结束」之后。
 
-这还不能回答两个实现问题：读者怎样找到 A 的位置，主人又怎样知道读取已经结束。下一步先引入 DataRef，把结果的位置和元数据装进一个句柄；之后再讲读取完成的回执。
+这还不能回答两个实现问题：读者怎样找到 A 的位置，发送方又怎样知道读取已经结束。下一步先引入 DataRef，把结果的位置和元数据装进一个句柄；之后再讲读取完成的回执。
 
 ### 边界与出处
 
@@ -47,7 +47,7 @@ $$W=N-S=2-1=1$$
 ### 图上是什么
 
 - 左框是发送方后端，蓝色大块是数据 A 的 tensor 字节。中间白框是 DataRef，右框是接收方 `talker_ar`。
-- 本例的卡片有四行：`version = 1` 是线格式版本，`object_id = A` 是数据对象的名字，`transport = SHM` 指定传输后端，`buffer = info + length` 保存后端返回的读取信息和字节长度。
+- 本例的卡片有四行：`version = 1` 是传输格式版本，`object_id = A` 是数据对象的名字，`transport = SHM` 指定传输后端，`buffer = info + length` 保存后端返回的读取信息和字节长度。
 - 卡片和数据之间的箭头表示「描述这份数据」，不是把 tensor 字节复制进卡片。卡片到接收方的箭头表示读者拿到描述后可以找到 A。
 - 图只列出找数据最需要看的字段。`kind`、`layout`、`header`、`tensors` 等字段继续描述数据种类、布局和 tensor 还原方式，不在这张简图里展开。
 
@@ -55,7 +55,7 @@ $$W=N-S=2-1=1$$
 
 | 字段 | 本例 | 读者用它做什么 |
 |---|---|---|
-| `version` | 1 | 按第 1 版线格式解析卡片 |
+| `version` | 1 | 按第 1 版传输格式解析卡片 |
 | `object_id` | A | 确认要读的数据对象 |
 | `transport` | SHM | 选择 SHM relay |
 | `buffer.info` | 后端返回的信息 | 找到后端里的数据 |
@@ -77,7 +77,7 @@ Router 在创建 DataRef 之前按两端位置和数据设备选路。普通 pay
 
 ### 源码出处
 
-- `sglang_omni/comm/data_ref.py:117-133`：DataRef 字段；`40-67`：`TensorMeta`；`70-99`：`BackendRef` 和字节长度；`135-216`：线格式、版本 1 与字段校验。
+- `sglang_omni/comm/data_ref.py:117-133`：DataRef 字段；`40-67`：`TensorMeta`；`70-99`：`BackendRef` 和字节长度；`135-216`：传输格式、版本 1 与字段校验。
 - `sglang_omni/comm/router.py:215-252`：普通 payload 选路；`263-299`：relay 创建与 `LOCAL_OBJECT` 无 relay；`301-320`：tensor 设备扫描。
 - `sglang_omni/pipeline/stage/runtime.py:774-790`：直接 PyTorch CUDA IPC 旁路；`1939-1954`：逐 target 发送。
 
@@ -155,7 +155,7 @@ SHM 使用 `put_chunks_async()`，其他 relay 使用 `put_async()`。两种 put
 
 ### cleanup 不等于统一释放发送方数据
 
-重建后调用的 `relay.cleanup(request_id)` 是 request 级后端清理钩子，Router 对 active relays 逐个调用它。不能把这个名字统一解释为「删除 sender 数据」或「所有后端立即释放内存」。正常发送方资源的收尾仍由下一步的 ACK watcher 和具体 `RelayOperation` 完成。
+重建后调用的 `relay.cleanup(request_id)` 是 request 级后端清理钩子，Router 对 active relays 逐个调用它。不能把这个名字统一解释为「删除发送方数据」或「所有后端立即释放内存」。正常发送方资源的收尾仍由下一步的 ACK watcher 和具体 `RelayOperation` 完成。
 
 ### 源码出处
 
