@@ -200,3 +200,38 @@ The public guide shows a request and JSON response on this path. Zero-to-sglang 
 The answer has returned. The next step opens the path to show how text becomes tokens, reaches all eight workers and returns to the client.
 
 Sources: `Awesome-ML-SYS-Tutorial/sglang/nvidia-dynamo/dynamo.md:85-95`; `launch/dynamo-run/src/input/http.rs:43-47,95-108` at `ai-dynamo/dynamo@670661f6`; `zero-to-sglang/course-material/ch/part4/第1章_用Cookbook部署SGLang.md:64-83`.
+
+## Step 6 · Input and output for one request
+
+**One sentence.** Node 0 turns text into token IDs, the client request enters the TP group through rank 0, and all eight workers compute before the answer returns.
+
+### On the stage
+
+- The top row is the blue input path: the client question reaches node 0's HTTP entrance, text becomes token IDs, rank 0's scheduler receives them, and the eight-worker TP group computes.
+- The bottom row is the orange output path: the TP group produces new token IDs, rank 0 returns them to the response pipeline, and the client receives text in an HTTP response.
+- `Rank 0` is a global TP worker identifier, not a node-rank. Step 3 placed r0–r3 on node 0 and r4–r7 on node 1.
+- The phone layout draws node 0 twice for its input and output stages. Both rows use the same client entrance and worker group.
+
+### Formula and symbols
+
+$$r_{\mathrm{in}}=0,\qquad R_{\mathrm{compute}}=R_0\cup R_1=\{0,1,\ldots,7\}$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $r_{\mathrm{in}}$ | TP rank receiving this client input | Fixed-version configuration: 0 |
+| $R_{\mathrm{compute}}$ | Ranks participating in this TP computation | Step 3 |
+| $R_0,R_1$ | Rank sets on the two nodes | Step 3: four each |
+
+### The numbers on the stage
+
+$$r_{\mathrm{in}}=0,\qquad R_{\mathrm{compute}}=\{0,1,2,3\}\cup\{4,5,6,7\}$$
+
+At the fixed commit, the HTTP pipeline links the preprocessor, backend and SGLang engine. The engine's input loop takes token IDs, constructs a request and sends it through a local ZMQ socket to rank 0's scheduler. Its output loop reads rank 0's scheduler output and forwards new token IDs to the response pipeline. ZMQ is a socket for messages between processes; Ch. 9 Steps 6–9 in the first book showed these input and output channels.
+
+The multi-node configuration also says that nonzero nodes receive work from the leader through PyTorch distributed rather than directly from the user. All eight TP workers exchange tensors as they compute; Chapter 4 Steps 4 and 6 covered the communication backend and a Ring teaching example. This picture omits serialization, socket buffering and HTTP stream chunking.
+
+### Next
+
+The request's location can now be followed. The next step places timers on this path to check the wait before token one, later generation and the whole request.
+
+Sources: `launch/dynamo-run/src/input/http.rs:85-104`, `launch/dynamo-run/src/lib.rs:235-250` and `lib/llm/src/engines/sglang/worker.rs:425-443,588-758` at `ai-dynamo/dynamo@670661f6`; Ch. 9 Steps 6–9 in the first book; Chapter 4 Steps 4 and 6 in this book.

@@ -200,3 +200,38 @@ curl --fail-with-body http://<node0-ip>:8080/v1/chat/completions \
 回答已经返回。下一步打开这条路径，看文本怎样变成 token，怎样到达 8 个 worker，再怎样回到客户端。
 
 来源：`Awesome-ML-SYS-Tutorial/sglang/nvidia-dynamo/dynamo.md:85-95`；`ai-dynamo/dynamo@670661f6` 的 `launch/dynamo-run/src/input/http.rs:43-47,95-108`；`zero-to-sglang/course-material/ch/part4/第1章_用Cookbook部署SGLang.md:64-83`。
+
+## 第 6 步 · 同一请求的输入与返回
+
+**一句话。** node 0 把文本转成 token ID，客户端请求经 rank 0 进入 TP 组，8 个 worker 计算后再把回答送回客户端。
+
+### 图上是什么
+
+- 上排是蓝色输入路：客户端问题先到 node 0 的 HTTP 入口，再把文本转成 token ID，交给 rank 0 的 scheduler，最后进入 8 个 worker 组成的 TP 组。
+- 下排是橙色输出路：TP 组产生新 token ID，经 rank 0 的输出返回，再组成文本和 HTTP 回答，交还客户端。
+- `rank 0` 是 TP worker 的全局编号，不是 node-rank。第 3 步已把 r0–r3 放在 node 0，把 r4–r7 放在 node 1。
+- 手机图把 node 0 画两次，分别表示同一节点的输入和输出阶段。两排共用同一个客户端入口和同一组 worker。
+
+### 公式与符号
+
+$$r_{\mathrm{in}}=0,\qquad R_{\mathrm{compute}}=R_0\cup R_1=\{0,1,\ldots,7\}$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $r_{\mathrm{in}}$ | 接收本次客户端输入的 TP rank | 固定版本配置，0 |
+| $R_{\mathrm{compute}}$ | 参加本次 TP 计算的 rank 集合 | 第 3 步 |
+| $R_0,R_1$ | 两台节点上的 rank 集合 | 第 3 步，各 4 个 |
+
+### 代入图上的数
+
+$$r_{\mathrm{in}}=0,\qquad R_{\mathrm{compute}}=\{0,1,2,3\}\cup\{4,5,6,7\}$$
+
+固定版本的 HTTP 管线把 preprocessor、backend 和 SGLang engine 串联。engine 的 input loop 取出 token ID，构造请求并通过本地 ZMQ socket 发给 rank 0 scheduler；output loop 读取 rank 0 scheduler 的输出，把新增 token ID 送回响应管线。ZMQ 是进程间传消息的 socket，第 1 本 Ch. 9 Steps 6–9 已画过这种输入和输出通道。
+
+多节点配置还明确写道：非 0 节点从 leader 的 PyTorch distributed 路径接收工作，不直接从用户接收。8 个 TP worker 共同计算时交换张量，第 4 章第 4、6 步已经解释通信后端和 Ring 教学例。本图不展开序列化、socket 缓冲和 HTTP 流式分块。
+
+### 接下来
+
+现在能跟踪请求的位置了。下一步沿同一条路放计时点，核对首 token 前、后续生成和全程各等多久。
+
+来源：`ai-dynamo/dynamo@670661f6` 的 `launch/dynamo-run/src/input/http.rs:85-104`、`launch/dynamo-run/src/lib.rs:235-250`、`lib/llm/src/engines/sglang/worker.rs:425-443,588-758`；第 1 本 Ch. 9 Steps 6–9；本书第 4 章第 4、6 步。
