@@ -38,7 +38,7 @@
     { n: 6, cached: 6, compute: [5], attend: 5, caption: `Its query reads every key in the cache and blends every value in the cache. Same result as recomputing, because the cache holds exactly what recomputing would have produced.`, captionZh: `q₆ 读 6 个 key，再混合 6 个 value。旧 k、v 不用重算，结果不变。` },
     { n: 7, cached: 7, compute: [6], flyIn: true, store: true, attend: 6, caption: `Next token, same routine. One column of compute, one more slot, one read of the whole cache.`, captionZh: `下一个 token 还是只算 1 列、写 1 格。q₇ 读取全部 7 个 key 和 value。` },
     { n: 7, cached: 7, compute: [6], whyNotQ: true, caption: `Why not keep q too? Nobody asks for it later. A query is used on the step it's made, and its output is consumed right there.`, captionZh: `旧 q 以后没人读，所以不占 cache。每个 q 只在自己的那一步用一次。` },
-    { n: 7, cached: 7, compute: [6], cost: true, caption: `The cache isn't free. Every token keeps a k and a v in each of Llama-3-8B's ${KV_HEADS}&nbsp;k,&nbsp;v&nbsp;heads (Ch. 2 Step 14), in every layer. That's ${KB_PER_TOKEN} KB per token, per sequence.`, captionZh: `cache 不是免费的。每个 token 在 Llama-3-8B 每一层的 ${KV_HEADS} 个 k、v head 里各存一个 k 和 v（Ch. 2 Step 14）。也就是每个 token、每个序列 ${KB_PER_TOKEN} KB。` },
+    { n: 7, cached: 7, compute: [6], cost: true, caption: `The cache isn't free. Every token keeps a k and a v in each of Llama-3-8B's ${KV_HEADS}&nbsp;k,&nbsp;v&nbsp;heads (Ch. 2 Step 14), in every layer. That's ${KB_PER_TOKEN} KB per token, per sequence.`, captionZh: `每个 token 存 ${KB_PER_TOKEN} KiB，7 个共 ${7 * KB_PER_TOKEN} KiB。8,192 个约是 7 个的 1,170 倍，共 1 GiB。` },
     { n: 7, cached: 7, compute: [6], cost: true, contrast: true, caption: `Look at the two kinds of step. The first crunched five tokens and wrote five slots. Every step since computes one token and reads the whole cache. Two very different jobs.`, captionZh: `看这两种步。第一步算了五个 token、写了五个槽位。之后每一步只算一个 token，却要读整个 cache。两种很不一样的工作。` },
   ];
 
@@ -83,7 +83,7 @@
     query.addEventListener('change', update);
     return () => query.removeEventListener('change', update);
   });
-  const phoneCustom = $derived(phone && $lang === 'zh' && step <= 7);
+  const phoneCustom = $derived(phone && $lang === 'zh' && step <= 8);
 </script>
 
 <figure class="viz">
@@ -224,6 +224,22 @@
         <text x="180" y="435" text-anchor="middle">下一次改用新的 q₈</text>
         <text x="180" y="515" text-anchor="middle">KV cache 的名字来自只存 K 和 V</text>
         <text x="180" y="565" text-anchor="middle">下一步：这些格子占多少显存？</text>
+      {:else if phoneCustom && step === 8}
+        <text x="180" y="30" text-anchor="middle" class="ph-title">1 个 token 的 cache 有多大？</text>
+        <text x="180" y="55" text-anchor="middle">全模型：32 层，每层 8 个 KV head</text>
+        <rect x="20" y="78" width="320" height="112" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="180" y="108" text-anchor="middle">每个 head：128 个数 × k、v 两份</text>
+        <text x="180" y="137" text-anchor="middle">× 2 字节 × 8 head × 32 层</text>
+        <text x="180" y="169" text-anchor="middle" class="ph-strong">= 131,072 B = 128 KiB</text>
+        <text x="180" y="229" text-anchor="middle">本例 7 token</text>
+        <text x="180" y="260" text-anchor="middle" class="ph-strong">7 × 128 KiB = 896 KiB</text>
+        <rect x="20" y="294" width="320" height="130" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x="180" y="325" text-anchor="middle">8,192 token</text>
+        <text x="180" y="355" text-anchor="middle">8,192 × 128 KiB = 1,048,576 KiB</text>
+        <text x="180" y="394" text-anchor="middle" class="ph-strong">= 1 GiB</text>
+        <text x="180" y="474" text-anchor="middle">8,192 ÷ 7 ≈ 1,170</text>
+        <text x="180" y="505" text-anchor="middle">token 数约 1,170 倍，cache 也约 1,170 倍</text>
+        <text x="180" y="565" text-anchor="middle">KiB、GiB 按 1,024 进制换算</text>
       {:else}
       <!-- Contrast brackets: first step vs every step after -->
       {#if cur.contrast}
@@ -333,11 +349,11 @@
       {#if cur.cost}
         <g in:fade>
           <text x="18" y={CACHE.y + CACHE.h + 24} class="pt">·</text><text x="28" y={CACHE.y + CACHE.h + 24} class="legend">
-            <tspan class="strong">{cur.cached} tokens × {KB_PER_TOKEN} KB</tspan> = {cacheKB.toLocaleString()} KB
+            <tspan class="strong">{cur.cached} tokens × {KB_PER_TOKEN} {t('KB', 'KiB')}</tspan> = {cacheKB.toLocaleString()} {t('KB', 'KiB')}
             <tspan class="muted">{t(`   (${LAYERS} layers · ${KV_HEADS} k, v heads · ${HEAD_DIM} dims · k and v · ${BYTES} bytes)`, `   （${LAYERS} 层 · ${KV_HEADS} 个 k、v head · ${HEAD_DIM} 维 · k 和 v · ${BYTES} 字节）`)}</tspan>
           </text>
           <text x="18" y={CACHE.y + CACHE.h + 44} class="pt">·</text><text x="28" y={CACHE.y + CACHE.h + 44} class="legend" in:fade={{ delay: 500 }}>
-            {t('at 8k tokens: ', '8k token 时：')}<tspan class="strong">{((8192 * KB_PER_TOKEN) / 1024 / 1024).toFixed(0)} GB</tspan>{t(', for one sequence. Keep that number in mind.', '，一个序列。记住这个数。')}
+            {t('at 8k tokens: ', '8k token 时：')}<tspan class="strong">{((8192 * KB_PER_TOKEN) / 1024 / 1024).toFixed(0)} {t('GB', 'GiB')}</tspan>{t(', for one sequence. Keep that number in mind.', '，一个序列。记住这个数。')}
           </text>
         </g>
       {/if}

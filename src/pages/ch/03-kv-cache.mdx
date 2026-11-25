@@ -31,6 +31,6 @@ $$
 \text{bytes per token} = 2 \cdot L \cdot H_{kv} \cdot d_{head} \cdot \text{bytes per value}
 $$
 
-Llama-3-8B：$2 \cdot 32 \cdot 8 \cdot 128 \cdot 2 = 131{,}072$ 字节，即每个 token 128 KB，8k token 的上下文约 1 GB。之所以 $H_{kv} = 8$ 而不是 32 个 query head，是因为 grouped-query attention。
+Llama-3-8B：$2 \cdot 32 \cdot 8 \cdot 128 \cdot 2 = 131{,}072$ 字节，即每个 token 128 KiB，8k token 的上下文正好 1 GiB。这里 $1\ \mathrm{KiB}=1{,}024$ 字节。之所以 $H_{kv} = 8$ 而不是 32 个 query head，是因为 grouped-query attention。
 
 </details>
