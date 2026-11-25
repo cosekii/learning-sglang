@@ -11,6 +11,8 @@
     VOXT_ASR_FILE_SECONDS,
     VOXT_ASR_FILE_WAV_BYTES,
     VOXT_ASR_ROUTE_COUNT,
+    VOXT_ASR_STREAM_CALLS,
+    VOXT_ASR_STREAM_SENDS,
     VOXT_PCM_BYTES_PER_SECOND,
     VOXT_WAV_HEADER_BYTES,
   } from '../../voxt/numbers';
@@ -23,6 +25,9 @@
   }, {
     caption: 'A file transcriber waits for the whole recording. It returns final text after the stop.',
     captionZh: '文件型识别等整段录音结束。停止后，它返回最终文字。',
+  }, {
+    caption: 'Streaming recognition revises a draft as sound arrives. The final result replaces the draft.',
+    captionZh: '流式识别边收声音边改草稿。最终文字取代草稿。',
   }];
   const ariaLabels = [{
     en: 'One second of sound is 32000 bytes. A chooser selects one of three recognition routes: local Omni on this Mac, a configured remote ASR API, or macOS system dictation through the helper.',
@@ -30,6 +35,9 @@
   }, {
     en: 'A file transcriber waits for three seconds of speech to stop. For this OpenAI-compatible example, 96000 PCM bytes plus a 44-byte WAV header become one 96044-byte upload, then one final text.',
     zh: '文件型识别等三秒说话结束。这个 OpenAI 兼容例子里，96000 字节 PCM 加 44 字节 WAV 头组成一次 96044 字节上传，然后返回一份最终文字。',
+  }, {
+    en: 'Three sends produce three replaceable whole-text drafts: Good, Good mor, Good morning. Finish produces one final Good morning. The drafts are not appended together.',
+    zh: '三次发送产生三份可替换的完整草稿：Good、Good mor、Good morning。结束后产生一份最终 Good morning。草稿不是逐句拼接。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -46,7 +54,8 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(step === 0 ? (phone ? 650 : 440) : (phone ? 570 : 410));
+  const H = $derived((phone ? [650, 570, 550, 600, 500, 570, 480] : [440, 410, 450, 480, 390, 440, 370])[step]);
+  const draftText = ['Good', 'Good mor', 'Good morning'];
 </script>
 
 <figure class="viz">
@@ -128,6 +137,26 @@
       <text x={phone ? 150 : 530} y={phone ? 455 : 304} text-anchor="middle" class="detail">{t('one result after the stop', '停止后返回一份结果')}</text>
       <text x={W / 2} y={phone ? 510 : 363} text-anchor="middle" class="cut">{t('STOP → ONE UPLOAD → ONE FINAL RESULT', '停止 → 一次上传 → 一份最终结果')}</text>
       <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t(`Constructed ${VOXT_ASR_FILE_SECONDS}-second example; OpenAI-compatible WAV upload.`, `构造的 ${VOXT_ASR_FILE_SECONDS} 秒例子；OpenAI 兼容接口上传 WAV。`)}</text>
+      {:else if step === 2}
+      <text x={W / 2} y="27" text-anchor="middle" class="title">{t('STREAMING · DRAFTS CAN CHANGE', '流式识别 · 草稿可以变化')}</text>
+      <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('stream = recognise while sound is still arriving', '流式 = 声音还在送来，识别已经开始')}</text>
+      {#each draftText as text, i}
+        {@const x = phone ? 35 : 30 + i * 230}
+        {@const y = phone ? 75 + i * 95 : 80}
+        <rect x={x} y={y} width={phone ? 230 : 200} height="78" rx="9" fill="var(--bg)" stroke="var(--line)" />
+        <text x={x + (phone ? 115 : 100)} y={y + 21} text-anchor="middle" class="detail">SEND {i + 1} → {t('DRAFT', '草稿')} {i + 1}</text>
+        <text x={x + (phone ? 115 : 100)} y={y + 50} text-anchor="middle" class="result">“{text}”</text>
+        <text x={x + (phone ? 115 : 100)} y={y + 69} text-anchor="middle" class="detail">{t('the whole current draft', '当前整份草稿')}</text>
+        {#if i < 2}
+          <line x1={phone ? 150 : x + 200} y1={phone ? y + 78 : 119} x2={phone ? 150 : x + 225} y2={phone ? y + 91 : 119} stroke="var(--muted)" stroke-width="2" marker-end="url(#asr-route-arrow)" />
+        {/if}
+      {/each}
+      <text x={W / 2} y={phone ? 373 : 190} text-anchor="middle" class="cut">{t('EACH NEW DRAFT REPLACES THE LAST · NOT AN EXTRA SENTENCE', '每份新草稿替换上一份 · 不是多加一句话')}</text>
+      <line x1={W / 2} y1={phone ? 385 : 205} x2={W / 2} y2={phone ? 414 : 240} stroke="var(--muted)" stroke-width="2" marker-end="url(#asr-route-arrow)" />
+      <rect x={phone ? 35 : 180} y={phone ? 420 : 250} width={phone ? 230 : 360} height="82" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
+      <text x={W / 2} y={phone ? 444 : 276} text-anchor="middle" class="label amber">FINISH → {t('FINAL TEXT', '最终文字')}</text>
+      <text x={W / 2} y={phone ? 477 : 309} text-anchor="middle" class="result">“Good morning.”</text>
+      <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t(`${VOXT_ASR_STREAM_SENDS} Send calls + 1 Finish = ${VOXT_ASR_STREAM_CALLS} calls in this example.`, `本例 ${VOXT_ASR_STREAM_SENDS} 次 Send + 1 次 Finish = ${VOXT_ASR_STREAM_CALLS} 次调用。`)}</text>
       {/if}
     </svg>
   </div>

@@ -105,3 +105,54 @@ OpenAI 兼容 client 收到 PCM 后调用 `asr.WAV` 包装，再向 `/audio/tran
 - session 的流式优先、文件型后备分支：`Voxt/internal/session/run_audio.go:18-22`；`Voxt/internal/session/run_listen.go:399-418`。
 - WAV 的 44 字节头与 PCM 包装：`Voxt/internal/asr/audio.go:27-49`。
 - OpenAI 兼容接口的单次上传与 PCM→WAV：`Voxt/internal/asr/openai/openai.go:1-5,101-129`。
+
+## 第 3 步 · 流式草稿会被替换
+
+> **一句话：** 流式识别在录音途中给出整份当前草稿；新草稿替换旧草稿，停止后的最终文字才正式采用。
+
+### 图上是什么
+
+- `Streamer` 是流式识别器：录音还没结束，就能接收声音并返回文字。
+- 三个蓝框对应本例三次 `Send`。每次送入一些声音后，识别器可能发出 `EventPartial`，图里简写为“草稿”。
+- “Good” → “Good mor” → “Good morning” 是三份依次替换的完整草稿，不是三段要接起来的话。第二份包含第一份，第三份又包含第二份。
+- 本例文字只是变长；真实模型也能改动已经显示的字词，所以草稿不能当成最终结果。
+- 停止后调用 `Finish`。`EventFinal` 给出正式结果，橙色框标出它取代草稿。
+
+### 公式
+
+$$
+N=S+1
+$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $N$ | 本例对 stream 的调用次数 | 本步计算 |
+| $S$ | 录音途中调用 `Send` 的次数 | 本步构造的 3 次 |
+| $1$ | 停止时调用一次 `Finish` | `run_audio.go` 的结束分支 |
+
+### 代入图上的数
+
+| 要算的量 | 算式 | 结果 |
+|---|---|---:|
+| 本例总调用次数 | $3+1$ | 4 次 |
+| 本例草稿数量 | 每次 `Send` 后一份 | 3 份 |
+
+实际 `Send` 次数随录音长度和帧大小变化；provider 也不必在每次 `Send` 后都发草稿。本例固定三次，是为了看清“替换”而不是模拟性能。
+
+### 协议规则与边界
+
+session 只在 provider 实现 `Streamer` 且声明 `Caps().Stream` 时走这条路。后台循环在录音期间发送音频，录音结束后调用 `Finish`；事件循环把 `EventPartial` 写进当前快照，把 `EventFinal` 或 `EventError` 当作终止事件。
+
+`Partial` 是当前整份假设文本，不是增量 delta。不同 provider 的草稿时机和内容可以不同；本步只讲共同协议，不保证一秒一份，也不把所有本机 Omni 的细节套给其他服务。
+
+### 接下来
+
+流式识别可以边听边改草稿。若文件型录音超过上传上限，就要先切块；下一步看切点怎样避开词语中间。
+
+### 源码出处
+
+公开基线同第 1 步。
+
+- 流式能力判断：`Voxt/internal/session/run_audio.go:18-22`。
+- `Finish` 与草稿、最终、错误事件：`Voxt/internal/session/run_audio.go:176-225`。
+- stream 接口和事件约定：`Voxt/internal/asr/asr.go:107-177`。

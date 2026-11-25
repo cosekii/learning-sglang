@@ -13,7 +13,7 @@ export const deep = await deepFor('voxt-speech-recognition-routes');
 <details class="i18n-en">
 <summary>Where this chapter's claims come from</summary>
 
-Step 1 uses the public provider interfaces to map three alternatives: local Omni, a configured ASR API and macOS system dictation. Its one-second, 32,000-byte recording is a constructed example derived from the capture format in Chapter 3; only the selected service receives it. An API hosted at a loopback address also stays on this Mac. Step 2 uses the session's file-transcriber branch and an OpenAI-compatible WAV upload; its three-second recording and returned sentence are constructed, while the 44-byte WAV header and size formula come from public code.
+Step 1 uses the public provider interfaces to map three alternatives: local Omni, a configured ASR API and macOS system dictation. Its one-second, 32,000-byte recording is a constructed example derived from the capture format in Chapter 3; only the selected service receives it. An API hosted at a loopback address also stays on this Mac. Step 2 uses the session's file-transcriber branch and an OpenAI-compatible WAV upload; its three-second recording and returned sentence are constructed, while the 44-byte WAV header and size formula come from public code. Step 3 follows the public stream protocol; three sends and their English draft texts are constructed to show that each partial replaces the whole current hypothesis.
 
 Source revision: `sglang-omni@0e641996a0c269601d03f1cb29d3f46d7cb345a6`. The deep dive lists exact files and lines.
 
@@ -22,7 +22,7 @@ Source revision: `sglang-omni@0e641996a0c269601d03f1cb29d3f46d7cb345a6`. The dee
 <details class="i18n-zh">
 <summary>本章说法的出处</summary>
 
-第 1 步按公开 provider 接口画出三种选择：本机 Omni、配置的 ASR API 和 macOS 系统听写。1 秒、32,000 字节录音是沿用第 3 章采集格式构造的例子；只有选中的服务收到它。API 地址指向 loopback 时，声音也留在本机。第 2 步采用 session 的文件型识别分支和 OpenAI 兼容 WAV 上传；3 秒录音和返回句子是构造示例，44 字节 WAV 头及大小算式来自公开代码。
+第 1 步按公开 provider 接口画出三种选择：本机 Omni、配置的 ASR API 和 macOS 系统听写。1 秒、32,000 字节录音是沿用第 3 章采集格式构造的例子；只有选中的服务收到它。API 地址指向 loopback 时，声音也留在本机。第 2 步采用 session 的文件型识别分支和 OpenAI 兼容 WAV 上传；3 秒录音和返回句子是构造示例，44 字节 WAV 头及大小算式来自公开代码。第 3 步遵循公开 stream 协议；三次发送和英文草稿是构造示例，用来说明每份 partial 都替换当前整份假设文本。
 
 源码版本：`sglang-omni@0e641996a0c269601d03f1cb29d3f46d7cb345a6`。精确文件和行号见深入讲解。
 

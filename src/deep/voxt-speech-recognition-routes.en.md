@@ -105,3 +105,54 @@ Public baseline: same as Step 1.
 - Session's streaming-first and file-fallback branches: `Voxt/internal/session/run_audio.go:18-22`; `Voxt/internal/session/run_listen.go:399-418`.
 - WAV's 44-byte header and PCM wrapping: `Voxt/internal/asr/audio.go:27-49`.
 - OpenAI-compatible upload and PCM-to-WAV conversion: `Voxt/internal/asr/openai/openai.go:1-5,101-129`.
+
+## Step 3 · Streaming drafts are replaced
+
+> **In one line:** A streaming recogniser supplies the whole current draft during recording; each draft replaces the last, and final text is the result that counts.
+
+### On the stage
+
+- A `Streamer` accepts sound and returns text before recording has finished.
+- The three boxes correspond to this example's three `Send` calls. After some audio, the recogniser can emit `EventPartial`, shortened to “draft” on the stage.
+- “Good” → “Good mor” → “Good morning” are three successive whole drafts, not three parts to concatenate. Each contains or revises the previous hypothesis.
+- This example only adds characters; a real model can also change words already shown, so a draft is not final.
+- `Finish` follows the stop. `EventFinal` supplies the result in orange, replacing the draft.
+
+### Formula
+
+$$
+N=S+1
+$$
+
+| Symbol | Meaning | Where it comes from |
+|---|---|---|
+| $N$ | Calls to the stream in this example | Calculated in this step |
+| $S$ | `Send` calls during recording | This step's constructed 3 |
+| $1$ | One `Finish` at the stop | The ending branch in `run_audio.go` |
+
+### The numbers on the stage
+
+| Quantity | Calculation | Result |
+|---|---|---:|
+| Total calls in this example | $3+1$ | 4 calls |
+| Drafts in this example | One after each `Send` | 3 drafts |
+
+Real send counts depend on recording length and frame size, and a provider need not emit a draft after every send. Three fixed sends make replacement visible; they are not a performance measurement.
+
+### Protocol and scope
+
+The session uses this route only when the provider implements `Streamer` and declares `Caps().Stream`. Its writer sends audio during recording and calls `Finish` afterwards. Its event reader stores each `EventPartial` in the current snapshot; `EventFinal` or `EventError` terminates the stream.
+
+A partial is the whole current hypothesis, not a delta. Draft timing and content vary by provider. This step explains the shared protocol, not a one-second cadence or every local Omni detail.
+
+### Next
+
+Streaming can revise drafts while listening. An oversized file upload must first be split; the next step shows how the cut avoids the middle of a word.
+
+### Sources
+
+Public baseline: same as Step 1.
+
+- Streaming capability check: `Voxt/internal/session/run_audio.go:18-22`.
+- `Finish` and partial, final or error events: `Voxt/internal/session/run_audio.go:176-225`.
+- Stream interface and event contract: `Voxt/internal/asr/asr.go:107-177`.

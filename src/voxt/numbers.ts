@@ -66,3 +66,7 @@ export const VOXT_ASR_FILE_SECONDS = 3;
 export const VOXT_WAV_HEADER_BYTES = 44;
 export const VOXT_ASR_FILE_PCM_BYTES = VOXT_ASR_FILE_SECONDS * VOXT_PCM_BYTES_PER_SECOND;
 export const VOXT_ASR_FILE_WAV_BYTES = VOXT_ASR_FILE_PCM_BYTES + VOXT_WAV_HEADER_BYTES;
+
+// Constructed stream: three audio sends, then one finish call.
+export const VOXT_ASR_STREAM_SENDS = 3;
+export const VOXT_ASR_STREAM_CALLS = VOXT_ASR_STREAM_SENDS + 1;
