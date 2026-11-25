@@ -216,6 +216,7 @@ SGLang 里一个 prefill batch 的 token 数受 `max_prefill_tokens`（默认 16
 - 上行：每个 chunk 步对应一块灰色（冻结），chunk 之间各有一个橙色 decode 步。
 - 红色括号「13 ms 没有 token」；数字块 13 ms（仍是红框，超过 9.55 ms）和 47 ms。
 - 底部灰色脚注：SGLang 默认切 chunk（H100 上 8,192 token），但一个 prompt 的 chunk 连着跑；图上的交替需要 `--prefill-decode-interval 1`。
+- 中文手机图按四行列出 512、512、512、464：每行蓝块后都有橙色的 decode，白圈在最后的 464 块末。底部写出最长间隔 13 ms = 8.3 ms + 4.8 ms、首个 token 47 ms，并保留默认连续 chunk 与交替参数的脚注。
 
 ### 公式
 
