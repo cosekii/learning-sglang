@@ -100,3 +100,36 @@ A process group is the communication boundary. This chapter does not expand `new
 Every process calls the same collective. The next step follows that call into the GPU communication software.
 
 Source: `Awesome-ML-SYS-Tutorial/torch/torch-distributed/readme.md:13-24,57-89,118-141`.
+
+## Step 4 · The interface hands the collective to NCCL
+
+**One sentence.** All four ranks call SUM all-reduce through `torch.distributed`, and the selected NCCL backend communicates the GPU tensors.
+
+### On the stage
+
+- Ranks 0–3 on the left all participate in the collective; rank 0 is not doing the operation alone.
+- The code applies SUM all-reduce to each process's local tensor.
+- `torch.distributed` is the interface the program calls. The `NCCL backend` below it implements GPU collective communication.
+- Blue marks the participants; orange marks the two software layers. Physical links are not drawn yet.
+
+### Formula and symbols
+
+$$y=\operatorname{all\_reduce}_{\mathrm{SUM}}(x_0,x_1,x_2,x_3)$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $x_r$ | Input tensor on rank $r$ | Steps 2 and 3 |
+| $y$ | Sum returned to every rank | Step 2: $[16,20]$ |
+| $\operatorname{all\_reduce}_{\mathrm{SUM}}$ | Collective that adds matching positions and returns the result to every participant | Step 2 |
+
+### The numbers on the stage
+
+The four ranks input $[1,2]$, $[3,4]$, $[5,6]$ and $[7,8]$, so every rank receives $y=[16,20]$. `tensor` in the code is the current process's local input, not four inputs inside one process.
+
+Initialization selects this backend with `backend="nccl"`. NCCL is NVIDIA's GPU collective-communication library. Other backends are outside this chapter, and Ring is not presented as the choice for every run.
+
+### Next
+
+Which hardware path carries the tensor below this interface? The next step draws the links.
+
+Sources: `Awesome-ML-SYS-Tutorial/torch/nccl/readme.md:3-10,41-53`; `Awesome-ML-SYS-Tutorial/torch/torch-distributed/readme.md:160-175,286-292`.

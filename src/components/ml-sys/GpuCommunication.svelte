@@ -17,6 +17,9 @@
   }, {
     caption: `One process drives each GPU in this example. Rank names the process; world size counts all ${COMM_WORLD_SIZE}.`,
     captionZh: `这个例子里，一个进程管一张 GPU。rank 是进程编号，world size 是总数 ${COMM_WORLD_SIZE}。`,
+  }, {
+    caption: 'torch.distributed exposes the all-reduce call. Its NCCL backend moves GPU tensors.',
+    captionZh: 'torch.distributed 提供 all-reduce 接口。NCCL 后端负责搬 GPU 张量。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -138,6 +141,50 @@
           <text x="150" y="477" text-anchor="middle" class="small">{t('one process per GPU in this example', '本例：一个进程对应一张 GPU')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('The one-process-per-GPU mapping is an example, not a requirement.', '一进程一卡是本例安排，不是唯一做法。')}</text>
+      {:else if step === 3}
+        <text x={phone ? 18 : 36} y="30" class="title">{t('Follow one call into the NCCL backend', '跟着一次调用走进 NCCL 后端')}</text>
+        <text x={phone ? 18 : 36} y="55" class="label">{t('NCCL = NVIDIA’s GPU collective-communication library', 'NCCL = NVIDIA 的 GPU 集合通信库')}</text>
+        {#if !phone}
+          <rect x="42" y="86" width="155" height="226" rx="13" fill="var(--bg)" stroke="var(--line)" />
+          <text x="120" y="113" text-anchor="middle" class="small strong">{t('all participants call', '所有参与者都调用')}</text>
+          {#each COMM_PARTIAL_TENSORS as _, i}
+            <rect x="66" y={130 + i * 42} width="108" height="31" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="120" y={151 + i * 42} text-anchor="middle" class="small">rank {i}</text>
+          {/each}
+          <line x1="197" y1="199" x2="238" y2="199" stroke="var(--accent)" stroke-width="3" />
+          <path d="M238,199 l-11,-7 v14 z" fill="var(--accent)" />
+          <rect x="248" y="86" width="422" height="65" rx="11" fill="var(--panel)" stroke="var(--line)" />
+          <text x="459" y="113" text-anchor="middle" class="code">dist.all_reduce(tensor,</text>
+          <text x="459" y="137" text-anchor="middle" class="code">op=dist.ReduceOp.SUM)</text>
+          <line x1="459" y1="151" x2="459" y2="174" stroke="var(--gen)" stroke-width="3" />
+          <path d="M459,180 l-8,-13 h16 z" fill="var(--gen)" />
+          <rect x="248" y="187" width="422" height="51" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="459" y="219" text-anchor="middle" class="section">torch.distributed</text>
+          <line x1="459" y1="238" x2="459" y2="261" stroke="var(--gen)" stroke-width="3" />
+          <path d="M459,267 l-8,-13 h16 z" fill="var(--gen)" />
+          <rect x="248" y="274" width="422" height="55" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="459" y="308" text-anchor="middle" class="section">NCCL backend</text>
+          <text x="459" y="360" text-anchor="middle" class="small">{t('collective call → GPU communication backend', '集合通信调用 → GPU 通信后端')}</text>
+        {:else}
+          <rect x="45" y="76" width="210" height="39" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="150" y="101" text-anchor="middle" class="small strong">rank 0–3 · {t('same call', '同一个调用')}</text>
+          <line x1="150" y1="115" x2="150" y2="132" stroke="var(--gen)" stroke-width="3" />
+          <path d="M150,137 l-7,-11 h14 z" fill="var(--gen)" />
+          <rect x="22" y="143" width="256" height="76" rx="10" fill="var(--panel)" stroke="var(--line)" />
+          <text x="150" y="174" text-anchor="middle" class="code">dist.all_reduce(tensor,</text>
+          <text x="150" y="201" text-anchor="middle" class="code">op=SUM)</text>
+          <line x1="150" y1="219" x2="150" y2="239" stroke="var(--gen)" stroke-width="3" />
+          <path d="M150,245 l-7,-11 h14 z" fill="var(--gen)" />
+          <rect x="22" y="251" width="256" height="57" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="150" y="286" text-anchor="middle" class="section">torch.distributed</text>
+          <line x1="150" y1="308" x2="150" y2="328" stroke="var(--gen)" stroke-width="3" />
+          <path d="M150,334 l-7,-11 h14 z" fill="var(--gen)" />
+          <rect x="22" y="340" width="256" height="59" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="150" y="376" text-anchor="middle" class="section">NCCL backend</text>
+          <text x="150" y="434" text-anchor="middle" class="small">{t('interface above', '上面：程序调用的接口')}</text>
+          <text x="150" y="460" text-anchor="middle" class="small">{t('GPU communication below', '下面：GPU 通信后端')}</text>
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('PyTorch selects the NCCL backend with backend="nccl".', 'PyTorch 用 backend="nccl" 选择 NCCL 后端。')}</text>
       {/if}
     </svg>
   </div>
@@ -152,6 +199,7 @@
   .small { font-size: 13px; fill: var(--fg); }
   .total { font-family: var(--mono); font-size: 18px; font-weight: 700; fill: var(--fg); }
   .tensor { font-family: var(--mono); font-size: 18px; font-weight: 700; fill: var(--fg); }
+  .code { font-family: var(--mono); font-size: 15px; fill: var(--fg); }
   .result { font-family: var(--mono); font-size: 15px; font-weight: 650; fill: var(--fg); }
   @media (max-width: 600px) {
     .title { font-size: 16px; }

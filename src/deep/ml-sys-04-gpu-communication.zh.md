@@ -100,3 +100,36 @@ $$N=\texttt{world\_size},\qquad r=\texttt{rank}\in\{0,1,\ldots,N-1\}$$
 每个进程都调用同一个集合操作时，调用怎样落到 GPU 通信？下一步跟进软件栈。
 
 来源：`Awesome-ML-SYS-Tutorial/torch/torch-distributed/readme.md:13-24,57-89,118-141`。
+
+## 第 4 步 · 接口把集合调用交给 NCCL
+
+**一句话。** 四个 rank 都调用 `torch.distributed` 的 SUM all-reduce，选择 NCCL 后端后，由它执行 GPU 张量通信。
+
+### 图上是什么
+
+- 左侧 rank 0–3 表示四个进程都参与这次集合调用，不是只有 rank 0 工作。
+- 中间代码是各进程对自己的张量执行求和 all-reduce。
+- `torch.distributed` 是程序调用的接口；`NCCL backend` 是它下面的 GPU 集合通信实现。
+- 蓝色表示参与者，橙色表示这次调用经过的两层软件；本步没有画物理链路。
+
+### 公式与符号
+
+$$y=\operatorname{all\_reduce}_{\mathrm{SUM}}(x_0,x_1,x_2,x_3)$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $x_r$ | rank $r$ 的输入张量 | 第 2、3 步 |
+| $y$ | 每个 rank 都拿到的求和结果 | 第 2 步，$[16,20]$ |
+| $\operatorname{all\_reduce}_{\mathrm{SUM}}$ | 对所有输入逐格求和并发回每个参与者的集合操作 | 第 2 步 |
+
+### 代入图上的数
+
+四个 rank 分别输入 $[1,2]$、$[3,4]$、$[5,6]$、$[7,8]$，所以每个 rank 的 $y$ 都是 $[16,20]$。代码里的 `tensor` 是当前进程的本地输入，不是四份输入同时塞进一个进程。
+
+初始化时写 `backend="nccl"` 选择这个后端。NCCL 是 NVIDIA 的 GPU 集合通信库；本章不展开其他后端，也不把 Ring 说成每次运行的固定选择。
+
+### 接下来
+
+接口下面，张量究竟走哪条硬件路径？下一步看 GPU 之间的链路。
+
+来源：`Awesome-ML-SYS-Tutorial/torch/nccl/readme.md:3-10,41-53`；`Awesome-ML-SYS-Tutorial/torch/torch-distributed/readme.md:160-175,286-292`。
