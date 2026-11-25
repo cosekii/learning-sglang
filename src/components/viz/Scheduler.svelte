@@ -65,7 +65,7 @@
   const CHUNK_FOOT_ZH = `SGLang 默认切 chunk（H100 上 8,192 token），但一个 prompt 的 chunk 连着跑 · 这需要 --prefill-decode-interval 1`;
   const M = Object.fromEntries((['prefill-first', 'batched', 'chunked', 'mixed'] as Mode[]).map((m) => [m, metrics(timeline(m))])) as Record<Mode, ReturnType<typeof metrics>>;
   const steps: Step[] = [
-    { scene: 'recap', caption: `Ch. 5 Step 9 ended here: a newcomer's prefill stretching everyone's decode step. SGLang doesn't run the two together by default. They split the work into two kinds of batch and pick one each step. That's the scheduler.`, captionZh: `Ch. 5 Step 9 到此：新来者的 prefill 拉长所有人的 decode 步。SGLang 默认不一起跑，而是把工作分成两种 batch，每步选一种。这就是 scheduler。` },
+    { scene: 'recap', caption: `Ch. 5 Step 9 ended here: a newcomer's prefill stretching everyone's decode step. SGLang doesn't run the two together by default. They split the work into two kinds of batch and pick one each step. That's the scheduler.`, captionZh: `Ch. 5 Step 9 的新来者拉长了 decode 步。SGLang 默认每步只选 prefill 或 decode batch。` },
     { scene: 'lists', caption: `The engine keeps two lists. <b>Waiting</b>: new requests that need a prefill. <b>Running</b>: conversations mid-answer that need one more token. Each step runs one batch, from one list.`, captionZh: `引擎维护两个列表。<b>Waiting</b>：需要 prefill 的新 request。<b>Running</b>：回答到一半、还差一个 token 的对话。每步跑一个 batch，来自其中一个列表。` },
     { scene: 'why', caption: `Same model, two shapes. Prefill: a few sequences, hundreds of tokens each, ragged. Decode: many sequences, one token each, every step. Two shapes, two batches; chapters ${CH_DISAGG} and ${CH_CUDA} show what that unlocks.`, captionZh: `同一模型，两种形状。Prefill：几条序列，各几百 token，长短不齐。Decode：许多序列，每步各一个 token。两种形状两个 batch；第 ${CH_DISAGG}、${CH_CUDA} 章讲这解锁了什么。` },
     { scene: 'timeline', mode: 'prefill-first', caption: `The default policy: if anyone is waiting, run a prefill batch first. The newcomer's first token comes in ${fmt(M['prefill-first'].ttft)}, but nobody decodes during those ${fmt(M['prefill-first'].ttft)}. An 8k-token prompt, the longest Llama-3-8B takes, freezes everyone for ${fmt(stepMs(8192))}.`, captionZh: `默认策略：有人等待就先跑 prefill batch。新来者的首个 token 要 ${fmt(M['prefill-first'].ttft)}，但这 ${fmt(M['prefill-first'].ttft)} 里没人 decode。8k token 的 prompt（Llama-3-8B 的上限）会冻结所有人 ${fmt(stepMs(8192))}。` },
@@ -95,14 +95,36 @@
     query.addEventListener('change', update);
     return () => query.removeEventListener('change', update);
   });
+  const phoneRecap = $derived(phone && step === 0 && $lang === 'zh');
   const phoneMixed = $derived(phone && step === 6 && $lang === 'zh');
   const phoneCompare = $derived(phone && step === 7 && $lang === 'zh');
-  const phoneCustom = $derived(phoneMixed || phoneCompare);
+  const phoneCustom = $derived(phoneRecap || phoneMixed || phoneCompare);
 </script>
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox={phoneMixed ? '0 0 360 550' : phoneCompare ? '0 0 360 500' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="The scheduler, step {step + 1}" class:phone-custom={phoneCustom}>
+    <svg viewBox={phoneRecap ? '0 0 360 400' : phoneMixed ? '0 0 360 550' : phoneCompare ? '0 0 360 500' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="The scheduler, step {step + 1}" class:phone-custom={phoneCustom}>
+
+      {#if phoneRecap}
+        <text x="180" y="28" text-anchor="middle" class="ph-title">新来者让这一步变长</text>
+        <text x="180" y="52" text-anchor="middle">Ch. 5 Step 9 的同一例</text>
+        <text x="20" y="92">普通 decode 步</text>
+        <rect x="20" y="106" width="66" height="30" rx="5" fill="var(--gen)" />
+        <text x="102" y="126">每人出 token</text>
+        <text x="20" y="174">新 prompt 挤进同一步</text>
+        <rect x="20" y="188" width="244" height="30" rx="5" fill="var(--accent)" />
+        <rect x="264" y="188" width="52" height="30" rx="5" fill="var(--gen)" />
+        <text x="20" y="240" class="ph-strong">同一步变长，其他人也更晚出 token</text>
+        <line x1="180" y1="258" x2="180" y2="280" stroke="var(--line)" stroke-width="2" />
+        <polygon points="174,278 186,278 180,288" fill="var(--faint)" />
+        <rect x="20" y="294" width="146" height="66" rx="9" fill="#fbfaf7" stroke="var(--accent)" />
+        <text x="93" y="321" text-anchor="middle" class="ph-strong">prefill batch</text>
+        <text x="93" y="345" text-anchor="middle">处理新 prompt</text>
+        <rect x="194" y="294" width="146" height="66" rx="9" fill="#fbfaf7" stroke="var(--gen)" />
+        <text x="267" y="321" text-anchor="middle" class="ph-strong">decode batch</text>
+        <text x="267" y="345" text-anchor="middle">每人出 token</text>
+        <text x="180" y="386" text-anchor="middle" class="ph-strong">SGLang 默认每步二选一</text>
+      {/if}
 
       {#if phoneMixed}
         <text x="180" y="26" text-anchor="middle" class="ph-title">混合：每步都有 decode token</text>
