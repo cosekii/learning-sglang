@@ -17,6 +17,8 @@ Step 1 selects two rows from the six-setting experiment in `Awesome-ML-SYS-Tutor
 
 Step 2 uses the article's simplified 5,500-token system and 40-token user example (`readme.md:71-89`). Full-attention K/V is per-token and append-only, so the new request can retain the 5,500 shared slots, release the old tail and prefill 40 new tokens. The block widths are schematic. Ch. 8 Steps 2–3 already established shared pages and longest-common-prefix matching.
 
+Step 3 follows `readme.md:93-135`: a recurrent layer keeps a fixed-size state and updates it rather than storing every earlier state. The pinned llama.cpp source says that Mamba-like models do not preserve previous per-token states (`llama-memory-recurrent.cpp:170-172` at `7e4c0a96880dae4fc4268ad441f8a6446bd5460a`). Its optional bounded snapshot ring is a separate exception, not evidence that an arbitrary earlier state is always available.
+
 </details>
 
 <details class="i18n-zh">
@@ -25,5 +27,7 @@ Step 2 uses the article's simplified 5,500-token system and 40-token user exampl
 第 1 步选取 `Awesome-ML-SYS-Tutorial/engineer/hybrid-prefix-cache/readme.md:572-599` 六组实验中的两行。实验保持机器、system prompt 和短请求不变，只改 `num_batch`。1024 时短请求为 3.95 秒、重算 1019–1029 个 token；64 时为 0.91 秒、重算 63–69 个 token。冷启动分别为 16.9 秒和 28.4 秒。这些是原文实测，不是本机实测，也不是对所有负载的通用推荐。
 
 第 2 步使用原文第 71–89 行的简化例子：5,500 token system 加 40 token user。全注意力的 K/V 按 token 独立保存、只往后追加，因此新请求可以保留 5,500 格共同前缀、释放旧尾部，只 prefill 40 个新 token。色块宽度是示意。第 1 本 Ch. 8 Steps 2–3 已经讲过共享 page 和最长共同前缀匹配。
+
+第 3 步依据原文第 93–135 行：recurrent layer 保存定长 state 并持续更新，不另存每个历史位置的 state。固定版本 `7e4c0a96880dae4fc4268ad441f8a6446bd5460a` 的 `llama-memory-recurrent.cpp:170-172` 也明确说明 Mamba 一类模型没有保存此前的逐 token state。它另有长度受限的快照环；这个例外不表示任意历史 state 总能直接读取。
 
 </details>

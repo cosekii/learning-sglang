@@ -14,6 +14,9 @@
   }, {
     caption: `Full attention stores each token’s K/V in its own slot. A new request keeps ${HYBRID_SYSTEM_TOKENS.toLocaleString()} shared slots and computes only its ${HYBRID_USER_TOKENS}-token tail.`,
     captionZh: `全注意力把每个 token 的 K/V 单独存一格。新请求保留 ${HYBRID_SYSTEM_TOKENS.toLocaleString()} 格共同前缀，只算 ${HYBRID_USER_TOKENS} 个新 token。`,
+  }, {
+    caption: `A recurrent state is one fixed-size summary, updated by every token. Once the old tail joins it, token ${HYBRID_SYSTEM_TOKENS.toLocaleString()}’s version was not saved.`,
+    captionZh: `recurrent state 是一份定长摘要，每个 token 都更新它。旧 user 并入后，第 ${HYBRID_SYSTEM_TOKENS.toLocaleString()} 个 token 时的摘要没有另存。`,
   }];
   let step = $state(0);
   $effect(() => {
@@ -83,7 +86,7 @@
         <text x="150" y="385" text-anchor="middle" class="cold">{t('cold startup', '冷启动')}: {HYBRID_COLD_DEFAULT_S} s → {HYBRID_COLD_TUNED_S} s</text>
         <text x="150" y="407" text-anchor="middle" class="small">+{HYBRID_COLD_EXTRA_S} s · {t('blue = one short request', '蓝色 = 一条短请求')}</text>
       {/if}
-      {:else}
+      {:else if step === 1}
         <defs>
           <pattern id="released-tail" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
             <rect width="7" height="7" fill="var(--bg)" />
@@ -147,8 +150,65 @@
           <text x="150" y="409" text-anchor="middle" class="small">{t('blue = reuse · orange = compute', '蓝 = 复用 · 橙 = 计算')}</text>
         {/if}
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('Block widths are schematic.', '色块宽度是示意。')}</text>
+      {:else}
+        {#if !phone}
+          <text x="38" y="30" class="title">{t('Recurrent state · one running summary', 'recurrent state · 一份不断更新的摘要')}</text>
+          <text x="38" y="55" class="label">{t('fixed-size state · every token updates the same copy', '定长 state · 每个 token 都更新同一份')}</text>
+
+          <text x="40" y="84" class="small strong">{t('tokens already processed', '已经处理的 token')}</text>
+          <rect x="40" y="95" width="330" height="35" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <rect x="370" y="95" width="90" height="35" rx="5" fill="var(--bg)" stroke="var(--muted)" stroke-dasharray="5 3" />
+          <text x="205" y="117" text-anchor="middle" class="small">system · {HYBRID_SYSTEM_TOKENS.toLocaleString()}</text>
+          <text x="415" y="117" text-anchor="middle" class="small">{t('old user', '旧 user')} · {HYBRID_USER_TOKENS}</text>
+          <line x1="468" y1="112" x2="520" y2="112" stroke="var(--gen)" stroke-width="3" />
+          <path d="M520,112 l-11,-7 v14 z" fill="var(--gen)" />
+          <rect x="530" y="75" width="150" height="95" rx="12" fill="var(--gen-soft)" stroke="var(--gen)" stroke-width="2" />
+          <text x="605" y="103" text-anchor="middle" class="small strong">{t('current state', '当前 state')}</text>
+          <text x="605" y="132" text-anchor="middle" class="batch">{t('after', '处理到')} {HYBRID_PROMPT_TOKENS.toLocaleString()}</text>
+          <text x="605" y="154" text-anchor="middle" class="small">system + {t('old', '旧')} {HYBRID_USER_TOKENS}</text>
+
+          <rect x="40" y="210" width="300" height="105" rx="12" fill="var(--bg)" stroke="var(--line)" />
+          <text x="190" y="240" text-anchor="middle" class="small strong">{t('token matching still works', 'token 匹配仍然有效')}</text>
+          <text x="190" y="269" text-anchor="middle" class="small">{t('first 5,500 tokens are identical', '前 5,500 个 token 完全相同')}</text>
+          <text x="190" y="296" text-anchor="middle" class="small">{t('matching content ≠ having its old state', '内容相同 ≠ 留着当时 state')}</text>
+
+          <line x1="605" y1="171" x2="605" y2="216" stroke="var(--eos)" stroke-width="2" stroke-dasharray="5 4" />
+          <path d="M596,187 l18,18 M614,187 l-18,18" stroke="var(--eos)" stroke-width="3" />
+          <rect x="390" y="220" width="290" height="95" rx="12" fill="var(--eos-soft)" stroke="var(--eos)" stroke-dasharray="6 4" />
+          <text x="535" y="250" text-anchor="middle" class="small strong">{t('needed for the new request', '新请求需要')}</text>
+          <text x="535" y="278" text-anchor="middle" class="batch">{t('state after', '处理到')} {HYBRID_SYSTEM_TOKENS.toLocaleString()}</text>
+          <text x="535" y="301" text-anchor="middle" class="small unavailable">{t('not saved; cannot subtract old 40', '没有另存；不能减去旧 40')}</text>
+
+          <text x="360" y="351" text-anchor="middle" class="small">{t('The current summary includes the old tail; earlier summaries were not saved.', '当前摘要已包含旧尾部；更早的摘要没有另存。')}</text>
+        {:else}
+          <text x="18" y="27" class="title">{t('Recurrent state', 'recurrent state')}</text>
+          <text x="18" y="51" class="small">{t('one fixed-size running summary', '一份定长、不断更新的摘要')}</text>
+
+          <text x="20" y="80" class="small strong">{t('tokens already processed', '已经处理的 token')}</text>
+          <rect x="20" y="91" width="190" height="32" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <rect x="210" y="91" width="70" height="32" rx="5" fill="var(--bg)" stroke="var(--muted)" stroke-dasharray="5 3" />
+          <text x="115" y="111" text-anchor="middle" class="small">system {HYBRID_SYSTEM_TOKENS.toLocaleString()}</text>
+          <text x="245" y="111" text-anchor="middle" class="small">{t('old', '旧')} {HYBRID_USER_TOKENS}</text>
+          <line x1="150" y1="124" x2="150" y2="143" stroke="var(--gen)" stroke-width="3" />
+          <path d="M150,145 l-7,-11 h14 z" fill="var(--gen)" />
+
+          <rect x="45" y="148" width="210" height="72" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" stroke-width="2" />
+          <text x="150" y="171" text-anchor="middle" class="small strong">{t('current state', '当前 state')}</text>
+          <text x="150" y="194" text-anchor="middle" class="batch">{t('after', '处理到')} {HYBRID_PROMPT_TOKENS.toLocaleString()}</text>
+          <text x="150" y="212" text-anchor="middle" class="small">system + {t('old', '旧')} {HYBRID_USER_TOKENS}</text>
+
+          <path d="M140,225 l20,20 M160,225 l-20,20" stroke="var(--eos)" stroke-width="3" />
+          <rect x="45" y="249" width="210" height="68" rx="11" fill="var(--eos-soft)" stroke="var(--eos)" stroke-dasharray="6 4" />
+          <text x="150" y="273" text-anchor="middle" class="small strong">{t('new request needs', '新请求需要')}</text>
+          <text x="150" y="296" text-anchor="middle" class="batch">{t('state after', '处理到')} {HYBRID_SYSTEM_TOKENS.toLocaleString()}</text>
+          <text x="150" y="312" text-anchor="middle" class="small unavailable">{t('not saved', '没有另存')}</text>
+
+          <text x="150" y="347" text-anchor="middle" class="small">{t('token match: first 5,500 still same', 'token 匹配：前 5,500 仍相同')}</text>
+          <text x="150" y="374" text-anchor="middle" class="small">{t('current state already includes old 40', '当前 state 已包含旧 40')}</text>
+        {/if}
+        <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('Earlier states require separately saved copies.', '更早的 state 需要另外保存副本。')}</text>
       {/if}
-      <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{step === 0 ? t('Selected article measurements; not this computer.', '选自原文实测，不是本机实测。') : t('Simplified article example; Ch. 8 Steps 2–3 covers matching.', '原文简化例；匹配见 Ch. 8 Steps 2–3。')}</text>
+      <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{step === 0 ? t('Selected article measurements; not this computer.', '选自原文实测，不是本机实测。') : step === 1 ? t('Simplified article example; Ch. 8 Steps 2–3 covers matching.', '原文简化例；匹配见 Ch. 8 Steps 2–3。') : t('llama.cpp: previous per-token states are not preserved here.', 'llama.cpp：这里没有保存此前的逐 token state。')}</text>
     </svg>
   </div>
   <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh}
@@ -165,6 +225,7 @@
   .tokens { font-family: var(--mono); font-size: 16px; font-weight: 650; fill: var(--fg); }
   .result { font-family: var(--mono); font-size: 16px; font-weight: 650; fill: var(--accent); }
   .cold { font-family: var(--mono); font-size: 15px; font-weight: 650; fill: var(--gen); }
+  .unavailable { fill: var(--eos); }
   @media (max-width: 600px) {
     .title { font-size: 16px; }
     .small { font-size: 12px; }

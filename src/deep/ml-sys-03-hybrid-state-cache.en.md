@@ -64,3 +64,36 @@ The K/V at position $i$ depends on tokens $1$ through $i$. Later tokens append n
 This result relies on a separate saved value for every position. The next step replaces that history with one recurrent summary.
 
 Sources: `Awesome-ML-SYS-Tutorial/engineer/hybrid-prefix-cache/readme.md:71-89`; Ch. 3 Steps 1–3 and Ch. 8 Steps 2–3.
+
+## Step 3 · Recurrent state keeps the current summary
+
+**One sentence.** A recurrent state compresses prior tokens into one fixed-size summary; after the old user updates it, the cache has no separate summary for token 5,500.
+
+### On the stage
+
+- The blue 5,500-token system and hatched 40-token old user update the same orange state. They do not write separate slots.
+- The orange box holds the current summary after 5,540 tokens. The dashed box marks the summary the new request needs at 5,500. That version was not saved, and the current summary cannot subtract only the old user.
+- This step concerns saved state. Token matching still works; the missing piece is a historical state at the matched position.
+
+### Formula and symbols
+
+$$S_t=U(S_{t-1},x_t)$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $S_t$ | Recurrent state after token $t$ | Abstract notation introduced here |
+| $S_{t-1}$ | State after the preceding token | Same recurrence |
+| $x_t$ | Model input representation for token $t$ | Per-token computation in Ch. 2 |
+| $U$ | The current recurrent layer's update | Treated as one operation; its internals are outside this step |
+
+### The numbers on the stage
+
+After 5,540 tokens, the cache holds $S_{5{,}540}$. The new request needs $S_{5{,}500}$ to compute only 40 new tokens, but this example keeps only the current state. State shape does not grow with token count. This saves per-position storage and removes direct positional access to earlier states.
+
+Gated DeltaNet also erases and gates information during its update. This chapter omits those formulas because the caching issue depends only on history being folded into one state. llama.cpp has a bounded per-token snapshot ring controlled by `n_rs_seq`; that exception stores extra copies for short rollbacks and does not match this diagram's no-saved-copy premise.
+
+### Next
+
+The engine can explicitly copy the state at selected positions. The next step calls each copy a checkpoint and replays from the newest usable one.
+
+Sources: `Awesome-ML-SYS-Tutorial/engineer/hybrid-prefix-cache/readme.md:93-165`; llama.cpp `7e4c0a96880dae4fc4268ad441f8a6446bd5460a`, `src/llama-memory-recurrent.cpp:170-189` and `common/common.h:970-975`.

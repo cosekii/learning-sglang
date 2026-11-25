@@ -64,3 +64,36 @@ $$E=5{,}500+40=5{,}540,\qquad C_{\mathrm{KV}}=5{,}540-5{,}500=40$$
 这个结果依赖「每个位置都另存一份」。下一步换成只保存一份汇总的 recurrent state。
 
 来源：`Awesome-ML-SYS-Tutorial/engineer/hybrid-prefix-cache/readme.md:71-89`；第 1 本 Ch. 3 Steps 1–3、Ch. 8 Steps 2–3。
+
+## 第 3 步 · recurrent state 只留当前摘要
+
+**一句话。** recurrent state 把已有 token 压进一份定长摘要；旧 user 也更新进去以后，cache 里没有第 5,500 个 token 时的另一份摘要。
+
+### 图上是什么
+
+- 上方蓝色是共同的 5,500 token system，斜线是旧 40 token user。它们依次更新同一个橙色 state，而不是各写一格。
+- 橙色框是处理到 5,540 时的当前摘要。下方虚线框表示新请求想找的第 5,500 个 token 时的摘要。它没有单独保存，当前摘要也无法单独减去旧 user。
+- 本步只讲 cache 里保存了什么。token 内容匹配仍然成立，缺的是与匹配位置对应的历史 state。
+
+### 公式与符号
+
+$$S_t=U(S_{t-1},x_t)$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $S_t$ | 处理完第 $t$ 个 token 后的 recurrent state | 本步的抽象记号 |
+| $S_{t-1}$ | 处理前一个 token 后的 state | 同一递推关系 |
+| $x_t$ | 第 $t$ 个 token 的模型输入表示 | 第 1 本 Ch. 2 的逐 token 计算 |
+| $U$ | 当前 recurrent layer 的更新计算 | 本步把它作为整体，不展开内部公式 |
+
+### 代入图上的数
+
+处理 5,540 个 token 后，cache 持有 $S_{5{,}540}$。新请求需要 $S_{5{,}500}$ 才能只算 40 个新 token，但本例只留当前 state，没有保存 $S_{5{,}500}$。state 的形状不随 token 数增加，省下了逐位置存储，也失去了直接按位置读取历史 state 的能力。
+
+真实 Gated DeltaNet 的更新还包含擦除与门控遗忘；本章不展开这些公式，因为裁剪问题只依赖「历史被更新进一份 state」这一性质。llama.cpp 另有 `n_rs_seq` 限制的逐 token 快照环，可以回滚很短的距离；它是有额外观存副本的例外，不改变本图「没有另存历史副本」的前提。
+
+### 接下来
+
+既然历史位置没有自动留下副本，就在选定位置主动抄一份 state，形成 checkpoint。
+
+来源：`Awesome-ML-SYS-Tutorial/engineer/hybrid-prefix-cache/readme.md:93-165`；llama.cpp `7e4c0a96880dae4fc4268ad441f8a6446bd5460a` 的 `src/llama-memory-recurrent.cpp:170-189`、`common/common.h:970-975`。
