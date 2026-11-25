@@ -163,7 +163,7 @@
         </marker>
       </defs>
       {#if step === 0}
-      <text x={phone ? 15 : 20} y="20" class="tag strong">SimpleScheduler.collect_batch · {t('same arrivals in both panels', '两幅图使用相同到达顺序')}</text>
+      <text x={phone ? 15 : 20} y="20" class="tag strong">SimpleScheduler.collect_batch · {phone ? t('same arrivals', '两幅图使用相同到达顺序') : t('same arrivals in both panels', '两幅图使用相同到达顺序')}</text>
       <text x={phone ? 15 : 20} y="44" class="tag">max_batch_size = {BATCH_WAIT_MAX_SIZE} · {BATCH_WAIT_READY_IDS.join('、')} @ 0 ms · {BATCH_WAIT_LATE_ID} @ {BATCH_WAIT_LATE_MS} ms</text>
       <text x={phone ? 15 : 20} y="66" class="tag">{t('Blue: queued work · orange: extra collection wait', '蓝色：已排队的工作 · 橙色：额外的凑批等待')}</text>
 
@@ -194,12 +194,12 @@
       {/each}
 
       <text x={W / 2} y={phone ? 586 : 340} text-anchor="middle" class="mono strong">{BATCH_WAIT_ACTIVE_MS} ms − 0 ms = {BATCH_WAIT_ADDED_MS} ms {t('later for A and B', 'A、B 更晚开始')}</text>
-      <text x={W / 2} y={phone ? 612 : 362} text-anchor="middle" class="tag">{t('C arrives at 6 ms, so it misses both collections; compute time is omitted.', 'C 在 6 ms 才到，两次收集都没赶上；图中不画计算耗时。')}</text>
-      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{t('The five-ms budget is a teaching counterfactual, not a recommended setting.', '5 ms 只是教学对照，不是推荐配置。')}</text>
-      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Next: an AR batch can keep running while requests join and leave.', '下一步：AR batch 怎样在请求加入和退出时继续运行。')}</text>
+      <text x={W / 2} y={phone ? 612 : 362} text-anchor="middle" class="tag">{phone ? t('C arrives at 6 ms and misses both; compute time omitted.', 'C 在 6 ms 才到，两次收集都没赶上；图中不画计算耗时。') : t('C arrives at 6 ms, so it misses both collections; compute time is omitted.', 'C 在 6 ms 才到，两次收集都没赶上；图中不画计算耗时。')}</text>
+      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{phone ? t('5 ms is a teaching comparison, not a recommendation.', '5 ms 只是教学对照，不是推荐配置。') : t('The five-ms budget is a teaching counterfactual, not a recommended setting.', '5 ms 只是教学对照，不是推荐配置。')}</text>
+      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Next: AR batches keep running as requests join and leave.', '下一步：AR batch 怎样在请求加入和退出时继续运行。') : t('Next: an AR batch can keep running while requests join and leave.', '下一步：AR batch 怎样在请求加入和退出时继续运行。')}</text>
       {:else if step === 1}
       <text x={phone ? 15 : 20} y="20" class="tag strong">running batch = {t('unfinished requests advancing together', '未完成请求一起逐步前进')}</text>
-      <text x={phone ? 15 : 20} y="44" class="tag">{t('Teaching cap', '教学上限')} · max_running_requests = {AR_TEACHING_MAX_RUNNING} · {t('memory must also fit', '显存也必须放得下')}</text>
+      <text x={phone ? 15 : 20} y="44" class="tag">{phone ? t(`max_running_requests = ${AR_TEACHING_MAX_RUNNING} · memory must fit`, `教学上限 · max_running_requests = ${AR_TEACHING_MAX_RUNNING} · 显存也必须放得下`) : t(`Teaching cap · max_running_requests = ${AR_TEACHING_MAX_RUNNING} · memory must also fit`, `教学上限 · max_running_requests = ${AR_TEACHING_MAX_RUNNING} · 显存也必须放得下`)}</text>
       <text x={phone ? 15 : 20} y="66" class="tag">{t('Blue: running row · orange: waiting request · grey: finished', '蓝色：运行中的行 · 橙色：等待请求 · 灰色：已结束')}</text>
       {#each arPanels as panel, round}
         <rect x={panel.x} y={panel.y} width={phone ? 270 : 325} height="230" rx="12" fill="var(--bg)" stroke="var(--line)" />
@@ -225,10 +225,10 @@
       {/if}
       <text x={W / 2} y={phone ? 600 : 350} text-anchor="middle" class="mono strong">A {t('finished', '结束')} → 1 {t('free row', '空行')} → C {t('joins if memory allows', '在显存允许时补入')}</text>
       <text x={W / 2} y={phone ? 626 : 372} text-anchor="middle" class="tag">{phone ? t('policy builds limits · OmniScheduler schedules', 'policy 构造并校验上限 · OmniScheduler 调度') : t('generation_batch_policy.py builds and validates limits; OmniScheduler schedules', 'generation_batch_policy.py 构造并校验上限；OmniScheduler 执行调度')}</text>
-      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{t('Two rows are a teaching view; request and token budgets can both block admission.', '两行只是教学视角；请求行数和 token 预算都能阻止补入。')}</text>
+      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{phone ? t('Two rows are illustrative; request/token budgets apply.', '两行只是教学视角；请求行数和 token 预算都能阻止补入。') : t('Two rows are a teaching view; request and token budgets can both block admission.', '两行只是教学视角；请求行数和 token 预算都能阻止补入。')}</text>
       <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Next: an encoder collects only ready work.', '下一步：encoder 只收现成的编码请求。') : t('Next: a one-shot encoder drains ready work without keeping a running batch.', '下一步：一次性 encoder 怎样收集现成工作，而不保留 running batch。')}</text>
       {:else if step === 2}
-      <text x={phone ? 15 : 20} y="20" class="tag strong">ReferenceEncodeService · {t('one collection from the ready queue', '从就绪队列做一次收集')}</text>
+      <text x={phone ? 15 : 20} y="20" class="tag strong">ReferenceEncodeService · {phone ? t('collect ready work', '从就绪队列做一次收集') : t('one collection from the ready queue', '从就绪队列做一次收集')}</text>
       <text x={phone ? 15 : 20} y="44" class="tag">{phone ? t('defaults: cap 1 · wait 0 ms', '默认值：上限 1 · 等待 0 ms') : `max_batch_size = ${REFERENCE_ENCODER_DEFAULT_MAX_BATCH} · max_batch_wait_ms = ${REFERENCE_ENCODER_DEFAULT_WAIT_MS}`}</text>
       <text x={phone ? 15 : 20} y="66" class="tag">{t('Teaching view: cap 4 + batch-capable hook + wait 0 ms', '教学视角：上限 4 + 支持批处理的 hook + 等待 0 ms')}</text>
 
@@ -242,7 +242,7 @@
       <text x={phone ? 29 : 590} y={phone ? 145 : 129} class="tag">{phone ? '' : t('D is not here yet', 'D 尚未到达')}</text>
 
       <path d={phone ? 'M150 172 V196' : 'M360 178 V204'} stroke="var(--accent)" stroke-width="2" marker-end="url(#batch-arrow)" />
-      <text x={phone ? 162 : 374} y={phone ? 188 : 196} class="tag strong">get_nowait() · {t('no empty-slot wait', '不为空位等待')}</text>
+      <text x={phone ? 162 : 374} y={phone ? 188 : 196} class="tag strong">get_nowait() · {phone ? t('no slot wait', '不为空位等待') : t('no empty-slot wait', '不为空位等待')}</text>
 
       <rect x={phone ? 15 : 20} y={phone ? 204 : 214} width={phone ? 270 : 680} height="90" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2" />
       <text x={phone ? 29 : 34} y={phone ? 228 : 238} class="rowlabel">encode_batch([A, B, C]) · {t('one call', '一次调用')}</text>
@@ -263,12 +263,12 @@
       <text x={phone ? 29 : 389} y={phone ? 498 : 368} class="tag">{phone ? t('hook.can_encode_batch() must also pass', 'hook.can_encode_batch() 也必须通过') : ''}</text>
 
       <text x={W / 2} y={phone ? 544 : 404} text-anchor="middle" class="tag strong">{phone ? t('Default: one per call · batching needs hook support', '默认一次一条；batch 还需要 hook 支持') : t('Three results need three encode calls with the shipped cap of one; batching also requires hook support.', '出厂上限为 1 时，三条结果要三次 encode；启用 batch 还需要 hook 支持。')}</text>
-      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{t('This service drains ready requests; it does not retain an AR running batch.', '这个服务只取现成请求，不保留 AR 的 running batch。')}</text>
-      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Next: a cost budget can leave a large request for the next batch.', '下一步：成本预算怎样把大请求留给下一批。')}</text>
+      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{phone ? t('Ready work only · no retained AR running batch', '这个服务只取现成请求，不保留 AR 的 running batch。') : t('This service drains ready requests; it does not retain an AR running batch.', '这个服务只取现成请求，不保留 AR 的 running batch。')}</text>
+      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Next: cost budgets can defer large requests.', '下一步：成本预算怎样把大请求留给下一批。') : t('Next: a cost budget can leave a large request for the next batch.', '下一步：成本预算怎样把大请求留给下一批。')}</text>
       {:else if step === 3}
-      <text x={phone ? 15 : 20} y="20" class="tag strong">SimpleScheduler · max_batch_cost = {t('a second limit beside request count', '条数之外的第二个上限')}</text>
+      <text x={phone ? 15 : 20} y="20" class="tag strong">SimpleScheduler · max_batch_cost = {phone ? t('second limit', '条数之外的第二个上限') : t('a second limit beside request count', '条数之外的第二个上限')}</text>
       <text x={phone ? 15 : 20} y="44" class="tag">{phone ? t('MiniCPM-o audio: cap 8 · wait 0 ms', 'MiniCPM-o 音频：上限 8 条 · 等待 0 ms') : `MiniCPM-o audio_encoder · max_batch_size = ${AUDIO_BATCH_MAX_SIZE} · max_batch_wait_ms = ${AUDIO_BATCH_WAIT_MS}`}</text>
-      <text x={phone ? 15 : 20} y="66" class="tag">max_batch_mel_frames = {AUDIO_MAX_MEL_FRAMES} · {t('mel frame = one small sound column', 'mel 帧 = 一小格声音特征')}</text>
+      <text x={phone ? 15 : 20} y="66" class="tag">max_batch_mel_frames = {AUDIO_MAX_MEL_FRAMES} · {phone ? t('mel = sound column', 'mel 帧 = 一小格声音特征') : t('mel frame = one small sound column', 'mel 帧 = 一小格声音特征')}</text>
       {#each costPanels as panel}
         {@const barW = phone ? 238 : 280}
         {@const scale = panel.accepted ? AUDIO_MAX_MEL_FRAMES : AUDIO_ABC_MEL_FRAMES}
@@ -294,11 +294,11 @@
         <text x={panel.x + (phone ? 135 : 162)} y={panel.y + 198} text-anchor="middle" class="tag strong">{panel.accepted ? t(`collect A + B · ${AUDIO_REMAINING_MEL_FRAMES} frames left`, `收集 A + B · 还剩 ${AUDIO_REMAINING_MEL_FRAMES} 帧`) : t('keep C in pending_messages · stop', 'C 留回 pending_messages · 停止收集')}</text>
       {/each}
       <text x={W / 2} y={phone ? 586 : 340} text-anchor="middle" class="mono strong">{AUDIO_ABC_MEL_FRAMES} − {AUDIO_MAX_MEL_FRAMES} = {AUDIO_OVERFLOW_MEL_FRAMES} {t('frames too many', '帧超出')}</text>
-      <text x={W / 2} y={phone ? 612 : 366} text-anchor="middle" class="tag">{AUDIO_FULL_CHUNK_COUNT} × {AUDIO_FULL_CHUNK_MEL_FRAMES} = {AUDIO_MAX_MEL_FRAMES} · {t('the real budget admits eight full 30-second chunks', '真实预算可容纳八段完整的 30 秒音频')}</text>
-      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{t('A, B and C use teaching costs; 15,000 + 6,000 + 6,000 is not a benchmark.', 'A、B、C 是教学成本；15000 + 6000 + 6000 不是实测数据。')}</text>
-      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Next: streaming chunks need a different batch path from one-shot requests.', '下一步：流式 chunk 需要不同于一次性请求的成批路径。')}</text>
+      <text x={W / 2} y={phone ? 612 : 366} text-anchor="middle" class="tag">{AUDIO_FULL_CHUNK_COUNT} × {AUDIO_FULL_CHUNK_MEL_FRAMES} = {AUDIO_MAX_MEL_FRAMES} · {phone ? t('eight full 30-s chunks fit', '真实预算可容纳八段完整的 30 秒音频') : t('the real budget admits eight full 30-second chunks', '真实预算可容纳八段完整的 30 秒音频')}</text>
+      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{phone ? t('Teaching costs, not a benchmark: 15000 + 6000 + 6000', 'A、B、C 是教学成本；15000 + 6000 + 6000 不是实测数据。') : t('A, B and C use teaching costs; 15,000 + 6,000 + 6,000 is not a benchmark.', 'A、B、C 是教学成本；15000 + 6000 + 6000 不是实测数据。')}</text>
+      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Next: streaming chunks use a different batch path.', '下一步：流式 chunk 需要不同于一次性请求的成批路径。') : t('Next: streaming chunks need a different batch path from one-shot requests.', '下一步：流式 chunk 需要不同于一次性请求的成批路径。')}</text>
       {:else if step === 4}
-      <text x={phone ? 15 : 20} y="20" class="tag strong">{t('Two ways to share compute · do not merge these code paths', '两种共享计算的路径 · 不要混成同一段代码')}</text>
+      <text x={phone ? 15 : 20} y="20" class="tag strong">{phone ? t('Two compute-sharing paths · keep them separate', '两种共享计算的路径 · 不要混成同一段代码') : t('Two ways to share compute · do not merge these code paths', '两种共享计算的路径 · 不要混成同一段代码')}</text>
       <text x={phone ? 15 : 20} y="44" class="tag">stream_chunk = {t('one small arriving piece of a request', '一条请求陆续到达的一小段')}</text>
       <text x={phone ? 15 : 20} y="66" class="tag">{t('Blue: scheduler / stream state · orange: one shared compute', '蓝色：调度器或流状态 · 橙色：一次共享计算')}</text>
       {#each streamPaths as panel}
@@ -318,8 +318,8 @@
       {/each}
       <text x={W / 2} y={phone ? 724 : 420} text-anchor="middle" class="mono strong">{STREAM_TEACHING_INPUT_COUNT} {t('inputs', '份输入')} → {STREAM_TEACHING_SHARED_STEPS} {t('shared compute', '次共享计算')} → {STREAM_TEACHING_OUTPUT_COUNT} {t('outputs', '份输出')}</text>
       <text x={W / 2} y={phone ? 750 : 446} text-anchor="middle" class="tag">{phone ? t('MiniCPM-o: left · optional streaming coalescing: right', 'MiniCPM-o 走左侧 · 可选流式合步走右侧') : t('MiniCPM-o uses the left SimpleScheduler path; the right path is optional for streaming-vocoder subclasses.', 'MiniCPM-o 走左边的 SimpleScheduler；右边是流式 vocoder 子类的可选路径。')}</text>
-      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{t('A and B are a teaching example; one shared step does not mean one request loses its identity.', 'A、B 是教学例子；合做一步不会抹掉各请求的身份。')}</text>
-      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Next: historical measurements show why a bigger batch is not a universal promise.', '下一步：历史实验说明，更大 batch 不是普遍保证。')}</text>
+      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{phone ? t('A + B are examples; sharing a step keeps both identities.', 'A、B 是教学例子；合做一步不会抹掉各请求的身份。') : t('A and B are a teaching example; one shared step does not mean one request loses its identity.', 'A、B 是教学例子；合做一步不会抹掉各请求的身份。')}</text>
+      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Next: historical H200 results do not generalize.', '下一步：历史实验说明，更大 batch 不是普遍保证。') : t('Next: historical measurements show why a bigger batch is not a universal promise.', '下一步：历史实验说明，更大 batch 不是普遍保证。')}</text>
       {:else if step === 5}
       <text x={phone ? 15 : 20} y="20" class="tag strong">{t('HISTORICAL H200 EXPERIMENT · quoted, not rerun here', '历史 H200 实验 · 引用记录，本章没有重跑')}</text>
       <text x={phone ? 15 : 20} y="44" class="tag">FIFO · {H200_FIFO_REQUEST_COUNT} {t('requests', '条请求')} · {t('concurrency', '客户端并发')} {H200_FIFO_CLIENT_CONCURRENCY} · {t('wait', '主动等待')} {H200_FIFO_WAIT_MS} ms</text>
@@ -344,12 +344,12 @@
       {/if}
       <text x={W / 2} y={phone ? 552 : 382} text-anchor="middle" class="mono strong">({H200_FIFO_LARGE_REQUESTS_PER_S} − {H200_FIFO_SMALL_REQUESTS_PER_S}) ÷ {H200_FIFO_SMALL_REQUESTS_PER_S} = {H200_FIFO_SPEEDUP_PERCENT}%</text>
       <text x={W / 2} y={phone ? 578 : 408} text-anchor="middle" class="tag">{t('About', '约')} {H200_FIFO_EXTRA_REQUESTS_PER_S.toFixed(2)} {t('more completed requests each second', '条请求每秒多完成')}</text>
-      <text x={W / 2} y={phone ? 604 : 434} text-anchor="middle" class="tag strong">{t('Historical code: cap 8 · current main: cap 16 and changed implementation', '历史代码：上限 8 · 当前主线：上限 16，实现也已变化')}</text>
+      <text x={W / 2} y={phone ? 604 : 434} text-anchor="middle" class="tag strong">{phone ? t('Old cap 8 · current cap 16 · implementation changed', '历史代码：上限 8 · 当前主线：上限 16，实现也已变化') : t('Historical code: cap 8 · current main: cap 16 and changed implementation', '历史代码：上限 8 · 当前主线：上限 16，实现也已变化')}</text>
       <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{phone ? t('Source: batch.md / PR #2271 · old code 89e60d0', '出处：batch.md / PR #2271 · 旧版 89e60d0') : t('Historical reference: batch.md and PR #2271; old code 89e60d0, not current main.', '历史出处：batch.md 与 PR #2271；旧代码 89e60d0，不是当前主线。')}</text>
-      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Next: when capacity is full, backpressure rejects work instead of hiding an unbounded queue.', '下一步：容量满时，背压拒绝新工作，而不是藏起无限队列。')}</text>
+      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Next: full capacity triggers backpressure.', '下一步：容量满时，背压拒绝新工作，而不是藏起无限队列。') : t('Next: when capacity is full, backpressure rejects work instead of hiding an unbounded queue.', '下一步：容量满时，背压拒绝新工作，而不是藏起无限队列。')}</text>
       {:else if step === 6}
       <text x={phone ? 15 : 20} y="20" class="tag strong">backpressure = {t('a full boundary tells its caller', '容量满时，把压力明确传回调用方')}</text>
-      <text x={phone ? 15 : 20} y="44" class="tag">{t('Two independent examples', '两个独立例子')} · {t('teaching cap', '教学上限')} = {ADMISSION_TEACHING_LIMIT} · {ADMISSION_ACTIVE_IDS.join(' + ')} {t('still active', '仍在处理')}</text>
+      <text x={phone ? 15 : 20} y="44" class="tag">{phone ? t(`Two examples · cap ${ADMISSION_TEACHING_LIMIT} · ${ADMISSION_ACTIVE_IDS.join(' + ')} active`, `两个独立例子 · 教学上限 = ${ADMISSION_TEACHING_LIMIT} · ${ADMISSION_ACTIVE_IDS.join(' + ')} 仍在处理`) : t(`Two independent examples · teaching cap = ${ADMISSION_TEACHING_LIMIT} · ${ADMISSION_ACTIVE_IDS.join(' + ')} still active`, `两个独立例子 · 教学上限 = ${ADMISSION_TEACHING_LIMIT} · ${ADMISSION_ACTIVE_IDS.join(' + ')} 仍在处理`)}</text>
       <text x={phone ? 15 : 20} y="66" class="tag">{t('Blue: active request · orange: rejected request C', '蓝色：处理中的请求 · 橙色：被拒绝的 C')}</text>
       {#each admissionPanels as panel}
         <rect x={panel.x} y={panel.y} width={phone ? 270 : 325} height="290" rx="12" fill="var(--bg)" stroke="var(--line)" />
@@ -367,13 +367,13 @@
         <text x={panel.x + (phone ? 135 : 162)} y={panel.y + 264} text-anchor="middle" class="tag">{panel.kind === 'router' ? t('released on response end / error / cancel', '响应结束 / 错误 / 取消才还许可') : t('counts only admission-counting requests', '只数计入准入的请求')}</text>
       {/each}
       <text x={W / 2} y={phone ? 724 : 420} text-anchor="middle" class="mono strong">{ADMISSION_ACTIVE_COUNT} {t('active', '条处理中')} + {ADMISSION_NEW_COUNT} {t('new', '条新到')} &gt; {ADMISSION_TEACHING_LIMIT} {t('cap', '条上限')} → {ADMISSION_FREE_PERMITS} {t('free', '个空位')}</text>
-      <text x={W / 2} y={phone ? 750 : 446} text-anchor="middle" class="tag strong">{t('429 and 503 come from different boundaries; do not interchange them.', '429 与 503 来自不同边界，不能互换。')}</text>
-      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{t('Caps two and requests A, B, C are teaching values, not deployment defaults.', '上限 2 和 A、B、C 都是教学值，不是部署默认值。')}</text>
-      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Next: an accepted response applies backpressure one frame at a time.', '下一步：已接收的响应怎样逐帧施加背压。')}</text>
+      <text x={W / 2} y={phone ? 750 : 446} text-anchor="middle" class="tag strong">{phone ? t('Different boundaries: router 429 · coordinator 503', '429 与 503 来自不同边界，不能互换。') : t('429 and 503 come from different boundaries; do not interchange them.', '429 与 503 来自不同边界，不能互换。')}</text>
+      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{phone ? t('Cap 2 and A/B/C are teaching values, not defaults.', '上限 2 和 A、B、C 都是教学值，不是部署默认值。') : t('Caps two and requests A, B, C are teaching values, not deployment defaults.', '上限 2 和 A、B、C 都是教学值，不是部署默认值。')}</text>
+      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Next: responses apply backpressure frame by frame.', '下一步：已接收的响应怎样逐帧施加背压。') : t('Next: an accepted response applies backpressure one frame at a time.', '下一步：已接收的响应怎样逐帧施加背压。')}</text>
       {:else if step === 7}
       <text x={phone ? 15 : 20} y="20" class="tag strong">poll_frame() = {t('ask for the next frame', '来取下一帧')}</text>
       <text x={phone ? 15 : 20} y="44" class="tag">{phone ? t('Blue: response data · orange: read demand', '蓝色：响应数据 · 橙色：读取请求') : t('Blue: response data → · orange: ← read demand', '蓝色：响应数据 → · 橙色：← 读取请求')}</text>
-      <text x={phone ? 15 : 20} y="66" class="tag">{t('Teaching example: three frames, with frame one already delivered', '教学例子：三帧数据，第 1 帧已交给下游')}</text>
+      <text x={phone ? 15 : 20} y="66" class="tag">{phone ? t('Teaching example: 3 frames · frame 1 delivered', '教学例子：三帧数据，第 1 帧已交给下游') : t('Teaching example: three frames, with frame one already delivered', '教学例子：三帧数据，第 1 帧已交给下游')}</text>
       {#each relayNodes as node}
         <rect x={node.x} y={node.y} width={phone ? 240 : 190} height="120" rx="10" fill={node.title === 'ROUTER' ? 'var(--accent-soft)' : 'var(--bg)'} stroke={node.title === 'ROUTER' ? 'var(--accent)' : 'var(--line)'} stroke-width={node.title === 'ROUTER' ? 2 : 1} />
         <text x={node.x + 14} y={node.y + 27} class="rowlabel">{node.title}</text>
@@ -394,12 +394,12 @@
         <path d="M261 220 H218" stroke="var(--gen)" stroke-width="2" marker-end="url(#batch-arrow-gen)" />
         <path d="M506 220 H463" stroke="var(--gen)" stroke-width="2" marker-end="url(#batch-arrow-gen)" />
       {/if}
-      <text x={W / 2} y={phone ? 570 : 316} text-anchor="middle" class="mono strong">{RELAY_POLL_COUNT} {t('downstream poll', '次下游 poll')} → {RELAY_POLL_COUNT} {t('upstream poll', '次上游 poll')} → ≤ {RELAY_MAX_FRAMES_PER_POLL} {t('data frame', '帧数据')}</text>
+      <text x={W / 2} y={phone ? 570 : 316} text-anchor="middle" class="mono strong">{RELAY_POLL_COUNT} {t('downstream poll', '次下游 poll')} → {RELAY_POLL_COUNT} {t('upstream poll', '次上游 poll')} → ≤ {RELAY_MAX_FRAMES_PER_POLL} {phone ? t('frame', '帧数据') : t('data frame', '帧数据')}</text>
       <text x={W / 2} y={phone ? 596 : 344} text-anchor="middle" class="tag">{RELAY_TEACHING_FRAME_COUNT} {t('frames', '帧')} = {RELAY_DELIVERED_FRAME_COUNT} {t('delivered', '帧已交付')} + {RELAY_UPSTREAM_FRAME_COUNT} {t('upstream', '帧在上游')}</text>
       <text x={W / 2} y={phone ? 624 : 374} text-anchor="middle" class="tag strong">{t('No body pump · no application queue · no extra relay task', '不加 body pump · 不加应用队列 · 不加转发任务')}</text>
-      <text x={W / 2} y={phone ? 650 : 402} text-anchor="middle" class="tag">{t('Queue zero covers this adapter; socket and worker buffers can remain.', '队列是 0 只指这个转接框；socket 和 worker 仍可缓冲。')}</text>
-      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{t('This is response relay, not classified-upload buffering or a worker-stage queue.', '这里只讲响应转发，不讲分类上传缓冲或 worker 内部队列。')}</text>
-      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Chapter summary: bound new admissions and relay accepted responses directly.', '本章收束：限制新请求准入，已接收响应直接逐帧转发。')}</text>
+      <text x={W / 2} y={phone ? 650 : 402} text-anchor="middle" class="tag">{phone ? t('Adapter queue = 0 · socket and worker buffers remain', '队列是 0 只指这个转接框；socket 和 worker 仍可缓冲。') : t('Queue zero covers this adapter; socket and worker buffers can remain.', '队列是 0 只指这个转接框；socket 和 worker 仍可缓冲。')}</text>
+      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{phone ? t('Response relay only · upload/worker queues are separate', '这里只讲响应转发，不讲分类上传缓冲或 worker 内部队列。') : t('This is response relay, not classified-upload buffering or a worker-stage queue.', '这里只讲响应转发，不讲分类上传缓冲或 worker 内部队列。')}</text>
+      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Summary: bound admissions · relay responses directly', '本章收束：限制新请求准入，已接收响应直接逐帧转发。') : t('Chapter summary: bound new admissions and relay accepted responses directly.', '本章收束：限制新请求准入，已接收响应直接逐帧转发。')}</text>
       {/if}
     </svg>
   </div>

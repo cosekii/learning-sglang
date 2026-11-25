@@ -77,7 +77,7 @@
 
 ## Learning SGLang Omni
 
-规划完成：`docs/plan-omni.md` 共 3 部分、13 章；第 1 章已制作 4 步并完成，第 2、3 章各已制作 3 步并完成，第 4 章已制作 4 步并完成，第 5 章已制作 5 步并完成。
+规划完成：`docs/plan-omni.md` 共 3 部分、13 章；第 1 章已制作 4 步并完成，第 2、3 章各已制作 3 步并完成，第 4 章已制作 4 步并完成，第 5 章已制作 5 步并完成，第 6 章已制作 8 步并完成。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
@@ -86,7 +86,7 @@
 | 03 | 03-request-binding | 完成：3/3 步易读满分 | 24.00 |
 | 04 | 04-readiness-contracts | 完成：4/4 步易读满分 | 24.00 |
 | 05 | 05-data-lifetime | 完成：5/5 步易读满分 | 24.00 |
-| 06 | 06-batching-backpressure | 在做第 8 步 | — |
+| 06 | 06-batching-backpressure | 完成：8/8 步易读满分 | 24.00 |
 | 07 | 07-shared-gpu-budgets | 规划 | — |
 | 08 | 08-measure-streaming | 规划 | — |
 | 09 | 09-ar-stage-optimization | 规划 | — |
