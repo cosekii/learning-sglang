@@ -51,3 +51,60 @@ Public baseline: `sglang-omni@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`. Paths a
 - `trigger` while idle returns `Start`: `Voxt/internal/hotkey/route.go:114-121`; its test: `Voxt/internal/hotkey/hotkey_test.go:419`.
 - Transcribe starts in `Recording`: `Voxt/internal/session/run.go:192-202`; `capture.start` goes to the helper: `Voxt/internal/session/helperio.go:20-35`.
 - A public fixture of the same event type: `Voxt/helper/Fixtures/hotkey.jsonl:3`.
+
+## Step 2 · Accessibility decides whether the key route can start
+
+> **In one line:** Accessibility is a Mac setting. Without it, the helper cannot receive global keys. With permission and successful key reception, the same Right Option tap follows Step 1's route as one message.
+
+### On the stage
+
+- Both panels use the same `Right ⌥ Option` tap, and both Go apps start idle. Only Accessibility changes.
+- Accessibility: the Mac permission that lets the helper see keys you press in other apps. It is not microphone permission.
+- Left, `OFF`: without this permission, the helper's global key listener is not installed. It cannot see this tap, emits **0** `hotkey.event` messages, and leaves the Go app idle. The red cross marks the broken route.
+- Right, `ON`: key reception works in this example. The helper sees the same tap, emits **1** `hotkey.event`, and the Go app starts Transcribe under Step 1's routing rule. The blue arrow shows message delivery.
+- Both panels place the key, Mac setting and helper in matching positions. Grey is reserved for ordinary boxes and the key arrow.
+
+### The relationship
+
+$$
+(M,G)=
+\begin{cases}
+(0,\mathrm{idle}), & A=\mathrm{off}\\
+(1,\mathrm{start}), & A=\mathrm{on}
+\end{cases}
+$$
+
+| Symbol | What it is | Where it comes from |
+|---|---|---|
+| $A$ | Whether Accessibility is allowed | The only setting changed in this step |
+| $M$ | Number of `hotkey.event` messages reaching Go | Whether the helper receives and recognizes this tap |
+| $G$ | The Go app's routing result | Step 1's routing rule for an idle app |
+
+### The numbers on the stage
+
+| Accessibility | Same Right Option | $M$: messages reaching Go | $G$: Go result |
+|---|---|---:|---|
+| OFF | 1 tap | 0 | Stays idle |
+| ON, with key reception working | 1 tap | 1 | Starts Transcribe |
+
+These counts describe a constructed comparison, not permission success rates or performance. Turning the setting on does not start dictation; you still press the shortcut.
+
+### The source checks and omissions
+
+The helper reads Accessibility with `AXIsProcessTrusted()`. macOS checks it against the responsible process, `VoxtNew.app`, so System Settings names VoxtNew. Without permission, or if macOS strips keyboard events, the helper does not count the listener as installed and retries every 2 seconds. Granting permission does not require a helper restart.
+
+Only Accessibility changes here, and the right panel assumes every other condition succeeds. Input Monitoring, other permissions, permission prompts and listener failures are not drawn. The picture does not claim that Accessibility alone guarantees success.
+
+### Next
+
+The hotkey message can now reach the Go app. The next step examines microphone permission: whether sound may enter is a separate setting from seeing keys.
+
+### Source
+
+Public baseline: `sglang-omni@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`. Paths are relative to that repository.
+
+- Accessibility status and the responsible-process explanation: `Voxt/helper/Sources/VoxtNewHelper/Permissions.swift:7-9,40-46`.
+- No installed listener without permission, a retry every 2 seconds, and no restart after granting it: `Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:6-19,76-89,155-169`.
+- Listener creation and verification of the keyboard events actually granted: `Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:113-151`.
+- Recognition and `hotkey.event` delivery: `Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:240-250,269-274`.
+- `trigger` while idle returns `Start`: `Voxt/internal/hotkey/route.go:114-121`.

@@ -51,3 +51,60 @@ helper 要能看见全局按键，需要 macOS 允许。下一步把权限检查
 - 空闲状态收到 `trigger` 后返回 `Start`：`Voxt/internal/hotkey/route.go:114-121`；对应测试：`Voxt/internal/hotkey/hotkey_test.go:419`。
 - Transcribe 初始状态为 `Recording`：`Voxt/internal/session/run.go:192-202`；向 helper 发 `capture.start`：`Voxt/internal/session/helperio.go:20-35`。
 - 同类型公开 fixture：`Voxt/helper/Fixtures/hotkey.jsonl:3`。
+
+## 第 2 步 · Accessibility 决定按键路线能否开始
+
+> **一句话：** Accessibility 是 Mac 的一项设置；没允许时 helper 收不到全局按键，允许并成功接收后，同一个右 Option 才能沿第 1 步的路线变成一条消息。
+
+### 图上是什么
+
+- 两幅图使用同一个 `Right ⌥ Option`，Go app 起初都空闲；只改变 Accessibility。
+- Accessibility：Mac 的「辅助功能」权限。它允许 helper 看见你在其他 app 里按的键，不是麦克风权限。
+- 左图 `OFF`：没有这项权限，helper 的全局按键监听没有装上，所以它看不见这次按键，发出 **0 条** `hotkey.event`，Go app 仍空闲。红色叉号表示这条路线断开。
+- 右图 `ON`：本例中监听成功，helper 看见同一个按键，发出 **1 条** `hotkey.event`，Go app 按第 1 步的规则开始 Transcribe。蓝色箭头表示消息到达。
+- 两幅图里的按键、Mac 设置和 helper 使用相同位置；灰色只用于普通框和按键箭头。
+
+### 对应关系
+
+$$
+(M,G)=
+\begin{cases}
+(0,\mathrm{idle}), & A=\mathrm{off}\\
+(1,\mathrm{start}), & A=\mathrm{on}
+\end{cases}
+$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $A$ | Accessibility 是否允许 | 本步唯一改变的设置 |
+| $M$ | Go app 收到的 `hotkey.event` 数量 | helper 是否成功接收并识别这次按键 |
+| $G$ | Go app 的路由结果 | 第 1 步的空闲状态路由规则 |
+
+### 代入图上的数
+
+| Accessibility | 同一个右 Option | $M$：到达 Go 的消息 | $G$：Go 的结果 |
+|---|---|---:|---|
+| OFF | 按 1 次 | 0 条 | 仍空闲 |
+| ON，且监听成功 | 按 1 次 | 1 条 | 开始 Transcribe |
+
+这些是本步构造的对照，不是权限申请成功率或性能测量。打开设置本身不会开始听写；仍要按一下快捷键。
+
+### 源码里的检查与省略
+
+helper 用 `AXIsProcessTrusted()` 读取 Accessibility 状态。macOS 把它归到 responsible process，也就是 `VoxtNew.app`，所以系统设置里显示的是 VoxtNew。没有权限或键盘事件被系统剔除时，helper 不认为监听已安装，会每 2 秒重试；允许后不用重启 helper。
+
+本步只改变 Accessibility，并假设右图的其他条件都成功。Input Monitoring、其他权限、权限申请窗口和监听故障没有画。它们不能被这张图解释成「只要打开 Accessibility 就必然成功」。
+
+### 接下来
+
+快捷键消息已经能到达 Go app。下一步要看麦克风权限：它决定声音能否进入，与看见按键是另一项设置。
+
+### 源码出处
+
+公开基线：`sglang-omni@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`，路径均相对该仓库。
+
+- Accessibility 状态读取及 responsible process 说明：`Voxt/helper/Sources/VoxtNewHelper/Permissions.swift:7-9,40-46`。
+- 没有权限时不安装监听、每 2 秒重试，以及允许后无需重启：`Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:6-19,76-89,155-169`。
+- 创建监听并核对实际收到的键盘事件：`Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:113-151`。
+- 识别后发送 `hotkey.event`：`Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:240-250,269-274`。
+- 空闲状态收到 `trigger` 后返回 `Start`：`Voxt/internal/hotkey/route.go:114-121`。

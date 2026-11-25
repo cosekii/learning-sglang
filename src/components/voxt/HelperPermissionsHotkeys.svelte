@@ -4,13 +4,16 @@
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
-  import { HOTKEY_MESSAGE_COUNT, HOTKEY_PRESS_COUNT, HOTKEY_PROGRAM_COUNT } from '../../voxt/numbers';
+  import { HOTKEY_BLOCKED_MESSAGE_COUNT, HOTKEY_MESSAGE_COUNT, HOTKEY_PRESS_COUNT, HOTKEY_PROGRAM_COUNT } from '../../voxt/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
   const steps = [{
     caption: 'Right Option becomes one JSON message. The Go app reads it and starts dictation.',
     captionZh: '右 Option 变成 JSON 消息。Go app 读后启动听写。',
+  }, {
+    caption: 'Accessibility lets the helper see keys you press in other apps. Without it, this route stops.',
+    captionZh: 'Accessibility 让 helper 看见你在其他 app 按的键。没允许时，这条路线断开。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -38,11 +41,18 @@
     { x: 300, y: 90, w: 250, h: 170 },
     { x: 570, y: 90, w: 130, h: 170 },
   ]);
+  const permissionPanels = $derived(phone ? [
+    { x: 10, y: 78, allowed: false },
+    { x: 10, y: 282, allowed: true },
+  ] : [
+    { x: 20, y: 78, allowed: false },
+    { x: 370, y: 78, allowed: true },
+  ]);
 </script>
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="One Right Option tap crosses from the Swift helper to the Go app as one JSON message, which starts dictation">
+    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={step === 0 ? 'One Right Option tap crosses from the Swift helper to the Go app as one JSON message, which starts dictation' : t('The same Right Option tap produces no message with Accessibility off and one message with it on', '同一个右 Option 在 Accessibility 关闭时没有消息，打开时产生一条消息')}>
       <defs>
         <marker id="key-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
           <path d="M0,0 L8,4 L0,8 z" fill="var(--muted)" />
@@ -51,12 +61,18 @@
           <path d="M0,0 L8,4 L0,8 z" fill="var(--accent)" />
         </marker>
       </defs>
-      <text x={W / 2} y={phone ? 24 : 32} text-anchor="middle" class="title">{t(
+      <text x={W / 2} y={phone ? 24 : 32} text-anchor="middle" class="title">{step === 0 ? t(
         `${HOTKEY_PRESS_COUNT} KEY · ${HOTKEY_PROGRAM_COUNT} PROGRAMS · ${HOTKEY_MESSAGE_COUNT} MESSAGE`,
         `${HOTKEY_PRESS_COUNT} 次按键 · ${HOTKEY_PROGRAM_COUNT} 个程序 · ${HOTKEY_MESSAGE_COUNT} 条消息`,
-      )}</text>
-      <text x={W / 2} y={phone ? 45 : 55} text-anchor="middle" class="subtitle">{t('The key becomes a message, not sound', '按键变成消息，不是声音')}</text>
+      ) : t('SAME KEY · TWO SETTINGS', '同一个按键 · 两种设置')}</text>
+      {#if step === 0}
+        <text x={W / 2} y={phone ? 45 : 55} text-anchor="middle" class="subtitle">{t('The key becomes a message, not sound', '按键变成消息，不是声音')}</text>
+      {:else}
+        <text x={W / 2} y={phone ? 43 : 55} text-anchor="middle" class="subtitle">{t('Accessibility = a Mac setting', 'Accessibility = Mac 的一项设置')}</text>
+        <text x={W / 2} y={phone ? 61 : 72} text-anchor="middle" class="subtitle">{t('It lets helper see keys from other apps', '让 helper 看见其他 app 的按键')}</text>
+      {/if}
 
+      {#if step === 0}
       {#each boxes as box, i}
         <rect x={box.x} y={box.y} width={box.w} height={box.h} rx="12" fill={i === 2 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={i === 2 ? 'var(--accent)' : 'var(--line)'} stroke-width={i === 2 ? 2 : 1} />
         {#if i < boxes.length - 1}
@@ -92,6 +108,45 @@
 
       <text x={W / 2} y={H - (phone ? 34 : 38)} text-anchor="middle" class="footnote">{t('Permission already granted; key route only', '本步假设权限已通过，只画按键路线')}</text>
       <text x={W / 2} y={H - (phone ? 12 : 18)} text-anchor="middle" class="footnote">{t('After Start, Go asks helper for microphone audio.', '开始后，Go app 请 helper 采集麦克风。')}</text>
+      {:else}
+        {#each permissionPanels as panel}
+          {@const keyX = phone ? 12 : 16}
+          {@const keyW = phone ? 68 : 82}
+          {@const gateX = phone ? 99 : 119}
+          {@const gateW = phone ? 82 : 92}
+          {@const helperX = phone ? 200 : 232}
+          {@const helperW = phone ? 68 : 82}
+          <g transform={`translate(${panel.x} ${panel.y})`}>
+            <rect width={phone ? 280 : 330} height={phone ? 190 : 210} rx="12" fill="var(--bg)" stroke="var(--line)" />
+            <text x="16" y="24" class="label">{panel.allowed ? t('ACCESSIBILITY: ON', '已允许 Accessibility') : t('ACCESSIBILITY: OFF', '未允许 Accessibility')}</text>
+
+            <rect x={keyX} y="48" width={keyW} height="68" rx="9" fill="var(--bg)" stroke="var(--line)" />
+            <text x={keyX + keyW / 2} y="68" text-anchor="middle" class="label">{t('YOU TAP', '你按一下')}</text>
+            <text x={keyX + keyW / 2} y="91" text-anchor="middle" class="compare-key">Right ⌥</text>
+            <text x={keyX + keyW / 2} y="110" text-anchor="middle" class="detail">Option</text>
+
+            <rect x={gateX} y="48" width={gateW} height="68" rx="9" fill="var(--bg)" stroke="var(--line)" />
+            <text x={gateX + gateW / 2} y="70" text-anchor="middle" class="label">MAC</text>
+            <text x={gateX + gateW / 2} y="91" text-anchor="middle" class="detail">{t('setting', '设置')}</text>
+            <text x={gateX + gateW / 2} y="110" text-anchor="middle" class={panel.allowed ? 'action' : 'blocked'}>{panel.allowed ? 'ON' : 'OFF'}</text>
+
+            <rect x={helperX} y="48" width={helperW} height="68" rx="9" fill="var(--bg)" stroke="var(--line)" />
+            <text x={helperX + helperW / 2} y="70" text-anchor="middle" class="label">HELPER</text>
+            <text x={helperX + helperW / 2} y="96" text-anchor="middle" class="detail">{panel.allowed ? t('key seen', '看见按键') : t('no key', '看不见')}</text>
+
+            <line x1={keyX + keyW} y1="82" x2={gateX - 4} y2="82" stroke="var(--muted)" stroke-width="2" marker-end="url(#key-arrow)" />
+            <line x1={gateX + gateW} y1="82" x2={helperX - 5} y2="82" stroke={panel.allowed ? 'var(--accent)' : 'var(--eos)'} stroke-width="2" marker-end={panel.allowed ? 'url(#message-arrow)' : undefined} />
+            {#if !panel.allowed}<text x={(gateX + gateW + helperX) / 2} y="77" text-anchor="middle" class="blocked-x">×</text>{/if}
+
+            <text x={(phone ? 280 : 330) / 2} y={phone ? 150 : 158} text-anchor="middle" class={panel.allowed ? 'message' : 'blocked'}>{panel.allowed
+              ? t(`${HOTKEY_MESSAGE_COUNT} key message`, `${HOTKEY_MESSAGE_COUNT} 条按键消息`)
+              : t(`${HOTKEY_BLOCKED_MESSAGE_COUNT} key messages`, `${HOTKEY_BLOCKED_MESSAGE_COUNT} 条按键消息`)}</text>
+            <text x={(phone ? 280 : 330) / 2} y={phone ? 174 : 184} text-anchor="middle" class="action">{panel.allowed ? t('Go app: START', 'Go app：开始') : t('Go app: idle', 'Go app：仍空闲')}</text>
+          </g>
+        {/each}
+        <text x={W / 2} y={H - (phone ? 34 : 38)} text-anchor="middle" class="footnote">{t('Both panels use the same Right Option tap.', '两幅图里，你都按同一个右 Option。')}</text>
+        <text x={W / 2} y={H - (phone ? 12 : 18)} text-anchor="middle" class="footnote">{t('The Go app starts idle.', 'Go app 起初都空闲。')}</text>
+      {/if}
     </svg>
   </div>
   <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh}
@@ -104,12 +159,17 @@
   .label { font-size: 12px; font-weight: 700; fill: var(--fg); }
   .detail { font-size: 11px; fill: var(--fg); }
   .key { font-family: var(--mono); font-size: 19px; font-weight: 700; fill: var(--fg); }
+  .compare-key { font-family: var(--mono); font-size: 17px; font-weight: 700; fill: var(--fg); }
+  .blocked { font-size: 12px; font-weight: 700; fill: var(--eos); }
+  .blocked-x { font-size: 22px; font-weight: 700; fill: var(--eos); }
+  .message { font-size: 12px; font-weight: 700; fill: var(--accent); }
   .mono { font-family: var(--mono); font-size: 10px; fill: var(--fg); }
   .meaning { font-size: 10px; fill: var(--fg); }
   .action { font-size: 14px; font-weight: 700; fill: var(--fg); }
   @media (max-width: 600px) {
     .title { font-size: 14px; }
     .subtitle, .label, .detail, .mono, .meaning, .footnote { font-size: 12px; }
+    .compare-key { font-size: 15px; }
     .action { font-size: 13px; }
   }
 </style>
