@@ -35,3 +35,15 @@ export const DEMO_SLOWEST_OVER_P99_MS = DEMO_SLOWEST_E2E_MS - DEMO_P99_MS;
 // The same constructed 100-request batch completes within one 20-second test window.
 export const DEMO_MEASUREMENT_WINDOW_SECONDS = 20;
 export const DEMO_REQUEST_THROUGHPUT_PER_SECOND = DEMO_PERCENTILE_REQUEST_COUNT / DEMO_MEASUREMENT_WINDOW_SECONDS;
+
+// Rounded worked example from Awesome-ML-SYS mem-fraction-static.md, not a local measurement.
+export const DEMO_PRE_MODEL_FREE_GB = 78;
+export const DEMO_POST_MODEL_FREE_GB = 18;
+export const DEMO_MODEL_LOAD_GB = DEMO_PRE_MODEL_FREE_GB - DEMO_POST_MODEL_FREE_GB;
+export const DEMO_MEM_FRACTION_LOW = 0.70;
+export const DEMO_MEM_FRACTION_HIGH = 0.85;
+const rounded = (n: number) => Number(n.toFixed(1));
+export const DEMO_DYNAMIC_LOW_GB = rounded((1 - DEMO_MEM_FRACTION_LOW) * DEMO_PRE_MODEL_FREE_GB);
+export const DEMO_DYNAMIC_HIGH_GB = rounded((1 - DEMO_MEM_FRACTION_HIGH) * DEMO_PRE_MODEL_FREE_GB);
+export const DEMO_KV_LOW_GB = rounded(DEMO_POST_MODEL_FREE_GB - DEMO_DYNAMIC_LOW_GB);
+export const DEMO_KV_HIGH_GB = rounded(DEMO_POST_MODEL_FREE_GB - DEMO_DYNAMIC_HIGH_GB);

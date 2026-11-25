@@ -8,7 +8,7 @@ export const mlSysParts: Part[] = [
 
 export const mlSysChapters: Chapter[] = [
   { part: 'inference', slug: '01-measure-inference', title: 'Measure one inference request', hook: 'Put first-token waits, token gaps, percentiles and throughput on one timeline.', titleZh: '测量一次推理', hookZh: '把首 token 等待、token 间隔、延迟百分位和吞吐量画出来。', ready: true },
-  { part: 'inference', slug: '02-inference-memory-budget', title: 'The full GPU memory budget', hook: 'Fit weights, KV, activations, CUDA graphs and temporary allocations on one card.', titleZh: '一张卡的完整显存账', hookZh: '把权重、KV、激活、CUDA Graph 和临时分配放进同一张卡。', ready: false },
+  { part: 'inference', slug: '02-inference-memory-budget', title: 'The full GPU memory budget', hook: 'Fit weights, KV, activations, CUDA graphs and temporary allocations on one card.', titleZh: '一张卡的完整显存账', hookZh: '把权重、KV、激活、CUDA Graph 和临时分配放进同一张卡。', ready: true },
   { part: 'inference', slug: '03-hybrid-state-cache', title: 'Prefix state in hybrid models', hook: 'Compare per-token KV with recurrent-state snapshots and replay.', titleZh: 'Hybrid 模型的前缀状态', hookZh: '对照逐 token KV 与 recurrent state 的快照和重放。', ready: false },
   { part: 'inference', slug: '04-gpu-communication', title: 'The tensor road between GPUs', hook: 'Follow one tensor through processes, communication libraries, links and all-reduce.', titleZh: 'GPU 之间的张量路', hookZh: '沿着一份张量看进程、通信库、链路和 all-reduce。', ready: false },
   { part: 'inference', slug: '05-distributed-serving', title: 'A distributed serving experiment', hook: 'Start workers from a public config and follow one request home.', titleZh: '多节点推理服务实验', hookZh: '按公开配置启动 worker，跟着一个请求走完计算和返回。', ready: false },

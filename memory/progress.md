@@ -4,10 +4,10 @@
 
 ## 本轮记录
 
-- 06:10 修旧 Learning SGLang 第 2 章第 11 步：中文主图用第 1 列并排对照第 3 步与第 11 步，补齐旧 q 的等号、两句 caption、三种宽度的手机大字对照卡和中文深入讲解；英文原文、图与深入讲解未动。
-- 最终中文桌面、360／390 px 手机独立冷读均为 **12/12、24/24、0 洞**，遮住 caption 仍为 12/12；整步易读记 **11/12**，因为受保护英文 caption 仍有 3 句，不能标成整步完成。章均原分 **23.64→23.86**，总洞数 **6→3**。
-- `build`、本章 `transcript`、`deep-check 02`、`zh-check`、全章中英手机布局、本步中文手机字号和 `git diff --check` 通过。`readability` 仍报告英文三句及 RoPE 新词扫描；100／1400 ms 图因旧格脉冲未逐字节一致，冷读 R6=2，未声称静态一致。
-- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch02-s11-repair-20261125-0610/final/` 和 `checks/`。本轮类型：**修旧**；下一普通轮做 **新书**，下次整点仍轮换第 2 项「向好的范例学」。
+- 06:20 新书 Learning ML Systems 第 2 章第 1 步：用 78→18 GB 两次可用显存读数讲 `mem_fraction_static`，同标尺对照 0.70 的 KV 短缺 5.4 GB 与 0.85 的 KV 6.3 GB，说明模型不变、动态余量缩小；补齐中英主图、手机图、深入讲解和固定版本源码出处。
+- 首轮冷读发现余量缺推导、红色负 KV 不够自明、Next 承诺了不存在的下一步，且手机截图误开抽屉。补上 `(1−f)×78`、`78−18≈60`、78 GB 边界和红色超出标记，Next 改为指向灰色余量的问题，重拍正常手机图并修正两处源码引用。
+- 最终中英桌面及手机独立冷读在正常和遮住 caption 时均为 **12/12、24/24、0 洞**；中文 360／390 px 与英文 390 px 无截断或重叠。`build`、本章 `transcript`、本步 `readability`、`deep-check 02`、`zh-check`、三种宽度中英手机布局与字号、数字断言、100／1400 ms 静态截图一致和 `git diff --check` 均通过。
+- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch02-s01-20261125-0620/final/` 和 `checks/`。本轮类型：**新书**；下一普通轮做 **修旧**，下次整点仍轮换第 2 项「向好的范例学」。
 
 ## Learning SGLang
 
@@ -65,12 +65,12 @@
 
 ## Learning ML Systems
 
-规划完成：`docs/plan-ml-sys.md` 共 3 部分、16 章；第 1 章已制作 7 步。第 11 章须先补齐训推不一致的原始来源，缺源时先跳过。
+规划完成：`docs/plan-ml-sys.md` 共 3 部分、16 章；第 1 章已制作 7 步并完成，第 2 章已制作 1 步。第 11 章须先补齐训推不一致的原始来源，缺源时先跳过。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
 | 01 | 01-measure-inference | 完成：7/7 步易读满分 | 24.00 |
-| 02 | 02-inference-memory-budget | 规划 | — |
+| 02 | 02-inference-memory-budget | 在做第 2 步；第 1 步易读满分 | 24.00 |
 | 03 | 03-hybrid-state-cache | 规划 | — |
 | 04 | 04-gpu-communication | 规划 | — |
 | 05 | 05-distributed-serving | 规划 | — |

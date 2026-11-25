@@ -1,0 +1,25 @@
+---
+layout: ../../../layouts/Chapter.astro
+book: ml-sys
+slug: 02-inference-memory-budget
+---
+import InferenceMemoryBudget from '../../../components/ml-sys/InferenceMemoryBudget.svelte';
+import { mlSysNeighbors } from '../../../ml-sys/chapters';
+import { deepFor } from '../../../deep';
+export const deep = await deepFor('ml-sys-02-inference-memory-budget');
+
+<InferenceMemoryBudget client:load {...mlSysNeighbors('02-inference-memory-budget')} deep={deep} />
+
+<details class="i18n-en">
+<summary>Where this chapter's claims come from</summary>
+
+Step 1 reproduces the rounded worked example in `Awesome-ML-SYS-Tutorial/sglang/kvcache-code-walk-through/mem-fraction-static.md:73-85`: available memory is about 78 GB before model loading and 18 GB afterward. At `mem_fraction_static = 0.70`, KV room is −5.4 GB; at 0.85, it is 6.3 GB. These are the article's teaching values, not measurements from this computer. The formula and startup behavior were checked against SGLang source at `4fa3482`; exact files and lines are in the deep dive. Dynamic headroom is an allowance, not memory already fully occupied.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的出处</summary>
+
+第 1 步沿用 `Awesome-ML-SYS-Tutorial/sglang/kvcache-code-walk-through/mem-fraction-static.md:73-85` 的约数例子：装入模型前可用显存约 78 GB，装入后约 18 GB。`mem_fraction_static = 0.70` 时 KV 空间为 −5.4 GB，调到 0.85 后为 6.3 GB。这些是原文的教学值，不是本机实测。公式和启动行为已对照 SGLang `4fa3482` 源码，具体文件和行号见深入讲解。动态余量是预留，不是已经全部占用。
+
+</details>
