@@ -4,7 +4,7 @@
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
-  import { DYNAMO_LOG_READY_US, DYNAMO_LOG_HTTP_US, DYNAMO_READY_TO_HTTP_US, DYNAMO_HTTP_PORT, DYNAMO_NUM_NODES, DYNAMO_DIST_INIT_PORT, DYNAMO_TP_SIZE, DYNAMO_TP_PER_NODE, DYNAMO_TP_RANKS_BY_NODE } from '../../ml-sys/numbers';
+  import { DYNAMO_LOG_READY_US, DYNAMO_LOG_HTTP_US, DYNAMO_READY_TO_HTTP_US, DYNAMO_HTTP_PORT, DYNAMO_NUM_NODES, DYNAMO_DIST_INIT_PORT, DYNAMO_TP_SIZE, DYNAMO_TP_PER_NODE, DYNAMO_TP_RANKS_BY_NODE, DYNAMO_SMOKE_MAX_TOKENS } from '../../ml-sys/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
@@ -20,7 +20,10 @@
     captionZh: `TP 把同一模型的计算分给 ${DYNAMO_TP_SIZE} 个 worker。每节点 ${DYNAMO_TP_PER_NODE} 个。`,
   }, {
     caption: `Each node waits for its ${DYNAMO_TP_PER_NODE} local workers. If readiness never arrives, inspect the SGLang worker logs.`,
-    captionZh: `每个启动器先等本机 ${DYNAMO_TP_PER_NODE} 个 worker。没等到就绪，就查 SGLang worker 日志。`,
+    captionZh: `每个节点先等本机 ${DYNAMO_TP_PER_NODE} 个 worker。没等到就绪，就查 SGLang worker 日志。`,
+  }, {
+    caption: 'Send a short request to node 0. Answer text confirms the path, not the speed.',
+    captionZh: '向 0 号节点发一个短请求。有回答说明链路通，不代表速度快。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -36,7 +39,7 @@
     return () => query.removeEventListener('change', update);
   });
   const cur = $derived(steps[step]);
-  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 3 ? 650 : 520) : (step === 3 ? 460 : 400));
+  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 3 ? 650 : step === 4 ? 600 : 520) : (step === 3 ? 460 : 400));
 </script>
 
 <figure class="viz">
@@ -207,6 +210,45 @@
         {/if}
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('Old guide: initialization failure may exit silently.', '旧版指南提醒：初始化失败可能静默退出。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Check worker logs; ready is not a response.' : 'Check worker processes and logs; a ready log is not a response.', '检查 worker 进程与日志；就绪不等于请求成功。')}</text>
+      {:else if step === 4}
+        <text x={phone ? 18 : 36} y="30" class="title">{t(phone ? 'One request, one answer' : 'Send one request, check one answer', '发一个请求，检查一个回答')}</text>
+        <text x={phone ? 18 : 36} y="55" class="label">{t(phone ? `cap ${DYNAMO_SMOKE_MAX_TOKENS} = at most ${DYNAMO_SMOKE_MAX_TOKENS} new tokens` : `max_completion_tokens ${DYNAMO_SMOKE_MAX_TOKENS} = at most ${DYNAMO_SMOKE_MAX_TOKENS} new tokens`, phone ? `最多生成 ${DYNAMO_SMOKE_MAX_TOKENS} 个新 token` : `max_completion_tokens ${DYNAMO_SMOKE_MAX_TOKENS} = 最多生成 ${DYNAMO_SMOKE_MAX_TOKENS} 个 token`)}</text>
+        {#if !phone}
+          <rect x="40" y="82" width="250" height="202" rx="13" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="60" y="113" class="section">CLIENT · {t('new terminal', '新终端')}</text>
+          <text x="60" y="151" class="code">POST /v1/chat/completions</text>
+          <text x="60" y="183" class="code">model: &lt;model&gt;</text>
+          <text x="60" y="215" class="code">messages: [one question]</text>
+          <text x="60" y="247" class="code">max_completion_tokens: {DYNAMO_SMOKE_MAX_TOKENS}</text>
+          <rect x="430" y="82" width="250" height="202" rx="13" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="555" y="125" text-anchor="middle" class="section">NODE 0</text>
+          <text x="555" y="169" text-anchor="middle" class="result">HTTP :{DYNAMO_HTTP_PORT}</text>
+          <text x="555" y="207" text-anchor="middle" class="code">in=http out=sglang</text>
+          <text x="555" y="247" text-anchor="middle" class="small">{t('the only client entrance', '唯一的客户端入口')}</text>
+          <line x1="290" y1="139" x2="420" y2="139" stroke="var(--accent)" stroke-width="3" marker-end="url(#serve-arrow-blue)" />
+          <text x="355" y="121" text-anchor="middle" class="small">{t('request', '请求')}</text>
+          <line x1="430" y1="229" x2="300" y2="229" stroke="var(--gen)" stroke-width="3" marker-end="url(#serve-arrow-orange)" />
+          <text x="355" y="214" text-anchor="middle" class="small">{t('response', '回答')}</text>
+          <rect x="40" y="310" width="640" height="50" rx="11" fill="var(--bg)" stroke="var(--line)" />
+          <text x="360" y="341" text-anchor="middle" class="result">✓ choices[0].message.content = {t('answer text', '回答文本')}</text>
+        {:else}
+          <rect x="20" y="76" width="260" height="164" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="150" y="105" text-anchor="middle" class="section">CLIENT</text>
+          <text x="150" y="137" text-anchor="middle" class="code">POST /v1/chat/completions</text>
+          <text x="150" y="169" text-anchor="middle" class="code">model: &lt;model&gt;</text>
+          <text x="150" y="201" text-anchor="middle" class="code">messages: [one question]</text>
+          <text x="150" y="228" text-anchor="middle" class="code">max tokens: {DYNAMO_SMOKE_MAX_TOKENS}</text>
+          <line x1="150" y1="240" x2="150" y2="276" stroke="var(--accent)" stroke-width="3" marker-end="url(#serve-arrow-blue)" />
+          <rect x="20" y="286" width="260" height="91" rx="12" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="150" y="319" text-anchor="middle" class="section">NODE 0 · HTTP :{DYNAMO_HTTP_PORT}</text>
+          <text x="150" y="351" text-anchor="middle" class="code">in=http out=sglang</text>
+          <line x1="150" y1="377" x2="150" y2="413" stroke="var(--gen)" stroke-width="3" marker-end="url(#serve-arrow-orange)" />
+          <rect x="20" y="423" width="260" height="91" rx="12" fill="var(--bg)" stroke="var(--line)" />
+          <text x="150" y="455" text-anchor="middle" class="small">✓ choices[0].message.content</text>
+          <text x="150" y="488" text-anchor="middle" class="result">{t('answer text returned', '返回了回答文本')}</text>
+        {/if}
+        <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('Placeholders replace local names; 8 is a teaching cap.', '占位符代替本机名称；8 是教学上限。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('One response does not test quality, speed or concurrency.', '一个回答不检验质量、速度或并发。')}</text>
       {/if}
     </svg>
   </div>

@@ -21,6 +21,8 @@ Step 3 derives four workers per node from the public `--tensor-parallel-size 8` 
 
 Step 4 separates a recommended preflight from guarantees made by the software. The model and shared-address checks come from the public config; compatible-version and process/log checks follow zero-to-sglang's deployment recipe. The fixed source starts the whole TP group together and waits for each node's local ready notifications. The old guide warns at `dynamo.md:130-132` that an SGLang initialization failure may make `dynamo-run` exit silently; this chapter does not generalize that warning to every Dynamo version.
 
+Step 5 adapts the public chat request at `dynamo.md:85-95` into a capped connectivity check. Its eight-token cap is a teaching choice, not a Dynamo default or a result from the public response. The response-field check and the warning about quality and concurrency follow zero-to-sglang's deployment recipe. The fixed HTTP source enables chat completions and connects the request pipeline at `launch/dynamo-run/src/input/http.rs:43-47,95-108`.
+
 The command and log examples describe an old guide. This chapter keeps their version boundary and replaces machine-specific paths and addresses with placeholders rather than presenting them as reusable defaults.
 
 </details>
@@ -35,6 +37,8 @@ The command and log examples describe an old guide. This chapter keeps their ver
 第 3 步用公开的 `--tensor-parallel-size 8` 和 `--num-nodes 2` 推出每节点 4 个 worker。固定版本 `worker.rs:305-324` 计算 `tp_size_per_node`，给每个节点分配连续的全局 TP rank，并为每个 rank 启动一个子进程。这里只描述示例的 8-worker 配置，不把它推荐给其他模型或机器。
 
 第 4 步把建议的 preflight 与软件保证分开。模型和共同地址检查来自公开配置；版本兼容、进程与日志检查沿用 zero-to-sglang 的部署顺序。固定源码要求整组 TP worker 一起启动，并等待每个节点的本机 ready 通知。旧指南在 `dynamo.md:130-132` 提醒 SGLang 初始化失败可能让 `dynamo-run` 静默退出；本章不把这条限制推广到所有 Dynamo 版本。
+
+第 5 步把 `dynamo.md:85-95` 的公开对话请求改成限制长度的连通性检查。8 个 token 的上限是教学选择，不是 Dynamo 默认值，也不是公开回答的实测结果。回答字段检查，以及不能把一次成功当成质量和并发结论的边界，沿用 zero-to-sglang 的部署顺序。固定 HTTP 源码在 `launch/dynamo-run/src/input/http.rs:43-47,95-108` 开启 chat completions 并连接请求管线。
 
 这些命令和日志来自旧版操作记录。本章保留版本边界，把机器相关路径和地址换成占位符，不把它们写成可照搬的默认值。
 

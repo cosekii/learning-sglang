@@ -110,3 +110,5 @@ export const DYNAMO_TP_SIZE = 8;
 export const DYNAMO_TP_PER_NODE = DYNAMO_TP_SIZE / DYNAMO_NUM_NODES;
 export const DYNAMO_TP_RANKS_BY_NODE = Array.from({ length: DYNAMO_NUM_NODES }, (_, node) =>
   Array.from({ length: DYNAMO_TP_PER_NODE }, (_, i) => node * DYNAMO_TP_PER_NODE + i));
+// A small cap for this chapter's adapted smoke request, not a Dynamo default.
+export const DYNAMO_SMOKE_MAX_TOKENS = 8;

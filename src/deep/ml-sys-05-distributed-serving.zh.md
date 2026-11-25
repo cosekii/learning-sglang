@@ -155,3 +155,48 @@ zero-to-sglang 的部署章节建议先核对模型、硬件与版本，再检�
 进程和就绪日志检查完后，下一步发出最小 HTTP 请求，验证整条路径真的可用。
 
 来源：`Awesome-ML-SYS-Tutorial/sglang/nvidia-dynamo/dynamo.md:130-132`；`ai-dynamo/dynamo@670661f6` 的 `lib/llm/src/engines/sglang/worker.rs:305-343`、`launch/dynamo-run/src/lib.rs:253-270,407-443`；`zero-to-sglang/course-material/ch/part4/第1章_用Cookbook部署SGLang.md:17-24,48-98`。
+
+## 第 5 步 · 用一个短请求检查回答
+
+**一句话。** 向 node 0 发一个最多生成 8 个 token 的请求，返回回答文本就说明这条路径能完成一次服务。
+
+### 图上是什么
+
+- 左侧是另一个终端里的客户端。请求包含模型名、一个用户问题和 `max_completion_tokens 8`；这个参数把生成量限制为最多 8 个新 token。
+- 请求只发给 node 0 的 `HTTP :8080`。它沿用第 2 步的 `in=http out=sglang`，不是另开 node 1 的入口。
+- 橙色返回箭头代表 HTTP 回答。底部检查 `choices[0].message.content` 是否有回答文本。
+- `<model>` 是占位符。8 是本章为短请求选的教学上限，不是 Dynamo 默认值，也不是原文公开回答的 token 数。
+
+### 公式与符号
+
+$$N_{\mathrm{req}}=1,\qquad N_{\mathrm{new}}\le C_{\mathrm{smoke}}$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $N_{\mathrm{req}}$ | 本次检查发送的请求数 | 本步，1 |
+| $N_{\mathrm{new}}$ | 服务实际生成的新 token 数 | 请求完成后统计 |
+| $C_{\mathrm{smoke}}$ | 本次短请求的生成上限 | `numbers.ts`，8 |
+
+### 代入图上的数
+
+$$N_{\mathrm{req}}=1,\qquad N_{\mathrm{new}}\le8$$
+
+适配公开例子的请求如下。把 `<node0-ip>` 和 `<model>` 换成本次实验值；模型名必须与启动时注册的名字一致。
+
+```bash
+curl --fail-with-body http://<node0-ip>:8080/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "model": "<model>",
+    "messages": [{"role": "user", "content": "What is the capital of South Africa?"}],
+    "max_completion_tokens": 8
+  }'
+```
+
+公开指南给出了同一路径的请求和 JSON 回答；zero-to-sglang 建议检查回答字段，并明确一次成功不能证明高并发性能或模型质量。本步另外缩短生成长度，只检查连通性；公开例子的 token 计数不是这次多节点实验结果。
+
+### 接下来
+
+回答已经返回。下一步打开这条路径，看文本怎样变成 token，怎样到达 8 个 worker，再怎样回到客户端。
+
+来源：`Awesome-ML-SYS-Tutorial/sglang/nvidia-dynamo/dynamo.md:85-95`；`ai-dynamo/dynamo@670661f6` 的 `launch/dynamo-run/src/input/http.rs:43-47,95-108`；`zero-to-sglang/course-material/ch/part4/第1章_用Cookbook部署SGLang.md:64-83`。
