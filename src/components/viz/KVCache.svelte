@@ -31,7 +31,7 @@
   const all5 = [0, 1, 2, 3, 4];
   const steps: Step[] = [
     { n: 5, cached: 0, caption: `Same sequence, same layer. This time we keep what we compute.`, captionZh: `上章为 ␣Paris 重算了 5 个旧 k 和 5 个旧 v。KV cache 是存旧 k、v 的仓库。` },
-    { n: 5, cached: 0, compute: all5, caption: `First step: all five tokens at once. Each gets its q, k and v, exactly as before.`, captionZh: `第一步：五个 token 一起算。每个都得到自己的 q、k、v，和之前完全一样。` },
+    { n: 5, cached: 0, compute: all5, caption: `First step: all five tokens at once. Each gets its q, k and v, exactly as before.`, captionZh: `第一次：5 个 token 各得到 q、k、v，cache 仍为空。` },
     { n: 5, cached: 5, compute: all5, store: true, dropQ: true, caption: `Attention runs as before. Then, instead of throwing k and v away, we file them. Five slots. The queries were used, so they go.`, captionZh: `Attention 照常运行。然后我们不再把 k 和 v 扔掉，而是把它们存起来。五个槽位。query 已经用过了，所以丢掉。` },
     { n: 6, cached: 5, compute: [5], flyIn: true, caption: `Decode step. Paris arrives. Only Paris gets an x, a q, a k and a v. One column of work, not six.`, captionZh: `Decode 步。Paris 到了。只有 Paris 得到 x、q、k、v。一列的工作量，不是六列。` },
     { n: 6, cached: 6, compute: [5], store: true, caption: `Its k and v go into the cache. Slot six.`, captionZh: `它的 k 和 v 进入 cache。第六个槽位。` },
@@ -83,13 +83,55 @@
     query.addEventListener('change', update);
     return () => query.removeEventListener('change', update);
   });
-  const phoneCustom = $derived(phone && $lang === 'zh' && step === 0);
+  const phoneCustom = $derived(phone && $lang === 'zh' && step <= 1);
 </script>
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox={phoneCustom ? '0 0 360 540' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="The KV cache, step {step + 1}" class:phone-custom={phoneCustom}>
-      {#if phoneCustom}
+    <svg viewBox={phoneCustom ? '0 0 360 620' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="The KV cache, step {step + 1}" class:phone-custom={phoneCustom}>
+      {#snippet phoneTokens(n: number, y: number)}
+        {@const start = 180 - (n * 46 - 8) / 2}
+        {#each Array(n) as _, i}
+          <rect x={start + i * 46} y={y} width="38" height="32" rx="6" fill={i < PROMPT_N ? 'var(--accent-soft)' : 'var(--gen-soft)'} stroke={i < PROMPT_N ? 'var(--accent)' : 'var(--gen)'} />
+          <text x={start + i * 46 + 19} y={y + 21} text-anchor="middle">#{i + 1}</text>
+        {/each}
+      {/snippet}
+      {#snippet phoneCompute(indices: number[], y: number)}
+        {@const start = 180 - (indices.length * 46 - 8) / 2}
+        {#each (['x', 'q', 'k', 'v'] as Row[]) as r, ri}
+          <text x={start - 16} y={y + ri * 38 + 21} text-anchor="end">{r}</text>
+          {#each indices as idx, i}
+            <g opacity={r === 'q' && cur.dropQ ? 0.25 : 1}>
+              <rect x={start + i * 46} y={y + ri * 38} width="38" height="32" rx="5" fill={COLOR[r][0]} stroke={COLOR[r][1]} />
+              <text x={start + i * 46 + 19} y={y + ri * 38 + 21} text-anchor="middle">{r}{sub(idx + 1)}</text>
+            </g>
+          {/each}
+        {/each}
+      {/snippet}
+      {#snippet phoneCache(count: number, y: number, attend: number, ghost: boolean)}
+        {@const start = 180 - (count * 38 - 6) / 2}
+        <text x={start - 14} y={y + 21} text-anchor="end">k</text>
+        <text x={start - 14} y={y + 58} text-anchor="end">v</text>
+        {#each Array(count) as _, i}
+          {@const x = start + i * 38}
+          {#if attend >= 0}<text x={x + 16} y={y - 8} text-anchor="middle">{w[i].toFixed(2)}</text>{/if}
+          <rect x={x} y={y} width="32" height="32" rx="5" fill={COLOR.k[0]} stroke={COLOR.k[1]} />
+          <text x={x + 16} y={y + 21} text-anchor="middle">k{sub(i + 1)}</text>
+          <rect x={x} y={y + 38} width="32" height="32" rx="5" fill={COLOR.v[0]} stroke={COLOR.v[1]} opacity={attend >= 0 ? 0.35 + 0.65 * w[i] : 1} />
+          <text x={x + 16} y={y + 59} text-anchor="middle">v{sub(i + 1)}</text>
+          {#if attend >= 0}<path d="M {x + 16} {y + 70} Q {x + 16} {y + 104}, 180 {y + 126}" fill="none" stroke={COLOR.v[1]} stroke-width={1 + w[i] * 5} opacity="0.65" />{/if}
+          {#if ghost}
+            <rect x={x} y={y + 96} width="32" height="32" rx="5" fill={COLOR.q[0]} stroke={COLOR.q[1]} stroke-dasharray="3 3" opacity="0.55" />
+            <text x={x + 16} y={y + 117} text-anchor="middle" opacity="0.55">q{sub(i + 1)}</text>
+            <line x1={x + 4} y1={y + 124} x2={x + 28} y2={y + 100} stroke={COLOR.q[1]} opacity="0.7" />
+          {/if}
+        {/each}
+        {#if attend >= 0}
+          <rect x="158" y={y + 116} width="44" height="34" rx="6" fill="var(--bg)" stroke={COLOR.v[1]} stroke-width="2" />
+          <text x="180" y={y + 138} text-anchor="middle">out{sub(attend + 1)}</text>
+        {/if}
+      {/snippet}
+      {#if phoneCustom && step === 0}
         <text x="180" y="30" text-anchor="middle" class="ph-title">为什么要有 KV cache？</text>
         <text x="180" y="55" text-anchor="middle">KV cache = 存旧 k、v 的仓库</text>
         <rect x="20" y="80" width="320" height="94" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
@@ -111,6 +153,16 @@
         {/each}
         <text x="180" y="486" text-anchor="middle">下一步：算出 5 组 k、v，装进仓库</text>
         <text x="180" y="520" text-anchor="middle" class="ph-foot">空槽是预留位置，还没有旧结果</text>
+      {:else if phoneCustom && step === 1}
+        <text x="180" y="30" text-anchor="middle" class="ph-title">第一次：5 个 token 一起算</text>
+        <text x="180" y="55" text-anchor="middle">每个位置各得到 x、q、k、v</text>
+        {@render phoneTokens(5, 80)}
+        {@render phoneCompute(all5, 140)}
+        <text x="180" y="329" text-anchor="middle" class="ph-strong">5 组结果算好了，仓库还空着</text>
+        <rect x="55" y="355" width="250" height="100" rx="10" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />
+        <text x="180" y="412" text-anchor="middle">KV cache：0 格</text>
+        <text x="180" y="510" text-anchor="middle">下一步：k、v 入仓，q 丢掉</text>
+        <text x="180" y="590" text-anchor="middle" class="ph-foot">#1–#5 对应上方 5 个 prompt token</text>
       {:else}
       <!-- Contrast brackets: first step vs every step after -->
       {#if cur.contrast}
