@@ -4,6 +4,8 @@
 
 ## 本轮记录
 
+- 11:52 完成 Learning SGLang Omni 第 5 章全部 5 步：安全复用、DataRef 描述符、发布时的 pending、读取后的 ACK、发送方收尾与后端可回收边界。全章 **5/5 步易读 12/12**，原分均 **24/24**，平均 **24.00/24**，**0 内容洞、0 最终显示洞**。
+- 逐步提交并推送；`build`、本章 `transcript`、全章 `readability`、中英三种宽度本章 `mobile`、`deep-check 05`、本章 `zh-check`、30 个手机视图 SVG 溢出审计和 `git diff --check` 通过。最终图：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-omni-ch05-20261125-1130/final/`。独立 subagent 因 API key 不可用未运行，最终由主线程换视角冷读。本轮只跑本章检查，未跑全站回归。本轮类型：**新书**；下一普通轮按交替规则修旧。
 - 11:00 修旧 Learning SGLang 第 2 章：第 13 步用「旧 q → 旧输出 → 下一层旧 x → 相同旧 k、v」解释旧 q 不再使用，第 14 步对照需要保留的旧 k、v 与每层、每组的重算；第 7 步手机另补清 query 属行、key 属列。第 13、14 步中文补评并整改至 **12/12、24/24、0 洞**；两步整步易读均 **11/12**，只剩受保护英文 R4。全章原分 **24.00/24**、总洞数 **0**，整步易读满分 **8/14**。
 - 第 7、13、14 步最终独立复读均为中文 **12/12、24/24、0 内容洞、0 显示洞**，必须修项为无。逐步提交并推送；`build`、本章 `transcript`、三种宽度本章 `mobile`、目标中文步字号、`deep-check 02`、本章 `zh-check` 和 `git diff --check` 通过；本章 42 个英文小字视图仅作既有审计。全章 `readability` 中文 0 问题，保留 9 个受保护英文机械问题。最终图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch02-r3-20261125-1100/final/`、`final-checks/`。本轮只跑本章检查，未跑全站回归。本轮类型：**修旧**；下一普通轮做新书。
 - 10:58 完成 Learning ML Systems 第 3 章全部 6 步：实测 `num_batch` 的矛盾、全注意力 KV 复用、recurrent state、checkpoint 重算、hybrid 共同恢复点和 MambaRadixCache 墓碑。全章 **6/6 步易读 12/12**，中英原分均 **24/24**，平均 **24.00/24**，**0 内容洞、0 最终显示洞**。
@@ -65,7 +67,7 @@
 
 ## Learning SGLang Omni
 
-规划完成：`docs/plan-omni.md` 共 3 部分、13 章；第 1 章已制作 4 步并完成，第 2、3 章各已制作 3 步并完成，第 4 章已制作 4 步并完成。
+规划完成：`docs/plan-omni.md` 共 3 部分、13 章；第 1 章已制作 4 步并完成，第 2、3 章各已制作 3 步并完成，第 4 章已制作 4 步并完成，第 5 章已制作 5 步并完成。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
@@ -73,7 +75,7 @@
 | 02 | 02-spg-topology | 完成：3/3 步易读满分 | 24.00 |
 | 03 | 03-request-binding | 完成：3/3 步易读满分 | 24.00 |
 | 04 | 04-readiness-contracts | 完成：4/4 步易读满分 | 24.00 |
-| 05 | 05-data-lifetime | 制作中：5/5 步；已做步文本自检 12/12、24/24，章末集中冷读 | — |
+| 05 | 05-data-lifetime | 完成：5/5 步易读满分 | 24.00 |
 | 06 | 06-batching-backpressure | 规划 | — |
 | 07 | 07-shared-gpu-budgets | 规划 | — |
 | 08 | 08-measure-streaming | 规划 | — |
