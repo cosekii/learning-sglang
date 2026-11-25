@@ -61,3 +61,63 @@ speech 路线的 `thinker` 配置了 `wait_for`、动态 `wait_for_fn` 和 `merg
 ### 接下来
 
 下一步看 bufferable stream：结果分成 chunk 后，先到的 chunk 存在哪里，是否仍要等全部到齐。
+
+## 第 2 步 · 早到的 chunk 按顺序存下
+
+> **一句话：** 整份结果还没到，`talker_ar` 也能把 `thinker` 的 chunk 按到达顺序存好。
+
+### 图上是什么
+
+- **chunk** 是一小段结果。交接路线是 `thinker → talker_ar`；0、1、2 是本例的 chunk 编号。
+- 三张图分别收到 1、2、3 个 chunk。蓝框表示已收到，橙框标出每张新到的 chunk；灰虚线表示整份结果还没到。
+- 第 1、2 张的整份结果还未到，第 3 张已到；早到的 chunk 保持到达顺序。
+- 这个 stage 允许整份结果还没到就先收流数据。是否允许由 stage 配置决定，不是所有 stage 都通用。
+- 本图只画接收和保存，不表示请求已开始构建或计算。
+
+### 公式
+
+设 $C_A$ 是请求 A 已存下的 chunk 序列，$c_i$ 是编号为 $i$ 的 chunk，$n_A$ 是已存数量：
+
+$$C_A=[c_0,c_1,\ldots,c_{n_A-1}],\qquad n_A=|C_A|$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $A$ | 第 3 章一路跟踪的请求 | 第 3 章第 1 步 |
+| $C_A$ | A 的 chunk 按到达顺序形成的序列 | scheduler 保存的 chunk 列表 |
+| $c_i$ | 图上标为 $i$ 的 chunk | `StreamItem.chunk_id` |
+| $n_A$ | 已存 chunk 的数量 | 本步对 $C_A$ 计数 |
+
+### 代入图上的数
+
+| 快照 | $C_A$ | $n_A$ | 整份结果 |
+|---|---|---:|---|
+| 1 | $[c_0]$ | 1 | 还未到 |
+| 2 | $[c_0,c_1]$ | 2 | 还未到 |
+| 3 | $[c_0,c_1,c_2]$ | 3 | 已到 |
+
+### chunk 存在哪里
+
+`talker_stage` 配置了 `can_accept_stream_before_payload=True`。chunk 比请求 payload 早到时，`Stage.route_stream_item_or_fail()` 只给允许这样做的 stage 打开 pre-payload 流路径；不允许时会中止这个请求。发送方按每个请求和目标分别递增 chunk 编号。
+
+如果 `OmniScheduler` 还不认识这个请求，`on_stream_chunk()` 会把每个 `StreamItem` 依次追加到 `pending_stream_ingress[request_id].chunks`。整份 `StagePayload` 到达后，scheduler 把这个列表移到 `payload.prefetched_chunks`，不重排。顺序保证属于同一 request/source receive lane；chunk 编号不是跨请求或跨来源的全局排序。这里的「整份结果」是普通的终止 payload，不是把所有 chunk 拼成一个大对象。
+
+存下 chunk 不代表请求已开始构建，也不代表 GPU 已开始计算；能否构建请求另有检查。
+
+### 边界与出处
+
+本步不讲背压、传输、chunk 消费、完成、数据释放和请求构建阈值。3 个 chunk 是教学例子，不是固定的流长度。
+
+以下来源位于 `sglang-omni origin/main@f6827ed1907e392fd67d5f13fa315c016e2056e8`：
+
+- [`thinker` 向 `talker_ar` 发流：`sglang_omni/models/qwen3_omni/config.py:170-185`](https://github.com/sgl-project/sglang-omni/blob/f6827ed1907e392fd67d5f13fa315c016e2056e8/sglang_omni/models/qwen3_omni/config.py#L170-L185)。
+- [`talker_ar` 允许 pre-payload 流数据：`sglang_omni/models/qwen3_omni/config.py:212-242`](https://github.com/sgl-project/sglang-omni/blob/f6827ed1907e392fd67d5f13fa315c016e2056e8/sglang_omni/models/qwen3_omni/config.py#L212-L242)。
+- [stage 接收或拒绝早到的 chunk：`sglang_omni/pipeline/stage/runtime.py:1024-1046,1238-1257`](https://github.com/sgl-project/sglang-omni/blob/f6827ed1907e392fd67d5f13fa315c016e2056e8/sglang_omni/pipeline/stage/runtime.py#L1024-L1046)。
+- [接收任务按 request/source lane 串接：`sglang_omni/pipeline/stage/runtime.py:571-648,700-730`](https://github.com/sgl-project/sglang-omni/blob/f6827ed1907e392fd67d5f13fa315c016e2056e8/sglang_omni/pipeline/stage/runtime.py#L571-L648)。
+- [chunk 编号按请求和目标递增：`sglang_omni/pipeline/stage/runtime.py:2215-2229`](https://github.com/sgl-project/sglang-omni/blob/f6827ed1907e392fd67d5f13fa315c016e2056e8/sglang_omni/pipeline/stage/runtime.py#L2215-L2229)。
+- [未知请求按到达顺序积累 chunk：`sglang_omni/scheduling/omni_scheduler.py:3639-3653`](https://github.com/sgl-project/sglang-omni/blob/f6827ed1907e392fd67d5f13fa315c016e2056e8/sglang_omni/scheduling/omni_scheduler.py#L3639-L3653)。
+- [payload 接过已缓冲的 chunk 列表：`sglang_omni/scheduling/omni_scheduler.py:1565-1582`](https://github.com/sgl-project/sglang-omni/blob/f6827ed1907e392fd67d5f13fa315c016e2056e8/sglang_omni/scheduling/omni_scheduler.py#L1565-L1582)。
+- [同进程流式测试保持 chunk 顺序：`tests/unit_test/pipeline/test_stage_streaming.py:1309-1342`](https://github.com/sgl-project/sglang-omni/blob/f6827ed1907e392fd67d5f13fa315c016e2056e8/tests/unit_test/pipeline/test_stage_streaming.py#L1309-L1342)。
+
+### 接下来
+
+下一步看存下多少 chunk 才够构建并启动请求。

@@ -61,3 +61,63 @@ Sources on `sglang-omni origin/main@91d06c70b00746c0b2b84db12a318240db360f1d`:
 ### Next
 
 The next step examines a bufferable stream: where early chunks wait, and whether every chunk must arrive before request construction.
+
+## Step 2 · Store early chunks in order
+
+> **In one sentence:** `talker_ar` can store numbered `thinker` chunks in arrival order before the whole result arrives.
+
+### What the picture shows
+
+- A **chunk** is one small piece of a result. The route is `thinker → talker_ar`. The numbers 0, 1 and 2 are the chunk ids in this example.
+- The three pictures contain one, two and three received chunks. Blue means received; orange marks the new chunk in each picture. Gray dashes mean the whole result has not arrived yet.
+- The whole result is absent in snapshots 1 and 2, and present in snapshot 3. The early chunks remain in their arrival order.
+- This stage allows pre-payload stream data. That permission is a stage configuration, not a rule for every stage.
+- The picture shows receiving and storage only. It does not show request construction or computation starting.
+
+### Formula
+
+Let $C_A$ be the saved chunk sequence for request A, $c_i$ the chunk with id $i$, and $n_A$ the number saved:
+
+$$C_A=[c_0,c_1,\ldots,c_{n_A-1}],\qquad n_A=|C_A|$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $A$ | The request followed from Ch. 3 | Ch. 3 Step 1 |
+| $C_A$ | A's chunks in arrival order | The scheduler's saved chunk list |
+| $c_i$ | The chunk labelled $i$ on the stage | `StreamItem.chunk_id` |
+| $n_A$ | Number of saved chunks | This step counts $C_A$ |
+
+### The numbers on the stage
+
+| Snapshot | $C_A$ | $n_A$ | Whole result |
+|---|---|---:|---|
+| 1 | $[c_0]$ | 1 | Not yet |
+| 2 | $[c_0,c_1]$ | 2 | Not yet |
+| 3 | $[c_0,c_1,c_2]$ | 3 | Arrived |
+
+### Where the chunks wait
+
+`talker_stage` sets `can_accept_stream_before_payload=True`. When a chunk arrives before the request payload, `Stage.route_stream_item_or_fail()` opens the pre-payload stream path only if the stage permits it. Otherwise, the stage aborts that request. The sender numbers chunks separately for each request and target.
+
+For a request not yet known to `OmniScheduler`, `on_stream_chunk()` appends each `StreamItem` to `pending_stream_ingress[request_id].chunks`. When the whole `StagePayload` arrives, the scheduler moves that list to `payload.prefetched_chunks` without reordering it. This order is local to the receive lane for one request and source. Chunk ids do not globally sort different requests or sources. Here "whole result" means the ordinary terminal payload, not a large object assembled by joining all chunks.
+
+Storage does not prove that request construction or GPU work started. Request-build readiness is a separate check.
+
+### Scope and sources
+
+This step omits backpressure, transport, chunk consumption, completion, data release and the request-build threshold. The three chunks are a teaching example, not a fixed stream length.
+
+Sources on `sglang-omni origin/main@f6827ed1907e392fd67d5f13fa315c016e2056e8`:
+
+- [`thinker` streams to `talker_ar`: `sglang_omni/models/qwen3_omni/config.py:170-185`](https://github.com/sgl-project/sglang-omni/blob/f6827ed1907e392fd67d5f13fa315c016e2056e8/sglang_omni/models/qwen3_omni/config.py#L170-L185).
+- [`talker_ar` permits pre-payload stream data: `sglang_omni/models/qwen3_omni/config.py:212-242`](https://github.com/sgl-project/sglang-omni/blob/f6827ed1907e392fd67d5f13fa315c016e2056e8/sglang_omni/models/qwen3_omni/config.py#L212-L242).
+- [The stage admits or rejects an early chunk: `sglang_omni/pipeline/stage/runtime.py:1024-1046,1238-1257`](https://github.com/sgl-project/sglang-omni/blob/f6827ed1907e392fd67d5f13fa315c016e2056e8/sglang_omni/pipeline/stage/runtime.py#L1024-L1046).
+- [Receive work is chained per request and source lane: `sglang_omni/pipeline/stage/runtime.py:571-648,700-730`](https://github.com/sgl-project/sglang-omni/blob/f6827ed1907e392fd67d5f13fa315c016e2056e8/sglang_omni/pipeline/stage/runtime.py#L571-L648).
+- [Chunk ids increase per request and target: `sglang_omni/pipeline/stage/runtime.py:2215-2229`](https://github.com/sgl-project/sglang-omni/blob/f6827ed1907e392fd67d5f13fa315c016e2056e8/sglang_omni/pipeline/stage/runtime.py#L2215-L2229).
+- [Unknown requests accumulate early chunks in arrival order: `sglang_omni/scheduling/omni_scheduler.py:3639-3653`](https://github.com/sgl-project/sglang-omni/blob/f6827ed1907e392fd67d5f13fa315c016e2056e8/sglang_omni/scheduling/omni_scheduler.py#L3639-L3653).
+- [The payload receives the buffered chunk list: `sglang_omni/scheduling/omni_scheduler.py:1565-1582`](https://github.com/sgl-project/sglang-omni/blob/f6827ed1907e392fd67d5f13fa315c016e2056e8/sglang_omni/scheduling/omni_scheduler.py#L1565-L1582).
+- [The same-process streaming test preserves chunk order: `tests/unit_test/pipeline/test_stage_streaming.py:1309-1342`](https://github.com/sgl-project/sglang-omni/blob/f6827ed1907e392fd67d5f13fa315c016e2056e8/tests/unit_test/pipeline/test_stage_streaming.py#L1309-L1342).
+
+### Next
+
+The next step asks when saved chunks become enough to construct and start a request.

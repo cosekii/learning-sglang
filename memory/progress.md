@@ -4,10 +4,10 @@
 
 ## 本轮记录
 
-- 07:30 修旧 Learning SGLang 第 2 章第 8 步：中文桌面和手机改画 `5 + 1 = 6` 个 token 整组重进同一层，补 `␣ = 空格`、蓝橙图例和下一步的 6 个 `x`；中文深入讲解释明生成 decode 不是把编号翻回文字。英文原文与图未改。
-- 独立成人模拟冷读从 **9/12、22/24、3 洞** 提升到整步 **11/12、24/24、0 洞**；中文桌面和 390 px 手机均 **12/12、0 洞**，遮 caption 也能复述。剩余唯一硬门是受保护英文 caption 有 3 句，R4=1，本步不标易读满分。
-- `build`、本章 `transcript`、本步中文字号与全站三种宽度手机检查、`deep-check 02`、本章 `zh-check`、静态截图、浏览器导航和抽屉检查、HTTP 200、`git diff --check` 通过；`readability` 只剩上述英文句数问题，全站 615 个既有小字视图仅作审计。
-- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch02-s08-repair-20261125-0730/final/` 和 `checks/`。本轮类型：**修旧**；下一普通轮做 **新书**，下次整点仍轮换第 2 项「向好的范例学」。
+- 07:50 新书 Learning SGLang Omni 第 4 章第 2 步：用三张图讲清 `thinker → talker_ar` 的早到 chunk 在整份结果到达前按顺序存下；标明图片序号、从 0 开始的 chunk 编号、蓝橙图例和新到 chunk，中英深入讲解补齐公式、数值表、边界与 pinned 源码。
+- 独立源码核查收窄了顺序保证和 stage 适用范围。初版成人模拟冷读为 **8–9/12**，终稿中文桌面、360／390／430 px 中文手机、英文桌面和 390 px 英文手机均 **12/12、0 内容洞、0 显示洞**；中英遮 caption 均能复述，原 12 项自评 **24/24**。
+- `build`、本章 `transcript`、本步 `readability`、`deep-check 04`、本章 `zh-check`、本步中文及 Omni 全书 `mobile`、静态截图一致性、双语抽屉 DOM、键盘导航、HTTP 200、源码链接和 `git diff --check` 均通过。
+- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-omni-ch04-s02-20261125-0750/final/` 和 `checks/`。本轮类型：**新书**；下一普通轮做第 4 章第 3 步「存下多少 chunk 才够构建并启动请求」，下次整点仍轮换第 2 项「向好的范例学」。
 
 ## Learning SGLang
 
@@ -45,14 +45,14 @@
 
 ## Learning SGLang Omni
 
-规划完成：`docs/plan-omni.md` 共 3 部分、13 章；第 1 章已制作 4 步并完成，第 2、3 章各已制作 3 步并完成，第 4 章已制作 1 步。
+规划完成：`docs/plan-omni.md` 共 3 部分、13 章；第 1 章已制作 4 步并完成，第 2、3 章各已制作 3 步并完成，第 4 章已制作 2 步。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
 | 01 | 01-config-to-runtime | 完成：4/4 步易读满分 | 24.00 |
 | 02 | 02-spg-topology | 完成：3/3 步易读满分 | 24.00 |
 | 03 | 03-request-binding | 完成：3/3 步易读满分 | 24.00 |
-| 04 | 04-readiness-contracts | 在做第 2 步；第 1 步易读满分 | 24.00 |
+| 04 | 04-readiness-contracts | 在做第 3 步；第 1–2 步易读满分 | 24.00 |
 | 05 | 05-data-lifetime | 规划 | — |
 | 06 | 06-batching-backpressure | 规划 | — |
 | 07 | 07-shared-gpu-budgets | 规划 | — |

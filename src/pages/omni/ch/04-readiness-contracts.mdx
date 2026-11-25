@@ -15,7 +15,9 @@ export const deep = await deepFor('omni-04-readiness-contracts');
 
 Step 1 constructs an image-only request A in the speech topology. Its expected sources are `image_encoder` and `preprocessing`. The image result arrives first and is buffered; preprocessing arrives second, resolves the expected-source set and completes the fan-in. The snapshots 0/2, 1/2 and 2/2 count arrived payloads for this teaching example, not seconds or throughput. The figure covers dispatch after a one-shot fan-in into `thinker`, not the start of prefill. Streams, per-step feedback and data release come later.
 
-Source revision: `sglang-omni origin/main@91d06c70b00746c0b2b84db12a318240db360f1d`. The deep dive lists the exact files and lines.
+Step 2 constructs a three-chunk `thinker → talker_ar` stream. This stage accepts stream data before the whole result. The first two snapshots store one and two chunks while the whole result has not arrived. By the third snapshot, chunk 2 and the whole result have arrived. The scheduler keeps early chunks in arrival order and later attaches them to the payload. The figure covers receiving and storage, not the start of computation. Three chunks are an example, not a required stream length.
+
+Step 1 source revision: `sglang-omni origin/main@91d06c70b00746c0b2b84db12a318240db360f1d`. Step 2 source revision: `sglang-omni origin/main@f6827ed1907e392fd67d5f13fa315c016e2056e8`. The deep dive lists the exact files and lines.
 
 </details>
 
@@ -24,6 +26,8 @@ Source revision: `sglang-omni origin/main@91d06c70b00746c0b2b84db12a318240db360f
 
 第 1 步构造 speech 路线里只有图的请求 A，应等 `image_encoder` 和 `preprocessing` 两份结果。image 的完整结果先到并存下，preprocessing 随后到达，确定应等来源并补齐两路输入。0/2、1/2、2/2 数的是这个教学例子里已经到达的结果，不是等待秒数或吞吐量。本图只讲 one-shot 汇聚后交给 scheduler，不表示 prefill 已开始；流、逐步反馈和数据释放留到后面。
 
-源码版本：`sglang-omni origin/main@91d06c70b00746c0b2b84db12a318240db360f1d`。精确文件和行号见深入讲解。
+第 2 步构造 `thinker → talker_ar` 的流，本例有 3 个 chunk。这个 stage 允许整份结果还没到就先收流数据。前两张快照分别存下 1、2 个 chunk，整份结果还未到；第三张快照里，chunk 2 和整份结果都已到。scheduler 按到达顺序保存早到的 chunk，随后把它们附到 payload。图中只讲接收和保存，不表示开始计算。每个结果不固定为 3 个 chunk。
+
+第 1 步源码版本：`sglang-omni origin/main@91d06c70b00746c0b2b84db12a318240db360f1d`。第 2 步源码版本：`sglang-omni origin/main@f6827ed1907e392fd67d5f13fa315c016e2056e8`。精确文件和行号见深入讲解。
 
 </details>

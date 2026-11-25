@@ -100,3 +100,7 @@ export const REQUEST_BINDING_ASSIGNMENTS = REQUEST_BINDING_REQUEST_IDS.map((_, i
 export const READINESS_ONE_SHOT_INPUTS = ['image_encoder', 'preprocessing'] as const;
 export const READINESS_ONE_SHOT_REQUIRED_COUNT = READINESS_ONE_SHOT_INPUTS.length;
 export const READINESS_ONE_SHOT_ARRIVED_COUNTS = [0, 1, READINESS_ONE_SHOT_REQUIRED_COUNT] as const;
+
+// A three-chunk thinker → talker_ar example; chunks 0 and 1 precede the whole result.
+export const READINESS_STREAM_CHUNK_IDS = [0, 1, 2] as const;
+export const READINESS_STREAM_STORED_COUNTS = READINESS_STREAM_CHUNK_IDS.map((_, index) => index + 1);
