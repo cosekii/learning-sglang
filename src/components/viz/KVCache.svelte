@@ -30,7 +30,7 @@
   }
   const all5 = [0, 1, 2, 3, 4];
   const steps: Step[] = [
-    { n: 5, cached: 0, caption: `Same sequence, same layer. This time we keep what we compute.`, captionZh: `同一个序列，同一层。这一次，我们把算出来的东西留下来。` },
+    { n: 5, cached: 0, caption: `Same sequence, same layer. This time we keep what we compute.`, captionZh: `上章为 ␣Paris 重算了 5 个旧 k 和 5 个旧 v。KV cache 是存旧 k、v 的仓库。` },
     { n: 5, cached: 0, compute: all5, caption: `First step: all five tokens at once. Each gets its q, k and v, exactly as before.`, captionZh: `第一步：五个 token 一起算。每个都得到自己的 q、k、v，和之前完全一样。` },
     { n: 5, cached: 5, compute: all5, store: true, dropQ: true, caption: `Attention runs as before. Then, instead of throwing k and v away, we file them. Five slots. The queries were used, so they go.`, captionZh: `Attention 照常运行。然后我们不再把 k 和 v 扔掉，而是把它们存起来。五个槽位。query 已经用过了，所以丢掉。` },
     { n: 6, cached: 5, compute: [5], flyIn: true, caption: `Decode step. Paris arrives. Only Paris gets an x, a q, a k and a v. One column of work, not six.`, captionZh: `Decode 步。Paris 到了。只有 Paris 得到 x、q、k、v。一列的工作量，不是六列。` },
@@ -75,11 +75,43 @@
   const isDecode = $derived(cur.n > PROMPT_N);
   const w = $derived(cur.attend !== undefined ? softmax(scores[cur.attend]) : []);
   const cacheKB = $derived(cur.cached * KB_PER_TOKEN);
+  let phone = $state(false);
+  $effect(() => {
+    const query = window.matchMedia('(max-width: 900px)');
+    const update = () => (phone = query.matches);
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  });
+  const phoneCustom = $derived(phone && $lang === 'zh' && step === 0);
 </script>
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="The KV cache, step {step + 1}">
+    <svg viewBox={phoneCustom ? '0 0 360 540' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="The KV cache, step {step + 1}" class:phone-custom={phoneCustom}>
+      {#if phoneCustom}
+        <text x="180" y="30" text-anchor="middle" class="ph-title">为什么要有 KV cache？</text>
+        <text x="180" y="55" text-anchor="middle">KV cache = 存旧 k、v 的仓库</text>
+        <rect x="20" y="80" width="320" height="94" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="180" y="110" text-anchor="middle" class="ph-strong">上章：5 个旧 k + 5 个旧 v</text>
+        <text x="180" y="137" text-anchor="middle">10 个旧向量，每次都重算</text>
+        <text x="180" y="161" text-anchor="middle">本章：算一次，留下以后用</text>
+        <text x="180" y="207" text-anchor="middle" class="ph-strong">上章的 5 个旧位置</text>
+        {#each Array(5) as _, i}
+          <rect x={55 + i * 51} y="225" width="42" height="34" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x={76 + i * 51} y="247" text-anchor="middle">#{i + 1}</text>
+        {/each}
+        <text x="20" y="297" class="ph-strong">一层、一个 head 的空仓库</text>
+        <rect x="20" y="312" width="320" height="134" rx="10" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />
+        <text x="30" y="349">k</text>
+        <text x="30" y="405">v</text>
+        {#each Array(5) as _, i}
+          <rect x={65 + i * 51} y="328" width="38" height="34" rx="5" fill="none" stroke="var(--line)" stroke-dasharray="3 3" />
+          <rect x={65 + i * 51} y="384" width="38" height="34" rx="5" fill="none" stroke="var(--line)" stroke-dasharray="3 3" />
+        {/each}
+        <text x="180" y="486" text-anchor="middle">下一步：算出 5 组 k、v，装进仓库</text>
+        <text x="180" y="520" text-anchor="middle" class="ph-foot">空槽是预留位置，还没有旧结果</text>
+      {:else}
       <!-- Contrast brackets: first step vs every step after -->
       {#if cur.contrast}
         {@const a = allCols[0].x} {@const b = allCols[PROMPT_N - 1].x + allCols[PROMPT_N - 1].w}
@@ -90,6 +122,11 @@
           <path d="M {c} 26 V 20 H {d} V 26" fill="none" stroke="var(--gen)" stroke-width="1.5" />
           <text x={c} y="14" class="tag strong gen">{t('every step after · one token, reads the whole cache', '之后每步 · 一个 token，读取整个 cache')}</text>
         </g>
+      {/if}
+
+      {#if step === 0 && $lang === 'zh'}
+        <text x={W / 2} y="112" text-anchor="middle" class="slab">不保存：5 个旧 k + 5 个旧 v，每次都重算</text>
+        <text x={W / 2} y="140" text-anchor="middle" class="slab">本章：这 10 个旧向量只算一次，留下以后用</text>
       {/if}
 
       <!-- Token row -->
@@ -190,6 +227,7 @@
           </text>
         </g>
       {/if}
+      {/if}
     </svg>
   </div>
 
@@ -205,4 +243,8 @@
   .tag.strong { fill: var(--accent); font-weight: 600; }
   .tag.strong.gen { fill: var(--gen); }
   .legend .muted, .legend.muted { fill: var(--muted); }
+  .phone-custom text { font-family: var(--sans); font-size: 12px; fill: var(--fg); }
+  .phone-custom .ph-title { font-size: 16px; font-weight: 650; }
+  .phone-custom .ph-strong { font-weight: 650; }
+  .phone-custom .ph-foot { fill: var(--faint); }
 </style>
