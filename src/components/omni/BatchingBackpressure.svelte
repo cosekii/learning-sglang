@@ -55,6 +55,14 @@
     H200_FIFO_EXTRA_REQUESTS_PER_S,
     H200_FIFO_SPEEDUP_PERCENT,
     H200_FIFO_BAR_MAX,
+    ADMISSION_TEACHING_LIMIT,
+    ADMISSION_ACTIVE_IDS,
+    ADMISSION_NEW_ID,
+    ADMISSION_ACTIVE_COUNT,
+    ADMISSION_NEW_COUNT,
+    ADMISSION_FREE_PERMITS,
+    ADMISSION_ROUTER_STATUS,
+    ADMISSION_COORDINATOR_STATUS,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -77,6 +85,9 @@
   }, {
     caption: 'In this H200 test, B8 throughput is 38% higher. That result does not promise a win elsewhere.',
     captionZh: '这组 H200 实验里，B8 吞吐高约 38%。它只说明当时条件，不保证别处更快。',
+  }, {
+    caption: 'Both limits are full, so C gets an immediate error. Router admission returns 429; a full coordinator returns 503.',
+    captionZh: '两处容量都满，C 会立刻收到错误。Router 拒绝是 429；coordinator 满了是 503。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -92,7 +103,7 @@
     query.addEventListener('change', update);
     return () => query.removeEventListener('change', update);
   });
-  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 2 ? 610 : step === 4 ? 820 : step === 5 ? 700 : 680) : step === 2 ? 460 : step >= 4 ? 500 : step > 0 ? 450 : 410);
+  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 2 ? 610 : step === 4 || step === 6 ? 820 : step === 5 ? 700 : 680) : step === 2 ? 460 : step >= 4 ? 500 : step > 0 ? 450 : 410);
   const panels = $derived([
     { x: phone ? 15 : 20, y: phone ? 82 : 86, wait: 0 },
     { x: phone ? 15 : 375, y: phone ? 330 : 86, wait: BATCH_WAIT_ACTIVE_MS },
@@ -116,6 +127,10 @@
     const height = (phone ? 180 : 190) * bar.value / H200_FIFO_BAR_MAX;
     return { ...bar, height, y: (phone ? 320 : 330) - height };
   }));
+  const admissionPanels = $derived([
+    { x: phone ? 15 : 20, y: phone ? 82 : 92, kind: 'router', title: t('ROUTER · before worker dispatch', 'ROUTER · 发往 worker 之前') },
+    { x: phone ? 15 : 375, y: phone ? 400 : 92, kind: 'coordinator', title: t('COORDINATOR · before pipeline submit', 'COORDINATOR · 交给 pipeline 之前') },
+  ]);
 </script>
 
 <figure class="viz">
@@ -124,6 +139,9 @@
       <defs>
         <marker id="batch-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
           <path d="M0,0 L8,4 L0,8 Z" fill="var(--accent)" />
+        </marker>
+        <marker id="batch-arrow-gen" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+          <path d="M0,0 L8,4 L0,8 Z" fill="var(--gen)" />
         </marker>
       </defs>
       {#if step === 0}
@@ -311,6 +329,29 @@
       <text x={W / 2} y={phone ? 604 : 434} text-anchor="middle" class="tag strong">{t('Historical code: cap 8 · current main: cap 16 and changed implementation', '历史代码：上限 8 · 当前主线：上限 16，实现也已变化')}</text>
       <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{phone ? t('Source: batch.md / PR #2271 · old code 89e60d0', '出处：batch.md / PR #2271 · 旧版 89e60d0') : t('Historical reference: batch.md and PR #2271; old code 89e60d0, not current main.', '历史出处：batch.md 与 PR #2271；旧代码 89e60d0，不是当前主线。')}</text>
       <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Next: when capacity is full, backpressure rejects work instead of hiding an unbounded queue.', '下一步：容量满时，背压拒绝新工作，而不是藏起无限队列。')}</text>
+      {:else if step === 6}
+      <text x={phone ? 15 : 20} y="20" class="tag strong">backpressure = {t('a full boundary tells its caller', '容量满时，把压力明确传回调用方')}</text>
+      <text x={phone ? 15 : 20} y="44" class="tag">{t('Two independent examples', '两个独立例子')} · {t('teaching cap', '教学上限')} = {ADMISSION_TEACHING_LIMIT} · {ADMISSION_ACTIVE_IDS.join(' + ')} {t('still active', '仍在处理')}</text>
+      <text x={phone ? 15 : 20} y="66" class="tag">{t('Blue: active request · orange: rejected request C', '蓝色：处理中的请求 · 橙色：被拒绝的 C')}</text>
+      {#each admissionPanels as panel}
+        <rect x={panel.x} y={panel.y} width={phone ? 270 : 325} height="290" rx="12" fill="var(--bg)" stroke="var(--line)" />
+        <text x={panel.x + 14} y={panel.y + 25} class="rowlabel">{panel.title}</text>
+        <text x={panel.x + 14} y={panel.y + 49} class="tag">{panel.kind === 'router' ? 'global + per-service permits' : 'max_in_flight'} = {ADMISSION_TEACHING_LIMIT}</text>
+        {#each ADMISSION_ACTIVE_IDS as id, i}
+          <rect x={panel.x + 16 + i * (phone ? 121 : 148)} y={panel.y + 64} width={phone ? 110 : 134} height="40" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x={panel.x + (phone ? 71 : 83) + i * (phone ? 121 : 148)} y={panel.y + 90} text-anchor="middle" class="mono strong">{id} · {t('active', '处理中')}</text>
+        {/each}
+        <text x={panel.x + 16} y={panel.y + 128} class="mono strong">{ADMISSION_NEW_ID} → {panel.kind === 'router' ? 'try_acquire_owned()' : 'submit_request()'}</text>
+        <path d="M{panel.x + 20} {panel.y + 142} H{panel.x + (phone ? 248 : 303)}" stroke="var(--gen)" stroke-width="2" marker-end="url(#batch-arrow-gen)" />
+        <text x={panel.x + 16} y={panel.y + 166} class="tag">{panel.kind === 'router' ? t(`${ADMISSION_FREE_PERMITS} permits → AdmissionError::Overloaded`, `${ADMISSION_FREE_PERMITS} 个许可 → AdmissionError::Overloaded`) : `${ADMISSION_ACTIVE_COUNT} >= ${ADMISSION_TEACHING_LIMIT} → QueueFullError`}</text>
+        <rect x={panel.x + 16} y={panel.y + 184} width={phone ? 238 : 293} height="50" rx="7" fill="var(--gen-soft)" stroke="var(--gen)" stroke-width="2" />
+        <text x={panel.x + (phone ? 135 : 162)} y={panel.y + 215} text-anchor="middle" class="mono strong">HTTP {panel.kind === 'router' ? ADMISSION_ROUTER_STATUS : ADMISSION_COORDINATOR_STATUS} · {panel.kind === 'router' ? t('not sent upstream', '不发给 worker') : t('no pipeline submit', '不交给 pipeline')}</text>
+        <text x={panel.x + (phone ? 135 : 162)} y={panel.y + 264} text-anchor="middle" class="tag">{panel.kind === 'router' ? t('released on response end / error / cancel', '响应结束 / 错误 / 取消才还许可') : t('counts only admission-counting requests', '只数计入准入的请求')}</text>
+      {/each}
+      <text x={W / 2} y={phone ? 724 : 420} text-anchor="middle" class="mono strong">{ADMISSION_ACTIVE_COUNT} {t('active', '条处理中')} + {ADMISSION_NEW_COUNT} {t('new', '条新到')} &gt; {ADMISSION_TEACHING_LIMIT} {t('cap', '条上限')} → {ADMISSION_FREE_PERMITS} {t('free', '个空位')}</text>
+      <text x={W / 2} y={phone ? 750 : 446} text-anchor="middle" class="tag strong">{t('429 and 503 come from different boundaries; do not interchange them.', '429 与 503 来自不同边界，不能互换。')}</text>
+      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{t('Caps two and requests A, B, C are teaching values, not deployment defaults.', '上限 2 和 A、B、C 都是教学值，不是部署默认值。')}</text>
+      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Next: an accepted response applies backpressure one frame at a time.', '下一步：已接收的响应怎样逐帧施加背压。')}</text>
       {/if}
     </svg>
   </div>

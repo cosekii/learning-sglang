@@ -190,3 +190,13 @@ export const H200_FIFO_REPEATS = 3;
 export const H200_FIFO_EXTRA_REQUESTS_PER_S = H200_FIFO_LARGE_REQUESTS_PER_S - H200_FIFO_SMALL_REQUESTS_PER_S;
 export const H200_FIFO_SPEEDUP_PERCENT = Math.round(((H200_FIFO_LARGE_REQUESTS_PER_S / H200_FIFO_SMALL_REQUESTS_PER_S) - 1) * 1000) / 10;
 export const H200_FIFO_BAR_MAX = Math.ceil(H200_FIFO_LARGE_REQUESTS_PER_S);
+
+// Two independent admission examples with a teaching cap of two active requests.
+export const ADMISSION_TEACHING_LIMIT = 2;
+export const ADMISSION_ACTIVE_IDS = ['A', 'B'] as const;
+export const ADMISSION_NEW_ID = 'C';
+export const ADMISSION_ACTIVE_COUNT = ADMISSION_ACTIVE_IDS.length;
+export const ADMISSION_NEW_COUNT = 1;
+export const ADMISSION_FREE_PERMITS = ADMISSION_TEACHING_LIMIT - ADMISSION_ACTIVE_COUNT;
+export const ADMISSION_ROUTER_STATUS = 429;
+export const ADMISSION_COORDINATOR_STATUS = 503;

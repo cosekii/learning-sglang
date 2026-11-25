@@ -342,3 +342,67 @@ Current-main line numbers refer to `origin/main@21a6d229c3d2075da5e97848f94e0d2a
 ### Next
 
 Step 7 moves from computing more to rejecting when full. Router, worker and coordinator each have capacity boundaries, and backpressure makes waiting or failure explicit to the client.
+
+## Step 7 · Two admission boundaries return different errors
+
+> **In one sentence:** Two active requests fill the teaching capacity, so C receives HTTP 429 from router admission or HTTP 503 at the coordinator's pipeline entrance.
+
+### What the picture shows
+
+- Backpressure here means a capacity boundary tells its caller that it is full instead of accepting unlimited new requests. The panels are independent examples; one C does not receive 429 and then 503.
+- The left panel sets both router global and per-service permits to the teaching value two. A and B remain active, leaving no permit. C's non-blocking acquisition fails, producing `RouterOverloaded` and HTTP 429 without worker dispatch.
+- The right panel sets coordinator `max_in_flight` to two. A and B count toward admission. C's `submit_request()` raises `QueueFullError` before pipeline submit, and the OpenAI error mapping returns HTTP 503.
+- Blue marks active requests and orange marks rejected C in both panels. The errors come from different boundaries, so 429 and 503 are not interchangeable labels.
+- Router permits and the worker-load guard remain held until response EOF, upstream error or downstream cancellation. Sending response headers does not release them early. The coordinator sums only requests whose `counts_toward_admission` is true.
+
+### Work through the numbers
+
+Let the teaching admission cap be $L=2$, active request count be $U=2$ and new request count be $N=1$. Remaining permits are:
+
+$$F=L-U=2-2=0$$
+
+Accepting C would produce:
+
+$$U+N=2+1=3>L=2$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $L$ | Teaching admission cap in each panel | Constructed value two, not a deployment default |
+| $U$ | Requests currently occupying capacity | A and B |
+| $N$ | New arrivals in this example | C alone |
+| $F$ | Permits left before the new arrival | Cap two minus two active requests |
+| $U+N$ | Occupancy after hypothetically accepting C | Two plus one gives three, above the cap |
+
+$F=0$ explains this rejection; it does not recommend a production cap of two. Router service classes can use weighted credits, and coordinator `max_in_flight` can remain unset. Those branches are outside this figure.
+
+### Fail-fast router admission
+
+`AdmissionController.try_admit_envelope()` uses `try_acquire_owned()` for a global permit, and `try_admit_class()` acquires the service-class permit. With none available, the controller returns `AdmissionError::Overloaded`; the HTTP error table maps `RouterOverloaded` to 429. This is immediate failure, not a router queue waiting for a permit.
+
+After admission, `RequestLease` owns admission, optional worker capacity and the worker-load guard. `DirectResponseBody` retains that lease and releases it on completion, upstream error or body drop. A streaming response therefore occupies its permit until the response actually terminates.
+
+### The coordinator's pipeline-entry check
+
+Before constructing pipeline input, `submit_request()` sums existing requests with `counts_toward_admission`. If that sum already meets or exceeds `max_in_flight`, and this request does not explicitly bypass admission, the method raises `QueueFullError`. With $U=2$, C never enters the pipeline.
+
+`generation_error_status_code()` recognizes `QueueFullError` and returns 503. This status comes from a worker-internal capacity boundary; the left panel's 429 comes from the Rust router. Other stages can reject for their own capacity reasons, but this step shows only the two verified paths.
+
+### Boundaries and sources
+
+The teaching caps are not configuration recommendations or measured capacities. Worker selection separately checks health, compatibility and session capacity. The coordinator also has request-id reservation, sessions and stage-level rejection. This step omits those branches.
+
+The coordinator has a separate, easily confused rule for its optional `stream_queue`: a supplied queue must be unbounded so one full request queue cannot stall the shared completion loop. Request-count admission still applies, and this rule does not give every response path an unbounded application queue. Step 8 concerns only the Rust router's direct response body.
+
+- `docs/basic_usage/omni_router.md:240-251`: fail-fast admission, permits held through response termination and worker ownership of execution and queue capacity.
+- `sglang_omni_router/src/worker_pool/admission.rs:143-188`: non-blocking global and class permit acquisition and `Overloaded` when none remain.
+- `sglang_omni_router/src/worker_pool/admission.rs:49-103`: the worker-load guard and `RequestLease` ownership.
+- `sglang_omni_router/src/error.rs:181-199`: `RouterOverloaded` to HTTP 429.
+- `sglang_omni/pipeline/coordinator.py:560-601`: the pre-submit `max_in_flight` check and `QueueFullError`.
+- `sglang_omni/serve/openai_errors.py:104-111`: `QueueFullError` to HTTP 503.
+- `sglang_omni/admission.py:9-32`: the queue-full error and its text matching across IPC.
+
+Line numbers refer to `origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`.
+
+### Next
+
+Step 8 follows an accepted response. The router's `DirectResponseBody` lets downstream consumers pull frames without adding a body pump or application queue.

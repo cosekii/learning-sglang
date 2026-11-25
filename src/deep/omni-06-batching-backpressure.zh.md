@@ -342,3 +342,67 @@ $$G=\frac{T_8-T_1}{T_1}\times100\%=\frac{5.652-4.100}{4.100}\times100\%\approx37
 ### 接下来
 
 第 7 步从「怎样算得更多」转到「满了怎样拒绝」：router、worker 和 coordinator 各有容量边界，背压让等待和错误显式返回客户端。
+
+## 第 7 步 · 两层准入满了，错误路径不同
+
+> **一句话：** 教学例子的两条请求已经占满容量，C 到达时 router 准入返回 429，coordinator 的 pipeline 入口返回 503。
+
+### 图上是什么
+
+- 背压在这里表示：容量边界把「已经满了」明确告诉调用方，而不是继续接受无限多的新请求。两幅图是独立例子，不表示同一个 C 会先收 429 再收 503。
+- 左图把 router 的全局与每服务许可都设成教学值 2。A、B 仍在处理，许可没有空余；C 的非阻塞获取失败，直接返回 `RouterOverloaded` 对应的 HTTP 429，不发给 worker。
+- 右图把 coordinator 的 `max_in_flight` 设为教学值 2。A、B 都计入准入，C 调用 `submit_request()` 时在 pipeline submit 之前触发 `QueueFullError`，OpenAI 错误映射为 HTTP 503。
+- 蓝色表示处理中的请求，橙色表示被边界拒绝的 C。两处颜色含义相同，但错误来源不同，不能把 429 和 503 当成可互换的同义词。
+- router 的许可与 worker load guard 会持有到响应 EOF、上游错误或下游取消。响应头发出并不代表可以提早释放；coordinator 只累加 `counts_toward_admission` 为真的请求。
+
+### 代入图上的数
+
+设教学准入上限为 $L=2$，仍在处理的请求数为 $U=2$，新到请求数为 $N=1$。剩余许可为：
+
+$$F=L-U=2-2=0$$
+
+若再接受 C，处理中请求数将变成：
+
+$$U+N=2+1=3>L=2$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $L$ | 每幅图各自的教学准入上限 | 构造的 2，不是部署默认值 |
+| $U$ | 当前仍占容量的请求数 | A、B 两条 |
+| $N$ | 本次新到请求数 | 只有 C 一条 |
+| $F$ | 新请求到达前的剩余许可 | 上限 2 减占用 2，得到 0 |
+| $U+N$ | 假设接受 C 后的占用数 | 2 加 1，得到 3，超过上限 |
+
+$F=0$ 解释本例为什么拒绝，不表示真实部署应把上限设为 2。router 还有按服务类别加权的 credits；coordinator 也可配置为不设 `max_in_flight`，本图不展开这些配置分支。
+
+### Router 的 fail-fast 准入
+
+`AdmissionController.try_admit_envelope()` 使用 `try_acquire_owned()` 获取全局许可，`try_admit_class()` 再获取服务类别许可。没有许可时返回 `AdmissionError::Overloaded`，HTTP 错误表把 `RouterOverloaded` 映射为 429。这是立即失败，不是把 C 放进一个等待许可的 router 队列。
+
+准入成功后，`RequestLease` 同时持有 admission、可选 worker capacity 与 worker load guard。`DirectResponseBody` 持有这个 lease，并在完成、上游错误或 body 被丢弃时释放。正常流式响应因此会一直占许可，直到响应真正终止。
+
+### Coordinator 的 pipeline 入口检查
+
+`submit_request()` 在构造 pipeline 输入之前，累加现有请求里 `counts_toward_admission` 的值。若结果已经大于或等于 `max_in_flight`，且本次没有显式绕过准入，就抛出 `QueueFullError`。图中 $U=2$ 已达到上限，所以 C 不会进入 pipeline。
+
+`generation_error_status_code()` 识别 `QueueFullError` 后返回 503。这个状态来自 worker 内部的容量边界；左图的 429 来自 Rust router。真实请求也可能遇到其他 stage 的容量错误，本步只画这两条已经核对的路径。
+
+### 边界与出处
+
+教学上限不是配置建议，也不是实测容量。router 的 worker 选择另有健康、兼容性与 session capacity 检查；coordinator 也另有保留 request id、session 和 stage 级拒绝。本步不展开这些分支。
+
+coordinator 对可选 `stream_queue` 另有一条容易混淆的要求：若调用方传入该队列，它必须是无界队列，避免一条请求塞满队列后卡住共享 completion loop。这不取消前面的请求数准入，也不表示所有响应路径都有无界应用队列。第 8 步只讲 Rust router 的直接响应 body。
+
+- `docs/basic_usage/omni_router.md:240-251`：fail-fast、许可持有到响应终止，以及 worker 仍负责自己的执行与队列容量。
+- `sglang_omni_router/src/worker_pool/admission.rs:143-188`：全局和分类许可的非阻塞获取，以及无许可时的 `Overloaded`。
+- `sglang_omni_router/src/worker_pool/admission.rs:49-103`：worker load guard 与 `RequestLease` 的持有关系。
+- `sglang_omni_router/src/error.rs:181-199`：`RouterOverloaded` 到 HTTP 429 的映射。
+- `sglang_omni/pipeline/coordinator.py:560-601`：pipeline submit 前的 `max_in_flight` 检查与 `QueueFullError`。
+- `sglang_omni/serve/openai_errors.py:104-111`：`QueueFullError` 到 HTTP 503 的映射。
+- `sglang_omni/admission.py:9-32`：队列满错误及其跨 IPC 文本匹配。
+
+行号对应 `origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`。
+
+### 接下来
+
+第 8 步看已接收请求的响应：router 的 `DirectResponseBody` 由下游逐帧拉取，不另建 body pump 或应用队列。
