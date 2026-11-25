@@ -47,6 +47,12 @@
 - 顺序专项独立冷读为 **12/12、24/24、0 洞**，R1–R6 均为 2。R1：「七个工作环节用六个进程，交接 11 次；下一步先拆开两个语音环节，再各复制一份。」桌面与 390px 手机都保留 7 个 stage、6 个进程和共用进程框，没有把这里的 6 与下一章默认配置的 7 混为一谈。
 - 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-hourly-reader-20261124-1500/final/` 和 `checks/`。两章 `build`、`transcript`、`readability`、`deep-check`、`zh-check`、全章及中文本步 `mobile`（360/390/430 px）均通过；最终中英桌面、390px 长截图和深入讲解图已打开检查。
 
+## 21:00 连续走读复核（2026-11-24）
+
+- 从首页进入 Omni，在桌面和 390 px 手机上连走本章四步，再进入第 2 章第 1 步。独立冷读者带上既定的第 1 本 Ch.17 Step 3、Ch.19 Step 3 先修，确认本章四步 R1–R6 均为 2、易读均 **12/12**、共 **0 洞**；第 4 步 caption 已用「共交接 11 次」和「箭头 = 交接数据」讲清新增路线层。
+- 本轮限定复核连续图、caption、transcript 和跨章衔接，未重新提供源码与深入讲解，因此不改表中基于完整材料的原 **24/24**。没有内容洞需要修，教程未改，分数和洞数不变。
+- `build`、本章 `transcript`、四步 `readability`、四步中文 `mobile`、`deep-check`、两章 `zh-check`、桌面与手机路径断言均通过。截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-autonomous-20261124-2100/final/` 和 `checks/`。
+
 ## 硬门与事实边界
 
 - `build`、Omni `transcript`、中文和英文本步 `mobile`（360/390/430 px）、`readability`、`deep-check`、`zh-check` 全部通过；transcript 无裁切、重叠或布局规则标记。

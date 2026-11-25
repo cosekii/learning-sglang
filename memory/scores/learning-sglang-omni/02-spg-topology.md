@@ -50,3 +50,9 @@
 - 最终独立复核为 **12/12、24/24、0 洞**，R1–R6 和原 #1–#12 均为 2。R1：「同一个活儿，原来一个进程用一张 GPU 做，现在两个进程用两张 GPU 一起做。」#2、#10 是相对最弱两项，但也都为 2。
 - `build`、本章 `transcript`、`readability`、全站及本步中英 `mobile`（360/390/430 px）、`deep-check`、`zh-check`、数字断言、键盘双向翻页与末步边界、页面 HTTP 200 和 `git diff --check` 均通过；全站另有 576 个旧图小字审计视图，按脚本规则不挡提交，本步中英字号硬门均通过。第 3 步 13 个固定 GitHub 来源链接均为 HTTP 200。事实版本为 `sglang-omni origin/main@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`，其 SGLang 固定版本为 `v0.5.23@297e54fd105e974cdf401e5b4d20253a22c16f90`。
 - 最终中英桌面、360/390 px 中文手机、390 px 英文手机，以及双语深入讲解的首段、完整符号表、代入段、边界段和 Next 截图均已打开检查。截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-omni-ch02-s03-20261124-1633/final/` 和 `checks/`。未启动多 GPU 模型或测量显存、延迟。
+
+## 21:00 跨章走读复核（2026-11-24）
+
+- 独立冷读者从首页连续读完 Omni 第 1 章四步，再进入本章第 1 步；既定先修为第 1 本 Ch.17 Step 3、Ch.19 Step 3。本步 R1–R6 均为 2、易读 **12/12**、**0 洞**。上一章结尾的问题与本步「先拆开得到 7 个进程和 GPU 0、1，再复制得到 9 个进程和 GPU 0、1、2」直接相接。
+- 本轮未重新提供源码与深入讲解，原 12 项不在限定复核中重打，保留此前完整材料评出的 **24/24**。没有内容洞需要修，教程未改，分数和洞数不变。
+- 桌面和 390 px 手机路径均走通；手机实际点击上一章三次「下一步」和一次「下一章」进入本步。`build`、本章 `transcript`、本步 `readability` 与中文 `mobile`、`deep-check`、两章 `zh-check` 和路径断言均通过。截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-autonomous-20261124-2100/final/` 和 `checks/`。
