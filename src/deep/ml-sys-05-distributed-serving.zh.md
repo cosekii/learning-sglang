@@ -68,3 +68,54 @@ node 0 使用 `in=http`、`node-rank 0`，node 1 使用 `in=none`、`node-rank 1
 两台机器已经分工，公开配置里的 `--tensor-parallel-size 8` 又怎样安排 worker？下一步展开这 8 个 worker。
 
 来源：`Awesome-ML-SYS-Tutorial/sglang/nvidia-dynamo/dynamo.md:97-106`；`ai-dynamo/dynamo@670661f6` 的 `launch/dynamo-run/src/lib.rs:235-250,407-443`、`lib/llm/src/engines/sglang/subprocess.rs:59-65`、`lib/llm/src/engines/sglang/sglang_inc.py:43-48`。
+
+## 第 3 步 · 8 个 TP worker 分到两个节点
+
+**一句话。** `--tensor-parallel-size 8` 让 8 个 worker 分担同一模型的计算，这份配置在每个节点启动 4 个。
+
+### 图上是什么
+
+- `tensor parallel` 缩写为 TP，意思是把同一模型的计算分给多个 worker；每个蓝框是一个 TP worker。
+- node 0 里是 TP rank 0–3，node 1 里是 TP rank 4–7。这里的 TP rank 是 worker 的全局编号，不要与第 2 步的节点编号 `node-rank` 混为一谈。
+- 两个节点都写 `--tensor-parallel-size 8`，它表示整个 TP 组的 worker 总数，不是每节点 8 个。
+- 底部用 $8÷2=4$ 得到每节点 worker 数。本章不展开 TP 的矩阵切法，第 4 章已经讲过这些 worker 为什么需要交换张量。
+
+### 公式与符号
+
+$$W_{\mathrm{node}}=\frac{N_{\mathrm{TP}}}{N_{\mathrm{node}}},\qquad R_r=\{rW_{\mathrm{node}},\ldots,(r+1)W_{\mathrm{node}}-1\}$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $N_{\mathrm{TP}}$ | 整个 TP 组的 worker 总数 | `--tensor-parallel-size 8` |
+| $N_{\mathrm{node}}$ | 节点数 | 第 2 步，2 |
+| $W_{\mathrm{node}}$ | 每个节点启动的 worker 数 | 本步计算 |
+| $r$ | 当前节点编号 | 第 2 步，0 或 1 |
+| $R_r$ | 节点 $r$ 上的全局 TP rank 集合 | 本步按源码公式展开 |
+
+### 代入图上的数
+
+$$W_{\mathrm{node}}=8÷2=4$$
+
+$$R_0=\{0,1,2,3\},\qquad R_1=\{4,5,6,7\}$$
+
+固定版本 `worker.rs` 先算 `tp_size_per_node = tp_size / num_nodes`，再用它求 `tp_rank_start` 和 `tp_rank_end`，为区间内每个 TP rank 启动一个 SGLang 子进程。`sglang_inc.py` 另注明 TP rank 必须跨节点全局唯一。
+
+两条完整公开命令可写成下面的占位形式。两边的模型、TP 总数、节点数和会合地址相同，只有输入方式与 `node-rank` 不同。
+
+```bash
+# node 0
+dynamo-run in=http out=sglang --model-path <model> \
+  --tensor-parallel-size 8 --num-nodes 2 --node-rank 0 \
+  --dist-init-addr <node0-ip>:9876
+
+# node 1
+dynamo-run in=none out=sglang --model-path <model> \
+  --tensor-parallel-size 8 --num-nodes 2 --node-rank 1 \
+  --dist-init-addr <node0-ip>:9876
+```
+
+### 接下来
+
+8 个 worker 启动时，HTTP 入口在哪一步才出现？下一步把本机就绪检查和日志排障放在一起。
+
+来源：`Awesome-ML-SYS-Tutorial/sglang/nvidia-dynamo/dynamo.md:97-106`；`ai-dynamo/dynamo@670661f6` 的 `lib/llm/src/engines/sglang/worker.rs:283-343`、`lib/llm/src/engines/sglang/sglang_inc.py:79-89`；`zero-to-sglang/course-material/ch/part3/第4章_横向扩展.md:19-34`。

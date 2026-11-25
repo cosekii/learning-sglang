@@ -106,3 +106,7 @@ export const DYNAMO_READY_TO_HTTP_US = DYNAMO_LOG_HTTP_US - DYNAMO_LOG_READY_US;
 export const DYNAMO_HTTP_PORT = 8080;
 export const DYNAMO_NUM_NODES = 2;
 export const DYNAMO_DIST_INIT_PORT = 9876;
+export const DYNAMO_TP_SIZE = 8;
+export const DYNAMO_TP_PER_NODE = DYNAMO_TP_SIZE / DYNAMO_NUM_NODES;
+export const DYNAMO_TP_RANKS_BY_NODE = Array.from({ length: DYNAMO_NUM_NODES }, (_, node) =>
+  Array.from({ length: DYNAMO_TP_PER_NODE }, (_, i) => node * DYNAMO_TP_PER_NODE + i));

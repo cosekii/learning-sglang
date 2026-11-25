@@ -68,3 +68,54 @@ At the fixed commit, Dynamo assembles `num_nodes`, `node_rank` and `leader_addr`
 The two machines have distinct input roles. The next step opens `--tensor-parallel-size 8` to show where its eight workers run.
 
 Sources: `Awesome-ML-SYS-Tutorial/sglang/nvidia-dynamo/dynamo.md:97-106`; `launch/dynamo-run/src/lib.rs:235-250,407-443`, `lib/llm/src/engines/sglang/subprocess.rs:59-65` and `lib/llm/src/engines/sglang/sglang_inc.py:43-48` at `ai-dynamo/dynamo@670661f6`.
+
+## Step 3 · Eight TP workers span two nodes
+
+**One sentence.** `--tensor-parallel-size 8` assigns eight workers to one model's computation, with four workers launched on each node in this config.
+
+### On the stage
+
+- `Tensor parallel`, abbreviated TP, splits one model's computation across workers. Each blue box is one TP worker.
+- Node 0 holds TP ranks 0–3 and node 1 holds TP ranks 4–7. These global worker identifiers differ from Step 2's `node-rank` values.
+- Both nodes use `--tensor-parallel-size 8`. The flag counts the whole TP group, not eight workers per node.
+- The bottom derives four workers per node with $8÷2=4$. This chapter does not repeat TP matrix partitioning; Chapter 4 showed why these workers exchange tensors.
+
+### Formula and symbols
+
+$$W_{\mathrm{node}}=\frac{N_{\mathrm{TP}}}{N_{\mathrm{node}}},\qquad R_r=\{rW_{\mathrm{node}},\ldots,(r+1)W_{\mathrm{node}}-1\}$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $N_{\mathrm{TP}}$ | Workers in the whole TP group | `--tensor-parallel-size 8` |
+| $N_{\mathrm{node}}$ | Number of nodes | Step 2: 2 |
+| $W_{\mathrm{node}}$ | Workers launched on each node | Calculated in this step |
+| $r$ | Current node identifier | Step 2: 0 or 1 |
+| $R_r$ | Global TP ranks on node $r$ | Expanded from the source formula here |
+
+### The numbers on the stage
+
+$$W_{\mathrm{node}}=8÷2=4$$
+
+$$R_0=\{0,1,2,3\},\qquad R_1=\{4,5,6,7\}$$
+
+At the fixed commit, `worker.rs` computes `tp_size_per_node = tp_size / num_nodes`, uses it to derive `tp_rank_start` and `tp_rank_end`, and starts one SGLang subprocess for every TP rank in that range. `sglang_inc.py` also requires TP ranks to be globally unique across nodes.
+
+The two complete public commands can be written with placeholders as follows. Model, TP size, node count and meeting address match; only the input mode and `node-rank` differ.
+
+```bash
+# node 0
+dynamo-run in=http out=sglang --model-path <model> \
+  --tensor-parallel-size 8 --num-nodes 2 --node-rank 0 \
+  --dist-init-addr <node0-ip>:9876
+
+# node 1
+dynamo-run in=none out=sglang --model-path <model> \
+  --tensor-parallel-size 8 --num-nodes 2 --node-rank 1 \
+  --dist-init-addr <node0-ip>:9876
+```
+
+### Next
+
+Where does the HTTP input appear while all eight workers start? The next step combines local readiness checks with log-based debugging.
+
+Sources: `Awesome-ML-SYS-Tutorial/sglang/nvidia-dynamo/dynamo.md:97-106`; `lib/llm/src/engines/sglang/worker.rs:283-343` and `lib/llm/src/engines/sglang/sglang_inc.py:79-89` at `ai-dynamo/dynamo@670661f6`; `zero-to-sglang/course-material/ch/part3/第4章_横向扩展.md:19-34`.

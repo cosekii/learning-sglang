@@ -17,6 +17,8 @@ Step 1 subtracts the three timestamps in the public startup log at `Awesome-ML-S
 
 Step 2 follows the two public multi-node commands at `dynamo.md:97-106`, replacing their local model path and IP with placeholders. `in=http` runs the HTTP input, while `in=none` leaves the engine running without another user input (`launch/dynamo-run/src/lib.rs:407-443`). Nonzero node ranks are also forced to `Input::None` at lines 246-250. The shared node settings pass into SGLang through `lib/llm/src/engines/sglang/subprocess.rs:59-65` and `sglang_inc.py:43-48`.
 
+Step 3 derives four workers per node from the public `--tensor-parallel-size 8` and `--num-nodes 2`. The fixed `worker.rs:305-324` computes `tp_size_per_node`, assigns contiguous global TP ranks to each node and starts one subprocess per rank. This describes the example's eight-worker configuration, not a recommended size for other models or machines.
+
 The command and log examples describe an old guide. This chapter keeps their version boundary and replaces machine-specific paths and addresses with placeholders rather than presenting them as reusable defaults.
 
 </details>
@@ -27,6 +29,8 @@ The command and log examples describe an old guide. This chapter keeps their ver
 第 1 步对 `Awesome-ML-SYS-Tutorial/sglang/nvidia-dynamo/dynamo.md:79-83` 的三条公开启动日志做时间相减。它是单节点例子，不是多节点实测，也不是启动耗时目标。固定版本 Dynamo 源码的顺序与日志一致：`SgLangWorker::start` 先等 worker 就绪，再运行 HTTP 输入（`lib/llm/src/engines/sglang/worker.rs:341-343`；`launch/dynamo-run/src/lib.rs:407-410`，提交 `670661f6fa85f6ffc77433d21b363285d6cec32f`）。
 
 第 2 步依据 `dynamo.md:97-106` 的两条公开多节点命令，把本机模型路径和 IP 换成占位符。`in=http` 运行 HTTP 输入，`in=none` 让引擎继续运行而不再开用户输入（`launch/dynamo-run/src/lib.rs:407-443`）。第 246–250 行还会把非 0 节点强制设为 `Input::None`。共同节点设置经 `lib/llm/src/engines/sglang/subprocess.rs:59-65` 和 `sglang_inc.py:43-48` 传给 SGLang。
+
+第 3 步用公开的 `--tensor-parallel-size 8` 和 `--num-nodes 2` 推出每节点 4 个 worker。固定版本 `worker.rs:305-324` 计算 `tp_size_per_node`，给每个节点分配连续的全局 TP rank，并为每个 rank 启动一个子进程。这里只描述示例的 8-worker 配置，不把它推荐给其他模型或机器。
 
 这些命令和日志来自旧版操作记录。本章保留版本边界，把机器相关路径和地址换成占位符，不把它们写成可照搬的默认值。
 

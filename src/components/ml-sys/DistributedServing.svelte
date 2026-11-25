@@ -4,7 +4,7 @@
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
-  import { DYNAMO_LOG_READY_US, DYNAMO_LOG_HTTP_US, DYNAMO_READY_TO_HTTP_US, DYNAMO_HTTP_PORT, DYNAMO_NUM_NODES, DYNAMO_DIST_INIT_PORT } from '../../ml-sys/numbers';
+  import { DYNAMO_LOG_READY_US, DYNAMO_LOG_HTTP_US, DYNAMO_READY_TO_HTTP_US, DYNAMO_HTTP_PORT, DYNAMO_NUM_NODES, DYNAMO_DIST_INIT_PORT, DYNAMO_TP_SIZE, DYNAMO_TP_PER_NODE, DYNAMO_TP_RANKS_BY_NODE } from '../../ml-sys/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
@@ -15,6 +15,9 @@
   }, {
     caption: 'The public config gives both nodes one model and meeting address. Only node 0 accepts HTTP; node 1 uses in=none.',
     captionZh: '两节点共用模型和会合地址。0 号接 HTTP；1 号写 in=none。',
+  }, {
+    caption: `TP splits one model's math across ${DYNAMO_TP_SIZE} workers. This config places ${DYNAMO_TP_PER_NODE} workers on each node.`,
+    captionZh: `TP 把同一模型的计算分给 ${DYNAMO_TP_SIZE} 个 worker。每节点 ${DYNAMO_TP_PER_NODE} 个。`,
   }];
   let step = $state(0);
   $effect(() => {
@@ -120,6 +123,40 @@
           <text x="150" y="461" text-anchor="middle" class="code">dist-init :{DYNAMO_DIST_INIT_PORT}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t("Placeholders replace the article's local path and IP.", '占位符代替原文的本机路径和 IP。')}</text>
+      {:else if step === 2}
+        <text x={phone ? 18 : 36} y="30" class="title">{t('The TP flag assigns eight workers', 'TP 参数安排 8 个 worker')}</text>
+        <text x={phone ? 18 : 36} y="55" class="label">{t(phone ? 'TP = split model math across workers' : 'tensor parallel (TP) = split one model\'s math across workers', 'TP = 把同一模型的计算分给多个 worker')}</text>
+        {#if !phone}
+          {#each DYNAMO_TP_RANKS_BY_NODE as ranks, node}
+            {@const x = 40 + node * 340}
+            <rect x={x} y="82" width="300" height="205" rx="13" fill="var(--bg)" stroke="var(--line)" />
+            <text x={x + 20} y="113" class="section">NODE {node} · node-rank {node}</text>
+            {#each ranks as rank, i}
+              <rect x={x + 15 + i * 69} y="139" width="60" height="74" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
+              <text x={x + 45 + i * 69} y="166" text-anchor="middle" class="small">rank</text>
+              <text x={x + 45 + i * 69} y="195" text-anchor="middle" class="result">{rank}</text>
+            {/each}
+            <text x={x + 150} y="250" text-anchor="middle" class="result">{DYNAMO_TP_PER_NODE} {t('workers', '个 worker')}</text>
+          {/each}
+          <rect x="40" y="311" width="640" height="61" rx="11" fill="var(--panel)" stroke="var(--line)" />
+          <text x="360" y="336" text-anchor="middle" class="result">{DYNAMO_TP_SIZE} TP workers ÷ {DYNAMO_NUM_NODES} nodes = {DYNAMO_TP_PER_NODE} workers / node</text>
+          <text x="360" y="360" text-anchor="middle" class="code">--tensor-parallel-size {DYNAMO_TP_SIZE}</text>
+        {:else}
+          {#each DYNAMO_TP_RANKS_BY_NODE as ranks, node}
+            {@const y = 76 + node * 157}
+            <rect x="20" y={y} width="260" height="141" rx="12" fill="var(--bg)" stroke="var(--line)" />
+            <text x="150" y={y + 27} text-anchor="middle" class="section">NODE {node} · node-rank {node}</text>
+            {#each ranks as rank, i}
+              <rect x={31 + i * 61} y={y + 45} width="52" height="52" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+              <text x={57 + i * 61} y={y + 76} text-anchor="middle" class="result">r{rank}</text>
+            {/each}
+            <text x="150" y={y + 122} text-anchor="middle" class="small">{DYNAMO_TP_PER_NODE} {t('workers', '个 worker')}</text>
+          {/each}
+          <rect x="20" y="398" width="260" height="72" rx="11" fill="var(--panel)" stroke="var(--line)" />
+          <text x="150" y="424" text-anchor="middle" class="result">{DYNAMO_TP_SIZE} ÷ {DYNAMO_NUM_NODES} = {DYNAMO_TP_PER_NODE} workers / node</text>
+          <text x="150" y="451" text-anchor="middle" class="code">--tensor-parallel-size {DYNAMO_TP_SIZE}</text>
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Blue = one TP worker; ranks are unique across nodes.', '蓝色 = 一个 TP worker；rank 跨节点不重复。')}</text>
       {/if}
     </svg>
   </div>
