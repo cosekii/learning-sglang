@@ -154,7 +154,8 @@
         <text x="360" y="309" text-anchor="middle" class="formula small">E2E = {DEMO_LAST_TOKEN_MS} − {DEMO_REQUEST_SENT_MS} = {DEMO_TTFT_MS} + {DEMO_ITL_TOTAL_MS} = {DEMO_E2E_MS} ms</text>
         <text x="360" y="339" text-anchor="middle" class="legend strong">{DEMO_ITL_TOTAL_MS} ms = {DEMO_ITL_GAPS_MS.join(' + ')} ({t('three ITL gaps', '三段 ITL')})</text>
       {:else}
-        <text x="20" y="25" class="rowlabel">E2E = {t('request sent → completion', '请求发出 → 全部完成')}</text>
+        <text x="20" y="14" class="rowlabel">{t('Same request · how long in total?', '同一个请求 · 全程要等多久？')}</text>
+        <text x="20" y="35" class="rowlabel">E2E = {t('request sent → completion', '请求发出 → 全部完成')}</text>
         <line x1="30" y1="76" x2="30" y2="310" stroke="var(--accent)" stroke-width="5" />
         <line x1="30" y1="76" x2="45" y2="76" stroke="var(--accent)" stroke-width="3" />
         <line x1="30" y1="310" x2="45" y2="310" stroke="var(--accent)" stroke-width="3" />

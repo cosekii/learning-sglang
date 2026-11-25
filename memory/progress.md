@@ -4,12 +4,12 @@
 
 ## 本轮记录
 
-- 本轮新书：Inside Voxt 第 2 章第 1 步，沿公开源码讲清默认右 Option 怎样经 Swift helper 变成一条 JSON 通知，再由 Go app 在空闲状态路由为开始 Transcribe；开始后才采集麦克风，权限检查留给后续步骤。
-- 主图用 `名字=值` 和中文意思解释 `hotkey.event`、`transcribe/0`、`trigger`，补出 `/0` 的编号规则；手机首屏完整显示按键到开始听写的路线。双语深入讲解列出协议、源码行号和构造例子的边界。
-- 三轮独立冷读从易读 **9/12**、原项 **15/20**、**8 洞**，修到最终 **12/12**、**20/20**、**0 洞**；主线程核对 #10、#12 各 2 分，原分 **24/24**。
-- `build`、本章 `transcript`、本步 `readability`、中文手机字号硬门、Voxt 三种宽度手机布局、`deep-check 02`、本章 `zh-check` 和 `git diff --check` 均通过；中英桌面、390 px 中文手机和中英深入讲解截图均已打开核对。
-- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch02-s01-20261124-1613/final/` 和 `checks/`。
-- 本轮类型：**新书**；下一普通轮转为**修旧**。
+- 本轮修旧：Learning ML Systems 第 1 章第 4 步，手机顶部补回桌面已有的「同一个请求 · 全程要等多久？」，让读者先知道这张图在量什么，再读 E2E 的起点、终点和算式。
+- 独立冷读复核易读 **12/12**、原分 **23→24/24**、**0 洞**；手机原 #1 恢复 2 分，章均分 **23.75→24.00**。桌面 caption、数值和深入讲解均未改。
+- `build`、本章 `transcript`、本步 `readability`、本章三种宽度的中英手机布局、本步中文手机字号、`deep-check 01`、`zh-check`、数字断言、课程链接和 `git diff --check` 均通过；中英桌面、中文手机和双语深入讲解截图均已打开核对。
+- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-repair-20261124-1622/mlsys/final/` 和 `checks/`。
+- 第 1 本第 14 章第 9、11、12 步仍受保护英文长句阻挡，第 12 步另有 backend 时效性问题；未提交半成品，已记入 `docs/ideas.md` 的「待主人定」。
+- 本轮类型：**修旧**；下一普通轮转为**新书**。
 
 ## Learning SGLang
 
@@ -71,7 +71,7 @@
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
-| 01 | 01-measure-inference | 在做第 5 步；前 4 步易读满分 | 23.75 |
+| 01 | 01-measure-inference | 在做第 5 步；前 4 步易读满分 | 24.00 |
 | 02 | 02-inference-memory-budget | 规划 | — |
 | 03 | 03-hybrid-state-cache | 规划 | — |
 | 04 | 04-gpu-communication | 规划 | — |
