@@ -15,6 +15,9 @@
   const steps = [{
     caption: 'Two copies take turns: A and C use copy 0, and B uses copy 1. A\'s work is in copy 0, so its saved binding sends it there again.',
     captionZh: '两个副本轮流接：A、C 去第 0 份，B 去第 1 份。A 的记录在第 0 份；下次照绑定，仍去那里。',
+  }, {
+    caption: 'Finishing A removes its work record, but its result-wait record stays. Collecting the result clears that record and frees A\'s name.',
+    captionZh: 'A 做完后，工作记录删掉，等结果的记录还在。结果取走后，这张记录也删掉，名字 A 才能给新请求用。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -30,7 +33,7 @@
     query.addEventListener('change', update);
     return () => query.removeEventListener('change', update);
   });
-  const W = $derived(phone ? 300 : 720), H = $derived(phone ? 940 : 560);
+  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 0 ? 940 : 720) : (step === 0 ? 560 : 450));
   const panels = $derived(REQUEST_BINDING_REQUEST_IDS.map((id, i) => phone
     ? { id, copy: REQUEST_BINDING_ASSIGNMENTS[i], x: 15, y: 85 + i * 175, w: 270, h: 160 }
     : { id, copy: REQUEST_BINDING_ASSIGNMENTS[i], x: 20 + i * 235, y: 85, w: 215, h: 260 }));
@@ -38,11 +41,20 @@
     ? [{ x: 15, y: 640, w: 270, copy: 0 }, { x: 15, y: 765, w: 270, copy: 1 }]
     : [{ x: 20, y: 395, w: 325, copy: 0 }, { x: 375, y: 395, w: 325, copy: 1 }]);
   const arrival = (i: number) => t(`${i + 1}${['st', 'nd', 'rd'][i]} ARRIVAL`, `第 ${i + 1} 个到达`);
+  const releaseId = REQUEST_BINDING_REQUEST_IDS[0];
+  const releasePanels = $derived([
+    { title: t('1 · WORKING', '1 · 正在算'), work: releaseId, waiting: releaseId, status: t(`name ${releaseId}: taken`, `名字 ${releaseId}：被占用`) },
+    { title: t('2 · RESULT READY', '2 · 结果已出'), work: '—', waiting: releaseId, status: t(`name ${releaseId}: still taken`, `名字 ${releaseId}：仍被占用`) },
+    { title: t('3 · RESULT COLLECTED', '3 · 结果取走'), work: '—', waiting: '—', status: t(`name ${releaseId}: free`, `名字 ${releaseId}：可以给新请求用`) },
+  ].map((panel, i) => phone
+    ? { ...panel, x: 15, y: 100 + i * 190, w: 270, h: 165 }
+    : { ...panel, x: 20 + i * 240, y: 110, w: 200, h: 230 }));
 </script>
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={t('Requests A, B and C arrive in order. The two talker_ar copies take turns: A and C bind to copy 0, B binds to copy 1. A has work in copy 0. Following its saved binding finds that work; switching to copy 1 would not.', '请求 A、B、C 依次到达。两个 talker_ar 副本轮流接收：A、C 绑定第 0 份，B 绑定第 1 份。A 的计算记录在第 0 份。照绑定去第 0 份能找到记录，改去第 1 份则没有。')}>
+    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={step === 0 ? t('Requests A, B and C arrive in order. The two talker_ar copies take turns: A and C bind to copy 0, B binds to copy 1. A has work in copy 0. Following its saved binding finds that work; switching to copy 1 would not.', '请求 A、B、C 依次到达。两个 talker_ar 副本轮流接收：A、C 绑定第 0 份，B 绑定第 1 份。A 的计算记录在第 0 份。照绑定去第 0 份能找到记录，改去第 1 份则没有。') : t('Request A has a work record and a result-wait record. Finishing removes only the work record, so the name A stays taken. Collecting the result clears the remaining record and frees the name.', '请求 A 有工作记录和等结果的记录。做完只删工作记录，名字 A 仍被占用。结果取走后，剩下的记录也清空，这个名字才能给新请求用。')}>
+      {#if step === 0}
       <defs>
         <marker id="binding-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
           <path d="M0,0 L7,3.5 L0,7 Z" fill="var(--muted)" />
@@ -95,7 +107,33 @@
         <text x={panel.x + (phone ? 182 : 220)} y={panel.y + 79} text-anchor="middle" class="tag strong">{saved ? t('A\'s record is here', '有 A 的记录') : t('no record for A', '没有 A 的记录')}</text>
       {/each}
       <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('This step covers binding, not completion or abort.', '本步只讲绑定，不讲完成或取消。')}</text>
-      <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Next: how does request A release copy 0?', '下一步：请求 A 怎样释放第 0 份副本？')}</text>
+      <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Next: when can another request use the name A?', '下一步：名字 A 什么时候能给新请求用？')}</text>
+      {:else}
+      <defs>
+        <marker id="release-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+          <path d="M0,0 L7,3.5 L0,7 Z" fill="var(--muted)" />
+        </marker>
+      </defs>
+      <text x={phone ? 15 : 30} y="20" class="tag strong">request id = {t(`the request's name; ${releaseId} in this example`, `请求的名字；本例叫 ${releaseId}`)}</text>
+      <text x={phone ? 15 : 30} y="48" class="tag">{t('Each row is a record under A’s name. — means cleared.', '每一行都是以 A 的名字登记的一条记录；— 表示已清空。')}</text>
+
+      {#each releasePanels as panel, i}
+        <rect x={panel.x} y={panel.y} width={panel.w} height={panel.h} rx="12" fill="var(--bg)" stroke="var(--line)" />
+        <text x={panel.x + 14} y={panel.y + 25} class="rowlabel">{panel.title}</text>
+        <rect x={panel.x + 12} y={panel.y + (phone ? 40 : 62)} width={panel.w - 24} height={phone ? 38 : 48} rx="7" fill="white" stroke={panel.work === '—' ? 'var(--line)' : 'var(--accent)'} stroke-dasharray={panel.work === '—' ? '4 3' : '0'} />
+        <text x={panel.x + 22} y={panel.y + (phone ? 64 : 91)} class="tag">{t('work record', '工作记录')}</text>
+        <text x={panel.x + panel.w - 22} y={panel.y + (phone ? 64 : 91)} text-anchor="end" class="legend strong">{panel.work}</text>
+        <rect x={panel.x + 12} y={panel.y + (phone ? 84 : 122)} width={panel.w - 24} height={phone ? 38 : 48} rx="7" fill="white" stroke={panel.waiting === '—' ? 'var(--line)' : 'var(--accent)'} stroke-dasharray={panel.waiting === '—' ? '4 3' : '0'} />
+        <text x={panel.x + 22} y={panel.y + (phone ? 108 : 151)} class="tag">{t('result-wait record', '等结果记录')}</text>
+        <text x={panel.x + panel.w - 22} y={panel.y + (phone ? 108 : 151)} text-anchor="end" class="legend strong">{panel.waiting}</text>
+        <text x={panel.x + panel.w / 2} y={panel.y + (phone ? 146 : 204)} text-anchor="middle" class="legend strong">{panel.status}</text>
+        {#if i < releasePanels.length - 1}
+          <line x1={phone ? panel.x + panel.w / 2 : panel.x + panel.w + 7} y1={phone ? panel.y + panel.h + 5 : panel.y + 115} x2={phone ? panel.x + panel.w / 2 : panel.x + panel.w + 33} y2={phone ? panel.y + panel.h + 20 : panel.y + 115} stroke="var(--muted)" stroke-width="1.4" marker-end="url(#release-arrow)" />
+        {/if}
+      {/each}
+      <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('Normal completion only; memory cleanup is not drawn.', '只讲正常做完；不画显存清理。')}</text>
+      <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Next: what changes if A is cancelled?', '下一步：如果 A 没做完就被取消，会怎样？')}</text>
+      {/if}
     </svg>
   </div>
   <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh}

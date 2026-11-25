@@ -50,4 +50,63 @@ $$r_0=0\bmod2=0,\qquad r_1=1\bmod2=1,\qquad r_2=2\bmod2=0$$
 
 ### 接下来
 
-下一步看请求完成或取消时，协调器怎样释放这个 request id 的所有权。
+下一步先看正常完成：结果已经出来以后，名字 A 为什么还不能马上给新请求用。主动取消放在再下一步。
+
+## 第 2 步 · 正常完成后，请求名字何时可复用
+
+> **一句话：** A 做完只删掉工作记录；调用方取走结果并清掉剩下的登记后，名字 A 才能给新请求用。
+
+### 图上是什么
+
+- **request id** 是请求的名字，本例用 A。图只画协调器以这个名字保存的登记，不画副本里的 KV cache 或显存。
+- 「工作记录」对应 `requests[A]`；「等结果记录」对应 `completion_futures[A]`。蓝色边框表示记录还在，灰色虚线和 — 表示记录已清空。
+- 第 1 格正在算：两张记录都在，名字 A 被占用。第 2 格结果已出：工作记录删掉，等结果记录还在，所以名字 A 仍被占用。第 3 格结果取走：两张记录都清空，新请求才能使用名字 A。
+- 本例走非流式 `submit()`；`stream_queues` 和 `abort_tasks` 始终为空。本步不画主动取消、多个终端或 GPU 内存清理。
+
+### 公式
+
+协调器用四张表判断 request id 是否仍被占用：
+
+$$
+\operatorname{occupied}(A) \iff A \in R \lor A \in F \lor A \in Q \lor A \in T
+$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $A$ | 本例的 request id | 第 1 步的请求 A |
+| $R$ | `requests`，仍在跟踪的工作记录 | 协调器 |
+| $F$ | `completion_futures`，等待结果的记录 | 协调器 |
+| $Q$ | `stream_queues`，流式结果的队列 | 协调器；本例为空 |
+| $T$ | `abort_tasks`，仍在执行的取消任务 | 协调器；本例为空 |
+
+### 代入图上的数
+
+| 图上的状态 | $R$ | $F$ | $Q$ | $T$ | 名字 A 被占用？ |
+|---|---|---|---|---|---|
+| 正在算 | $\{A\}$ | $\{A\}$ | $\varnothing$ | $\varnothing$ | 是 |
+| 结果已出 | $\varnothing$ | $\{A\}$ | $\varnothing$ | $\varnothing$ | 是 |
+| 结果取走 | $\varnothing$ | $\varnothing$ | $\varnothing$ | $\varnothing$ | 否 |
+
+结果已出时，删除 `requests[A]` 已经释放这个请求的准入槽；但 `completion_futures[A]` 还在，所以同名新请求仍不能进入。准入槽和 request id 可复用是两件事。
+
+### 源码里的删除顺序
+
+终端 stage 发出 `CompleteMessage`。协调器的 `handle_completion` 先把结果交给 future，再删除 `requests[request_id]`。因此图的第 2 格表示完成处理已经结束，而不是结果刚算出来的一瞬间。
+
+非流式 `submit()` 的调用方取到结果后，在 `finally` 里运行 `release_submission`，删除 future、流式队列和积压记录。正常完成时，`requests[request_id]` 已经不存在，收尾里的 `abort()` 会直接返回，不会向 stage 广播取消。
+
+### 边界与出处
+
+本步只说明正常非流式请求何时能复用 request id，不声称结果一出就释放全部资源，也不说明副本内部或网络传输已经清理。
+
+以下来源位于 `sglang-omni origin/main@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`：
+
+- [四张表共同决定 request id 是否被占用：`sglang_omni/pipeline/coordinator.py:733-740`](https://github.com/sgl-project/sglang-omni/blob/52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84/sglang_omni/pipeline/coordinator.py#L733-L740)。
+- [正常完成先交付结果，再删除工作记录：`sglang_omni/pipeline/coordinator.py:984-1001`](https://github.com/sgl-project/sglang-omni/blob/52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84/sglang_omni/pipeline/coordinator.py#L984-L1001)。
+- [`submit()` 取到结果后在 `finally` 收尾：`sglang_omni/pipeline/coordinator.py:485-495`](https://github.com/sgl-project/sglang-omni/blob/52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84/sglang_omni/pipeline/coordinator.py#L485-L495)。
+- [剩余登记的删除，以及正常完成时取消直接返回：`sglang_omni/pipeline/coordinator.py:703-727,776-778`](https://github.com/sgl-project/sglang-omni/blob/52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84/sglang_omni/pipeline/coordinator.py#L703-L727)。
+- [准入计数只看 `requests`：`sglang_omni/pipeline/coordinator.py:589-593`](https://github.com/sgl-project/sglang-omni/blob/52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84/sglang_omni/pipeline/coordinator.py#L589-L593)。
+
+### 接下来
+
+下一步看 A 没做完就被取消时，协调器会多发什么消息，哪些记录仍需等收尾。

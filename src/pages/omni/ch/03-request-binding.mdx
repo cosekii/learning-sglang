@@ -15,6 +15,8 @@ export const deep = await deepFor('omni-03-request-binding');
 
 Step 1 uses a teaching example with two `talker_ar` replicas, a fresh round-robin counter, and requests A, B, C admitted in that order. The resulting copy indices 0, 1, 0 come from SGLang-Omni's per-process round-robin policy. The example shows binding and reuse only; it does not measure load or claim that concurrent arrivals always have this order.
 
+Step 2 follows a normal non-streaming request A. Its result-ready state has no `requests[A]` entry but still has `completion_futures[A]`; the name becomes reusable only after the caller collects the result and cleanup removes the remaining registrations. This example does not cover abort or memory cleanup.
+
 Source revision: `sglang-omni origin/main@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`. The deep dive lists the exact files and lines.
 
 </details>
@@ -23,6 +25,8 @@ Source revision: `sglang-omni origin/main@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc
 <summary>本章说法的出处</summary>
 
 第 1 步构造两个 `talker_ar` 副本、从 0 开始的轮流计数器，以及按 A、B、C 顺序进入的请求。副本编号 0、1、0 来自 SGLang-Omni 按进程轮流分配的策略。本例只讲绑定和复用，没有测量负载，也不声称并发请求永远按这个顺序进入。
+
+第 2 步跟随正常完成的非流式请求 A。结果已出时，`requests[A]` 已删除，但 `completion_futures[A]` 还在；调用方取走结果并清掉剩余登记后，这个名字才能复用。本例不讲取消或显存清理。
 
 源码版本：`sglang-omni origin/main@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`。精确文件和行号见深入讲解。
 

@@ -50,4 +50,63 @@ Sources on `sglang-omni origin/main@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`:
 
 ### Next
 
-The next step follows completion or abort as the coordinator releases ownership of the request id.
+The next step follows normal completion to explain why the name A cannot be reused as soon as its result is ready. Active cancellation comes after that.
+
+## Step 2 · When a completed request's name can be reused
+
+> **In one sentence:** Finishing A removes only its work record; another request can use the name A after the caller collects the result and the remaining records clear.
+
+### What the picture shows
+
+- A **request id** is a request's name, A in this example. The picture shows only coordinator records under that name, not replica KV cache or GPU memory.
+- The work record is `requests[A]`; the result-wait record is `completion_futures[A]`. A blue border means the record remains, while a grey dashed border and — mean it has cleared.
+- In panel 1, A is running: both records remain and the name is taken. In panel 2, the result is ready: the work record has cleared, but the result-wait record remains, so the name is still taken. In panel 3, the caller has collected the result: both records have cleared and another request can use the name A.
+- This example uses non-streaming `submit()`; `stream_queues` and `abort_tasks` stay empty. Active cancellation, multiple terminals and GPU memory cleanup are not drawn.
+
+### Formula
+
+The coordinator checks four tables to decide whether a request id is still occupied:
+
+$$
+\operatorname{occupied}(A) \iff A \in R \lor A \in F \lor A \in Q \lor A \in T
+$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $A$ | This example's request id | Request A from Step 1 |
+| $R$ | `requests`, the tracked work records | The coordinator |
+| $F$ | `completion_futures`, the records waiting for results | The coordinator |
+| $Q$ | `stream_queues`, queues for streaming results | The coordinator; empty here |
+| $T$ | `abort_tasks`, cancellation tasks still running | The coordinator; empty here |
+
+### The numbers on the stage
+
+| Stage state | $R$ | $F$ | $Q$ | $T$ | Is the name A occupied? |
+|---|---|---|---|---|---|
+| Working | $\{A\}$ | $\{A\}$ | $\varnothing$ | $\varnothing$ | Yes |
+| Result ready | $\varnothing$ | $\{A\}$ | $\varnothing$ | $\varnothing$ | Yes |
+| Result collected | $\varnothing$ | $\varnothing$ | $\varnothing$ | $\varnothing$ | No |
+
+When the result is ready, removing `requests[A]` releases this request's admission slot. The remaining `completion_futures[A]` still prevents another request from using the same name. Releasing an admission slot and making a request id reusable are separate events.
+
+### The source's deletion order
+
+A terminal stage sends a `CompleteMessage`. The coordinator's `handle_completion` delivers the result to the future, then removes `requests[request_id]`. Panel 2 therefore shows the state after completion handling, not the instant the result was computed.
+
+After the non-streaming `submit()` caller receives the result, its `finally` block runs `release_submission`, removing the future, stream queue and backlog records. During normal completion, `requests[request_id]` is already gone, so the cleanup call to `abort()` returns immediately without broadcasting cancellation to stages.
+
+### Scope and sources
+
+This step covers only when a normal non-streaming request id becomes reusable. It does not claim that a ready result releases every resource, or that replica and network transfer cleanup has finished.
+
+Sources on `sglang-omni origin/main@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`:
+
+- [Four tables jointly decide whether a request id is occupied: `sglang_omni/pipeline/coordinator.py:733-740`](https://github.com/sgl-project/sglang-omni/blob/52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84/sglang_omni/pipeline/coordinator.py#L733-L740).
+- [Normal completion delivers the result, then removes the work record: `sglang_omni/pipeline/coordinator.py:984-1001`](https://github.com/sgl-project/sglang-omni/blob/52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84/sglang_omni/pipeline/coordinator.py#L984-L1001).
+- [`submit()` cleans up in `finally` after returning the result: `sglang_omni/pipeline/coordinator.py:485-495`](https://github.com/sgl-project/sglang-omni/blob/52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84/sglang_omni/pipeline/coordinator.py#L485-L495).
+- [Remaining record removal and the no-op abort after normal completion: `sglang_omni/pipeline/coordinator.py:703-727,776-778`](https://github.com/sgl-project/sglang-omni/blob/52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84/sglang_omni/pipeline/coordinator.py#L703-L727).
+- [Admission counts only `requests`: `sglang_omni/pipeline/coordinator.py:589-593`](https://github.com/sgl-project/sglang-omni/blob/52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84/sglang_omni/pipeline/coordinator.py#L589-L593).
+
+### Next
+
+The next step follows active cancellation: what extra message the coordinator sends, and which records still need cleanup.
