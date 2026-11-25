@@ -235,3 +235,42 @@ The multi-node configuration also says that nonzero nodes receive work from the 
 The request's location can now be followed. The next step places timers on this path to check the wait before token one, later generation and the whole request.
 
 Sources: `launch/dynamo-run/src/input/http.rs:85-104`, `launch/dynamo-run/src/lib.rs:235-250` and `lib/llm/src/engines/sglang/worker.rs:425-443,588-758` at `ai-dynamo/dynamo@670661f6`; Ch. 9 Steps 6–9 in the first book; Chapter 4 Steps 4 and 6 in this book.
+
+## Step 7 · Check the waits at the client
+
+**One sentence.** The client measures TTFT from request submission to token 1, then adds three later gaps to get E2E.
+
+### On the stage
+
+- The client sends the request at 0 ms, receives token 1 at 250 ms and receives the last token at 325 ms. Orange marks token arrivals; blue marks measured time spans.
+- The first span is TTFT: 250 ms. Three ITL gaps follow token 1: 25, 20 and 30 ms, totaling 75 ms.
+- Four output tokens fit Step 5's cap of eight. The token count and every timestamp reuse Chapter 1's constructed teaching example; they are not measurements from Dynamo serving this request.
+- Both timers sit at the client. They check the wait before token 1, later generation and the whole request, but cannot split 250 ms into network, queue, prefill and TP communication time.
+
+### Formula and symbols
+
+$$\mathrm{E2E}=t_4-t_0=\mathrm{TTFT}+\sum_{i=2}^{4}\mathrm{ITL}_i$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $t_0$ | Time when the client sends the request | Chapter 1 constructed example: 0 ms |
+| $t_4$ | Time when the client receives token 4, the last token | Chapter 1 constructed example: 325 ms |
+| $\mathrm{TTFT}$ | Wait from request submission to token 1 at the client | Chapter 1 Step 1: 250 ms |
+| $\mathrm{ITL}_i$ | Gap between adjacent output tokens at the client | Chapter 1 Step 2: 25, 20 and 30 ms |
+| $\mathrm{E2E}$ | Whole wait from request submission to the last token | Chapter 1 Step 4 |
+
+### The numbers on the stage
+
+$$\mathrm{TTFT}=250-0=250\ \mathrm{ms}$$
+
+$$\sum_{i=2}^{4}\mathrm{ITL}_i=25+20+30=75\ \mathrm{ms}$$
+
+$$\mathrm{E2E}=325-0=250+75=325\ \mathrm{ms}$$
+
+Locating a wait inside the service requires timestamps or tracing at the relevant boundaries. This figure has no such measurements, so the client total cannot reveal each internal span. The E2E boundary also excludes work after the last token, as in Chapter 1.
+
+### Next
+
+The service can now start, answer and report client-side waits. The next chapter adds a training process beside it to show how answers, training and new weights form one slime loop.
+
+Sources: Chapter 1 Steps 1, 2 and 4 in this book; `DEMO_*` and `DYNAMO_SMOKE_MAX_TOKENS` in `src/ml-sys/numbers.ts`; the timing boundaries in zero-to-sglang Part I Chapter 5 §3.1.

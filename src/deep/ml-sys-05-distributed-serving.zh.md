@@ -235,3 +235,42 @@ $$r_{\mathrm{in}}=0,\qquad R_{\mathrm{compute}}=\{0,1,2,3\}\cup\{4,5,6,7\}$$
 现在能跟踪请求的位置了。下一步沿同一条路放计时点，核对首 token 前、后续生成和全程各等多久。
 
 来源：`ai-dynamo/dynamo@670661f6` 的 `launch/dynamo-run/src/input/http.rs:85-104`、`launch/dynamo-run/src/lib.rs:235-250`、`lib/llm/src/engines/sglang/worker.rs:425-443,588-758`；第 1 本 Ch. 9 Steps 6–9；本书第 4 章第 4、6 步。
+
+## 第 7 步 · 在客户端核对各段等待
+
+**一句话。** 客户端从请求发出计时，到第 1 个 token 得到 TTFT，再加后续 3 段间隔得到 E2E。
+
+### 图上是什么
+
+- 请求发出时是 0 ms，客户端在 250 ms 收到第 1 个 token，在 325 ms 收到末个 token。橙色标 token 到达，蓝色标测到的时间段。
+- 第一段是 TTFT，为 250 ms。第 1 个 token 后还有 3 段 ITL，分别是 25、20、30 ms，合计 75 ms。
+- 4 个输出 token 没超过第 5 步的上限 8。这里的 4 个 token 和全部时刻都沿用第 1 章的构造教学例，不是 Dynamo 返回这条请求时的实测。
+- 计时点都在客户端。它能核对首 token 前、后续生成和全程各等多久，但不能把 250 ms 再拆成网络、排队、prefill 和 TP 通信的各自耗时。
+
+### 公式与符号
+
+$$\mathrm{E2E}=t_4-t_0=\mathrm{TTFT}+\sum_{i=2}^{4}\mathrm{ITL}_i$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $t_0$ | 客户端发出请求的时刻 | 第 1 章构造例，0 ms |
+| $t_4$ | 客户端收到第 4 个、也是末个 token 的时刻 | 第 1 章构造例，325 ms |
+| $\mathrm{TTFT}$ | 请求发出到收到第 1 个 token 的等待 | 第 1 章第 1 步，250 ms |
+| $\mathrm{ITL}_i$ | 相邻两个输出 token 到达客户端的间隔 | 第 1 章第 2 步，25、20、30 ms |
+| $\mathrm{E2E}$ | 请求发出到收到末个 token 的全程耗时 | 第 1 章第 4 步 |
+
+### 代入图上的数
+
+$$\mathrm{TTFT}=250-0=250\ \mathrm{ms}$$
+
+$$\sum_{i=2}^{4}\mathrm{ITL}_i=25+20+30=75\ \mathrm{ms}$$
+
+$$\mathrm{E2E}=325-0=250+75=325\ \mathrm{ms}$$
+
+若要定位等待落在服务内部的哪一段，需要在相应边界另加时间戳或 tracing；本图没有这些测量，不能从客户端总时长反推各段耗时。本步也不把最后一个 token 之后的处理时间计入 E2E，边界与第 1 章相同。
+
+### 接下来
+
+这条服务路径已经能启动、回答并计时。下一章在服务旁边加入训练进程，看回答、训练和新权重怎样组成 slime 的一轮循环。
+
+来源：本书第 1 章第 1、2、4 步；`src/ml-sys/numbers.ts` 的 `DEMO_*` 与 `DYNAMO_SMOKE_MAX_TOKENS`；zero-to-sglang 第 1 部分第 5 章 §3.1 的计时边界。

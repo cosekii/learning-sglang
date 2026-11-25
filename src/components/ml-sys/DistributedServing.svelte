@@ -4,7 +4,7 @@
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
-  import { DYNAMO_LOG_READY_US, DYNAMO_LOG_HTTP_US, DYNAMO_READY_TO_HTTP_US, DYNAMO_HTTP_PORT, DYNAMO_NUM_NODES, DYNAMO_DIST_INIT_PORT, DYNAMO_TP_SIZE, DYNAMO_TP_PER_NODE, DYNAMO_TP_RANKS_BY_NODE, DYNAMO_SMOKE_MAX_TOKENS } from '../../ml-sys/numbers';
+  import { DYNAMO_LOG_READY_US, DYNAMO_LOG_HTTP_US, DYNAMO_READY_TO_HTTP_US, DYNAMO_HTTP_PORT, DYNAMO_NUM_NODES, DYNAMO_DIST_INIT_PORT, DYNAMO_TP_SIZE, DYNAMO_TP_PER_NODE, DYNAMO_TP_RANKS_BY_NODE, DYNAMO_SMOKE_MAX_TOKENS, DEMO_REQUEST_SENT_MS, DEMO_FIRST_TOKEN_MS, DEMO_LAST_TOKEN_MS, DEMO_TTFT_MS, DEMO_ITL_GAPS_MS, DEMO_ITL_TOTAL_MS, DEMO_E2E_MS } from '../../ml-sys/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
@@ -27,6 +27,9 @@
   }, {
     caption: 'Node 0 turns text into token IDs for rank 0. The TP group computes, and the answer returns to the client.',
     captionZh: '0 号节点把文本变成 token，交给 rank 0。TP 组计算后，回答再返回客户端。',
+  }, {
+    caption: 'At the client, TTFT ends when token 1 arrives. Add the three later gaps to get E2E.',
+    captionZh: '收到第 1 个 token，TTFT 就结束。再加 3 段间隔，就是 E2E。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -42,7 +45,7 @@
     return () => query.removeEventListener('change', update);
   });
   const cur = $derived(steps[step]);
-  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 3 ? 650 : step === 4 ? 600 : step === 5 ? 710 : 520) : (step === 3 ? 460 : 400));
+  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 3 ? 650 : step === 4 ? 600 : step === 5 ? 710 : step === 6 ? 610 : 520) : (step === 3 ? 460 : 400));
 </script>
 
 <figure class="viz">
@@ -316,6 +319,49 @@
           <text x="150" y="662" text-anchor="middle" class="small strong">CLIENT · {t('answer text', '回答文本')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Client input and output pass through rank 0\'s scheduler.', '客户端输入和输出都经过 rank 0 的 scheduler。')}</text>
+      {:else if step === 6}
+        <text x={phone ? 18 : 36} y="30" class="title">{t('Put the timers at the client', '在客户端放计时点')}</text>
+        <text x={phone ? 18 : 36} y="55" class="label">{t(phone ? 'orange = tokens · blue = time spans' : 'orange = token arrivals · blue = measured time spans', '橙 = token 到达 · 蓝 = 测到的时间段')}</text>
+        {#if !phone}
+          {#each [
+            { x: 40, top: 'REQUEST SENT', topZh: '请求发出', time: DEMO_REQUEST_SENT_MS, orange: false },
+            { x: 270, top: 'TOKEN 1 ARRIVES', topZh: '收到第 1 个 token', time: DEMO_FIRST_TOKEN_MS, orange: true },
+            { x: 500, top: 'LAST TOKEN ARRIVES', topZh: '收到末个 token', time: DEMO_LAST_TOKEN_MS, orange: true },
+          ] as event}
+            <rect x={event.x} y="90" width="180" height="91" rx="12" fill={event.orange ? 'var(--gen-soft)' : 'var(--bg)'} stroke={event.orange ? 'var(--gen)' : 'var(--line)'} />
+            <text x={event.x + 90} y="124" text-anchor="middle" class="small strong">{t(event.top, event.topZh)}</text>
+            <text x={event.x + 90} y="158" text-anchor="middle" class="result">{event.time} ms</text>
+          {/each}
+          <line x1="220" y1="136" x2="260" y2="136" stroke="var(--accent)" stroke-width="3" marker-end="url(#serve-arrow-blue)" />
+          <text x="245" y="78" text-anchor="middle" class="delta">TTFT</text>
+          <text x="245" y="207" text-anchor="middle" class="result">+{DEMO_TTFT_MS} ms</text>
+          <line x1="450" y1="136" x2="490" y2="136" stroke="var(--accent)" stroke-width="3" marker-end="url(#serve-arrow-blue)" />
+          <text x="475" y="78" text-anchor="middle" class="delta">3 ITL</text>
+          <text x="475" y="207" text-anchor="middle" class="result">+{DEMO_ITL_TOTAL_MS} ms</text>
+          <rect x="40" y="234" width="640" height="91" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="360" y="269" text-anchor="middle" class="result">E2E = {DEMO_LAST_TOKEN_MS} − {DEMO_REQUEST_SENT_MS} = {DEMO_TTFT_MS} + {DEMO_ITL_TOTAL_MS} = {DEMO_E2E_MS} ms</text>
+          <text x="360" y="304" text-anchor="middle" class="small">{DEMO_ITL_TOTAL_MS} ms = {DEMO_ITL_GAPS_MS.join(' + ')} ms · 4 {t('tokens fit the cap of', '个 token 没超过上限')} {DYNAMO_SMOKE_MAX_TOKENS}</text>
+        {:else}
+          <rect x="35" y="75" width="230" height="65" rx="11" fill="var(--bg)" stroke="var(--line)" />
+          <text x="150" y="101" text-anchor="middle" class="small strong">{t('REQUEST SENT', '请求发出')}</text>
+          <text x="150" y="127" text-anchor="middle" class="result">{DEMO_REQUEST_SENT_MS} ms</text>
+          <line x1="150" y1="140" x2="150" y2="184" stroke="var(--accent)" stroke-width="3" marker-end="url(#serve-arrow-blue)" />
+          <text x="165" y="168" class="delta">TTFT +{DEMO_TTFT_MS} ms</text>
+          <rect x="35" y="194" width="230" height="65" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="150" y="220" text-anchor="middle" class="small strong">{t('TOKEN 1 ARRIVES', '收到第 1 个 token')}</text>
+          <text x="150" y="246" text-anchor="middle" class="result">{DEMO_FIRST_TOKEN_MS} ms</text>
+          <line x1="150" y1="259" x2="150" y2="303" stroke="var(--accent)" stroke-width="3" marker-end="url(#serve-arrow-blue)" />
+          <text x="165" y="287" class="delta">3 ITL +{DEMO_ITL_TOTAL_MS} ms</text>
+          <rect x="35" y="313" width="230" height="65" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="150" y="339" text-anchor="middle" class="small strong">{t('LAST TOKEN ARRIVES', '收到末个 token')}</text>
+          <text x="150" y="365" text-anchor="middle" class="result">{DEMO_LAST_TOKEN_MS} ms</text>
+          <rect x="20" y="405" width="260" height="113" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="150" y="436" text-anchor="middle" class="result">E2E = {DEMO_LAST_TOKEN_MS} − {DEMO_REQUEST_SENT_MS} = {DEMO_E2E_MS} ms</text>
+          <text x="150" y="466" text-anchor="middle" class="small">= {DEMO_TTFT_MS} + {DEMO_ITL_TOTAL_MS} = {DEMO_E2E_MS} ms</text>
+          <text x="150" y="496" text-anchor="middle" class="small">{DEMO_ITL_TOTAL_MS} ms = {DEMO_ITL_GAPS_MS.join(' + ')} ms</text>
+        {/if}
+        <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t(phone ? 'Client timers do not locate the wait.' : 'Client timers do not split network, queue, prefill or TP waits.', phone ? '客户端计时找不到等待在哪一段。' : '客户端计时分不清网络、排队、prefill 和 TP 各等多久。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Chapter 1 example times, not a Dynamo measurement.', '第 1 章的构造时间，不是 Dynamo 实测。')}</text>
       {/if}
     </svg>
   </div>
