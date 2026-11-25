@@ -4,13 +4,16 @@
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
-  import { HYBRID_SYSTEM_TOKENS, HYBRID_NUM_BATCH_DEFAULT, HYBRID_NUM_BATCH_TUNED, HYBRID_SHORT_WAIT_DEFAULT_S, HYBRID_SHORT_WAIT_TUNED_S, HYBRID_WAIT_SAVED_S, HYBRID_WAIT_RATIO, HYBRID_RECOMPUTE_DEFAULT_MIN, HYBRID_RECOMPUTE_DEFAULT_MAX, HYBRID_RECOMPUTE_TUNED_MIN, HYBRID_RECOMPUTE_TUNED_MAX, HYBRID_COLD_DEFAULT_S, HYBRID_COLD_TUNED_S, HYBRID_COLD_EXTRA_S } from '../../ml-sys/numbers';
+  import { HYBRID_SYSTEM_TOKENS, HYBRID_NUM_BATCH_DEFAULT, HYBRID_NUM_BATCH_TUNED, HYBRID_SHORT_WAIT_DEFAULT_S, HYBRID_SHORT_WAIT_TUNED_S, HYBRID_WAIT_SAVED_S, HYBRID_WAIT_RATIO, HYBRID_RECOMPUTE_DEFAULT_MIN, HYBRID_RECOMPUTE_DEFAULT_MAX, HYBRID_RECOMPUTE_TUNED_MIN, HYBRID_RECOMPUTE_TUNED_MAX, HYBRID_COLD_DEFAULT_S, HYBRID_COLD_TUNED_S, HYBRID_COLD_EXTRA_S, HYBRID_USER_TOKENS, HYBRID_PROMPT_TOKENS, HYBRID_FULL_ATTENTION_NEW_TOKENS } from '../../ml-sys/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
   const steps = [{
     caption: `At num_batch ${HYBRID_NUM_BATCH_DEFAULT}, the short request takes ${HYBRID_SHORT_WAIT_DEFAULT_S} s. At ${HYBRID_NUM_BATCH_TUNED}, it takes ${HYBRID_SHORT_WAIT_TUNED_S} s and recomputes ${HYBRID_RECOMPUTE_TUNED_MIN}–${HYBRID_RECOMPUTE_TUNED_MAX} tokens.`,
     captionZh: `同样的短请求，num_batch ${HYBRID_NUM_BATCH_DEFAULT} 用 ${HYBRID_SHORT_WAIT_DEFAULT_S} 秒，${HYBRID_NUM_BATCH_TUNED} 只用 ${HYBRID_SHORT_WAIT_TUNED_S} 秒。重算从 ${HYBRID_RECOMPUTE_DEFAULT_MIN}–${HYBRID_RECOMPUTE_DEFAULT_MAX} 个 token 降到 ${HYBRID_RECOMPUTE_TUNED_MIN}–${HYBRID_RECOMPUTE_TUNED_MAX} 个。`,
+  }, {
+    caption: `Full attention stores each token’s K/V in its own slot. A new request keeps ${HYBRID_SYSTEM_TOKENS.toLocaleString()} shared slots and computes only its ${HYBRID_USER_TOKENS}-token tail.`,
+    captionZh: `全注意力把每个 token 的 K/V 单独存一格。新请求保留 ${HYBRID_SYSTEM_TOKENS.toLocaleString()} 格共同前缀，只算 ${HYBRID_USER_TOKENS} 个新 token。`,
   }];
   let step = $state(0);
   $effect(() => {
@@ -33,6 +36,7 @@
 <figure class="viz">
   <div class="canvas">
     <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={t(`At num_batch ${HYBRID_NUM_BATCH_DEFAULT}, a short request takes ${HYBRID_SHORT_WAIT_DEFAULT_S} seconds and recomputes ${HYBRID_RECOMPUTE_DEFAULT_MIN} to ${HYBRID_RECOMPUTE_DEFAULT_MAX} tokens. At ${HYBRID_NUM_BATCH_TUNED}, it takes ${HYBRID_SHORT_WAIT_TUNED_S} seconds and recomputes ${HYBRID_RECOMPUTE_TUNED_MIN} to ${HYBRID_RECOMPUTE_TUNED_MAX} tokens. Cold startup takes longer with the second setting.`, `num_batch 为 ${HYBRID_NUM_BATCH_DEFAULT} 时，短请求用 ${HYBRID_SHORT_WAIT_DEFAULT_S} 秒并重算 ${HYBRID_RECOMPUTE_DEFAULT_MIN} 到 ${HYBRID_RECOMPUTE_DEFAULT_MAX} 个 token。调到 ${HYBRID_NUM_BATCH_TUNED} 后用 ${HYBRID_SHORT_WAIT_TUNED_S} 秒，重算 ${HYBRID_RECOMPUTE_TUNED_MIN} 到 ${HYBRID_RECOMPUTE_TUNED_MAX} 个 token，但冷启动更慢。`)}>
+      {#if step === 0}
       {#if !phone}
         <text x="38" y="30" class="title">{t('One setting changes the short-request wait', '一个设置改变短请求等待')}</text>
         <text x="38" y="55" class="label">{t(`same machine · same ${HYBRID_SYSTEM_TOKENS.toLocaleString()}-token system · same short users`, `同一台机器 · 同一个 ${HYBRID_SYSTEM_TOKENS.toLocaleString()} token system · 同样的短 user`)}</text>
@@ -79,7 +83,72 @@
         <text x="150" y="385" text-anchor="middle" class="cold">{t('cold startup', '冷启动')}: {HYBRID_COLD_DEFAULT_S} s → {HYBRID_COLD_TUNED_S} s</text>
         <text x="150" y="407" text-anchor="middle" class="small">+{HYBRID_COLD_EXTRA_S} s · {t('blue = one short request', '蓝色 = 一条短请求')}</text>
       {/if}
-      <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Selected article measurements; not this computer.', '选自原文实测，不是本机实测。')}</text>
+      {:else}
+        <defs>
+          <pattern id="released-tail" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <rect width="7" height="7" fill="var(--bg)" />
+            <line x1="0" y1="0" x2="0" y2="7" stroke="var(--faint)" stroke-width="2" />
+          </pattern>
+        </defs>
+        {#if !phone}
+          <text x="38" y="30" class="title">{t('Full attention · one K/V slot per token', '全注意力 · 每个 token 一格 K/V')}</text>
+          <text x="38" y="55" class="label">{t('Ch. 8 Steps 2–3 · matching starts at token 1', 'Ch. 8 Steps 2–3 · 从第 1 个 token 开始匹配')}</text>
+
+          <text x="40" y="96" class="small strong">{t('old request', '旧请求')}</text>
+          <rect x="170" y="72" width="350" height="32" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <rect x="520" y="72" width="70" height="32" rx="5" fill="url(#released-tail)" stroke="var(--muted)" />
+          <text x="345" y="93" text-anchor="middle" class="small">system · {HYBRID_SYSTEM_TOKENS.toLocaleString()}</text>
+          <text x="555" y="93" text-anchor="middle" class="small">{t('old', '旧')} {HYBRID_USER_TOKENS}</text>
+          <text x="680" y="96" text-anchor="end" class="small">{HYBRID_PROMPT_TOKENS.toLocaleString()} token</text>
+
+          <text x="40" y="154" class="small strong">{t('new request', '新请求')}</text>
+          <rect x="170" y="130" width="350" height="32" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <rect x="520" y="130" width="70" height="32" rx="5" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="345" y="151" text-anchor="middle" class="small">{t('same system', '相同 system')} · {HYBRID_SYSTEM_TOKENS.toLocaleString()}</text>
+          <text x="555" y="151" text-anchor="middle" class="small">{t('new', '新')} {HYBRID_USER_TOKENS}</text>
+          <text x="680" y="154" text-anchor="end" class="small">{HYBRID_PROMPT_TOKENS.toLocaleString()} token</text>
+
+          <text x="40" y="210" class="small strong">{t('new request’s KV slots', '新请求的 KV 槽位')}</text>
+          <rect x="170" y="224" width="350" height="36" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <rect x="520" y="224" width="70" height="36" rx="5" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="345" y="247" text-anchor="middle" class="small">{t('reuse', '复用')} {HYBRID_SYSTEM_TOKENS.toLocaleString()} K/V</text>
+          <text x="555" y="247" text-anchor="middle" class="small">{HYBRID_USER_TOKENS} {t('new', '新增')}</text>
+          <rect x="520" y="274" width="70" height="22" rx="4" fill="url(#released-tail)" stroke="var(--muted)" stroke-dasharray="4 3" />
+          <text x="555" y="316" text-anchor="middle" class="small">{t('old 40 released', '旧 40 格释放')}</text>
+
+          <text x="360" y="338" text-anchor="middle" class="result">{HYBRID_PROMPT_TOKENS.toLocaleString()} − {HYBRID_SYSTEM_TOKENS.toLocaleString()} = {HYBRID_FULL_ATTENTION_NEW_TOKENS} {t('tokens to prefill', '个 token 要 prefill')}</text>
+          <text x="360" y="364" text-anchor="middle" class="small">{t('blue = reuse · orange = compute · hatch = release', '蓝 = 复用 · 橙 = 计算 · 斜线 = 释放')}</text>
+        {:else}
+          <text x="18" y="27" class="title">{t('Full attention', '全注意力')}</text>
+          <text x="18" y="51" class="small">{t('one K/V slot per token', '每个 token 一格 K/V')}</text>
+
+          <text x="20" y="82" class="small strong">{t('old request', '旧请求')}</text>
+          <rect x="40" y="94" width="180" height="30" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <rect x="220" y="94" width="60" height="30" rx="5" fill="url(#released-tail)" stroke="var(--muted)" />
+          <text x="130" y="113" text-anchor="middle" class="small">system {HYBRID_SYSTEM_TOKENS.toLocaleString()}</text>
+          <text x="250" y="113" text-anchor="middle" class="small">{t('old', '旧')}{HYBRID_USER_TOKENS}</text>
+
+          <text x="20" y="154" class="small strong">{t('new request', '新请求')}</text>
+          <rect x="40" y="166" width="180" height="30" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <rect x="220" y="166" width="60" height="30" rx="5" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="130" y="185" text-anchor="middle" class="small">{t('same', '相同')} {HYBRID_SYSTEM_TOKENS.toLocaleString()}</text>
+          <text x="250" y="185" text-anchor="middle" class="small">{t('new', '新')}{HYBRID_USER_TOKENS}</text>
+
+          <text x="20" y="229" class="small strong">{t('new request’s KV slots', '新请求的 KV 槽位')}</text>
+          <rect x="40" y="242" width="180" height="33" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <rect x="220" y="242" width="60" height="33" rx="5" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="130" y="263" text-anchor="middle" class="small">{t('reuse', '复用')} {HYBRID_SYSTEM_TOKENS.toLocaleString()}</text>
+          <text x="250" y="263" text-anchor="middle" class="small">{HYBRID_USER_TOKENS} {t('new', '新增')}</text>
+          <rect x="220" y="287" width="60" height="19" rx="4" fill="url(#released-tail)" stroke="var(--muted)" stroke-dasharray="4 3" />
+          <text x="150" y="325" text-anchor="middle" class="small">{t('hatched old tail is released', '斜线旧尾部释放')}</text>
+
+          <text x="150" y="355" text-anchor="middle" class="result">{HYBRID_PROMPT_TOKENS.toLocaleString()} − {HYBRID_SYSTEM_TOKENS.toLocaleString()} = {HYBRID_FULL_ATTENTION_NEW_TOKENS}</text>
+          <text x="150" y="382" text-anchor="middle" class="small">{t('40 tokens to prefill', '40 个 token 要 prefill')}</text>
+          <text x="150" y="409" text-anchor="middle" class="small">{t('blue = reuse · orange = compute', '蓝 = 复用 · 橙 = 计算')}</text>
+        {/if}
+        <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('Block widths are schematic.', '色块宽度是示意。')}</text>
+      {/if}
+      <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{step === 0 ? t('Selected article measurements; not this computer.', '选自原文实测，不是本机实测。') : t('Simplified article example; Ch. 8 Steps 2–3 covers matching.', '原文简化例；匹配见 Ch. 8 Steps 2–3。')}</text>
     </svg>
   </div>
   <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh}

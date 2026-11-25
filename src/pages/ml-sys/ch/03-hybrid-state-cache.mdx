@@ -15,11 +15,15 @@ export const deep = await deepFor('ml-sys-03-hybrid-state-cache');
 
 Step 1 selects two rows from the six-setting experiment in `Awesome-ML-SYS-Tutorial/engineer/hybrid-prefix-cache/readme.md:572-599`. The same machine, system prompt and short requests were used while `num_batch` changed. At 1024, the short request took 3.95 s and recomputed 1019–1029 tokens; at 64, it took 0.91 s and recomputed 63–69 tokens. Cold startup took 16.9 s and 28.4 s respectively. These are the article's measurements, not measurements from this computer or a universal recommendation.
 
+Step 2 uses the article's simplified 5,500-token system and 40-token user example (`readme.md:71-89`). Full-attention K/V is per-token and append-only, so the new request can retain the 5,500 shared slots, release the old tail and prefill 40 new tokens. The block widths are schematic. Ch. 8 Steps 2–3 already established shared pages and longest-common-prefix matching.
+
 </details>
 
 <details class="i18n-zh">
 <summary>本章说法的出处</summary>
 
 第 1 步选取 `Awesome-ML-SYS-Tutorial/engineer/hybrid-prefix-cache/readme.md:572-599` 六组实验中的两行。实验保持机器、system prompt 和短请求不变，只改 `num_batch`。1024 时短请求为 3.95 秒、重算 1019–1029 个 token；64 时为 0.91 秒、重算 63–69 个 token。冷启动分别为 16.9 秒和 28.4 秒。这些是原文实测，不是本机实测，也不是对所有负载的通用推荐。
+
+第 2 步使用原文第 71–89 行的简化例子：5,500 token system 加 40 token user。全注意力的 K/V 按 token 独立保存、只往后追加，因此新请求可以保留 5,500 格共同前缀、释放旧尾部，只 prefill 40 个新 token。色块宽度是示意。第 1 本 Ch. 8 Steps 2–3 已经讲过共享 page 和最长共同前缀匹配。
 
 </details>

@@ -63,3 +63,8 @@ export const HYBRID_RECOMPUTE_TUNED_MAX = 69;
 export const HYBRID_COLD_DEFAULT_S = 16.9;
 export const HYBRID_COLD_TUNED_S = 28.4;
 export const HYBRID_COLD_EXTRA_S = rounded(HYBRID_COLD_TUNED_S - HYBRID_COLD_DEFAULT_S);
+
+// Simplified full-attention example from the same article, lines 71-89.
+export const HYBRID_USER_TOKENS = 40;
+export const HYBRID_PROMPT_TOKENS = HYBRID_SYSTEM_TOKENS + HYBRID_USER_TOKENS;
+export const HYBRID_FULL_ATTENTION_NEW_TOKENS = HYBRID_PROMPT_TOKENS - HYBRID_SYSTEM_TOKENS;

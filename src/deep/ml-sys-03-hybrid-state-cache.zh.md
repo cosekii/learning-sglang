@@ -32,3 +32,35 @@ $$r=\frac{3.95}{0.91}\approx4.3,\qquad \Delta W_{\mathrm{cold}}=28.4-16.9=11.5\ 
 重算量随设置变化已经很清楚。下一步先看全注意力为什么能只算新的短 user。
 
 来源：`Awesome-ML-SYS-Tutorial/engineer/hybrid-prefix-cache/readme.md:566-599`。
+
+## 第 2 步 · 全注意力按 token 留格子
+
+**一句话。** 全注意力把每个 token 的 K/V 放在独立槽位，共同前缀之后的旧尾部可以直接释放。
+
+### 图上是什么
+
+- 旧、新请求都有 5,500 token system 和 40 token user。蓝色表示相同且可以复用的前缀，橙色表示要计算的新 user，斜线表示旧 user 的槽位可以释放。
+- 第三行把新请求要用的 KV cache 单独画出：前 5,500 格直接读旧结果，后 40 格写入新结果。每个色块代表一段槽位，宽度不按 token 数成比例。
+- 第 1 本 Ch. 8 Steps 2–3 已经说明：只有从头开始相同的 token 才能复用；第一次不同之后都属于新尾部。
+
+### 公式与符号
+
+$$C_{\mathrm{KV}}=E-M$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $C_{\mathrm{KV}}$ | 全注意力新请求需要 prefill 的 token 数 | 本步计算 |
+| $E$ | 新请求的 prompt 末尾位置 | $5{,}500+40=5{,}540$ |
+| $M$ | 从头逐 token 匹配的共同前缀长度 | 原文简化例，5,500 |
+
+### 代入图上的数
+
+$$E=5{,}500+40=5{,}540,\qquad C_{\mathrm{KV}}=5{,}540-5{,}500=40$$
+
+第 $i$ 格的 K/V 由前 $i$ 个 token 决定。后续 token 只会追加新槽位，不改前 $i$ 格，所以旧请求和新请求在共同前缀里的 K/V 相同。释放尾部只是把游标和空闲标记改到第 5,500 格，不需要重算前缀。
+
+### 接下来
+
+这个结果依赖「每个位置都另存一份」。下一步换成只保存一份汇总的 recurrent state。
+
+来源：`Awesome-ML-SYS-Tutorial/engineer/hybrid-prefix-cache/readme.md:71-89`；第 1 本 Ch. 3 Steps 1–3、Ch. 8 Steps 2–3。

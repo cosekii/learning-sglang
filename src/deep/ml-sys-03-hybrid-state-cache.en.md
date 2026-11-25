@@ -32,3 +32,35 @@ The 4.3 figure compares total request times, not throughput. For each setting, t
 The measurements expose a large change in recomputation. The next step shows why full attention can compute only the new user tail.
 
 Source: `Awesome-ML-SYS-Tutorial/engineer/hybrid-prefix-cache/readme.md:566-599`.
+
+## Step 2 · Full attention keeps one slot per token
+
+**One sentence.** Full attention stores each token's K/V independently, so a new request can release the old tail after the shared prefix.
+
+### On the stage
+
+- Both requests contain a 5,500-token system and a 40-token user. Blue marks the reusable prefix, orange marks the new user to compute and hatching marks old slots to release.
+- The third row isolates the new request's KV cache: read 5,500 existing slots, then write 40 new ones. Each block represents a range of slots; its width is not proportional to token count.
+- Ch. 8 Steps 2–3 established that reuse must start at token 1. The first different token and everything after it form the new tail.
+
+### Formula and symbols
+
+$$C_{\mathrm{KV}}=E-M$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $C_{\mathrm{KV}}$ | Tokens the full-attention request must prefill | Calculated in this step |
+| $E$ | End position of the new prompt | $5{,}500+40=5{,}540$ |
+| $M$ | Common prefix length, matched from token 1 | Article's simplified example: 5,500 |
+
+### The numbers on the stage
+
+$$E=5{,}500+40=5{,}540,\qquad C_{\mathrm{KV}}=5{,}540-5{,}500=40$$
+
+The K/V at position $i$ depends on tokens $1$ through $i$. Later tokens append new slots without changing earlier ones, so both requests have identical K/V throughout their shared prefix. Releasing the tail moves the cursor and free markers back to slot 5,500; it does not recompute the prefix.
+
+### Next
+
+This result relies on a separate saved value for every position. The next step replaces that history with one recurrent summary.
+
+Sources: `Awesome-ML-SYS-Tutorial/engineer/hybrid-prefix-cache/readme.md:71-89`; Ch. 3 Steps 1–3 and Ch. 8 Steps 2–3.
