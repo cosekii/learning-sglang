@@ -4,6 +4,8 @@
 
 ## 本轮记录
 
+- 10:58 完成 Learning ML Systems 第 3 章全部 6 步：实测 `num_batch` 的矛盾、全注意力 KV 复用、recurrent state、checkpoint 重算、hybrid 共同恢复点和 MambaRadixCache 墓碑。全章 **6/6 步易读 12/12**，中英原分均 **24/24**，平均 **24.00/24**，**0 内容洞、0 最终显示洞**。
+- 逐步提交并推送；最终图为 12 张双语桌面、12 张 390 px 双语手机和 12 张双语深入讲解。`build`、本章 `transcript`、全章 `readability`、三种宽度中英 `mobile`、`deep-check 03`、本章 `zh-check` 和 `git diff --check` 通过；章节与四个 zero-to-sglang 延伸阅读链接均为 HTTP 200。材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch03-20261125-1030/final/`。本轮只跑本章检查，未跑全站回归。本轮类型：**新书**；下一普通轮按交替规则修旧。
 - 10:27 修旧 Learning SGLang 第 7 章第 4、6 步：中文第 4 步只讲分页，第 6 步只讲页表；两步中文易读均 **11→12/12**、原分 **23/24**、**0 冷读洞**。完整中英分均保持 **10/12**，因为受保护英文仍有 R2 两件新事及 R4 三句／长句，未标完成。
 - `build`、本章 `transcript`、本章及两步中文 `mobile`、`deep-check 07`、本章 `zh-check` 和 `git diff --check` 通过；逐步 `readability` 只余上述受保护英文问题。最终中英桌面与中文手机图已打开，两步英文桌面改前改后均逐像素一致。材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch07-r2-20261125-1020/`。本轮类型：**修旧**；下一普通轮做新书的下一整章。
 - 10:19 完成 Inside Voxt 第 3 章第 3–8 步：3,300 个样本的尾帧、历史原件与模型副本、50／200 Hz 高通、连续三个 20 ms 小段的 VAD 起点、轻声增加 7 dB、−1 dBFS 限幅。全章 **8/8 步易读 12/12**，平均 **23.75/24**，**0 冷读洞**。
@@ -81,13 +83,13 @@
 
 ## Learning ML Systems
 
-规划完成：`docs/plan-ml-sys.md` 共 3 部分、16 章；第 1 章已制作 7 步并完成，第 2 章已制作 2 步并完成。第 11 章须先补齐训推不一致的原始来源，缺源时先跳过。
+规划完成：`docs/plan-ml-sys.md` 共 3 部分、16 章；第 1 章已制作 7 步并完成，第 2 章已制作 2 步并完成，第 3 章已制作 6 步并完成。第 11 章须先补齐训推不一致的原始来源，缺源时先跳过。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
 | 01 | 01-measure-inference | 完成：7/7 步易读满分 | 24.00 |
 | 02 | 02-inference-memory-budget | 完成：2/2 步易读满分 | 24.00 |
-| 03 | 03-hybrid-state-cache | 规划 | — |
+| 03 | 03-hybrid-state-cache | 完成：6/6 步易读满分 | 24.00 |
 | 04 | 04-gpu-communication | 规划 | — |
 | 05 | 05-distributed-serving | 规划 | — |
 | 06 | 06-slime-rollout-loop | 规划 | — |
