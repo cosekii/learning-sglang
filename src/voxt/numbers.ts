@@ -44,3 +44,9 @@ export const VOXT_VAD_FRAME_MS = 20;
 export const VOXT_VAD_ONSET_MS = 60;
 export const VOXT_VAD_ONSET_FRAMES = VOXT_VAD_ONSET_MS / VOXT_VAD_FRAME_MS;
 export const VOXT_VAD_FRAME_SAMPLES = VOXT_CAPTURE_SAMPLE_RATE * VOXT_VAD_FRAME_MS / 1000;
+
+// Public GainFor quiet-voice example; the wave shapes are constructed.
+export const VOXT_QUIET_SPEECH_DB = -30;
+export const VOXT_TARGET_SPEECH_DB = -23;
+export const VOXT_QUIET_GAIN_DB = VOXT_TARGET_SPEECH_DB - VOXT_QUIET_SPEECH_DB;
+export const VOXT_QUIET_GAIN_RATIO = 10 ** (VOXT_QUIET_GAIN_DB / 20);

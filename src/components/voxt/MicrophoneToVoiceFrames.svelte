@@ -21,6 +21,8 @@
     VOXT_HIGH_PASS_CLEAR_HZ,
     VOXT_HIGH_PASS_HUM_HZ,
     VOXT_HIGH_PASS_HUM_RATIO,
+    VOXT_QUIET_GAIN_DB,
+    VOXT_QUIET_GAIN_RATIO,
     VOXT_VAD_FRAME_MS,
     VOXT_VAD_ONSET_FRAMES,
     VOXT_VAD_ONSET_MS,
@@ -46,6 +48,9 @@
   }, {
     caption: 'The voice detector waits for three louder 20 ms slices in a row. That is 60 ms, so one key click does not start speech.',
     captionZh: '语音检测要连续三个比噪声响的 20 ms 小段。共 60 ms，一次按键声还不够。',
+  }, {
+    caption: 'Gain raises this quiet voice by 7 dB. Its wave becomes about 2.24 times taller.',
+    captionZh: '增益把这次较轻的说话声提高 7 dB。波形高度约变成 2.24 倍。',
   }];
   const ariaLabels = [{
     en: 'The helper cuts one second of continuous sound into ten ordered audio frames, each holding 100 milliseconds',
@@ -65,6 +70,9 @@
   }, {
     en: 'Voice activity detection compares 20 millisecond slices with room noise. One louder slice is not enough. Three louder slices in a row total 60 milliseconds and start a speech segment.',
     zh: '语音活动检测把 20 毫秒的小段与房间噪声比较。一个较响的小段还不够，连续三个较响的小段共 60 毫秒，开始一个说话段。',
+  }, {
+    en: 'Gain means making sound stronger. This quiet voice receives 7 decibels of gain, so its wave becomes about 2.24 times taller on the same scale.',
+    zh: '增益是让声音变强。这次较轻的说话声增加 7 分贝，按同一尺度画，波形高度约变成 2.24 倍。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -81,7 +89,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(step === 0 ? (phone ? 590 : 380) : step === 2 ? (phone ? 450 : 340) : step === 3 ? (phone ? 475 : 370) : step === 4 ? (phone ? 480 : 420) : step === 5 ? (phone ? 445 : 335) : (phone ? 515 : 330));
+  const H = $derived(step === 0 ? (phone ? 590 : 380) : step === 2 ? (phone ? 450 : 340) : step === 3 ? (phone ? 475 : 370) : step === 4 ? (phone ? 480 : 420) : step === 5 ? (phone ? 445 : 335) : step === 6 ? (phone ? 320 : 300) : (phone ? 515 : 330));
   const frames = Array.from({ length: VOXT_CAPTURE_FRAME_COUNT }, (_, i) => ({
     seq: i,
     start: i * VOXT_CAPTURE_FRAME_MS,
@@ -271,7 +279,7 @@
       <line x1={phone ? 137 : 330} y1={phone ? 355 : 328} x2={phone ? 158 : 390} y2={phone ? 355 : 328} stroke="var(--muted)" stroke-width="2" marker-end="url(#byte-arrow)" />
       <text x={phone ? 225 : 530} y={phone ? 410 : 378} text-anchor="middle" class="cut">{t('same sound', '声音不变')}</text>
       <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Public response; both sides share one scale.', '按公开响应绘制；处理前后同一尺度。')}</text>
-      {:else}
+      {:else if step === 5}
       <text x={W / 2} y={phone ? 25 : 30} text-anchor="middle" class="title">{t('VOICE DETECTION WAITS FOR 60 MS', '语音检测要等连续 60 ms')}</text>
       <text x={W / 2} y={phone ? 47 : 53} text-anchor="middle" class="subtitle">{t('VAD = voice activity detection · finds speech', 'VAD = 语音活动检测，找出说话声')}</text>
       <text x={W / 2} y={phone ? 69 : 75} text-anchor="middle" class="definition">{t('grey line = room noise · blue = louder slices', '灰线 = 房间噪声 · 蓝柱 = 更响的小段')}</text>
@@ -290,6 +298,19 @@
       {/each}
       <text x={W / 2} y={phone ? 400 : 290} text-anchor="middle" class="formula">{VOXT_VAD_ONSET_MS} ms ÷ {VOXT_VAD_FRAME_MS} ms = {VOXT_VAD_ONSET_FRAMES} {t('slices in a row', '个连续小段')}</text>
       <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Constructed slices; public detector defaults.', '构造示例；采用公开检测器默认值。')}</text>
+      {:else}
+      <text x={W / 2} y={phone ? 25 : 30} text-anchor="middle" class="title">{t('GAIN RAISES QUIET SPEECH', '增益让较轻的说话声变响')}</text>
+      <text x={W / 2} y={phone ? 47 : 53} text-anchor="middle" class="subtitle">{t('gain = makes sound stronger · dB = a sound-level unit', '增益 = 让声音变强 · dB = 分贝，音量单位')}</text>
+      <text x={W / 2} y={phone ? 69 : 75} text-anchor="middle" class="definition">+{VOXT_QUIET_GAIN_DB} dB ≈ {VOXT_QUIET_GAIN_RATIO.toFixed(2)} × {t('wave height', '波形高度')}</text>
+      <text x={phone ? 75 : 190} y="120" text-anchor="middle" class="detail">{t('BEFORE', '处理前')}</text>
+      <text x={phone ? 225 : 530} y="120" text-anchor="middle" class="detail">{t('AFTER', '处理后')}</text>
+      <line x1={phone ? 20 : 80} y1="175" x2={phone ? 130 : 300} y2="175" stroke="var(--line)" />
+      <line x1={phone ? 170 : 420} y1="175" x2={phone ? 280 : 640} y2="175" stroke="var(--line)" />
+      <g transform={`translate(${phone ? 20 : 80} 0)`}><path d={sine(phone ? 110 : 220, 175, 20, 5)} fill="none" stroke="var(--accent)" stroke-width="2.5" /></g>
+      <g transform={`translate(${phone ? 170 : 420} 0)`}><path d={sine(phone ? 110 : 220, 175, 20 * VOXT_QUIET_GAIN_RATIO, 5)} fill="none" stroke="var(--accent)" stroke-width="2.5" /></g>
+      <line x1={phone ? 137 : 330} y1="175" x2={phone ? 158 : 390} y2="175" stroke="var(--muted)" stroke-width="2" marker-end="url(#byte-arrow)" />
+      <text x={phone ? 225 : 530} y="240" text-anchor="middle" class="cut">+{VOXT_QUIET_GAIN_DB} dB · {t('louder', '更响')}</text>
+      <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Public gain value; constructed waves share one scale.', '增益数值来自公开测试；波形同尺度构造。')}</text>
       {/if}
     </svg>
   </div>

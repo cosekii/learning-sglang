@@ -314,3 +314,70 @@ Public baseline: `sglang-omni@6d8ed2dcf70da1b021bb14b62239a3add428636c`; paths a
 - Consecutive onset thresholds and segment start at the first qualifying frame: `Voxt/internal/vad/vad.go:239-278`.
 - Level formula and conservative detection rationale: `Voxt/internal/vad/doc.go:1-31`.
 - Speech found in either original or filtered audio is kept: `Voxt/internal/vad/doc.go:54-62`; streaming wiring: `Voxt/internal/session/run_audio.go:128-145`; file merge: `Voxt/internal/dsp/level.go:144-148`.
+
+## Step 7 · Gain raises quiet speech
+
+> **In one line:** The public test's −30 dBFS quiet voice receives 7 dB of gain toward the −23 dBFS target, making the constructed wave about 2.24 times taller.
+
+### On the stage
+
+- The gain value comes from the public `TestGainFor` quiet case. The wave shapes are constructed to show that gain on the model copy; they are not a recorded test waveform.
+- Before and after share one scale. Seven decibels means about 2.24 times the amplitude, so both peaks and troughs use that ratio; decibels are not linear wave height.
+- The history recording from Step 4 is not redrawn. This stage changes only the model copy.
+
+### Formula
+
+The public quiet case supplies speech $S=-30$, noise floor $F=-65$ and speech peak $P=-12$, in dBFS or dB as applicable. Its gain is the smallest of four limits:
+
+$$
+g=\min(T-S,\ G_{\max},\ N-F,\ C+L-P)
+$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $T$ | Quiet-speech target | Default −23 dBFS |
+| $S$ | Measured speech level | Public test −30 dBFS |
+| $G_{\max}$ | Maximum boost | Default 12 dB |
+| $N$ | Highest permitted noise floor after gain | Default −50 dBFS |
+| $F$ | Current noise floor | Public test −65 dBFS |
+| $C$ | Sample-peak ceiling | Default −1 dBFS |
+| $L$ | Reduction the limiter may take from speech peaks | Default 6 dB |
+| $P$ | Current speech peak | Public test −12 dBFS |
+
+Convert gain to the amplitude ratio used by the stage:
+
+$$
+G=10^{g/20}
+$$
+
+### The numbers on the stage
+
+| Quantity | Calculation | Result |
+|---|---|---:|
+| Boost needed to reach the target | $-23-(-30)$ | 7 dB |
+| Maximum-boost limit | Default | 12 dB |
+| Boost allowed by the noise floor | $-50-(-65)$ | 15 dB |
+| Boost allowed by limiter headroom | $-1+6-(-12)$ | 17 dB |
+| Final gain | $\min(7,12,15,17)$ | 7 dB |
+| Wave-height ratio | $10^{7/20}$ | About 2.239× |
+
+The four limits respectively protect the target, maximum gain, room noise and peak headroom. The target is strictest in this example, yielding 7 dB; not every recording receives that boost.
+
+### Scope
+
+This stage substitutes only the quiet case. Speech between the target and the −12 dBFS loud threshold stays unchanged, louder speech is reduced, and noise alone receives no gain when no speech is found. File recognition applies one gain to the whole recording. Streaming follows speech smoothly and holds gain through silence and pauses rather than pumping noise upward.
+
+The last gain limit reserves headroom for the limiter. This stage does not show that limiter's per-sample behavior or recovery.
+
+### Next
+
+Gain can make a quiet voice easier to recognize, but it can also push a high sample too far. The next step shows how the limiter keeps every sample within its ceiling.
+
+### Sources
+
+Public baseline: `sglang-omni@6d8ed2dcf70da1b021bb14b62239a3add428636c`; paths are relative to that repository.
+
+- Default target, maximum gain, noise ceiling, sample ceiling and headroom: `Voxt/internal/dsp/params.go:20-56`.
+- Four quiet-gain limits and the loud-speech branch: `Voxt/internal/dsp/params.go:95-119`.
+- Public quiet-case inputs and 7 dB result: `Voxt/internal/dsp/dsp_test.go:98-120`.
+- File gain measurement and streaming behavior: `Voxt/internal/dsp/level.go:125-169,172-210`; silence receives no boost: `Voxt/internal/dsp/dsp_test.go:172-212`.

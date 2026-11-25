@@ -9,7 +9,7 @@ export const voxtParts: Part[] = [
 export const voxtChapters: Chapter[] = [
   { part: 'dictation', slug: 'one-dictation', title: 'The journey of one sentence', hook: 'Follow one dictation through its route and its session tag.', titleZh: '一句话的完整旅程', hookZh: '跟着一次听写走过整条路线，认清它的 session 标签。', ready: true },
   { part: 'dictation', slug: 'helper-permissions-hotkeys', title: 'Hotkeys and permissions', hook: 'Trace hotkeys and permissions through the helper.', titleZh: '快捷键和权限', hookZh: '看快捷键和权限怎样经过 helper。', ready: true },
-  { part: 'dictation', slug: 'microphone-to-voice-frames', title: 'From microphone to audio frames', hook: 'Cut sound into 100 ms frames, then store each measurement as two bytes.', titleZh: '从麦克风到音频帧', hookZh: '把声音切成 100 ms 的帧，再把每次测量存成两个字节。', ready: true },
+  { part: 'dictation', slug: 'microphone-to-voice-frames', title: 'From microphone to audio frames', hook: 'Cut sound into frames, then filter, detect and level the model copy.', titleZh: '从麦克风到音频帧', hookZh: '把声音切成帧，再滤波、检测并调整模型副本的音量。', ready: true },
   { part: 'dictation', slug: 'speech-recognition-routes', title: 'Routes from sound to text', hook: 'Compare local, API and system speech recognition.', titleZh: '声音变文字的几条路', hookZh: '对照本机、API 和系统语音识别。', ready: false },
   { part: 'dictation', slug: 'language-model-connection', title: 'The language-model connection', hook: 'Separate model settings, text and the API key.', titleZh: '语言模型服务与钥匙串', hookZh: '分清模型设置、文本和 API key。', ready: false },
   { part: 'dictation', slug: 'compose-and-cleanup', title: 'The text workshop', hook: 'Assemble a cleanup request and follow its failure exits.', titleZh: '文字加工厂', hookZh: '组装整理请求，再看失败时走哪个出口。', ready: false },
