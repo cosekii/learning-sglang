@@ -349,3 +349,10 @@ $n$ is the sequence's current length: $n = 6$ on `␣Paris`'s step, $n = 7$ on `
 ### Next
 
 Chapter 4 names the two jobs **prefill** and **decode** and measures what limits each.
+
+### Further reading
+
+- [zero-to-sglang Part I Chapter 4: KV Cache — The Core Data Structure of Inference](https://zero-to-sglang.datawhale.cc/eng/part1/Chapter4_KV%20Cache%20The%20Core%20Data%20Structure%20of%20Inference.html)
+- [zero-to-sglang Part II Chapter 4: KV Cache Optimization](https://zero-to-sglang.datawhale.cc/eng/part2/Chapter4_KV-Cache-Optimization.html)
+- [The chapter's code walkthrough](https://zero-to-sglang.datawhale.cc/eng/part2/Chapter4_KV-Cache-Optimization_code.html)
+- Preview: [zero-to-sglang Part II Chapter 7: Paged KV Cache and Memory Management](https://zero-to-sglang.datawhale.cc/eng/part2/Chapter7_Paged-KV-Cache-and-Memory-Management.html)

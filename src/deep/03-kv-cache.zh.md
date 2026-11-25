@@ -363,6 +363,32 @@ $n$ 是序列当前的 token 数：`␣Paris` 那步 $n = 6$，`.` 那步 $n = 7
 - 第一步：很多列共用同一组矩阵，每读一个字节的权重就做很多次乘法。
 - 之后每步：只有一列的乘法，却仍要读整个 cache，而且（第 4 章会看到）还要读模型的全部权重。
 
+### 「省成线性」到底指什么
+
+设当前序列长度为 $T$，只看一层、一个 head，并把向量维度当作固定常数。没有 cache 时，每生成一个 token 都重算整个前缀；有 cache 时只算新列、读旧结果。
+
+| 工作 | 无 KV cache | 有 KV cache |
+|---|---:|---:|
+| 单步 K/V 投影 | $O(T)$ | $O(1)$ |
+| 连续 $n$ 步的累计 K/V 投影 | $O(n^2)$ | $O(n)$ |
+| 单步 attention | $O(T^2)$ | $O(T)$ |
+| 连续 $n$ 步的累计 attention | $O(n^3)$ | $O(n^2)$ |
+
+所以「线性」只描述被消除的**历史 K/V 重复投影**。有 cache 的单步 attention 仍随 $T$ 增长，累计 attention 仍是平方级；每步还要读取权重。这里比较渐近量级，不代替第 4 章的实际耗时测量。
+
+### 本章画到哪里
+
+图里的槽位编号是**逻辑位置**，不表示真实显存地址必须相邻。完整生命周期是「分配 → prefill 写入 → decode 读取和追加 → 请求结束后释放，或保留可复用前缀」。第 7 章讲物理页与释放，第 8 章讲前缀复用；本章不展开这两部分。
+
+KV cache 只保存各层的 key 和 value，不保存 attention 权重矩阵、最终 logits 或整段 hidden state。它们不在这张图的仓库里。
+
 ### 接下来
 
 第 4 章把这两种工作叫作 **prefill** 和 **decode**，并测量各自受什么限制。
+
+### 延伸阅读
+
+- [zero-to-sglang 第 1 部分第 4 章：推理的核心数据结构](https://zero-to-sglang.datawhale.cc/ch/part1/%E7%AC%AC4%E7%AB%A0_%E6%8E%A8%E7%90%86%E7%9A%84%E6%A0%B8%E5%BF%83%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%85%A5%E9%97%A8.html)
+- [zero-to-sglang 第 2 部分第 4 章：KV Cache 优化](https://zero-to-sglang.datawhale.cc/ch/part2/%E7%AC%AC4%E7%AB%A0_KVCache%E4%BC%98%E5%8C%96.html)
+- [同章代码走读](https://zero-to-sglang.datawhale.cc/ch/part2/%E7%AC%AC4%E7%AB%A0_KVCache%E4%BC%98%E5%8C%96_%E4%BB%A3%E7%A0%81.html)
+- 前瞻：[zero-to-sglang 第 2 部分第 7 章：PagedKVCache 与显存管理](https://zero-to-sglang.datawhale.cc/ch/part2/%E7%AC%AC7%E7%AB%A0_PagedKVCache%E4%B8%8E%E6%98%BE%E5%AD%98%E7%AE%A1%E7%90%86.html)

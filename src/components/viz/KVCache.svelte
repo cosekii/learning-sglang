@@ -39,7 +39,7 @@
     { n: 7, cached: 7, compute: [6], flyIn: true, store: true, attend: 6, caption: `Next token, same routine. One column of compute, one more slot, one read of the whole cache.`, captionZh: `下一个 token 还是只算 1 列、写 1 格。q₇ 读取全部 7 个 key 和 value。` },
     { n: 7, cached: 7, compute: [6], whyNotQ: true, caption: `Why not keep q too? Nobody asks for it later. A query is used on the step it's made, and its output is consumed right there.`, captionZh: `旧 q 以后没人读，所以不占 cache。每个 q 只在自己的那一步用一次。` },
     { n: 7, cached: 7, compute: [6], cost: true, caption: `The cache isn't free. Every token keeps a k and a v in each of Llama-3-8B's ${KV_HEADS}&nbsp;k,&nbsp;v&nbsp;heads (Ch. 2 Step 14), in every layer. That's ${KB_PER_TOKEN} KB per token, per sequence.`, captionZh: `每个 token 存 ${KB_PER_TOKEN} KiB，7 个共 ${7 * KB_PER_TOKEN} KiB。8,192 个约是 7 个的 1,170 倍，共 1 GiB。` },
-    { n: 7, cached: 7, compute: [6], cost: true, contrast: true, caption: `Look at the two kinds of step. The first crunched five tokens and wrote five slots. Every step since computes one token and reads the whole cache. Two very different jobs.`, captionZh: `看这两种步。第一步算了五个 token、写了五个槽位。之后每一步只算一个 token，却要读整个 cache。两种很不一样的工作。` },
+    { n: 7, cached: 7, compute: [6], cost: true, contrast: true, caption: `Look at the two kinds of step. The first crunched five tokens and wrote five slots. Every step since computes one token and reads the whole cache. Two very different jobs.`, captionZh: `第一次算 5 个、写 5 格。以后每步算 1 个、写 1 格，读完全部 cache。` },
   ];
 
   let step = $state(0);
@@ -83,7 +83,7 @@
     query.addEventListener('change', update);
     return () => query.removeEventListener('change', update);
   });
-  const phoneCustom = $derived(phone && $lang === 'zh' && step <= 8);
+  const phoneCustom = $derived(phone && $lang === 'zh');
 </script>
 
 <figure class="viz">
@@ -240,6 +240,22 @@
         <text x="180" y="474" text-anchor="middle">8,192 ÷ 7 ≈ 1,170</text>
         <text x="180" y="505" text-anchor="middle">token 数约 1,170 倍，cache 也约 1,170 倍</text>
         <text x="180" y="565" text-anchor="middle">KiB、GiB 按 1,024 进制换算</text>
+      {:else if phoneCustom && step === 9}
+        <text x="180" y="30" text-anchor="middle" class="ph-title">第一次和以后每步，工作不一样</text>
+        <text x="180" y="55" text-anchor="middle">同一个 cache，两种读写方式</text>
+        <rect x="20" y="80" width="320" height="170" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="180" y="112" text-anchor="middle" class="ph-strong">第一次：5 个 prompt token</text>
+        <text x="60" y="153">计算：5 列</text>
+        <text x="60" y="187">写入：5 格</text>
+        <text x="60" y="221">读旧 cache：0 格</text>
+        <rect x="20" y="278" width="320" height="190" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x="180" y="310" text-anchor="middle" class="ph-strong">以后每步：1 个新 token</text>
+        <text x="60" y="351">计算：1 列</text>
+        <text x="60" y="385">写入：1 格</text>
+        <text x="60" y="419">读取：全部 n 组 k、v</text>
+        <text x="60" y="451">n = 6 读 6 组；n = 7 读 7 组</text>
+        <text x="180" y="520" text-anchor="middle">每步只算 1 列，但读取会随 n 增加</text>
+        <text x="180" y="565" text-anchor="middle">下一章分别测量这两种工作</text>
       {:else}
       <!-- Contrast brackets: first step vs every step after -->
       {#if cur.contrast}
