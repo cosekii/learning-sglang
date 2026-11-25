@@ -4,6 +4,8 @@
 
 ## 本轮记录
 
+- 14:05 完成 Learning ML Systems 第 4 章全部 7 步：通信代价、SUM all-reduce、进程组、NCCL、物理链路、Ring 和拓扑导致的依赖等待。全章 **7/7 步易读 12/12**，中英原分均 **24/24**，平均 **24.00/24**，**0 内容洞、0 最终显示洞**。
+- 逐步提交并推送；英文手机首轮发现 18 个 SVG 标签出界，缩短后中英三种宽度均通过。最终图为 14 张双语桌面、14 张 390 px 双语手机和 14 张双语深入讲解，主线程已逐张打开冷读；独立冷读 subagent 因 API key 不可用未运行。`build`、本章 `transcript`、全章 `readability`、中英本章 `mobile`、`deep-check 04`、本章 `zh-check` 和 `git diff --check` 通过；章节与六个 zero-to-sglang 延伸阅读链接均为 HTTP 200。材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch04-20261125-1340/final/`、`checks/`。本轮只跑本章检查，未跑全站回归。本轮类型：**新书**；下一普通轮按交替规则修旧。
 - 13:30 修旧 Learning SGLang 第 3 章全部 10 步：保留旧 k、v，逐格写入和读取，解释不存 q、显存账及第一次与以后每步的工作差异。全章中文 **10/10 步易读 12/12**，原分平均 **24.00/24**，**0 内容洞、0 最终显示洞**。
 - 逐步提交并推送；`build`、本章 `transcript`、本章中文三种宽度 `mobile`、第 1、6、7、9、10 步中文字号、`deep-check 03`、本章 `zh-check` 和 `git diff --check` 通过。全章 `readability` 中文 0 问题，保留 7 个受保护英文 R4 机械问题。独立冷读先发现 8 个内容洞及第 9、10 步硬门失败，整改后复读为 10/10 步中文 12/12、原分均 24/24，必须修项为无。最终图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch03-repair-20261125-1252/final/`、`checks/`。本轮只跑本章检查，未跑全站回归。本轮类型：**修旧**；下一普通轮做新书。
 - 12:50 完成 Inside Voxt 第 4 章全部 7 步：三条识别路线、文件型整段识别、流式整份草稿替换、安静处分块、按序合并、本机 Omni 预览后的 Final、原话交接。全章 **7/7 步易读 12/12**，平均 **23.86/24**，**0 内容洞、0 最终显示洞**；第 1 步仅原 #1 动机为 1。
@@ -95,14 +97,14 @@
 
 ## Learning ML Systems
 
-规划完成：`docs/plan-ml-sys.md` 共 3 部分、16 章；第 1 章已制作 7 步并完成，第 2 章已制作 2 步并完成，第 3 章已制作 6 步并完成。第 11 章须先补齐训推不一致的原始来源，缺源时先跳过。
+规划完成：`docs/plan-ml-sys.md` 共 3 部分、16 章；第 1 章已制作 7 步并完成，第 2 章已制作 2 步并完成，第 3 章已制作 6 步并完成，第 4 章已制作 7 步并完成。第 11 章须先补齐训推不一致的原始来源，缺源时先跳过。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
 | 01 | 01-measure-inference | 完成：7/7 步易读满分 | 24.00 |
 | 02 | 02-inference-memory-budget | 完成：2/2 步易读满分 | 24.00 |
 | 03 | 03-hybrid-state-cache | 完成：6/6 步易读满分 | 24.00 |
-| 04 | 04-gpu-communication | 规划 | — |
+| 04 | 04-gpu-communication | 完成：7/7 步易读满分 | 24.00 |
 | 05 | 05-distributed-serving | 规划 | — |
 | 06 | 06-slime-rollout-loop | 规划 | — |
 | 07 | 07-weight-updates | 规划 | — |
