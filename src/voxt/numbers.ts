@@ -95,3 +95,9 @@ export const VOXT_OMNI_PREVIEW_TIMES_MS = Array.from(
 
 // One selected recognition route hands off one raw text result.
 export const VOXT_ASR_RAW_RESULT_COUNT = 1;
+
+// Constructed language-model request: one text, one model name and one API key.
+export const VOXT_LLM_TEXT_COUNT = 1;
+export const VOXT_LLM_MODEL_COUNT = 1;
+export const VOXT_LLM_KEY_COUNT = 1;
+export const VOXT_LLM_REQUEST_ITEM_COUNT = VOXT_LLM_TEXT_COUNT + VOXT_LLM_MODEL_COUNT + VOXT_LLM_KEY_COUNT;
