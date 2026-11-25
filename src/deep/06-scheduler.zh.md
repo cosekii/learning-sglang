@@ -179,6 +179,7 @@ gap 为什么多一个 $t_{\text{mem}}$：上一个 token 在到达时出来，p
 - 下行「新来者们」：一个蓝色长块「prefill · 3 prompts · 4,600 tokens」。
 - 竖虚线「到达」：三个 prompt 都在 14.3 ms 到达。
 - 红色括号「79 ms 没有 token」；数字块 79 ms（红框）和 74 ms。
+- 中文手机图用同一个蓝块标出三个 prompt 合计 4,600 token，旁边橙块表示之后的 decode；白圈是三个新来者共同的首个 token 时刻，底部写出 79 ms = 74 ms + 4.8 ms。
 
 ### 代入图上的数
 
