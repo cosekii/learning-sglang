@@ -4,11 +4,11 @@
 
 ## 本轮记录
 
-- 本轮新书：Inside Voxt 第 2 章第 2 步，用同布局对照 Accessibility 关／开：同一个右 Option 分别得到 0／1 条按键消息，Go app 分别保持空闲／开始听写；章名改为直述，并补齐双语深入讲解和源码边界。
-- 首次独立冷读为易读 **9/12**、**5 洞**；删去章名比喻及其他权限、监听失败的前向岔路后，最终独立冷读为 **12/12**、**0 洞**。原分 **23/24**，仅「没允许／未允许／已允许」的中文自然度扣 1 分；章均分 **24.00→23.50**。
-- `build`、本章 `transcript`、本步 `readability`、全站及本章三种宽度的中英手机布局、本步中文手机字号、`deep-check 02`、`zh-check` 和 `git diff --check` 均通过；全站另有 **576** 个既有小字视图仅作审计。
-- 中英桌面、360／390／430 px 中文手机和双语深入讲解截图均已打开核对。截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch02-s02-20261124-1751/final/` 和 `checks/`。
-- 本轮类型：**新书**；下一普通轮按新旧交替做 **修旧**。
+- 本轮修旧：Inside Voxt 第 2 章第 2 步，把中文 caption、图内状态和中文深入讲解里的「没允许／未允许／已允许」改为「未开启／已开启」，机制、数字和英文内容不变。
+- 改前易读 **12/12**、原分 **23/24**、**0 洞**；改后独立冷读为易读 **12/12**、原分 **24/24**、**0 洞**，#11 中文自然度恢复满分，章均分 **23.50→24.00**。
+- `build`、本章 `transcript`、本步 `readability`、本章三种宽度的中英手机布局、本步中文手机字号、全站 `WAIT=100 mobile`、`deep-check 02`、`zh-check` 和 `git diff --check` 均通过；全站另有 **576** 个既有小字视图仅作审计。
+- 中英桌面、360／390／430 px 中文手机和中文深入讲解截图均已打开核对；英文截图改前后 SHA-256 均为 `b875a9570d563b6ae396f331c7e94986025304818efd7e56b438094bc639ad74`。截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch02-s02-wording-20261124-1821/final/` 和 `checks/`。
+- 本轮类型：**修旧**；下一普通轮按三本新书轮流做 **Learning SGLang Omni 第 3 章第 1 步**。
 
 ## Learning SGLang
 
@@ -94,7 +94,7 @@
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
 | 01 | one-dictation | 完成：4/4 步易读满分 | 24.00 |
-| 02 | helper-permissions-hotkeys | 在做第 3 步；前 2 步易读满分 | 23.50 |
+| 02 | helper-permissions-hotkeys | 在做第 3 步；前 2 步易读满分 | 24.00 |
 | 03 | microphone-to-voice-frames | 规划 | — |
 | 04 | speech-recognition-routes | 规划 | — |
 | 05 | language-model-connection | 规划 | — |

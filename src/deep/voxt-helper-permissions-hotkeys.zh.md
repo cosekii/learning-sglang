@@ -54,7 +54,7 @@ helper 要能看见全局按键，需要 macOS 允许。下一步把权限检查
 
 ## 第 2 步 · Accessibility 决定按键路线能否开始
 
-> **一句话：** Accessibility 是 Mac 的一项设置；没允许时 helper 收不到全局按键，允许并成功接收后，同一个右 Option 才能沿第 1 步的路线变成一条消息。
+> **一句话：** Accessibility 是 Mac 的一项设置；未开启时 helper 收不到全局按键，开启并成功接收后，同一个右 Option 才能沿第 1 步的路线变成一条消息。
 
 ### 图上是什么
 

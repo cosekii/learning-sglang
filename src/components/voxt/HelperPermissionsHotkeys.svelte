@@ -13,7 +13,7 @@
     captionZh: '右 Option 变成 JSON 消息。Go app 读后启动听写。',
   }, {
     caption: 'Accessibility lets the helper see keys you press in other apps. Without it, this route stops.',
-    captionZh: 'Accessibility 让 helper 看见你在其他 app 按的键。没允许时，这条路线断开。',
+    captionZh: 'Accessibility 让 helper 看见你在其他 app 按的键。未开启时，这条路线断开。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -118,7 +118,7 @@
           {@const helperW = phone ? 68 : 82}
           <g transform={`translate(${panel.x} ${panel.y})`}>
             <rect width={phone ? 280 : 330} height={phone ? 190 : 210} rx="12" fill="var(--bg)" stroke="var(--line)" />
-            <text x="16" y="24" class="label">{panel.allowed ? t('ACCESSIBILITY: ON', '已允许 Accessibility') : t('ACCESSIBILITY: OFF', '未允许 Accessibility')}</text>
+            <text x="16" y="24" class="label">{panel.allowed ? t('ACCESSIBILITY: ON', '已开启 Accessibility') : t('ACCESSIBILITY: OFF', '未开启 Accessibility')}</text>
 
             <rect x={keyX} y="48" width={keyW} height="68" rx="9" fill="var(--bg)" stroke="var(--line)" />
             <text x={keyX + keyW / 2} y="68" text-anchor="middle" class="label">{t('YOU TAP', '你按一下')}</text>
