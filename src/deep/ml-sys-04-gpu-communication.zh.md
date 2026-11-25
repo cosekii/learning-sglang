@@ -66,3 +66,37 @@ $$y_0=1+3+5+7=16,\qquad y_1=2+4+6+8=20$$
 这些 GPU 由谁代表、程序怎样知道一共有多少参与者？下一步看进程组。
 
 来源：`Awesome-ML-SYS-Tutorial/torch/torch-distributed/readme.md:510-526`；`zero-to-sglang/course-material/ch/part2/第9章_多进程与张量并行.md:82-105`。
+
+## 第 3 步 · 进程组给四个参与者编号
+
+**一句话。** 本例让四个进程分别驱动四张 GPU，`rank` 标识进程，`world size` 记录参与者总数。
+
+### 图上是什么
+
+- 虚线框是一个进程组，负责组织这些已有进程交换数据。
+- 每一行从进程指向它使用的 GPU；进程旁的 `rank 0` 到 `rank 3` 是组内编号。
+- 四行都参与同一个 all-reduce，所以 `world size = 4`。张量沿用第 2 步，表示每个进程仍持有自己的输入。
+- 一进程一卡是这份示例代码的安排，不是所有框架和所有部署的硬性要求。
+
+### 公式与符号
+
+$$N=\texttt{world\_size},\qquad r=\texttt{rank}\in\{0,1,\ldots,N-1\}$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $N$ | 进程组里的进程总数 | 本例 `world size = 4` |
+| $r$ | 当前进程在组内的编号 | 本例 0–3 |
+| $\texttt{world\_size}$ | 示例代码传给初始化接口的总数 | `torch.distributed` 示例 |
+| $\texttt{rank}$ | 示例代码传给初始化接口的编号 | 同上 |
+
+### 代入图上的数
+
+示例代码用 `torch.cuda.set_device(rank)` 选择 GPU，再以 `world_size` 启动相应数量的进程。本例 $N=4$，因此有 rank 0、1、2、3 四行；它们对应第 2 步的四份输入，而不是一个进程复制成四份输出。
+
+进程组是通信的组织边界。这里只画默认组，不展开 `new_group` 创建子组，也不展开控制面的请求分发。
+
+### 接下来
+
+每个进程都调用同一个集合操作时，调用怎样落到 GPU 通信？下一步跟进软件栈。
+
+来源：`Awesome-ML-SYS-Tutorial/torch/torch-distributed/readme.md:13-24,57-89,118-141`。

@@ -66,3 +66,37 @@ Every GPU therefore receives $y=[16,20]$. `Reduce` returns the total to one dest
 Which processes represent these GPUs, and how does the program know the participant count? The next step draws the process group.
 
 Sources: `Awesome-ML-SYS-Tutorial/torch/torch-distributed/readme.md:510-526`; `zero-to-sglang/course-material/ch/part2/第9章_多进程与张量并行.md:82-105`.
+
+## Step 3 · The process group numbers four participants
+
+**One sentence.** This example uses four processes to drive four GPUs, with `rank` identifying each process and `world size` counting them.
+
+### On the stage
+
+- The dashed box is a process group, which organizes existing processes so they can exchange data.
+- Each row connects a process to its GPU. `rank 0` through `rank 3` are their identifiers within the group.
+- All four rows join the same all-reduce, so `world size = 4`. The tensors from Step 2 show that each process still owns a separate input.
+- One process per GPU is this example's mapping, not a requirement for every framework or deployment.
+
+### Formula and symbols
+
+$$N=\texttt{world\_size},\qquad r=\texttt{rank}\in\{0,1,\ldots,N-1\}$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $N$ | Total processes in the group | This example: `world size = 4` |
+| $r$ | Process identifier within the group | 0–3 here |
+| $\texttt{world\_size}$ | Participant count passed to initialization | `torch.distributed` example |
+| $\texttt{rank}$ | Process identifier passed to initialization | Same example |
+
+### The numbers on the stage
+
+The sample selects a device with `torch.cuda.set_device(rank)` and starts `world_size` processes. Here $N=4$, giving ranks 0, 1, 2 and 3. These are the four owners of Step 2's separate inputs, not one process copied into four outputs.
+
+A process group is the communication boundary. This chapter does not expand `new_group`, child groups or control-plane request routing.
+
+### Next
+
+Every process calls the same collective. The next step follows that call into the GPU communication software.
+
+Source: `Awesome-ML-SYS-Tutorial/torch/torch-distributed/readme.md:13-24,57-89,118-141`.

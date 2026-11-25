@@ -14,6 +14,9 @@
   }, {
     caption: `Each GPU computes a two-number tensor. All-reduce adds the four tensors and gives every GPU ${COMM_TENSOR_TEXT(COMM_REDUCED_TENSOR)}.`,
     captionZh: `每张卡算出自己的两格张量。all-reduce 求和，让四张卡都得到 ${COMM_TENSOR_TEXT(COMM_REDUCED_TENSOR)}。`,
+  }, {
+    caption: `One process drives each GPU in this example. Rank names the process; world size counts all ${COMM_WORLD_SIZE}.`,
+    captionZh: `这个例子里，一个进程管一张 GPU。rank 是进程编号，world size 是总数 ${COMM_WORLD_SIZE}。`,
   }];
   let step = $state(0);
   $effect(() => {
@@ -101,6 +104,40 @@
           <text x="150" y="462" text-anchor="middle" class="small">{t('blue = local part · orange = shared total', '蓝 = 自己的部分 · 橙 = 共同结果')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Constructed values; the operation is SUM.', '构造数值；这里的归约操作是求和。')}</text>
+      {:else if step === 2}
+        <text x={phone ? 18 : 36} y="30" class="title">{t('One process group · four GPU workers', '一个进程组 · 四个 GPU 工作者')}</text>
+        <text x={phone ? 18 : 36} y="55" class="label">{t('rank = process number · world size = process count', 'rank = 进程编号 · world size = 进程总数')}</text>
+        {#if !phone}
+          <rect x="40" y="72" width="640" height="264" rx="15" fill="var(--bg)" stroke="var(--accent)" stroke-dasharray="7 5" />
+          <text x="58" y="96" class="small strong">{t('process group', '进程组')}</text>
+          {#each COMM_PARTIAL_TENSORS as tensor, i}
+            <rect x="70" y={108 + i * 53} width="210" height="42" rx="8" fill="var(--panel)" stroke="var(--line)" />
+            <text x="88" y={135 + i * 53} class="small strong">{t('process', '进程')} {i} · rank {i}</text>
+            <line x1="280" y1={129 + i * 53} x2="425" y2={129 + i * 53} stroke="var(--accent)" stroke-width="2" />
+            <path d={`M425,${129 + i * 53} l-10,-6 v12 z`} fill="var(--accent)" />
+            <rect x="435" y={108 + i * 53} width="210" height="42" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="453" y={135 + i * 53} class="small strong">GPU {i} · {COMM_TENSOR_TEXT(tensor)}</text>
+          {/each}
+          <rect x="200" y="351" width="320" height="37" rx="18" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="360" y="375" text-anchor="middle" class="result">world size = {COMM_WORLD_SIZE}</text>
+        {:else}
+          <rect x="12" y="70" width="276" height="326" rx="14" fill="var(--bg)" stroke="var(--accent)" stroke-dasharray="7 5" />
+          <text x="26" y="93" class="small strong">{t('process group', '进程组')}</text>
+          {#each COMM_PARTIAL_TENSORS as tensor, i}
+            <rect x="25" y={105 + i * 67} width="108" height="49" rx="8" fill="var(--panel)" stroke="var(--line)" />
+            <text x="79" y={125 + i * 67} text-anchor="middle" class="small strong">{t('process', '进程')} {i}</text>
+            <text x="79" y={145 + i * 67} text-anchor="middle" class="small">rank {i}</text>
+            <line x1="133" y1={129 + i * 67} x2="162" y2={129 + i * 67} stroke="var(--accent)" stroke-width="2" />
+            <path d={`M162,${129 + i * 67} l-8,-5 v10 z`} fill="var(--accent)" />
+            <rect x="170" y={105 + i * 67} width="103" height="49" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="221" y={125 + i * 67} text-anchor="middle" class="small strong">GPU {i}</text>
+            <text x="221" y={145 + i * 67} text-anchor="middle" class="small">{COMM_TENSOR_TEXT(tensor)}</text>
+          {/each}
+          <rect x="45" y="415" width="210" height="39" rx="19" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="150" y="440" text-anchor="middle" class="result">world size = {COMM_WORLD_SIZE}</text>
+          <text x="150" y="477" text-anchor="middle" class="small">{t('one process per GPU in this example', '本例：一个进程对应一张 GPU')}</text>
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('The one-process-per-GPU mapping is an example, not a requirement.', '一进程一卡是本例安排，不是唯一做法。')}</text>
       {/if}
     </svg>
   </div>

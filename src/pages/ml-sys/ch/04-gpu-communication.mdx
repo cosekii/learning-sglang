@@ -17,6 +17,8 @@ Step 1 is a constructed timing example, not a hardware measurement. It illustrat
 
 Step 2 uses constructed tensors to show SUM all-reduce: corresponding positions are added and every participant receives the result. The operation follows `Awesome-ML-SYS-Tutorial/torch/torch-distributed/readme.md:510-526` and zero-to-sglang Part II Chapter 9 §3.1.
 
+Step 3 follows the process-group example in `torch-distributed/readme.md:13-24,57-89,118-141`. Rank identifies a process and world size counts the participants. One process per GPU is the example's mapping, not a universal requirement.
+
 </details>
 
 <details class="i18n-zh">
@@ -25,5 +27,7 @@ Step 2 uses constructed tensors to show SUM all-reduce: corresponding positions 
 第 1 步是构造的时间例子，不是硬件实测。它对应 zero-to-sglang 第 3 部分第 4 章 §2.1 的权衡：拆分工作可以减少计算时间，通信的启动、传输和同步也会增加等待。本章不声称 8 张 GPU 通常比 4 张慢。
 
 第 2 步用构造张量说明 SUM all-reduce：对应位置相加，每个参与者都拿到结果。操作定义依据 `Awesome-ML-SYS-Tutorial/torch/torch-distributed/readme.md:510-526` 和 zero-to-sglang 第 2 部分第 9 章 §3.1。
+
+第 3 步沿用 `torch-distributed/readme.md:13-24,57-89,118-141` 的进程组例子。rank 标识进程，world size 是参与者总数；一进程一卡只是示例安排，不是通用要求。
 
 </details>
