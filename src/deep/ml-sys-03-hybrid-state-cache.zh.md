@@ -135,3 +135,38 @@ $$5{,}558-4{,}536=1{,}022\ \text{个位置}\quad\Longrightarrow\quad C\approx1{,
 全注意力本来可以在 5,514 裁剪，recurrent state 却要到 4,536 恢复。下一步看 hybrid 模型怎样让两类 layer 对齐。
 
 来源：`Awesome-ML-SYS-Tutorial/engineer/hybrid-prefix-cache/readme.md:139-165,202-221,385-458`；llama.cpp `7e4c0a96880dae4fc4268ad441f8a6446bd5460a` 的 `tools/server/server-context.cpp:3253-3288`。
+
+## 第 5 步 · hybrid 请求对齐到同一个恢复点
+
+**一句话。** SGLang 可以沿 radix 树匹配到更深的位置，但只返回最后一个仍带 Mamba state 的节点之前的 KV。
+
+### 图上是什么
+
+- $M=5{,}514$ 是逐 token 匹配到达的位置，全注意力的 KV 本来能复用到这里；$P=4{,}536$ 是匹配路径上最新仍存 Mamba state 的位置。
+- 橙色段从 $P$ 一直到新 prompt 末尾 $E=5{,}558$。hybrid 结果行把这一段作为共同 prefill 范围，不让两类 layer 各选一个起点。
+- 数字沿用上一步的 llama.cpp 日志，只为对照位置关系；本步不是一条 SGLang 实测日志。源码事实是返回数组的截断规则。
+
+### 公式与符号
+
+$$B=P,\qquad R=E-P,\qquad P\le M\le E$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $B$ | 本例的 `best_value_len`，即可返回的 KV 前缀长度 | 本步示意，$P=4{,}536$ |
+| $P$ | 匹配路径上最新仍带 `mamba_value` 的位置 | `_match_prefix_helper` 的候选更新条件 |
+| $M$ | 逐 token 匹配到达的位置 | 前一步的位置例，5,514 |
+| $R$ | 共同恢复点之后的 prefill 位置数 | $E-P$ |
+
+### 代入图上的数
+
+$$R=5{,}558-4{,}536=1{,}022$$
+
+`_match_prefix_helper` 只在 `node.mamba_value is not None` 时更新 `best_value_len` 和 `best_last_node`。即使随后还能继续匹配 token，`_match_post_processor` 最后仍执行 `value = value[:best_value_len]`。所以图里的返回前缀停在 $P$，不是停在更深的 $M$。
+
+这并不改变全注意力 KV 的逐 token 语义，也不表示所有 hybrid 引擎都只能这样调度；它说明这份 SGLang 实现怎样为一次请求选出两类 layer 共用的前缀。
+
+### 接下来
+
+最后一个问题是谁来保存这些节点，以及 state 被淘汰后 token 路径是否还在。下一步看同一棵树上的墓碑节点。
+
+来源：SGLang `385903b0acd69455cb688b5cb5e3afcc0fd91598` 的 `python/sglang/srt/mem_cache/mamba_radix_cache.py:1086-1126,1137-1206`；`Awesome-ML-SYS-Tutorial/engineer/hybrid-prefix-cache/readme.md:624-658`。

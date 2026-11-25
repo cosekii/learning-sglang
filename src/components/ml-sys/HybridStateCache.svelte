@@ -20,6 +20,9 @@
   }, {
     caption: `A checkpoint copies the whole state at one position. Restore at ${HYBRID_LOG_CHECKPOINT_TOKENS.toLocaleString()} and replay about ${HYBRID_LOG_RECOMPUTE_APPROX.toLocaleString()} tokens to reach ${HYBRID_LOG_END_TOKENS.toLocaleString()}.`,
     captionZh: `checkpoint 把某个位置的整份 state 抄下来。从 ${HYBRID_LOG_CHECKPOINT_TOKENS.toLocaleString()} 恢复，再重放约 ${HYBRID_LOG_RECOMPUTE_APPROX.toLocaleString()} 个 token 到 ${HYBRID_LOG_END_TOKENS.toLocaleString()}。`,
+  }, {
+    caption: 'A hybrid request needs one resume point for both layer kinds. SGLang truncates reusable KV to the newest node that still has Mamba state.',
+    captionZh: 'hybrid 请求要为两类 layer 选一个共同恢复点。SGLang 把可复用 KV 截到最新仍存 Mamba state 的节点。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -41,7 +44,7 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={t(`At num_batch ${HYBRID_NUM_BATCH_DEFAULT}, a short request takes ${HYBRID_SHORT_WAIT_DEFAULT_S} seconds and recomputes ${HYBRID_RECOMPUTE_DEFAULT_MIN} to ${HYBRID_RECOMPUTE_DEFAULT_MAX} tokens. At ${HYBRID_NUM_BATCH_TUNED}, it takes ${HYBRID_SHORT_WAIT_TUNED_S} seconds and recomputes ${HYBRID_RECOMPUTE_TUNED_MIN} to ${HYBRID_RECOMPUTE_TUNED_MAX} tokens. Cold startup takes longer with the second setting.`, `num_batch 为 ${HYBRID_NUM_BATCH_DEFAULT} 时，短请求用 ${HYBRID_SHORT_WAIT_DEFAULT_S} 秒并重算 ${HYBRID_RECOMPUTE_DEFAULT_MIN} 到 ${HYBRID_RECOMPUTE_DEFAULT_MAX} 个 token。调到 ${HYBRID_NUM_BATCH_TUNED} 后用 ${HYBRID_SHORT_WAIT_TUNED_S} 秒，重算 ${HYBRID_RECOMPUTE_TUNED_MIN} 到 ${HYBRID_RECOMPUTE_TUNED_MAX} 个 token，但冷启动更慢。`)}>
+    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={t('Compare per-token attention KV with recurrent-state snapshots, replay and hybrid prefix matching.', '对照逐 token 注意力 KV 与 recurrent state 的快照、重放和 hybrid 前缀匹配。')}>
       {#if step === 0}
       {#if !phone}
         <text x="38" y="30" class="title">{t('One setting changes the short-request wait', '一个设置改变短请求等待')}</text>
@@ -210,7 +213,7 @@
           <text x="150" y="374" text-anchor="middle" class="small">{t('current state already includes old 40', '当前 state 已包含旧 40')}</text>
         {/if}
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('Earlier states require separately saved copies.', '更早的 state 需要另外保存副本。')}</text>
-      {:else}
+      {:else if step === 3}
         {#if !phone}
           <text x="38" y="30" class="title">{t('Checkpoint · copy the whole state at one position', 'checkpoint · 抄下某个位置的整份 state')}</text>
           <text x="38" y="55" class="label">{t('restore the newest copy that does not pass the token match', '恢复不越过 token 匹配位置的最新副本')}</text>
@@ -273,8 +276,65 @@
           <text x="150" y="366" text-anchor="middle" class="small">{t('then replay to the new prompt end', '再重放到新 prompt 末尾')}</text>
         {/if}
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('Positions are schematic; 1,022 is position arithmetic.', '位置间距是示意；1,022 是位置算式。')}</text>
+      {:else}
+        {#if !phone}
+          <text x="38" y="30" class="title">{t('Hybrid · choose one common resume point', 'hybrid · 选一个共同恢复点')}</text>
+          <text x="38" y="55" class="label">{t('full-attention layers + recurrent layers · one request', '全注意力 layer + recurrent layer · 同一个请求')}</text>
+          <text x="230" y="86" text-anchor="middle" class="batch">P · {HYBRID_LOG_CHECKPOINT_TOKENS.toLocaleString()}</text>
+          <text x="480" y="86" text-anchor="middle" class="batch">M · {HYBRID_LOG_MATCH_TOKENS.toLocaleString()}</text>
+          <text x="640" y="86" text-anchor="middle" class="batch">E · {HYBRID_LOG_END_TOKENS.toLocaleString()}</text>
+
+          <text x="40" y="126" class="small strong">{t('full-attention layers', '全注意力 layer')}</text>
+          <rect x="170" y="103" width="310" height="30" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <rect x="480" y="103" width="160" height="30" rx="5" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="325" y="123" text-anchor="middle" class="small">{t('KV can reuse through M', 'KV 可复用到 M')}</text>
+          <text x="560" y="123" text-anchor="middle" class="small">{HYBRID_LOG_NEW_TOKENS} {t('new', '新增')}</text>
+          <text x="360" y="157" text-anchor="middle" class="small">{t('token matching reaches 5,514', 'token 匹配走到 5,514')}</text>
+
+          <text x="40" y="204" class="small strong">{t('recurrent layers', 'recurrent layer')}</text>
+          <line x1="230" y1="190" x2="640" y2="190" stroke="var(--gen)" stroke-width="4" />
+          <path d="M640,190 l-12,-7 v14 z" fill="var(--gen)" />
+          <rect x="194" y="169" width="72" height="42" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" stroke-width="2" />
+          <text x="230" y="195" text-anchor="middle" class="small strong">{t('state P', 'state P')}</text>
+          <rect x="455" y="174" width="50" height="32" rx="6" fill="var(--bg)" stroke="var(--eos)" stroke-dasharray="5 3" />
+          <path d="M466 181 l16 16 M482 181 l-16 16" stroke="var(--eos)" stroke-width="2" />
+          <text x="435" y="234" text-anchor="middle" class="small">{t('newest surviving state at P · none at M', '最新存留 state 在 P · M 没有')}</text>
+
+          <text x="40" y="287" class="small strong">{t('hybrid match result', 'hybrid 匹配结果')}</text>
+          <rect x="170" y="260" width="60" height="34" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <rect x="230" y="260" width="410" height="34" rx="5" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="435" y="282" text-anchor="middle" class="small strong">{t('resume at P · compute through E', '从 P 恢复 · 计算到 E')}</text>
+          <text x="360" y="328" text-anchor="middle" class="result">value[:best_value_len] → P = {HYBRID_LOG_CHECKPOINT_TOKENS.toLocaleString()}</text>
+          <text x="360" y="355" text-anchor="middle" class="small">E − P = {HYBRID_LOG_REPLAY_POSITIONS.toLocaleString()} {t('positions to prefill', '个位置要 prefill')}</text>
+        {:else}
+          <text x="18" y="27" class="title">{t('Hybrid', 'hybrid')}</text>
+          <text x="18" y="51" class="small">{t('one resume point for both layer kinds', '两类 layer 共用一个恢复点')}</text>
+          <text x="70" y="82" text-anchor="middle" class="batch">P · {HYBRID_LOG_CHECKPOINT_TOKENS.toLocaleString()}</text>
+          <text x="180" y="82" text-anchor="middle" class="batch">M · {HYBRID_LOG_MATCH_TOKENS.toLocaleString()}</text>
+          <text x="260" y="82" text-anchor="middle" class="batch">E · {HYBRID_LOG_END_TOKENS.toLocaleString()}</text>
+
+          <text x="20" y="112" class="small strong">{t('full attention', '全注意力')}</text>
+          <rect x="30" y="124" width="150" height="26" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <rect x="180" y="124" width="90" height="26" rx="5" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="150" y="172" text-anchor="middle" class="small">{t('KV can reuse through M', 'KV 可复用到 M')}</text>
+
+          <text x="20" y="207" class="small strong">{t('recurrent state', 'recurrent state')}</text>
+          <line x1="70" y1="226" x2="265" y2="226" stroke="var(--gen)" stroke-width="4" />
+          <path d="M265,226 l-11,-7 v14 z" fill="var(--gen)" />
+          <rect x="40" y="207" width="60" height="38" rx="7" fill="var(--gen-soft)" stroke="var(--gen)" stroke-width="2" />
+          <text x="70" y="231" text-anchor="middle" class="small">{t('state P', 'state P')}</text>
+          <text x="150" y="267" text-anchor="middle" class="small">{t('newest state at P · none at M', '最新 state 在 P · M 没有')}</text>
+
+          <text x="20" y="301" class="small strong">{t('hybrid result', 'hybrid 结果')}</text>
+          <rect x="30" y="312" width="40" height="29" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <rect x="70" y="312" width="200" height="29" rx="5" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="170" y="332" text-anchor="middle" class="small">{t('resume P → compute E', '恢复 P → 算到 E')}</text>
+          <text x="150" y="374" text-anchor="middle" class="result">prefix ends at P</text>
+          <text x="150" y="401" text-anchor="middle" class="small">E − P = {HYBRID_LOG_REPLAY_POSITIONS.toLocaleString()} {t('positions', '个位置')}</text>
+        {/if}
+        <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">value = value[:best_value_len]</text>
       {/if}
-      <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{step === 0 ? t('Selected article measurements; not this computer.', '选自原文实测，不是本机实测。') : step === 1 ? t('Simplified article example; Ch. 8 Steps 2–3 covers matching.', '原文简化例；匹配见 Ch. 8 Steps 2–3。') : step === 2 ? t('llama.cpp: previous per-token states are not preserved here.', 'llama.cpp：这里没有保存此前的逐 token state。') : t('Logged article example; recomputation stays approximate.', '原文日志例；重算 token 保留约数。')}</text>
+      <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{step === 0 ? t('Selected article measurements; not this computer.', '选自原文实测，不是本机实测。') : step === 1 ? t('Simplified article example; Ch. 8 Steps 2–3 covers matching.', '原文简化例；匹配见 Ch. 8 Steps 2–3。') : step === 2 ? t('llama.cpp: previous per-token states are not preserved here.', 'llama.cpp：这里没有保存此前的逐 token state。') : step === 3 ? t('Logged article example; recomputation stays approximate.', '原文日志例；重算 token 保留约数。') : t('Pinned SGLang match; earlier positions reused as a schematic.', '固定版 SGLang 匹配逻辑；沿用前面位置作示意。')}</text>
     </svg>
   </div>
   <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh}

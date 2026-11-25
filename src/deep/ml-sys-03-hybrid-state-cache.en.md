@@ -135,3 +135,38 @@ The article documents two unresolved gaps in its exact `num_batch` reconstructio
 Full attention could truncate at 5,514, while recurrent state must restore at 4,536. The next step aligns both layer kinds in one hybrid model.
 
 Sources: `Awesome-ML-SYS-Tutorial/engineer/hybrid-prefix-cache/readme.md:139-165,202-221,385-458`; llama.cpp `7e4c0a96880dae4fc4268ad441f8a6446bd5460a`, `tools/server/server-context.cpp:3253-3288`.
+
+## Step 5 · A hybrid request aligns on one resume point
+
+**One sentence.** SGLang can match farther down the radix tree, but returns KV only through the newest node that still carries Mamba state.
+
+### On the stage
+
+- $M=5{,}514$ is the token-match position. Full-attention KV could reach this far; $P=4{,}536$ is the newest position on that path with surviving Mamba state.
+- Orange spans $P$ through the new prompt end $E=5{,}558$. The hybrid row makes this one common prefill range instead of choosing a separate starting point for each layer kind.
+- The numbers reuse the preceding llama.cpp log to compare positions. This is not an SGLang measurement; the source-backed fact is the truncation of the returned array.
+
+### Formula and symbols
+
+$$B=P,\qquad R=E-P,\qquad P\le M\le E$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $B$ | `best_value_len` in this example: the returned KV prefix length | Schematic: $P=4{,}536$ |
+| $P$ | Newest matched position still carrying `mamba_value` | Candidate update in `_match_prefix_helper` |
+| $M$ | Position reached by token matching | Previous position example: 5,514 |
+| $R$ | Positions to prefill after the common resume point | $E-P$ |
+
+### The numbers on the stage
+
+$$R=5{,}558-4{,}536=1{,}022$$
+
+`_match_prefix_helper` updates `best_value_len` and `best_last_node` only when `node.mamba_value is not None`. Even if token matching continues beyond that node, `_match_post_processor` ends with `value = value[:best_value_len]`. The returned prefix therefore stops at $P$, not at the deeper $M$.
+
+This does not change full attention's per-token KV semantics or establish a rule for every hybrid engine. It describes how this SGLang implementation selects one prefix shared by both layer kinds in a request.
+
+### Next
+
+The remaining question is who owns those state values, and whether eviction removes the token path too. The next step examines a tombstone in the same tree.
+
+Sources: SGLang `385903b0acd69455cb688b5cb5e3afcc0fd91598`, `python/sglang/srt/mem_cache/mamba_radix_cache.py:1086-1126,1137-1206`; `Awesome-ML-SYS-Tutorial/engineer/hybrid-prefix-cache/readme.md:624-658`.
