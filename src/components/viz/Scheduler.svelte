@@ -73,7 +73,7 @@
     { scene: 'timeline', mode: 'chunked', caption: `Cap the prefill batch. Split prompts into chunks and alternate: a chunk, a decode step, a chunk, a decode step. The freeze is now one chunk long, whatever the prompt's size. The first token arrives a little later.`, captionZh: `把 prompt 切成 ${CHUNK} token 的 chunk，并与 decode 步交替。最长间隔从 ${fmt(M['prefill-first'].worst)} 降到 ${fmt(M.chunked.worst)}，首个 token 从 ${fmt(M['prefill-first'].ttft)} 推迟到 ${fmt(M.chunked.ttft)}。`, foot: CHUNK_FOOT, footZh: CHUNK_FOOT_ZH },
     { scene: 'timeline', mode: 'mixed', caption: `Once prefill comes in chunks, a chunk is small enough to ride inside a decode step, on compute the decodes leave idle. No freeze at all, first token in ${fmt(M.mixed.ttft)}. Sarathi-Serve's idea, vLLM v1's default, SGLang's mixed-chunk option.`, captionZh: `chunk 搭进 decode 步，其他人每步都出 token。最长间隔由 ${fmt(tMem)} 增至 ${fmt(M.mixed.worst)}，新来者的首个 token 要 ${fmt(M.mixed.ttft)}。` },
     { scene: 'compare', caption: `Same GPU, same prompt, three policies. Prefill-first: fastest first token, worst freeze. Chunked: a bounded freeze. Mixed: none. The chunk size is the knob between the two clocks, and it belongs to the scheduler, not the model.`, captionZh: `同一 GPU、同一 prompt，三种策略并排。Mixed 每步出 token，间隔只多 ${fmt(M.mixed.worst - tMem)}。`, foot: CHUNK_FOOT, footZh: CHUNK_FOOT_ZH },
-    { scene: 'loop', caption: `Each step the scheduler asks: anyone waiting, and room in the cache? If so, a prefill batch up to the chunk size, plus the decodes if mixing is on. If not, the decode batch. What counts as room is chapter ${chNum('07-kv-memory')}.`, captionZh: `每步 scheduler 都问：有人等待吗，cache 里有空位吗？若有，组一个不超过 chunk 大小的 prefill batch，若开了 mixing 再加上 decode。若没有，就跑 decode batch。什么算有空位，见第 ${chNum('07-kv-memory')} 章。` },
+    { scene: 'loop', caption: `Each step the scheduler asks: anyone waiting, and room in the cache? If so, a prefill batch up to the chunk size, plus the decodes if mixing is on. If not, the decode batch. What counts as room is chapter ${chNum('07-kv-memory')}.`, captionZh: `waiting 有人时，要同时看槽位、KV 预留和本轮 token 预算。组不出 prefill 就跑 decode；算不完的 prompt 回 waiting 续块。` },
   ];
 
   let step = $state(0);
@@ -101,12 +101,13 @@
   const phoneTimeline = $derived(phone && step >= 3 && step <= 5 && $lang === 'zh');
   const phoneMixed = $derived(phone && step === 6 && $lang === 'zh');
   const phoneCompare = $derived(phone && step === 7 && $lang === 'zh');
-  const phoneCustom = $derived(phoneRecap || phoneLists || phoneWhy || phoneTimeline || phoneMixed || phoneCompare);
+  const phoneLoop = $derived(phone && step === 8 && $lang === 'zh');
+  const phoneCustom = $derived(phoneRecap || phoneLists || phoneWhy || phoneTimeline || phoneMixed || phoneCompare || phoneLoop);
 </script>
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox={phoneRecap ? '0 0 360 400' : phoneLists ? '0 0 360 570' : phoneWhy ? '0 0 360 500' : phoneTimeline ? (mode === 'chunked' ? '0 0 360 560' : '0 0 360 360') : phoneMixed ? '0 0 360 550' : phoneCompare ? '0 0 360 500' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="The scheduler, step {step + 1}" class:phone-custom={phoneCustom}>
+    <svg viewBox={phoneRecap ? '0 0 360 400' : phoneLists ? '0 0 360 570' : phoneWhy ? '0 0 360 500' : phoneTimeline ? (mode === 'chunked' ? '0 0 360 560' : '0 0 360 360') : phoneMixed ? '0 0 360 550' : phoneCompare ? '0 0 360 500' : phoneLoop ? '0 0 360 680' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="The scheduler, step {step + 1}" class:phone-custom={phoneCustom}>
 
       {#if phoneRecap}
         <text x="180" y="28" text-anchor="middle" class="ph-title">新来者让这一步变长</text>
@@ -261,6 +262,33 @@
         <rect x="16" y="410" width="328" height="74" rx="9" fill="#fbfaf7" stroke="var(--line)" />
         <text x="30" y="437" class="ph-strong">Mixed 每步出 token，没有整步停住</text>
         <text x="30" y="467">最长 4.9 ms = 纯 decode 4.8 ms + 0.1 ms</text>
+      {/if}
+
+      {#if phoneLoop}
+        <text x="180" y="28" text-anchor="middle" class="ph-title">waiting 有人，还要过三项检查</text>
+        <text x="180" y="52" text-anchor="middle">新 prompt、续块、撤回后重算都在 waiting</text>
+        <rect x="16" y="70" width="328" height="88" rx="10" fill="#fbfaf7" stroke="var(--line)" />
+        <text x="32" y="98" class="ph-strong">① 请求槽位</text>
+        <text x="32" y="124">一条活动 request 占一行</text>
+        <text x="32" y="146">新 request 要有空行；续块已有槽位</text>
+        <rect x="16" y="174" width="328" height="106" rx="10" fill="#fbfaf7" stroke="var(--line)" />
+        <text x="32" y="202" class="ph-strong">② KV 预留</text>
+        <text x="32" y="228">未缓存 prompt + 还要生成的回答</text>
+        <text x="32" y="252">加上运行中请求的预留，够用才接纳</text>
+        <text x="32" y="272">续块沿用已有预留 · 细节见第 {chNum('07-kv-memory')} 章</text>
+        <rect x="16" y="296" width="328" height="106" rx="10" fill="#fbfaf7" stroke="var(--line)" />
+        <text x="32" y="324" class="ph-strong">③ 本轮 prefill token 预算</text>
+        <text x="32" y="350">决定这条本轮算多少 token</text>
+        <text x="32" y="374">算不完回 waiting，下一步续 prefill</text>
+        <text x="32" y="394">预算用完后，后面的 request 继续等</text>
+        <rect x="16" y="424" width="328" height="72" rx="10" fill="#fbfaf7" stroke="var(--accent)" />
+        <text x="32" y="452" class="ph-strong">能组 → prefill batch</text>
+        <text x="32" y="478">按策略和本轮预算选 request</text>
+        <rect x="16" y="512" width="328" height="72" rx="10" fill="#fbfaf7" stroke="var(--gen)" />
+        <text x="32" y="540" class="ph-strong">组不出 → decode batch</text>
+        <text x="32" y="566">运行中的 request 各出一个 token</text>
+        <text x="180" y="616" text-anchor="middle">开了 mixing 可在 prefill 同一步带 decode</text>
+        <text x="180" y="652" text-anchor="middle" class="ph-strong">一次前向后，回来重新检查</text>
       {/if}
 
       <!-- Two lists, one batch per step -->
@@ -509,9 +537,9 @@
           <text x="16" y="52" class="rowlabel">{t('one scheduler step', 'scheduler 的一步')}</text>
           <g in:fly={{ y: 8, duration: 300 }}>
             <rect x="190" y="62" width="340" height="60" rx="12" fill="white" stroke="var(--fg)" stroke-width="1.5" />
-            <text x="360" y="84" text-anchor="middle" class="slab strong small">{t('anyone waiting, and room in the cache?', '有人等待，且 cache 有空位吗？')}</text>
-            <text x="360" y="101" text-anchor="middle" class="tag">{t(`the cache question is chapter ${chNum('07-kv-memory')}`, `cache 的问题见第 ${chNum('07-kv-memory')} 章`)}</text>
-            <text x="360" y="115" text-anchor="middle" class="tag">{t('with an interval N, also: N decode steps since the last prefill', '若设间隔 N，还要求：上次 prefill 后已有 N 个 decode 步')}</text>
+            <text x="360" y="84" text-anchor="middle" class="slab strong small">{t('anyone waiting, and room in the cache?', 'waiting 有人，能组 prefill 吗？')}</text>
+            <text x="360" y="101" text-anchor="middle" class="tag">{t(`the cache question is chapter ${chNum('07-kv-memory')}`, '槽位：一条 request 一行 · KV 预留')}</text>
+            <text x="360" y="115" text-anchor="middle" class="tag">{t('with an interval N, also: N decode steps since the last prefill', 'token 预算：本轮 prefill 最多算多少')}</text>
           </g>
           <g in:fly={{ y: 8, delay: 300, duration: 300 }}>
             <path d="M 270 122 V 146" fill="none" stroke="#b8b4aa" stroke-width="1.5" marker-end="url(#arrowhead)" />

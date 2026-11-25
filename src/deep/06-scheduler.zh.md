@@ -361,26 +361,43 @@ $C$ 越大，gap 越大、TTFT 越小。模型的权重和计算对任何 $C$ �
 
 ## 第 9 步 · scheduler 的一步
 
-> **一句话：** 每步先问「有人等待，且 cache 有空位吗？」；是就组 prefill batch（开了混合再带上 decode），否就跑 decode batch；跑完一次前向回到顶部。
+> **一句话：** waiting 非空不代表一定能组 prefill；请求槽位、KV 预留和本轮 token 预算共同决定能接纳谁、本轮算多少，组不出 prefill 才跑 decode。
 
 ### 图上是什么
 
-- 顶部判断框：「有人等待，且 cache 有空位吗？」；下面两行「cache 的问题见第 7 章」「若设间隔 N，还要求：上次 prefill 后已有 N 个 decode 步」。
+- 顶部判断框：「waiting 有人，能组 prefill 吗？」；下面两行「槽位：一条 request 一行 · KV 预留」「token 预算：本轮 prefill 最多算多少」。waiting 的含义与第 2 步相同：新到、后续 prefill 和撤回后重算都在这里等。
 - 「是」→ 蓝框「一个 prefill batch」：从 waiting 列表按策略顺序取（先来先服务 · 最短优先 · 最长缓存前缀），不超过 chunk 大小。框里两个小框：
   - 「关闭混合 · 默认」：prefill 单独跑，运行中的等一步。
   - 「开启混合 · 第 7 步」：每个运行中 request 的下一个 token 在同一次前向中跑，两者共享 chunk 大小。
 - 「否」→ 橙框「decode batch」：所有运行中的各一个 token；完成的序列离开，释放它们的 cache；每个 batch 大小一份录制 → CUDA graph 回放，第 11 章。
 - 两条路汇到黑色条「一次前向 · 然后回到顶部」，虚线绕回判断框。
 - 底部两行脚注：SGLang 的四个设置 `schedule_policy`、`chunked_prefill_size`、`prefill_decode_interval`、`enable_mixed_chunk`；这个循环就是 `Scheduler.get_next_batch_to_run()`。
+- 中文手机图把三项检查画成三张大字卡，区分新 request 和续块，再汇到 prefill／decode 两条路；KV 卡回指第 7 章，token 预算卡明确「算不完回 waiting」。
+
+### 三项检查：新 request 和续块不一样
+
+| 检查 | 新 request | 续块 |
+|---|---|---|
+| 请求槽位 | 一条活动 request 占请求表一行；没有空行就等待 | 已占一行，不重复分配 |
+| KV 预留 | 估算未缓存输入和后续输出，还要给运行中的请求留空间；不够就等待 | 已做过接纳和预留，沿用已有资源 |
+| 本轮 prefill token 预算 | 与本轮其他 request 共享；决定本次算多少未缓存 prompt | 同样受剩余预算限制；没算完继续回 waiting |
+
+下面用 mini-sglang 固定提交 [9a91cfa](https://github.com/sgl-project/mini-sglang/tree/9a91cfafe754aa85daee49998176275667eb58f2) 核对这三类检查，不把它的实现细节冒充 SGLang 的通用规则：
+
+- 新 request 在 `PrefillAdder._try_allocate_one` 里先查 `table_manager.available_size`，再比较 `estimated_len + reserved_size` 与 `cache_manager.available_size`。其中 `estimated_len = input_len - cached_len + output_len`，所以 KV 估算不只看本步要算的 prompt。
+- `try_add_one` 先查 `token_budget <= 0`；有 `chunked_req` 时直接走 `_add_one_req`，不重新分配槽位。`_add_one_req` 用 `min(token_budget, remain_len)` 决定本次片段，剩余部分生成 `ChunkedReq`，中间片段不采样、也不进入 decode 集合。
+- `PrefillManager.schedule_next_batch` 按 `pending_list` 顺序尝试，队首失败后 `break`，不绕过它找更小的 request。这是这个 mini 版本的队首阻塞行为，不外推成 SGLang 的通用行为。
 
 ### 每个部分对应本章哪一步
 
-| 流程图里 | SGLang 设置 | 默认 | 本章 |
+| 流程图里 | SGLang 设置或概念 | 默认 | 本章 |
 |---|---|---|---|
-| 有人等待 | waiting 列表 | | 第 2 步 |
-| 上次 prefill 后 N 个 decode 步 | `prefill_decode_interval` | 0（关闭） | 第 6 步 |
+| 有人等待 | waiting 列表；新到、续块和撤回后重算 | | 第 2、6 步；第 7 章 |
+| 请求槽位 | `max_running_requests`、请求表 | 按服务配置 | 本步 |
+| KV 预留 | `PrefillAdder` 与 KV pool | | 第 7 章 |
+| 本轮 token 预算 | `max_prefill_tokens`、`chunked_prefill_size` | 16,384；H100 上 8,192 | 第 5、6 步 |
+| 交替间隔（脚注） | `prefill_decode_interval` | 0（关闭） | 第 6 步 |
 | 按策略顺序 | `schedule_policy` | `fcfs` | 本步 |
-| 不超过 chunk 大小 | `chunked_prefill_size` | H100 上 8,192 | 第 6 步 |
 | 开启混合 | `enable_mixed_chunk` | 关闭 | 第 7 步 |
 | decode batch | running 列表 | | 第 2、3 步 |
 
@@ -394,11 +411,11 @@ $C$ 越大，gap 越大、TTFT 越小。模型的权重和计算对任何 $C$ �
 
 ### 两条路各发生什么
 
-- **是**：从 waiting 取 request，直到它们的 prompt token 数达到 $C$。关闭混合时 running 的用户这一步拿不到 token，就是第 4–6 步的 gap；开启混合时它们的 $B$ 个 token 也进这次前向，占同一个预算，如第 7 步 236 + 64 = 300。
-- **否**：running 的每条出 1 个 token，$n = B$；只要 $B$ 低于约 300，$t_{\text{step}} = t_{\text{mem}}$。输出结束 token 的 request 离开 running、释放 cache，下一次 prefill 才有空位。
+- **是**：按策略从 waiting 取 request；槽位或 KV 不足会停止接纳，token 预算则限制本次处理的总量，不要求整个 prompt 都小于预算。关闭混合时 running 的用户这一步拿不到 token，就是第 4–6 步的 gap；开启混合时它们的 $B$ 个 token 也进这次前向，占同一个预算，如第 7 步 236 + 64 = 300。
+- **否**：running 的每条出 1 个 token，$n = B$；只要 $B$ 低于约 300，$t_{\text{step}} = t_{\text{mem}}$。输出结束 token 的 request 离开 running、释放槽位和 cache，下一次 prefill 才可能接纳等待者。
 
 源码里的一处细节：间隔 N 只在 running 的条数不少于 `prefill_decode_interval_min_bs`（默认 0）时生效；没有人在 decode 时也不等。
 
 ### 接下来
 
-判断框里的「cache 有空位」具体指什么、怎么算，第 7 章讲。
+判断框里的 KV 预留具体怎样分页、回收，第 7 章讲。
