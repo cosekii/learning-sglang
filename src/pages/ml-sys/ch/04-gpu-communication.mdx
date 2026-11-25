@@ -1,0 +1,25 @@
+---
+layout: ../../../layouts/Chapter.astro
+book: ml-sys
+slug: 04-gpu-communication
+---
+import GpuCommunication from '../../../components/ml-sys/GpuCommunication.svelte';
+import { mlSysNeighbors } from '../../../ml-sys/chapters';
+import { deepFor } from '../../../deep';
+export const deep = await deepFor('ml-sys-04-gpu-communication');
+
+<GpuCommunication client:load {...mlSysNeighbors('04-gpu-communication')} deep={deep} />
+
+<details class="i18n-en">
+<summary>Where this chapter's claims come from</summary>
+
+Step 1 is a constructed timing example, not a hardware measurement. It illustrates the tradeoff in zero-to-sglang Part III Chapter 4 §2.1: splitting work can save compute time while communication launch, transfer and synchronization add waiting. The chapter does not claim that 8 GPUs are generally slower than 4.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的出处</summary>
+
+第 1 步是构造的时间例子，不是硬件实测。它对应 zero-to-sglang 第 3 部分第 4 章 §2.1 的权衡：拆分工作可以减少计算时间，通信的启动、传输和同步也会增加等待。本章不声称 8 张 GPU 通常比 4 张慢。
+
+</details>
