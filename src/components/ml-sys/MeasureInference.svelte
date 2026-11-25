@@ -4,7 +4,7 @@
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
-  import { DEMO_REQUEST_SENT_MS, DEMO_FIRST_TOKEN_MS, DEMO_TTFT_MS, DEMO_TTFT_SECONDS, DEMO_TTFT_FRACTION, DEMO_OUTPUT_TOKEN_TIMES_MS, DEMO_ITL_GAPS_MS, DEMO_POST_FIRST_GAP_COUNT, DEMO_ITL_TOTAL_MS, DEMO_TPOT_MS, DEMO_LAST_TOKEN_MS, DEMO_E2E_MS, DEMO_SORTED_E2E_MS, DEMO_PERCENTILE_REQUEST_COUNT, DEMO_P50_RANK, DEMO_P50_MS, DEMO_AT_MOST_P50_COUNT, DEMO_SLOWEST_E2E_MS, DEMO_SLOWEST_OVER_P50 } from '../../ml-sys/numbers';
+  import { DEMO_REQUEST_SENT_MS, DEMO_FIRST_TOKEN_MS, DEMO_TTFT_MS, DEMO_TTFT_SECONDS, DEMO_TTFT_FRACTION, DEMO_OUTPUT_TOKEN_TIMES_MS, DEMO_ITL_GAPS_MS, DEMO_POST_FIRST_GAP_COUNT, DEMO_ITL_TOTAL_MS, DEMO_TPOT_MS, DEMO_LAST_TOKEN_MS, DEMO_E2E_MS, DEMO_SORTED_E2E_MS, DEMO_PERCENTILE_REQUEST_COUNT, DEMO_P50_RANK, DEMO_P50_MS, DEMO_AT_MOST_P50_COUNT, DEMO_P99_RANK, DEMO_P99_MS, DEMO_AT_MOST_P99_COUNT, DEMO_SLOWEST_E2E_MS, DEMO_SLOWEST_OVER_P50, DEMO_SLOWEST_OVER_P99_MS } from '../../ml-sys/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
@@ -23,6 +23,9 @@
   }, {
     caption: `Sort ${DEMO_PERCENTILE_REQUEST_COUNT} requests by E2E latency. P50 is ${DEMO_P50_MS} ms; the slowest waits ${DEMO_SLOWEST_E2E_MS} ms.`,
     captionZh: `把 ${DEMO_PERCENTILE_REQUEST_COUNT} 个请求按总延迟排队。P50 是 ${DEMO_P50_MS} ms，最慢要等 ${DEMO_SLOWEST_E2E_MS} ms。`,
+  }, {
+    caption: `In the same queue, P99 is request #${DEMO_P99_RANK}'s latency: ${DEMO_P99_MS} ms. The slowest request takes ${DEMO_SLOWEST_E2E_MS} ms.`,
+    captionZh: `同一排请求中，P99 取第 ${DEMO_P99_RANK} 个的总延迟：${DEMO_P99_MS} ms。最慢的第 ${DEMO_PERCENTILE_REQUEST_COUNT} 个要等 ${DEMO_SLOWEST_E2E_MS} ms。`,
   }];
   let step = $state(0);
   $effect(() => {
@@ -38,12 +41,18 @@
     return () => query.removeEventListener('change', update);
   });
   const cur = $derived(steps[step]);
-  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 0 ? 390 : step === 2 ? 550 : step === 4 ? 490 : 500) : (step === 4 ? 470 : 400));
+  const percentileName = $derived(step === 4 ? 'P50' : 'P99');
+  const percentileRank = $derived(step === 4 ? DEMO_P50_RANK : DEMO_P99_RANK);
+  const percentileMs = $derived(step === 4 ? DEMO_P50_MS : DEMO_P99_MS);
+  const atMostPercentileCount = $derived(step === 4 ? DEMO_AT_MOST_P50_COUNT : DEMO_AT_MOST_P99_COUNT);
+  const percentileBarX = $derived((phone ? 40 : 60) + (percentileRank - 1) * (phone ? 2.4 : 6) + (phone ? 0.8 : 2));
+  const percentileLabelX = $derived(step === 4 ? percentileBarX : phone ? 235 : 620);
+  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 0 ? 390 : step === 2 ? 550 : step >= 4 ? 490 : 500) : (step >= 4 ? 470 : 400));
 </script>
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={step === 0 ? 'TTFT is the 250 millisecond wait from sending a request to seeing its first token' : step === 1 ? 'ITL is each time gap between neighboring output tokens' : step === 2 ? `TPOT is the ${DEMO_TPOT_MS} millisecond average gap after the first token` : step === 3 ? `E2E latency is ${DEMO_E2E_MS} milliseconds from request sent to completion` : `Across ${DEMO_PERCENTILE_REQUEST_COUNT} sorted requests, P50 is ${DEMO_P50_MS} milliseconds and the slowest is ${DEMO_SLOWEST_E2E_MS} milliseconds`}>
+    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={step === 0 ? 'TTFT is the 250 millisecond wait from sending a request to seeing its first token' : step === 1 ? 'ITL is each time gap between neighboring output tokens' : step === 2 ? `TPOT is the ${DEMO_TPOT_MS} millisecond average gap after the first token` : step === 3 ? `E2E latency is ${DEMO_E2E_MS} milliseconds from request sent to completion` : step === 4 ? `Across ${DEMO_PERCENTILE_REQUEST_COUNT} sorted requests, P50 is ${DEMO_P50_MS} milliseconds and the slowest is ${DEMO_SLOWEST_E2E_MS} milliseconds` : `Across ${DEMO_PERCENTILE_REQUEST_COUNT} sorted requests, P99 is request ${DEMO_P99_RANK} at ${DEMO_P99_MS} milliseconds and the slowest is ${DEMO_SLOWEST_E2E_MS} milliseconds`}>
       <defs>
         <marker id="ttft-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
           <path d="M0,0 L8,4 L0,8 z" fill="var(--accent)" />
@@ -185,7 +194,7 @@
       {:else}
       {#if !phone}
         <text x="35" y="26" class="rowlabel">{t(`${DEMO_PERCENTILE_REQUEST_COUNT} requests · E2E shortest to longest (ms)`, `${DEMO_PERCENTILE_REQUEST_COUNT} 个请求 · 总延迟从短到长（ms）`)}</text>
-        <text x="35" y="50" class="legend strong">{t(`P50 = request #${DEMO_P50_RANK}'s E2E latency here`, `P50 = 本图第 ${DEMO_P50_RANK} 个请求的总延迟`)}</text>
+        <text x="35" y="50" class="legend strong">{t(`${percentileName} = request #${percentileRank}'s E2E latency here`, `${percentileName} = 本图第 ${percentileRank} 个请求的总延迟`)}</text>
         <text x="360" y="76" text-anchor="middle" class="legend">{t('blue = one request’s E2E latency', '蓝色 = 一个请求的总延迟')}</text>
         {#each [DEMO_SLOWEST_E2E_MS, DEMO_SLOWEST_E2E_MS / 2, 0] as tick}
           {@const y = 290 - (tick / DEMO_SLOWEST_E2E_MS) * 195}
@@ -196,21 +205,21 @@
           {@const height = (latency / DEMO_SLOWEST_E2E_MS) * 195}
           <rect x={60 + i * 6} y={290 - height} width="4" height={height} rx="1" fill="var(--accent)" />
         {/each}
-        <line x1="356" y1="290" x2="356" y2="299" stroke="var(--fg)" stroke-width="1.5" />
-        <text x="356" y="312" text-anchor="middle" class="tag strong">#{DEMO_P50_RANK}</text>
+        <line x1={percentileBarX} y1="290" x2={percentileLabelX} y2="299" stroke="var(--fg)" stroke-width="1.5" />
+        <text x={percentileLabelX} y="312" text-anchor="middle" class="tag strong">#{percentileRank}</text>
         <line x1="656" y1="290" x2="676" y2="299" stroke="var(--fg)" stroke-width="1.5" />
         <text x="680" y="312" text-anchor="middle" class="tag strong">#{DEMO_PERCENTILE_REQUEST_COUNT}</text>
         <rect x="125" y="335" width="220" height="85" rx="12" fill="var(--accent-soft)" />
-        <text x="235" y="359" text-anchor="middle" class="legend strong">P50 · {t(`request #${DEMO_P50_RANK}`, `第 ${DEMO_P50_RANK} 个请求`)}</text>
-        <text x="235" y="386" text-anchor="middle" class="formula small">{DEMO_P50_MS} ms</text>
-        <text x="235" y="409" text-anchor="middle" class="legend">{t(`${DEMO_AT_MOST_P50_COUNT} of ${DEMO_PERCENTILE_REQUEST_COUNT} take at most ${DEMO_P50_MS} ms`, `${DEMO_PERCENTILE_REQUEST_COUNT} 个中有 ${DEMO_AT_MOST_P50_COUNT} 个不超过 ${DEMO_P50_MS} ms`)}</text>
+        <text x="235" y="359" text-anchor="middle" class="legend strong">{percentileName} · {t(`request #${percentileRank}`, `第 ${percentileRank} 个请求`)}</text>
+        <text x="235" y="386" text-anchor="middle" class="formula small">{percentileMs} ms</text>
+        <text x="235" y="409" text-anchor="middle" class="legend">{t(`${atMostPercentileCount} of ${DEMO_PERCENTILE_REQUEST_COUNT} take at most ${percentileMs} ms`, `${DEMO_PERCENTILE_REQUEST_COUNT} 个中有 ${atMostPercentileCount} 个不超过 ${percentileMs} ms`)}</text>
         <rect x="375" y="335" width="220" height="85" rx="12" fill="var(--accent-soft)" />
         <text x="485" y="359" text-anchor="middle" class="legend strong">{t(`Slowest · request #${DEMO_PERCENTILE_REQUEST_COUNT}`, `最慢 · 第 ${DEMO_PERCENTILE_REQUEST_COUNT} 个请求`)}</text>
-        <text x="485" y="386" text-anchor="middle" class="formula small">{DEMO_SLOWEST_E2E_MS} ms = {DEMO_SLOWEST_OVER_P50} × P50</text>
-        <text x="485" y="409" text-anchor="middle" class="legend">{t(`1 of ${DEMO_PERCENTILE_REQUEST_COUNT} requests`, `${DEMO_PERCENTILE_REQUEST_COUNT} 个中有 1 个`)}</text>
+        <text x="485" y="386" text-anchor="middle" class="formula small">{DEMO_SLOWEST_E2E_MS} ms{step === 4 ? ` = ${DEMO_SLOWEST_OVER_P50} × P50` : ''}</text>
+        <text x="485" y="409" text-anchor="middle" class="legend">{step === 4 ? t(`1 of ${DEMO_PERCENTILE_REQUEST_COUNT} requests`, `${DEMO_PERCENTILE_REQUEST_COUNT} 个中有 1 个`) : t(`${DEMO_SLOWEST_OVER_P99_MS} ms more than P99`, `比 P99 多 ${DEMO_SLOWEST_OVER_P99_MS} ms`)}</text>
       {:else}
         <text x="20" y="20" class="rowlabel">{t(`${DEMO_PERCENTILE_REQUEST_COUNT} requests · E2E shortest to longest (ms)`, `${DEMO_PERCENTILE_REQUEST_COUNT} 个请求 · 总延迟从短到长（ms）`)}</text>
-        <text x="20" y="42" class="legend strong">{t(`P50 = request #${DEMO_P50_RANK}'s E2E latency here`, `P50 = 本图第 ${DEMO_P50_RANK} 个请求的总延迟`)}</text>
+        <text x="20" y="42" class="legend strong">{t(`${percentileName} = request #${percentileRank}'s E2E latency here`, `${percentileName} = 本图第 ${percentileRank} 个请求的总延迟`)}</text>
         <text x="150" y="65" text-anchor="middle" class="legend">{t('blue = one request’s E2E latency', '蓝色 = 一个请求的总延迟')}</text>
         {#each [DEMO_SLOWEST_E2E_MS, DEMO_SLOWEST_E2E_MS / 2, 0] as tick}
           {@const y = 260 - (tick / DEMO_SLOWEST_E2E_MS) * 170}
@@ -221,18 +230,18 @@
           {@const height = (latency / DEMO_SLOWEST_E2E_MS) * 170}
           <rect x={40 + i * 2.4} y={260 - height} width="1.6" height={height} rx="0.5" fill="var(--accent)" />
         {/each}
-        <line x1="158" y1="260" x2="158" y2="268" stroke="var(--fg)" stroke-width="1.5" />
-        <text x="158" y="281" text-anchor="middle" class="tag strong">#{DEMO_P50_RANK}</text>
+        <line x1={percentileBarX} y1="260" x2={percentileLabelX} y2="268" stroke="var(--fg)" stroke-width="1.5" />
+        <text x={percentileLabelX} y="281" text-anchor="middle" class="tag strong">#{percentileRank}</text>
         <line x1="278" y1="260" x2="278" y2="268" stroke="var(--fg)" stroke-width="1.5" />
         <text x="278" y="281" text-anchor="middle" class="tag strong">#{DEMO_PERCENTILE_REQUEST_COUNT}</text>
         <rect x="20" y="290" width="260" height="76" rx="11" fill="var(--accent-soft)" />
-        <text x="35" y="312" class="legend strong">P50 · {t(`request #${DEMO_P50_RANK}`, `第 ${DEMO_P50_RANK} 个请求`)}</text>
-        <text x="35" y="335" class="legend strong">{DEMO_P50_MS} ms</text>
-        <text x="35" y="355" class="legend">{t(`${DEMO_AT_MOST_P50_COUNT} of ${DEMO_PERCENTILE_REQUEST_COUNT} take at most ${DEMO_P50_MS} ms`, `${DEMO_PERCENTILE_REQUEST_COUNT} 个中有 ${DEMO_AT_MOST_P50_COUNT} 个不超过 ${DEMO_P50_MS} ms`)}</text>
+        <text x="35" y="312" class="legend strong">{percentileName} · {t(`request #${percentileRank}`, `第 ${percentileRank} 个请求`)}</text>
+        <text x="35" y="335" class="legend strong">{percentileMs} ms</text>
+        <text x="35" y="355" class="legend">{t(`${atMostPercentileCount} of ${DEMO_PERCENTILE_REQUEST_COUNT} take at most ${percentileMs} ms`, `${DEMO_PERCENTILE_REQUEST_COUNT} 个中有 ${atMostPercentileCount} 个不超过 ${percentileMs} ms`)}</text>
         <rect x="20" y="376" width="260" height="76" rx="11" fill="var(--accent-soft)" />
         <text x="35" y="398" class="legend strong">{t(`Slowest · request #${DEMO_PERCENTILE_REQUEST_COUNT}`, `最慢 · 第 ${DEMO_PERCENTILE_REQUEST_COUNT} 个请求`)}</text>
-        <text x="35" y="421" class="legend strong">{DEMO_SLOWEST_E2E_MS} ms = {DEMO_SLOWEST_OVER_P50} × P50</text>
-        <text x="35" y="441" class="legend">{t(`1 of ${DEMO_PERCENTILE_REQUEST_COUNT} requests`, `${DEMO_PERCENTILE_REQUEST_COUNT} 个中有 1 个`)}</text>
+        <text x="35" y="421" class="legend strong">{DEMO_SLOWEST_E2E_MS} ms{step === 4 ? ` = ${DEMO_SLOWEST_OVER_P50} × P50` : ''}</text>
+        <text x="35" y="441" class="legend">{step === 4 ? t(`1 of ${DEMO_PERCENTILE_REQUEST_COUNT} requests`, `${DEMO_PERCENTILE_REQUEST_COUNT} 个中有 1 个`) : t(`${DEMO_SLOWEST_OVER_P99_MS} ms more than P99`, `比 P99 多 ${DEMO_SLOWEST_OVER_P99_MS} ms`)}</text>
       {/if}
       <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Constructed teaching example, not a local benchmark.', '构造的教学例子，不是本机实测。')}</text>
       {/if}

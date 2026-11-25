@@ -124,3 +124,28 @@ $$L_{(100)}=2000\ \mathrm{ms}=10\times200\ \mathrm{ms}=10\times\mathrm{P50}$$
 Another common method averages the waits at positions 50 and 51. Both are 200 ms here, so that method also gives 200 ms. The groups of 51, 48 and 1 form a constructed distribution based on the scenario in zero-to-sglang Part I Chapter 5 §5.2: 99 requests within 100–300 ms and one request taking 2 s. These are not local measurements. Course §5.1 and *Inference Engineering* §1.4.1 both place P50 halfway through sorted requests. Other datasets and tools may interpolate P50; this step does not cover those methods.
 
 **Next.** The middle position is now visible. The next step inspects request 99 to examine a longer wait.
+
+## Step 6 · Sort requests to find P99
+
+**One sentence.** P99 takes the E2E latency at the 99% position: 300 ms at request 99 here, not the slowest request's 2000 ms.
+
+**What the picture shows.** The 100 blue bars are unchanged: the first 51 are 200 ms, the next 48 are 300 ms, and the last is 2000 ms. The cards now identify requests 99 and 100. Request 99 takes 300 ms, so 99 of the 100 requests take at most 300 ms. The slowest request, number 100, waits $2000-300=1700$ ms longer than P99.
+
+**Formula and symbols.** Using the same rank method as Step 5, this step calls the latency at the 99% position P99:
+
+$$L_{(1)}\le L_{(2)}\le\cdots\le L_{(N)},\qquad r=\lceil0.99N\rceil,\qquad \mathrm{P99}=L_{(r)}$$
+
+- $L_{(i)}$: the E2E latency of request $i$ after sorting, as in Step 5.
+- $N$: the number of requests, 100 here.
+- $r$: the position at 99% of the queue; $\lceil\ \rceil$ rounds up to an integer.
+- $\mathrm{P99}$: the latency at position $r$, not an average and not necessarily the slowest request.
+
+**Substitute the picture's numbers.**
+
+$$\mathrm{P99}=L_{(\lceil0.99\times100\rceil)}=L_{(99)}=300\ \mathrm{ms}$$
+
+$$L_{(100)}-\mathrm{P99}=2000-300=1700\ \mathrm{ms}$$
+
+Zero-to-sglang Part I Chapter 5 §5.1 asks readers to observe P50 and P99 together, using P99 to examine the slower requests. Section 5.2 uses 99 faster requests and one 2 s request to show how an average can hide that single slow request. This picture's groups of 51, 48 and 1 form a constructed teaching distribution based on that scenario, not local measurements. The course does not prescribe this picture's rank formula; this step explicitly rounds up as in Step 5. Other tools may interpolate, which this step does not cover.
+
+**Next.** The middle and slower waits are now measured. The next step changes the question to how many requests finish in a given period.

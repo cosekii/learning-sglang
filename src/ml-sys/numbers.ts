@@ -14,7 +14,7 @@ export const DEMO_TPOT_MS = DEMO_ITL_TOTAL_MS / DEMO_POST_FIRST_GAP_COUNT;
 export const DEMO_LAST_TOKEN_MS = DEMO_OUTPUT_TOKEN_TIMES_MS[DEMO_OUTPUT_TOKEN_TIMES_MS.length - 1];
 export const DEMO_E2E_MS = DEMO_LAST_TOKEN_MS - DEMO_REQUEST_SENT_MS;
 
-// A constructed 100-request distribution for nearest-rank P50, not a local benchmark.
+// A constructed 100-request distribution for nearest-rank P50 and P99, not a local benchmark.
 export const DEMO_E2E_GROUPS = [
   { requests: 51, latencyMs: 200 },
   { requests: 48, latencyMs: 300 },
@@ -25,5 +25,9 @@ export const DEMO_PERCENTILE_REQUEST_COUNT = DEMO_SORTED_E2E_MS.length;
 export const DEMO_P50_RANK = Math.ceil(0.50 * DEMO_PERCENTILE_REQUEST_COUNT);
 export const DEMO_P50_MS = DEMO_SORTED_E2E_MS[DEMO_P50_RANK - 1];
 export const DEMO_AT_MOST_P50_COUNT = DEMO_SORTED_E2E_MS.filter((latency) => latency <= DEMO_P50_MS).length;
+export const DEMO_P99_RANK = Math.ceil(0.99 * DEMO_PERCENTILE_REQUEST_COUNT);
+export const DEMO_P99_MS = DEMO_SORTED_E2E_MS[DEMO_P99_RANK - 1];
+export const DEMO_AT_MOST_P99_COUNT = DEMO_SORTED_E2E_MS.filter((latency) => latency <= DEMO_P99_MS).length;
 export const DEMO_SLOWEST_E2E_MS = DEMO_SORTED_E2E_MS[DEMO_PERCENTILE_REQUEST_COUNT - 1];
 export const DEMO_SLOWEST_OVER_P50 = DEMO_SLOWEST_E2E_MS / DEMO_P50_MS;
+export const DEMO_SLOWEST_OVER_P99_MS = DEMO_SLOWEST_E2E_MS - DEMO_P99_MS;
