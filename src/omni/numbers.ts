@@ -119,3 +119,8 @@ export const READINESS_FEEDBACK_SNAPSHOTS = [
   { feedback: true, text: false },
   { feedback: true, text: true },
 ] as const;
+
+// Two results and one illustrative storage space; this is not a configured pool size.
+export const LIFETIME_RESULT_IDS = ['A', 'B'] as const;
+export const LIFETIME_SLOT_COUNT = 1;
+export const LIFETIME_WAITING_COUNT = LIFETIME_RESULT_IDS.length - LIFETIME_SLOT_COUNT;
