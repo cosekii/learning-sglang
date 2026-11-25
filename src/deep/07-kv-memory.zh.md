@@ -202,7 +202,7 @@ $$
 
 ### 第 3 步的两种浪费怎么处理
 
-- **不预留：** request 每多一个 token 才多要一页，不替还没生成的 token 占地方。
+- **不预留：** 本图按 SGLang 默认的 $p=1$ 计算，request 每多一个 token 才多要一页，不替还没生成的 token 占地方；其他 $p$ 的换算见第 6 步。
 - **没有外部碎片：** 每个空闲 page 都能给任何 request，不存在「空闲总量够、单块太小」的洞。
 - **尾页仍可能浪费：** 一页装多个 token 时，最后一页可能装不满；第 6 步再算这部分。
 
@@ -250,9 +250,9 @@ SGLang 默认开着 prefix caching：request 结束后，它的 page 留作 cach
 ### 图上是什么
 
 - 同一个网格，起点是第 5 步结束时的状态（41 个空闲）。
-- 「req 7 到达 · 需要 8 个 page」，一整块深青色，拆成 8 个 page，飞进网格。
-- 底下两行：req 7 的页表 1, 17, 29, 44, 45, 61, 77, 114；attention 照这个列表读 cache。
-- 右边图例：req 1–7，req 5 仍标「· 结束」。
+- 「req 7 到达 · 需要 8 个 page」，一整块深青色，拆成 8 个 page，一次一个飞进网格。
+- 底下三行：req 7 的页表 1, 17, 29, 44, 45, 61, 77, 114；attention 照表读 cache；vLLM 默认一页 16 个 token，SGLang 默认一页 1 个。
+- 右边图例：req 1–7，req 5 仍标「· 结束」。手机只保留 req 7 和空闲两项，其余 request 的颜色沿用前几步。
 
 ### 代入图上的数
 
@@ -261,11 +261,31 @@ SGLang 默认开着 prefix caching：request 结束后，它的 page 留作 cach
 | req 7 取走 | 8 个，都在第 5 步释放的 14 个里 |
 | 之后空闲 | 41 − 8 = 33 |
 
-attention kernel（在 GPU 上跑的一段计算程序）读 req 7 的 K/V 时，先读第 1 页，再读第 17 页，依此类推。
+本图按 SGLang 默认的 $p=1$ 数页，所以 req 7 的 8 个 page 对应 8 个 token。attention kernel（在 GPU 上跑的一段计算程序）读 req 7 的 K/V 时，先读第 1 页，再读第 17 页，依此类推。
 
-### page 大小
+### page 大小与 token 的位置
 
-page 大小 $p$ = 一页装几个 token 的 K/V。
+page 大小 $p$ = 一页装几个 token 的 K/V。vLLM 是另一个开源大模型推理引擎，这里用它和 SGLang 对照 page 大小。$c$ 个 token 需要 $n$ 页；序号 $i$ 从 0 开始数，这个 token 所在的逻辑页号 $\ell$ 和页内偏移 $o$ 是：
+
+$$
+n=\left\lceil\frac{c}{p}\right\rceil,\qquad
+\ell=\left\lfloor\frac{i}{p}\right\rfloor,\qquad
+o=i\bmod p
+$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $p$ | 一页装几个 token | 本步 caption |
+| $c,n$ | request 的 token 数、所需 page 数 | 本步 |
+| $i,\ell,o$ | token 序号、逻辑页号、页内偏移，均从 0 数 | 本步 |
+| $m_{kv}$ | 一个 token 在全部层的 K/V，128 KB | 第 3 章第 9 步 |
+| $M_{\text{room}}$ | 用来估算页数的 64 GB | 第 1 步的 80 − 16 GB 教学简化 |
+
+物理页号 = 页表[$\ell$]，再取这一页的第 $o$ 份 K/V。比如 vLLM 的 $p=16$ 时，50 个 token 要 $\lceil50\div16\rceil=4$ 页；序号 $i=49$ 的 token 在逻辑页 $\ell=3$、页内偏移 $o=1$，也就是第 4 页的第 2 个位置，最后一页只装 2 个 token。
+
+第 14 章第 4 步讲跨块读取怎样合并 attention 结果，第 9 步给 kernel 按表找物理页的例子；本步不展开在线 softmax。这里的页数关系与 [zero-to-sglang 第 2 部分第 7 章 §3.1–3.2、§4.1](https://github.com/datawhalechina/zero-to-sglang/blob/bcf0cd82b9d1a058e5211d56431f14efd99eaf12/course-material/ch/part2/%E7%AC%AC7%E7%AB%A0_PagedKVCache%E4%B8%8E%E6%98%BE%E5%AD%98%E7%AE%A1%E7%90%86.md) 相同。
+
+### 一页多少字节，64 GB 多少页
 
 $$
 \text{一页的字节} = p \times m_{kv},\qquad
@@ -274,10 +294,15 @@ $$
 
 | | $p$ | 一页 | 64 GB 里有多少页 |
 |---|---|---|---|
-| vLLM 默认 | 16 | 16 × 128 KB = 2 MB | 约 3.05 万 |
-| SGLang 默认 | 1 | 128 KB | 64 × 10⁹ ÷ 131,072 ≈ 48.8 万 |
+| [vLLM 默认](https://docs.vllm.ai/en/stable/api/vllm/config/cache/) | 16 | 16 × 128 KB = 2,048 KB | 约 3.05 万 |
+| SGLang 默认 | 1 | 128 KB | 约 48.8 万 |
 
-图上的 120 格只是其中一小部分。SGLang 在 CUDA 上 `--page-size` 不设时取 1（源码 `_page_size_default`）。
+单位逐个展开：$m_{kv}=128\times1{,}024$ B $=131{,}072$ B；64 GB $=64\times10^9$ B。所以：
+
+- vLLM：64 × 10⁹ ÷ (16 × 131,072) ≈ 30,518 页。
+- SGLang：64 × 10⁹ ÷ 131,072 ≈ 488,281 页。
+
+第 1 步已经说明 SGLang 实际给池子的约 55 GB；这里的页数是用 64 GB 教学容量估算，不是实际池的精确页数。图上的 120 格只是其中一小部分。SGLang 在 CUDA 上 [`--page-size`](https://docs.sglang.io/docs/advanced_features/server_arguments) 不设时取 1，由源码 [`arg_groups/overrides.py` 的 `_page_size_default`](https://github.com/sgl-project/sglang/blob/v0.5.18/python/sglang/srt/arg_groups/overrides.py) 决定。
 
 ### 大 page 和小 page
 
