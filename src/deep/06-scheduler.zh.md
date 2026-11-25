@@ -257,7 +257,7 @@ gap 只取决于 $C$，不取决于 prompt 多长。一个 chunk 的 K、V 写�
 
 ## 第 7 步 · 切 chunk，并且混合
 
-> **一句话：** 每步一次前向带一个 236 token 的 chunk 和全部 64 个 decode token，正好落在约 300 的分界点；没有冻结，首个 token 44 ms。
+> **一句话：** 每步一次前向带一个 236 token 的 chunk 和全部 64 个 decode token，正好落在约 300 的分界点；其他人每步都出 token，最长间隔 4.9 ms，首个 token 44 ms。
 
 ### 图上是什么
 
@@ -297,11 +297,14 @@ $$
 
 TTFT 比第 6 步的 47 ms 少，因为没有只跑 decode 的步。chunk 用的是 decode 步闲着的算力：64 个 decode token 在 4.78 ms 里只算 1.04 ms。
 
+第 4–6 步的「冻结」指整步没有 decode token。本步没有这种停顿，但混合步仍比纯 decode 的 4.78 ms 多 0.08 ms；每步都出 token，不代表间隔不变。
+
 ### SGLang 里（已对源码核对）
 
 - `--enable-mixed-chunk` 打开混合，默认关闭。
 - 打开后 chunk 和 decode 共用一个预算：chunk 最多 `chunked_prefill_size` − $B$ 个 token（调度器把 running 的条数作为 `mixed_with_decode_tokens` 传进去）。
 - SGLang 不会自动把 chunk 调到分界点。图上的 236 是本章选的大小，相当于把 `chunked_prefill_size` 设成 300。
+- 方法归属：Sarathi-Serve 的想法、vLLM v1 的默认、SGLang 的 mixed-chunk 选项。
 
 ### 接下来
 
@@ -309,13 +312,13 @@ TTFT 比第 6 步的 47 ms 少，因为没有只跑 decode 的步。chunk 用的
 
 ## 第 8 步 · 三种策略并排
 
-> **一句话：** 同一个 prompt：prefill 优先首个 token 最快（32 ms）但冻结 37 ms；切 chunk 冻结 13 ms；混合没有冻结。chunk 大小 $C$ 在两个数字之间取舍，它由 scheduler 决定。
+> **一句话：** 同一个 prompt：prefill 优先首个 token 最快（32 ms）但停顿 37 ms；切 chunk 停顿 13 ms；混合每步都出 token，最长间隔 4.9 ms，比纯 decode 多 0.08 ms。chunk 大小 $C$ 在两个数字之间取舍，它由 scheduler 决定。
 
 ### 图上是什么
 
 - 三组，每组两根条，同一比例：蓝条「新来者 · 首个 token」，下面一根「其他人 · 最长间隔」（超过两个 decode 步为红色，否则橙色）。
 - 每组标题和说明：「prefill 优先 · 一个 prompt，单独一步」「切 chunk，不混合 · 每 chunk 512 token」「切 chunk，混合 · 每 chunk 236 token」。
-- 说明行：「decode 步的下限是 4.8 ms：间隔为 4.8 ms 说明没人察觉新来者」。
+- 说明行：「decode 步下限是 4.8 ms；Mixed 每步出 token，但 4.9 ms 比下限多 0.1 ms」。
 - 底部脚注同第 6 步。
 
 ### 代入图上的数

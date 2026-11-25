@@ -257,7 +257,7 @@ Step 7 lets a chunk and the decodes share one forward pass.
 
 ## Step 7 · Chunked and mixed
 
-> **In one line:** Each step is one forward pass with a 236-token chunk and all 64 decode tokens, landing on the ~300 balance point; no freeze, first token in 44 ms.
+> **In one line:** Each step is one forward pass with a 236-token chunk and all 64 decode tokens, landing on the ~300 balance point; everyone else gets a token every step, with a 4.9 ms longest gap and a 44 ms first token.
 
 ### On the stage
 
@@ -297,6 +297,8 @@ $$
 
 The first token comes sooner than step 6's 47 ms because no step is decode alone. The chunk uses compute a decode step leaves idle: 64 decode tokens need 1.04 ms of math in 4.78 ms.
 
+Steps 4–6 use "freeze" for a whole step with no decode token. Mixed has no such stall, but its 4.85 ms step is still 0.08 ms longer than the 4.78 ms decode-only step: a token every step does not mean an unchanged gap.
+
 ### In SGLang (checked against the source)
 
 - `--enable-mixed-chunk` turns mixing on; it is off by default.
@@ -309,7 +311,7 @@ Step 8 sets the two numbers of the three policies side by side.
 
 ## Step 8 · Three policies side by side
 
-> **In one line:** For the same prompt, prefill first gives the fastest first token (32 ms) but a 37 ms freeze; chunked freezes 13 ms; mixed does not freeze. The chunk size $C$ trades one number against the other, and the scheduler sets it.
+> **In one line:** For the same prompt, prefill first gives the fastest first token (32 ms) but a 37 ms stall without decode; chunked has a 13 ms stall; mixed produces a token every step, with a 4.9 ms longest gap, 0.08 ms above decode alone. The chunk size $C$ trades one number against the other, and the scheduler sets it.
 
 ### On the stage
 

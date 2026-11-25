@@ -71,8 +71,8 @@
     { scene: 'timeline', mode: 'prefill-first', caption: `The default policy: if anyone is waiting, run a prefill batch first. The newcomer's first token comes in ${fmt(M['prefill-first'].ttft)}, but nobody decodes during those ${fmt(M['prefill-first'].ttft)}. An 8k-token prompt, the longest Llama-3-8B takes, freezes everyone for ${fmt(stepMs(8192))}.`, captionZh: `默认策略：有人等待就先跑 prefill batch。新来者的首个 token 要 ${fmt(M['prefill-first'].ttft)}，但这 ${fmt(M['prefill-first'].ttft)} 里没人 decode。8k token 的 prompt（Llama-3-8B 的上限）会冻结所有人 ${fmt(stepMs(8192))}。` },
     { scene: 'timeline', mode: 'batched', caption: `It gets worse. Waiting prompts are batched into one prefill step, efficient for the GPU and awful for the decoders: three prompts, ${waitingTotal.toLocaleString()} tokens, one ${fmt(M.batched.ttft)} step. Every running conversation freezes for all of it.`, captionZh: `更糟的是，等待的 prompt 被合进一个 prefill 步：对 GPU 高效，对 decode 却糟糕：三个 prompt、${waitingTotal.toLocaleString()} 个 token、一个 ${fmt(M.batched.ttft)} 的步。所有运行中的对话全程冻结。` },
     { scene: 'timeline', mode: 'chunked', caption: `Cap the prefill batch. Split prompts into chunks and alternate: a chunk, a decode step, a chunk, a decode step. The freeze is now one chunk long, whatever the prompt's size. The first token arrives a little later.`, captionZh: `给 prefill batch 设上限。把 prompt 切成 chunk 并交替：一个 chunk、一个 decode 步、一个 chunk、一个 decode 步。现在无论 prompt 多大，冻结只有一个 chunk 长。首个 token 稍晚到达。`, foot: CHUNK_FOOT, footZh: CHUNK_FOOT_ZH },
-    { scene: 'timeline', mode: 'mixed', caption: `Once prefill comes in chunks, a chunk is small enough to ride inside a decode step, on compute the decodes leave idle. No freeze at all, first token in ${fmt(M.mixed.ttft)}. Sarathi-Serve's idea, vLLM v1's default, SGLang's mixed-chunk option.`, captionZh: `prefill 一旦切成 chunk，一个 chunk 就小到能搭进 decode 步，用 decode 闲置的算力。完全没有冻结，首个 token 只要 ${fmt(M.mixed.ttft)}。这是 Sarathi-Serve 的想法、vLLM v1 的默认、SGLang 的 mixed-chunk 选项。` },
-    { scene: 'compare', caption: `Same GPU, same prompt, three policies. Prefill-first: fastest first token, worst freeze. Chunked: a bounded freeze. Mixed: none. The chunk size is the knob between the two clocks, and it belongs to the scheduler, not the model.`, captionZh: `同一 GPU、同一 prompt，三种策略。Prefill-first：首个 token 最快，冻结最糟。Chunked：冻结有界。Mixed：无冻结。chunk 大小是两个时钟之间的旋钮，它属于 scheduler，不属于模型。`, foot: CHUNK_FOOT, footZh: CHUNK_FOOT_ZH },
+    { scene: 'timeline', mode: 'mixed', caption: `Once prefill comes in chunks, a chunk is small enough to ride inside a decode step, on compute the decodes leave idle. No freeze at all, first token in ${fmt(M.mixed.ttft)}. Sarathi-Serve's idea, vLLM v1's default, SGLang's mixed-chunk option.`, captionZh: `chunk 搭进 decode 步，其他人每步都出 token。最长间隔由 ${fmt(tMem)} 增至 ${fmt(M.mixed.worst)}，新来者的首个 token 要 ${fmt(M.mixed.ttft)}。` },
+    { scene: 'compare', caption: `Same GPU, same prompt, three policies. Prefill-first: fastest first token, worst freeze. Chunked: a bounded freeze. Mixed: none. The chunk size is the knob between the two clocks, and it belongs to the scheduler, not the model.`, captionZh: `同一 GPU、同一 prompt，三种策略并排。Mixed 每步出 token，间隔只多 ${fmt(M.mixed.worst - tMem)}。`, foot: CHUNK_FOOT, footZh: CHUNK_FOOT_ZH },
     { scene: 'loop', caption: `Each step the scheduler asks: anyone waiting, and room in the cache? If so, a prefill batch up to the chunk size, plus the decodes if mixing is on. If not, the decode batch. What counts as room is chapter ${chNum('07-kv-memory')}.`, captionZh: `每步 scheduler 都问：有人等待吗，cache 里有空位吗？若有，组一个不超过 chunk 大小的 prefill batch，若开了 mixing 再加上 decode。若没有，就跑 decode batch。什么算有空位，见第 ${chNum('07-kv-memory')} 章。` },
   ];
 
@@ -87,14 +87,75 @@
   const met = $derived(M[mode]);
   const segX = $derived(segs.reduce<number[]>((acc, s, i) => { acc.push(i === 0 ? 0 : acc[i - 1] + segs[i - 1].ms); return acc; }, []));
   const W = 720, H = 400;
+  let phone = $state(false);
+  $effect(() => {
+    const query = window.matchMedia('(max-width: 900px)');
+    const update = () => (phone = query.matches);
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  });
+  const phoneMixed = $derived(phone && step === 6 && $lang === 'zh');
+  const phoneCompare = $derived(phone && step === 7 && $lang === 'zh');
+  const phoneCustom = $derived(phoneMixed || phoneCompare);
 </script>
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="The scheduler, step {step + 1}">
+    <svg viewBox={phoneMixed ? '0 0 360 550' : phoneCompare ? '0 0 360 500' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="The scheduler, step {step + 1}" class:phone-custom={phoneCustom}>
+
+      {#if phoneMixed}
+        <text x="180" y="26" text-anchor="middle" class="ph-title">混合：每步都有 decode token</text>
+        <text x="180" y="50" text-anchor="middle">到达后 9 步 · 64 个用户继续 decode</text>
+        <rect x="28" y="68" width="16" height="12" rx="2" fill="var(--accent)" />
+        <text x="52" y="79">chunk</text>
+        <rect x="120" y="68" width="16" height="12" rx="2" fill="var(--gen)" />
+        <text x="144" y="79">64 个 decode</text>
+        <text x="180" y="105" text-anchor="middle" class="ph-strong">蓝块算新 prompt，橙块让其他人出 token</text>
+        {#each segs.filter((s) => s.prefill > 0) as s, i}
+          {@const y = 126 + i * 31}
+          <text x="12" y={y + 16}>第 {i + 1} 步</text>
+          <rect x="62" y={y} width="100" height="23" rx="4" fill="var(--accent)" />
+          <text x="112" y={y + 16} text-anchor="middle" class="ph-onblue">{s.label}</text>
+          <rect x="170" y={y} width="100" height="23" rx="4" fill="var(--gen)" opacity="0.8" />
+          <text x="220" y={y + 16} text-anchor="middle">出 token</text>
+          <text x="280" y={y + 16}>{fmt(s.ms)}</text>
+        {/each}
+        <text x="180" y="418" text-anchor="middle">第 9 步末：新来者的首个 token</text>
+        <rect x="16" y="438" width="328" height="88" rx="9" fill="#fbfaf7" stroke="var(--line)" />
+        <text x="30" y="462" class="ph-strong">其他人每步都出 token，没有整步停住</text>
+        <text x="30" y="488">最长间隔 {fmt(met.worst)} = 纯 decode {fmt(tMem)} + {fmt(met.worst - tMem)}</text>
+        <text x="30" y="514">新来者：首个 token {fmt(met.ttft)}</text>
+      {/if}
+
+      {#if phoneCompare}
+        {@const maxMs = Math.max(...policies.map((p) => Math.max(M[p.mode].ttft, M[p.mode].worst)))}
+        <text x="180" y="26" text-anchor="middle" class="ph-title">同一 prompt，三种策略</text>
+        <text x="180" y="50" text-anchor="middle">2,000 token · 64 个用户在 decode</text>
+        <rect x="16" y="66" width="16" height="12" rx="2" fill="var(--accent)" />
+        <text x="40" y="77">首个 token</text>
+        <rect x="128" y="66" width="16" height="12" rx="2" fill="var(--gen)" />
+        <text x="152" y="77">最长间隔</text>
+        <rect x="246" y="66" width="16" height="12" rx="2" fill="var(--eos)" />
+        <text x="270" y="77">&gt; 2 步</text>
+        {#each policies as p, i}
+          {@const y = 126 + i * 96}
+          {@const m = M[p.mode]}
+          <text x="16" y={y} class="ph-strong">{p.name.split(' · ')[0]}</text>
+          <text x="16" y={y + 29}>首个 token</text>
+          <rect x="104" y={y + 16} width={(m.ttft / maxMs) * 160} height="18" rx="3" fill="var(--accent)" />
+          <text x="272" y={y + 30}>{fmt(m.ttft)}</text>
+          <text x="16" y={y + 57}>最长间隔</text>
+          <rect x="104" y={y + 44} width={Math.max(3, (m.worst / maxMs) * 160)} height="18" rx="3" fill={m.worst > 2 * tMem ? 'var(--eos)' : 'var(--gen)'} />
+          <text x="272" y={y + 58}>{fmt(m.worst)}</text>
+        {/each}
+        <rect x="16" y="410" width="328" height="74" rx="9" fill="#fbfaf7" stroke="var(--line)" />
+        <text x="30" y="437" class="ph-strong">Mixed 每步出 token，没有整步停住</text>
+        <text x="30" y="467">最长 4.9 ms = 纯 decode 4.8 ms + 0.1 ms</text>
+      {/if}
 
       <!-- Two lists, one batch per step -->
-      {#if cur.scene === 'lists'}
+      {#if !phoneCustom && cur.scene === 'lists'}
         <g transition:fade={{ duration: 250 }}>
           <rect x="24" y="70" width="200" height="220" rx="12" fill="#fbfaf7" stroke="var(--accent)" stroke-dasharray="5 4" />
           <text x="40" y="92" class="boxtitle">{t('waiting · need a prefill', 'waiting · 需要 prefill')}</text>
@@ -139,7 +200,7 @@
       {/if}
 
       <!-- Recap: where chapter 5 left off -->
-      {#if cur.scene === 'recap'}
+      {#if !phoneCustom && cur.scene === 'recap'}
         {@const cols = [{ w: 44, wide: false }, { w: 44, wide: false }, { w: 150, wide: true }, { w: 44, wide: false }, { w: 44, wide: false }]}
         {@const xs = cols.reduce<number[]>((a, c, i) => { a.push(i === 0 ? 0 : a[i - 1] + cols[i - 1].w + 4); return a; }, [])}
         <g transition:fade={{ duration: 250 }}>
@@ -178,7 +239,7 @@
       {/if}
 
       <!-- Why two batch types: the shapes -->
-      {#if cur.scene === 'why'}
+      {#if !phoneCustom && cur.scene === 'why'}
         <g transition:fade={{ duration: 250 }}>
           <rect x="24" y="64" width="330" height="232" rx="12" fill="#fbfaf7" stroke="var(--accent)" />
           <text x="40" y="86" class="boxtitle">{t('a prefill batch', '一个 prefill batch')}</text>
@@ -215,7 +276,7 @@
       {/if}
 
       <!-- Timeline: 64 decoders and the newcomer(s), time on the x axis -->
-      {#if cur.scene === 'timeline'}
+      {#if !phoneCustom && cur.scene === 'timeline'}
         {@const rowA = TL.y}
         {@const rowN = TL.y + TL.gapY}
         {@const arrX = TL.x + met.arrival * TL.pxPerMs}
@@ -275,6 +336,9 @@
             <rect x={TL.x + 110} y={ly - 9} width="26" height="10" rx="2" fill="var(--gen)" opacity="0.85" /><text x={TL.x + 142} y={ly} class="tag">decode batch</text>
             <rect x={TL.x + 230} y={ly - 9} width="26" height="5" rx="1.5" fill="var(--accent)" /><rect x={TL.x + 230} y={ly - 4} width="26" height="5" rx="1.5" fill="var(--gen)" /><text x={TL.x + 262} y={ly} class="tag">{t('mixed batch: a chunk plus every decode, one forward pass', '混合 batch：一个 chunk 加全部 decode，一次前向')}</text>
           </g>
+          {#if mode === 'mixed' && $lang === 'zh'}
+            <text x={W / 2} y="282" text-anchor="middle" class="tag strong">每步都出 token；最长 {fmt(met.worst)}，比纯 decode 多 {fmt(met.worst - tMem)}</text>
+          {/if}
           {#if met.worst > 1.5 * tMem}
             <path d="M {gx0} {rowA - 6} V {rowA - 12} H {gx1} V {rowA - 6}" fill="none" stroke="var(--eos)" stroke-width="1.5" in:fade={{ delay: 500 }} />
             <text x={(gx0 + gx1) / 2} y={rowA - 18} text-anchor="middle" class="tag" fill="var(--eos)" in:fade={{ delay: 500 }}>{t(`no token for ${fmt(met.worst)}`, `${fmt(met.worst)} 没有 token`)}</text>
@@ -294,7 +358,7 @@
       {/if}
 
       <!-- Compare the policies -->
-      {#if cur.scene === 'compare'}
+      {#if !phoneCustom && cur.scene === 'compare'}
         {@const maxMs = Math.max(...policies.map((p) => Math.max(M[p.mode].ttft, M[p.mode].worst)))}
         {@const bx = 180}
         {@const bw = 460}
@@ -315,12 +379,12 @@
               <text x={bx + Math.max(3, (m.worst / maxMs) * bw) + 6} y={y + 51} class="num">{fmt(m.worst)}</text>
             </g>
           {/each}
-          <text x="16" y="352" class="legend" in:fade={{ delay: 900 }}>{t(`the decode step floor is ${fmt(tMem)}: a gap of ${fmt(tMem)} means nobody noticed the newcomer at all`, `decode 步的下限是 ${fmt(tMem)}：间隔为 ${fmt(tMem)} 说明没人察觉新来者`)}</text>
+          <text x="16" y="352" class="legend" in:fade={{ delay: 900 }}>{t(`the decode step floor is ${fmt(tMem)}: a gap of ${fmt(tMem)} means nobody noticed the newcomer at all`, `decode 步下限是 ${fmt(tMem)}；Mixed 每步出 token，但 ${fmt(M.mixed.worst)} 比下限多 ${fmt(M.mixed.worst - tMem)}`)}</text>
         </g>
       {/if}
 
       <!-- The scheduler's loop -->
-      {#if cur.scene === 'loop'}
+      {#if !phoneCustom && cur.scene === 'loop'}
         <g transition:fade={{ duration: 250 }}>
           <defs>
             <marker id="arrowhead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -377,7 +441,7 @@
           <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote" in:fade={{ delay: 1400 }}>{t('this loop is', '这个循环就是')} <tspan class="mono">Scheduler.get_next_batch_to_run()</tspan></text>
         </g>
       {/if}
-      {#if cur.foot}
+      {#if cur.foot && !phoneCustom}
         {#key cur.foot}<text x={W / 2} y={H - 10} text-anchor="middle" class="footnote" in:fade>{t(cur.foot ?? '', cur.footZh ?? '')}</text>{/key}
       {/if}
     </svg>
@@ -398,4 +462,8 @@
   .tile-value { font-size: 20px; font-weight: 650; letter-spacing: -0.02em; }
   .tile-label { font-size: 10.5px; fill: var(--muted); }
   .wire { stroke: var(--line); stroke-width: 6; stroke-linecap: round; }
+  .phone-custom text { font-family: var(--sans); font-size: 13px; fill: var(--fg); }
+  .phone-custom .ph-title { font-size: 16px; font-weight: 650; }
+  .phone-custom .ph-strong { font-weight: 650; }
+  .phone-custom .ph-onblue { fill: white; }
 </style>
