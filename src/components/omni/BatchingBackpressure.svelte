@@ -43,6 +43,18 @@
     STREAM_TEACHING_INPUT_COUNT,
     STREAM_TEACHING_SHARED_STEPS,
     STREAM_TEACHING_OUTPUT_COUNT,
+    H200_FIFO_BATCH_SMALL,
+    H200_FIFO_BATCH_LARGE,
+    H200_FIFO_SMALL_REQUESTS_PER_S,
+    H200_FIFO_LARGE_REQUESTS_PER_S,
+    H200_FIFO_REQUEST_COUNT,
+    H200_FIFO_CLIENT_CONCURRENCY,
+    H200_FIFO_WAIT_MS,
+    H200_FIFO_WARMUP_REQUESTS,
+    H200_FIFO_REPEATS,
+    H200_FIFO_EXTRA_REQUESTS_PER_S,
+    H200_FIFO_SPEEDUP_PERCENT,
+    H200_FIFO_BAR_MAX,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -62,6 +74,9 @@
   }, {
     caption: 'The left collects whole requests. The right stores each stream\'s chunk before one shared step.',
     captionZh: '左边收完整请求，右边先存各人的 chunk。两边都能合算，消息路径却不同。',
+  }, {
+    caption: 'In this H200 test, B8 throughput is 38% higher. That result does not promise a win elsewhere.',
+    captionZh: '这组 H200 实验里，B8 吞吐高约 38%。它只说明当时条件，不保证别处更快。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -77,7 +92,7 @@
     query.addEventListener('change', update);
     return () => query.removeEventListener('change', update);
   });
-  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 2 ? 610 : step === 4 ? 820 : 680) : step === 2 ? 460 : step === 4 ? 500 : step > 0 ? 450 : 410);
+  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 2 ? 610 : step === 4 ? 820 : step === 5 ? 700 : 680) : step === 2 ? 460 : step >= 4 ? 500 : step > 0 ? 450 : 410);
   const panels = $derived([
     { x: phone ? 15 : 20, y: phone ? 82 : 86, wait: 0 },
     { x: phone ? 15 : 375, y: phone ? 330 : 86, wait: BATCH_WAIT_ACTIVE_MS },
@@ -94,6 +109,13 @@
     { x: phone ? 15 : 20, y: phone ? 82 : 92, kind: 'batch', title: t('MiniCPM-o Code2Wav · whole requests', 'MiniCPM-o Code2Wav · 完整请求') },
     { x: phone ? 15 : 375, y: phone ? 400 : 92, kind: 'stream', title: t('StreamingVocoderBase · opt-in coalescing', 'StreamingVocoderBase · 可选跨请求合步') },
   ]);
+  const h200Bars = $derived([
+    { batch: H200_FIFO_BATCH_SMALL, value: H200_FIFO_SMALL_REQUESTS_PER_S, x: phone ? 55 : 100 },
+    { batch: H200_FIFO_BATCH_LARGE, value: H200_FIFO_LARGE_REQUESTS_PER_S, x: phone ? 185 : 290 },
+  ].map((bar) => {
+    const height = (phone ? 180 : 190) * bar.value / H200_FIFO_BAR_MAX;
+    return { ...bar, height, y: (phone ? 320 : 330) - height };
+  }));
 </script>
 
 <figure class="viz">
@@ -262,6 +284,33 @@
       <text x={W / 2} y={phone ? 750 : 446} text-anchor="middle" class="tag">{phone ? t('MiniCPM-o: left · optional streaming coalescing: right', 'MiniCPM-o 走左侧 · 可选流式合步走右侧') : t('MiniCPM-o uses the left SimpleScheduler path; the right path is optional for streaming-vocoder subclasses.', 'MiniCPM-o 走左边的 SimpleScheduler；右边是流式 vocoder 子类的可选路径。')}</text>
       <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{t('A and B are a teaching example; one shared step does not mean one request loses its identity.', 'A、B 是教学例子；合做一步不会抹掉各请求的身份。')}</text>
       <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Next: historical measurements show why a bigger batch is not a universal promise.', '下一步：历史实验说明，更大 batch 不是普遍保证。')}</text>
+      {:else if step === 5}
+      <text x={phone ? 15 : 20} y="20" class="tag strong">{t('HISTORICAL H200 EXPERIMENT · quoted, not rerun here', '历史 H200 实验 · 引用记录，本章没有重跑')}</text>
+      <text x={phone ? 15 : 20} y="44" class="tag">FIFO · {H200_FIFO_REQUEST_COUNT} {t('requests', '条请求')} · {t('concurrency', '客户端并发')} {H200_FIFO_CLIENT_CONCURRENCY} · {t('wait', '主动等待')} {H200_FIFO_WAIT_MS} ms</text>
+      <text x={phone ? 15 : 20} y="66" class="tag">{phone ? t(`warmup ${H200_FIFO_WARMUP_REQUESTS} · repeats ${H200_FIFO_REPEATS} · throughput = requests/s`, `预热 ${H200_FIFO_WARMUP_REQUESTS} · 重复 ${H200_FIFO_REPEATS} · 吞吐 = 请求数/秒`) : t(`${H200_FIFO_WARMUP_REQUESTS} warmup requests excluded · ${H200_FIFO_REPEATS} mixed-reference repeats · throughput = completed requests / second`, `${H200_FIFO_WARMUP_REQUESTS} 条预热剔除 · ${H200_FIFO_REPEATS} 次混合参考音频重复 · throughput = 每秒完成请求数`)}</text>
+      <path d="M{phone ? 35 : 60} {phone ? 100 : 100} V{phone ? 320 : 330} H{phone ? 275 : 450}" fill="none" stroke="var(--line)" stroke-width="1.5" />
+      <path d="M{phone ? 35 : 60} {phone ? 140 : 140} H{phone ? 275 : 450}" fill="none" stroke="var(--faint)" stroke-width="1" stroke-dasharray="4 4" />
+      <text x={phone ? 31 : 56} y={phone ? 144 : 144} text-anchor="end" class="tag">{H200_FIFO_BAR_MAX}</text>
+      <text x={phone ? 31 : 56} y={phone ? 324 : 334} text-anchor="end" class="tag">0</text>
+      {#each h200Bars as bar}
+        <rect x={bar.x} y={bar.y} width={phone ? 80 : 110} height={bar.height} rx="7" fill={bar.batch === H200_FIFO_BATCH_LARGE ? 'var(--accent)' : 'var(--accent-soft)'} stroke="var(--accent)" stroke-width="2" />
+        <text x={bar.x + (phone ? 40 : 55)} y={bar.y - 13} text-anchor="middle" class="mono strong">{bar.value.toFixed(3)}</text>
+        <text x={bar.x + (phone ? 40 : 55)} y={(phone ? 320 : 330) + 30} text-anchor="middle" class="rowlabel">B{bar.batch} · {t('cap', '上限')} {bar.batch}</text>
+      {/each}
+      <rect x={phone ? 20 : 500} y={phone ? 392 : 105} width={phone ? 260 : 180} height={phone ? 128 : 225} rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
+      <text x={phone ? 34 : 514} y={phone ? 417 : 132} class="rowlabel">{t('WHAT THIS PROVES', '这组数字能证明什么')}</text>
+      <text x={phone ? 34 : 514} y={phone ? 443 : 163} class="tag">✓ {t('B8 won on this workload', 'B8 在这份负载上更快')}</text>
+      <text x={phone ? 34 : 514} y={phone ? 467 : 193} class="tag">✓ {t('same controlled comparison', '同一组受控对照')}</text>
+      <text x={phone ? 34 : 514} y={phone ? 491 : 233} class="tag">× {t('not every GPU or workload', '不是所有 GPU 和负载')}</text>
+      <text x={phone ? 34 : 514} y={phone ? 515 : 263} class="tag">× {t('not the current cap of 16', '不是当前主线的上限 16')}</text>
+      {#if !phone}
+        <text x="514" y="303" class="tag">× {t('not a universal optimum', '不是普遍最优配置')}</text>
+      {/if}
+      <text x={W / 2} y={phone ? 552 : 382} text-anchor="middle" class="mono strong">({H200_FIFO_LARGE_REQUESTS_PER_S} − {H200_FIFO_SMALL_REQUESTS_PER_S}) ÷ {H200_FIFO_SMALL_REQUESTS_PER_S} = {H200_FIFO_SPEEDUP_PERCENT}%</text>
+      <text x={W / 2} y={phone ? 578 : 408} text-anchor="middle" class="tag">{t('About', '约')} {H200_FIFO_EXTRA_REQUESTS_PER_S.toFixed(2)} {t('more completed requests each second', '条请求每秒多完成')}</text>
+      <text x={W / 2} y={phone ? 604 : 434} text-anchor="middle" class="tag strong">{t('Historical code: cap 8 · current main: cap 16 and changed implementation', '历史代码：上限 8 · 当前主线：上限 16，实现也已变化')}</text>
+      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{phone ? t('Source: batch.md / PR #2271 · old code 89e60d0', '出处：batch.md / PR #2271 · 旧版 89e60d0') : t('Historical reference: batch.md and PR #2271; old code 89e60d0, not current main.', '历史出处：batch.md 与 PR #2271；旧代码 89e60d0，不是当前主线。')}</text>
+      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Next: when capacity is full, backpressure rejects work instead of hiding an unbounded queue.', '下一步：容量满时，背压拒绝新工作，而不是藏起无限队列。')}</text>
       {/if}
     </svg>
   </div>

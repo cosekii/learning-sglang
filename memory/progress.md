@@ -86,7 +86,7 @@
 | 03 | 03-request-binding | 完成：3/3 步易读满分 | 24.00 |
 | 04 | 04-readiness-contracts | 完成：4/4 步易读满分 | 24.00 |
 | 05 | 05-data-lifetime | 完成：5/5 步易读满分 | 24.00 |
-| 06 | 06-batching-backpressure | 在做第 5 步 | — |
+| 06 | 06-batching-backpressure | 在做第 6 步 | — |
 | 07 | 07-shared-gpu-budgets | 规划 | — |
 | 08 | 08-measure-streaming | 规划 | — |
 | 09 | 09-ar-stage-optimization | 规划 | — |

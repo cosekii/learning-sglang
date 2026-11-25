@@ -286,3 +286,59 @@ Line numbers refer to `origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`.
 ### Next
 
 Step 6 adds historical H200 measurements. Batching can improve throughput, but those results belong to their code, model and test conditions rather than a universal promise about current main.
+
+## Step 6 · A historical win has a limited scope
+
+> **In one sentence:** In that H200 comparison of 200 requests, client concurrency 16 and zero delay, FIFO B8 delivered about 37.9% more throughput than B1; this promises nothing universal about current main or other workloads.
+
+### What the picture shows
+
+- This step quotes the historical article and PR #2271; it does not rerun the model locally. Throughput means completed requests per second, so a taller bar completes more work in the same second.
+- The two bars change only FIFO's Code2Wav collection cap: B1 reaches 4.100 requests/s and B8 reaches 5.652. Here B names a batch cap, not request B from earlier steps.
+- The experiment used one H200, the first 200 SeedTTS EN requests, client concurrency 16 and zero deliberate delay. It excluded 50 warmup requests per launch, repeated mixed-reference configurations three times, pinned CPU cores and checked contention.
+- The scope card limits the result to this old code and workload. It does not call B8 optimal for every GPU, request distribution or current main.
+- Historical Code2Wav used a cap of eight; the chapter's pinned current-main configuration uses 16 and a changed implementation. These values cannot form a new performance comparison.
+
+### Work through the numbers
+
+Let B1 throughput be $T_1=4.100\,\mathrm{requests/s}$ and B8 throughput be $T_8=5.652\,\mathrm{requests/s}$. The additional completed requests per second are:
+
+$$\Delta T=T_8-T_1=5.652-4.100=1.552\,\mathrm{requests/s}$$
+
+The improvement relative to B1 is:
+
+$$G=\frac{T_8-T_1}{T_1}\times100\%=\frac{5.652-4.100}{4.100}\times100\%\approx37.9\%$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $T_1$ | Historical FIFO B1 average throughput | 4.100 requests/s in the H200 comparison |
+| $T_8$ | Historical FIFO B8 average throughput | 5.652 requests/s in the same comparison |
+| $\Delta T$ | Additional requests completed each second | 5.652 minus 4.100, giving 1.552 |
+| $G$ | B8 throughput improvement over B1 | Difference divided by B1, about 37.9% |
+
+The 37.9% baseline is explicitly FIFO B1 in the same table, not reference-aware, A800 or current main. Values from different tables and experiment rounds cannot share a denominator.
+
+### Why the conditions still matter
+
+Client concurrency 16 does not keep 16 requests in Code2Wav's queue. Requests may be in the network, preprocessing, Thinker or Talker. Available work arriving at this stage determines the actual batch. A scheduling cap of eight also does not prove one eight-request GPU kernel; the historical implementation regrouped by reference and other conditions.
+
+Zero deliberate delay removes only the window spent waiting for more arrivals. Waiting for an earlier batch, serial groups, whole-batch return and insufficient upstream supply can remain. B8's win is therefore a measurement, not a theorem deduced from zero delay.
+
+The historical record also describes a different A800 observation. The article says hardware, host and procedure were not fully aligned, so the card name alone cannot explain the difference. This step does not place those unlike environments on one axis.
+
+### Boundaries and sources
+
+This step does not rerun the experiment or evaluate historical reference-aware and early-emit alternatives. Current-main `code2wav` already has a cap of 16; the old reference grouping and return paths cannot be conflated with current code. A current configuration decision needs current code, the target workload and a controlled environment.
+
+- `Awesome-ML-SYS-Tutorial/sglang/sglang-omni/batch.md:5-16`: opening FIFO B1/B8 values and the H200, request-count, concurrency, delay, warmup and repeat conditions.
+- `Awesome-ML-SYS-Tutorial/sglang/sglang-omni/batch.md:27-35`: distinctions among client concurrency, scheduling batch, internal compute batch and zero delay.
+- `Awesome-ML-SYS-Tutorial/sglang/sglang-omni/batch.md:119-139`: samples, CPU controls, log interpretation and call-count boundary.
+- `Awesome-ML-SYS-Tutorial/sglang/sglang-omni/batch.md:143-164`: independent conditions for another batch-size round and why no universal optimum follows.
+- Historical experiment code: `89e60d0bf216bacd0e072d79f969550469614662`; discussion: PR #2271.
+- Current-main contrast: `sglang_omni/models/minicpm_o/config.py:144-176`, with cap 16.
+
+Current-main line numbers refer to `origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`.
+
+### Next
+
+Step 7 moves from computing more to rejecting when full. Router, worker and coordinator each have capacity boundaries, and backpressure makes waiting or failure explicit to the client.
