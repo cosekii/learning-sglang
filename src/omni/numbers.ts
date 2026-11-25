@@ -144,3 +144,12 @@ export const AR_ROUND_ONE_RUNNING_IDS = ['A', 'B'] as const;
 export const AR_ROUND_ONE_WAITING_IDS = ['C'] as const;
 export const AR_ROUND_TWO_RUNNING_IDS = ['B', 'C'] as const;
 export const AR_ROUND_ONE_WAITING_COUNT = AR_ROUND_ONE_WAITING_IDS.length;
+
+// ReferenceEncodeService defaults and a three-request ready-queue example.
+export const REFERENCE_ENCODER_DEFAULT_MAX_BATCH = 1;
+export const REFERENCE_ENCODER_DEFAULT_WAIT_MS = 0;
+export const REFERENCE_ENCODER_TEACHING_MAX_BATCH = 4;
+export const REFERENCE_ENCODER_READY_IDS = ['A', 'B', 'C'] as const;
+export const REFERENCE_ENCODER_LATE_ID = 'D';
+export const REFERENCE_ENCODER_FIRST_BATCH_COUNT = REFERENCE_ENCODER_READY_IDS.length;
+export const REFERENCE_ENCODER_EMPTY_SLOTS = REFERENCE_ENCODER_TEACHING_MAX_BATCH - REFERENCE_ENCODER_FIRST_BATCH_COUNT;

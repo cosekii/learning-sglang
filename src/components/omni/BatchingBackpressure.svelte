@@ -17,6 +17,13 @@
     AR_ROUND_ONE_WAITING_IDS,
     AR_ROUND_TWO_RUNNING_IDS,
     AR_ROUND_ONE_WAITING_COUNT,
+    REFERENCE_ENCODER_DEFAULT_MAX_BATCH,
+    REFERENCE_ENCODER_DEFAULT_WAIT_MS,
+    REFERENCE_ENCODER_TEACHING_MAX_BATCH,
+    REFERENCE_ENCODER_READY_IDS,
+    REFERENCE_ENCODER_LATE_ID,
+    REFERENCE_ENCODER_FIRST_BATCH_COUNT,
+    REFERENCE_ENCODER_EMPTY_SLOTS,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -27,6 +34,9 @@
   }, {
     caption: 'A stays in the running batch until it finishes. C takes that row only after A finishes.',
     captionZh: 'A 没结束，下一轮仍留在 running batch。A 结束后，C 才补进空出的这一行。',
+  }, {
+    caption: 'A, B and C are already queued, so one encoder call takes all three. D arrives too late for this call.',
+    captionZh: 'A、B、C 都已在队列，一次 encoder 调用就带走三条。D 到得晚，只能等下一次。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -42,7 +52,7 @@
     query.addEventListener('change', update);
     return () => query.removeEventListener('change', update);
   });
-  const W = $derived(phone ? 300 : 720), H = $derived(phone ? 680 : step === 1 ? 450 : 410);
+  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 2 ? 610 : 680) : step === 1 ? 450 : step === 2 ? 460 : 410);
   const panels = $derived([
     { x: phone ? 15 : 20, y: phone ? 82 : 86, wait: 0 },
     { x: phone ? 15 : 375, y: phone ? 330 : 86, wait: BATCH_WAIT_ACTIVE_MS },
@@ -126,6 +136,44 @@
       <text x={W / 2} y={phone ? 626 : 372} text-anchor="middle" class="tag">{phone ? t('policy builds limits · OmniScheduler schedules', 'policy 构造并校验上限 · OmniScheduler 调度') : t('generation_batch_policy.py builds and validates limits; OmniScheduler schedules', 'generation_batch_policy.py 构造并校验上限；OmniScheduler 执行调度')}</text>
       <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{t('Two rows are a teaching view; request and token budgets can both block admission.', '两行只是教学视角；请求行数和 token 预算都能阻止补入。')}</text>
       <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Next: an encoder collects only ready work.', '下一步：encoder 只收现成的编码请求。') : t('Next: a one-shot encoder drains ready work without keeping a running batch.', '下一步：一次性 encoder 怎样收集现成工作，而不保留 running batch。')}</text>
+      {:else if step === 2}
+      <text x={phone ? 15 : 20} y="20" class="tag strong">ReferenceEncodeService · {t('one collection from the ready queue', '从就绪队列做一次收集')}</text>
+      <text x={phone ? 15 : 20} y="44" class="tag">{phone ? t('defaults: cap 1 · wait 0 ms', '默认值：上限 1 · 等待 0 ms') : `max_batch_size = ${REFERENCE_ENCODER_DEFAULT_MAX_BATCH} · max_batch_wait_ms = ${REFERENCE_ENCODER_DEFAULT_WAIT_MS}`}</text>
+      <text x={phone ? 15 : 20} y="66" class="tag">{t('Teaching view: cap 4 + batch-capable hook + wait 0 ms', '教学视角：上限 4 + 支持批处理的 hook + 等待 0 ms')}</text>
+
+      <rect x={phone ? 15 : 20} y={phone ? 88 : 94} width={phone ? 270 : 680} height="76" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
+      <text x={phone ? 29 : 34} y={phone ? 112 : 118} class="rowlabel">batch_queue · {t('before collection', '收集前')}</text>
+      {#each REFERENCE_ENCODER_READY_IDS as id, i}
+        <rect x={(phone ? 29 : 260) + i * 58} y={phone ? 124 : 108} width="46" height="32" rx="5" fill="white" stroke="var(--accent)" />
+        <text x={(phone ? 52 : 283) + i * 58} y={phone ? 145 : 129} text-anchor="middle" class="mono strong">{id}</text>
+      {/each}
+      <text x={phone ? 222 : 480} y={phone ? 145 : 129} class="tag">{t('3 ready now', '现有 3 条')}</text>
+      <text x={phone ? 29 : 590} y={phone ? 145 : 129} class="tag">{phone ? '' : t('D is not here yet', 'D 尚未到达')}</text>
+
+      <path d={phone ? 'M150 172 V196' : 'M360 178 V204'} stroke="var(--accent)" stroke-width="2" marker-end="url(#batch-arrow)" />
+      <text x={phone ? 162 : 374} y={phone ? 188 : 196} class="tag strong">get_nowait() · {t('no empty-slot wait', '不为空位等待')}</text>
+
+      <rect x={phone ? 15 : 20} y={phone ? 204 : 214} width={phone ? 270 : 680} height="90" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2" />
+      <text x={phone ? 29 : 34} y={phone ? 228 : 238} class="rowlabel">encode_batch([A, B, C]) · {t('one call', '一次调用')}</text>
+      {#each Array(REFERENCE_ENCODER_TEACHING_MAX_BATCH) as _, i}
+        <rect x={(phone ? 29 : 300) + i * (phone ? 58 : 68)} y={phone ? 241 : 231} width={phone ? 46 : 56} height="38" rx="6" fill={i < REFERENCE_ENCODER_FIRST_BATCH_COUNT ? 'white' : 'var(--bg)'} stroke={i < REFERENCE_ENCODER_FIRST_BATCH_COUNT ? 'var(--accent)' : 'var(--faint)'} stroke-dasharray={i < REFERENCE_ENCODER_FIRST_BATCH_COUNT ? '0' : '4 3'} />
+        <text x={(phone ? 52 : 328) + i * (phone ? 58 : 68)} y={phone ? 265 : 255} text-anchor="middle" class="mono strong">{REFERENCE_ENCODER_READY_IDS[i] ?? '·'}</text>
+      {/each}
+      <text x={phone ? 150 : 510} y={phone ? 288 : 278} text-anchor="middle" class="tag">{REFERENCE_ENCODER_FIRST_BATCH_COUNT} {t('taken', '条入批')} · {REFERENCE_ENCODER_EMPTY_SLOTS} {t('left empty', '格留空')}</text>
+
+      <rect x={phone ? 15 : 20} y={phone ? 316 : 326} width={phone ? 270 : 325} height={phone ? 90 : 52} rx="8" fill="var(--bg)" stroke="var(--line)" />
+      <text x={phone ? 29 : 34} y={phone ? 340 : 347} class="tag strong">{t('same three results return', '同三条结果逐项返回')}</text>
+      <text x={phone ? 29 : 34} y={phone ? 364 : 368} class="tag">A.result · B.result · C.result</text>
+      <text x={phone ? 29 : 34} y={phone ? 390 : 368} class="tag">{phone ? t('cap > 1 alone is not enough', '只调大上限还不够') : ''}</text>
+
+      <rect x={phone ? 15 : 375} y={phone ? 424 : 326} width={phone ? 270 : 325} height={phone ? 90 : 52} rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+      <text x={phone ? 29 : 389} y={phone ? 448 : 347} class="tag strong">{t('D arrives after collection', 'D 在收集结束后才到')}</text>
+      <text x={phone ? 29 : 389} y={phone ? 472 : 368} class="tag">{REFERENCE_ENCODER_LATE_ID} → {t('next collection, not this batch', '下一次收集，不进这一批')}</text>
+      <text x={phone ? 29 : 389} y={phone ? 498 : 368} class="tag">{phone ? t('hook.can_encode_batch() must also pass', 'hook.can_encode_batch() 也必须通过') : ''}</text>
+
+      <text x={W / 2} y={phone ? 544 : 404} text-anchor="middle" class="tag strong">{phone ? t('Default: one per call · batching needs hook support', '默认一次一条；batch 还需要 hook 支持') : t('Three results need three encode calls with the shipped cap of one; batching also requires hook support.', '出厂上限为 1 时，三条结果要三次 encode；启用 batch 还需要 hook 支持。')}</text>
+      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{t('This service drains ready requests; it does not retain an AR running batch.', '这个服务只取现成请求，不保留 AR 的 running batch。')}</text>
+      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Next: a cost budget can leave a large request for the next batch.', '下一步：成本预算怎样把大请求留给下一批。')}</text>
       {/if}
     </svg>
   </div>

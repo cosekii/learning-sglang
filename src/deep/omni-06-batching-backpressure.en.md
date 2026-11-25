@@ -109,3 +109,56 @@ Line numbers refer to `origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`.
 ### Next
 
 Step 3 returns to one-shot work. `ReferenceEncodeService` drains only requests already in its queue, and a larger cap enables batching only when the hook supports it.
+
+## Step 3 · An encoder collects only ready requests
+
+> **In one sentence:** With a sufficient cap and a batch-capable hook, A, B and C share one call; D is not queued yet, so this call neither waits for nor includes it.
+
+### What the picture shows
+
+- The shipped defaults are `max_batch_size=1` and `max_batch_wait_ms=0`, so the default service encodes one request at a time. The teaching view raises the cap to four and assumes `hook.can_encode_batch()` is true.
+- Before collection, `batch_queue` contains A, B and C. The orange queue box is the arrival side; the blue box is the actual encoding call.
+- `get_nowait()` takes the three available requests. The queue is then empty, and the zero-delay budget ends collection with the fourth slot unused.
+- One `encode_batch([A, B, C])` call produces three outcomes, which the service returns to their respective requests. D arrives after collection and belongs to the next one.
+- There is no running batch. Each reference encoding receives its complete result from this call rather than remaining in a scheduling set across AR decode rounds.
+
+### Work through the numbers
+
+Let the teaching cap be $B=4$ and the ready-request count be $N=3$. This batch takes:
+
+$$K=\min(B,N)=\min(4,3)=3$$
+
+The unused-slot count is:
+
+$$E=B-K=4-3=1$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $B$ | Request cap for one encoding collection | Teaching construction of four |
+| $N$ | Requests in the queue at collection time | A, B and C |
+| $K$ | Requests encoded by this call | Minimum of cap and ready count |
+| $E$ | Unused positions in this batch | Four slots minus three requests |
+
+With the shipped cap $B_0=1$, three ready requests need three collections and three encode calls. A larger cap is only one requirement; when the hook has no batch support, the service retains its single-request path.
+
+### Default path and optional batching
+
+The `ReferenceEncodeService` constructor defaults to a cap of one and zero collection delay. It creates the batch function and `queue.Queue` only when `max_batch_size > 1` and `hook.can_encode_batch()` returns true. Otherwise it retains the original per-request `encode()` path.
+
+The batch worker blocks on `get()` for its first message. With no work present, this wait does not postpone an existing request to find it companions. After that first message, the code uses `get_nowait()` up to the remaining capacity. Only a positive delay budget can add a deadline wait when the queue is temporarily empty. This step keeps the budget at zero, so only the three ready requests enter.
+
+The compute call returns `list[ArtifactT | BaseException]`. The worker writes each artifact or exception into that request's own `Future`. If the batch hook raises an ordinary exception, `encode_batch()` also falls back to per-item encoding, so one failure need not fail its peers.
+
+### Boundaries and sources
+
+This step does not claim that a MiniCPM-o model enables reference-encoding batches by default, and four is not a recommendation. It explains the optional mechanism in the current service. Cancellation, hook-level concurrency and operator padding are outside the figure.
+
+- `sglang_omni/scheduling/reference_encoder.py:139-196`: default cap, zero delay, hook capability check and batch queue/worker creation.
+- `sglang_omni/scheduling/reference_encoder.py:231-290`: first-item wait, non-blocking collection, optional remaining-time wait, one batch call and per-request `Future` results.
+- `sglang_omni/scheduling/reference_encoder.py:317-342`: call the batch hook and fall back to per-item encoding after an ordinary exception.
+
+Line numbers refer to `origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`.
+
+### Next
+
+Step 4 adds a mel-frame cost to each request. A request can wait for the next batch even when the request-count cap has room, if admitting it would exceed the cost budget.
