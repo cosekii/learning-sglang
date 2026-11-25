@@ -92,3 +92,6 @@ export const VOXT_OMNI_PREVIEW_TIMES_MS = Array.from(
   { length: VOXT_OMNI_PREVIEW_COUNT },
   (_, i) => VOXT_OMNI_FIRST_DECODE_MS + i * VOXT_OMNI_DECODE_INTERVAL_MS,
 );
+
+// One selected recognition route hands off one raw text result.
+export const VOXT_ASR_RAW_RESULT_COUNT = 1;

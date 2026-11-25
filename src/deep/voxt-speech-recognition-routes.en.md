@@ -321,3 +321,58 @@ Public baseline: same as Step 1.
 - Default `Finish` starts Final: `Voxt/internal/omni/live.go:368-393`.
 - Final tail, joining and final event: `Voxt/internal/omni/live_final.go:11-18,39-56,80-82`.
 - `LiveResult` switch: `Voxt/internal/settings/settings.go:163-167`.
+
+## Step 7 · Recognition hands over raw text
+
+> **In one line:** The selected ASR route returns one recognized result, which the session stores in `Snapshot.Raw`; language-model connection and credentials are questions for the next chapter.
+
+### On the stage
+
+- Orange contains one final recognition result, this example's “Good morning.” It is not three drafts added together or two file pieces left separate.
+- “Raw text” means recognized wording before language-model cleanup. It does not mean raw PCM audio.
+- `Snapshot.Raw` is the session field that stores this text. The code also trims surrounding whitespace and removes a configured end word; this sentence has neither, so it remains unchanged.
+- The dashed blue box asks the next chapter's questions: what else the language model receives and where its API key lives. A language model organises the wording; this chapter has not performed that cleanup.
+
+### Formula
+
+$$
+R=\operatorname{withoutEndWord}(\operatorname{trim}(F),w)
+$$
+
+| Symbol | Meaning | Where it comes from |
+|---|---|---|
+| $R$ | Raw recognized text passed onward | `raw` in `run_listen.go` |
+| $F$ | Provider's final text | This example's “Good morning.” |
+| $w$ | Configured end word | Session settings; absent in this example |
+| $\operatorname{trim}$ | Remove surrounding whitespace | `strings.TrimSpace` |
+| $\operatorname{withoutEndWord}$ | Remove the configured end word | The same call in `run_listen.go` |
+
+The actual code first applies `inScript` for text direction, then performs this pipeline. That representation handling does not call a language model to polish the text.
+
+### The numbers on the stage
+
+| Quantity | Calculation | Result |
+|---|---|---:|
+| Candidate routes in Step 1 | Local, system and configured API | 3 routes |
+| Active recognition route | Choose one per recording | 1 route |
+| Raw-text result | One result for this recognition | 1 result |
+| This example's raw text | $F$ has no extra whitespace and no $w$ | Good morning. |
+
+If processing leaves `raw` empty, the session does not pass blank text onward as valid speech; ordinary dictation ends with the no-speech problem. This example is non-empty, so it stores `Raw` and continues.
+
+### Chapter boundary
+
+The chapter has now answered: choose one of three routes; file recognition waits for the whole recording while streaming supplies replaceable drafts; oversized files split at quiet places and join in order; default local Omni follows previews with a Final.
+
+It has not covered language-model requests, wording cleanup, API-key storage or insertion into another app. The last stage deliberately stops at visible raw text rather than claiming that cleanup has already happened.
+
+### Next
+
+The next chapter starts from `Raw` and examines the context sent to the language-model service, plus its endpoint, model and API-key configuration.
+
+### Sources
+
+Public baseline: same as Step 1.
+
+- Raw-text trimming, end-word removal and `Snapshot.Raw`: `Voxt/internal/session/run_listen.go:438-449`.
+- Authorization in ASR requests belongs to the recognition connection: `Voxt/internal/asr/asr.go:9-20,59-76`.

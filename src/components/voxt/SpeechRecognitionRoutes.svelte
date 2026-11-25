@@ -13,6 +13,7 @@
     VOXT_ASR_JOIN_INSERTED_SPACES,
     VOXT_ASR_JOIN_PIECE_COUNT,
     VOXT_ASR_ROUTE_COUNT,
+    VOXT_ASR_RAW_RESULT_COUNT,
     VOXT_ASR_SPLIT_MAX_SECONDS,
     VOXT_ASR_SPLIT_PAUSE_MS,
     VOXT_ASR_SPLIT_PIECE_COUNT,
@@ -47,6 +48,9 @@
   }, {
     caption: 'By default, local Omni updates drafts about every second. It recognises the whole recording again after the stop.',
     captionZh: '默认本机 Omni 约每秒更新草稿。停止后，它重新识别完整录音。',
+  }, {
+    caption: 'The recognition route delivers raw text here. Next, see what else the language model receives.',
+    captionZh: '识别路线到这里交出原话。下一章看语言模型还收到什么。',
   }];
   const ariaLabels = [{
     en: 'One second of sound is 32000 bytes. A chooser selects one of three recognition routes: local Omni on this Mac, a configured remote ASR API, or macOS system dictation through the helper.',
@@ -66,6 +70,9 @@
   }, {
     en: 'With LiveResult off, local Qwen3-ASR starts decoding about 100 milliseconds after audible sound, then updates about every second. In this three-second example drafts appear at 0.1, 1.1 and 2.1 seconds. After the stop, Final recognises the whole recording again.',
     zh: 'LiveResult 关闭时，本机 Qwen3-ASR 在可闻声音后约一百毫秒开始解码，随后约每秒更新。本例三秒录音在零点一、一点一和二点一秒出现草稿。停止后，Final 重新识别完整录音。',
+  }, {
+    en: 'The selected recognition route returns one raw text result, Good morning. This is recognised wording before language-model cleanup. The next chapter asks what else the language model receives and where its API key lives.',
+    zh: '选中的识别路线交出一份原话 Good morning。这是语言模型整理之前的识别文字。下一章追问语言模型还收到什么，以及它的 API key 放在哪里。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -254,6 +261,22 @@
       <text x={W / 2} y={phone ? 480 : 370} text-anchor="middle" class="result">“Good morning.”</text>
       <text x={W / 2} y={phone ? 501 : 393} text-anchor="middle" class="detail">{t('recognise the whole recording again', '重新识别完整录音')}</text>
       <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Decode schedule, not a measured-latency promise.', '这是解码节拍，不是实测延迟承诺。')}</text>
+      {:else if step === 6}
+      <text x={W / 2} y="27" text-anchor="middle" class="title">{t('THE ASR ROUTE HANDS OVER RAW TEXT', '识别路线交出原话')}</text>
+      <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('raw text = recognised words before language-model cleanup', '原话 = 识别出来、尚未由语言模型整理的文字')}</text>
+      <rect x={phone ? 35 : 55} y="90" width={phone ? 230 : 260} height="130" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" />
+      <text x={phone ? 150 : 185} y="120" text-anchor="middle" class="label amber">{t('ONE RECOGNITION RESULT', '一份识别结果')}</text>
+      <text x={phone ? 150 : 185} y="158" text-anchor="middle" class="result">“Good morning.”</text>
+      <text x={phone ? 150 : 185} y="190" text-anchor="middle" class="detail">{t('raw text · not polished here', '原话 · 本章尚未润色')}</text>
+      <line x1={phone ? 150 : 320} y1={phone ? 225 : 155} x2={phone ? 150 : 385} y2={phone ? 260 : 155} stroke="var(--muted)" stroke-width="2" marker-end="url(#asr-route-arrow)" />
+      <rect x={phone ? 35 : 395} y={phone ? 270 : 90} width={phone ? 230 : 270} height={phone ? 145 : 180} rx="11" fill="var(--bg)" stroke="var(--accent)" stroke-dasharray="5 4" />
+      <text x={phone ? 150 : 530} y={phone ? 299 : 120} text-anchor="middle" class="label">{t('NEXT CHAPTER · LANGUAGE MODEL', '下一章 · 语言模型')}</text>
+      <text x={phone ? 150 : 530} y={phone ? 327 : 151} text-anchor="middle" class="detail">{t('a model that organises the wording', '负责整理文字的模型')}</text>
+      <text x={phone ? 150 : 530} y={phone ? 361 : 190} text-anchor="middle" class="cut">{t('WHAT ELSE DOES IT RECEIVE?', '它还收到什么？')}</text>
+      <text x={phone ? 150 : 530} y={phone ? 392 : 225} text-anchor="middle" class="cut">{t('WHERE DOES ITS API KEY LIVE?', '它的 API key 放在哪里？')}</text>
+      {#if !phone}<text x="530" y="250" text-anchor="middle" class="detail">endpoint · model · key</text>{/if}
+      <text x={W / 2} y={H - 32} text-anchor="middle" class="cut">{VOXT_ASR_RAW_RESULT_COUNT} {t('RAW TEXT RESULT · RECOGNITION IS DONE', '份原话 · 识别阶段到此完成')}</text>
+      <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Cleanup and delivery are later chapters.', '文字整理和交付留到后面章节。')}</text>
       {/if}
     </svg>
   </div>

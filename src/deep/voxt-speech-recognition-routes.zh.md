@@ -321,3 +321,58 @@ $$
 - 默认 `Finish` 启动 Final：`Voxt/internal/omni/live.go:368-393`。
 - Final 的 tail、合并与最终事件：`Voxt/internal/omni/live_final.go:11-18,39-56,80-82`。
 - `LiveResult` 开关含义：`Voxt/internal/settings/settings.go:163-167`。
+
+## 第 7 步 · 识别交出原话，下一章再问语言模型
+
+> **一句话：** 选中的 ASR 路线返回一份识别原话，session 把它放入 `Snapshot.Raw`；语言模型怎样连接和取钥匙是下一章的问题。
+
+### 图上是什么
+
+- 橙色框只有一份最终识别文字，本例是 “Good morning.”。它不是三份草稿相加，也不是分块后的两份文字。
+- `raw text` 在这里指识别出来、尚未由语言模型整理的原话。它不是原始 PCM 音频。
+- `Snapshot.Raw` 是 session 保存这份原话的字段。代码还会去掉首尾空白，并按设置移除结束词；图中句子没有额外空白或结束词，所以文字不变。
+- 蓝色虚线框是下一章的问题：语言模型除了原话还收到什么，它的 API key 放在哪里。语言模型是负责整理文字的模型，本章没有执行这次整理。
+
+### 公式
+
+$$
+R=\operatorname{withoutEndWord}(\operatorname{trim}(F),w)
+$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $R$ | 交给后续流程的识别原话 | `run_listen.go` 的局部变量 `raw` |
+| $F$ | provider 返回的最终文字 | 本例 “Good morning.” |
+| $w$ | 设置的结束词 | session 配置；本例没有 |
+| $\operatorname{trim}$ | 去掉首尾空白 | `strings.TrimSpace` |
+| $\operatorname{withoutEndWord}$ | 按设置移除结束词 | `run_listen.go` 同名调用 |
+
+实际代码还先用 `inScript` 处理文字方向，再执行上式。它只改变文字表示，不调用语言模型润色。
+
+### 代入图上的数
+
+| 要算的量 | 算式 | 结果 |
+|---|---|---:|
+| 第 1 步候选路线 | 本机、系统、配置的 API | 3 条 |
+| 实际识别路线 | 一次只选一条 | 1 条 |
+| 原话结果 | 一次识别交付一份 | 1 份 |
+| 本例原话 | $F$ 无额外空白，$w$ 未出现 | Good morning. |
+
+若处理后 `raw` 为空，session 不会把空白当成有效原话继续；普通听写会以“没有听出语音”结束。本例非空，所以保存 `Raw` 并继续。
+
+### 本章边界
+
+到这里已经回答：三条路线选一条；文件型等整段，流式给可替换草稿；超长文件在安静处分块并按序合并；默认本机 Omni 在草稿后做 Final。
+
+本章没有讲语言模型请求、文字润色、API key 存放或把文字插入其他 app。最后一步故意停在看得见的原话上，让下一章从这份原话继续，而不是提前宣称整理已经完成。
+
+### 接下来
+
+下一章从 `Raw` 出发，看语言模型服务还收到哪些上下文，endpoint、model 和 API key 分别怎样配置。
+
+### 源码出处
+
+公开基线同第 1 步。
+
+- 原话 trim、结束词移除与 `Snapshot.Raw`：`Voxt/internal/session/run_listen.go:438-449`。
+- ASR 请求中的授权字段只用于识别连接：`Voxt/internal/asr/asr.go:9-20,59-76`。
