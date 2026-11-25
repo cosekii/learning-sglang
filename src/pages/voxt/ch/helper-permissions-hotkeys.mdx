@@ -13,7 +13,7 @@ export const deep = await deepFor('voxt-helper-permissions-hotkeys');
 <details class="i18n-en">
 <summary>Where this chapter's claims come from</summary>
 
-Step 1 follows the default Right Option shortcut through the public Swift helper, helper protocol and Go hotkey router. Step 2 compares the same constructed tap with Accessibility off and on, assuming the right panel receives the key. The comparison changes only Accessibility and tests no other failure. Neither step measures latency or records audio.
+Step 1 follows the default Right Option shortcut through the public Swift helper, helper protocol and Go hotkey router. Step 2 compares the same constructed tap with Accessibility off and on, assuming the right panel receives the key. Step 3 holds Accessibility on and compares the same `capture.start` request with Microphone permission denied or granted; the granted side also assumes a working input. These are constructed routes, not latency measurements or microphone recordings.
 
 Source revision: `sglang-omni origin/main@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`. The deep dive lists exact files and lines.
 
@@ -22,7 +22,7 @@ Source revision: `sglang-omni origin/main@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc
 <details class="i18n-zh">
 <summary>本章说法的出处</summary>
 
-第 1 步沿公开源码追踪默认右 Option 快捷键，依次经过 Swift helper、helper 协议和 Go 热键路由。第 2 步用同一次构造的按键比较 Accessibility 关／开，并假设右图收到按键。对照只改变 Accessibility，不测试其他故障。两步都没有测量延迟，也没有采集声音。
+第 1 步沿公开源码追踪默认右 Option 快捷键，依次经过 Swift helper、helper 协议和 Go 热键路由。第 2 步用同一次构造的按键比较 Accessibility 关／开，并假设右图收到按键。第 3 步保持 Accessibility 开启，用同一个 `capture.start` 请求比较麦克风权限拒绝／允许；允许的一侧还假设输入设备正常。这些都是构造的路线，没有测量延迟，也没有采集真实声音。
 
 源码版本：`sglang-omni origin/main@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`。精确文件和行号见深入讲解。
 

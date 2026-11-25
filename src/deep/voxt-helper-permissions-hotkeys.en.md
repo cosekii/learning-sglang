@@ -108,3 +108,57 @@ Public baseline: `sglang-omni@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`. Paths a
 - Listener creation and verification of the keyboard events actually granted: `Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:113-151`.
 - Recognition and `hotkey.event` delivery: `Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:240-250,269-274`.
 - `trigger` while idle returns `Start`: `Voxt/internal/hotkey/route.go:114-121`.
+
+## Step 3 · Microphone permission decides whether sound can enter
+
+> **In one line:** Both panels send the same `capture.start` after the hotkey. If Microphone permission is denied, the helper returns an error. With permission and a working input, sound returns to the Go app.
+
+### On the stage
+
+- Accessibility stays on in both panels, so the helper can see keys. Only Microphone permission changes here.
+- `capture.start`: the request from the Go app to the helper, meaning "please start recording." The blue arrow shows that request.
+- Left, Microphone permission is off: macOS blocks sound, the helper returns `permission_denied`, meaning "permission was refused," and recording does not start.
+- Right, Microphone permission is on and the microphone works: sound passes through the helper to the Go app, and recording starts.
+- Red marks only the permission block; blue marks a connected request or sound route. The panels measure no latency and record no real audio.
+
+### The relationship
+
+$$
+R=\begin{cases}
+\mathrm{permission\_denied}, & P=\mathrm{off}\\
+\mathrm{recording}, & P=\mathrm{on}\ \land\ D=\mathrm{works}
+\end{cases}
+$$
+
+| Symbol | What it is | Where it comes from |
+|---|---|---|
+| $P$ | Whether Microphone permission is allowed | The only permission changed in this step |
+| $D$ | Whether the input device works | The right panel's explicit assumption |
+| $R$ | Result of the same `capture.start` | The helper's permission check and capture route |
+
+### The two cases on the stage
+
+| Request after the hotkey | $P$: Microphone permission | $D$: input device | $R$: result |
+|---|---|---|---|
+| `capture.start` | Off | Device startup is not reached | `permission_denied`; no recording |
+| `capture.start` | On | Working | Sound reaches the Go app; recording starts |
+
+### The source checks and omissions
+
+The helper reads Microphone permission with `AVCaptureDevice.authorizationStatus(for: .audio)`. If macOS has never asked, it shows the prompt and waits for an answer. The left panel constructs an already denied or restricted state; it does not treat "not determined" as an immediate failure.
+
+After permission succeeds, the helper must still start an input. An unavailable device, missing audio callbacks or an existing capture of the same kind can produce other errors; this comparison omits them. After audio arrives, the helper sends `capture.started`, then ongoing sound data in `capture.pcm`. The stage calls these messages "sound"; the next chapter explains their format.
+
+### Next
+
+The hotkey and sound routes have separate permission gates. The next chapter divides continuous sound into data chunks that programs can carry.
+
+### Source
+
+Public baseline: `sglang-omni@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`. Paths are relative to that repository.
+
+- Four Microphone permission states: `Voxt/helper/Sources/VoxtNewHelper/Permissions.swift:11-18`; the first permission request: lines 53-58.
+- `capture.start` checks permission before creating its capture job and returns Microphone `permission_denied` on refusal: `Voxt/helper/Sources/VoxtNewHelper/Capture.swift:53-79`.
+- The request method, permission error and wait when permission is undetermined: `Voxt/docs/helper-protocol.md:32-37,63,107`.
+- A failed start sends no `capture.started`: `Voxt/internal/helper/proto/capture.go:20-25`; first audio and subsequent `capture.pcm`: lines 56-72 and 82-90.
+- The Go session classifies this permission error as `ProblemMicrophone`: `Voxt/internal/session/session.go:464-483`.

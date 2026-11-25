@@ -14,6 +14,9 @@
   }, {
     caption: 'Accessibility lets the helper see keys you press in other apps. Without it, this route stops.',
     captionZh: 'Accessibility 让 helper 看见你在其他 app 按的键。未开启时，这条路线断开。',
+  }, {
+    caption: 'Microphone permission controls sound, not keys. Without it, recording cannot start.',
+    captionZh: '麦克风权限只管声音，不管按键。未开启时，录音不能开始。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -52,7 +55,7 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={step === 0 ? 'One Right Option tap crosses from the Swift helper to the Go app as one JSON message, which starts dictation' : t('The same Right Option tap produces no message with Accessibility off and one message with it on', '同一个右 Option 在 Accessibility 关闭时没有消息，打开时产生一条消息')}>
+    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={step === 0 ? 'One Right Option tap crosses from the Swift helper to the Go app as one JSON message, which starts dictation' : step === 1 ? t('The same Right Option tap produces no message with Accessibility off and one message with it on', '同一个右 Option 在 Accessibility 关闭时没有消息，打开时产生一条消息') : t('The same recording request fails with Microphone permission off and brings sound to the Go app with it on', '同一个录音请求在麦克风权限关闭时失败，开启时把声音送到 Go app')}>
       <defs>
         <marker id="key-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
           <path d="M0,0 L8,4 L0,8 z" fill="var(--muted)" />
@@ -64,12 +67,15 @@
       <text x={W / 2} y={phone ? 24 : 32} text-anchor="middle" class="title">{step === 0 ? t(
         `${HOTKEY_PRESS_COUNT} KEY · ${HOTKEY_PROGRAM_COUNT} PROGRAMS · ${HOTKEY_MESSAGE_COUNT} MESSAGE`,
         `${HOTKEY_PRESS_COUNT} 次按键 · ${HOTKEY_PROGRAM_COUNT} 个程序 · ${HOTKEY_MESSAGE_COUNT} 条消息`,
-      ) : t('SAME KEY · TWO SETTINGS', '同一个按键 · 两种设置')}</text>
+      ) : step === 1 ? t('SAME KEY · TWO SETTINGS', '同一个按键 · 两种设置') : t('SAME REQUEST · MICROPHONE OFF / ON', '同一个请求 · 麦克风权限关 / 开')}</text>
       {#if step === 0}
         <text x={W / 2} y={phone ? 45 : 55} text-anchor="middle" class="subtitle">{t('The key becomes a message, not sound', '按键变成消息，不是声音')}</text>
-      {:else}
+      {:else if step === 1}
         <text x={W / 2} y={phone ? 43 : 55} text-anchor="middle" class="subtitle">{t('Accessibility = a Mac setting', 'Accessibility = Mac 的一项设置')}</text>
         <text x={W / 2} y={phone ? 61 : 72} text-anchor="middle" class="subtitle">{t('It lets helper see keys from other apps', '让 helper 看见其他 app 的按键')}</text>
+      {:else}
+        <text x={W / 2} y={phone ? 43 : 55} text-anchor="middle" class="subtitle">{t('Microphone permission = Mac allows sound input', '麦克风权限 = Mac 允许声音进入')}</text>
+        <text x={W / 2} y={phone ? 61 : 72} text-anchor="middle" class="subtitle">{t('Accessibility stays on in both panels', '两幅图都保持 Accessibility 开启')}</text>
       {/if}
 
       {#if step === 0}
@@ -108,7 +114,7 @@
 
       <text x={W / 2} y={H - (phone ? 34 : 38)} text-anchor="middle" class="footnote">{t('Permission already granted; key route only', '本步假设权限已通过，只画按键路线')}</text>
       <text x={W / 2} y={H - (phone ? 12 : 18)} text-anchor="middle" class="footnote">{t('After Start, Go asks helper for microphone audio.', '开始后，Go app 请 helper 采集麦克风。')}</text>
-      {:else}
+      {:else if step === 1}
         {#each permissionPanels as panel}
           {@const keyX = phone ? 12 : 16}
           {@const keyW = phone ? 68 : 82}
@@ -146,6 +152,34 @@
         {/each}
         <text x={W / 2} y={H - (phone ? 34 : 38)} text-anchor="middle" class="footnote">{t('Both panels use the same Right Option tap.', '两幅图里，你都按同一个右 Option。')}</text>
         <text x={W / 2} y={H - (phone ? 12 : 18)} text-anchor="middle" class="footnote">{t('The Go app starts idle.', 'Go app 起初都空闲。')}</text>
+      {:else}
+        {#each permissionPanels as panel}
+          {@const panelW = phone ? 280 : 330}
+          <g transform={`translate(${panel.x} ${panel.y})`}>
+            <rect width={panelW} height={phone ? 200 : 210} rx="12" fill="var(--bg)" stroke="var(--line)" />
+            <text x="16" y="24" class="label">{panel.allowed ? t('MICROPHONE: ON', '麦克风权限：已开启') : t('MICROPHONE: OFF', '麦克风权限：未开启')}</text>
+
+            <rect x="25" y="38" width={panelW - 50} height="58" rx="9" fill="var(--bg)" stroke="var(--line)" />
+            <text x={panelW / 2} y="56" text-anchor="middle" class="label">{t('GO APP → HELPER', 'Go app → helper')}</text>
+            <text x={panelW / 2} y="75" text-anchor="middle" class="mono">capture.start</text>
+            <text x={panelW / 2} y="91" text-anchor="middle" class="detail">{t('please start recording', '请开始录音')}</text>
+            <line x1={panelW / 2} y1="96" x2={panelW / 2} y2="105" stroke="var(--accent)" stroke-width="2" marker-end="url(#message-arrow)" />
+
+            <rect x="25" y="108" width={panelW - 50} height="48" rx="9" fill={panel.allowed ? 'var(--accent-soft)' : 'var(--bg)'} stroke={panel.allowed ? 'var(--accent)' : 'var(--eos)'} />
+            <text x={panelW / 2} y="127" text-anchor="middle" class="label">{t('MAC MICROPHONE', 'Mac 麦克风')}</text>
+            <text x={panelW / 2} y="147" text-anchor="middle" class={panel.allowed ? 'message' : 'blocked'}>{panel.allowed ? t('sound may enter', '允许声音进入') : t('sound is blocked', '声音被挡住')}</text>
+
+            {#if panel.allowed}
+              <text x={panelW / 2} y={phone ? 178 : 184} text-anchor="middle" class="message">{t('sound → helper → Go app', '声音 → helper → Go app')}</text>
+              <text x={panelW / 2} y={phone ? 195 : 204} text-anchor="middle" class="action">{t('recording starts', '录音开始')}</text>
+            {:else}
+              <text x={panelW / 2} y={phone ? 176 : 182} text-anchor="middle" class="mono">permission_denied</text>
+              <text x={panelW / 2} y={phone ? 195 : 204} text-anchor="middle" class="blocked">{t('Permission refused; no recording', '权限被拒绝，录音没有开始')}</text>
+            {/if}
+          </g>
+        {/each}
+        <text x={W / 2} y={H - (phone ? 34 : 38)} text-anchor="middle" class="footnote">{t('Both send the same request after the hotkey.', '按键后，两边发出同一个请求。')}</text>
+        <text x={W / 2} y={H - (phone ? 12 : 18)} text-anchor="middle" class="footnote">{t('Permission unblocks sound; the mic must also work.', '权限只取消阻拦；麦克风还要能收音。')}</text>
       {/if}
     </svg>
   </div>

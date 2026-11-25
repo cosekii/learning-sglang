@@ -108,3 +108,57 @@ helper 用 `AXIsProcessTrusted()` 读取 Accessibility 状态。macOS 把它归�
 - 创建监听并核对实际收到的键盘事件：`Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:113-151`。
 - 识别后发送 `hotkey.event`：`Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:240-250,269-274`。
 - 空闲状态收到 `trigger` 后返回 `Start`：`Voxt/internal/hotkey/route.go:114-121`。
+
+## 第 3 步 · 麦克风权限决定声音能否进入
+
+> **一句话：** 两边在按键后发出同一个 `capture.start`；麦克风权限拒绝时 helper 返回错误，允许且输入设备正常时声音才送回 Go app。
+
+### 图上是什么
+
+- 两幅图都保持 Accessibility 开启，所以 helper 能看见按键；这一步只改变麦克风权限。
+- `capture.start`：Go app 发给 helper 的请求，意思是「请开始录音」。蓝色箭头表示请求从 Go app 到 helper。
+- 左图麦克风权限未开启：Mac 挡住声音，helper 返回 `permission_denied`，意思是「权限被拒绝」；录音没有开始。
+- 右图麦克风权限已开启，并假设麦克风能正常工作：声音经过 helper 送回 Go app，录音开始。
+- 红色只表示权限阻断，蓝色只表示请求或声音路线接通。两图没有测量耗时，也没有采集真实声音。
+
+### 对应关系
+
+$$
+R=\begin{cases}
+\mathrm{permission\_denied}, & P=\mathrm{off}\\
+\mathrm{recording}, & P=\mathrm{on}\ \land\ D=\mathrm{works}
+\end{cases}
+$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $P$ | 麦克风权限是否允许 | 本步唯一改变的权限设置 |
+| $D$ | 输入设备能否正常工作 | 右图明确假设的条件 |
+| $R$ | 同一个 `capture.start` 的结果 | helper 的权限检查与采集路线 |
+
+### 代入图上的两种情况
+
+| 按键后的请求 | $P$：麦克风权限 | $D$：输入设备 | $R$：结果 |
+|---|---|---|---|
+| `capture.start` | 未开启 | 不进入设备启动 | `permission_denied`，录音未开始 |
+| `capture.start` | 已开启 | 正常工作 | 声音送到 Go app，录音开始 |
+
+### 源码里的检查与省略
+
+helper 用 `AVCaptureDevice.authorizationStatus(for: .audio)` 读取麦克风权限。若从未询问，系统先弹出选择并等待回答；本步左图构造的是已经拒绝或受限的情况，不把「尚未询问」画成立即失败。
+
+权限通过后，helper 还要启动输入设备。设备不可用、没有声音回调或已有同类录音，可能产生别的错误；这些不在本步对照里。成功采集后，helper 用 `capture.started` 报告首个音频已到达，再用 `capture.pcm` 持续发送声音数据。主图把这些消息概括成「声音」，下一章再展开数据格式。
+
+### 接下来
+
+按键和声音分别通过两道权限门。下一章把连续的声音切成能搬运的数据块。
+
+### 源码出处
+
+公开基线：`sglang-omni@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`，路径均相对该仓库。
+
+- 麦克风权限的四种状态：`Voxt/helper/Sources/VoxtNewHelper/Permissions.swift:11-18`；首次请求权限：同文件 `53-58`。
+- `capture.start` 在创建采集任务前检查权限，拒绝时返回麦克风 `permission_denied`：`Voxt/helper/Sources/VoxtNewHelper/Capture.swift:53-79`。
+- 请求方法、权限错误和未询问时等待回答：`Voxt/docs/helper-protocol.md:32-37,63,107`。
+- 启动失败不会发送 `capture.started`：`Voxt/internal/helper/proto/capture.go:20-25`；首个音频与后续 `capture.pcm`：同文件 `56-72,82-90`。
+- Go session 把麦克风权限错误归类为 `ProblemMicrophone`：`Voxt/internal/session/session.go:464-483`。

@@ -4,11 +4,11 @@
 
 ## 本轮记录
 
-- 本轮修旧：Learning SGLang 第 6 章第 7 步，中文把「完全没有冻结」改为「每步都出 token，最长间隔由 4.8 ms 增至 4.9 ms」；第 8 步和双语深入讲解同步区分不停步与间隔不变。
-- 独立冷读从 **6/12、20/24、1 个内容洞** 提升到 **9/12、23/24、0 洞**。原分改前基线已按相同深入讲解材料回算，不把补读材料算作改进。中文第 7 步新增九步手机大字图，第 8 步补三策略手机对比图；两步在 360／390／430 px 的字号与布局均通过，第 7 步手机显示洞 **1→0**。
-- `build`、全站 `transcript`、`deep-check 06`、`zh-check`、全站及第 7、8 步中文 `mobile`、数值断言通过；全站另有 **572** 个既有小字视图仅作审计，英文桌面截图改前后逐字节相同。第 7、8 步 `readability` 仍分别只有受保护英文的句长／句数两项失败；浏览器实测多组元素同时淡入，R6=1，因此不标整步完成。
-- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch06-s07-repair-20261124-1911/final/` 和 `checks/`。
-- 本轮类型：**修旧**；下一普通轮做 **新书**。
+- 本轮新书：Inside Voxt 第 2 章第 3 步，用同一个 `capture.start` 对照麦克风权限关／开；两图都保持 Accessibility 开启，分清「看见按键」与「接收声音」。开启的一侧明确限定输入设备正常，不把权限当成录音成功的无条件保证。
+- 首次独立冷读为 **10/12、18/20、2 洞**：`permission_denied` 缺中文意思，「有权限还要设备正常」缺解释。只补这两处后，同一冷读者复读为 **12/12、24/24、0 洞**，R1–R6 均为 2；第 2 章 **3/3 步完成，章均分 24.00**。
+- `build`、Voxt `transcript`、本步 `readability`、本步中文手机字号、本章中英及全站三种宽度手机布局、`deep-check 02`、本章 `zh-check` 和 `git diff --check` 均通过；全站另有 **570** 个既有小字视图仅作审计。中英桌面、360／390／430 px 中文手机及双语深入讲解截图均已打开核对；浏览器实测本步无 SVG 动画，两个对照面板和 caption 始终完整可见。
+- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch02-s03-20261124-1941/final/` 和 `checks/`。
+- 本轮类型：**新书**；下一普通轮做 **修旧**。
 
 ## Learning SGLang
 
@@ -89,12 +89,12 @@
 
 ## Inside Voxt
 
-规划完成：`docs/plan-voxt.md` 共 3 部分、16 章；第 1 章已制作 4 步并完成，第 2 章已制作 2 步。事实来源只使用 `sglang-omni` 的 `origin/main` 公开代码和文档。
+规划完成：`docs/plan-voxt.md` 共 3 部分、16 章；第 1 章已制作 4 步并完成，第 2 章已制作 3 步并完成。事实来源只使用 `sglang-omni` 的 `origin/main` 公开代码和文档。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
 | 01 | one-dictation | 完成：4/4 步易读满分 | 24.00 |
-| 02 | helper-permissions-hotkeys | 在做第 3 步；前 2 步易读满分 | 24.00 |
+| 02 | helper-permissions-hotkeys | 完成：3/3 步易读满分 | 24.00 |
 | 03 | microphone-to-voice-frames | 规划 | — |
 | 04 | speech-recognition-routes | 规划 | — |
 | 05 | language-model-connection | 规划 | — |

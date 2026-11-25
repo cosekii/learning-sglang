@@ -2,14 +2,16 @@
 
 日期：2026-11-24。评分办法：`EVAL.md` 易读性 R1–R6 与原 12 项，每项 0 / 1 / 2。
 第 1 步材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch02-s01-20261124-1613/final/`。
-第 2 步最新材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch02-s02-wording-20261124-1821/final/`；检查日志在相邻的 `checks/`。冷读者没有编程前置知识，只读主图、累计 transcript 和前章 transcript。
+第 2 步最新材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch02-s02-wording-20261124-1821/final/`。
+第 3 步材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch02-s03-20261124-1941/final/`；检查日志在相邻的 `checks/`。冷读者没有编程前置知识，只读主图、累计 transcript 和前章 transcript。
 
 | 步 | 易读分 /12 | R1 小学生复述 | 分数 /24 | 冷读者洞数 | 最差的两条 | 日期 |
 |---|---:|---|---:|---:|---|---|
 | 1 | 12 | 我按一下右边的 Option，辅助程序认出后告诉主程序「按键了」，主程序开始听写，然后请辅助程序采集麦克风的声音。 | 24 | 0 | — | 2026-11-24 |
 | 2 | 12 | 同样按右 Option，没开 Accessibility 时 helper 看不见按键，Go app 不动；开了以后 helper 看见按键、发出一条消息，Go app 开始听写。 | 24 | 0 | — | 2026-11-24 |
+| 3 | 12 | 麦克风权限只管声音，不管按键；没权限就录不了，有权限也还要麦克风能收音才行。 | 24 | 0 | — | 2026-11-24 |
 
-**当前平均：24 / 24；最低：24；总洞数：0；2/2 个已制作步骤易读满分。** 本章在做第 3 步。
+**当前平均：24 / 24；最低：24；总洞数：0；3/3 个步骤易读满分。** 本章完成。
 
 ## 第 1 步冷读与检查
 
@@ -38,3 +40,13 @@
 - 中英桌面、360／390／430 px 中文手机和中文深入讲解截图均已打开检查。英文截图改前后 SHA-256 均为 `b875a9570d563b6ae396f331c7e94986025304818efd7e56b438094bc639ad74`；浏览器断言确认 caption、图和深入讲解使用新措辞，旧措辞已消失。
 - `build`、本章 `transcript`、本步 `readability`、本章三种宽度的中英手机布局、本步中文手机字号、全站 `WAIT=100 mobile`、`deep-check 02`、`zh-check` 和 `git diff --check` 均通过；全站另有 **576** 个既有小字视图仅作审计。
 - 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch02-s02-wording-20261124-1821/final/` 和 `checks/`。未运行 Voxt 产品测试或真人儿童试读。
+
+## 第 3 步冷读与检查
+
+- 首次独立冷读为易读 **10 / 12**、可评原项 **18 / 20**、**2 洞**：`permission_denied` 没有中文意思；右图为何还要假设设备正常没有说清。只在错误下补「权限被拒绝，录音没有开始」，并把脚注改为「权限只取消阻拦；麦克风还要能收音」。同一冷读者复读为易读 **12 / 12**、可评原项 **20 / 20**、**0 洞**，R1–R6 均为 2，无新增洞。
+- 主线程核对原 #10、#12 各 **2 / 2**，合计 **24 / 24**。#10 的每个结论都有公开源码行号；#12 的一句话、图上内容、公式与符号来源、两种情况代入、省略边界、接下来和源码出处均完整。
+- 两幅同布局图保持 Accessibility 开启并发送同一个 `capture.start`，只改变麦克风权限。左图拒绝时返回 `permission_denied`，录音不开始；右图允许且输入设备正常时，声音经 helper 送到 Go app。主图没有声称权限单独保证录音成功。
+- 源码基线为 `sglang-omni@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`。权限状态与首次请求见 `Voxt/helper/Sources/VoxtNewHelper/Permissions.swift:11-18,53-58`；采集前权限检查见 `Voxt/helper/Sources/VoxtNewHelper/Capture.swift:53-79`；请求与错误见 `Voxt/docs/helper-protocol.md:32-37,63,107`；启动失败不发送 `capture.started` 见 `Voxt/internal/helper/proto/capture.go:20-25`；Go 错误归类见 `Voxt/internal/session/session.go:464-483`。
+- 双语深入讲解的公式、符号表、两种权限代入、未决定的权限状态、设备与其他失败边界均已核对；中英顶部和底部截图均已打开检查。
+- 最终 `build`、Voxt `transcript`、本步 `readability`、本步中文手机字号、本章中英及全站三种宽度手机布局、`deep-check 02`、本章 `zh-check` 和 `git diff --check` 均通过；全站另有 **570** 个既有小字视图仅作审计。中英桌面、360／390／430 px 中文手机、手机底部及双语深入讲解截图均已打开检查；本地目标页返回 HTTP 200。浏览器实测本步无 SVG 动画，两个面板与 caption 在 0、100、300、1200 ms 均完整可见。
+- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch02-s03-20261124-1941/final/` 和 `checks/`。未运行 Voxt 产品测试或真人儿童试读；独立冷读为模拟读者。
