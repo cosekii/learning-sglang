@@ -170,3 +170,34 @@ $$
 - `flush()` 只发送剩余样本；帧编号、样本偏移和字节生成：`Voxt/helper/Sources/VoxtNewHelperKit/PCMFramer.swift:70-87`。
 - 停止时先发送已转换数据和末尾不足帧：`Voxt/helper/Sources/VoxtNewHelper/Capture.swift:552-568`。
 - 3,300 样本、两个完整帧、200 字节尾帧和偏移 3,200 的公开测试：`Voxt/helper/Tests/VoxtNewHelperKitTests/HotkeyRecognizerTests.swift:474-488`。
+
+## 第 4 步 · 原始录音与模型副本分开
+
+> **一句话：** 开启声音处理时，历史保留收到的原始 PCM；识别模型使用另一份可被高通、语音检测和音量处理改变的副本。
+
+### 图上是什么
+
+- 上方是 helper 按顺序送来的 PCM 帧。session 把这些字节追加到自己的 `pcmBuffer`，这份数据就是后面保存历史录音的来源。
+- 橙色路径表示原样保留的录音。只有开启保留录音时，历史才会写入 WAV；这里说的是被保留的那份，不表示每次听写都永久保存音频。
+- 蓝色路径表示识别模型的副本。流式处理先把当前字节赋给 `raw`，再让高通和音量阶段返回新切片；历史使用的原始 `pcm` 不随之改变。
+- 「按收到的字节保存」沿用第 2 步的字节概念，强调原始数据不变；主图不引入新的编码格式。
+
+### 范围
+
+主图以开启处理为例。各项处理可以由设置关闭；关闭时不应把图理解成一定创建了另一种声音。是否保留历史录音也是独立设置，保留期限不在本章展开。
+
+文件识别和流式识别都遵守「原始录音不变」这条边界，但发送时机和删静音方式不同，留到语音检测及下一章继续区分。
+
+### 接下来
+
+原始录音已经留在橙色路径上。下一步先看蓝色副本的第一站：高通滤波怎样减弱低频嗡声。
+
+### 源码出处
+
+公开基线：`sglang-omni@6d8ed2dcf70da1b021bb14b62239a3add428636c`，路径均相对该仓库。
+
+- helper 的 PCM 追加到 session 的原始缓冲区：`Voxt/internal/session/run_audio.go:66-72`；缓冲区追加实现：`Voxt/internal/session/pcm.go:8-28`。
+- 流式路径保留 `raw`，处理阶段生成副本后发送：`Voxt/internal/session/run_audio.go:122-150`。
+- 文件处理明确不修改输入 `pcm`，历史保留原始录音：`Voxt/internal/session/run_audio.go:261-269`；实现：`Voxt/internal/dsp/level.go:125-169`。
+- 历史 WAV 写入 `r.pcm.bytes()`：`Voxt/internal/session/run.go:545-554`。
+- 公开文档也说明录音是在高通、增益和静音裁剪之前的麦克风信号：`Voxt/docs/dictation-collection.md:37-40`。

@@ -13,17 +13,17 @@ export const deep = await deepFor('voxt-microphone-to-voice-frames');
 <details class="i18n-en">
 <summary>Where this chapter's claims come from</summary>
 
-Step 1 uses the public helper's default capture rate and frame duration. The one-second waveform is constructed to explain slicing, not a recording or a performance measurement. Step 2 starts with the public PCMFramer test's converted `16,383` sample to explain the two-byte split; its deep dive also derives the `0.5` conversion and full-frame size. Step 3 uses the same public test's 3,300 samples to show two full frames and the 100-sample final frame. Speech detection is not covered yet.
+Step 1 uses the public helper's default capture rate and frame duration. The one-second waveform is constructed to explain slicing, not a recording or a performance measurement. Step 2 starts with the public PCMFramer test's converted `16,383` sample to explain the two-byte split; its deep dive also derives the `0.5` conversion and full-frame size. Step 3 uses the same public test's 3,300 samples to show two full frames and the 100-sample final frame. Step 4 separates the unchanged recording kept for history from the copy processed for a speech model. Speech detection is not covered yet.
 
-Source revisions: Step 1 uses `sglang-omni@91d06c70b00746c0b2b84db12a318240db360f1d`; Step 2 uses `sglang-omni@f6827ed1907e392fd67d5f13fa315c016e2056e8`; Step 3 uses `sglang-omni@6d8ed2dcf70da1b021bb14b62239a3add428636c`. The deep dive lists exact files and lines.
+Source revisions: Step 1 uses `sglang-omni@91d06c70b00746c0b2b84db12a318240db360f1d`; Step 2 uses `sglang-omni@f6827ed1907e392fd67d5f13fa315c016e2056e8`; Steps 3–4 use `sglang-omni@6d8ed2dcf70da1b021bb14b62239a3add428636c`. The deep dive lists exact files and lines.
 
 </details>
 
 <details class="i18n-zh">
 <summary>本章说法的出处</summary>
 
-第 1 步采用公开 helper 的默认采集速率和帧时长。一秒波形是为了讲切分而构造的示意图，不是真实录音或性能测量。第 2 步从公开 PCMFramer 测试转换后的 `16,383` 样本讲两字节拆分；深入讲解再推导 `0.5` 的转换和完整帧大小。第 3 步用同一公开测试的 3,300 个样本，画出两个完整帧和余下 100 个样本组成的最后一帧。语音检测还未展开。
+第 1 步采用公开 helper 的默认采集速率和帧时长。一秒波形是为了讲切分而构造的示意图，不是真实录音或性能测量。第 2 步从公开 PCMFramer 测试转换后的 `16,383` 样本讲两字节拆分；深入讲解再推导 `0.5` 的转换和完整帧大小。第 3 步用同一公开测试的 3,300 个样本，画出两个完整帧和余下 100 个样本组成的最后一帧。第 4 步区分原样保留的历史录音和为识别模型处理的副本。语音检测还未展开。
 
-源码版本：第 1 步为 `sglang-omni@91d06c70b00746c0b2b84db12a318240db360f1d`；第 2 步为 `sglang-omni@f6827ed1907e392fd67d5f13fa315c016e2056e8`；第 3 步为 `sglang-omni@6d8ed2dcf70da1b021bb14b62239a3add428636c`。精确文件和行号见深入讲解。
+源码版本：第 1 步为 `sglang-omni@91d06c70b00746c0b2b84db12a318240db360f1d`；第 2 步为 `sglang-omni@f6827ed1907e392fd67d5f13fa315c016e2056e8`；第 3–4 步为 `sglang-omni@6d8ed2dcf70da1b021bb14b62239a3add428636c`。精确文件和行号见深入讲解。
 
 </details>

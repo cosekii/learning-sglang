@@ -1,15 +1,16 @@
 # 第 3 章评分卡 · From microphone to audio frames
 
 日期：2026-11-25。评分办法：`EVAL.md` 易读性 R1–R6 与原 12 项，每项 0 / 1 / 2。
-第 1 步材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/voxt-ch03-s01-20261125-0353/final/`；第 2 步材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch03-s02-20261125-0710/final/`；第 3 步材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch03-s03-20261125-0950/checks/`。冷读者没有编程前置知识，只读主图、累计 transcript 和前两章 transcript。
+第 1 步材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/voxt-ch03-s01-20261125-0353/final/`；第 2 步材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch03-s02-20261125-0710/final/`；第 3 步材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch03-s03-20261125-0950/checks/`；第 4 步材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch03-s04-20261125-0954/checks/`。冷读者没有编程前置知识，只读主图、累计 transcript 和前两章 transcript。
 
 | 步 | 易读分 /12 | R1 小学生复述 | 分数 /24 | 冷读者洞数 | 最差的两条 | 日期 |
 |---|---:|---|---:|---:|---|---|
 | 1 | 12 | 助手程序把连续声音按每 100 毫秒一小段切开，所以 1 秒会变成 10 小段。 | 23 | 0 | #1 动机 1；其余各项 2 | 2026-11-25 |
 | 2 | 12 | 有个声音的数 16,383，一个字节装不下，除以 256 后，先装余数 255，再装 63。 | 23 | 0 | #1 动机 1；其余各项 2 | 2026-11-25 |
 | 3 | 12 | 两个大框装满后，剩下的 100 个样本也装进停止时的短帧，不会丢掉。 | 24 | 0 | 各项 2 | 2026-11-25 |
+| 4 | 12 | 同一段声音分成两份，历史那份原样保存，识别模型那份可以另外处理。 | 24 | 0 | 各项 2 | 2026-11-25 |
 
-**当前平均：23.33 / 24；最低：23；总洞数：0；3/3 个已制作步骤易读满分。** 本章继续制作第 4 步。
+**当前平均：23.50 / 24；最低：23；总洞数：0；4/4 个已制作步骤易读满分。** 本章继续制作第 5 步。
 
 ## 第 1 步冷读与检查
 
@@ -38,3 +39,10 @@
 - 3,300 个样本来自公开测试，主图拆成 `1,600 + 1,600 + 100`；尾帧与完整帧同横向比例，`100 × 2 = 200` 字节复用第 2 步规则。蓝色和橙色分别标完整帧与末尾不足帧，脚注说明尾帧不补齐。
 - 公开基线为 `sglang-omni origin/main@6d8ed2dcf70da1b021bb14b62239a3add428636c`。`PCMFramer.swift:59-87`、`Capture.swift:552-568` 和 `HotkeyRecognizerTests.swift:474-488` 支撑完整帧、`flush()`、尾帧字节与偏移。
 - `build`、本章 `transcript`、本步 `readability`、中文步三种宽度手机布局与字号、`deep-check 03`、本章 `zh-check` 和 `git diff --check` 均通过。中英桌面及手机截图已打开检查；本轮不跑全站回归或 Voxt 产品测试。
+
+## 第 4 步冷读与检查
+
+- 初稿把只在深入讲解出现过的 `PCM` 和 `FF 3F` 放上主图，冷读各算一个洞。最终改成已讲过的「音频帧、原来的声音、复制出的声音、按收到的字节保存」，主图只新增「副本」并用一句白话定义。
+- 最终换视角自检：易读 **12/12**、原分 **24/24**、**0 洞**。小学生复述为「同一段声音分成两份，历史那份原样保存，识别模型那份可以另外处理」。报告：`checks/cold-read.md`。
+- 橙色路径是开启保留时写入历史的原始录音，蓝色路径是供识别模型处理的副本；脚注说明处理和保存是独立设置。公开基线 `6d8ed2d` 的 `run_audio.go:66-72,122-150,261-269`、`level.go:125-169`、`run.go:545-554` 支撑原始缓冲、处理副本与历史 WAV。
+- 最终 `build`、本章 `transcript`、本步 `readability`、中文步三种宽度手机布局与字号、`deep-check 03`、本章 `zh-check` 和 `git diff --check` 均通过。最终中文桌面和手机截图已打开检查；未跑全站回归或 Voxt 产品测试。

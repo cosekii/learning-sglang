@@ -170,3 +170,34 @@ Public baseline: `sglang-omni@6d8ed2dcf70da1b021bb14b62239a3add428636c`; paths a
 - `flush()` emits only the leftovers; sequence numbers, sample offsets and byte generation: `Voxt/helper/Sources/VoxtNewHelperKit/PCMFramer.swift:70-87`.
 - Stop sends converted buffers and the partial final frame first: `Voxt/helper/Sources/VoxtNewHelper/Capture.swift:552-568`.
 - Public test for 3,300 samples, two full frames, a 200-byte tail and offset 3,200: `Voxt/helper/Tests/VoxtNewHelperKitTests/HotkeyRecognizerTests.swift:474-488`.
+
+## Step 4 · Separate the original recording from the model copy
+
+> **In one line:** With sound processing enabled, history keeps the incoming PCM unchanged while the speech model uses a separate copy that filtering, voice detection and level processing can change.
+
+### On the stage
+
+- The helper supplies ordered PCM frames at the top. The session appends these bytes to its `pcmBuffer`, which later supplies the kept history recording.
+- The amber path preserves the original recording. History writes a WAV only when audio keeping is enabled; this stage does not claim that every dictation keeps audio forever.
+- The blue path supplies the speech model's copy. Streaming first names the current bytes `raw`, then the high-pass and level stages return new slices. The original `pcm` used by history does not change with them.
+- “Same bytes as received” reuses Step 2's byte concept to stress that the original data stays unchanged. The stage introduces no new encoding format.
+
+### Scope
+
+The stage shows processing enabled. Settings can turn off individual processing stages, so the picture does not imply that every configuration creates a different sound. Audio keeping is a separate setting, and its retention period is outside this chapter.
+
+File and streaming recognition both preserve the original recording. Their send timing and silence removal differ; the voice-detection step and next chapter distinguish those routes.
+
+### Next
+
+The original recording stays on the amber path. Next, follow the blue copy to its first processing stage: a high-pass filter that reduces low hum.
+
+### Sources
+
+Public baseline: `sglang-omni@6d8ed2dcf70da1b021bb14b62239a3add428636c`; paths are relative to that repository.
+
+- Helper PCM appends to the session's original buffer: `Voxt/internal/session/run_audio.go:66-72`; buffer append: `Voxt/internal/session/pcm.go:8-28`.
+- The streaming path preserves `raw`, sends processed copies: `Voxt/internal/session/run_audio.go:122-150`.
+- File processing leaves input `pcm` unchanged for history: `Voxt/internal/session/run_audio.go:261-269`; implementation: `Voxt/internal/dsp/level.go:125-169`.
+- History WAV writes `r.pcm.bytes()`: `Voxt/internal/session/run.go:545-554`.
+- The public documentation describes the recording as the microphone signal before high-pass, gain and silence trimming: `Voxt/docs/dictation-collection.md:37-40`.

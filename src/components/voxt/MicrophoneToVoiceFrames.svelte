@@ -31,6 +31,9 @@
   }, {
     caption: 'When sound stops, the remaining 100 samples still form a final frame.',
     captionZh: '声音停了，剩下的 100 个样本也装成最后一帧。',
+  }, {
+    caption: 'The kept history recording stays unchanged. Processing changes a separate copy for the speech model.',
+    captionZh: '保留的历史录音不变。处理只改送给识别模型的副本。',
   }];
   const ariaLabels = [{
     en: 'The helper cuts one second of continuous sound into ten ordered audio frames, each holding 100 milliseconds',
@@ -41,6 +44,9 @@
   }, {
     en: 'A total of 3300 samples fills two frames of 1600 samples. At stop, the remaining 100 samples form a final partial frame of 200 bytes.',
     zh: '共 3300 个样本，先装满两个各有 1600 个样本的帧。停止时，剩下的 100 个样本也装成最后一帧，占 200 个字节。',
+  }, {
+    en: 'One recording takes two paths. The kept history preserves the original sound. A separate copy changes during processing for the speech model.',
+    zh: '同一段录音走两条路。保留的历史录音原样不动，另一份副本经过处理后送给识别模型。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -57,7 +63,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(step === 0 ? (phone ? 590 : 380) : step === 2 ? (phone ? 450 : 340) : (phone ? 515 : 330));
+  const H = $derived(step === 0 ? (phone ? 590 : 380) : step === 2 ? (phone ? 450 : 340) : step === 3 ? (phone ? 475 : 370) : (phone ? 515 : 330));
   const frames = Array.from({ length: VOXT_CAPTURE_FRAME_COUNT }, (_, i) => ({
     seq: i,
     start: i * VOXT_CAPTURE_FRAME_MS,
@@ -94,6 +100,9 @@
         </marker>
         <marker id="byte-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
           <path d="M0,0 L8,4 L0,8 z" fill="var(--muted)" />
+        </marker>
+        <marker id="original-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 z" fill="var(--gen)" />
         </marker>
       </defs>
       {#if step === 0}
@@ -158,7 +167,7 @@
       <text x={W / 2} y={phone ? 464 : 281} text-anchor="middle" class="label">{t('BYTE ORDER IN THE FRAME: 255 → 63', '这次测量在帧里的字节顺序：255 → 63')}</text>
       <rect x={W / 2 - 80} y={phone ? 482 : 299} width="12" height="12" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
       <text x={W / 2 - 60} y={phone ? 493 : 310} class="detail">{t('blue = stored bytes', '蓝色 = 存好的字节')}</text>
-      {:else}
+      {:else if step === 2}
       <text x={W / 2} y={phone ? 25 : 30} text-anchor="middle" class="title">{t('STOP KEEPS THE LAST PARTIAL FRAME', '停止时，末尾不足一帧也保留')}</text>
       <text x={W / 2} y={phone ? 48 : 55} text-anchor="middle" class="subtitle">{t(`${VOXT_DEMO_TOTAL_SAMPLES.toLocaleString('en-US')} samples · ${VOXT_CAPTURE_FRAME_SAMPLES.toLocaleString('en-US')} fill one frame`, `共 ${VOXT_DEMO_TOTAL_SAMPLES.toLocaleString('en-US')} 个样本 · 每 ${VOXT_CAPTURE_FRAME_SAMPLES.toLocaleString('en-US')} 个装满一帧`)}</text>
       <text x={W / 2} y={phone ? 76 : 88} text-anchor="middle" class="formula">{VOXT_DEMO_TOTAL_SAMPLES.toLocaleString('en-US')} = {VOXT_CAPTURE_FRAME_SAMPLES.toLocaleString('en-US')} + {VOXT_CAPTURE_FRAME_SAMPLES.toLocaleString('en-US')} + {VOXT_DEMO_TAIL_SAMPLES}</text>
@@ -181,6 +190,34 @@
       <rect x={phone ? 165 : 414} y={phone ? 403 : 296} width="12" height="12" rx="2" fill="var(--gen-soft)" stroke="var(--gen)" />
       <text x={phone ? 185 : 434} y={phone ? 414 : 307} class="detail">{t('final partial frame', '末尾不足帧')}</text>
       <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Public test example; the last frame is shorter, not padded.', '公开测试示例；最后一帧更短，不补齐。')}</text>
+      {:else}
+      <text x={W / 2} y={phone ? 25 : 30} text-anchor="middle" class="title">{t('ONE RECORDING, TWO COPIES', '同一段录音，分成两份')}</text>
+      <text x={W / 2} y={phone ? 49 : 55} text-anchor="middle" class="subtitle">{t('copy = the same sound in separate storage', '副本 = 同一段声音，另存一份')}</text>
+      <rect x={phone ? 45 : 250} y={phone ? 70 : 80} width={phone ? 210 : 220} height={phone ? 60 : 70} rx="10" fill="var(--bg)" stroke="var(--line)" />
+      <text x={W / 2} y={phone ? 96 : 108} text-anchor="middle" class="label">{t('AUDIO FRAMES FROM HELPER', 'helper 送来的音频帧')}</text>
+      <text x={W / 2} y={phone ? 117 : 131} text-anchor="middle" class="detail">{t('one recording', '同一段录音')}</text>
+      <line x1={phone ? 105 : 310} y1={phone ? 132 : 151} x2={phone ? 80 : 180} y2={phone ? 177 : 184} stroke="var(--gen)" stroke-width="2" marker-end="url(#original-arrow)" />
+      <line x1={phone ? 195 : 410} y1={phone ? 132 : 151} x2={phone ? 220 : 540} y2={phone ? 177 : 184} stroke="var(--accent)" stroke-width="2" marker-end="url(#frame-arrow)" />
+      <rect x={phone ? 15 : 40} y={phone ? 190 : 195} width={phone ? 130 : 290} height={phone ? 190 : 105} rx="10" fill="var(--gen-soft)" stroke="var(--gen)" stroke-width="2" />
+      <text x={phone ? 80 : 185} y={phone ? 219 : 224} text-anchor="middle" class="label amber">{t('KEPT HISTORY', '保留的历史录音')}</text>
+      <text x={phone ? 80 : 185} y={phone ? 246 : 252} text-anchor="middle" class="detail">{t('ORIGINAL SOUND', '原来的声音')}</text>
+      <text x={phone ? 80 : 185} y={phone ? 270 : 275} text-anchor="middle" class="detail">{t('unchanged', '保持原样')}</text>
+      <rect x={phone ? 155 : 390} y={phone ? 190 : 195} width={phone ? 130 : 290} height={phone ? 190 : 105} rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2" />
+      <text x={phone ? 220 : 535} y={phone ? 219 : 224} text-anchor="middle" class="label">{t('MODEL COPY', '识别模型副本')}</text>
+      <text x={phone ? 220 : 535} y={phone ? 246 : 252} text-anchor="middle" class="detail">{t('COPIED SOUND', '复制出的声音')}</text>
+      <text x={phone ? 220 : 535} y={phone ? 270 : 275} text-anchor="middle" class="detail">{t('processing changes it', '处理只改这份')}</text>
+      {#if phone}
+        <text x="80" y="311" text-anchor="middle" class="detail">{t('same bytes', '同样的字节')}</text>
+        <text x="80" y="345" text-anchor="middle" class="detail">{t('as received', '按收到的保存')}</text>
+        <text x="220" y="311" text-anchor="middle" class="detail">{t('same sound', '同样的声音')}</text>
+        <text x="220" y="337" text-anchor="middle" class="detail">{t('new storage', '另存一份')}</text>
+        <text x="220" y="356" text-anchor="middle" class="detail">{t('for the model', '送给模型')}</text>
+      {:else}
+        <text x="185" y="294" text-anchor="middle" class="detail">{t('same bytes as received', '按收到的字节保存')}</text>
+        <text x="535" y="294" text-anchor="middle" class="detail">{t('same sound, new storage', '同样的声音，另存一份')}</text>
+      {/if}
+      <text x={W / 2} y={phone ? 414 : 328} text-anchor="middle" class="formula">{t('ORIGINAL STAYS · COPY CHANGES', '原件不动 · 副本处理')}</text>
+      <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Processing is on here; keeping audio is a separate setting.', '图中开启处理；是否保存录音由另一项设置决定。')}</text>
       {/if}
     </svg>
   </div>
