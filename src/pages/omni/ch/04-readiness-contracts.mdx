@@ -19,7 +19,9 @@ Step 2 constructs a three-chunk `thinker → talker_ar` stream. This stage accep
 
 Step 3 uses the default speech configuration: early request construction is enabled with a five-usable-chunk threshold. Four usable chunks with an open stream stay deferred; five enter the request builder. A finished stream passes regardless of the count, illustrated by two usable chunks. A trailing `im_end` chunk is excluded from the usable count. Entering the builder is not admission or GPU execution. Five is the default, while the implementation's configurable floor is one.
 
-Step 1 source revision: `sglang-omni origin/main@91d06c70b00746c0b2b84db12a318240db360f1d`. Step 2 source revision: `sglang-omni origin/main@f6827ed1907e392fd67d5f13fa315c016e2056e8`. Step 3 source revision: `sglang-omni origin/main@6d8ed2dcf70da1b021bb14b62239a3add428636c`. The deep dive lists the exact files and lines.
+Step 4 follows one request while its thinker text stream remains open. The code predictor runs inside `talker_ar` and produces both audio codes and a summed-embedding feedback row. Codes go to `code2wav`; feedback enters that request's feedback queue. The next decode row requires feedback plus the next thinker text. With feedback but no text, it waits unless the text stream is done and `tts_pad_embed` can fill the text role. Unready rows are excluded individually; the whole batch need not stop. The chapter stops before DataRef storage and release.
+
+Step 1 source revision: `sglang-omni origin/main@91d06c70b00746c0b2b84db12a318240db360f1d`. Step 2 source revision: `sglang-omni origin/main@f6827ed1907e392fd67d5f13fa315c016e2056e8`. Steps 3–4 source revision: `sglang-omni origin/main@6d8ed2dcf70da1b021bb14b62239a3add428636c`. The deep dive lists the exact files and lines.
 
 </details>
 
@@ -32,6 +34,8 @@ Step 1 source revision: `sglang-omni origin/main@91d06c70b00746c0b2b84db12a31824
 
 第 3 步使用 speech 默认配置：允许提前构建，阈值是 5 段可用 chunk。流未结束时，4 段继续等待，5 段进入请求构建器；流结束后不限制数量，图中用 2 段展示。末尾的 `im_end` chunk 不计入可用数量。进入构建器不等于准入或 GPU 执行。5 是默认配置，当前实现允许配置的硬下限是 1。
 
-第 1 步源码版本：`sglang-omni origin/main@91d06c70b00746c0b2b84db12a318240db360f1d`。第 2 步源码版本：`sglang-omni origin/main@f6827ed1907e392fd67d5f13fa315c016e2056e8`。第 3 步源码版本：`sglang-omni origin/main@6d8ed2dcf70da1b021bb14b62239a3add428636c`。精确文件和行号见深入讲解。
+第 4 步跟踪 thinker 文字流尚未结束的同一个请求。code predictor 在 `talker_ar` 内运行，同时产出声音 codes 和 summed-embedding 反馈行。codes 发给 `code2wav`，feedback 进入这个请求的反馈队列。下一步 decode 需要 feedback 加下一段 thinker 文字。有 feedback 但没文字时，除非文字流已结束且可用 `tts_pad_embed` 补上，否则继续等待。未就绪的请求行单独排除，不要求整个 batch 停下。本章讲到就绪为止，DataRef 的存储和释放留给下一章。
+
+第 1 步源码版本：`sglang-omni origin/main@91d06c70b00746c0b2b84db12a318240db360f1d`。第 2 步源码版本：`sglang-omni origin/main@f6827ed1907e392fd67d5f13fa315c016e2056e8`。第 3–4 步源码版本：`sglang-omni origin/main@6d8ed2dcf70da1b021bb14b62239a3add428636c`。精确文件和行号见深入讲解。
 
 </details>

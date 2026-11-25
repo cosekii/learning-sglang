@@ -187,3 +187,74 @@ Sources on `sglang-omni origin/main@6d8ed2dcf70da1b021bb14b62239a3add428636c`:
 ### Next
 
 Once a request can be constructed, each decode step still needs its own inputs. The next step shows why the next step cannot run before the current step's feedback arrives.
+
+## Step 4 · The current step's feedback feeds the next step
+
+> **In one sentence:** The current talker step leaves feedback as part of the next step's input; while the text stream is open, that request's next decode needs both this feedback and the next thinker text.
+
+### What the picture shows
+
+- **Feedback** is input prepared by the current step for the same request's next step. The code predictor computes audio codes inside the current `talker_ar` step and also produces a feedback embedding, which enters `pending_feedback_queue`. It is neither the code ids sent to `code2wav` nor a request-completion signal.
+- The top row identifies the two input sources: feedback comes from the current talker step, and the next text comes from the thinker stream. All three snapshots follow request A with its text stream still open.
+- The first snapshot lacks feedback, and the second lacks the next text, so the next step waits. The third has both and combines them into the next input.
+- Blue borders mark arrived inputs; gray dashes mark missing inputs. “Next step” means this request's next decode row, not a requirement for every other request to stop.
+- After the text stream ends, a fixed `tts_pad_embed` can replace missing text, but feedback is still required. This picture covers only the open-stream case.
+
+### Formula
+
+For request A's decode input at step $k+1$, let $F_k$ be feedback from the current step, $T_{k+1}$ the next thinker text, $d$ whether the text stream is done, $P$ the final pad input, and $R_{k+1}$ next-step readiness:
+
+$$R_{k+1}\iff F_k\ \mathrm{exists}\land\left(T_{k+1}\ \mathrm{exists}\lor\left(d\land P\ \mathrm{exists}\right)\right)$$
+
+When ready, the next input $X_{k+1}$ adds the two vectors rather than concatenating them:
+
+$$X_{k+1}=F_k+\begin{cases}T_{k+1},&T_{k+1}\ \mathrm{exists}\\P,&d\land P\ \mathrm{exists}\end{cases}$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $A$ | The same request followed here | Request A from Chapter 3 |
+| $k$ | Current talker step number | Used in this step to distinguish adjacent steps |
+| $F_k$ | Feedback embedding left for the next step | Head of `pending_feedback_queue` |
+| $T_{k+1}$ | Next thinker text embedding | Head of `pending_text_queue` |
+| $d$ | Whether the thinker text stream has finished | `thinker_chunks_done` |
+| $P$ | Fixed input that replaces text after stream completion | `tts_pad_embed` |
+| $R_{k+1}$ | Whether this request's next decode row may run | `data_has_next_decode_input()` |
+| $X_{k+1}$ | Actual input vector for the next step | `take_next_decode_input_embed()` |
+
+### The numbers on the stage
+
+Here $d=\mathrm{false}$, so the formula reduces to $R_{k+1}\iff F_k\ \mathrm{exists}\land T_{k+1}\ \mathrm{exists}$.
+
+| Snapshot | $F_k$ | $T_{k+1}$ | $R_{k+1}$ | Result on stage |
+|---|---|---|---|---|
+| 1 | Missing | Ready | No | Next step waits |
+| 2 | Ready | Missing | No | Next step waits |
+| 3 | Ready | Ready | Yes | Add both for the next step |
+
+### How the source produces and consumes feedback
+
+During decode, the talker model calls `code_predictor_forward()` inside its own forward pass. The runner also calls the same prediction path after prefill. The code predictor returns result codes and summed embeddings. The runner clones this batch's codes and embeds, sends code chunks to `code2wav`, and appends each request's `feedback_row` to its own `pending_feedback_queue`. Codes and feedback are therefore two outputs from one prediction, not two stage handoffs. The main figure omits codes because they go to `code2wav`, not into the next talker step.
+
+Thinker text chunks enter `pending_text_queue`. Before each decode, `peek_next_decode_inputs()` examines the feedback queue first and returns null without feedback. With feedback but no text, it also returns null while the text stream is open. Only after stream completion can an available `tts_pad_embed` fill the text role. `combine_feedback_with_next_text()` adds the two vectors and pops both queue heads only when taking the input.
+
+`ready_decode_rows()` applies the same check to select ready rows. An unready request is excluded from this decode while retaining its KV; it has not failed, and other requests in the batch need not wait with it. The speech configuration enables `feedback_enabled` by default and disables SGLang overlap scheduling when feedback is active. Those scheduling details do not change the pictured data dependency.
+
+### Scope and sources
+
+This step covers only per-request, per-step input readiness in Qwen3-Omni's default speech path. It omits the code predictor's 15 internal selections, audio conversion, the full batch-exclusion implementation, completion, transport and memory release. Feedback is summed embeddings, not a code id or text. Book 1, Chapter 17, Step 5 already explains why the predictor lives inside the talker; this step reuses that conclusion.
+
+Sources on `sglang-omni origin/main@6d8ed2dcf70da1b021bb14b62239a3add428636c`:
+
+- [The decode forward calls the code predictor: `sglang_omni/models/qwen3_omni/components/talker.py:1362-1383`](https://github.com/sgl-project/sglang-omni/blob/6d8ed2dcf70da1b021bb14b62239a3add428636c/sglang_omni/models/qwen3_omni/components/talker.py#L1362-L1383).
+- [The code predictor returns codes and summed embeddings: `sglang_omni/models/qwen3_omni/components/talker.py:1677-1719,1968-1979`](https://github.com/sgl-project/sglang-omni/blob/6d8ed2dcf70da1b021bb14b62239a3add428636c/sglang_omni/models/qwen3_omni/components/talker.py#L1677-L1719).
+- [Feedback is produced after prefill and decode: `sglang_omni/models/qwen3_omni/talker_model_runner.py:117-171`](https://github.com/sgl-project/sglang-omni/blob/6d8ed2dcf70da1b021bb14b62239a3add428636c/sglang_omni/models/qwen3_omni/talker_model_runner.py#L117-L171).
+- [Codes go to code2wav; feedback enters a per-request queue: `sglang_omni/models/qwen3_omni/talker_model_runner.py:173-229`](https://github.com/sgl-project/sglang-omni/blob/6d8ed2dcf70da1b021bb14b62239a3add428636c/sglang_omni/models/qwen3_omni/talker_model_runner.py#L173-L229).
+- [Readiness requires feedback and text or a final pad: `sglang_omni/models/qwen3_omni/talker_model_runner.py:558-588,656-726`](https://github.com/sgl-project/sglang-omni/blob/6d8ed2dcf70da1b021bb14b62239a3add428636c/sglang_omni/models/qwen3_omni/talker_model_runner.py#L558-L588).
+- [Unready rows are excluded while other rows can continue: `sglang_omni/models/qwen3_omni/talker_scheduler.py:142-183,329-339`](https://github.com/sgl-project/sglang-omni/blob/6d8ed2dcf70da1b021bb14b62239a3add428636c/sglang_omni/models/qwen3_omni/talker_scheduler.py#L142-L183).
+- [Feedback is enabled by default: `sglang_omni/models/qwen3_omni/config.py:454-464`](https://github.com/sgl-project/sglang-omni/blob/6d8ed2dcf70da1b021bb14b62239a3add428636c/sglang_omni/models/qwen3_omni/config.py#L454-L464).
+- [Feedback disables overlap scheduling: `sglang_omni/models/qwen3_omni/talker_scheduler.py:35-52`](https://github.com/sgl-project/sglang-omni/blob/6d8ed2dcf70da1b021bb14b62239a3add428636c/sglang_omni/models/qwen3_omni/talker_scheduler.py#L35-L52).
+- [Tests for text, pad, missing text and the three readiness states: `tests/unit_test/qwen3_omni/test_talker.py:144-168,203-249`](https://github.com/sgl-project/sglang-omni/blob/6d8ed2dcf70da1b021bb14b62239a3add428636c/tests/unit_test/qwen3_omni/test_talker.py#L144-L168).
+
+### Next
+
+The chapter has established when a request can be constructed and when its next step can run. The next chapter follows this data through DataRef: where it lives, how another process or device reads it, and when it is released.

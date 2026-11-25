@@ -4,6 +4,8 @@
 
 ## 本轮记录
 
+- 09:45 完成 Learning SGLang Omni 第 4 章第 3–4 步：默认五段可用 chunk 可提前构建，流结束可豁免；逐步 decode 需要当前步 feedback 和下一段 thinker 文字，文字流结束后才可用 pad 补文字。本章 4/4 步均为易读 **12/12**、原分 **24/24**、**0 冷读洞**。
+- `build`、本章 `transcript`、逐步 `readability`、中文步及 Omni 全书 `mobile`、`deep-check 04`、本章 `zh-check`、静态图一致性和双语抽屉断言通过。第 3 步截图：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-omni-ch04-s03-20261125-0935/final/`；第 4 步截图：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-omni-ch04-s04-20261125-0943/final/`。本轮只跑本章检查，未跑全站回归。
 - 09:30 主人指出只署 Wilson Zheng 不符合当前贡献：主页、章节侧栏、README 和链接预览卡改为「原教程 Wilson Zheng；扩展 cosekii 与 learning-sglang」，网页仓库链接和预览卡地址改指 `cosekii/learning-sglang`。教程内容与评分不变。
 - `build`、`og`、31 页署名与链接断言、93 个手机署名视图和 `git diff --check` 通过；360/390/430 px 均能看到完整署名，无横向溢出。截图：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-attribution-20261125-0930/home-zh.png`；预览图：`public/og.png`。本轮类型：**修旧**；下一普通轮做新书的下一整章。
 - 09:10 主人反馈主页只露出 Learning SGLang：新增共享四本书目录，左侧固定显示四本书入口，主页正文列出四本书全部章节；章节页保留本书目录，并核对 30 个已完成章节后加上 19 组双向跨书相关链接。侧栏滚动位置改为按书保存，教程 caption、图和 transcript 未改。
@@ -55,14 +57,14 @@
 
 ## Learning SGLang Omni
 
-规划完成：`docs/plan-omni.md` 共 3 部分、13 章；第 1 章已制作 4 步并完成，第 2、3 章各已制作 3 步并完成，第 4 章已制作 3 步。
+规划完成：`docs/plan-omni.md` 共 3 部分、13 章；第 1 章已制作 4 步并完成，第 2、3 章各已制作 3 步并完成，第 4 章已制作 4 步并完成。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
 | 01 | 01-config-to-runtime | 完成：4/4 步易读满分 | 24.00 |
 | 02 | 02-spg-topology | 完成：3/3 步易读满分 | 24.00 |
 | 03 | 03-request-binding | 完成：3/3 步易读满分 | 24.00 |
-| 04 | 04-readiness-contracts | 在做第 4 步；第 1–3 步易读满分 | 24.00 |
+| 04 | 04-readiness-contracts | 完成：4/4 步易读满分 | 24.00 |
 | 05 | 05-data-lifetime | 规划 | — |
 | 06 | 06-batching-backpressure | 规划 | — |
 | 07 | 07-shared-gpu-budgets | 规划 | — |

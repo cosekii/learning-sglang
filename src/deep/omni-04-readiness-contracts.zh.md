@@ -187,3 +187,74 @@ $$B_A\iff d_A\lor\left(p\land u_A\ge m\right)$$
 ### 接下来
 
 请求可以构建后，每一步 decode 还要等自己的输入。下一步看为什么当前一步的 feedback 没到，下一步就不能算。
+
+## 第 4 步 · 当前步的反馈是下一步的输入
+
+> **一句话：** 当前 talker 步留下的 feedback 是下一步输入的一部分；文字流未结束时，feedback 和下一段 thinker 文字都到齐，这个请求的下一步 decode 才能运行。
+
+### 图上是什么
+
+- **feedback** 是当前步为同一个请求的下一步准备的输入。code predictor 在当前 `talker_ar` 步内算出声音 codes，同时给出反馈向量；反馈向量进入 `pending_feedback_queue`。它不是发给 `code2wav` 的 code 编号，也不是整条请求已经完成的信号。
+- 顶行只标两份输入从哪里来：feedback 来自当前 talker 步，下一段文字来自 thinker 流。三张快照都跟踪请求 A，且文字流未结束。
+- 第 1 张缺 feedback，第 2 张缺下一段文字，下一步都等待；第 3 张两份都到，合成下一步输入。
+- 蓝框表示这份输入已到，灰虚线表示还没到。「下一步」是这个请求的下一行 decode，不表示其他请求的 decode 也必须一起停住。
+- 文字流结束后，若没有下一段文字，实现可用固定的 `tts_pad_embed` 代替文字，但仍必须有 feedback。本图只画流未结束的情况。
+
+### 公式
+
+对请求 A 的第 $k+1$ 个 decode 输入，设 $F_k$ 是当前步留下的 feedback，$T_{k+1}$ 是下一段 thinker 文字，$d$ 表示文字流是否结束，$P$ 是结束后的 pad 输入，$R_{k+1}$ 表示下一步是否就绪：
+
+$$R_{k+1}\iff \exists F_k\land\left(\exists T_{k+1}\lor\left(d\land \exists P\right)\right)$$
+
+就绪时，下一步输入 $X_{k+1}$ 是两份向量相加，而不是拼接：
+
+$$X_{k+1}=F_k+\begin{cases}T_{k+1},&\exists T_{k+1}\\P,&d\land \exists P\end{cases}$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $A$ | 本步跟踪的同一个请求 | 第 3 章的请求 A |
+| $k$ | 当前 talker 步的编号 | 本步用来区分相邻两步 |
+| $F_k$ | 当前步留给下一步的反馈向量 | `pending_feedback_queue` 的队首 |
+| $T_{k+1}$ | 下一段 thinker 文字向量 | `pending_text_queue` 的队首 |
+| $d$ | thinker 文字流是否结束 | `thinker_chunks_done` |
+| $P$ | 文字流结束后代替文字的固定输入 | `tts_pad_embed` |
+| $R_{k+1}$ | 请求的下一步 decode 是否可运行 | `data_has_next_decode_input()` |
+| $X_{k+1}$ | 下一步实际使用的输入向量 | `take_next_decode_input_embed()` |
+
+### 代入图上的数
+
+本例 $d=\mathrm{false}$，所以公式化简为 $R_{k+1}\iff \exists F_k\land \exists T_{k+1}$。
+
+| 快照 | $F_k$ | $T_{k+1}$ | $R_{k+1}$ | 图上结果 |
+|---|---|---|---|---|
+| 1 | 未到 | 已到 | 否 | 下一步等待 |
+| 2 | 已到 | 未到 | 否 | 下一步等待 |
+| 3 | 已到 | 已到 | 是 | 相加后进入下一步 |
+
+### 源码怎样产生并消费 feedback
+
+decode 时，talker 模型在自己的 forward 里调用 `code_predictor_forward()`；prefill 后也由 runner 调用同一预测路径。code predictor 返回结果 codes 与 summed embeddings。runner 克隆本 batch 的 codes 和 embeds，把 code chunk 发往 `code2wav`，并把每个请求对应的 `feedback_row` 追加到自己的 `pending_feedback_queue`。因此 codes 与 feedback 是同一次预测的两种输出，不是两次 stage 交接。codes 发往 `code2wav`，不进入下一 talker 步，所以主图省略 codes。
+
+thinker 的文字 chunk 进入 `pending_text_queue`。每次准备 decode 时，`peek_next_decode_inputs()` 先看 feedback 队首；没有 feedback 就返回空。有 feedback 但没有文字时，若文字流尚未结束也返回空；只有文字流已结束且有 `tts_pad_embed`，才用 pad 补上。`combine_feedback_with_next_text()` 将两份向量相加，取用时才弹出两队队首。
+
+`ready_decode_rows()` 用同一检查挑出就绪行。未就绪请求会被排除在本次 decode 外并保留 KV，不就绪不等于请求失败，也不要求整个 batch 的其他请求一起等待。speech 配置默认打开 `feedback_enabled`，并在启用反馈时关闭 SGLang overlap schedule；这些调度细节不改变图里的数据依赖。
+
+### 边界与出处
+
+本步只讲 Qwen3-Omni 默认 speech 路径里单个请求的逐步输入就绪，不讲 code predictor 内部 15 次选择、codec 如何转声音、batch 排除行的完整实现、完成、传输和内存释放。feedback 是 summed embeddings，不把它简化成 code id 或文本。第 1 本第 17 章第 5 步已经解释 code predictor 为何放在 talker 内，本步只复用这一结论。
+
+以下来源位于 `sglang-omni origin/main@6d8ed2dcf70da1b021bb14b62239a3add428636c`：
+
+- [decode forward 内调用 code predictor：`sglang_omni/models/qwen3_omni/components/talker.py:1362-1383`](https://github.com/sgl-project/sglang-omni/blob/6d8ed2dcf70da1b021bb14b62239a3add428636c/sglang_omni/models/qwen3_omni/components/talker.py#L1362-L1383)。
+- [code predictor 输出 codes 与 summed embeddings：`sglang_omni/models/qwen3_omni/components/talker.py:1677-1719,1968-1979`](https://github.com/sgl-project/sglang-omni/blob/6d8ed2dcf70da1b021bb14b62239a3add428636c/sglang_omni/models/qwen3_omni/components/talker.py#L1677-L1719)。
+- [prefill 和 decode 后产生反馈：`sglang_omni/models/qwen3_omni/talker_model_runner.py:117-171`](https://github.com/sgl-project/sglang-omni/blob/6d8ed2dcf70da1b021bb14b62239a3add428636c/sglang_omni/models/qwen3_omni/talker_model_runner.py#L117-L171)。
+- [codes 发往 code2wav，反馈进入逐请求队列：`sglang_omni/models/qwen3_omni/talker_model_runner.py:173-229`](https://github.com/sgl-project/sglang-omni/blob/6d8ed2dcf70da1b021bb14b62239a3add428636c/sglang_omni/models/qwen3_omni/talker_model_runner.py#L173-L229)。
+- [就绪检查需要 feedback，以及文字或结束后的 pad：`sglang_omni/models/qwen3_omni/talker_model_runner.py:558-588,656-726`](https://github.com/sgl-project/sglang-omni/blob/6d8ed2dcf70da1b021bb14b62239a3add428636c/sglang_omni/models/qwen3_omni/talker_model_runner.py#L558-L588)。
+- [未就绪行被排除，其他行可继续：`sglang_omni/models/qwen3_omni/talker_scheduler.py:142-183,329-339`](https://github.com/sgl-project/sglang-omni/blob/6d8ed2dcf70da1b021bb14b62239a3add428636c/sglang_omni/models/qwen3_omni/talker_scheduler.py#L142-L183)。
+- [默认启用 feedback：`sglang_omni/models/qwen3_omni/config.py:454-464`](https://github.com/sgl-project/sglang-omni/blob/6d8ed2dcf70da1b021bb14b62239a3add428636c/sglang_omni/models/qwen3_omni/config.py#L454-L464)。
+- [启用 feedback 时关闭 overlap schedule：`sglang_omni/models/qwen3_omni/talker_scheduler.py:35-52`](https://github.com/sgl-project/sglang-omni/blob/6d8ed2dcf70da1b021bb14b62239a3add428636c/sglang_omni/models/qwen3_omni/talker_scheduler.py#L35-L52)。
+- [文字、pad、缺文字和三种就绪状态测试：`tests/unit_test/qwen3_omni/test_talker.py:144-168,203-249`](https://github.com/sgl-project/sglang-omni/blob/6d8ed2dcf70da1b021bb14b62239a3add428636c/tests/unit_test/qwen3_omni/test_talker.py#L144-L168)。
+
+### 接下来
+
+现在已经知道请求何时能构建、下一步何时能算。下一章沿着这些数据看 DataRef：数据实际放在哪里，另一个进程或设备怎样读取，又何时释放。

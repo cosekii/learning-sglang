@@ -112,3 +112,10 @@ export const READINESS_BUILD_SNAPSHOTS = [
   { usable: READINESS_BUILD_MIN_CHUNKS, done: false },
   { usable: 2, done: true },
 ] as const;
+
+// While the thinker stream is open, the next decode needs feedback and the next text row.
+export const READINESS_FEEDBACK_SNAPSHOTS = [
+  { feedback: false, text: true },
+  { feedback: true, text: false },
+  { feedback: true, text: true },
+] as const;
