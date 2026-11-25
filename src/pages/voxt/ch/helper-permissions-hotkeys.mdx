@@ -1,0 +1,29 @@
+---
+layout: ../../../layouts/Chapter.astro
+book: voxt
+slug: helper-permissions-hotkeys
+---
+import HelperPermissionsHotkeys from '../../../components/voxt/HelperPermissionsHotkeys.svelte';
+import { voxtNeighbors } from '../../../voxt/chapters';
+import { deepFor } from '../../../deep';
+export const deep = await deepFor('voxt-helper-permissions-hotkeys');
+
+<HelperPermissionsHotkeys client:load {...voxtNeighbors('helper-permissions-hotkeys')} deep={deep} />
+
+<details class="i18n-en">
+<summary>Where this chapter's claims come from</summary>
+
+Step 1 follows the default Right Option shortcut through the public Swift helper, helper protocol and Go hotkey router. The diagram uses one constructed key press while no dictation is running; it does not measure latency or record audio. Permission checks, fallback shortcuts and other key behaviors are outside this step.
+
+Source revision: `sglang-omni origin/main@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`. The deep dive lists exact files and lines.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的出处</summary>
+
+第 1 步沿公开源码追踪默认右 Option 快捷键，依次经过 Swift helper、helper 协议和 Go 热键路由。图中构造了一次按键，并设定此前没有听写在运行；没有测量延迟，也没有采集声音。权限检查、备用快捷键和其他按键行为不在本步范围内。
+
+源码版本：`sglang-omni origin/main@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`。精确文件和行号见深入讲解。
+
+</details>

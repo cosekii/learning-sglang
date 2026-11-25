@@ -4,11 +4,12 @@
 
 ## 本轮记录
 
-- 本轮修旧：Learning SGLang 第 1 章第 1 步补章首数字动机。中文主图标出 `20 个字母 + 4 个空格 = 24 个字符`，说明文字要先变成编号、模型只读数字，并解释引号不计入字符；新增中文手机大字专版。
-- 英文 caption 和英文主图未动，英文桌面截图改前后逐字节一致。双语深入讲解补计数算式和本页代码出处。最终独立冷读为易读 **12/12**、原分 **24/24**、**0 洞**；本章均分升为 **24.00**。
-- `build`、本章 `transcript`、全章 `readability`、本步中文手机硬门、全站手机布局回归、`token-legends`、`deep-check 01`、本章 `zh-check`、8 个课程链接、中英桌面和 360/390 px 手机截图、键盘双向翻页、静态截图对照及 `git diff --check` 均通过。
-- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch01-s01-20261124-1559/final/` 和 `checks/`。
-- 本轮类型：**修旧**；下一普通轮转为**新书**。
+- 本轮新书：Inside Voxt 第 2 章第 1 步，沿公开源码讲清默认右 Option 怎样经 Swift helper 变成一条 JSON 通知，再由 Go app 在空闲状态路由为开始 Transcribe；开始后才采集麦克风，权限检查留给后续步骤。
+- 主图用 `名字=值` 和中文意思解释 `hotkey.event`、`transcribe/0`、`trigger`，补出 `/0` 的编号规则；手机首屏完整显示按键到开始听写的路线。双语深入讲解列出协议、源码行号和构造例子的边界。
+- 三轮独立冷读从易读 **9/12**、原项 **15/20**、**8 洞**，修到最终 **12/12**、**20/20**、**0 洞**；主线程核对 #10、#12 各 2 分，原分 **24/24**。
+- `build`、本章 `transcript`、本步 `readability`、中文手机字号硬门、Voxt 三种宽度手机布局、`deep-check 02`、本章 `zh-check` 和 `git diff --check` 均通过；中英桌面、390 px 中文手机和中英深入讲解截图均已打开核对。
+- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch02-s01-20261124-1613/final/` 和 `checks/`。
+- 本轮类型：**新书**；下一普通轮转为**修旧**。
 
 ## Learning SGLang
 
@@ -89,12 +90,12 @@
 
 ## Inside Voxt
 
-规划完成：`docs/plan-voxt.md` 共 3 部分、16 章；第 1 章已制作 4 步并完成。事实来源只使用 `sglang-omni` 的 `origin/main` 公开代码和文档。
+规划完成：`docs/plan-voxt.md` 共 3 部分、16 章；第 1 章已制作 4 步并完成，第 2 章已制作第 1 步。事实来源只使用 `sglang-omni` 的 `origin/main` 公开代码和文档。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
 | 01 | one-dictation | 完成：4/4 步易读满分 | 24.00 |
-| 02 | helper-permissions-hotkeys | 规划 | — |
+| 02 | helper-permissions-hotkeys | 在做第 2 步；第 1 步易读满分 | 24.00 |
 | 03 | microphone-to-voice-frames | 规划 | — |
 | 04 | speech-recognition-routes | 规划 | — |
 | 05 | language-model-connection | 规划 | — |

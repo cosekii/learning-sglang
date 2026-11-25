@@ -31,3 +31,4 @@ Read it to check wording and numbers across chapters without opening the compone
 | omni | 02 | [Stage–Process–GPU layout](omni/02-spg-topology.md) | 2 |
 | ml-sys | 01 | [Measure one inference request](ml-sys/01-measure-inference.md) | 4 |
 | voxt | 01 | [The journey of one sentence](voxt/one-dictation.md) | 4 |
+| voxt | 02 | [The doorbell and the guards](voxt/helper-permissions-hotkeys.md) | 1 |
