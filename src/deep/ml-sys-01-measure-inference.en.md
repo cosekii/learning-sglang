@@ -149,3 +149,26 @@ $$L_{(100)}-\mathrm{P99}=2000-300=1700\ \mathrm{ms}$$
 Zero-to-sglang Part I Chapter 5 §5.1 asks readers to observe P50 and P99 together, using P99 to examine the slower requests. Section 5.2 uses 99 faster requests and one 2 s request to show how an average can hide that single slow request. This picture's groups of 51, 48 and 1 form a constructed teaching distribution based on that scenario, not local measurements. The course does not prescribe this picture's rank formula; this step explicitly rounds up as in Step 5. Other tools may interpolate, which this step does not cover.
 
 **Next.** The middle and slower waits are now measured. The next step changes the question to how many requests finish in a given period.
+
+## Step 7 · Calculate throughput from completed work
+
+**One sentence.** Throughput is the number of requests completed per unit time; this example uses requests/s to show the average completions each second.
+
+**What the picture shows.** The 100 cells are the same 100 requests from Steps 5 and 6, now all complete. The timer's 20 s runs from the start of the whole test until the last request finishes; it is not any one request's E2E latency, and requests can start at different times. Dividing completed work by the whole test duration gives 5 requests/s. This is an average over the full window, not a claim that exactly one request finishes every 0.2 s, and it does not replace P50 or P99.
+
+**Formula and symbols.**
+
+$$Q=\frac{N_{\mathrm{done}}}{T}$$
+
+- $Q$: request throughput, the number of requests completed per unit time.
+- $N_{\mathrm{done}}$: completed requests during the whole test, 100 here and the same $N$ as Steps 5 and 6.
+- $T$: total duration of the whole test, 20 s here.
+- $\mathrm{requests/s}$: completed requests per second; a `request` is one request sent by the reader in the earlier steps.
+
+**Substitute the picture's numbers.**
+
+$$Q=\frac{100\ \mathrm{requests}}{20\ \mathrm{s}}=5\ \mathrm{requests/s}$$
+
+Zero-to-sglang Part I Chapter 5 §3.2 defines Throughput as output per unit time, allows `request/s` as its unit, and asks readers to observe it alongside latency. The 20 s in `src/ml-sys/numbers.ts` is a constructed teaching value added for this step. The 100 requests come from Steps 5 and 6, and the same file derives the result as $100\div20$. These are not local measurements and make no claim about actual SGLang performance. This step covers request throughput only; `token/s`, Goodput and changing concurrency are deliberately left out.
+
+**Next.** The chapter has measured both individual waits and completed work across a batch. The next chapter returns to the time before requests start to inspect what already occupies the GPU and how much space each part uses.

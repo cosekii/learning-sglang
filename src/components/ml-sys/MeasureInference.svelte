@@ -4,7 +4,7 @@
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
-  import { DEMO_REQUEST_SENT_MS, DEMO_FIRST_TOKEN_MS, DEMO_TTFT_MS, DEMO_TTFT_SECONDS, DEMO_TTFT_FRACTION, DEMO_OUTPUT_TOKEN_TIMES_MS, DEMO_ITL_GAPS_MS, DEMO_POST_FIRST_GAP_COUNT, DEMO_ITL_TOTAL_MS, DEMO_TPOT_MS, DEMO_LAST_TOKEN_MS, DEMO_E2E_MS, DEMO_SORTED_E2E_MS, DEMO_PERCENTILE_REQUEST_COUNT, DEMO_P50_RANK, DEMO_P50_MS, DEMO_AT_MOST_P50_COUNT, DEMO_P99_RANK, DEMO_P99_MS, DEMO_AT_MOST_P99_COUNT, DEMO_SLOWEST_E2E_MS, DEMO_SLOWEST_OVER_P50, DEMO_SLOWEST_OVER_P99_MS } from '../../ml-sys/numbers';
+  import { DEMO_REQUEST_SENT_MS, DEMO_FIRST_TOKEN_MS, DEMO_TTFT_MS, DEMO_TTFT_SECONDS, DEMO_TTFT_FRACTION, DEMO_OUTPUT_TOKEN_TIMES_MS, DEMO_ITL_GAPS_MS, DEMO_POST_FIRST_GAP_COUNT, DEMO_ITL_TOTAL_MS, DEMO_TPOT_MS, DEMO_LAST_TOKEN_MS, DEMO_E2E_MS, DEMO_SORTED_E2E_MS, DEMO_PERCENTILE_REQUEST_COUNT, DEMO_P50_RANK, DEMO_P50_MS, DEMO_AT_MOST_P50_COUNT, DEMO_P99_RANK, DEMO_P99_MS, DEMO_AT_MOST_P99_COUNT, DEMO_SLOWEST_E2E_MS, DEMO_SLOWEST_OVER_P50, DEMO_SLOWEST_OVER_P99_MS, DEMO_MEASUREMENT_WINDOW_SECONDS, DEMO_REQUEST_THROUGHPUT_PER_SECOND } from '../../ml-sys/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
@@ -26,6 +26,9 @@
   }, {
     caption: `In the same queue, P99 is request #${DEMO_P99_RANK}'s latency: ${DEMO_P99_MS} ms. The slowest request takes ${DEMO_SLOWEST_E2E_MS} ms.`,
     captionZh: `同一排请求中，P99 取第 ${DEMO_P99_RANK} 个的总延迟：${DEMO_P99_MS} ms。最慢的第 ${DEMO_PERCENTILE_REQUEST_COUNT} 个要等 ${DEMO_SLOWEST_E2E_MS} ms。`,
+  }, {
+    caption: `Throughput is completed requests per second. Here, ${DEMO_PERCENTILE_REQUEST_COUNT} ÷ ${DEMO_MEASUREMENT_WINDOW_SECONDS} = ${DEMO_REQUEST_THROUGHPUT_PER_SECOND} requests/s.`,
+    captionZh: `吞吐量是每秒完成的请求数。${DEMO_PERCENTILE_REQUEST_COUNT} ÷ ${DEMO_MEASUREMENT_WINDOW_SECONDS} = ${DEMO_REQUEST_THROUGHPUT_PER_SECOND}，平均每秒完成 ${DEMO_REQUEST_THROUGHPUT_PER_SECOND} 个。`,
   }];
   let step = $state(0);
   $effect(() => {
@@ -47,12 +50,12 @@
   const atMostPercentileCount = $derived(step === 4 ? DEMO_AT_MOST_P50_COUNT : DEMO_AT_MOST_P99_COUNT);
   const percentileBarX = $derived((phone ? 40 : 60) + (percentileRank - 1) * (phone ? 2.4 : 6) + (phone ? 0.8 : 2));
   const percentileLabelX = $derived(step === 4 ? percentileBarX : phone ? 235 : 620);
-  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 0 ? 390 : step === 2 ? 550 : step >= 4 ? 490 : 500) : (step >= 4 ? 470 : 400));
+  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 0 ? 390 : step === 2 ? 550 : step === 6 ? 560 : step >= 4 ? 490 : 500) : (step >= 4 ? 470 : 400));
 </script>
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={step === 0 ? 'TTFT is the 250 millisecond wait from sending a request to seeing its first token' : step === 1 ? 'ITL is each time gap between neighboring output tokens' : step === 2 ? `TPOT is the ${DEMO_TPOT_MS} millisecond average gap after the first token` : step === 3 ? `E2E latency is ${DEMO_E2E_MS} milliseconds from request sent to completion` : step === 4 ? `Across ${DEMO_PERCENTILE_REQUEST_COUNT} sorted requests, P50 is ${DEMO_P50_MS} milliseconds and the slowest is ${DEMO_SLOWEST_E2E_MS} milliseconds` : `Across ${DEMO_PERCENTILE_REQUEST_COUNT} sorted requests, P99 is request ${DEMO_P99_RANK} at ${DEMO_P99_MS} milliseconds and the slowest is ${DEMO_SLOWEST_E2E_MS} milliseconds`}>
+    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={step === 0 ? 'TTFT is the 250 millisecond wait from sending a request to seeing its first token' : step === 1 ? 'ITL is each time gap between neighboring output tokens' : step === 2 ? `TPOT is the ${DEMO_TPOT_MS} millisecond average gap after the first token` : step === 3 ? `E2E latency is ${DEMO_E2E_MS} milliseconds from request sent to completion` : step === 4 ? `Across ${DEMO_PERCENTILE_REQUEST_COUNT} sorted requests, P50 is ${DEMO_P50_MS} milliseconds and the slowest is ${DEMO_SLOWEST_E2E_MS} milliseconds` : step === 5 ? `Across ${DEMO_PERCENTILE_REQUEST_COUNT} sorted requests, P99 is request ${DEMO_P99_RANK} at ${DEMO_P99_MS} milliseconds and the slowest is ${DEMO_SLOWEST_E2E_MS} milliseconds` : `Throughput is ${DEMO_REQUEST_THROUGHPUT_PER_SECOND} requests per second: ${DEMO_PERCENTILE_REQUEST_COUNT} requests completed in ${DEMO_MEASUREMENT_WINDOW_SECONDS} seconds`}>
       <defs>
         <marker id="ttft-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
           <path d="M0,0 L8,4 L0,8 z" fill="var(--accent)" />
@@ -191,7 +194,7 @@
         <text x="150" y="470" text-anchor="middle" class="legend">{t('blue = measured time spans', '蓝色 = 量出的时间段')}</text>
       {/if}
       <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Constructed teaching example, not a local benchmark.', '构造的教学例子，不是本机实测。')}</text>
-      {:else}
+      {:else if step < 6}
       {#if !phone}
         <text x="35" y="26" class="rowlabel">{t(`${DEMO_PERCENTILE_REQUEST_COUNT} requests · E2E shortest to longest (ms)`, `${DEMO_PERCENTILE_REQUEST_COUNT} 个请求 · 总延迟从短到长（ms）`)}</text>
         <text x="35" y="50" class="legend strong">{t(`${percentileName} = request #${percentileRank}'s E2E latency here`, `${percentileName} = 本图第 ${percentileRank} 个请求的总延迟`)}</text>
@@ -244,6 +247,51 @@
         <text x="35" y="441" class="legend">{step === 4 ? t(`1 of ${DEMO_PERCENTILE_REQUEST_COUNT} requests`, `${DEMO_PERCENTILE_REQUEST_COUNT} 个中有 1 个`) : t(`${DEMO_SLOWEST_OVER_P99_MS} ms more than P99`, `比 P99 多 ${DEMO_SLOWEST_OVER_P99_MS} ms`)}</text>
       {/if}
       <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Constructed teaching example, not a local benchmark.', '构造的教学例子，不是本机实测。')}</text>
+      {:else}
+      {#if !phone}
+        <text x="35" y="30" class="rowlabel">{t(`Same ${DEMO_PERCENTILE_REQUEST_COUNT} requests · measure the whole test`, `同一批 ${DEMO_PERCENTILE_REQUEST_COUNT} 个请求 · 测量整个测试`)}</text>
+        <text x="123" y="66" text-anchor="middle" class="legend strong">{DEMO_PERCENTILE_REQUEST_COUNT} {t('requests complete', '个请求完成')}</text>
+        {#each DEMO_SORTED_E2E_MS as _, i}
+          <rect class="request-cell" x={40 + (i % 10) * 18} y={85 + Math.floor(i / 10) * 18} width="14" height="14" rx="2" fill="var(--fg)" />
+        {/each}
+        <text x="248" y="180" text-anchor="middle" class="formula neutral">÷</text>
+        <rect x="285" y="85" width="170" height="176" rx="12" fill="var(--bg)" stroke="var(--line)" />
+        <text x="370" y="116" text-anchor="middle" class="legend strong">{t('whole test', '整个测试')}</text>
+        <text x="370" y="157" text-anchor="middle" class="formula neutral">{DEMO_MEASUREMENT_WINDOW_SECONDS} s</text>
+        <line x1="315" y1="194" x2="425" y2="194" stroke="var(--fg)" stroke-width="2" />
+        <line x1="315" y1="187" x2="315" y2="201" stroke="var(--fg)" stroke-width="2" />
+        <line x1="425" y1="187" x2="425" y2="201" stroke="var(--fg)" stroke-width="2" />
+        <text x="315" y="226" text-anchor="middle" class="tag">0 s</text>
+        <text x="425" y="226" text-anchor="middle" class="tag">{DEMO_MEASUREMENT_WINDOW_SECONDS} s</text>
+        <text x="490" y="180" text-anchor="middle" class="formula neutral">=</text>
+        <rect x="525" y="85" width="155" height="176" rx="12" fill="var(--accent-soft)" />
+        <text x="602" y="120" text-anchor="middle" class="legend strong">{t('Throughput', '吞吐量')}</text>
+        <text x="602" y="164" text-anchor="middle" class="formula">{DEMO_REQUEST_THROUGHPUT_PER_SECOND}</text>
+        <text x="602" y="199" text-anchor="middle" class="legend strong">requests/s</text>
+        <text x="602" y="229" text-anchor="middle" class="tag">{t('average per second', '平均每秒')}</text>
+        <rect x="85" y="290" width="550" height="112" rx="14" fill="var(--bg)" stroke="var(--line)" />
+        <text x="360" y="323" text-anchor="middle" class="legend strong">{t('Throughput = completed requests ÷ total test time', '吞吐量 = 完成的请求数 ÷ 测试总时长')}</text>
+        <text x="360" y="354" text-anchor="middle" class="formula small neutral">{DEMO_PERCENTILE_REQUEST_COUNT} {t('requests', '个请求')} ÷ {DEMO_MEASUREMENT_WINDOW_SECONDS} s = {DEMO_REQUEST_THROUGHPUT_PER_SECOND} requests/s</text>
+        <text x="360" y="385" text-anchor="middle" class="legend">{t(`The ${DEMO_MEASUREMENT_WINDOW_SECONDS} s window is for the batch, not one request's E2E latency.`, `${DEMO_MEASUREMENT_WINDOW_SECONDS} s 是整批时间，不是一个请求的 E2E 总延迟。`)}</text>
+      {:else}
+        <text x="20" y="24" class="rowlabel">{t(`Same ${DEMO_PERCENTILE_REQUEST_COUNT} requests · whole test`, `同一批 ${DEMO_PERCENTILE_REQUEST_COUNT} 个请求 · 整个测试`)}</text>
+        <text x="150" y="50" text-anchor="middle" class="legend strong">{DEMO_PERCENTILE_REQUEST_COUNT} {t('requests complete', '个请求完成')}</text>
+        {#each DEMO_SORTED_E2E_MS as _, i}
+          <rect class="request-cell" x={53 + (i % 10) * 20} y={65 + Math.floor(i / 10) * 18} width="14" height="14" rx="2" fill="var(--fg)" />
+        {/each}
+        <text x="150" y="270" text-anchor="middle" class="formula neutral">÷</text>
+        <rect x="55" y="287" width="190" height="66" rx="11" fill="var(--bg)" stroke="var(--line)" />
+        <text x="150" y="313" text-anchor="middle" class="legend strong">{t(`whole test = ${DEMO_MEASUREMENT_WINDOW_SECONDS} s`, `整个测试 = ${DEMO_MEASUREMENT_WINDOW_SECONDS} s`)}</text>
+        <text x="150" y="338" text-anchor="middle" class="legend">{t(`start 0 s → end ${DEMO_MEASUREMENT_WINDOW_SECONDS} s`, `从 0 s 计时到 ${DEMO_MEASUREMENT_WINDOW_SECONDS} s`)}</text>
+        <text x="150" y="379" text-anchor="middle" class="formula neutral">=</text>
+        <rect x="35" y="393" width="230" height="82" rx="11" fill="var(--accent-soft)" />
+        <text x="150" y="417" text-anchor="middle" class="legend strong">{t('Throughput = completions per second', '吞吐量 = 每秒完成的请求数')}</text>
+        <text x="150" y="443" text-anchor="middle" class="legend strong">{DEMO_PERCENTILE_REQUEST_COUNT} ÷ {DEMO_MEASUREMENT_WINDOW_SECONDS} = {DEMO_REQUEST_THROUGHPUT_PER_SECOND} requests/s</text>
+        <text x="150" y="465" text-anchor="middle" class="tag">{t(`average ${DEMO_REQUEST_THROUGHPUT_PER_SECOND} requests each second`, `平均每秒完成 ${DEMO_REQUEST_THROUGHPUT_PER_SECOND} 个请求`)}</text>
+        <text x="150" y="500" text-anchor="middle" class="legend">{t(`${DEMO_MEASUREMENT_WINDOW_SECONDS} s is for the batch, not one request's E2E.`, `${DEMO_MEASUREMENT_WINDOW_SECONDS} s 是整批时间，不是单请求的 E2E。`)}</text>
+      {/if}
+      <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('Next: what fills the GPU before requests start?', '下一章：请求前，显卡里已经装了什么？')}</text>
+      <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Constructed teaching example, not a local benchmark.', '构造的教学例子，不是本机实测。')}</text>
       {/if}
     </svg>
   </div>
@@ -254,6 +302,7 @@
 <style>
   .time { font-family: var(--mono); font-size: 18px; font-weight: 650; fill: var(--fg); }
   .formula { font-family: var(--mono); font-size: 20px; font-weight: 650; fill: var(--accent); }
+  .formula.neutral { fill: var(--fg); }
   .formula.small { font-size: 16px; }
   .legend.strong { font-weight: 650; }
   @media (max-width: 600px) {

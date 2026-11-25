@@ -1,7 +1,7 @@
 # 第 1 章评分卡 · Measure one inference request
 
 日期：2026-11-24。评分办法：`EVAL.md` 易读性 R1–R6 与原 12 项，每项 0 / 1 / 2。
-材料：每步的最终中英桌面截图、中文手机截图、深入讲解截图和逐步 transcript；第 1 步位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s01/`，第 2 步位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s02/`，第 3 步位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s03/`，第 4 步最新复核位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-repair-20261124-1622/mlsys/`，第 5 步位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s05-20261124-1711/`；第 5 步本轮修旧材料位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s05-repair-20261124-1851/final/`，检查日志在相邻的 `checks/`；第 6 步材料位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s06-20261124-1901/final/`，检查日志在相邻的 `checks/`。冷读者只带 request、token、prefill 和毫秒的前置知识；后续步骤另带前面步骤的 TTFT、ITL、TPOT、E2E、P50。
+材料：每步的最终中英桌面截图、中文手机截图、深入讲解截图和逐步 transcript；第 1 步位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s01/`，第 2 步位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s02/`，第 3 步位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s03/`，第 4 步最新复核位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-repair-20261124-1622/mlsys/`，第 5 步位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s05-20261124-1711/`；第 5 步本轮修旧材料位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s05-repair-20261124-1851/final/`，检查日志在相邻的 `checks/`；第 6 步材料位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s06-20261124-1901/final/`，检查日志在相邻的 `checks/`；第 7 步材料位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ml-sys-ch01-s07-20261124-2130/final/`，检查日志在相邻的 `checks/`。冷读者只带 request、token、prefill 和毫秒的前置知识；后续步骤另带前面步骤的 TTFT、ITL、TPOT、E2E、P50、P99。
 
 | 步 | 易读分 /12 | R1 小学生复述 | 分数 /24 | 冷读者洞数 | 最差的两条 | 日期 |
 |---|---:|---|---:|---:|---|---|
@@ -11,8 +11,9 @@
 | 4 | 12 | 整个请求用 325 ms：首 token 前等 250 ms，后面三段 25、20、30 ms 共 75 ms。 | 24 | 0 | — | 2026-11-24 |
 | 5 | 12 | 100 个请求从快到慢排队，第 50、51 个都等 200 ms，所以有 51 个不超过 200 ms；最慢的 1 个等 2000 ms，是 P50 的 10 倍。 | 24 | 0 | — | 2026-11-24 |
 | 6 | 12 | 把 100 个请求按等待时间排队，第 99 个等 300 ms，这个位置叫 P99；最慢的第 100 个等 2000 ms，它不是 P99。 | 24 | 0 | — | 2026-11-24 |
+| 7 | 12 | 100 个请求用 20 秒全部做完，100 除以 20 等于 5，所以平均每秒做完 5 个请求，这就叫吞吐量。 | 24 | 0 | — | 2026-11-24 |
 
-**当前平均：24.00 / 24；最低：24；总洞数：0；6/6 个已制作步骤易读满分。** 本章继续制作第 7 步。
+**当前平均：24.00 / 24；最低：24；总洞数：0；7/7 步易读满分。** 本章完成。
 
 ## 第 1 步冷读与检查
 
@@ -70,3 +71,12 @@
 - 本步沿用 51×200 ms、48×300 ms、1×2000 ms 的构造分布。`DEMO_P99_RANK`、`DEMO_P99_MS`、`DEMO_AT_MOST_P99_COUNT` 和 `DEMO_SLOWEST_OVER_P99_MS` 均由同一数组推导：第 99 个为 300 ms，99 个不超过 300 ms，最慢 2000 ms，比 P99 多 1700 ms。
 - `build`、本章 `transcript`、本步 `readability`、本章与全站三种宽度手机布局、本步中文手机字号、`deep-check 01`、`zh-check`、数字断言、浏览器导航、静态截图对比、课程链接和 `git diff --check` 均通过。全站另有 **576** 个既有小字视图仅作审计。
 - 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s06-20261124-1901/final/` 和 `checks/`。中英桌面、360／390／430 px 中文手机顶部与底部、双语深入讲解顶部与底部均已打开核对；浏览器确认第 5 步右箭头进入本步、末步不越界、直达链接和 100 根柱均正确。
+
+## 第 7 步冷读与检查
+
+- 首轮独立冷读为易读 **11/12**、原分 **23/24**、**0 内容洞**：请求格、计时、运算符和结果都用蓝色，#5 的一色一义未满；R6 因只有静态截图而暂记证据上限。
+- 请求格、计时、运算符和下方算式改为中性色，只让结果 `5` 使用蓝色；深入讲解同步把「蓝格」改为「方格」。同一冷读者复读为易读 **12/12**、原分 **24/24**、**0 洞**，R1–R6 与原 #1–#12 均为 2。
+- 本步沿用同一批 100 个请求，新增构造的 20 s 整段测试时间；`numbers.ts` 由 $100\div20$ 推得 5 requests/s。图上明确 20 s 不是单请求 E2E，深入讲解说明平均值不代表固定完成节奏。定义核对 zero-to-sglang 第 1 部分第 5 章 §3.2；本步不展开 `token/s`、Goodput 或并发变化。
+- 真实浏览器记录 `animations: 0`，两个相隔 1.5 s 的截图逐字节相同；只有结果文字 `5` 使用 accent，100 个请求格使用中性前景色。R6 的证据缺口由此闭合，不把静态步伪装成动画审查。
+- `build`、本章 `transcript`、本步 `readability`、本章与全站三种宽度手机布局、本步中文手机字号、`deep-check 01`、`zh-check`、数字断言、浏览器导航、课程链接和 `git diff --check` 均通过。全站另有 **567** 个既有小字视图仅作审计。
+- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ml-sys-ch01-s07-20261124-2130/final/` 和 `checks/`。中英桌面、360／390／430 px 中文手机、双语深入讲解顶部与底部均已打开核对；浏览器确认第 6 步右箭头进入本步、末步不越界、直达链接、100 个方格和双语深入讲解均正确。
