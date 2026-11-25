@@ -150,8 +150,7 @@
         <text x="32" y="352">prompt 已处理，回答还没结束</text>
         <text x="32" y="378">每个 decode 步各出一个 token</text>
         <rect x="32" y="392" width="180" height="10" rx="3" fill="var(--gen)" />
-        <path d="M 16 140 H 7 V 490 H 30" fill="none" stroke="var(--line)" stroke-width="2" />
-        <path d="M 344 334 H 353 V 490 H 330" fill="none" stroke="var(--line)" stroke-width="2" />
+        <!-- The batch labels already name their source lists; outer wires look like stray boxes on phones. -->
         <rect x="36" y="452" width="136" height="76" rx="9" fill="white" stroke="var(--accent)" />
         <text x="104" y="482" text-anchor="middle" class="ph-strong">prefill batch</text>
         <text x="104" y="508" text-anchor="middle">从 waiting 选</text>
