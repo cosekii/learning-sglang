@@ -170,3 +170,42 @@ $$R=5{,}558-4{,}536=1{,}022$$
 最后一个问题是谁来保存这些节点，以及 state 被淘汰后 token 路径是否还在。下一步看同一棵树上的墓碑节点。
 
 来源：SGLang `385903b0acd69455cb688b5cb5e3afcc0fd91598` 的 `python/sglang/srt/mem_cache/mamba_radix_cache.py:1086-1126,1137-1206`；`Awesome-ML-SYS-Tutorial/engineer/hybrid-prefix-cache/readme.md:624-658`。
+
+## 第 6 步 · 墓碑留下路径，拿走恢复能力
+
+**一句话。** 内部节点的 Mamba state 可以独立淘汰；token 边、全注意力 KV 和子节点仍在，但匹配不能再从这里恢复。
+
+### 图上是什么
+
+- 蓝色路径从更早前缀 $P$ 到共同前缀 $M$。$P=4{,}536$ 仍有 state；$M=5{,}514$ 的 `mamba_value` 已置为 `None`，所以画成红色虚线墓碑。
+- 旧 user 的叶节点仍可有 state，但它已经包含不同尾部，不能服务新请求。橙色新尾部 $E=5{,}558$ 必须计算。
+- token 匹配仍能沿树到 $M$，恢复候选却跳过 $M$、停回 $P$。因此重放覆盖 $P\rightarrow M\rightarrow E$，不是只算 $M\rightarrow E$。
+
+### 公式与符号
+
+$$V(n)=1\iff n.\texttt{mamba\_value}\ne\texttt{None}$$
+
+$$P=\max\{\operatorname{pos}(n):n\in\operatorname{path}(M),\ V(n)=1\},\qquad R=E-P$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $V(n)$ | 节点 $n$ 是否仍有可恢复的 Mamba state | 节点的 `mamba_value` 是否非空 |
+| $\operatorname{path}(M)$ | 从 root 到匹配位置 $M$ 的节点路径 | radix 树匹配 |
+| $P$ | 路径上最新仍满足 $V(n)=1$ 的位置 | `_match_prefix_helper` 的最佳候选 |
+| $R$ | 从恢复点到新末尾的重放位置数 | 本步计算 |
+
+### 代入图上的数
+
+$M$ 是墓碑，旧 user 又不在新请求的共同前缀路径上，所以最新可用候选是 $P=4{,}536$：
+
+$$R=5{,}558-4{,}536=1{,}022$$
+
+`evict_mamba` 能选择未加锁的内部节点；`_tombstone_internal_node` 只把 `node.mamba_value` 设为 `None`。这一步本身不删除其子节点或全注意力 KV。相对地，`evict_full` 从未加锁叶节点开始回收；本步不把内部节点的规则套到所有叶节点。
+
+另一个边界也很重要：`_split_node` 会给新父节点写入 `new_node.mamba_value = None`，注释说明 Mamba cache 不能随 token 边切开。因此「分叉处形成内容边界」不等于「这个边界自动带有可用 state」。
+
+### 接下来
+
+本章的回答是：相同 token 给出可匹配的路径，只有该路径上另存的 state 才给出可恢复的位置。下一章把状态分到多张卡，继续看卡与卡怎样交换张量。
+
+来源：SGLang `385903b0acd69455cb688b5cb5e3afcc0fd91598` 的 `python/sglang/srt/mem_cache/mamba_radix_cache.py:861-919,1086-1126,1208-1241,1354-1357`；`Awesome-ML-SYS-Tutorial/engineer/hybrid-prefix-cache/readme.md:660-709`。

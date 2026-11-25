@@ -23,6 +23,9 @@
   }, {
     caption: 'A hybrid request needs one resume point for both layer kinds. SGLang truncates reusable KV to the newest node that still has Mamba state.',
     captionZh: 'hybrid 请求要为两类 layer 选一个共同恢复点。SGLang 把可复用 KV 截到最新仍存 Mamba state 的节点。',
+  }, {
+    caption: 'MambaRadixCache keeps token paths and state values separate. Evicting one internal state leaves a tombstone; matching falls back to an older surviving state.',
+    captionZh: 'MambaRadixCache 分开管理 token 路径和 state。内部 state 被淘汰后留下墓碑，匹配会回退到更早仍存留的 state。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -276,7 +279,7 @@
           <text x="150" y="366" text-anchor="middle" class="small">{t('then replay to the new prompt end', '再重放到新 prompt 末尾')}</text>
         {/if}
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('Positions are schematic; 1,022 is position arithmetic.', '位置间距是示意；1,022 是位置算式。')}</text>
-      {:else}
+      {:else if step === 4}
         {#if !phone}
           <text x="38" y="30" class="title">{t('Hybrid · choose one common resume point', 'hybrid · 选一个共同恢复点')}</text>
           <text x="38" y="55" class="label">{t('full-attention layers + recurrent layers · one request', '全注意力 layer + recurrent layer · 同一个请求')}</text>
@@ -333,8 +336,79 @@
           <text x="150" y="401" text-anchor="middle" class="small">E − P = {HYBRID_LOG_REPLAY_POSITIONS.toLocaleString()} {t('positions', '个位置')}</text>
         {/if}
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">value = value[:best_value_len]</text>
+      {:else}
+        {#if !phone}
+          <text x="38" y="30" class="title">{t('MambaRadixCache · a token path can outlive its state', 'MambaRadixCache · token 路径可以比 state 活得久')}</text>
+          <text x="38" y="55" class="label">{t('evict one internal mamba_value · keep its KV and children', '淘汰内部节点的 mamba_value · 保留 KV 和子节点')}</text>
+
+          <rect x="35" y="116" width="70" height="50" rx="9" fill="var(--bg)" stroke="var(--line)" />
+          <text x="70" y="146" text-anchor="middle" class="small strong">root</text>
+          <line x1="105" y1="141" x2="160" y2="141" stroke="var(--muted)" stroke-width="2" />
+          <path d="M160,141 l-10,-6 v12 z" fill="var(--muted)" />
+
+          <rect x="165" y="101" width="140" height="80" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" stroke-width="2" />
+          <text x="235" y="127" text-anchor="middle" class="small strong">{t('earlier prefix P', '更早前缀 P')}</text>
+          <text x="235" y="151" text-anchor="middle" class="batch">{HYBRID_LOG_CHECKPOINT_TOKENS.toLocaleString()}</text>
+          <text x="235" y="172" text-anchor="middle" class="small">{t('state kept ✓', 'state 保留 ✓')}</text>
+          <line x1="305" y1="141" x2="370" y2="141" stroke="var(--accent)" stroke-width="3" />
+          <path d="M370,141 l-11,-7 v14 z" fill="var(--accent)" />
+
+          <rect x="375" y="96" width="170" height="90" rx="11" fill="var(--eos-soft)" stroke="var(--eos)" stroke-width="2" stroke-dasharray="6 4" />
+          <text x="460" y="121" text-anchor="middle" class="small strong">{t('shared prefix M', '共同前缀 M')}</text>
+          <text x="460" y="145" text-anchor="middle" class="batch">{HYBRID_LOG_MATCH_TOKENS.toLocaleString()}</text>
+          <text x="460" y="166" text-anchor="middle" class="small unavailable">mamba_value = None</text>
+          <text x="460" y="204" text-anchor="middle" class="small unavailable">{t('tombstone · state evicted', '墓碑 · state 已淘汰')}</text>
+
+          <line x1="545" y1="126" x2="600" y2="88" stroke="var(--muted)" stroke-width="2" />
+          <path d="M600,88 l-11,1 6,9 z" fill="var(--muted)" />
+          <rect x="605" y="55" width="90" height="66" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="650" y="81" text-anchor="middle" class="small strong">{t('old user', '旧 user')}</text>
+          <text x="650" y="105" text-anchor="middle" class="small">{t('state kept ✓', 'state 保留 ✓')}</text>
+
+          <line x1="545" y1="159" x2="600" y2="194" stroke="var(--gen)" stroke-width="2" stroke-dasharray="5 3" />
+          <path d="M600,194 l-6,-10 11,1 z" fill="var(--gen)" />
+          <rect x="605" y="170" width="90" height="66" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" stroke-dasharray="5 3" />
+          <text x="650" y="195" text-anchor="middle" class="small strong">{t('new tail E', '新尾部 E')}</text>
+          <text x="650" y="219" text-anchor="middle" class="small">{t('compute', '待计算')}</text>
+
+          <rect x="40" y="254" width="640" height="100" rx="12" fill="var(--bg)" stroke="var(--line)" />
+          <text x="360" y="281" text-anchor="middle" class="small strong">{t('token match still reaches M · state restore stops at P', 'token 匹配仍到 M · state 恢复停在 P')}</text>
+          <text x="360" y="309" text-anchor="middle" class="result">P → M → E · {HYBRID_LOG_REPLAY_POSITIONS.toLocaleString()} {t('positions to replay', '个位置要重放')}</text>
+          <text x="360" y="336" text-anchor="middle" class="small">{t('old-user state cannot serve a different tail', '旧 user 的 state 不能用于不同尾部')}</text>
+        {:else}
+          <text x="18" y="27" class="title">{t('MambaRadixCache', 'MambaRadixCache')}</text>
+          <text x="18" y="51" class="small">{t('token paths and states have separate lifetimes', 'token 路径和 state 分开淘汰')}</text>
+
+          <rect x="15" y="79" width="125" height="78" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" stroke-width="2" />
+          <text x="78" y="104" text-anchor="middle" class="small strong">{t('earlier prefix P', '更早前缀 P')}</text>
+          <text x="78" y="128" text-anchor="middle" class="batch">{HYBRID_LOG_CHECKPOINT_TOKENS.toLocaleString()}</text>
+          <text x="78" y="149" text-anchor="middle" class="small">{t('state kept ✓', 'state 保留 ✓')}</text>
+          <line x1="140" y1="118" x2="158" y2="118" stroke="var(--accent)" stroke-width="3" />
+          <path d="M158,118 l-9,-6 v12 z" fill="var(--accent)" />
+
+          <rect x="163" y="74" width="122" height="88" rx="10" fill="var(--eos-soft)" stroke="var(--eos)" stroke-width="2" stroke-dasharray="6 4" />
+          <text x="224" y="98" text-anchor="middle" class="small strong">{t('shared prefix M', '共同前缀 M')}</text>
+          <text x="224" y="121" text-anchor="middle" class="batch">{HYBRID_LOG_MATCH_TOKENS.toLocaleString()}</text>
+          <text x="224" y="141" text-anchor="middle" class="small unavailable">state = None</text>
+          <text x="224" y="157" text-anchor="middle" class="small unavailable">{t('tombstone', '墓碑')}</text>
+
+          <line x1="210" y1="162" x2="90" y2="190" stroke="var(--muted)" stroke-width="2" />
+          <rect x="30" y="190" width="105" height="57" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="83" y="214" text-anchor="middle" class="small strong">{t('old user', '旧 user')}</text>
+          <text x="83" y="236" text-anchor="middle" class="small">{t('state kept ✓', 'state 保留 ✓')}</text>
+          <line x1="238" y1="162" x2="220" y2="190" stroke="var(--gen)" stroke-width="2" stroke-dasharray="5 3" />
+          <rect x="170" y="190" width="105" height="57" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" stroke-dasharray="5 3" />
+          <text x="223" y="214" text-anchor="middle" class="small strong">{t('new tail E', '新尾部 E')}</text>
+          <text x="223" y="236" text-anchor="middle" class="small">{t('compute', '待计算')}</text>
+
+          <text x="150" y="281" text-anchor="middle" class="small strong">{t('match reaches M · restore stops at P', '匹配到 M · 恢复停在 P')}</text>
+          <text x="150" y="309" text-anchor="middle" class="result">P → M → E</text>
+          <text x="150" y="337" text-anchor="middle" class="small">{HYBRID_LOG_REPLAY_POSITIONS.toLocaleString()} {t('positions to replay', '个位置要重放')}</text>
+          <text x="150" y="365" text-anchor="middle" class="small">{t('KV and children stay', 'KV 和子节点保留')}</text>
+        {/if}
+        <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('A branch boundary does not guarantee a saved state.', '分叉边界不保证已经保存 state。')}</text>
       {/if}
-      <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{step === 0 ? t('Selected article measurements; not this computer.', '选自原文实测，不是本机实测。') : step === 1 ? t('Simplified article example; Ch. 8 Steps 2–3 covers matching.', '原文简化例；匹配见 Ch. 8 Steps 2–3。') : step === 2 ? t('llama.cpp: previous per-token states are not preserved here.', 'llama.cpp：这里没有保存此前的逐 token state。') : step === 3 ? t('Logged article example; recomputation stays approximate.', '原文日志例；重算 token 保留约数。') : t('Pinned SGLang match; earlier positions reused as a schematic.', '固定版 SGLang 匹配逻辑；沿用前面位置作示意。')}</text>
+      <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{step === 0 ? t('Selected article measurements; not this computer.', '选自原文实测，不是本机实测。') : step === 1 ? t('Simplified article example; Ch. 8 Steps 2–3 covers matching.', '原文简化例；匹配见 Ch. 8 Steps 2–3。') : step === 2 ? t('llama.cpp: previous per-token states are not preserved here.', 'llama.cpp：这里没有保存此前的逐 token state。') : step === 3 ? t('Logged article example; recomputation stays approximate.', '原文日志例；重算 token 保留约数。') : step === 4 ? t('Pinned SGLang match; earlier positions reused as a schematic.', '固定版 SGLang 匹配逻辑；沿用前面位置作示意。') : t('Pinned SGLang eviction; positions are schematic.', '固定版 SGLang 淘汰逻辑；位置是示意。')}</text>
     </svg>
   </div>
   <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh}

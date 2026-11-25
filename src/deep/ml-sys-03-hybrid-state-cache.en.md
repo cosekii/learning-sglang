@@ -170,3 +170,42 @@ This does not change full attention's per-token KV semantics or establish a rule
 The remaining question is who owns those state values, and whether eviction removes the token path too. The next step examines a tombstone in the same tree.
 
 Sources: SGLang `385903b0acd69455cb688b5cb5e3afcc0fd91598`, `python/sglang/srt/mem_cache/mamba_radix_cache.py:1086-1126,1137-1206`; `Awesome-ML-SYS-Tutorial/engineer/hybrid-prefix-cache/readme.md:624-658`.
+
+## Step 6 · A tombstone keeps the path but loses restoration
+
+**One sentence.** An internal node's Mamba state can be evicted independently; its token edges, full-attention KV and children remain, but matching can no longer resume there.
+
+### On the stage
+
+- The blue path runs from earlier prefix $P$ to shared prefix $M$. State survives at $P=4{,}536$; at $M=5{,}514$, `mamba_value` is `None`, shown as a red dashed tombstone.
+- The old-user leaf can retain state, but that state includes a different tail and cannot serve the new request. The orange new tail ends at $E=5{,}558$ and must be computed.
+- Token matching still reaches $M$. Restore candidates skip $M$ and stop at $P$, so replay spans $P\rightarrow M\rightarrow E$, not only $M\rightarrow E$.
+
+### Formula and symbols
+
+$$V(n)=1\iff n.\texttt{mamba\_value}\ne\texttt{None}$$
+
+$$P=\max\{\operatorname{pos}(n):n\in\operatorname{path}(M),\ V(n)=1\},\qquad R=E-P$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $V(n)$ | Whether node $n$ still has restorable Mamba state | Whether its `mamba_value` is present |
+| $\operatorname{path}(M)$ | Nodes from the root to matched position $M$ | Radix-tree matching |
+| $P$ | Newest path position where $V(n)=1$ | Best candidate in `_match_prefix_helper` |
+| $R$ | Positions replayed from restore point to new end | Calculated in this step |
+
+### The numbers on the stage
+
+$M$ is a tombstone, and the old user is not on the new request's shared-prefix path. The newest usable candidate is therefore $P=4{,}536$:
+
+$$R=5{,}558-4{,}536=1{,}022$$
+
+`evict_mamba` can select an unlocked internal node; `_tombstone_internal_node` only sets `node.mamba_value` to `None`. That operation does not delete its children or full-attention KV. By contrast, `evict_full` starts with unlocked leaves; this step does not apply the internal-node rule to every leaf.
+
+There is another important boundary: `_split_node` sets `new_node.mamba_value = None`, with a comment that Mamba cache cannot be split. A content boundary created by a branch therefore does not automatically carry a usable state.
+
+### Next
+
+The chapter's answer is that identical tokens provide a matchable path, while only a separately saved state on that path provides a resume point. The next chapter distributes state across GPUs and follows tensor exchange between them.
+
+Sources: SGLang `385903b0acd69455cb688b5cb5e3afcc0fd91598`, `python/sglang/srt/mem_cache/mamba_radix_cache.py:861-919,1086-1126,1208-1241,1354-1357`; `Awesome-ML-SYS-Tutorial/engineer/hybrid-prefix-cache/readme.md:660-709`.
