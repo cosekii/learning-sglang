@@ -133,3 +133,38 @@ Initialization selects this backend with `backend="nccl"`. NCCL is NVIDIA's GPU 
 Which hardware path carries the tensor below this interface? The next step draws the links.
 
 Sources: `Awesome-ML-SYS-Tutorial/torch/nccl/readme.md:3-10,41-53`; `Awesome-ML-SYS-Tutorial/torch/torch-distributed/readme.md:160-175,286-292`.
+
+## Step 5 · Topology labels describe the tensor's path
+
+**One sentence.** `NV18` denotes a bonded set of 18 NVLinks, while `SYS` traverses PCIe and the interconnect between NUMA nodes.
+
+### On the stage
+
+- The panels come from two reported `nvidia-smi topo -m` outputs. They are not two options to toggle on one machine.
+- On the left, an `NV18` connection joins two GPUs. NVLink is a GPU-to-GPU link, and 18 is the bonded-link count in this output.
+- On the right, `SYS` is expanded into GPU, PCIe, the interconnect between NUMA nodes, PCIe and the other GPU.
+- PCIe is a GPU-to-host channel. NUMA nodes are host CPU and memory partitions. Blue boxes remain GPUs and orange marks communication paths.
+
+### Formula and symbols
+
+$$\mathrm{NV}\#=\#\times\mathrm{NVLink}$$
+
+$$P_{\mathrm{SYS}}=\mathrm{GPU}\leftrightarrow\mathrm{PCIe}\leftrightarrow I_{\mathrm{NUMA}}\leftrightarrow\mathrm{PCIe}\leftrightarrow\mathrm{GPU}$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $\#$ | Number of NVLinks in a bonded connection | `nvidia-smi topo -m` legend |
+| $P_{\mathrm{SYS}}$ | SYS example path expanded here | Same legend |
+| $I_{\mathrm{NUMA}}$ | Interconnect between NUMA nodes | Same legend |
+
+### The numbers on the stage
+
+The left panel sets $\#=18$, producing the label `NV18`. This describes one reported output, not a link count for every GPU.
+
+The right panel has no bandwidth or time measurement. A route label names the interconnects crossed; it does not determine an application speedup. NVSwitch, InfiniBand and specific link rates are outside this chapter.
+
+### Next
+
+The next step splits the tensor into chunks and follows those chunks through one all-reduce algorithm.
+
+Sources: `Awesome-ML-SYS-Tutorial/torch/nccl/readme.md:99-145`; `zero-to-sglang/course-material/ch/part1/第3章_GPU入门.md:97-108,300-312`; `Inference Engineering §3.3.1`.

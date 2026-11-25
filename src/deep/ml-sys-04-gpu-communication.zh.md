@@ -133,3 +133,38 @@ $$y=\operatorname{all\_reduce}_{\mathrm{SUM}}(x_0,x_1,x_2,x_3)$$
 接口下面，张量究竟走哪条硬件路径？下一步看 GPU 之间的链路。
 
 来源：`Awesome-ML-SYS-Tutorial/torch/nccl/readme.md:3-10,41-53`；`Awesome-ML-SYS-Tutorial/torch/torch-distributed/readme.md:160-175,286-292`。
+
+## 第 5 步 · 拓扑标签描述张量走的路
+
+**一句话。** `NV18` 表示 18 条 NVLink 组成的连接，`SYS` 表示路径还穿过 PCIe 和 NUMA 节点间互连。
+
+### 图上是什么
+
+- 左右是文章里两份 `nvidia-smi topo -m` 输出中的路径示例，不是同一台机器可随便切换的选项。
+- 左图两个 GPU 由标为 `NV18` 的连接相通。`NVLink` 是 GPU 间链路，`18` 是这份输出里捆绑的链路数。
+- 右图展开 `SYS`：从 GPU 经 PCIe、NUMA 节点间连线，再经 PCIe 到另一张 GPU。
+- `PCIe` 是 GPU 与主机通信的通道；`NUMA 节点` 是主机里的 CPU／内存分区。蓝框仍是 GPU，橙色仍是通信路径。
+
+### 公式与符号
+
+$$\mathrm{NV}\#=\#\times\mathrm{NVLink}$$
+
+$$P_{\mathrm{SYS}}=\mathrm{GPU}\leftrightarrow\mathrm{PCIe}\leftrightarrow I_{\mathrm{NUMA}}\leftrightarrow\mathrm{PCIe}\leftrightarrow\mathrm{GPU}$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $\#$ | 组成一条捆绑连接的 NVLink 数 | `nvidia-smi topo -m` 图例 |
+| $P_{\mathrm{SYS}}$ | 本步展开的 SYS 示例路径 | 同一份图例 |
+| $I_{\mathrm{NUMA}}$ | NUMA 节点之间的互连 | 同一份图例 |
+
+### 代入图上的数
+
+左图标 $\#=18$，所以标签是 `NV18`。这个数字只描述那份输出，不是所有 GPU 都有 18 条 NVLink。
+
+右图没有带宽或毫秒数。路径标签说明经过哪些互连，不能单独推出应用一定快多少；本章也不展开 NVSwitch、InfiniBand 或具体链路速率。
+
+### 接下来
+
+知道链路的名称后，还要看一次 all-reduce 怎样把张量分块送过这些链路。
+
+来源：`Awesome-ML-SYS-Tutorial/torch/nccl/readme.md:99-145`；`zero-to-sglang/course-material/ch/part1/第3章_GPU入门.md:97-108,300-312`；`Inference Engineering §3.3.1`。

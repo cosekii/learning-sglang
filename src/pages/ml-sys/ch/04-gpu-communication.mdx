@@ -21,6 +21,8 @@ Step 3 follows the process-group example in `torch-distributed/readme.md:13-24,5
 
 Step 4 follows the PyTorch NCCL setup and SUM call in `Awesome-ML-SYS-Tutorial/torch/nccl/readme.md:41-53` and `torch-distributed/readme.md:160-175,286-292`. It separates the `torch.distributed` interface from the GPU communication backend without claiming a fixed algorithm choice.
 
+Step 5 expands the `NV#` and `SYS` legend from `Awesome-ML-SYS-Tutorial/torch/nccl/readme.md:99-145`. The two route examples come from different reported machines; their labels alone do not establish a speedup.
+
 </details>
 
 <details class="i18n-zh">
@@ -33,5 +35,7 @@ Step 4 follows the PyTorch NCCL setup and SUM call in `Awesome-ML-SYS-Tutorial/t
 第 3 步沿用 `torch-distributed/readme.md:13-24,57-89,118-141` 的进程组例子。rank 标识进程，world size 是参与者总数；一进程一卡只是示例安排，不是通用要求。
 
 第 4 步依据 `Awesome-ML-SYS-Tutorial/torch/nccl/readme.md:41-53` 和 `torch-distributed/readme.md:160-175,286-292`，区分 `torch.distributed` 接口与 NCCL GPU 通信后端，不声称每次运行固定选择某种算法。
+
+第 5 步展开 `Awesome-ML-SYS-Tutorial/torch/nccl/readme.md:99-145` 的 `NV#` 和 `SYS` 图例。两条路径来自不同的输出示例，标签本身不能推出加速比。
 
 </details>

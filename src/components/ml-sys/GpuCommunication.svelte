@@ -20,6 +20,9 @@
   }, {
     caption: 'torch.distributed exposes the all-reduce call. Its NCCL backend moves GPU tensors.',
     captionZh: 'torch.distributed 提供 all-reduce 接口。NCCL 后端负责搬 GPU 张量。',
+  }, {
+    caption: 'NVLink connects GPUs. SYS crosses PCIe and the interconnect between NUMA nodes.',
+    captionZh: 'NVLink 连接 GPU。SYS 还经过 PCIe 和 NUMA 节点间连线。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -41,7 +44,7 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={t('A constructed example where more GPUs reduce compute time but add more communication time.', '构造例子：更多 GPU 减少计算时间，却增加更多通信时间。')}>
+    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={$lang === 'zh' ? cur.captionZh : cur.caption}>
       {#if step === 0}
         <text x={phone ? 18 : 36} y="30" class="title">{t('More GPUs can still finish later', 'GPU 更多，总时间也可能更长')}</text>
         <text x={phone ? 18 : 36} y="55" class="label">{t('constructed example · same work · same millisecond scale', '构造示例 · 同一份计算 · 同一把毫秒标尺')}</text>
@@ -185,6 +188,78 @@
           <text x="150" y="460" text-anchor="middle" class="small">{t('GPU communication below', '下面：GPU 通信后端')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('PyTorch selects the NCCL backend with backend="nccl".', 'PyTorch 用 backend="nccl" 选择 NCCL 后端。')}</text>
+      {:else if step === 4}
+        <text x={phone ? 18 : 36} y="30" class="title">{t('The tensor crosses physical links', '张量要走实际的硬件链路')}</text>
+        <text x={phone ? 18 : 36} y="55" class="label">{t('two reported examples · not two choices on one machine', '两份实际输出示例 · 不是同一台机器的两个选项')}</text>
+        {#if !phone}
+          <rect x="35" y="82" width="310" height="254" rx="13" fill="var(--bg)" stroke="var(--line)" />
+          <text x="190" y="112" text-anchor="middle" class="section">NV18</text>
+          <rect x="58" y="148" width="82" height="48" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="99" y="178" text-anchor="middle" class="small strong">GPU 0</text>
+          <line x1="140" y1="172" x2="238" y2="172" stroke="var(--gen)" stroke-width="5" />
+          <rect x="240" y="148" width="82" height="48" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="281" y="178" text-anchor="middle" class="small strong">GPU 1</text>
+          <text x="190" y="224" text-anchor="middle" class="result">NV18 = 18 × NVLink</text>
+          <text x="190" y="263" text-anchor="middle" class="small">{t('NVLink = a link between GPUs', 'NVLink = GPU 之间的链路')}</text>
+          <text x="190" y="301" text-anchor="middle" class="small">{t('18 links form this reported connection', '这份输出里，18 条链路组成该连接')}</text>
+
+          <rect x="375" y="82" width="310" height="254" rx="13" fill="var(--bg)" stroke="var(--line)" />
+          <text x="530" y="112" text-anchor="middle" class="section">SYS</text>
+          <rect x="394" y="140" width="70" height="40" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="429" y="165" text-anchor="middle" class="small strong">GPU 0</text>
+          <path d="M464,160 H493" stroke="var(--gen)" stroke-width="3" />
+          <path d="M493,160 l-8,-5 v10 z" fill="var(--gen)" />
+          <rect x="497" y="140" width="62" height="40" rx="8" fill="var(--panel)" stroke="var(--gen)" />
+          <text x="528" y="165" text-anchor="middle" class="small">PCIe</text>
+          <path d="M559,160 H588" stroke="var(--gen)" stroke-width="3" />
+          <path d="M588,160 l-8,-5 v10 z" fill="var(--gen)" />
+          <rect x="592" y="140" width="74" height="40" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="629" y="165" text-anchor="middle" class="small">NUMA 0↕1</text>
+          <path d="M629,180 V204 H528 V219" stroke="var(--gen)" stroke-width="3" fill="none" />
+          <path d="M528,224 l-6,-13 h12 z" fill="var(--gen)" />
+          <rect x="497" y="224" width="62" height="40" rx="8" fill="var(--panel)" stroke="var(--gen)" />
+          <text x="528" y="249" text-anchor="middle" class="small">PCIe</text>
+          <path d="M497,244 H469" stroke="var(--gen)" stroke-width="3" fill="none" />
+          <path d="M464,244 l13,-7 v14 z" fill="var(--gen)" />
+          <rect x="394" y="224" width="70" height="40" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="429" y="249" text-anchor="middle" class="small strong">GPU 1</text>
+          <text x="530" y="291" text-anchor="middle" class="small">{t('PCIe = GPU-to-host channel', 'PCIe = GPU 与主机之间的通道')}</text>
+          <text x="530" y="316" text-anchor="middle" class="small">{t('NUMA nodes = host CPU/memory partitions', 'NUMA 节点 = 主机里的 CPU／内存分区')}</text>
+        {:else}
+          <rect x="18" y="72" width="264" height="118" rx="12" fill="var(--bg)" stroke="var(--line)" />
+          <text x="150" y="96" text-anchor="middle" class="section">NV18 = 18 × NVLink</text>
+          <rect x="35" y="112" width="70" height="36" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="70" y="135" text-anchor="middle" class="small strong">GPU 0</text>
+          <line x1="105" y1="130" x2="195" y2="130" stroke="var(--gen)" stroke-width="4" />
+          <rect x="195" y="112" width="70" height="36" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="230" y="135" text-anchor="middle" class="small strong">GPU 1</text>
+          <text x="150" y="173" text-anchor="middle" class="small">{t('NVLink connects GPUs', 'NVLink 连接 GPU')}</text>
+
+          <rect x="18" y="205" width="264" height="255" rx="12" fill="var(--bg)" stroke="var(--line)" />
+          <text x="150" y="231" text-anchor="middle" class="section">SYS</text>
+          <rect x="31" y="249" width="65" height="36" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="63" y="272" text-anchor="middle" class="small strong">GPU 0</text>
+          <path d="M96,267 H108" stroke="var(--gen)" stroke-width="2" />
+          <path d="M110,267 l-7,-5 v10 z" fill="var(--gen)" />
+          <rect x="114" y="249" width="57" height="36" rx="8" fill="var(--panel)" stroke="var(--gen)" />
+          <text x="142" y="272" text-anchor="middle" class="small">PCIe</text>
+          <path d="M171,267 H183" stroke="var(--gen)" stroke-width="2" />
+          <path d="M185,267 l-7,-5 v10 z" fill="var(--gen)" />
+          <rect x="189" y="249" width="80" height="36" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="229" y="272" text-anchor="middle" class="small">NUMA 0↕1</text>
+          <path d="M229,285 V302 H142 V315" stroke="var(--gen)" stroke-width="2" fill="none" />
+          <path d="M142,320 l-6,-12 h12 z" fill="var(--gen)" />
+          <rect x="114" y="320" width="57" height="36" rx="8" fill="var(--panel)" stroke="var(--gen)" />
+          <text x="142" y="343" text-anchor="middle" class="small">PCIe</text>
+          <path d="M114,338 H96" stroke="var(--gen)" stroke-width="2" />
+          <path d="M91,338 l12,-6 v12 z" fill="var(--gen)" />
+          <rect x="31" y="320" width="65" height="36" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="63" y="343" text-anchor="middle" class="small strong">GPU 1</text>
+          <text x="150" y="387" text-anchor="middle" class="small">{t('PCIe connects a GPU to the host', 'PCIe 连接 GPU 与主机')}</text>
+          <text x="150" y="414" text-anchor="middle" class="small">{t('NUMA nodes partition', 'NUMA 节点划分')}</text>
+          <text x="150" y="437" text-anchor="middle" class="small">{t('host CPUs and memory', '主机里的 CPU 和内存')}</text>
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Route labels come from nvidia-smi topo -m.', '路径标签来自 nvidia-smi topo -m 的输出示例。')}</text>
       {/if}
     </svg>
   </div>
