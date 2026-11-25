@@ -60,7 +60,7 @@
       <rect x={phone ? 147 : 175} y="33" width="10" height="10" rx="2" fill="var(--gen-soft)" stroke="var(--gen)" />
       <text x={phone ? 163 : 191} y="42" class="tag">{t('next result', '下一份结果')}</text>
       <text x={phone ? 15 : 20} y="68" class="tag">thinker → talker_ar · {LIFETIME_RESULT_IDS.length} {t('results', '份结果')} − {LIFETIME_SLOT_COUNT} {t('space', '格')} = {LIFETIME_WAITING_COUNT} {t('must wait', '份要等')}</text>
-      <text x={phone ? 15 : 20} y="90" class="tag">{t('The one-space pool is a teaching example, not a configured limit.', '一格只是教学例子，不是实际配置的上限。')}</text>
+      <text x={phone ? 15 : 20} y="90" class="tag">{phone ? t('One space is an example, not a configured limit.', '一格只是教学例子，不是实际配置的上限。') : t('The one-space pool is a teaching example, not a configured limit.', '一格只是教学例子，不是实际配置的上限。')}</text>
 
       {#each panels as panel, i}
         {@const wrong = i === 0}
@@ -82,11 +82,11 @@
         <text x={panel.x + 175} y={panel.y + 185} text-anchor="middle" class="tag strong">talker_ar</text>
         <text x={panel.x + 175} y={panel.y + 200} text-anchor="middle" class="tag">{wrong ? t('wanted A · reads B', '要读 A · 却读到 B') : t('reads A · then B may enter', '读完 A · B 才能进')}</text>
       {/each}
-      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{t('The diagram covers safe reuse, not a particular transport or pool size.', '本图只讲何时能安全复用，不限定传输方式或池子大小。')}</text>
-      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Next: how does the reader find A, and how does the owner know it finished?', '下一步：读者怎样找到 A，主人又怎样知道它读完了？')}</text>
+      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{phone ? t('Safe reuse only; no specific transport or pool size.', '本图只讲何时能安全复用，不限定传输方式或池子大小。') : t('The diagram covers safe reuse, not a particular transport or pool size.', '本图只讲何时能安全复用，不限定传输方式或池子大小。')}</text>
+      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Next: finding A and knowing the read finished.', '下一步：读者怎样找到 A，主人又怎样知道它读完了？') : t('Next: how does the reader find A, and how does the owner know it finished?', '下一步：读者怎样找到 A，主人又怎样知道它读完了？')}</text>
       {:else if step === 1}
       <text x={phone ? 15 : 20} y="20" class="tag strong">DataRef = {t('a small descriptor for finding a payload', '找数据的小卡片')}</text>
-      <text x={phone ? 15 : 20} y="45" class="tag">{t('Example: object A · SHM transport · payload stays in the backend', '示例：数据 A · SHM 传输 · 数据本体留在后端')}</text>
+      <text x={phone ? 15 : 20} y="45" class="tag">{phone ? t('Object A · SHM · payload stays in the backend', '示例：数据 A · SHM 传输 · 数据本体留在后端') : t('Example: object A · SHM transport · payload stays in the backend', '示例：数据 A · SHM 传输 · 数据本体留在后端')}</text>
       {#if !phone}
         <rect x="20" y="85" width="210" height="205" rx="12" fill="var(--bg)" stroke="var(--line)" />
         <text x="35" y="112" class="rowlabel">{t('SENDER BACKEND', '发送方后端')}</text>
@@ -135,8 +135,8 @@
         <text x="150" y="510" text-anchor="middle" class="tag strong">{t('find A · choose SHM', '找到 A · 选择 SHM')}</text>
         <text x="150" y="539" text-anchor="middle" class="tag">{t('use buffer info to fetch', '用 buffer 信息取数据')}</text>
       {/if}
-      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{t('DataRef has no reader count or ACK state; other fields reconstruct tensors.', 'DataRef 没有读者计数或 ACK 状态；其他字段用于还原 tensor。')}</text>
-      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Next: publishing adds a separate pending record on the sender.', '下一步：发布时，发送方另加一张等待回执的记录。')}</text>
+      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{phone ? t('No reader count or ACK state; other fields rebuild data.', 'DataRef 没有读者计数或 ACK 状态；别的字段还原 tensor。') : t('DataRef has no reader count or ACK state; other fields reconstruct tensors.', 'DataRef 没有读者计数或 ACK 状态；其他字段用于还原 tensor。')}</text>
+      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Next: publishing adds a sender pending record.', '下一步：发布时，发送方另加一张等待回执的记录。') : t('Next: publishing adds a separate pending record on the sender.', '下一步：发布时，发送方另加一张等待回执的记录。')}</text>
       {:else if step === 2}
       <text x={phone ? 15 : 20} y="20" class="tag strong">pending = {t("sender's record waiting for an ACK", '发送方等待 ACK 的记录')}</text>
       <text x={phone ? 15 : 20} y="45" class="tag">{t('Object A: write first, register pending, then send DataReady', '数据 A：先写入，再登记 pending，最后发 DataReady')}</text>
@@ -193,8 +193,8 @@
         <text x="150" y="539" text-anchor="middle" class="tag strong">send_payload(): {t('write + notice done', '写入 + 通知完成')}</text>
         <text x="150" y="560" text-anchor="middle" class="tag">{t('receiver read is not implied', '不表示接收方已读取')}</text>
       {/if}
-      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{t('The pending key is object_id; the DataRef still has no ACK state.', 'pending 用 object_id 对应数据；DataRef 里仍没有 ACK 状态。')}</text>
-      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Next: the receiver gets the bytes, rebuilds the payload and acknowledges.', '下一步：接收方取字节、还原数据，再回 ACK。')}</text>
+      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{phone ? t('pending uses object_id; DataRef has no ACK state.', 'pending 用 object_id 对应数据；DataRef 里仍没有 ACK 状态。') : t('The pending key is object_id; the DataRef still has no ACK state.', 'pending 用 object_id 对应数据；DataRef 里仍没有 ACK 状态。')}</text>
+      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Next: read, rebuild and acknowledge.', '下一步：接收方取字节、还原数据，再回 ACK。') : t('Next: the receiver gets the bytes, rebuilds the payload and acknowledges.', '下一步：接收方取字节、还原数据，再回 ACK。')}</text>
       {:else if step === 3}
       <text x={phone ? 15 : 20} y="20" class="tag strong">ACK = {t('receipt: the data-plane read has finished', '回执：数据平面已经读完')}</text>
       <text x={phone ? 15 : 20} y="45" class="tag">{phone ? t('Receiver: parse → GET → rebuild → ACK', '接收方：解析 → 读取 → 还原 → ACK') : t('Receiver: parse DataRef → GET and wait → rebuild → ACK → scheduler', '接收方：解析 DataRef → GET 并等待 → 还原 → ACK → scheduler')}</text>
@@ -259,11 +259,11 @@
         <text x="150" y="509" text-anchor="middle" class="tag strong">{t('read finished ✓', '读取完成 ✓')}</text>
         <text x="150" y="531" text-anchor="middle" class="tag">{t('then → scheduler', '然后 → scheduler')}</text>
       {/if}
-      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{t('ACK means the read ended, not that downstream computation finished.', 'ACK 只表示读取结束，不表示下游计算完成。')}</text>
-      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Next: the sender matches this ACK to pending[A] and finishes the operation.', '下一步：发送方用 ACK 找到 pending[A]，让操作收尾。')}</text>
+      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{phone ? t('ACK ends the read, not downstream computation.', 'ACK 只表示读取结束，不表示下游计算完成。') : t('ACK means the read ended, not that downstream computation finished.', 'ACK 只表示读取结束，不表示下游计算完成。')}</text>
+      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Next: match ACK to pending[A] and finish.', '下一步：发送方用 ACK 找到 pending[A]，让操作收尾。') : t('Next: the sender matches this ACK to pending[A] and finishes the operation.', '下一步：发送方用 ACK 找到 pending[A]，让操作收尾。')}</text>
       {:else}
-      <text x={phone ? 15 : 20} y="20" class="tag strong">{t('Normal sender path: match ACK → finish operation → remove pending', '发送方正常路径：匹配 ACK → 操作收尾 → 删除 pending')}</text>
-      <text x={phone ? 15 : 20} y="45" class="tag">{t('Each concrete RelayOperation handles its own backend resource', '每种 RelayOperation 自己处理后端的资源')}</text>
+      <text x={phone ? 15 : 20} y="20" class="tag strong">{phone ? t('Match ACK → finish operation → remove pending', '发送方正常路径：匹配 ACK → 操作收尾 → 删除 pending') : t('Normal sender path: match ACK → finish operation → remove pending', '发送方正常路径：匹配 ACK → 操作收尾 → 删除 pending')}</text>
+      <text x={phone ? 15 : 20} y="45" class="tag">{phone ? t('Each RelayOperation handles its backend resource', '每种 RelayOperation 自己处理后端的资源') : t('Each concrete RelayOperation handles its own backend resource', '每种 RelayOperation 自己处理后端的资源')}</text>
       {#if !phone}
         <path d="M225 180 H252" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
         <path d="M462 180 H490" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
@@ -318,8 +318,8 @@
         <text x="150" y="539" text-anchor="middle" class="tag strong">{t('operations finish before completion', 'operations 完成后才收尾')}</text>
         <text x="150" y="560" text-anchor="middle" class="tag">{t('no universal release() call', '通用层没有统一 release()')}</text>
       {/if}
-      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{t('A slow reader holds backend resources longer; reclamation is backend-specific.', '读者越慢，后端资源占用越久；具体回收方式由后端决定。')}</text>
-      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Next chapter: how queues and backpressure connect stages at different speeds.', '下一章：队列和背压怎样连接快慢不同的 stage。')}</text>
+      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{phone ? t('Slow readers hold resources; backends control release.', '读者越慢，后端资源占用越久；具体回收方式由后端决定。') : t('A slow reader holds backend resources longer; reclamation is backend-specific.', '读者越慢，后端资源占用越久；具体回收方式由后端决定。')}</text>
+      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Next: queues and backpressure between stages.', '下一章：队列和背压怎样连接快慢不同的 stage。') : t('Next chapter: how queues and backpressure connect stages at different speeds.', '下一章：队列和背压怎样连接快慢不同的 stage。')}</text>
       {/if}
     </svg>
   </div>
