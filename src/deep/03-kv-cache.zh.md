@@ -55,7 +55,7 @@ $$
 
 ### 公式
 
-prompt 的 attention 就是第 2 章第 7 步的 causal 版本：
+prompt 的 attention 就是第 2 章第 7 步的 causal 版本。下图沿用第 2 章的未缩放示意分数；真实模型会把 $q_i\cdot k_j$ 除以 $\sqrt{d_{head}}$：
 
 $$
 \begin{gathered}
@@ -80,6 +80,8 @@ $$
 ### 为什么 q 可以丢
 
 每个 $q_i$ 只在自己那一行用来算 $\text{out}_i$。第 2 章第 13 步说明之后没有任何一步再读它。存下来的只有 $k$ 和 $v$：这一步之后 cache 里有这一层、这一个 head 的 5 个 key 和 5 个 value。
+
+主图按「先使用、再归档」展示数据去向，不规定物理执行顺序。具体实现可以先写入当前 k、v，再调用 attention；第 5 步解释为什么当前 token 也必须已经在 cache 里。
 
 ### 接下来
 

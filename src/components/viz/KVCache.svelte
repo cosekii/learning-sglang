@@ -32,7 +32,7 @@
   const steps: Step[] = [
     { n: 5, cached: 0, caption: `Same sequence, same layer. This time we keep what we compute.`, captionZh: `上章为 ␣Paris 重算了 5 个旧 k 和 5 个旧 v。KV cache 是存旧 k、v 的仓库。` },
     { n: 5, cached: 0, compute: all5, caption: `First step: all five tokens at once. Each gets its q, k and v, exactly as before.`, captionZh: `第一次：5 个 token 各得到 q、k、v，cache 仍为空。` },
-    { n: 5, cached: 5, compute: all5, store: true, dropQ: true, caption: `Attention runs as before. Then, instead of throwing k and v away, we file them. Five slots. The queries were used, so they go.`, captionZh: `Attention 照常运行。然后我们不再把 k 和 v 扔掉，而是把它们存起来。五个槽位。query 已经用过了，所以丢掉。` },
+    { n: 5, cached: 5, compute: all5, store: true, dropQ: true, caption: `Attention runs as before. Then, instead of throwing k and v away, we file them. Five slots. The queries were used, so they go.`, captionZh: `5 个 k、v 存进 cache；q 用完就丢。` },
     { n: 6, cached: 5, compute: [5], flyIn: true, caption: `Decode step. Paris arrives. Only Paris gets an x, a q, a k and a v. One column of work, not six.`, captionZh: `Decode 步。Paris 到了。只有 Paris 得到 x、q、k、v。一列的工作量，不是六列。` },
     { n: 6, cached: 6, compute: [5], store: true, caption: `Its k and v go into the cache. Slot six.`, captionZh: `它的 k 和 v 进入 cache。第六个槽位。` },
     { n: 6, cached: 6, compute: [5], attend: 5, caption: `Its query reads every key in the cache and blends every value in the cache. Same result as recomputing, because the cache holds exactly what recomputing would have produced.`, captionZh: `它的 query 读取 cache 里的每个 key，混合每个 value。结果和重算一样，因为 cache 存的正是重算会产生的东西。` },
@@ -83,7 +83,7 @@
     query.addEventListener('change', update);
     return () => query.removeEventListener('change', update);
   });
-  const phoneCustom = $derived(phone && $lang === 'zh' && step <= 1);
+  const phoneCustom = $derived(phone && $lang === 'zh' && step <= 2);
 </script>
 
 <figure class="viz">
@@ -163,6 +163,17 @@
         <text x="180" y="412" text-anchor="middle">KV cache：0 格</text>
         <text x="180" y="510" text-anchor="middle">下一步：k、v 入仓，q 丢掉</text>
         <text x="180" y="590" text-anchor="middle" class="ph-foot">#1–#5 对应上方 5 个 prompt token</text>
+      {:else if phoneCustom && step === 2}
+        <text x="180" y="30" text-anchor="middle" class="ph-title">留下 k、v，丢掉 q</text>
+        <text x="180" y="55" text-anchor="middle">5 个 k + 5 个 v 写入 cache</text>
+        {@render phoneTokens(5, 80)}
+        {@render phoneCompute(all5, 135)}
+        <text x="180" y="323" text-anchor="middle" class="ph-strong">仓库现在有 5 组旧结果</text>
+        {@render phoneCache(5, 355, -1, false)}
+        <text x="180" y="480" text-anchor="middle">紫色 q 变淡：用完，不占格子</text>
+        <text x="180" y="525" text-anchor="middle">下一步：新 token 只算 1 列</text>
+        <text x="180" y="570" text-anchor="middle" class="ph-foot">主图展示逻辑顺序</text>
+        <text x="180" y="592" text-anchor="middle" class="ph-foot">实现可先写 cache，再算 attention</text>
       {:else}
       <!-- Contrast brackets: first step vs every step after -->
       {#if cur.contrast}
