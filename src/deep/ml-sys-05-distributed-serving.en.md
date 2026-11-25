@@ -36,3 +36,35 @@ The article records one single-node startup. It does not establish a normal star
 How does the launch configuration join two machines into one service? The next step draws their roles.
 
 Sources: `Awesome-ML-SYS-Tutorial/sglang/nvidia-dynamo/dynamo.md:69-88`; `lib/llm/src/engines/sglang/worker.rs:341-343` and `launch/dynamo-run/src/lib.rs:407-410` at `ai-dynamo/dynamo@670661f6`.
+
+## Step 2 · Two nodes use different request inputs
+
+**One sentence.** The public config shares one model and `dist-init-addr` across two nodes, with `in=http` on node 0 and `in=none` on node 1.
+
+### On the stage
+
+- A `node` is one machine in this experiment. `node-rank 0` and `node-rank 1` identify the two machines in the configuration.
+- `--num-nodes 2` declares the node count. Both sides also use one model directory and one `dist-init-addr`, the shared meeting address for distributed initialization.
+- Both commands select the SGLang backend with `out=sglang`. Node 0 opens HTTP input with `in=http`. Node 1 uses `in=none`, so it has no second HTTP input while its worker process keeps running.
+- `<model>` and `<node0-ip>` are placeholders, not the article's local path and IP address.
+
+### Formula and symbols
+
+$$N_{\mathrm{node}}=2,\qquad r_{\mathrm{node}}\in\{0,1\}$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $N_{\mathrm{node}}$ | Nodes in this experiment | Public `--num-nodes 2` setting |
+| $r_{\mathrm{node}}$ | Identifier of the current node | Public `--node-rank 0` or `1` setting |
+
+### The numbers on the stage
+
+Node 0 uses `in=http` and `node-rank 0`; node 1 uses `in=none` and `node-rank 1`. Both commands set `num-nodes` to 2 and must refer to the same model and meeting address for this experiment.
+
+At the fixed commit, Dynamo assembles `num_nodes`, `node_rank` and `leader_addr` into `MultiNodeConfig`, then passes them to SGLang as `nnodes`, `node_rank` and `dist_init_addr`. `Input::Http` runs the HTTP service, while `Input::None` only waits. The code also forces nonzero ranks to `Input::None`, so the second node is not a separate HTTP service for clients.
+
+### Next
+
+The two machines have distinct input roles. The next step opens `--tensor-parallel-size 8` to show where its eight workers run.
+
+Sources: `Awesome-ML-SYS-Tutorial/sglang/nvidia-dynamo/dynamo.md:97-106`; `launch/dynamo-run/src/lib.rs:235-250,407-443`, `lib/llm/src/engines/sglang/subprocess.rs:59-65` and `lib/llm/src/engines/sglang/sglang_inc.py:43-48` at `ai-dynamo/dynamo@670661f6`.

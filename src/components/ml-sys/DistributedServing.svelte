@@ -4,7 +4,7 @@
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
-  import { DYNAMO_LOG_READY_US, DYNAMO_LOG_HTTP_US, DYNAMO_READY_TO_HTTP_US, DYNAMO_HTTP_PORT } from '../../ml-sys/numbers';
+  import { DYNAMO_LOG_READY_US, DYNAMO_LOG_HTTP_US, DYNAMO_READY_TO_HTTP_US, DYNAMO_HTTP_PORT, DYNAMO_NUM_NODES, DYNAMO_DIST_INIT_PORT } from '../../ml-sys/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
@@ -12,6 +12,9 @@
   const steps = [{
     caption: `The public log waits ${(DYNAMO_LOG_READY_US / 1_000_000).toFixed(2)} s for SGLang readiness. HTTP starts ${(DYNAMO_READY_TO_HTTP_US / 1_000_000).toFixed(2)} s later, after the worker is ready.`,
     captionZh: `公开日志里，SGLang 就绪等了 ${(DYNAMO_LOG_READY_US / 1_000_000).toFixed(2)} 秒。HTTP 又过 ${(DYNAMO_READY_TO_HTTP_US / 1_000_000).toFixed(2)} 秒才启动。`,
+  }, {
+    caption: 'The public config gives both nodes one model and meeting address. Only node 0 accepts HTTP; node 1 uses in=none.',
+    captionZh: '两节点共用模型和会合地址。0 号接 HTTP；1 号写 in=none。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -82,6 +85,41 @@
           <text x="150" y="482" text-anchor="middle" class="result">{seconds(DYNAMO_LOG_HTTP_US)} s {t('to HTTP', '到 HTTP')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Public single-node log, not a multi-node timing target.', '公开单节点日志，不是多节点耗时目标。')}</text>
+      {:else if step === 1}
+        <text x={phone ? 18 : 36} y="30" class="title">{t('Two nodes, two request roles', '两台节点，两种请求入口')}</text>
+        <text x={phone ? 18 : 36} y="55" class="label">{t(phone ? 'node = one machine · one shared address' : 'node = one machine · dist-init-addr = shared meeting address', 'node = 一台机器 · dist-init-addr 是会合地址')}</text>
+        {#if !phone}
+          {#each [
+            { x: 40, rank: 0, input: 'http', role: 'accepts client requests', roleZh: '接收客户端请求', note: `HTTP :${DYNAMO_HTTP_PORT}` },
+            { x: 380, rank: 1, input: 'none', role: 'no HTTP input here', roleZh: '这里不开 HTTP 输入', note: 'worker still runs', noteZh: 'worker 仍然运行' },
+          ] as node}
+            <rect x={node.x} y="82" width="300" height="205" rx="13" fill="var(--bg)" stroke={node.rank === 0 ? 'var(--gen)' : 'var(--accent)'} />
+            <text x={node.x + 20} y="113" class="section">NODE {node.rank} · node-rank {node.rank}</text>
+            <text x={node.x + 150} y="151" text-anchor="middle" class="code">dynamo-run in={node.input} out=sglang</text>
+            <text x={node.x + 150} y="190" text-anchor="middle" class="small strong">{t(node.role, node.roleZh)}</text>
+            <rect x={node.x + 55} y="214" width="190" height="43" rx="9" fill={node.rank === 0 ? 'var(--gen-soft)' : 'var(--accent-soft)'} />
+            <text x={node.x + 150} y="241" text-anchor="middle" class="result">{t(node.note, node.noteZh ?? node.note)}</text>
+          {/each}
+          <rect x="40" y="311" width="640" height="61" rx="11" fill="var(--panel)" stroke="var(--line)" />
+          <text x="360" y="336" text-anchor="middle" class="code">--num-nodes {DYNAMO_NUM_NODES} · --model-path &lt;model&gt;</text>
+          <text x="360" y="360" text-anchor="middle" class="code">--dist-init-addr &lt;node0-ip&gt;:{DYNAMO_DIST_INIT_PORT}</text>
+        {:else}
+          {#each [
+            { y: 76, rank: 0, input: 'http', role: 'accepts client requests', roleZh: '接收客户端请求', note: `HTTP :${DYNAMO_HTTP_PORT}` },
+            { y: 229, rank: 1, input: 'none', role: 'no HTTP input here', roleZh: '这里不开 HTTP 输入', note: 'worker still runs', noteZh: 'worker 仍然运行' },
+          ] as node}
+            <rect x="20" y={node.y} width="260" height="137" rx="12" fill="var(--bg)" stroke={node.rank === 0 ? 'var(--gen)' : 'var(--accent)'} />
+            <text x="150" y={node.y + 27} text-anchor="middle" class="section">NODE {node.rank} · rank {node.rank}</text>
+            <text x="150" y={node.y + 58} text-anchor="middle" class="code">in={node.input} out=sglang</text>
+            <text x="150" y={node.y + 87} text-anchor="middle" class="small">{t(node.role, node.roleZh)}</text>
+            <text x="150" y={node.y + 116} text-anchor="middle" class="result">{t(node.note, node.noteZh ?? node.note)}</text>
+          {/each}
+          <rect x="20" y="387" width="260" height="82" rx="11" fill="var(--panel)" stroke="var(--line)" />
+          <text x="150" y="412" text-anchor="middle" class="code">--num-nodes {DYNAMO_NUM_NODES}</text>
+          <text x="150" y="437" text-anchor="middle" class="code">--model-path &lt;model&gt;</text>
+          <text x="150" y="461" text-anchor="middle" class="code">dist-init :{DYNAMO_DIST_INIT_PORT}</text>
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t("Placeholders replace the article's local path and IP.", '占位符代替原文的本机路径和 IP。')}</text>
       {/if}
     </svg>
   </div>
@@ -93,6 +131,8 @@
   .title { font-size: 18px; font-weight: 650; fill: var(--fg); }
   .label { font-size: 13px; fill: var(--fg); }
   .small { font-size: 13px; fill: var(--fg); }
+  .section { font-family: var(--mono); font-size: 16px; font-weight: 700; fill: var(--fg); }
+  .code { font-family: var(--mono); font-size: 14px; fill: var(--fg); }
   .strong { font-weight: 650; }
   .timestamp { font-family: var(--mono); font-size: 13px; fill: var(--fg); }
   .delta { font-family: var(--mono); font-size: 12px; font-weight: 650; fill: var(--fg); }
@@ -101,6 +141,8 @@
     .title { font-size: 16px; }
     .label, .small { font-size: 12px; }
     .timestamp { font-size: 12px; }
+    .section { font-size: 14px; }
+    .code { font-size: 12px; }
     .delta { font-size: 11px; }
     .result { font-size: 12px; }
   }
