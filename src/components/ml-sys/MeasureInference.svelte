@@ -4,7 +4,7 @@
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
-  import { DEMO_REQUEST_SENT_MS, DEMO_FIRST_TOKEN_MS, DEMO_TTFT_MS, DEMO_TTFT_SECONDS, DEMO_TTFT_FRACTION, DEMO_OUTPUT_TOKEN_TIMES_MS, DEMO_ITL_GAPS_MS, DEMO_POST_FIRST_GAP_COUNT, DEMO_ITL_TOTAL_MS, DEMO_TPOT_MS, DEMO_LAST_TOKEN_MS, DEMO_E2E_MS, DEMO_SORTED_E2E_MS, DEMO_PERCENTILE_REQUEST_COUNT, DEMO_P50_RANK, DEMO_P50_MS, DEMO_SLOWEST_E2E_MS, DEMO_SLOWEST_OVER_P50 } from '../../ml-sys/numbers';
+  import { DEMO_REQUEST_SENT_MS, DEMO_FIRST_TOKEN_MS, DEMO_TTFT_MS, DEMO_TTFT_SECONDS, DEMO_TTFT_FRACTION, DEMO_OUTPUT_TOKEN_TIMES_MS, DEMO_ITL_GAPS_MS, DEMO_POST_FIRST_GAP_COUNT, DEMO_ITL_TOTAL_MS, DEMO_TPOT_MS, DEMO_LAST_TOKEN_MS, DEMO_E2E_MS, DEMO_SORTED_E2E_MS, DEMO_PERCENTILE_REQUEST_COUNT, DEMO_P50_RANK, DEMO_P50_MS, DEMO_AT_MOST_P50_COUNT, DEMO_SLOWEST_E2E_MS, DEMO_SLOWEST_OVER_P50 } from '../../ml-sys/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
@@ -185,7 +185,7 @@
       {:else}
       {#if !phone}
         <text x="35" y="26" class="rowlabel">{t(`${DEMO_PERCENTILE_REQUEST_COUNT} requests · E2E shortest to longest (ms)`, `${DEMO_PERCENTILE_REQUEST_COUNT} 个请求 · 总延迟从短到长（ms）`)}</text>
-        <text x="35" y="50" class="legend strong">{t('P50 = halfway through the queue, not an average', 'P50 = 排到一半的位置，不是平均数')}</text>
+        <text x="35" y="50" class="legend strong">{t(`P50 = request #${DEMO_P50_RANK}'s E2E latency here`, `P50 = 本图第 ${DEMO_P50_RANK} 个请求的总延迟`)}</text>
         <text x="360" y="76" text-anchor="middle" class="legend">{t('blue = one request’s E2E latency', '蓝色 = 一个请求的总延迟')}</text>
         {#each [DEMO_SLOWEST_E2E_MS, DEMO_SLOWEST_E2E_MS / 2, 0] as tick}
           {@const y = 290 - (tick / DEMO_SLOWEST_E2E_MS) * 195}
@@ -203,14 +203,14 @@
         <rect x="125" y="335" width="220" height="85" rx="12" fill="var(--accent-soft)" />
         <text x="235" y="359" text-anchor="middle" class="legend strong">P50 · {t(`request #${DEMO_P50_RANK}`, `第 ${DEMO_P50_RANK} 个请求`)}</text>
         <text x="235" y="386" text-anchor="middle" class="formula small">{DEMO_P50_MS} ms</text>
-        <text x="235" y="409" text-anchor="middle" class="legend">{DEMO_P50_RANK}/{DEMO_PERCENTILE_REQUEST_COUNT} {t(`requests at most ${DEMO_P50_MS} ms`, `个请求不超过 ${DEMO_P50_MS} ms`)}</text>
+        <text x="235" y="409" text-anchor="middle" class="legend">{t(`${DEMO_AT_MOST_P50_COUNT} of ${DEMO_PERCENTILE_REQUEST_COUNT} take at most ${DEMO_P50_MS} ms`, `${DEMO_PERCENTILE_REQUEST_COUNT} 个中有 ${DEMO_AT_MOST_P50_COUNT} 个不超过 ${DEMO_P50_MS} ms`)}</text>
         <rect x="375" y="335" width="220" height="85" rx="12" fill="var(--accent-soft)" />
         <text x="485" y="359" text-anchor="middle" class="legend strong">{t(`Slowest · request #${DEMO_PERCENTILE_REQUEST_COUNT}`, `最慢 · 第 ${DEMO_PERCENTILE_REQUEST_COUNT} 个请求`)}</text>
         <text x="485" y="386" text-anchor="middle" class="formula small">{DEMO_SLOWEST_E2E_MS} ms = {DEMO_SLOWEST_OVER_P50} × P50</text>
-        <text x="485" y="409" text-anchor="middle" class="legend">1 / {DEMO_PERCENTILE_REQUEST_COUNT} {t('request', '个请求')}</text>
+        <text x="485" y="409" text-anchor="middle" class="legend">{t(`1 of ${DEMO_PERCENTILE_REQUEST_COUNT} requests`, `${DEMO_PERCENTILE_REQUEST_COUNT} 个中有 1 个`)}</text>
       {:else}
         <text x="20" y="20" class="rowlabel">{t(`${DEMO_PERCENTILE_REQUEST_COUNT} requests · E2E shortest to longest (ms)`, `${DEMO_PERCENTILE_REQUEST_COUNT} 个请求 · 总延迟从短到长（ms）`)}</text>
-        <text x="20" y="42" class="legend strong">{t('P50 = halfway through the queue, not average', 'P50 = 排到一半的位置，不是平均数')}</text>
+        <text x="20" y="42" class="legend strong">{t(`P50 = request #${DEMO_P50_RANK}'s E2E latency here`, `P50 = 本图第 ${DEMO_P50_RANK} 个请求的总延迟`)}</text>
         <text x="150" y="65" text-anchor="middle" class="legend">{t('blue = one request’s E2E latency', '蓝色 = 一个请求的总延迟')}</text>
         {#each [DEMO_SLOWEST_E2E_MS, DEMO_SLOWEST_E2E_MS / 2, 0] as tick}
           {@const y = 260 - (tick / DEMO_SLOWEST_E2E_MS) * 170}
@@ -228,11 +228,11 @@
         <rect x="20" y="290" width="260" height="76" rx="11" fill="var(--accent-soft)" />
         <text x="35" y="312" class="legend strong">P50 · {t(`request #${DEMO_P50_RANK}`, `第 ${DEMO_P50_RANK} 个请求`)}</text>
         <text x="35" y="335" class="legend strong">{DEMO_P50_MS} ms</text>
-        <text x="35" y="355" class="legend">{DEMO_P50_RANK}/{DEMO_PERCENTILE_REQUEST_COUNT} {t(`requests at most ${DEMO_P50_MS} ms`, `个请求不超过 ${DEMO_P50_MS} ms`)}</text>
+        <text x="35" y="355" class="legend">{t(`${DEMO_AT_MOST_P50_COUNT} of ${DEMO_PERCENTILE_REQUEST_COUNT} take at most ${DEMO_P50_MS} ms`, `${DEMO_PERCENTILE_REQUEST_COUNT} 个中有 ${DEMO_AT_MOST_P50_COUNT} 个不超过 ${DEMO_P50_MS} ms`)}</text>
         <rect x="20" y="376" width="260" height="76" rx="11" fill="var(--accent-soft)" />
         <text x="35" y="398" class="legend strong">{t(`Slowest · request #${DEMO_PERCENTILE_REQUEST_COUNT}`, `最慢 · 第 ${DEMO_PERCENTILE_REQUEST_COUNT} 个请求`)}</text>
         <text x="35" y="421" class="legend strong">{DEMO_SLOWEST_E2E_MS} ms = {DEMO_SLOWEST_OVER_P50} × P50</text>
-        <text x="35" y="441" class="legend">1 / {DEMO_PERCENTILE_REQUEST_COUNT} {t('request', '个请求')}</text>
+        <text x="35" y="441" class="legend">{t(`1 of ${DEMO_PERCENTILE_REQUEST_COUNT} requests`, `${DEMO_PERCENTILE_REQUEST_COUNT} 个中有 1 个`)}</text>
       {/if}
       <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Constructed teaching example, not a local benchmark.', '构造的教学例子，不是本机实测。')}</text>
       {/if}

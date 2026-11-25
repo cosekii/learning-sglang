@@ -1,7 +1,7 @@
 # 第 1 章评分卡 · Measure one inference request
 
 日期：2026-11-24。评分办法：`EVAL.md` 易读性 R1–R6 与原 12 项，每项 0 / 1 / 2。
-材料：每步的最终中英桌面截图、中文手机截图、深入讲解截图和逐步 transcript；第 1 步位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s01/`，第 2 步位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s02/`，第 3 步位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s03/`，第 4 步最新复核位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-repair-20261124-1622/mlsys/`，第 5 步位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s05-20261124-1711/`。冷读者只带 request、token、prefill 和毫秒的前置知识；后续步骤另带前面步骤的 TTFT、ITL、TPOT、E2E。
+材料：每步的最终中英桌面截图、中文手机截图、深入讲解截图和逐步 transcript；第 1 步位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s01/`，第 2 步位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s02/`，第 3 步位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s03/`，第 4 步最新复核位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-repair-20261124-1622/mlsys/`，第 5 步位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s05-20261124-1711/`；第 5 步本轮修旧材料位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s05-repair-20261124-1851/final/`，检查日志在相邻的 `checks/`。冷读者只带 request、token、prefill 和毫秒的前置知识；后续步骤另带前面步骤的 TTFT、ITL、TPOT、E2E。
 
 | 步 | 易读分 /12 | R1 小学生复述 | 分数 /24 | 冷读者洞数 | 最差的两条 | 日期 |
 |---|---:|---|---:|---:|---|---|
@@ -9,7 +9,7 @@
 | 2 | 12 | 从 request 发出开始计时，首个 token 在 250 ms 出现，这段等待叫 TTFT；后面三个 token 分别在 275、295、325 ms 出现，相邻 token 的间隔叫 ITL，所以三段 ITL 分别是 25、20、30 ms。 | 24 | 0 | — | 2026-11-23 |
 | 3 | 12 | 首个 token 后有 25、20、30 ms 三段间隔，加起来除以 3，TPOT 就是 25 ms；它不含 TTFT，也不表示每段一样长。 | 24 | 0 | — | 2026-11-24 |
 | 4 | 12 | 整个请求用 325 ms：首 token 前等 250 ms，后面三段 25、20、30 ms 共 75 ms。 | 24 | 0 | — | 2026-11-24 |
-| 5 | 12 | 把 100 个请求按总等待时间从短到长排队，中间第 50 个是 200 ms，最后第 100 个最慢，要等 2000 ms，是中间那个的 10 倍。 | 24 | 0 | — | 2026-11-24 |
+| 5 | 12 | 100 个请求从快到慢排队，第 50、51 个都等 200 ms，所以有 51 个不超过 200 ms；最慢的 1 个等 2000 ms，是 P50 的 10 倍。 | 24 | 0 | — | 2026-11-24 |
 
 **当前平均：24.00 / 24；最低：24；总洞数：0；5/5 个已制作步骤易读满分。** 本章继续制作第 6 步。
 
@@ -55,3 +55,8 @@
 - 全站默认等待的 `mobile` 在 600 秒被终止，未报告布局断言失败；改用 `WAIT=100 npm run mobile` 完整重跑通过，360、390、430 px 无布局破坏，另有 **576** 个小字视图仅作审计。
 - 最终中英桌面、360／390 px 中文手机、双语深入讲解顶部与底部截图均已打开核对，无裁切或重叠；浏览器从第 4 步按右箭头可进入本步，显示 `05 / 05`、100 根柱且下一步禁用。
 - 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s05-20261124-1711/final/` 和 `checks/`。
+- 2026-11-24 修旧：改前独立冷读指出 P50 取位不清、分数式计数难读两个洞；主评审另发现 51 个请求为 200 ms，图上却写 `50/100 requests at most 200 ms`。静态图复核后，改前为易读 **11/12**、原分 **21/24**、**3 洞**。
+- 主图改为「P50 = 本图第 50 个请求的总延迟」；新增 `DEMO_AT_MOST_P50_COUNT`，由实际延迟数组算出不超过 P50 的数量。中英文都改写为「100 个中有 51 个不超过 200 ms」和「100 个中有 1 个」，不再用分数式表达请求个数。caption、柱图、数值分布和深入讲解未改。
+- 同一冷读者复读并补核双语深入讲解，最终易读 **12/12**、原分 **24/24**、**0 洞**，R1–R6 与原 #1–#12 均为 2。读者能说明第 50、51 个请求同为 200 ms，所以 51 个不超过 200 ms；最慢 1 个为 2000 ms，是 P50 的 10 倍。
+- 本轮 `build`、本章 `transcript`、本步 `readability`、本章与全站三种宽度手机布局、本步中文手机字号、`deep-check 01`、`zh-check`、数字断言、浏览器导航、静态截图对比和 `git diff --check` 均通过。全站另有 **576** 个既有小字视图仅作审计。
+- 最新截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s05-repair-20261124-1851/final/` 和 `checks/`。中英桌面、360／390／430 px 中文手机、双语深入讲解顶部与底部均已打开核对。
