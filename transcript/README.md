@@ -30,7 +30,7 @@ Read it to check wording and numbers across chapters without opening the compone
 | omni | 01 | [From config to a runtime graph](omni/01-config-to-runtime.md) | 4 |
 | omni | 02 | [Stage–Process–GPU layout](omni/02-spg-topology.md) | 3 |
 | omni | 03 | [Request binding and exit](omni/03-request-binding.md) | 3 |
-| omni | 04 | [Three waiting rules](omni/04-readiness-contracts.md) | 2 |
+| omni | 04 | [Three waiting rules](omni/04-readiness-contracts.md) | 3 |
 | ml-sys | 01 | [Measure one inference request](ml-sys/01-measure-inference.md) | 7 |
 | ml-sys | 02 | [The full GPU memory budget](ml-sys/02-inference-memory-budget.md) | 2 |
 | voxt | 01 | [The journey of one sentence](voxt/one-dictation.md) | 4 |

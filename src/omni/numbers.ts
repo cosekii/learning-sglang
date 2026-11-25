@@ -104,3 +104,11 @@ export const READINESS_ONE_SHOT_ARRIVED_COUNTS = [0, 1, READINESS_ONE_SHOT_REQUI
 // A three-chunk thinker → talker_ar example; chunks 0 and 1 precede the whole result.
 export const READINESS_STREAM_CHUNK_IDS = [0, 1, 2] as const;
 export const READINESS_STREAM_STORED_COUNTS = READINESS_STREAM_CHUNK_IDS.map((_, index) => index + 1);
+
+// Default Qwen speech config: build early at five usable chunks, or after stream completion.
+export const READINESS_BUILD_MIN_CHUNKS = 5;
+export const READINESS_BUILD_SNAPSHOTS = [
+  { usable: 4, done: false },
+  { usable: READINESS_BUILD_MIN_CHUNKS, done: false },
+  { usable: 2, done: true },
+] as const;

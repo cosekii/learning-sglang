@@ -121,3 +121,69 @@ Sources on `sglang-omni origin/main@f6827ed1907e392fd67d5f13fa315c016e2056e8`:
 ### Next
 
 The next step asks when saved chunks become enough to construct and start a request.
+
+## Step 3 · Build early with five chunks by default
+
+> **In one sentence:** In the default configuration, five usable chunks can start request construction before the stream finishes; a finished stream has no minimum chunk count.
+
+### What the picture shows
+
+- **Build-ready** means the payload may pass the construction check and enter the request builder, which assembles the stored data into a request. It does not mean the request has been admitted or that GPU work has started.
+- A **usable chunk** is a stored chunk that counts toward the construction threshold. A trailing `im_end` marker does not count. This example has no trailing marker, so every stored chunk is usable.
+- The stream is open in the first two pictures. Four usable chunks wait, while the default five enter the request builder. The third picture has only two usable chunks, but its finished stream also passes.
+- Blue borders mark satisfied conditions; gray dashes mark missing ones. The three empty slots in the third picture do not require waiting for five, because stream completion already passes the check.
+
+### Formula
+
+Let $U_A$ be request A's usable chunks, $u_A=|U_A|$ their count, $d_A$ whether the stream is done, $p$ whether early construction is enabled, $m$ the configured early-construction threshold, and $B_A$ construction readiness:
+
+$$B_A\iff d_A\lor\left(p\land u_A\ge m\right)$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $A$ | The request followed through the previous steps | Request A from Chapter 3 |
+| $U_A$ | Chunks usable for the construction check | `payload.prefetched_chunks`, excluding a trailing `im_end` |
+| $u_A$ | Number of usable chunks | `count_usable_prefetched_chunks()` |
+| $d_A$ | Whether the stream has finished | `pending_stream_done` |
+| $p$ | Whether construction may start before stream completion | `enable_partial_start`; true in this example |
+| $m$ | Minimum usable chunks for early construction | `partial_start_min_chunks`; 5 in the default configuration |
+| $B_A$ | Whether the request-construction check passes | The return value of `is_request_build_ready()` |
+
+### The numbers on the stage
+
+Here $p=\mathrm{true}$, $m=5$, and there is no trailing `im_end`, so $u_A$ equals the stored chunk count.
+
+| Snapshot | $u_A$ | $d_A$ | $u_A\ge5$? | $B_A$ | Result on stage |
+|---|---:|---|---|---|---|
+| 1 | 4 | No | No | No | Wait |
+| 2 | 5 | No | Yes | Yes | Enter request builder |
+| 3 | 2 | Yes | No | Yes | Enter request builder |
+
+The default is indeed $m=5$, but five is not an immutable implementation floor. The current implementation permits a configured threshold of at least 1. This picture covers only the default configuration, not every deployment.
+
+### How the source passes the check
+
+`talker_stage` enables `enable_partial_start` by default and passes `partial_start_min_chunks` to `QwenTalkerScheduler`. The default speech pipeline sets that value to 5. The scheduler rejects values below `TALKER_START_MIN_CHUNKS=1`.
+
+`count_usable_prefetched_chunks()` normally returns the saved list's length. It subtracts one only when the last chunk's `metadata.token_id` equals `im_end_token_id`; the same marker in the middle does not cause another subtraction. `is_request_build_ready()` checks `pending_stream_done` first and passes immediately when it is true. Otherwise, with early construction enabled, it compares the usable count with the configured threshold.
+
+A failed check stores the payload in `deferred_request_payloads`. Each later chunk or stream-completion event marks it for another check. After a pass, an ordinary request enters `run_request_builder()` synchronously or asynchronously. Admission and scheduling still follow. The pictured arrow therefore stops at the request builder. A finished reply with no spoken tokens can instead take `complete_without_generation()`; this example's usable chunks contain ordinary content and do not take that no-audio branch.
+
+### Scope and sources
+
+This step covers only the request-construction check in Qwen3-Omni's default speech configuration. It omits backpressure, builder internals, admission, batching, GPU start time, per-decode inputs and data release. Five is a default, not a universal rule for every stage.
+
+Sources on `sglang-omni origin/main@6d8ed2dcf70da1b021bb14b62239a3add428636c`:
+
+- [Default threshold 5 and implementation floor 1: `sglang_omni/models/qwen3_omni/config.py:33-35,445-451`](https://github.com/sgl-project/sglang-omni/blob/6d8ed2dcf70da1b021bb14b62239a3add428636c/sglang_omni/models/qwen3_omni/config.py#L33-L35).
+- [`talker_stage` enables early construction and passes the threshold: `sglang_omni/models/qwen3_omni/config.py:225-242`](https://github.com/sgl-project/sglang-omni/blob/6d8ed2dcf70da1b021bb14b62239a3add428636c/sglang_omni/models/qwen3_omni/config.py#L225-L242).
+- [Usable counting, stream-done precedence and the threshold check: `sglang_omni/models/qwen3_omni/talker_scheduler.py:62-112`](https://github.com/sgl-project/sglang-omni/blob/6d8ed2dcf70da1b021bb14b62239a3add428636c/sglang_omni/models/qwen3_omni/talker_scheduler.py#L62-L112).
+- [A very short finished reply may bypass generation: `sglang_omni/models/qwen3_omni/talker_scheduler.py:114-128`](https://github.com/sgl-project/sglang-omni/blob/6d8ed2dcf70da1b021bb14b62239a3add428636c/sglang_omni/models/qwen3_omni/talker_scheduler.py#L114-L128).
+- [Failed checks defer; passed checks enter the request builder: `sglang_omni/scheduling/omni_scheduler.py:1565-1652`](https://github.com/sgl-project/sglang-omni/blob/6d8ed2dcf70da1b021bb14b62239a3add428636c/sglang_omni/scheduling/omni_scheduler.py#L1565-L1652).
+- [Later chunks and stream completion trigger rechecks: `sglang_omni/scheduling/omni_scheduler.py:3639-3679`](https://github.com/sgl-project/sglang-omni/blob/6d8ed2dcf70da1b021bb14b62239a3add428636c/sglang_omni/scheduling/omni_scheduler.py#L3639-L3679).
+- [Tests for disabled early construction and counts below and at the threshold: `tests/unit_test/qwen3_omni/test_talker.py:981-1007`](https://github.com/sgl-project/sglang-omni/blob/6d8ed2dcf70da1b021bb14b62239a3add428636c/tests/unit_test/qwen3_omni/test_talker.py#L981-L1007).
+- [Trailing end-marker counting tests: `tests/unit_test/qwen3_omni/test_talker.py:1023-1050`](https://github.com/sgl-project/sglang-omni/blob/6d8ed2dcf70da1b021bb14b62239a3add428636c/tests/unit_test/qwen3_omni/test_talker.py#L1023-L1050).
+
+### Next
+
+Once a request can be constructed, each decode step still needs its own inputs. The next step shows why the next step cannot run before the current step's feedback arrives.

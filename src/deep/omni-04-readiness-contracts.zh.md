@@ -121,3 +121,69 @@ $$C_A=[c_0,c_1,\ldots,c_{n_A-1}],\qquad n_A=|C_A|$$
 ### 接下来
 
 下一步看存下多少 chunk 才够构建并启动请求。
+
+## 第 3 步 · 默认五段可提前构建
+
+> **一句话：** 默认配置下，流还没结束时有 5 段可用 chunk 就能开始构建请求；流已经结束则不受这个数量限制。
+
+### 图上是什么
+
+- **build-ready** 表示可以通过构建检查，把 payload 交给请求构建器，由它把已存数据整理成请求；不表示请求已准入，也不表示 GPU 已开始计算。
+- **可用 chunk** 是计入构建阈值的已存 chunk。若最后一段是 `im_end` 结束标记，这一段不计入；本例没有末尾结束标记，所以存下几段就有几段可用。
+- 前两张的流都未结束：4 段可用时继续等，到默认的 5 段就进入请求构建器。第三张只有 2 段可用，但流已结束，也能通过检查。
+- 蓝框表示条件满足，灰虚线表示条件未满足或没有存下。第三张的三个空位不表示仍要等满 5 段，因为「流已结束」已经让检查通过。
+
+### 公式
+
+设 $U_A$ 是请求 A 的可用 chunk 集合，$u_A=|U_A|$ 是可用数量，$d_A$ 表示流是否结束，$p$ 表示是否允许提前构建，$m$ 是配置的提前构建阈值，$B_A$ 表示能否开始构建：
+
+$$B_A\iff d_A\lor\left(p\land u_A\ge m\right)$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $A$ | 前两步跟踪的请求 | 第 3 章的请求 A |
+| $U_A$ | 可用于构建检查的 chunk | `payload.prefetched_chunks` 去掉末尾 `im_end` 后的列表 |
+| $u_A$ | 可用 chunk 数量 | `count_usable_prefetched_chunks()` |
+| $d_A$ | 流是否已经结束 | `pending_stream_done` |
+| $p$ | 是否允许流未结束就构建 | `enable_partial_start`；本例为真 |
+| $m$ | 提前构建所需的最少可用段数 | `partial_start_min_chunks`；默认配置为 5 |
+| $B_A$ | 是否通过请求构建检查 | `is_request_build_ready()` 的返回值 |
+
+### 代入图上的数
+
+本例 $p=\mathrm{true}$，$m=5$，且没有末尾 `im_end`，所以 $u_A$ 等于已存段数。
+
+| 快照 | $u_A$ | $d_A$ | $u_A\ge5$？ | $B_A$ | 图上结果 |
+|---|---:|---|---|---|---|
+| 1 | 4 | 否 | 否 | 否 | 等待 |
+| 2 | 5 | 否 | 是 | 是 | 进入请求构建器 |
+| 3 | 2 | 是 | 否 | 是 | 进入请求构建器 |
+
+默认配置确实是 $m=5$，但 5 不是不可修改的硬下限。当前实现允许配置的硬下限是 1；本图只展示默认配置，不声称每个部署都等 5 段。
+
+### 源码怎样通过检查
+
+`talker_stage` 默认打开 `enable_partial_start`，并把 `partial_start_min_chunks` 交给 `QwenTalkerScheduler`。speech pipeline 的默认配置把这个值设为 5。调度器拒绝低于 `TALKER_START_MIN_CHUNKS=1` 的配置。
+
+`count_usable_prefetched_chunks()` 通常返回已存列表的长度。只有最后一段的 `metadata.token_id` 等于 `im_end_token_id` 时才减 1；列表中间的相同标记不额外扣除。`is_request_build_ready()` 先看 `pending_stream_done`：已结束就直接通过；未结束且允许提前构建时，再比较可用数量和配置阈值。
+
+未通过时，payload 存入 `deferred_request_payloads`。后续每个 chunk 或流结束事件会把它标为待复查。通过后，普通请求会同步或异步进入 `run_request_builder()`；构建结果之后还要经过准入和调度。因此图中的箭头只到请求构建器。极短且没有可发声 token 的完成回复可走 `complete_without_generation()`，本例的可用段都是普通内容，不走这条无音频分支。
+
+### 边界与出处
+
+本步只讲 Qwen3-Omni speech 默认配置下的请求构建检查，不讲背压、构建细节、准入、batch、GPU 开始时间、decode 的逐步输入或数据释放。5 是默认值，不是所有 stage 的通用规则。
+
+以下来源位于 `sglang-omni origin/main@6d8ed2dcf70da1b021bb14b62239a3add428636c`：
+
+- [默认阈值为 5，配置硬下限为 1：`sglang_omni/models/qwen3_omni/config.py:33-35,445-451`](https://github.com/sgl-project/sglang-omni/blob/6d8ed2dcf70da1b021bb14b62239a3add428636c/sglang_omni/models/qwen3_omni/config.py#L33-L35)。
+- [`talker_stage` 打开提前构建并传入阈值：`sglang_omni/models/qwen3_omni/config.py:225-242`](https://github.com/sgl-project/sglang-omni/blob/6d8ed2dcf70da1b021bb14b62239a3add428636c/sglang_omni/models/qwen3_omni/config.py#L225-L242)。
+- [可用段计数、流结束优先及阈值检查：`sglang_omni/models/qwen3_omni/talker_scheduler.py:62-112`](https://github.com/sgl-project/sglang-omni/blob/6d8ed2dcf70da1b021bb14b62239a3add428636c/sglang_omni/models/qwen3_omni/talker_scheduler.py#L62-L112)。
+- [极短完成回复可不走生成：`sglang_omni/models/qwen3_omni/talker_scheduler.py:114-128`](https://github.com/sgl-project/sglang-omni/blob/6d8ed2dcf70da1b021bb14b62239a3add428636c/sglang_omni/models/qwen3_omni/talker_scheduler.py#L114-L128)。
+- [未就绪则暂存，就绪后进入请求构建器：`sglang_omni/scheduling/omni_scheduler.py:1565-1652`](https://github.com/sgl-project/sglang-omni/blob/6d8ed2dcf70da1b021bb14b62239a3add428636c/sglang_omni/scheduling/omni_scheduler.py#L1565-L1652)。
+- [后续 chunk 和流结束会触发复查：`sglang_omni/scheduling/omni_scheduler.py:3639-3679`](https://github.com/sgl-project/sglang-omni/blob/6d8ed2dcf70da1b021bb14b62239a3add428636c/sglang_omni/scheduling/omni_scheduler.py#L3639-L3679)。
+- [关闭提前构建、低于阈值和达到阈值的测试：`tests/unit_test/qwen3_omni/test_talker.py:981-1007`](https://github.com/sgl-project/sglang-omni/blob/6d8ed2dcf70da1b021bb14b62239a3add428636c/tests/unit_test/qwen3_omni/test_talker.py#L981-L1007)。
+- [末尾结束标记的计数测试：`tests/unit_test/qwen3_omni/test_talker.py:1023-1050`](https://github.com/sgl-project/sglang-omni/blob/6d8ed2dcf70da1b021bb14b62239a3add428636c/tests/unit_test/qwen3_omni/test_talker.py#L1023-L1050)。
+
+### 接下来
+
+请求可以构建后，每一步 decode 还要等自己的输入。下一步看为什么当前一步的 feedback 没到，下一步就不能算。

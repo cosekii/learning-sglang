@@ -55,14 +55,14 @@
 
 ## Learning SGLang Omni
 
-规划完成：`docs/plan-omni.md` 共 3 部分、13 章；第 1 章已制作 4 步并完成，第 2、3 章各已制作 3 步并完成，第 4 章已制作 2 步。
+规划完成：`docs/plan-omni.md` 共 3 部分、13 章；第 1 章已制作 4 步并完成，第 2、3 章各已制作 3 步并完成，第 4 章已制作 3 步。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
 | 01 | 01-config-to-runtime | 完成：4/4 步易读满分 | 24.00 |
 | 02 | 02-spg-topology | 完成：3/3 步易读满分 | 24.00 |
 | 03 | 03-request-binding | 完成：3/3 步易读满分 | 24.00 |
-| 04 | 04-readiness-contracts | 在做第 3 步；第 1–2 步易读满分 | 24.00 |
+| 04 | 04-readiness-contracts | 在做第 4 步；第 1–3 步易读满分 | 24.00 |
 | 05 | 05-data-lifetime | 规划 | — |
 | 06 | 06-batching-backpressure | 规划 | — |
 | 07 | 07-shared-gpu-budgets | 规划 | — |

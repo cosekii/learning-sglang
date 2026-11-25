@@ -17,7 +17,9 @@ Step 1 constructs an image-only request A in the speech topology. Its expected s
 
 Step 2 constructs a three-chunk `thinker → talker_ar` stream. This stage accepts stream data before the whole result. The first two snapshots store one and two chunks while the whole result has not arrived. By the third snapshot, chunk 2 and the whole result have arrived. The scheduler keeps early chunks in arrival order and later attaches them to the payload. The figure covers receiving and storage, not the start of computation. Three chunks are an example, not a required stream length.
 
-Step 1 source revision: `sglang-omni origin/main@91d06c70b00746c0b2b84db12a318240db360f1d`. Step 2 source revision: `sglang-omni origin/main@f6827ed1907e392fd67d5f13fa315c016e2056e8`. The deep dive lists the exact files and lines.
+Step 3 uses the default speech configuration: early request construction is enabled with a five-usable-chunk threshold. Four usable chunks with an open stream stay deferred; five enter the request builder. A finished stream passes regardless of the count, illustrated by two usable chunks. A trailing `im_end` chunk is excluded from the usable count. Entering the builder is not admission or GPU execution. Five is the default, while the implementation's configurable floor is one.
+
+Step 1 source revision: `sglang-omni origin/main@91d06c70b00746c0b2b84db12a318240db360f1d`. Step 2 source revision: `sglang-omni origin/main@f6827ed1907e392fd67d5f13fa315c016e2056e8`. Step 3 source revision: `sglang-omni origin/main@6d8ed2dcf70da1b021bb14b62239a3add428636c`. The deep dive lists the exact files and lines.
 
 </details>
 
@@ -28,6 +30,8 @@ Step 1 source revision: `sglang-omni origin/main@91d06c70b00746c0b2b84db12a31824
 
 第 2 步构造 `thinker → talker_ar` 的流，本例有 3 个 chunk。这个 stage 允许整份结果还没到就先收流数据。前两张快照分别存下 1、2 个 chunk，整份结果还未到；第三张快照里，chunk 2 和整份结果都已到。scheduler 按到达顺序保存早到的 chunk，随后把它们附到 payload。图中只讲接收和保存，不表示开始计算。每个结果不固定为 3 个 chunk。
 
-第 1 步源码版本：`sglang-omni origin/main@91d06c70b00746c0b2b84db12a318240db360f1d`。第 2 步源码版本：`sglang-omni origin/main@f6827ed1907e392fd67d5f13fa315c016e2056e8`。精确文件和行号见深入讲解。
+第 3 步使用 speech 默认配置：允许提前构建，阈值是 5 段可用 chunk。流未结束时，4 段继续等待，5 段进入请求构建器；流结束后不限制数量，图中用 2 段展示。末尾的 `im_end` chunk 不计入可用数量。进入构建器不等于准入或 GPU 执行。5 是默认配置，当前实现允许配置的硬下限是 1。
+
+第 1 步源码版本：`sglang-omni origin/main@91d06c70b00746c0b2b84db12a318240db360f1d`。第 2 步源码版本：`sglang-omni origin/main@f6827ed1907e392fd67d5f13fa315c016e2056e8`。第 3 步源码版本：`sglang-omni origin/main@6d8ed2dcf70da1b021bb14b62239a3add428636c`。精确文件和行号见深入讲解。
 
 </details>
