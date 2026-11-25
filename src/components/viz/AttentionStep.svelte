@@ -50,7 +50,7 @@
     { n: 6, flyIn: true, caption: `Decode step. "Paris" joins the sequence, and the layer runs again on all six. From the top.`, captionZh: `Decode 步。"Paris" 加入序列，这一层对全部六个 token 重新运行，从头开始。` },
     { n: 6, x: true, caption: `Six tokens come in as six vectors.`, captionZh: `六个 token 各变成一排数，得到 x₁ 到 x₆。前五个 x 没变，只有 x₆ 是新的。` },
     { n: 6, rows: true, caption: `Every token multiplies its x by the same three matrices. All six of them, from scratch.`, captionZh: `每个 token 都用自己的 x 乘同样的三个矩阵。全部六个，从头算起。` },
-    { n: 6, rows: true, recompute: true, markNew: true, caption: `Look at the five old columns. Same x, same matrices, same vectors as last time. Nothing changed, we just computed them again.`, captionZh: `看那五个旧列。同样的 x、同样的矩阵、和上次一样的向量。什么都没变，只是又算了一遍。` },
+    { n: 6, rows: true, recompute: true, markNew: true, caption: `Look at the five old columns. Same x, same matrices, same vectors as last time. Nothing changed, we just computed them again.`, captionZh: `前五个 x 和三张数字表没变。却又重算出和第 3 步一样的 q、k、v。` },
     { n: 6, rows: true, markNew: true, attend: 5, weights: true, mix: true, caption: `Paris's query looks at all six keys and blends all six values. It needs every earlier key and value.`, captionZh: `Paris 的 query 看全部六个 key，混合全部六个 value。它需要之前每一个 key 和 value。` },
     { n: 6, rows: true, markNew: true, unusedQ: true, caption: `The old queries? Their outputs only go on to rebuild the next layer's old x, and from it the same old k and v. Keep every layer's k and v, and nothing reads them.`, captionZh: `旧的 query 呢？它们的输出只会重建下一层的旧 x，再由它算出同样的旧 k 和 v。只要留住每层的 k 和 v，就没人再读它们。` },
     { n: 6, rows: true, markNew: true, tally: true, caption: `So each decode step, the new token needs every earlier k and v, and nothing else from the past. We recomputed them all, identically, in every head of every layer. Why not just keep them?`, captionZh: `所以每个 decode 步，新 token 只需要之前所有的 k 和 v，不需要过去的其他东西。我们却在每层每个 head 里把它们原样重算了一遍。为什么不直接留住它们？` },
@@ -90,9 +90,10 @@
 
   const rowsFor = $derived(cur.rows ? (cur.rowsFor ?? cur.n) : 0);
   const w = $derived(cur.attend !== undefined ? softmax(scores[cur.attend]) : []);
+  const zhSame = $derived(step === 10 && $lang === 'zh');
   const isNewCol = (c: number) => !!cur.markNew && c >= PROMPT_N;
   const isOld = (c: number) => cur.n > PROMPT_N && c < PROMPT_N;
-  const sameBadge = (r: Row, c: number) => (cur.recompute || cur.tally) && (r === 'k' || r === 'v') && isOld(c);
+  const sameBadge = (r: Row, c: number) => (cur.recompute || cur.tally) && (r === 'k' || r === 'v' || (zhSame && r === 'q')) && isOld(c);
   const unused = (r: Row, c: number) => (cur.unusedQ || cur.tally) && r === 'q' && isOld(c);
   const hotQ = (r: Row, c: number) => r === 'q' && cur.attend === c;
   const hotK = (r: Row, c: number) => r === 'k' && cur.attend !== undefined && (cur.scores || cur.weights) && c <= cur.attend;
@@ -121,6 +122,7 @@
   const phoneCausal = $derived(phone && zhCausal);
   const phoneSix = $derived(phone && zhSix);
   const phoneRecompute = $derived(phone && zhRecompute);
+  const phoneSame = $derived(phone && zhSame);
   const expScores = $derived(cur.attend !== undefined ? scores[cur.attend].map((score) => Math.exp(score)) : []);
   const expTotal = $derived(expScores.reduce((sum, value) => sum + value, 0));
   const tallyDenominator = scores[5].reduce((sum, score) => sum + Math.exp(score), 0);
@@ -130,8 +132,31 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox={phoneProject ? '0 0 360 560' : phoneIntro ? '0 0 360 450' : phoneRecompute ? '0 0 360 440' : phoneSix ? '0 0 360 430' : phoneCausal ? '0 0 360 520' : phoneMix ? '0 0 360 580' : phoneWeights ? '0 0 360 550' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Attention per decode step, step {step + 1}" class:phone-project={phoneProject} class:phone-intro={phoneIntro} class:phone-weights={phoneWeights} class:phone-mix={phoneMix} class:phone-causal={phoneCausal} class:phone-six={phoneSix} class:phone-recompute={phoneRecompute}>
-      {#if phoneProject}
+    <svg viewBox={phoneProject ? '0 0 360 560' : phoneSame ? '0 0 360 500' : phoneIntro ? '0 0 360 450' : phoneRecompute ? '0 0 360 440' : phoneSix ? '0 0 360 430' : phoneCausal ? '0 0 360 520' : phoneMix ? '0 0 360 580' : phoneWeights ? '0 0 360 550' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Attention per decode step, step {step + 1}" class:phone-project={phoneProject} class:phone-same={phoneSame} class:phone-intro={phoneIntro} class:phone-weights={phoneWeights} class:phone-mix={phoneMix} class:phone-causal={phoneCausal} class:phone-six={phoneSix} class:phone-recompute={phoneRecompute}>
+      {#if phoneSame}
+        <text x="180" y="28" text-anchor="middle" class="ph-title">前五列：和第 3 步结果一样</text>
+        <text x="180" y="56" text-anchor="middle">拿第 1 列对照；第 2—5 列也一样</text>
+        <text x="132" y="94" text-anchor="middle" class="ph-strong">第 3 步（上次）</text>
+        <text x="292" y="94" text-anchor="middle" class="ph-strong">第 11 步（这次）</text>
+        {#each [
+          { y: 116, label: '输入', old: 'x₁', now: 'x₁' },
+          { y: 190, label: '数字表', old: 'W_Q  W_K  W_V', now: 'W_Q  W_K  W_V' },
+          { y: 264, label: '结果', old: 'q₁  k₁  v₁', now: 'q₁  k₁  v₁' },
+        ] as row}
+          <text x="18" y={row.y + 29}>{row.label}</text>
+          <rect x="70" y={row.y} width="124" height="42" rx="6" fill={COLOR.x[0]} stroke="var(--line)" />
+          <text x="132" y={row.y + 27} text-anchor="middle" class="ph-mono">{row.old}</text>
+          <text x="215" y={row.y + 27} text-anchor="middle" class="ph-title">=</text>
+          <rect x="236" y={row.y} width="112" height="42" rx="6" fill={COLOR.x[0]} stroke="var(--line)" />
+          <text x="292" y={row.y + 27} text-anchor="middle" class="ph-mono">{row.now}</text>
+        {/each}
+        <text x="180" y="340" text-anchor="middle">输入相同，数字表相同，结果就相同</text>
+        <text x="180" y="372" text-anchor="middle" class="ph-strong">却又把前五列算了一遍</text>
+        <line x1="18" y1="394" x2="342" y2="394" stroke="var(--line)" />
+        <text x="180" y="426" text-anchor="middle">第 2—5 列：q、k、v 也全部相同</text>
+        <text x="180" y="458" text-anchor="middle" class="new-x">第 6 列是 ␣Paris：第一次算</text>
+        <text x="180" y="488" text-anchor="middle" class="ph-faint">= 表示上次和这次的结果相同</text>
+      {:else if phoneProject}
         <text x="180" y="26" text-anchor="middle" class="ph-title">一个 x 算出 q、k、v</text>
         <text x="180" y="52" text-anchor="middle">5 个 token → x₁、x₂、x₃、x₄、x₅</text>
         <text x="180" y="78" text-anchor="middle" class="ph-faint">拿第 5 个位置看；每个位置只用自己的 x</text>
@@ -632,7 +657,25 @@
         </g>
       {/if}
 
-      {#if cur.recompute}
+      {#if zhSame}
+        <g in:fade={{ duration: 0 }}>
+          <text x="16" y={LOW + 16} class="slab">拿第 1 列对照；第 2—5 列也一样</text>
+          <text x="700" y={LOW + 16} text-anchor="end" class="legend">格子里的 =：和第 3 步相同</text>
+          <text x="225" y={LOW + 44} text-anchor="middle" class="rowlabel">第 3 步（上次）</text>
+          <text x="495" y={LOW + 44} text-anchor="middle" class="rowlabel">第 11 步（这次）</text>
+          {#each [
+            { y: LOW + 72, label: '输入', value: 'x₁' },
+            { y: LOW + 100, label: '数字表', value: 'W_Q  W_K  W_V' },
+            { y: LOW + 128, label: '结果', value: 'q₁  k₁  v₁' },
+          ] as row}
+            <text x="16" y={row.y} class="legend">{row.label}</text>
+            <text x="225" y={row.y} text-anchor="middle" class="num">{row.value}</text>
+            <text x="360" y={row.y} text-anchor="middle" class="slab">=</text>
+            <text x="495" y={row.y} text-anchor="middle" class="num">{row.value}</text>
+          {/each}
+          <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">相同输入 + 相同数字表 → 相同结果；这次却又算了一遍</text>
+        </g>
+      {:else if cur.recompute}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote" in:fade>{t(`Llama also rotates q and k by each token's position (RoPE) · a token's position never changes, so its k is still identical`, `Llama 还会按每个 token 的位置旋转 q 和 k（RoPE）· token 的位置不变，所以它的 k 仍然相同`)}</text>
       {/if}
 
@@ -694,6 +737,11 @@
   .phone-recompute text { font-family: var(--mono); font-size: 12px; fill: var(--fg); }
   .phone-recompute .ph-title { font-family: var(--sans); font-size: 16px; font-weight: 650; }
   .phone-recompute .ph-faint { fill: var(--faint); }
+  .phone-same text { font-family: var(--sans); font-size: 12px; fill: var(--fg); }
+  .phone-same .ph-title { font-size: 16px; font-weight: 650; }
+  .phone-same .ph-strong { font-weight: 650; }
+  .phone-same .ph-faint { fill: var(--faint); }
+  .phone-same .ph-mono { font-family: var(--mono); }
   .new-x { fill: var(--gen) !important; }
   .tag.new { fill: var(--gen); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; font-size: 9px; }
   rect.pulse { animation: pulse 700ms ease-in-out 2; }
