@@ -89,3 +89,9 @@ export const TP_EXAMPLE_STAGE_COUNT = 1;
 export const TP_EXAMPLE_GPU_IDS = Array.from({ length: TP_EXAMPLE_SIZE }, (_, rank) => rank);
 export const TP_EXAMPLE_PROCESS_COUNT = TP_EXAMPLE_SIZE;
 export const TP_EXAMPLE_GPU_COUNT = TP_EXAMPLE_GPU_IDS.length;
+
+// A fresh round-robin counter and two talker_ar replicas; requests arrive in order.
+export const REQUEST_BINDING_PROCESS_NAME = 'talker_ar';
+export const REQUEST_BINDING_REPLICA_COUNT = 2;
+export const REQUEST_BINDING_REQUEST_IDS = ['A', 'B', 'C'] as const;
+export const REQUEST_BINDING_ASSIGNMENTS = REQUEST_BINDING_REQUEST_IDS.map((_, index) => index % REQUEST_BINDING_REPLICA_COUNT);

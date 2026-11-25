@@ -4,11 +4,11 @@
 
 ## 本轮记录
 
-- 本轮修旧：Inside Voxt 第 2 章第 2 步，把中文 caption、图内状态和中文深入讲解里的「没允许／未允许／已允许」改为「未开启／已开启」，机制、数字和英文内容不变。
-- 改前易读 **12/12**、原分 **23/24**、**0 洞**；改后独立冷读为易读 **12/12**、原分 **24/24**、**0 洞**，#11 中文自然度恢复满分，章均分 **23.50→24.00**。
-- `build`、本章 `transcript`、本步 `readability`、本章三种宽度的中英手机布局、本步中文手机字号、全站 `WAIT=100 mobile`、`deep-check 02`、`zh-check` 和 `git diff --check` 均通过；全站另有 **576** 个既有小字视图仅作审计。
-- 中英桌面、360／390／430 px 中文手机和中文深入讲解截图均已打开核对；英文截图改前后 SHA-256 均为 `b875a9570d563b6ae396f331c7e94986025304818efd7e56b438094bc639ad74`。截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch02-s02-wording-20261124-1821/final/` 和 `checks/`。
-- 本轮类型：**修旧**；下一普通轮按三本新书轮流做 **Learning SGLang Omni 第 3 章第 1 步**。
+- 本轮新书：Learning SGLang Omni 第 3 章第 1 步，用两个 `talker_ar` 副本和依次到达的 A／B／C 讲清 0／1／0 的轮流绑定，以及 A 再发时照绑定找回第 0 份里的记录。
+- 初版冷读 **9/12、2 洞**；补协调器白话说明和换份后果后两洞清零，但为 **11/12**。最终删去主图第二个新角色名并补箭头含义，独立复读为 **12/12、24/24、0 洞**。
+- `build`、本章 `transcript`、本步 `readability`、`deep-check 03`、`zh-check`、全站及本步中文 `mobile`、数字与浏览器断言、六个固定源码链接和 `git diff --check` 均通过；全站另有 **576** 个既有小字视图仅作审计。
+- 中英桌面、360／390／430 px 中文手机和双语深入讲解截图均已打开核对。截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-omni-ch03-s01-20261124-1831/final/` 和 `checks/`。
+- 本轮类型：**新书**；下一普通轮做 **修旧**。
 
 ## Learning SGLang
 
@@ -46,13 +46,13 @@
 
 ## Learning SGLang Omni
 
-规划完成：`docs/plan-omni.md` 共 3 部分、13 章；第 1 章已制作 4 步并完成，第 2 章已制作 3 步并完成。
+规划完成：`docs/plan-omni.md` 共 3 部分、13 章；第 1 章已制作 4 步并完成，第 2 章已制作 3 步并完成，第 3 章已制作 1 步。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
 | 01 | 01-config-to-runtime | 完成：4/4 步易读满分 | 24.00 |
 | 02 | 02-spg-topology | 完成：3/3 步易读满分 | 24.00 |
-| 03 | 03-request-binding | 规划 | — |
+| 03 | 03-request-binding | 在做第 2 步；第 1 步易读满分 | 24.00 |
 | 04 | 04-readiness-contracts | 规划 | — |
 | 05 | 05-data-lifetime | 规划 | — |
 | 06 | 06-batching-backpressure | 规划 | — |

@@ -1,0 +1,29 @@
+---
+layout: ../../../layouts/Chapter.astro
+book: omni
+slug: 03-request-binding
+---
+import RequestBinding from '../../../components/omni/RequestBinding.svelte';
+import { omniNeighbors } from '../../../omni/chapters';
+import { deepFor } from '../../../deep';
+export const deep = await deepFor('omni-03-request-binding');
+
+<RequestBinding client:load {...omniNeighbors('03-request-binding')} deep={deep} />
+
+<details class="i18n-en">
+<summary>Where this chapter's claims come from</summary>
+
+Step 1 uses a teaching example with two `talker_ar` replicas, a fresh round-robin counter, and requests A, B, C admitted in that order. The resulting copy indices 0, 1, 0 come from SGLang-Omni's per-process round-robin policy. The example shows binding and reuse only; it does not measure load or claim that concurrent arrivals always have this order.
+
+Source revision: `sglang-omni origin/main@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`. The deep dive lists the exact files and lines.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的出处</summary>
+
+第 1 步构造两个 `talker_ar` 副本、从 0 开始的轮流计数器，以及按 A、B、C 顺序进入的请求。副本编号 0、1、0 来自 SGLang-Omni 按进程轮流分配的策略。本例只讲绑定和复用，没有测量负载，也不声称并发请求永远按这个顺序进入。
+
+源码版本：`sglang-omni origin/main@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`。精确文件和行号见深入讲解。
+
+</details>
