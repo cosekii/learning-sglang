@@ -41,7 +41,7 @@
   const steps: Step[] = [
     { n: 5, intro: true, caption: `Same five tokens, one forward pass. This time we watch what one attention layer does with them.`, captionZh: `上一章没存旧结果，18 格有 11 格是重算。打开模型里的 attention，找哪些不用再算。` },
     { n: 5, x: true, caption: `Each token comes in as a vector. Call it x.`, captionZh: `每个 token 都变成一排有顺序的数，叫向量，记作 x。` },
-    { n: 5, rows: true, caption: `Every token multiplies its own x by three learned matrices and gets a <b>query</b>, a <b>key</b> and a <b>value</b>. No other token is involved yet.`, captionZh: `每个 x 变成 q、k、v 三排数，分别写要找什么、有什么、给什么。` },
+    { n: 5, rows: true, caption: `Every token multiplies its own x by three learned matrices and gets a <b>query</b>, a <b>key</b> and a <b>value</b>. No other token is involved yet.`, captionZh: `每个 x 经过三张数字表，变成 q、k、v。分别写要找什么、有什么、给什么。` },
     { n: 5, rows: true, attend: 4, scores: true, caption: `The last token's query gets dotted with every key. A big score means "this one matters to me".`, captionZh: `点积就是两排数对应相乘，再全部相加。下一步再讲这些分数怎么用。` },
     { n: 5, rows: true, attend: 4, scores: true, weights: true, caption: `Softmax turns the scores into weights that add up to one.`, captionZh: `Softmax 把分数换成权重。每列的权重表示它占多少，合起来是 1。` },
     { n: 5, rows: true, attend: 4, weights: true, mix: true, caption: `Its output is the values, blended by those weights. This is how "is" finds out it's sitting after "capital of France".`, captionZh: `每列 value 先乘自己的权重，再把五份相加。␣France 的权重最大，贡献也最大。` },
@@ -231,7 +231,7 @@
         <text x="180" y="458" text-anchor="middle" class="new-x">第 6 列是 ␣Paris：第一次算</text>
         <text x="180" y="488" text-anchor="middle" class="ph-faint">= 表示上次和这次的结果相同</text>
       {:else if phoneProject}
-        <text x="180" y="26" text-anchor="middle" class="ph-title">一个 x 变成三排分工不同的数</text>
+        <text x="180" y="26" text-anchor="middle" class="ph-title">一个 x 经过三张数字表，变成三排数</text>
         <text x="180" y="52" text-anchor="middle">拿第 5 个位置看；每个位置只用自己的 x</text>
         {#each [
           { y: 82, r: 'q', role: '我要找什么', use: '第 4 步：和每个 k 比分数' },
@@ -244,8 +244,8 @@
         {/each}
         <text x="180" y="354" text-anchor="middle">x₅ 只变成自己的 q₅、k₅、v₅</text>
         <text x="180" y="382" text-anchor="middle">其他位置也算自己的 q、k、v</text>
-        <text x="180" y="418" text-anchor="middle" class="ph-faint">q、k、v 都是一排数；下标相同 = 同一位置</text>
-        <text x="180" y="446" text-anchor="middle" class="ph-faint">下一步：q₅ 和 k₁…k₅ 比分数</text>
+        <text x="180" y="414" text-anchor="middle" class="ph-faint">W_Q、W_K、W_V 是这三张表的名字</text>
+        <text x="180" y="442" text-anchor="middle" class="ph-faint">分别算出 q、k、v；乘加算法在深入讲解</text>
       {:else if phoneIntro}
         <defs>
           <marker id="phone-intro-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
@@ -513,7 +513,7 @@
         <text x="174" y="346" class="legend">×：后面的 key，不能看</text>
         <text x={W / 2} y="382" text-anchor="middle" class="footnote">看到后面 = 提前看下一个 token 的答案 · 五份位置输出，不是五个新 token</text>
       {:else if zhProject}
-        <text x="16" y="24" class="slab">每个 x 变成三排分工不同的数</text>
+        <text x="16" y="24" class="slab">每个 x 经过三张数字表，变成三排分工不同的数</text>
         <text x="16" y="46" class="legend">每个位置只用自己的 x，其他 token 还没参与</text>
         <text x="16" y="82" class="rowlabel">tokens</text>
         <text x="16" y="120" class="rowlabel">x</text>
@@ -541,7 +541,7 @@
           <text x={panel.x + 14} y="307" class="legend">{panel.use}</text>
         {/each}
         <text x="16" y="360" class="slab">5 个位置 × 3 = 15 排数；下标相同的三排属于同一个位置</text>
-        <text x="16" y="390" class="legend">下一步：␣is 的 q₅ 和 k₁…k₅ 比分数</text>
+        <text x="16" y="390" class="legend">W_Q、W_K、W_V 是这三张表的名字，分别算出 q、k、v；乘加算法在深入讲解</text>
       {:else}
       <defs>
         <marker id="intro-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
