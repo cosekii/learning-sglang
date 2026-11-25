@@ -127,3 +127,45 @@ Line numbers refer to `origin/main@0e641996a0c269601d03f1cb29d3f46d7cb345a6`.
 ### Next
 
 Step 4 starts with DataReady at the receiver: it uses the DataRef to read and rebuild the payload, then sends an ACK.
+
+## Step 4 · Acknowledge the read before scheduling
+
+> **In one sentence:** The receiver selects a relay from the DataRef, reads and rebuilds the payload, then sends an ACK before handing the payload to its input handler.
+
+### What the picture shows
+
+- The first box parses the DataRef, selects a relay from `transport`, and uses `buffer.info` to locate backend data.
+- The second box allocates a `uint8` receive buffer using `buffer.length`, calls `get_async()`, and waits for the read to complete.
+- The third box uses `TensorMeta`'s `path/shape/dtype/device/offset/size` to reconstruct tensors and the payload. The figure shows the fields related to slicing, shape and device.
+- The fourth box is a successful ACK with `object_id = A` and `success = true`. The ACK returns to the sender, while the rebuilt payload continues to the input handler and then the scheduler.
+- The order is “read complete → ACK → input handler.” The ACK does not mean that `talker_ar` finished computing or that the whole request finished.
+
+### The generic receive chain
+
+| Order | Call or message | Result |
+|---|---|---|
+| 1 | Receive `DataReadyMessage` and deserialize DataRef | Object, transport and backend descriptor |
+| 2 | `CommEngine.read_data()` | Relay selection and data read |
+| 3 | `relay.get_async(buffer.info, dest_tensor)`, then wait | Bytes in the receive buffer |
+| 4 | Slice using tensor metadata and restore the payload | A data object for this stage |
+| 5 | `DataAckMessage(object_id=A, success=true)` | A read receipt the sender can match |
+| 6 | The input handler receives the payload | Later scheduler input |
+
+A failed read also produces an ACK, but with `success=False` and error information. Cleanup and stage-failure reporting follow. That ACK reports a terminated, failed read, not successful consumption.
+
+### Cleanup is not universal sender-data release
+
+The `relay.cleanup(request_id)` call after reconstruction is a request-level backend cleanup hook. Router invokes it across active relays. Its name does not imply deleting the sender's data or immediately freeing memory in every backend. The next step's ACK watcher and concrete `RelayOperation` still handle normal sender-resource completion.
+
+### Source references
+
+- `sglang_omni/pipeline/stage/runtime.py:794-801`: DataRef extraction, relay selection and `read_data()`; `802-812`: failure ACK, cleanup and failure reporting; `813-817`: successful ACK before the input handler.
+- `sglang_omni/comm/stage_io.py:826-842`: receive-buffer allocation, get and wait; `537-568`: payload/tensor reconstruction and cleanup.
+- `sglang_omni/proto/messages.py:235-273`: `DataAckMessage`'s `object_id`, `success` and error fields.
+- `sglang_omni/comm/router.py:409-418`: request-level relay cleanup.
+
+Line numbers refer to `origin/main@0e641996a0c269601d03f1cb29d3f46d7cb345a6`.
+
+### Next
+
+Step 5 returns to the sender: match the ACK's `object_id` to pending, finish the operation, and remove the lifetime record.

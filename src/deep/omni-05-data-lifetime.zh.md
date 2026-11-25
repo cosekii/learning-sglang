@@ -127,3 +127,45 @@ SHM 使用 `put_chunks_async()`，其他 relay 使用 `put_async()`。两种 put
 ### 接下来
 
 第 4 步从接收方收到 DataReady 开始：按 DataRef 读取、重建 payload，读完后发送 ACK。
+
+## 第 4 步 · 读完先回 ACK，再交给 scheduler
+
+> **一句话：** 接收方按 DataRef 选择 relay，取回字节并重建 payload；读取结束后发送 ACK，随后才把 payload 交给 input handler。
+
+### 图上是什么
+
+- 第 1 格解析 DataRef，按 `transport` 选择 relay，并使用 `buffer.info` 找到后端数据。
+- 第 2 格按 `buffer.length` 准备 `uint8` 接收空间，调用 `get_async()`，再等待读取完成。
+- 第 3 格按 `TensorMeta` 的 `path/shape/dtype/device/offset/size` 还原 tensor 和 payload。图中只写出与切片、形状和设备直接相关的几项。
+- 第 4 格是成功 ACK：`object_id = A`、`success = true`。ACK 回发送方，还原的数据则继续交给 input handler，之后才轮到 scheduler。
+- 图的顺序是「读取完成 → ACK → input handler」。ACK 不表示 `talker_ar` 已完成计算，更不表示整个请求已结束。
+
+### 一条通用接收链
+
+| 顺序 | 调用或消息 | 本步得到什么 |
+|---|---|---|
+| 1 | 收到 `DataReadyMessage`，反序列化 DataRef | 对象、传输方式和后端描述 |
+| 2 | `CommEngine.read_data()` | 按 transport 选择 relay 并读取 |
+| 3 | `relay.get_async(buffer.info, dest_tensor)` 后等待完成 | 接收空间里的字节 |
+| 4 | 按 tensor 元数据切片并恢复 payload | 可交给本 stage 的数据对象 |
+| 5 | `DataAckMessage(object_id=A, success=true)` | 发送方可匹配的读完回执 |
+| 6 | input handler 接收 payload | 后续 scheduler 输入 |
+
+失败读取也会回 ACK，但 `success=False` 并带错误信息；随后执行 cleanup 并上报 stage failure。这样的 ACK 表示读取已经终止且失败，不能被理解为成功消费。
+
+### cleanup 不等于统一释放发送方数据
+
+重建后调用的 `relay.cleanup(request_id)` 是 request 级后端清理钩子，Router 对 active relays 逐个调用它。不能把这个名字统一解释为「删除 sender 数据」或「所有后端立即释放内存」。正常发送方资源的收尾仍由下一步的 ACK watcher 和具体 `RelayOperation` 完成。
+
+### 源码出处
+
+- `sglang_omni/pipeline/stage/runtime.py:794-801`：取出 DataRef、选择 relay、调用 `read_data()`；`802-812`：失败 ACK、cleanup 和 failure；`813-817`：成功 ACK 后交给 input handler。
+- `sglang_omni/comm/stage_io.py:826-842`：按字节长度分配接收空间、get 并等待；`537-568`：重建 payload 和 tensor、调用 cleanup。
+- `sglang_omni/proto/messages.py:235-273`：`DataAckMessage` 的 `object_id`、`success` 和错误字段。
+- `sglang_omni/comm/router.py:409-418`：request 级 relay cleanup。
+
+行号对应 `origin/main@0e641996a0c269601d03f1cb29d3f46d7cb345a6`。
+
+### 接下来
+
+第 5 步回到发送方：按 ACK 的 `object_id` 找到 pending，完成 operation，再删除生命周期记录。

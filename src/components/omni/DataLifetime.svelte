@@ -17,6 +17,9 @@
   }, {
     caption: 'Publishing sends the DataRef and creates a pending transfer. The sender keeps its write operation alive until an ack arrives.',
     captionZh: '发布时，DataRef 发给读者，发送方另留等待回执的记录。记录没结束，写入操作就不能收尾。',
+  }, {
+    caption: 'The receiver uses the DataRef to get and rebuild the payload. It acknowledges the finished read before scheduling the payload.',
+    captionZh: '接收方照 DataRef 取回并还原数据。读完后先回 ACK，再把数据交给 scheduler。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -131,7 +134,7 @@
       {/if}
       <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{t('DataRef has no reader count or ACK state; other fields reconstruct tensors.', 'DataRef 没有读者计数或 ACK 状态；其他字段用于还原 tensor。')}</text>
       <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Next: publishing adds a separate pending record on the sender.', '下一步：发布时，发送方另加一张等待回执的记录。')}</text>
-      {:else}
+      {:else if step === 2}
       <text x={phone ? 15 : 20} y="20" class="tag strong">pending = {t("sender's record waiting for an ACK", '发送方等待 ACK 的记录')}</text>
       <text x={phone ? 15 : 20} y="45" class="tag">{t('Object A: write first, register pending, then send DataReady', '数据 A：先写入，再登记 pending，最后发 DataReady')}</text>
       {#if !phone}
@@ -189,6 +192,72 @@
       {/if}
       <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{t('The pending key is object_id; the DataRef still has no ACK state.', 'pending 用 object_id 对应数据；DataRef 里仍没有 ACK 状态。')}</text>
       <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Next: the receiver gets the bytes, rebuilds the payload and acknowledges.', '下一步：接收方取字节、还原数据，再回 ACK。')}</text>
+      {:else}
+      <text x={phone ? 15 : 20} y="20" class="tag strong">ACK = {t('receipt: the data-plane read has finished', '回执：数据平面已经读完')}</text>
+      <text x={phone ? 15 : 20} y="45" class="tag">{t('Receiver: parse DataRef → GET and wait → rebuild → ACK → scheduler', '接收方：解析 DataRef → GET 并等待 → 还原 → ACK → scheduler')}</text>
+      {#if !phone}
+        <path d="M170 180 H192" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
+        <path d="M345 180 H367" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
+        <path d="M520 180 H542" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
+        <rect x="20" y="80" width="150" height="220" rx="11" fill="var(--bg)" stroke="var(--line)" />
+        <text x="32" y="108" class="rowlabel">1 · {t('PARSE', '解析')}</text>
+        <text x="95" y="145" text-anchor="middle" class="mono strong">DataRef(A)</text>
+        <text x="95" y="181" text-anchor="middle" class="mono">SHM</text>
+        <text x="95" y="211" text-anchor="middle" class="mono">buffer.info</text>
+        <text x="95" y="258" text-anchor="middle" class="tag">{t('choose the relay', '选择 relay')}</text>
+
+        <rect x="195" y="80" width="150" height="220" rx="11" fill="var(--bg)" stroke="var(--line)" />
+        <text x="207" y="108" class="rowlabel">2 · GET</text>
+        <text x="270" y="145" text-anchor="middle" class="mono strong">get_async</text>
+        <rect x="215" y="165" width="110" height="48" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="270" y="194" text-anchor="middle" class="mono">uint8[length]</text>
+        <text x="270" y="246" text-anchor="middle" class="tag">{t('wait for completion', '等待读取完成')}</text>
+
+        <rect x="370" y="80" width="150" height="220" rx="11" fill="var(--bg)" stroke="var(--line)" />
+        <text x="382" y="108" class="rowlabel">3 · {t('REBUILD', '还原')}</text>
+        <text x="445" y="145" text-anchor="middle" class="mono strong">TensorMeta</text>
+        <text x="445" y="179" text-anchor="middle" class="tag">shape · dtype</text>
+        <text x="445" y="205" text-anchor="middle" class="tag">device · offset</text>
+        <rect x="390" y="229" width="110" height="40" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="445" y="254" text-anchor="middle" class="mono strong">{t('payload A', '数据 A')}</text>
+
+        <rect x="545" y="80" width="155" height="220" rx="11" fill="white" stroke="var(--accent)" stroke-width="2" />
+        <text x="557" y="108" class="rowlabel">4 · ACK</text>
+        <text x="622" y="143" text-anchor="middle" class="mono strong">object_id = A</text>
+        <text x="622" y="175" text-anchor="middle" class="mono">success = true</text>
+        <text x="622" y="211" text-anchor="middle" class="tag strong">{t('read finished ✓', '读取完成 ✓')}</text>
+        <line x1="565" y1="229" x2="680" y2="229" stroke="var(--line)" />
+        <text x="622" y="257" text-anchor="middle" class="tag">{t('then → scheduler', '然后 → scheduler')}</text>
+
+        <rect x="20" y="318" width="680" height="30" rx="7" fill="white" stroke="var(--line)" />
+        <text x="360" y="338" text-anchor="middle" class="tag strong">{t('ACK goes to the sender · rebuilt payload goes to the input handler', 'ACK 回发送方 · 还原的数据交给 input handler')}</text>
+      {:else}
+        <path d="M150 166 V186" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
+        <path d="M150 286 V306" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
+        <path d="M150 406 V426" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
+        <rect x="15" y="66" width="270" height="100" rx="10" fill="var(--bg)" stroke="var(--line)" />
+        <text x="30" y="90" class="rowlabel">1 · {t('PARSE', '解析')} · DataRef(A)</text>
+        <text x="150" y="121" text-anchor="middle" class="mono">SHM · buffer.info</text>
+        <text x="150" y="148" text-anchor="middle" class="tag">{t('choose the relay', '选择 relay')}</text>
+
+        <rect x="15" y="186" width="270" height="100" rx="10" fill="var(--bg)" stroke="var(--line)" />
+        <text x="30" y="210" class="rowlabel">2 · GET · get_async</text>
+        <text x="150" y="241" text-anchor="middle" class="mono">uint8[length]</text>
+        <text x="150" y="268" text-anchor="middle" class="tag">{t('wait for completion', '等待读取完成')}</text>
+
+        <rect x="15" y="306" width="270" height="100" rx="10" fill="var(--bg)" stroke="var(--line)" />
+        <text x="30" y="330" class="rowlabel">3 · {t('REBUILD', '还原')} · TensorMeta</text>
+        <text x="150" y="361" text-anchor="middle" class="tag">shape · dtype · device · offset</text>
+        <text x="150" y="388" text-anchor="middle" class="mono strong">{t('payload A rebuilt', '数据 A 已还原')}</text>
+
+        <rect x="15" y="426" width="270" height="115" rx="10" fill="white" stroke="var(--accent)" stroke-width="2" />
+        <text x="30" y="450" class="rowlabel">4 · ACK · object_id = A</text>
+        <text x="150" y="481" text-anchor="middle" class="mono">success = true</text>
+        <text x="150" y="509" text-anchor="middle" class="tag strong">{t('read finished ✓', '读取完成 ✓')}</text>
+        <text x="150" y="531" text-anchor="middle" class="tag">{t('then → scheduler', '然后 → scheduler')}</text>
+      {/if}
+      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{t('ACK means the read ended, not that downstream computation finished.', 'ACK 只表示读取结束，不表示下游计算完成。')}</text>
+      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Next: the sender matches this ACK to pending[A] and finishes the operation.', '下一步：发送方用 ACK 找到 pending[A]，让操作收尾。')}</text>
       {/if}
     </svg>
   </div>

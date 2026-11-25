@@ -19,6 +19,8 @@ Step 2 constructs a version-1 DataRef for object A using SHM. Its `object_id`, `
 
 Step 3 follows the generic relay path. The payload write returns a DataRef and a live `RelayOperation`. Before sending DataReady, the sender registers `PendingTransfer` under the DataRef's `object_id`; that record owns the operations and ACK future. The watcher starts after the control message is sent, and only then does the worker complete `job.ready`. Thus `send_payload()` reports write and publication completion, not receiver consumption or application completion.
 
+Step 4 uses the generic receive path. The receiver deserializes DataRef, selects its transport's relay, allocates `buffer.length` bytes, performs and waits for `get_async`, then reconstructs tensors and the payload. A successful ACK is sent before the input handler receives the payload. The ACK reports data-plane read completion, not downstream computation. Failed reads use `success=False`; request-level `relay.cleanup` is not a universal sender-data release operation.
+
 Source revision for the chapter: `sglang-omni origin/main@0e641996a0c269601d03f1cb29d3f46d7cb345a6`. The deep dive lists the exact files and lines.
 
 </details>
@@ -31,6 +33,8 @@ Source revision for the chapter: `sglang-omni origin/main@0e641996a0c269601d03f1
 第 2 步为数据 A 构造第 1 版 DataRef，传输方式固定为 SHM。`object_id`、`transport` 和 `buffer` 分别标识对象、选择 relay、保存后端读取信息。tensor 字节仍留在后端。DataRef 不含读者计数或 ACK 状态；fan-out 按 target 使用独立生命周期。图中省略其他还原字段，也不展开同进程和直接 PyTorch CUDA IPC 旁路。
 
 第 3 步跟踪通用 relay 路径。写入 payload 后得到 DataRef 和仍存活的 `RelayOperation`。发送 DataReady 前，发送方按 DataRef 的 `object_id` 登记 `PendingTransfer`，由这张记录保存 operations 和 ACK future。控制消息发出后启动 watcher，随后 worker 才完成 `job.ready`。因此 `send_payload()` 只表示写入和发布完成，不表示接收方已消费或业务处理已完成。
+
+第 4 步走通用接收路径。接收方反序列化 DataRef，按 transport 选择 relay，分配 `buffer.length` 字节，执行并等待 `get_async`，再重建 tensor 和 payload。成功 ACK 发出后，input handler 才接收 payload。ACK 表示数据平面读取完成，不表示下游计算完成。读取失败使用 `success=False`；request 级 `relay.cleanup` 不是统一的发送方数据释放操作。
 
 本章源码版本：`sglang-omni origin/main@0e641996a0c269601d03f1cb29d3f46d7cb345a6`。精确文件和行号见深入讲解。
 
