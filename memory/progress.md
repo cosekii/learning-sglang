@@ -4,6 +4,8 @@
 
 ## 本轮记录
 
+- 12:00 整点自主优化第 3 项「复盘自己」：最近评分卡反复靠人工冷读发现手机小字、截断和 SVG 文字出界；`mobile.mjs` 新增可见文字与所属 SVG 的实际左右边界比较，`ONLY=N` 选中章设为硬门，全站运行只汇总审计。重注 Omni 第 5 章修复前的英文脚注，旧内容被检出 **25 px** 出界，当前终稿为 **0**。
+- `build`、`node --check scripts/mobile.mjs`、中英第 5 章三种宽度 `mobile`、改前内容失败／当前内容通过的自检和 `git diff --check` 均通过；检查脚本与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-autonomous-mobile-svg-20261125-1200/checks/`。本轮不改教程与评分，未跑全站回归。本轮类型：**自主优化**；下一普通轮按交替规则修旧，下次整点轮换第 1 项「像读者一样从头读一遍」。
 - 11:52 完成 Learning SGLang Omni 第 5 章全部 5 步：安全复用、DataRef 描述符、发布时的 pending、读取后的 ACK、发送方收尾与后端可回收边界。全章 **5/5 步易读 12/12**，原分均 **24/24**，平均 **24.00/24**，**0 内容洞、0 最终显示洞**。
 - 逐步提交并推送；`build`、本章 `transcript`、全章 `readability`、中英三种宽度本章 `mobile`、`deep-check 05`、本章 `zh-check`、30 个手机视图 SVG 溢出审计和 `git diff --check` 通过。最终图：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-omni-ch05-20261125-1130/final/`。独立 subagent 因 API key 不可用未运行，最终由主线程换视角冷读。本轮只跑本章检查，未跑全站回归。本轮类型：**新书**；下一普通轮按交替规则修旧。
 - 11:00 修旧 Learning SGLang 第 2 章：第 13 步用「旧 q → 旧输出 → 下一层旧 x → 相同旧 k、v」解释旧 q 不再使用，第 14 步对照需要保留的旧 k、v 与每层、每组的重算；第 7 步手机另补清 query 属行、key 属列。第 13、14 步中文补评并整改至 **12/12、24/24、0 洞**；两步整步易读均 **11/12**，只剩受保护英文 R4。全章原分 **24.00/24**、总洞数 **0**，整步易读满分 **8/14**。

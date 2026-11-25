@@ -3,8 +3,10 @@
 //   overflow   the page scrolls sideways (document wider than the viewport), with the widest elements that cause it
 //   caption    the caption's text is cut off (taller than its box)
 //   controls   a step-control button or link runs past the viewport's edge
+//   svg-text   visible SVG text runs past the left or right edge of its own <svg>
 //   font       visible SVG text renders below MIN_FONT CSS px
-// Layout breaks always gate a commit. Small fonts are an audit in full runs and gate only a selected step.
+// Layout breaks always gate a commit. SVG text overflow gates selected chapters and is an audit in full runs.
+// Small fonts are an audit in full runs and gate only a selected step.
 //
 // usage: node scripts/mobile.mjs [baseUrl]        (default http://localhost:4321/learning-sglang)
 //   WIDTHS=360,390,430   phone widths to check (CSS px, 844 tall)
@@ -60,20 +62,29 @@ const CHECK = `(() => {
     return true;
   };
   const small = [];
+  const svgOverflow = [];
   for (const el of document.querySelectorAll('.viz svg text, .canvas svg text')) {
     if (!visible(el) || !el.textContent.trim()) continue;
+    const text = el.textContent.trim().replace(/\\s+/g, ' ').slice(0, 60);
+    const r = el.getBoundingClientRect();
+    const s = el.ownerSVGElement?.getBoundingClientRect();
+    if (s) {
+      const by = Math.max(s.left - r.left, r.right - s.right, 0);
+      if (by > 1) svgOverflow.push({ by: Math.ceil(by), text });
+    }
     const ctm = el.getScreenCTM();
     if (!ctm) continue;
     const size = parseFloat(getComputedStyle(el).fontSize) * Math.hypot(ctm.b, ctm.d);
-    if (size + 0.05 < ${minFont}) small.push({ size: Math.round(size * 100) / 100, text: el.textContent.trim().replace(/\\s+/g, ' ').slice(0, 60) });
+    if (size + 0.05 < ${minFont}) small.push({ size: Math.round(size * 100) / 100, text });
   }
   const m = (document.querySelector('.counter')?.textContent ?? '').match(/(\\d+)\\s*\\/\\s*(\\d+)/);
-  return { step: m ? +m[1] : 0, total: m ? +m[2] : 0, out, small };
+  return { step: m ? +m[1] : 0, total: m ? +m[2] : 0, out, small, svgOverflow };
 })()`;
 
 const browser = await launch({ port: 9335 });
 let flagged = 0;
 let fontAudits = 0;
+let svgOverflowAudits = 0;
 for (const w of widths) {
   const page = await browser.tab({ width: w, height: 844, mobile: true });
   const open = async (url) => {
@@ -105,6 +116,11 @@ for (const w of widths) {
         if (onlyStep === null) fontNotes.push(note);
         else hits.push(note);
       }
+      if (r.svgOverflow.length) {
+        svgOverflowAudits++;
+        const examples = r.svgOverflow.slice(0, 3).map((t) => `${t.by}px “${t.text}”`).join(', ');
+        if (only !== null) hits.push(`step ${n} · svg-text: ${r.svgOverflow.length} text(s) outside its svg · ${examples}`);
+      }
     }
     for (const h of hits) console.log(`${w}px · ${ch.slug} · ${h}`);
     if (only !== null) for (const note of fontNotes) console.log(`${w}px · ${ch.slug} · FONT AUDIT · ${note}`);
@@ -113,6 +129,7 @@ for (const w of widths) {
   await page.close();
 }
 const audit = onlyStep === null && fontAudits ? ` · ${fontAudits} step view(s) with SVG text below ${minFont}px (audit only)` : '';
-console.log((flagged ? `${flagged} phone check failure(s)` : `no layout breaks at ${widths.join(', ')} px`) + audit);
+const svgAudit = only === null && svgOverflowAudits ? ` · ${svgOverflowAudits} step view(s) with SVG text outside its svg (audit only)` : '';
+console.log((flagged ? `${flagged} phone check failure(s)` : `no layout breaks at ${widths.join(', ')} px`) + audit + svgAudit);
 browser.close();
 process.exit(flagged ? 1 : 0);
