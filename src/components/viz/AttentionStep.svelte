@@ -312,7 +312,7 @@
         <text x="180" y="350" text-anchor="middle" class="ph-faint">深色行：第 4–6 步的 q₅ → out₅</text>
         <line x1="18" y1="364" x2="342" y2="364" stroke="var(--line)" />
         <text x="180" y="386" text-anchor="middle" class="ph-strong">每行都照第 4–6 步计算</text>
-        <text x="180" y="410" text-anchor="middle">有色列的 query、key 比分数，再变权重</text>
+        <text x="180" y="410" text-anchor="middle">每行 query 和有色列 key 比分数，再变权重</text>
         <text x="180" y="434" text-anchor="middle">按权重混合有色列的 value，得到 out</text>
         <text x="180" y="458" text-anchor="middle">五份输出各回各位，继续本层后面的计算</text>
         <text x="180" y="482" text-anchor="middle">看到后面，就是提前看下一个 token 的答案</text>
