@@ -393,8 +393,8 @@
           <rect x="163" y="74" width="122" height="88" rx="10" fill="var(--eos-soft)" stroke="var(--eos)" stroke-width="2" stroke-dasharray="6 4" />
           <text x="224" y="98" text-anchor="middle" class="small strong">{t('shared prefix M', '共同前缀 M')}</text>
           <text x="224" y="121" text-anchor="middle" class="batch">{HYBRID_LOG_MATCH_TOKENS.toLocaleString()}</text>
-          <text x="224" y="141" text-anchor="middle" class="small unavailable">state = None</text>
-          <text x="224" y="157" text-anchor="middle" class="small unavailable">{t('tombstone: path only', '墓碑：只留路径')}</text>
+          <text x="224" y="137" text-anchor="middle" class="small unavailable">state = None</text>
+          <text x="224" y="153" text-anchor="middle" class="small unavailable">{t('path-only tombstone', '墓碑：只留路径')}</text>
 
           <line x1="210" y1="162" x2="90" y2="190" stroke="var(--muted)" stroke-width="2" />
           <rect x="30" y="190" width="105" height="57" rx="9" fill="var(--panel)" stroke="var(--fg)" />
