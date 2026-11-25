@@ -36,7 +36,7 @@
   function buildSteps(): Step[] {
     const steps: Step[] = [];
     let seq = [...prompt];
-    steps.push({ phase: 'raw', seq: [], caption: `A prompt is just a string.`, captionZh: `prompt 就是你输入的一段文字。` });
+    steps.push({ phase: 'raw', seq: [], caption: `A prompt is just a string.`, captionZh: `prompt 就是你输入的一段文字。这 24 个字符要先变成编号，模型才能读。` });
     steps.push({ phase: 'tokenize', seq, caption: `Split into tokens, each one an integer id. The model never sees the text, only these numbers.`, captionZh: `文字切成小段，每段叫 token。每段有固定的整数编号（id），模型只读编号。` });
     rounds.forEach((round, i) => {
       const n = seq.length;
@@ -105,6 +105,7 @@
     query.addEventListener('change', update);
     return () => query.removeEventListener('change', update);
   });
+  const phoneRaw = $derived(phone && step === 0 && $lang === 'zh');
   const phoneForward = $derived(phone && step === 2 && $lang === 'zh');
   const phoneAppendFirst = $derived(phone && step === 4 && $lang === 'zh');
   const repeatForward = $derived(step === 5 && $lang === 'zh');
@@ -147,8 +148,25 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox={phoneAppendFirst || phoneAppend ? '0 0 360 440' : phoneForward || phoneRepeat || phoneDone || phoneTally ? '0 0 360 570' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Autoregressive generation, step {step + 1}" class:phone-forward={phoneForward} class:phone-repeat={phoneRepeat} class:phone-append={phoneAppend || phoneAppendFirst} class:phone-done={phoneDone} class:phone-tally={phoneTally}>
-      {#if phoneAppendFirst}
+    <svg viewBox={phoneRaw ? '0 0 360 390' : phoneAppendFirst || phoneAppend ? '0 0 360 440' : phoneForward || phoneRepeat || phoneDone || phoneTally ? '0 0 360 570' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Autoregressive generation, step {step + 1}" class:phone-raw={phoneRaw} class:phone-forward={phoneForward} class:phone-repeat={phoneRepeat} class:phone-append={phoneAppend || phoneAppendFirst} class:phone-done={phoneDone} class:phone-tally={phoneTally}>
+      {#if phoneRaw}
+        <text x="16" y="24" class="label">prompt = 你输入的一段文字</text>
+        <rect x="16" y="42" width="328" height="52" rx="6" fill="white" stroke="var(--line)" stroke-width="1.5" />
+        <text x="28" y="75" class="tok">"{promptText}"</text>
+        <text x="180" y="122" text-anchor="middle" class="note">20 个字母 + 4 个空格 = 24 个字符</text>
+        <rect x="54" y="144" width="252" height="44" rx="8" class="model" />
+        <text x="180" y="172" text-anchor="middle" class="model-title">24 个字符</text>
+        <path d="M 180 192 V 208" class="wire" />
+        <polygon points="175,206 185,206 180,214" fill="var(--line)" />
+        <rect x="54" y="216" width="252" height="44" rx="8" class="model" />
+        <text x="180" y="244" text-anchor="middle" class="model-title">下一步：变成编号</text>
+        <path d="M 180 264 V 280" class="wire" />
+        <polygon points="175,278 185,278 180,286" fill="var(--line)" />
+        <rect x="54" y="288" width="252" height="44" rx="8" class="model" />
+        <text x="180" y="316" text-anchor="middle" class="model-title">模型只读数字</text>
+        <text x="180" y="356" text-anchor="middle" class="note">模型 = 负责接着写文字</text>
+        <text x="180" y="380" text-anchor="middle" class="note">引号不算字符 · 这段文字不能直接输入</text>
+      {:else if phoneAppendFirst}
         <text x="16" y="22" class="label">把 ␣Paris 接到末尾：5 段变 6 段</text>
         <rect x="16" y="32" width="10" height="10" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
         <text x="32" y="41" class="note">原输入 5 段</text>
@@ -356,11 +374,27 @@
         <text x="16" y="374" class="note">本例没存第 1 轮结果，所以前 5 段不能跳过</text>
       {:else}
       <!-- Row 1: the raw prompt, then the token sequence -->
-      <text x="16" y="22" class="label">{cur.phase === 'raw' ? 'prompt' : t(`sequence (${cur.seq.length} tokens)`, `序列（${cur.seq.length} 个 token）`)}</text>
+      <text x="16" y="22" class="label">{cur.phase === 'raw' ? t('prompt', 'prompt = 你输入的一段文字') : t(`sequence (${cur.seq.length} tokens)`, `序列（${cur.seq.length} 个 token）`)}</text>
       {#if cur.phase === 'raw'}
         <g out:fade={{ duration: 200 }}>
           <rect x="16" y={seqY} width={promptText.length * charW + padX * 2} height={tokH} rx="6" fill="white" stroke="var(--line)" stroke-width="1.5" />
           <text x={16 + padX} y={seqY + 19} class="tok">"{promptText}"</text>
+          {#if $lang === 'zh'}
+            <text x="16" y="104" class="note">20 个字母 + 4 个空格 = 24 个字符</text>
+            <rect x="30" y="140" width="180" height="64" rx="10" class="model" />
+            <text x="120" y="179" text-anchor="middle" class="model-title">24 个字符</text>
+            <path d="M 218 172 H 262" class="wire" />
+            <polygon points="260,167 260,177 268,172" fill="var(--line)" />
+            <rect x="270" y="140" width="180" height="64" rx="10" class="model" />
+            <text x="360" y="179" text-anchor="middle" class="model-title">下一步：变成编号</text>
+            <path d="M 458 172 H 502" class="wire" />
+            <polygon points="500,167 500,177 508,172" fill="var(--line)" />
+            <rect x="510" y="140" width="180" height="64" rx="10" class="model" />
+            <text x="600" y="179" text-anchor="middle" class="model-title">模型只读数字</text>
+            <text x="360" y="244" text-anchor="middle" class="note">这段文字不能直接输入</text>
+            <text x="360" y="270" text-anchor="middle" class="note">模型 = 负责接着写文字</text>
+            <text x="360" y="296" text-anchor="middle" class="note">引号只标出文字边界，不算字符</text>
+          {/if}
         </g>
       {/if}
       {#each layout as { t, x, w }, i (i)}
@@ -615,6 +649,10 @@
 </figure>
 
 <style>
+  .phone-raw .label { font-size: 12px; }
+  .phone-raw .tok { font-size: 15px; }
+  .phone-raw .note { font-size: 13px; fill: var(--fg); }
+  .phone-raw .model-title { font-size: 16px; }
   .phone-forward .label, .phone-repeat .label, .phone-append .label, .phone-done .label, .phone-tally .label { font-size: 12px; }
   .phone-forward .note, .phone-repeat .note, .phone-append .note, .phone-done .note, .phone-tally .note { font-size: 13px; }
   .phone-forward .id, .phone-forward .model-sub, .phone-repeat .id, .phone-repeat .model-sub, .phone-append .id, .phone-append .model-sub, .phone-done .id, .phone-tally .id { font-size: 12px; }

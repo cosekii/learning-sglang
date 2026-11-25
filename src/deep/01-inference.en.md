@@ -10,6 +10,12 @@
 
 The model is a function: it takes a list of integers (token ids) and returns scores for what the next token should be. The string cannot go in as it is; Step 2 turns it into ids first.
 
+### Plug in the numbers
+
+The five words contain 3, 7, 2, 6, and 2 letters, for $3+7+2+6+2=20$ letters in total. The four spaces between them bring the count to $20+4=24$ characters. The two quotation marks only delimit the string; they are not part of it and do not count toward 24.
+
+Source: `tokenizer.encode("The capital of France is")` in this page's "same loop, in code" section uses the same string. Check the count with `len("The capital of France is") == 24`.
+
 The rest of the chapter uses one notation, and each step works on what the step before produced:
 
 | Symbol | What it is | From |

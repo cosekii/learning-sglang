@@ -4,17 +4,17 @@
 
 ## 本轮记录
 
-- 本轮新书：Learning SGLang Omni 第 2 章新增第 2 步「共用进程」。同一组 `talker_ar → code2wav` 从两个进程改成一个，stage、scheduler 和路线都保留；图只讲非 TP 进程分组，不画 GPU，也不声称提速。
-- 第 1 步图尾改问共用进程，与实际下一步衔接。第 2 步最终独立冷读为易读 **12/12**、原分 **24/24**、**0 洞**，中英桌面及 360/390 px 手机均通过；本章两步均分 **24.00**。
-- `build`、本章 `transcript`、两步 `readability`、两步中文手机硬门、全站手机布局回归、`deep-check 02`、本章 `zh-check`、六个来源链接、页面 HTTP 200、键盘双向翻页、双语截图和 `git diff --check` 均通过。
-- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-omni-ch02-s02-20261124-1539/final/` 和 `checks/`。
-- 本轮类型：**新书**；下一普通轮转为**修旧**。
+- 本轮修旧：Learning SGLang 第 1 章第 1 步补章首数字动机。中文主图标出 `20 个字母 + 4 个空格 = 24 个字符`，说明文字要先变成编号、模型只读数字，并解释引号不计入字符；新增中文手机大字专版。
+- 英文 caption 和英文主图未动，英文桌面截图改前后逐字节一致。双语深入讲解补计数算式和本页代码出处。最终独立冷读为易读 **12/12**、原分 **24/24**、**0 洞**；本章均分升为 **24.00**。
+- `build`、本章 `transcript`、全章 `readability`、本步中文手机硬门、全站手机布局回归、`token-legends`、`deep-check 01`、本章 `zh-check`、8 个课程链接、中英桌面和 360/390 px 手机截图、键盘双向翻页、静态截图对照及 `git diff --check` 均通过。
+- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch01-s01-20261124-1559/final/` 和 `checks/`。
+- 本轮类型：**修旧**；下一普通轮转为**新书**。
 
 ## Learning SGLang
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
-| 01 | 01-inference | 完成：12/12 步易读满分 | 23.92 |
+| 01 | 01-inference | 完成：12/12 步易读满分 | 24.00 |
 | 02 | 02-attention | 易读整改：8/14 步满分；第 3、7、8、11 步待主人定 | 23.21 |
 | 03 | 03-kv-cache | 完成 | — |
 | 04 | 04-prefill-decode | 完成 | — |
