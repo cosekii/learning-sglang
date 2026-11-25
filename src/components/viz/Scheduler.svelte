@@ -106,7 +106,7 @@
 
       {#if phoneMixed}
         <text x="180" y="26" text-anchor="middle" class="ph-title">混合：每步都有 decode token</text>
-        <text x="180" y="50" text-anchor="middle">到达后 9 步 · 64 个用户继续 decode</text>
+        <text x="180" y="50" text-anchor="middle">Ch. 4 Step 8 的约 300：300 − 64 = 236</text>
         <rect x="28" y="68" width="16" height="12" rx="2" fill="var(--accent)" />
         <text x="52" y="79">chunk</text>
         <rect x="120" y="68" width="16" height="12" rx="2" fill="var(--gen)" />
@@ -285,7 +285,7 @@
         {@const firstIdx = segs.findIndex((z) => z.first)}
         {@const ly = rowN + TL.rowH + 66}
         {@const fx = TL.x + (segX[firstIdx] + segs[firstIdx].ms) * TL.pxPerMs - 1}
-        <g transition:fade={{ duration: 250 }}>
+        <g transition:fade={{ duration: mode === 'mixed' ? 0 : 250 }}>
           <text x="16" y={TL.y - 52} class="rowlabel">{t(`${DECODERS} users decoding · ${mode === 'batched' ? `${WAITING.length} prompts waiting` : `a ${PROMPT.toLocaleString()}-token prompt arrives`}`, `${DECODERS} 个用户在 decode · ${mode === 'batched' ? `${WAITING.length} 个 prompt 在等待` : `一个 ${PROMPT.toLocaleString()} token 的 prompt 到达`}`)}</text>
           <text x="16" y={TL.y - 36} class="rowlabel strong">{t(mode === 'prefill-first' ? 'prefill first · the prompt gets its own step' : mode === 'batched' ? 'prefill first · three prompts in one prefill step' : mode === 'chunked' ? `chunked prefill, not mixed · chunk step, decode step, chunk step…` : `chunked prefill, mixed · every step carries a chunk and all the decodes`, mode === 'prefill-first' ? 'prefill 优先 · prompt 单独一步' : mode === 'batched' ? 'prefill 优先 · 三个 prompt 合一个 prefill 步' : mode === 'chunked' ? '切 chunk 的 prefill，不混合 · chunk 步、decode 步、chunk 步…' : '切 chunk 的 prefill，混合 · 每步带一个 chunk 和全部 decode')}</text>
           <text x={TL.x - 10} y={rowN + TL.rowH + 18} text-anchor="end" class="rowlabel">{t('step type', '步类型')}</text>
@@ -295,11 +295,11 @@
           {/each}
           <text x={TL.x - 10} y={rowA + 17} text-anchor="end" class="rowlabel">{t('everyone else', '其他人')}</text>
           <text x={TL.x - 10} y={rowN + 17} text-anchor="end" class="rowlabel">{t(mode === 'batched' ? 'newcomers' : 'newcomer', mode === 'batched' ? '新来者们' : '新来者')}</text>
-          {#each segs as s, i}
+          {#each segs as s, i (mode === 'mixed' ? 'mixed-' + i : i)}
             {@const x = TL.x + segX[i] * TL.pxPerMs}
             {@const w = Math.max(3, s.ms * TL.pxPerMs - 2)}
             {@const sy = rowN + TL.rowH + 8}
-            <g in:fade={{ delay: i * 40, duration: 200 }}>
+            <g in:fade={{ delay: mode === 'mixed' ? 250 + i * 220 : i * 40, duration: 200 }}>
               {#if s.decode}
                 <rect {x} y={rowA} width={w} height={TL.rowH} rx="4" fill="var(--gen)" opacity={s.prefill > 0 ? 0.45 : 0.85} />
                 <rect x={x + w - 5} y={rowA} width="5" height={TL.rowH} rx="2" fill="var(--gen)" />
@@ -325,35 +325,41 @@
               {/if}
             </g>
           {/each}
-          <g in:fade={{ delay: firstIdx * 40 + 100 }}>
-            <circle cx={fx} cy={rowN + TL.rowH / 2} r="6" fill="white" stroke="var(--fg)" stroke-width="2" />
-            <text x={fx} y={rowN - 8} text-anchor="middle" class="tag strong">{t('first token', '首个 token')}</text>
-          </g>
+          {#key mode === 'mixed' ? 'mixed' : 'static'}
+            <g in:fade={{ delay: mode === 'mixed' ? 250 + segs.length * 220 : firstIdx * 40 + 100, duration: mode === 'mixed' ? 200 : 400 }}>
+              <circle cx={fx} cy={rowN + TL.rowH / 2} r="6" fill="white" stroke="var(--fg)" stroke-width="2" />
+              <text x={fx} y={rowN - 8} text-anchor="middle" class="tag strong">{t('first token', '首个 token')}</text>
+            </g>
+          {/key}
           <line x1={arrX} y1={rowA - 14} x2={arrX} y2={rowN + TL.rowH + 36} stroke="var(--fg)" stroke-dasharray="3 3" />
           <text x={arrX} y={rowN + TL.rowH + 48} text-anchor="middle" class="tag strong">{t(mode === 'batched' ? 'arrive' : 'arrives', '到达')}</text>
-          <g in:fade={{ delay: 300 }}>
-            <rect x={TL.x} y={ly - 9} width="26" height="10" rx="2" fill="var(--accent)" /><text x={TL.x + 32} y={ly} class="tag">prefill batch</text>
-            <rect x={TL.x + 110} y={ly - 9} width="26" height="10" rx="2" fill="var(--gen)" opacity="0.85" /><text x={TL.x + 142} y={ly} class="tag">decode batch</text>
-            <rect x={TL.x + 230} y={ly - 9} width="26" height="5" rx="1.5" fill="var(--accent)" /><rect x={TL.x + 230} y={ly - 4} width="26" height="5" rx="1.5" fill="var(--gen)" /><text x={TL.x + 262} y={ly} class="tag">{t('mixed batch: a chunk plus every decode, one forward pass', '混合 batch：一个 chunk 加全部 decode，一次前向')}</text>
-          </g>
+          {#key mode === 'mixed' ? 'mixed' : 'static'}
+            <g in:fade={{ delay: mode === 'mixed' ? 250 + segs.length * 220 + 220 : 300, duration: mode === 'mixed' ? 200 : 250 }}>
+              <rect x={TL.x} y={ly - 9} width="26" height="10" rx="2" fill="var(--accent)" /><text x={TL.x + 32} y={ly} class="tag">prefill batch</text>
+              <rect x={TL.x + 110} y={ly - 9} width="26" height="10" rx="2" fill="var(--gen)" opacity="0.85" /><text x={TL.x + 142} y={ly} class="tag">decode batch</text>
+              <rect x={TL.x + 230} y={ly - 9} width="26" height="5" rx="1.5" fill="var(--accent)" /><rect x={TL.x + 230} y={ly - 4} width="26" height="5" rx="1.5" fill="var(--gen)" /><text x={TL.x + 262} y={ly} class="tag">{t('mixed batch: a chunk plus every decode, one forward pass', '混合 batch：一个 chunk 加全部 decode，一次前向')}</text>
+            </g>
+          {/key}
           {#if mode === 'mixed' && $lang === 'zh'}
-            <text x={W / 2} y="282" text-anchor="middle" class="tag strong">每步都出 token；最长 {fmt(met.worst)}，比纯 decode 多 {fmt(met.worst - tMem)}</text>
+            <text x={W / 2} y="282" text-anchor="middle" class="tag strong">每步约 300 token（Ch. 4 Step 8）：300 − 64 个 decode = 236 个 prompt token；间隔多 {fmt(met.worst - tMem)}</text>
           {/if}
           {#if met.worst > 1.5 * tMem}
             <path d="M {gx0} {rowA - 6} V {rowA - 12} H {gx1} V {rowA - 6}" fill="none" stroke="var(--eos)" stroke-width="1.5" in:fade={{ delay: 500 }} />
             <text x={(gx0 + gx1) / 2} y={rowA - 18} text-anchor="middle" class="tag" fill="var(--eos)" in:fade={{ delay: 500 }}>{t(`no token for ${fmt(met.worst)}`, `${fmt(met.worst)} 没有 token`)}</text>
           {/if}
-          <g in:fade={{ delay: 700 }}>
-            {#each [
-              { v: fmt(met.worst), l: t('everyone else · longest gap between tokens', '其他人 · token 间最长间隔'), bad: met.worst > 2 * tMem },
-              { v: fmt(met.ttft), l: t((mode === 'batched' ? 'newcomers' : 'newcomer') + ' · time to first token', (mode === 'batched' ? '新来者们' : '新来者') + ' · 首个 token 用时'), bad: false },
-            ] as tile, i}
-              {@const x = 90 + i * 300}
-              <rect {x} y="296" width="280" height="64" rx="10" fill="#fbfaf7" stroke={tile.bad ? 'var(--eos)' : 'var(--line)'} />
-              <text x={x + 16} y="324" class="tile-value" fill={tile.bad ? 'var(--eos)' : 'var(--fg)'}>{tile.v}</text>
-              <text x={x + 16} y="346" class="tile-label">{tile.l}</text>
-            {/each}
-          </g>
+          {#key mode === 'mixed' ? 'mixed' : 'static'}
+            <g in:fade={{ delay: mode === 'mixed' ? 250 + segs.length * 220 + 440 : 700, duration: mode === 'mixed' ? 200 : 250 }}>
+              {#each [
+                { v: fmt(met.worst), l: t('everyone else · longest gap between tokens', '其他人 · token 间最长间隔'), bad: met.worst > 2 * tMem },
+                { v: fmt(met.ttft), l: t((mode === 'batched' ? 'newcomers' : 'newcomer') + ' · time to first token', (mode === 'batched' ? '新来者们' : '新来者') + ' · 首个 token 用时'), bad: false },
+              ] as tile, i}
+                {@const x = 90 + i * 300}
+                <rect {x} y="296" width="280" height="64" rx="10" fill="#fbfaf7" stroke={tile.bad ? 'var(--eos)' : 'var(--line)'} />
+                <text x={x + 16} y="324" class="tile-value" fill={tile.bad ? 'var(--eos)' : 'var(--fg)'}>{tile.v}</text>
+                <text x={x + 16} y="346" class="tile-label">{tile.l}</text>
+              {/each}
+            </g>
+          {/key}
         </g>
       {/if}
 

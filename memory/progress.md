@@ -4,10 +4,10 @@
 
 ## 本轮记录
 
-- 07:50 新书 Learning SGLang Omni 第 4 章第 2 步：用三张图讲清 `thinker → talker_ar` 的早到 chunk 在整份结果到达前按顺序存下；标明图片序号、从 0 开始的 chunk 编号、蓝橙图例和新到 chunk，中英深入讲解补齐公式、数值表、边界与 pinned 源码。
-- 独立源码核查收窄了顺序保证和 stage 适用范围。初版成人模拟冷读为 **8–9/12**，终稿中文桌面、360／390／430 px 中文手机、英文桌面和 390 px 英文手机均 **12/12、0 内容洞、0 显示洞**；中英遮 caption 均能复述，原 12 项自评 **24/24**。
-- `build`、本章 `transcript`、本步 `readability`、`deep-check 04`、本章 `zh-check`、本步中文及 Omni 全书 `mobile`、静态截图一致性、双语抽屉 DOM、键盘导航、HTTP 200、源码链接和 `git diff --check` 均通过。
-- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-omni-ch04-s02-20261125-0750/final/` 和 `checks/`。本轮类型：**新书**；下一普通轮做第 4 章第 3 步「存下多少 chunk 才够构建并启动请求」，下次整点仍轮换第 2 项「向好的范例学」。
+- 08:10 修旧 Learning SGLang 第 6 章第 7 步：15 个混合步改为依次淡入，再显示首个 token、图例和数字卡；直接加载不再叠上 recap 淡出。中文图补「每步约 300 token，300 − 64 = 236」，解释 chunk 从 512 变为 236。
+- 浏览器按实际 opacity 每 40 ms 采样，直接加载和 Step 6→7 的可见并发动画峰值均为 **1**，后者测到 18 个元素且结束无残留。独立成人模拟冷读中文 **12/12、0 内容洞、0 显示洞**；整步易读 **9→10/12**，原 12 项 **23/24**。受保护英文仍有 R4 两项机械失败及既有的 1 个内容洞、1 个手机显示洞，整步不标完成。
+- `build`、本章 `transcript`、本步中文 `mobile`、`deep-check 06`、本章 `zh-check`、英文画布像素一致性和 `git diff --check` 均通过；`readability` 只余英文首句 22 词、caption 超过两句。
+- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch06-s07-animation-20261125-0810/final/` 和 `checks/`。本轮类型：**修旧**；下一普通轮做 Learning ML Systems 第 2 章第 2 步，下次整点仍轮换第 2 项「向好的范例学」。
 
 ## Learning SGLang
 
@@ -18,7 +18,7 @@
 | 03 | 03-kv-cache | 完成 | — |
 | 04 | 04-prefill-decode | 完成 | — |
 | 05 | 05-batching | 完成 | — |
-| 06 | 06-scheduler | 完成；第 7 步中文口径已修，英文 R4 待主人定 | — |
+| 06 | 06-scheduler | 易读整改：第 7 步 10/12（中文 12/12、0 洞，动画已修）；英文 R4 待主人定 | — |
 | 07 | 07-kv-memory | 易读整改：第 4 步 10/12（中文 11/12、0 洞；R2 与英文 R4 未过）、第 6 步 10/12（中文 11/12、0 洞；R2 与英文 R4 未过）；其余步未评；英文 R4 与英文旧文待主人定 | — |
 | 08 | 08-prefix-caching | 完成 | — |
 | 09 | 09-one-request | 完成 | — |
