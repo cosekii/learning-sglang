@@ -127,7 +127,7 @@ html.deep-open .stage { margin-right: var(--deep-w); }
   .sidebar { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 0.7rem 1rem; }
   .sidebar .brandrow { gap: 0.5rem; }
   .sidebar .brand { margin: 0; }
-  .sidebar .menu { display: inline-flex; align-items: center; height: 34px; padding: 0 0.9rem; font: inherit; font-size: 0.85rem; color: var(--fg); background: white; border: 1px solid var(--line); border-radius: 999px; cursor: pointer; }
+  .sidebar .menu { display: inline-flex; align-items: center; flex-shrink: 0; height: 34px; padding: 0 0.9rem; font: inherit; font-size: 0.85rem; color: var(--fg); background: white; border: 1px solid var(--line); border-radius: 999px; cursor: pointer; white-space: nowrap; }
   .sidebar .menu::after { content: '▾'; margin-left: 0.4rem; font-size: 0.75em; color: var(--muted); }
   .sidebar.open .menu::after { content: '▴'; }
   .sidebar .navbody { display: none; }

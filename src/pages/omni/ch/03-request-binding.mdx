@@ -17,7 +17,9 @@ Step 1 uses a teaching example with two `talker_ar` replicas, a fresh round-robi
 
 Step 2 follows a normal non-streaming request A. Its result-ready state has no `requests[A]` entry but still has `completion_futures[A]`; the name becomes reusable only after the caller collects the result and cleanup removes the remaining registrations. This example does not cover abort or memory cleanup.
 
-Source revision: `sglang-omni origin/main@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`. The deep dive lists the exact files and lines.
+Step 3 broadcasts A's abort to both copies, including the copy that did no A work. A reused name could go to either copy, so both apply the same ban; this keeps late old work from being attached to a new A. Panel 2 is a later snapshot after both copies handle the message; it is not a stage acknowledgement, and the coordinator does not wait for one. The waiting caller receives a cancellation error, and its result-wait record is removed during caller cleanup. A's abort marker has no fixed release time: while it remains, A is rejected. It may later be removed by trimming; the deep dive covers that policy and its reuse consequence. D only passes the name check here, not a claim that it has started running. The figure omits transient coordinator task records and GPU or data cleanup. The next chapter asks when the bound copy may start computing.
+
+Source revisions: Steps 1–2 use `sglang-omni origin/main@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`; Step 3 uses `sglang-omni origin/main@91d06c70b00746c0b2b84db12a318240db360f1d`. The deep dive lists the exact files and lines.
 
 </details>
 
@@ -28,6 +30,8 @@ Source revision: `sglang-omni origin/main@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc
 
 第 2 步跟随正常完成的非流式请求 A。结果已出时，`requests[A]` 已删除，但 `completion_futures[A]` 还在；调用方取走结果并清掉剩余登记后，这个名字才能复用。本例不讲取消或显存清理。
 
-源码版本：`sglang-omni origin/main@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`。精确文件和行号见深入讲解。
+第 3 步把 A 的取消消息广播到两个副本，连没做过 A 的那份也收到。同名请求可能轮到任一份，所以两份都拒绝旧名字，旧活晚到也不会算给新 A。第 2 格是两份都处理完消息后的快照，不表示它们向协调器回了确认，协调器也不等确认。等结果的调用方会收到取消错误，等结果记录在调用方收尾时删除。取消标记没有固定释放时间：标记还在就拒绝 A。之后裁剪可能删掉它；深入讲解会讲裁剪规则和删掉后的结果。这里的 D 只通过名字检查，不表示已经开始运行。图中不画协调器的临时任务记录，也不画显存或数据清理。下一章问绑定的副本什么时候可以开始算。
+
+源码版本：第 1、2 步使用 `sglang-omni origin/main@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`；第 3 步使用 `sglang-omni origin/main@91d06c70b00746c0b2b84db12a318240db360f1d`。精确文件和行号见深入讲解。
 
 </details>

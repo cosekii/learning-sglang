@@ -110,3 +110,56 @@ Sources on `sglang-omni origin/main@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`:
 ### Next
 
 The next step follows active cancellation: what extra message the coordinator sends, and which records still need cleanup.
+
+## Step 3 · An aborted request id cannot directly return
+
+> **In one sentence:** Abort clears A's work record, but every stage keeps an abort marker for A; submitting A again is rejected, so the caller needs a fresh request id.
+
+### What the picture shows
+
+- **Abort** stops a request before normal completion. An **abort marker** is a stage's record that this request id was cancelled; it corresponds to the source's `aborted` set.
+- Panel 1 continues the earlier steps: the coordinator holds A's work record `requests[A]`, and A's replica state is in copy 0. Neither copy has an abort marker for A yet.
+- Panel 2 is a later snapshot after both copies handle the broadcast, not only bound copy 0. The work record clears, and both copies remember A as aborted. This is not a stage acknowledgement or a coordinator wait for one.
+- In panel 3, a stage finds A's abort marker and rejects the resubmitted name. D is a fresh request id and passes this name check; the figure does not claim that D has started running. Broadcasting the same ban to both copies prevents late work from old A being attached to a new A.
+- A blue border means the record remains; a grey dashed border and — mean it is absent. The picture omits transient abort tasks, stream queues and GPU cleanup.
+
+### Formula
+
+Each stage applies this abort-marker check when it receives a submission:
+
+$$\mathrm{reject}(id)\iff id\in\mathrm{aborted}$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $id$ | Request id being checked | A or D in this step |
+| $\mathrm{aborted}$ | Set of cancelled request ids held by this stage | Stage runtime |
+| $\mathrm{reject}(id)$ | Whether the abort marker rejects this id | Defined in this step |
+
+### The numbers on the stage
+
+After abort, $A\in\mathrm{aborted}$, so $\mathrm{reject}(A)$ is true. $D\notin\mathrm{aborted}$, so this check does not reject D; the example's other admission checks also pass.
+
+### Broadcast and cleanup in the source
+
+`AbortMessage` carries only `request_id`, not the replica binding from Step 1. The coordinator broadcasts it to every stage over PUB/SUB, so both copies receive it. Waiting for publication does not wait for every stage to acknowledge that its work has stopped.
+
+The coordinator then marks the request `ABORTED`, rejects its completion future with a cancellation error, and removes `requests[A]` and partial results. The awaiting caller's cleanup removes its `completion_futures[A]` result-wait record. While cancellation is running, `abort_tasks[A]` still reserves the name; that entry is removed when the task finishes. The picture omits this transient state because the stage-side abort marker continues to reject A afterward.
+
+Each receiving stage adds A to `aborted`, clears request state and replica bindings, and calls its scheduler's abort logic. A later submission named A reaches `on_submit`, which returns “use a fresh request ID.” This is the rejection in panel 3.
+
+### Scope and sources
+
+Abort markers are not permanent: when the set exceeds 10,000 ids, it is trimmed to 5,000. These thresholds are implementation constants, not values derived from the example. Trimming follows set-iteration order, not id age. If A's marker is removed, this check no longer rejects A, and the marker-based old/new protection ends. The main picture covers behavior while the marker remains. TP-fanned work may finish its current collective; GPU memory and in-flight data reclamation are outside this picture.
+
+Sources on `sglang-omni origin/main@91d06c70b00746c0b2b84db12a318240db360f1d`:
+
+- [The abort message carries only the request id: `sglang_omni/proto/messages.py:300-311`](https://github.com/sgl-project/sglang-omni/blob/91d06c70b00746c0b2b84db12a318240db360f1d/sglang_omni/proto/messages.py#L300-L311).
+- [The coordinator broadcasts abort over PUB/SUB: `sglang_omni/pipeline/control_plane.py:425-491`](https://github.com/sgl-project/sglang-omni/blob/91d06c70b00746c0b2b84db12a318240db360f1d/sglang_omni/pipeline/control_plane.py#L425-L491).
+- [Abort tasks, coordinator cleanup and task-record removal: `sglang_omni/pipeline/coordinator.py:761-843`](https://github.com/sgl-project/sglang-omni/blob/91d06c70b00746c0b2b84db12a318240db360f1d/sglang_omni/pipeline/coordinator.py#L761-L843).
+- [Result-wait record removal during caller cleanup: `sglang_omni/pipeline/coordinator.py:703-740`](https://github.com/sgl-project/sglang-omni/blob/91d06c70b00746c0b2b84db12a318240db360f1d/sglang_omni/pipeline/coordinator.py#L703-L740).
+- [Stage marker, state cleanup and bounded set: `sglang_omni/pipeline/stage/runtime.py:2603-2687`](https://github.com/sgl-project/sglang-omni/blob/91d06c70b00746c0b2b84db12a318240db360f1d/sglang_omni/pipeline/stage/runtime.py#L2603-L2687).
+- [Explicit rejection of a reused id: `sglang_omni/pipeline/stage/runtime.py:732-743`](https://github.com/sgl-project/sglang-omni/blob/91d06c70b00746c0b2b84db12a318240db360f1d/sglang_omni/pipeline/stage/runtime.py#L732-L743).
+
+### Next
+
+The request has a bound replica and two taught exit paths. The next chapter asks when downstream may start computing and when upstream must wait.

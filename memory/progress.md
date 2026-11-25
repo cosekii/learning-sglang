@@ -4,10 +4,10 @@
 
 ## 本轮记录
 
-- 04:10 修旧 Learning SGLang 第 7 章第 4 步：中文 caption 缩成两句，主图补页号公式、5 token 对应 5 page 和 64 GB ≈ 49 万 page 的算式；中文手机改短标签并放大字号，深入讲解补符号来源表。英文原文未改。
-- 同一独立冷读者的中文易读分 **7→11**、可见原项 **9→15**、中文洞 **4→0**；计入受保护英文 R4 后总易读分 **10/12**，主线程核对原分 **23/24**。R2 仍有两个新概念，英文仍有三句和 25 词长句，未标易读完成。
-- `build`、本章 `transcript`、`deep-check 07`、`zh-check`、中文手机字号、全章及全站手机布局、源码断言和 `git diff --check` 通过；`readability` 仅报上述两条英文 R4 问题。全章其他步另有 15 个小字视图仅作审计。
-- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-repair-20261125-0410/final/` 和 `checks/`。本轮类型：**修旧**；下一普通轮做 **新书**，下次整点仍轮换第 2 项「向好的范例学」。
+- 04:40 新书 Learning SGLang Omni 第 3 章第 3 步：用三格图讲主动取消，广播到两个副本、留下取消标记、同名 A 被拒而 D 通过名字检查；补等结果调用方、处理时点和标记生命周期，并修复 360 px「章节」换行。
+- 独立冷读易读分 **9→11→12**，内容洞 **7→1→0**，手机洞 **1→0→0**；最终中英文均 **12/12**、可见原项 **16/16**，主线程核对原分 **24/24**。本章 3/3 步易读满分，完成。
+- `build`、本章 `transcript`、本步 `readability`、`deep-check 03`、`zh-check`、中文手机字号、全站手机布局、累计 transcript 与中文口径断言、六个固定源码链接和 `git diff --check` 通过。全站另有 615 个小字视图仅作审计。
+- 截图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-omni-ch03-s03-20261125-0440/final/` 和 `checks/`。本轮类型：**新书**；下一普通轮做 **修旧**，下次整点仍轮换第 2 项「向好的范例学」。
 
 ## Learning SGLang
 
@@ -45,13 +45,13 @@
 
 ## Learning SGLang Omni
 
-规划完成：`docs/plan-omni.md` 共 3 部分、13 章；第 1 章已制作 4 步并完成，第 2 章已制作 3 步并完成，第 3 章已制作 2 步。
+规划完成：`docs/plan-omni.md` 共 3 部分、13 章；第 1 章已制作 4 步并完成，第 2、3 章各已制作 3 步并完成。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
 | 01 | 01-config-to-runtime | 完成：4/4 步易读满分 | 24.00 |
 | 02 | 02-spg-topology | 完成：3/3 步易读满分 | 24.00 |
-| 03 | 03-request-binding | 在做第 3 步；第 1、2 步易读满分 | 24.00 |
+| 03 | 03-request-binding | 完成：3/3 步易读满分 | 24.00 |
 | 04 | 04-readiness-contracts | 规划 | — |
 | 05 | 05-data-lifetime | 规划 | — |
 | 06 | 06-batching-backpressure | 规划 | — |

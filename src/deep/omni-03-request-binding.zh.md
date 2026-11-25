@@ -110,3 +110,56 @@ $$
 ### 接下来
 
 下一步看 A 没做完就被取消时，协调器会多发什么消息，哪些记录仍需等收尾。
+
+## 第 3 步 · 取消后，同名请求不能直接进入
+
+> **一句话：** 取消会清掉 A 的工作记录，但每个 stage 都留下 A 的取消标记；同名 A 再来会被拒绝，要换新的 request id。
+
+### 图上是什么
+
+- **abort（主动取消）**：请求还没正常做完就让它停止。**取消标记**是 stage 记下的「这个 request id 已取消」，对应源码里的 `aborted` 集合。
+- 第 1 格接着前两步：协调器有 A 的工作记录 `requests[A]`，A 的副本记录在第 0 份；两个副本都还没有 A 的取消标记。
+- 第 2 格是两份都处理完广播消息后的快照，不是只处理绑定的第 0 份。工作记录清掉，两份都记下 A 已取消。这不表示 stage 回了确认，也不表示协调器等待确认。
+- 第 3 格再用名字 A，stage 查到取消标记并拒绝。D 是没有用过的新 request id，能通过这项名字检查；图中不表示 D 已开始运行。同名请求可能轮到任一份，所以两份都拒绝旧名字，旧活晚到也不会算给新 A。
+- 蓝框表示对应记录还在，灰色虚线和 — 表示没有这条记录。图中只画工作记录和取消标记，不画临时取消任务、流式队列或显存清理。
+
+### 公式
+
+单个 stage 收到提交时，先用取消标记做这项检查：
+
+$$\mathrm{reject}(id)\iff id\in\mathrm{aborted}$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $id$ | 待检查的 request id | 本步的 A 或 D |
+| $\mathrm{aborted}$ | 这个 stage 保存的已取消 request id 集合 | stage runtime |
+| $\mathrm{reject}(id)$ | 是否因取消标记拒绝这个 id | 本步定义 |
+
+### 代入图上的数
+
+取消后，$A\in\mathrm{aborted}$，所以 $\mathrm{reject}(A)$ 成立。$D\notin\mathrm{aborted}$，所以 D 不会被这项检查拒绝；本例的其他准入检查也通过。
+
+### 源码里的广播与清理
+
+`AbortMessage` 只带 `request_id`，不带第 1 步的副本绑定。协调器通过 PUB/SUB 把它广播给所有 stage，因此两个副本都会收到。等待消息发布不等于等待每个 stage 回复「已经停完」。
+
+协调器随后把请求标成 `ABORTED`，让等待结果的 future 收到取消错误，并删除 `requests[A]` 和部分结果。等待结果的调用方收尾时，会删除 `completion_futures[A]` 这张等结果记录。取消运行期间，`abort_tasks[A]` 仍会暂时占住这个名字；任务结束后才删除。本图没有画这项短暂状态，因为后面的 stage 取消标记仍会拒绝 A。
+
+每个 stage 收到消息后，把 A 加入 `aborted`，清理请求状态和副本绑定，再调用 scheduler 的取消逻辑。之后同名 A 提交时，`on_submit` 会返回「use a fresh request ID」。这就是第 3 格的拒绝。
+
+### 边界与出处
+
+取消标记不是永久记录：集合超过 10,000 个 id 时会裁剪到 5,000 个。这两个阈值是实现里选定的常数，不是从本例数字算出来的。裁剪按集合迭代顺序删除，不按 id 新旧选择。如果 A 的标记被删掉，这项检查就不再拒绝 A，靠标记防止新旧混淆的保护也随之结束。主图只讲标记还在时的行为。TP 拆分的工作可能仍跑完本次集合通信；显存和传输数据的释放也不在图中展开。
+
+以下来源位于 `sglang-omni origin/main@91d06c70b00746c0b2b84db12a318240db360f1d`：
+
+- [取消消息只带 request id：`sglang_omni/proto/messages.py:300-311`](https://github.com/sgl-project/sglang-omni/blob/91d06c70b00746c0b2b84db12a318240db360f1d/sglang_omni/proto/messages.py#L300-L311)。
+- [协调器通过 PUB/SUB 广播取消：`sglang_omni/pipeline/control_plane.py:425-491`](https://github.com/sgl-project/sglang-omni/blob/91d06c70b00746c0b2b84db12a318240db360f1d/sglang_omni/pipeline/control_plane.py#L425-L491)。
+- [取消任务、协调器清理及任务记录删除：`sglang_omni/pipeline/coordinator.py:761-843`](https://github.com/sgl-project/sglang-omni/blob/91d06c70b00746c0b2b84db12a318240db360f1d/sglang_omni/pipeline/coordinator.py#L761-L843)。
+- [调用方收尾时删除等结果记录：`sglang_omni/pipeline/coordinator.py:703-740`](https://github.com/sgl-project/sglang-omni/blob/91d06c70b00746c0b2b84db12a318240db360f1d/sglang_omni/pipeline/coordinator.py#L703-L740)。
+- [stage 记录取消、清理状态及有界集合：`sglang_omni/pipeline/stage/runtime.py:2603-2687`](https://github.com/sgl-project/sglang-omni/blob/91d06c70b00746c0b2b84db12a318240db360f1d/sglang_omni/pipeline/stage/runtime.py#L2603-L2687)。
+- [同名提交被明确拒绝：`sglang_omni/pipeline/stage/runtime.py:732-743`](https://github.com/sgl-project/sglang-omni/blob/91d06c70b00746c0b2b84db12a318240db360f1d/sglang_omni/pipeline/stage/runtime.py#L732-L743)。
+
+### 接下来
+
+请求已经绑定到副本，也知道怎样退出。下一章问下游什么时候可以开始算，上游什么时候必须等结果。
