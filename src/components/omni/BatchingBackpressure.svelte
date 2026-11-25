@@ -36,6 +36,13 @@
     AUDIO_ABC_MEL_FRAMES,
     AUDIO_REMAINING_MEL_FRAMES,
     AUDIO_OVERFLOW_MEL_FRAMES,
+    CODE2WAV_MAX_BATCH_SIZE,
+    CODE2WAV_BATCH_WAIT_MS,
+    CODE2WAV_BATCH_WAIT_WHEN_IDLE,
+    STREAM_TEACHING_IDS,
+    STREAM_TEACHING_INPUT_COUNT,
+    STREAM_TEACHING_SHARED_STEPS,
+    STREAM_TEACHING_OUTPUT_COUNT,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -52,6 +59,9 @@
   }, {
     caption: 'A and B use 21,000 frames. C crosses the 24,000-frame budget, so it waits despite free slots.',
     captionZh: 'A、B 已占 21000 帧，C 会超过 24000 帧预算。条数没满，C 也等下一批。',
+  }, {
+    caption: 'The left collects whole requests. The right stores each stream\'s chunk before one shared step.',
+    captionZh: '左边收完整请求，右边先存各人的 chunk。两边都能合算，消息路径却不同。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -67,7 +77,7 @@
     query.addEventListener('change', update);
     return () => query.removeEventListener('change', update);
   });
-  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 2 ? 610 : 680) : step === 2 ? 460 : step > 0 ? 450 : 410);
+  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 2 ? 610 : step === 4 ? 820 : 680) : step === 2 ? 460 : step === 4 ? 500 : step > 0 ? 450 : 410);
   const panels = $derived([
     { x: phone ? 15 : 20, y: phone ? 82 : 86, wait: 0 },
     { x: phone ? 15 : 375, y: phone ? 330 : 86, wait: BATCH_WAIT_ACTIVE_MS },
@@ -79,6 +89,10 @@
   const costPanels = $derived([
     { x: phone ? 15 : 20, y: phone ? 82 : 86, accepted: true, title: t('THIS BATCH · A + B fit', '这一批 · A + B 装得下') },
     { x: phone ? 15 : 375, y: phone ? 330 : 86, accepted: false, title: t('TRY ADDING C · over budget', '试着加入 C · 超出预算') },
+  ]);
+  const streamPaths = $derived([
+    { x: phone ? 15 : 20, y: phone ? 82 : 92, kind: 'batch', title: t('MiniCPM-o Code2Wav · whole requests', 'MiniCPM-o Code2Wav · 完整请求') },
+    { x: phone ? 15 : 375, y: phone ? 400 : 92, kind: 'stream', title: t('StreamingVocoderBase · opt-in coalescing', 'StreamingVocoderBase · 可选跨请求合步') },
   ]);
 </script>
 
@@ -225,6 +239,29 @@
       <text x={W / 2} y={phone ? 612 : 366} text-anchor="middle" class="tag">{AUDIO_FULL_CHUNK_COUNT} × {AUDIO_FULL_CHUNK_MEL_FRAMES} = {AUDIO_MAX_MEL_FRAMES} · {t('the real budget admits eight full 30-second chunks', '真实预算可容纳八段完整的 30 秒音频')}</text>
       <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{t('A, B and C use teaching costs; 15,000 + 6,000 + 6,000 is not a benchmark.', 'A、B、C 是教学成本；15000 + 6000 + 6000 不是实测数据。')}</text>
       <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Next: streaming chunks need a different batch path from one-shot requests.', '下一步：流式 chunk 需要不同于一次性请求的成批路径。')}</text>
+      {:else if step === 4}
+      <text x={phone ? 15 : 20} y="20" class="tag strong">{t('Two ways to share compute · do not merge these code paths', '两种共享计算的路径 · 不要混成同一段代码')}</text>
+      <text x={phone ? 15 : 20} y="44" class="tag">stream_chunk = {t('one small arriving piece of a request', '一条请求陆续到达的一小段')}</text>
+      <text x={phone ? 15 : 20} y="66" class="tag">{t('Blue: scheduler / stream state · orange: one shared compute', '蓝色：调度器或流状态 · 橙色：一次共享计算')}</text>
+      {#each streamPaths as panel}
+        <rect x={panel.x} y={panel.y} width={phone ? 270 : 325} height="290" rx="12" fill="var(--bg)" stroke="var(--line)" />
+        <text x={panel.x + 14} y={panel.y + 25} class="rowlabel">{panel.title}</text>
+        <text x={panel.x + 14} y={panel.y + 49} class="tag">{panel.kind === 'batch' ? (phone ? t(`cap ${CODE2WAV_MAX_BATCH_SIZE} · wait ${CODE2WAV_BATCH_WAIT_MS} ms · idle ${CODE2WAV_BATCH_WAIT_WHEN_IDLE}`, `上限 ${CODE2WAV_MAX_BATCH_SIZE} · 等待 ${CODE2WAV_BATCH_WAIT_MS} ms · idle ${CODE2WAV_BATCH_WAIT_WHEN_IDLE}`) : `max_batch_size = ${CODE2WAV_MAX_BATCH_SIZE} · wait = ${CODE2WAV_BATCH_WAIT_MS} ms · idle = ${CODE2WAV_BATCH_WAIT_WHEN_IDLE}`) : t('2 streams ready · subclass implements the step hooks', '2 条流就绪 · 子类实现合步钩子')}</text>
+        <rect x={panel.x + 16} y={panel.y + 65} width={phone ? 238 : 293} height="36" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x={panel.x + (phone ? 135 : 162)} y={panel.y + 88} text-anchor="middle" class="mono strong">{panel.kind === 'batch' ? 'new_request: A + B' : 'stream_chunk: A + B'}</text>
+        <path d="M{panel.x + (phone ? 135 : 162)} {panel.y + 105} V{panel.y + 123}" stroke="var(--accent)" stroke-width="2" marker-end="url(#batch-arrow)" />
+        <rect x={panel.x + 16} y={panel.y + 130} width={phone ? 238 : 293} height="42" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x={panel.x + (phone ? 135 : 162)} y={panel.y + 156} text-anchor="middle" class="tag strong">{panel.kind === 'batch' ? 'SimpleScheduler.collect_batch' : 'ingest A → state A · ingest B → state B'}</text>
+        <path d="M{panel.x + (panel.kind === 'batch' ? (phone ? 135 : 162) : 25)} {panel.y + 176} V{panel.y + 191}" stroke="var(--accent)" stroke-width="2" marker-end="url(#batch-arrow)" />
+        <text x={panel.x + (phone ? 135 : 162)} y={panel.y + 189} text-anchor="middle" class="tag">{panel.kind === 'batch' ? '' : 'select_step_participants → A + B'}</text>
+        <rect x={panel.x + 16} y={panel.y + 198} width={phone ? 238 : 293} height="48" rx="7" fill="var(--gen-soft)" stroke="var(--gen)" stroke-width="2" />
+        <text x={panel.x + (phone ? 135 : 162)} y={panel.y + 227} text-anchor="middle" class="mono strong">{panel.kind === 'batch' ? 'vocode_and_release([A, B])' : 'run_step([A, B])'}</text>
+        <text x={panel.x + (phone ? 135 : 162)} y={panel.y + 272} text-anchor="middle" class="tag strong">{panel.kind === 'batch' ? t('one batch call → A.result + B.result', '一次批量调用 → A.result + B.result') : t('one shared step → A.audio + B.audio', '一次合步 → A.audio + B.audio')}</text>
+      {/each}
+      <text x={W / 2} y={phone ? 724 : 420} text-anchor="middle" class="mono strong">{STREAM_TEACHING_INPUT_COUNT} {t('inputs', '份输入')} → {STREAM_TEACHING_SHARED_STEPS} {t('shared compute', '次共享计算')} → {STREAM_TEACHING_OUTPUT_COUNT} {t('outputs', '份输出')}</text>
+      <text x={W / 2} y={phone ? 750 : 446} text-anchor="middle" class="tag">{phone ? t('MiniCPM-o: left · optional streaming coalescing: right', 'MiniCPM-o 走左侧 · 可选流式合步走右侧') : t('MiniCPM-o uses the left SimpleScheduler path; the right path is optional for streaming-vocoder subclasses.', 'MiniCPM-o 走左边的 SimpleScheduler；右边是流式 vocoder 子类的可选路径。')}</text>
+      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{t('A and B are a teaching example; one shared step does not mean one request loses its identity.', 'A、B 是教学例子；合做一步不会抹掉各请求的身份。')}</text>
+      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Next: historical measurements show why a bigger batch is not a universal promise.', '下一步：历史实验说明，更大 batch 不是普遍保证。')}</text>
       {/if}
     </svg>
   </div>

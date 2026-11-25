@@ -225,3 +225,64 @@ $$O=C_{ABC}-24000=27000-24000=3000$$
 ### 接下来
 
 第 5 步看 Code2Wav 的一次性 batch 与流式 vocoder 的跨请求合步。两者都能让多条请求一起计算，但消息路径并不相同。
+
+## 第 5 步 · 一次性 batch 与流式合步不是同一条路
+
+> **一句话：** MiniCPM-o Code2Wav 收集完整请求做一次批量调用；可选的流式 vocoder 路径先把 chunk 放进各自状态，再让就绪请求合做一步。
+
+### 图上是什么
+
+- 左边是当前 MiniCPM-o `code2wav` 工厂：上限 16 条、零收集等待、`batch_wait_when_idle=false`。输入是两条完整的 `new_request`。
+- `SimpleScheduler.collect_batch()` 收好现成请求后，调用 `vocode_and_release([A, B])`。结果仍按 A、B 分开返回。
+- 右边是 `StreamingVocoderBase` 的可选跨请求 coalescing。输入是陆续到达的 `stream_chunk`，本例假设 A、B 都已满足本步子类的就绪条件。
+- 右侧先把 A、B 的 chunk 分别 ingest 到各自 stream state，再选出参与者、构造计划，并调用一次 `run_step([A, B])`。返回的 waveform 仍按 request id 对应到各自输出。
+- 橙色都表示共享计算，但两边入口、状态和函数不同。不能把右图的 `run_step()` 标到 MiniCPM-o 左边的工厂里。
+
+### 代入图上的数
+
+设输入请求数为 $N=2$，本例共享计算次数为 $S=1$。两条路径都得到 $N=2$ 份独立输出：
+
+$$N=2,\qquad S=1,\qquad \text{outputs}=N=2$$
+
+若完全不共享调度计算，两条请求会对应两次调用；本例把调用次数从 $N=2$ 合为 $S=1$：
+
+$$N-S=2-1=1$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $N$ | 参与本例的请求数 | A、B 两条 |
+| $S$ | 本例的一次共享计算 | 左侧一次 batch 调用，或右侧一次 `run_step` |
+| outputs | 保留请求身份的输出数 | A、B 各一份，共两份 |
+| $N-S$ | 相对两次独立调用少的一次调度调用 | 2 减 1，得到 1 |
+
+$N-S=1$ 只数调用次数，不等于延迟降低一半，也不证明吞吐翻倍。共享 kernel 的工作量、padding、流就绪条件和硬件都会改变结果。
+
+### 左边的完整请求路径
+
+`create_code2wav_executor()` 返回的是 `SimpleScheduler`。它把 `vocode_and_release` 同时用于单条和批量路径，并传入请求上限、等待配置和可选 codec token 成本。当前模型配置为零等待，所以这里只收集已经到达的完整请求，不主动等空位填满。
+
+`vocode_and_release()` 调用 `vocode_code2wav_payloads()`，并在 `finally` 中逐条释放 reference。批量执行与资源释放属于这条工厂路径，和右侧的流式状态机不是同一套函数。
+
+### 右边的流式合步路径
+
+`StreamingVocoderBase` 默认并不保证跨请求合步；子类要启用 `can_batch_stream_chunks`，并实现参与者、计划和 `run_step` 等钩子。比如 DotsTTS 的子类显式打开这个开关。
+
+启用后，`on_stream_chunk_batch()` 在 `state_lock` 下先 ingest 本批所有 chunk，再执行 pump。`pump_one_step()` 选择本轮参与者、构造计划并调用一次 `run_step()`，然后把返回字典里的 waveform 发到对应请求。没有就绪参与者时，本步不运行。
+
+本例假设 A、B 同时就绪，所以它们共享一步。真实系统可以只有 A 就绪，也可以让某条流暂时不产生 waveform；不能把「收到两条 chunk」直接等同于「两条一定进入同一次计算」。
+
+### 边界与出处
+
+右侧某次共享计算抛出异常时，默认 `on_step_failure()` 会向所有参与者发错并清理它们的状态，外部 abort 清理由锁外代码执行。左侧批量结果与错误的处理不能直接套到这条流式路径上。
+
+- `sglang_omni/models/minicpm_o/config.py:144-176`：MiniCPM-o Code2Wav 的 16 条、零等待和 idle=false 配置。
+- `sglang_omni/models/minicpm_o/stages.py:397-465`：Code2Wav 工厂返回 `SimpleScheduler`，批量调用并逐条释放 reference。
+- `sglang_omni/scheduling/streaming_vocoder.py:347-369`：先 ingest 所有 chunk，再在锁内 pump，锁外执行 abort 清理。
+- `sglang_omni/scheduling/streaming_vocoder.py:776-796`：选择参与者、执行一次 `run_step`，再按 request id 发 waveform。
+- `sglang_omni/models/dots_tts/vocoder.py:166-222`：一个实际启用跨请求流式合步的子类。
+
+行号对应 `origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`。
+
+### 接下来
+
+第 6 步加入历史 H200 对照数字：batch 可能提高吞吐，但结果只属于当时的代码、模型和实验条件，不能当成当前主线的普遍承诺。

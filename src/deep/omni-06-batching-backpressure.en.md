@@ -225,3 +225,64 @@ Line numbers refer to `origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`.
 ### Next
 
 Step 5 contrasts Code2Wav's one-shot batch with streaming-vocoder coalescing across requests. Both can compute work for multiple requests together, but their message paths differ.
+
+## Step 5 · One-shot batching and streaming coalescing take different paths
+
+> **In one sentence:** MiniCPM-o Code2Wav collects whole requests for one batch call; the optional streaming-vocoder path stores chunks in request-local states before advancing ready requests together.
+
+### What the picture shows
+
+- The left panel is the current MiniCPM-o `code2wav` factory: cap 16, zero collection delay and `batch_wait_when_idle=false`. Its inputs are two complete `new_request` messages.
+- `SimpleScheduler.collect_batch()` gathers the available requests and invokes `vocode_and_release([A, B])`. A and B still receive separate results.
+- The right panel is optional cross-request coalescing in `StreamingVocoderBase`. Its inputs are arriving `stream_chunk` messages; this example assumes both A and B satisfy their subclass's readiness rule.
+- The right path ingests each chunk into its own stream state, selects participants, builds a plan and invokes `run_step([A, B])` once. Returned waveforms remain keyed by request id.
+- Orange marks shared compute in both panels, but their inputs, states and functions differ. The right panel's `run_step()` does not belong in MiniCPM-o's left-hand factory.
+
+### Work through the numbers
+
+Let the input request count be $N=2$ and shared compute calls in this example be $S=1$. Both paths produce $N=2$ distinct outputs:
+
+$$N=2,\qquad S=1,\qquad \text{outputs}=N=2$$
+
+Without a shared scheduling call, two requests would need two calls. This example reduces the call count from $N=2$ to $S=1$:
+
+$$N-S=2-1=1$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $N$ | Requests in this example | A and B |
+| $S$ | One shared computation | One batch call on the left or one `run_step` on the right |
+| outputs | Outputs that retain request identity | One each for A and B |
+| $N-S$ | One fewer scheduling call than two independent calls | Two minus one |
+
+$N-S=1$ counts calls only. It does not halve latency or prove doubled throughput. Shared-kernel work, padding, stream readiness and hardware all affect the result.
+
+### The whole-request path on the left
+
+`create_code2wav_executor()` returns a `SimpleScheduler`. It supplies `vocode_and_release` for both single and batched execution, together with request caps, delay settings and optional codec-token cost. The current model configuration uses zero delay, so this path collects available complete requests without deliberately waiting to fill empty slots.
+
+`vocode_and_release()` calls `vocode_code2wav_payloads()` and releases each request's reference in `finally`. Batch execution and resource release here are not the right panel's streaming state machine.
+
+### The streaming-coalescing path on the right
+
+`StreamingVocoderBase` does not guarantee cross-request coalescing by default. A subclass opts into `can_batch_stream_chunks` and implements participant, plan and `run_step` hooks. DotsTTS is one subclass that explicitly enables the switch.
+
+After opt-in, `on_stream_chunk_batch()` ingests every chunk under `state_lock` before pumping. `pump_one_step()` selects this round's participants, builds a plan and invokes `run_step()` once, then emits each returned waveform to its request. With no ready participant, no step runs.
+
+This example assumes A and B are ready together. A real system may have only A ready, or a stream may emit no waveform in a step. Receiving two chunks is not proof that both requests enter the same computation.
+
+### Boundaries and sources
+
+If a shared step raises, the default `on_step_failure()` emits an error and clears state for every participant; external abort cleanup runs after the lock is released. The left path's batch result and error handling cannot be copied onto this streaming path.
+
+- `sglang_omni/models/minicpm_o/config.py:144-176`: MiniCPM-o Code2Wav's cap of 16, zero delay and idle=false.
+- `sglang_omni/models/minicpm_o/stages.py:397-465`: Code2Wav's `SimpleScheduler`, batch call and per-request reference release.
+- `sglang_omni/scheduling/streaming_vocoder.py:347-369`: ingest all chunks, pump under the lock and run abort cleanup outside it.
+- `sglang_omni/scheduling/streaming_vocoder.py:776-796`: select participants, run one step and emit waveforms by request id.
+- `sglang_omni/models/dots_tts/vocoder.py:166-222`: an actual subclass that enables cross-request streaming coalescing.
+
+Line numbers refer to `origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`.
+
+### Next
+
+Step 6 adds historical H200 measurements. Batching can improve throughput, but those results belong to their code, model and test conditions rather than a universal promise about current main.
