@@ -204,6 +204,11 @@ $$R=5{,}558-4{,}536=1{,}022$$
 
 There is another important boundary: `_split_node` sets `new_node.mamba_value = None`, with a comment that Mamba cache cannot be split. A content boundary created by a branch therefore does not automatically carry a usable state.
 
+### Further reading
+
+- [zero-to-sglang Part II Chapter 8: RadixAttention and Prefix Caching](https://zero-to-sglang.datawhale.cc/eng/part2/Chapter8_RadixAttention-and-Prefix-Caching.html) covers sharing, matching and eviction for full-attention KV.
+- [The chapter's code walkthrough](https://zero-to-sglang.datawhale.cc/eng/part2/Chapter8_RadixAttention-and-Prefix-Caching_code.html) examines mini-sglang's prefix cache; it does not replace this chapter's pinned MambaRadixCache source.
+
 ### Next
 
 The chapter's answer is that identical tokens provide a matchable path, while only a separately saved state on that path provides a resume point. The next chapter distributes state across GPUs and follows tensor exchange between them.

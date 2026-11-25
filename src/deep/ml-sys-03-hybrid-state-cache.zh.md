@@ -204,6 +204,11 @@ $$R=5{,}558-4{,}536=1{,}022$$
 
 另一个边界也很重要：`_split_node` 会给新父节点写入 `new_node.mamba_value = None`，注释说明 Mamba cache 不能随 token 边切开。因此「分叉处形成内容边界」不等于「这个边界自动带有可用 state」。
 
+### 延伸阅读
+
+- [zero-to-sglang 第 2 部分第 8 章：RadixAttention 与前缀缓存](https://zero-to-sglang.datawhale.cc/ch/part2/%E7%AC%AC8%E7%AB%A0_RadixAttention%E4%B8%8E%E5%89%8D%E7%BC%80%E7%BC%93%E5%AD%98.html) 讲全注意力 KV 的共享、匹配和淘汰。
+- [同章代码篇](https://zero-to-sglang.datawhale.cc/ch/part2/%E7%AC%AC8%E7%AB%A0_RadixAttention%E4%B8%8E%E5%89%8D%E7%BC%80%E7%BC%93%E5%AD%98_%E4%BB%A3%E7%A0%81.html) 对照 mini-sglang 的前缀缓存实现；它不替代本章核对的 MambaRadixCache 固定源码。
+
 ### 接下来
 
 本章的回答是：相同 token 给出可匹配的路径，只有该路径上另存的 state 才给出可恢复的位置。下一章把状态分到多张卡，继续看卡与卡怎样交换张量。
