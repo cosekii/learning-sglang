@@ -51,3 +51,57 @@ session 解析出用户选中的 ASR provider 后，只把这次录音交给它�
 - 本机 Omni 的 loopback 服务与按需启动：`Voxt/internal/omni/doc.go:1-5,29-48`。
 - 系统听写、语言与权限失败：`Voxt/internal/dictation/dictation.go:1-12,31-58`。
 - 远程服务配置与预设：`Voxt/internal/providers/speech.go:27-75,158-193`。
+
+## 第 2 步 · 文件型识别等整段结束
+
+> **一句话：** 文件型识别在停止后接收完整录音；OpenAI 兼容接口把本例 PCM 包成 WAV，上传后返回最终文字。
+
+### 图上是什么
+
+- 0–3 秒的蓝色竖线是构造的说话波形；3 秒处橙色线是停止点。停止前，主图没有最终文字。
+- `FileTranscriber` 是文件型识别器：一次接收完整录音并返回 `Result`，不是在说话途中持续给草稿。
+- WAV 例子包含 PCM 声音和 44 字节文件头。文件头记录格式等信息，不是额外 44 字节声音。
+- `final` 是最终文字，也就是这次识别正式采用的结果。橙色只标停止点和最终结果。
+- 本例上传一次，得到 “Good morning.”。真实文字由模型决定，这句英文只是构造的识别结果。
+
+### 公式
+
+$$
+W=T\times R\times C+H
+$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $W$ | WAV 文件总字节数 | 本步计算 |
+| $T$ | 录音秒数 | 本步构造的 3 秒 |
+| $R$ | 每秒样本数 | 第 1 步，16,000 |
+| $C$ | 每样本字节数 | 第 1 步，2 |
+| $H$ | WAV 文件头 | `asr.WAV`，44 字节 |
+
+### 代入图上的数
+
+| 要算的量 | 算式 | 结果 |
+|---|---|---:|
+| PCM 声音 | $3\times16{,}000\times2$ | 96,000 字节 |
+| WAV 总大小 | $96{,}000+44$ | 96,044 字节 |
+
+96,044 字节只计算 WAV 文件本身。实际上传还包含 multipart 表单边界、模型名等字段，所以不能把图上的文件大小当成整个 HTTP 请求大小。
+
+### 选择规则与边界
+
+session 先检查选中的 provider 是否实现 `Streamer` 且 `Caps().Stream` 为真；不能流式识别时，才走本步的 `FileTranscriber` 分支。它调用 `prepare` 得到处理后的 PCM，再把 `Format: "pcm"`、语言、词典提示、上下文和上传上限一起传给 provider。
+
+OpenAI 兼容 client 收到 PCM 后调用 `asr.WAV` 包装，再向 `/audio/transcriptions` 发一个 multipart 上传。其他文件型 provider 可以使用自己的格式；本步的 44 字节算式只指这个 WAV 例子。超过上传上限的长录音留到第 4、5 步。
+
+### 接下来
+
+整段上传简单，但要等停止才有文字。下一步看支持流式识别的服务怎样在说话途中先给可修改的草稿，停止后再给最终结果。
+
+### 源码出处
+
+公开基线同第 1 步。
+
+- 文件型接口与请求：`Voxt/internal/asr/asr.go:59-76,101-105`。
+- session 的流式优先、文件型后备分支：`Voxt/internal/session/run_audio.go:18-22`；`Voxt/internal/session/run_listen.go:399-418`。
+- WAV 的 44 字节头与 PCM 包装：`Voxt/internal/asr/audio.go:27-49`。
+- OpenAI 兼容接口的单次上传与 PCM→WAV：`Voxt/internal/asr/openai/openai.go:1-5,101-129`。

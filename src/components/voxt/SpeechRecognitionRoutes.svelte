@@ -7,8 +7,12 @@
   import {
     VOXT_ASR_DEMO_BYTES,
     VOXT_ASR_DEMO_SECONDS,
+    VOXT_ASR_FILE_PCM_BYTES,
+    VOXT_ASR_FILE_SECONDS,
+    VOXT_ASR_FILE_WAV_BYTES,
     VOXT_ASR_ROUTE_COUNT,
     VOXT_PCM_BYTES_PER_SECOND,
+    VOXT_WAV_HEADER_BYTES,
   } from '../../voxt/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -16,10 +20,16 @@
   const steps = [{
     caption: 'Only the selected speech service receives the recording. The other two routes receive nothing.',
     captionZh: '只有选中的识别服务收到录音。另外两条路线收不到。',
+  }, {
+    caption: 'A file transcriber waits for the whole recording. It returns final text after the stop.',
+    captionZh: '文件型识别等整段录音结束。停止后，它返回最终文字。',
   }];
   const ariaLabels = [{
     en: 'One second of sound is 32000 bytes. A chooser selects one of three recognition routes: local Omni on this Mac, a configured remote ASR API, or macOS system dictation through the helper.',
     zh: '一秒声音有 32000 个字节。选择器从三条识别路线中选一条：这台 Mac 上的本机 Omni、配置的外部 ASR API，或经过 helper 的 macOS 系统听写。',
+  }, {
+    en: 'A file transcriber waits for three seconds of speech to stop. For this OpenAI-compatible example, 96000 PCM bytes plus a 44-byte WAV header become one 96044-byte upload, then one final text.',
+    zh: '文件型识别等三秒说话结束。这个 OpenAI 兼容例子里，96000 字节 PCM 加 44 字节 WAV 头组成一次 96044 字节上传，然后返回一份最终文字。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -36,7 +46,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? 650 : 440);
+  const H = $derived(step === 0 ? (phone ? 650 : 440) : (phone ? 570 : 410));
 </script>
 
 <figure class="viz">
@@ -47,6 +57,7 @@
           <path d="M0,0 L8,4 L0,8 z" fill="var(--muted)" />
         </marker>
       </defs>
+      {#if step === 0}
       <text x={W / 2} y="27" text-anchor="middle" class="title">{t('ONE RECORDING · CHOOSE ONE RECOGNITION ROUTE', '同一段录音 · 选一条识别路线')}</text>
       <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('ASR = speech recognition: sound becomes words', 'ASR = 语音识别：把声音听成文字')}</text>
 
@@ -86,6 +97,38 @@
       <text x={phone ? 150 : 580} y={phone ? 580 : 342} text-anchor="middle" class="detail">{t('another computer in this example', '本例在另一台电脑上')}</text>
       {#if !phone}<text x="580" y="390" text-anchor="middle" class="detail amber">{t('OUTSIDE THIS MAC', '这台 Mac 之外')}</text>{/if}
       <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('An API at 127.0.0.1 stays on this Mac too.', 'API 地址是 127.0.0.1 时，声音也留在本机。')}</text>
+      {:else if step === 1}
+      <text x={W / 2} y="27" text-anchor="middle" class="title">{t('FILE RECOGNITION · WAIT FOR THE STOP', '文件型识别 · 等说话停止')}</text>
+      <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('file transcriber = receives one finished recording', '文件型识别 = 接收一段完整录音')}</text>
+
+      <rect x={phone ? 30 : 40} y="72" width={phone ? 240 : 640} height="92" rx="10" fill="var(--bg)" stroke="var(--line)" />
+      <text x={W / 2} y="93" text-anchor="middle" class="label">{t('YOU SPEAK · NO FINAL TEXT YET', '你正在说话 · 还没有最终文字')}</text>
+      {#each Array.from({ length: 30 }, (_, i) => i) as i}
+        {@const x = (phone ? 50 : 60) + i * (phone ? 6.7 : 20)}
+        {@const height = 8 + ((i * 7) % 19)}
+        <line x1={x} y1={128 - height / 2} x2={x} y2={128 + height / 2} stroke="var(--accent)" stroke-width={phone ? 3 : 5} stroke-linecap="round" />
+      {/each}
+      <line x1={phone ? 252 : 660} y1="103" x2={phone ? 252 : 660} y2="146" stroke="var(--gen)" stroke-width="2" />
+      <text x={phone ? 50 : 60} y="153" text-anchor="middle" class="detail">0 s</text>
+      <text x={phone ? 117 : 260} y="153" text-anchor="middle" class="detail">1 s</text>
+      <text x={phone ? 184 : 460} y="153" text-anchor="middle" class="detail">2 s</text>
+      <text x={phone ? 250 : 660} y="153" text-anchor="middle" class="detail amber">3 s · {t('STOP', '停止')}</text>
+
+      <line x1={W / 2} y1="168" x2={W / 2} y2="197" stroke="var(--muted)" stroke-width="2" marker-end="url(#asr-route-arrow)" />
+      <rect x={phone ? 35 : 45} y="205" width={phone ? 230 : 290} height="125" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+      <text x={phone ? 150 : 190} y="230" text-anchor="middle" class="label">{t('EXAMPLE UPLOAD · WAV', '上传示例 · WAV')}</text>
+      <text x={phone ? 150 : 190} y="252" text-anchor="middle" class="detail">{t('WAV = PCM + a 44-byte file header', 'WAV = PCM + 44 字节文件头')}</text>
+      <text x={phone ? 150 : 190} y="280" text-anchor="middle" class="formula">{VOXT_ASR_FILE_SECONDS} × {VOXT_PCM_BYTES_PER_SECOND.toLocaleString('en-US')} + {VOXT_WAV_HEADER_BYTES}</text>
+      <text x={phone ? 150 : 190} y="306" text-anchor="middle" class="formula">= {VOXT_ASR_FILE_WAV_BYTES.toLocaleString('en-US')} {t('bytes', '字节')}</text>
+
+      <line x1={phone ? 150 : 340} y1={phone ? 334 : 267} x2={phone ? 150 : 380} y2={phone ? 362 : 267} stroke="var(--muted)" stroke-width="2" marker-end="url(#asr-route-arrow)" />
+      <rect x={phone ? 35 : 385} y={phone ? 370 : 205} width={phone ? 230 : 290} height={phone ? 105 : 125} rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
+      <text x={phone ? 150 : 530} y={phone ? 396 : 234} text-anchor="middle" class="label amber">{t('FINAL TEXT · THE TEXT THAT COUNTS', '最终文字 · 正式采用的文字')}</text>
+      <text x={phone ? 150 : 530} y={phone ? 431 : 277} text-anchor="middle" class="result">“Good morning.”</text>
+      <text x={phone ? 150 : 530} y={phone ? 455 : 304} text-anchor="middle" class="detail">{t('one result after the stop', '停止后返回一份结果')}</text>
+      <text x={W / 2} y={phone ? 510 : 363} text-anchor="middle" class="cut">{t('STOP → ONE UPLOAD → ONE FINAL RESULT', '停止 → 一次上传 → 一份最终结果')}</text>
+      <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t(`Constructed ${VOXT_ASR_FILE_SECONDS}-second example; OpenAI-compatible WAV upload.`, `构造的 ${VOXT_ASR_FILE_SECONDS} 秒例子；OpenAI 兼容接口上传 WAV。`)}</text>
+      {/if}
     </svg>
   </div>
   <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh}
@@ -99,6 +142,7 @@
   .detail { font-size: 11px; fill: var(--fg); }
   .cut { font-size: 12px; font-weight: 650; fill: var(--accent); }
   .formula { font-family: var(--mono); font-size: 13px; font-weight: 650; fill: var(--fg); }
+  .result { font-size: 20px; font-weight: 650; fill: var(--fg); }
   .amber { fill: var(--gen); }
   .footnote { font-size: 10.5px; }
   @media (max-width: 600px) {
