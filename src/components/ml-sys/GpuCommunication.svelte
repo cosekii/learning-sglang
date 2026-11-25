@@ -26,6 +26,9 @@
   }, {
     caption: `Reduce-Scatter takes ${COMM_RING_PHASE_STEPS} rounds. All-Gather takes ${COMM_RING_PHASE_STEPS} more, giving every GPU all four chunks.`,
     captionZh: `前 ${COMM_RING_PHASE_STEPS} 轮算出分块，后 ${COMM_RING_PHASE_STEPS} 轮发齐。每卡最后都有 4 块。`,
+  }, {
+    caption: 'Topology changes the path. A slower transfer makes dependent rounds wait.',
+    captionZh: '拓扑改变传输路径。一次传送变慢，后续轮次就要等。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -321,6 +324,50 @@
           <text x="150" y="531" text-anchor="middle" class="small">{t('sent by each GPU in total', '每张卡总共发送的张量字节数')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Teaching ring; payload only, not a time forecast.', '教学 Ring；只算张量载荷，不预测耗时。')}</text>
+      {:else if step === 6}
+        <text x={phone ? 18 : 36} y="30" class="title">{t('A slower link delays the rounds behind it', '一条链路变慢，后面的轮次就要等')}</text>
+        <text x={phone ? 18 : 36} y="55" class="label">{t('topology = map of GPU links · same Ring, S and 6 rounds', '拓扑 = GPU 链路图 · 两边的 Ring、S 和 6 轮相同')}</text>
+        {#if !phone}
+          <rect x="35" y="82" width="650" height="120" rx="13" fill="var(--bg)" stroke="var(--line)" />
+          <text x="55" y="108" class="small strong">{t('baseline · each dependent round takes t', '对照路径 · 每段相关轮次都花 t')}</text>
+          {#each [55, 145, 235, 325, 415, 505] as x, i}
+            <rect x={x} y="126" width="80" height="36" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x={x + 40} y="150" text-anchor="middle" class="small">{i + 1} · t</text>
+          {/each}
+          <text x="360" y="185" text-anchor="middle" class="result">{t('dependent chain', '这条相关链')} = 6t</text>
+
+          <rect x="35" y="218" width="650" height="132" rx="13" fill="var(--bg)" stroke="var(--line)" />
+          <text x="55" y="244" class="small strong">{t('change one link · round 2 takes t + d', '只改变一条链路 · 第 2 轮花 t + d')}</text>
+          {#each [{ x: 55, w: 80, time: 't' }, { x: 145, w: 140, time: 't+d' }, { x: 295, w: 80, time: 't' }, { x: 385, w: 80, time: 't' }, { x: 475, w: 80, time: 't' }, { x: 565, w: 80, time: 't' }] as round, i}
+            <rect x={round.x} y="260" width={round.w} height="36" rx="7" fill={i === 1 ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={i === 1 ? 'var(--gen)' : 'var(--accent)'} />
+            <text x={round.x + round.w / 2} y="284" text-anchor="middle" class="small">{i + 1} · {round.time}</text>
+          {/each}
+          <text x="360" y="323" text-anchor="middle" class="result">5t + (t+d) = 6t+d · {t('extra wait', '多等')} = d</text>
+          <text x="360" y="364" text-anchor="middle" class="small"><tspan fill="var(--accent)">■</tspan> {t('unchanged rounds', '未改变的轮次')}   <tspan fill="var(--gen)">■</tspan> {t('slower transfer; later rounds shift right', '变慢的传送；后续轮次向右推迟')}</text>
+        {:else}
+          <rect x="18" y="78" width="264" height="137" rx="12" fill="var(--bg)" stroke="var(--line)" />
+          <text x="150" y="102" text-anchor="middle" class="small strong">{t('baseline · every round t', '对照路径 · 每轮都花 t')}</text>
+          {#each [29, 70, 111, 152, 193, 234] as x, i}
+            <rect x={x} y="119" width="34" height="37" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x={x + 17} y="142" text-anchor="middle" class="small">{i + 1}</text>
+          {/each}
+          <text x="150" y="180" text-anchor="middle" class="small">{t('each block = t', '每一格 = t')}</text>
+          <text x="150" y="202" text-anchor="middle" class="result">{t('chain', '相关链')} = 6t</text>
+
+          <rect x="18" y="229" width="264" height="157" rx="12" fill="var(--bg)" stroke="var(--line)" />
+          <text x="150" y="253" text-anchor="middle" class="small strong">{t('round 2 now takes t + d', '第 2 轮现在花 t + d')}</text>
+          {#each [{ x: 25, w: 30 }, { x: 61, w: 75 }, { x: 142, w: 30 }, { x: 178, w: 30 }, { x: 214, w: 30 }, { x: 250, w: 30 }] as round, i}
+            <rect x={round.x} y="270" width={round.w} height="38" rx="6" fill={i === 1 ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={i === 1 ? 'var(--gen)' : 'var(--accent)'} />
+            <text x={round.x + round.w / 2} y="294" text-anchor="middle" class="small">{i + 1}</text>
+          {/each}
+          <text x="150" y="331" text-anchor="middle" class="small">{t('orange adds d; later rounds shift', '橙色多花 d；后续轮次推迟')}</text>
+          <text x="150" y="357" text-anchor="middle" class="result">5t + (t+d) = 6t+d</text>
+          <text x="150" y="379" text-anchor="middle" class="small">{t('extra wait = d', '多等的时间 = d')}</text>
+          <text x="150" y="420" text-anchor="middle" class="small">{t('same 6 rounds and tensor S', '两边都是同样的 6 轮和张量 S')}</text>
+          <text x="150" y="448" text-anchor="middle" class="small">{t('only the transfer path changes', '只改变传输路径')}</text>
+        {/if}
+        <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t("Next: how does a service send requests to this Ring's GPUs?", '下一章：服务怎样把请求分给 Ring 上的 GPU？')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Simplified dependent-chain model, not an NCCL timing forecast.', '简化的相关链模型，不是 NCCL 耗时预测。')}</text>
       {/if}
     </svg>
   </div>

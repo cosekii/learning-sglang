@@ -205,3 +205,38 @@ Step 2's four positions become the four chunks, so each position computes $1+2+3
 If the rounds and payload stay fixed, how can a path change the wait? The next step holds the Ring fixed and changes only a link.
 
 Sources: `Awesome-ML-SYS-Tutorial/torch/nccl/readme.md:55-64`; `Awesome-ML-SYS-Tutorial/torch/torch-distributed/readme.md:926-950`; `Awesome-ML-SYS-Tutorial/torch/torch-distributed/complete-allreduce.svg:5-45`.
+
+## Step 7 · A slower path delays dependent rounds
+
+**One sentence.** Hold the Ring, tensor and six rounds fixed; adding $d$ to round 2 shifts every later round on this dependent chain by $d$.
+
+### On the stage
+
+- Topology is the map of links between GPUs. Both rows keep Step 6's Ring, tensor $S$ and six rounds unchanged.
+- Each block is one dependent transfer; the next block waits for the previous arrival. The baseline takes $t$ per block and $6t$ for the chain.
+- Below, only one link changes. Round 2 grows from $t$ to $t+d$. Orange shows the added $d$, and rounds 3–6 shift right.
+- This is a simplified dependent chain. It does not serialize every parallel NCCL transfer or claim a fixed slowdown for either topology label.
+
+### Formula and symbols
+
+$$C_0=6t,\qquad C_1=5t+(t+d)=6t+d,\qquad \Delta C=C_1-C_0=d$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $t$ | Time for one dependent round on the baseline path | Variable defined here |
+| $d$ | Added time in round 2 after changing a link | Variable defined here, $d>0$ |
+| $C_0$ | Baseline dependent-chain time | Six rounds of $t$ |
+| $C_1$ | Chain time after round 2 slows | Five rounds of $t$ plus one of $t+d$ |
+| $\Delta C$ | Added wait on this chain | Calculated here |
+
+### The numbers on the stage
+
+Step 6 supplies six rounds, so the baseline chain is $t+t+t+t+t+t=6t$. Only the second term changes below, giving $C_1=5t+(t+d)=6t+d$ and an added wait of $d$.
+
+No milliseconds are assigned: Step 5's `NV18` and `SYS` labels do not provide $t$ or $d$. Real NCCL can overlap transfers or select another algorithm, so this equation explains dependency waiting without predicting full all-reduce wall time.
+
+### Next
+
+This chapter's answer is that Ring gives every GPU the same result, while a delayed link shifts dependent rounds. The next chapter combines these GPUs into a service and follows how requests reach its workers.
+
+Sources: `Awesome-ML-SYS-Tutorial/torch/nccl/readme.md:114-145`; `Awesome-ML-SYS-Tutorial/torch/torch-distributed/readme.md:935-950`; `zero-to-sglang/course-material/ch/part3/第4章_横向扩展.md:21-34`; `Inference Engineering §3.3.1, §5.4`.

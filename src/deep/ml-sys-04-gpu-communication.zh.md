@@ -205,3 +205,38 @@ $$R=2\times(4-1)=6,\qquad B_{\mathrm{rank}}=6\times\frac{S}{4}=1.5S$$
 轮数和发送量固定以后，路径快慢还会怎样改变等待？下一步固定 Ring，只看链路。
 
 来源：`Awesome-ML-SYS-Tutorial/torch/nccl/readme.md:55-64`；`Awesome-ML-SYS-Tutorial/torch/torch-distributed/readme.md:926-950`；`Awesome-ML-SYS-Tutorial/torch/torch-distributed/complete-allreduce.svg:5-45`。
+
+## 第 7 步 · 路径变慢会推迟相关轮次
+
+**一句话。** 固定 Ring、张量和 6 轮，只让第 2 轮多花 $d$，这条相关链的后续轮次就跟着推迟 $d$。
+
+### 图上是什么
+
+- 拓扑是 GPU 之间链路的连接图。上下两行保持第 6 步的 Ring、张量 $S$ 和 6 轮不变。
+- 每格是一段相关传送，后一格必须等前一格到达。对照行每格花 $t$，链上总时间是 $6t$。
+- 下行只改变一条链路：第 2 轮从 $t$ 变为 $t+d$，橙色加宽表示多出的 $d$；第 3–6 格整体向右移。
+- 这是单条相关链的简化图，不把 NCCL 的所有并行传输画成一条串行线，也不声称某种标签必然慢多少。
+
+### 公式与符号
+
+$$C_0=6t,\qquad C_1=5t+(t+d)=6t+d,\qquad \Delta C=C_1-C_0=d$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $t$ | 对照路径中一段相关轮次的时间 | 本步设定的变量 |
+| $d$ | 改变链路后，第 2 轮增加的时间 | 本步设定的变量，$d>0$ |
+| $C_0$ | 对照相关链的时间 | 6 段，每段 $t$ |
+| $C_1$ | 第 2 轮变慢后的相关链时间 | 5 段 $t$ 加一段 $t+d$ |
+| $\Delta C$ | 这条链增加的等待 | 本步计算 |
+
+### 代入图上的数
+
+第 6 步给出 6 轮，所以对照链是 $t+t+t+t+t+t=6t$。下行只有第 2 项变为 $t+d$，于是 $C_1=5t+(t+d)=6t+d$，后续相关轮次多等 $d$。
+
+这里故意不代入毫秒：第 5 步的 `NV18` 和 `SYS` 标签不能提供 $t$ 或 $d$。真实 NCCL 还可能重叠传输或选择别的算法，因此本式只解释依赖等待，不预测完整 all-reduce 的墙钟时间。
+
+### 接下来
+
+本章的回答是：Ring 让每卡集齐同一份结果，链路上的延迟会推迟相关轮次。下一章把这些 GPU 组成服务，看不同请求怎样分给 worker。
+
+来源：`Awesome-ML-SYS-Tutorial/torch/nccl/readme.md:114-145`；`Awesome-ML-SYS-Tutorial/torch/torch-distributed/readme.md:935-950`；`zero-to-sglang/course-material/ch/part3/第4章_横向扩展.md:21-34`；`Inference Engineering §3.3.1, §5.4`。
