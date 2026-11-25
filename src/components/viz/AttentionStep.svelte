@@ -41,7 +41,7 @@
   const steps: Step[] = [
     { n: 5, intro: true, caption: `Same five tokens, one forward pass. This time we watch what one attention layer does with them.`, captionZh: `上一章没存旧结果，18 格有 11 格是重算。打开模型里的 attention，找哪些不用再算。` },
     { n: 5, x: true, caption: `Each token comes in as a vector. Call it x.`, captionZh: `每个 token 都变成一排有顺序的数，叫向量，记作 x。` },
-    { n: 5, rows: true, caption: `Every token multiplies its own x by three learned matrices and gets a <b>query</b>, a <b>key</b> and a <b>value</b>. No other token is involved yet.`, captionZh: `每个 x 经过三张数字表，变成 q、k、v。下一步用 q 找信息。` },
+    { n: 5, rows: true, caption: `Every token multiplies its own x by three learned matrices and gets a <b>query</b>, a <b>key</b> and a <b>value</b>. No other token is involved yet.`, captionZh: `每个 x 变成 q、k、v 三排数，分别写要找什么、有什么、给什么。` },
     { n: 5, rows: true, attend: 4, scores: true, caption: `The last token's query gets dotted with every key. A big score means "this one matters to me".`, captionZh: `点积就是两排数对应相乘，再全部相加。下一步再讲这些分数怎么用。` },
     { n: 5, rows: true, attend: 4, scores: true, weights: true, caption: `Softmax turns the scores into weights that add up to one.`, captionZh: `Softmax 把分数换成权重。每列的权重表示它占多少，合起来是 1。` },
     { n: 5, rows: true, attend: 4, weights: true, mix: true, caption: `Its output is the values, blended by those weights. This is how "is" finds out it's sitting after "capital of France".`, captionZh: `每列 value 先乘自己的权重，再把五份相加。␣France 的权重最大，贡献也最大。` },
@@ -138,7 +138,7 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox={phoneConclusion ? '0 0 360 570' : phoneProject ? '0 0 360 560' : phoneUnusedQ ? '0 0 360 550' : phoneSame ? '0 0 360 500' : phoneDecode ? '0 0 360 500' : phoneIntro ? '0 0 360 450' : phoneRecompute ? '0 0 360 440' : phoneSix ? '0 0 360 430' : phoneCausal ? '0 0 360 520' : phoneMix ? '0 0 360 580' : phoneWeights ? '0 0 360 550' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Attention per decode step, step {step + 1}" class:phone-project={phoneProject} class:phone-same={phoneSame} class:phone-decode={phoneDecode} class:phone-intro={phoneIntro} class:phone-weights={phoneWeights} class:phone-mix={phoneMix} class:phone-causal={phoneCausal} class:phone-six={phoneSix} class:phone-recompute={phoneRecompute} class:phone-kv={phoneUnusedQ || phoneConclusion}>
+    <svg viewBox={phoneConclusion ? '0 0 360 570' : phoneProject ? '0 0 360 460' : phoneUnusedQ ? '0 0 360 550' : phoneSame ? '0 0 360 500' : phoneDecode ? '0 0 360 500' : phoneIntro ? '0 0 360 450' : phoneRecompute ? '0 0 360 440' : phoneSix ? '0 0 360 430' : phoneCausal ? '0 0 360 520' : phoneMix ? '0 0 360 580' : phoneWeights ? '0 0 360 550' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Attention per decode step, step {step + 1}" class:phone-project={phoneProject} class:phone-same={phoneSame} class:phone-decode={phoneDecode} class:phone-intro={phoneIntro} class:phone-weights={phoneWeights} class:phone-mix={phoneMix} class:phone-causal={phoneCausal} class:phone-six={phoneSix} class:phone-recompute={phoneRecompute} class:phone-kv={phoneUnusedQ || phoneConclusion}>
       {#if phoneConclusion}
         <text x="180" y="26" text-anchor="middle" class="ph-title">新 token 从过去只要旧 k、v</text>
         <text x="180" y="52" text-anchor="middle">拿第 12 步的 ␣Paris 看</text>
@@ -231,29 +231,21 @@
         <text x="180" y="458" text-anchor="middle" class="new-x">第 6 列是 ␣Paris：第一次算</text>
         <text x="180" y="488" text-anchor="middle" class="ph-faint">= 表示上次和这次的结果相同</text>
       {:else if phoneProject}
-        <text x="180" y="26" text-anchor="middle" class="ph-title">一个 x 算出 q、k、v</text>
-        <text x="180" y="52" text-anchor="middle">5 个 token → x₁、x₂、x₃、x₄、x₅</text>
-        <text x="180" y="78" text-anchor="middle" class="ph-faint">拿第 5 个位置看；每个位置只用自己的 x</text>
+        <text x="180" y="26" text-anchor="middle" class="ph-title">一个 x 变成三排分工不同的数</text>
+        <text x="180" y="52" text-anchor="middle">拿第 5 个位置看；每个位置只用自己的 x</text>
         {#each [
-          { y: 100, r: 'q', name: 'query', role: '我要找什么', use: '第 4 步：和每个 key 比较' },
-          { y: 190, r: 'k', name: 'key', role: '我这里有什么', use: '让其他位置的 query 来比较' },
-          { y: 280, r: 'v', name: 'value', role: '我提供的内容', use: '第 6 步：按每份占多少，把内容合起来' },
+          { y: 82, r: 'q', role: '我要找什么', use: '第 4 步：和每个 k 比分数' },
+          { y: 166, r: 'k', role: '我这里有什么', use: '让其他位置的 q 来比较' },
+          { y: 250, r: 'v', role: '我提供的内容', use: '第 6 步：按占比把内容合起来' },
         ] as panel}
-          <rect x="20" y={panel.y} width="320" height="76" rx="8" fill={COLOR[panel.r][0]} stroke={COLOR[panel.r][1]} />
-          <text x="36" y={panel.y + 23} class="ph-strong">{panel.r}₅ = W_{panel.r.toUpperCase()} x₅ · {panel.name}</text>
-          <text x="36" y={panel.y + 47}>{panel.role}</text>
-          <text x="36" y={panel.y + 67}>{panel.use}</text>
+          <rect x="20" y={panel.y} width="320" height="70" rx="8" fill={COLOR[panel.r][0]} stroke={COLOR[panel.r][1]} />
+          <text x="36" y={panel.y + 26} class="ph-strong">{panel.r}₅ · {panel.role}</text>
+          <text x="36" y={panel.y + 52}>{panel.use}</text>
         {/each}
-        <text x="18" y="388" class="pt">·</text>
-        <text x="30" y="388">矩阵 = 训练时学好的数字表</text>
-        <text x="18" y="414" class="pt">·</text>
-        <text x="30" y="414">W_Q x = 用 W_Q 这张表变换 x</text>
-        <text x="18" y="440" class="pt">·</text>
-        <text x="30" y="440">每行与 x 对应相乘再相加，得到 q 的一个数</text>
-        <text x="30" y="474" class="ph-mono">小例：[1, 2] 与 x = [3, 4]</text>
-        <text x="30" y="498" class="ph-mono">1×3 + 2×4 = 11</text>
-        <text x="180" y="530" text-anchor="middle" class="ph-faint">所有位置共用这三张表；q、k、v 都是一排数</text>
-        <text x="180" y="552" text-anchor="middle" class="ph-faint">下一步：q₅ 和每个 key 比较</text>
+        <text x="180" y="354" text-anchor="middle">x₅ 只变成自己的 q₅、k₅、v₅</text>
+        <text x="180" y="382" text-anchor="middle">其他位置也算自己的 q、k、v</text>
+        <text x="180" y="418" text-anchor="middle" class="ph-faint">q、k、v 都是一排数；下标相同 = 同一位置</text>
+        <text x="180" y="446" text-anchor="middle" class="ph-faint">下一步：q₅ 和 k₁…k₅ 比分数</text>
       {:else if phoneIntro}
         <defs>
           <marker id="phone-intro-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
@@ -521,8 +513,8 @@
         <text x="174" y="346" class="legend">×：后面的 key，不能看</text>
         <text x={W / 2} y="382" text-anchor="middle" class="footnote">看到后面 = 提前看下一个 token 的答案 · 五份位置输出，不是五个新 token</text>
       {:else if zhProject}
-        <text x="16" y="24" class="slab">每个 x 经过三张数字表，变成 q、k、v</text>
-        <text x="16" y="46" class="legend">q、k、v 都是一排数；每个位置只用自己的 x，其他 token 还没参与</text>
+        <text x="16" y="24" class="slab">每个 x 变成三排分工不同的数</text>
+        <text x="16" y="46" class="legend">每个位置只用自己的 x，其他 token 还没参与</text>
         <text x="16" y="82" class="rowlabel">tokens</text>
         <text x="16" y="120" class="rowlabel">x</text>
         {#each cols as c, i}
@@ -533,27 +525,23 @@
         {/each}
         {#each (['q', 'k', 'v'] as Row[]) as r, ri}
           {@const y = 142 + ri * 30}
-          <text x="16" y={y + 14} class="rowlabel">{r} = W_{r.toUpperCase()} x</text>
+          <text x="16" y={y + 14} class="rowlabel">{r} · {r === 'q' ? '找什么' : r === 'k' ? '有什么' : '给内容'}</text>
           {#each cols as c, i}
             <rect x={c.cx - 16} y={y} width="32" height="20" rx="4" fill={COLOR[r][0]} stroke={COLOR[r][1]} />
             <text x={c.cx} y={y + 14} text-anchor="middle" class="cell">{r}{sub(i + 1)}</text>
           {/each}
         {/each}
         {#each [
-          { x: 20, r: 'q', name: 'query', role: '我要找什么', use: '第 4 步：和每个 key 比较' },
-          { x: 250, r: 'k', name: 'key', role: '我这里有什么', use: '让其他位置的 query 来比较' },
-          { x: 480, r: 'v', name: 'value', role: '我提供的内容', use: '第 6 步：按每份占多少，把内容合起来' },
+          { x: 20, r: 'q', role: '我要找什么', use: '第 4 步：和每个 k 比分数' },
+          { x: 250, r: 'k', role: '我这里有什么', use: '让其他位置的 q 来比较' },
+          { x: 480, r: 'v', role: '我提供的内容', use: '第 6 步：按占比把内容合起来' },
         ] as panel}
           <rect x={panel.x} y="248" width="220" height="82" rx="8" fill={COLOR[panel.r][0]} stroke={COLOR[panel.r][1]} />
-          <text x={panel.x + 14} y="270" class="slab">{panel.r} = {panel.name}</text>
-          <text x={panel.x + 14} y="293" class="legend">{panel.role}</text>
-          <text x={panel.x + 14} y="316" class="legend">{panel.use}</text>
+          <text x={panel.x + 14} y="270" class="slab">{panel.r} · {panel.role}</text>
+          <text x={panel.x + 14} y="307" class="legend">{panel.use}</text>
         {/each}
-        <text x="18" y="350" class="pt">·</text>
-        <text x="30" y="350" class="legend">矩阵 = 训练时学好的数字表；所有位置共用 W_Q、W_K、W_V</text>
-        <text x="18" y="372" class="pt">·</text>
-        <text x="30" y="372" class="legend">W_Q x = 用 W_Q 变换 x；每行与 x 对应相乘再相加，得到 q 的一个数</text>
-        <text x="30" y="392" class="num">小例：[1, 2] 与 x = [3, 4] → 1×3 + 2×4 = 11</text>
+        <text x="16" y="360" class="slab">5 个位置 × 3 = 15 排数；下标相同的三排属于同一个位置</text>
+        <text x="16" y="390" class="legend">下一步：␣is 的 q₅ 和 k₁…k₅ 比分数</text>
       {:else}
       <defs>
         <marker id="intro-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
