@@ -5,6 +5,7 @@
 ### On the stage
 
 - Both rows use the same machine, 5,500-token system and short users. The experiment changes only `num_batch`.
+- The stage uses the `n_batch` meaning: tokens scheduled per batch. Ollama actually sets both `n_batch` and `n_ubatch`; this step does not expand their difference.
 - Blue bars show total short-request time on one 3.95-second scale. The right column reports the range of prefilled tokens, not the user's own length.
 - The bottom panel includes both the 3.04-second saving per request and the 11.5-second cold-start penalty.
 
@@ -31,7 +32,7 @@ The 4.3 figure compares total request times, not throughput. For each setting, t
 
 The measurements expose a large change in recomputation. The next step shows why full attention can compute only the new user tail.
 
-Source: `Awesome-ML-SYS-Tutorial/engineer/hybrid-prefix-cache/readme.md:566-599`.
+Source: `Awesome-ML-SYS-Tutorial/engineer/hybrid-prefix-cache/readme.md:245-253,566-599`.
 
 ## Step 2 · Full attention keeps one slot per token
 
@@ -94,17 +95,17 @@ Gated DeltaNet also erases and gates information during its update. This chapter
 
 ### Next
 
-The engine can explicitly copy the state at selected positions. The next step calls each copy a checkpoint and replays from the newest usable one.
+The engine can explicitly copy the state at selected positions. The next step calls each copy a checkpoint and recomputes from the newest usable one.
 
 Sources: `Awesome-ML-SYS-Tutorial/engineer/hybrid-prefix-cache/readme.md:93-165`; llama.cpp `7e4c0a96880dae4fc4268ad441f8a6446bd5460a`, `src/llama-memory-recurrent.cpp:170-189` and `common/common.h:970-975`.
 
-## Step 4 · Replay from the newest usable checkpoint
+## Step 4 · Recompute from the newest usable checkpoint
 
 **One sentence.** A checkpoint saves the whole state at one position; a new request restores the newest copy that does not pass the match, then computes to the new prompt end.
 
 ### On the stage
 
-- The blue line marks 5,514 matching tokens. Orange marks replay to the new prompt end. The red old-tail checkpoint passes the match and cannot be used.
+- The blue line marks 5,514 matching tokens. Orange marks recomputation to the new prompt end. The red old-tail checkpoint passes the match and cannot be used.
 - Position 5,514 would be the ideal resume point, but no state copy exists there. The newest usable copy is at 4,536, so processing resumes there and continues to 5,558.
 - Distances are schematic. Subtracting positions gives 1,022, while the article's log says about 1,020 recomputed tokens. This step keeps the logged value approximate.
 
@@ -179,7 +180,7 @@ Sources: SGLang `385903b0acd69455cb688b5cb5e3afcc0fd91598`, `python/sglang/srt/m
 
 - The blue path runs from earlier prefix $P$ to shared prefix $M$. State survives at $P=4{,}536$; at $M=5{,}514$, `mamba_value` is `None`, shown as a red dashed tombstone.
 - The old-user leaf can retain state, but that state includes a different tail and cannot serve the new request. The orange new tail ends at $E=5{,}558$ and must be computed.
-- Token matching still reaches $M$. Restore candidates skip $M$ and stop at $P$, so replay spans $P\rightarrow M\rightarrow E$, not only $M\rightarrow E$.
+- Token matching still reaches $M$. Restore candidates skip $M$ and stop at $P$, so recomputation spans $P\rightarrow M\rightarrow E$, not only $M\rightarrow E$.
 
 ### Formula and symbols
 
@@ -192,7 +193,7 @@ $$P=\max\{\operatorname{pos}(n):n\in\operatorname{path}(M),\ V(n)=1\},\qquad R=E
 | $V(n)$ | Whether node $n$ still has restorable Mamba state | Whether its `mamba_value` is present |
 | $\operatorname{path}(M)$ | Nodes from the root to matched position $M$ | Radix-tree matching |
 | $P$ | Newest path position where $V(n)=1$ | Best candidate in `_match_prefix_helper` |
-| $R$ | Positions replayed from restore point to new end | Calculated in this step |
+| $R$ | Positions recomputed from restore point to new end | Calculated in this step |
 
 ### The numbers on the stage
 

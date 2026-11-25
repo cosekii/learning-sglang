@@ -5,6 +5,7 @@
 ### 图上是什么
 
 - 两行使用同一台机器、同一个 5,500 token system 和同一批短 user；唯一改动的实验设置是 `num_batch`。
+- 图上按 `n_batch` 的含义把 `num_batch` 标为「每批调度的 token 数」。Ollama 实际同时设置 `n_batch` 和 `n_ubatch`，本步不展开二者区别。
 - 蓝色横条是短请求总耗时，使用同一把 3.95 秒标尺。右列是日志报告的 prefill 重算 token 范围，不是 user 本身的长度。
 - 下方同时写出每次短请求少等的 3.04 秒和冷启动多等的 11.5 秒，避免只报收益。
 
@@ -31,7 +32,7 @@ $$r=\frac{3.95}{0.91}\approx4.3,\qquad \Delta W_{\mathrm{cold}}=28.4-16.9=11.5\ 
 
 重算量随设置变化已经很清楚。下一步先看全注意力为什么能只算新的短 user。
 
-来源：`Awesome-ML-SYS-Tutorial/engineer/hybrid-prefix-cache/readme.md:566-599`。
+来源：`Awesome-ML-SYS-Tutorial/engineer/hybrid-prefix-cache/readme.md:245-253,566-599`。
 
 ## 第 2 步 · 全注意力按 token 留格子
 
@@ -98,13 +99,13 @@ $$S_t=U(S_{t-1},x_t)$$
 
 来源：`Awesome-ML-SYS-Tutorial/engineer/hybrid-prefix-cache/readme.md:93-165`；llama.cpp `7e4c0a96880dae4fc4268ad441f8a6446bd5460a` 的 `src/llama-memory-recurrent.cpp:170-189`、`common/common.h:970-975`。
 
-## 第 4 步 · 从最近的可用 checkpoint 重放
+## 第 4 步 · 从最近的可用 checkpoint 重算
 
 **一句话。** checkpoint 主动保存某个位置的整份 state；新请求从不超过匹配末尾的最新副本恢复，再算到新的 prompt 末尾。
 
 ### 图上是什么
 
-- 蓝线是新旧请求相同的 5,514 个 token。橙色段是新 prompt 末尾前的重放范围，红色旧尾部副本越过了匹配位置，不能使用。
+- 蓝线是新旧请求相同的 5,514 个 token。橙色段是新 prompt 末尾前的重算范围，红色旧尾部副本越过了匹配位置，不能使用。
 - 5,514 是理想的续算位置，但这里没有 state 副本。最新可用副本在 4,536，所以引擎先恢复该点，再处理到 5,558。
 - 位置间距不按 token 数成比例。1,022 是图上位置相减的结果；原文日志写「约 1,020 个重算 token」，两者口径不同，本步不把约数改成精确等式。
 
@@ -179,7 +180,7 @@ $$R=5{,}558-4{,}536=1{,}022$$
 
 - 蓝色路径从更早前缀 $P$ 到共同前缀 $M$。$P=4{,}536$ 仍有 state；$M=5{,}514$ 的 `mamba_value` 已置为 `None`，所以画成红色虚线墓碑。
 - 旧 user 的叶节点仍可有 state，但它已经包含不同尾部，不能服务新请求。橙色新尾部 $E=5{,}558$ 必须计算。
-- token 匹配仍能沿树到 $M$，恢复候选却跳过 $M$、停回 $P$。因此重放覆盖 $P\rightarrow M\rightarrow E$，不是只算 $M\rightarrow E$。
+- token 匹配仍能沿树到 $M$，恢复候选却跳过 $M$、停回 $P$。因此重算覆盖 $P\rightarrow M\rightarrow E$，不是只算 $M\rightarrow E$。
 
 ### 公式与符号
 
@@ -192,7 +193,7 @@ $$P=\max\{\operatorname{pos}(n):n\in\operatorname{path}(M),\ V(n)=1\},\qquad R=E
 | $V(n)$ | 节点 $n$ 是否仍有可恢复的 Mamba state | 节点的 `mamba_value` 是否非空 |
 | $\operatorname{path}(M)$ | 从 root 到匹配位置 $M$ 的节点路径 | radix 树匹配 |
 | $P$ | 路径上最新仍满足 $V(n)=1$ 的位置 | `_match_prefix_helper` 的最佳候选 |
-| $R$ | 从恢复点到新末尾的重放位置数 | 本步计算 |
+| $R$ | 从恢复点到新末尾的重算位置数 | 本步计算 |
 
 ### 代入图上的数
 
