@@ -88,3 +88,9 @@ export const COMM_EXAMPLE_TOTAL_AFTER_MS = COMM_EXAMPLE_COMPUTE_AFTER_MS + COMM_
 export const COMM_EXAMPLE_COMPUTE_SAVED_MS = COMM_EXAMPLE_COMPUTE_BEFORE_MS - COMM_EXAMPLE_COMPUTE_AFTER_MS;
 export const COMM_EXAMPLE_WAIT_ADDED_MS = COMM_EXAMPLE_WAIT_AFTER_MS - COMM_EXAMPLE_WAIT_BEFORE_MS;
 export const COMM_EXAMPLE_TOTAL_ADDED_MS = COMM_EXAMPLE_TOTAL_AFTER_MS - COMM_EXAMPLE_TOTAL_BEFORE_MS;
+
+// Constructed four-GPU sum used throughout the communication chapter.
+export const COMM_WORLD_SIZE = 4;
+export const COMM_PARTIAL_TENSORS = [[1, 2], [3, 4], [5, 6], [7, 8]];
+export const COMM_REDUCED_TENSOR = [0, 1].map((column) => COMM_PARTIAL_TENSORS.reduce((sum, tensor) => sum + tensor[column], 0));
+export const COMM_TENSOR_TEXT = (tensor: number[]) => `[${tensor.join(', ')}]`;

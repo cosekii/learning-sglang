@@ -32,3 +32,37 @@ Zero-to-sglang Part III Chapter 4 §2.1 explains that TP repeatedly combines loc
 To locate the communication wait, first see which result every GPU must obtain.
 
 Source: `zero-to-sglang/course-material/ch/part3/第4章_横向扩展.md:19-34`.
+
+## Step 2 · All-reduce gives every GPU the same total
+
+**One sentence.** Four GPUs hold different two-number tensors; SUM all-reduce adds matching positions and returns `[16, 20]` to every GPU.
+
+### On the stage
+
+- The four blue boxes are different local tensors, not four copies of one input.
+- The center adds by position: $1+3+5+7=16$ in the first column and $2+4+6+8=20$ in the second.
+- The orange panel shows GPU 0–3 holding the same complete result afterward. Color separates local inputs from reduced outputs.
+
+### Formula and symbols
+
+$$y_j=\sum_{r=0}^{N-1}x_{r,j}$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $N$ | Number of participating GPUs | Constructed here: 4 |
+| $r$ | GPU index | 0–3 in this step |
+| $j$ | Tensor column | 0 or 1 here |
+| $x_{r,j}$ | Column $j$ on GPU $r$ | Local tensors on the stage |
+| $y_j$ | Sum of column $j$ across all GPUs | Calculated in this step |
+
+### The numbers on the stage
+
+$$y_0=1+3+5+7=16,\qquad y_1=2+4+6+8=20$$
+
+Every GPU therefore receives $y=[16,20]$. `Reduce` returns the total to one destination; `all-reduce` returns it to every participant. Other reductions exist, including MAX, but this chapter uses SUM and does not expand them.
+
+### Next
+
+Which processes represent these GPUs, and how does the program know the participant count? The next step draws the process group.
+
+Sources: `Awesome-ML-SYS-Tutorial/torch/torch-distributed/readme.md:510-526`; `zero-to-sglang/course-material/ch/part2/第9章_多进程与张量并行.md:82-105`.

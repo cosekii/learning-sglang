@@ -15,11 +15,15 @@ export const deep = await deepFor('ml-sys-04-gpu-communication');
 
 Step 1 is a constructed timing example, not a hardware measurement. It illustrates the tradeoff in zero-to-sglang Part III Chapter 4 §2.1: splitting work can save compute time while communication launch, transfer and synchronization add waiting. The chapter does not claim that 8 GPUs are generally slower than 4.
 
+Step 2 uses constructed tensors to show SUM all-reduce: corresponding positions are added and every participant receives the result. The operation follows `Awesome-ML-SYS-Tutorial/torch/torch-distributed/readme.md:510-526` and zero-to-sglang Part II Chapter 9 §3.1.
+
 </details>
 
 <details class="i18n-zh">
 <summary>本章说法的出处</summary>
 
 第 1 步是构造的时间例子，不是硬件实测。它对应 zero-to-sglang 第 3 部分第 4 章 §2.1 的权衡：拆分工作可以减少计算时间，通信的启动、传输和同步也会增加等待。本章不声称 8 张 GPU 通常比 4 张慢。
+
+第 2 步用构造张量说明 SUM all-reduce：对应位置相加，每个参与者都拿到结果。操作定义依据 `Awesome-ML-SYS-Tutorial/torch/torch-distributed/readme.md:510-526` 和 zero-to-sglang 第 2 部分第 9 章 §3.1。
 
 </details>
