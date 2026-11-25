@@ -21,6 +21,9 @@
     VOXT_HIGH_PASS_CLEAR_HZ,
     VOXT_HIGH_PASS_HUM_HZ,
     VOXT_HIGH_PASS_HUM_RATIO,
+    VOXT_VAD_FRAME_MS,
+    VOXT_VAD_ONSET_FRAMES,
+    VOXT_VAD_ONSET_MS,
   } from '../../voxt/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -40,6 +43,9 @@
   }, {
     caption: 'A high-pass filter reduces slow hum in the model copy. The saved recording does not change.',
     captionZh: '高通滤波减弱副本里的低沉嗡声。保存的录音不变。',
+  }, {
+    caption: 'The voice detector waits for three louder 20 ms slices in a row. That is 60 ms, so one key click does not start speech.',
+    captionZh: '语音检测要连续三个比噪声响的 20 ms 小段。共 60 ms，一次按键声还不够。',
   }];
   const ariaLabels = [{
     en: 'The helper cuts one second of continuous sound into ten ordered audio frames, each holding 100 milliseconds',
@@ -56,6 +62,9 @@
   }, {
     en: 'A high-pass filter reduces a slow 50 Hz hum in the model copy while a faster 200 Hz sound stays the same. Hz means vibrations each second.',
     zh: '高通滤波把模型副本里每秒振动 50 次的低沉嗡声减弱，每秒振动 200 次的声音保持不变。',
+  }, {
+    en: 'Voice activity detection compares 20 millisecond slices with room noise. One louder slice is not enough. Three louder slices in a row total 60 milliseconds and start a speech segment.',
+    zh: '语音活动检测把 20 毫秒的小段与房间噪声比较。一个较响的小段还不够，连续三个较响的小段共 60 毫秒，开始一个说话段。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -72,7 +81,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(step === 0 ? (phone ? 590 : 380) : step === 2 ? (phone ? 450 : 340) : step === 3 ? (phone ? 475 : 370) : step === 4 ? (phone ? 480 : 420) : (phone ? 515 : 330));
+  const H = $derived(step === 0 ? (phone ? 590 : 380) : step === 2 ? (phone ? 450 : 340) : step === 3 ? (phone ? 475 : 370) : step === 4 ? (phone ? 480 : 420) : step === 5 ? (phone ? 445 : 335) : (phone ? 515 : 330));
   const frames = Array.from({ length: VOXT_CAPTURE_FRAME_COUNT }, (_, i) => ({
     seq: i,
     start: i * VOXT_CAPTURE_FRAME_MS,
@@ -89,6 +98,13 @@
     const y = base + amplitude * Math.sin(x * Math.PI * 2 * cycles);
     return `${i ? 'L' : 'M'}${(x * width).toFixed(1)},${y.toFixed(1)}`;
   }).join(' ');
+  const vadPanels = $derived([1, VOXT_VAD_ONSET_FRAMES].map((count, i) => ({
+    count,
+    x: phone ? 25 : 40 + i * 350,
+    y: phone ? 90 + i * 155 : 100,
+    width: phone ? 250 : 290,
+    height: phone ? 125 : 160,
+  })));
   const partialLayout = $derived(Array.from({ length: VOXT_DEMO_FULL_FRAME_COUNT + 1 }, (_, i) => {
     const full = i < VOXT_DEMO_FULL_FRAME_COUNT;
     const width = phone ? 220 : 240;
@@ -232,7 +248,7 @@
       {/if}
       <text x={W / 2} y={phone ? 414 : 328} text-anchor="middle" class="formula">{t('ORIGINAL STAYS · COPY CHANGES', '原件不动 · 副本处理')}</text>
       <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Processing is on here; keeping audio is a separate setting.', '图中开启处理；是否保存录音由另一项设置决定。')}</text>
-      {:else}
+      {:else if step === 4}
       <text x={W / 2} y={phone ? 25 : 30} text-anchor="middle" class="title">{t('HIGH-PASS REDUCES LOW HUM', '高通滤波减弱低沉嗡声')}</text>
       <text x={W / 2} y={phone ? 47 : 53} text-anchor="middle" class="subtitle">{t('high-pass = reduces slow vibrations', '高通 = 减弱振动慢的声音')}</text>
       <text x={W / 2} y={phone ? 68 : 75} text-anchor="middle" class="definition">{t('Hz = vibrations each second', 'Hz = 每秒振动多少次')}</text>
@@ -255,6 +271,25 @@
       <line x1={phone ? 137 : 330} y1={phone ? 355 : 328} x2={phone ? 158 : 390} y2={phone ? 355 : 328} stroke="var(--muted)" stroke-width="2" marker-end="url(#byte-arrow)" />
       <text x={phone ? 225 : 530} y={phone ? 410 : 378} text-anchor="middle" class="cut">{t('same sound', '声音不变')}</text>
       <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Public response; both sides share one scale.', '按公开响应绘制；处理前后同一尺度。')}</text>
+      {:else}
+      <text x={W / 2} y={phone ? 25 : 30} text-anchor="middle" class="title">{t('VOICE DETECTION WAITS FOR 60 MS', '语音检测要等连续 60 ms')}</text>
+      <text x={W / 2} y={phone ? 47 : 53} text-anchor="middle" class="subtitle">{t('VAD = voice activity detection · finds speech', 'VAD = 语音活动检测，找出说话声')}</text>
+      <text x={W / 2} y={phone ? 69 : 75} text-anchor="middle" class="definition">{t('grey line = room noise · blue = louder slices', '灰线 = 房间噪声 · 蓝柱 = 更响的小段')}</text>
+      {#each vadPanels as panel}
+        <rect x={panel.x} y={panel.y} width={panel.width} height={panel.height} rx="10" fill="var(--bg)" stroke={panel.count === 1 ? 'var(--line)' : 'var(--accent)'} stroke-width={panel.count === 1 ? 1 : 2} />
+        <text x={panel.x + panel.width / 2} y={panel.y + 22} text-anchor="middle" class="label">{panel.count === 1 ? t('ONE KEY CLICK', '一次按键声') : t('THREE VOICE SLICES', '连续三个说话小段')}</text>
+        {@const base = panel.y + (phone ? 75 : 87)}
+        <line x1={panel.x + 20} y1={base - 25} x2={panel.x + panel.width - 20} y2={base - 25} stroke="var(--muted)" stroke-dasharray="4 3" />
+        {#each Array.from({ length: VOXT_VAD_ONSET_FRAMES }, (_, j) => j) as j}
+          {@const active = j < panel.count}
+          {@const barX = panel.x + panel.width / 2 + (j - 1) * 60 - 22}
+          <rect x={barX} y={active ? base - (phone ? 42 : 52) : base - 14} width="44" height={active ? (phone ? 42 : 52) : 14} rx="4" fill={active ? 'var(--accent-soft)' : 'var(--bg)'} stroke={active ? 'var(--accent)' : 'var(--line)'} stroke-width={active ? 2 : 1} />
+          <text x={barX + 22} y={base + 17} text-anchor="middle" class="detail">{VOXT_VAD_FRAME_MS} ms</text>
+        {/each}
+        <text x={panel.x + panel.width / 2} y={panel.y + (phone ? 110 : 143)} text-anchor="middle" class={panel.count === 1 ? 'detail' : 'cut'}>{panel.count === 1 ? t(`${VOXT_VAD_FRAME_MS} ms < ${VOXT_VAD_ONSET_MS} ms · NOT YET`, `${VOXT_VAD_FRAME_MS} ms < ${VOXT_VAD_ONSET_MS} ms · 还不够`) : t(`${VOXT_VAD_ONSET_FRAMES} × ${VOXT_VAD_FRAME_MS} = ${VOXT_VAD_ONSET_MS} ms · SPEECH`, `${VOXT_VAD_ONSET_FRAMES} × ${VOXT_VAD_FRAME_MS} = ${VOXT_VAD_ONSET_MS} ms · 说话段`)}</text>
+      {/each}
+      <text x={W / 2} y={phone ? 400 : 290} text-anchor="middle" class="formula">{VOXT_VAD_ONSET_MS} ms ÷ {VOXT_VAD_FRAME_MS} ms = {VOXT_VAD_ONSET_FRAMES} {t('slices in a row', '个连续小段')}</text>
+      <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Constructed slices; public detector defaults.', '构造示例；采用公开检测器默认值。')}</text>
       {/if}
     </svg>
   </div>

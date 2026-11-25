@@ -252,3 +252,65 @@ Public baseline: `sglang-omni@6d8ed2dcf70da1b021bb14b62239a3add428636c`; paths a
 - Default corner: `Voxt/internal/dsp/params.go:5-10,41-50`.
 - Fourth-order filter, response function and new-slice output: `Voxt/internal/dsp/highpass.go:65-106`.
 - Public test for about −16.4 dB at 50 Hz, −3 dB at 80 Hz and nearly unchanged 200 Hz audio: `Voxt/internal/dsp/dsp_test.go:12-44`.
+
+## Step 6 · Speech starts after 60 ms in a row
+
+> **In one line:** The default energy VAD examines the copy in 20 ms slices and waits for three consecutive slices above its onset thresholds, so one 20 ms key click is not enough.
+
+### On the stage
+
+- These 20 ms analysis slices differ from the helper's 100 ms audio frames in Step 1. One 100 ms audio frame yields five consecutive 20 ms analysis slices.
+- The dashed grey line is the room-noise estimate, which follows quiet slices. A blue bar rises above it to represent a sufficiently loud slice. The stage focuses on the time condition; the real onset also requires an absolute minimum level.
+- At left, one louder 20 ms slice does not reach 60 ms in a row, so it says “not yet.” At right, three sufficiently loud slices arrive consecutively, and speech starts when the third arrives.
+- The segment start moves back to the first of those three slices rather than the end of the third. Waiting for confirmation does not cut off the beginning of the speech.
+
+### Formula
+
+The defaults give the samples per analysis frame and the consecutive frames needed for onset:
+
+$$
+S=r\times\frac{F}{1000},\qquad N=\frac{O}{F}
+$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $r$ | Samples per second | This chapter's 16,000 Hz |
+| $F$ | VAD analysis-frame duration | Default 20 ms |
+| $O$ | Consecutive duration needed to start speech | Default 60 ms |
+| $S$ | Samples per analysis frame | Calculated in this step |
+| $N$ | Consecutive frames needed to start speech | Calculated in this step |
+
+The detector also converts each analysis frame to a level:
+
+$$
+L=10\log_{10}(\operatorname{mean}(x^2)),\qquad x\in[-1,1]
+$$
+
+### The numbers on the stage
+
+| Quantity | Calculation | Result |
+|---|---|---:|
+| Samples per analysis frame | $16{,}000\times20/1{,}000$ | 320 samples |
+| Consecutive onset frames | $60/20$ | 3 frames |
+| Analysis frames per helper frame | $100/20$ | 5 frames |
+
+By default, every onset frame must satisfy both $L>\text{noise floor}+10\,\mathrm{dB}$ and $L>-60\,\mathrm{dBFS}$. The implementation uses strict comparisons; the documentation summarizes both as “above.”
+
+### Scope
+
+This stage covers only the default energy detector's onset condition. It does not expand model-assisted detection, noise-floor updates or the complete file-versus-stream sending routes. After onset, the continuation threshold falls to 6 dB above the noise floor. Speech ends after 300 ms below that threshold, with the segment end returning to the last frame that met it.
+
+With high-pass enabled, detection also listens to the original recording. The file route merges speech found in either version, and the streaming gate can open from either one. This conservative rule keeps speech found on either side instead of letting the filter cut an onset.
+
+### Next
+
+Detection finds the speech before level processing measures its strength. Gain follows speech frames rather than room noise, so silence does not drive the volume upward.
+
+### Sources
+
+Public baseline: `sglang-omni@6d8ed2dcf70da1b021bb14b62239a3add428636c`; paths are relative to that repository.
+
+- Twenty-millisecond analysis frames, the 60 ms onset, thresholds and 300 ms hangover: `Voxt/internal/vad/vad.go:21-57`.
+- Consecutive onset thresholds and segment start at the first qualifying frame: `Voxt/internal/vad/vad.go:239-278`.
+- Level formula and conservative detection rationale: `Voxt/internal/vad/doc.go:1-31`.
+- Speech found in either original or filtered audio is kept: `Voxt/internal/vad/doc.go:54-62`; streaming wiring: `Voxt/internal/session/run_audio.go:128-145`; file merge: `Voxt/internal/dsp/level.go:144-148`.

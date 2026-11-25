@@ -38,3 +38,9 @@ export const VOXT_HIGH_PASS_HUM_HZ = 50;
 export const VOXT_HIGH_PASS_CLEAR_HZ = 200;
 export const VOXT_HIGH_PASS_HUM_RESPONSE_DB = -16.4;
 export const VOXT_HIGH_PASS_HUM_RATIO = 10 ** (VOXT_HIGH_PASS_HUM_RESPONSE_DB / 20);
+
+// Public energy-VAD defaults; the one-click and three-slice examples are constructed.
+export const VOXT_VAD_FRAME_MS = 20;
+export const VOXT_VAD_ONSET_MS = 60;
+export const VOXT_VAD_ONSET_FRAMES = VOXT_VAD_ONSET_MS / VOXT_VAD_FRAME_MS;
+export const VOXT_VAD_FRAME_SAMPLES = VOXT_CAPTURE_SAMPLE_RATE * VOXT_VAD_FRAME_MS / 1000;
