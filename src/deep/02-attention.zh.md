@@ -21,7 +21,7 @@
 
 ### 背景
 
-Llama-3-8B 由 32 个一模一样结构的层（layer）叠成。每一层先做 **attention**（让每个 token 从别的 token 那里取信息），再做一个 MLP（每个 token 各自变换）。第 1 章第 3 步的「前向传播」就是把 5 个 token 依次穿过这 32 层。
+Llama-3-8B 由 32 个一模一样结构的层（layer）叠成。每一层先做 **attention**（让每个 token 从别的 token 那里取信息），再做一个 MLP（每个 token 各自变换）。第 1 章第 3 步的「前向传播」就是把 5 个 token 依次穿过这 32 层。[Meta 官方 Llama 3 代码](https://github.com/meta-llama/llama3/blob/main/llama/model.py#L20-L23) 的 `ModelArgs.n_layers = 32` 给出层数；同文件 `llama/model.py:251-264` 用同一个 `TransformerBlock` 构造这些层。
 
 这一章只看**某一层里的 attention**，而且先只看其中一个 head（第 14 步再说 head 有几个）。五个位置是一起并行算的，不是一个接一个。
 
