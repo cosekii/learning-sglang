@@ -47,7 +47,7 @@
     { n: 5, rows: true, attend: 4, weights: true, mix: true, caption: `Its output is the values, blended by those weights. This is how "is" finds out it's sitting after "capital of France".`, captionZh: `每列 value 先乘自己的权重，再把五份相加。␣France 的权重最大，贡献也最大。` },
     { n: 5, rows: true, causal: true, caption: `Every position does the same thing with its own query, over the keys up to itself. One pass, all five outputs at once.`, captionZh: `每行只看自己和前面的 key，算一份输出。不能偷看后面。` },
     // Decode step: the layer runs again, and it really does start over. Same three steps as above, on six tokens.
-    { n: 6, flyIn: true, caption: `Decode step. "Paris" joins the sequence, and the layer runs again on all six. From the top.`, captionZh: `Decode 步。"Paris" 加入序列，这一层对全部六个 token 重新运行，从头开始。` },
+    { n: 6, flyIn: true, caption: `Decode step. "Paris" joins the sequence, and the layer runs again on all six. From the top.`, captionZh: `模型选出 ␣Paris，接到原来五个 token 后。六个 token 一起重新进入同一层。` },
     { n: 6, x: true, caption: `Six tokens come in as six vectors.`, captionZh: `六个 token 各变成一排数，得到 x₁ 到 x₆。前五个 x 没变，只有 x₆ 是新的。` },
     { n: 6, rows: true, caption: `Every token multiplies its x by the same three matrices. All six of them, from scratch.`, captionZh: `每个 token 都用自己的 x 乘同样的三个矩阵。全部六个，从头算起。` },
     { n: 6, rows: true, recompute: true, markNew: true, caption: `Look at the five old columns. Same x, same matrices, same vectors as last time. Nothing changed, we just computed them again.`, captionZh: `前五个 x 和三张数字表没变。却又重算出和第 3 步一样的 q、k、v。` },
@@ -105,6 +105,7 @@
   const zhWeights = $derived(step === 4 && $lang === 'zh');
   const zhMix = $derived(step === 5 && $lang === 'zh');
   const zhCausal = $derived(step === 6 && $lang === 'zh');
+  const zhDecode = $derived(step === 7 && $lang === 'zh');
   const zhSix = $derived(step === 8 && $lang === 'zh');
   const zhRecompute = $derived(step === 9 && $lang === 'zh');
   let phone = $state(false);
@@ -120,6 +121,7 @@
   const phoneWeights = $derived(phone && zhWeights);
   const phoneMix = $derived(phone && zhMix);
   const phoneCausal = $derived(phone && zhCausal);
+  const phoneDecode = $derived(phone && zhDecode);
   const phoneSix = $derived(phone && zhSix);
   const phoneRecompute = $derived(phone && zhRecompute);
   const phoneSame = $derived(phone && zhSame);
@@ -132,8 +134,31 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox={phoneProject ? '0 0 360 560' : phoneSame ? '0 0 360 500' : phoneIntro ? '0 0 360 450' : phoneRecompute ? '0 0 360 440' : phoneSix ? '0 0 360 430' : phoneCausal ? '0 0 360 520' : phoneMix ? '0 0 360 580' : phoneWeights ? '0 0 360 550' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Attention per decode step, step {step + 1}" class:phone-project={phoneProject} class:phone-same={phoneSame} class:phone-intro={phoneIntro} class:phone-weights={phoneWeights} class:phone-mix={phoneMix} class:phone-causal={phoneCausal} class:phone-six={phoneSix} class:phone-recompute={phoneRecompute}>
-      {#if phoneSame}
+    <svg viewBox={phoneProject ? '0 0 360 560' : phoneSame ? '0 0 360 500' : phoneDecode ? '0 0 360 500' : phoneIntro ? '0 0 360 450' : phoneRecompute ? '0 0 360 440' : phoneSix ? '0 0 360 430' : phoneCausal ? '0 0 360 520' : phoneMix ? '0 0 360 580' : phoneWeights ? '0 0 360 550' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Attention per decode step, step {step + 1}" class:phone-project={phoneProject} class:phone-same={phoneSame} class:phone-decode={phoneDecode} class:phone-intro={phoneIntro} class:phone-weights={phoneWeights} class:phone-mix={phoneMix} class:phone-causal={phoneCausal} class:phone-six={phoneSix} class:phone-recompute={phoneRecompute}>
+      {#if phoneDecode}
+        <defs>
+          <marker id="phone-decode-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+            <path d="M 0 0 L 7 3.5 L 0 7 z" fill="var(--muted)" />
+          </marker>
+        </defs>
+        <text x="180" y="26" text-anchor="middle" class="ph-title">␣Paris 接到末尾</text>
+        <text x="180" y="52" text-anchor="middle" class="ph-title">6 个 token 一起再进同一层</text>
+        <rect x="20" y="65" width="12" height="12" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="40" y="76">原来的 5 个</text>
+        <rect x="190" y="65" width="12" height="12" rx="3" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x="210" y="76">模型新选出 · ␣ = 空格</text>
+        {#each cols as c, i}
+          <text x="26" y={115 + i * 36} text-anchor="middle">{i + 1}</text>
+          <rect x="48" y={94 + i * 36} width="264" height="28" rx="5" fill={i === PROMPT_N ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={i === PROMPT_N ? 'var(--gen)' : 'var(--accent)'} stroke-width="1.5" />
+          <text x="180" y={114 + i * 36} text-anchor="middle">{c.t.replace(/^ /, '␣')}</text>
+        {/each}
+        <text x="180" y="326" text-anchor="middle" class="ph-strong">5 + 1 = 6 个：整组重新输入，不只 ␣Paris</text>
+        <line x1="180" y1="338" x2="180" y2="360" stroke="var(--muted)" stroke-width="2" marker-end="url(#phone-decode-arrow)" />
+        <rect x="30" y="370" width="300" height="72" rx="8" fill="var(--bg)" stroke="var(--line)" />
+        <text x="180" y="398" text-anchor="middle" class="ph-title">同一个 attention 层</text>
+        <text x="180" y="426" text-anchor="middle">从 x 开始，重走第 2–7 步</text>
+        <text x="180" y="480" text-anchor="middle">下一步：6 个 token → 6 个 x</text>
+      {:else if phoneSame}
         <text x="180" y="28" text-anchor="middle" class="ph-title">前五列：和第 3 步结果一样</text>
         <text x="180" y="56" text-anchor="middle">拿第 1 列对照；第 2—5 列也一样</text>
         <text x="132" y="94" text-anchor="middle" class="ph-strong">第 3 步（上次）</text>
@@ -326,6 +351,30 @@
         <text x="16" y="482">图中数四舍五入</text>
         <text x="16" y="506">0.06 + 0.26 + 0.05 + 0.53 + 0.10 = 1.00</text>
         <text x="16" y="540">下一步：按这些权重混合五列 value</text>
+      {:else if zhDecode}
+        <defs>
+          <marker id="decode-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+            <path d="M 0 0 L 8 4 L 0 8 z" fill="var(--muted)" />
+          </marker>
+        </defs>
+        <text x="20" y="26" class="boxtitle">␣Paris 接到末尾，6 个 token 一起再进同一层</text>
+        <rect x="20" y="43" width="14" height="14" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="44" y="55" class="legend">原来的 5 个</text>
+        <rect x="164" y="43" width="14" height="14" rx="3" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x="188" y="55" class="legend">模型新选出</text>
+        <text x="700" y="55" text-anchor="end" class="legend">␣ = 空格</text>
+        <text x="16" y="103" class="rowlabel">tokens</text>
+        {#each cols as c, i}
+          <rect x={c.x} y="78" width={c.w} height="32" rx="6" fill={i === PROMPT_N ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={i === PROMPT_N ? 'var(--gen)' : 'var(--accent)'} stroke-width="1.5" />
+          <text x={c.cx} y="99" text-anchor="middle" class="tok">{c.t.replace(/^ /, '␣')}</text>
+        {/each}
+        <text x={W / 2} y="151" text-anchor="middle" class="slab">6 个 token 整组重新输入，不只 ␣Paris</text>
+        <line x1={W / 2} y1="169" x2={W / 2} y2="207" stroke="var(--muted)" stroke-width="2" marker-end="url(#decode-arrow)" />
+        <rect x="140" y="218" width="440" height="88" rx="10" fill="var(--bg)" stroke="var(--line)" />
+        <text x={W / 2} y="251" text-anchor="middle" class="boxtitle">同一个 attention 层（第 1–7 步）</text>
+        <text x={W / 2} y="283" text-anchor="middle" class="slab">从 x 开始，重走第 2–7 步</text>
+        <text x={W / 2} y="342" text-anchor="middle" class="sum">这次输入：5 + 1 = 6 个 token</text>
+        <text x={W / 2} y="382" text-anchor="middle" class="footnote">下一步：看这 6 个 token 怎样变成 6 个 x</text>
       {:else if zhCausal}
         <text x="20" y="26" class="boxtitle">五个位置，各算一份输出</text>
         <text x="20" y="50" class="legend">行是自己的 query · 列是要看的 key · 每行只许看自己和前面</text>
@@ -713,6 +762,9 @@
   .example-hit:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
   .badge { font-family: var(--mono); font-size: 10px; font-weight: 700; }
   .num { font-family: var(--mono); font-size: 10.5px; fill: var(--fg); }
+  .phone-decode text { font-family: var(--sans); font-size: 12px; fill: var(--fg); }
+  .phone-decode .ph-title { font-size: 16px; font-weight: 650; }
+  .phone-decode .ph-strong { font-weight: 650; }
   .phone-project text { font-family: var(--sans); font-size: 12px; fill: var(--fg); }
   .phone-project .ph-title { font-size: 16px; font-weight: 650; }
   .phone-project .ph-strong { font-weight: 650; }
