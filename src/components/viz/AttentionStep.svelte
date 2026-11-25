@@ -53,7 +53,7 @@
     { n: 6, rows: true, recompute: true, markNew: true, caption: `Look at the five old columns. Same x, same matrices, same vectors as last time. Nothing changed, we just computed them again.`, captionZh: `前五个 x 和三张数字表没变。却又重算出和第 3 步一样的 q、k、v。` },
     { n: 6, rows: true, markNew: true, attend: 5, weights: true, mix: true, caption: `Paris's query looks at all six keys and blends all six values. It needs every earlier key and value.`, captionZh: `Paris 的 query 看全部六个 key，混合全部六个 value。它需要之前每一个 key 和 value。` },
     { n: 6, rows: true, markNew: true, unusedQ: true, caption: `The old queries? Their outputs only go on to rebuild the next layer's old x, and from it the same old k and v. Keep every layer's k and v, and nothing reads them.`, captionZh: `旧 q 只用于旧输出，旧输出又会还原旧 k、v。留下每层的旧 k、v，旧 q 就没用了。` },
-    { n: 6, rows: true, markNew: true, tally: true, caption: `So each decode step, the new token needs every earlier k and v, and nothing else from the past. We recomputed them all, identically, in every head of every layer. Why not just keep them?`, captionZh: `所以每个 decode 步，新 token 只需要之前所有的 k 和 v，不需要过去的其他东西。我们却在每层每个 head 里把它们原样重算了一遍。为什么不直接留住它们？` },
+    { n: 6, rows: true, markNew: true, tally: true, caption: `So each decode step, the new token needs every earlier k and v, and nothing else from the past. We recomputed them all, identically, in every head of every layer. Why not just keep them?`, captionZh: `新 token 要用全部旧 k、v，不用旧 q。每层都在重算旧 k、v，为什么不直接留下？` },
   ];
 
 
@@ -109,6 +109,7 @@
   const zhSix = $derived(step === 8 && $lang === 'zh');
   const zhRecompute = $derived(step === 9 && $lang === 'zh');
   const zhUnusedQ = $derived(step === 12 && $lang === 'zh');
+  const zhConclusion = $derived(step === 13 && $lang === 'zh');
   let phone = $state(false);
   $effect(() => {
     const query = window.matchMedia('(max-width: 900px)');
@@ -127,6 +128,7 @@
   const phoneRecompute = $derived(phone && zhRecompute);
   const phoneSame = $derived(phone && zhSame);
   const phoneUnusedQ = $derived(phone && zhUnusedQ);
+  const phoneConclusion = $derived(phone && zhConclusion);
   const expScores = $derived(cur.attend !== undefined ? scores[cur.attend].map((score) => Math.exp(score)) : []);
   const expTotal = $derived(expScores.reduce((sum, value) => sum + value, 0));
   const tallyDenominator = scores[5].reduce((sum, score) => sum + Math.exp(score), 0);
@@ -136,8 +138,27 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox={phoneProject ? '0 0 360 560' : phoneUnusedQ ? '0 0 360 510' : phoneSame ? '0 0 360 500' : phoneDecode ? '0 0 360 500' : phoneIntro ? '0 0 360 450' : phoneRecompute ? '0 0 360 440' : phoneSix ? '0 0 360 430' : phoneCausal ? '0 0 360 520' : phoneMix ? '0 0 360 580' : phoneWeights ? '0 0 360 550' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Attention per decode step, step {step + 1}" class:phone-project={phoneProject} class:phone-same={phoneSame} class:phone-decode={phoneDecode} class:phone-intro={phoneIntro} class:phone-weights={phoneWeights} class:phone-mix={phoneMix} class:phone-causal={phoneCausal} class:phone-six={phoneSix} class:phone-recompute={phoneRecompute} class:phone-kv={phoneUnusedQ}>
-      {#if phoneUnusedQ}
+    <svg viewBox={phoneConclusion ? '0 0 360 570' : phoneProject ? '0 0 360 560' : phoneUnusedQ ? '0 0 360 510' : phoneSame ? '0 0 360 500' : phoneDecode ? '0 0 360 500' : phoneIntro ? '0 0 360 450' : phoneRecompute ? '0 0 360 440' : phoneSix ? '0 0 360 430' : phoneCausal ? '0 0 360 520' : phoneMix ? '0 0 360 580' : phoneWeights ? '0 0 360 550' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Attention per decode step, step {step + 1}" class:phone-project={phoneProject} class:phone-same={phoneSame} class:phone-decode={phoneDecode} class:phone-intro={phoneIntro} class:phone-weights={phoneWeights} class:phone-mix={phoneMix} class:phone-causal={phoneCausal} class:phone-six={phoneSix} class:phone-recompute={phoneRecompute} class:phone-kv={phoneUnusedQ || phoneConclusion}>
+      {#if phoneConclusion}
+        <text x="180" y="26" text-anchor="middle" class="ph-title">新 token 从过去只要旧 k、v</text>
+        <text x="180" y="52" text-anchor="middle">拿第 12 步的 ␣Paris 看</text>
+        <rect x="15" y="70" width="330" height="230" rx="9" fill="var(--bg)" stroke="var(--line)" />
+        <text x="180" y="98" text-anchor="middle" class="ph-strong">q₆ 算 out₆，输入只有：</text>
+        <rect x="35" y="116" width="290" height="38" rx="6" fill={COLOR.k[0]} stroke={COLOR.k[1]} />
+        <text x="180" y="141" text-anchor="middle">k₁…k₆：旧 k₁…k₅，新 k₆</text>
+        <rect x="35" y="164" width="290" height="38" rx="6" fill={COLOR.v[0]} stroke={COLOR.v[1]} />
+        <text x="180" y="189" text-anchor="middle">v₁…v₆：旧 v₁…v₅，新 v₆</text>
+        <rect x="35" y="212" width="290" height="38" rx="6" fill={COLOR.q[0]} stroke={COLOR.q[1]} />
+        <text x="180" y="237" text-anchor="middle">新 q₆：这次新算，不是旧信息</text>
+        <text x="180" y="280" text-anchor="middle">旧 q₁…q₅ 不在输入里</text>
+        <rect x="15" y="320" width="330" height="160" rx="9" fill="var(--bg)" stroke="var(--line)" />
+        <text x="180" y="348" text-anchor="middle" class="ph-strong">每层却重算同样的旧 k、v</text>
+        <text x="180" y="382" text-anchor="middle">第 1 层：旧 k、v 又算一遍</text>
+        <text x="180" y="414" text-anchor="middle">第 2 层：旧 k、v 又算一遍</text>
+        <text x="180" y="446" text-anchor="middle">……每一层都这样</text>
+        <text x="180" y="514" text-anchor="middle" class="ph-strong">5 个旧位置 × 2（k、v）= 10 排旧数</text>
+        <text x="180" y="550" text-anchor="middle" class="ph-faint">下一章：留下旧 k、v，下次直接读</text>
+      {:else if phoneUnusedQ}
         <defs>
           <marker id="phone-old-q-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
             <path d="M 0 0 L 7 3.5 L 0 7 z" fill="var(--muted)" />
@@ -378,6 +399,40 @@
         <text x="16" y="482">图中数四舍五入</text>
         <text x="16" y="506">0.06 + 0.26 + 0.05 + 0.53 + 0.10 = 1.00</text>
         <text x="16" y="540">下一步：按这些权重混合五列 value</text>
+      {:else if zhConclusion}
+        <defs>
+          <marker id="keep-kv-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+            <path d="M 0 0 L 7 3.5 L 0 7 z" fill="var(--muted)" />
+          </marker>
+        </defs>
+        <text x="20" y="26" class="kv-title">新 token 从过去只要旧 k、v</text>
+        <text x="20" y="50" class="legend">拿第 12 步的 ␣Paris 看：q₆ 读取旧 k、v，得到 out₆</text>
+        <rect x="20" y="80" width="330" height="250" rx="9" fill="var(--bg)" stroke="var(--line)" />
+        <text x="40" y="110" class="slab">q₆ 算 out₆，输入只有：</text>
+        <rect x="40" y="132" width="180" height="44" rx="6" fill={COLOR.k[0]} stroke={COLOR.k[1]} />
+        <text x="130" y="159" text-anchor="middle" class="legend">k₁…k₆：旧 k₁…k₅，新 k₆</text>
+        <rect x="40" y="192" width="180" height="44" rx="6" fill={COLOR.v[0]} stroke={COLOR.v[1]} />
+        <text x="130" y="219" text-anchor="middle" class="legend">v₁…v₆：旧 v₁…v₅，新 v₆</text>
+        <rect x="40" y="252" width="180" height="44" rx="6" fill={COLOR.q[0]} stroke={COLOR.q[1]} />
+        <text x="130" y="279" text-anchor="middle" class="legend">新 q₆：这次新算</text>
+        <path d="M 220 154 C 246 154, 238 190, 262 190" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#keep-kv-arrow)" />
+        <line x1="220" y1="214" x2="262" y2="214" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#keep-kv-arrow)" />
+        <path d="M 220 274 C 246 274, 238 238, 262 238" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#keep-kv-arrow)" />
+        <rect x="270" y="184" width="60" height="60" rx="7" fill="white" stroke={COLOR.v[1]} stroke-width="2" />
+        <text x="300" y="220" text-anchor="middle" class="slab">out₆</text>
+        <text x="40" y="318" class="legend">旧 q₁…q₅：不在输入里</text>
+        <rect x="370" y="80" width="330" height="250" rx="9" fill="var(--bg)" stroke="var(--line)" />
+        <text x="390" y="110" class="slab">每层却重算同样的旧 k、v</text>
+        {#each ['第 1 层', '第 2 层', '每一层'] as layer, i}
+          {@const y = 132 + i * 60}
+          <text x="390" y={y + 27} class="legend">{layer}</text>
+          <rect x="480" y={y} width="90" height="44" rx="6" fill={COLOR.k[0]} stroke={COLOR.k[1]} />
+          <text x="525" y={y + 27} text-anchor="middle" class="legend">旧 k₁…₅</text>
+          <rect x="580" y={y} width="90" height="44" rx="6" fill={COLOR.v[0]} stroke={COLOR.v[1]} />
+          <text x="625" y={y + 27} text-anchor="middle" class="legend">旧 v₁…₅</text>
+        {/each}
+        <text x={W / 2} y="362" text-anchor="middle" class="sum">5 个旧位置 × 2（k、v）= 10 排旧数，每层都重算</text>
+        <text x={W / 2} y="390" text-anchor="middle" class="footnote">下一章：把旧 k、v 留下来，下次直接读</text>
       {:else if zhUnusedQ}
         <defs>
           <marker id="old-q-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
@@ -404,7 +459,7 @@
         <text x="547" y="112" text-anchor="middle" class="tag">三张数字表</text>
         <rect x="20" y="210" width="680" height="142" rx="9" fill="var(--bg)" stroke="var(--line)" />
         <text x="40" y="240" class="slab">留下每层的旧 k、v 后，第 12 步仍然能算：</text>
-        <text x="40" y="278" class="sum">q₆ 读取旧 k₁…k₅、旧 v₁…v₅ → out₆</text>
+        <text x="40" y="278" class="sum">q₆、k₁…k₆、v₁…v₆ → out₆；来自过去的只有旧 k、v</text>
         <text x="40" y="318" class="legend">旧 q₁…q₅、旧 out₁…out₅ 不再读；这条重算链可以不走</text>
         <text x={W / 2} y="390" text-anchor="middle" class="footnote">k、v 要按层分别留下；下一章讲怎样留下并直接读</text>
       {:else if zhDecode}
