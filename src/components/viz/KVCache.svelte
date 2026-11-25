@@ -34,7 +34,7 @@
     { n: 5, cached: 0, compute: all5, caption: `First step: all five tokens at once. Each gets its q, k and v, exactly as before.`, captionZh: `第一次：5 个 token 各得到 q、k、v，cache 仍为空。` },
     { n: 5, cached: 5, compute: all5, store: true, dropQ: true, caption: `Attention runs as before. Then, instead of throwing k and v away, we file them. Five slots. The queries were used, so they go.`, captionZh: `5 个 k、v 存进 cache；q 用完就丢。` },
     { n: 6, cached: 5, compute: [5], flyIn: true, caption: `Decode step. Paris arrives. Only Paris gets an x, a q, a k and a v. One column of work, not six.`, captionZh: `␣Paris 到了，只算它的 1 列；旧 5 列不重算。` },
-    { n: 6, cached: 6, compute: [5], store: true, caption: `Its k and v go into the cache. Slot six.`, captionZh: `它的 k 和 v 进入 cache。第六个槽位。` },
+    { n: 6, cached: 6, compute: [5], store: true, caption: `Its k and v go into the cache. Slot six.`, captionZh: `它的 k、v 写进第 6 格。` },
     { n: 6, cached: 6, compute: [5], attend: 5, caption: `Its query reads every key in the cache and blends every value in the cache. Same result as recomputing, because the cache holds exactly what recomputing would have produced.`, captionZh: `它的 query 读取 cache 里的每个 key，混合每个 value。结果和重算一样，因为 cache 存的正是重算会产生的东西。` },
     { n: 7, cached: 7, compute: [6], flyIn: true, store: true, attend: 6, caption: `Next token, same routine. One column of compute, one more slot, one read of the whole cache.`, captionZh: `下一个 token，同样的流程。一列计算，多一个槽位，读一遍整个 cache。` },
     { n: 7, cached: 7, compute: [6], whyNotQ: true, caption: `Why not keep q too? Nobody asks for it later. A query is used on the step it's made, and its output is consumed right there.`, captionZh: `为什么不把 q 也留下来？之后没人再要它。query 只在生成它的那一步被使用，输出当场就被消耗掉。` },
@@ -83,7 +83,7 @@
     query.addEventListener('change', update);
     return () => query.removeEventListener('change', update);
   });
-  const phoneCustom = $derived(phone && $lang === 'zh' && step <= 3);
+  const phoneCustom = $derived(phone && $lang === 'zh' && step <= 4);
 </script>
 
 <figure class="viz">
@@ -184,6 +184,16 @@
         {@render phoneCache(5, 360, -1, false)}
         <text x="180" y="490" text-anchor="middle">不保存：算 6 列　用 cache：算 1 列</text>
         <text x="180" y="540" text-anchor="middle">下一步：把第 6 组 k、v 也存进去</text>
+      {:else if phoneCustom && step === 4}
+        <text x="180" y="30" text-anchor="middle" class="ph-title">第 6 组 k、v 也入仓</text>
+        <text x="180" y="55" text-anchor="middle">每个新 token 都留下自己的 k、v</text>
+        {@render phoneTokens(6, 80)}
+        {@render phoneCompute([5], 140)}
+        <text x="180" y="320" text-anchor="middle" class="ph-strong">第 6 格填上了</text>
+        {@render phoneCache(6, 350, -1, false)}
+        <text x="180" y="475" text-anchor="middle">现在 6 个位置都有 k、v</text>
+        <text x="180" y="515" text-anchor="middle">q₆ 不入仓，下一步用它读仓库</text>
+        <text x="180" y="580" text-anchor="middle" class="ph-foot">先写入当前 k、v，attention 才能看见自己</text>
       {:else}
       <!-- Contrast brackets: first step vs every step after -->
       {#if cur.contrast}
