@@ -86,3 +86,44 @@ Router 在创建 DataRef 之前按两端位置和数据设备选路。普通 pay
 ### 接下来
 
 第 3 步把这张卡片发布给读者，同时在发送方建立一张等待 ACK 的 `PendingTransfer` 记录。
+
+## 第 3 步 · 发布时另留一张等待回执的记录
+
+> **一句话：** 数据写入 relay 后，发送方按 `object_id` 登记 `PendingTransfer`，再发布 DataRef；`send_payload()` 返回仍不表示接收方已经读取。
+
+### 图上是什么
+
+- 第 1 格是已经写入数据 A 的 `RelayOperation`。写入完成不等于操作已经收尾，蓝色数据仍由这次传输使用。
+- 第 2 格是发送方的 `pending[A]`。本图列出 `ops` 和仍在等待的 `ack`，键 `A` 对应 DataRef 的 `object_id`。
+- 第 3 格是发给 `talker_ar` 的 `DataReady` 控制消息，里面带序列化后的 DataRef。箭头只表示通知发出，不表示数据已被读取。
+- 最下面的 `send_payload()` 状态把「写入 + 通知完成」与「接收方已读取」分开。图中没有画 scheduler 或业务计算。
+
+### 实际调用顺序
+
+| 顺序 | 做什么 | 留下什么 |
+|---|---|---|
+| 1 | `stage_io.write_payload()` 抽取并打包 tensor，调用 relay 的 put | DataRef 和仍存活的 `RelayOperation` |
+| 2 | `publish_data_ready()` 以 `object_id` 为键登记 `PendingTransfer` | operations、ACK future 及 watcher 所需状态 |
+| 3 | 发送 `DataReadyMessage(data_ref=data_ref.to_dict())` | 接收方可解析的 DataRef |
+| 4 | 控制消息发出后启动 `watch_pending()` | 等待 ACK 的后台任务 |
+| 5 | worker 完成 `job.ready` | 等待中的 `send_payload()` 可以返回 |
+
+SHM 使用 `put_chunks_async()`，其他 relay 使用 `put_async()`。两种 put 都返回异步操作及接收端所需元数据；put 完成不是接收方消费完成。
+
+### PendingTransfer 记什么
+
+通用记录保存 `ops`、`ack` future、可选的 KV lease、watcher task 和终态标志。ACK 状态在这张发送方记录里，不在 DataRef 里。正常路径的后续清理由 watcher 等待 ACK 后推动，第 5 步展开。
+
+如果同一数据发给多个 target，每个 target 走自己的发送与 Pending/ACK 生命周期。本图只画 A 发给一个 `talker_ar` 的路径。
+
+### 源码出处
+
+- `sglang_omni/comm/stage_io.py:496-534`：写入 payload、构造 DataRef、返回 operation。
+- `sglang_omni/comm/relay/base.py:91-145`：relay 的 put/get 接口和异步操作契约。
+- `sglang_omni/comm/engine.py:68-75`：`PendingTransfer` 字段；`222-270`：`send_payload()` 等待 `ready`；`1011-1038`：worker 写入；`1052-1061`：完成 `job.ready`；`1125-1208`：登记 pending、发送 DataReady、启动 watcher。
+
+行号对应 `origin/main@0e641996a0c269601d03f1cb29d3f46d7cb345a6`。
+
+### 接下来
+
+第 4 步从接收方收到 DataReady 开始：按 DataRef 读取、重建 payload，读完后发送 ACK。

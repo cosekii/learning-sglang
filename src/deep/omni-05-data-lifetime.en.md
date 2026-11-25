@@ -86,3 +86,44 @@ All line numbers refer to `origin/main@0e641996a0c269601d03f1cb29d3f46d7cb345a6`
 ### Next
 
 Step 3 publishes this descriptor and creates a `PendingTransfer` record that waits for the receiver's ACK.
+
+## Step 3 · Publication leaves a record waiting for acknowledgement
+
+> **In one sentence:** After the relay write, the sender registers `PendingTransfer` by `object_id` and publishes the DataRef; `send_payload()` can return before the receiver reads.
+
+### What the picture shows
+
+- The first box contains the `RelayOperation` that wrote payload A. A completed write does not mean a completed operation because the transfer still uses the blue data.
+- The second box is the sender's `pending[A]`. It shows `ops` and a waiting `ack`; key A matches the DataRef's `object_id`.
+- The third box is the `DataReady` control message sent to `talker_ar`, carrying the serialized DataRef. Its arrow means that the notice was sent, not that the data was read.
+- The bottom status separates “write + notice complete” from “receiver read.” The figure does not show a scheduler or application computation.
+
+### The call sequence
+
+| Order | Action | What remains |
+|---|---|---|
+| 1 | `stage_io.write_payload()` extracts and packs tensors, then calls the relay's put | A DataRef and a live `RelayOperation` |
+| 2 | `publish_data_ready()` registers `PendingTransfer` by `object_id` | Operations, an ACK future and watcher state |
+| 3 | Send `DataReadyMessage(data_ref=data_ref.to_dict())` | A DataRef the receiver can parse |
+| 4 | Start `watch_pending()` after sending the control message | A background task waiting for ACK |
+| 5 | The worker completes `job.ready` | The waiting `send_payload()` can return |
+
+SHM uses `put_chunks_async()`, while other relays use `put_async()`. Both return an asynchronous operation and receiver metadata. Finishing the put does not mean that the receiver consumed the data.
+
+### What PendingTransfer stores
+
+The generic record holds `ops`, an `ack` future, an optional KV lease, a watcher task and terminal-state flags. The sender's record owns the ACK state; DataRef does not. On the normal path, the watcher advances cleanup after the ACK, as Step 5 explains.
+
+Fan-out gives each target its own send and Pending/ACK lifecycle. The figure follows one send from A to one `talker_ar`.
+
+### Source references
+
+- `sglang_omni/comm/stage_io.py:496-534`: payload write, DataRef construction and returned operation.
+- `sglang_omni/comm/relay/base.py:91-145`: relay put/get interface and asynchronous operation contract.
+- `sglang_omni/comm/engine.py:68-75`: `PendingTransfer` fields; `222-270`: `send_payload()` waiting for `ready`; `1011-1038`: worker write; `1052-1061`: `job.ready` completion; `1125-1208`: pending registration, DataReady send and watcher start.
+
+Line numbers refer to `origin/main@0e641996a0c269601d03f1cb29d3f46d7cb345a6`.
+
+### Next
+
+Step 4 starts with DataReady at the receiver: it uses the DataRef to read and rebuild the payload, then sends an ACK.
