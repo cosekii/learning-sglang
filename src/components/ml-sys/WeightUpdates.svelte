@@ -34,7 +34,7 @@
       { title: 'ROLLOUT WAITS', titleZh: 'ROLLOUT 等待', body: 'use v1 only after the update', bodyZh: '更新完成后才用 v1', tone: 'blue' },
     ],
     formulas: [
-      { en: `1B × ${UPDATE_DEBUG_BF16_BYTES} B = ${UPDATE_DEBUG_WEIGHT_GB} GB of weights`, zh: `10 亿个数 × 每个 ${UPDATE_DEBUG_BF16_BYTES} B = ${UPDATE_DEBUG_WEIGHT_GB} GB 权重` },
+      { en: `1 billion values × ${UPDATE_DEBUG_BF16_BYTES} bytes = ${UPDATE_DEBUG_WEIGHT_GB} GB`, zh: `10 亿个数 × 每个 ${UPDATE_DEBUG_BF16_BYTES} 字节 = ${UPDATE_DEBUG_WEIGHT_GB} GB` },
       { en: `2 GB ÷ 3.35 TB/s ≈ ${UPDATE_DEBUG_YARDSTICK_MS.toFixed(1)} ms (HBM)`, zh: `2 GB ÷ 3.35 TB/s ≈ ${UPDATE_DEBUG_YARDSTICK_MS.toFixed(1)} ms（HBM 对照）` },
       { en: `full 1B: ${UPDATE_DEBUG_INITIAL_S} s ≈ ${UPDATE_DEBUG_FULL_YARDSTICK_RATIO.toLocaleString('en-US')} × ${UPDATE_DEBUG_YARDSTICK_MS.toFixed(1)} ms`, zh: `完整 1B：${UPDATE_DEBUG_INITIAL_S} 秒 ≈ ${UPDATE_DEBUG_FULL_YARDSTICK_RATIO.toLocaleString('en-US')} × ${UPDATE_DEBUG_YARDSTICK_MS.toFixed(1)} ms` },
       { en: `one tensor: model code ${UPDATE_DEBUG_INNER_S} s`, zh: `一个张量：模型代码本身 ${UPDATE_DEBUG_INNER_S} 秒` },
@@ -248,8 +248,8 @@
         <text x="600" y="188" text-anchor="middle" class="small">{t('then uses v1', '完成后才用 v1')}</text>
         <rect x="35" y="235" width="310" height="150" rx="12" fill="var(--bg)" stroke="var(--line)" />
         <text x="190" y="263" text-anchor="middle" class="small strong">{t('WEIGHT SIZE · FULL 1B', '权重规模 · 完整 1B')}</text>
-        <text x="190" y="295" text-anchor="middle" class="result">1B × {UPDATE_DEBUG_BF16_BYTES} B = {UPDATE_DEBUG_WEIGHT_GB} GB</text>
-        <text x="190" y="322" text-anchor="middle" class="small">{t('bf16 = 2 B per number · 1B = 1 billion', 'bf16 = 每个数 2 字节 · 1B = 10 亿')}</text>
+        <text x="190" y="295" text-anchor="middle" class="result">{t(`1B values × ${UPDATE_DEBUG_BF16_BYTES} bytes = ${UPDATE_DEBUG_WEIGHT_GB} GB`, `10 亿个数 × 每个 ${UPDATE_DEBUG_BF16_BYTES} 字节 = ${UPDATE_DEBUG_WEIGHT_GB} GB`)}</text>
+        <text x="190" y="322" text-anchor="middle" class="small">{t('1B = 1 billion values · bf16 = 2 bytes each', '1B = 10 亿个数 · bf16 = 每个数 2 字节')}</text>
         <text x="190" y="350" text-anchor="middle" class="result">2 GB ÷ 3.35 TB/s ≈ {UPDATE_DEBUG_YARDSTICK_MS.toFixed(1)} ms</text>
         <text x="190" y="375" text-anchor="middle" class="small">{t('HBM yardstick, not an update prediction', 'HBM 带宽对照，不是更新耗时预测')}</text>
         <rect x="375" y="235" width="310" height="150" rx="12" fill="var(--gen-soft)" stroke="var(--gen)" />
