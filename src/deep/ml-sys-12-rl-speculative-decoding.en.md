@@ -29,7 +29,7 @@ Online draft training means training the checkpoint's built-in multi-token predi
 
 The next step takes one hidden state from each token position in the target's forward pass and asks what clue it gives the draft.
 
-Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:66-94`; `THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a`, `docs/zh/advanced/speculative-decoding.md:24-38`.
+Sources: `Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7`, `rlhf/slime/spec/readme.md:66-94`; `THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a`, `docs/zh/advanced/speculative-decoding.md:24-38`.
 
 ## Step 2 · Target notes at every token
 
@@ -60,7 +60,7 @@ The first position gives $h(a)=H(a)$ and the second gives $h(b)=H(a,b)$. Five po
 
 The draft also needs the next input token. The next step shifts the token sequence left and turns the shifted tokens into embeddings aligned with these notes.
 
-Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:25-30`; `THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a`, `docker/patch/latest/megatron.patch:152-179`.
+Sources: `Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7`, `rlhf/slime/spec/readme.md:25-30`; `THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a`, `docker/patch/latest/megatron.patch:152-179`.
 
 ## Step 3 · Pair target notes with the next token
 
@@ -95,7 +95,7 @@ The diagram shows the original MiMo checkpoint order, `concat(h_t,e_{t+1})`. The
 
 The next step shifts the tokens again to make the training labels and computes cross entropy.
 
-Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:31-46,236-240`; `THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a`, `docker/patch/latest/megatron.patch:152-190` and `slime_plugins/mbridge/mimo.py:106-120`; `NVIDIA/Megatron-LM@23e00ed0963c35382dfe8a5a94fb3cda4d21e133`, `megatron/core/transformer/multi_token_prediction.py:511-522`.
+Sources: `Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7`, `rlhf/slime/spec/readme.md:31-46,236-240`; `THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a`, `docker/patch/latest/megatron.patch:152-190` and `slime_plugins/mbridge/mimo.py:106-120`; `NVIDIA/Megatron-LM@23e00ed0963c35382dfe8a5a94fb3cda4d21e133`, `megatron/core/transformer/multi_token_prediction.py:511-522`.
 
 ## Step 4 · The second shift makes labels
 
@@ -128,7 +128,7 @@ The formula above is one per-position CE term, not the whole normalized loss. Th
 
 The next step shows how detach lets this auxiliary CE train the draft without sending its gradients into the target trunk and shared tables.
 
-Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:46-60`; `THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a`, `docs/zh/advanced/speculative-decoding.md:24-38` and `docker/patch/latest/megatron.patch:152-191`; `NVIDIA/Megatron-LM@23e00ed0963c35382dfe8a5a94fb3cda4d21e133`, `megatron/core/models/gpt/gpt_model.py:500-508` and `megatron/core/transformer/multi_token_prediction.py:349-382`.
+Sources: `Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7`, `rlhf/slime/spec/readme.md:46-60`; `THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a`, `docs/zh/advanced/speculative-decoding.md:24-38` and `docker/patch/latest/megatron.patch:152-191`; `NVIDIA/Megatron-LM@23e00ed0963c35382dfe8a5a94fb3cda4d21e133`, `megatron/core/models/gpt/gpt_model.py:500-508` and `megatron/core/transformer/multi_token_prediction.py:349-382`.
 
 ## Step 5 · Keep the draft lesson on the draft
 
@@ -162,7 +162,7 @@ The stage leaves shared tables out. The implementation also handles the embeddin
 
 The next step uses a loss mask to select CE positions, excluding positions without two valid future tokens.
 
-Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:58-60,184-234`; `THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a`, `docker/patch/latest/megatron.patch:170-179,596-603`.
+Sources: `Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7`, `rlhf/slime/spec/readme.md:58-60,184-234`; `THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a`, `docker/patch/latest/megatron.patch:170-179,596-603`.
 
 ## Step 6 · Keep positions with two valid future tokens
 
@@ -195,7 +195,7 @@ Before shifting, slime pads the prompt portion with zeros, then slices and align
 
 The next step returns to the public experiment and compares rollout throughput for all three configurations.
 
-Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:144-176`; `THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a`, `slime/backends/megatron_utils/model.py:408-467` and `docker/patch/latest/megatron.patch:158-191`.
+Sources: `Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7`, `rlhf/slime/spec/readme.md:144-176`; `THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a`, `slime/backends/megatron_utils/model.py:408-467` and `docker/patch/latest/megatron.patch:158-191`.
 
 ## Step 7 · Compare rollout throughput on one scale
 
@@ -232,7 +232,7 @@ The article describes improved draft acceptance and falling MTP loss in plots. T
 
 The next step measures the added training seconds and explains why throughput gain alone cannot establish a whole-round win.
 
-Source: `Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:66-114`.
+Source: `Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7`, `rlhf/slime/spec/readme.md:66-114`.
 
 ## Step 8 · Online draft training adds 7 seconds
 
@@ -265,4 +265,4 @@ Step 7 reports tokens/s, while this step reports a training metric in seconds. T
 
 The pinned ReTool example marks generated assistant tokens as training-valid, appends interpreter observations to the same response and uses different masks. The next chapter follows that visible sequence to ask which tokens enter policy training and which adjacent positions may teach the draft.
 
-Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:66-104`; `THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a`, `examples/retool/generate_with_retool.py:267-303`.
+Sources: `Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7`, `rlhf/slime/spec/readme.md:66-104`; `THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a`, `examples/retool/generate_with_retool.py:267-303`.

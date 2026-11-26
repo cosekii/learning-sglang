@@ -29,7 +29,7 @@ $$g=(1667-1464)/1464=13.9\%$$
 
 下一步从 target 的一次前向中取出每个 token 位置的 hidden state，看 draft 能拿到什么线索。
 
-来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:66-94`；`THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a` 的 `docs/zh/advanced/speculative-decoding.md:24-38`。
+来源：`Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7`, `rlhf/slime/spec/readme.md:66-94`；`THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a` 的 `docs/zh/advanced/speculative-decoding.md:24-38`。
 
 ## 第 2 步 · target 在每个 token 位置留下笔记
 
@@ -60,7 +60,7 @@ $$h_t=H(x_{\le t})$$
 
 draft 还需要知道下一个输入 token。下一步把 token 序列左移，再转成 embedding，与这些笔记对齐。
 
-来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:25-30`；`THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a` 的 `docker/patch/latest/megatron.patch:152-179`。
+来源：`Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7`, `rlhf/slime/spec/readme.md:25-30`；`THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a` 的 `docker/patch/latest/megatron.patch:152-179`。
 
 ## 第 3 步 · 把 target 笔记与下一个 token 配对
 
@@ -95,7 +95,7 @@ $$u_a=\operatorname{concat}(h(a),e(b))$$
 
 下一步把移位后的 token 再左移一次，得到每个位置的训练标签，并计算 cross entropy。
 
-来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:31-46,236-240`；`THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a` 的 `docker/patch/latest/megatron.patch:152-190`、`slime_plugins/mbridge/mimo.py:106-120`；`NVIDIA/Megatron-LM@23e00ed0963c35382dfe8a5a94fb3cda4d21e133` 的 `megatron/core/transformer/multi_token_prediction.py:511-522`。
+来源：`Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7`, `rlhf/slime/spec/readme.md:31-46,236-240`；`THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a` 的 `docker/patch/latest/megatron.patch:152-190`、`slime_plugins/mbridge/mimo.py:106-120`；`NVIDIA/Megatron-LM@23e00ed0963c35382dfe8a5a94fb3cda4d21e133` 的 `megatron/core/transformer/multi_token_prediction.py:511-522`。
 
 ## 第 4 步 · 第二次左移生成训练标签
 
@@ -128,7 +128,7 @@ $$\mathcal L_{\mathrm{MTP}}=-\log p_{\mathrm{draft}}(x_{t+2}\mid u_t)$$
 
 下一步看 `detach` 怎样让这份辅助 CE 更新 draft，同时不把它的梯度送进 target 主干和共享表。
 
-来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:46-60`；`THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a` 的 `docs/zh/advanced/speculative-decoding.md:24-38`、`docker/patch/latest/megatron.patch:152-191`；`NVIDIA/Megatron-LM@23e00ed0963c35382dfe8a5a94fb3cda4d21e133` 的 `megatron/core/models/gpt/gpt_model.py:500-508`、`megatron/core/transformer/multi_token_prediction.py:349-382`。
+来源：`Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7`, `rlhf/slime/spec/readme.md:46-60`；`THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a` 的 `docs/zh/advanced/speculative-decoding.md:24-38`、`docker/patch/latest/megatron.patch:152-191`；`NVIDIA/Megatron-LM@23e00ed0963c35382dfe8a5a94fb3cda4d21e133` 的 `megatron/core/models/gpt/gpt_model.py:500-508`、`megatron/core/transformer/multi_token_prediction.py:349-382`。
 
 ## 第 5 步 · detach 把 draft 的课程留在 draft
 
@@ -162,7 +162,7 @@ $$g^{\mathrm{CE}}_{\theta_{\mathrm{shared}}}=0,\qquad g^{\mathrm{CE}}_{\theta_{\
 
 下一步用 loss mask 决定哪些位置计入 CE，避免没有两个有效后续 token 的位置教错 draft。
 
-来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:58-60,184-234`；`THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a` 的 `docker/patch/latest/megatron.patch:170-179,596-603`。
+来源：`Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7`, `rlhf/slime/spec/readme.md:58-60,184-234`；`THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a` 的 `docker/patch/latest/megatron.patch:170-179,596-603`。
 
 ## 第 6 步 · 两个后续 token 都有效才计分
 
@@ -195,7 +195,7 @@ slime 在移位前先把 prompt 部分补成 0，再按 context parallelism 的�
 
 下一步回到公开实验，比较三种配置的 rollout 吞吐，看在线训练 draft 的收益有多大。
 
-来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:144-176`；`THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a` 的 `slime/backends/megatron_utils/model.py:408-467`、`docker/patch/latest/megatron.patch:158-191`。
+来源：`Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7`, `rlhf/slime/spec/readme.md:144-176`；`THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a` 的 `slime/backends/megatron_utils/model.py:408-467`、`docker/patch/latest/megatron.patch:158-191`。
 
 ## 第 7 步 · 用同一比例比较 rollout 吞吐
 
@@ -232,7 +232,7 @@ $$g_{online:frozen}=1667/1464-1=13.9\%,\qquad g_{online:no}=1667/1219-1=36.8\%$$
 
 下一步看在线训练额外付出的训练秒数，并标明为什么不能把吞吐提升直接当成整轮收益。
 
-来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:66-114`。
+来源：`Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7`, `rlhf/slime/spec/readme.md:66-114`。
 
 ## 第 8 步 · 在线训练 draft 多付 7 秒
 
@@ -265,4 +265,4 @@ $$\Delta T_{online:frozen}=148-143=5\ \text{s},\qquad c_{online:frozen}=148/143-
 
 固定版本的 ReTool 示例把 assistant 生成的 token 标为训练有效，又把解释器返回的观察追加到同一 response，并使用不同 mask。下一章沿着这条可见序列问：哪些 token 进入策略训练，哪些相邻位置还能教 draft？
 
-来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:66-104`；`THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a` 的 `examples/retool/generate_with_retool.py:267-303`。
+来源：`Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7`, `rlhf/slime/spec/readme.md:66-104`；`THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a` 的 `examples/retool/generate_with_retool.py:267-303`。

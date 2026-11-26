@@ -13,7 +13,7 @@ export const deep = await deepFor('ml-sys-12-rl-speculative-decoding');
 <details class="i18n-en">
 <summary>Where this chapter's claims come from</summary>
 
-This chapter follows `Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md`. Implementation references use `THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a` and `NVIDIA/Megatron-LM@23e00ed0963c35382dfe8a5a94fb3cda4d21e133`, reproducibility pins chosen for this chapter. Reported experiments and constructed examples are labelled separately.
+This chapter follows `rlhf/slime/spec/readme.md` in `Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7`. Implementation references use `THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a` and `NVIDIA/Megatron-LM@23e00ed0963c35382dfe8a5a94fb3cda4d21e133`, reproducibility pins chosen for this chapter. Reported experiments and constructed examples are labelled separately.
 
 Step 1 uses the public three-arm experiment at `readme.md:66-94`: MiMo-7B-RL on H200 with DAPO-Math-17k and maximum response length 24k. Frozen speculative decoding reaches 1,464 tokens/s and online draft training reaches 1,667, a 13.9% increase. Here, “frozen” means that auxiliary CE does not train the MTP layer. The main RL loss still updates the target trunk and the embedding/LM head shared with the draft in both configurations. This is rollout throughput, not an end-to-end RL speedup. The draft–verify mechanism is recalled from Learning SGLang Ch. 15 Step 3 rather than retaught.
 
@@ -38,7 +38,7 @@ Further reading: [zero-to-sglang Part II Chapter 10: Speculative Decoding](https
 <details class="i18n-zh">
 <summary>本章说法的出处</summary>
 
-本章依据 `Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md`。实现引用固定到 `THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a` 和 `NVIDIA/Megatron-LM@23e00ed0963c35382dfe8a5a94fb3cda4d21e133`，这是本章选择的可复现版本。公开实验与构造算例分别标明。
+本章依据 `Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7` 中的 `rlhf/slime/spec/readme.md`。实现引用固定到 `THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a` 和 `NVIDIA/Megatron-LM@23e00ed0963c35382dfe8a5a94fb3cda4d21e133`，这是本章选择的可复现版本。公开实验与构造算例分别标明。
 
 第 1 步依据 `readme.md:66-94` 的三组公开实验：MiMo-7B-RL、H200、DAPO-Math-17k，最长回答 24k。冻结 draft 的 rollout 吞吐为 1464 token/s，在线训练 draft 为 1667，提升 13.9%。这里的“冻结”只指辅助 CE 不训练 MTP 层；两种配置的主 RL 损失都仍更新 target 主干以及与 draft 共享的 embedding／LM head。这里只比较 rollout 吞吐，不声称端到端 RL 加速。draft–verify 机制只回指第 1 本第 15 章第 3 步，不重复讲。
 
