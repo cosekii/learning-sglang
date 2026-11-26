@@ -19,6 +19,8 @@ Step 2 shows the shipped `stream_delivery.max_total_backlog_bytes` default: 1 Gi
 
 Step 3 defines reader idleness from coordinator queue reads, not playback. `queue.get()` subtracts the delivered payload from both ledgers and sets `reader_idle_since_s` to the current monotonic time. A later produced chunk increases the backlog without changing that timestamp; when an empty backlog first becomes nonempty, the producer starts the idle clock (`sglang_omni/pipeline/coordinator.py:103-109,497-520,1088-1096`; `tests/unit_test/pipeline/test_coordinator.py:1599-1620`). The two-second timestamps are constructed.
 
+Step 4 reproduces the unit test's 12 B example. `req-idle` holds 4 B with the older reader timestamp; `req-behind` holds 8 B with a fresher reader. Another 4 B for `req-behind` makes 16 B. The coordinator fails `req-idle`, subtracts its 4 B and leaves 12 B. Selection uses the oldest `reader_idle_since_s` among streams with positive backlog, not the largest backlog, and the cap triggers only while the total is strictly greater (`sglang_omni/pipeline/coordinator.py:1102-1131`; `tests/unit_test/pipeline/test_coordinator.py:1516-1539`). The tiny byte counts and adjusted timestamps are test values.
+
 Code references in this chapter pin to `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`. The chapter reads source and unit tests; it does not run a model or measure a server.
 
 </details>
@@ -31,6 +33,8 @@ Code references in this chapter pin to `sglang-omni origin/main@9725235249df8512
 第 2 步展示随仓库发布的 `stream_delivery.max_total_backlog_bytes` 默认值：每个 coordinator／API 进程 1 GiB，`none` 关闭上限（`sglang_omni/config/schema.py:641-648,793-796`；`docs/cookbook/qwen3_tts/tuning.md:24-28`）。记账只累加消息内容顶层的 `bytes` 值，所以构造的 6 字节声音和 100 字符文字合计仍只计 6 字节，不是 106（`sglang_omni/pipeline/coordinator.py:91-100`）。文字、socket 缓冲、进程总内存和其他 API 进程都不在这份账里。
 
 第 3 步用 coordinator 的队列读取定义空闲，不用播放位置。`queue.get()` 从两本账减去交付负载，并把 `reader_idle_since_s` 设为当前 monotonic 时刻。之后新生成的 chunk 增加积压，却不改这个时间；空积压第一次变为非空时，生产者会启动空闲钟（`sglang_omni/pipeline/coordinator.py:103-109,497-520,1088-1096`；`tests/unit_test/pipeline/test_coordinator.py:1599-1620`）。图上的两秒时刻是构造值。
+
+第 4 步复现单元测试的 12 B 算例。`req-idle` 有 4 B，读取时间戳更老；`req-behind` 有 8 B，读取更新。`req-behind` 再增加 4 B，总量变成 16 B。coordinator 让 `req-idle` 失败，减去它的 4 B，留下 12 B。实现从积压大于 0 的流里选择最老的 `reader_idle_since_s`，不是选择最大积压；只有总量严格大于上限才触发（`sglang_omni/pipeline/coordinator.py:1102-1131`；`tests/unit_test/pipeline/test_coordinator.py:1516-1539`）。这些微小字节数和调整后时间戳都是测试值。
 
 本章代码出处固定到 `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`。本章只读源码和单元测试，没有运行模型或测量服务器。
 

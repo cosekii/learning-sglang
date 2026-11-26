@@ -121,3 +121,43 @@ Read-side accounting and clock resets are in `sglang_omni/pipeline/coordinator.p
 ### Next
 
 The next step gives two streams different idle times and backlog sizes to show which one the coordinator chooses.
+
+## Step 4 · The longest-idle reader fails first
+
+> **In one line:** Over the cap, the coordinator picks the oldest idle clock rather than the largest backlog.
+
+### On the stage
+
+- The cap is 12 B. Initially `req-idle` holds 4 B with 100 idle seconds, while `req-behind` holds 8 B with 2 idle seconds. They total exactly 12 B.
+- `req-behind` adds 4 B, making `12 + 4 = 16 B` and crossing the cap.
+- Orange marks `req-idle` ending and leaving the ledger. Blue marks `req-behind` staying.
+- Removing 4 B returns the total to 12 B. The larger backlog survives because its reader is fresher.
+
+### Formula
+
+$$
+T_{after}=T_{before}+A-Q_f
+$$
+
+| Symbol | Meaning | Size | Source |
+|---|---|---:|---|
+| $T_{before}$ | Shared backlog before the new message | 12 B | Unit test |
+| $A$ | Added audio | 4 B | Unit test |
+| $Q_f$ | Backlog removed with the failed stream | 4 B | Oldest-idle `req-idle` |
+| $T_{after}$ | Shared backlog after removal | 12 B | This step |
+
+### The numbers on the stage
+
+$$
+T_{after}=12+4-4=12\ \text{B}\leq12\ \text{B}
+$$
+
+Selection runs only while $T>C$, so equality does not trigger it. Candidates must hold positive undelivered bytes; an empty stream cannot win the oldest-idle comparison.
+
+### Boundary and sources
+
+The selection and accounting loop is in `sglang_omni/pipeline/coordinator.py:1102-1131`. The values reproduce `tests/unit_test/pipeline/test_coordinator.py:1516-1539`, whose test adjusts the idle timestamps.
+
+### Next
+
+If removing the oldest stream still leaves too many bytes, the coordinator repeats the same choice on the remaining streams.

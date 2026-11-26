@@ -52,6 +52,9 @@
   }, {
     caption: 'A queue read resets the idle clock. A new generated chunk does not.',
     captionZh: '读者取走一条消息，空闲钟就归零。新生成的 chunk 不会归零。',
+  }, {
+    caption: 'The longest-idle stream fails first, even when another stream holds more bytes.',
+    captionZh: '最久没读取的流先失败，哪怕另一流积压更多。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -176,6 +179,34 @@
         {/each}
         <text x={W / 2} y={phone ? 716 : 550} text-anchor="middle" class="rowlabel">{t('Which stream has the oldest idle clock?', '哪一路流的空闲钟最老？')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Constructed times. This clock does not observe playback.', '构造时刻。这个时钟不观察播放位置。')}</text>
+      {:else if step === 3}
+        <text x={phone ? 15 : 20} y="26" class="rowlabel">{t('THE LONGEST-IDLE STREAM FAILS FIRST', '最久没读取的流先失败')}</text>
+        <text x={phone ? 15 : 20} y="52" class="tag">{t('fail = end the stream with an error · cap = 12 B', '失败 = 用错误结束这一路流 · 上限 = 12 B')}</text>
+        <text x={phone ? 15 : 20} y="76" class="tag">{t('blue = queued and kept · orange = failed and removed', '蓝 = 保留的积压 · 橙 = 失败并移除的积压')}</text>
+        <rect x={phone ? 15 : 20} y="104" width={phone ? 270 : 680} height="190" rx="11" fill="var(--bg)" stroke="var(--line)" />
+        <text x={W / 2} y="133" text-anchor="middle" class="tag strong">{t('BEFORE · total fits', '之前 · 总量不超上限')}</text>
+        <text x={W / 2} y="158" text-anchor="middle" class="formula">{DELIVERY_IDLE_CASE_STREAMS[0].bytes} + {DELIVERY_IDLE_CASE_STREAMS[1].bytes} = {DELIVERY_IDLE_BEFORE_BYTES} B ≤ {DELIVERY_TEST_CAP_BYTES} B</text>
+        {#each DELIVERY_IDLE_CASE_STREAMS as stream, i}
+          {@const x = phone ? 27 + i * 132 : 40 + i * 340}
+          <rect {x} y="180" width={phone ? 120 : 300} height="88" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x={x + 12} y="205" class="mono">{stream.id}</text>
+          <text x={x + 12} y="232" class="tag strong">{stream.bytes} B · idle {stream.idleSeconds} s</text>
+          <text x={x + 12} y="255" class="tag">{i === 0 ? t('older reader', '更久没读') : t('larger backlog', '积压更大')}</text>
+        {/each}
+        <rect x={phone ? 15 : 170} y="320" width={phone ? 270 : 380} height="66" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x={W / 2} y="347" text-anchor="middle" class="tag strong">req-behind + {DELIVERY_IDLE_TRIGGER_BYTES} B</text>
+        <text x={W / 2} y="373" text-anchor="middle" class="result">{DELIVERY_IDLE_BEFORE_BYTES} + {DELIVERY_IDLE_TRIGGER_BYTES} = {DELIVERY_IDLE_OVER_BYTES} B &gt; {DELIVERY_TEST_CAP_BYTES} B</text>
+        <rect x={phone ? 15 : 20} y="412" width={phone ? 270 : 680} height="150" rx="11" fill="var(--bg)" stroke="var(--line)" />
+        <text x={W / 2} y="441" text-anchor="middle" class="tag strong">{t('AFTER · fail req-idle, keep req-behind', '之后 · req-idle 失败，req-behind 保留')}</text>
+        <rect x={phone ? 27 : 40} y="463" width={phone ? 120 : 300} height="72" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x={phone ? 39 : 52} y="491" class="mono">req-idle</text>
+        <text x={phone ? 39 : 52} y="518" class="tag strong">FAIL · −{DELIVERY_IDLE_CASE_STREAMS[0].bytes} B</text>
+        <rect x={phone ? 159 : 380} y="463" width={phone ? 120 : 300} height="72" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x={phone ? 171 : 392} y="491" class="mono">req-behind</text>
+        <text x={phone ? 171 : 392} y="518" class="tag strong">{DELIVERY_IDLE_AFTER_BYTES} B · {t('KEPT', '保留')}</text>
+        <text x={W / 2} y="596" text-anchor="middle" class="formula">{DELIVERY_IDLE_OVER_BYTES} − {DELIVERY_IDLE_CASE_STREAMS[0].bytes} = {DELIVERY_IDLE_AFTER_BYTES} B ≤ {DELIVERY_TEST_CAP_BYTES} B</text>
+        <text x={W / 2} y={phone ? 770 : 626} text-anchor="middle" class="rowlabel">{t('What if one failure is not enough?', '如果失败一路还不够呢？')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Unit-test values; idle timestamps were adjusted.', '单元测试算例；空闲时间戳经过调整。')}</text>
       {/if}
     </svg>
   </div>
