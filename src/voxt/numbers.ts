@@ -101,3 +101,7 @@ export const VOXT_LLM_TEXT_COUNT = 1;
 export const VOXT_LLM_MODEL_COUNT = 1;
 export const VOXT_LLM_KEY_COUNT = 1;
 export const VOXT_LLM_REQUEST_ITEM_COUNT = VOXT_LLM_TEXT_COUNT + VOXT_LLM_MODEL_COUNT + VOXT_LLM_KEY_COUNT;
+
+// Two constructed address alternatives; one setup selects one destination.
+export const VOXT_LLM_ADDRESS_OPTION_COUNT = 2;
+export const VOXT_LLM_DESTINATION_COUNT = 1;

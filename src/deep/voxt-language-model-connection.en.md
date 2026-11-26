@@ -50,3 +50,45 @@ Public baseline: `sglang-omni@14046fc02c5268df8b7d4a9a3094b15e1150060e`; paths a
 - Request destination and authorization header: `Voxt/internal/llm/openai.go:177-211`; `Voxt/internal/llm/openai_http.go:22-25,38-66`.
 - Key retrieval when a session opens a provider: `Voxt/remote_link.go:189-200`.
 - Key-optional presets, including custom and local services: `Voxt/internal/llm/presets.json:6-7,14,20`.
+
+## Step 2 · The address picks the destination
+
+> **In one line:** Changing only the request address can keep the same three parts on this Mac or send them to another computer.
+
+### On the stage
+
+- The top card repeats Step 1's text, model name and key. Only the address changes in the two panels.
+- A host is the computer named in an address. The panels show only host portions so this step can focus on the destination.
+- Address A shows `127.0.0.1`, a loopback address: it refers to this same machine. The public Ollama preset is `http://localhost:11434/v1`, also a local address. This constructed panel uses `127.0.0.1` and omits the scheme, port and path.
+- Address B shows `api.example.com`, a constructed host on another computer. Both services are assumed reachable.
+- The arrows are alternatives. One setup selects one address, so the request has one destination; Voxt does not send both copies.
+- Both examples carry a key to keep the comparison unchanged. A key-optional local service can instead send no key.
+
+### The numbers on the stage
+
+| Quantity | Where it comes from | Result |
+|---|---|---:|
+| Candidate addresses | Two constructed panels | 2 |
+| Destinations for one setup | One selected address | 1 |
+
+These counts describe the drawing, not a Voxt limit. Voxt can store more setups.
+
+### Address boundaries
+
+An external address means that the text and any configured key leave this Mac. A loopback address keeps the HTTP exchange on this Mac; it does not mean the model runs inside Voxt's process. The local model server is a separate program.
+
+Voxt also distinguishes internet destinations from private-network and local-name destinations. That classification does not perform a DNS lookup. Those extra address classes are outside this two-panel comparison. A private-network address can still leave this Mac.
+
+### Next
+
+The address chooses the destination. Next, open one setup and see where Voxt gets its full key.
+
+### Sources
+
+Public baseline: `sglang-omni@14046fc02c5268df8b7d4a9a3094b15e1150060e`; paths are relative to that repository.
+
+- Address resolution and allowed URL forms: `Voxt/internal/llm/presets.go:92-138`.
+- Loopback, private-network and local-name classification without DNS lookup: `Voxt/internal/providers/providers.go:92-117`.
+- The resolved address used for the chat request: `Voxt/internal/llm/openai.go:177-211`.
+- The HTTP request sent to that URL: `Voxt/internal/llm/openai_http.go:22-38,63-71`.
+- Ollama's public local preset and optional key: `Voxt/internal/llm/presets.json:6`.
