@@ -10,11 +10,14 @@ if (!outDir || !slug || !steps.length) { console.error('usage: deep-shot.mjs <ou
 mkdirSync(outDir, { recursive: true });
 const browser = await launch({ port: 9334, width: Number(process.env.W) || 1440, height: Number(process.env.H) || 900 });
 const page = await browser.tab();
-const base = 'http://localhost:4321/learning-sglang/ch/';
-await page.goto(base + slug + '/');
+const base = (process.env.BASE || 'http://localhost:4321/learning-sglang').replace(/\/$/, '');
+const book = process.env.BOOK || 'sglang';
+const bookPrefix = book === 'sglang' ? '' : `/${book}`;
+const chapterBase = `${base}${bookPrefix}/ch/${slug}/`;
+await page.goto(chapterBase);
 await page.evaluate(`localStorage.setItem('lang', ${JSON.stringify(lang)})`);
 for (const s of steps) {
-  await page.goto(`${base}${slug}/?step=${s}`);
+  await page.goto(`${chapterBase}?step=${s}`);
   await sleep(1500);
   await page.evaluate(`(() => { const b = document.querySelector('button.deep'); if (b && b.getAttribute('aria-expanded') !== 'true') b.click(); })()`);
   await sleep(1200);
