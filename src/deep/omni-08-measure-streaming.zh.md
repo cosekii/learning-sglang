@@ -183,3 +183,39 @@ $$r=12-5=7\ \text{ms}$$
 字段能指出等待在哪一侧，但优化结论还需要公平对照。下一步固定输入、seed、硬件与预热，只改变 partial-start 开关。
 
 来源：`sglang_omni/relay/cuda_ipc.py:526-581`；`sglang_omni/profiler/comm_trace.py:19-24`。
+
+## 第 6 步 · 只改变 partial-start
+
+**一句话。** A/B 两边使用相同输入、seed 和测量次数，只把等待完整输入改为收到 5 个 thinker chunk 后启动 talker。
+
+### 图上是什么
+
+- `partial-start` 表示 talker 在部分前缀就绪后开始，不等完整 thinker 输入。B 的阈值是 5 个 chunk，A 明确关闭这个开关。
+- 蓝色表示两边保持不变的工作，橙色标出 B 改动的设置。除此之外，prompt、seed、最大 token 数、模型和 talker 采样参数都保持相同。
+- `warmup` 是不计入结果的预热请求，用来吸收冷启动工作。每个 prompt 先做 2 次，再做 5 次正式测量。
+- 每个标签有 short、medium 两个 prompt，因此剔除 $2\times2=4$ 次预热，保留 $2\times5=10$ 次正式结果。
+- 本步没有画出结果快慢，因为仓库脚本本身不包含一组固定的测量输出。
+
+### 公式与符号
+
+$$N_{\mathrm{warm}}=p\times w,\qquad N_{\mathrm{kept}}=p\times r$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $p$ | 每个标签的 prompt 数 | `PROMPTS` 中的 short、medium，2 |
+| $w$ | 每个 prompt 的预热次数 | `--warmup` 默认值，2 |
+| $r$ | 每个 prompt 的正式重复次数 | `--repeats` 默认值，5 |
+| $N_{\mathrm{warm}}$ | 每个标签剔除的预热总数 | 本步相乘 |
+| $N_{\mathrm{kept}}$ | 每个标签保留的正式结果数 | 本步相乘 |
+
+### 代入图上的数
+
+$$N_{\mathrm{warm}}=2\times2=4,\qquad N_{\mathrm{kept}}=2\times5=10$$
+
+预热和正式测量使用同一个 seed 1000，减少冷启动与采样差异对 A/B 的混入。每个正式结果仍逐条保存，不能只留一个平均数。脚本还会写入 label、base URL、采样参数与可用的 fingerprint 字段，便于核对实验条件。
+
+### 接下来
+
+协议会留下 10 次正式 TTFT。下一步读懂 mean、min、max、stdev，避免一次慢请求被平均数藏起来。
+
+来源：`benchmarks/eval/benchmark_omni_streaming_ttft.py:11-25,59-69,73-95,126-145,224-283,316-365`。

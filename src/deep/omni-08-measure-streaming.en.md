@@ -183,3 +183,39 @@ The code writes $g$ and $r$ only when GPU start and done events exist. On the th
 These fields locate waiting, but an optimization still needs a fair comparison. The next step fixes inputs, seed, hardware and warmup while changing only partial start.
 
 Sources: `sglang_omni/relay/cuda_ipc.py:526-581`; `sglang_omni/profiler/comm_trace.py:19-24`.
+
+## Step 6 · Change only partial start
+
+**One sentence.** Both A/B sides keep the same inputs, seed and measurement counts while changing only whether the talker starts after 5 thinker chunks instead of the complete input.
+
+### On the stage
+
+- `Partial-start` starts the talker when part of the prefix is ready, without waiting for the whole thinker input. B sets the threshold to 5 chunks; A disables the feature.
+- Blue marks unchanged work, and orange marks B's changed setting. Prompt, seed, token cap, model and talker sampling parameters remain the same.
+- A `Warmup` is an uncounted request that absorbs cold work. Each prompt gets 2 warmups and then 5 measured repeats.
+- Each label has short and medium prompts, so it discards $2\times2=4$ warmups and keeps $2\times5=10$ measured results.
+- The stage shows no winning result because the repository script does not include a fixed set of outputs.
+
+### Formula and symbols
+
+$$N_{\mathrm{warm}}=p\times w,\qquad N_{\mathrm{kept}}=p\times r$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $p$ | Prompts per label | `PROMPTS`: short and medium, 2 |
+| $w$ | Warmups per prompt | `--warmup` default, 2 |
+| $r$ | Measured repeats per prompt | `--repeats` default, 5 |
+| $N_{\mathrm{warm}}$ | Warmups discarded per label | Calculated here |
+| $N_{\mathrm{kept}}$ | Measured results kept per label | Calculated here |
+
+### The numbers on the stage
+
+$$N_{\mathrm{warm}}=2\times2=4,\qquad N_{\mathrm{kept}}=2\times5=10$$
+
+Warmup and measured requests reuse seed 1000, reducing cold-start and sampling differences between A and B. Every measured result remains in the JSON instead of leaving only an average. The output also records the label, base URL, sampling parameters and available fingerprint fields for checking conditions.
+
+### Next
+
+The protocol leaves 10 measured TTFT values. The next step reads mean, min, max and stdev so one slow run cannot hide inside an average.
+
+Sources: `benchmarks/eval/benchmark_omni_streaming_ttft.py:11-25,59-69,73-95,126-145,224-283,316-365`.

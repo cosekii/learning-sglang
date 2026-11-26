@@ -23,6 +23,8 @@ Step 4 follows `sglang_omni/profiler/comm_trace.py:14-34`, `sglang_omni/comm/eng
 
 Step 5 reads `sglang_omni/relay/cuda_ipc.py:526-581`. `elapsed_ms` measures the host-side wait. When start and done CUDA events exist, `receiver_gpu_wait_copy_ms` reports their GPU-event interval and `host_minus_receiver_gpu_ms` subtracts it from the host wait. The 12, 5 and 7 ms values are constructed to teach the fields. The difference is not, by itself, proof of CPU compute time. Worker queue, worker block and resume fields are optional and appear only on the thread-synchronize path.
 
+Step 6 follows the shipped A/B protocol in `benchmarks/eval/benchmark_omni_streaming_ttft.py:11-25,59-69,126-145,224-283,316-340`. Baseline uses `--no-enable-partial-start`; treatment uses `--enable-partial-start --partial-start-min-chunks 5`. Both labels use the same short and medium prompts, seed 1000, maximum 256 tokens and talker sampling settings. Each prompt gets two excluded warmups and five measured repeats, giving four warmups and ten kept runs per label. This step shows protocol only and claims no winning result.
+
 Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`. Each public measurement keeps its original setup. The benchmark is read from source, not executed.
 
 </details>
@@ -39,6 +41,8 @@ Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37
 第 4 步依据 `sglang_omni/profiler/comm_trace.py:14-34`、`sglang_omni/comm/engine.py:327-393` 和 `sglang_omni/pipeline/stage/runtime.py:665-682`。`SGLANG_OMNI_COMM_TRACE=1` 打开 JSON 日志。`ts_ns` 来自 `time.time_ns`；`elapsed_ms` 用 `perf_counter_ns` 计算局部区间，例如 enqueue 或 read 的耗时，不是整个请求。请求 A、chunk 7 和对象 `obj-17` 都是构造标识符，不是抓取的日志。
 
 第 5 步读取 `sglang_omni/relay/cuda_ipc.py:526-581`。`elapsed_ms` 测量 host 侧等待。存在 start、done CUDA event 时，`receiver_gpu_wait_copy_ms` 报告它们的 GPU event 区间，`host_minus_receiver_gpu_ms` 再从 host 等待中减去它。12、5、7 ms 是为讲字段构造的值。差额本身不能证明 CPU 计算时间。worker 队列、阻塞和恢复字段是可选项，只在线程同步路径出现。
+
+第 6 步依据 `benchmarks/eval/benchmark_omni_streaming_ttft.py:11-25,59-69,126-145,224-283,316-340` 的 A/B 协议。baseline 使用 `--no-enable-partial-start`；treatment 使用 `--enable-partial-start --partial-start-min-chunks 5`。两个标签使用相同的 short、medium prompt、seed 1000、最多 256 token 和 talker 采样设置。每个 prompt 先剔除 2 次预热，再保留 5 次测量，所以每个标签有 4 次预热、10 次保留结果。本步只讲协议，不声称哪边更快。
 
 本章代码出处固定到 `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`。公开测量保留各自原来的实验条件。本章只读 benchmark 源码，没有运行它。
 

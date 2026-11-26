@@ -13,6 +13,9 @@
     STREAM_CHUNK2_ARRIVAL_S, STREAM_CHUNK2_END_S, STREAM_STALL_S, STREAM_STALL_CHUNK_PERCENT,
     STREAM_TRACE_REQUEST_ID, STREAM_TRACE_CHUNK_ID, STREAM_TRACE_OBJECT_ID,
     STREAM_TRACE_HOST_WAIT_MS, STREAM_TRACE_GPU_EVENT_MS, STREAM_TRACE_HOST_REST_MS,
+    STREAM_BENCH_PROMPT_COUNT, STREAM_BENCH_WARMUP_PER_PROMPT, STREAM_BENCH_REPEATS_PER_PROMPT,
+    STREAM_BENCH_SEED, STREAM_BENCH_MAX_TOKENS, STREAM_PARTIAL_START_MIN_CHUNKS,
+    STREAM_BENCH_WARMUP_PER_LABEL, STREAM_BENCH_KEPT_PER_LABEL,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -32,6 +35,9 @@
   }, {
     caption: `The host waited ${STREAM_TRACE_HOST_WAIT_MS} ms; the GPU event covered ${STREAM_TRACE_GPU_EVENT_MS} ms. The remaining ${STREAM_TRACE_HOST_REST_MS} ms was elsewhere on the host path.`,
     captionZh: `host 等了 ${STREAM_TRACE_HOST_WAIT_MS} ms，GPU event 覆盖 ${STREAM_TRACE_GPU_EVENT_MS} ms。其余 ${STREAM_TRACE_HOST_REST_MS} ms 在 host 路径上。`,
+  }, {
+    caption: `Warm up ${STREAM_BENCH_WARMUP_PER_PROMPT} times, then record ${STREAM_BENCH_REPEATS_PER_PROMPT} runs per prompt. Change only the partial-start setting.`,
+    captionZh: `每个 prompt 预热 ${STREAM_BENCH_WARMUP_PER_PROMPT} 次，再测 ${STREAM_BENCH_REPEATS_PER_PROMPT} 次。只改 partial-start 设置。`,
   }];
   let step = $state(0);
   $effect(() => {
@@ -48,7 +54,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [590, 650, 600, 650, 610][step] : [430, 460, 480, 480, 460][step]);
+  const H = $derived(phone ? [590, 650, 600, 650, 610, 680][step] : [430, 460, 480, 480, 460, 500][step]);
   const barMax = $derived(phone ? 185 : 400);
   const barScale = $derived(barMax / STREAM_P90_SHARED_S);
   const timeX = (seconds: number) => 60 + (seconds / STREAM_TEACHING_DONE_S) * 600;
@@ -62,6 +68,9 @@
       <defs>
         <marker id="measure-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
           <path d="M0,0 L8,4 L0,8 z" fill="var(--accent)" />
+        </marker>
+        <marker id="measure-arrow-gen" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 z" fill="var(--gen)" />
         </marker>
       </defs>
       {#if step === 0}
@@ -236,6 +245,52 @@
           <text x="150" y="510" text-anchor="middle" class="small strong">{t('The difference is not CPU compute time.', '差额不等于 CPU 计算时间。')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Constructed timing record, not captured output.', '构造的计时记录，不是抓取的日志。')}</text>
+      {:else if step === 5}
+        <text x={phone ? 18 : 36} y="30" class="title">{t(phone ? 'Change one switch only' : 'A fair A/B changes one switch only', phone ? '只改一个开关' : '公平 A/B 只改一个开关')}</text>
+        <text x={phone ? 18 : 36} y="55" class="label">{t(phone ? `partial-start = talker starts after ${STREAM_PARTIAL_START_MIN_CHUNKS} chunks` : `partial-start = start the talker after ${STREAM_PARTIAL_START_MIN_CHUNKS} thinker chunks, not the whole input`, `partial-start = ${STREAM_PARTIAL_START_MIN_CHUNKS} 个 thinker chunk 后就启动 talker`)}</text>
+        <text x={phone ? 18 : 36} y="79" class="label">{t('warmup = uncounted runs that absorb cold work', '预热 = 不计入结果，用来吸收冷启动工作')}</text>
+        {#if !phone}
+          <rect x="25" y="108" width="320" height="190" rx="12" fill="var(--bg)" stroke="var(--line)" />
+          <text x="45" y="139" class="small strong">A · BASELINE</text>
+          <text x="45" y="171" class="code">--no-enable-partial-start</text>
+          <rect x="45" y="196" width="130" height="48" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="110" y="226" text-anchor="middle" class="small">{t('whole input', '完整输入')}</text>
+          <line x1="180" y1="220" x2="228" y2="220" stroke="var(--accent)" stroke-width="3" marker-end="url(#measure-arrow)" />
+          <text x="240" y="226" class="small">talker</text>
+          <rect x="375" y="108" width="320" height="190" rx="12" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="395" y="139" class="small strong">B · PARTIAL5</text>
+          <text x="395" y="158" class="code">--enable-partial-start</text>
+          <text x="395" y="180" class="code">--partial-start-min-chunks {STREAM_PARTIAL_START_MIN_CHUNKS}</text>
+          <rect x="395" y="196" width="130" height="48" rx="7" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="460" y="226" text-anchor="middle" class="small">{STREAM_PARTIAL_START_MIN_CHUNKS} {t('chunks', '个 chunk')}</text>
+          <line x1="530" y1="220" x2="578" y2="220" stroke="var(--gen)" stroke-width="3" marker-end="url(#measure-arrow-gen)" />
+          <text x="590" y="226" class="small">talker</text>
+          <rect x="25" y="326" width="670" height="129" rx="11" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="45" y="355" class="small strong">{t('KEEP IDENTICAL', '保持不变')}</text>
+          <text x="45" y="383" class="small">short + medium prompts · seed {STREAM_BENCH_SEED} · max_tokens {STREAM_BENCH_MAX_TOKENS} · {t('same server', '同一服务配置')}</text>
+          <text x="45" y="414" class="result">{STREAM_BENCH_PROMPT_COUNT} × {STREAM_BENCH_WARMUP_PER_PROMPT} = {STREAM_BENCH_WARMUP_PER_LABEL} {t('warmups excluded', '次预热剔除')}</text>
+          <text x="45" y="442" class="result">{STREAM_BENCH_PROMPT_COUNT} × {STREAM_BENCH_REPEATS_PER_PROMPT} = {STREAM_BENCH_KEPT_PER_LABEL} {t('runs kept per label', '次结果保留 / 标签')}</text>
+        {:else}
+          <rect x="20" y="101" width="260" height="144" rx="11" fill="var(--bg)" stroke="var(--line)" />
+          <text x="34" y="130" class="small strong">A · BASELINE</text>
+          <text x="34" y="158" class="code">--no-enable-partial-start</text>
+          <text x="34" y="193" class="small">{t('whole input', '完整输入')} → talker</text>
+          <text x="34" y="222" class="small">{t('blue = unchanged work', '蓝 = 不变的工作')}</text>
+          <rect x="20" y="265" width="260" height="157" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="34" y="294" class="small strong">B · PARTIAL5</text>
+          <text x="34" y="322" class="code">--enable-partial-start</text>
+          <text x="34" y="346" class="code">--partial-start-min-chunks {STREAM_PARTIAL_START_MIN_CHUNKS}</text>
+          <text x="34" y="384" class="small">{STREAM_PARTIAL_START_MIN_CHUNKS} {t('chunks', '个 chunk')} → talker</text>
+          <text x="34" y="409" class="small">{t('orange = changed setting', '橙 = 改动的设置')}</text>
+          <rect x="20" y="442" width="260" height="192" rx="11" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="34" y="470" class="small strong">{t('KEEP IDENTICAL', '保持不变')}</text>
+          <text x="34" y="497" class="small">short + medium · seed {STREAM_BENCH_SEED}</text>
+          <text x="34" y="523" class="small">max_tokens {STREAM_BENCH_MAX_TOKENS} · {t('same server', '同一服务配置')}</text>
+          <text x="34" y="557" class="result">{STREAM_BENCH_PROMPT_COUNT}×{STREAM_BENCH_WARMUP_PER_PROMPT}={STREAM_BENCH_WARMUP_PER_LABEL} {t('warmups excluded', '次预热剔除')}</text>
+          <text x="34" y="587" class="result">{STREAM_BENCH_PROMPT_COUNT}×{STREAM_BENCH_REPEATS_PER_PROMPT}={STREAM_BENCH_KEPT_PER_LABEL} {t('kept / label', '次保留 / 标签')}</text>
+          <text x="34" y="617" class="small">{t('5 measured runs per prompt', '每个 prompt 实测 5 次')}</text>
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Benchmark protocol · no result claimed' : 'Protocol from the shipped benchmark; no result claimed here.', phone ? 'benchmark 协议 · 不声称结果' : '协议来自随仓库发布的 benchmark；本步不声称性能结果。')}</text>
       {/if}
     </svg>
   </div>
