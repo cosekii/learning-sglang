@@ -4,7 +4,7 @@
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
-  import { UPDATE_DEBUG_PARAMS, UPDATE_DEBUG_BF16_BYTES, UPDATE_DEBUG_WEIGHT_GB, UPDATE_DEBUG_INITIAL_S, UPDATE_DEBUG_INNER_S, UPDATE_DEBUG_OUTER_S } from '../../ml-sys/numbers';
+  import { UPDATE_DEBUG_PARAMS, UPDATE_DEBUG_BF16_BYTES, UPDATE_DEBUG_WEIGHT_GB, UPDATE_DEBUG_INITIAL_S, UPDATE_DEBUG_INNER_S, UPDATE_DEBUG_OUTER_S, UPDATE_GROUP_SIZE_TP_ONE, UPDATE_GROUP_SIZE_TP_TWO } from '../../ml-sys/numbers';
 
   type Tone = 'plain' | 'blue' | 'orange';
   type MobileItem = { title: string; titleZh: string; body: string; bodyZh: string; tone: Tone };
@@ -58,6 +58,25 @@
       { en: 'distributed = broadcast values', zh: 'distributed = 广播权重数值' },
       { en: 'tensor = send GPU handles', zh: 'tensor = 发送 GPU 定位句柄' },
     ],
+  }, {
+    caption: 'Training rank 0 broadcasts each parameter\'s values. Each inference rank receives and loads its part.',
+    captionZh: '训练端 rank 0 广播每个参数的数值。每个推理 rank 收下并装入自己那部分。',
+    title: 'Three channels · 2 of 3: broadcast values', titleZh: '三条通道 · 第 2 条：广播数值',
+    subtitle: 'process group = cooperating training and inference ranks · rank = a member number', subtitleZh: 'process group = 一起传权的训练与推理 rank · rank = 成员编号',
+    foot: 'The group has 1 training rank plus the inference TP ranks.', footZh: '通信组包含 1 个训练 rank，再加上推理端的 TP rank。',
+    mobileTitle: '2 of 3 · broadcast values', mobileTitleZh: '第 2 条 · 广播数值',
+    mobileSubtitle: 'process group = cooperating ranks', mobileSubtitleZh: 'process group = 一起传权的 rank',
+    mobileFoot: 'world size = 1 + inference TP', mobileFootZh: '组大小 = 1 + 推理 TP',
+    mobile: [
+      { title: 'TRAINING RANK 0', titleZh: '训练端 RANK 0', body: 'send the parameter values', bodyZh: '发出参数数值', tone: 'orange' },
+      { title: 'PROCESS GROUP', titleZh: 'PROCESS GROUP', body: 'broadcast(src = 0)', bodyZh: '从 rank 0 广播', tone: 'orange' },
+      { title: 'INFERENCE RANKS', titleZh: '推理端各 RANK', body: 'receive and load their parts', bodyZh: '收下并装入各自部分', tone: 'blue' },
+    ],
+    formulas: [
+      { en: `TP 1 → ${UPDATE_GROUP_SIZE_TP_ONE} ranks · TP 2 → ${UPDATE_GROUP_SIZE_TP_TWO} ranks`, zh: `TP 1 → 组内 ${UPDATE_GROUP_SIZE_TP_ONE} 人 · TP 2 → 组内 ${UPDATE_GROUP_SIZE_TP_TWO} 人` },
+      { en: 'world size = 1 + inference TP', zh: '组大小 = 1 + 推理 TP' },
+      { en: 'for each parameter: allocate → broadcast → load', zh: '每个参数：分配空间 → 广播 → 装入' },
+    ],
   }];
   let step = $state(0);
   $effect(() => {
@@ -74,7 +93,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [480, 620][step] : [410, 480][step]);
+  const H = $derived(phone ? [480, 620, 510][step] : [410, 480, 460][step]);
 </script>
 
 <figure class="viz">
@@ -151,6 +170,34 @@
         <text x="360" y="366" text-anchor="middle" class="code">update_weights_from_disk → model.load_weights</text>
         <text x="360" y="403" text-anchor="middle" class="small">{t('The same saved file can also serve a newly added rollout engine.', '新加入的 rollout 也能读取这份已保存的权重。')}</text>
         <text x="360" y="433" text-anchor="middle" class="small">{t('Blue = the disk route · grey = the two direct alternatives', '蓝 = 磁盘路线 · 灰 = 另外两条直接通道')}</text>
+      {:else if step === 2}
+        <rect x="35" y="86" width="310" height="235" rx="12" fill="var(--bg)" stroke="var(--line)" />
+        <text x="190" y="116" text-anchor="middle" class="section">TP = 1</text>
+        <rect x="55" y="160" width="110" height="62" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x="110" y="185" text-anchor="middle" class="small strong">{t('TRAINING', '训练端')}</text>
+        <text x="110" y="207" text-anchor="middle" class="small">rank 0</text>
+        <line x1="165" y1="191" x2="207" y2="191" stroke="var(--gen)" stroke-width="2.5" marker-end="url(#update-arrow-orange)" />
+        <rect x="215" y="160" width="110" height="62" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="270" y="185" text-anchor="middle" class="small strong">{t('INFERENCE', '推理端')}</text>
+        <text x="270" y="207" text-anchor="middle" class="small">rank 1</text>
+        <text x="190" y="266" text-anchor="middle" class="result">world size = 1 + 1 = {UPDATE_GROUP_SIZE_TP_ONE}</text>
+        <text x="190" y="296" text-anchor="middle" class="small">{t('two group members', '组内两个成员')}</text>
+        <rect x="375" y="86" width="310" height="235" rx="12" fill="var(--bg)" stroke="var(--line)" />
+        <text x="530" y="116" text-anchor="middle" class="section">TP = 2</text>
+        <rect x="395" y="160" width="105" height="62" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x="447" y="185" text-anchor="middle" class="small strong">{t('TRAINING', '训练端')}</text>
+        <text x="447" y="207" text-anchor="middle" class="small">rank 0</text>
+        <line x1="500" y1="182" x2="545" y2="149" stroke="var(--gen)" stroke-width="2.5" marker-end="url(#update-arrow-orange)" />
+        <line x1="500" y1="201" x2="545" y2="232" stroke="var(--gen)" stroke-width="2.5" marker-end="url(#update-arrow-orange)" />
+        <rect x="555" y="123" width="110" height="52" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="610" y="154" text-anchor="middle" class="small">rank 1</text>
+        <rect x="555" y="207" width="110" height="52" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="610" y="238" text-anchor="middle" class="small">rank 2</text>
+        <text x="530" y="286" text-anchor="middle" class="result">world size = 1 + 2 = {UPDATE_GROUP_SIZE_TP_TWO}</text>
+        <text x="530" y="310" text-anchor="middle" class="small">{t('three group members', '组内三个成员')}</text>
+        <text x="360" y="355" text-anchor="middle" class="code">for each parameter: allocate → broadcast(src=0) → load_weights</text>
+        <text x="360" y="390" text-anchor="middle" class="small">{t('Orange = sends values · blue = receives values', '橙 = 发出数值 · 蓝 = 接收数值')}</text>
+        <text x="360" y="422" text-anchor="middle" class="code">update_weights_from_distributed</text>
       {/if}
       {#if cur.foot2}
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t(cur.foot2, cur.foot2Zh ?? cur.foot2)}</text>

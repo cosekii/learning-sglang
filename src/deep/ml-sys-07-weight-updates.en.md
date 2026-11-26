@@ -59,3 +59,35 @@ This step adds no weight size, engine count or timing. The source says storage a
 The disk route crosses storage. The next route instead lets training and inference processes broadcast parameter values through a shared process group.
 
 Sources: `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-1.md:400-409`; `python/sglang/srt/model_executor/model_runner.py:641-694` at `sgl-project/sglang@392e441ad17c78b68638f2d959fcf592d19b4834`.
+
+## Step 3 · Broadcast values inside a process group
+
+**One sentence.** The distributed channel puts one training rank and the inference TP ranks into a process group, then broadcasts each parameter from training rank 0.
+
+### On the stage
+
+- A process group is the named set of ranks that participate in this transfer. A rank is one member's number, not necessarily a separate top-level process.
+- Orange marks the training sender. Blue marks inference receivers. TP 1 has one inference receiver; TP 2 has two.
+- The bottom sequence runs for every parameter: allocate the destination, broadcast from rank 0, then load the received values.
+
+### Formula and symbols
+
+$$W=R_{\text{train}}+T$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $R_{\text{train}}$ | Training ranks supplying values in this example | 1 |
+| $T$ | Inference tensor-parallel rank count | `tp_size` |
+| $W$ | Update process-group `world_size` | Sum of both sides |
+
+### The numbers on the stage
+
+$$T=1\Rightarrow W=1+1=2,\qquad T=2\Rightarrow W=1+2=3$$
+
+The figure labels group membership only. It does not claim that two or three top-level processes exist.
+
+### Next
+
+This channel transfers parameter values through the group. The tensor channel instead passes handles that let inference locate an already assembled GPU tensor.
+
+Sources: `Awesome-ML-SYS-Tutorial/sglang/latency-accelerate-for-weight-updates/readme.md:232-262,399-412,931-950`; `model_runner.py:696-772` at `sgl-project/sglang@392e441ad17c78b68638f2d959fcf592d19b4834`.

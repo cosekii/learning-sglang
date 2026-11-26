@@ -19,6 +19,8 @@ Step 1 uses the debug note at `latency-accelerate-for-weight-updates/readme.md:5
 
 Step 2 compares the three interfaces at `sys-design/readme-1.md:400-409` and opens the disk route. `update_weights_from_disk` reads a saved checkpoint and eventually calls the model's weight loader. The same checkpoint can serve existing and newly added rollout engines. Storage speed and loader behavior determine its wait; the sources provide no disk timing. The pinned implementation is `sgl-project/sglang@392e441ad17c78b68638f2d959fcf592d19b4834`, `python/sglang/srt/model_executor/model_runner.py:641-694`.
 
+Step 3 follows `latency-accelerate-for-weight-updates/readme.md:232-262,399-412,931-950`. The update group contains one training rank plus the inference TP ranks, so `world_size = 1 + tp_size`. For each parameter, inference allocates a destination, broadcasts the values from rank 0 and calls `load_weights`. Group-rank count is not a count of top-level processes. The pinned `ModelRunner` receive path is `model_runner.py:696-772` at the same SGLang revision.
+
 </details>
 
 <details class="i18n-zh">
@@ -29,5 +31,7 @@ Step 2 compares the three interfaces at `sys-design/readme-1.md:400-409` and ope
 第 1 步使用 `latency-accelerate-for-weight-updates/readme.md:556-558,980-1007` 的调试记录。权重大小按 `1,000,000,000 个参数 × 2 字节 = 2 GB` 计算，采用十进制单位。完整更新 7.047 秒、`ModelRunner` 示例 0.001 秒、外部调用 0.033 秒都是一位作者对 distributed 更新的测量，不是传输方式的对照实验。
 
 第 2 步依据 `sys-design/readme-1.md:400-409` 比较三个接口，并展开磁盘路线。`update_weights_from_disk` 读取保存的 checkpoint，最后调用模型的权重加载器。现有和新加入的 rollout 都能读同一份 checkpoint。等待取决于存储和加载过程，来源没有给出磁盘计时。固定实现为 `sgl-project/sglang@392e441ad17c78b68638f2d959fcf592d19b4834` 的 `python/sglang/srt/model_executor/model_runner.py:641-694`。
+
+第 3 步依据 `latency-accelerate-for-weight-updates/readme.md:232-262,399-412,931-950`。更新组包含 1 个训练 rank 和推理端的 TP rank，所以 `world_size = 1 + tp_size`。每个参数都先由推理端分配接收空间，再从 rank 0 广播数值并调用 `load_weights`。组内 rank 数不等于顶层进程数。固定 `ModelRunner` 接收路径为同一 SGLang 版本的 `model_runner.py:696-772`。
 
 </details>
