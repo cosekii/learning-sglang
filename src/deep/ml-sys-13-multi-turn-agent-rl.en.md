@@ -212,37 +212,37 @@ Stop rules belong to interaction management, not one token-generation call. The 
 
 Source: `THUDM/slime@f68dc4a25f362fc0335165a17ff976f5b6f675e1`, `examples/geo3k_vlm_multi_turn/rollout.py:283-290,320-366`.
 
-## Step 7 · AgentLoop owns interaction; the server generates
+## Step 7 · ToolAgentLoop owns interaction; the server generates
 
 **One sentence.** This step switches to verl: `ToolAgentLoop` decides when to call the model and tools, while `server_manager.generate` only accepts tokens and returns action tokens.
 
 ### On the stage
 
-- The blue `ToolAgentLoop` sends accumulated `prompt_ids` and one shared `request_id` to the server manager.
-- The orange server manager returns `response_ids` without parsing or selecting tools.
-- Control returns to `ToolAgentLoop`. When action `A` contains a valid tool call, it appends the action with mask 1 and calls the tool.
-- The tool or environment returns observation `O` to `ToolAgentLoop` without assigning its mask. `ToolAgentLoop` appends it with mask 0 before the next model call.
-- While `request_id` remains in the LRU cache, the same ID reuses the earlier server choice to enable prefix-cache reuse. An evicted ID is assigned again.
+- The blue `ToolAgentLoop` sends accumulated `prompt_ids` `P` and the same `request_id` `u` to the server manager.
+- The orange server manager returns four `A` cells without parsing or selecting tools.
+- Control returns to `ToolAgentLoop`. When action `A` contains a valid tool call, four blue mask-1 cells appear and `ToolAgentLoop` calls the tool.
+- The tool or environment returns three orange `O` cells without assigning their mask. The return arrow goes back to `ToolAgentLoop`, not directly to the server.
+- If `O` fits the remaining token budget, `ToolAgentLoop` appends it with mask 0. The first card then shows `P+A+O` entering the next model call with the same `u`. Otherwise the loop stops.
 
 ### Formula and symbols
 
-$$A=G(r,P),\qquad O=E(A),\qquad P'=P+A+O$$
+$$A=G(u,P),\qquad O=\operatorname{tool}(A),\qquad P'=P+A+O$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
-| $r$ | Shared `request_id` for this interaction | `ToolAgentLoop.run` in this step |
-| $P$ | Accumulated `prompt_ids` | Step 1 |
+| $u$ | Shared `request_id` for this interaction | `ToolAgentLoop.run` in this step |
+| $P$ | Accumulated `prompt_ids` for the current model call | Step 1's prompt sequence, with prior spans appended |
 | $G$ | Server manager's token-generation call | This step |
 | $A$ | Action tokens returned by the model | Step 1: four tokens |
-| $E$ | Environment path that parses the action and executes the tool | This step |
-| $O$ | Tool-observation tokens | Step 1: three tokens |
+| $\operatorname{tool}$ | Environment path that parses the action and executes the tool | This step |
+| $O$ | Complete tool-observation delta | Step 3: three tokens |
 | $P'$ | Accumulated input for the next model call | Sum in this step |
 
 ### The numbers on the stage
 
 $$P'=P+A+O,\qquad |A|=4,\quad |O|=3$$
 
-The server receives input tokens and sampling parameters. `ToolAgentLoop` owns tool state, stop rules and the mask. The picture follows only the valid-tool-call path; verl stops when no tool call exists or a tool returns an error. The second model call uses the same `request_id`.
+The server receives input tokens and sampling parameters. `ToolAgentLoop` owns tool state, stop rules and the mask. The picture follows a valid tool call with room to append `O`; verl stops when no tool call exists, a tool returns an error, or a limit is reached. The second model call uses the same `request_id`.
 
 ### Next
 

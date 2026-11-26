@@ -212,37 +212,37 @@ $$b_{\text{next}}=12-(4+3+5)=0\Rightarrow\text{TRUNCATED}$$
 
 来源：`THUDM/slime@f68dc4a25f362fc0335165a17ff976f5b6f675e1` 的 `examples/geo3k_vlm_multi_turn/rollout.py:283-290,320-366`。
 
-## 第 7 步 · AgentLoop 管交互，server 管生成
+## 第 7 步 · ToolAgentLoop 管交互，server 管生成
 
 **一句话。** 本步改用 verl：`ToolAgentLoop` 决定何时调用模型和工具，`server_manager.generate` 只接收 token 并返回动作 token。
 
 ### 图上是什么
 
-- 蓝色 `ToolAgentLoop` 把累积 `prompt_ids` 和同一个 `request_id` 交给 server manager。
-- 橙色 server manager 返回 `response_ids`，不解析或选择工具。
-- 控制权回到 `ToolAgentLoop`：当动作 `A` 含有效工具调用时，它把动作追加到上下文并标 mask 1，然后调用工具。
-- 工具或环境把观察 `O` 返回给 `ToolAgentLoop`，此时还没标 mask。`ToolAgentLoop` 追加观察并标 mask 0，再开始下一次模型调用。
-- 只要 `request_id` 仍在 LRU 缓存中，相同 ID 就复用之前的 server 选择，以便复用前缀缓存；被淘汰后会重新选择。
+- 蓝色 `ToolAgentLoop` 把累积 `prompt_ids` `P` 和同一个 `request_id` `u` 交给 server manager。
+- 橙色 server manager 返回 4 个 `A` 方块，不解析或选择工具。
+- 控制权回到 `ToolAgentLoop`：当动作 `A` 含有效工具调用时，出现 4 个蓝色 mask 1 方块，`ToolAgentLoop` 调用工具。
+- 工具或环境返回 3 个橙色 `O` 方块，此时还没标 mask。返回箭头先回到 `ToolAgentLoop`，不是直接回到 server。
+- 若剩余 token 预算装得下 `O`，`ToolAgentLoop` 追加它并标 mask 0。随后第一张卡显示 `P+A+O` 带着同一个 `u` 进入下一次模型调用；装不下就停止。
 
 ### 公式与符号
 
-$$A=G(r,P),\qquad O=E(A),\qquad P'=P+A+O$$
+$$A=G(u,P),\qquad O=\operatorname{tool}(A),\qquad P'=P+A+O$$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
-| $r$ | 本次交互共用的 `request_id` | 本步 `ToolAgentLoop.run` |
-| $P$ | 当前累积的 `prompt_ids` | 第 1 步 |
+| $u$ | 本次交互共用的 `request_id` | 本步 `ToolAgentLoop.run` |
+| $P$ | 当前模型调用累积的 `prompt_ids` | 第 1 步的 prompt 序列，再追加先前片段 |
 | $G$ | server manager 的 token 生成调用 | 本步 |
 | $A$ | 模型返回的动作 token | 第 1 步，4 个 |
-| $E$ | 解析动作并执行工具的环境路径 | 本步 |
-| $O$ | 工具观察 token | 第 1 步，3 个 |
+| $\operatorname{tool}$ | 解析动作并执行工具的环境路径 | 本步 |
+| $O$ | 完整的工具观察 delta | 第 3 步，3 个 |
 | $P'$ | 下一次模型调用的累积输入 | 本步相加 |
 
 ### 代入图上的数
 
 $$P'=P+A+O,\qquad |A|=4,\quad |O|=3$$
 
-server 只看到输入 token 和采样参数。`ToolAgentLoop` 保有工具状态、停止规则和 mask。图中只走有效工具调用路径；没有工具调用或工具返回错误时，verl 会停止。第二次模型调用仍使用同一个 `request_id`。
+server 只看到输入 token 和采样参数。`ToolAgentLoop` 保有工具状态、停止规则和 mask。图中走的是工具有效且有余量追加 `O` 的路径；没有工具调用、工具返回错误或达到限制时，verl 会停止。第二次模型调用仍使用同一个 `request_id`。
 
 ### 接下来
 

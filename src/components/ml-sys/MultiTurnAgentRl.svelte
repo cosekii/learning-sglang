@@ -227,31 +227,31 @@
     title: 'Separate interaction logic from token generation', titleZh: '把交互管理与 token 生成分开',
     subtitle: 'ToolAgentLoop = owner of model calls, tool calls and stop rules', subtitleZh: 'ToolAgentLoop = 管理模型调用、工具调用和停止规则',
     foot: 'Switching to verl: stops use length, turn limits, no tool call, or tool error.', footZh: '改用 verl：长度、轮数上限、无工具调用或工具错误会停止。',
-    legend: 'Blue = AgentLoop · orange = server or environment · red = current', legendZh: '蓝 = AgentLoop · 橙 = server 或环境 · 红 = 当前',
+    legend: 'Blue = ToolAgentLoop · orange = server or environment · red = current', legendZh: '蓝 = ToolAgentLoop · 橙 = server 或环境 · 红 = 当前',
     flow: true,
     nodes: [
-      { title: 'TOOLAGENTLOOP', titleZh: 'TOOLAGENTLOOP', result: 'tokens → server', resultZh: 'token → server', body: 'shared request_id', bodyZh: '共用 request_id', tone: 'blue' },
-      { title: 'SERVER MANAGER', titleZh: 'SERVER MANAGER', result: 'tokens → action A', resultZh: 'token → 动作 A', body: 'no tool decisions here', bodyZh: '这里不决定工具调用', tone: 'orange' },
+      { title: 'TOOLAGENTLOOP', titleZh: 'TOOLAGENTLOOP', result: 'P → server', resultZh: 'P → server', body: 'same request_id', bodyZh: '同一个 request_id', tone: 'blue' },
+      { title: 'SERVER MANAGER', titleZh: 'SERVER MANAGER', result: 'P → action A', resultZh: 'P → 动作 A', body: 'no tool decisions here', bodyZh: '这里不决定工具调用', tone: 'orange' },
       { title: 'TOOLAGENTLOOP', titleZh: 'TOOLAGENTLOOP', result: 'A has a tool call', resultZh: 'A 含有工具调用', body: 'A gets mask 1', bodyZh: 'A 的 mask 为 1', tone: 'blue' },
-      { title: 'TOOL / ENV', titleZh: '工具 / 环境', result: 'reply O → AgentLoop', resultZh: '回复 O → AgentLoop', body: 'O returns unmasked', bodyZh: 'O 返回时还没标 mask', tone: 'orange' },
+      { title: 'TOOL / ENV', titleZh: '工具 / 环境', result: 'reply O', resultZh: '回复 O', body: 'mask not set yet', bodyZh: '此时还没标 mask', tone: 'orange' },
     ],
     formulas: [
-      { en: 'same cached request_id → same server choice', zh: '缓存中的相同 request_id → 相同 server 选择' },
+      { en: 'same request_id accompanies every model call', zh: '每次模型调用都带同一个 request_id' },
       { en: 'server.generate(prompt_ids) → response_ids', zh: 'server.generate(prompt_ids) → response_ids' },
-      { en: 'AgentLoop parses the action and calls the tool', zh: 'AgentLoop 解析动作并调用工具' },
-      { en: 'valid tool path: AgentLoop appends O with mask 0, then repeats', zh: '有效工具路径：AgentLoop 追加 O 和 mask 0，再循环' },
+      { en: 'ToolAgentLoop parses the action and calls the tool', zh: 'ToolAgentLoop 解析动作并调用工具' },
+      { en: 'valid call + room for O: ToolAgentLoop adds O + mask 0, then repeats', zh: '调用有效且 O 有余量：ToolAgentLoop 追加 O 和 mask 0，再循环' },
       { en: 'Next: pack different-length responses for training', zh: '下一步：把不同长度的响应装进训练 batch' },
     ],
     mobile: {
       title: 'Separate loop logic from generation', titleZh: '分开循环管理与 token 生成',
       subtitle: 'ToolAgentLoop owns model and tool calls', subtitleZh: 'ToolAgentLoop 管理模型和工具调用',
       foot: 'Switching to verl; its stop rules differ from slime.', footZh: '改用 verl；它的停止规则与 slime 不同。',
-      legend: 'Blue = AgentLoop · orange = server/env · red = now', legendZh: '蓝 = AgentLoop · 橙 = server/环境 · 红 = 当前',
+      legend: 'Blue = ToolAgentLoop · orange = server/env', legendZh: '蓝 = ToolAgentLoop · 橙 = server/环境',
       formulas: [
-        { en: 'Cached request_id → same server', zh: '缓存中的 request_id → 相同 server' },
+        { en: 'Same request_id on each model call', zh: '每次模型调用带同一个 request_id' },
         { en: 'generate(prompt_ids) → response_ids', zh: 'generate(prompt_ids) → response_ids' },
-        { en: 'AgentLoop parses A and calls the tool', zh: 'AgentLoop 解析 A 并调用工具' },
-        { en: 'Valid path: AgentLoop adds O + mask 0', zh: '有效路径：AgentLoop 加 O 和 mask 0' },
+        { en: 'ToolAgentLoop parses A and calls the tool', zh: 'ToolAgentLoop 解析 A 并调用工具' },
+        { en: 'If O fits: ToolAgentLoop adds O + mask 0', zh: '若 O 有余量：ToolAgentLoop 加 O 和 mask 0' },
         { en: 'Next: pack responses for training', zh: '下一步：把响应装进训练 batch' },
       ],
     },
@@ -343,7 +343,10 @@
   const nodeW = (count: number) => count === 2 ? 260 : count === 3 ? 200 : 155;
   const nodeX = (i: number, count: number) => count === 2 ? 65 + i * 330 : count === 3 ? 35 + i * 225 : 25 + i * 175;
   const shown = (i: number) => cur.compare || i <= phase;
-  const resultFor = (i: number) => t(cur.nodes[i].result, cur.nodes[i].resultZh);
+  const resultFor = (i: number) => {
+    if (step === 6 && i === 0) return t(phase >= 4 ? 'P+A+O → server' : 'P → server', phase >= 4 ? 'P+A+O → server' : 'P → server');
+    return t(cur.nodes[i].result, cur.nodes[i].resultZh);
+  };
   const aria = $derived([
     $lang === 'zh' ? cur.captionZh : cur.caption,
     phone ? t(cur.mobile?.subtitle ?? cur.subtitle, cur.mobile?.subtitleZh ?? cur.subtitleZh) : t(cur.subtitle, cur.subtitleZh),
@@ -449,6 +452,17 @@
     {:else if i === 2 && phase >= 2}
       {@render statusPill(x + 22, y + 63, w - 44, 'COMPLETED', 'blue')}
     {/if}
+  {:else if step === 6}
+    {#if i === 0}
+      {@const all = [...tokenCells('P', N.AGENT_PROMPT_TOKENS), ...tokenCells('A', N.AGENT_FIRST_ACTION_TOKENS), ...tokenCells('O', N.AGENT_OBSERVATION_TOKENS)]}
+      {@render tokenStrip(x + 10, y + 67, w - 20, phase >= 4 ? all : all.slice(0, N.AGENT_PROMPT_TOKENS))}
+    {:else if i === 1 && phase >= 1}
+      {@render tokenStrip(x + 12, y + 67, w - 24, tokenCells('A', N.AGENT_FIRST_ACTION_TOKENS))}
+    {:else if i === 2 && phase >= 2}
+      {@render tokenStrip(x + 12, y + 67, w - 24, tokenCells('1', N.AGENT_FIRST_ACTION_TOKENS, 'blue'))}
+    {:else if i === 3 && phase >= 3}
+      {@render tokenStrip(x + 12, y + 67, w - 24, tokenCells('O', N.AGENT_OBSERVATION_TOKENS, 'orange'))}
+    {/if}
   {/if}
   </g>
 {/snippet}
@@ -464,11 +478,16 @@
         {#if phase >= 1}<path data-fork="rollout" d="M135 105 V84 H360 V105" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#agent-arrow)" transition:fade />{/if}
         {#if phase >= 2}<path data-fork="training" d="M135 105 V84 H585 V105" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#agent-arrow)" transition:fade />{/if}
       {/if}
+      {#if !phone && step === 6 && phase >= 4}
+        <path data-return="next-call" d="M627 105 V86 H103 V105" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#agent-arrow)" transition:fade />
+        <text x="360" y="76" text-anchor="middle" class="small" transition:fade>{t('ToolAgentLoop adds mask 0', 'ToolAgentLoop 加 mask 0')}</text>
+      {/if}
       {#if phone}
         {#if step === 3}
           {#if phase >= 1}<path data-fork="rollout" d="M150 200 V212" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#agent-arrow)" transition:fade />{/if}
           {#if phase >= 2}<path data-fork="training" d="M275 140 H288 V352 H275" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#agent-arrow)" transition:fade />{/if}
         {/if}
+        {#if step === 6 && phase >= 4}<path data-return="next-call" d="M25 548 H10 V140 H25" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#agent-arrow)" transition:fade />{/if}
         {#each cur.nodes as node, i}
           {@const y = start + i * phoneStride}
           <g data-card={i} opacity={shown(i) ? 1 : 0.3} class="reveal">
