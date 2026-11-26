@@ -4,6 +4,7 @@
 
 ## 本轮记录
 
+- 00:35 第三轮修 Inside Voxt 第 7 章：第 1 步舞台补「焦点：打字会落下的框」；第 5 步兜底改「未贴入：卡片提供 Insert 和 Copy。」并把「落地的文字」改成「答案文字」；双语深入讲解第 1 步标题改「可以不是同一个 app」。尝试找有图片输入的复审者看 15 张舞台图和 10 张深入讲解图：`general` 子代理返回 `NO_IMAGE_INPUT`，`pstack-reviewer` 的模型配置不存在。R6、#4、#5 仍无目视结果，本章保持待目视，不给总分。
 - 00:08 修旧 Learning SGLang 第 14 章第 5、7、9、11、12 步：改清 prefill/decode 两条执行路径，补固定版本源码，修正 `cutedsl_mla`、Triton page、MPS 默认例外与 MHA/GQA 共用关系，并加中文手机大字专版。五步中文易读均 **12/12**、原分均 **24/24**、**0 内容洞**；第 9、11、12 步原分由 **23、23、22** 升为 **24**，章均分 **23.69→24.00/24**。
 - `build`、本章 `transcript`、整改步中文三宽度 `mobile`、`deep-check 14`、本章 `zh-check` 和 `git diff --check` 通过。独立冷读首轮发现第 5、12 步两处矛盾，修后复读均为 12/12、0 洞；主线程打开全部整改步桌面／手机终稿，英文第 12 步改前后像素一致。材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch14-repair-20261126-0008/final/`、`checks/`。整步保留第 7、9、11、12 步 9 个受保护英文 R4 问题，第 5 步另有 2 个受保护英文 R2/R4 问题；未跑全站回归。本轮类型：**修旧**；下一普通轮做新书，下次整点轮换第 3 项「复盘自己」。
 - 00:25 按第二轮复审继续修 Inside Voxt 第 7 章：第 4 步把「一样=没确认」收窄到普通可读框，并把「一样且网页区域 → 贴入」画成比较框里的第四条出口；第 5 步去掉 `Priya` 和问句的蓝色，只留加粗当锚点；剪贴板兜底改为只有「发出粘贴但没确认」才留文字，密码框/不可编辑在写剪贴板前返回，`KeepClipboard` 单列；第 1 步复述改成「文字去此刻焦点，不一定回 start app」。评分卡、progress、report 相应改为待目视，不标完成。
@@ -154,7 +155,7 @@
 | 04 | speech-recognition-routes | 完成：7/7 步易读满分 | 23.86 |
 | 05 | language-model-connection | 完成：5/5 步易读满分 | 24.00 |
 | 06 | compose-and-cleanup | 完成：8/8 步易读满分 | 23.88 |
-| 07 | deliver-text-safely | 待目视：5/5 步文本冷读通过；图表未目视 | — |
+| 07 | deliver-text-safely | 待目视：5/5 文本项通过；无图片输入复审者，R6/#4/#5 未评 | — |
 | 08 | personal-dictionary | 规划 | — |
 | 09 | history-retry-retention | 规划 | — |
 | 10 | file-transcription | 规划 | — |

@@ -1,4 +1,4 @@
-# 第 7 章评分卡 · Checks before text lands（第二轮修复后）
+# 第 7 章评分卡 · Checks before text lands（第三轮修复后）
 
 日期：2026-11-26。评分办法：`EVAL.md` 易读性 R1–R6 与原 12 项，每项 0 / 2。
 材料：中文桌面与 390 px 中文手机截图 10 张（`/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-fcdw3krd/opencode/ls-voxt-ch07-repair2-20261126/final/`）、逐步 transcript、双语深入讲解。冷读者只读 Voxt 第 1–6 章。
@@ -22,7 +22,18 @@
 3. **剪贴板兜底收窄。** caption、aria、MDX 出处、双语深入讲解统一为：只有「发出粘贴但结果没确认」才把文字留在剪贴板；密码框和不可编辑在写剪贴板之前返回，不动剪贴板；`KeepClipboard` 是单独的例外。卡片提供 Insert / Copy 的说法保留。
 4. **复述纠正。** 第 1 步 R1 改成「文字去此刻的焦点，不一定回到 start app」，不再与第 3 步的 start app 规则矛盾。
 
-## 机械门槛（第二轮修复后）
+## 第三轮修复
+
+1. 第 1 步舞台显式定义焦点：加「focus: the field where typing goes」/「焦点：打字会落下的框」，不再只放在 aria 里。
+2. 第 5 步兜底措辞改为「Not inserted: the card offers Insert and Copy.」/「未贴入：卡片提供 Insert 和 Copy。」，覆盖 Step 4 的「发出粘贴但没确认」；旁边的标签由「landed text」改为「answer text」/「答案文字」，不再把可能没落地的文字叫「落地」。
+3. 双语深入讲解第 1 步标题由「是两个 app」改为「可以不是同一个 app」/「can be different apps」，因为不切 app 时两者相同。
+
+## 视觉评审尝试（未完成）
+
+- 本轮模型没有图片输入。尝试让独立子代理看 `stage/` 的 15 张和 `deep/` 的 10 张截图；可用的 `general` 子代理返回 `NO_IMAGE_INPUT`，`pstack-reviewer` 的模型配置不存在（`qweneval/...` model not found）。因此 R6、#4、#5 仍无目视结果，本章不标完成，也不给 12/12、24/24。
+- 需要一位有图片输入的复审者打开：`/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-fcdw3krd/opencode/ls-voxt-ch07-final-20261126/stage/`（en/zh/zh-phone 各 5 步）和 `.../deep/`（zh/en 各 5 步）。发现就改，再补数字分。
+
+## 机械门槛（第三轮修复后）
 
 - `build`：通过
 - 本章 `transcript`：5 步，无出界/重叠告警
