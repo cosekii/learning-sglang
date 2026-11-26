@@ -96,6 +96,40 @@
         { en: '32 values share one scale · codes: −7…7', zh: '32 个数共用一个 scale · 编码：−7…7' },
       ],
     },
+  }, {
+    caption: 'Fake quantization rounds, then returns to BF16. Training computes with the rounded value.',
+    captionZh: '模拟量化先舍入，再还原成 BF16。训练用还原值计算。',
+    title: 'Fake quantization keeps BF16 storage', titleZh: '模拟量化仍用 BF16 保存和计算',
+    subtitle: 'QAT = training with this fake rounding', subtitleZh: 'QAT = 带着这种模拟舍入来训练',
+    foot: 'The recipe applies this hook to selected grouped-linear weights.',
+    footZh: '这个配置只给选定的 grouped-linear 权重加模拟量化。',
+    legend: 'Orange = BF16 storage or compute · blue = rounding operation', legendZh: '橙 = BF16 保存或计算 · 蓝 = 舍入操作',
+    flow: true,
+    nodes: [
+      { title: 'STORED WEIGHT', titleZh: '保存的权重', result: 'BF16 · 0.35', resultZh: 'BF16 · 0.35', body: 'model parameter', bodyZh: '模型参数', tone: 'orange', compact: true },
+      { title: 'FAKE ROUND TRIP', titleZh: '模拟舍入往返', result: '0.35 → 4 → 0.40', resultZh: '0.35 → 4 → 0.40', body: 'BF16 in and out', bodyZh: '进出都是 BF16', tone: 'blue', compact: true, dashed: true },
+      { title: 'BF16 COMPUTE', titleZh: 'BF16 计算', result: 'uses 0.40', resultZh: '使用 0.40', body: 'forward pass', bodyZh: '前向计算', tone: 'orange', compact: true },
+    ],
+    formulas: [
+      { en: 'storage stays BF16 · no packed INT4 checkpoint here', zh: '保存值仍是 BF16 · 这里还没有打包的 INT4 checkpoint' },
+      { en: 'the forward pass sees rounded 0.40, not original 0.35', zh: '前向看到舍入后的 0.40，不是原来的 0.35' },
+      { en: 'QAT = quantization-aware training', zh: 'QAT = 量化感知训练' },
+      { en: 'fake is not real export: no 4-bit storage yet', zh: '模拟不是真实导出：还没有 4 位存储' },
+      { en: 'Next: how does a gradient cross rounding?', zh: '下一步：梯度怎样穿过舍入？' },
+    ],
+    mobile: {
+      title: 'Fake quantization keeps BF16', titleZh: '模拟量化仍用 BF16',
+      subtitle: 'QAT = train with fake rounding', subtitleZh: 'QAT = 带着模拟舍入训练',
+      foot: 'Only selected grouped-linear weights use this hook.', footZh: '只有选定的 grouped-linear 权重用它。',
+      legend: 'Orange = BF16 · blue = rounding', legendZh: '橙 = BF16 · 蓝 = 舍入',
+      formulas: [
+        { en: 'Storage stays BF16 · no packed INT4 yet', zh: '保存值仍是 BF16 · 还没有 INT4 打包' },
+        { en: 'Forward sees 0.40, not 0.35', zh: '前向看到 0.40，不是 0.35' },
+        { en: 'QAT = quantization-aware training', zh: 'QAT = 量化感知训练' },
+        { en: 'Fake is not real 4-bit export', zh: '模拟不是真实 4 位导出' },
+        { en: 'Next: how does a gradient cross?', zh: '下一步：梯度怎样穿过？' },
+      ],
+    },
   }];
   let step = $state(0);
   $effect(() => {

@@ -19,6 +19,8 @@ Step 1 uses the article's raw INT4 storage discussion at `readme.md:101-114`. Th
 
 Step 2 follows the fake-quantization mechanism at `readme.md:53-61` and the pinned `docker/patch/latest/megatron.patch:71-110`. The three displayed values are constructed from one 32-value group. The implementation computes an FP32 scale as `max_abs ÷ 7`, clamps it to at least `1e-5`, rounds and clamps codes to `[-7,7]`, then restores and casts to the input dtype. The example is nonzero, so it does not exercise the scale floor.
 
+Step 3 follows `readme.md:37-49,63-78`, `docker/patch/latest/megatron.patch:124-150`, and the recipe's environment at `scripts/low_precision/run-kimi-k2-Thinking-int4.sh:158-170`. QAT means quantization-aware training. The hook applies fake quantize–dequantize to selected `TEGroupedLinear` weights with group size 32. BF16 storage and computation remain; the forward value keeps the rounding error. The article's asymmetric comparisons support pairing fake INT4 training with real INT4 rollout, not a universal BF16-equivalence claim.
+
 Further reading: [zero-to-sglang Part III Chapter 2: Quantization and Low-Precision Inference](https://zero-to-sglang.datawhale.cc/eng/part3/Chapter2_Quantization-and-Low-Precision-Inference.html).
 
 </details>
@@ -31,6 +33,8 @@ Further reading: [zero-to-sglang Part III Chapter 2: Quantization and Low-Precis
 第 1 步依据 `readme.md:101-114` 的 INT4 原始存储讨论。32 个权重是构造算例：`32 × 2 字节 = 64 字节`，原始 INT4 为 `32 × 0.5 字节 = 16 字节`，未计 scale、排除项和运行显存时少 75%。更少的数值等级带来舍入；本步不声称延迟或完整 checkpoint 的收益。
 
 第 2 步依据 `readme.md:53-61` 的模拟量化机制，以及固定版本 `docker/patch/latest/megatron.patch:71-110`。三个展示值来自构造的 32 权重组。实现用 FP32 计算 `最大绝对值 ÷ 7` 的 scale，把下限设为 `1e-5`，编码舍入并截断到 `[-7,7]`，再还原并转成输入类型。本例非零，不触发 scale 下限。
+
+第 3 步依据 `readme.md:37-49,63-78`、`docker/patch/latest/megatron.patch:124-150` 和 `scripts/low_precision/run-kimi-k2-Thinking-int4.sh:158-170` 的环境配置。QAT 是量化感知训练。钩子以 32 为组大小，对选定的 `TEGroupedLinear` 权重做模拟量化再还原。保存和计算仍是 BF16，前向保留舍入误差。文章的非对称对照支持训练 fake INT4 与 rollout real INT4 配对，不能推出任意配置都等同 BF16。
 
 延伸阅读：[zero-to-sglang 第 3 部分第 2 章：量化与低精度推理](https://zero-to-sglang.datawhale.cc/ch/part3/%E7%AC%AC2%E7%AB%A0_%E9%87%8F%E5%8C%96%E4%B8%8E%E4%BD%8E%E7%B2%BE%E5%BA%A6%E6%8E%A8%E7%90%86.html)。
 

@@ -67,3 +67,40 @@ $$\hat{x}_2=4\times0.10=0.40,\qquad |0.35-0.40|=0.05$$
 训练前向反复做这次“量化再还原”，但保存和计算仍是 BF16。下一步给这条训练路径一个名字：fake quantization。
 
 来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:53-61`；`THUDM/slime@58525eb986c66a271aa31077e17b8afebe704b4f` 的 `docker/patch/latest/megatron.patch:71-110`。
+
+## 第 3 步 · 模拟量化仍用 BF16 保存和计算
+
+**一句话。** Fake quantization 在前向中先舍入再还原成 BF16，让训练看见量化误差，但还没有生成真正的 4 位权重文件。
+
+### 图上是什么
+
+- 保存的模型参数仍是 BF16 的 0.35。
+- 蓝色虚线卡执行第 2 步的往返：0.35 变成编码 4，再还原为 BF16 的 0.40。
+- 前向计算使用 0.40。量化误差没有被消掉，模型可以在训练中适应它。
+
+### 公式与符号
+
+$$\hat{w}=\mathcal{D}(\mathcal{Q}(w)),\qquad y=\operatorname{BF16\ compute}(\hat{w},a)$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $w$ | 保存的 BF16 模型参数 | 本例的 0.35 |
+| $\mathcal{Q}$ | 除以 scale 并舍入成整数编码 | 第 2 步 |
+| $\mathcal{D}$ | 编码乘回 scale 并转回 BF16 | 第 2 步 |
+| $\hat{w}$ | 前向实际使用的还原权重 | 本例的 0.40 |
+| $a$ | 前向的激活值，即计算产生的数值 | 第 9 章第 3 步 |
+| $y$ | 当前前向计算的输出 | 本步定义 |
+
+### 代入图上的数
+
+$$w=0.35\rightarrow q=4\rightarrow\hat{w}=0.40$$
+
+“Fake”指存储和矩阵计算没有变成 INT4：参数仍以 BF16 保存，舍入后立即还原成 BF16。QAT 是 quantization-aware training，也就是让训练前向反复经历这种舍入。固定配置通过 `OPEN_TRAINING_INT4_FAKE_QAT_FLAG=1` 开启钩子，并设置 `OPEN_TRAINING_INT4_GROUP_SIZE=32`；钩子包住 `TEGroupedLinear` 的权重，不是整个模型的每个张量。
+
+文章的两组非对称实验用于说明配对的重要性：开 QAT 却用 BF16 rollout，会移除训练已经适应的舍入；不开 QAT 却直接用 INT4 rollout，会在训练未见过的位置加入舍入。它们支持训练 fake INT4 与 rollout real INT4 配对，不证明任意模型或配置都能达到 BF16。
+
+### 接下来
+
+前向可以计算，但普通反向传播会卡在舍入处。下一步看 STE 怎样给梯度一条近似通道。
+
+来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:37-49,63-78`；`THUDM/slime@58525eb986c66a271aa31077e17b8afebe704b4f` 的 `docker/patch/latest/megatron.patch:124-150` 和 `scripts/low_precision/run-kimi-k2-Thinking-int4.sh:158-170`。

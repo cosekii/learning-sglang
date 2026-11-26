@@ -67,3 +67,40 @@ The pinned implementation finds the maximum and scale in FP32, clamps the scale 
 Training repeats this quantize–restore round trip in its forward pass while storage and computation remain BF16. The next step names that path fake quantization.
 
 Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:53-61`; `THUDM/slime@58525eb986c66a271aa31077e17b8afebe704b4f`, `docker/patch/latest/megatron.patch:71-110`.
+
+## Step 3 · Keep BF16 storage with fake quantization
+
+**One sentence.** Fake quantization rounds and then restores BF16 in the forward pass, exposing training to quantization error without producing a real four-bit checkpoint.
+
+### On the stage
+
+- The stored model parameter remains BF16's 0.35.
+- The dashed blue card performs Step 2's round trip: 0.35 becomes code 4 and then BF16's 0.40.
+- Forward computation uses 0.40. The quantization error remains visible, so training can adapt to it.
+
+### Formula and symbols
+
+$$\hat{w}=\mathcal{D}(\mathcal{Q}(w)),\qquad y=\operatorname{BF16\ compute}(\hat{w},a)$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $w$ | Stored BF16 model parameter | This example's 0.35 |
+| $\mathcal{Q}$ | Division by the scale and rounding to an integer code | Step 2 |
+| $\mathcal{D}$ | Multiplication by the scale and conversion back to BF16 | Step 2 |
+| $\hat{w}$ | Restored weight used by the forward pass | This example's 0.40 |
+| $a$ | Activation, a value produced during computation | Chapter 9 Step 3 |
+| $y$ | Output of the current forward computation | Defined here |
+
+### The numbers on the stage
+
+$$w=0.35\rightarrow q=4\rightarrow\hat{w}=0.40$$
+
+“Fake” means storage and matrix computation do not become INT4. The parameter stays BF16, and rounding immediately returns to BF16. QAT means quantization-aware training: the training forward pass repeatedly experiences this rounding. The shipped recipe enables the hook with `OPEN_TRAINING_INT4_FAKE_QAT_FLAG=1` and sets `OPEN_TRAINING_INT4_GROUP_SIZE=32`. The hook wraps `TEGroupedLinear` weights rather than every model tensor.
+
+The article's asymmetric comparisons explain why the two sides must pair. QAT with BF16 rollout removes the rounding that training adapted to. Training without QAT followed by INT4 rollout adds rounding that training never saw. These comparisons support fake INT4 training with real INT4 rollout; they do not prove BF16-level results for every model or configuration.
+
+### Next
+
+The forward pass works, but ordinary backpropagation stalls at rounding. The next step shows how STE creates an approximate gradient path.
+
+Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:37-49,63-78`; `THUDM/slime@58525eb986c66a271aa31077e17b8afebe704b4f`, `docker/patch/latest/megatron.patch:124-150` and `scripts/low_precision/run-kimi-k2-Thinking-int4.sh:158-170`.
