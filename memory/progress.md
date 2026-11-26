@@ -4,8 +4,8 @@
 
 ## 本轮记录
 
-- 13:48 按协调复查返工 Learning ML Systems 第 13 章：第 1 步 `P P = 2` 改为 `P = 2`，第 7 步英文手机图例缩短为 `red = now`，第 8 步标签改为 `RESPONSE ATTENTION MASK`。协调指出的旧 **0 洞**和「中英 mobile 全过」记录已撤回；修复后作者重评 **R1–R5 80/80、非视觉原项 160/160、机制 R6 16/16、当前未决内容洞 0**。当前不记原十二项总分或整章完成，协调复审、原 #4／#5／#6 与主人最终视觉验收仍待。
-- 八个步骤与本轮返工均已提交并推送；`build`（60 页）、本章 `transcript`、全章 `readability`、`deep-check 13`、`zh-check`、`git diff --check` 通过。英文和中文分别使用 `BOOK=ml-sys ONLY=13 [LANG=zh] npm run mobile -- http://127.0.0.1:4384/learning-sglang`，360／390／430 px 全部通过；两次均在标签调整后重跑。独立冷读确认第 1 步洞已关闭。图在 `.bot/out/ml13/`，深入讲解图在 `.bot/out/ml13-deep/`；当前模型不能读 PNG。只跑本章检查，未跑全站回归、真实训练、rollout、VLM 或 benchmark。下一单元仍需等待本章协调复审。
+- 14:45 完成 Learning ML Systems 第 13 章全部 8 步协调返工：逐步加入 token 合并、mask 赋值、观察切片、图片分叉、张量拼接、独立停止示例、模型—工具返回和右侧 padding 动画；关闭 assistant generation prompt、跨步符号、字典／张量类型、ToolAgentLoop 停止条件、样本命名和卡片边界问题。独立只读复审在 `c0ab0de` 给出 **GO（source/content/mechanism）**：R1–R5 **80/80**、原十个非视觉项 **160/160**、机制 R6 **16/16**、未决内容洞 **0**。原 #4/#5 和原十二项总分仍待协调与主人视觉验收，不记整章完成。
+- 八步及三轮后续返工均已提交并推送；`build`（60 页）、`WAIT=6000` 本章 `transcript`、全章 `readability`、英中全章 360／390／430 px `mobile`、`deep-check 13`、`zh-check`、八步机制与卡片边界 DOM 检查、16 个深入讲解抽屉检查和 `git diff --check` 通过。图在 `.bot/out/ml13-review/`；当前模型不能读 PNG，未给视觉分。只跑本章检查，未跑全站回归、真实训练、rollout、VLM 或 benchmark。下一单元仍需等待本章协调复审。
 
 - 14:22 同步 Learning SGLang Omni 第 14 章的协调 verdict：`58c960c…955e518` 的机制 R6 为 **15/16**；`bfc6517…0f4cba0` 已关闭第 6 步失败态问题，最新机制 R6 **16/16**，八步均 **2/2**。R1–R5 **80/80**、原十个非视觉项 **160/160**、静态原 #4/#5 **32/32**、原十二项 **192/192**。本章记录同步后为 `complete-under-EVAL`，主人最终验收另计。
 - 协调人在固定 `0f4cba0` 快照通过 60 页 `build`、8 步 `readability`、`deep-check 14`、pinned-identical `transcript`、英中全章三种宽度 `mobile`、中文第 1／6 步字号门和 `zh-check`，并读取第 6 步的 8 张新相位图。本轮只同步记录，未重跑教程门、全站回归、真实连接、模型或 GPU benchmark。本轮类型：**修旧**；下一单元回 Omni 15。
