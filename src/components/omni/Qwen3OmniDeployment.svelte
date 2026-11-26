@@ -67,14 +67,14 @@
     caption: 'Precision is the number of bits used to store each weight. INT4 roughly halves the BF16 estimate; its talker and code2wav stay BF16.',
     captionZh: '精度是保存每个权重所用的 bit 数。INT4 约省一半，它的 talker 和 code2wav 仍用 BF16。',
   }, {
-    caption: 'Both panels keep 2 encoders + thinker on GPU 0. Default code2wav has 32 slots; Replica2 gives each process 64, not double throughput.',
-    captionZh: '两幅图都把两个 encoder 和 thinker 留在 GPU 0。默认 32 个状态位；replica2 每进程 64 个，不代表吞吐翻倍。',
+    caption: 'Both panels keep 2 encoders + thinker on GPU 0; default adds code2wav there. Each code2wav process gets 32 slots by default, 64 with Replica2, not double throughput.',
+    captionZh: '两图的 GPU 0 都有 2 encoders + thinker；默认还有 code2wav，每进程 32 个状态位。replica2 每个 code2wav 进程 64 个，不代表吞吐翻倍。',
   }, {
     caption: 'Readiness uses small inputs and at most eight tokens per generating stage. Measure real traffic with fixed settings and separate clocks.',
     captionZh: '就绪检查用小输入，每个生成 stage 最多 8 token。再用真实流量测量，基准客户端和听者分别计时。',
   }, {
-    caption: 'One decision sheet records the route, placement, precision, capacity and evidence. Next: client ← queued audio; what happens when the client reads too slowly?',
-    captionZh: '一张决策表记录路线、摆卡、精度、容量和证据。client ← queued audio：客户端读得太慢会怎样？',
+    caption: 'One decision sheet records the route, placement, precision, capacity and evidence. Next: client ← queued audio (API process); what happens when the client reads too slowly?',
+    captionZh: '一张决策表记录路线、摆卡、精度、容量和证据。client ← queued audio (API process)：客户端读得太慢会怎样？',
   }];
   let step = $state(0);
   $effect(() => {
@@ -504,10 +504,10 @@
           <text x={x + 12} y={y + (phone ? 39 : 43)} class="tag">{t(card.text, card.textZh)}</text>
         {/each}
         {#if phone}
-          <text x={W / 2} y="1013" text-anchor="middle" class="tag strong">client ← queued audio</text>
+          <text x={W / 2} y="1013" text-anchor="middle" class="tag strong">client ← queued audio (API process)</text>
           <text x={W / 2} y="1038" text-anchor="middle" class="tag strong">{t('What if the client reads too slowly?', '客户端读得太慢会怎样？')}</text>
         {:else}
-          <text x={W / 2} y="709" text-anchor="middle" class="tag strong">{t('client ← queued audio · What happens when the client reads too slowly?', 'client ← queued audio · 客户端读得太慢会怎样？')}</text>
+          <text x={W / 2} y="709" text-anchor="middle" class="tag strong">{t('client ← queued audio (API process) · What happens when the client reads too slowly?', 'client ← queued audio (API process) · 客户端读得太慢会怎样？')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Constructed TP1 hypothesis · local A/B required', '构造的 TP1 假设 · 仍需本地 A/B') : t('Constructed TP1 hypothesis from H200/TP2 evidence; local A/B required. No local model run.', '由 H200/TP2 证据构造的 TP1 假设，仍需本地 A/B；未运行模型。')}</text>
       {/if}

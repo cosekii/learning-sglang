@@ -311,4 +311,4 @@ This is a constructed TP1 starting hypothesis from H200/TP2 evidence, not a benc
 
 ### Next
 
-The next part follows the running service. The closing cue is `client ← queued audio`. Chapter 14 answers the closing question: after generation finishes, what happens when a client reads too slowly and audio remains queued in the API process?
+The next part follows the running service. The closing cue is `client ← queued audio (API process)`. Chapter 14 answers the closing question: after generation finishes, what happens when a client reads too slowly and audio remains queued in the API process?
