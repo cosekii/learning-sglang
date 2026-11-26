@@ -80,7 +80,7 @@ Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:16-23`; `Awesome-ML-
 ### On the stage
 
 - The orange 8 GB box is the persistent state owned by one rank from Step 2.
-- `All-gather` means every rank contributes its shard so the group can reconstruct the full parameter values for one FSDP unit. A unit is the layer or parameter group gathered together.
+- `All-gather` means every rank contributes its shard so the group can reconstruct one full layer. The implementation calls the layer or parameter group gathered together a unit.
 - The blue full layer has temporary size `U`. Computation uses that full layer, then `RELEASE` removes the temporary copy. The persistent 8 GB remains.
 
 ### Formula and symbols
@@ -98,7 +98,7 @@ $$M_{\text{forward}}\approx M_i+U,\qquad M_{\text{after}}=M_i$$
 
 The only supplied number is $M_i=8$ GB. The figure does not assign a value to $U$, so it cannot produce a numeric forward peak. It shows only the boundary $8\ \text{GB}+U\rightarrow8\ \text{GB}$, not a measured total.
 
-The all-gather reconstructs parameters. Gradients do not exist until backward computation, so they are not part of this gather.
+This all-gather reconstructs parameters; forward computation does not all-gather gradients.
 
 ### Next
 

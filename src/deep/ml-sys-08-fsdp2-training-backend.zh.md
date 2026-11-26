@@ -80,7 +80,7 @@ FSDP2 把每个参数表示为 DTensor：逻辑张量、分布信息和本地分
 ### 图上是什么
 
 - 橙色 8 GB 是第 2 步中一个 rank 长期保存的状态。
-- `All-gather` 表示每个 rank 都拿出自己的分片，共同重建一个 FSDP unit 的完整参数。unit 是一起聚合的层或参数组。
+- `All-gather` 表示每个 rank 都拿出自己的分片，共同重建完整一层。实现把一起聚合的层或参数组称为 unit。
 - 蓝色完整一层的临时大小记作 $U$。计算使用完整层，随后 `RELEASE` 删除临时副本，长期保存的 8 GB 仍在。
 
 ### 公式与符号
@@ -98,7 +98,7 @@ $$M_{\text{forward}}\approx M_i+U,\qquad M_{\text{after}}=M_i$$
 
 已给出的数只有 $M_i=8$ GB。图中不给 $U$ 填值，因此无法算出数值化的前向峰值。这里只画 $8\ \text{GB}+U\rightarrow8\ \text{GB}$ 的边界，不声称实测总量。
 
-All-gather 重建的是参数。梯度要到反向计算才产生，所以不在这次聚合里。
+这次 all-gather 重建的是参数；前向计算不对梯度执行 all-gather。
 
 ### 接下来
 

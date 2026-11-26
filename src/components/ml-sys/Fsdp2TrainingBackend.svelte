@@ -63,20 +63,20 @@
       { en: 'Each GPU keeps one-eighth of its old copy', zh: '每张 GPU 只留原来的八分之一' },
     ],
   }, {
-    caption: 'Forward temporarily rebuilds one layer for computation. The full layer is released afterward.',
-    captionZh: '前向计算时，先临时拼出一层。算完就释放这一层。',
-    title: 'Forward borrows a full layer, then releases it', titleZh: '前向先借来完整一层，用完释放',
-    subtitle: 'all-gather = rebuild one full layer from every rank\'s shard · unit = the layer gathered together',
-    subtitleZh: 'all-gather = 从各 rank 的分片拼出完整一层 · unit = 一起聚合的这一层',
-    foot: 'The temporary unit has U bytes; the source supplies no U value.',
-    footZh: '临时 unit 的大小记作 U；来源没有给出 U 的数值。',
+    caption: 'Forward computes with current weights. It temporarily rebuilds one full layer, then releases it.',
+    captionZh: 'Forward 用当前权重计算。它先临时拼出完整一层，算完释放。',
+    title: 'Forward borrows a full layer, then releases it', titleZh: 'Forward 先借来完整一层，用完释放',
+    subtitle: 'all-gather = rebuild one full layer from every rank\'s shard',
+    subtitleZh: 'all-gather = 从各 rank 的分片拼出完整一层',
+    foot: 'U is the temporary full layer\'s memory size; the source supplies no value.',
+    footZh: 'U 是临时完整层的显存大小；来源没有给出数值。',
     mobileTitle: 'Borrow a layer, then release it', mobileTitleZh: '借来一层，用完释放',
     mobileSubtitle: 'all-gather = rebuild a full layer', mobileSubtitleZh: 'all-gather = 拼出完整一层',
-    mobileFoot: 'U is temporary and unquantified.', mobileFootZh: 'U 是临时占用，数值未知。',
+    mobileFoot: 'U is temporary memory; no value is supplied.', mobileFootZh: 'U 是临时显存，数值未知。',
     mobile: [
       { title: 'OWNED SHARDS', titleZh: '拥有的分片', body: '8 GB stay on this rank', bodyZh: '这个 rank 长期保存 8 GB', tone: 'orange' },
-      { title: 'ALL-GATHER · ONE UNIT', titleZh: 'ALL-GATHER · 一个 unit', body: 'every rank contributes its shard', bodyZh: '每个 rank 都拿出自己的一片', tone: 'blue' },
-      { title: 'FULL LAYER · U BYTES', titleZh: '完整一层 · U 字节', body: 'compute with the full values', bodyZh: '用完整数值计算', tone: 'blue' },
+      { title: 'ALL-GATHER · ONE LAYER', titleZh: 'ALL-GATHER · 完整一层', body: 'every rank contributes its shard', bodyZh: '每个 rank 都拿出自己的一片', tone: 'blue' },
+      { title: 'FULL LAYER · U', titleZh: '完整一层 · U', body: 'temporary memory, size unknown', bodyZh: '临时显存，大小未知', tone: 'blue' },
       { title: 'RELEASE', titleZh: '释放', body: 'return to 8 GB owned', bodyZh: '回到长期保存的 8 GB', tone: 'plain' },
     ],
     formulas: [
@@ -238,8 +238,8 @@
       {:else if step === 2}
         {#each [
           { x: 25, title: 'OWNED SHARDS', titleZh: '拥有的分片', result: '8 GB', body: 'persistent', bodyZh: '长期保存', tone: 'orange' },
-          { x: 205, title: 'ALL-GATHER', titleZh: 'ALL-GATHER', result: 'one unit', body: 'from every rank', bodyZh: '来自每个 rank', tone: 'blue' },
-          { x: 385, title: 'FULL LAYER', titleZh: '完整一层', result: 'U bytes', body: 'compute', bodyZh: '计算', tone: 'blue' },
+          { x: 205, title: 'ALL-GATHER', titleZh: 'ALL-GATHER', result: 'one layer', body: 'from every rank', bodyZh: '来自每个 rank', tone: 'blue' },
+          { x: 385, title: 'FULL LAYER', titleZh: '完整一层', result: 'U', body: 'compute', bodyZh: '计算', tone: 'blue' },
           { x: 565, title: 'RELEASE', titleZh: '释放', result: 'U gone', body: 'owned 8 GB', bodyZh: '仍保存 8 GB', tone: 'plain' },
         ] as node, i}
           <rect x={node.x} y="105" width="130" height="151" rx="12" fill={fill(node.tone)} stroke={stroke(node.tone)} stroke-dasharray={node.tone === 'plain' ? '5 4' : '0'} />
