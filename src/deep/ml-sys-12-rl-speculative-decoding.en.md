@@ -230,3 +230,36 @@ The article describes rising acceptance length and falling MTP loss in plots; th
 The next step measures the added training seconds and explains why throughput gain alone cannot establish a whole-round win.
 
 Source: `Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:66-114`.
+
+## Step 8 · Online draft training adds 7 seconds
+
+**One sentence.** The same public table lists training time as 141, 143 and 148 seconds; online adds 7 seconds over no speculation, but these data cannot establish a whole-round speedup.
+
+### On the stage
+
+- The grey no-speculation bar reports 141 seconds, the orange frozen bar 143 and the blue online bar 148. All three bars share one scale.
+- The two differences are $148-141=7$ seconds and $148-143=5$ seconds.
+- The final two lines leave this single-generation experiment and draw `assistant → tool result → assistant`, introducing the next chapter's multi-turn mask question.
+
+### Formula and symbols
+
+$$\Delta T_{a:b}=T^{train}_a-T^{train}_b,\qquad c_{a:b}=\frac{T^{train}_a}{T^{train}_b}-1$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $T^{train}_a,T^{train}_b$ | Reported training time for two configurations | Public summary table |
+| $\Delta T_{a:b}$ | Additional training seconds for configuration $a$ | Computed here |
+| $c_{a:b}$ | Relative increase in training time | Computed here |
+
+### The numbers on the stage
+
+$$\Delta T_{online:no}=148-141=7\ \text{s},\qquad c_{online:no}=148/141-1=5.0\%$$
+$$\Delta T_{online:frozen}=148-143=5\ \text{s},\qquad c_{online:frozen}=148/143-1=3.5\%$$
+
+Step 7 reports tokens/s, while this step reports training seconds. Without a common rollout token count and complete round timeline, they cannot produce an end-to-end gain. The 5.0% figure is a training-time increase, not a claim that the whole round becomes 5.0% slower.
+
+### Next
+
+The pinned ReTool example marks generated assistant tokens as training-valid, appends interpreter observations to the same response and uses different masks. The next chapter follows that visible sequence to ask which tokens enter policy training and which adjacent positions may teach the draft.
+
+Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:66-104`; `THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a`, `examples/retool/generate_with_retool.py:267-303`.

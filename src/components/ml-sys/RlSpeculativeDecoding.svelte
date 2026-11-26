@@ -251,6 +251,41 @@
         { en: 'Next: the training-time cost', zh: '下一步：训练时间成本' },
       ],
     },
+  }, {
+    caption: 'Online training adds 7 seconds over no speculation here. The table cannot prove whole-round speedup.',
+    captionZh: '在线训练比不用投机多 7 秒。这张表算不出整轮加速。',
+    title: 'Online draft training adds 7 seconds', titleZh: '在线训练 draft 多付 7 秒',
+    subtitle: 'reported training seconds for the same three-arm experiment', subtitleZh: '同一组公开实验报告的训练秒数',
+    foot: 'Reported training metric, not a full RL-round timeline.',
+    footZh: '文章报告的训练指标，不是完整 RL 轮次时间线。',
+    legend: 'Grey = no spec · orange = frozen · blue = online · one scale', legendZh: '灰 = 不用投机 · 橙 = 冻结 · 蓝 = 在线 · 同一比例',
+    nodes: [
+      { title: 'NO SPEC', titleZh: '不用投机', result: `${N.SPEC_NO_SPEC_TRAIN_S} s`, resultZh: `${N.SPEC_NO_SPEC_TRAIN_S} 秒`, body: 'no draft training', bodyZh: '不训练 draft', tone: 'plain', bar: N.SPEC_NO_SPEC_TRAIN_S / N.SPEC_ONLINE_TRAIN_S, compact: true },
+      { title: 'FROZEN SPEC', titleZh: '冻结投机', result: `${N.SPEC_FROZEN_TRAIN_S} s`, resultZh: `${N.SPEC_FROZEN_TRAIN_S} 秒`, body: 'draft stays frozen', bodyZh: 'draft 保持冻结', tone: 'orange', bar: N.SPEC_FROZEN_TRAIN_S / N.SPEC_ONLINE_TRAIN_S, compact: true },
+      { title: 'ONLINE SPEC', titleZh: '在线投机', result: `${N.SPEC_ONLINE_TRAIN_S} s`, resultZh: `${N.SPEC_ONLINE_TRAIN_S} 秒`, body: 'draft learns too', bodyZh: 'draft 也学习', tone: 'blue', bar: 1, compact: true },
+    ],
+    formulas: [
+      { en: `online − no: ${N.SPEC_ONLINE_TRAIN_S} − ${N.SPEC_NO_SPEC_TRAIN_S} = ${N.SPEC_ONLINE_EXTRA_TRAIN_S} s`, zh: `在线 − 不用：${N.SPEC_ONLINE_TRAIN_S} − ${N.SPEC_NO_SPEC_TRAIN_S} = ${N.SPEC_ONLINE_EXTRA_TRAIN_S} 秒` },
+      { en: `online − frozen: ${N.SPEC_ONLINE_TRAIN_S} − ${N.SPEC_FROZEN_TRAIN_S} = ${N.SPEC_ONLINE_EXTRA_FROZEN_TRAIN_S} s`, zh: `在线 − 冻结：${N.SPEC_ONLINE_TRAIN_S} − ${N.SPEC_FROZEN_TRAIN_S} = ${N.SPEC_ONLINE_EXTRA_FROZEN_TRAIN_S} 秒` },
+      { en: `training increase: ${N.SPEC_ONLINE_TRAIN_S} ÷ ${N.SPEC_NO_SPEC_TRAIN_S} − 1 = ${(N.SPEC_ONLINE_TRAIN_OVER_NO_SPEC * 100).toFixed(1)}%`, zh: `训练增加：${N.SPEC_ONLINE_TRAIN_S} ÷ ${N.SPEC_NO_SPEC_TRAIN_S} − 1 = ${(N.SPEC_ONLINE_TRAIN_OVER_NO_SPEC * 100).toFixed(1)}%` },
+      { en: 'tokens/s and training seconds measure different parts', zh: 'token/s 与训练秒数衡量不同部分' },
+      { en: 'Next: assistant → tool result → assistant', zh: '下一章：assistant → 工具结果 → assistant' },
+      { en: 'Which tokens get mask 1, and which pairs teach the draft?', zh: '哪些 token 的 mask 是 1，哪些相邻位置能教 draft？' },
+    ],
+    mobile: {
+      title: 'Online training adds 7 seconds', titleZh: '在线训练多付 7 秒',
+      subtitle: 'Reported training seconds, same experiment', subtitleZh: '同一实验报告的训练秒数',
+      foot: 'Training metric, not a full-round timeline.', footZh: '训练指标，不是整轮时间线。',
+      legend: 'Grey = none · orange = frozen · blue = online', legendZh: '灰 = 不用 · 橙 = 冻结 · 蓝 = 在线',
+      formulas: [
+        { en: 'Online − no: 148 − 141 = 7 s', zh: '在线 − 不用：148 − 141 = 7 秒' },
+        { en: 'Online − frozen: 148 − 143 = 5 s', zh: '在线 − 冻结：148 − 143 = 5 秒' },
+        { en: 'Training increase: 5.0%', zh: '训练增加：5.0%' },
+        { en: 'Throughput is not whole-round speed', zh: '吞吐不等于整轮速度' },
+        { en: 'Next: assistant → tool → assistant', zh: '下一章：assistant → 工具 → assistant' },
+        { en: 'Which tokens teach target and draft?', zh: '哪些 token 能教 target 和 draft？' },
+      ],
+    },
   }];
   let step = $state(0);
   $effect(() => {

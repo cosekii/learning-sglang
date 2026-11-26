@@ -230,3 +230,36 @@ $$g_{online:frozen}=1667/1464-1=13.9\%,\qquad g_{online:no}=1667/1219-1=36.8\%$$
 下一步看在线训练额外付出的训练秒数，并标明为什么不能把吞吐提升直接当成整轮收益。
 
 来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:66-114`。
+
+## 第 8 步 · 在线训练 draft 多付 7 秒
+
+**一句话。** 同一公开表把训练时间列为 141、143、148 秒；在线训练比不用投机多 7 秒，但现有数据算不出整轮加速。
+
+### 图上是什么
+
+- 灰柱不用投机，训练时间 141 秒；橙柱冻结 draft 为 143 秒；蓝柱在线训练为 148 秒。三柱仍用同一比例。
+- 两个差值分别是 $148-141=7$ 秒和 $148-143=5$ 秒。
+- 最后两行离开这组单轮生成实验，画出 `assistant → 工具结果 → assistant`，引出下一章的多轮序列和 mask 问题。
+
+### 公式与符号
+
+$$\Delta T_{a:b}=T^{train}_a-T^{train}_b,\qquad c_{a:b}=\frac{T^{train}_a}{T^{train}_b}-1$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $T^{train}_a,T^{train}_b$ | 两种配置的报告训练时间 | 公开汇总表 |
+| $\Delta T_{a:b}$ | 配置 $a$ 多付的训练秒数 | 本步计算 |
+| $c_{a:b}$ | 训练时间的相对增幅 | 本步计算 |
+
+### 代入图上的数
+
+$$\Delta T_{online:no}=148-141=7\ \text{s},\qquad c_{online:no}=148/141-1=5.0\%$$
+$$\Delta T_{online:frozen}=148-143=5\ \text{s},\qquad c_{online:frozen}=148/143-1=3.5\%$$
+
+第 7 步给的是 token/s，本步给的是训练秒数。没有统一的 rollout token 数和完整轮次时间线，就不能把二者合成一个端到端收益。这里的 5.0% 是训练时间增加，不是整轮变慢 5.0%。
+
+### 接下来
+
+固定版本的 ReTool 示例把 assistant 生成的 token 标为训练有效，又把解释器返回的观察追加到同一 response，并使用不同 mask。下一章沿着这条可见序列问：哪些 token 进入策略训练，哪些相邻位置还能教 draft？
+
+来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:66-104`；`THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a` 的 `examples/retool/generate_with_retool.py:267-303`。
