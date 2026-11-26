@@ -6,8 +6,8 @@
 
 - A `worker` is one Omni server the router can call. The `router` owns the shared URL and chooses a worker for each request.
 - The request names model M and carries one image. Worker A accepts only text, so it cannot take this request. Worker B accepts image input and can take it.
-- The dashed path to A is not a dispatch. It marks the choice that compatibility filtering must remove.
-- The counts are two configured workers, one image request and one compatible worker. They are constructed, not a benchmark.
+- Both workers begin as candidates. The image check removes A first, leaving one candidate; it then confirms B before the blue dispatch path appears. The dashed path to A is not a dispatch.
+- The counts are two configured workers, one image request and one remaining compatible worker. They are constructed, not a benchmark.
 
 ### What compatibility means here
 

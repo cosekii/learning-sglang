@@ -6,8 +6,8 @@
 
 - `worker` 是 router 可以调用的一个 Omni server。`router` 持有共用网址，为每个请求选择 worker。
 - 请求指定 model M，带一张图片。worker A 只接收文字，不能接收这个请求；worker B 接收图片输入，可以接收。
-- 指向 A 的虚线不是实际 dispatch，而是兼容性过滤必须排除的选择。
-- 数字是两个已配置 worker、一个图片请求、一个兼容 worker。它们是构造值，不是 benchmark。
+- 两个 worker 起初都是候选。图片检查先排除 A，留下一个候选；确认 B 能接收图片后，才出现蓝色的 dispatch 路径。指向 A 的虚线不是实际 dispatch。
+- 数字是两个已配置 worker、一个图片请求、最后留下的一个兼容 worker。它们是构造值，不是 benchmark。
 
 ### 这里的兼容是什么意思
 

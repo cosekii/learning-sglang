@@ -72,7 +72,7 @@
   const H = $derived(phone ? [650, 750, 830, 840, 680, 730, 760, 880][step] : [520, 560, 600, 600, 570, 600, 560, 650][step]);
 
   // Each step reveals one routing event at a time, then holds the finished scene before looping.
-  const PHASE_COUNTS = [2, 5, 4, 6, 7, 6, 5, 5];
+  const PHASE_COUNTS = [4, 5, 4, 6, 7, 6, 5, 5];
   const PHASE_MS = 1100, REST_MS = 2500;
   let phase = $state(0);
   let lap = $state(0), lapMs = $state(0);
@@ -93,7 +93,7 @@
   });
 </script>
 
-<figure class="viz">
+<figure class="viz" data-animation-step={step} data-animation-phase={phase} data-animation-final-phase={PHASE_COUNTS[step] - 1}>
   <div class="canvas">
     <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={$lang === 'zh' ? cur.captionZh : cur.caption}>
       <defs>
@@ -108,32 +108,32 @@
         <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'One URL, two workers' : 'One URL, two different workers', phone ? '一个网址，两个 worker' : '一个网址，两个能力不同的 worker')}</text>
         <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'worker = one Omni server' : 'worker = one Omni server the router can call', phone ? 'worker = 一个 Omni server' : 'worker = router 可以调用的一个 Omni server')}</text>
         <text x={phone ? 18 : 30} y="79" class="label">{t(phone ? 'router = the shared URL that chooses' : 'router = the shared URL that chooses a worker', phone ? 'router = 共用网址，负责选择' : 'router = 共用网址背后的选择者')}</text>
-        <text x={W / 2} y="112" text-anchor="middle" class="result">{ROUTER_WORKER_COUNT} {t('workers', '个 worker')} · 1 {t(phone ? 'image' : 'image request', '个图片请求')} · {ROUTER_COMPATIBLE_WORKER_COUNT} {t('compatible', '个兼容')}</text>
+        <text x={W / 2} y="112" text-anchor="middle" class="result">{ROUTER_WORKER_COUNT} {t('workers', '个 worker')} · 1 {t(phone ? 'image' : 'image request', '个图片请求')} · {phase === 0 ? ROUTER_WORKER_COUNT : ROUTER_COMPATIBLE_WORKER_COUNT} {t(phase === 0 ? 'candidates' : 'candidate', '个候选')}</text>
         <rect x={phone ? 50 : 260} y="140" width={phone ? 200 : 200} height="75" rx="11" fill="var(--accent-soft)" stroke="var(--accent)" />
         <text x={W / 2} y="169" text-anchor="middle" class="small strong">POST · model M</text>
         <text x={W / 2} y="195" text-anchor="middle" class="small">1 {t('image as input', '张图片作为输入')}</text>
         {#if !phone}
-          <line x1="310" y1="216" x2="190" y2="280" stroke="var(--faint)" stroke-width="2" stroke-dasharray="5 4" />
-          <line x1="410" y1="216" x2="530" y2="280" stroke="var(--accent)" stroke-width="2" marker-end="url(#router-arrow)" opacity={phase >= 1 ? 1 : 0} style="transition: opacity 350ms" />
+          <line x1="310" y1="216" x2="190" y2="280" stroke="var(--faint)" stroke-width="2" stroke-dasharray="5 4" opacity={phase >= 1 ? 0.35 : 1} style="transition: opacity 350ms" />
+          <line x1="410" y1="216" x2="530" y2="280" stroke="var(--accent)" stroke-width="2" marker-end="url(#router-arrow)" opacity={phase >= 3 ? 1 : 0} style="transition: opacity 350ms" />
           {#each [
-            { x: 50, name: 'worker A', ability: 'text input only', abilityZh: '只接收文字输入', result: 'cannot accept this image', resultZh: '不能接收这张图片', ok: false },
-            { x: 410, name: 'worker B', ability: 'image input → text', abilityZh: '图片输入 → 文字', result: 'accepts this request', resultZh: '可以接收这个请求', ok: true },
+            { x: 50, name: 'worker A', ability: 'text input only', abilityZh: '只接收文字输入', ok: false },
+            { x: 410, name: 'worker B', ability: 'image input → text', abilityZh: '图片输入 → 文字', ok: true },
           ] as worker}
-            <rect x={worker.x} y="285" width="260" height="145" rx="12" fill={worker.ok && phase >= 1 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={worker.ok && phase >= 1 ? 'var(--accent)' : 'var(--line)'} style="transition: fill 350ms, stroke 350ms" />
+            <rect x={worker.x} y="285" width="260" height="145" rx="12" fill={worker.ok && phase >= 2 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={!worker.ok && phase >= 1 ? 'var(--fg)' : worker.ok && phase >= 2 ? 'var(--accent)' : 'var(--line)'} stroke-width={(!worker.ok && phase >= 1) || (worker.ok && phase >= 2) ? 3 : 1} style="transition: fill 350ms, stroke 350ms, stroke-width 350ms" />
             <text x={worker.x + 20} y="317" class="result">{worker.name}</text>
             <text x={worker.x + 20} y="351" class="small">{t(worker.ability, worker.abilityZh)}</text>
-            <text x={worker.x + 20} y="397" class="small strong" style={worker.ok ? '' : 'fill:var(--muted)'}>{t(worker.result, worker.resultZh)}</text>
+            <text x={worker.x + 20} y="397" class="small strong" style={worker.ok ? '' : 'fill:var(--muted)'}>{worker.ok ? t(phase >= 2 ? 'image input ✓ → accepted' : 'image input: not checked', phase >= 2 ? '图片输入 ✓ → 可以接收' : '图片输入：尚未检查') : t(phase >= 1 ? 'image input ✗ → removed' : 'image input: not checked', phase >= 1 ? '图片输入 ✗ → 排除' : '图片输入：尚未检查')}</text>
           {/each}
         {:else}
-          <line x1="150" y1="216" x2="150" y2="244" stroke="var(--accent)" stroke-width="2" marker-end="url(#router-arrow)" opacity={phase >= 1 ? 1 : 0} style="transition: opacity 350ms" />
-          <rect x="20" y="250" width="260" height="115" rx="11" fill="var(--bg)" stroke="var(--line)" />
+          <line x1="150" y1="216" x2="150" y2="244" stroke="var(--accent)" stroke-width="2" marker-end="url(#router-arrow)" opacity={phase >= 3 ? 1 : 0} style="transition: opacity 350ms" />
+          <rect x="20" y="250" width="260" height="115" rx="11" fill="var(--bg)" stroke={phase >= 1 ? 'var(--fg)' : 'var(--line)'} stroke-width={phase >= 1 ? 3 : 1} style="transition: stroke 350ms, stroke-width 350ms" />
           <text x="36" y="280" class="result">worker A</text>
           <text x="36" y="309" class="small">{t('text input only', '只接收文字输入')}</text>
-          <text x="36" y="341" class="small" style="fill:var(--muted)">{t('cannot accept this image', '不能接收这张图片')}</text>
-          <rect x="20" y="385" width="260" height="115" rx="11" fill={phase >= 1 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={phase >= 1 ? 'var(--accent)' : 'var(--line)'} style="transition: fill 350ms, stroke 350ms" />
+          <text x="36" y="341" class="small strong" style="fill:var(--muted)">{t(phase >= 1 ? 'image input ✗ → removed' : 'image input: not checked', phase >= 1 ? '图片输入 ✗ → 排除' : '图片输入：尚未检查')}</text>
+          <rect x="20" y="385" width="260" height="115" rx="11" fill={phase >= 2 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={phase >= 2 ? 'var(--accent)' : 'var(--line)'} stroke-width={phase >= 2 ? 3 : 1} style="transition: fill 350ms, stroke 350ms, stroke-width 350ms" />
           <text x="36" y="415" class="result">worker B</text>
           <text x="36" y="444" class="small">{t('image input → text', '图片输入 → 文字')}</text>
-          <text x="36" y="476" class="small strong">{t('accepts this request', '可以接收这个请求')}</text>
+          <text x="36" y="476" class="small strong">{t(phase >= 2 ? 'image input ✓ → accepted' : 'image input: not checked', phase >= 2 ? '图片输入 ✓ → 可以接收' : '图片输入：尚未检查')}</text>
         {/if}
         <text x={W / 2} y={phone ? 545 : 470} text-anchor="middle" class="small strong">{t(phone ? 'Turns alone cannot find a compatible worker.' : 'Taking turns alone cannot answer who can accept it.', '只看轮流顺序，无法知道谁能接收这个请求。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Constructed typed-image profiles.' : 'Constructed profiles from the router’s typed-image routing test.', phone ? '构造 typed-image 能力' : '构造能力行来自 router 的 typed-image 路由测试。')}</text>
