@@ -17,6 +17,8 @@ This chapter follows `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md` and `Aw
 
 Step 1 contrasts full replication with sharding at `fsdp/readme.md:16`. The constructed model has `4,000,000,000` values, with 2-byte weights and 2-byte gradients. Its optimizer convention comes from `readme-2-en.md:21-31`: FP32 master weights, momentum and variance, or `3 × 4 = 12` bytes per value. Thus one full copy uses `4B × (2 + 2 + 12) = 64 GB`, 80% of the shared 80 GB H100 capacity. Eight copies use 512 GB. These numbers describe only the three saved table kinds, not activations or temporary allocations.
 
+Step 2 uses the same source's FSDP alternative: each rank owns a shard of the parameters, gradients and optimizer state (`fsdp/readme.md:16-23`; `readme-2-en.md:43-47`). The equal eight-way split gives `64 ÷ 8 = 8 GB` per rank and 64 GB in aggregate. FSDP2's per-parameter DTensor representation is explained in the deep dive. The DP mesh determines the shard count: slime computes `dp_size = world_size // cp_size` and passes `dp_mesh` to `fully_shard` (`actor.py:158-186,94-98` at the pinned revision). Eight physical GPUs imply DP 8 only when CP is 1, as in this example.
+
 </details>
 
 <details class="i18n-zh">
@@ -25,5 +27,7 @@ Step 1 contrasts full replication with sharding at `fsdp/readme.md:16`. The cons
 本章依据 `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md` 和 `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md`。实现结论固定到 `THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7`。显存示例是构造算式，不是训练实测。
 
 第 1 步依据 `fsdp/readme.md:16` 对照完整复制与分片。构造模型有 `4,000,000,000` 个数值，权重和梯度都按 2 字节计算。优化器约定来自 `readme-2-en.md:21-31`：FP32 master 权重、momentum 和 variance，即每个数值 `3 × 4 = 12` 字节。因此一份完整训练表占 `4B × (2 + 2 + 12) = 64 GB`，是共享 H100 80 GB 容量的 80%；8 份占 512 GB。这些数字只算三类保存的表，不含激活和临时分配。
+
+第 2 步使用同一来源的 FSDP 方案：每个 rank 拥有参数、梯度和优化器状态的一片（`fsdp/readme.md:16-23`；`readme-2-en.md:43-47`）。平均分成 8 份得到每个 rank `64 ÷ 8 = 8 GB`，合计仍为 64 GB。FSDP2 的逐参数 DTensor 表示放在深入讲解。分片数由 DP mesh 决定：slime 计算 `dp_size = world_size // cp_size`，并把 `dp_mesh` 传给 `fully_shard`（固定版本的 `actor.py:158-186,94-98`）。本例取 CP 1，所以 8 张物理 GPU 才对应 DP 8。
 
 </details>

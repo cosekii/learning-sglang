@@ -34,3 +34,41 @@ $$C=8\times64\ \text{GB}=512\ \text{GB},\qquad f=64/80=0.8=80\%$$
 代价来自重复保存同样的表。下一步把同样的表分给 8 个 rank，不再每张卡都留完整副本。
 
 来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:16`；`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:21-31`；`src/numbers.ts` 的共享 `HBM_GB`。
+
+## 第 2 步 · 每个 rank 只留一片
+
+**一句话。** FSDP2 把参数、梯度和优化器状态分给 DP 组，每个 rank 留下对应的分片，不再保存完整副本。
+
+### 图上是什么
+
+- 左图沿用第 1 步：每张 GPU 都有 64 GB 完整副本，8 张合计 512 GB。
+- 右图用同样的柱子比例画一个 rank 的 8 GB 分片：权重 1 GB、梯度 1 GB、优化器相关表 6 GB。
+- 8 个 rank 拥有同一套逻辑表的不同部分，所以合计保存状态仍是 64 GB。等分只是教学简化，不保证真实张量都能整除。
+
+### 公式与符号
+
+$$M_i=M/N,\qquad C_{\text{shard}}=N M_i$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $M$ | 一份完整训练状态的字节数 | 第 1 步，64 GB |
+| $N$ | DP 分片组的大小 | 本例 8 个 rank |
+| $i$ | 一个 rank 的编号 | rank 0 到 7 |
+| $M_i$ | rank $i$ 拥有并保存的表 | 本步计算，8 GB |
+| $C_{\text{shard}}$ | DP 组所有分片的合计 | 本步计算，64 GB |
+
+### 代入图上的数
+
+$$M_i=64\ \text{GB}/8=8\ \text{GB},\qquad C_{\text{shard}}=8\times8\ \text{GB}=64\ \text{GB}$$
+
+每个 rank 的拆分为：权重 $8/8=1$ GB、梯度 $8/8=1$ GB、优化器相关表 $48/8=6$ GB。250 px 与 31.25 px 的柱宽比是 8:1，对应 64:8 GB。
+
+### FSDP2 与 DTensor
+
+FSDP2 把每个参数表示为 DTensor：逻辑张量、分布信息和本地分片一起记录，不需要 FSDP1 的模块级 `FlatParameter`。slime 计算 `dp_size = world_size // cp_size`，并把 DP mesh 传给 `fully_shard`。启用 CP 时，物理 GPU 数和 DP 分片数可以不同；本例取 CP 1。
+
+### 接下来
+
+分片能减少长期保存的显存，但计算一层时仍需要这一层的完整参数。下一步临时聚齐这一层。
+
+来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:16-23`；`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:43-47,62-82`；`THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7` 的 `slime/backends/fsdp_utils/actor.py:94-98,158-186`。

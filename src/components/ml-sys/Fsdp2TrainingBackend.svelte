@@ -4,7 +4,7 @@
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
-  import { FSDP_EXAMPLE_PARAMS_B, FSDP_DP_SIZE, FSDP_BYTES_PER_PARAM, FSDP_FULL_WEIGHT_GB, FSDP_FULL_GRADIENT_GB, FSDP_FULL_OPTIMIZER_GB, FSDP_FULL_STATE_PER_GPU_GB, FSDP_FULL_CLUSTER_STATE_GB, FSDP_FULL_CARD_SHARE } from '../../ml-sys/numbers';
+  import { FSDP_EXAMPLE_PARAMS_B, FSDP_DP_SIZE, FSDP_BYTES_PER_PARAM, FSDP_FULL_WEIGHT_GB, FSDP_FULL_GRADIENT_GB, FSDP_FULL_OPTIMIZER_GB, FSDP_FULL_STATE_PER_GPU_GB, FSDP_FULL_CLUSTER_STATE_GB, FSDP_FULL_CARD_SHARE, FSDP_SHARD_WEIGHT_GB, FSDP_SHARD_GRADIENT_GB, FSDP_SHARD_OPTIMIZER_GB, FSDP_SHARD_STATE_PER_GPU_GB, FSDP_SHARD_CLUSTER_STATE_GB } from '../../ml-sys/numbers';
 
   type Tone = 'plain' | 'blue' | 'orange';
   type MobileItem = { title: string; titleZh: string; body: string; bodyZh: string; tone: Tone };
@@ -40,6 +40,27 @@
       { en: `${FSDP_FULL_STATE_PER_GPU_GB} GB ÷ 80 GB = ${(FSDP_FULL_CARD_SHARE * 100).toFixed(0)}% of one H100`, zh: `${FSDP_FULL_STATE_PER_GPU_GB} GB ÷ 80 GB = 一张 H100 的 ${(FSDP_FULL_CARD_SHARE * 100).toFixed(0)}%` },
       { en: '16 bytes = 2 + 2 + 12 per value', zh: '每个数 16 字节 = 2 + 2 + 12' },
     ],
+  }, {
+    caption: `FSDP2 divides the same tables across the DP group. Each rank owns ${FSDP_SHARD_STATE_PER_GPU_GB} GB in this example.`,
+    captionZh: `FSDP2 把同样的表分给 DP 组。本例每个 rank 拥有 ${FSDP_SHARD_STATE_PER_GPU_GB} GB。`,
+    title: 'FSDP2 keeps one slice of each table', titleZh: 'FSDP2 让每个 rank 各留一片',
+    subtitle: 'shard = one rank\'s part · DP group = ranks sharing one model',
+    subtitleZh: 'shard = 一个 rank 的一片 · DP 组 = 共同分担一个模型的 rank',
+    foot: 'Equal slices simplify the layout; DP size is the mesh size, not always the physical GPU count.',
+    footZh: '等分只是简化画法；DP 大小取决于 mesh，不一定等于物理 GPU 数。',
+    mobileTitle: 'Each rank owns 8 GB', mobileTitleZh: '每个 rank 拥有 8 GB',
+    mobileSubtitle: 'shard = one rank\'s part · DP 8', mobileSubtitleZh: 'shard = 一个 rank 的一片 · DP 8',
+    mobileFoot: 'Equal slices are a teaching simplification.', mobileFootZh: '等分只是教学简化。',
+    mobile: [
+      { title: 'FSDP2 · DP GROUP 8', titleZh: 'FSDP2 · DP 组 8', body: 'divide the same tables, not the models', bodyZh: '分同样的表，不是分成 8 个模型', tone: 'blue' },
+      { title: 'EACH RANK OWNS', titleZh: '每个 rank 拥有', body: '1 + 1 + 6 = 8 GB', bodyZh: '1 + 1 + 6 = 8 GB', tone: 'blue' },
+      { title: '8 RANKS TOGETHER', titleZh: '8 个 rank 合计', body: '8 × 8 = 64 GB, not 512 GB', bodyZh: '8 × 8 = 64 GB，不是 512 GB', tone: 'orange' },
+    ],
+    formulas: [
+      { en: `${FSDP_FULL_STATE_PER_GPU_GB} GB ÷ ${FSDP_DP_SIZE} = ${FSDP_SHARD_STATE_PER_GPU_GB} GB per rank`, zh: `${FSDP_FULL_STATE_PER_GPU_GB} GB ÷ ${FSDP_DP_SIZE} = 每个 rank ${FSDP_SHARD_STATE_PER_GPU_GB} GB` },
+      { en: `${FSDP_DP_SIZE} × ${FSDP_SHARD_STATE_PER_GPU_GB} GB = ${FSDP_SHARD_CLUSTER_STATE_GB} GB total`, zh: `${FSDP_DP_SIZE} × ${FSDP_SHARD_STATE_PER_GPU_GB} GB = 合计 ${FSDP_SHARD_CLUSTER_STATE_GB} GB` },
+      { en: 'Each GPU keeps one-eighth of its old copy', zh: '每张 GPU 只留原来的八分之一' },
+    ],
   }];
   let step = $state(0);
   $effect(() => {
@@ -56,7 +77,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [560][step] : [500][step]);
+  const H = $derived(phone ? [560, 560][step] : [500, 500][step]);
 </script>
 
 <figure class="viz">
@@ -109,6 +130,24 @@
         <text x="360" y="382" text-anchor="middle" class="result">{FSDP_EXAMPLE_PARAMS_B}B values × {FSDP_BYTES_PER_PARAM} bytes = {FSDP_FULL_STATE_PER_GPU_GB} GB {t('per GPU', '每张 GPU')}</text>
         <text x="360" y="416" text-anchor="middle" class="result">{FSDP_FULL_STATE_PER_GPU_GB} GB × {FSDP_DP_SIZE} = {FSDP_FULL_CLUSTER_STATE_GB} GB</text>
         <text x="360" y="452" text-anchor="middle" class="small">{t('Orange = saved training tables · blue = repeated full copies', '橙 = 训练保存的表 · 蓝 = 重复的完整副本')}</text>
+      {:else if step === 1}
+        <rect x="30" y="88" width="315" height="248" rx="13" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x="187" y="120" text-anchor="middle" class="section">{t('BEFORE · FULL COPY', '之前 · 完整复制')}</text>
+        <rect x="60" y="140" width="250" height="64" rx="9" fill="var(--bg)" stroke="var(--gen)" />
+        <text x="185" y="180" text-anchor="middle" class="big">{FSDP_FULL_STATE_PER_GPU_GB} GB</text>
+        <text x="187" y="231" text-anchor="middle" class="small">{FSDP_FULL_WEIGHT_GB} + {FSDP_FULL_GRADIENT_GB} + {FSDP_FULL_OPTIMIZER_GB} = {FSDP_FULL_STATE_PER_GPU_GB} GB</text>
+        <text x="187" y="270" text-anchor="middle" class="result">{FSDP_DP_SIZE} {t('copies', '份')} = {FSDP_FULL_CLUSTER_STATE_GB} GB</text>
+        <text x="187" y="305" text-anchor="middle" class="small">{t('every GPU keeps every table', '每张 GPU 都保存所有表')}</text>
+        <rect x="375" y="88" width="315" height="248" rx="13" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="532" y="120" text-anchor="middle" class="section">{t('WITH FSDP2 · ONE RANK', '使用 FSDP2 · 一个 rank')}</text>
+        <rect x="405" y="140" width={250 / FSDP_DP_SIZE} height="64" rx="4" fill="var(--bg)" stroke="var(--accent)" />
+        <text x="450" y="180" class="big">{FSDP_SHARD_STATE_PER_GPU_GB} GB</text>
+        <text x="532" y="231" text-anchor="middle" class="small">{FSDP_SHARD_WEIGHT_GB} + {FSDP_SHARD_GRADIENT_GB} + {FSDP_SHARD_OPTIMIZER_GB} = {FSDP_SHARD_STATE_PER_GPU_GB} GB</text>
+        <text x="532" y="270" text-anchor="middle" class="result">{FSDP_DP_SIZE} {t('ranks', '个 rank')} = {FSDP_SHARD_CLUSTER_STATE_GB} GB</text>
+        <text x="532" y="305" text-anchor="middle" class="small">{t('each rank owns one shard', '每个 rank 拥有一片')}</text>
+        <text x="360" y="370" text-anchor="middle" class="small strong">{t('The two bars use one scale: 250 px = 64 GB.', '两条柱使用同一比例：250 px = 64 GB。')}</text>
+        <text x="360" y="407" text-anchor="middle" class="result">{FSDP_FULL_STATE_PER_GPU_GB} GB ÷ {FSDP_DP_SIZE} = {FSDP_SHARD_STATE_PER_GPU_GB} GB {t('per rank', '每个 rank')}</text>
+        <text x="360" y="450" text-anchor="middle" class="small">{t('Orange = full copies · blue = owned shards', '橙 = 完整副本 · 蓝 = 拥有的分片')}</text>
       {/if}
       <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t(cur.mobileFoot, cur.mobileFootZh) : t(cur.foot, cur.footZh)}</text>
     </svg>
