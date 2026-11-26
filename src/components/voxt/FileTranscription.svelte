@@ -223,7 +223,7 @@
           <text x="360" y="226" text-anchor="middle" class="formula">{VOXT_TRANSCRIBE_DEMO_SECONDS} s × {VOXT_CAPTURE_SAMPLE_RATE.toLocaleString('en-US')} × 2 B = {pcm} B PCM</text>
           <text x="360" y="255" text-anchor="middle" class="formula">+ {VOXT_WAV_HEADER_BYTES} B {t('WAV header', 'WAV 文件头')} = {VOXT_TRANSCRIBE_WAV_BYTES.toLocaleString('en-US')} B</text>
           <text x="360" y="282" text-anchor="middle" class="detail">{t('about 256 KB, smaller than one phone photo', '约 256 KB，比一张手机照片小')}</text>
-          <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('The temporary WAV goes after the command reads it.', '命令读完 PCM 后就删掉这个临时 WAV。')}</text>
+          <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('The temporary WAV is deleted after the command reads the PCM.', '命令读完 PCM 后就删掉这个临时 WAV。')}</text>
         {:else}
           <rect x="40" y="70" width="220" height="62" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="150" y="95" text-anchor="middle" class="label amber">talk.m4a · 8 s</text>
@@ -469,7 +469,7 @@
           <text x="540" y="220" text-anchor="middle" class="detail">{t('no numbers, no times', '没有编号，没有时间')}</text>
           <text x="540" y="242" text-anchor="middle" class="detail">{t('easy to read or feed to a script', '方便阅读或交给脚本')}</text>
           <text x={W / 2} y={H - 34} text-anchor="middle" class="cut">{t('THE FILE IS WRITTEN ONLY AFTER THE LAST CUE', '最后一句之后才写文件')}</text>
-          <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('No -o, or -o -, prints to stdout; progress goes to stderr.', '不给 -o 或写 -o - 时输出到 stdout；进度走 stderr。')}</text>
+          <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Without -o, the text prints in the terminal; progress prints separately.', '不给 -o 时，文字打印在终端，进度另打印。')}</text>
         {:else}
           <rect x="15" y="68" width="270" height="270" rx="10" fill="var(--bg)" stroke="var(--accent)" />
           <text x="150" y="92" text-anchor="middle" class="label">{t('SRT · CUES WITH TIMES', 'SRT · 带时间的字幕')}</text>
