@@ -90,7 +90,7 @@
           <path d="M296 166 H392" stroke="var(--muted)" stroke-width="2" marker-end="url(#deliver-arrow)" />
           <text x="300" y="158" class="tag">{t('you switch', '你切了 app')}</text>
         {/if}
-        <text x="20" y={phone ? 458 : 272} class="tag strong">{t('The owner can be the start app, another app, or a floating window.', '所属进程可以是 start app、别的 app，或一个浮窗。')}</text>
+        <text x="20" y={phone ? 458 : 272} class="tag strong">{phone ? t('Owner: start app, another app, or a floating window.', '所属进程：start app、别的 app 或浮窗。') : t('The owner can be the start app, another app, or a floating window.', '所属进程可以是 start app、别的 app，或一个浮窗。')}</text>
         <text x="20" y={phone ? 480 : 300} class="tag strong">{phone ? t('Remembered, but not automatically the destination.', '会被记住，但不一定是目的地。') : t('The start app is remembered, but it is not automatically the destination.', 'start app 会被记住，但它不一定是目的地。')}</text>
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('TextIO focus() · PasteCheck.targetReached', 'TextIO focus() · PasteCheck.targetReached') : t('Source: TextIO.swift focus() · PasteCheck.targetReached', '出处：TextIO.swift focus() · PasteCheck.targetReached')}</text>
       {:else if step === 1}
