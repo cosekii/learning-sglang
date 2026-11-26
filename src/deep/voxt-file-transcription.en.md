@@ -91,7 +91,7 @@ The request is **one JSON line**, followed directly by the PCM:
 
 `Request` has three fields (`Voxt/internal/fileasr/socket.go:34-39`), but `Lang` carries `json:"lang,omitempty"` (`socket.go:38`) and `Transcribe` marshals the struct directly (`socket.go:146`). With no `--lang`, the key is absent from the wire; after Unmarshal the field is `""`, which tells the app to use dictation's language hint (`transcribe_socket.go:77-79`). One request line is at most 4 KiB (`socket.go:25-29`).
 
-The reply is **one JSON line per cue**, ending with a `done` line:
+`op` names the action, `transcribe`; `bytes` gives the PCM length. The reply is **one JSON line per cue**, ending with a `done` line:
 
 ```json
 {"segment":{"start":0,"end":3350000000,"text":"Good morning."}}
@@ -99,7 +99,7 @@ The reply is **one JSON line per cue**, ending with a `done` line:
 {"done":true,"count":2}
 ```
 
-`Segment` times are integer nanoseconds, because Go's `time.Duration` marshals as an integer number of nanoseconds (`Voxt/internal/fileasr/fileasr.go:26-31`).
+`segment` carries one cue's start, end and text; `done` says the reply stream ended; `count` says how many cues came back. `Segment` times are integer nanoseconds, because Go's `time.Duration` marshals as an integer number of nanoseconds (`Voxt/internal/fileasr/fileasr.go:26-31`).
 
 ### Why it does not wait for the whole upload
 
@@ -166,7 +166,7 @@ $$ \text{cue end} = \text{last speech} + 450\ \text{ms} $$
 
 ### Why the quiet at the end stays
 
-The `End` from `finalize` is the slice that triggered the end, and the buffer already holds those 450 ms (`cutter.go:119-127`). This chapter does not remove them; the model usually ignores trailing silence. The SRT times on the stage use that `End`.
+The `End` from `finalize` is the slice that triggered the end, and the buffer already holds those 450 ms (`cutter.go:119-127`). The chapter keeps them in the audio and in the SRT end time; what each provider does with trailing silence is outside this chapter.
 
 ### Next
 
@@ -184,7 +184,7 @@ The start of a cue has one more rule. Step 5 covers the 300 ms lead-in.
 
 ### The start and the minimum
 
-`startUtterance` moves the start back by `cutterPreRoll = 300 ms`, but not below 0 (`cutter.go:95-105`). It keeps the ring buffer from before the speech (`appendRing`, `cutter.go:111-117`).
+`pushFrame` adds the current frame to the ring before it calls `startUtterance` (`cutter.go:51-62`, `95-105`). `startUtterance` copies the whole ring into the cue buffer, then the loop appends the same first speech frame again (`cutter.go:63-69`). With a full 300 ms ring, the cue therefore holds 290 ms of earlier sound and the first 10 ms speech frame twice. The reported start is still `speech onset − 300 ms`.
 
 A short cue is refused in `finalize(end, true)`: `voicedDur < cutterMinUtterance` (350 ms) returns `false` (`cutter.go:119-127`). This runs on the pause path. When the file ends, `fileasr.Run` calls `c.Flush()` (`fileasr.go:67-68`), and `Flush` emits the remaining buffer directly, without calling `finalize` and without the 350 ms check (`cutter.go:84-92`).
 
@@ -274,7 +274,7 @@ if languageTag == "" {
 }
 ```
 
-`p.lang` comes from `session.SpeechLang(a.prefs, i18n.Locale())` (`transcribe_socket.go:77-79`). Recognition itself is `asr.Recognize(ctx, prov, pcm, languageTag, nil, "", asr.Feed{})` (`transcribe_socket.go:84-87`).
+`p.lang` comes from `session.SpeechLang(a.prefs, i18n.Locale())` (`transcribe_socket.go:77-79`). The language hint tells the model which language to expect; it is not the text to transcribe. Recognition itself is `asr.Recognize(ctx, prov, pcm, languageTag, nil, "", asr.Feed{})` (`transcribe_socket.go:84-87`).
 
 $$ \text{segments} \le \text{cues},\qquad \text{segment} \text{ is emitted only if } \mathrm{trim}(\text{text}) \ne "" $$
 
@@ -359,7 +359,7 @@ The output is done. Step 9 looks at what this route leaves on the Mac.
 
 ### How the code keeps it clean
 
-Dictation writes history only when `Privacy.KeepHistory` is enabled, which is the default; it writes none when the setting is off (`Voxt/internal/session/run.go:572-576`, `Voxt/internal/settings/settings.go:373-380`). The file route's `fileRecognizer` calls `asr.Recognize` directly (`transcribe_socket.go:84-87`); it never calls the session's `keep()`, so it writes no `store.Entry` and no WAV. The completion hook builds one `core.LogEntry`:
+Dictation writes history only when `Privacy.KeepHistory` is enabled, which is the default; it writes none when the setting is off (`Voxt/internal/session/run.go:572-576`, `Voxt/internal/settings/settings.go:373-380`). The file route's `fileRecognizer` calls `asr.Recognize` directly (`transcribe_socket.go:84-87`); it never calls the session's `keep()`, so it writes no history record and keeps no history WAV. The command does write a temporary `audio.wav` while decoding, and removes the temporary folder when it returns (`transcribe_cli.go:111-139`). The completion hook builds one `core.LogEntry`:
 
 ```go
 Message: fmt.Sprintf("transcribed a file for the command line: %s of audio, %d segments", ...)

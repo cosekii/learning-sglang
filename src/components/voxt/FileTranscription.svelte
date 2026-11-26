@@ -65,8 +65,8 @@
     captionZh: '文件路线不写历史，也不留录音。',
   }];
   const ariaLabels = [{
-    en: 'Two routes. A dictation goes from the microphone through a dictation session and cleanup to the cursor, with a history row when history is enabled. A file goes from disk through Voxt transcribe to SRT or TXT; it reuses the model set for Transcribe but opens no session and runs no cleanup. A one-hour meeting is 3600 seconds, 115.2 megabytes of PCM, about 29 phone photos.',
-    zh: '两条路线。听写从麦克风经过听写 session 和整理，到光标处的文字；历史开启时还会写一条历史记录。文件从磁盘经过 Voxt transcribe 到 SRT 或 TXT；它复用 Transcribe 选定的模型，但不打开 session，也不做整理。一小时的会议是 3600 秒、115.2 MB 的 PCM，约等于 29 张手机照片。',
+    en: 'Two routes. A dictation goes from the microphone through a dictation session and cleanup to the cursor, with a history row when history is enabled. A file goes from disk through Voxt transcribe to SRT or TXT; it reuses the model set for Transcribe but opens no session and runs no cleanup. A one-hour meeting is 3600 seconds of sound; Step 2 turns that into bytes.',
+    zh: '两条路线。听写从麦克风经过听写 session 和整理，到光标处的文字；历史开启时还会写一条历史记录。文件从磁盘经过 Voxt transcribe 到 SRT 或 TXT；它复用 Transcribe 选定的模型，但不打开 session，也不做整理。一小时的会议是 3600 秒的声音；第 2 步把它算成字节。',
   }, {
     en: 'A constructed eight-second file is decoded by a Mac sound tool to 16 kHz mono PCM, held as a temporary file. Eight seconds times 32000 bytes a second is 256000 PCM bytes, plus a 44-byte header.',
     zh: '构造的八秒文件由 Mac 的声音工具转成 16 kHz 单声道 PCM，放进一个临时文件。八秒乘每秒 32000 字节是 256000 字节 PCM，再加 44 字节文件头。',
@@ -225,7 +225,7 @@
         {/if}
       {:else if step === 1}
         <text x={W / 2} y="27" text-anchor="middle" class="title">{t('DECODE THE FILE TO PCM', '把文件转成 PCM')}</text>
-        <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('PCM = raw sound the model reads; mono = one channel', 'PCM = 模型能读的原始声音；单声道 = 一条声道')}</text>
+        <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t(phone ? 'PCM = raw sound · mono · 16-bit = 2 B' : 'PCM = raw sound the model reads; mono = one channel; 16-bit = 2 bytes a sample', 'PCM = 原始声音；单声道 = 一条；16 位 = 每个采样 2 字节')}</text>
         {#if !phone}
           <rect x="20" y="80" width="150" height="78" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="95" y="108" text-anchor="middle" class="label amber">talk.m4a</text>
@@ -299,8 +299,9 @@
           {#each replyLines as line, i}
             <text x="120" y={286 + i * 22} class="mono">{line}</text>
           {/each}
+          <text x="36" y="350" class="detail">{t('op = action · segment = one cue · done + count = finished, how many', 'op = 要做什么 · segment = 一句 · done + count = 完成和句数')}</text>
           <text x="360" y="372" text-anchor="middle" class="cut">{t('a reply can arrive before the last PCM byte', '最后一块 PCM 还没传完，回复就可能到了')}</text>
-          <text x={W / 2} y={H - 32} text-anchor="middle" class="detail">{t(`one request line is at most ${VOXT_TRANSCRIBE_MAX_REQUEST_BYTES} bytes`, `请求行最多 ${VOXT_TRANSCRIBE_MAX_REQUEST_BYTES} 字节`)}</text>
+          <text x={W / 2} y={H - 32} text-anchor="middle" class="detail">{t(`one request line ≤ ${VOXT_TRANSCRIBE_MAX_REQUEST_BYTES} bytes (about 4,000 letters)`, `请求行最多 ${VOXT_TRANSCRIBE_MAX_REQUEST_BYTES} 字节（约 4000 个字母）`)}</text>
           <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('No network port; only your account can open it; Voxt reads none of your folders.', '没有网络端口；只有你的账户能打开；Voxt 不读你的文件夹。')}</text>
         {:else}
           <rect x="30" y="70" width="240" height="62" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
@@ -327,9 +328,11 @@
           <text x="36" y="474" class="mono small">{replyLines[0]}</text>
           <text x="36" y="496" class="mono small">{replyLines[1]}</text>
           <text x="36" y="518" class="mono small">{replyLines[2]}</text>
-          <text x="150" y="550" text-anchor="middle" class="cut">{t('a reply can arrive before', '最后一块 PCM')}</text>
-          <text x="150" y="572" text-anchor="middle" class="cut">{t('the last PCM byte', '还没传完，回复就可能到了')}</text>
-          <text x={W / 2} y={H - 46} text-anchor="middle" class="detail">{t(`request line ≤ ${VOXT_TRANSCRIBE_MAX_REQUEST_BYTES} bytes`, `请求行 ≤ ${VOXT_TRANSCRIBE_MAX_REQUEST_BYTES} 字节`)}</text>
+          <text x="36" y="536" class="detail">{t('op = action · segment = one cue', 'op = 要做什么 · segment = 一句')}</text>
+          <text x="36" y="556" class="detail">{t('done + count = finished, how many', 'done + count = 完成和句数')}</text>
+          <text x="150" y="582" text-anchor="middle" class="cut">{t('a reply can arrive before', '最后一块 PCM')}</text>
+          <text x="150" y="604" text-anchor="middle" class="cut">{t('the last PCM byte', '还没传完，回复就可能到了')}</text>
+          <text x={W / 2} y={H - 46} text-anchor="middle" class="detail">{t(`request line ≤ ${VOXT_TRANSCRIBE_MAX_REQUEST_BYTES} B (≈4,000 letters)`, `请求行 ≤ ${VOXT_TRANSCRIBE_MAX_REQUEST_BYTES} 字节（约 4000 字母）`)}</text>
           <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('No network port; only your account can open it.', '没有网络端口；只有你的账户能打开。')}</text>
         {/if}
       {:else if step === 3}
@@ -510,7 +513,7 @@
             <text x="496" y={y + 38} text-anchor="middle" class="result">“{VOXT_TRANSCRIBE_CUE_TEXT[i]}”</text>
           {/each}
           <text x={W / 2} y={H - 32} text-anchor="middle" class="detail">{t('an empty answer is left out', '返回空文字的句子会被丢掉')}</text>
-          <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Without --lang, the command uses dictation\'s language hint.', '不给 --lang 时，命令用听写的语言提示。')}</text>
+          <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Without --lang, dictation\'s hint says which language to expect.', '不给 --lang 时，听写提示告诉模型预期哪种语言。')}</text>
         {:else}
           <rect x="25" y="68" width="250" height="58" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="150" y="93" text-anchor="middle" class="label">{t('Transcribe\'s speech model', 'Transcribe 的语音模型')}</text>
@@ -525,7 +528,7 @@
             <text x="150" y={y + 114} text-anchor="middle" class="result small">“{VOXT_TRANSCRIBE_CUE_TEXT[i]}”</text>
           {/each}
           <text x={W / 2} y={H - 32} text-anchor="middle" class="detail">{t('an empty answer is left out', '返回空文字的句子会被丢掉')}</text>
-          <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('No --lang: dictation\'s hint.', '不给 --lang 时用听写的提示。')}</text>
+          <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('No --lang: the hint says which language.', '不给 --lang 时，提示说明预期语言。')}</text>
         {/if}
       {:else if step === 7}
         <text x={W / 2} y="27" text-anchor="middle" class="title">{t('WRITE SRT OR TXT', '写成 SRT 或 TXT')}</text>
@@ -590,7 +593,7 @@
 
           <rect x="365" y="72" width="330" height="160" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="530" y="96" text-anchor="middle" class="label amber">{t('WRITTEN', '留下')}</text>
-          <text x="385" y="128" class="detail">{t('one line in the app\'s log:', '应用日志里的一行：')}</text>
+          <text x="385" y="128" class="detail">{t("one line in the app's own log (not Ch. 9's access log):", '应用自己的日志（不是第 9 章的访问日志）：')}</text>
           <text x="385" y="152" class="mono small">transcribed a file for the</text>
           <text x="385" y="170" class="mono small">command line: {VOXT_TRANSCRIBE_DEMO_SECONDS}s of audio,</text>
           <text x="385" y="188" class="mono small">{VOXT_TRANSCRIBE_CUE_COUNT} segments</text>
@@ -618,7 +621,7 @@
 
           <rect x="15" y="276" width="270" height="190" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="150" y="300" text-anchor="middle" class="label amber">{t('WRITTEN', '留下')}</text>
-          <text x="30" y="330" class="detail">{t('one line in the app\'s log:', '应用日志里的一行：')}</text>
+          <text x="30" y="330" class="detail">{t("app's own log (not Ch. 9's):", '应用自己的日志（不是第 9 章）：')}</text>
           <text x="30" y="354" class="mono small">transcribed a file for the</text>
           <text x="30" y="374" class="mono small">command line: {VOXT_TRANSCRIBE_DEMO_SECONDS}s of</text>
           <text x="30" y="394" class="mono small">audio, {VOXT_TRANSCRIBE_CUE_COUNT} segments</text>

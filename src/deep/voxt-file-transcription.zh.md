@@ -91,7 +91,7 @@ PCM 已经能送进模型了，但模型在运行中的 Voxt 里。第 3 步讲�
 
 `Request` 有三个字段（`Voxt/internal/fileasr/socket.go:34-39`），但 `Lang` 带 `json:"lang,omitempty"`（`socket.go:38`），`Transcribe` 又直接 `json.Marshal` 这个结构（`socket.go:146`）。没给 `--lang` 时，这个键不在线上；Unmarshal 之后字段是 `""`，应用就用听写的语言提示（`transcribe_socket.go:77-79`）。一行请求最多 4 KiB（`socket.go:25-29`）。
 
-回复是**每句一行 JSON**，最后一行是 `done`：
+`op` 是动作，这里是 `transcribe`；`bytes` 是 PCM 的长度。回复是**每句一行 JSON**，最后一行是 `done`：
 
 ```json
 {"segment":{"start":0,"end":3350000000,"text":"Good morning."}}
@@ -99,7 +99,7 @@ PCM 已经能送进模型了，但模型在运行中的 Voxt 里。第 3 步讲�
 {"done":true,"count":2}
 ```
 
-`Segment` 的时间单位是纳秒，因为 Go 的 `time.Duration` 在 JSON 里就是整数纳秒（`Voxt/internal/fileasr/fileasr.go:26-31`）。
+`segment` 带一句的起止时间和文字；`done` 表示回复流结束；`count` 是回来的句子数。`Segment` 的时间单位是纳秒，因为 Go 的 `time.Duration` 在 JSON 里就是整数纳秒（`Voxt/internal/fileasr/fileasr.go:26-31`）。
 
 ### 为什么不是「传完再开始」
 
@@ -166,7 +166,7 @@ $$ \text{cue end} = \text{last speech} + 450\ \text{ms} $$
 
 ### 为什么末尾的安静也留下
 
-`finalize` 的 `End` 是触发结束的那一小片，缓冲里已经包含这 450 ms 安静（`cutter.go:119-127`）。本章不删它；模型通常会把尾部静音忽略掉。图上的 SRT 时间就是按这个 `End` 写的。
+`finalize` 的 `End` 是触发结束的那一小片，缓冲里已经包含这 450 ms 安静（`cutter.go:119-127`）。本章把这 450 ms 留在声音里，也留在 SRT 的结束时间里；各 provider 怎么处理尾部静音不在本章范围。图上的 SRT 时间就是按这个 `End` 写的。
 
 ### 接下来
 
@@ -184,7 +184,7 @@ $$ \text{cue end} = \text{last speech} + 450\ \text{ms} $$
 
 ### 起点和最短长度
 
-`startUtterance` 把起点往前减 `cutterPreRoll = 300 ms`，但不小于 0（`cutter.go:95-105`）。它保留的是进入讲话前 `cutterPreRoll` 长的一段环形缓冲（`appendRing`，`cutter.go:111-117`）。
+`pushFrame` 先把当前帧放进环形缓冲，再调用 `startUtterance`（`cutter.go:51-62`、`95-117`）。`startUtterance` 把整个环形缓冲复制进这一句，随后循环又把同一个首个讲话帧追加一次（`cutter.go:63-69`）。环形缓冲满 300 ms 时，这句里是 290 ms 的更早声音，加上两份首个 10 ms 讲话帧。报出的起点仍是「讲话开始减 300 ms」。
 
 短句在 `finalize(end, true)` 里被拒绝：`voicedDur < cutterMinUtterance`（350 ms）时返回 `false`（`cutter.go:119-127`）。这只走停顿结束这条路。文件读完时，`fileasr.Run` 调用 `c.Flush()`（`fileasr.go:67-68`），`Flush` 直接把剩下的缓冲交出来，不调用 `finalize`，也不查 350 ms（`cutter.go:84-92`）。
 
@@ -274,7 +274,7 @@ if languageTag == "" {
 }
 ```
 
-`p.lang` 来自 `session.SpeechLang(a.prefs, i18n.Locale())`（`transcribe_socket.go:77-79`）。识别本身是 `asr.Recognize(ctx, prov, pcm, languageTag, nil, "", asr.Feed{})`（`transcribe_socket.go:84-87`）。
+`p.lang` 来自 `session.SpeechLang(a.prefs, i18n.Locale())`（`transcribe_socket.go:77-79`）。语言提示告诉模型预期哪种语言，不是要转写的文字。识别本身是 `asr.Recognize(ctx, prov, pcm, languageTag, nil, "", asr.Feed{})`（`transcribe_socket.go:84-87`）。
 
 $$ \text{segments} \le \text{cues},\qquad \text{segment} \text{ is emitted only if } \mathrm{trim}(\text{text}) \ne "" $$
 
@@ -359,7 +359,7 @@ TXT 只有两行：`Good morning.` 和 `See you at noon.`。
 
 ### 代码怎么保证
 
-听写只在 `Privacy.KeepHistory` 开启时写历史，默认开启；关闭时不写（`Voxt/internal/session/run.go:572-576`、`Voxt/internal/settings/settings.go:373-380`）。文件路线的 `fileRecognizer` 直接调用 `asr.Recognize`（`transcribe_socket.go:84-87`），没有调用 `session` 的 `keep()`，所以不会写 `store.Entry`，也不会写 WAV。完成回调只拼一条 `core.LogEntry`：
+听写只在 `Privacy.KeepHistory` 开启时写历史，默认开启；关闭时不写（`Voxt/internal/session/run.go:572-576`、`Voxt/internal/settings/settings.go:373-380`）。文件路线的 `fileRecognizer` 直接调用 `asr.Recognize`（`transcribe_socket.go:84-87`），没有调用 `session` 的 `keep()`，所以不写历史记录，也不保留历史 WAV。命令解码时确实会写一个临时 `audio.wav`，返回时删掉临时目录（`transcribe_cli.go:111-139`）。完成回调只拼一条 `core.LogEntry`：
 
 ```go
 Message: fmt.Sprintf("transcribed a file for the command line: %s of audio, %d segments", ...)
