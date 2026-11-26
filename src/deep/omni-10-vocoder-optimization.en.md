@@ -139,3 +139,40 @@ PR #2909 also reports end-to-end c64 QPS rising 2.8%, not 60.5%. The window win 
 Retained state changes how many frames a window reads. The next mechanism records a window's kernel launches and replays them only for an exact graph key.
 
 Sources: [public PR #2909, mechanism and results](https://github.com/sgl-project/sglang-omni/pull/2909); `sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:999-1011`.
+
+## Step 5 · Replay only an exact graph key
+
+**One sentence.** Qwen3-Omni's Code2Wav graph key contains row count, frame count and window kind, so only an exact match replays a captured graph.
+
+### On the stage
+
+- Learning SGLang Ch. 11 Step 1 introduced `CUDA graph`: record kernel launches, then replay them. This step shows how Code2Wav chooses a recorded graph.
+- `B` is the number of request rows, `T` is the frame count, and `kind` is the window path. `window` means stateless, `first` means a slot-backed first window, and `next` means a slot-backed later window.
+- The example catalogue contains one key, `(3,10,first)`. Call A has that exact key and replays. Call B changes `B` to 2, so this catalogue has no matching key and runs eagerly.
+- The one-key catalogue is constructed to make matching visible. The real runner holds many keys. A different incoming key can use another captured graph; it runs eagerly only if no published graph has that key.
+- Orange marks the captured graph and replay, while blue marks eager execution. The graph changes kernel submission, not the model's mathematical function.
+
+### Formula and symbols
+
+$$K=(B,T,k)$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $B$ | Request rows in the call | `GraphKey.batch_size` |
+| $T$ | Frames in each row | `GraphKey.frames` |
+| $k$ | `window`, `first` or `next` path | `GraphKey.kind` |
+| $K$ | Exact identity required for replay | `code2wav_cuda_graph.py` |
+
+### The numbers on the stage
+
+$$K_A=(3,10,\mathrm{first}),\qquad K_B=(2,10,\mathrm{first})$$
+
+$K_A$ equals the catalogue key, but $K_B$ differs in its first field. Replay copies codes and slot indices into static buffers and reuses static output. Capture checks exact equality against eager output before publishing a graph.
+
+A missing or ineligible key uses eager execution. A runtime replay failure is different: it disables the graphs and re-raises the error instead of silently replaying that call eagerly.
+
+### Next
+
+Exact keys make replay possible, but do not measure its value. The next step uses one historical H200 comparison to measure end-to-end throughput with and without Code2Wav graphs.
+
+Sources: `sglang_omni/models/qwen3_omni/components/code2wav_cuda_graph.py:85-117,264-282,673-723,804-888`; `sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:112-143,1307-1345`.

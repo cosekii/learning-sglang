@@ -21,6 +21,8 @@ Step 3 follows `sglang_omni/models/qwen3_omni/components/codec_state_pool.py:13-
 
 Step 4 quotes [public PR #2909](https://github.com/sgl-project/sglang-omni/pull/2909), measured on Qwen3-Omni colocated BF16 on H200 with eight rows and one graph replay, median of 20 timings. The first window rises from 3,656.3 to 3,992.0 µs because it writes state; the later window falls from 10,777.5 to 4,255.3 µs. Both arms use graph replay, so this is a retained-state comparison, not a graph-versus-eager result. The 9.2% increase and 60.5% reduction are derived from those displayed timings and apply only to window GPU time. PR #2909 reports 2.8% end-to-end c64 QPS growth instead.
 
+Step 5 follows `sglang_omni/models/qwen3_omni/components/code2wav_cuda_graph.py:85-117,264-282,673-723,804-888` and `code2wav_scheduler.py:112-143,1307-1345`. `GraphKey` contains batch size, frame count and `window`/`first`/`next` kind. The one-key catalogue is constructed: A replays an exact match, while B changes the row count and misses this catalogue. Other real keys may have their own graphs. Missing or ineligible keys run eagerly; a runtime replay failure disables graphs and re-raises instead of silently retrying eagerly. Capture checks exact output equality before publication.
+
 Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`. The chapter reads source and public results; it does not run a model or benchmark.
 
 </details>
@@ -35,6 +37,8 @@ Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37
 第 3 步依据 `sglang_omni/models/qwen3_omni/components/codec_state_pool.py:13-24,63-115` 和 `code2wav_scheduler.py:296-327,999-1011,1283-1300`。slot 保存 K/V 环、卷积历史、重叠样本和流位置。首个窗口写入状态；后续 slot 窗口只读取 10 帧新内容，不再读取 25 帧旧内容加 10 帧新内容。没有空 slot 的请求始终走无状态路径，首个阈值窗口前结束的短流也无状态解码。35→10 比较输入帧数，不是延迟或显存收益。
 
 第 4 步引用[公开 PR #2909](https://github.com/sgl-project/sglang-omni/pull/2909)，条件是 Qwen3-Omni 同卡 BF16、H200、8 行、一次 graph replay、20 次取中位数。首窗口写入状态，从 3,656.3 升到 3,992.0 µs；后续窗口从 10,777.5 降到 4,255.3 µs。两边都用 graph replay，所以这是保留状态对照，不是 graph 对 eager。9.2% 增幅和 60.5% 降幅由展示的耗时推导，只适用于窗口 GPU 时间。PR #2909 的端到端 c64 QPS 增幅是 2.8%。
+
+第 5 步依据 `sglang_omni/models/qwen3_omni/components/code2wav_cuda_graph.py:85-117,264-282,673-723,804-888` 和 `code2wav_scheduler.py:112-143,1307-1345`。`GraphKey` 包含 batch 大小、帧数和 `window`/`first`/`next` 类型。单 key 目录是构造示例：A 完全匹配后 replay，B 改变行数，在此目录 miss。真实其他 key 可能有自己的 graph。缺少或不合格 key 走 eager；运行时 replay 失败会禁用 graphs 并抛错，不会悄悄重试 eager。capture 发布前检查输出完全相等。
 
 本章代码出处固定到 `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`。本章只读源码和公开结果，没有运行模型或 benchmark。
 

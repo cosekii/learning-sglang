@@ -139,3 +139,40 @@ PR #2909 还报告端到端 c64 QPS 提升 2.8%，不是 60.5%。后续窗口省
 保留状态改变窗口读取多少帧。下一种机制录下窗口的 kernel launches，只有 graph key 完全匹配时才重放。
 
 来源：[公开 PR #2909 的机制与结果](https://github.com/sgl-project/sglang-omni/pull/2909)；`sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:999-1011`。
+
+## 第 5 步 · 只重放完全匹配的 graph key
+
+**一句话。** Qwen3-Omni 的 Code2Wav graph key 包含行数、帧数和窗口类型，只有完全匹配才重放已 capture 的 graph。
+
+### 图上是什么
+
+- Learning SGLang 第 11 章第 1 步讲过 `CUDA graph`：先录 kernel launches，再重放。本步看 Code2Wav 怎样选择录好的 graph。
+- `B` 是请求行数，`T` 是帧数，`kind` 是窗口路径。`window` 是无状态，`first` 是 slot 首个窗口，`next` 是 slot 后续窗口。
+- 示例目录只有一个 key `(3,10,first)`。调用 A 完全匹配，所以 replay。调用 B 把 `B` 改成 2，此目录没有匹配 key，所以 eager 运行。
+- 单 key 目录是为说明匹配而构造的。真实 runner 有许多 key。不同的 incoming key 可能有自己的 graph；只有没有已发布 graph 匹配时才走 eager。
+- 橙色表示已 capture graph 和 replay，蓝色表示 eager。graph 改变 kernel 提交方式，不改变模型数学。
+
+### 公式与符号
+
+$$K=(B,T,k)$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $B$ | 一次调用里的请求行数 | `GraphKey.batch_size` |
+| $T$ | 每行的帧数 | `GraphKey.frames` |
+| $k$ | `window`、`first` 或 `next` 路径 | `GraphKey.kind` |
+| $K$ | replay 要求的精确身份 | `code2wav_cuda_graph.py` |
+
+### 代入图上的数
+
+$$K_A=(3,10,\mathrm{first}),\qquad K_B=(2,10,\mathrm{first})$$
+
+$K_A$ 等于目录里的 key，$K_B$ 的第一个字段不同。replay 把 codes 和 slot indices 拷进静态 buffer，再复用静态输出。capture 发布前会检查 graph 输出和 eager 输出完全相等。
+
+缺少或不合格的 key 使用 eager。运行时 replay 失败是另一种情况：它会禁用 graphs 并抛出错误，不会悄悄把这次调用改成 eager。
+
+### 接下来
+
+精确 key 让 replay 可行，却没有说明收益。下一步用一次历史 H200 对照，测量开关 Code2Wav graph 的端到端吞吐量。
+
+来源：`sglang_omni/models/qwen3_omni/components/code2wav_cuda_graph.py:85-117,264-282,673-723,804-888`；`sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:112-143,1307-1345`。

@@ -34,6 +34,9 @@
   }, {
     caption: 'In PR #2909’s eight-row test, later windows got faster. First windows got slower because they also wrote state.',
     captionZh: 'PR #2909 的 8 行测试里，后续窗口更快。首个窗口还要写入状态，所以更慢。',
+  }, {
+    caption: 'Each exact shape needs its own graph. A missing key falls back to eager execution.',
+    captionZh: '每种精确形状需要自己的 graph。找不到匹配 key 就回退 eager。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -51,7 +54,7 @@
   const cur = $derived(steps[step]);
   const fmt = (value: number) => value.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [790, 850, 850, 740][step] : [570, 630, 640, 570][step]);
+  const H = $derived(phone ? [790, 850, 850, 740, 800][step] : [570, 630, 640, 570, 640][step]);
   const roadmap = $derived([
     { title: 'ready windows', body: 'decode them together', titleZh: '准备好的窗口', bodyZh: '放在一起解码' },
     { title: 'earlier decoder work', body: 'keep it for next time', titleZh: '之前算过的内容', bodyZh: '留给下个窗口' },
@@ -216,6 +219,52 @@
         <text x={W / 2} y={phone ? 674 : 444} text-anchor="middle" class="small strong">{t(phone ? 'Both replay one CUDA graph' : 'Both sides replay one CUDA graph; only the window path changes.', phone ? '两边都重放一次 CUDA graph' : '两边都重放一次 CUDA graph；只有窗口路径不同。')}</text>
         <text x={W / 2} y={phone ? 700 : 478} text-anchor="middle" class="small">{t(phone ? 'Window GPU time, not request latency' : 'These are window GPU times, not whole-request latency.', phone ? '窗口 GPU 耗时，不是请求延迟' : '这些是窗口 GPU 耗时，不是整个请求的延迟。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'PR #2909 · Qwen3-Omni BF16 · H200' : 'Public PR #2909 · Qwen3-Omni colocated BF16 on H200 · median of 20 graph replays.', phone ? 'PR #2909 · Qwen3-Omni BF16 · H200' : '公开 PR #2909 · Qwen3-Omni 同卡 BF16 · H200 · 20 次 graph 重放取中位数。')}</text>
+      {:else if step === 4}
+        <text x={phone ? 18 : 30} y="30" class="title">{t('Replay an exact shape · 3 of 3 · 1/2', '重放精确形状 · 3 / 3 · 1/2')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t('graph key = B + T + window kind', 'graph key = B + T + 窗口类型')}</text>
+        <text x={phone ? 18 : 30} y="79" class="label">{t('B = requests · T = frames', 'B = 请求数 · T = 帧数')}</text>
+        <text x={phone ? 18 : 30} y="103" class="label">{t(phone ? 'window = stateless · first = slot first' : 'kind: window = stateless · first = slot-backed first · next = slot-backed later', phone ? 'window = 无状态 · first = slot 首个' : '类型：window = 无状态 · first = slot 首个 · next = slot 后续')}</text>
+        {#if phone}
+          <text x="18" y="127" class="label">next = slot {t('later', '后续')}</text>
+        {/if}
+        {#if !phone}
+          <rect x="30" y="125" width="660" height="91" rx="11" fill="var(--bg)" stroke="var(--gen)" />
+          <text x="48" y="151" class="small strong">{t('EXAMPLE CATALOGUE · ONE CAPTURED GRAPH', '示例目录 · 一张已 capture 的 graph')}</text>
+          <rect x="230" y="163" width="260" height="37" rx="7" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="360" y="187" text-anchor="middle" class="code">B=3 · T=10 · kind=first</text>
+          {#each [{ id: 'A', b: 3 }, { id: 'B', b: 2 }] as call, i}
+            {@const y = 242 + i * 120}
+            {@const hit = call.b === 3}
+            <rect x="30" y={y} width="660" height="99" rx="10" fill="var(--bg)" stroke="var(--line)" />
+            <text x="48" y={y + 29} class="small strong">{t('incoming call', 'incoming 调用')} {call.id}</text>
+            <text x="48" y={y + 65} class="code">B={call.b} · T=10 · kind=first</text>
+            <text x="350" y={y + 29} class="small strong">{hit ? t('exact key found', '找到完全匹配的 key') : t('no matching key here', '此目录没有匹配 key')}</text>
+            <text x="350" y={y + 61} class="small">{hit ? t('same B, T and kind', 'B、T、类型都相同') : t('B changes 3 → 2', 'B 从 3 变成 2')}</text>
+            <rect x="550" y={y + 20} width="120" height="59" rx="8" fill={hit ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={hit ? 'var(--gen)' : 'var(--accent)'} />
+            <text x="610" y={y + 56} text-anchor="middle" class="small strong">{hit ? 'REPLAY' : 'EAGER'}</text>
+          {/each}
+          <text x="360" y="513" text-anchor="middle" class="result">{t('same key', '相同 key')} → REPLAY · {t('missing key', '缺少 key')} → EAGER</text>
+          <text x="360" y="548" text-anchor="middle" class="small">{t('The graph records launches; the key decides whether replay fits.', 'graph 录下 launches；key 决定能否重放。')}</text>
+        {:else}
+          <rect x="18" y="148" width="264" height="122" rx="11" fill="var(--bg)" stroke="var(--gen)" />
+          <text x="32" y="174" class="small strong">{t('CATALOGUE · ONE GRAPH', '目录 · 一张 graph')}</text>
+          <rect x="32" y="192" width="236" height="56" rx="7" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="150" y="226" text-anchor="middle" class="code">B=3 · T=10 · kind=first</text>
+          {#each [{ id: 'A', b: 3 }, { id: 'B', b: 2 }] as call, i}
+            {@const y = 294 + i * 157}
+            {@const hit = call.b === 3}
+            <rect x="18" y={y} width="264" height="139" rx="10" fill="var(--bg)" stroke="var(--line)" />
+            <text x="32" y={y + 25} class="small strong">{t('incoming', 'incoming')} {call.id} · {hit ? t('key found', '找到 key') : t('no key here', '此目录无 key')}</text>
+            <text x="32" y={y + 54} class="code">B={call.b} · T=10 · kind=first</text>
+            <text x="32" y={y + 82} class="small">{hit ? t('same B, T and kind', 'B、T、类型都相同') : t('B changes 3 → 2', 'B 从 3 变成 2')}</text>
+            <rect x="32" y={y + 96} width="236" height="29" rx="6" fill={hit ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={hit ? 'var(--gen)' : 'var(--accent)'} />
+            <text x="150" y={y + 116} text-anchor="middle" class="small strong">{hit ? 'REPLAY' : 'EAGER'}</text>
+          {/each}
+          <text x="150" y="633" text-anchor="middle" class="result">{t('same key', '相同 key')} → REPLAY</text>
+          <text x="150" y="664" text-anchor="middle" class="result">{t('missing key', '缺少 key')} → EAGER</text>
+          <text x="150" y="701" text-anchor="middle" class="small">{t('The key decides whether replay fits.', 'key 决定能否重放。')}</text>
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Constructed one-key catalogue · other keys may exist' : 'Constructed one-key catalogue; other captured keys may exist. A missing key runs eagerly.', phone ? '构造的单 key 目录 · 其他 key 可能存在' : '构造的单 key 目录；其他已 capture key 可能存在，缺少匹配 key 时 eager 运行。')}</text>
       {/if}
     </svg>
   </div>
