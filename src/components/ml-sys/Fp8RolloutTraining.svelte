@@ -145,6 +145,24 @@
       { en: `forward: ${N.FP8_PUBLIC_FORWARD_BF16_MS} → ${N.FP8_PUBLIC_FORWARD_FP8_MS} ms`, zh: `前向：${N.FP8_PUBLIC_FORWARD_BF16_MS} → ${N.FP8_PUBLIC_FORWARD_FP8_MS} ms` },
       { en: `backward: ${N.FP8_PUBLIC_BACKWARD_BF16_MS.toLocaleString('en-US')} → ${N.FP8_PUBLIC_BACKWARD_FP8_MS.toLocaleString('en-US')} ms`, zh: `反向：${N.FP8_PUBLIC_BACKWARD_BF16_MS.toLocaleString('en-US')} → ${N.FP8_PUBLIC_BACKWARD_FP8_MS.toLocaleString('en-US')} ms` },
     ],
+  }, {
+    caption: 'Real and fake FP8 separate kernel effects from rounding loss. The source attributes most error to rounding.',
+    captionZh: '真实与模拟 FP8 分开看 kernel 和舍入误差。误差主要来自舍入。',
+    title: 'Compare: separate kernel effects from rounding loss', titleZh: '对照：分清 kernel 和舍入带来的误差',
+    subtitle: 'fake quantization = BF16 → FP8 → BF16', subtitleZh: '模拟量化 = BF16 → FP8 → BF16',
+    foot: 'Qwen3-4B, one H800, RL Steps 0 and 1; comparison claims follow the article.',
+    footZh: 'Qwen3-4B，一张 H800，RL 第 0、1 步；对照结论来自文章。',
+    legend: 'Orange = BF16 compute · blue = FP8 compute · dashed = round-trip', legendZh: '橙 = BF16 计算 · 蓝 = FP8 计算 · 虚线 = 往返转换',
+    nodes: [
+      { title: 'BF16 BASELINE', titleZh: 'BF16 基准', result: 'BF16 inputs', resultZh: 'BF16 输入', body: 'BF16 matrix multiply', bodyZh: 'BF16 矩阵乘法', tone: 'orange', compact: true },
+      { title: 'REAL FP8', titleZh: '真实 FP8', result: 'FP8 inputs', resultZh: 'FP8 输入', body: 'FP8 matrix multiply', bodyZh: 'FP8 矩阵乘法', tone: 'blue', compact: true },
+      { title: 'FAKE FP8', titleZh: '模拟 FP8', result: 'BF16 → FP8 → BF16', resultZh: 'BF16 → FP8 → BF16', body: 'then BF16 multiply', bodyZh: '再做 BF16 矩阵乘法', tone: 'plain', compact: true },
+    ],
+    formulas: [
+      { en: 'REAL ↔ FAKE → FP8 kernel implementation', zh: '真实 ↔ 模拟 → FP8 kernel 实现差异' },
+      { en: 'BASELINE ↔ FAKE → quantization round-trip loss', zh: '基准 ↔ 模拟 → 量化往返的舍入损失' },
+      { en: 'reported: rounding loss dominates · kernel difference is small', zh: '文章结果：舍入损失为主 · kernel 差异较小' },
+    ],
   }];
   let step = $state(0);
   $effect(() => {

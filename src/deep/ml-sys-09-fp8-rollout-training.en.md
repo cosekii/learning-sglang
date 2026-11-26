@@ -214,3 +214,38 @@ Extra transposed FP8 outputs and higher-precision saved tensors prevent memory f
 Measurements show that benefits vary. The next step isolates numerical error with real and fake quantization instead of attributing every difference to the FP8 kernel.
 
 Sources: `InfiR2 arXiv:2509.22536v4`, §5.1.1 and §5.4 Table 6; `Awesome-ML-SYS-Tutorial/rlhf/slime/fp8/readme.md:140-182`; `NVIDIA/TransformerEngine@8ef8285c40542c8c3724f9b3eadbb006793958f0`, `transformer_engine/common/transpose/quantize_transpose_square_blockwise.cu:462-485,513-524`.
+
+## Step 7 · Isolate rounding loss with fake quantization
+
+**One sentence.** Real FP8, fake FP8, and a BF16 baseline form two comparisons that separate kernel implementation differences from quantization round-trip loss.
+
+### On the stage
+
+- The baseline keeps weights and inputs in BF16 and runs BF16 matrix multiplications.
+- Real FP8 quantizes weights and inputs and runs an FP8 matrix multiplication.
+- Fake FP8 quantizes to FP8, immediately dequantizes to BF16, and runs a BF16 matrix multiplication. It keeps the rounding loss without using the FP8 kernel.
+- Real versus fake isolates the kernel implementation. Baseline versus fake isolates the quantize–dequantize round trip. The article attributes the larger error to the round trip, not to an error-free kernel.
+
+### Formula and symbols
+
+$$D_{rf}=Y_r-Y_f,\qquad D_{bf}=Y_b-Y_f$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $Y_b$ | BF16 baseline matrix-multiplication output | Baseline path |
+| $Y_r$ | Real FP8 matrix-multiplication output | Real FP8 path |
+| $Y_f$ | Fake-quantized BF16 matrix-multiplication output | FP8 round trip followed by BF16 multiplication |
+| $D_{rf}$ | Output difference associated with the FP8 kernel implementation | Real versus fake |
+| $D_{bf}$ | Output difference associated with quantization round-trip loss | Baseline versus fake |
+
+### The numbers on the stage
+
+This experiment ran Qwen3-4B on one H800 during RL Steps 0 and 1. The article does not define a norm or unit for its plotted Diff, so this chapter does not turn it into a percentage, log probability, or KL value. It follows the article's textual high/low assignment and does not quote Figure 6's conflicting printed means.
+
+A separate kernel check compared two FP8 implementations against BF16. For $(M,K,N)=(128,128,128)$, the reported Diff was 0.00068 for cuBLAS and 0.00036 for DeepGEMM. For $(1024,4096,1024)$, it was 0.000681 and 0.00065. These values are the same order, so changing the FP8 implementation did not explain the initial KL increase. $M,K,N$ are matrix dimensions, and their Diff unit is also unspecified.
+
+### Next
+
+The round trip explains why BF16 training and FP8 rollout can diverge. The next step aligns those schemes and examines the published change in the log-probability gap.
+
+Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fp8/readme.md:204-261`, especially the experiment definitions at `225-243` and implementation table at `208-219`.
