@@ -142,7 +142,7 @@ $$\mathcal L_{\mathrm{MTP}}=-\log p_{\mathrm{draft}}(x_{t+2}\mid u_t)$$
 
 ### 公式与符号
 
-gradient 是训练时告诉权重该往哪个方向、按多大幅度改变的数。本步把它说成“改权重的说明”。
+gradient 是训练时调整权重的信号，指明权重改变的方向和幅度。
 
 $$g^{\mathrm{CE}}_{\theta_{\mathrm{shared}}}=0,\qquad g^{\mathrm{CE}}_{\theta_{\mathrm{MTP}}}\ \text{正常计算}$$
 
