@@ -50,8 +50,8 @@
     caption: 'A new cue starts 300 ms before its speech.',
     captionZh: '新的一句在讲话前 300 ms 开始。',
   }, {
-    caption: 'A cue longer than 7 s is cut in its quietest part.',
-    captionZh: '超过 7 秒的一句，在最安静处切开。',
+    caption: 'At 7 s, a cue is cut in its quietest part.',
+    captionZh: '到 7 秒，一句在最安静处切开。',
   }, {
     caption: 'Voxt recognizes each cue with the Transcribe model.',
     captionZh: 'Voxt 用 Transcribe 的模型逐句识别。',
@@ -105,7 +105,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived((phone ? [810, 760, 820, 760, 760, 740, 760, 780, 840] : [470, 430, 450, 460, 450, 440, 430, 470, 520])[step]);
+  const H = $derived((phone ? [810, 760, 820, 760, 760, 740, 760, 780, 840] : [490, 430, 450, 460, 450, 440, 430, 470, 520])[step]);
 
   const srt = (ms: number) => {
     const h = Math.floor(ms / 3_600_000);
@@ -117,6 +117,9 @@
   const sec = (ms: number) => (ms / 1000).toFixed(2);
   const arrow = '-->';
   const requestLine = JSON.stringify({ op: 'transcribe', bytes: VOXT_TRANSCRIBE_PCM_BYTES, lang: '' });
+  const requestSplit = requestLine.indexOf('"bytes"');
+  const requestHead = requestLine.slice(0, requestSplit);
+  const requestTail = requestLine.slice(requestSplit);
   const replyLines = ['{"segment": …}', '{"segment": …}', `{"done":true,"count":${VOXT_TRANSCRIBE_CUE_COUNT}}`];
   const pcm = VOXT_TRANSCRIBE_PCM_BYTES.toLocaleString('en-US');
   const photoCount = Math.round(VOXT_TRANSCRIBE_MEETING_MB / VOXT_TRANSCRIBE_PHOTO_MB);
@@ -156,15 +159,15 @@
           <text x="185" y="215" text-anchor="middle" class="label">{t('one dictation session', '一次听写 session')}</text>
           <text x="185" y="237" text-anchor="middle" class="detail">{t('model → cleanup → history?', '模型 → 整理 → 历史？')}</text>
           <line x1="185" y1="253" x2="185" y2="278" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
-          <rect x="45" y="286" width="280" height="52" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="185" y="309" text-anchor="middle" class="label amber">{t('TEXT AT THE CURSOR', '光标处的文字')}</text>
+          <rect x="45" y="286" width="280" height="52" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="185" y="309" text-anchor="middle" class="label">{t('TEXT AT THE CURSOR', '光标处的文字')}</text>
           <text x="185" y="328" text-anchor="middle" class="detail">{t('plus a history row', '外加一条历史记录')}</text>
 
           <rect x="370" y="70" width="330" height="280" rx="12" fill="var(--bg)" stroke="var(--gen)" />
           <text x="535" y="94" text-anchor="middle" class="label amber">{t('FILE · TO SRT OR TXT', '文件 · 到 SRT 或 TXT')}</text>
           <rect x="395" y="110" width="280" height="50" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="535" y="131" text-anchor="middle" class="detail">{t('meeting.m4a on disk', '磁盘上的 meeting.m4a')}</text>
-          <text x="535" y="149" text-anchor="middle" class="detail">{t('1-hour meeting: 3,600 s', '1 小时会议：3,600 秒')}</text>
+          <text x="535" y="149" text-anchor="middle" class="detail">{t('1-hour meeting · compressed M4A', '1 小时会议 · 压缩 M4A')}</text>
           <line x1="535" y1="160" x2="535" y2="185" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
           <rect x="395" y="193" width="280" height="60" rx="9" fill="var(--bg)" stroke="var(--line)" />
           <text x="535" y="215" text-anchor="middle" class="label">{t('Voxt transcribe', 'Voxt transcribe')}</text>
@@ -174,12 +177,14 @@
           <text x="535" y="309" text-anchor="middle" class="label amber">{t('meeting.srt / talk.txt', 'meeting.srt / talk.txt')}</text>
           <text x="535" y="328" text-anchor="middle" class="detail">{t('subtitle file / plain text', '字幕文件 / 纯文本')}</text>
 
-          <text x="28" y="372" class="pt">·</text>
-          <text x="38" y="372" class="detail">{t(`a 1-hour meeting = ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} s = ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} MB, about ${photoCount} phone photos`, `1 小时会议 = ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} 秒 = ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} MB，约 ${photoCount} 张手机照片`)}</text>
-          <text x="28" y="394" class="pt">·</text>
-          <text x="38" y="394" class="detail">{t('both use Voxt and a speech model', '两条都用 Voxt 和语音模型')}</text>
-          <text x="28" y="416" class="pt">·</text>
-          <text x="38" y="416" class="detail">{t('the file route skips the dictation session and its history row', '文件路线不经过听写 session，也没有历史记录')}</text>
+          <text x="28" y="370" class="pt">·</text>
+          <text x="38" y="370" class="detail">{t(`decoded PCM: ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} × 16,000 × 2 B = 115,200,000 B`, `解码后的 PCM：${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} × 16,000 × 2 B = 115,200,000 B`)}</text>
+          <text x="38" y="390" class="detail">{t(`= ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} MB, not the compressed M4A size`, `= ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} MB，不是压缩 M4A 的大小`)}</text>
+          <text x="38" y="410" class="detail">{t(`4 MB per photo → ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} ÷ 4 ≈ ${photoCount} photos`, `每张手机照片 4 MB → ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} ÷ 4 ≈ ${photoCount} 张`)}</text>
+          <text x="28" y="432" class="pt">·</text>
+          <text x="38" y="432" class="detail">{t('both use Voxt and a speech model', '两条都用 Voxt 和语音模型')}</text>
+          <text x="28" y="454" class="pt">·</text>
+          <text x="38" y="454" class="detail">{t('the file route skips the dictation session and its history row', '文件路线不经过听写 session，也没有历史记录')}</text>
           <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Orange marks the route this chapter follows.', '橙色是本章要走的路线。')}</text>
         {:else}
           <rect x="15" y="68" width="270" height="250" rx="12" fill="var(--bg)" stroke="var(--accent)" />
@@ -191,14 +196,14 @@
           <text x="150" y="200" text-anchor="middle" class="label">{t('one dictation session', '一次听写 session')}</text>
           <text x="150" y="219" text-anchor="middle" class="detail">{t('model → cleanup → history?', '模型 → 整理 → 历史？')}</text>
           <line x1="150" y1="230" x2="150" y2="250" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
-          <rect x="30" y="258" width="240" height="48" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="150" y="280" text-anchor="middle" class="label amber">{t('TEXT AT THE CURSOR', '光标处的文字')}</text>
+          <rect x="30" y="258" width="240" height="48" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="150" y="280" text-anchor="middle" class="label">{t('TEXT AT THE CURSOR', '光标处的文字')}</text>
           <text x="150" y="297" text-anchor="middle" class="detail">{t('plus a history row', '外加一条历史记录')}</text>
 
           <rect x="15" y="330" width="270" height="250" rx="12" fill="var(--bg)" stroke="var(--gen)" />
           <text x="150" y="354" text-anchor="middle" class="label amber">{t('FILE · TO SRT OR TXT', '文件 · 到 SRT 或 TXT')}</text>
           <rect x="30" y="368" width="240" height="44" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="150" y="395" text-anchor="middle" class="detail">{t('1-hour meeting: 3,600 s', '1 小时会议：3,600 秒')}</text>
+          <text x="150" y="395" text-anchor="middle" class="detail">{t('1-hour meeting · compressed M4A', '1 小时会议 · 压缩 M4A')}</text>
           <line x1="150" y1="412" x2="150" y2="432" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
           <rect x="30" y="440" width="240" height="52" rx="8" fill="var(--bg)" stroke="var(--line)" />
           <text x="150" y="462" text-anchor="middle" class="label">{t('Voxt transcribe', 'Voxt transcribe')}</text>
@@ -209,13 +214,14 @@
           <text x="150" y="559" text-anchor="middle" class="detail">{t('subtitle file / plain text', '字幕文件 / 纯文本')}</text>
 
           <text x="20" y="606" class="pt">·</text>
-          <text x="30" y="606" class="detail">{t(`a 1-hour meeting = ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} MB`, `1 小时会议 = ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} MB`)}</text>
-          <text x="30" y="628" class="detail">{t(`about ${photoCount} phone photos`, `约 ${photoCount} 张手机照片`)}</text>
-          <text x="20" y="650" class="pt">·</text>
-          <text x="30" y="650" class="detail">{t('both use Voxt and a speech model', '两条都用 Voxt 和语音模型')}</text>
+          <text x="30" y="606" class="detail">{t(`3,600 × 16,000 × 2 B`, `3,600 × 16,000 × 2 B`)}</text>
+          <text x="30" y="628" class="detail">{t(`= 115,200,000 B = ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} MB PCM`, `= 115,200,000 B = ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} MB PCM`)}</text>
+          <text x="30" y="650" class="detail">{t(`4 MB/photo → 115.2 ÷ 4 ≈ ${photoCount}`, `每张照片 4 MB → 115.2 ÷ 4 ≈ ${photoCount} 张`)}</text>
           <text x="20" y="672" class="pt">·</text>
-          <text x="30" y="672" class="detail">{t('the file route skips the dictation session', '文件路线不经过听写 session')}</text>
-          <text x="30" y="694" class="detail">{t('and writes no history row', '也不写历史记录')}</text>
+          <text x="30" y="672" class="detail">{t('both use Voxt and a speech model', '两条都用 Voxt 和语音模型')}</text>
+          <text x="20" y="694" class="pt">·</text>
+          <text x="30" y="694" class="detail">{t('the file route skips the dictation session', '文件路线不经过听写 session')}</text>
+          <text x="30" y="716" class="detail">{t('and writes no history row', '也不写历史记录')}</text>
           <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Orange marks the route this chapter follows.', '橙色是本章要走的路线。')}</text>
         {/if}
       {:else if step === 1}
@@ -280,17 +286,18 @@
           <text x="540" y="96" text-anchor="middle" class="label">{t('running Voxt', '运行中的 Voxt')}</text>
           <text x="540" y="118" text-anchor="middle" class="detail">{t('picks Transcribe\'s model', '选 Transcribe 的模型')}</text>
 
-          <rect x="20" y="158" width="680" height="190" rx="10" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />
-          <text x="36" y="188" class="label">{t('PCM →', 'PCM →')}</text>
-          <rect x="110" y="172" width="550" height="20" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <line x1="660" y1="182" x2="676" y2="182" stroke="var(--accent)" stroke-width="2" marker-end="url(#ft-arrow-accent)" />
-          <text x="400" y="214" text-anchor="middle" class="detail">{t(`${pcm} bytes, still uploading`, `${pcm} 字节，还在上传`)}</text>
-          <text x="36" y="250" class="label">{t('← replies', '← 回复')}</text>
-          <line x1="660" y1="256" x2="110" y2="256" stroke="var(--accent)" stroke-width="2" marker-end="url(#ft-arrow-accent)" />
+          <text x="36" y="150" class="mono">{requestLine}</text>
+          <rect x="20" y="164" width="680" height="186" rx="10" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />
+          <text x="36" y="194" class="label">{t('PCM →', 'PCM →')}</text>
+          <rect x="110" y="180" width="550" height="20" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <line x1="660" y1="190" x2="676" y2="190" stroke="var(--accent)" stroke-width="2" marker-end="url(#ft-arrow-accent)" />
+          <text x="400" y="220" text-anchor="middle" class="detail">{t(`${pcm} bytes, still uploading`, `${pcm} 字节，还在上传`)}</text>
+          <text x="36" y="252" class="label">{t('← replies', '← 回复')}</text>
+          <line x1="660" y1="258" x2="110" y2="258" stroke="var(--accent)" stroke-width="2" marker-end="url(#ft-arrow-accent)" />
           {#each replyLines as line, i}
-            <text x="120" y={284 + i * 22} class="mono">{line}</text>
+            <text x="120" y={286 + i * 22} class="mono">{line}</text>
           {/each}
-          <text x="360" y="344" text-anchor="middle" class="cut">{t('a reply can arrive before the last PCM byte', '最后一块 PCM 还没传完，回复就可能到了')}</text>
+          <text x="360" y="372" text-anchor="middle" class="cut">{t('a reply can arrive before the last PCM byte', '最后一块 PCM 还没传完，回复就可能到了')}</text>
           <text x={W / 2} y={H - 32} text-anchor="middle" class="detail">{t(`one request line is at most ${VOXT_TRANSCRIBE_MAX_REQUEST_BYTES} bytes`, `请求行最多 ${VOXT_TRANSCRIBE_MAX_REQUEST_BYTES} 字节`)}</text>
           <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('No network port; only your account can open it; Voxt reads none of your folders.', '没有网络端口；只有你的账户能打开；Voxt 不读你的文件夹。')}</text>
         {:else}
@@ -306,18 +313,20 @@
           <text x="150" y="255" text-anchor="middle" class="label">{t('running Voxt', '运行中的 Voxt')}</text>
           <text x="150" y="275" text-anchor="middle" class="detail">{t('picks Transcribe\'s model', '选 Transcribe 的模型')}</text>
 
-          <rect x="15" y="306" width="270" height="276" rx="10" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />
-          <text x="26" y="332" class="label">PCM →</text>
-          <rect x="30" y="342" width="240" height="18" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <line x1="270" y1="351" x2="282" y2="351" stroke="var(--accent)" stroke-width="2" marker-end="url(#ft-arrow-accent)" />
-          <text x="150" y="384" text-anchor="middle" class="detail">{t(`${pcm} bytes, still uploading`, `${pcm} 字节，还在上传`)}</text>
-          <text x="26" y="416" class="label">← {t('replies', '回复')}</text>
-          <line x1="270" y1="422" x2="30" y2="422" stroke="var(--accent)" stroke-width="2" marker-end="url(#ft-arrow-accent)" />
-          <text x="36" y="450" class="mono small">{replyLines[0]}</text>
-          <text x="36" y="472" class="mono small">{replyLines[1]}</text>
-          <text x="36" y="494" class="mono small">{replyLines[2]}</text>
-          <text x="150" y="528" text-anchor="middle" class="cut">{t('a reply can arrive before', '最后一块 PCM')}</text>
-          <text x="150" y="550" text-anchor="middle" class="cut">{t('the last PCM byte', '还没传完，回复就可能到了')}</text>
+          <text x="26" y="316" class="mono small">{requestHead}</text>
+          <text x="26" y="336" class="mono small">{requestTail}</text>
+          <rect x="15" y="348" width="270" height="290" rx="10" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />
+          <text x="26" y="374" class="label">PCM →</text>
+          <rect x="30" y="384" width="240" height="18" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <line x1="270" y1="393" x2="282" y2="393" stroke="var(--accent)" stroke-width="2" marker-end="url(#ft-arrow-accent)" />
+          <text x="150" y="414" text-anchor="middle" class="detail">{t(`${pcm} bytes, still uploading`, `${pcm} 字节，还在上传`)}</text>
+          <text x="26" y="444" class="label">← {t('replies', '回复')}</text>
+          <line x1="270" y1="450" x2="30" y2="450" stroke="var(--accent)" stroke-width="2" marker-end="url(#ft-arrow-accent)" />
+          <text x="36" y="474" class="mono small">{replyLines[0]}</text>
+          <text x="36" y="496" class="mono small">{replyLines[1]}</text>
+          <text x="36" y="518" class="mono small">{replyLines[2]}</text>
+          <text x="150" y="550" text-anchor="middle" class="cut">{t('a reply can arrive before', '最后一块 PCM')}</text>
+          <text x="150" y="572" text-anchor="middle" class="cut">{t('the last PCM byte', '还没传完，回复就可能到了')}</text>
           <text x={W / 2} y={H - 46} text-anchor="middle" class="detail">{t(`request line ≤ ${VOXT_TRANSCRIBE_MAX_REQUEST_BYTES} bytes`, `请求行 ≤ ${VOXT_TRANSCRIBE_MAX_REQUEST_BYTES} 字节`)}</text>
           <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('No network port; only your account can open it.', '没有网络端口；只有你的账户能打开。')}</text>
         {/if}
@@ -577,8 +586,8 @@
           <text x="530" y="96" text-anchor="middle" class="label amber">{t('WRITTEN', '留下')}</text>
           <text x="385" y="128" class="detail">{t('one log line:', '一行日志：')}</text>
           <text x="385" y="152" class="mono small">transcribed a file for the</text>
-          <text x="385" y="170" class="mono small">command line: 8s of audio,</text>
-          <text x="385" y="188" class="mono small">2 segments</text>
+          <text x="385" y="170" class="mono small">command line: {VOXT_TRANSCRIBE_DEMO_SECONDS}s of audio,</text>
+          <text x="385" y="188" class="mono small">{VOXT_TRANSCRIBE_CUE_COUNT} segments</text>
           <text x="530" y="216" text-anchor="middle" class="detail">{t('length and cue count, never the text', '只有长度和句子数，没有文字')}</text>
 
           <text x="40" y="268" class="label">{t('WHERE THE AUDIO GOES', '声音去哪里')}</text>
@@ -604,10 +613,11 @@
           <rect x="15" y="276" width="270" height="190" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="150" y="300" text-anchor="middle" class="label amber">{t('WRITTEN', '留下')}</text>
           <text x="30" y="330" class="detail">{t('one log line:', '一行日志：')}</text>
-          <text x="30" y="354" class="mono small">transcribed a file: 8s of</text>
-          <text x="30" y="374" class="mono small">audio, 2 segments</text>
-          <text x="150" y="408" text-anchor="middle" class="detail">{t('length and cue count only', '只有长度和句子数')}</text>
-          <text x="150" y="436" text-anchor="middle" class="detail">{t('never the text', '没有文字')}</text>
+          <text x="30" y="354" class="mono small">transcribed a file for the</text>
+          <text x="30" y="374" class="mono small">command line: {VOXT_TRANSCRIBE_DEMO_SECONDS}s of</text>
+          <text x="30" y="394" class="mono small">audio, {VOXT_TRANSCRIBE_CUE_COUNT} segments</text>
+          <text x="150" y="424" text-anchor="middle" class="detail">{t('length and cue count only', '只有长度和句子数')}</text>
+          <text x="150" y="446" text-anchor="middle" class="detail">{t('never the text', '没有文字')}</text>
 
           <text x="150" y="498" text-anchor="middle" class="label">{t('WHERE THE AUDIO GOES', '声音去哪里')}</text>
           <rect x="25" y="516" width="250" height="58" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />

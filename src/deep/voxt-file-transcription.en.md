@@ -5,8 +5,8 @@
 ### On the stage
 
 - The left column is **dictation**: the microphone and helper send sound, one dictation session handles it, and the result appears at the cursor and may also be written to history.
-- The right column is **file**: `meeting.m4a` on disk, marked "1-hour meeting: 3,600 s", goes through `Voxt transcribe` and becomes `meeting.srt` or `talk.txt`.
-- The three lines below say: a one-hour meeting is 115.2 MB, about 30 phone photos; both routes use Voxt and a speech model; the file route has no dictation session and no history row.
+- The right column is **file**: `meeting.m4a` on disk, marked "1-hour meeting · compressed M4A", goes through `Voxt transcribe` and becomes `meeting.srt` or `talk.txt`.
+- The lines below derive the decoded size: 3,600 × 16,000 × 2 B = 115,200,000 B = 115.2 MB PCM, not the compressed M4A size; at 4 MB per photo, 115.2 ÷ 4 ≈ 29 photos. They also say both routes use Voxt and a speech model, and the file route has no dictation session or history row.
 
 ### Why this needs its own route
 
@@ -85,6 +85,7 @@ The PCM can go to the model now, but the model lives inside the running Voxt. St
 ### On the stage
 
 - The top row is the command, `transcribe.sock` and the running Voxt. The socket says "your account only".
+- The line above the dashed box is the request: `{"op":"transcribe","bytes":256000,"lang":""}`.
 - The upper lane is PCM still moving right, marked 256,000 bytes; the lower lane is replies coming back from the right.
 - The line below says: a reply can arrive before the last PCM byte.
 
