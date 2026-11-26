@@ -23,6 +23,8 @@ Step 4 uses Qwen's `heard_tokens(audio_end_ms) = 3 + floor(audio_end_ms ÷ 80)`.
 
 Step 5 follows the cascade's default `method: sentence` (`sglang_omni/models/streaming_cascade/alignment.py:98-138`). Its dialog takes the smaller of client H and delivered D, then keeps text through the last progress boundary whose audio ended at or before that cut (`sglang_omni/models/streaming_cascade/dialog.py:66-78,857-903`). In the constructed progress list `(1.0 s, 2.0 s, 2.5 s)`, D retains two sentences and H retains one. The three sentence texts are teaching examples, not model output. An unfinished retained prefix is marked uncertain. If no text remains, the empty assistant entry disappears and adjacent user messages join (`dialog.py:906-917`). Forced or ASR alignment can retain a finer verified prefix, with explicit timeout and mismatch fallbacks (`alignment.py:219-229,370-424`).
 
+Step 6 follows MiniCPM-o's client `response.cancel` and `conversation.item.truncate`. Cancel initially keeps through the last adapter-delivered unit. A client truncate then keeps only delivered units whose audio fully ended by H, and later truncates can only move backward (`sglang_omni/models/minicpm_o/session_adapters.py:469-516,553-640`). Thus D=2.0 seconds keeps units 0 and 1, while H=1.2 seconds keeps only unit 0. The 200 ms heard inside unit 1 has no whole-unit history representation. The thinker drops later spoken units, restores earlier generated history and refills later user input as forced-listen units (`session_adapters.py:118-179,219-236`). This is separate from the model-led decision to stop speaking.
+
 Code references in this chapter pin to `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`. The chapter reads source and tests; it does not run a model or benchmark.
 
 </details>
@@ -39,6 +41,8 @@ Code references in this chapter pin to `sglang-omni origin/main@9725235249df8512
 第 4 步使用 Qwen 的 `heard_tokens(audio_end_ms) = 3 + floor(audio_end_ms ÷ 80)`。一个 codec 帧在 24 kHz 下是 1,920 个采样点，即 80 ms；talker prefill 先读三行文字，之后每个 codec 帧读一行（`sglang_omni/models/qwen3_omni/thinker_session.py:38-42,87-89`）。所以 D 对应 28 行，H 对应 18 行。无论两个报告谁先到达，thinker 都保留较小切点（`thinker_session.py:167-223`；`session_input.py:253-260`）。如果没有交付任何回答声音，Qwen 会把原来的说话内容带进下一单元，重新提问（`session_input.py:184-205`；`tests/unit_test/qwen3_omni/test_session_input.py:102-138`）。
 
 第 5 步跟随 cascade 默认的 `method: sentence`（`sglang_omni/models/streaming_cascade/alignment.py:98-138`）。dialog 取客户端 H 与交付 D 的较小值，再保留到最后一个声音结束时刻不超过切点的进度边界（`sglang_omni/models/streaming_cascade/dialog.py:66-78,857-903`）。在构造的 `(1.0 秒, 2.0 秒, 2.5 秒)` 进度列表里，D 保留两句，H 保留一句。三段句子文字是教学算例，不是模型输出。保留文字若在不完整句子前停下，会标成不确定。如果没有文字留下，空 assistant 条目会被删除，相邻 user 消息合并（`dialog.py:906-917`）。forced 或 ASR 对齐可以保留更细且经过核对的前缀，超时或不匹配有明确回退（`alignment.py:219-229,370-424`）。
+
+第 6 步跟随 MiniCPM-o 的客户端 `response.cancel` 和 `conversation.item.truncate`。cancel 先保留到 adapter 最后交付的单元。客户端 truncate 再只保留声音在 H 前已经全部结束的已交付单元，后续 truncate 只能继续往前挪（`sglang_omni/models/minicpm_o/session_adapters.py:469-516,553-640`）。所以 D=2.0 秒保留 unit 0 和 unit 1，H=1.2 秒只保留 unit 0。unit 1 中被听过的 200 ms 无法进入整单元历史。thinker 删除之后的 spoken units，恢复之前的生成记录，并把后续用户输入作为强制 listening 单元补回（`session_adapters.py:118-179,219-236`）。这不同于模型自己决定停止说话。
 
 本章代码出处固定到 `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`。本章只读源码和测试，没有运行模型或 benchmark。
 

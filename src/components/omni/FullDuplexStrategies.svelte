@@ -19,6 +19,11 @@
     DUPLEX_CASCADE_SENTENCE_ENDS_MS,
     DUPLEX_CASCADE_DELIVERED_SENTENCES,
     DUPLEX_CASCADE_HEARD_SENTENCES,
+    DUPLEX_NATIVE_DELIVERED_UNIT_COUNT,
+    DUPLEX_NATIVE_HEARD_UNIT_COUNT,
+    DUPLEX_NATIVE_LAST_DELIVERED_UNIT,
+    DUPLEX_NATIVE_LAST_HEARD_UNIT,
+    DUPLEX_NATIVE_PARTIAL_HEARD_MS,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -38,6 +43,9 @@
   }, {
     caption: 'Sentence alignment keeps the last sentence that finished before the cut. At 1.2 seconds, only sentence 1 remains.',
     captionZh: '句子对齐保留切点前最后一句完整声音。1.2 秒时只剩第 1 句。',
+  }, {
+    caption: 'MiniCPM-o truncates at complete one-second units. At 1.2 seconds, only unit 0 enters repaired history.',
+    captionZh: 'MiniCPM-o 只按完整的一秒单元裁切。1.2 秒时只保留 unit 0。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -54,7 +62,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [650, 790, 790, 760, 830][step] : [540, 590, 570, 610, 640][step]);
+  const H = $derived(phone ? [650, 790, 790, 760, 830, 830][step] : [540, 590, 570, 610, 640, 640][step]);
   const seconds = (ms: number) => (ms / 1000).toFixed(1);
 </script>
 
@@ -273,6 +281,47 @@
           <text x="150" y="723" text-anchor="middle" class="small strong">{t('Next: native one-second units', '下一步：native 的一秒单元')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Default: sentence alignment' : 'Default method: sentence. Forced or ASR alignment can retain finer prefixes; not drawn here.', phone ? '默认使用句子对齐' : '默认 method: sentence。forced 或 ASR 对齐能保留更细前缀，本图不展开。')}</text>
+      {:else if step === 5}
+        <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? '3 of 3 · MiniCPM-o 4.5' : 'History repair · 3 of 3 · MiniCPM-o 4.5', phone ? '3/3 · MiniCPM-o 4.5' : '对话记录修复 · 3/3 · MiniCPM-o 4.5')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'client cut = complete units only' : 'client truncate = keep only complete one-second units', phone ? '客户端切点 = 只留完整单元' : '客户端 truncate = 只保留完整的一秒单元')}</text>
+        <text x={phone ? 18 : 30} y="79" class="label">{t(phone ? 'blue = kept · grey = dropped' : 'blue = units kept · grey = units dropped', phone ? '蓝 = 保留 · 灰 = 删除' : '蓝 = 保留的单元 · 灰 = 删除的单元')}</text>
+        {#if !phone}
+          {#each [
+            { x: 30, kept: DUPLEX_NATIVE_DELIVERED_UNIT_COUNT, title: 'response.cancel · D = 2.0 s', titleZh: 'response.cancel · D = 2.0 秒' },
+            { x: 370, kept: DUPLEX_NATIVE_HEARD_UNIT_COUNT, title: 'client truncate · H = 1.2 s', titleZh: '客户端 truncate · H = 1.2 秒' },
+          ] as panel}
+            <rect x={panel.x} y="112" width="320" height="329" rx="12" fill="var(--bg)" stroke="var(--line)" />
+            <text x={panel.x + 16} y="141" class="small strong">{t(panel.title, panel.titleZh)}</text>
+            {#each [0, 1, 2] as unit}
+              <rect x={panel.x + 16} y={169 + unit * 71} width="288" height="54" rx="8" fill={unit < panel.kept ? 'var(--accent-soft)' : 'var(--bg)'} stroke={unit < panel.kept ? 'var(--accent)' : 'var(--faint)'} />
+              <text x={panel.x + 30} y={191 + unit * 71} class="small strong">unit {unit} · {unit < 2 ? t(`audio ends ${unit + 1}.0 s`, `声音在 ${unit + 1}.0 秒结束`) : t('not delivered', '尚未交付')}</text>
+              <text x={panel.x + 30} y={213 + unit * 71} class="small">{unit < panel.kept ? t('KEEP IN HISTORY', '留在记录里') : t('DROP', '删除')}</text>
+            {/each}
+            <text x={panel.x + 160} y="420" text-anchor="middle" class="result">{t(`KEEP THROUGH UNIT ${panel.kept - 1}`, `保留到 unit ${panel.kept - 1}`)}</text>
+          {/each}
+          <text x="360" y="486" text-anchor="middle" class="result">floor(min(D, H) ÷ {DUPLEX_NATIVE_UNIT_MS}) = {DUPLEX_NATIVE_HEARD_UNIT_COUNT} {t('complete unit', '个完整单元')}</text>
+          <rect x="160" y="510" width="400" height="52" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="360" y="542" text-anchor="middle" class="small strong">{t(`${DUPLEX_NATIVE_PARTIAL_HEARD_MS} ms of unit 1 was heard, but this cut cannot keep it`, `unit 1 有 ${DUPLEX_NATIVE_PARTIAL_HEARD_MS} ms 被听过，但这次裁切无法保留它`)}</text>
+          <text x="360" y="606" text-anchor="middle" class="result">{t('Which server timer still says nothing about playback?', '哪种服务器计时仍不能说明播放情况？')}</text>
+        {:else}
+          {#each [
+            { y: 108, kept: DUPLEX_NATIVE_DELIVERED_UNIT_COUNT, title: 'cancel · D = 2.0 s', titleZh: '取消 · D = 2.0 秒' },
+            { y: 347, kept: DUPLEX_NATIVE_HEARD_UNIT_COUNT, title: 'truncate · H = 1.2 s', titleZh: '截断 · H = 1.2 秒' },
+          ] as panel}
+            <rect x="18" y={panel.y} width="264" height="217" rx="11" fill="var(--bg)" stroke="var(--line)" />
+            <text x="32" y={panel.y + 28} class="small strong">{t(panel.title, panel.titleZh)}</text>
+            {#each [0, 1, 2] as unit}
+              <rect x="32" y={panel.y + 46 + unit * 43} width="236" height="35" rx="6" fill={unit < panel.kept ? 'var(--accent-soft)' : 'var(--bg)'} stroke={unit < panel.kept ? 'var(--accent)' : 'var(--faint)'} />
+              <text x="42" y={panel.y + 69 + unit * 43} class="small">unit {unit} · {unit < panel.kept ? t('KEEP', '保留') : t('DROP', '删除')}</text>
+            {/each}
+            <text x="150" y={panel.y + 199} text-anchor="middle" class="result">{t(`THROUGH UNIT ${panel.kept - 1}`, `到 unit ${panel.kept - 1}`)}</text>
+          {/each}
+          <text x="150" y="607" text-anchor="middle" class="result">floor(1,200 ÷ {DUPLEX_NATIVE_UNIT_MS}) = {DUPLEX_NATIVE_HEARD_UNIT_COUNT}</text>
+          <text x="150" y="638" text-anchor="middle" class="small">{t(`unit 1: ${DUPLEX_NATIVE_PARTIAL_HEARD_MS} ms was heard`, `unit 1 有 ${DUPLEX_NATIVE_PARTIAL_HEARD_MS} ms 被听过`)}</text>
+          <text x="150" y="663" text-anchor="middle" class="small">{t('The whole-unit cut drops it.', '整单元裁切会删掉它。')}</text>
+          <text x="150" y="723" text-anchor="middle" class="small strong">{t('Next: server timing boundaries', '下一步：服务器计时边界')}</text>
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Unit indices start at 0' : 'Unit indices start at 0. Later user audio returns as forced-listen units; not drawn here.', phone ? 'unit 编号从 0 开始' : 'unit 编号从 0 开始。后续用户声音会作为强制 listening 单元补回，本图不展开。')}</text>
       {/if}
     </svg>
   </div>

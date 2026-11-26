@@ -167,3 +167,45 @@ The default is `method: sentence`. `forced` adds word-ending information for com
 Native MiniCPM-o does not cut text sentences or 80 ms rows. Its client truncate keeps complete one-second units.
 
 Sources: `sglang_omni/models/streaming_cascade/dialog.py:66-78,857-917`; `sglang_omni/models/streaming_cascade/alignment.py:98-138,219-229,370-424`; `tests/unit_test/models/test_streaming_cascade.py:320-348`.
+
+## Step 6 · MiniCPM-o keeps whole units
+
+> **In one line:** The 1.2-second client cut retains only unit 0 in MiniCPM-o's repaired history.
+
+### On the stage
+
+- `response.cancel` initially keeps delivered units 0 and 1 because D = 2.0 seconds.
+- Client truncate at H = 1.2 seconds moves the cut back to unit 0.
+- Unit 2 was generated but not delivered, so it is dropped.
+- The listener heard 200 ms inside unit 1, but this whole-unit cut cannot retain that fragment.
+
+### Formula
+
+$$
+K = \left\lfloor\frac{\min(D,H)}{U}\right\rfloor - 1
+$$
+
+| Symbol | Meaning | Value | Source |
+|---|---|---:|---|
+| $K$ | Zero-based index of the last retained unit | 0 | This step |
+| $D$ | Delivered position | 2,000 ms | Step 1 |
+| $H$ | Client playback position | 1,200 ms | Step 1 |
+| $U$ | Native audio-unit duration | 1,000 ms | Ch. 21 Step 2 |
+
+### The numbers on the stage
+
+$$
+K_D = \left\lfloor 2{,}000 \div 1{,}000 \right\rfloor - 1 = 1
+$$
+
+$$
+K_H = \left\lfloor 1{,}200 \div 1{,}000 \right\rfloor - 1 = 0
+$$
+
+The output converter remembers each delivered unit's reply-audio end. `played_through_unit` selects the last delivered unit whose end is at or before H. A position inside a unit rounds down. The thinker drops spoken units after the boundary, restores earlier generated history and refills later input as forced-listen units. It also holds listening until user speech arrives, so silence does not resume the cancelled answer.
+
+### Next
+
+The next step separates the server's Unit profiler clock from client playback and interruption measurements.
+
+Sources: `sglang_omni/models/minicpm_o/session_adapters.py:118-179,219-236,469-516,553-640`; `tests/unit_test/minicpm_o/test_realtime_session_params.py:253-317`.

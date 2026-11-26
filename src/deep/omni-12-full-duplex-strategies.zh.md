@@ -167,3 +167,45 @@ $$
 native MiniCPM-o 不裁切文字句子或 80 ms 行。客户端 truncate 保留完整的一秒单元。
 
 出处：`sglang_omni/models/streaming_cascade/dialog.py:66-78,857-917`；`sglang_omni/models/streaming_cascade/alignment.py:98-138,219-229,370-424`；`tests/unit_test/models/test_streaming_cascade.py:320-348`。
+
+## 第 6 步 · MiniCPM-o 保留完整单元
+
+> **一句话：** 客户端在 1.2 秒裁切时，MiniCPM-o 的修复记录只保留 unit 0。
+
+### 图上是什么
+
+- D = 2.0 秒，所以 `response.cancel` 先保留已交付的 unit 0 和 unit 1。
+- 客户端在 H = 1.2 秒 truncate，把切点往前挪到 unit 0。
+- unit 2 已生成但未交付，因此会被删除。
+- 听者已经听到 unit 1 里的 200 ms，但整单元裁切无法保留这一小段。
+
+### 公式
+
+$$
+K = \left\lfloor\frac{\min(D,H)}{U}\right\rfloor - 1
+$$
+
+| 符号 | 是什么 | 大小 | 从哪来 |
+|---|---|---:|---|
+| $K$ | 最后保留单元的零基编号 | 0 | 本步 |
+| $D$ | 已交付位置 | 2,000 ms | 第 1 步 |
+| $H$ | 客户端播放位置 | 1,200 ms | 第 1 步 |
+| $U$ | native 声音单元时长 | 1,000 ms | 第 21 章第 2 步 |
+
+### 代入图上的数
+
+$$
+K_D = \left\lfloor 2{,}000 \div 1{,}000 \right\rfloor - 1 = 1
+$$
+
+$$
+K_H = \left\lfloor 1{,}200 \div 1{,}000 \right\rfloor - 1 = 0
+$$
+
+output converter 记录每个已交付单元的回答声音结束位置。`played_through_unit` 选择最后一个在 H 前已经全部结束的已交付单元。位于单元内部的位置会向下取整。thinker 删除边界后的 spoken units，恢复较早的生成记录，并把后续输入作为强制 listening 单元补回。它还会保持 listening，直到用户声音到达，避免静音让已取消回答继续。
+
+### 接下来
+
+下一步区分服务器的 Unit profiler 时钟、客户端播放和打断测量。
+
+出处：`sglang_omni/models/minicpm_o/session_adapters.py:118-179,219-236,469-516,553-640`；`tests/unit_test/minicpm_o/test_realtime_session_params.py:253-317`。
