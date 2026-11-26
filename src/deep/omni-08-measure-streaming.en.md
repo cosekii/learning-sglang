@@ -36,3 +36,41 @@ The test used H200s and 8 concurrent requests, with the thinker split across two
 The numbers show a changed wait without locating it. The next step fixes when the timer starts and which event stops it.
 
 Sources: Learning SGLang Ch. 19 Step 5; the PR #1235 measurement notes in `src/pages/ch/19-sharing-gpus.mdx`.
+
+## Step 2 · Stop TTFT at the first audio delta
+
+**One sentence.** This streaming benchmark starts at POST submission, records TTFT at the first delta with nonempty `audio.data`, and separately times the whole stream to `[DONE]`.
+
+### On the stage
+
+- `POST` is request submission, set to 0.0 seconds in this constructed example.
+- A `text delta` carries no audio data, so it cannot stop the TTFT timer.
+- `First audio delta` is the first streaming event with nonempty `audio.data`, set to 1.4 seconds here. The orange TTFT interval stops there.
+- `[DONE]` ends the stream at a constructed 3.2 seconds. The blue total-time interval runs from POST to this event.
+- Orange and blue distinguish the two timing boundaries. They do not represent CPU or GPU work.
+
+### Formula and symbols
+
+$$T_{\mathrm{TTFT}}=t_{\mathrm{first\ audio}}-t_{\mathrm{submit}},\qquad T_{\mathrm{total}}=t_{\mathrm{done}}-t_{\mathrm{submit}}$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $t_{\mathrm{submit}}$ | The `time.perf_counter()` start | Before POST, 0.0 seconds in this example |
+| $t_{\mathrm{first\ audio}}$ | Arrival of the first delta with nonempty `audio.data` | 1.4 seconds in this example |
+| $t_{\mathrm{done}}$ | Time after the stream finishes | 3.2 seconds in this example |
+| $T_{\mathrm{TTFT}}$ | Wait for the first audio | Calculated in this step |
+| $T_{\mathrm{total}}$ | Wait for the whole streaming request | Calculated in this step |
+
+### The numbers on the stage
+
+$$T_{\mathrm{TTFT}}=1.4-0.0=1.4\ \text{s}$$
+
+$$T_{\mathrm{total}}=3.2-0.0=3.2\ \text{s}$$
+
+The code checks HTTP errors and streaming `error` events. If a server returns 200 without any audio delta, `_measure_one` raises an error instead of recording a valid measurement. Each `RunResult` stores TTFT, total seconds, audio chunk count and status code.
+
+### Next
+
+Sound can still stop after the first chunk. The next step places chunk arrivals on the playback timeline and calculates the silent gap.
+
+Sources: `benchmarks/eval/benchmark_omni_streaming_ttft.py:73-82,148-205,259-275`.

@@ -36,3 +36,41 @@ $$s=(1-1.44\div2.68)\times100\%\approx46\%$$
 数字说明首音等待变了，但还没有指出等待落在哪一段。下一步先确定计时器从何时开始、到哪一个事件停止。
 
 来源：Learning SGLang 第 19 章第 5 步；`src/pages/ch/19-sharing-gpus.mdx` 的 PR #1235 测量说明。
+
+## 第 2 步 · TTFT 在首个 audio delta 停表
+
+**一句话。** 这份 streaming benchmark 从提交 POST 开始计时，在第一个带非空 `audio.data` 的 delta 到达时记录 TTFT，另记整个流到 `[DONE]` 的总时间。
+
+### 图上是什么
+
+- `POST` 是客户端提交请求的时刻，本例构造为 0.0 秒。
+- `text delta` 只带文字，没有音频数据，所以它不是 TTFT 的停止事件。
+- `first audio delta` 是第一个带非空 `audio.data` 的流式事件，本例构造为 1.4 秒，橙色 TTFT 在这里停止。
+- `[DONE]` 表示整个流结束，本例构造为 3.2 秒。蓝色总计时覆盖从 POST 到 `[DONE]` 的全过程。
+- 橙色和蓝色表示两种计时边界，不代表 CPU 或 GPU 工作。
+
+### 公式与符号
+
+$$T_{\mathrm{TTFT}}=t_{\mathrm{first\ audio}}-t_{\mathrm{submit}},\qquad T_{\mathrm{total}}=t_{\mathrm{done}}-t_{\mathrm{submit}}$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $t_{\mathrm{submit}}$ | 调用 `time.perf_counter()` 开始计时的时刻 | POST 前，本例 0.0 秒 |
+| $t_{\mathrm{first\ audio}}$ | 首个含非空 `audio.data` 的 delta 到达时刻 | 本例 1.4 秒 |
+| $t_{\mathrm{done}}$ | 流读完后的时刻 | 本例 3.2 秒 |
+| $T_{\mathrm{TTFT}}$ | 首音等待 | 本步相减 |
+| $T_{\mathrm{total}}$ | 整个流式请求的等待 | 本步相减 |
+
+### 代入图上的数
+
+$$T_{\mathrm{TTFT}}=1.4-0.0=1.4\ \text{s}$$
+
+$$T_{\mathrm{total}}=3.2-0.0=3.2\ \text{s}$$
+
+代码先检查 HTTP 错误和流内 `error`。若服务器返回 200 却没有任何 audio delta，`_measure_one` 会报错，不把这次请求写成有效测量。TTFT 与 `total_seconds`、`audio_chunks`、`status_code` 一起存入每条 `RunResult`。
+
+### 接下来
+
+首音之后仍可能停声。下一步把 chunk 到达时刻放到播放时间线上，算出空档有多长。
+
+来源：`benchmarks/eval/benchmark_omni_streaming_ttft.py:73-82,148-205,259-275`。

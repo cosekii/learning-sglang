@@ -7,6 +7,8 @@
   import {
     STREAM_P90_SHARED_S, STREAM_P90_ALONE_S, STREAM_P90_EXTRA_S,
     STREAM_P90_SOONER_PERCENT,
+    STREAM_TEACHING_SUBMIT_S, STREAM_TEACHING_FIRST_AUDIO_S, STREAM_TEACHING_DONE_S,
+    STREAM_TEACHING_TTFT_S, STREAM_TEACHING_TOTAL_S,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -14,6 +16,9 @@
   const steps = [{
     caption: `The talker's own GPU gave p90 first sound in ${STREAM_P90_ALONE_S.toFixed(1)} seconds. Sharing the thinker's GPU took ${STREAM_P90_SHARED_S.toFixed(1)} seconds.`,
     captionZh: `talker 独占 GPU 时，首音 p90 是 ${STREAM_P90_ALONE_S.toFixed(1)} 秒。与 thinker 同卡时是 ${STREAM_P90_SHARED_S.toFixed(1)} 秒。`,
+  }, {
+    caption: 'TTFT stops at the first audio delta. The total timer continues to [DONE].',
+    captionZh: 'TTFT 在首个 audio delta 停止。总计时继续到 [DONE]。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -30,8 +35,10 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [590][step] : [430][step]);
+  const H = $derived(phone ? [590, 650][step] : [430, 460][step]);
   const barMax = $derived(phone ? 185 : 400);
+  const timeX = (seconds: number) => 60 + (seconds / STREAM_TEACHING_DONE_S) * 600;
+  const timeY = (seconds: number) => 112 + (seconds / STREAM_TEACHING_DONE_S) * 300;
   const barScale = $derived(barMax / STREAM_P90_SHARED_S);
 </script>
 
@@ -75,6 +82,48 @@
           <text x="150" y="510" text-anchor="middle" class="small strong">{t('Which wait disappeared?', '省掉了哪段等待？')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'PR #1235 · H200 · two runs each' : 'PR #1235 · H200 · 8 requests at once · two runs each', phone ? 'PR #1235 · H200 · 各跑两次' : 'PR #1235 · H200 · 同时 8 个请求 · 各跑两次')}</text>
+      {:else if step === 1}
+        <text x={phone ? 18 : 36} y="30" class="title">{t(phone ? 'Stop at the first audio' : 'Two timers stop at different events', phone ? '到首个声音就停表' : '两个计时器在不同事件停止')}</text>
+        <text x={phone ? 18 : 36} y="55" class="label">{t('TTFT = time to the first audio chunk', 'TTFT = 到第一段声音的时间')}</text>
+        <text x={phone ? 18 : 36} y="79" class="label">{t('orange = TTFT · blue = whole request', '橙 = TTFT · 蓝 = 整个请求')}</text>
+        {#if !phone}
+          <line x1="60" y1="160" x2="660" y2="160" stroke="var(--line)" stroke-width="4" />
+          {#each [
+            { at: STREAM_TEACHING_SUBMIT_S, title: 'POST', sub: 'request submitted', titleZh: '提交请求', subZh: '计时开始' },
+            { at: STREAM_TEACHING_FIRST_AUDIO_S / 2, title: 'text delta', sub: 'no audio yet', titleZh: '文字 delta', subZh: '还没有声音' },
+            { at: STREAM_TEACHING_FIRST_AUDIO_S, title: 'first audio delta', sub: 'stop TTFT', titleZh: '首个 audio delta', subZh: 'TTFT 停表' },
+            { at: STREAM_TEACHING_DONE_S, title: '[DONE]', sub: 'stop total', titleZh: '[DONE]', subZh: '总计时停表' },
+          ] as event}
+            <circle cx={timeX(event.at)} cy="160" r="8" fill={event.at === STREAM_TEACHING_FIRST_AUDIO_S ? 'var(--gen)' : 'var(--accent)'} />
+            <text x={timeX(event.at)} y="126" text-anchor="middle" class="small strong">{t(event.title, event.titleZh)}</text>
+            <text x={timeX(event.at)} y="194" text-anchor="middle" class="small">{t(event.sub, event.subZh)}</text>
+            <text x={timeX(event.at)} y="218" text-anchor="middle" class="result">{event.at.toFixed(1)} s</text>
+          {/each}
+          <line x1="60" y1="265" x2={timeX(STREAM_TEACHING_FIRST_AUDIO_S)} y2="265" stroke="var(--gen)" stroke-width="5" />
+          <text x={(60 + timeX(STREAM_TEACHING_FIRST_AUDIO_S)) / 2} y="294" text-anchor="middle" class="result">TTFT = {STREAM_TEACHING_FIRST_AUDIO_S.toFixed(1)} − {STREAM_TEACHING_SUBMIT_S.toFixed(1)} = {STREAM_TEACHING_TTFT_S.toFixed(1)} s</text>
+          <line x1="60" y1="335" x2="660" y2="335" stroke="var(--accent)" stroke-width="5" />
+          <text x="360" y="364" text-anchor="middle" class="result">total = {STREAM_TEACHING_DONE_S.toFixed(1)} − {STREAM_TEACHING_SUBMIT_S.toFixed(1)} = {STREAM_TEACHING_TOTAL_S.toFixed(1)} s</text>
+          <text x="360" y="410" text-anchor="middle" class="small strong">{t('Text deltas and [DONE] do not change the TTFT boundary.', '文字 delta 和 [DONE] 都不改变 TTFT 的停表点。')}</text>
+        {:else}
+          <line x1="52" y1="112" x2="52" y2="412" stroke="var(--line)" stroke-width="4" />
+          {#each [
+            { at: STREAM_TEACHING_SUBMIT_S, title: 'POST', sub: 'start', titleZh: '提交', subZh: '开始' },
+            { at: STREAM_TEACHING_FIRST_AUDIO_S / 2, title: 'text delta', sub: 'no audio', titleZh: '文字 delta', subZh: '无声音' },
+            { at: STREAM_TEACHING_FIRST_AUDIO_S, title: 'FIRST AUDIO', sub: 'stop TTFT', titleZh: '首个声音', subZh: 'TTFT 停表' },
+            { at: STREAM_TEACHING_DONE_S, title: '[DONE]', sub: 'stop total', titleZh: '[DONE]', subZh: '总计时停表' },
+          ] as event}
+            <circle cx="52" cy={timeY(event.at)} r="8" fill={event.at === STREAM_TEACHING_FIRST_AUDIO_S ? 'var(--gen)' : 'var(--accent)'} />
+            <text x="74" y={timeY(event.at) - 3} class="small strong">{t(event.title, event.titleZh)} · {event.at.toFixed(1)} s</text>
+            <text x="74" y={timeY(event.at) + 19} class="small">{t(event.sub, event.subZh)}</text>
+          {/each}
+          <rect x="20" y="454" width="260" height="70" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="150" y="481" text-anchor="middle" class="result">TTFT = {STREAM_TEACHING_FIRST_AUDIO_S.toFixed(1)} − {STREAM_TEACHING_SUBMIT_S.toFixed(1)} = {STREAM_TEACHING_TTFT_S.toFixed(1)} s</text>
+          <text x="150" y="507" text-anchor="middle" class="small">{t('stop at first audio', '到首个声音停止')}</text>
+          <rect x="20" y="544" width="260" height="70" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="150" y="571" text-anchor="middle" class="result">total = {STREAM_TEACHING_DONE_S.toFixed(1)} − {STREAM_TEACHING_SUBMIT_S.toFixed(1)} = {STREAM_TEACHING_TOTAL_S.toFixed(1)} s</text>
+          <text x="150" y="597" text-anchor="middle" class="small">{t('continue to [DONE]', '继续到 [DONE]')}</text>
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Constructed times · time.perf_counter()' : 'Constructed request times; the code uses time.perf_counter().', '构造时刻 · time.perf_counter()')}</text>
       {/if}
     </svg>
   </div>
