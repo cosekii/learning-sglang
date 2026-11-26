@@ -19,6 +19,8 @@ Step 2 follows `sglang_omni/models/fishaudio_s2_pro/stages.py:249-376,425-490`: 
 
 Step 3 follows `sglang_omni/models/fishaudio_s2_pro/tokenizer.py:53-73,94-162` and `model_runner.py:288-356`. Slow AR is the outer, time-axis loop. Target text uses ordinary tokens. Each reference frame contributes a semantic token made from code 0, while all ten code rows modify the model input at that position. The exact embedding average is `(text embedding + ten codec embeddings) ÷ sqrt(11)`, from `fish_speech/models/text2semantic/audio_decoder.py:597-612`. Multiple references concatenate along time; a request without references omits the system voice block.
 
+Step 4 follows a nonterminal frame in `sglang_omni/models/fishaudio_s2_pro/sglang_model.py:294-300,418-510`. Fast AR is the inner loop. Call 0 receives the projected Slow hidden state and does not supply a vocoder code. Calls 1–9 choose the nine remaining codes by argmax. The engine stores the raw Slow token, its derived code 0 and those nine codes: 11 rows. `streaming_vocoder.py:88-106` drops the raw token and sends the other ten rows to the vocoder. The 1+9=10 Fast-call count has no eleventh call after code 9.
+
 Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`. Fetching a newer ref failed with `Operation not permitted`. The chapter reads source; it does not run a model or benchmark.
 
 </details>
@@ -31,6 +33,8 @@ Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37
 第 2 步依据 `sglang_omni/models/fishaudio_s2_pro/stages.py:249-376,425-490`：参考声音先变单声道，重采样到 44,100 Hz，再进入参考 DAC。构造算例从 16 kHz 的 1 秒声音开始。DAC 每帧 2,048 个采样点，所以 `ceil(44,100 ÷ 2,048) = 22` 帧，需要补 956 个采样点，输出共十行。`scheduling/reference_encoder.py:344-413` 在 CPU 缓存相同参考声音的 codes 并返回副本；这不是 AR KV。已有 `vq_codes` 可以跳过编码，没有参考声音的请求会省略这段声音提示。
 
 第 3 步依据 `sglang_omni/models/fishaudio_s2_pro/tokenizer.py:53-73,94-162` 和 `model_runner.py:288-356`。Slow AR 是沿时间轴走的外层循环。目标文字使用普通 tokens。每个参考帧由 code 0 形成一个语义 token，同时十行 codes 都会改变这个位置的模型输入。精确的 embedding 平均是 `(文字 embedding + 十个 codec embeddings) ÷ sqrt(11)`，见 `fish_speech/models/text2semantic/audio_decoder.py:597-612`。多个参考声音沿时间拼接；没有参考声音时会省略 system 声音块。
+
+第 4 步跟随一个非结束帧，见 `sglang_omni/models/fishaudio_s2_pro/sglang_model.py:294-300,418-510`。Fast AR 是内层循环。第 0 次调用接收投影后的 Slow 隐藏状态，不提供 vocoder code。第 1–9 次调用通过 argmax 选出其余九个 codes。engine 保存 Slow 原始 token、由它得到的 code 0 和这九个 codes，共 11 行。`streaming_vocoder.py:88-106` 去掉原始 token，把其余十行送入 vocoder。1+9=10 次 Fast 调用，code 9 之后没有第 11 次调用。
 
 本章代码出处固定到 `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`。获取更新 ref 时出现 `Operation not permitted`。本章只读源码，没有运行模型或 benchmark。
 

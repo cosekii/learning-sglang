@@ -14,6 +14,10 @@
     FISH_REFERENCE_FRAMES,
     FISH_REFERENCE_PADDED_SAMPLES,
     FISH_REFERENCE_PADDING_SAMPLES,
+    FISH_FAST_INITIAL_CALLS,
+    FISH_FAST_REMAINING_ROWS,
+    FISH_FAST_CALLS_PER_FRAME,
+    FISH_ENGINE_ROWS_PER_FRAME,
     VOC_FISH_CODEBOOK_ROWS,
   } from '../../omni/numbers';
 
@@ -28,6 +32,9 @@
   }, {
     caption: 'Slow AR reads text and the reference codes. It chooses code 0 for one frame.',
     captionZh: 'Slow AR 读取文字和参考 codes。它为一帧选出 code 0。',
+  }, {
+    caption: 'Fast AR fills the other nine rows inside that frame. Ten rows go to the vocoder.',
+    captionZh: 'Fast AR 在这一帧补齐另外九行。十行 codes 送进 vocoder。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -44,7 +51,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [710, 800, 790][step] : [540, 630, 600][step]);
+  const H = $derived(phone ? [710, 800, 790, 900][step] : [540, 630, 600, 650][step]);
   const fmt = (value: number) => value.toLocaleString('en-US', { maximumFractionDigits: 0 });
 </script>
 
@@ -228,6 +235,71 @@
           <text x="150" y="735" text-anchor="middle" class="result">1 {t('frame', '帧')} → 1 code 0</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'All ten rows join each reference position' : 'Only code 0 becomes a token ID; all ten rows change the model input at that position.', phone ? '每个参考位置都会读入全部十行' : '只有 code 0 变成 token ID；十行 codes 都会改变该位置的模型输入。')}</text>
+      {:else if step === 3}
+        <text x={phone ? 18 : 30} y="30" class="title">{t('Fast AR fills one frame', 'Fast AR 补齐一帧')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'Fast AR = inner loop · blue = vocoder codes' : 'Fast AR = inner loop · orange = Slow token · blue = vocoder codes', phone ? 'Fast AR = 内层循环 · 蓝 = vocoder codes' : 'Fast AR = 内层循环 · 橙 = Slow token · 蓝 = vocoder codes')}</text>
+        {#if !phone}
+          <rect x="30" y="88" width="350" height="508" rx="12" fill="var(--bg)" stroke="var(--line)" />
+          <rect x="52" y="113" width="306" height="76" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="205" y="143" text-anchor="middle" class="result" style="fill:var(--gen)">Slow AR → raw token</text>
+          <text x="205" y="171" text-anchor="middle" class="small">{t('one choice on the time axis', '时间轴上的一个选择')}</text>
+          <line x1="205" y1="193" x2="205" y2="227" stroke="var(--accent)" stroke-width="2" marker-end="url(#fish-arrow)" />
+          <rect x="52" y="239" width="306" height="302" rx="10" fill="white" stroke="var(--accent)" />
+          <text x="70" y="267" class="result" style="fill:var(--accent)">Fast AR · {t('inner loop', '内层循环')}</text>
+          <rect x="70" y="287" width="270" height="61" rx="8" fill="var(--bg)" stroke="var(--line)" />
+          <text x="84" y="313" class="small strong">call 0 · {t('reads Slow’s numbers', '读取 Slow 算出的数')}</text>
+          <text x="84" y="336" class="small">{t('adds no vocoder row', '不增加 vocoder 行')}</text>
+          <text x="70" y="381" class="small strong">calls 1–9 · {t('one new code each', '每次选一个新 code')}</text>
+          {#each Array(FISH_FAST_REMAINING_ROWS) as _, i}
+            <rect x={70 + i * 29} y="400" width="24" height="47" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x={82 + i * 29} y="429" text-anchor="middle" class="code">c{i + 1}</text>
+          {/each}
+          <text x="205" y="493" text-anchor="middle" class="result">{FISH_FAST_INITIAL_CALLS} + {FISH_FAST_REMAINING_ROWS} = {FISH_FAST_CALLS_PER_FRAME} Fast {t('calls', '次调用')}</text>
+          <text x="205" y="523" text-anchor="middle" class="small">{t('no call after code 9', 'code 9 之后没有调用')}</text>
+          <rect x="410" y="88" width="280" height="508" rx="12" fill="var(--bg)" stroke="var(--line)" />
+          <text x="428" y="117" class="small strong">{t('ONE FRAME IN THE ENGINE', 'ENGINE 里的一帧')}</text>
+          <rect x="428" y="138" width="244" height="52" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="550" y="170" text-anchor="middle" class="small strong">row 0 · raw Slow token</text>
+          <rect x="428" y="207" width="244" height="52" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="550" y="239" text-anchor="middle" class="small strong">row 1 · code 0</text>
+          <rect x="428" y="276" width="244" height="82" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="550" y="310" text-anchor="middle" class="small strong">rows 2–10</text>
+          <text x="550" y="339" text-anchor="middle" class="small">codes 1–9 · Fast AR</text>
+          <text x="550" y="399" text-anchor="middle" class="result">1 + 1 + 9 = {FISH_ENGINE_ROWS_PER_FRAME} {t('rows', '行')}</text>
+          <line x1="550" y1="416" x2="550" y2="450" stroke="var(--accent)" stroke-width="2" marker-end="url(#fish-arrow)" />
+          <rect x="428" y="462" width="244" height="93" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="550" y="491" text-anchor="middle" class="small strong">{t('drop the raw Slow token', '去掉 Slow 原始 token')}</text>
+          <text x="550" y="529" text-anchor="middle" class="result">1 + 9 = {VOC_FISH_CODEBOOK_ROWS} → vocoder</text>
+        {:else}
+          <rect x="18" y="82" width="264" height="73" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="150" y="112" text-anchor="middle" class="result" style="fill:var(--gen)">Slow AR → raw token</text>
+          <text x="150" y="139" text-anchor="middle" class="small">{t('one time-axis choice', '时间轴上的一个选择')}</text>
+          <line x1="150" y1="159" x2="150" y2="185" stroke="var(--accent)" stroke-width="2" marker-end="url(#fish-arrow)" />
+          <rect x="18" y="197" width="264" height="282" rx="10" fill="white" stroke="var(--accent)" />
+          <text x="32" y="225" class="result" style="fill:var(--accent)">Fast AR · {t('inner loop', '内层循环')}</text>
+          <rect x="32" y="244" width="236" height="60" rx="8" fill="var(--bg)" stroke="var(--line)" />
+          <text x="44" y="270" class="small strong">call 0 · {t('reads Slow’s numbers', '读取 Slow 的数')}</text>
+          <text x="44" y="293" class="small">{t('adds no vocoder row', '不增加 vocoder 行')}</text>
+          <text x="32" y="337" class="small strong">calls 1–9 · {t('one code each', '每次一个 code')}</text>
+          {#each Array(FISH_FAST_REMAINING_ROWS) as _, i}
+            <rect x={32 + i * 26} y="355" width="21" height="44" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x={42.5 + i * 26} y="383" text-anchor="middle" class="code">c{i + 1}</text>
+          {/each}
+          <text x="150" y="438" text-anchor="middle" class="result">1 + 9 = {FISH_FAST_CALLS_PER_FRAME} Fast {t('calls', '次调用')}</text>
+          <text x="150" y="463" text-anchor="middle" class="small">{t('no call after code 9', 'code 9 后无调用')}</text>
+          <rect x="18" y="510" width="264" height="331" rx="11" fill="var(--bg)" stroke="var(--line)" />
+          <text x="32" y="537" class="small strong">{t('ENGINE · ONE FRAME', 'ENGINE · 一帧')}</text>
+          <rect x="32" y="555" width="236" height="45" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="150" y="583" text-anchor="middle" class="small strong">row 0 · raw Slow token</text>
+          <rect x="32" y="615" width="236" height="45" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="150" y="643" text-anchor="middle" class="small strong">row 1 · code 0</text>
+          <rect x="32" y="675" width="236" height="52" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="150" y="707" text-anchor="middle" class="small strong">rows 2–10 · codes 1–9</text>
+          <text x="150" y="763" text-anchor="middle" class="result">1 + 1 + 9 = {FISH_ENGINE_ROWS_PER_FRAME} {t('rows', '行')}</text>
+          <text x="150" y="798" text-anchor="middle" class="small strong">{t('drop raw token', '去掉原始 token')}</text>
+          <text x="150" y="826" text-anchor="middle" class="result">1 + 9 = {VOC_FISH_CODEBOOK_ROWS} → vocoder</text>
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Nonterminal frame · call 0 adds no code row' : 'Nonterminal frame. Fast call 0 supplies context; its output scores are not a vocoder choice.', phone ? '非结束帧 · 第 0 次调用不增加 code 行' : '非结束帧。Fast 第 0 次调用提供上下文，其输出分数不是 vocoder 选择。')}</text>
       {/if}
     </svg>
   </div>

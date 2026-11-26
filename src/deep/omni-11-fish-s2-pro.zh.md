@@ -134,3 +134,48 @@ $$
 Slow AR 的选择开启一帧。第 4 步打开内层 Fast AR 循环，补齐 vocoder 的另外九行。
 
 出处：`models/fishaudio_s2_pro/tokenizer.py:53-73,94-162`；`models/fishaudio_s2_pro/model_runner.py:288-356`；`models/fishaudio_s2_pro/fish_speech/models/text2semantic/audio_decoder.py:597-612`。
+
+## 第 4 步 · Fast AR 补齐内层九行
+
+> **一句话：** Fast AR 在一个 Slow 帧里启动，做出 vocoder 还缺的九个选择。
+
+### 图上是什么
+
+- Fast AR 是内层循环，只在一个音频帧里工作。
+- Slow AR 先产生原始语义 token，engine 再由它得到 vocoder 的 `code 0`。
+- Fast 第 0 次调用接收 Slow 算出的数，其输出分数不当作 vocoder 选择。
+- Fast 第 1–9 次调用各选一个剩余 code。
+- 橙色是 Slow 原始 token，蓝色是送进 vocoder 的十行。
+
+### 公式
+
+对一个非结束帧：
+
+$$
+raw = B + c_0,\qquad c_0 = raw - B
+$$
+
+$$
+N_{\text{Fast}} = 1 + 9 = 10,\quad
+N_{\text{engine}} = 1 + 1 + 9 = 11,\quad
+N_{\text{DAC}} = 1 + 9 = 10
+$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $raw$ | Slow AR 的语义词表 token | `sglang_model.py` 的 Slow 输出 |
+| $B$ | 附加语义词表起点，这个 checkpoint 是 151,678 | `fish_speech/tokenizer.py` |
+| $c_0$ | 从 $raw$ 得到的语义 DAC code | 本步公式 |
+| $N_{\text{Fast}}$ | 本帧 Fast 调用数，包含第 0 次 | Fast 循环 |
+| $N_{\text{engine}}$ | 保存行数：一个原始 token 加十个 DAC codes | `payload_types.py` |
+| $N_{\text{DAC}}$ | 去掉 $raw$ 后送入 vocoder 的行数 | `streaming_vocoder.py` |
+
+### 代入图上的数
+
+一次 Slow 选择得到一个 code 0，九次 Fast 选择得到 code 1–9。第 0 次 Fast 调用提供上下文，不增加一行，所以一共是十次 Fast 调用和十一行保存结果。
+
+### 接下来
+
+第 5 步跟着这些 codes 进入下一个 Slow 帧，比较两层循环分别记住什么。
+
+出处：`models/fishaudio_s2_pro/sglang_model.py:294-300,418-510`；`models/fishaudio_s2_pro/payload_types.py:35-50`；`models/fishaudio_s2_pro/streaming_vocoder.py:88-106`；`models/fishaudio_s2_pro/fish_speech/tokenizer.py:19-37`。

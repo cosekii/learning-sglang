@@ -134,3 +134,48 @@ The prompt places the reference transcript and semantic positions in the system 
 Slow AR's choice starts one frame. Step 4 opens the inner Fast AR loop that fills the other nine vocoder rows.
 
 Sources: `models/fishaudio_s2_pro/tokenizer.py:53-73,94-162`; `models/fishaudio_s2_pro/model_runner.py:288-356`; `models/fishaudio_s2_pro/fish_speech/models/text2semantic/audio_decoder.py:597-612`.
+
+## Step 4 · Fast AR fills the inner nine rows
+
+> **In one line:** Fast AR starts inside one Slow frame and makes the nine remaining vocoder choices.
+
+### On the stage
+
+- Fast AR is the inner loop: it stays inside one audio frame.
+- Slow AR first produces a raw semantic token. The engine derives vocoder `code 0` from that token.
+- Fast call 0 receives Slow's computed numbers. Its output scores are not used as a vocoder choice.
+- Fast calls 1–9 each choose one remaining code.
+- Orange marks Slow's raw token. Blue marks the ten rows sent to the vocoder.
+
+### Formula
+
+For a nonterminal frame,
+
+$$
+raw = B + c_0,\qquad c_0 = raw - B
+$$
+
+$$
+N_{\text{Fast}} = 1 + 9 = 10,\quad
+N_{\text{engine}} = 1 + 1 + 9 = 11,\quad
+N_{\text{DAC}} = 1 + 9 = 10
+$$
+
+| Symbol | What it is | Where it comes from |
+|---|---|---|
+| $raw$ | Slow AR's semantic-vocabulary token | Slow output in `sglang_model.py` |
+| $B$ | Added semantic-vocabulary base, 151,678 in this checkpoint | `fish_speech/tokenizer.py` |
+| $c_0$ | Semantic DAC code derived from $raw$ | This formula |
+| $N_{\text{Fast}}$ | Fast calls for this frame, including call 0 | Fast loop |
+| $N_{\text{engine}}$ | Stored rows: one raw token plus ten DAC codes | `payload_types.py` |
+| $N_{\text{DAC}}$ | Rows sent to the vocoder after dropping $raw$ | `streaming_vocoder.py` |
+
+### The numbers on the stage
+
+One Slow choice creates one derived code 0. Nine Fast choices create codes 1–9. The initial Fast call supplies context but no additional row, so there are ten Fast calls and eleven stored rows.
+
+### Next
+
+Step 5 follows these codes into the next Slow frame and compares what the two loops retain.
+
+Sources: `models/fishaudio_s2_pro/sglang_model.py:294-300,418-510`; `models/fishaudio_s2_pro/payload_types.py:35-50`; `models/fishaudio_s2_pro/streaming_vocoder.py:88-106`; `models/fishaudio_s2_pro/fish_speech/tokenizer.py:19-37`.
