@@ -221,3 +221,38 @@ Step 1's 75% covers raw INT4 payload only. Adding one BF16 scale gives 71.875% f
 The standard packed layout is not Marlin's working layout. The next step restores the buffer shape, loads new values and repacks them after every update.
 
 Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:101-114`; `THUDM/slime@58525eb986c66a271aa31077e17b8afebe704b4f`, `quantizer_compressed_tensors.py:47-85`.
+
+## Step 7 · Rebuild the Marlin layout after every update
+
+**One sentence.** After rollout pauses generation, it restores the buffer's original shape, receives new packed weights and scales, repacks them for the Marlin kernel and resumes generation.
+
+### On the stage
+
+- The pause-and-resize card only calls `resize_` to restore the buffer's cached original shape.
+- The load card overwrites that buffer with this round's packed weights and scales.
+- The Marlin card repacks weights and permutes scales into the layout required by the kernel.
+- The continue card resumes generation with the new weights. The `is_marlin_converted` flag moves from true to false and back to true.
+
+### Formula and symbols
+
+$$B_{\mathrm{old}}\xrightarrow{\operatorname{resize}}B_{\mathrm{shape}}\xrightarrow{\operatorname{load}}B_{\mathrm{new}}\xrightarrow{\operatorname{repack}}B_{\mathrm{Marlin}}$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $B_{\mathrm{old}}$ | Buffer in the previous round's Marlin layout | Current rollout state |
+| $B_{\mathrm{shape}}$ | Same buffer after restoring its original shape | `_original_shapes` and `resize_` |
+| $B_{\mathrm{new}}$ | Buffer after writing the new standard packed weights and scales | Training update path |
+| $B_{\mathrm{Marlin}}$ | Repacked buffer ready for the kernel | `gptq_marlin_moe_repack` and scale permutation |
+| $\operatorname{resize}$ | Shape change without an inverse transform of old values | `restore_weights_before_loading` |
+
+### The numbers on the stage
+
+This step adds no numerical example. The pinned order is `pause_generation`, `flush_cache`, shape restoration, new-tensor transfer, post-processing and `continue_generation`. Generation stays paused so it cannot use a mixture of old and new weights.
+
+“Restore” does not mean inverse permutation. The code only calls `param.resize_(orig_shape)` using `_original_shapes` and clears the converted flag. It does not dequantize or recover the previous weights. New values then overwrite the buffer, and post-processing calls `gptq_marlin_moe_repack` and `marlin_moe_permute_scales`. The converted flag also prevents double repacking.
+
+### Next
+
+The new layout is ready for Marlin. The next step opens its compute path: INT4 storage becomes BF16 matrix multiplication with FP32 accumulation.
+
+Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:80-103`; `THUDM/slime@58525eb986c66a271aa31077e17b8afebe704b4f`, `update_weight_from_distributed.py:73-132` and `docker/patch/latest/sglang.patch:732-823`.

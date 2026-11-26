@@ -236,6 +236,41 @@
         { en: '(64 − 18) ÷ 64 = 71.875% saved', zh: '(64 − 18) ÷ 64 = 省下 71.875%' },
       ],
     },
+  }, {
+    caption: 'Each update restores the buffer shape, loads new weights, then repacks them for Marlin.',
+    captionZh: '每次更新先恢复形状，再装入新权重。最后重排成 Marlin 布局。',
+    title: 'Marlin layout is rebuilt after every update', titleZh: '每次更新都重建 Marlin 布局',
+    subtitle: 'Marlin = the rollout kernel’s weight layout', subtitleZh: 'Marlin = rollout kernel 需要的权重布局',
+    foot: 'Restore means resize only; it does not recover old weight values.',
+    footZh: '恢复只调整形状，不会找回旧权重数值。',
+    legend: 'Orange = update work · blue = Marlin-ready state', legendZh: '橙 = 更新工作 · 蓝 = Marlin 可用状态',
+    flow: true,
+    nodes: [
+      { title: 'PAUSE + RESIZE', titleZh: '暂停 + 恢复形状', result: 'original shape', resultZh: '原来的形状', body: 'buffer shape only', bodyZh: '只改 buffer 形状', tone: 'orange', compact: true },
+      { title: 'LOAD NEW VALUES', titleZh: '装入新数值', result: 'weights + scales', resultZh: '权重 + scale', body: 'overwrite the buffer', bodyZh: '覆盖这个 buffer', tone: 'orange', compact: true },
+      { title: 'MARLIN REPACK', titleZh: 'MARLIN 重排', result: 'permute + repack', resultZh: '重排 + 重新打包', body: 'required kernel layout', bodyZh: 'kernel 需要的布局', tone: 'blue', compact: true },
+      { title: 'CONTINUE', titleZh: '继续生成', result: 'new weights ready', resultZh: '新权重可用', body: 'generation resumes', bodyZh: '恢复生成', tone: 'blue', compact: true },
+    ],
+    formulas: [
+      { en: 'restore = resize_(original_shape)', zh: '恢复 = resize_(original_shape)' },
+      { en: 'is_marlin_converted: true → false → true', zh: 'is_marlin_converted：true → false → true' },
+      { en: 'restore does not undo permutation or recover old values', zh: '恢复不会撤销排列，也不会找回旧值' },
+      { en: 'pause → load → repack → continue', zh: '暂停 → 装入 → 重排 → 继续' },
+      { en: 'Next: how does Marlin compute with 4-bit weights?', zh: '下一步：Marlin 怎样用 4 位权重计算？' },
+    ],
+    mobile: {
+      title: 'Repack every update for Marlin', titleZh: '每次更新都重排成 Marlin 布局',
+      subtitle: 'Marlin = the kernel’s weight layout', subtitleZh: 'Marlin = kernel 需要的权重布局',
+      foot: 'Restore resizes the buffer; old values stay gone.', footZh: '恢复只改 buffer 形状，旧值不会回来。',
+      legend: 'Orange = update · blue = Marlin-ready', legendZh: '橙 = 更新 · 蓝 = Marlin 可用',
+      formulas: [
+        { en: 'restore = resize_(original_shape)', zh: '恢复 = resize_(original_shape)' },
+        { en: 'converted flag: true → false → true', zh: 'converted 标记：true → false → true' },
+        { en: 'No inverse permutation · no old-value recovery', zh: '不撤销排列 · 不找回旧值' },
+        { en: 'pause → load → repack → continue', zh: '暂停 → 装入 → 重排 → 继续' },
+        { en: 'Next: how does Marlin compute?', zh: '下一步：Marlin 怎样计算？' },
+      ],
+    },
   }];
   let step = $state(0);
   $effect(() => {

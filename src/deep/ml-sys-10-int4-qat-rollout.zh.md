@@ -221,3 +221,38 @@ $$(64-18)/64=71.875\%$$
 打包后的标准排列还不能直接当成 Marlin 的工作布局。下一步看每次更新怎样恢复 buffer 形状、装入新值并重排。
 
 来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:101-114`；`THUDM/slime@58525eb986c66a271aa31077e17b8afebe704b4f` 的 `quantizer_compressed_tensors.py:47-85`。
+
+## 第 7 步 · 每次更新都重建 Marlin 布局
+
+**一句话。** Rollout 暂停生成后，先把 buffer 恢复原形状，再接收新打包权重和 scale，最后重排成 Marlin kernel 的布局并继续生成。
+
+### 图上是什么
+
+- 暂停和恢复形状卡只把 buffer `resize_` 到缓存的原形状。
+- 装入卡用本轮的新打包权重和 scale 覆盖 buffer。
+- Marlin 重排卡执行权重 repack 和 scale permutation，得到 kernel 需要的布局。
+- 继续卡表示新权重可用后恢复生成。`is_marlin_converted` 标记从 true 变 false，重排完成后再变 true。
+
+### 公式与符号
+
+$$B_{\mathrm{old}}\xrightarrow{\operatorname{resize}}B_{\mathrm{shape}}\xrightarrow{\operatorname{load}}B_{\mathrm{new}}\xrightarrow{\operatorname{repack}}B_{\mathrm{Marlin}}$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $B_{\mathrm{old}}$ | 上一轮 Marlin 布局的 buffer | rollout 当前状态 |
+| $B_{\mathrm{shape}}$ | 恢复原形状后的同一个 buffer | `_original_shapes` 与 `resize_` |
+| $B_{\mathrm{new}}$ | 写入本轮标准打包权重和 scale 的 buffer | 训练端更新通道 |
+| $B_{\mathrm{Marlin}}$ | 重排后供 kernel 使用的新 buffer | `gptq_marlin_moe_repack` 和 scale permutation |
+| $\operatorname{resize}$ | 只调整存储形状，不计算旧值的逆变换 | `restore_weights_before_loading` |
+
+### 代入图上的数
+
+本步没有新增数值算例。固定更新顺序是 `pause_generation`、`flush_cache`、恢复形状、传输新 tensor、post-process 和 `continue_generation`。生成暂停期间不能继续使用新旧混合的权重。
+
+“Restore”容易误读。代码只按 `_original_shapes` 调整 `param.resize_(orig_shape)` 并清除 converted 标记；它不做 inverse permutation，不反量化，也不恢复上一轮权重。随后写入的新值覆盖这个 buffer，post-process 再做 `gptq_marlin_moe_repack` 和 `marlin_moe_permute_scales`。converted 标记还防止重复 repack。
+
+### 接下来
+
+新布局已经可供 Marlin 使用。下一步打开计算路径，看 INT4 存储怎样变成 BF16 矩阵乘法，并在哪里使用 FP32 累加。
+
+来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:80-103`；`THUDM/slime@58525eb986c66a271aa31077e17b8afebe704b4f` 的 `update_weight_from_distributed.py:73-132` 和 `docker/patch/latest/sglang.patch:732-823`。
