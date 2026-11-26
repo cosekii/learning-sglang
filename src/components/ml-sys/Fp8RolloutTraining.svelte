@@ -64,6 +64,24 @@
       { en: `176 × (1/56) = ${N.FP8_EXAMPLE_RESTORED[1].toFixed(6)}`, zh: `176 × (1/56) = ${N.FP8_EXAMPLE_RESTORED[1].toFixed(6)}` },
       { en: `absolute error = |3.2 − 3.142857| = ${N.FP8_EXAMPLE_MIDDLE_ERROR.toFixed(6)}`, zh: `绝对误差 = |3.2 − 3.142857| = ${N.FP8_EXAMPLE_MIDDLE_ERROR.toFixed(6)}` },
     ],
+  }, {
+    caption: 'Rollout converts weights beforehand and activations when they appear. Some layers keep BF16.',
+    captionZh: 'Rollout 提前转换权重，激活值现算现转。有些层仍用 BF16。',
+    title: 'Rollout · 1 of 4: two inputs become FP8', titleZh: 'Rollout · 1/4：两类输入变成 FP8',
+    subtitle: 'dynamic quantization = activations are scaled as computation creates them',
+    subtitleZh: '动态量化 = 计算产生激活值时，再把它们缩放成 FP8',
+    foot: 'Implementation path, not a rollout latency measurement.', footZh: '实现路径，不是 rollout 延迟实测。',
+    legend: 'Orange = BF16 sources · blue = FP8 matrix multiplication', legendZh: '橙 = BF16 输入来源 · 蓝 = FP8 矩阵乘法',
+    nodes: [
+      { title: 'WEIGHTS', titleZh: '权重', result: 'BF16 → FP8 + scale', resultZh: 'BF16 → FP8 + scale', body: 'converted before rollout', bodyZh: 'rollout 前提前转换', tone: 'orange', compact: true },
+      { title: 'ACTIVATIONS', titleZh: '激活值', result: 'BF16 → FP8', resultZh: 'BF16 → FP8', body: 'converted when created', bodyZh: '计算产生时再转换', tone: 'orange' },
+      { title: 'MATRIX MULTIPLY', titleZh: '矩阵乘法', result: 'FP8 inputs', resultZh: 'FP8 输入', body: 'some layers stay BF16', bodyZh: '有些层仍用 BF16', tone: 'blue' },
+    ],
+    formulas: [
+      { en: 'weights: offline conversion · save their scales too', zh: '权重：提前转换 · 同时保存 scale' },
+      { en: 'activations = values made during compute · convert dynamically', zh: '激活值 = 计算时产生的值 · 出现时再转换' },
+      { en: 'eligible matrix multiplies receive both FP8 inputs', zh: '可转换的矩阵乘法接收两类 FP8 输入' },
+    ],
   }];
   let step = $state(0);
   $effect(() => {

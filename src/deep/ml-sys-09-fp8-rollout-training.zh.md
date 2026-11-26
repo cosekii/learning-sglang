@@ -73,3 +73,38 @@ $$16{,}384+4=16{,}388\ \text{字节},\qquad 16{,}384\times2=32{,}768\ \text{字�
 scale 让一组数能存进 FP8。下一步看 rollout 的两类输入：提前转换的权重，以及计算出现时再转换的激活值。
 
 来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/fp8/readme.md:66-124`；`THUDM/slime@15fbd2ef82c765fe22f78e288db2bb79ebf582bd` 的 `tools/convert_hf_to_fp8.py:31-71,142-146`；Qwen3-4B-FP8 的 `weight_block_size=[128,128]`。
+
+## 第 3 步 · 转换 rollout 的两类输入
+
+**一句话。** Rollout 提前转换可支持的权重，计算产生激活值时再动态量化，随后让支持的矩阵乘法使用两类 FP8 输入。
+
+### 图上是什么
+
+- 权重路从 BF16 checkpoint 开始。离线转换在 rollout 前写好 FP8 权重和对应 scale。
+- 激活值是计算过程中产生的值。第二条路在使用当前激活值时才量化，不会预先把所有激活值都存进 checkpoint。
+- 支持的矩阵乘法接收转换后的权重和当前激活值。embedding 和 `lm_head` 保留原精度。来源没有在这条路径中给出 FP8 KV cache。
+
+### 公式与符号
+
+$$(W_q,S_w)=\mathcal{Q}_w(W_{16}),\qquad (A_q,S_a)=\mathcal{Q}_a(A_{16})$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $W_{16}$ | 可转换的 BF16 checkpoint 权重 | 输入 checkpoint |
+| $\mathcal{Q}_w$ | 带 scale 的离线权重量化 | `convert_hf_to_fp8.py` |
+| $W_q,S_w$ | FP8 权重及对应 scale | 转换后的 checkpoint |
+| $A_{16}$ | 当前高精度激活值 | rollout 计算产生 |
+| $\mathcal{Q}_a$ | 动态激活量化 | rollout 支持的 FP8 矩阵乘法路径 |
+| $A_q,S_a$ | 当前 FP8 激活值及 scale | 需要时生成 |
+
+### 代入图上的数
+
+本步没有新增实测数值。若有 $P$ 个可转换权重数值，第 1 步的原始权重仍是 BF16 的 $2P$ 字节对 FP8 的 $P$ 字节，另加 scale 和未转换部分。scale 算式见第 2 步。这些式子不含 KV cache，也不表示所有层都使用 FP8。
+
+自带转换脚本跳过指定的 embedding 和 `lm_head` 张量。激活值支持属于矩阵乘法实现，不属于离线 checkpoint 转换器。
+
+### 接下来
+
+训练也需要 FP8 矩阵乘法，但它要在前向和反向中使用，同时保留高精度训练状态。下一步打开训练路径。
+
+来源：`THUDM/slime@15fbd2ef82c765fe22f78e288db2bb79ebf582bd` 的 `examples/low_precision/README.md:23-27` 和 `tools/convert_hf_to_fp8.py:179-188`；`Awesome-ML-SYS-Tutorial/rlhf/slime/fp8/readme.md:40-54`。

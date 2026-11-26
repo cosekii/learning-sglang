@@ -73,3 +73,38 @@ The block saves $32{,}768-16{,}388=16{,}380$ bytes, or 49.9878%. This does not i
 The scale makes storage possible. The next step follows the two kinds of FP8 inputs that rollout needs: weights converted beforehand and activations converted as they appear.
 
 Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fp8/readme.md:66-124`; `THUDM/slime@15fbd2ef82c765fe22f78e288db2bb79ebf582bd`, `tools/convert_hf_to_fp8.py:31-71,142-146`; Qwen3-4B-FP8 `weight_block_size=[128,128]`.
+
+## Step 3 · Convert rollout's two input kinds
+
+**One sentence.** Rollout converts eligible weights before serving and quantizes activations dynamically when computation creates them, then runs supported matrix multiplications with FP8 inputs.
+
+### On the stage
+
+- The weights path starts with a BF16 checkpoint. Offline conversion writes FP8 weights and their scales before rollout begins.
+- An activation is a value produced during computation. The second path quantizes each new activation when it is needed instead of storing all activations as FP8 in the checkpoint.
+- Supported matrix multiplications consume the converted weights and current activations. Embedding and `lm_head` keep their original precision. The source does not establish an FP8 KV cache in this path.
+
+### Formula and symbols
+
+$$(W_q,S_w)=\mathcal{Q}_w(W_{16}),\qquad (A_q,S_a)=\mathcal{Q}_a(A_{16})$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $W_{16}$ | BF16 checkpoint weights eligible for conversion | Input checkpoint |
+| $\mathcal{Q}_w$ | Offline weight quantization with scales | `convert_hf_to_fp8.py` |
+| $W_q,S_w$ | FP8 weights and their scales | Converted checkpoint |
+| $A_{16}$ | Current higher-precision activation | Produced during rollout computation |
+| $\mathcal{Q}_a$ | Dynamic activation quantization | Rollout's supported FP8 matrix-multiplication path |
+| $A_q,S_a$ | Current FP8 activation and scale | Produced when needed |
+
+### The numbers on the stage
+
+This step adds no new measured number. For $P$ eligible weight values, Step 1's raw payload remains $2P$ bytes in BF16 and $P$ bytes in FP8, plus scales and exclusions. Step 2 supplies the scale arithmetic. Neither formula includes KV cache or claims that every layer uses FP8.
+
+The shipped conversion skips named embedding and `lm_head` tensors. Its activation support belongs to the matrix-multiplication implementation, not to the offline checkpoint converter.
+
+### Next
+
+Training also needs FP8 matrix multiplications, but it must run them in forward and backward while retaining higher-precision training state. The next step opens that path.
+
+Sources: `THUDM/slime@15fbd2ef82c765fe22f78e288db2bb79ebf582bd`, `examples/low_precision/README.md:23-27` and `tools/convert_hf_to_fp8.py:179-188`; `Awesome-ML-SYS-Tutorial/rlhf/slime/fp8/readme.md:40-54`.
