@@ -18,6 +18,10 @@
     VOC_STATE_LATER_SLOT_US,
     VOC_STATE_FIRST_CHANGE_PERCENT,
     VOC_STATE_LATER_REDUCTION_PERCENT,
+    VOC_GRAPH_CONCURRENCY,
+    VOC_GRAPH_CONTROL_QPS,
+    VOC_GRAPH_REPLAY_QPS,
+    VOC_GRAPH_MEAN_QPS_GAIN_PERCENT,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -37,6 +41,9 @@
   }, {
     caption: 'Each exact shape needs its own graph. A missing key falls back to eager execution.',
     captionZh: '每种精确形状需要自己的 graph。找不到匹配 key 就回退 eager。',
+  }, {
+    caption: 'PR #1101’s H200 c16 test compared eager and graph replay. Mean throughput rose about 10.4%.',
+    captionZh: 'PR #1101 的 H200 c16 测试对照 eager 和 graph replay。平均吞吐提升约 10.4%。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -54,7 +61,7 @@
   const cur = $derived(steps[step]);
   const fmt = (value: number) => value.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [790, 850, 850, 740, 800][step] : [570, 630, 640, 570, 640][step]);
+  const H = $derived(phone ? [790, 850, 850, 740, 800, 650][step] : [570, 630, 640, 570, 640, 570][step]);
   const roadmap = $derived([
     { title: 'ready windows', body: 'decode them together', titleZh: '准备好的窗口', bodyZh: '放在一起解码' },
     { title: 'earlier decoder work', body: 'keep it for next time', titleZh: '之前算过的内容', bodyZh: '留给下个窗口' },
@@ -265,6 +272,23 @@
           <text x="150" y="701" text-anchor="middle" class="small">{t('The key decides whether replay fits.', 'key 决定能否重放。')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Constructed one-key catalogue · other keys may exist' : 'Constructed one-key catalogue; other captured keys may exist. A missing key runs eagerly.', phone ? '构造的单 key 目录 · 其他 key 可能存在' : '构造的单 key 目录；其他已 capture key 可能存在，缺少匹配 key 时 eager 运行。')}</text>
+      {:else if step === 5}
+        <text x={phone ? 18 : 30} y="30" class="title">{t('Measure graph replay · 3 of 3 · 2/2', '测量 graph replay · 3 / 3 · 2/2')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">c{VOC_GRAPH_CONCURRENCY} = {VOC_GRAPH_CONCURRENCY} {t('requests running concurrently', '个请求同时运行')}</text>
+        <text x={phone ? 18 : 30} y="79" class="label">{t(phone ? 'blue eager · orange graph · one scale' : 'blue = eager control · orange = graph replay · one shared scale', phone ? '蓝 eager · 橙 graph · 同比例' : '蓝 = eager 对照 · 橙 = graph replay · 同一比例')}</text>
+        <rect x={phone ? 18 : 30} y="108" width={phone ? 264 : 660} height={phone ? 319 : 319} rx="12" fill="var(--bg)" stroke="var(--line)" />
+        <text x={phone ? 32 : 48} y="137" class="small strong">{t(phone ? 'MEAN QPS' : 'MEAN THROUGHPUT · REQUESTS PER SECOND', phone ? '平均 QPS' : '平均吞吐 · 每秒请求数')}</text>
+        <text x={phone ? 32 : 48} y="181" class="small strong">{t('eager control', 'eager 对照')}</text>
+        <rect x={phone ? 32 : 180} y="198" width={(phone ? 155 : 390) * VOC_GRAPH_CONTROL_QPS / 0.7} height="45" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x={phone ? 264 : 660} y="227" text-anchor="end" class="result">{VOC_GRAPH_CONTROL_QPS.toFixed(3)}</text>
+        <text x={phone ? 32 : 48} y="287" class="small strong">graph replay</text>
+        <rect x={phone ? 32 : 180} y="304" width={(phone ? 155 : 390) * VOC_GRAPH_REPLAY_QPS / 0.7} height="45" rx="7" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x={phone ? 264 : 660} y="333" text-anchor="end" class="result">{VOC_GRAPH_REPLAY_QPS.toFixed(3)}</text>
+        <text x={W / 2} y="392" text-anchor="middle" class="result">0 → 0.7 {t(phone ? 'requests/s · one axis' : 'requests/s · identical axis for both bars', phone ? 'requests/s · 同轴' : 'requests/s · 两根横条同一坐标轴')}</text>
+        <text x={W / 2} y={phone ? 470 : 459} text-anchor="middle" class="result">({VOC_GRAPH_REPLAY_QPS.toFixed(3)} ÷ {VOC_GRAPH_CONTROL_QPS.toFixed(3)} − 1) × 100 = {fmt(VOC_GRAPH_MEAN_QPS_GAIN_PERCENT)}%</text>
+        <text x={W / 2} y={phone ? 505 : 495} text-anchor="middle" class="small strong">{t('Mean QPS derived from the two displayed means.', '由展示的两个平均 QPS 推导。')}</text>
+        <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t(phone ? 'PR #1101 · H200 BF16 · 128 requests per arm' : 'Historical PR #1101 · H200 BF16 · 128 measured requests per arm · two paired rounds.', phone ? 'PR #1101 · H200 BF16 · 每方案 128 请求' : '历史 PR #1101 · H200 BF16 · 每方案 128 个测量请求 · 两轮成对对照。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Talker cap 800 tokens · not a universal gain' : 'Talker capped at 800 tokens; matched audio work stayed within 0.076%. Not a universal speedup.', phone ? 'Talker 上限 800 token · 不是通用收益' : 'Talker 上限 800 token；匹配音频工作量相差不超过 0.076%。不是通用加速比。')}</text>
       {/if}
     </svg>
   </div>

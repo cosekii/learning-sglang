@@ -176,3 +176,39 @@ A missing or ineligible key uses eager execution. A runtime replay failure is di
 Exact keys make replay possible, but do not measure its value. The next step uses one historical H200 comparison to measure end-to-end throughput with and without Code2Wav graphs.
 
 Sources: `sglang_omni/models/qwen3_omni/components/code2wav_cuda_graph.py:85-117,264-282,673-723,804-888`; `sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:112-143,1307-1345`.
+
+## Step 6 · Measure graph replay at c16
+
+**One sentence.** PR #1101's historical H200 c16 comparison reports mean throughput of 0.575 requests/s without graphs and 0.635 requests/s with graphs, a 10.4% ratio between the displayed means.
+
+### On the stage
+
+- `c16` means 16 client requests running concurrently. `QPS` means completed requests per second. The two bars use one axis from 0 to 0.7 requests/s.
+- The eager control completes 0.575 requests/s; graph replay completes 0.635 requests/s. Blue is the eager control and orange is graph replay.
+- The H200 BF16 protocol used a fresh server per arm, temperature 0, seed 777 and an 800-token Talker cap. Each arm measured 128 requests after 16 warmups, with two alternating A/B pairs.
+- All measured requests and warmups succeeded. Matched total audio work stayed within 0.076%, so the comparison did not simply produce much less audio in one arm.
+- This is a historical result on ancestor `b4159d2a`, not a new measurement of the pinned current source or a promise for another model, GPU or concurrency.
+
+### Formula and symbols
+
+$$G_{\mathrm{mean}}=\left(\frac{q_{\mathrm{graph}}}{q_{\mathrm{eager}}}-1\right)100$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $q_{\mathrm{eager}}$ | Mean throughput without Code2Wav graphs | PR #1101, 0.575 requests/s |
+| $q_{\mathrm{graph}}$ | Mean throughput with Code2Wav graphs | PR #1101, 0.635 requests/s |
+| $G_{\mathrm{mean}}$ | Ratio between the two displayed mean QPS values | Calculated here |
+
+### The numbers on the stage
+
+$$G_{\mathrm{mean}}=\left(\frac{0.635}{0.575}-1\right)100\approx10.4\%$$
+
+PR #1101 separately reports a paired delta of 10.55%. That metric averages the two per-pair percent changes; it is not the ratio of the two displayed means. The stage labels its 10.4% calculation to keep those quantities distinct.
+
+The same historical table reports p50 first-audio time falling 6.27% at c16. A separate H100 c8 experiment had mean first-audio change of only +0.02%, so these results do not establish a universal first-audio improvement.
+
+### Next
+
+The Qwen examples now cover all three mechanisms. The next step compares them with MiniCPM-o and Fish S2 Pro so similarly named optimizations do not blur different implementations.
+
+Sources: [public PR #1101 and its H200 protocol](https://github.com/sgl-project/sglang-omni/pull/1101#issuecomment-5040716545).

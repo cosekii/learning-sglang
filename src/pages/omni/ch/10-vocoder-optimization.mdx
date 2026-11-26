@@ -23,6 +23,8 @@ Step 4 quotes [public PR #2909](https://github.com/sgl-project/sglang-omni/pull/
 
 Step 5 follows `sglang_omni/models/qwen3_omni/components/code2wav_cuda_graph.py:85-117,264-282,673-723,804-888` and `code2wav_scheduler.py:112-143,1307-1345`. `GraphKey` contains batch size, frame count and `window`/`first`/`next` kind. The one-key catalogue is constructed: A replays an exact match, while B changes the row count and misses this catalogue. Other real keys may have their own graphs. Missing or ineligible keys run eagerly; a runtime replay failure disables graphs and re-raises instead of silently retrying eagerly. Capture checks exact output equality before publication.
 
+Step 6 quotes [public PR #1101's historical H200 c16 sweep](https://github.com/sgl-project/sglang-omni/pull/1101#issuecomment-5040716545): eager control 0.575 requests/s, graph replay 0.635 requests/s. Their ratio gives the stage's 10.4% mean-QPS increase. The PR's separate 10.55% paired delta averages per-pair percent changes, so it is not recomputed from the two displayed means. The protocol used ancestor `b4159d2a`, BF16, fresh servers, temperature 0, seed 777, an 800-token Talker cap, 16 warmups and 128 measured requests per arm, and two alternating pairs. Matched audio work stayed within 0.076%. This is not a current-source or universal speedup claim.
+
 Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`. The chapter reads source and public results; it does not run a model or benchmark.
 
 </details>
@@ -39,6 +41,8 @@ Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37
 第 4 步引用[公开 PR #2909](https://github.com/sgl-project/sglang-omni/pull/2909)，条件是 Qwen3-Omni 同卡 BF16、H200、8 行、一次 graph replay、20 次取中位数。首窗口写入状态，从 3,656.3 升到 3,992.0 µs；后续窗口从 10,777.5 降到 4,255.3 µs。两边都用 graph replay，所以这是保留状态对照，不是 graph 对 eager。9.2% 增幅和 60.5% 降幅由展示的耗时推导，只适用于窗口 GPU 时间。PR #2909 的端到端 c64 QPS 增幅是 2.8%。
 
 第 5 步依据 `sglang_omni/models/qwen3_omni/components/code2wav_cuda_graph.py:85-117,264-282,673-723,804-888` 和 `code2wav_scheduler.py:112-143,1307-1345`。`GraphKey` 包含 batch 大小、帧数和 `window`/`first`/`next` 类型。单 key 目录是构造示例：A 完全匹配后 replay，B 改变行数，在此目录 miss。真实其他 key 可能有自己的 graph。缺少或不合格 key 走 eager；运行时 replay 失败会禁用 graphs 并抛错，不会悄悄重试 eager。capture 发布前检查输出完全相等。
+
+第 6 步引用[公开 PR #1101 的历史 H200 c16 对照](https://github.com/sgl-project/sglang-omni/pull/1101#issuecomment-5040716545)：eager 对照 0.575 requests/s，graph replay 0.635 requests/s。两者之比得到图上的 10.4% 平均 QPS 增幅。PR 另报的 10.55% paired delta 是逐对百分比变化的均值，不能由两个展示均值重算。协议使用 ancestor `b4159d2a`、BF16、新 server、temperature 0、seed 777、Talker 上限 800 token，每方预热 16 个并测量 128 个请求，做两轮交替对照。匹配音频工作量相差不超过 0.076%。这不是当前源码或通用加速声明。
 
 本章代码出处固定到 `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`。本章只读源码和公开结果，没有运行模型或 benchmark。
 

@@ -176,3 +176,39 @@ $K_A$ 等于目录里的 key，$K_B$ 的第一个字段不同。replay 把 codes
 精确 key 让 replay 可行，却没有说明收益。下一步用一次历史 H200 对照，测量开关 Code2Wav graph 的端到端吞吐量。
 
 来源：`sglang_omni/models/qwen3_omni/components/code2wav_cuda_graph.py:85-117,264-282,673-723,804-888`；`sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:112-143,1307-1345`。
+
+## 第 6 步 · 测量 c16 的 graph replay
+
+**一句话。** PR #1101 的历史 H200 c16 对照中，eager 的平均吞吐是 0.575 requests/s，graph replay 是 0.635 requests/s，两个均值之比提升 10.4%。
+
+### 图上是什么
+
+- `c16` 是 16 个客户端请求同时运行，`QPS` 是每秒完成的请求数。两根横条使用 0 到 0.7 requests/s 的同一坐标轴。
+- eager 对照每秒完成 0.575 个请求，graph replay 每秒完成 0.635 个。蓝色是 eager 对照，橙色是 graph replay。
+- H200 BF16 协议为每个方案启动新 server，temperature 为 0，seed 为 777，Talker 上限 800 token。每方预热 16 个请求后测量 128 个，做两轮交替 A/B 对照。
+- 所有测量和预热请求都成功，匹配音频总工作量相差不超过 0.076%，不是某一边少生成很多音频造成的差异。
+- 这是 ancestor `b4159d2a` 的历史结果，不是对当前固定源码的新实测，也不保证其他模型、GPU 或并发有同样收益。
+
+### 公式与符号
+
+$$G_{\mathrm{mean}}=\left(\frac{q_{\mathrm{graph}}}{q_{\mathrm{eager}}}-1\right)100$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $q_{\mathrm{eager}}$ | 不用 Code2Wav graph 的平均吞吐 | PR #1101，0.575 requests/s |
+| $q_{\mathrm{graph}}$ | 使用 Code2Wav graph 的平均吞吐 | PR #1101，0.635 requests/s |
+| $G_{\mathrm{mean}}$ | 展示的两个平均 QPS 之比 | 本步计算 |
+
+### 代入图上的数
+
+$$G_{\mathrm{mean}}=\left(\frac{0.635}{0.575}-1\right)100\approx10.4\%$$
+
+PR #1101 另报 paired delta 10.55%。它取两轮各自百分比变化的均值，不是展示均值的比。图上明确标出 10.4% 的计算口径，避免混淆。
+
+同一张历史表还报告 c16 的 p50 首音时间下降 6.27%。另一项 H100 c8 实验的首音平均变化只有 +0.02%，所以这些结果不能证明首音普遍改善。
+
+### 接下来
+
+Qwen 示例已经覆盖三种机制。下一步对照 MiniCPM-o 和 Fish S2 Pro，避免把名字相近的优化误认为同一种实现。
+
+来源：[公开 PR #1101 及 H200 实验协议](https://github.com/sgl-project/sglang-omni/pull/1101#issuecomment-5040716545)。
