@@ -155,3 +155,34 @@ $$R_{\text{all}}=S+M,\qquad R_{\text{bucket}}=S+b,\qquad b<M$$
 分桶限制了显存，但参数仍逐个变化。下一步画出更新边界，防止生成过程读到一半旧、一半新的模型。
 
 来源：`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-1.md:254-272,280-296,329-395`。
+
+## 第 6 步 · 关闭版本边界后再开始 rollout
+
+**一句话。** 等当前读者排空、每个参数更新完、旧 KV 失效并且更新调用结束后，才能恢复 rollout。
+
+### 图上是什么
+
+- 蓝色是完整的 v0 和 v1，红色虚线框里的新旧混合不能用于生成。
+- 四个框依次执行：排空读者、更新每个参数、等待完成，再开始第 1 轮。
+- v0 产生的缓存属于旧权重。slime 在分桶前重置 prefix cache，verl 在最后一个参数时请求 flush。
+
+### 公式与符号
+
+$$U=\bigwedge_{i=1}^{n}u_i,\qquad \text{开始 rollout}\Rightarrow U$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $u_i$ | 第 $i$ 个参数已经更新完 | 每个参数的装入边界 |
+| $n$ | 需要更新的参数总数 | 被替换的模型 |
+| $U$ | 所有必需参数都已更新 | 全部 $u_i$ 的 AND |
+| $\bigwedge$ | 对所有参数做逻辑 AND | 本步记号 |
+
+### 代入图上的数
+
+图中不指定参数总数。只要一个 $u_i$ 失败，模型就可能只更新了一部分，必须弃用，不能继续 rollout。这条规则不表示图中的实现已经提供崩溃安全事务。
+
+### 接下来
+
+这个边界保证生成不会读到混合版本，却没有说明等待在哪里。下一步给外部调用计时，找出 `ModelRunner` 外面固定的 CPU sleep。
+
+来源：`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-1.md:268-287`；`verl/workers/sharding_manager/fsdp_sglang.py:98-135,164-188`；`Awesome-ML-SYS-Tutorial/sglang/latency-accelerate-for-weight-updates/readme.md:451-458,1011-1058`。

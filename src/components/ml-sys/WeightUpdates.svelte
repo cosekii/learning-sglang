@@ -117,6 +117,26 @@
       { en: 'not SGLang + the whole training model', zh: '不是 SGLang + 整套训练模型' },
       { en: 'upload → assemble → send → wait → clear', zh: '拿回 → 拼好 → 发送 → 等待 → 清空' },
     ],
+  }, {
+    caption: 'Generation must not read a half-updated model. The next rollout waits for every parameter and the old cache.',
+    captionZh: '生成不能读到只更新一半的模型。下一轮要等参数全部更新，并清掉旧缓存。',
+    title: 'Replace one whole version, never a mixture', titleZh: '换成完整的新版本，不能新旧混用',
+    subtitle: 'version boundary = generation pauses while any parameter is changing', subtitleZh: '版本边界 = 只要还有参数在变化，生成就暂停',
+    foot: 'Slime clears old KV before buckets; verl requests a flush on the last parameter.', footZh: 'slime 在分桶前清旧 KV；verl 在最后一个参数时请求清理。',
+    mobileTitle: 'No old-and-new mixture', mobileTitleZh: '不能新旧混用',
+    mobileSubtitle: 'generation pauses during replacement', mobileSubtitleZh: '替换期间暂停生成',
+    mobileFoot: 'Old KV also must be invalidated.', mobileFootZh: '旧 KV 也必须失效。',
+    mobile: [
+      { title: 'ROLLOUT 0 STOPS', titleZh: '第 0 轮停止', body: 'no new generation', bodyZh: '不再生成', tone: 'blue' },
+      { title: 'DRAIN ACTIVE REQUESTS', titleZh: '等当前请求结束', body: 'no reader inside the update', bodyZh: '更新时没有读者', tone: 'orange' },
+      { title: 'UPDATE EVERY PARAMETER', titleZh: '更新每个参数', body: 'invalidate KV made under v0', bodyZh: '让 v0 产生的 KV 失效', tone: 'orange' },
+      { title: 'AWAIT COMPLETION', titleZh: '等待全部完成', body: 'discard a partial failure', bodyZh: '部分失败就整套弃用', tone: 'orange' },
+      { title: 'ROLLOUT 1 USES v1', titleZh: '第 1 轮使用 v1', body: 'one complete version', bodyZh: '完整的同一版本', tone: 'blue' },
+    ],
+    formulas: [
+      { en: 'start after every parameter updates', zh: '每个参数都更新完，才开始' },
+      { en: 'never generate with v0 + v1 mixed', zh: '绝不能新旧权重混着生成' },
+    ],
   }];
   let step = $state(0);
   $effect(() => {
@@ -133,7 +153,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [480, 620, 510, 620, 620][step] : [410, 480, 460, 500, 490][step]);
+  const H = $derived(phone ? [480, 620, 510, 620, 620, 640][step] : [410, 480, 460, 500, 490, 490][step]);
 </script>
 
 <figure class="viz">
@@ -282,6 +302,35 @@
         <text x="360" y="378" text-anchor="middle" class="code">upload → assemble → convert → send handles → ray.get → clear</text>
         <text x="360" y="413" text-anchor="middle" class="small strong">{t('ray.get finishes before the converted bucket is cleared.', 'ray.get 完成后，才清空这一桶的转换结果。')}</text>
         <text x="360" y="447" text-anchor="middle" class="small">{t('Blue = rollout state · orange = training weights being updated', '蓝 = rollout 状态 · 橙 = 正在更新的训练权重')}</text>
+      {:else if step === 5}
+        <rect x="35" y="90" width="190" height="121" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="130" y="124" text-anchor="middle" class="section">{t('BEFORE', '更新前')}</text>
+        <text x="130" y="165" text-anchor="middle" class="big">v0</text>
+        <text x="130" y="191" text-anchor="middle" class="small">{t('one complete version', '完整的一套旧权重')}</text>
+        <line x1="225" y1="150" x2="255" y2="150" stroke="var(--gen)" stroke-width="2.5" marker-end="url(#update-arrow-orange)" />
+        <rect x="265" y="90" width="190" height="121" rx="12" fill="var(--bg)" stroke="var(--eos)" stroke-dasharray="6 4" />
+        <text x="360" y="124" text-anchor="middle" class="section">{t('UPDATING', '更新中')}</text>
+        <text x="360" y="160" text-anchor="middle" class="result">v0 + v1</text>
+        <text x="360" y="191" text-anchor="middle" class="small strong">{t('GENERATION PAUSED', '生成暂停')}</text>
+        <line x1="455" y1="150" x2="485" y2="150" stroke="var(--gen)" stroke-width="2.5" marker-end="url(#update-arrow-orange)" />
+        <rect x="495" y="90" width="190" height="121" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="590" y="124" text-anchor="middle" class="section">{t('AFTER', '更新后')}</text>
+        <text x="590" y="165" text-anchor="middle" class="big">v1</text>
+        <text x="590" y="191" text-anchor="middle" class="small">{t('one complete version', '完整的一套新权重')}</text>
+        <text x="360" y="244" text-anchor="middle" class="small strong">{t('KV produced under v0 must also become invalid.', 'v0 产生的 KV 也必须失效。')}</text>
+        {#each [
+          { x: 45, title: 'DRAIN', titleZh: '等待排空', body: 'active requests', bodyZh: '当前请求' },
+          { x: 215, title: 'UPDATE ALL', titleZh: '全部更新', body: 'every parameter', bodyZh: '每个参数' },
+          { x: 385, title: 'AWAIT', titleZh: '等待完成', body: 'the whole update', bodyZh: '整个更新' },
+          { x: 555, title: 'ROLLOUT 1', titleZh: '第 1 轮', body: 'use v1', bodyZh: '使用 v1' },
+        ] as node, i}
+          <rect x={node.x} y="280" width="125" height="90" rx="10" fill={i === 3 ? 'var(--accent-soft)' : 'var(--gen-soft)'} stroke={i === 3 ? 'var(--accent)' : 'var(--gen)'} />
+          <text x={node.x + 62.5} y="311" text-anchor="middle" class="small strong">{t(node.title, node.titleZh)}</text>
+          <text x={node.x + 62.5} y="342" text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
+          {#if i < 3}<line x1={node.x + 125} y1="325" x2={node.x + 158} y2="325" stroke="var(--gen)" stroke-width="2.5" marker-end="url(#update-arrow-orange)" />{/if}
+        {/each}
+        <text x="360" y="411" text-anchor="middle" class="small strong">{t('If any parameter fails, discard the partially updated model.', '只要一个参数失败，就弃用这套只更新了一部分的模型。')}</text>
+        <text x="360" y="447" text-anchor="middle" class="small">{t('Blue = complete versions · orange = update work · red outline = unsafe mixture', '蓝 = 完整版本 · 橙 = 更新工作 · 红框 = 危险的新旧混合')}</text>
       {/if}
       {#if cur.foot2}
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t(cur.foot2, cur.foot2Zh ?? cur.foot2)}</text>

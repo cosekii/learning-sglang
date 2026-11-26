@@ -155,3 +155,34 @@ No numeric $S$, $M$ or $b$ is available in the source. The valid conclusion is t
 Buckets bound memory, but parameters still change one by one. The next step draws the boundary that keeps generation from observing a half-old, half-new model.
 
 Source: `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-1.md:254-272,280-296,329-395`.
+
+## Step 6 · Close the version boundary before rollout
+
+**One sentence.** Rollout resumes only after active readers drain, every parameter updates, old KV state becomes invalid and the update call completes.
+
+### On the stage
+
+- Complete `v0` and `v1` models are blue. The red-outlined mixture is not a valid generation state.
+- The four boxes enforce an order: drain readers, update every parameter, await completion, then start rollout 1.
+- Cache produced under `v0` belongs to the old weights. Slime resets prefix caches before buckets; verl requests a flush with the last parameter.
+
+### Formula and symbols
+
+$$U=\bigwedge_{i=1}^{n}u_i,\qquad \text{start rollout}\Rightarrow U$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $u_i$ | Parameter $i$ has finished updating | Per-parameter load boundary |
+| $n$ | Required parameter count | Model being replaced |
+| $U$ | Every required parameter has finished | AND of all $u_i$ |
+| $\bigwedge$ | Logical AND over all parameters | Notation introduced here |
+
+### The numbers on the stage
+
+The figure assigns no parameter count. If any $u_i$ fails, the model may contain a partial update and must be discarded rather than used for rollout. This rule does not claim that the pictured implementations provide crash-safe transactions.
+
+### Next
+
+This boundary makes replacement safe to read, but it says nothing about where the wait lies. The next step times the outer call and finds fixed CPU-side sleeps outside `ModelRunner`.
+
+Sources: `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-1.md:268-287`; `verl/workers/sharding_manager/fsdp_sglang.py:98-135,164-188`; `Awesome-ML-SYS-Tutorial/sglang/latency-accelerate-for-weight-updates/readme.md:451-458,1011-1058`.
