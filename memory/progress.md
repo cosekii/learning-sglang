@@ -4,6 +4,7 @@
 
 ## 本轮记录
 
+- 复审确认 Learning ML Systems 第 7 章文本和机械门槛真实通过，但 8/8 步只有 R1–R5，未达到 12/12。停止文字重写；另行尝试 `explore` 视觉复审仍返回 `NO_IMAGE_INPUT`，本章定为 **text-complete / visual-blocked-on-owner**，`ready` 改为 `false`，R6、原 #4／#5 和总分继续不记。按「两轮还上不去就换单元」规则，下一单元明确为 `08-fsdp2-training-backend`。核查本 lane 的 ML Systems 提交只涉及第 7 章，没有其他 k2 章节的视觉总分需要追溯；其他 lane 的历史视觉分不据此改动。
 - 01:45 Inside Voxt 第 8 章《你的小词典》7 步内容完成：同一词条分画语音提示、别名替换、术语表、备注四个去处与各自开关；别名替换先于清理、模型不在仍有效；术语表 ≤30 整份 / >30 只发提到的最多 60 行 2000 字符；备注作为单独一层进 system 提示。文本与机械门槛全过（build、本章 transcript、readability、deep-check、zh-check、中英三种宽度 mobile、中文逐步字号），0 内容洞；R6/#4/#5 与截图目测待有图片输入的复审者，本章保持待目视。
 - 01:39 继续修 Learning ML Systems 第 7 章：独立文本冷读发现 11 项问题，分别修第 1、3、4、5、6、7、8 步的单位歧义、接收空间、两种 rank 0、句柄访问范围、SGLang 装入等待、未指定桶数、旧 KV 复用、两个深入讲解符号表和示例 GPU 数量。复审确认 11 项全部解决；按同一地图／流程标准校准后，**8/8 步 R1–R5 为 10/10**，非视觉原 12 项无新增扣分，**R6 与总分继续不记**。本章仍未完成，等待 vision-capable reviewer 或主人做视觉验收。
 - 七个步骤分别提交并推送至 `2de62ec`。`build`、本章 `transcript`、全章 `readability`、中英三种宽度 `mobile`、中文目标步字号、`deep-check 07`、本章 `zh-check`、16 个深入讲解渲染断言和 `git diff --check` 通过。最终 48 张图位于 `/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-lyljndnh/opencode/ls-k2-mlsys07/`，文件齐全；主模型和独立代理均不支持图片输入，未声称目测通过。只跑本章检查，未跑全站回归、真实训练、权重传输或性能基准。本轮类型：**修旧**；下一章是 `08-fsdp2-training-backend`。
@@ -142,7 +143,7 @@
 | 04 | 04-gpu-communication | 完成：7/7 步易读满分 | 24.00 |
 | 05 | 05-distributed-serving | 完成：7/7 步易读满分 | 24.00 |
 | 06 | 06-slime-rollout-loop | 完成：8/8 步易读满分 | 24.00 |
-| 07 | 07-weight-updates | 未完成：8 步已制作，R1–R5 为 10/10，含带宽与像素对照；R6 与视觉终检待主人 | —（视觉后评） |
+| 07 | 07-weight-updates | text-complete / visual-blocked-on-owner：8 步 R1–R5 为 10/10；R6、原 #4／#5 与视觉终检待主人；`ready: false`，不再做文字轮次 | —（视觉后评） |
 | 08 | 08-fsdp2-training-backend | 规划 | — |
 | 09 | 09-fp8-rollout-training | 规划 | — |
 | 10 | 10-int4-qat-rollout | 规划 | — |
