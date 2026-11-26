@@ -324,7 +324,7 @@ JSONL supports the whole `Row` schema, not every key on every row. Recordings, w
 
 ### Next
 
-The other format, Markdown, writes far fewer fields. Step 8 shows its lines.
+The next step shows the other export format, which writes far fewer fields.
 
 ## Step 8 · Markdown export: a day section
 
