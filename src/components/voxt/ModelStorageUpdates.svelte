@@ -16,7 +16,6 @@
     VOXT_APP_MB,
     VOXT_DOWNLOAD_RESERVE_GB,
     VOXT_SERVER_IDLE_MINUTES,
-    VOXT_SERVER_START_TIMEOUT_S,
     VOXT_UPDATE_CHECK_HOURS,
     VOXT_MODEL_COMMIT,
   } from '../../voxt/numbers';
@@ -33,8 +32,8 @@
     caption: 'One download job has four parts: resume, room, checks, and needs.',
     captionZh: '一个下载任务有四部分：续传、空位、校验和所需模型。',
   }, {
-    caption: 'One server lifetime runs from first use through idle waiting to unload.',
-    captionZh: '服务器的一生：首次使用、空闲等待，最后卸载。',
+    caption: 'Using a model starts its server. Ten idle minutes stop the server; its files stay.',
+    captionZh: '使用模型会启动服务器。空闲 10 分钟会停服务器，文件留着。',
   }, {
     caption: 'An app update has two routes; neither touches the model folder.',
     captionZh: '应用更新有两条路，都不动模型文件夹。',
@@ -52,8 +51,8 @@
     en: 'One download job brings the model and the small models it needs. A cancel keeps the bytes already here and the next start continues. LFS files are checked with SHA-256 and other files with git blob IDs; a mismatch is an error. Two gigabytes must stay free. The 1.24 megabyte Silero voice detector finds speech and rides in the same job.',
     zh: '一个下载任务带来模型和它需要的小模型。取消后已经下到的字节留着，下次接着下。LFS 文件用 SHA-256 校验，其他文件用 git blob ID，不对就报错。磁盘上要留 2 GB 空位。1.24 MB 的 Silero 语音检测器负责找出语音，也在同一个任务里。',
   }, {
-    en: 'The model files stay on disk. Using a model starts the speech server, a separate program that loads the model into memory. The Silero voice detector has its own small server. Automatic mode stops a server after ten idle minutes; Settings offers other durations or keep until quit. The next use starts it again, but a server not ready in 180 seconds is stopped. Delete requests unloading and then file removal without waiting; a busy server exits after its uses end.',
-    zh: '模型文件留在磁盘上。用模型会启动语音服务器，它是把模型读进内存的另一个程序。Silero 语音检测器有自己的小服务器。自动模式让空闲十分钟后退出，设置里可以改时间或一直留到退出应用。下次用会再启动；180 秒还没就绪就停止。删除先请求卸载，再请求删文件，不等待进程退出；忙碌的服务器等这次用完再退出。',
+    en: 'The model files stay on disk. Using a model starts the speech server, a separate program that loads the model into memory. The Silero voice detector has its own small server. Automatic mode stops the speech server after ten idle minutes; Settings offers 5, 15, 30 or 60 minutes, or keep until quit. The next use starts it again. Delete requests unloading and then file removal without waiting; a busy server exits after its uses end.',
+    zh: '模型文件留在磁盘上。用模型会启动语音服务器，它是把模型读进内存的另一个程序。Silero 语音检测器有自己的小服务器。自动模式让空闲十分钟的语音服务器退出；设置里可以选 5、15、30 或 60 分钟，也可以一直留到退出应用。下次用会再启动。删除先请求卸载，再请求删文件，不等待进程退出；忙碌的服务器等这次用完再退出。',
   }, {
     en: "Release builds with Voxt's signed update feed check daily by default, and installation is manual by default. The updater replaces the app bundle while the old version runs. Until a restart the helper on disk is the new version, so the supervisor refuses to start it and a card asks to restart. Release builds without a feed offer an external installer instead. The model folder is not touched.",
     zh: '带 Voxt 签名更新源的发布构建默认每天检查，默认由用户安装。更新器在旧版本运行时替换应用包。重启之前，磁盘上的 helper 已经是新版本，管理器就不启动它，卡片请用户重启。没有更新源的发布构建改为提供外部安装包。模型文件夹不动。',
@@ -312,12 +311,12 @@
           <text x="529" y="96" text-anchor="middle" class="label amber">{t('IN MEMORY', '在内存里')}</text>
           <text x="529" y="122" text-anchor="middle" class="mono">qwen3_asr_server</text>
           <text x="529" y="148" text-anchor="middle" class="detail">{t('loads the model from the folder', '从这个文件夹读模型')}</text>
-          <text x="529" y="172" text-anchor="middle" class="detail">{t('one ASR model; VAD runs beside it', '一个 ASR 模型；VAD 在旁边运行')}</text>
+          <text x="529" y="172" text-anchor="middle" class="detail">{t('VAD has its own small server', 'VAD 有自己的小服务器')}</text>
           <text x="529" y="196" text-anchor="middle" class="label">{t(`Automatic: idle ${VOXT_SERVER_IDLE_MINUTES} min → exits`, `自动模式：空闲 ${VOXT_SERVER_IDLE_MINUTES} 分钟 → 退出`)}</text>
-          <text x="529" y="222" text-anchor="middle" class="detail">{t(`next use → restart; ${VOXT_SERVER_START_TIMEOUT_S} s (3 min) not ready → stop`, `下次用 → 重启；${VOXT_SERVER_START_TIMEOUT_S} 秒（3 分钟）未就绪 → 停止`)}</text>
+          <text x="529" y="222" text-anchor="middle" class="detail">{t('next use → restart', '下次用 → 再启动')}</text>
 
           <rect x="20" y="284" width="680" height="110" rx="10" fill="var(--bg)" stroke="var(--line)" />
-          <text x="40" y="308" class="label">{t('DELETE A MODEL', '删一个模型')}</text>
+          <text x="40" y="308" class="label">{t('DELETE MODEL FILES', '删除模型文件')}</text>
           <rect x="60" y="324" width="150" height="44" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="135" y="351" text-anchor="middle" class="label">{t('1 · request unload', '1 · 请求卸载')}</text>
           <line x1="214" y1="346" x2="242" y2="346" stroke="var(--muted)" stroke-width="2" marker-end="url(#ms-arrow)" />
@@ -325,8 +324,7 @@
           <text x="338" y="351" text-anchor="middle" class="label">{t('2 · request delete', '2 · 请求删除')}</text>
           <text x="448" y="342" class="detail">{t('no wait for the process;', '不等待进程退出；')}</text>
           <text x="448" y="362" class="detail">{t('a busy server exits after its uses', '忙碌的服务器等用完再退出')}</text>
-          <text x="40" y="388" class="detail">{t('idle server: stop now · busy server: stop after use', '空闲服务器：现在停 · 忙碌服务器：用完再停')}</text>
-          <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('Settings: 5–60 min, or keep until quit.', '设置：5–60 分钟，或一直留到退出应用。')}</text>
+          <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('Settings: 5, 15, 30, 60 min, or keep until quit.', '设置：5、15、30 或 60 分钟，或一直留到退出应用。')}</text>
           <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Sources: internal/omni/runtime.go, internal/local/library.go.', '出处：internal/omni/runtime.go、internal/local/library.go。')}</text>
         {:else}
           <rect x="15" y="64" width="270" height="170" rx="10" fill="var(--bg)" stroke="var(--accent)" />
@@ -340,13 +338,12 @@
           <text x="150" y="298" text-anchor="middle" class="label amber">{t('IN MEMORY', '在内存里')}</text>
           <text x="150" y="322" text-anchor="middle" class="mono">qwen3_asr_server</text>
           <text x="150" y="346" text-anchor="middle" class="detail">{t('loads the model from the folder', '从文件夹读模型')}</text>
-          <text x="150" y="368" text-anchor="middle" class="detail">{t('one ASR model; VAD runs beside it', '一个 ASR 模型；VAD 在旁边运行')}</text>
+          <text x="150" y="368" text-anchor="middle" class="detail">{t('VAD has its own small server', 'VAD 有自己的小服务器')}</text>
           <text x="150" y="394" text-anchor="middle" class="label">{t(`Automatic: idle ${VOXT_SERVER_IDLE_MINUTES} min → exits`, `自动模式：空闲 ${VOXT_SERVER_IDLE_MINUTES} 分钟 → 退出`)}</text>
           <text x="150" y="420" text-anchor="middle" class="detail">{t('next use → restart', '下次用 → 再启动')}</text>
-          <text x="150" y="444" text-anchor="middle" class="detail">{t(`${VOXT_SERVER_START_TIMEOUT_S} s (3 min) not ready → stop`, `${VOXT_SERVER_START_TIMEOUT_S} 秒（3 分钟）未就绪 → 停止`)}</text>
 
           <rect x="15" y="486" width="270" height="200" rx="10" fill="var(--bg)" stroke="var(--line)" />
-          <text x="30" y="510" class="label">{t('DELETE A MODEL', '删一个模型')}</text>
+          <text x="30" y="510" class="label">{t('DELETE MODEL FILES', '删除模型文件')}</text>
           <rect x="30" y="524" width="110" height="40" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="85" y="549" text-anchor="middle" class="label">{t('1 · unload', '1 · 卸载')}</text>
           <line x1="144" y1="544" x2="168" y2="544" stroke="var(--muted)" stroke-width="2" marker-end="url(#ms-arrow)" />
@@ -356,7 +353,7 @@
           <text x="30" y="614" class="detail">{t('no wait for the process', '不等待进程退出')}</text>
           <text x="30" y="644" class="detail">{t('idle → stop now', '空闲 → 现在停')}</text>
           <text x="30" y="666" class="detail">{t('busy → stop after use', '忙碌 → 用完再停')}</text>
-          <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('Settings: 5–60 min, or keep until quit.', '设置：5–60 分钟，或留到退出应用。')}</text>
+          <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('Settings: 5, 15, 30, 60 min, or keep until quit.', '设置：5、15、30 或 60 分钟，或留到退出应用。')}</text>
           <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Sources: omni/runtime.go, local/library.go.', '出处：omni/runtime.go、local/library.go。')}</text>
         {/if}
       {:else if step === 4}

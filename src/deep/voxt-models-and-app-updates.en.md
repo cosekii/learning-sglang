@@ -140,15 +140,15 @@ Step 4 turns from the files to the process that reads them.
 ### On the stage
 
 - Left blue panel: **on disk**, the snapshot folder `Qwen3-ASR-1.7B-8bit`, 2.47 GB, stays after the server exits.
-- Right amber panel: **in memory**, `qwen3_asr_server`, loads one ASR model from the folder while Silero VAD runs beside it. Automatic mode uses ten idle minutes; the next use restarts a stopped server; a server not ready in 180 seconds is stopped.
-- Lower panel: **delete a model** requests unload and then file removal. It does not wait for process exit. An idle server stops now; a busy server stops after its uses end.
+- Right amber panel: **in memory**, `qwen3_asr_server`, loads one ASR model from the folder, and Silero VAD has its own small server. Automatic mode uses ten idle minutes; the next use restarts a stopped server.
+- Lower panel: **delete model files** requests unload and then file removal. It does not wait for process exit. A busy server stops after its uses end.
 - Footnote: Settings offers 5, 15, 30 or 60 minutes, or keep until quit.
 
 ### Formula
 
 $$ t_{\text{exit}} = t_{\text{last use}} + T_{\text{idle}} \quad (T_{\text{idle}} \ge 0), \qquad T_{\text{idle}} < 0 \Rightarrow \text{no idle exit} $$
 
-$$ \text{not ready by } 180\ \text{s} \Rightarrow \text{start fails and the process is stopped} $$
+$$ \text{unable to accept recognition after } 180\ \text{s} \Rightarrow \text{start fails and the process stops} $$
 
 | Symbol | What it is | Size | Where it comes from |
 |---|---|---|---|
@@ -164,7 +164,7 @@ $$ \text{not ready by } 180\ \text{s} \Rightarrow \text{start fails and the proc
 | Automatic | $T_{\text{idle}} = 10$ min |
 | Settings | 5, 15, 30 or 60 min; keep until quit disables the idle timer |
 | Next use after a stop | start the server again |
-| Not ready after 180 s = 3 min | fail the start and stop the process |
+| Unable to accept recognition 180 s = 3 min after starting | fail the start and stop the process |
 
 ### Why a process at all
 
