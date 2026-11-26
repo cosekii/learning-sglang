@@ -77,6 +77,7 @@ const relatedPairs: RelatedPair[] = [
   { from: ref('sglang', '18-between-stages'), to: ref('omni', '02-spg-topology'), label: 'Hand-offs inside a shared process', labelZh: '同进程内的交接' },
   { from: ref('sglang', '18-between-stages'), to: ref('omni', '03-request-binding'), label: 'Abort and stale-work protection', labelZh: '取消与过期工作隔离' },
   { from: ref('sglang', '21-full-duplex'), to: ref('omni', '03-request-binding'), label: 'Binding stateful work to a replica', labelZh: '把有状态工作绑定到副本' },
+  { from: ref('sglang', '21-full-duplex'), to: ref('omni', '12-full-duplex-strategies'), label: 'Interruption strategies and measurement', labelZh: '打断策略与测量' },
   { from: ref('voxt', 'one-dictation'), to: ref('omni', '03-request-binding'), label: 'Late results and cancellation', labelZh: '迟到结果与取消' },
   { from: ref('sglang', '17-stages-and-schedulers'), to: ref('omni', '04-readiness-contracts'), label: 'Streaming readiness and buffering', labelZh: '流式就绪与缓冲' },
   { from: ref('sglang', '20-streaming-audio'), to: ref('omni', '04-readiness-contracts'), label: 'Buffering before stream readiness', labelZh: '流式就绪前的缓冲' },

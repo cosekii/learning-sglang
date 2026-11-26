@@ -1,0 +1,29 @@
+---
+layout: ../../../layouts/Chapter.astro
+book: omni
+slug: 12-full-duplex-strategies
+---
+import FullDuplexStrategies from '../../../components/omni/FullDuplexStrategies.svelte';
+import { omniNeighbors } from '../../../omni/chapters';
+import { deepFor } from '../../../deep';
+export const deep = await deepFor('omni-12-full-duplex-strategies');
+
+<FullDuplexStrategies client:load {...omniNeighbors('12-full-duplex-strategies')} deep={deep} />
+
+<details class="i18n-en">
+<summary>Where this chapter's claims come from</summary>
+
+Step 1 uses a constructed 2.5-second reply. The delivery ledger reaches 2.0 seconds and the client reports 1.2 seconds played, leaving 800 ms delivered but unplayed. `DeliveryPacer.sent()` counts audio handed to the client; it does not observe acoustic playback (`sglang_omni/pipeline/session_delivery.py:112-128`). The default `max_output_lead_ms` is 1,000 ms (`sglang_omni/proto/session.py:19-28`), so the constructed 800 ms interval fits within that delivery horizon. Later steps reuse these exact positions.
+
+Code references in this chapter pin to `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`. The chapter reads source and tests; it does not run a model or benchmark.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的出处</summary>
+
+第 1 步构造一段 2.5 秒回答。交付记录到 2.0 秒，客户端报告播放到 1.2 秒，因此有 800 ms 已交付但未播放。`DeliveryPacer.sent()` 统计交给客户端连接的声音，不观察真实播放（`sglang_omni/pipeline/session_delivery.py:112-128`）。默认 `max_output_lead_ms` 是 1,000 ms（`sglang_omni/proto/session.py:19-28`），所以这段 800 ms 构造间隔在默认交付范围内。后续步骤沿用同一组位置。
+
+本章代码出处固定到 `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`。本章只读源码和测试，没有运行模型或 benchmark。
+
+</details>

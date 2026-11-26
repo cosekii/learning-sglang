@@ -419,3 +419,10 @@ export const FISH_NONSTREAM_A_SAMPLES = FISH_NONSTREAM_A_FRAMES * FISH_SAMPLES_P
 export const FISH_NONSTREAM_B_SAMPLES = FISH_NONSTREAM_B_FRAMES * FISH_SAMPLES_PER_FRAME;
 export const FISH_NONSTREAM_MAX_BATCH = 8;
 export const FISH_NONSTREAM_WAIT_MS = 2;
+
+// Chapter 12's constructed interruption uses one reply at three different positions.
+export const DUPLEX_GENERATED_MS = 2500;
+export const DUPLEX_DELIVERED_MS = 2000;
+export const DUPLEX_HEARD_MS = 1200;
+export const DUPLEX_DELIVERED_UNPLAYED_MS = DUPLEX_DELIVERED_MS - DUPLEX_HEARD_MS;
+export const DUPLEX_DEFAULT_MAX_OUTPUT_LEAD_MS = 1000;
