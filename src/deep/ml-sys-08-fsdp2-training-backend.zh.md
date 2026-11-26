@@ -173,3 +173,42 @@ $$M_{\text{peak}}\approx M_i+U_{\max}+A+T_{\text{other}}$$
 训练结束后，rollout 需要完整的新参数值，不需要梯度和优化器状态。下一步把完整权重张量装进桶，交给已有更新路径。
 
 来源：`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:31,93-107`；`Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:18-19`。
+
+## 第 6 步 · 把完整权重张量装桶导出
+
+**一句话。** slime 把每个权重分片重新分布成完整张量，再将完整张量装桶；梯度和优化器状态留在训练端。
+
+### 图上是什么
+
+- 导出只取权重分片，梯度和优化器状态表留在训练框。
+- `Replicate()` 把一个 DTensor 的各分片重建为完整逻辑权重张量，不会一次重建所有参数。
+- 完整张量加入一个桶。异步结果准备好后，桶走第 7 章的更新路径，rollout 收到 `v1`。
+- 结尾回到前面步骤的 16 位和 32 位保存表：分片改变的是副本数量，不是每个数占用的位数。
+
+### 公式与符号
+
+$$W_j=\mathcal{R}(P_{j,i}),\qquad B_k=\{W_j\mid j\in J_k\}$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $P_{j,i}$ | rank $i$ 拥有的参数 $j$ 分片 | FSDP2 模型状态 |
+| $\mathcal{R}$ | 把分片重新分布为 `Replicate()` | slime 更新器 |
+| $W_j$ | 参数 $j$ 的完整逻辑权重张量 | 重新分布的结果 |
+| $J_k$ | 装入第 $k$ 桶的参数索引 | 按大小限制的更新循环 |
+| $B_k$ | 一桶完整权重张量 | 交给更新器的桶 |
+
+### 代入图上的数
+
+自带 Qwen3-4B FSDP 脚本把 `update_weight_buffer_size` 设为 $536{,}870{,}912$ 字节：
+
+$$536{,}870{,}912/(1024\times1024)=512\ \text{MiB}$$
+
+这是桶的冲刷阈值，不是严格显存上限。来源没有给出临时显存总量，所以图中不声称一个总量。
+
+更新器在重新分布前调用 `param.cuda()`。因此图中从本地或恢复的分片开始，不声称所有 FSDP2 部署都把整套训练权重先放在 CPU。调用 `update_bucket_weights` 前会等待异步张量。
+
+### 接下来
+
+保存表中的数仍占 16 或 32 位。第 9 章看 rollout 和训练的哪些部分可以改用 FP8；本章不对 FP8 的精度或速度作结论。
+
+来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:134-140`；`THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7` 的 `slime/backends/fsdp_utils/update_weight_utils.py:45-74` 和 `scripts/run-qwen3-4B-fsdp.sh:93-108`；`docs/plan-ml-sys.md:28-29`。

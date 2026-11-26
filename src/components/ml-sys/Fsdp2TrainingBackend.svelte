@@ -125,6 +125,27 @@
       { en: 'Peak is greater than 8 GB', zh: '峰值大于 8 GB' },
       { en: 'No exact total is claimed', zh: '不填精确总量' },
     ],
+  }, {
+    caption: 'Export gathers full weight tensors into buckets. Gradients and optimizer state stay out of the rollout handoff.',
+    captionZh: '导出时，把完整权重张量装进桶。梯度和优化器状态不交给 rollout。',
+    title: 'Rollout receives full weights bucket by bucket', titleZh: 'Rollout 按桶收到完整权重',
+    subtitle: 'Replicate() = turn one sharded weight tensor into a full tensor',
+    subtitleZh: 'Replicate() = 把一个权重分片变成完整张量',
+    foot: 'The whole training model is not gathered at once; Ch. 7 owns transport and cache rules.',
+    footZh: '不会一次拼出整套训练模型；传输和缓存规则见第 7 章。',
+    mobileTitle: 'Full weights, one bucket at a time', mobileTitleZh: '完整权重，一次一桶',
+    mobileSubtitle: 'Replicate() = make one full weight tensor', mobileSubtitleZh: 'Replicate() = 拼出一个完整权重张量',
+    mobileFoot: 'Next: which tables can use fewer bits?', mobileFootZh: '下一章：哪些表能用更少位？',
+    mobile: [
+      { title: 'WEIGHT SHARDS ONLY', titleZh: '只取权重分片', body: 'gradients + optimizer stay in training', bodyZh: '梯度和优化器留在训练端', tone: 'orange' },
+      { title: 'REPLICATE()', titleZh: 'REPLICATE()', body: 'one full weight tensor', bodyZh: '拼出一个完整权重张量', tone: 'blue' },
+      { title: 'BUCKET', titleZh: '一桶', body: 'full tensors wait together', bodyZh: '完整张量一起等待发送', tone: 'blue' },
+      { title: 'CH. 7 UPDATE → ROLLOUT', titleZh: '第 7 章更新 → ROLLOUT', body: 'use v1 after completion', bodyZh: '更新完成后使用 v1', tone: 'plain' },
+    ],
+    formulas: [
+      { en: 'Weights only · no gradients or optimizer', zh: '只传权重 · 不传梯度和优化器状态' },
+      { en: 'Next: fewer bits per number?', zh: '下一章：每个数用更少位？' },
+    ],
   }];
   let step = $state(0);
   $effect(() => {
@@ -141,7 +162,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [560, 560, 600, 600, 560][step] : [500, 500, 500, 500, 500][step]);
+  const H = $derived(phone ? [560, 560, 600, 600, 560, 600][step] : [500, 500, 500, 500, 500, 520][step]);
 </script>
 
 <figure class="viz">
@@ -270,6 +291,30 @@
         <text x="455" y="286" class="small">{t('no exact total in the source', '来源没有精确总量')}</text>
         <text x="360" y="401" text-anchor="middle" class="result">{t('PEAK', '峰值')} &gt; 8 GB · {t('exact total unknown', '精确总量未知')}</text>
         <text x="360" y="448" text-anchor="middle" class="small">{t('Orange = persistent owned state · blue = temporary unit · grey = other temporary memory', '橙 = 长期拥有状态 · 蓝 = 临时 unit · 灰 = 其他临时显存')}</text>
+      {:else if step === 5}
+        {#each [
+          { x: 25, title: 'WEIGHT SHARDS', titleZh: '权重分片', result: 'weights only', body: 'grad + opt stay', bodyZh: '梯度和优化器留下', tone: 'orange' },
+          { x: 205, title: 'REPLICATE()', titleZh: 'REPLICATE()', result: 'full tensor', body: 'one parameter', bodyZh: '一个参数', tone: 'blue' },
+          { x: 385, title: 'BUCKET', titleZh: '一桶', result: 'full tensors', body: 'wait + send', bodyZh: '等待并发送', tone: 'blue' },
+          { x: 565, title: 'ROLLOUT', titleZh: 'ROLLOUT', result: 'v1', body: 'after Ch. 7 update', bodyZh: '第 7 章更新后', tone: 'plain' },
+        ] as node, i}
+          <rect x={node.x} y="95" width="130" height="151" rx="12" fill={fill(node.tone)} stroke={stroke(node.tone)} stroke-dasharray={node.tone === 'plain' ? '5 4' : '0'} />
+          <text x={node.x + 65} y="127" text-anchor="middle" class="small strong">{t(node.title, node.titleZh)}</text>
+          <text x={node.x + 65} y="170" text-anchor="middle" class="result">{node.result}</text>
+          <text x={node.x + 65} y="212" text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
+          {#if i < 3}
+            <line x1={node.x + 130} y1="171" x2={node.x + 170} y2="171" stroke={i === 0 ? 'var(--gen)' : 'var(--accent)'} stroke-width="2.5" marker-end={i === 0 ? 'url(#fsdp-arrow-orange)' : 'url(#fsdp-arrow-blue)'} />
+          {/if}
+        {/each}
+        <rect x="35" y="294" width="305" height="100" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" stroke-dasharray="5 4" />
+        <text x="187" y="326" text-anchor="middle" class="section">{t('STAYS IN TRAINING', '留在训练端')}</text>
+        <text x="187" y="362" text-anchor="middle" class="small">{t('gradients + optimizer state', '梯度 + 优化器状态')}</text>
+        <rect x="380" y="294" width="305" height="100" rx="11" fill="var(--bg)" stroke="var(--line)" />
+        <text x="532" y="322" text-anchor="middle" class="small strong">{t('NEXT · FEWER BITS', '下一章 · 更少位')}</text>
+        <text x="532" y="350" text-anchor="middle" class="small">16-bit weights · 32-bit optimizer tables</text>
+        <text x="532" y="378" text-anchor="middle" class="small strong">{t('Which tables can use fewer bits?', '哪些表能用更少位？')}</text>
+        <text x="360" y="441" text-anchor="middle" class="small">{t('Orange = training state · blue = temporary full weights for export', '橙 = 训练状态 · 蓝 = 导出的临时完整权重')}</text>
+        <text x="360" y="478" text-anchor="middle" class="small">{t('Ch. 7 transports the buckets; this chapter does not repeat those routes.', '第 7 章负责传输这些桶；本章不重复那些路线。')}</text>
       {/if}
       <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t(cur.mobileFoot, cur.mobileFootZh) : t(cur.foot, cur.footZh)}</text>
     </svg>

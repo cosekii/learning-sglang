@@ -173,3 +173,42 @@ The linked source gives a formula with the largest fully materialized FSDP unit 
 After training, rollout needs complete new parameter values, not gradients or optimizer state. The next step gathers full weight tensors into buckets for the existing update path.
 
 Sources: `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:31,93-107`; `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:18-19`.
+
+## Step 6 · Export full weight tensors in buckets
+
+**One sentence.** Slime redistributes each sharded weight tensor to a full tensor, groups full tensors into buckets and leaves gradients and optimizer state in training.
+
+### On the stage
+
+- The export starts with weight shards only. Gradients and optimizer-state tables remain in the training box.
+- `Replicate()` reconstructs one complete logical weight tensor from its DTensor shards. It does not reconstruct every parameter at once.
+- Full tensors join a bucket. After asynchronous results are ready, the bucket uses Chapter 7's update path and rollout receives `v1`.
+- The closing question concerns the 16-bit and 32-bit saved tables from earlier steps: sharding changed their copies, not their bits per number.
+
+### Formula and symbols
+
+$$W_j=\mathcal{R}(P_{j,i}),\qquad B_k=\{W_j\mid j\in J_k\}$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $P_{j,i}$ | Rank $i$'s shard of parameter $j$ | FSDP2 model state |
+| $\mathcal{R}$ | Redistribute shards to `Replicate()` | Slime updater |
+| $W_j$ | Full logical weight tensor for parameter $j$ | Result of redistribution |
+| $J_k$ | Parameter indices grouped into bucket $k$ | Size-bounded updater loop |
+| $B_k$ | One bucket of full weight tensors | Bucket handed to the updater |
+
+### The numbers on the stage
+
+The shipped Qwen3-4B FSDP script sets `update_weight_buffer_size` to $536{,}870{,}912$ bytes:
+
+$$536{,}870{,}912/(1024\times1024)=512\ \text{MiB}$$
+
+This is a bucket-flushing threshold, not a hard memory cap. The source does not supply a total temporary-memory measurement, so the figure does not claim one.
+
+The updater calls `param.cuda()` before redistribution. The stage therefore starts with a local or restored shard and does not assert that every FSDP2 deployment begins with all training weights on CPU. Asynchronous tensors are waited on before `update_bucket_weights`.
+
+### Next
+
+The saved tables still use 16 or 32 bits per number. Chapter 9 examines which parts of rollout and training can use FP8 instead; this chapter makes no precision or speed claim for FP8.
+
+Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:134-140`; `THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7`, `slime/backends/fsdp_utils/update_weight_utils.py:45-74` and `scripts/run-qwen3-4B-fsdp.sh:93-108`; `docs/plan-ml-sys.md:28-29`.

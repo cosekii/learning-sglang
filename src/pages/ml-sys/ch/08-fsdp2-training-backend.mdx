@@ -25,6 +25,8 @@ Step 4 follows `fsdp/readme.md:19` and `readme-2-en.md:47-58`. Backward also mat
 
 Step 5 separates persistent shards from peak memory. Activations are intermediate training results and vary with batch size (`readme-2-en.md:31`). The source's formula with the largest fully materialized unit is explicitly for FSDP1 Stage 3 (`readme-2-en.md:93-107`), so the stage uses it only to identify memory categories. It does not present that formula as an exact FSDP2/slime measurement or assign values to `Umax`, activations or other temporary allocations.
 
+Step 6 follows `fsdp/readme.md:134-140` and the executable updater at `update_weight_utils.py:45-74` in the pinned slime revision. The updater iterates model-state weights, redistributes each DTensor to `Replicate()` and gathers full tensors into size-bounded buckets. It waits for asynchronous results before handing a bucket to Chapter 7's transport. Gradients and optimizer state are not exported, and the whole training model is not materialized at once. The deep dive records the shipped 512 MiB flush threshold from `scripts/run-qwen3-4B-fsdp.sh:93-108`; it is a flushing threshold, not a hard memory cap. The closing question leads to Chapter 9's FP8 topic without claiming an FP8 mechanism or speedup here.
+
 </details>
 
 <details class="i18n-zh">
@@ -41,5 +43,7 @@ Step 5 separates persistent shards from peak memory. Activations are intermediat
 第 4 步依据 `fsdp/readme.md:19` 和 `readme-2-en.md:47-58`。反向计算也按需拼出参数，再对算好的梯度执行 reduce-scatter，使每个 rank 留下归约后的梯度片，而不是完整梯度。优化器更新对应的参数片。slime 调用普通的 `loss.backward()` 和 `optimizer.step()`，集合通信交给 `fully_shard`（固定版本的 `actor.py:687-702,1000-1039`）。图中不为临时的完整梯度另填大小。
 
 第 5 步区分长期分片与峰值显存。激活是训练中间结果，随 batch 大小变化（`readme-2-en.md:31`）。来源包含最大完整 unit 的公式明确针对 FSDP1 Stage 3（`readme-2-en.md:93-107`），所以图中只借它辨认显存类别，不把该公式当成 FSDP2/slime 的精确测量，也不给 `Umax`、激活或其他临时分配填值。
+
+第 6 步依据 `fsdp/readme.md:134-140` 和固定 slime 版本的实际更新器 `update_weight_utils.py:45-74`。更新器遍历模型状态里的权重，把每个 DTensor `redistribute` 到 `Replicate()`，再把完整张量装进大小受限的桶。异步结果完成后，才把桶交给第 7 章的传输路径。导出不包含梯度和优化器状态，也不会一次拼出整套训练模型。深入讲解记录自带脚本 `scripts/run-qwen3-4B-fsdp.sh:93-108` 的 512 MiB 冲刷阈值；它不是严格显存上限。结尾引向第 9 章的 FP8 主题，本步不宣称 FP8 的机制或加速效果。
 
 </details>
