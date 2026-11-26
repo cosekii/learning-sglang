@@ -1,0 +1,29 @@
+---
+layout: ../../../layouts/Chapter.astro
+book: ml-sys
+slug: 09-fp8-rollout-training
+---
+import Fp8RolloutTraining from '../../../components/ml-sys/Fp8RolloutTraining.svelte';
+import { mlSysNeighbors } from '../../../ml-sys/chapters';
+import { deepFor } from '../../../deep';
+export const deep = await deepFor('ml-sys-09-fp8-rollout-training');
+
+<Fp8RolloutTraining client:load {...mlSysNeighbors('09-fp8-rollout-training')} deep={deep} />
+
+<details class="i18n-en">
+<summary>Where this chapter's claims come from</summary>
+
+This chapter follows `Awesome-ML-SYS-Tutorial/rlhf/slime/fp8/readme.md`. Constructed arithmetic and public measurements are labelled separately. Implementation references use `THUDM/slime@15fbd2ef82c765fe22f78e288db2bb79ebf582bd`, a reproducibility pin chosen for this chapter rather than a pin supplied by the article.
+
+Step 1 uses the article's BF16 and FP8 storage discussion at `readme.md:40-54`. The 4B eligible-weight example is constructed from Chapter 8: `4B × 2 B = 8 GB` and `4B × 1 B = 4 GB`. The 2.39 ms and 1.19 ms figures divide those byte counts by the shared H100 bandwidth of 3.35 TB/s. They are ideal read lower bounds, not rollout latency. Scales and every other tensor are excluded.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的出处</summary>
+
+本章依据 `Awesome-ML-SYS-Tutorial/rlhf/slime/fp8/readme.md`。构造算式与公开测量分别标明。实现引用固定到 `THUDM/slime@15fbd2ef82c765fe22f78e288db2bb79ebf582bd`，这是本章选择的可复现版本，不是文章给出的固定版本。
+
+第 1 步依据 `readme.md:40-54` 的 BF16 与 FP8 存储讨论。4B 个可转换权重沿用第 8 章构造示例：`4B × 2 字节 = 8 GB`，`4B × 1 字节 = 4 GB`。2.39 ms 和 1.19 ms 用共享 H100 带宽 3.35 TB/s 计算，只是理想读取下限，不是 rollout 延迟。scale 和其他张量均不计入。
+
+</details>
