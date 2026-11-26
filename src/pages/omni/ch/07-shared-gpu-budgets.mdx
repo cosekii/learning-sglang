@@ -1,0 +1,49 @@
+---
+layout: ../../../layouts/Chapter.astro
+book: omni
+slug: 07-shared-gpu-budgets
+---
+import SharedGpuBudgets from '../../../components/omni/SharedGpuBudgets.svelte';
+import { omniNeighbors } from '../../../omni/chapters';
+import { deepFor } from '../../../deep';
+export const deep = await deepFor('omni-07-shared-gpu-budgets');
+
+<SharedGpuBudgets client:load {...omniNeighbors('07-shared-gpu-budgets')} deep={deep} />
+
+<details class="i18n-en">
+<summary>Where this chapter's claims come from</summary>
+
+Step 1 reads the shipped Qwen3-TTS B200 DP9 YAML. Every replica declares `gpu_memory_fraction=0.0667` for `tts_engine` and `0.0178` for `vocoder`, all on GPU 0. One replica therefore declares 0.0845; nine declare 0.7605, or 76.05%. The remaining 23.95% is only outside this fraction sum, not a measured free-memory reading. Each engine separately declares `max_total_tokens=32768`.
+
+Step 2 uses the paired unit-test cases in `test_placement.py`, not B200 measurements. On a teaching 80-GiB card, a 0.50 fraction plus a 20-GiB total reserve declares 60 GiB and passes. A 0.90 fraction plus the same reserve declares 92 GiB and fails by 12 GiB. The reserve denotes the stage footprint, including its two-GiB KV pool, so that pool is not added to the same reserve again. Placement separately checks that summed KV pools alone fit.
+
+Step 3 constructs a two-GiB `engine.kv_cache_bytes` scope. The stage factory must construct exactly one SGLang engine that consumes it. Zero consumers leave an unconsumed budget and raise on scope exit; a second consumer raises instead of sizing two full pools from one declaration. The two-GiB value is illustrative.
+
+Step 4 compares two symbolic checkpoint copies with the shipped MOSS same-GPU DP2 weight-sharing example. With `weight_share=on`, the leader exports weights over CUDA IPC and one follower aliases them, while both replicas retain private KV pools, graphs and request state. Each engine declares `max_total_tokens=30000`, so the two private pools have a combined token cap of 60,000. The W boxes are symbolic and make no byte-saving claim.
+
+Step 5 constructs two eligible, single-GPU, non-TP processes on one physical GPU. `mps=auto` enables one pipeline-owned MPS lease for their physical UUID and verifies both named clients. TP processes are ineligible; multi-physical-GPU placements are rejected. A lease is an ownership record, not a memory allocation, and MPS does not change the earlier budget arithmetic.
+
+Step 6 follows AuK serial offload through conditioning, DiT and VAE. One request owns the path, one component is resident during each transition and the other two sleep. The old component sleeps before the next wakes. Ownership ends only after terminal-result delivery, failure or cancellation; another request can then begin. Offload requires one CUDA GPU, one process replica, `tp_size=1` and batch size one. Component sizes differ, so two sleeping boxes do not prove a two-thirds byte saving.
+
+Source revision for the chapter: `sglang-omni origin/main@db7cbf39ccffde7f95b81c2dcc7da1b52a5c0bb6`. The deep dive lists the exact files and lines.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的出处</summary>
+
+第 1 步读取仓库自带的 Qwen3-TTS B200 DP9 YAML。每个副本的 `tts_engine` 申报 `gpu_memory_fraction=0.0667`，`vocoder` 申报 `0.0178`，全部放在 GPU 0。一个副本合计 0.0845，九个合计 0.7605，即 76.05%。其余 23.95% 只表示不在这项比例之和中，不是实测空闲显存。每个 engine 另设 `max_total_tokens=32768`。
+
+第 2 步使用 `test_placement.py` 的一对单元测试，不是 B200 实测。在教学用 80 GiB 卡上，0.50 比例加 20 GiB 总 reserve 申报 60 GiB，可以通过。0.90 比例加同一 reserve 申报 92 GiB，超出 12 GiB。reserve 表示 stage 整体占用，包括其中 2 GiB KV 池，所以不能再把这个池加到同一份 reserve 上。placement 还单独检查所有 KV 池之和能否装下。
+
+第 3 步构造一份 2 GiB 的 `engine.kv_cache_bytes` 作用域。stage 工厂必须构造恰好一个 SGLang engine 来领取它。没有 engine 领取会在退出作用域时报错；第二个 engine 领取也会报错，不能让一份申报变成两份完整 KV 池。2 GiB 是教学值。
+
+第 4 步把两份符号化 checkpoint 与 MOSS 同卡 DP2 权重共享例作对照。`weight_share=on` 时，leader 通过 CUDA IPC 发布权重，一个 follower 映射同一份存储；两个副本仍各有私有 KV 池、graph 和请求状态。每个 engine 申报 `max_total_tokens=30000`，两个私有池合计上限为 60000 token。W 方框只是符号，不声称节省多少字节。
+
+第 5 步构造同一物理 GPU 上两个合格的单卡、非 TP 进程。`mps=auto` 为其物理 UUID 启用一份 pipeline 持有的 MPS 租约，并核对两个 client 名单。TP 进程不合格，跨多物理卡的放置会被拒绝。租约是所有权记录，不是显存分配；MPS 不改变前面的预算加法。
+
+第 6 步跟随 AuK serial offload 走过 conditioning、DiT 和 VAE。一个请求持有整条路线；每次换组件时一件常驻，另外两件休眠。旧组件先休眠，下一组件再唤醒。终态结果交付、失败或取消后才释放所有权，下一请求才能开始。offload 要求一张 CUDA GPU、一个进程副本、`tp_size=1` 和 batch size 1。组件大小不同，两件休眠不证明节省三分之二字节。
+
+本章源码版本：`sglang-omni origin/main@db7cbf39ccffde7f95b81c2dcc7da1b52a5c0bb6`。精确文件和行号见深入讲解。
+
+</details>
