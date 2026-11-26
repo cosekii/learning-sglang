@@ -1,42 +1,56 @@
 # 第 14 章评分卡 · When the client reads too slowly
 
-日期：2026-11-26。协调人对 `6ded516…208cea2` 的独立结论是 R1–R5 **75/80**、非视觉原项 **156/160**。R6 和原 #4/#5 未全评，旧作者的满分与无洞结论全部撤回。协调没有给出逐步 R1–R5 分布，表内不伪造逐步分数。本轮修复五组返工，独立文本冷读已关闭其指出问题；协调复评仍待，分数不变。
+日期：2026-11-26。
 
-材料：`.bot/out/omni14/shots/` 有第 1、2、7、8 步的 16 张中英桌面／390 px 手机图，`.bot/out/omni14/deep/` 有对应 8 张双语深入讲解图。`.bot/out/omni14/dom-check.json` 记录 8 个中英舞台／深入讲解视图的逐字断言。24 张 PNG 均已尝试读取；当前模型返回 `Cannot read image`，不据此给视觉分。
+## 协调基线与本轮边界
 
-| 步 | R1 小学生复述 | 协调 R1–R5 /10 | R6 | 原分 /24 | 协调未决项（本轮修复前） | 日期 |
-|---|---|---:|---:|---:|---|---|
-| 1 | 生成比播放快，socket 填满后，6 秒未读声音以 internal float32 留在 API 进程。 | 未单列 | 未全评 | 未全评 | internal payload、socket、慢读动机；前两项与第 2 步共享 | 2026-11-26 |
-| 2 | 一个 API 进程把所有流的消息字节放在一起限额，socket 缓冲不在这份账里。 | 未单列 | 未全评 | 未全评 | internal payload、socket；两项与第 1 步共享 | 2026-11-26 |
-| 3 | 读者取走消息会把空闲钟归零，生成新消息不会。 | 未单列 | 未全评 | 未全评 | 本轮未改 | 2026-11-26 |
-| 4 | 总量超限后，最久没读的流先失败。 | 未单列 | 未全评 | 未全评 | 本轮未改 | 2026-11-26 |
-| 5 | 两路老流依次失败，总量才回到上限以内。 | 未单列 | 未全评 | 未全评 | 本轮未改 | 2026-11-26 |
-| 6 | 超过上限会让整条流失败，还在生成时才中止生成。 | 未单列 | 未全评 | 未全评 | 本轮未改 | 2026-11-26 |
-| 7 | 首音前 HTTP SSE 和 raw audio 返回 JSON 503；SSE 开始后发 error，raw 响应流提前结束。 | 未单列 | 未全评 | 未全评 | 首音前 HTTP 503、SSE 开始后的 error、raw 响应流出口 | 2026-11-26 |
-| 8 | 关闭会清掉队列和积压，但 abort 消息没送到时，工作记录可能继续占住流 ID。 | 未单列 | 未全评 | 未全评 | abort transport 失败时的队列清理与 ID 保留 | 2026-11-26 |
+协调人对 `5e92976…6e190ef` 的结论是：五组内容返工全部通过，R1–R5 **80/80**，原十个非视觉项 **160/160**，静态原 #4/#5 **32/32**，原十二项 **192/192**；八步都没有机制动画，按 EVAL §6 记机制 R6 **0/16**。静态场景分数不代替动画分数。
 
-**当前状态：assigned-rework-source-fixed / coordinator-review-pending / owner-visual-review-pending。** 协调基线保持 R1–R5 **75/80**、非视觉原项 **156/160**。本轮源码修复和独立文本冷读不提高协调分，不记 `complete-under-EVAL`。组件只有响应式 `matchMedia`，本轮未新增动画；完整 R6 和原视觉项仍待协调评审。
+本轮给八步补上 held phases、`requestAnimationFrame` 和 `LoopProgress`。独立源码冷读首轮给 R6 **14/16**，指出第 1 步初始卡片与条形图分别为 6 秒和 10 秒排队、标签早于条形图到位两处问题；本轮已修正。当前源码和 DOM 证据支持 R6 **16/16**，这是 lane 的待复审结果，不是新的协调 verdict。协调 R6 复审和主人视觉验收仍待，不记 `complete-under-EVAL`。
 
-## 五组返工
+## 逐步评分
 
-- **第 1、2 步内部格式**：在 `24,000 samples/s × 4 B/sample` 和 3.1 小时算式旁标明 coordinator 队列里的 internal 24 kHz float32 payload，并区分 mono 16-bit HTTP 输出。MDX 和双语深入讲解同步，避免把 96,000 B/s 或 3.1 小时直接套到 raw PCM 交付。
-- **第 1、2 步 socket 缓冲**：舞台和正文说明它是已经交给操作系统或 HTTP runtime、不再属于 coordinator 账本的字节。它们也在等客户端，但不计入共享消息总量。
-- **第 1 步慢读动机**：caption 和正文说明客户端按播放速度读取，生成可快于实时；socket 填满后形成本步积压，并指回第 8 章第 3 步。
-- **第 7 步协议出口**：首音前 HTTP SSE 和 raw audio 返回 JSON 503；SSE 开始后改发 error 事件；raw 响应开始后只能提前结束，没有通用错误外壳；语音 WebSocket 使用 error 事件，自己的完成路径不在本步展开。`CONNECTION CLOSED EARLY` 改为 `RESPONSE STREAM ENDS EARLY`／「响应流提前结束」。保留请求到达时不被这个上限拒绝的边界。
-- **第 8 步两种清理保证**：取走错误或关闭读者会释放队列和剩余积压，不重复扣减已经归零的声音。abort transport 失败时，请求工作记录可能继续占住流 ID；只有 abort 成功、ownership 已完成或后续恢复时才释放。ownership 已完成表示不需要再次 abort，后续恢复机制不在本章展开。
+「协调 R6」保留动画返工前的 **0/16** 基线；「本轮 R6」是当前源码与 DOM 相位检查的待复审结果。
 
-独立文本冷读者检查组件、MDX、双语深入讲解和 transcript。首轮指出 503 范围、WebSocket 完成路径说明、admission 限定、双语队列保证和 ID 释放条件五组问题；修复后复查指出深入讲解摘要仍漏 SSE/raw 范围。补齐后终审为 **all prior findings closed**。这不替代协调复审或 PNG 视觉验收。
+| 步 | R1 小学生复述 | 协调 R1–R5 /10 | 协调 R6 /2 | 本轮 R6 /2 | 协调原分 /24 | 未决内容洞 |
+|---|---|---:|---:|---:|---:|---:|
+| 1 | 生成比播放快，读者取走 4 秒后，6 秒未读声音还留在 API 进程。 | 10 | 0 | 2 | 24 | 0 |
+| 2 | 一个 API 进程把各流的消息字节加在一起限额，文字不计入。 | 10 | 0 | 2 | 24 | 0 |
+| 3 | 读者取走消息会把空闲钟归零，生成新消息不会。 | 10 | 0 | 2 | 24 | 0 |
+| 4 | 总量超限后，最久没读的流先失败，不是积压最大的流先失败。 | 10 | 0 | 2 | 24 | 0 |
+| 5 | 两路老流依次失败，总量才回到上限以内。 | 10 | 0 | 2 | 24 | 0 |
+| 6 | 超过上限会让整条流失败，只有还在生成时才中止生成。 | 10 | 0 | 2 | 24 | 0 |
+| 7 | 首音前 HTTP 返回 JSON 503；响应开始后，SSE 发 error，raw 响应流提前结束。 | 10 | 0 | 2 | 24 | 0 |
+| 8 | 关闭会清掉队列和积压，但 abort 消息没送到时，工作记录可能继续占住流 ID。 | 10 | 0 | 2 | 24 | 0 |
+| 合计 |  | **80/80** | **0/16** | **16/16（待复审）** | **192/192** | **0** |
+
+## 八步动画
+
+- 第 1 步：10 秒声音先全部等待；读者取走 4 秒后，条形图留下 6 秒，再显示标签和 `576,000 B` 算式。卡片和条形图使用同一相位，标签在缩放结束后出现。
+- 第 2 步：流 A 的 6 B、流 B 的 10 B 依次计入共享总量；灰色文字不计入。
+- 第 3 步：左图读取后变成 4 B、idle 0 s；右图新增后变成 12 B、idle 仍为 2 s。
+- 第 4 步：先新增 4 B 超过 12 B 上限，再让最久没读的 `req-idle` 失败，扣掉 4 B 后回到 12 B。
+- 第 5 步：三幅面板依次显示 16 B、14 B、10 B；`req-oldest` 和 `req-older` 依次失败，最后显示两个失败流。
+- 第 6 步：运行中面板先发生整流失败，再显示 abort；已完成面板随后发生同一失败，显示没有生成器可中止。
+- 第 7 步：首音前 JSON 503 保持在舞台上，随后依次出现 SSE error 和 raw 响应流提前结束。
+- 第 8 步：提前关闭先把 12 B 清为 0 B，再显示 ID 可能保留；上限失败案例随后释放错误队列，也显示 ID 可能保留。
+
+每步循环播放并在末相位停留。`prefers-reduced-motion: reduce` 直接显示完成场景；切换步骤会取消旧的 `requestAnimationFrame`。
 
 ## 验证记录
 
-- `npx astro --config .astro/local.config.mjs build`：60 页，通过；`BOOK=omni node scripts/deep-check.mjs 14` 通过。
-- `BOOK=omni ONLY=14 npm run transcript -- http://localhost:4323/learning-sglang`：8 步，无布局问题，transcript 已重生成。
+- `npx astro --config .astro/local.config.mjs build`：60 页，通过。
+- `WAIT=6000 BOOK=omni ONLY=14 npm run transcript -- http://localhost:4325/learning-sglang`：8 步，无布局问题；生成文件已提交。
 - `BOOK=omni ONLY=14 npm run readability`：8 步，0 机械问题。
-- `BOOK=omni ONLY=14 npm run mobile -- http://localhost:4323/learning-sglang`：英文 24 个视图在 360、390、430 px 均无布局破坏。
-- 中文第 1、2、7、8 步分别运行 `BOOK=omni ONLY=14 STEP=M LANG=zh npm run mobile -- http://localhost:4323/learning-sglang`：三种宽度均通过布局和字号硬门。
-- `BASE=http://localhost:4323/learning-sglang BOOK=omni ONLY=14 node scripts/zh-check.mjs`：8 步通过。
-- `node .astro/check-omni14.mjs`：8 个中英舞台／深入讲解视图通过；caption 与 ARIA 逐字一致，内部格式、socket、协议出口和条件清理文字齐全，深入讲解无横向溢出、残留 `$$` 或 KaTeX 错误。
+- `BOOK=omni ONLY=14 npm run mobile -- http://localhost:4325/learning-sglang`：英文 360、390、430 px 全章通过；第 1 步修改后单独复跑通过。
+- 中文第 1–8 步分别运行 `BOOK=omni ONLY=14 STEP=M LANG=zh npm run mobile -- http://localhost:4325/learning-sglang`：三种宽度均通过布局和字号硬门；第 1 步修改后单独复跑通过。
+- `WAIT=6000 BASE=http://localhost:4325/learning-sglang BOOK=omni ONLY=14 node scripts/zh-check.mjs .bot/out/omni14-motion/zh-check`：8 步通过。
+- `BOOK=omni node scripts/deep-check.mjs 14`：通过。
+- `node .astro/check-omni14-motion.mjs`：八步依次检测到 **4/4/4/3/4/5/3/5** 个 held states；每步最终机制文字齐全，`LoopProgress`、循环重启、caption／ARIA 一致均通过。第 1 步另检初始 10 秒排队、0 秒读取和标签延迟，均通过。结果在 `.bot/out/omni14-motion/dom-check.json`。
 - `git diff --check`：通过。
-- 只运行目标章检查，没有运行全站回归、真实 SSE／WebSocket／raw-PCM 连接、模型或 GPU benchmark。代码出处固定到 `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`。
 
-源码提交：`5e92976`（第 1、2 步）、`76b0599`（第 7 步）、`1b016aa`（第 8 步）、`b4c7160`（独立冷读整改），均已推送到 `origin/tutorials`。
+截图在 `.bot/out/omni14-motion/`：`early-en/`、`mid-en/`、`final-en/`、`final-zh/`、`phone-zh/` 各 8 张，共 40 张。当前模型返回 `Cannot read image`，因此本轮不给新增 PNG 视觉分，也不把 DOM 相位检查当作主人视觉验收。
+
+未跑全站回归、真实 SSE／WebSocket／raw-PCM 连接、模型或 GPU benchmark。代码出处仍固定到 `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`。
+
+动画源码提交：`6b2e42a…cbdb0f5`；第 1 步相位修正：`58c960c`；生成 transcript：`03f9b8d`。均已推送到 `origin/tutorials`。
