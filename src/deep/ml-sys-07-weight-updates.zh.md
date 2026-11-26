@@ -124,3 +124,34 @@ $$E=4\times256\times1024=1024\times1024=1{,}048{,}576$$
 一次只拼一个参数，临时占用有边界。若把整套训练模型恢复到 SGLang 旁边，显存仍可能不够，所以 slime 分桶处理权重。
 
 来源：`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-1.md:51-60,132-204`；`volcengine/verl@0508af25b66e839772fba8e79d97896bf0d843d3` 的 `verl/workers/sharding_manager/fsdp_sglang.py:160-188`；固定 SGLang 版本的 `model_runner.py:774-792,1464-1479`。
+
+## 第 5 步 · 用 bucket 限制临时占用
+
+**一句话。** slime 每次恢复、转换并传输一桶训练参数，等更新完成后清空这桶，再用同一空间处理下一桶。
+
+### 图上是什么
+
+- 两幅面板使用相同的 SGLang 和 KV 框，对照旁边放整套训练模型或只放一桶。图形只示关系，不按字节比例绘制。
+- 右图只有 `bucket 1` 被恢复到 GPU，后面的桶在 GPU 外等待。
+- 下方顺序以 `ray.get` 和 `clear` 收尾。发送方等 SGLang 更新完成后才释放这桶的转换结果。
+
+### 公式与符号
+
+$$R_{\text{all}}=S+M,\qquad R_{\text{bucket}}=S+b,\qquad b<M$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $S$ | SGLang 权重、KV 等驻留状态 | 已有 rollout 分配 |
+| $M$ | 同时恢复的整套训练模型 | 左图 |
+| $b$ | 恢复的一组 bucket 参数 | 右图 |
+| $R$ | 两边合计的临时驻留 | 各图相加 |
+
+### 代入图上的数
+
+来源没有给出 $S$、$M$ 或 $b$ 的数值。这里只能说明临时恢复的一组更小，不能编造节省百分比或字节数。
+
+### 接下来
+
+分桶限制了显存，但参数仍逐个变化。下一步画出更新边界，防止生成过程读到一半旧、一半新的模型。
+
+来源：`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-1.md:254-272,280-296,329-395`。

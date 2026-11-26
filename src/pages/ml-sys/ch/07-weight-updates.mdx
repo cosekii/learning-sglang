@@ -23,6 +23,8 @@ Step 3 follows `latency-accelerate-for-weight-updates/readme.md:232-262,399-412,
 
 Step 4 follows `sys-design/readme-1.md:51-60,132-204`. `full_tensor()` assembles the parameter before serialization. `MultiprocessingSerializer.serialize` returns reconstruction handles rather than the tensor payload, and `gather_object` gathers those handles at inference TP rank 0. Each SGLang TP rank deserializes its entry and loads the reconstructed tensor. The fixed sender is `volcengine/verl@0508af25b66e839772fba8e79d97896bf0d843d3`, `verl/workers/sharding_manager/fsdp_sglang.py:160-188`; the receiver is `model_runner.py:774-792,1464-1479` at the pinned SGLang revision. The `[256,1024]` training shards and `[1024,1024]` full tensor follow line 51; line 53 accidentally reverses the two shard labels and is not reproduced.
 
+Step 5 follows `sys-design/readme-1.md:254-272,280-296,329-395`. Slime offloads training weights and optimizer state after training, then restores only one parameter bucket at a time. Within a bucket it broadcasts across PP and EP where needed, gathers TP partitions, removes padding and converts to Hugging Face layout before sending handles. `ray.get(ref)` completes before the converted tensors are cleared. The figure shows the residency boundary but no bucket size or memory saving because the source supplies neither.
+
 </details>
 
 <details class="i18n-zh">
@@ -37,5 +39,7 @@ Step 4 follows `sys-design/readme-1.md:51-60,132-204`. `full_tensor()` assembles
 第 3 步依据 `latency-accelerate-for-weight-updates/readme.md:232-262,399-412,931-950`。更新组包含 1 个训练 rank 和推理端的 TP rank，所以 `world_size = 1 + tp_size`。每个参数都先由推理端分配接收空间，再从 rank 0 广播数值并调用 `load_weights`。组内 rank 数不等于顶层进程数。固定 `ModelRunner` 接收路径为同一 SGLang 版本的 `model_runner.py:696-772`。
 
 第 4 步依据 `sys-design/readme-1.md:51-60,132-204`。`full_tensor()` 先拼好完整参数，再做序列化。`MultiprocessingSerializer.serialize` 返回的是重建句柄，不是张量数据本体；`gather_object` 再把这些句柄收拢到推理 TP rank 0。每个 SGLang TP rank 反序列化自己的那一项并装入重建的张量。发送端固定为 `volcengine/verl@0508af25b66e839772fba8e79d97896bf0d843d3` 的 `verl/workers/sharding_manager/fsdp_sglang.py:160-188`，接收端为固定 SGLang 版本的 `model_runner.py:774-792,1464-1479`。训练分片 `[256,1024]` 和完整张量 `[1024,1024]` 按第 51 行绘制；第 53 行误把两种分片标签写反，本章不沿用。
+
+第 5 步依据 `sys-design/readme-1.md:254-272,280-296,329-395`。slime 在训练后 offload 训练权重和优化器状态，更新时每次只恢复一个参数桶。桶内按需要做 PP、EP 广播，收集 TP 分片，去掉 padding 并转成 Hugging Face 布局，然后发送句柄。`ray.get(ref)` 完成后才清空转换结果。图中只画显存占用边界；来源没有给出每桶大小或节省量，本章不填数字。
 
 </details>

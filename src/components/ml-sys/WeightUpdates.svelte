@@ -97,6 +97,26 @@
       { en: 'serialize the handle, not the payload', zh: '序列化句柄，不序列化数据本体' },
       { en: 'gather_object collects handles at rank 0', zh: 'gather_object 把句柄收拢到 rank 0' },
     ],
+  }, {
+    caption: 'A bucket is a small group of parameters processed together. Slime finishes and clears one bucket before starting the next.',
+    captionZh: 'Bucket 是一起处理的一小组参数。slime 处理并清空一桶，再取下一桶。',
+    title: 'Slime restores one bucket at a time', titleZh: 'slime 每次只恢复一桶权重',
+    subtitle: 'bucket = a small group of parameters brought back to the GPU together', subtitleZh: 'bucket = 一起拿回 GPU 处理的一小组参数',
+    foot: 'Schematic residency; the source gives no bucket byte size.', footZh: '图中只画占用关系；来源没有给出每桶字节数。',
+    mobileTitle: 'One bucket at a time', mobileTitleZh: '每次只处理一桶',
+    mobileSubtitle: 'bucket = a small parameter group', mobileSubtitleZh: 'bucket = 一小组参数',
+    mobileFoot: 'No bucket size is claimed.', mobileFootZh: '不虚构每桶大小。',
+    mobile: [
+      { title: 'TRAINING WEIGHTS WAIT', titleZh: '训练权重先等待', body: 'not all restored to the GPU', bodyZh: '不全部拿回 GPU', tone: 'plain' },
+      { title: 'UPLOAD BUCKET 1', titleZh: '拿回第 1 桶', body: 'only this small group', bodyZh: '只拿这一小组', tone: 'orange' },
+      { title: 'ASSEMBLE + SEND HANDLES', titleZh: '拼好并发送句柄', body: 'update these parameters', bodyZh: '更新这组参数', tone: 'orange' },
+      { title: 'RAY.GET → CLEAR → NEXT', titleZh: '等待 → 清空 → 下一桶', body: 'finish before reusing the space', bodyZh: '完成后才复用空间', tone: 'blue' },
+    ],
+    formulas: [
+      { en: 'GPU holds SGLang + one bucket', zh: 'GPU 上是 SGLang + 一桶' },
+      { en: 'not SGLang + the whole training model', zh: '不是 SGLang + 整套训练模型' },
+      { en: 'upload → assemble → send → wait → clear', zh: '拿回 → 拼好 → 发送 → 等待 → 清空' },
+    ],
   }];
   let step = $state(0);
   $effect(() => {
@@ -113,7 +133,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [480, 620, 510, 620][step] : [410, 480, 460, 500][step]);
+  const H = $derived(phone ? [480, 620, 510, 620, 620][step] : [410, 480, 460, 500, 490][step]);
 </script>
 
 <figure class="viz">
@@ -242,6 +262,26 @@
         <text x="547" y="368" text-anchor="middle" class="code">→ load_weights</text>
         <text x="360" y="427" text-anchor="middle" class="small strong">{t('Only the handle crosses this arrow; the weight bytes do not.', '箭头只传句柄，不传权重字节。')}</text>
         <text x="360" y="458" text-anchor="middle" class="small">{t('Orange = training-side work · blue = inference-side work', '橙 = 训练端工作 · 蓝 = 推理端工作')}</text>
+      {:else if step === 4}
+        <rect x="30" y="85" width="315" height="259" rx="12" fill="var(--bg)" stroke="var(--line)" />
+        <text x="187" y="115" text-anchor="middle" class="section">{t('WITHOUT BUCKETS', '不分桶')}</text>
+        <rect x="50" y="136" width="275" height="55" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="187" y="169" text-anchor="middle" class="small strong">SGLANG + KV</text>
+        <rect x="50" y="207" width="275" height="104" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x="187" y="237" text-anchor="middle" class="small strong">{t('ALL TRAINING WEIGHTS', '整套训练权重')}</text>
+        <text x="187" y="267" text-anchor="middle" class="small">{t('restored beside SGLang', '全部恢复到 SGLang 旁边')}</text>
+        <text x="187" y="295" text-anchor="middle" class="small">{t('can exceed the card', '可能超出显卡容量')}</text>
+        <rect x="375" y="85" width="315" height="259" rx="12" fill="var(--bg)" stroke="var(--line)" />
+        <text x="532" y="115" text-anchor="middle" class="section">{t('WITH BUCKETS', '分桶')}</text>
+        <rect x="395" y="136" width="275" height="55" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="532" y="169" text-anchor="middle" class="small strong">SGLANG + KV</text>
+        <rect x="395" y="207" width="275" height="52" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x="532" y="239" text-anchor="middle" class="small strong">BUCKET 1 · {t('ON GPU', '在 GPU 上')}</text>
+        <rect x="395" y="275" width="275" height="43" rx="9" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />
+        <text x="532" y="302" text-anchor="middle" class="small">BUCKETS 2, 3 · {t('WAIT OFF GPU', '在 GPU 外等待')}</text>
+        <text x="360" y="378" text-anchor="middle" class="code">upload → assemble → convert → send handles → ray.get → clear</text>
+        <text x="360" y="413" text-anchor="middle" class="small strong">{t('ray.get finishes before the converted bucket is cleared.', 'ray.get 完成后，才清空这一桶的转换结果。')}</text>
+        <text x="360" y="447" text-anchor="middle" class="small">{t('Blue = rollout state · orange = training weights being updated', '蓝 = rollout 状态 · 橙 = 正在更新的训练权重')}</text>
       {/if}
       {#if cur.foot2}
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t(cur.foot2, cur.foot2Zh ?? cur.foot2)}</text>

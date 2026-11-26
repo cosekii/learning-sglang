@@ -124,3 +124,34 @@ The source's SGLang TP 2 layout has `[512,1024]` per inference rank. This exampl
 Assembling one parameter is bounded. Restoring the whole training model beside SGLang can still exceed GPU memory, so slime processes weights in buckets.
 
 Sources: `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-1.md:51-60,132-204`; `verl/workers/sharding_manager/fsdp_sglang.py:160-188` at `volcengine/verl@0508af25b66e839772fba8e79d97896bf0d843d3`; `model_runner.py:774-792,1464-1479` at the pinned SGLang revision.
+
+## Step 5 · Bound temporary residency with a bucket
+
+**One sentence.** Slime restores, converts and transfers one bucket of training parameters, waits for completion, clears that bucket and reuses the space for the next one.
+
+### On the stage
+
+- The two panels compare the same SGLang and KV allocation with either the whole training model or one bucket beside it. The shapes are schematic, not a byte-scale drawing.
+- `Bucket 1` is the only training-weight group restored in the right panel. Later buckets wait outside the GPU.
+- The bottom order ends with `ray.get` and `clear`. The sender waits for SGLang's update before releasing the converted bucket.
+
+### Formula and symbols
+
+$$R_{\text{all}}=S+M,\qquad R_{\text{bucket}}=S+b,\qquad b<M$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $S$ | SGLang weights, KV and related resident state | Existing rollout allocation |
+| $M$ | Whole training model restored together | Left panel |
+| $b$ | One restored parameter bucket | Right panel |
+| $R$ | Temporary combined residency | Sum in each panel |
+
+### The numbers on the stage
+
+No numeric $S$, $M$ or $b$ is available in the source. The valid conclusion is the smaller temporary group, not a claimed percentage or byte saving.
+
+### Next
+
+Buckets bound memory, but parameters still change one by one. The next step draws the boundary that keeps generation from observing a half-old, half-new model.
+
+Source: `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-1.md:254-272,280-296,329-395`.
