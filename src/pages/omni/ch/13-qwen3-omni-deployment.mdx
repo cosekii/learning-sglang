@@ -27,6 +27,8 @@ Step 6 applies the shipped replica2 YAML. The thinker defaults to 64 running req
 
 Step 7 separates health from performance. Readiness sends a small image, one second of audio and a short instruction, with at most eight new tokens per token-generating stage (`docs/cookbook/qwen3_omni.md:202-204`; `sglang_omni/models/qwen3_omni/config.py:328-366`). Video, large batches and other shapes may still warm later. A comparison first resolves the config, then holds input, sampling, hardware and warmup fixed while changing one deployment choice (`docs/basic_usage/process_topology.md:52-53`; Chapter 8 Steps 6 and 8). The documented sweep `--concurrencies 1,16 --repeats 5 --generate-only` gives ten measured runs per arm; raw repeats, failures and memory stay in the comparison. TTFA and server time stay separate from listener stalls and the Chapter 12 stop/response clocks. The benchmark notes that p99 needs at least 100 measured samples (`benchmarks/README.md:249-288`).
 
+Step 8 constructs one starting plan for eight concurrent spoken requests: default BF16 speech, text and audio output, thinker and code2wav on GPU 0, and talker alone on GPU 1. This applies the public concurrency-eight placement evidence without claiming the plan wins locally. Eight is below the 32-request talker cap, leaving `32 − 8 = 24` unallocated cap slots, so the example does not add a replica before measuring a queue. The evidence row keeps first audio, total time, stalls, failures, memory, output quality and raw repeats; interruption tests also keep the Chapter 12 listener clocks. The closing map revisits configuration and binding (Chapters 1–3), readiness, data and queues (4–6), memory and measurement (7–8), and optimization and model strategies (9–12).
+
 Code references in this chapter pin to `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`. The chapter reads source, shipped configs and public measurements; it does not run a model or benchmark.
 
 </details>
@@ -47,6 +49,8 @@ Code references in this chapter pin to `sglang-omni origin/main@9725235249df8512
 第 6 步应用随仓库发布的 replica2 YAML。thinker 默认最多运行 64 个请求，每个 talker engine 默认 32 个（`sglang_omni/models/qwen3_omni/stages.py:1276-1286`；`sglang_omni/models/qwen3_omni/config.py:37,454-496`）。两个 talker 副本让 code2wav 工厂计算 `codec_state_slots = 32 × 2 = 64`，用保存的 codec 状态覆盖 talker 可运行的流（`config.py:468-476`；`tests/unit_test/qwen3_omni/test_colocation_config.py:177-203`）。YAML 把 talker/code2wav 副本 0 放在 GPU 1，副本 1 放在 GPU 2，每个副本 GPU 申报 `12.3% + 1.4% = 13.7%`（`examples/configs/qwen3_omni_speech_replica2.yaml:1-42`）。这是配置容量，不是吞吐实测；自定义副本策略下也不是绑定契约保证。
 
 第 7 步区分健康与性能。readiness 发送一张小图、一秒声音和一条短指令，每个生成 token 的 stage 最多生成 8 个新 token（`docs/cookbook/qwen3_omni.md:202-204`；`sglang_omni/models/qwen3_omni/config.py:328-366`）。视频、大 batch 和其他形状可能仍会在之后预热。比较先解析配置，再固定输入、采样、硬件和预热，只改一个部署选择（`docs/basic_usage/process_topology.md:52-53`；第 8 章第 6、8 步）。文档中的 `--concurrencies 1,16 --repeats 5 --generate-only` 给每组十次测量；原始重复、失败和显存也进入比较。TTFA 和服务器时间与听者卡顿、第 12 章停答／回应时钟分开。benchmark 说明 p99 至少需要 100 个测量样本（`benchmarks/README.md:249-288`）。
+
+第 8 步为 8 路并发语音请求构造一个起步方案：默认 BF16 语音、文字和声音输出、thinker 和 code2wav 在 GPU 0、talker 独占 GPU 1。这里应用公开的 8 路摆卡证据，但不声称该方案在本地获胜。8 小于 talker 的 32 请求上限，还剩 `32 − 8 = 24` 个未占上限，所以算例不在测量排队前增加副本。证据行保留首音、总耗时、卡顿、失败、显存、输出质量和原始重复；打断测试还保留第 12 章听者时钟。收尾地图回看配置与绑定（第 1–3 章）、就绪、数据与队列（第 4–6 章）、显存与测量（第 7–8 章）、优化与模型策略（第 9–12 章）。
 
 本章代码出处固定到 `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`。本章只读源码、随仓库配置和公开测量，没有运行模型或 benchmark。
 

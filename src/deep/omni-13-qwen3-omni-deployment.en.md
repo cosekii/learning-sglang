@@ -267,3 +267,44 @@ Resolve the configuration with `sgl-omni config resolve --config <config.yaml> -
 ### Next
 
 The final step puts configuration, waiting, data and memory on one decision sheet for the whole book.
+
+## Step 8 · One deployment decision sheet
+
+> **In one line:** An eight-request example starts with default BF16 speech and an isolated talker, then keeps or changes that choice only from recorded evidence.
+
+### On the stage
+
+- The goal is eight concurrent spoken requests with earlier first sound.
+- The starting route requests text and audio from the default speech graph. BF16 is the initial checkpoint because it is the default, not because this chapter measured it as best.
+- GPU 0 holds thinker and code2wav; GPU 1 holds the talker. This follows the public concurrency-eight placement comparison from Step 3.
+- The talker cap has 24 unallocated slots after subtracting the example's eight requests. No second pair is added before a queue is measured.
+- The evidence row separates server metrics from listener metrics and retains output quality and raw repeats.
+- The bottom map closes the book: Chapters 1–3 cover configuration, routes and binding; 4–6 readiness, data and queues; 7–8 memory and measurement; 9–12 optimization and model strategies.
+
+### Formula
+
+$$
+V=X-I
+$$
+
+| Symbol | Meaning | Size | Source |
+|---|---|---:|---|
+| $V$ | Unallocated talker running-cap slots | 24 | This step |
+| $X$ | Running-request cap per talker | 32 | Step 6 |
+| $I$ | Expected concurrent requests in this example | 8 | Constructed goal |
+
+### The numbers on the stage
+
+$$
+V=32-8=24\ \text{unallocated cap slots}
+$$
+
+These are scheduler slots below the configured cap, not measured spare throughput or free GPU memory. A real queue, rising first-sound tails or another bottleneck must be observed before adding replicas.
+
+### Decision boundary
+
+This is a constructed starting plan, not a benchmark winner. First resolve the configuration and run readiness. Then compare the starting plan with one changed choice at a time using the controls in Step 7. Keep separate first-audio, total-time and listener results, and recheck output quality after changing precision.
+
+### Next
+
+This closes Learning SGLang Omni. The decision sheet records what was chosen, which earlier mechanism each choice uses and which evidence could change it.

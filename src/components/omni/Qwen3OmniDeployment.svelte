@@ -45,6 +45,7 @@
     QWEN_BENCH_REPEATS,
     QWEN_BENCH_RUNS_PER_ARM,
     QWEN_P99_MIN_SAMPLES,
+    QWEN_EXAMPLE_UNALLOCATED_TALKER_SLOTS,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -70,6 +71,9 @@
   }, {
     caption: 'Readiness uses small inputs and eight tokens per generating stage. Measure real traffic with fixed settings and separate clocks.',
     captionZh: '就绪检查用小输入，每个生成 stage 限 8 token。再用真实流量和不同时钟测量。',
+  }, {
+    caption: 'One decision sheet records the route, placement, precision, capacity and evidence. Keep the choice only after your own measurements.',
+    captionZh: '一张决策表记录路线、摆卡、精度、容量和证据。自己的测量通过后，才保留这个选择。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -86,7 +90,7 @@
     return () => query.removeEventListener('change', update);
   });
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [870, 820, 900, 850, 850, 930, 910][step] : [560, 600, 650, 580, 600, 630, 600][step]);
+  const H = $derived(phone ? [870, 820, 900, 850, 850, 930, 910, 1080][step] : [560, 600, 650, 580, 600, 630, 600, 740][step]);
   const budgetSegments = [
     ...COLOCATED_STAGE_SHARES.flatMap((stage) => stage.name === 'thinker' ? [
       { name: 'thinker AR', percent: QWEN_THINKER_EFFECTIVE_AR_PERCENT, kind: 'stage' },
@@ -355,6 +359,39 @@
         {/each}
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('Readiness can leave video, large batches and other shapes unwarmed.', 'readiness 可能没有预热视频、大 batch 和其他形状。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">p99 {t('needs at least', '至少需要')} {QWEN_P99_MIN_SAMPLES} {t('measured samples; keep raw repeats.', '个测量样本；保留每次原始结果。')}</text>
+      {:else if step === 7}
+        <text x={phone ? 15 : 20} y="24" class="rowlabel">{t('ONE DEPLOYMENT DECISION SHEET', '一张部署决策表')}</text>
+        <text x={phone ? 15 : 20} y="49" class="tag">{t('blue = starting choice · orange = evidence still required', '蓝 = 起步选择 · 橙 = 还需要的证据')}</text>
+        <text x={phone ? 15 : 20} y="72" class="tag strong">{t('EXAMPLE: 8 concurrent spoken requests, earlier first sound', '算例：8 路并发语音请求，希望首音更早')}</text>
+        {#each [
+          { label: 'GOAL', labelZh: '目标', a: '8 concurrent spoken requests', aZh: '8 路并发语音请求', b: 'target: earlier first sound', bZh: '目标：首音更早', evidence: false },
+          { label: 'ROUTE', labelZh: '路线', a: 'modalities=["text", "audio"]', aZh: 'modalities=["text", "audio"]', b: 'default speech graph · text + sound', bZh: '默认语音图 · 文字 + 声音', evidence: false },
+          { label: 'PRECISION', labelZh: '精度', a: 'BF16 checkpoint first', aZh: '先用 BF16 checkpoint', b: 'FP8 or INT4 needs memory + quality evidence', bZh: '换 FP8 或 INT4 要有显存和质量证据', evidence: false },
+          { label: 'PLACEMENT', labelZh: '摆卡', a: 'GPU 0: thinker + code2wav', aZh: 'GPU 0：thinker + code2wav', b: 'GPU 1: talker · 2 GPUs · 7 processes', bZh: 'GPU 1：talker · 2 张卡 · 7 个进程', evidence: false },
+          { label: 'CAPACITY', labelZh: '容量', a: `8 ≤ ${QWEN_TALKER_MAX_RUNNING_REQUESTS} talker running cap`, aZh: `8 ≤ talker 运行上限 ${QWEN_TALKER_MAX_RUNNING_REQUESTS}`, b: `32 − 8 = ${QWEN_EXAMPLE_UNALLOCATED_TALKER_SLOTS} unallocated cap slots · no replica yet`, bZh: `32 − 8 = ${QWEN_EXAMPLE_UNALLOCATED_TALKER_SLOTS} 个未占上限 · 先不加副本`, evidence: false },
+          { label: 'EVIDENCE', labelZh: '证据', a: 'server: first audio p50/p90 · total · failures · memory', aZh: '服务器：首音 p50/p90 · 总耗时 · 失败 · 显存', b: 'listener: stalls · L−S · N−R · quality · raw repeats', bZh: '听者：卡顿 · L−S · N−R · 质量 · 原始重复', evidence: true },
+        ] as row, i}
+          {@const y = phone ? 105 + i * 100 : 105 + i * 75}
+          <rect x={phone ? 15 : 20} {y} width={phone ? 270 : 680} height={phone ? 88 : 65} rx="8" fill={row.evidence ? 'var(--gen-soft)' : 'var(--accent-soft)'} fill-opacity="0.25" stroke={row.evidence ? 'var(--gen)' : 'var(--accent)'} />
+          <text x={phone ? 29 : 34} y={y + 24} class="tag strong" fill={row.evidence ? 'var(--gen)' : 'var(--accent)'}>{t(row.label, row.labelZh)}</text>
+          <text x={phone ? 29 : 170} y={y + (phone ? 49 : 25)} class="tag strong">{t(row.a, row.aZh)}</text>
+          <text x={phone ? 29 : 170} y={y + (phone ? 73 : 49)} class="tag">{t(row.b, row.bZh)}</text>
+        {/each}
+        <text x={W / 2} y={phone ? 738 : 593} text-anchor="middle" class="rowlabel">{t('THE WHOLE-BOOK CHECK', '全书检查')}</text>
+        {#each [
+          { ref: 'Ch. 1–3', refZh: '第 1–3 章', text: 'config · route · binding', textZh: '配置 · 路线 · 绑定' },
+          { ref: 'Ch. 4–6', refZh: '第 4–6 章', text: 'readiness · data · queues', textZh: '就绪 · 数据 · 队列' },
+          { ref: 'Ch. 7–8', refZh: '第 7–8 章', text: 'memory · measurement', textZh: '显存 · 测量' },
+          { ref: 'Ch. 9–12', refZh: '第 9–12 章', text: 'optimization · model strategies', textZh: '优化 · 模型策略' },
+        ] as card, i}
+          {@const x = phone ? 15 : 20 + i * 172}
+          {@const y = phone ? 765 + i * 58 : 620}
+          <rect {x} {y} width={phone ? 270 : 160} height={phone ? 48 : 60} rx="7" fill="var(--bg)" stroke="var(--line)" />
+          <text x={x + 12} y={y + 21} class="tag strong">{t(card.ref, card.refZh)}</text>
+          <text x={x + 12} y={y + (phone ? 39 : 43)} class="tag">{t(card.text, card.textZh)}</text>
+        {/each}
+        <text x={W / 2} y={phone ? 1038 : 709} text-anchor="middle" class="tag strong">{t('Change one choice only after these records identify the wait to reduce.', '只有记录指出要省哪段等待，才改一个选择。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('A constructed starting plan, not a measured winner. No local model run.', '构造的起步方案，不是实测胜者。本地没有运行模型。')}</text>
       {/if}
     </svg>
   </div>
