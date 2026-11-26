@@ -242,19 +242,24 @@
           { before: '[C, A, B]', after: '[A, B, C]', pick: 'C' },
         ] as row, i}
           {@const y = phone ? 118 + i * 66 : 120 + i * 66}
-          <text x={phone ? 18 : 50} y={y + 25} class="code">{row.before}</text>
-          <text x={phone ? 135 : 290} y={y + 25} class="result">→ {row.pick}</text>
-          <text x={phone ? 190 : 430} y={y + 25} class="code">{row.after}</text>
+          {@const active = phase > 0 && phase <= 6 && (phase - 1) % 3 === i}
+          <g opacity={phase === 0 || active ? 1 : 0.25} style="transition: opacity 350ms">
+            <text x={phone ? 18 : 50} y={y + 25} class="code">{row.before}</text>
+            <text x={phone ? 135 : 290} y={y + 25} class="result">→ {row.pick}</text>
+            <text x={phone ? 190 : 430} y={y + 25} class="code">{row.after}</text>
+          </g>
         {/each}
         <text x={phone ? 18 : 50} y={phone ? 330 : 340} class="small strong">{t('SIX REQUESTS · NONE HAS FINISHED', '六个请求 · 没有一个已结束')}</text>
         {#each ROUTER_ROUND_ROBIN_SEQUENCE as workerIndex, i}
           {@const x = phone ? 20 + (i % 3) * 90 : 50 + i * 105}
           {@const y = phone ? 355 + Math.floor(i / 3) * 105 : 375}
-          <rect x={x} y={y} width={phone ? 80 : 90} height="78" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x={x + (phone ? 40 : 45)} y={y + 28} text-anchor="middle" class="small">{t('request', '请求')} {i + 1}</text>
-          <text x={x + (phone ? 40 : 45)} y={y + 59} text-anchor="middle" class="result">{ROUTER_ROUND_ROBIN_WORKERS[workerIndex]}</text>
+          <g opacity={phase === i + 1 ? 1 : phase > i + 1 ? 0.45 : 0.12} style="transition: opacity 350ms">
+            <rect x={x} y={y} width={phone ? 80 : 90} height="78" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width={phase === i + 1 ? 3 : 1} />
+            <text x={x + (phone ? 40 : 45)} y={y + 28} text-anchor="middle" class="small">{t('request', '请求')} {i + 1}</text>
+            <text x={x + (phone ? 40 : 45)} y={y + 59} text-anchor="middle" class="result">{ROUTER_ROUND_ROBIN_WORKERS[workerIndex]}</text>
+          </g>
         {/each}
-        <text x={W / 2} y={phone ? 585 : 495} text-anchor="middle" class="result">A → B → C → A → B → C</text>
+        <text x={W / 2} y={phone ? 585 : 495} text-anchor="middle" class="result" opacity={phase >= 6 ? 1 : 0.12} style="transition: opacity 350ms">A → B → C → A → B → C</text>
         <text x={W / 2} y={phone ? 620 : 530} text-anchor="middle" class="small">{t('Unfinished requests do not change these turns.', '未结束的请求也不会改变轮换顺序。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'One order · skipped workers keep relative order' : 'One shared order across request types; skipped workers keep their relative order.', phone ? '一个顺序 · 跳过的 worker 保持相对顺序' : '不同请求类型共用一个顺序；跳过的 worker 保持相对顺序。')}</text>
       {:else if step === 5}
@@ -373,7 +378,7 @@
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Next chapter: worker failure and graceful exit.', '下一章：worker 故障与退出。')}</text>
       {/if}
-      {#if step <= 3}<LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={4} label={t('loops', '循环')} />{/if}
+      {#if step <= 4}<LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={4} label={t('loops', '循环')} />{/if}
     </svg>
   </div>
   <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh}
