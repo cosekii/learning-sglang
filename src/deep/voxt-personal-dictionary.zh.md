@@ -88,7 +88,7 @@ $$\text{提示} = [\text{启用的词条，按 } UpdatedAt \text{ 从新到旧}]
 
 ### 边界
 
-有些识别服务只收几十条提示，`dict.Hints` 的注释说它们会从列表末尾删。截尾保留列表前面的词条，所以按最近改过优先排时，新词条最能保住。
+有些识别服务只收数量有限的提示，`dict.Hints` 的注释说它们会从列表末尾删。截尾保留列表前面的词条，所以按最近改过优先排时，新词条最能保住。
 
 ### 接下来
 
@@ -114,7 +114,7 @@ $$\text{提示} = [\text{启用的词条，按 } UpdatedAt \text{ 从新到旧}]
 - 同一起点有多个可匹配时，**最长**的那个胜出（模式先按长度降序排，`alias.go:73`）。
 - 已经按词条写好的原文不动，所以再跑一次也不会改坏（`alias.go:90`）。
 
-$$\text{替换}(\text{Preeya}) = \text{Priya}\quad\text{当词典启用且别名启用}$$
+$$\text{替换}(\text{Preeya}) = \text{Priya}\quad\text{当词典和词条都启用}$$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
@@ -124,7 +124,7 @@ $$\text{替换}(\text{Preeya}) = \text{Priya}\quad\text{当词典启用且别名
 
 ### 为什么不受模型影响
 
-只用别名、不靠模型的这条路径，好处是「模型没来或报错」时结果仍然对。`spoken()` 在 `session/cleanup.go:68` 调用 `dict.Replace(raw, r.terms)`；`session/run.go:301` 先把识别原话交给它，`run.go:312` 才进入清理。顺序就是这样保证的。
+只用别名、不靠模型的这条替换路径，在模型没来或报错时仍会把 `Preeya` 换成 `Priya`。`spoken()` 在 `session/cleanup.go:68` 调用 `dict.Replace(raw, r.terms)`；`session/run.go:301` 先把识别原话交给它，`run.go:312` 才进入清理。顺序就是这样保证的。
 
 ### 接下来
 

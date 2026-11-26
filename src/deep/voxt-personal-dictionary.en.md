@@ -88,7 +88,7 @@ An alias is exactly what recognition gets wrong. Sending it as a hint tells the 
 
 ### Boundary
 
-Some recognition services take only tens of hints; the `dict.Hints` comment says they cut the list from the end. Truncating the tail preserves the prefix, so newest-changed terms survive at the front.
+Some recognition services accept a limited number of hints; the `dict.Hints` comment says they cut the list from the end. Truncating the tail preserves the prefix, so newest-changed terms survive at the front.
 
 ### Next
 
@@ -124,7 +124,7 @@ $$\text{replace}(\text{Preeya}) = \text{Priya}\quad\text{when the dictionary and
 
 ### Why this does not depend on the model
 
-This is the one path that still works when the language model is missing or errors. `spoken()` calls `dict.Replace(raw, r.terms)` at `session/cleanup.go:68`; `session/run.go:301` hands it the recognized text first, and `run.go:312` enters cleanup only after that. The order is what guarantees it.
+This replacement still works when the language model is missing or errors. `spoken()` calls `dict.Replace(raw, r.terms)` at `session/cleanup.go:68`; `session/run.go:301` hands it the recognized text first, and `run.go:312` enters cleanup only after that. The order is what guarantees it.
 
 ### Next
 
