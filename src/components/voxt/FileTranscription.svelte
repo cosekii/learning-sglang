@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
+  import LoopProgress from '../LoopProgress.svelte';
   import StepControls from '../StepControls.svelte';
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
@@ -61,14 +62,14 @@
     caption: 'SRT keeps the cue times; TXT keeps one line per cue.',
     captionZh: 'SRT 保留每句的时间；TXT 每句一行。',
   }, {
-    caption: 'Recognition failure leaves the output file alone. A later disk-write failure can still leave part of a file.',
-    captionZh: '识别失败不动输出文件。之后的写盘失败仍可能留下部分文件。',
+    caption: 'Recognition failure leaves the output untouched. A later write can still leave part of it.',
+    captionZh: '识别失败不动输出文件。识别成功后的写盘失败仍可能留下半个文件。',
   }, {
     caption: 'The file route writes no history and keeps no recording.',
     captionZh: '文件路线不写历史，也不留录音。',
   }, {
-    caption: 'The audio goes to the Transcribe model, on this Mac or remote. How do model files reach this Mac?',
-    captionZh: '声音送给 Transcribe 选的模型：本机或远端。模型文件又怎样到达这台 Mac？',
+    caption: 'Audio goes to Transcribe, local or remote. How do its model files reach this Mac?',
+    captionZh: '音频交给 Transcribe 模型，本机或远程。模型文件怎么来到这台 Mac？',
   }];
   const ariaLabels = [{
     en: 'Two routes. A dictation goes from the microphone through a dictation session and cleanup to the cursor, with a history row when history is enabled. A file goes from disk through Voxt transcribe to SRT or TXT; it reuses the model set for Transcribe but opens no session and runs no cleanup. A one-hour meeting is 3600 seconds of sound; Step 2 turns that into bytes.',
@@ -105,6 +106,24 @@
     zh: '声音送给 Transcribe 选定的模型：本机或配置的远端服务。下一章问模型文件和应用更新怎样到达这台 Mac。',
   }];
   let step = $state(0);
+  let clock = $state(0), lap = $state(0), lapMs = $state(0), reduced = $state(false);
+  const nextLap = (ms: number) => untrack(() => { lapMs = ms; lap++; });
+  $effect(() => {
+    if (step !== 2) { clock = 0; return; }
+    reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) { clock = 8000; return; }
+    const SPAN = 8000, SLOW = 1.6, REST = 1400, lapLen = SPAN / SLOW + REST;
+    let raf = 0, t0 = 0;
+    const tick = (now: number) => {
+      if (!t0 || now - t0 >= lapLen) { t0 = now; nextLap(lapLen); }
+      clock = Math.min(SPAN, (now - t0) / SLOW);
+      raf = requestAnimationFrame(tick);
+    };
+    clock = 0;
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  });
+  const quietNow = $derived(clock >= 2900 && clock <= 3350);
   $effect(() => {
     const q = Number(new URLSearchParams(window.location.search).get('step'));
     if (q >= 1 && q <= steps.length) step = q - 1;
@@ -192,7 +211,7 @@
           <text x="535" y="328" text-anchor="middle" class="detail">{t('SRT = subtitle · TXT = plain text', 'SRT = 字幕 · TXT = 纯文本')}</text>
 
           <text x="28" y="370" class="pt">·</text>
-          <text x="38" y="370" class="detail">{t(`a one-hour meeting is ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} s of sound, already in a file`, `一小时的会议是 ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} 秒的声音，本来就在文件里`)}</text>
+          <text x="38" y="370" class="detail">{t(`a one-hour meeting is ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} s of sound; decoded, 115.2 MB before recognition`, `一小时的会议是 ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} 秒的声音；解码后、识别前有 115.2 MB`)}</text>
           <text x="28" y="392" class="pt">·</text>
           <text x="38" y="392" class="detail">{t('both use Voxt and a speech model', '两条都用 Voxt 和语音模型')}</text>
           <text x="28" y="414" class="pt">·</text>
@@ -226,8 +245,8 @@
           <text x="150" y="559" text-anchor="middle" class="detail">{t('SRT = subtitle · TXT = plain text', 'SRT = 字幕 · TXT = 纯文本')}</text>
 
           <text x="20" y="606" class="pt">·</text>
-          <text x="30" y="606" class="detail">{t(`a one-hour meeting is ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} s`, `一小时的会议是 ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} 秒`)}</text>
-          <text x="30" y="628" class="detail">{t('of sound, already in a file', '的声音，本来就在文件里')}</text>
+          <text x="30" y="606" class="detail">{t(`a one-hour meeting is ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} s of sound`, `一小时的会议是 ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} 秒的声音`)}</text>
+          <text x="30" y="628" class="detail">{t('decoded: 115.2 MB before recognition', '解码后有 115.2 MB 才识别')}</text>
           <text x="20" y="650" class="pt">·</text>
           <text x="30" y="650" class="detail">{t('both use Voxt and a speech model', '两条都用 Voxt 和语音模型')}</text>
           <text x="20" y="672" class="pt">·</text>
@@ -361,7 +380,12 @@
             <line x1={40 + i * 4} y1={150 - height / 2} x2={40 + i * 4} y2={150 + height / 2}
               stroke={speech ? 'var(--accent)' : 'var(--line)'} stroke-width="3" stroke-linecap="round" />
           {/each}
+          {#if step === 2}
+            <line x1={40 + clock / 8000 * 636} y1="128" x2={40 + clock / 8000 * 636} y2="172" stroke="var(--fg)" stroke-width="2" />
+            <circle cx={40 + clock / 8000 * 636} cy="124" r="4" fill="var(--fg)" />
+          {/if}
           <rect x="272" y="182" width="36" height="12" fill="var(--gen-soft)" stroke="var(--gen)" />
+          {#if quietNow}<rect x="272" y="182" width="36" height="12" fill="none" stroke="var(--fg)" stroke-width="2" />{/if}
           <text x="290" y="214" text-anchor="middle" class="detail amber">{sec(VOXT_TRANSCRIBE_SPEECH_ENDS_MS[0])}–{sec(VOXT_TRANSCRIBE_CUE_ENDS_MS[0])} s</text>
           <text x="290" y="232" text-anchor="middle" class="detail">{t(`${VOXT_CUTTER_SILENCE_MS} ms quiet ends cue 1`, `${VOXT_CUTTER_SILENCE_MS} ms 安静结束第 1 句`)}</text>
           <text x="40" y="270" class="pt">·</text>
@@ -369,6 +393,7 @@
           <text x="40" y="294" class="pt">·</text>
           <text x="50" y="294" class="detail">{t('the cue keeps that quiet at its end', '句尾的安静也一起留下')}</text>
           <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Constructed 8-second example; quiet parts depend on the sound.', '构造的 8 秒例子；安静段由实际声音决定。')}</text>
+          {#if step === 2 && !reduced}<LoopProgress ms={lapMs} {lap} />{/if}
         {:else}
           <text x="65" y="82" text-anchor="middle" class="label">{t('CUE 1', '第 1 句')}</text>
           <text x="222" y="82" text-anchor="middle" class="label">{t('CUE 2', '第 2 句')}</text>
@@ -386,6 +411,10 @@
             <line x1={x} y1={150 - height / 2} x2={x} y2={150 + height / 2}
               stroke={speech ? 'var(--accent)' : 'var(--line)'} stroke-width="2.5" stroke-linecap="round" />
           {/each}
+          {#if step === 2}
+            <line x1={20 + clock / 8000 * 256} y1="132" x2={20 + clock / 8000 * 256} y2="168" stroke="var(--fg)" stroke-width="2" />
+            <circle cx={20 + clock / 8000 * 256} cy="128" r="3.5" fill="var(--fg)" />
+          {/if}
           <text x="65" y="178" text-anchor="middle" class="detail">0.00–{sec(VOXT_TRANSCRIBE_CUE_ENDS_MS[0])} s</text>
           <text x="222" y="178" text-anchor="middle" class="detail">{sec(VOXT_TRANSCRIBE_CUE_STARTS_MS[1])}–{sec(VOXT_TRANSCRIBE_CUE_ENDS_MS[1])} s</text>
           <text x="30" y="216" class="pt">·</text>
@@ -395,6 +424,7 @@
           <text x="30" y="268" class="pt">·</text>
           <text x="40" y="268" class="detail">{t('the quiet stays with the cue', '安静跟着句子留下')}</text>
           <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Constructed 8-second example.', '构造的 8 秒例子。')}</text>
+          {#if step === 2 && !reduced}<LoopProgress ms={lapMs} {lap} x={232} y={18} />{/if}
         {/if}
       {:else if step === 4}
         <text x={W / 2} y="27" text-anchor="middle" class="title">{t('A CUE STARTS A LITTLE EARLY', '一句稍微提前开始')}</text>

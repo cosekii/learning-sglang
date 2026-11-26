@@ -6,13 +6,34 @@
 
 - The left column is **dictation**: the microphone and helper send sound, one dictation session handles it, and the result appears at the cursor and may also be written to history.
 - The right column is **file**: `meeting.m4a` on disk, marked "1-hour meeting · compressed M4A", goes through `Voxt transcribe` and becomes `meeting.srt` or `talk.txt`.
-- The lines below say: a one-hour meeting is 3,600 s of sound already in a file; both routes use Voxt and a speech model; the file route has no dictation session or history row. The decoded size is Step 2's arithmetic.
+- The lines below say: a one-hour meeting is 3,600 s of sound already in a file; decoded, that is 115.2 MB before recognition; both routes use Voxt and a speech model; the file route has no dictation session or history row.
 
 ### Why this needs its own route
 
 The difference is where the result goes and what starts it. A dictation captures sound for the cursor; a recording already exists as a file, and the wanted result is SRT or TXT on disk. That file is then archived, played as subtitles, or fed to a script, so the file route writes no history entry and opens no dictation session.
 
 Length does not force the split. The changelog removed the recording length limit (`Voxt/CHANGELOG.md:531`), and `audio.maxSeconds = 0` means no limit (`Voxt/docs/settings.md:150`). The stage's one-hour meeting (3,600 s) is a scale example, not a limit that dictation cannot reach.
+
+### The one-hour cost
+
+One number shows why a file is heavy before recognition sees it:
+
+$$ B = T \times f_s \times b $$
+
+| Symbol | What it is | Where it comes from |
+|---|---|---|
+| $T$ | audio length | 3,600 s, the stage's one-hour meeting |
+| $f_s$ | samples a second | 16,000 per second, `asr.SampleRate`, `asr/asr.go:32` |
+| $b$ | bytes per sample | 2 B, 16-bit PCM |
+| $B$ | decoded bytes | this step's arithmetic |
+
+### Plugging in the stage's numbers
+
+| Quantity | Arithmetic | Result |
+|---|---|---|
+| one hour of decoded sound | $3{,}600 \times 16{,}000 \times 2$ | 115,200,000 B = 115.2 MB |
+
+Step 2 repeats this arithmetic on a constructed eight-second file and adds the 44-byte WAV header.
 
 ### The two routes in code
 
@@ -79,7 +100,7 @@ The PCM can go to the model now, but the model lives inside the running Voxt. St
 - The top row is the command, `transcribe.sock` and the running Voxt. The socket says "your account only".
 - The line above the dashed box is the default request: `{"op":"transcribe","bytes":256000}`.
 - The upper lane is PCM still moving right, marked 256,000 bytes; the lower lane is replies coming back from the right.
-- The line below says: a reply can arrive before the last PCM byte.
+- The line below the dashed box names the reply fields: `op` is the action, `segment` is one cue, and `done` plus `count` is the finished reply and how many cues it holds.
 
 ### Request and replies
 
@@ -236,7 +257,7 @@ $$ \text{search} = [\,7 - 1,\ 7\,]\ \text{s},\qquad w^* = \arg\min_{w \subset \t
 | $w$ | a 100 ms window | `cutterQuietWindow`, `cutter.go:17` |
 | $w^*$ | the quietest window | `quietestCutOffset`, `cutter.go:189-199` |
 | RMS | sound energy inside the window | `frameRMS`, `cutter.go:165` |
-| cut | the midpoint of $w^*$ in the buffer | `bestOff + winBytes/2`, `cutter.go:198`; 6.51 s here |
+| cut | the midpoint of $w^*$ in the buffer | `bestOff + winBytes/2`, `cutter.go:199`; 6.51 s here |
 
 ### Plugging in the stage's numbers
 
@@ -269,7 +290,7 @@ With the cues cut, the app sends each one to the model. Step 7 covers recognitio
 
 - The wide blue box on top is Transcribe's speech model, with a note that it is chosen in Settings → Speech models.
 - Two rows follow: the orange box on the left is a cue's time range, and the arrow points to the text in the neutral box on the right.
-- The footnotes say an empty answer is dropped, and a missing `--lang` uses dictation's language hint.
+- The line at the bottom says an empty answer is left out.
 
 ### Where the recognizer comes from
 
@@ -362,6 +383,23 @@ The cues now have a format. Step 9 covers when the output file is opened.
 
 The command builds the whole result in an in-memory `bytes.Buffer`. If recognition fails midway, `err != nil` and the function returns before opening the output, so it creates no new file and overwrites no old file (`Voxt/transcribe_cli.go:73-87`). Only after recognition succeeds does the command call `os.WriteFile` (`transcribe_cli.go:91-100`). That write is not atomic: a disk-write failure can truncate an old file or leave a partial new file, so the chapter does not promise that every failure leaves no partial file. With `-o -` or no `-o`, it writes the buffer to standard output and creates no file.
 
+$$ \text{output} = \begin{cases} \text{none} & \text{if any cue fails} \\ \text{one WriteFile(buffer)} & \text{if every cue succeeds} \end{cases} $$
+
+| Symbol | What it is | Where it comes from |
+|---|---|---|
+| cue | one recognized segment | Steps 7–8 |
+| fail | a recognition error for one cue | `fileasr.go:44-56` |
+| buffer | all cue text held in memory | `transcribe_cli.go:73-87` |
+| WriteFile | the single non-atomic write | `transcribe_cli.go:91-100` |
+| output | the file, or standard output with `-o -` | `transcribe_cli.go:91-100` |
+
+### Plugging in the stage's numbers
+
+| Run | Cues | Failures | Output |
+|---|---|---|---|
+| left | 2 | 1 (cue 1 fails) | none; an old file stays as it was |
+| right | 2 | 0 | one SRT or TXT write |
+
 ### Next
 
 The output is done. Step 10 looks at what this route leaves on the Mac.
@@ -420,6 +458,22 @@ Step 11 shows where the audio goes.
 
 `fileRecognizer` reads the Transcribe feature model (`transcribe_socket.go:64-67`) and gets that model's provider with `a.local.ASR(ctx, p.id)` (`transcribe_socket.go:80`). The model can be installed on this Mac or configured as a remote service. The Privacy section of `docs/transcribe.md` says the audio goes where Transcribe's audio goes, the on-device model or the remote service, and Voxt keeps nothing of it.
 
+$$ \text{provider} = \text{model}(\text{Transcribe}) \in \{\text{on this Mac},\ \text{remote}\} $$
+
+| Symbol | What it is | Where it comes from |
+|---|---|---|
+| provider | where one cue's audio is recognized | `transcribe_socket.go:64-80` |
+| Transcribe | the feature whose model is chosen in Settings | `transcribe_socket.go:64-67` |
+| on this Mac | the model installed and run locally | this step's left box |
+| remote | the service set for Transcribe | `docs/transcribe.md` |
+| audio | each cue's PCM bytes | Steps 2–7, 256,000 B for the constructed file |
+
+### Plugging in the stage's numbers
+
+| Run | Audio | Provider | Kept by Voxt |
+|---|---|---|---|
+| stage | 256,000 B, cut into 2 cues | one of the two boxes, chosen by Transcribe | nothing |
+
 | Question | Answer | Source |
 |---|---|---|
 | Where does the audio go? | the model chosen for Transcribe | `transcribe_socket.go:64-80` |
@@ -427,4 +481,4 @@ Step 11 shows where the audio goes.
 
 ### The next question
 
-The file route works, but it depends on an installed speech model and a running Voxt. How model files and app updates themselves reach this Mac is the next chapter's question.
+The file route works, but it depends on an installed speech model and a running Voxt. How model files themselves reach this Mac is the next chapter's question.

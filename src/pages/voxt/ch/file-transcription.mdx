@@ -33,7 +33,7 @@ Step 9 reads the write timing. A recognition error returns before the command op
 
 Step 10 reads what is kept. Dictation writes history only when `Privacy.KeepHistory` is enabled, which is the default (`Voxt/internal/session/run.go:572-576`, `Voxt/internal/settings/settings.go:373-380`). The app's completion hook writes only `transcribed a file for the command line: <length> of audio, <count> segments`, never the text (`transcribe_socket.go:90-98`).
 
-Step 11 reads where the audio goes. `fileRecognizer` chooses Transcribe's model (`transcribe_socket.go:64-80`), and `docs/transcribe.md` says the audio goes to that on-device model or the remote service set for Transcribe, with no history entry and no recording. The chapter's last line asks how model files and app updates reach the Mac, which is the next chapter.
+Step 11 reads where the audio goes. `fileRecognizer` chooses Transcribe's model (`transcribe_socket.go:64-80`), and `docs/transcribe.md` says the audio goes to that on-device model or the remote service set for Transcribe, with no history entry and no recording. The chapter's last line asks how model files reach the Mac, which is the next chapter.
 
 Source revision: `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`. The deep dive lists exact files and lines.
 
@@ -62,7 +62,7 @@ Source revision: `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683
 
 第 10 步读留下了什么。听写只在 `Privacy.KeepHistory` 开启时写历史，默认开启（`Voxt/internal/session/run.go:572-576`、`Voxt/internal/settings/settings.go:373-380`）。应用的完成回调只写 `transcribed a file for the command line: <长度> of audio, <句数> segments`，不写文字（`transcribe_socket.go:90-98`）。
 
-第 11 步读声音的去向。`fileRecognizer` 选 Transcribe 的模型（`transcribe_socket.go:64-80`）；`docs/transcribe.md` 说声音送给本机模型或为 Transcribe 设置的远程服务，不写历史、不留录音。章末问模型文件和应用更新怎样到达这台 Mac，这是下一章。
+第 11 步读声音的去向。`fileRecognizer` 选 Transcribe 的模型（`transcribe_socket.go:64-80`）；`docs/transcribe.md` 说声音送给本机模型或为 Transcribe 设置的远程服务，不写历史、不留录音。章末问模型文件怎样到达这台 Mac，这是下一章。
 
 本章源码版本：`sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`。精确文件和行号见深入讲解。
 
