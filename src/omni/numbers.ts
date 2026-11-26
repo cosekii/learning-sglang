@@ -294,3 +294,8 @@ export const STREAM_STALL_CHUNK_PERCENT = STREAM_STALL_S / STREAM_CHUNK_DURATION
 export const STREAM_TRACE_REQUEST_ID = 'A';
 export const STREAM_TRACE_CHUNK_ID = 7;
 export const STREAM_TRACE_OBJECT_ID = 'obj-17';
+
+// Constructed CUDA IPC timing record for reading host and GPU-event intervals.
+export const STREAM_TRACE_HOST_WAIT_MS = 12;
+export const STREAM_TRACE_GPU_EVENT_MS = 5;
+export const STREAM_TRACE_HOST_REST_MS = STREAM_TRACE_HOST_WAIT_MS - STREAM_TRACE_GPU_EVENT_MS;

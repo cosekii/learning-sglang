@@ -149,3 +149,37 @@ The `comm_send_enqueue` record is emitted before `await ready`. Its `elapsed_ms`
 The log separates local operations. The next step reads CUDA IPC host waiting and GPU-event waiting without calling the entire host interval GPU copying.
 
 Sources: `sglang_omni/profiler/comm_trace.py:14-34`; `sglang_omni/comm/engine.py:327-393`; `sglang_omni/pipeline/stage/runtime.py:665-682`.
+
+## Step 5 · Separate host waiting from the GPU-event interval
+
+**One sentence.** `Cuda_ipc_get_wait_copy` reports both total host-side waiting and a GPU-event interval, whose difference locates time elsewhere on the host path.
+
+### On the stage
+
+- `Host` is the CPU side of this hand-off. The constructed `elapsed_ms=12.0` is its total wait.
+- A `GPU event` places start and done marks on the GPU. The blue 5 ms block is `receiver_gpu_wait_copy_ms` between those marks.
+- The orange 7 ms block is `host_minus_receiver_gpu_ms`. Together, the two blocks make the 12 ms host wait.
+- The 7 ms difference can include queues, thread blocking, resume scheduling or other host work. It does not prove 7 ms of CPU compute or GPU copying.
+- Every value is a constructed field-reading example, not a captured CUDA IPC record.
+
+### Formula and symbols
+
+$$r=h-g$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $h$ | Total host wait, `elapsed_ms` | Constructed here, 12 ms |
+| $g$ | GPU start/done event interval, `receiver_gpu_wait_copy_ms` | Constructed here, 5 ms |
+| $r$ | Host wait minus the GPU event, `host_minus_receiver_gpu_ms` | Calculated in this step |
+
+### The numbers on the stage
+
+$$r=12-5=7\ \text{ms}$$
+
+The code writes $g$ and $r$ only when GPU start and done events exist. On the thread-synchronize path, the record can also include `worker_queue_ms`, `worker_block_ms` and `worker_done_to_resume_ms` to locate the host difference. `Completion_mode=query_ready` does not produce those worker fields. Missing events do not become a fake zero difference.
+
+### Next
+
+These fields locate waiting, but an optimization still needs a fair comparison. The next step fixes inputs, seed, hardware and warmup while changing only partial start.
+
+Sources: `sglang_omni/relay/cuda_ipc.py:526-581`; `sglang_omni/profiler/comm_trace.py:19-24`.

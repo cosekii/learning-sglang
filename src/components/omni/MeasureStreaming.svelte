@@ -12,6 +12,7 @@
     STREAM_CHUNK_DURATION_S, STREAM_CHUNK1_ARRIVAL_S, STREAM_CHUNK1_END_S,
     STREAM_CHUNK2_ARRIVAL_S, STREAM_CHUNK2_END_S, STREAM_STALL_S, STREAM_STALL_CHUNK_PERCENT,
     STREAM_TRACE_REQUEST_ID, STREAM_TRACE_CHUNK_ID, STREAM_TRACE_OBJECT_ID,
+    STREAM_TRACE_HOST_WAIT_MS, STREAM_TRACE_GPU_EVENT_MS, STREAM_TRACE_HOST_REST_MS,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -28,6 +29,9 @@
   }, {
     caption: 'Communication tracing records each event with a timestamp. Duration fields show how long that operation waited.',
     captionZh: '通信 trace 给每个事件记下时间戳。耗时字段记录这次操作等了多久。',
+  }, {
+    caption: `The host waited ${STREAM_TRACE_HOST_WAIT_MS} ms; the GPU event covered ${STREAM_TRACE_GPU_EVENT_MS} ms. The remaining ${STREAM_TRACE_HOST_REST_MS} ms was elsewhere on the host path.`,
+    captionZh: `host 等了 ${STREAM_TRACE_HOST_WAIT_MS} ms，GPU event 覆盖 ${STREAM_TRACE_GPU_EVENT_MS} ms。其余 ${STREAM_TRACE_HOST_REST_MS} ms 在 host 路径上。`,
   }];
   let step = $state(0);
   $effect(() => {
@@ -44,7 +48,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [590, 650, 600, 650][step] : [430, 460, 480, 480][step]);
+  const H = $derived(phone ? [590, 650, 600, 650, 610][step] : [430, 460, 480, 480, 460][step]);
   const barMax = $derived(phone ? 185 : 400);
   const barScale = $derived(barMax / STREAM_P90_SHARED_S);
   const timeX = (seconds: number) => 60 + (seconds / STREAM_TEACHING_DONE_S) * 600;
@@ -200,6 +204,38 @@
           <text x="34" y="601" class="code">÷ 1,000,000</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Constructed fields · trace off by default' : 'Constructed identifiers; tracing is off unless the environment switch enables it.', phone ? '构造字段 · trace 默认关闭' : '构造标识符；环境开关未打开时，trace 默认关闭。')}</text>
+      {:else if step === 4}
+        <text x={phone ? 18 : 36} y="30" class="title">{t(phone ? 'Two timers in one record' : 'One CUDA IPC record holds two timers', phone ? '一条记录里的两个计时' : '一条 CUDA IPC 记录包含两种计时')}</text>
+        <text x={phone ? 18 : 36} y="55" class="code">cuda_ipc_get_wait_copy</text>
+        <text x={phone ? 18 : 36} y="80" class="label">{t(phone ? 'host = CPU side · event = GPU marks' : 'host = CPU-side wait · GPU event = start and done marks on the GPU', phone ? 'host = CPU 侧 · event = GPU 标记' : 'host = CPU 侧等待 · GPU event = GPU 上的起止标记')}</text>
+        <text x={phone ? 18 : 36} y="104" class="label">{t('blue = GPU event · orange = rest of host wait', '蓝 = GPU event · 橙 = 其余 host 等待')}</text>
+        {#if !phone}
+          <rect x="55" y="135" width="610" height="112" rx="12" fill="var(--bg)" stroke="var(--line)" />
+          <text x="75" y="166" class="small strong">elapsed_ms = {STREAM_TRACE_HOST_WAIT_MS.toFixed(1)} · {t('whole host wait', 'host 全程等待')}</text>
+          <rect x="75" y="187" width={STREAM_TRACE_GPU_EVENT_MS * 40} height="38" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <rect x={75 + STREAM_TRACE_GPU_EVENT_MS * 40} y="187" width={STREAM_TRACE_HOST_REST_MS * 40} height="38" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x={75 + STREAM_TRACE_GPU_EVENT_MS * 20} y="212" text-anchor="middle" class="small strong">GPU {STREAM_TRACE_GPU_EVENT_MS} ms</text>
+          <text x={75 + STREAM_TRACE_GPU_EVENT_MS * 40 + STREAM_TRACE_HOST_REST_MS * 20} y="212" text-anchor="middle" class="small strong">host rest {STREAM_TRACE_HOST_REST_MS} ms</text>
+          <text x="55" y="290" class="code">receiver_gpu_wait_copy_ms = {STREAM_TRACE_GPU_EVENT_MS.toFixed(1)}</text>
+          <text x="55" y="330" class="code">host_minus_receiver_gpu_ms = {STREAM_TRACE_HOST_REST_MS.toFixed(1)}</text>
+          <text x="360" y="374" text-anchor="middle" class="result">{STREAM_TRACE_HOST_WAIT_MS} − {STREAM_TRACE_GPU_EVENT_MS} = {STREAM_TRACE_HOST_REST_MS} ms</text>
+          <text x="360" y="414" text-anchor="middle" class="small strong">{t(`The ${STREAM_TRACE_HOST_REST_MS} ms difference is not proof of ${STREAM_TRACE_HOST_REST_MS} ms spent computing.`, `${STREAM_TRACE_HOST_REST_MS} ms 差额不能证明 CPU 计算了 ${STREAM_TRACE_HOST_REST_MS} ms。`)}</text>
+        {:else}
+          <rect x="20" y="130" width="260" height="150" rx="11" fill="var(--bg)" stroke="var(--line)" />
+          <text x="34" y="158" class="small strong">elapsed = {STREAM_TRACE_HOST_WAIT_MS.toFixed(1)} ms</text>
+          <rect x="34" y="181" width={STREAM_TRACE_GPU_EVENT_MS * 18} height="40" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <rect x={34 + STREAM_TRACE_GPU_EVENT_MS * 18} y="181" width={STREAM_TRACE_HOST_REST_MS * 18} height="40" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x={34 + STREAM_TRACE_GPU_EVENT_MS * 9} y="206" text-anchor="middle" class="small strong">GPU {STREAM_TRACE_GPU_EVENT_MS}</text>
+          <text x={34 + STREAM_TRACE_GPU_EVENT_MS * 18 + STREAM_TRACE_HOST_REST_MS * 9} y="206" text-anchor="middle" class="small strong">rest {STREAM_TRACE_HOST_REST_MS}</text>
+          <text x="34" y="254" class="small">{t('whole host wait', 'host 全程等待')}</text>
+          <text x="20" y="321" class="code">receiver_gpu_wait_copy_ms</text>
+          <text x="20" y="347" class="result">= {STREAM_TRACE_GPU_EVENT_MS.toFixed(1)}</text>
+          <text x="20" y="390" class="code">host_minus_receiver_gpu_ms</text>
+          <text x="20" y="416" class="result">= {STREAM_TRACE_HOST_REST_MS.toFixed(1)}</text>
+          <text x="150" y="465" text-anchor="middle" class="result">{STREAM_TRACE_HOST_WAIT_MS} − {STREAM_TRACE_GPU_EVENT_MS} = {STREAM_TRACE_HOST_REST_MS} ms</text>
+          <text x="150" y="510" text-anchor="middle" class="small strong">{t('The difference is not CPU compute time.', '差额不等于 CPU 计算时间。')}</text>
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Constructed timing record, not captured output.', '构造的计时记录，不是抓取的日志。')}</text>
       {/if}
     </svg>
   </div>

@@ -149,3 +149,37 @@ $$d=\frac{c_{\mathrm{end}}-c_{\mathrm{start}}}{1{,}000{,}000}$$
 日志已经能分开局部操作。下一步读取 CUDA IPC 的 host 等待与 GPU event 等待，避免把整段 host 时间都叫成 GPU 拷贝。
 
 来源：`sglang_omni/profiler/comm_trace.py:14-34`；`sglang_omni/comm/engine.py:327-393`；`sglang_omni/pipeline/stage/runtime.py:665-682`。
+
+## 第 5 步 · 分开 host 等待与 GPU event 区间
+
+**一句话。** `cuda_ipc_get_wait_copy` 同时报告 host 侧总等待和 GPU event 区间，两者之差显示 host 路径上还有多少时间不属于这段 GPU event。
+
+### 图上是什么
+
+- `host` 指这次交接的 CPU 侧。`elapsed_ms=12.0` 是构造的 host 总等待。
+- `GPU event` 是 GPU 上记录的 start、done 标记。蓝色 5 ms 表示两标记之间的 `receiver_gpu_wait_copy_ms`。
+- 橙色 7 ms 是 `host_minus_receiver_gpu_ms`，与蓝块合计为 12 ms host 总等待。
+- 7 ms 只是差额。它可能包含队列、线程阻塞、恢复调度或其他 host 工作，不能直接称为 CPU 计算，也不能直接称为 GPU 拷贝。
+- 所有数值都是构造的字段读法示例，不是一次抓取的 CUDA IPC 日志。
+
+### 公式与符号
+
+$$r=h-g$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $h$ | host 侧总等待，`elapsed_ms` | 本步构造，12 ms |
+| $g$ | GPU start/done event 区间，`receiver_gpu_wait_copy_ms` | 本步构造，5 ms |
+| $r$ | host 等待减去 GPU event 的差额，`host_minus_receiver_gpu_ms` | 本步计算 |
+
+### 代入图上的数
+
+$$r=12-5=7\ \text{ms}$$
+
+只有存在 GPU start、done event 时，代码才写入 $g$ 和 $r$。在线程同步路径上，日志还可包含 `worker_queue_ms`、`worker_block_ms` 和 `worker_done_to_resume_ms`，用来继续定位 host 差额。`completion_mode=query_ready` 时不应有这组 worker 字段。代码没有在缺失 event 时把差额伪装成 0。
+
+### 接下来
+
+字段能指出等待在哪一侧，但优化结论还需要公平对照。下一步固定输入、seed、硬件与预热，只改变 partial-start 开关。
+
+来源：`sglang_omni/relay/cuda_ipc.py:526-581`；`sglang_omni/profiler/comm_trace.py:19-24`。
