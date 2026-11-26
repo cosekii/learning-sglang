@@ -259,7 +259,12 @@
           <text x={phone ? 28 : 200} y={y + 56} class="small">min = {minimum} · {tied} {tied.includes(',') ? t('tie', '并列') : t('only', '唯一最少')}</text>
         {/each}
         <text x={W / 2} y={phone ? 590 : 515} text-anchor="middle" class="result">B → C → B → C</text>
-        <text x={W / 2} y={phone ? 625 : 550} text-anchor="middle" class="small">{t('A never enters a minimum tie in these four rows.', '这四行里，A 从未进入最少并列组。')}</text>
+        {#if phone}
+          <text x={W / 2} y="620" text-anchor="middle" class="small">{t('Same [A,B,C], loads [2,0,0]', '同为 [A,B,C]，负载 [2,0,0]')}</text>
+          <text x={W / 2} y="650" text-anchor="middle" class="small strong">{t('round robin → A · least requests → B', 'round robin → A · least requests → B')}</text>
+        {:else}
+          <text x={W / 2} y="550" text-anchor="middle" class="small strong">{t('Same [A,B,C], loads [2,0,0]: round robin → A · least requests → B', '同为 [A,B,C]，负载 [2,0,0]：round robin → A · least requests → B')}</text>
+        {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Router-held work · not GPU usage' : 'Constructed ordinary requests; active counts are router-held work, not GPU usage or worker queues.', phone ? 'router 持有的工作 · 不是 GPU 利用率' : '构造的普通请求；活跃数是 router 持有的工作，不是 GPU 利用率或 worker 队列。')}</text>
       {:else if step === 6}
         <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'Fresh request · active count' : 'Fresh request · the lease holds the active count', phone ? '新请求 · 活跃计数' : '新请求 · 租约持有活跃计数')}</text>
