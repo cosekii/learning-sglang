@@ -4,9 +4,10 @@
 
 ## 本轮记录
 
+- 00:15 按复审修 Inside Voxt 第 7 章 6 处事实/评估问题：第 3 步把「网页从不收文字」收窄到别的 app（start app 里 `AXWebArea` 不走 `nonText`）；第 4 步把「一样=没贴进去」改为「一样=没确认」，并补 `AXWebArea` / 可编辑网页区域改成 unknown 再按已贴入处理的例外；第 4 步主图去掉 length/digest/selection/marker，改成「框里的文字和光标」；深入讲解修正第 1、2 步不存在的描述并补 `f.Role`、`t_restore`；第 5 步加「落地的文字」卡（`Priya` 高亮）并把章末问句锚在它上面；评分卡只记文本与机械检查，目视项待主人，不再声称 12/12、24/24。
 - 00:00 整点自主优化第 2 项「向好的范例学」：阅读 Jay Alammar《The Illustrated Transformer》，对照 Learning SGLang 第 2 章第 6、14 步。范例在分步后用同一例子回收多头总图；本章第 6 步只有 `32 × 128 = 4,096` 和 `W_O` 的文字说明，已把 `4096 → 32 个 128 → concat 4096 → W_O → 4096` 的具体补图方案并入 Z03。
 - 本轮只更新想法、评分记录和记忆，不试改满分步骤。第 6 步整步易读 **12/12**、原分 **24/24**、**0 洞**；第 14 步中文易读 **12/12**、原分 **24/24**、**0 洞**，整步仍 **11/12**，只余受保护英文 R4；章均分保持 **24.00/24**。截图：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-autonomous-transformer-20261126-0000/final/`。`transcript`、中英本章 `mobile`、`deep-check 02`、本章 `zh-check`、`build` 和 `git diff --check` 通过；`readability` 保留既有 9 个受保护英文机械问题，未跑全站回归。本轮类型：**自主优化**；下一普通轮按交替规则修旧，下次整点轮换第 3 项「复盘自己」。
-- 00:05 完成 Inside Voxt 第 7 章全部 5 步：start app 与 front app 的区别、密码框挡住投递、焦点能不能收文字的三条规则、贴完复查焦点、剪贴板快照与放回。全章 **5/5 步易读 12/12**，平均 **24.00/24**，**0 内容洞**。
+- 00:05 完成 Inside Voxt 第 7 章全部 5 步：start app 与 front app 的区别、密码框挡住投递、焦点能不能收文字的三条规则、贴完复查焦点、剪贴板快照与放回。5/5 步文本冷读通过，**0 内容洞**；R6 与图表目视项待主人，未给总分。
 - 本章 `build`、`transcript`、全章 `readability`（0 机械问题）、`deep-check 07`、`zh-check`、中英本章 `mobile`、中文逐步字号 `mobile` 和 `git diff --check` 通过。只跑本章检查，未跑或等待全站回归。本轮模型不能读图，像素级目视终检留给主人/复审者；布局由 transcript、`zh-check` 和三种宽度 `mobile` 代理。本轮类型：**新书**；下一章是 `08-personal-dictionary`。
 - 23:56 完成 Inside Voxt 第 6 章全部 8 步：三条任务路线、消息顺序、整理 prompt 的五部分、三种回答约定、长听写按序分片、失败片保留原话、Translate / Rewrite 失败出口、截断回答进入答案卡。全章 **8/8 步易读 12/12**，平均 **23.88/24**，**0 内容洞、0 最终显示洞**。
 - 教程逐步提交并推送至 `5bff5f4`；`build`、本章 `transcript`、全章 `readability`、中英三种宽度本章 `mobile`、`deep-check 06`、本章 `zh-check` 和 `git diff --check` 通过。独立模拟冷读整改后复读无必须修项；主线程逐张检查 40 张中英桌面／手机／深入讲解终稿。最终图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch06-20261125-2319/final/`、`checks/`。本轮只跑本章检查，未跑全站回归、真实模型或 Voxt 产品测试。本轮类型：**新书**；下一普通轮按交替规则修旧，下一章是 `deliver-text-safely`。
@@ -148,7 +149,7 @@
 | 04 | speech-recognition-routes | 完成：7/7 步易读满分 | 23.86 |
 | 05 | language-model-connection | 完成：5/5 步易读满分 | 24.00 |
 | 06 | compose-and-cleanup | 完成：8/8 步易读满分 | 23.88 |
-| 07 | deliver-text-safely | 完成：5/5 步易读满分 | 24.00 |
+| 07 | deliver-text-safely | 完成：5/5 步文本冷读通过；图表目视待主人 | — |
 | 08 | personal-dictionary | 规划 | — |
 | 09 | history-retry-retention | 规划 | — |
 | 10 | file-transcription | 规划 | — |
