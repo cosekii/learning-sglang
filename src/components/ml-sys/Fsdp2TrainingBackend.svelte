@@ -4,7 +4,7 @@
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
-  import { FSDP_EXAMPLE_PARAMS_B, FSDP_DP_SIZE, FSDP_BYTES_PER_PARAM, FSDP_FULL_WEIGHT_GB, FSDP_FULL_GRADIENT_GB, FSDP_FULL_OPTIMIZER_GB, FSDP_FULL_STATE_PER_GPU_GB, FSDP_FULL_CLUSTER_STATE_GB, FSDP_FULL_CARD_SHARE, FSDP_SHARD_WEIGHT_GB, FSDP_SHARD_GRADIENT_GB, FSDP_SHARD_OPTIMIZER_GB, FSDP_SHARD_STATE_PER_GPU_GB, FSDP_SHARD_CLUSTER_STATE_GB } from '../../ml-sys/numbers';
+  import { FSDP_EXAMPLE_PARAMS_B, FSDP_DP_SIZE, FSDP_FULL_WEIGHT_GB, FSDP_FULL_GRADIENT_GB, FSDP_FULL_OPTIMIZER_GB, FSDP_FULL_STATE_PER_GPU_GB, FSDP_FULL_CLUSTER_STATE_GB, FSDP_FULL_CARD_SHARE, FSDP_SHARD_WEIGHT_GB, FSDP_SHARD_GRADIENT_GB, FSDP_SHARD_OPTIMIZER_GB, FSDP_SHARD_STATE_PER_GPU_GB, FSDP_SHARD_CLUSTER_STATE_GB } from '../../ml-sys/numbers';
 
   type Tone = 'plain' | 'blue' | 'orange';
   type MobileItem = { title: string; titleZh: string; body: string; bodyZh: string; tone: Tone };
@@ -24,8 +24,8 @@
     title: 'Full replication turns 64 GB into 512 GB', titleZh: '完整复制把 64 GB 变成 512 GB',
     subtitle: 'full replication = every GPU keeps the same weights, gradients and optimizer state',
     subtitleZh: '完整复制 = 每张 GPU 都保存同样的权重、梯度和优化器状态',
-    foot: 'Constructed 4B example; 16-bit = 2 bytes and FP32 = 4 bytes per number.',
-    footZh: '构造的 4B 示例；16 位 = 每个数 2 字节，FP32 = 每个数 4 字节。',
+    foot: 'Constructed example; bytes per value: weights 2, gradients 2, optimizer tables 4 each.',
+    footZh: '构造示例；每个数占：权重 2 字节，梯度 2 字节，优化器表各 4 字节。',
     mobileTitle: 'Eight full copies · 512 GB', mobileTitleZh: '8 份完整复制 · 512 GB',
     mobileSubtitle: 'full replication = every GPU keeps all tables', mobileSubtitleZh: '完整复制 = 每张卡保存所有表',
     mobileFoot: 'Constructed example, not a memory measurement.', mobileFootZh: '构造算例，不是显存实测。',
@@ -35,10 +35,11 @@
       { title: '8 GPUS · SAME COPIES', titleZh: '8 张 GPU · 相同副本', body: '64 GB × 8 = 512 GB', bodyZh: '64 GB × 8 = 512 GB', tone: 'blue' },
     ],
     formulas: [
-      { en: `${FSDP_EXAMPLE_PARAMS_B}B values × ${FSDP_BYTES_PER_PARAM} bytes = ${FSDP_FULL_STATE_PER_GPU_GB} GB`, zh: `${FSDP_EXAMPLE_PARAMS_B}B 个数 × ${FSDP_BYTES_PER_PARAM} 字节 = ${FSDP_FULL_STATE_PER_GPU_GB} GB` },
+      { en: `${FSDP_EXAMPLE_PARAMS_B}B values × 16 bytes = ${FSDP_FULL_STATE_PER_GPU_GB} GB per GPU`, zh: `每张 GPU：${FSDP_EXAMPLE_PARAMS_B}B 个数 × 16 字节 = ${FSDP_FULL_STATE_PER_GPU_GB} GB` },
       { en: `${FSDP_FULL_STATE_PER_GPU_GB} GB × ${FSDP_DP_SIZE} = ${FSDP_FULL_CLUSTER_STATE_GB} GB`, zh: `${FSDP_FULL_STATE_PER_GPU_GB} GB × ${FSDP_DP_SIZE} = ${FSDP_FULL_CLUSTER_STATE_GB} GB` },
       { en: `${FSDP_FULL_STATE_PER_GPU_GB} GB ÷ 80 GB = ${(FSDP_FULL_CARD_SHARE * 100).toFixed(0)}% of one H100`, zh: `${FSDP_FULL_STATE_PER_GPU_GB} GB ÷ 80 GB = 一张 H100 的 ${(FSDP_FULL_CARD_SHARE * 100).toFixed(0)}%` },
-      { en: '16 bytes = 2 + 2 + 12 per value', zh: '每个数 16 字节 = 2 + 2 + 12' },
+      { en: '16 bytes = 2 + 2 + 3 × 4 per value', zh: '每个数 16 字节 = 2 + 2 + 3 × 4' },
+      { en: 'optimizer = update copy + 2 running averages', zh: '优化器 = 更新副本 + 2 个滑动平均值' },
     ],
   }, {
     caption: `FSDP2 divides the same tables across the DP group. Each rank owns ${FSDP_SHARD_STATE_PER_GPU_GB} GB in this example.`,
@@ -198,12 +199,13 @@
         <text x="315" y="158" text-anchor="end" class="result">{FSDP_FULL_WEIGHT_GB} GB</text>
         <text x="65" y="194" class="small">{t('gradients · 2 bytes each', '梯度 · 每个 2 字节')}</text>
         <text x="315" y="194" text-anchor="end" class="result">{FSDP_FULL_GRADIENT_GB} GB</text>
-        <text x="65" y="230" class="small">{t('optimizer · 3 tables × 4 bytes', '优化器 · 3 张表 × 4 字节')}</text>
-        <text x="315" y="230" text-anchor="end" class="result">{FSDP_FULL_OPTIMIZER_GB} GB</text>
-        <line x1="60" y1="250" x2="320" y2="250" stroke="var(--line)" />
-        <text x="65" y="284" class="small strong">{t('TOTAL ON THIS GPU', '这张 GPU 合计')}</text>
-        <text x="315" y="284" text-anchor="end" class="big">{FSDP_FULL_STATE_PER_GPU_GB} GB</text>
-        <text x="190" y="318" text-anchor="middle" class="small">{(FSDP_FULL_CARD_SHARE * 100).toFixed(0)}% {t('of an 80 GB H100', '一张 80 GB H100')}</text>
+        <text x="65" y="222" class="small">{t('optimizer · 3 tables × 4 bytes', '优化器 · 3 张表 × 4 字节')}</text>
+        <text x="315" y="222" text-anchor="end" class="result">{FSDP_FULL_OPTIMIZER_GB} GB</text>
+        <text x="65" y="248" class="small">{t('update copy + 2 running averages', '更新副本 + 2 个滑动平均值')}</text>
+        <line x1="60" y1="264" x2="320" y2="264" stroke="var(--line)" />
+        <text x="65" y="292" class="small strong">{t('TOTAL ON THIS GPU', '这张 GPU 合计')}</text>
+        <text x="315" y="292" text-anchor="end" class="big">{FSDP_FULL_STATE_PER_GPU_GB} GB</text>
+        <text x="190" y="323" text-anchor="middle" class="small">{FSDP_FULL_STATE_PER_GPU_GB} GB ÷ 80 GB = {(FSDP_FULL_CARD_SHARE * 100).toFixed(0)}% {t('of H100', 'H100')}</text>
         <rect x="375" y="88" width="310" height="252" rx="13" fill="var(--accent-soft)" stroke="var(--accent)" />
         <text x="530" y="120" text-anchor="middle" class="section">{t('8 GPUS · SAME COPIES', '8 张 GPU · 相同副本')}</text>
         {#each Array.from({ length: FSDP_DP_SIZE }, (_, i) => i) as i}
@@ -212,7 +214,7 @@
           <text x={423 + (i % 4) * 70} y={184 + Math.floor(i / 4) * 72} text-anchor="middle" class="small strong">{FSDP_FULL_STATE_PER_GPU_GB} GB</text>
         {/each}
         <text x="530" y="318" text-anchor="middle" class="big">{FSDP_FULL_CLUSTER_STATE_GB} GB</text>
-        <text x="360" y="382" text-anchor="middle" class="result">{FSDP_EXAMPLE_PARAMS_B}B values × {FSDP_BYTES_PER_PARAM} bytes = {FSDP_FULL_STATE_PER_GPU_GB} GB {t('per GPU', '每张 GPU')}</text>
+        <text x="360" y="382" text-anchor="middle" class="result">{FSDP_EXAMPLE_PARAMS_B}B values × 16 bytes = {FSDP_FULL_STATE_PER_GPU_GB} GB {t('per GPU', '每张 GPU')}</text>
         <text x="360" y="416" text-anchor="middle" class="result">{FSDP_FULL_STATE_PER_GPU_GB} GB × {FSDP_DP_SIZE} = {FSDP_FULL_CLUSTER_STATE_GB} GB</text>
         <text x="360" y="452" text-anchor="middle" class="small">{t('Orange = saved training tables · blue = repeated full copies', '橙 = 训练保存的表 · 蓝 = 重复的完整副本')}</text>
       {:else if step === 1}
