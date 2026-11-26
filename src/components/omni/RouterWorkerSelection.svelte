@@ -341,20 +341,24 @@
           <rect x="48" y="226" width="279" height="65" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="62" y="253" class="small">worker B · HEALTHY</text>
           <text x="62" y="277" class="small">active = {ROUTER_FINAL_LOADS[0]}</text>
-          <rect x="48" y="307" width="279" height="92" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <rect x="48" y="307" width="279" height="92" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width={phase === 1 ? 3 : 1} style="transition: stroke-width 250ms" />
           <text x="62" y="334" class="small">worker C · HEALTHY</text>
           <text x="62" y="358" class="small">active = {ROUTER_FINAL_LOADS[1]} · {t('minimum', '最少')}</text>
-          <text x="62" y="384" class="small strong">{t('select C → active 2', '选择 C → 活跃数 2')}</text>
-          <rect x="375" y="90" width="315" height="365" rx="12" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="62" y="384" class="small strong" opacity={phase >= 1 ? 1 : 0.12} style="transition: opacity 350ms">{t('select C → active 2', '选择 C → 活跃数 2')}</text>
+          <rect x="375" y="90" width="315" height="365" rx="12" fill={phase >= 3 ? 'var(--gen-soft)' : 'var(--bg)'} stroke={phase >= 3 ? 'var(--gen)' : 'var(--line)'} style="transition: fill 350ms, stroke 350ms" />
           <text x="393" y="120" class="small strong">{t('AFTER SELECTION · WORKER C', '选择之后 · WORKER C')}</text>
-          <rect x="393" y="145" width="279" height="56" rx="8" fill="var(--bg)" stroke="var(--line)" />
-          <text x="407" y="180" class="code">200 OK</text>
-          <rect x="393" y="217" width="279" height="56" rx="8" fill="var(--bg)" stroke="var(--line)" />
-          <text x="407" y="252" class="code">data: one</text>
-          <rect x="393" y="289" width="279" height="65" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="407" y="329" class="code">RESET · {t('connection breaks', '连接断开')}</text>
-          <text x="393" y="390" class="small strong">{t('no retry on healthy B', '不会转到 healthy B 重试')}</text>
-          <text x="393" y="423" class="small">{t('health changes need probe thresholds', 'health 变化仍需达到探测门槛')}</text>
+          <g opacity={phase >= 2 ? 1 : 0.12} style="transition: opacity 350ms">
+            <rect x="393" y="145" width="279" height="56" rx="8" fill="var(--bg)" stroke="var(--line)" />
+            <text x="407" y="180" class="code">200 OK</text>
+            <rect x="393" y="217" width="279" height="56" rx="8" fill="var(--bg)" stroke="var(--line)" />
+            <text x="407" y="252" class="code">data: one</text>
+          </g>
+          <g opacity={phase >= 3 ? 1 : 0.12} style="transition: opacity 350ms">
+            <rect x="393" y="289" width="279" height="65" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="407" y="329" class="code">RESET · {t('connection breaks', '连接断开')}</text>
+          </g>
+          <text x="393" y="390" class="small strong" opacity={phase >= 4 ? 1 : 0.12} style="transition: opacity 350ms">{t('no retry on healthy B', '不会转到 healthy B 重试')}</text>
+          <text x="393" y="423" class="small" opacity={phase >= 4 ? 1 : 0.12} style="transition: opacity 350ms">{t('health changes need probe thresholds', 'health 变化仍需达到探测门槛')}</text>
         {:else}
           <rect x="18" y="85" width="264" height="350" rx="12" fill="var(--bg)" stroke="var(--line)" />
           <text x="32" y="115" class="small strong">{t('SELECTING · LEAST REQUESTS', '选择中 · LEAST REQUESTS')}</text>
@@ -362,27 +366,27 @@
           <rect x="32" y="175" width="236" height="65" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="46" y="202" class="small">B · HEALTHY</text>
           <text x="46" y="226" class="small">active = {ROUTER_FINAL_LOADS[0]}</text>
-          <rect x="32" y="256" width="236" height="90" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <rect x="32" y="256" width="236" height="90" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width={phase === 1 ? 3 : 1} style="transition: stroke-width 250ms" />
           <text x="46" y="283" class="small">C · HEALTHY · active = {ROUTER_FINAL_LOADS[1]}</text>
-          <text x="46" y="309" class="small">{t('minimum → select C', '最少 → 选择 C')}</text>
-          <text x="46" y="334" class="small strong">{t('active becomes 2', '活跃数变成 2')}</text>
+          <text x="46" y="309" class="small" opacity={phase >= 1 ? 1 : 0.12} style="transition: opacity 350ms">{t('minimum → select C', '最少 → 选择 C')}</text>
+          <text x="46" y="334" class="small strong" opacity={phase >= 1 ? 1 : 0.12} style="transition: opacity 350ms">{t('active becomes 2', '活跃数变成 2')}</text>
           <text x="32" y="397" class="small strong">{t('C was healthy when selected.', '选择时 C 是 healthy。')}</text>
-          <rect x="18" y="460" width="264" height="230" rx="12" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <rect x="18" y="460" width="264" height="230" rx="12" fill={phase >= 3 ? 'var(--gen-soft)' : 'var(--bg)'} stroke={phase >= 3 ? 'var(--gen)' : 'var(--line)'} style="transition: fill 350ms, stroke 350ms" />
           <text x="32" y="490" class="small strong">{t('AFTER SELECTION · C', '选择之后 · C')}</text>
-          <text x="32" y="530" class="code">200 OK → data: one</text>
-          <text x="32" y="573" class="code">RESET · {t('connection breaks', '连接断开')}</text>
-          <text x="32" y="619" class="small strong">{t('no retry on healthy B', '不会转到 healthy B 重试')}</text>
-          <text x="32" y="653" class="small">{t('probe thresholds decide later health', '后续 health 仍看探测门槛')}</text>
+          <text x="32" y="530" class="code" opacity={phase >= 2 ? 1 : 0.12} style="transition: opacity 350ms">200 OK → data: one</text>
+          <text x="32" y="573" class="code" opacity={phase >= 3 ? 1 : 0.12} style="transition: opacity 350ms">RESET · {t('connection breaks', '连接断开')}</text>
+          <text x="32" y="619" class="small strong" opacity={phase >= 4 ? 1 : 0.12} style="transition: opacity 350ms">{t('no retry on healthy B', '不会转到 healthy B 重试')}</text>
+          <text x="32" y="653" class="small" opacity={phase >= 4 ? 1 : 0.12} style="transition: opacity 350ms">{t('probe thresholds decide later health', '后续 health 仍看探测门槛')}</text>
         {/if}
         </g>
-        <text x={W / 2} y={phone ? 735 : 495} text-anchor="middle" class="small strong">{t('This response stops; B does not continue it.', '这个响应停止，B 不会接着发送。')}</text>
+        <text x={W / 2} y={phone ? 735 : 495} text-anchor="middle" class="small strong" opacity={phase >= 4 ? 1 : 0.12} style="transition: opacity 350ms">{t('This response stops; B does not continue it.', '这个响应停止，B 不会接着发送。')}</text>
         <text x={W / 2} y={phone ? 778 : 545} text-anchor="middle" class="result" style="fill:var(--gen)">{t(phone ? 'What does the client receive?' : 'What does the client receive, and when do later requests avoid C?', phone ? '客户端会收到什么？' : '客户端会收到什么？后续请求何时不再选择 C？')}</text>
         {#if phone}
           <text x="150" y="815" text-anchor="middle" class="result" style="fill:var(--gen)">后续请求何时不再选择 C？</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Next chapter: worker failure and graceful exit.', '下一章：worker 故障与退出。')}</text>
       {/if}
-      {#if step <= 6}<LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={4} label={t('loops', '循环')} />{/if}
+      <LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={4} label={t('loops', '循环')} />
     </svg>
   </div>
   <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh}
