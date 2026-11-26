@@ -91,3 +91,36 @@ The figure labels group membership only. It does not claim that two or three top
 This channel transfers parameter values through the group. The tensor channel instead passes handles that let inference locate an already assembled GPU tensor.
 
 Sources: `Awesome-ML-SYS-Tutorial/sglang/latency-accelerate-for-weight-updates/readme.md:232-262,399-412,931-950`; `model_runner.py:696-772` at `sgl-project/sglang@392e441ad17c78b68638f2d959fcf592d19b4834`.
+
+## Step 4 · Send a handle to the assembled tensor
+
+**One sentence.** The tensor channel assembles a full parameter, passes reconstruction handles to SGLang, and lets each inference rank rebuild and load the tensor.
+
+### On the stage
+
+- Four orange training pieces each have shape `[256,1024]`. `full_tensor()` gathers them into one `[1024,1024]` tensor.
+- Serialization returns a handle tuple containing information such as shape, stride and a storage handle. It does not return the weight payload.
+- The blue arrow represents the handle handoff. `gather_object` collects the handles at rank 0; each SGLang rank then calls `tensor.get(tp_rank)` and `load_weights`.
+
+### Formula and symbols
+
+$$E=r\times c,\qquad E=T\times r_s\times c$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $r,c$ | Full-tensor row and column counts | Both 1024 |
+| $T$ | Training shard count | FSDP TP 4 |
+| $r_s$ | Rows in one training shard | $1024\div4=256$ |
+| $E$ | Elements in the assembled tensor | Derived here |
+
+### The numbers on the stage
+
+$$E=4\times256\times1024=1024\times1024=1{,}048{,}576$$
+
+The source's SGLang TP 2 layout has `[512,1024]` per inference rank. This example specifies no dtype, so the figure counts elements rather than inventing bytes.
+
+### Next
+
+Assembling one parameter is bounded. Restoring the whole training model beside SGLang can still exceed GPU memory, so slime processes weights in buckets.
+
+Sources: `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-1.md:51-60,132-204`; `verl/workers/sharding_manager/fsdp_sglang.py:160-188` at `volcengine/verl@0508af25b66e839772fba8e79d97896bf0d843d3`; `model_runner.py:774-792,1464-1479` at the pinned SGLang revision.

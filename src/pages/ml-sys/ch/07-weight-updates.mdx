@@ -21,6 +21,8 @@ Step 2 compares the three interfaces at `sys-design/readme-1.md:400-409` and ope
 
 Step 3 follows `latency-accelerate-for-weight-updates/readme.md:232-262,399-412,931-950`. The update group contains one training rank plus the inference TP ranks, so `world_size = 1 + tp_size`. For each parameter, inference allocates a destination, broadcasts the values from rank 0 and calls `load_weights`. Group-rank count is not a count of top-level processes. The pinned `ModelRunner` receive path is `model_runner.py:696-772` at the same SGLang revision.
 
+Step 4 follows `sys-design/readme-1.md:51-60,132-204`. `full_tensor()` assembles the parameter before serialization. `MultiprocessingSerializer.serialize` returns reconstruction handles rather than the tensor payload, and `gather_object` gathers those handles at inference TP rank 0. Each SGLang TP rank deserializes its entry and loads the reconstructed tensor. The fixed sender is `volcengine/verl@0508af25b66e839772fba8e79d97896bf0d843d3`, `verl/workers/sharding_manager/fsdp_sglang.py:160-188`; the receiver is `model_runner.py:774-792,1464-1479` at the pinned SGLang revision. The `[256,1024]` training shards and `[1024,1024]` full tensor follow line 51; line 53 accidentally reverses the two shard labels and is not reproduced.
+
 </details>
 
 <details class="i18n-zh">
@@ -33,5 +35,7 @@ Step 3 follows `latency-accelerate-for-weight-updates/readme.md:232-262,399-412,
 第 2 步依据 `sys-design/readme-1.md:400-409` 比较三个接口，并展开磁盘路线。`update_weights_from_disk` 读取保存的 checkpoint，最后调用模型的权重加载器。现有和新加入的 rollout 都能读同一份 checkpoint。等待取决于存储和加载过程，来源没有给出磁盘计时。固定实现为 `sgl-project/sglang@392e441ad17c78b68638f2d959fcf592d19b4834` 的 `python/sglang/srt/model_executor/model_runner.py:641-694`。
 
 第 3 步依据 `latency-accelerate-for-weight-updates/readme.md:232-262,399-412,931-950`。更新组包含 1 个训练 rank 和推理端的 TP rank，所以 `world_size = 1 + tp_size`。每个参数都先由推理端分配接收空间，再从 rank 0 广播数值并调用 `load_weights`。组内 rank 数不等于顶层进程数。固定 `ModelRunner` 接收路径为同一 SGLang 版本的 `model_runner.py:696-772`。
+
+第 4 步依据 `sys-design/readme-1.md:51-60,132-204`。`full_tensor()` 先拼好完整参数，再做序列化。`MultiprocessingSerializer.serialize` 返回的是重建句柄，不是张量数据本体；`gather_object` 再把这些句柄收拢到推理 TP rank 0。每个 SGLang TP rank 反序列化自己的那一项并装入重建的张量。发送端固定为 `volcengine/verl@0508af25b66e839772fba8e79d97896bf0d843d3` 的 `verl/workers/sharding_manager/fsdp_sglang.py:160-188`，接收端为固定 SGLang 版本的 `model_runner.py:774-792,1464-1479`。训练分片 `[256,1024]` 和完整张量 `[1024,1024]` 按第 51 行绘制；第 53 行误把两种分片标签写反，本章不沿用。
 
 </details>

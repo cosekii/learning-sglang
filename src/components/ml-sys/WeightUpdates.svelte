@@ -4,7 +4,7 @@
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
-  import { UPDATE_DEBUG_PARAMS, UPDATE_DEBUG_BF16_BYTES, UPDATE_DEBUG_WEIGHT_GB, UPDATE_DEBUG_INITIAL_S, UPDATE_DEBUG_INNER_S, UPDATE_DEBUG_OUTER_S, UPDATE_GROUP_SIZE_TP_ONE, UPDATE_GROUP_SIZE_TP_TWO } from '../../ml-sys/numbers';
+  import { UPDATE_DEBUG_BF16_BYTES, UPDATE_DEBUG_WEIGHT_GB, UPDATE_DEBUG_INITIAL_S, UPDATE_DEBUG_INNER_S, UPDATE_DEBUG_OUTER_S, UPDATE_GROUP_SIZE_TP_ONE, UPDATE_GROUP_SIZE_TP_TWO, UPDATE_EXAMPLE_FULL_ROWS, UPDATE_EXAMPLE_FULL_COLS, UPDATE_EXAMPLE_FSDP_TP, UPDATE_EXAMPLE_FSDP_ROWS, UPDATE_EXAMPLE_FULL_ELEMENTS } from '../../ml-sys/numbers';
 
   type Tone = 'plain' | 'blue' | 'orange';
   type MobileItem = { title: string; titleZh: string; body: string; bodyZh: string; tone: Tone };
@@ -77,6 +77,26 @@
       { en: 'world size = 1 + inference TP', zh: '组大小 = 1 + 推理 TP' },
       { en: 'for each parameter: allocate → broadcast → load', zh: '每个参数：分配空间 → 广播 → 装入' },
     ],
+  }, {
+    caption: 'The tensor route assembles one full parameter. It sends handles that locate GPU memory, not the parameter\'s bytes.',
+    captionZh: 'Tensor 路线先拼出一个完整参数。它发送的是 GPU 内存定位句柄，不是参数字节。',
+    title: 'Three channels · 3 of 3: send GPU handles', titleZh: '三条通道 · 第 3 条：发送 GPU 句柄',
+    subtitle: 'handle = instructions for finding an existing GPU tensor', subtitleZh: 'handle = 找到已有 GPU 张量所需的位置信息',
+    foot: 'The handle tuple carries reconstruction metadata, not the tensor data.', footZh: 'handle tuple 携带重建信息，不携带张量数据本身。',
+    mobileTitle: '3 of 3 · GPU handles', mobileTitleZh: '第 3 条 · GPU 句柄',
+    mobileSubtitle: 'handle = tensor location information', mobileSubtitleZh: 'handle = 张量的位置信息',
+    mobileFoot: 'Handles do not contain the weight bytes.', mobileFootZh: '句柄里没有权重字节。',
+    mobile: [
+      { title: '4 TRAINING PIECES', titleZh: '4 块训练分片', body: '[256, 1024] each', bodyZh: '每块 [256, 1024]', tone: 'orange' },
+      { title: 'FULL_TENSOR()', titleZh: 'FULL_TENSOR()', body: 'assemble [1024, 1024]', bodyZh: '拼成 [1024, 1024]', tone: 'orange' },
+      { title: 'HANDLE TUPLE', titleZh: 'HANDLE TUPLE', body: 'location information, not bytes', bodyZh: '位置信息，不是字节', tone: 'orange' },
+      { title: 'SGLANG REBUILDS + LOADS', titleZh: 'SGLANG 重建并装入', body: 'tensor.get(tp_rank)', bodyZh: '按 rank 取得张量', tone: 'blue' },
+    ],
+    formulas: [
+      { en: `4 × 256 × 1024 = ${UPDATE_EXAMPLE_FULL_ELEMENTS.toLocaleString('en-US')} elements`, zh: `4 × 256 × 1024 = ${UPDATE_EXAMPLE_FULL_ELEMENTS.toLocaleString('en-US')} 个数` },
+      { en: 'serialize the handle, not the payload', zh: '序列化句柄，不序列化数据本体' },
+      { en: 'gather_object collects handles at rank 0', zh: 'gather_object 把句柄收拢到 rank 0' },
+    ],
   }];
   let step = $state(0);
   $effect(() => {
@@ -93,7 +113,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [480, 620, 510][step] : [410, 480, 460][step]);
+  const H = $derived(phone ? [480, 620, 510, 620][step] : [410, 480, 460, 500][step]);
 </script>
 
 <figure class="viz">
@@ -198,6 +218,30 @@
         <text x="360" y="355" text-anchor="middle" class="code">for each parameter: allocate → broadcast(src=0) → load_weights</text>
         <text x="360" y="390" text-anchor="middle" class="small">{t('Orange = sends values · blue = receives values', '橙 = 发出数值 · 蓝 = 接收数值')}</text>
         <text x="360" y="422" text-anchor="middle" class="code">update_weights_from_distributed</text>
+      {:else if step === 3}
+        <text x="360" y="88" text-anchor="middle" class="small strong">{t('ONE PARAMETER · FOUR TRAINING PIECES', '一个参数 · 训练端的四块分片')}</text>
+        {#each [0, 1, 2, 3] as i}
+          <rect x={30 + i * 76} y="108" width="66" height="59" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x={63 + i * 76} y="134" text-anchor="middle" class="small">[{UPDATE_EXAMPLE_FSDP_ROWS},</text>
+          <text x={63 + i * 76} y="153" text-anchor="middle" class="small">{UPDATE_EXAMPLE_FULL_COLS}]</text>
+        {/each}
+        <line x1="337" y1="138" x2="380" y2="138" stroke="var(--gen)" stroke-width="2.5" marker-end="url(#update-arrow-orange)" />
+        <rect x="390" y="99" width="290" height="79" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x="535" y="130" text-anchor="middle" class="section">FULL_TENSOR()</text>
+        <text x="535" y="158" text-anchor="middle" class="result">[{UPDATE_EXAMPLE_FULL_ROWS}, {UPDATE_EXAMPLE_FULL_COLS}]</text>
+        <text x="360" y="211" text-anchor="middle" class="result">{UPDATE_EXAMPLE_FSDP_TP} × {UPDATE_EXAMPLE_FSDP_ROWS} × {UPDATE_EXAMPLE_FULL_COLS} = {UPDATE_EXAMPLE_FULL_ELEMENTS.toLocaleString('en-US')} {t('elements', '个数')}</text>
+        <text x="360" y="251" text-anchor="middle" class="code">MultiprocessingSerializer.serialize(full_tensor)</text>
+        <rect x="40" y="274" width="270" height="116" rx="12" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x="175" y="307" text-anchor="middle" class="section">HANDLE TUPLE</text>
+        <text x="175" y="340" text-anchor="middle" class="small">shape · stride</text>
+        <text x="175" y="366" text-anchor="middle" class="small">storage handle</text>
+        <line x1="310" y1="332" x2="405" y2="332" stroke="var(--accent)" stroke-width="3" marker-end="url(#update-arrow-blue)" />
+        <rect x="415" y="274" width="265" height="116" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="547" y="307" text-anchor="middle" class="section">SGLANG</text>
+        <text x="547" y="340" text-anchor="middle" class="code">tensor.get(tp_rank)</text>
+        <text x="547" y="368" text-anchor="middle" class="code">→ load_weights</text>
+        <text x="360" y="427" text-anchor="middle" class="small strong">{t('Only the handle crosses this arrow; the weight bytes do not.', '箭头只传句柄，不传权重字节。')}</text>
+        <text x="360" y="458" text-anchor="middle" class="small">{t('Orange = training-side work · blue = inference-side work', '橙 = 训练端工作 · 蓝 = 推理端工作')}</text>
       {/if}
       {#if cur.foot2}
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t(cur.foot2, cur.foot2Zh ?? cur.foot2)}</text>

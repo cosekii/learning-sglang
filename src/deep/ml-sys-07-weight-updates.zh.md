@@ -91,3 +91,36 @@ $$T=1\Rightarrow W=1+1=2,\qquad T=2\Rightarrow W=1+2=3$$
 这条通道通过通信组传递参数数值。Tensor 通道改为传句柄，让推理端找到已经拼好的 GPU 张量。
 
 来源：`Awesome-ML-SYS-Tutorial/sglang/latency-accelerate-for-weight-updates/readme.md:232-262,399-412,931-950`；`sgl-project/sglang@392e441ad17c78b68638f2d959fcf592d19b4834` 的 `model_runner.py:696-772`。
+
+## 第 4 步 · 发送指向完整张量的句柄
+
+**一句话。** Tensor 通道先拼好完整参数，把重建句柄交给 SGLang，再由每个推理 rank 重建并装入张量。
+
+### 图上是什么
+
+- 四个橙色训练分片各有 `[256,1024]` 个数。`full_tensor()` 把它们拼成一个 `[1024,1024]` 张量。
+- 序列化返回的 handle tuple 包含形状、stride 和存储句柄等信息，不包含权重数据本体。
+- 蓝色箭头表示句柄交接。`gather_object` 把句柄收拢到 rank 0；每个 SGLang rank 再调用 `tensor.get(tp_rank)` 和 `load_weights`。
+
+### 公式与符号
+
+$$E=r\times c,\qquad E=T\times r_s\times c$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $r,c$ | 完整张量的行数与列数 | 都是 1024 |
+| $T$ | 训练分片数 | FSDP TP 4 |
+| $r_s$ | 一个训练分片的行数 | $1024\div4=256$ |
+| $E$ | 拼好后的元素总数 | 本步计算 |
+
+### 代入图上的数
+
+$$E=4\times256\times1024=1024\times1024=1{,}048{,}576$$
+
+来源中的 SGLang TP 2 布局让每个推理 rank 持有 `[512,1024]`。这个例子没有指定数据类型，所以图中只数元素，不编字节数。
+
+### 接下来
+
+一次只拼一个参数，临时占用有边界。若把整套训练模型恢复到 SGLang 旁边，显存仍可能不够，所以 slime 分桶处理权重。
+
+来源：`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-1.md:51-60,132-204`；`volcengine/verl@0508af25b66e839772fba8e79d97896bf0d843d3` 的 `verl/workers/sharding_manager/fsdp_sglang.py:160-188`；固定 SGLang 版本的 `model_runner.py:774-792,1464-1479`。
