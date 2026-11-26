@@ -13,7 +13,7 @@ export const deep = await deepFor('voxt-compose-and-cleanup');
 <details class="i18n-en">
 <summary>Where this chapter's claims come from</summary>
 
-Step 1 maps one recognized result to three task routes and distinguishes content from a Rewrite instruction. Step 2 orders system, optional history and user messages, separating stable instructions from this run's input. Step 3 simplifies a Transcribe cleanup prompt into four instruction layers and one input; its deep dive covers omitted layers and the custom-prompt branch. Step 4 compares the three answer contracts, including built-in `<output>` extraction and first-write JSON fallback. Step 5 splits a constructed long Transcribe input into three requests and joins their answers in speech order; its deep dive covers thresholds, concurrency and draft publication. Step 6 fails one constructed piece, keeps that piece's recognized text and ends with degraded `Done + ProblemLLM`; its deep dive covers skip, deadlines and late answers. The inputs and answers are constructed teaching examples, not measured model traffic.
+Step 1 maps one recognized result to three task routes and distinguishes content from a Rewrite instruction. Step 2 orders system, optional history and user messages, separating stable instructions from this run's input. Step 3 simplifies a Transcribe cleanup prompt into four instruction layers and one input; its deep dive covers omitted layers and the custom-prompt branch. Step 4 compares the three answer contracts, including built-in `<output>` extraction and first-write JSON fallback. Step 5 splits a constructed long Transcribe input into three requests and joins their answers in speech order; its deep dive covers thresholds, concurrency and draft publication. Step 6 fails one constructed piece, keeps that piece's recognized text and ends with degraded `Done + ProblemLLM`; its deep dive covers skip, deadlines and late answers. Step 7 compares one strict selected-Translate echo retry with Rewrite's lack of a spoken-instruction fallback, including their `Failed` exits. The inputs and answers are constructed teaching examples, not measured model traffic.
 
 Source revision: `sglang-omni@3a31bd72e034db37ce5115a03dd4827b449683be`. The deep dive lists exact files and lines.
 
@@ -22,7 +22,7 @@ Source revision: `sglang-omni@3a31bd72e034db37ce5115a03dd4827b449683be`. The dee
 <details class="i18n-zh">
 <summary>本章说法的出处</summary>
 
-第 1 步把一份识别结果映射到三条任务路线，并区分加工内容与改写指令。第 2 步排列 system、可选 history 和 user 消息，把固定说明与本次输入分开。第 3 步把整理听写 prompt 简化成四层说明和一份输入，深入讲解覆盖省略层和自定义 prompt 分支。第 4 步比较三种输出约定，包括内置 `<output>` 提取和首次写作的 JSON 回退。第 5 步把构造的长听写拆成三个请求，再按原话顺序合回答案；深入讲解覆盖阈值、并行和草稿发布。第 6 步让构造的第二片失败，保留该片识别文字，并以降级的 `Done + ProblemLLM` 结束；深入讲解覆盖跳过、截止时间和迟到答案。输入和回答是构造的教学示例，不是实测的模型流量。
+第 1 步把一份识别结果映射到三条任务路线，并区分加工内容与改写指令。第 2 步排列 system、可选 history 和 user 消息，把固定说明与本次输入分开。第 3 步把整理听写 prompt 简化成四层说明和一份输入，深入讲解覆盖省略层和自定义 prompt 分支。第 4 步比较三种输出约定，包括内置 `<output>` 提取和首次写作的 JSON 回退。第 5 步把构造的长听写拆成三个请求，再按原话顺序合回答案；深入讲解覆盖阈值、并行和草稿发布。第 6 步让构造的第二片失败，保留该片识别文字，并以降级的 `Done + ProblemLLM` 结束；深入讲解覆盖跳过、截止时间和迟到答案。第 7 步比较选区翻译的一次 strict 回显重试与改写没有口述指令回退，并画出它们的 `Failed` 出口。输入和回答是构造的教学示例，不是实测的模型流量。
 
 源码版本：`sglang-omni@3a31bd72e034db37ce5115a03dd4827b449683be`。精确文件和行号见深入讲解。
 

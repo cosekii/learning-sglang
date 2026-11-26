@@ -4,7 +4,7 @@
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
-  import { VOXT_COMPOSE_CLEANED_PIECE_COUNT, VOXT_COMPOSE_FAILED_PIECE_COUNT, VOXT_COMPOSE_ORDERED_RESULT_COUNT, VOXT_COMPOSE_PIECE_COUNT, VOXT_COMPOSE_PROMPT_PART_COUNT, VOXT_COMPOSE_TASK_COUNT } from '../../voxt/numbers';
+  import { VOXT_COMPOSE_CLEANED_PIECE_COUNT, VOXT_COMPOSE_FAILED_PIECE_COUNT, VOXT_COMPOSE_ORDERED_RESULT_COUNT, VOXT_COMPOSE_PIECE_COUNT, VOXT_COMPOSE_PROMPT_PART_COUNT, VOXT_COMPOSE_TASK_COUNT, VOXT_REWRITE_SPEECH_FALLBACK_COUNT, VOXT_TRANSLATE_STRICT_RETRY_COUNT } from '../../voxt/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
@@ -26,6 +26,9 @@
   }, {
     caption: 'A failed piece keeps its recognized words. Other pieces can still be cleaned.',
     captionZh: '失败的分片保留识别原话。其他分片仍能使用清理结果。',
+  }, {
+    caption: 'Translate retries a suspected echo once. Rewrite cannot fall back to its spoken instruction.',
+    captionZh: '翻译发现疑似回显会重试一次。改写不会把口述指令当结果。',
   }];
   const ariaLabels = [{
     en: 'After recognition, one result can take one of three task routes. Transcribe treats words such as Good morning as text to tidy. Translate treats them as text to translate. Rewrite treats words such as Make it shorter as an instruction. Selected or typed text can supply the content to rewrite.',
@@ -45,6 +48,9 @@
   }, {
     en: 'In the same three-piece dictation, pieces one and three have cleaned answers. Piece two fails and keeps its recognized words. The three outputs still join in order. The session ends Done with ProblemLLM and Degraded true because one piece was not cleaned.',
     zh: '同一段三片听写中，第一片和第三片得到清理结果。第二片失败并保留识别原话。三份输出仍按顺序合回。因为有一片没有清理，会话以 Done、ProblemLLM 和 Degraded 为 true 结束。',
+  }, {
+    en: 'A constructed selected Translate answer repeats Good morning. Voxt makes one strict retry. If the final answer is still an echo and language mismatch gives positive evidence, the session fails without insertion. A constructed Rewrite request fails. Its speech, Make it shorter, is an instruction, so there are zero raw-speech fallbacks.',
+    zh: '构造的选区翻译回答重复 Good morning。Voxt 追加一次 strict 重试。如果最终回答仍是回显，并且有明确的语言不匹配证据，会话失败且不插入。构造的改写请求失败。Make it shorter 这段口述是指令，所以没有口述原文回退。',
   }];
   const tasks = [
     { name: 'TRANSCRIBE', nameZh: '整理听写', output: '“Good morning.”', note: 'words to tidy', noteZh: '要整理的文字' },
@@ -66,7 +72,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived((phone ? [680, 620, 670, 660, 650, 650] : [480, 410, 460, 420, 430, 430])[step]);
+  const H = $derived((phone ? [680, 620, 670, 660, 650, 650, 710] : [480, 410, 460, 420, 430, 430, 460])[step]);
 </script>
 
 <figure class="viz">
@@ -225,7 +231,7 @@
         <text x={W / 2} y={phone ? 555 : 370} text-anchor="middle" class="cut">{VOXT_COMPOSE_PIECE_COUNT} {t('PIECES', '个分片')} → {VOXT_COMPOSE_ORDERED_RESULT_COUNT} {t('ORDERED DICTATION', '段有序听写')}</text>
         <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('Constructed three-piece example.', '构造的三片示例。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Translate and Rewrite each use one request.', '翻译和改写各用一个请求。')}</text>
-      {:else}
+      {:else if step === 5}
         <text x={W / 2} y="27" text-anchor="middle" class="title">{t('TRANSCRIBE · ONE PIECE FAILS', '整理听写 · 一片失败')}</text>
         <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('degraded = finished with some recognized words left', 'degraded = 完成，但仍有原话分片')}</text>
         {#each Array(VOXT_COMPOSE_PIECE_COUNT) as _, i}
@@ -254,6 +260,38 @@
         {/if}
         <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('Constructed failure in piece 2.', '构造第二片失败的情形。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Late answers cannot replace the chosen result.', '迟到的答案不能替换已选定的结果。')}</text>
+      {:else}
+        <text x={W / 2} y="27" text-anchor="middle" class="title">{t('TRANSLATE AND REWRITE · DIFFERENT EXITS', '翻译和改写 · 不同出口')}</text>
+        <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('echo = the answer repeats the source', '回显 = 答案照抄原文')}</text>
+        {#each [
+          { name: 'TRANSLATE · SELECTION', nameZh: '翻译 · 选区', input: '“Good morning.”', role: 'ANSWER REPEATS THE SELECTION', roleZh: '回答重复选区原文' },
+          { name: 'REWRITE · SPEECH', nameZh: '改写 · 口述', input: '“Make it shorter.”', role: 'SPEECH IS AN INSTRUCTION', roleZh: '口述内容是指令' },
+        ] as job, i}
+          {@const x = phone ? 25 : 40 + i * 340}
+          {@const y = phone ? 70 + i * 285 : 75}
+          {@const w = phone ? 250 : 300}
+          <rect {x} {y} width={w} height={phone ? 260 : 300} rx="10" fill="var(--bg)" stroke="var(--line)" stroke-width="1.5" />
+          <text x={x + w / 2} y={y + 24} text-anchor="middle" class="label">{t(job.name, job.nameZh)}</text>
+          <text x={x + w / 2} y={y + 58} text-anchor="middle" class="value">{job.input}</text>
+          <text x={x + w / 2} y={y + 82} text-anchor="middle" class="detail">{t(job.role, job.roleZh)}</text>
+          <line x1={x + w / 2} y1={y + 94} x2={x + w / 2} y2={y + 115} stroke="var(--muted)" stroke-width="2" marker-end="url(#compose-arrow)" />
+          {#if i === 0}
+            <text x={x + w / 2} y={y + 141} text-anchor="middle" class="value small" fill="var(--accent)">{t('STRICT RETRY', 'STRICT 重试')} × {VOXT_TRANSLATE_STRICT_RETRY_COUNT}</text>
+            <text x={x + w / 2} y={y + 166} text-anchor="middle" class="detail">{t('STILL AN ECHO', '仍然是回显')}</text>
+            <text x={x + w / 2} y={y + 186} text-anchor="middle" class="detail">+ {t('LANGUAGE MISMATCH', '语言不匹配证据')}</text>
+          {:else}
+            <text x={x + w / 2} y={y + 141} text-anchor="middle" class="value small" fill="var(--gen)">{t('REQUEST FAILED', '请求失败')}</text>
+            <text x={x + w / 2} y={y + 166} text-anchor="middle" class="detail">{t('THE REQUEST DID NOT FINISH', '请求没有完成')}</text>
+            <text x={x + w / 2} y={y + 186} text-anchor="middle" class="detail">{t('SPEECH IS NOT RESULT TEXT', '口述不是结果正文')}</text>
+          {/if}
+          <text x={x + w / 2} y={y + 222} text-anchor="middle" class="value small" fill="var(--gen)">FAILED · {t('NO INSERT', '不插入')}</text>
+          {#if i === 1}
+            <text x={x + w / 2} y={y + (phone ? 246 : 270)} text-anchor="middle" class="detail" fill="var(--gen)">{VOXT_REWRITE_SPEECH_FALLBACK_COUNT} {t('RAW-SPEECH FALLBACKS', '个口述原文回退')}</text>
+          {/if}
+        {/each}
+        <text x={W / 2} y={phone ? 655 : 415} text-anchor="middle" class="cut">{VOXT_TRANSLATE_STRICT_RETRY_COUNT} {t('STRICT RETRY', '次 STRICT 重试')} · {VOXT_REWRITE_SPEECH_FALLBACK_COUNT} {t('REWRITE SPEECH FALLBACKS', '个改写口述回退')}</text>
+        <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('Constructed failures · no real model was called.', '构造的失败路径 · 没有调用真实模型。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Spoken Translate has separate skip and timeout exits.', '语音翻译另有跳过和超时出口。')}</text>
       {/if}
     </svg>
   </div>

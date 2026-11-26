@@ -281,3 +281,57 @@ Public baseline: same as Step 1.
 - Formation of `Done + ProblemLLM + Degraded`: `Voxt/internal/session/cleanup.go:204-224`.
 - Skip, soft deadlines and the single choice point: `Voxt/internal/session/cleanup.go:162-224`; `Voxt/internal/session/cleanup_manager.go:29-45,47-132`.
 - Recognized input versus dictionary replacement: `Voxt/internal/session/cleanup.go:64-77`.
+
+## Step 7 · Retry Translate, never deliver a Rewrite instruction
+
+> **In one line:** A suspected translation echo triggers one strict request, while an ordinary Rewrite failure never delivers the spoken instruction as the result.
+
+### On the stage
+
+- The left card covers selected `Translate`. The answer repeats “Good morning.”, so Voxt makes one `STRICT` retry. In this example, the final answer remains an echo and positive language-mismatch evidence exists, so the session ends `FAILED` without insertion.
+- The right card covers an ordinary `Rewrite` request failure. “Make it shorter.” is an instruction rather than deliverable content, so the raw-speech fallback count is 0 and Voxt inserts nothing.
+- Both paths are constructed. Spoken `Translate` has separate skip and timeout exits, so the left card does not describe every translation failure.
+
+### Formula
+
+$$
+S=1,\qquad B=0
+$$
+
+| Symbol | Meaning | Where it comes from |
+|---|---|---|
+| $S$ | Strict requests added after one suspected echo | The Translate echo branch in `write`: 1 |
+| $B$ | Ordinary Rewrite failures that deliver speech as the result | `keepSpeech` allows only spoken Translate: 0 |
+
+### The numbers on the stage
+
+| Quantity | Arithmetic | Result |
+|---|---|---:|
+| Strict retry for selected Translate | $S$ | 1 |
+| Rewrite raw-speech fallbacks | $B$ | 0 |
+
+These counts describe different mechanisms. Adding them would not produce a meaningful shared retry count.
+
+### Echo detection is not a quality evaluation
+
+`Untranslated` checks normalized source repetition, an unparenthesized whole source beside a translation, and script evidence. Parenthesized original names, language-neutral names, numbers and ambiguous Latin text have exceptions or insufficient evidence.
+
+If the strict request itself fails, Voxt keeps the first answer. A hard `ErrNotTranslated` failure requires both a final suspected echo and positive evidence from `LanguageMismatch`. This heuristic does not measure overall translation quality.
+
+### Other failure exits
+
+Manual Skip for spoken `Translate` finishes `Done` with recognized speech and no problem. A timeout also delivers recognized speech, but with degraded `ProblemLLM`. Selected Translate timeouts and other ordinary Translate failures end `Failed`, offer answer-card retry and insert nothing.
+
+`Rewrite` uses `ProblemNoLLM` when no model is ready and `ProblemLLM` for an ordinary request failure. If the user stops a card-streaming answer, the draft remains in the card without insertion. That path does not deliver the instruction either.
+
+### Next
+
+A failure blocks delivery, but a successful response can still be incomplete. The next step shows why length truncation forces the answer card.
+
+### Sources
+
+Public baseline: same as Step 1.
+
+- Strict echo retry, retention of the first answer and the final failure condition: `Voxt/internal/session/write.go:219-265`.
+- Echo and language-mismatch heuristics: `Voxt/internal/compose/translate.go:40-79,136-187`.
+- Spoken Translate skip, timeout and other write failures: `Voxt/internal/session/write.go:156-164,184-187,239-286,418-430`.

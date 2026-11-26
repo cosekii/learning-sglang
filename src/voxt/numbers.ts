@@ -117,3 +117,7 @@ export const VOXT_COMPOSE_ORDERED_RESULT_COUNT = 1;
 // The same constructed dictation: one failed piece keeps its recognized text.
 export const VOXT_COMPOSE_FAILED_PIECE_COUNT = 1;
 export const VOXT_COMPOSE_CLEANED_PIECE_COUNT = VOXT_COMPOSE_PIECE_COUNT - VOXT_COMPOSE_FAILED_PIECE_COUNT;
+
+// Public write path: one strict echo retry; Rewrite speech is an instruction, not fallback text.
+export const VOXT_TRANSLATE_STRICT_RETRY_COUNT = 1;
+export const VOXT_REWRITE_SPEECH_FALLBACK_COUNT = 0;
