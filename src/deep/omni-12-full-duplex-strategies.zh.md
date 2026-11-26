@@ -62,3 +62,27 @@ $$
 三种设计修改对话记录以前，Session graph 先删掉尚未进入交付记录的旧回答工作。
 
 出处：`docs/developer_reference/full_duplex_guide.md:391-397,1582-1591,1622-1645`；Learning SGLang 第 21 章第 1–2 步。
+
+## 第 3 步 · 删除边界
+
+> **一句话：** Session graph 删掉仍由它保管的旧工作，挡住迟到的旧输出，并报告交付位置。
+
+### 图上是什么
+
+- 蓝框是被打断回答在不同位置的副本。
+- 目标 inbox 和未送出 appends 删除匹配的旧 chunks。带 preempt 的 interrupt 还会中止已提交 appends。
+- 仍在 pacer 或未读客户端队列里的输出会被删除。这个回答之后迟到的 chunk 不能进入后续输出。
+- 橙色的客户端纠正会保留。打断回答不会关闭 session，也不会删除新输入。
+- `reply.delivered` 报告 `D = 2.0 s`。D 与 H 之间的 800 ms 已经在图的队列之外。
+
+### 这条边界不代表什么
+
+边界不是全局撤销。它不能抹掉连接已经取走的声音，也不能抹掉听者已经播放的声音。它还不能证明所有 owner 在同一时刻停下。第 3 章第 3 步已经区分了取消发布和 stage 确认。
+
+图会保留被打断的回答 ID，防止迟到的工具输出混入新回答。这与接下来三步各自的对话记录修复是两件事。
+
+### 接下来
+
+Qwen 把交付位置和客户端播放位置换算成回答 token 记录里的切点。
+
+出处：`sglang_omni/pipeline/session_graph.py:108-232,581-619`；`sglang_omni/pipeline/sessions.py:167-210`；`sglang_omni/pipeline/session_delivery.py:92-128`。

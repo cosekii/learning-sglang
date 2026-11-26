@@ -62,3 +62,27 @@ This is a mechanism map, not a speed ranking. The systems differ in both model a
 Before any design changes its history, the Session graph removes old reply work that has not reached the delivery ledger.
 
 Sources: `docs/developer_reference/full_duplex_guide.md:391-397,1582-1591,1622-1645`; Learning SGLang Ch. 21 Steps 1–2.
+
+## Step 3 · The interruption fence
+
+> **In one line:** The Session graph deletes old work it still holds, blocks late old output and reports the delivered position.
+
+### On the stage
+
+- Blue boxes are copies of the interrupted reply at different positions.
+- The target inbox and unsent appends lose matching old chunks. Already submitted appends are aborted when the interrupt preempts.
+- Output still in the pacer or unread client queue is dropped. A late chunk from that reply cannot enter later output.
+- The orange client correction stays. Interrupting a reply does not close the session or delete the new input.
+- `reply.delivered` reports `D = 2.0 s`. The 800 ms between D and H is already beyond the graph's queues.
+
+### What the fence does not mean
+
+The fence is not global undo. It cannot erase audio that the connection already took or sound that the listener already played. It also does not prove that every owner stopped at one timestamp. Ch. 3 Step 3 showed why abort publication and stage acknowledgement are different events.
+
+The graph retains interrupted reply IDs so late tools cannot attach old work to a new answer. This is separate from the model-specific history repair in the next three steps.
+
+### Next
+
+Qwen converts the delivered and client-played positions into a cut in its reply-token history.
+
+Sources: `sglang_omni/pipeline/session_graph.py:108-232,581-619`; `sglang_omni/pipeline/sessions.py:167-210`; `sglang_omni/pipeline/session_delivery.py:92-128`.

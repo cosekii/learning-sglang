@@ -21,6 +21,9 @@
   }, {
     caption: 'Three designs handle the same interruption. A streaming cascade separates recognition, language and speech services.',
     captionZh: '三种设计处理同一次打断。streaming cascade 让识别、语言模型和语音生成接力。',
+  }, {
+    caption: 'The fence drops queued old work and blocks late chunks. Delivered audio stays outside its reach.',
+    captionZh: '删除边界清掉排队的旧工作，并挡住迟到 chunks。已交付声音不在这条边界内。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -37,7 +40,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [650, 790][step] : [540, 590][step]);
+  const H = $derived(phone ? [650, 790, 790][step] : [540, 590, 570][step]);
   const seconds = (ms: number) => (ms / 1000).toFixed(1);
 </script>
 
@@ -122,6 +125,62 @@
           <text x="150" y="733" text-anchor="middle" class="small strong">{t('Which old outputs can be deleted?', '哪些旧输出能先删掉？')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Different systems · not a benchmark' : 'Different models and services; this map does not compare their speed.', phone ? '不同系统 · 不比较速度' : '不同模型和服务；这张地图不比较速度。')}</text>
+      {:else if step === 2}
+        <text x={phone ? 18 : 30} y="30" class="title">{t('The graph fences the old reply', '图给旧回答设一道删除边界')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'fence = old work cannot pass' : 'interruption fence = a turn marker that old work cannot pass', phone ? '边界 = 旧工作不能越过' : '删除边界 = 标出旧回答，不让它的工作越过')}</text>
+        <text x={phone ? 18 : 30} y="79" class="label">{t(phone ? 'blue = old · orange = input · red = fence' : 'blue = old reply · orange = client input · red = fence', phone ? '蓝 = 旧回答 · 橙 = 输入 · 红 = 边界' : '蓝 = 旧回答 · 橙 = 客户端输入 · 红 = 删除边界')}</text>
+        {#if !phone}
+          {#each [
+            { x: 30, w: 125, name: 'target inbox', sub: 'waiting input', action: 'DROP', nameZh: '目标 inbox', subZh: '等待的输入', actionZh: '删除' },
+            { x: 185, w: 125, name: 'unsent append', sub: 'not submitted', action: 'DROP', nameZh: '未送出 append', subZh: '还没提交', actionZh: '删除' },
+            { x: 340, w: 135, name: 'submitted', sub: 'owners still run', action: 'ABORT', nameZh: '已提交', subZh: 'owner 仍在运行', actionZh: '中止' },
+          ] as box}
+            <rect x={box.x} y="125" width={box.w} height="86" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x={box.x + box.w / 2} y="154" text-anchor="middle" class="small strong">{t(box.name, box.nameZh)}</text>
+            <text x={box.x + box.w / 2} y="181" text-anchor="middle" class="small">{t(box.sub, box.subZh)}</text>
+            <text x={box.x + box.w / 2} y="239" text-anchor="middle" class="result">{t(box.action, box.actionZh)}</text>
+          {/each}
+          <line x1="500" y1="105" x2="500" y2="370" stroke="var(--eos)" stroke-width="3" stroke-dasharray="7 5" />
+          <text x="500" y="101" text-anchor="middle" class="small strong">{t('FENCE', '边界')}</text>
+          <rect x="530" y="125" width="160" height="86" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="610" y="154" text-anchor="middle" class="small strong">{t('delivered = D', '已交付 = D')}</text>
+          <text x="610" y="181" text-anchor="middle" class="small">{t('connection took it', '连接已经取走')}</text>
+          <text x="610" y="239" text-anchor="middle" class="result">{t('CANNOT RECALL', '收不回来')}</text>
+          <rect x="30" y="292" width="205" height="65" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="132" y="319" text-anchor="middle" class="small strong">{t('client input · KEEP', '客户端输入 · 保留')}</text>
+          <text x="132" y="343" text-anchor="middle" class="small">“No, I meant London.”</text>
+          <rect x="270" y="292" width="160" height="65" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="350" y="319" text-anchor="middle" class="small strong">{t('late old chunk', '迟到的旧 chunk')}</text>
+          <text x="350" y="343" text-anchor="middle" class="result">{t('BLOCK', '挡住')}</text>
+          <rect x="530" y="292" width="160" height="65" rx="10" fill="var(--bg)" stroke="var(--eos)" />
+          <text x="610" y="319" text-anchor="middle" class="small strong">reply.delivered</text>
+          <text x="610" y="343" text-anchor="middle" class="result">D = {seconds(DUPLEX_DELIVERED_MS)} s</text>
+          <text x="360" y="415" text-anchor="middle" class="result">D − H = {DUPLEX_DELIVERED_UNPLAYED_MS} ms {t('outside the graph queues', '已在图的队列之外')}</text>
+          <text x="360" y="475" text-anchor="middle" class="small strong">{t('The graph also reports D so history can use the same cut.', '图还报告 D，让对话记录使用同一个切点。')}</text>
+          <text x="360" y="522" text-anchor="middle" class="result">{t('How many reply rows does Qwen keep?', 'Qwen 会保留旧回答的多少行？')}</text>
+        {:else}
+          {#each [
+            { y: 112, name: 'target inbox · DROP', sub: 'waiting old input', nameZh: '目标 inbox · 删除', subZh: '等待的旧输入' },
+            { y: 207, name: 'unsent append · DROP', sub: 'not submitted', nameZh: '未送出 append · 删除', subZh: '还没提交' },
+            { y: 302, name: 'submitted · ABORT', sub: 'owners stop old work', nameZh: '已提交 · 中止', subZh: 'owner 停止旧工作' },
+          ] as box}
+            <rect x="18" y={box.y} width="264" height="75" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="150" y={box.y + 30} text-anchor="middle" class="small strong">{t(box.name, box.nameZh)}</text>
+            <text x="150" y={box.y + 56} text-anchor="middle" class="small">{t(box.sub, box.subZh)}</text>
+          {/each}
+          <line x1="18" y1="397" x2="282" y2="397" stroke="var(--eos)" stroke-width="3" stroke-dasharray="7 5" />
+          <text x="150" y="421" text-anchor="middle" class="small strong">{t('FENCE · late old chunks BLOCK', '边界 · 迟到旧 chunks 挡住')}</text>
+          <rect x="18" y="442" width="264" height="70" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="150" y="470" text-anchor="middle" class="small strong">{t('delivered = D · CANNOT RECALL', '已交付 = D · 收不回来')}</text>
+          <text x="150" y="496" text-anchor="middle" class="result">reply.delivered = {seconds(DUPLEX_DELIVERED_MS)} s</text>
+          <rect x="18" y="532" width="264" height="62" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="150" y="558" text-anchor="middle" class="small strong">{t('client input · KEEP', '客户端输入 · 保留')}</text>
+          <text x="150" y="581" text-anchor="middle" class="small">“No, I meant London.”</text>
+          <text x="150" y="636" text-anchor="middle" class="result">D − H = {DUPLEX_DELIVERED_UNPLAYED_MS} ms</text>
+          <text x="150" y="666" text-anchor="middle" class="small">{t('outside the graph queues', '已在图的队列之外')}</text>
+          <text x="150" y="718" text-anchor="middle" class="small strong">{t('Next: Qwen history rows', '下一步：Qwen 保留多少行？')}</text>
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'D uses Step 1 · no global undo' : 'D reuses Step 1. The graph fences old work; it does not undo client playback.', phone ? 'D 来自第 1 步 · 不是全局撤销' : 'D 沿用第 1 步。图隔离旧工作，不会撤销客户端已经播放的声音。')}</text>
       {/if}
     </svg>
   </div>
