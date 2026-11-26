@@ -159,7 +159,7 @@
     captionZh: '训练先按轮保存张量。最后每个 key 拼一次，得到 3 行。',
     title: 'Merge each tensor key once', titleZh: '每个 tensor key 只拼接一次',
     subtitle: 'concat = join rows along dimension 0, the first axis', subtitleZh: 'concat = 沿第 0 维，也就是第一条轴拼接行',
-    foot: 'Constructed rows and key k; only tensor values join.', footZh: '构造行数和 key k；只有张量值参与拼接。',
+    foot: 'Constructed rows; key k names the same tensor field in both bundles.', footZh: '构造行数；key k 是两份输入包里同一个张量字段的名字。',
     legend: 'Orange = turn chunks · blue = merged tensor · red = current', legendZh: '橙 = 各轮片段 · 蓝 = 合并张量 · 红 = 当前',
     flow: true,
     nodes: [
@@ -178,7 +178,7 @@
     mobile: {
       title: 'Merge each key once', titleZh: '每个 key 只拼接一次',
       subtitle: 'concat = join rows on the first axis', subtitleZh: 'concat = 沿第一条轴拼接行',
-      foot: 'Constructed rows; only tensor values join.', footZh: '构造行数；只有张量值参与拼接。',
+      foot: 'Constructed rows; key k = shared tensor field name.', footZh: '构造行数；key k = 共有的张量字段名。',
       legend: 'Orange = chunks · blue = merged · red = current', legendZh: '橙 = 片段 · 蓝 = 合并 · 红 = 当前',
       formulas: [
         { en: 'Collect by key: k → [T0, T1]', zh: '按 key 收集：k → [T0, T1]' },
@@ -365,6 +365,14 @@
   {/each}
 {/snippet}
 
+{#snippet tensorRows(x: number, y: number, w: number, count: number, tone: Tone)}
+  <g in:fly={{ y: -6, duration: 350 }} out:fade={{ duration: 120 }}>
+    {#each Array(count) as _, j}
+      <rect data-row={j} {x} y={y + j * 12} width={w} height="8" rx="3" fill={fill(tone)} stroke={stroke(tone)} />
+    {/each}
+  </g>
+{/snippet}
+
 {#snippet imageIcon(x: number, y: number, label: string)}
   <g data-image={label} in:fly={{ y: -6, duration: 350 }} out:fade={{ duration: 120 }}>
     <rect {x} {y} width="44" height="28" rx="5" fill="var(--gen-soft)" stroke="var(--gen)" />
@@ -415,6 +423,16 @@
           <text x={x + w / 2 - 31 + j * 62} y={y + 81} text-anchor="middle" class="celltext">{label}</text>
         </g>
       {/each}
+    {/if}
+  {:else if step === 4}
+    {#if i === 0}
+      {@render tensorRows(x + 25, y + 62, w - 50, N.AGENT_INITIAL_TENSOR_ROWS, 'orange')}
+    {:else if i === 1}
+      {@render tensorRows(x + 25, y + 62, w - 50, N.AGENT_OBSERVATION_TENSOR_ROWS, 'orange')}
+    {:else if i === 2 && phase >= 2}
+      {@render tensorRows(x + 25, y + 58, w - 50, N.AGENT_MERGED_TENSOR_ROWS, 'orange')}
+    {:else if i === 3 && phase >= 3}
+      {@render tensorRows(x + 25, y + 58, w - 50, N.AGENT_MERGED_TENSOR_ROWS, 'blue')}
     {/if}
   {/if}
   </g>

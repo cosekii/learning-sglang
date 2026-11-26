@@ -146,27 +146,27 @@ Source: `THUDM/slime@f68dc4a25f362fc0335165a17ff976f5b6f675e1`, `examples/geo3k_
 
 ### On the stage
 
-- The initial chunk `T0` and observation chunk `T1` share the constructed key `k`.
-- Their tables have two rows and one row under `k`.
-- The merge concatenates along dimension 0, placing the second chunk after the first.
-- The final training input has three rows under `k`. Non-tensor fields do not join. A key also gets no merged value when not all its values are tensors.
+- The initial chunk `T0` and observation chunk `T1` share key `k`, the field name that points to the same kind of tensor in both bundles.
+- Two orange row bars appear under `T0`, and one appears under `T1`. Each bar is one row along dimension 0.
+- The concat card gathers those bars into one three-row stack, placing the observation row after the initial rows. The final training card shows the merged stack in blue.
+- Non-tensor fields do not join. A key also gets no merged value when not all its values are tensors.
 
 ### Formula and symbols
 
-$$C_k=\operatorname{cat}([T_{0,k},T_{1,k}],\ dim=0),\qquad R_k=R_{0,k}+R_{1,k}$$
+$$X_k=\operatorname{cat}([T_{0,k},T_{1,k}],\ dim=0),\qquad r_k=r_{0,k}+r_{1,k}$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
-| $k$ | Constructed key shared by both dictionaries | This step |
+| $k$ | Constructed field name shared by both dictionaries | Step 4's bundles |
 | $T_{0,k}$ | Tensor under key $k$ in the initial dictionary | Step 4's $T_0$ |
 | $T_{1,k}$ | Tensor under key $k$ in the observation dictionary | Step 4's $T_1$ |
-| $C_k$ | Merged tensor | One `torch.cat` in this step |
-| $R_{0,k},R_{1,k}$ | Row counts along dimension 0 | Constructed values: 2 and 1 |
-| $R_k$ | Merged row count along dimension 0 | Sum in this step |
+| $X_k$ | Merged tensor | One `torch.cat` in this step |
+| $r_{0,k},r_{1,k}$ | Row counts along dimension 0 | Constructed values: 2 and 1 |
+| $r_k$ | Merged row count along dimension 0 | Sum in this step |
 
 ### The numbers on the stage
 
-$$R_k=2+1=3$$
+$$r_k=2+1=3$$
 
 The implementation first builds `k → [T0, T1]`, then runs `torch.cat([T0, T1], dim=0)` once. The chunks retain their initial-then-observation order.
 
