@@ -22,6 +22,14 @@
     COLOCATED_FREE_PERCENT,
     QWEN_THINKER_ENCODER_RESERVE_PERCENT,
     QWEN_THINKER_EFFECTIVE_AR_PERCENT,
+    QWEN_BF16_BITS_PER_WEIGHT,
+    QWEN_FP8_BITS_PER_WEIGHT,
+    QWEN_INT4_BITS_PER_WEIGHT,
+    QWEN_BF16_ESTIMATED_MEMORY_GB,
+    QWEN_FP8_ESTIMATED_MEMORY_GB,
+    QWEN_INT4_ESTIMATED_MEMORY_GB,
+    QWEN_FP8_MEMORY_OF_BF16_PERCENT,
+    QWEN_INT4_MEMORY_OF_BF16_PERCENT,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -38,6 +46,9 @@
   }, {
     caption: 'The thinker declares 78%, then subtracts a 5% encoder reserve. Its effective AR budget is 73%.',
     captionZh: 'thinker 申报 78%，再减 5% 预留。AR 实际预算为 73%。',
+  }, {
+    caption: 'Precision stores each weight with fewer bits. INT4 roughly halves BF16 memory, while its talker stays BF16.',
+    captionZh: '精度决定权重占多少 bit。INT4 约省一半，talker 仍用 BF16。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -54,7 +65,7 @@
     return () => query.removeEventListener('change', update);
   });
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [870, 820, 900, 850][step] : [560, 600, 650, 580][step]);
+  const H = $derived(phone ? [870, 820, 900, 850, 850][step] : [560, 600, 650, 580, 600][step]);
   const budgetSegments = [
     ...COLOCATED_STAGE_SHARES.flatMap((stage) => stage.name === 'thinker' ? [
       { name: 'thinker AR', percent: QWEN_THINKER_EFFECTIVE_AR_PERCENT, kind: 'stage' },
@@ -63,6 +74,11 @@
     { name: 'outside fractions', percent: COLOCATED_FREE_PERCENT, kind: 'outside' },
   ];
   const budgetX = (index: number, width: number) => budgetSegments.slice(0, index).reduce((sum, segment) => sum + segment.percent, 0) * width / 100;
+  const precisionOptions = [
+    { name: 'BF16', bits: QWEN_BF16_BITS_PER_WEIGHT, memory: QWEN_BF16_ESTIMATED_MEMORY_GB, ratio: 100, stageA: 'thinker + talker AR', stageAZh: 'thinker + talker AR', stageB: 'BF16', stageBZh: 'BF16' },
+    { name: 'FP8', bits: QWEN_FP8_BITS_PER_WEIGHT, memory: QWEN_FP8_ESTIMATED_MEMORY_GB, ratio: QWEN_FP8_MEMORY_OF_BF16_PERCENT, stageA: 'thinker + talker AR', stageAZh: 'thinker + talker AR', stageB: 'FP8', stageBZh: 'FP8' },
+    { name: 'INT4', bits: QWEN_INT4_BITS_PER_WEIGHT, memory: QWEN_INT4_ESTIMATED_MEMORY_GB, ratio: QWEN_INT4_MEMORY_OF_BF16_PERCENT, stageA: 'thinker: INT4', stageAZh: 'thinker：INT4', stageB: 'talker + code2wav: BF16', stageBZh: 'talker + code2wav：BF16' },
+  ];
   const isCpuStage = (name: string) => name === 'preprocessing' || name === 'decode';
   const speechGpu0 = QWEN_SPEECH_DEFAULT_STAGE_PROCESSES.filter((stage) => stage.gpu === 0);
   const speechGpu1 = QWEN_SPEECH_DEFAULT_STAGE_PROCESSES.filter((stage) => stage.gpu === 1);
@@ -72,7 +88,7 @@
   <div class="canvas">
     <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={$lang === 'zh' ? cur.captionZh : cur.caption}>
       {#if step === 0}
-        <text x={phone ? 15 : 20} y="24" class="rowlabel">{t('ONE CHECKPOINT, TWO STARTUP BILLS', '同一个 CHECKPOINT，两份启动账单')}</text>
+        <text x={phone ? 15 : 20} y="24" class="rowlabel">{t('ONE MODEL, TWO STARTUP BILLS', '同一个模型，两份启动账单')}</text>
         <text x={phone ? 15 : 20} y="49" class="tag">{t('deployment = the stages, processes and cards you start', 'deployment = 你启动的 stage、进程和卡')}</text>
         <text x={phone ? 15 : 20} y="72" class="tag">{t('blue = GPU stage · grey = CPU stage · one dashed box = one process', '蓝 = GPU stage · 灰 = CPU stage · 一个虚线框 = 一个进程')}</text>
         {#each phone ? [
@@ -208,6 +224,35 @@
         {/if}
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('The 6% grey segment is outside declarations, not measured free memory.', '灰色 6% 在申报比例之外，不是实测空闲显存。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Next: choose how many bits each weight uses.', '下一步：每个权重用多少 bit。')}</text>
+      {:else if step === 4}
+        <text x={phone ? 15 : 20} y="24" class="rowlabel">{t('PRECISION COMES FROM THE CHECKPOINT', '精度来自 CHECKPOINT')}</text>
+        <text x={phone ? 15 : 20} y="49" class="tag">quantization = {t('store each weight with fewer bits', '每个权重用更少 bit 保存')}</text>
+        <text x={phone ? 15 : 20} y="72" class="tag">{phone ? t('bit = 0 or 1 · checkpoint = saved model files', 'bit = 0 或 1 · checkpoint = 模型文件') : t('bit = one 0-or-1 digit · checkpoint = saved model files; their config selects precision', 'bit = 一个 0 或 1 · checkpoint = 保存的模型文件；文件配置选择精度')}</text>
+        <text x={phone ? 15 : 20} y="95" class="tag">{t('blue bars = cookbook memory estimates · same scale', '蓝柱 = 教程文档的显存估计 · 同一比例')}</text>
+        {#each precisionOptions as option, i}
+          {@const x = phone ? 15 : 20 + i * 235}
+          {@const y = phone ? 120 + i * 205 : 130}
+          {@const w = phone ? 270 : 210}
+          <rect {x} {y} width={w} height={phone ? 180 : 320} rx="11" fill="var(--bg)" stroke="var(--line)" />
+          <text x={x + 15} y={y + 30} class="rowlabel">{option.name}</text>
+          <text x={x + 15} y={y + (phone ? 51 : 58)} class="tag">{option.bits} bits / weight</text>
+          <rect x={x + 15} y={y + (phone ? 67 : 85)} width={option.memory / QWEN_BF16_ESTIMATED_MEMORY_GB * (w - 30)} height={phone ? 32 : 42} rx="5" fill="var(--accent)" />
+          <text x={x + 15} y={y + (phone ? 123 : 157)} class="formula">≈ {option.memory} GB</text>
+          <text x={x + 15} y={y + (phone ? 148 : 207)} class="tag strong">{t(option.stageA, option.stageAZh)}</text>
+          <text x={x + 15} y={y + (phone ? 171 : 233)} class="tag">{t(option.stageB, option.stageBZh)}</text>
+          {#if !phone}
+            <text x={x + 15} y={y + 282} class="formula">{option.ratio.toFixed(0)}% {t('of BF16', 'BF16 的比例')}</text>
+          {/if}
+        {/each}
+        {#if phone}
+          <text x="150" y="747" text-anchor="middle" class="tag strong">{t('ALL THREE SUPPORT', '三种精度都支持')}</text>
+          <text x="150" y="773" text-anchor="middle" class="tag">text-only · TP1/TP2 · colocated TP1</text>
+        {:else}
+          <text x="360" y="503" text-anchor="middle" class="tag strong">{t('ALL THREE: text-only · disaggregated TP1 or TP2 · colocated TP1', '三种精度都支持：纯文字 · 分卡 TP1 或 TP2 · 同卡 TP1')}</text>
+          <text x="360" y="537" text-anchor="middle" class="formula">60 → 40 → 30 GB · {t('smaller bars are documentation estimates', '较短的柱来自文档估计')}</text>
+        {/if}
+        <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('BF16 is the default; native FP8 is not selected by --dtype fp8.', 'BF16 是默认值；native FP8 不是用 --dtype fp8 选择。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Approximate cookbook memory values, not local footprint or quality measurements.', '文档中的近似显存值，不是本地显存或质量实测。')}</text>
       {/if}
     </svg>
   </div>

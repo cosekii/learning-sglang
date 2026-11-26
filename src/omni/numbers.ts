@@ -11,6 +11,18 @@ export const COLOCATED_FREE_PERCENT = 100 - COLOCATED_USED_PERCENT;
 export const QWEN_THINKER_ENCODER_RESERVE_PERCENT = 5;
 export const QWEN_THINKER_EFFECTIVE_AR_PERCENT = COLOCATED_STAGE_SHARES.find((stage) => stage.name === 'thinker')!.percent - QWEN_THINKER_ENCODER_RESERVE_PERCENT;
 
+// Cookbook estimates for the three supported checkpoint precisions; not local measurements.
+export const QWEN_BF16_BITS_PER_WEIGHT = 16;
+export const QWEN_FP8_BITS_PER_WEIGHT = 8;
+export const QWEN_INT4_BITS_PER_WEIGHT = 4;
+export const QWEN_INT4_GROUP_SIZE = 128;
+export const QWEN_BF16_ESTIMATED_MEMORY_GB = 60;
+export const QWEN_FP8_ESTIMATED_MEMORY_GB = 40;
+export const QWEN_INT4_ESTIMATED_MEMORY_GB = 30;
+export const QWEN_FP8_MEMORY_OF_BF16_PERCENT = QWEN_FP8_ESTIMATED_MEMORY_GB / QWEN_BF16_ESTIMATED_MEMORY_GB * 100;
+export const QWEN_INT4_MEMORY_OF_BF16_PERCENT = QWEN_INT4_ESTIMATED_MEMORY_GB / QWEN_BF16_ESTIMATED_MEMORY_GB * 100;
+export const QWEN_INT4_MEMORY_OF_FP8_PERCENT = QWEN_INT4_ESTIMATED_MEMORY_GB / QWEN_FP8_ESTIMATED_MEMORY_GB * 100;
+
 // COLOCATED_SPEECH_PROCESSES in sglang_omni/models/qwen3_omni/config.py.
 export const COLOCATED_PROCESS_GROUPS = [
   { name: 'preprocessing', stages: ['preprocessing'], device: 'CPU' },

@@ -4,6 +4,7 @@
 
 ### 图上是什么
 
+- checkpoint 是服务器加载的一组已保存模型文件。
 - 左边一个虚线框是 `pipeline` 进程，里面装着纯文字部署的全部六个 stage。
 - 右边每个语音 stage 各住一个进程。四个进程用 GPU 0，一个用 GPU 1，两个只用 CPU。
 - 蓝色是 GPU stage，灰色是 CPU stage。图中画的是启动形态，不是实测占用率。
@@ -140,3 +141,43 @@ YAML 数值来自 `examples/configs/qwen3_omni_colocated_h100_bf16.yaml:7-20`。
 ### 接下来
 
 显存也取决于 checkpoint 的精度，下一步对照 BF16、native FP8 和 AutoRound INT4。
+
+## 第 5 步 · bit 变少，各 stage 精度不同
+
+> **一句话：** 三种 checkpoint 的文档显存估计约为 60、40、30 GB，但 INT4 不量化语音 talker 和 code2wav。
+
+### 图上是什么
+
+- 一个 bit 是一个 0 或 1。量化用更少 bit 保存权重，能表示的数值等级也随之减少。
+- 三根蓝柱用同一比例画教程文档估计的 60、40、30 GB。
+- BF16 把 thinker 和 talker AR 加载为 BF16；native FP8 从 FP8 checkpoint 加载这两个 AR stage。
+- AutoRound 是这份 INT4 checkpoint 使用的量化方法。它把 thinker 的 transformer 层按 128 个一组量化成 4 bit；talker 和 code2wav 仍是 BF16。
+- 三种精度都支持纯文字、分卡 TP1/TP2 和同卡 TP1。
+
+### 公式
+
+$$
+M_r=\frac{M_p}{M_{BF16}}\times100\%
+$$
+
+| 符号 | 是什么 | 大小 | 从哪来 |
+|---|---|---:|---|
+| $M_r$ | 相对 BF16 的估计显存 | 百分比 | 本步 |
+| $M_p$ | 一种精度的估计显存 | 60、40 或 30 GB | Qwen 教程文档 |
+| $M_{BF16}$ | BF16 的估计显存 | 60 GB | Qwen 教程文档 |
+
+### 代入图上的数
+
+- FP8：`40 ÷ 60 × 100% ≈ 67%`，约比 BF16 少三分之一。
+- INT4：`30 ÷ 60 × 100% = 50%`，约比 BF16 少一半。
+- INT4 相对 FP8：`30 ÷ 40 × 100% = 75%`，即少 25%。
+
+这些比值来自文档的近似显存，不能直接用 16、8、4 相除得到。缩放因子、未量化部分和其他文件也会占存储与显存。
+
+### 边界与出处
+
+兼容性：`docs/cookbook/qwen3_omni.md:25-44`。FP8 checkpoint 加载：`docs/cookbook/qwen3_omni.md:153-169`；支持的 dtype 字符串见 `sglang_omni/models/weight_loader.py:19-42`，所以 `--dtype fp8` 不是选择机制。INT4 的 stage 边界与估计：`docs/cookbook/qwen3_omni.md:181-200`。本章不声称本地显存、速度或准确率测量。
+
+### 接下来
+
+选好 checkpoint 和布局后，更多同时到来的语音请求可能需要另一对 talker 和 code2wav，而不是换精度。

@@ -21,6 +21,8 @@ Step 3 uses the public placement experiment from Chapter 8 Step 1. At concurrenc
 
 Step 4 starts with the H100 BF16 colocated YAML's declared `2 + 2 + 78 + 10 + 2 = 94%` (`examples/configs/qwen3_omni_colocated_h100_bf16.yaml:1-20`). The thinker factory defaults `encoder_mem_reserve` to 0.05 and subtracts it before deriving the AR budget when the colocated stage fraction is not matched by an explicit `mem_fraction_static`; the effective AR fraction is therefore `0.78 − 0.05 = 0.73` (`sglang_omni/models/qwen3_omni/stages.py:1230-1243,1358-1373`; `tests/unit_test/qwen3_omni/test_sglang_ar_budget.py:476-488,514-537`). Colocation requires one common GPU, TP 1, no talker/code2wav process replicas and a declared budget for every GPU stage (`sglang_omni/models/qwen3_omni/placement.py:55-60,84-108,122-187`). These are configuration arithmetic and validation rules, not measured occupancy.
 
+Step 5 compares the three precision rows in the compatibility matrix: BF16, native FP8 and AutoRound INT4 all support text-only, disaggregated TP1/TP2 and colocated TP1 (`docs/cookbook/qwen3_omni.md:25-44`). BF16 is the default. Native FP8 reads the checkpoint quantization config for thinker and talker AR; it is not a generic `--dtype fp8` option (`docs/cookbook/qwen3_omni.md:153-169`; `sglang_omni/models/weight_loader.py:19-42`). The AutoRound checkpoint uses 4-bit group-size-128 thinker weights while speech talker and code2wav remain BF16 (`docs/cookbook/qwen3_omni.md:181-195`). The approximately 60, 40 and 30 GB values and their 50%/25% reductions are documentation estimates, not local footprint, latency or quality measurements (`docs/cookbook/qwen3_omni.md:196-200`).
+
 Code references in this chapter pin to `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`. The chapter reads source, shipped configs and public measurements; it does not run a model or benchmark.
 
 </details>
@@ -35,6 +37,8 @@ Code references in this chapter pin to `sglang-omni origin/main@9725235249df8512
 第 3 步使用第 8 章第 1 步的公开摆卡实验。8 路并发时，只把 talker 从 thinker 所在 GPU 移到另一张卡，两次 p90 首音的均值从 2.680 秒降至 1.439 秒，约 46%。两组实验的 code2wav 都留在 thinker 旁边。同一指南另报单请求结果：独占改善首音，却让端到端延迟增加 14–17%，所以本章不把一项指标写成通用规则（`docs/cookbook/qwen3_omni/tuning.md:52-69`）。
 
 第 4 步从 H100 BF16 同卡 YAML 的 `2 + 2 + 78 + 10 + 2 = 94%` 开始（`examples/configs/qwen3_omni_colocated_h100_bf16.yaml:1-20`）。thinker 工厂默认 `encoder_mem_reserve` 为 0.05；当同卡 stage 比例没有匹配显式 `mem_fraction_static` 时，会先减去这份预留再推导 AR 预算，所以有效 AR 比例是 `0.78 − 0.05 = 0.73`（`sglang_omni/models/qwen3_omni/stages.py:1230-1243,1358-1373`；`tests/unit_test/qwen3_omni/test_sglang_ar_budget.py:476-488,514-537`）。同卡要求五个 GPU stage 共用一卡、TP 为 1、talker 和 code2wav 不复制进程，并且每个 GPU stage 都申报预算（`sglang_omni/models/qwen3_omni/placement.py:55-60,84-108,122-187`）。这些是配置算式与校验规则，不是实测占用。
+
+第 5 步对照兼容矩阵的三种精度：BF16、native FP8 和 AutoRound INT4 都支持纯文字、分卡 TP1/TP2 和同卡 TP1（`docs/cookbook/qwen3_omni.md:25-44`）。BF16 是默认值。native FP8 为 thinker 和 talker AR 读取 checkpoint 的量化配置，不是通用的 `--dtype fp8` 选项（`docs/cookbook/qwen3_omni.md:153-169`；`sglang_omni/models/weight_loader.py:19-42`）。AutoRound checkpoint 的 thinker 使用 4 bit、group size 128 权重，语音 talker 和 code2wav 仍是 BF16（`docs/cookbook/qwen3_omni.md:181-195`）。约 60、40、30 GB 及 50%/25% 降幅是文档估计，不是本地显存、延迟或质量实测（`docs/cookbook/qwen3_omni.md:196-200`）。
 
 本章代码出处固定到 `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`。本章只读源码、随仓库配置和公开测量，没有运行模型或 benchmark。
 

@@ -4,6 +4,7 @@
 
 ### On the stage
 
+- A checkpoint is the set of saved model files loaded by the server.
 - The left dashed box is one `pipeline` process containing all six text-only stages.
 - The right panel gives each speech stage its own process. Four processes use GPU 0, one uses GPU 1, and two use only CPU.
 - Blue marks GPU stages. Grey marks CPU stages. These are startup shapes, not measured utilization.
@@ -140,3 +141,43 @@ The YAML values come from `examples/configs/qwen3_omni_colocated_h100_bf16.yaml:
 ### Next
 
 Memory also depends on the checkpoint's precision, so the next step compares BF16, native FP8 and AutoRound INT4.
+
+## Step 5 · Fewer bits, different stage precisions
+
+> **In one line:** BF16, FP8 and INT4 checkpoints reduce the documented memory estimate from about 60 to 40 to 30 GB, but INT4 does not quantize the speech talker or code2wav.
+
+### On the stage
+
+- A bit is one 0-or-1 digit. Quantization stores weights with fewer bits and fewer representable levels.
+- The three blue bars use one scale for the cookbook's approximate 60, 40 and 30 GB memory values.
+- BF16 loads thinker and talker AR as BF16. Native FP8 loads those AR stages from an FP8 checkpoint.
+- AutoRound is the quantization method named by the INT4 checkpoint. It quantizes thinker transformer layers to 4-bit groups of 128; talker and code2wav remain BF16.
+- All three rows support text-only, disaggregated TP1/TP2 and colocated TP1.
+
+### Formula
+
+$$
+M_r=\frac{M_p}{M_{BF16}}\times100\%
+$$
+
+| Symbol | Meaning | Size | Source |
+|---|---|---:|---|
+| $M_r$ | Estimated memory relative to BF16 | percent | This step |
+| $M_p$ | Estimated memory for one precision | 60, 40 or 30 GB | Qwen cookbook |
+| $M_{BF16}$ | Estimated BF16 memory | 60 GB | Qwen cookbook |
+
+### The numbers on the stage
+
+- FP8: `40 ÷ 60 × 100% ≈ 67%` of BF16, about one third less.
+- INT4: `30 ÷ 60 × 100% = 50%` of BF16, about one half less.
+- Against FP8, INT4 is `30 ÷ 40 × 100% = 75%`, or 25% less.
+
+These ratios come from the cookbook's approximate values. They are not calculated by dividing 16, 8 and 4, because scales, unquantized parts and other files also occupy storage and memory.
+
+### Boundaries and sources
+
+Compatibility: `docs/cookbook/qwen3_omni.md:25-44`. FP8 checkpoint loading: `docs/cookbook/qwen3_omni.md:153-169`; supported dtype strings are in `sglang_omni/models/weight_loader.py:19-42`, so `--dtype fp8` is not the mechanism. INT4 stage boundaries and estimates: `docs/cookbook/qwen3_omni.md:181-200`. The chapter does not claim a local memory, speed or accuracy measurement.
+
+### Next
+
+After choosing a checkpoint and layout, more simultaneous speech requests may require another talker/code2wav pair rather than another precision.
