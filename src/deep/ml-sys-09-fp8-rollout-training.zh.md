@@ -108,3 +108,38 @@ $$(W_q,S_w)=\mathcal{Q}_w(W_{16}),\qquad (A_q,S_a)=\mathcal{Q}_a(A_{16})$$
 训练也需要 FP8 矩阵乘法，但它要在前向和反向中使用，同时保留高精度训练状态。下一步打开训练路径。
 
 来源：`THUDM/slime@15fbd2ef82c765fe22f78e288db2bb79ebf582bd` 的 `examples/low_precision/README.md:23-27` 和 `tools/convert_hf_to_fp8.py:179-188`；`Awesome-ML-SYS-Tutorial/rlhf/slime/fp8/readme.md:40-54`。
+
+## 第 4 步 · 在训练内部使用 FP8 矩阵乘法
+
+**一句话。** 训练为支持的前向和反向矩阵乘法在线量化权重与激活值，需要高精度的模型和优化器区域则保留高精度。
+
+### 图上是什么
+
+- 模型状态卡保留高精度数值。使用自带 `--fp8-param-gather` 配置时，驻留的 Transformer Engine 权重可以是 FP8；不开该参数时，驻留权重仍是 BF16，只在矩阵乘法前转换。
+- FP8 卡覆盖支持的前向和反向矩阵乘法。前向算输出，反向算权重梯度和输入梯度，实现分别称为 FProp、Wgrad 和 Dgrad。
+- 优化器卡在这本账里不会变成 FP8。因此第 8 章构造的 48 GB 优化器表仍是 48 GB，不是 24 GB。
+
+### 公式与符号
+
+$$Y=\operatorname{GEMM}_8(\mathcal{Q}(A),\mathcal{Q}(W))$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $A,W$ | 高精度激活值和权重输入 | 当前训练计算 |
+| $\mathcal{Q}$ | 按配置的 scale 和粒度做量化 | 第 2 步的机制，这里在线执行 |
+| $\operatorname{GEMM}_8$ | 使用 FP8 输入的支持矩阵乘法 | Transformer Engine 的 `Linear` 或 `GroupLinear` 路径 |
+| $Y$ | 矩阵乘法输出 | 前向结果；反向使用对应的梯度矩阵乘法 |
+
+### 代入图上的数
+
+第 8 章的 4B 构造算例把 48 GB 分给三张 FP32 优化器表。本步没有给出 FP8 优化器格式，所以：
+
+$$M_{\text{optimizer}}=48\ \text{GB}\rightarrow48\ \text{GB}$$
+
+Qwen3-4B 脚本组合了 `--bf16`、`--fp8-format e4m3`、`--fp8-recipe blockwise`、`--fp8-param-gather` 和 `NVTE_FP8_BLOCK_SCALING_FP32_SCALES=1`。attention softmax 和梯度累加保持 FP32。文档路径中只有 `Linear` 和 `GroupLinear` 使用 FP8；embedding 和 `lm_head` 保留原精度。
+
+### 接下来
+
+Rollout 仍需拿到训练后的权重。下一步沿着更新通道，看 FP8 权重先还原为 BF16，再重新量化，而不是沿一条不变的 FP8 线路直接发送。
+
+来源：`THUDM/slime@15fbd2ef82c765fe22f78e288db2bb79ebf582bd` 的 `examples/low_precision/run-qwen3-4b-fp8.sh:117-143` 和 `examples/low_precision/README.md:21-23,51-54`；`Awesome-ML-SYS-Tutorial/rlhf/slime/fp8/readme.md:118-132`。

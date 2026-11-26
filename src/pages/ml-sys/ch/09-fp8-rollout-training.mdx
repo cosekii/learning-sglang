@@ -21,6 +21,8 @@ Step 2 follows the scale and rounding mechanism at `readme.md:90-124` and the pi
 
 Step 3 follows `examples/low_precision/README.md:23-27` and `tools/convert_hf_to_fp8.py:179-188` at the pinned slime revision. Eligible weights are converted offline with scales; activations are quantized dynamically for supported matrix multiplications. Embedding and `lm_head` stay in their original precision. The chapter does not claim an FP8 KV cache or a rollout latency measurement.
 
+Step 4 follows `examples/low_precision/run-qwen3-4b-fp8.sh:117-143` and `examples/low_precision/README.md:21-23,51-54`. Supported `Linear` and `GroupLinear` matrix multiplications use FP8 in forward and backward; higher-precision regions remain, including attention softmax and gradient accumulation. Chapter 8's constructed 48 GB optimizer state is not halved because no cited source quantizes it to FP8.
+
 </details>
 
 <details class="i18n-zh">
@@ -33,5 +35,7 @@ Step 3 follows `examples/low_precision/README.md:23-27` and `tools/convert_hf_to
 第 2 步依据 `readme.md:90-124` 的 scale 与舍入机制，以及固定版本 `tools/convert_hf_to_fp8.py:31-71,142-146`。三个数的例子是构造算例。E4M3 把缩放后的中间值存为 176，还原为 3.142857。128 × 128 分块的字节账只包含一个 4 字节 FP32 scale，不能外推为整个 checkpoint 的节省比例。
 
 第 3 步依据固定 slime 版本的 `examples/low_precision/README.md:23-27` 和 `tools/convert_hf_to_fp8.py:179-188`。可转换权重提前离线量化并保存 scale，激活值在支持的矩阵乘法需要时动态量化。embedding 和 `lm_head` 保留原精度。本章不声称 FP8 KV cache，也不给出 rollout 延迟实测。
+
+第 4 步依据 `examples/low_precision/run-qwen3-4b-fp8.sh:117-143` 和 `examples/low_precision/README.md:21-23,51-54`。支持的 `Linear` 和 `GroupLinear` 矩阵乘法在前向和反向使用 FP8，attention softmax 和梯度累加等区域保持高精度。引用来源没有把优化器状态量化为 FP8，所以第 8 章构造的 48 GB 优化器状态不能减半。
 
 </details>

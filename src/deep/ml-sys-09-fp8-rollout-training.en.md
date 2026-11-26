@@ -108,3 +108,38 @@ The shipped conversion skips named embedding and `lm_head` tensors. Its activati
 Training also needs FP8 matrix multiplications, but it must run them in forward and backward while retaining higher-precision training state. The next step opens that path.
 
 Sources: `THUDM/slime@15fbd2ef82c765fe22f78e288db2bb79ebf582bd`, `examples/low_precision/README.md:23-27` and `tools/convert_hf_to_fp8.py:179-188`; `Awesome-ML-SYS-Tutorial/rlhf/slime/fp8/readme.md:40-54`.
+
+## Step 4 · Use FP8 matrix multiplies inside training
+
+**One sentence.** Training quantizes weights and activations for supported FP8 matrix multiplications in forward and backward, while model and optimizer regions that need higher precision remain there.
+
+### On the stage
+
+- The model-state card retains higher-precision values. With the shipped `--fp8-param-gather` configuration, resident Transformer Engine weights can use FP8; without it, resident weights remain BF16 and are cast for the multiplication.
+- The FP8 card covers supported forward and backward matrix multiplications. Forward computes outputs; backward computes weight and input gradients. The implementation names these FProp, Wgrad, and Dgrad.
+- The optimizer card does not become FP8 in this account. Chapter 8's constructed 48 GB of optimizer tables therefore stays 48 GB, not 24 GB.
+
+### Formula and symbols
+
+$$Y=\operatorname{GEMM}_8(\mathcal{Q}(A),\mathcal{Q}(W))$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $A,W$ | Higher-precision activation and weight inputs | Current training computation |
+| $\mathcal{Q}$ | Quantization with the configured scale and granularity | Step 2's mechanism, applied online here |
+| $\operatorname{GEMM}_8$ | Supported matrix multiplication with FP8 inputs | Transformer Engine `Linear` or `GroupLinear` path |
+| $Y$ | Matrix-multiplication output | Forward result; backward uses the corresponding gradient multiplies |
+
+### The numbers on the stage
+
+Chapter 8 assigned 48 GB to three FP32 optimizer tables in its constructed 4B-value example. This step supplies no FP8 optimizer format, so the example remains:
+
+$$M_{\text{optimizer}}=48\ \text{GB}\rightarrow48\ \text{GB}$$
+
+The Qwen3-4B script combines `--bf16`, `--fp8-format e4m3`, `--fp8-recipe blockwise`, `--fp8-param-gather`, and `NVTE_FP8_BLOCK_SCALING_FP32_SCALES=1`. Attention softmax and gradient accumulation remain FP32. Only `Linear` and `GroupLinear` use FP8 in the documented path; embedding and `lm_head` keep their original precision.
+
+### Next
+
+Rollout still needs the trained weights. The next step follows the update path, which expands FP8 weights to BF16 and then quantizes them again instead of sending one unchanged FP8 wire.
+
+Sources: `THUDM/slime@15fbd2ef82c765fe22f78e288db2bb79ebf582bd`, `examples/low_precision/run-qwen3-4b-fp8.sh:117-143` and `examples/low_precision/README.md:21-23,51-54`; `Awesome-ML-SYS-Tutorial/rlhf/slime/fp8/readme.md:118-132`.

@@ -82,6 +82,25 @@
       { en: 'activations = values made during compute · convert dynamically', zh: '激活值 = 计算时产生的值 · 出现时再转换' },
       { en: 'eligible matrix multiplies receive both FP8 inputs', zh: '可转换的矩阵乘法接收两类 FP8 输入' },
     ],
+  }, {
+    caption: 'Training uses FP8 matrix multiplies in forward and backward. Optimizer tables keep higher precision.',
+    captionZh: '训练的前向和反向矩阵乘法可用 FP8。优化器表仍用高精度。',
+    title: 'Training · 2 of 4: FP8 inside a mixed-precision model', titleZh: '训练 · 2/4：混合精度模型里的 FP8',
+    subtitle: 'matrix multiply = multiply two tables of numbers · these inputs are FP8',
+    subtitleZh: '矩阵乘法 = 两表数相乘 · 这里的输入是 FP8',
+    foot: 'Implementation path, not a training measurement; exact flags are in the deep dive.',
+    footZh: '实现路径，不是训练实测；精确参数见深入讲解。',
+    legend: 'Orange = higher-precision state · blue = FP8 matrix multiplication', legendZh: '橙 = 高精度状态 · 蓝 = FP8 矩阵乘法',
+    nodes: [
+      { title: 'MODEL STATE', titleZh: '模型状态', result: 'BF16 + FP32', resultZh: 'BF16 + FP32', body: 'kept for training', bodyZh: '训练时继续保存', tone: 'orange' },
+      { title: 'FP8 MULTIPLY', titleZh: 'FP8 矩阵乘法', result: 'forward + backward', resultZh: '前向 + 反向', body: 'quantize inputs when needed', bodyZh: '需要时才量化输入', tone: 'blue', compact: true },
+      { title: 'OPTIMIZER STATE', titleZh: '优化器状态', result: 'higher precision', resultZh: '保持高精度', body: 'not halved by FP8', bodyZh: '不会因 FP8 减半', tone: 'orange', compact: true },
+    ],
+    formulas: [
+      { en: 'FP8 region: eligible matrix multiplies only', zh: 'FP8 区域：仅限可支持的矩阵乘法' },
+      { en: 'forward computes outputs · backward computes gradients', zh: '前向算输出 · 反向算梯度' },
+      { en: 'Chapter 8 example: optimizer tables stay 48 GB, not 24 GB', zh: '第 8 章算例：优化器表仍是 48 GB，不是 24 GB' },
+    ],
   }];
   let step = $state(0);
   $effect(() => {
