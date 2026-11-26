@@ -169,39 +169,39 @@
         {#if !phone}
           <rect x="30" y="205" width="315" height="285" rx="12" fill="var(--bg)" stroke="var(--line)" />
           <text x="48" y="235" class="result">worker A</text>
-          <rect x="48" y="257" width="279" height="65" rx="8" fill="var(--bg)" stroke="var(--faint)" />
+          <rect x="48" y="257" width="279" height="65" rx="8" fill="var(--bg)" stroke={phase === 1 ? 'var(--fg)' : 'var(--faint)'} stroke-width={phase === 1 ? 3 : 1} style="transition: stroke 250ms, stroke-width 250ms" />
           <text x="62" y="283" class="small">row 1 · model M</text>
           <text x="62" y="307" class="small">text → text · no stream</text>
-          <rect x="48" y="338" width="279" height="65" rx="8" fill="var(--bg)" stroke="var(--faint)" />
+          <rect x="48" y="338" width="279" height="65" rx="8" fill="var(--bg)" stroke={phase === 2 ? 'var(--fg)' : 'var(--faint)'} stroke-width={phase === 2 ? 3 : 1} style="transition: stroke 250ms, stroke-width 250ms" />
           <text x="62" y="364" class="small">row 2 · model N</text>
           <text x="62" y="388" class="small">image → WAV · stream</text>
-          <text x="48" y="449" class="result">0 + 0 = 0 {t('matching rows', '行匹配')}</text>
-          <rect x="375" y="205" width="315" height="285" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="48" y="449" class="result" opacity={phase >= 2 ? 1 : 0.2} style="transition: opacity 350ms">0 + 0 = 0 {t('matching rows', '行匹配')}</text>
+          <rect x="375" y="205" width="315" height="285" rx="12" fill={phase >= 3 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={phase >= 3 ? 'var(--accent)' : 'var(--line)'} style="transition: fill 350ms, stroke 350ms" />
           <text x="393" y="235" class="result">worker B</text>
-          <rect x="393" y="257" width="279" height="92" rx="8" fill="var(--bg)" stroke="var(--accent)" />
+          <rect x="393" y="257" width="279" height="92" rx="8" fill="var(--bg)" stroke={phase >= 3 ? 'var(--accent)' : 'var(--faint)'} style="transition: stroke 350ms" />
           <text x="407" y="283" class="small">row 1 · model M</text>
           <text x="407" y="309" class="small">image → WAV · stream</text>
-          <text x="407" y="334" class="small strong">{t('every fact matches', '每项都匹配')}</text>
-          <text x="393" y="449" class="result">1 {t('matching row', '行匹配')}</text>
+          <text x="407" y="334" class="small strong" opacity={phase >= 3 ? 1 : 0.15} style="transition: opacity 350ms">{t('every fact matches', '每项都匹配')}</text>
+          <text x="393" y="449" class="result" opacity={phase >= 3 ? 1 : 0.15} style="transition: opacity 350ms">1 {t('matching row', '行匹配')}</text>
         {:else}
           <rect x="18" y="200" width="264" height="260" rx="12" fill="var(--bg)" stroke="var(--line)" />
           <text x="34" y="230" class="result">worker A</text>
-          <rect x="34" y="250" width="232" height="70" rx="8" fill="var(--bg)" stroke="var(--faint)" />
+          <rect x="34" y="250" width="232" height="70" rx="8" fill="var(--bg)" stroke={phase === 1 ? 'var(--fg)' : 'var(--faint)'} stroke-width={phase === 1 ? 3 : 1} style="transition: stroke 250ms, stroke-width 250ms" />
           <text x="46" y="277" class="small">row 1 · model M</text>
           <text x="46" y="302" class="small">text → text · no stream</text>
-          <rect x="34" y="335" width="232" height="70" rx="8" fill="var(--bg)" stroke="var(--faint)" />
+          <rect x="34" y="335" width="232" height="70" rx="8" fill="var(--bg)" stroke={phase === 2 ? 'var(--fg)' : 'var(--faint)'} stroke-width={phase === 2 ? 3 : 1} style="transition: stroke 250ms, stroke-width 250ms" />
           <text x="46" y="362" class="small">row 2 · model N</text>
           <text x="46" y="387" class="small">image → WAV · stream</text>
-          <text x="34" y="438" class="result">0 + 0 = 0 {t('rows', '行')}</text>
-          <rect x="18" y="485" width="264" height="200" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="34" y="438" class="result" opacity={phase >= 2 ? 1 : 0.2} style="transition: opacity 350ms">0 + 0 = 0 {t('rows', '行')}</text>
+          <rect x="18" y="485" width="264" height="200" rx="12" fill={phase >= 3 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={phase >= 3 ? 'var(--accent)' : 'var(--line)'} style="transition: fill 350ms, stroke 350ms" />
           <text x="34" y="515" class="result">worker B</text>
-          <rect x="34" y="535" width="232" height="85" rx="8" fill="var(--bg)" stroke="var(--accent)" />
+          <rect x="34" y="535" width="232" height="85" rx="8" fill="var(--bg)" stroke={phase >= 3 ? 'var(--accent)' : 'var(--faint)'} style="transition: stroke 350ms" />
           <text x="46" y="562" class="small">row 1 · model M</text>
           <text x="46" y="587" class="small">image → WAV · stream</text>
-          <text x="46" y="611" class="small strong">{t('all facts match', '每项都匹配')}</text>
-          <text x="34" y="657" class="result">1 {t('matching row', '行匹配')}</text>
+          <text x="46" y="611" class="small strong" opacity={phase >= 3 ? 1 : 0.15} style="transition: opacity 350ms">{t('all facts match', '每项都匹配')}</text>
+          <text x="34" y="657" class="result" opacity={phase >= 3 ? 1 : 0.15} style="transition: opacity 350ms">1 {t('matching row', '行匹配')}</text>
         {/if}
-        <text x={W / 2} y={phone ? 730 : 535} text-anchor="middle" class="small strong">{t('No cross-row combinations.', '不能跨行拼出请求需要的能力。')}</text>
+        <text x={W / 2} y={phone ? 730 : 535} text-anchor="middle" class="small strong" opacity={phase >= 3 ? 1 : 0.15} style="transition: opacity 350ms">{t('No cross-row combinations.', '不能跨行拼出请求需要的能力。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Constructed rows · model N is a different model', '构造行 · model N 是另一个模型')}</text>
       {:else if step === 3}
         <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'Health filters compatible workers' : 'Health filters the compatible workers', 'health 再过滤兼容的 worker')}</text>
@@ -369,7 +369,7 @@
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Next chapter: worker failure and graceful exit.', '下一章：worker 故障与退出。')}</text>
       {/if}
-      {#if step <= 1}<LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={4} label={t('loops', '循环')} />{/if}
+      {#if step <= 2}<LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={4} label={t('loops', '循环')} />{/if}
     </svg>
   </div>
   <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh}
