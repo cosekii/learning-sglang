@@ -55,7 +55,7 @@
   const POOL_FOOT_ZH = `SGLang 为激活值和 CUDA graphs 保留约 17% 的显存（--mem-fraction-static，此处 0.83），所以池更接近 55 GB`;
   const steps: Step[] = [
     { scene: 'room', caption: `The scheduler checks for room for KV cache before admitting a new request. ${HBM_GB} GB on the card, ${W_GB} GB of weights, and everything else is room for KV cache. Running requests fill it a token per step.`, captionZh: `scheduler 接纳新 request 前查空间：${HBM_GB} GB 减去权重 ${W_GB} GB，其余归 KV cache。运行中的 request 每步多占一个 token。`, foot: POOL_FOOT, footZh: POOL_FOOT_ZH },
-    { scene: 'caps', caption: `How many fit? Same card, three context lengths. At 2k tokens each, ${capAt(2048)} requests. At 4k, ${capAt(4096)}. At 8k, ${capAt(8192)}. Compute could take ${BALANCE} per step; at these lengths memory never lets it get there.`, captionZh: `能装多少？同一张卡，三种上下文长度：每个 2k token 装 ${capAt(2048)} 个，4k 装 ${capAt(4096)} 个，8k 装 ${capAt(8192)} 个。算力每步可跑 ${BALANCE} 个，但这些长度下内存到不了。`, foot: POOL_FOOT, footZh: POOL_FOOT_ZH },
+    { scene: 'caps', caption: `How many fit? Same card, three context lengths. At 2k tokens each, ${capAt(2048)} requests. At 4k, ${capAt(4096)}. At 8k, ${capAt(8192)}. Compute could take ${BALANCE} per step; at these lengths memory never lets it get there.`, captionZh: `上下文越长，每个 request 的 cache 越大。2k 装 ${capAt(2048)} 个，4k 装 ${capAt(4096)} 个，8k 只装 ${capAt(8192)} 个。`, foot: POOL_FOOT, footZh: POOL_FOOT_ZH },
     { scene: 'reserve', caption: `The naive way: reserve each request's maximum length up front, in one contiguous block. Most never use it, and finished requests leave holes no newcomer fits into. Most of the card, wasted.`, captionZh: `朴素做法：预先给每个 request 按最大长度预留一整块连续内存。大多用不满，结束的 request 留下新来者放不进的洞。卡上大部分被浪费。` },
     { scene: 'alloc', base: pages0, alloc: allocA, owner: 5, name: 'req 6', caption: `<b>Paging</b>: cut the room into fixed-size pages. A newcomer's cache isn't one block; it's however many pages it needs, taken from anywhere that's free, with the page numbers written in its table. No holes, no pages held in advance.`, captionZh: `<b>Paging</b>：把空间切成固定大小的 page。req 6 任取 5 个空闲 page，位置不限。` },
     { scene: 'free', caption: `When a request finishes, its pages go straight back to the pool. No compaction, nobody else moves. The pool just has more free pages, wherever they happen to be.`, captionZh: `request 结束时，它的 page 直接回到池里。不做整理，谁也不移动。池里只是多了些空闲 page，位置随意。`, foot: `with prefix caching off · SGLang keeps a finished request's pages in its prefix cache until it needs them (chapter ${CH_PREFIX})`, footZh: `关闭 prefix caching · SGLang 把已结束 request 的 page 留在 prefix cache 里，直到需要它们（第 ${CH_PREFIX} 章）` },
@@ -84,7 +84,7 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg class:step-one={step === 0 && $lang === 'zh'} class:step-four={step === 3 && $lang === 'zh'} class:step-six={step === 5} viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="KV memory, step {step + 1}">
+    <svg class:step-one={step === 0 && $lang === 'zh'} class:step-two={step === 1 && $lang === 'zh'} class:step-four={step === 3 && $lang === 'zh'} class:step-six={step === 5} viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="KV memory, step {step + 1}">
       <defs>
         <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
           <rect width="6" height="6" fill="#e0f2fe" />
@@ -137,21 +137,24 @@
             {@const y = 70 + r * 98}
             {@const n = capAt(ctx)}
             {@const h = 34}
-            <g in:fade={{ delay: r * 300 }}>
-              <text x={BAR.x} y={y - 10} class="rowlabel">{t(`every request at ${ctx / 1024}k tokens of context · ${Math.round(seqGB(ctx) * 1000).toLocaleString()} MB each`, `每个 request 上下文 ${ctx / 1024}k token · 各占 ${Math.round(seqGB(ctx) * 1000).toLocaleString()} MB`)}</text>
+            <g in:fade={{ delay: r * ($lang === 'zh' ? 500 : 300), duration: $lang === 'zh' ? 250 : 400 }}>
+              <text x={BAR.x} y={y - 10} class="rowlabel desktop-only">{t(`every request at ${ctx / 1024}k tokens of context · ${Math.round(seqGB(ctx) * 1000).toLocaleString()} MB each`, `每个 request：${ctx / 1024}k × ${KB_TOK} KiB ≈ ${Math.round(seqGB(ctx) * 1000).toLocaleString()} MB`)}</text>
+              <text x={BAR.x} y={y - 10} class="rowlabel phone-only">{ctx / 1024}k × {KB_TOK} KiB ≈ {Math.round(seqGB(ctx) * 1000).toLocaleString()} MB</text>
               <rect x={BAR.x} {y} width={BAR.w} height={h} rx="7" fill="white" stroke="var(--line)" />
               <rect x={BAR.x} {y} width={W_GB * pxPerGB} height={h} rx="7" fill="var(--accent)" opacity="0.9" />
               <text x={BAR.x + (W_GB * pxPerGB) / 2} y={y + 22} text-anchor="middle" class="steplabel">{t('weights', '权重')}</text>
               {#each Array(n) as _, i}
                 {@const x = BAR.x + W_GB * pxPerGB + i * seqGB(ctx) * pxPerGB}
-                <rect {x} y={y + 1} width={Math.max(0.8, seqGB(ctx) * pxPerGB - 1)} height={h - 2} fill="#0891b2" opacity={0.55 + 0.35 * (i % 2)} in:fly={{ x: -5, delay: r * 300 + 100 + i * (ctx > 4096 ? 20 : 6), duration: 200 }} />
+                <rect {x} y={y + 1} width={Math.max(0.8, seqGB(ctx) * pxPerGB - 1)} height={h - 2} fill="#0891b2" opacity={0.55 + 0.35 * (i % 2)} in:fly={{ x: $lang === 'zh' ? 0 : -5, delay: $lang === 'zh' ? 0 : r * 300 + 100 + i * (ctx > 4096 ? 20 : 6), duration: $lang === 'zh' ? 0 : 200 }} />
               {/each}
-              <text x={BAR.x + BAR.w} y={y + h + 16} text-anchor="end" class="legend"><tspan class="strong">{t(`${n} requests`, `${n} 个 request`)}</tspan> {t('fit', '装得下')}</text>
+              <text x={BAR.x + BAR.w} y={y + h + 16} text-anchor="end" class="legend desktop-only">{#if $lang === 'zh'}64 GB ÷ {Math.round(seqGB(ctx) * 1000).toLocaleString()} MB，取整 = <tspan class="strong">{n} 个</tspan>{:else}<tspan class="strong">{n} requests</tspan> fit{/if}</text>
+              <text x={BAR.x + BAR.w} y={y + h + 16} text-anchor="end" class="legend phone-only">64 GB ÷ {Math.round(seqGB(ctx) * 1000).toLocaleString()} MB，取整 = {n} 个</text>
             </g>
           {/each}
           <g in:fade={{ delay: 1400 }}>
-            <text x={BAR.x} y="340" class="legend">{t(`Ch. 5 Step 4's sweet spot was ${BALANCE} requests decoding at once;`, `Ch. 5 Step 4 的最佳点是 ${BALANCE} 个 request 同时 decode；`)}</text>
-            <text x={BAR.x} y="358" class="legend">{t(`even at a short 2k context, this card holds ${capAt(2048)}`, `即使上下文短到 2k，这张卡也只装得下 ${capAt(2048)} 个`)}</text>
+            <text x={BAR.x} y="340" class="legend desktop-only">{t(`Ch. 5 Step 4's sweet spot was ${BALANCE} requests decoding at once;`, `Ch. 5 Step 4 的最佳点是 ${BALANCE} 个 request 同时 decode；`)}</text>
+            <text x={BAR.x} y="358" class="legend desktop-only">{t(`even at a short 2k context, this card holds ${capAt(2048)}`, `即使上下文短到 2k，这张卡也只装得下 ${capAt(2048)} 个`)}</text>
+            <text x={BAR.x} y="350" class="legend phone-only">2k：{capAt(2048)} 个 &lt; 算力 {BALANCE} 个</text>
           </g>
         </g>
       {/if}
@@ -395,9 +398,10 @@
   .legend.muted, .legend .muted { fill: var(--muted); font-weight: 400; }
   .phone-only { display: none; }
   @media (max-width: 900px) {
-    .step-one .desktop-only, .step-one .context-label, .step-four .desktop-only, .step-four .past-key, .step-six .desktop-only, .step-six .past-key { display: none; }
-    .step-one .phone-only, .step-four .phone-only, .step-six .phone-only { display: inline; }
+    .step-one .desktop-only, .step-one .context-label, .step-two .desktop-only, .step-four .desktop-only, .step-four .past-key, .step-six .desktop-only, .step-six .past-key { display: none; }
+    .step-one .phone-only, .step-two .phone-only, .step-four .phone-only, .step-six .phone-only { display: inline; }
     .step-one .rowlabel, .step-one .legend, .step-one .tag, .step-one .pt, .step-one .steplabel, .step-one .footnote,
+    .step-two .rowlabel, .step-two .legend, .step-two .steplabel, .step-two .footnote,
     .step-four .rowlabel, .step-four .legend, .step-four .tag, .step-four .pt,
     .step-six .rowlabel, .step-six .legend, .step-six .tag, .step-six .pt { font-size: 23px; }
   }
