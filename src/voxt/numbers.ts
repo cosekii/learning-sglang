@@ -109,3 +109,7 @@ export const VOXT_LLM_DESTINATION_COUNT = 1;
 // One constructed raw text can be paired with cleanup, translation or rewriting.
 export const VOXT_COMPOSE_TASK_COUNT = 3;
 export const VOXT_COMPOSE_PROMPT_PART_COUNT = 5;
+
+// Constructed long dictation: three pieces rejoin as one ordered result.
+export const VOXT_COMPOSE_PIECE_COUNT = 3;
+export const VOXT_COMPOSE_ORDERED_RESULT_COUNT = 1;

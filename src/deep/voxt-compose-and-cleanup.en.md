@@ -178,3 +178,54 @@ Public baseline: same as Step 1.
 - Built-in `<output>` extraction and preservation of tags in content: `Voxt/internal/compose/answer.go:372-449`.
 - First-write JSON parsing and plain-text fallback: `Voxt/internal/compose/answer.go:463-483`; `Voxt/internal/session/write.go:341-415`.
 - Transcribe pieces call `CleanOutput`: `Voxt/internal/session/cleanup.go:399-431`.
+
+## Step 5 · Split long dictation and rejoin it in order
+
+> **In one line:** Long dictation can become several requests that share system instructions, then their answers join in speech order as one result.
+
+### On the stage
+
+- The first blue card holds one constructed long dictation from Ch. 4 recognition.
+- The dashed box contains three requests. Each piece has the same system instructions, while `user 1`, `user 2` and `user 3` hold different spans of speech.
+- The last blue card joins the three answers as `1 → 2 → 3`. Three pieces are a teaching example, not a fixed product value.
+- The footnote limits the scope: `Translate` and `Rewrite` each use one request rather than this splitting route.
+
+### Formula
+
+$$
+D=J(p_1,p_2,p_3)
+$$
+
+| Symbol | Meaning | Where it comes from |
+|---|---|---|
+| $D$ | One dictation joined in speech order | The result on this stage |
+| $p_i$ | Cleaned answer for piece $i$ | The three constructed requests |
+| $J$ | Function that joins answers in piece order | `compose.JoinParts` |
+
+### The numbers on the stage
+
+| Quantity | Arithmetic | Result |
+|---|---|---:|
+| Piece requests | $1\\rightarrow3$ | 3 |
+| Ordered results | $J(p_1,p_2,p_3)$ | 1 |
+
+The join skips empty answers and uses the original spaces, line breaks or paragraph boundaries. Parallel work can change completion order, but it cannot change delivery order.
+
+### Splitting and draft boundaries
+
+Only `Transcribe` takes this route. A whole-sentence language change can create a piece at any length. Text over `LongWords = 300` also splits. `PieceWords = 300` is a soft limit, so an unavoidable long unit can exceed it.
+
+An eligible remote path works on at most 4 pieces concurrently. Drafts publish only through the first unfinished piece, at most once every `40ms`. A later piece cannot appear before an earlier unfinished piece.
+
+### Next
+
+Splitting limits a failure to one piece. The next step shows how the other pieces and the full result continue when one request fails.
+
+### Sources
+
+Public baseline: same as Step 1.
+
+- Only Transcribe splits, with a shared system prompt: `Voxt/internal/compose/pieces.go:72-100`.
+- Thresholds, language boundaries and ordered joins: `Voxt/internal/compose/pieces.go:18-27,102-190`.
+- Up to four concurrent remote pieces and ordered drafts: `Voxt/internal/session/cleanup_together.go:14-21,42-103`.
+- Streaming publication interval: `Voxt/internal/session/write.go:17-18`; `Voxt/internal/session/cleanup_together.go:67-74`.

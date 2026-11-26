@@ -4,7 +4,7 @@
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
-  import { VOXT_COMPOSE_PROMPT_PART_COUNT, VOXT_COMPOSE_TASK_COUNT } from '../../voxt/numbers';
+  import { VOXT_COMPOSE_ORDERED_RESULT_COUNT, VOXT_COMPOSE_PIECE_COUNT, VOXT_COMPOSE_PROMPT_PART_COUNT, VOXT_COMPOSE_TASK_COUNT } from '../../voxt/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
@@ -20,6 +20,9 @@
   }, {
     caption: 'Each task has its own answer contract. Built-in Transcribe extracts &lt;output&gt;.',
     captionZh: '三种任务各有输出约定。内置整理听写会取出 &lt;output&gt; 内容。',
+  }, {
+    caption: 'Long dictation is split into pieces. Their answers rejoin in speech order.',
+    captionZh: '长听写会分成几片。各片答案按原话顺序合回来。',
   }];
   const ariaLabels = [{
     en: 'After recognition, one result can take one of three task routes. Transcribe treats words such as Good morning as text to tidy. Translate treats them as text to translate. Rewrite treats words such as Make it shorter as an instruction. Selected or typed text can supply the content to rewrite.',
@@ -33,6 +36,9 @@
   }, {
     en: 'Three tasks have three answer contracts. Built-in Transcribe changes an answer containing output tags into only the inner text. Translate preserves output tags that belong to the text. A first Rewrite from scratch reads title and content fields. The answers are constructed examples.',
     zh: '三种任务有三种输出约定。内置整理听写把带 output 标签的回答处理成标签内的文字。翻译保留正文本身的 output 标签。首次从零改写读取 title 和 content 字段。回答是构造示例。',
+  }, {
+    en: 'One constructed long dictation becomes three requests. Every request has the same system instructions and a different user piece. The three answers join in their original order as one dictation. Translate and Rewrite do not split this way.',
+    zh: '一段构造的长听写变成三个请求。每个请求使用相同的 system 说明和不同的 user 分片。三份答案按原顺序合成一段听写。翻译和改写不按这种方式分片。',
   }];
   const tasks = [
     { name: 'TRANSCRIBE', nameZh: '整理听写', output: '“Good morning.”', note: 'words to tidy', noteZh: '要整理的文字' },
@@ -54,7 +60,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived((phone ? [680, 620, 670, 660] : [480, 410, 460, 420])[step]);
+  const H = $derived((phone ? [680, 620, 670, 660, 650] : [480, 410, 460, 420, 430])[step]);
 </script>
 
 <figure class="viz">
@@ -156,7 +162,7 @@
         <text x={W / 2} y={phone ? 595 : 390} text-anchor="middle" class="cut">4 + 1 = {VOXT_COMPOSE_PROMPT_PART_COUNT} {t('PARTS · ONE PROMPT', '个部分 · 一份 prompt')}</text>
         <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('Simplified map · form and example layers omitted.', '简化图 · 省略格式和示例层。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('The input value is constructed.', '输入值是构造的。')}</text>
-      {:else}
+      {:else if step === 3}
         <text x={W / 2} y="27" text-anchor="middle" class="title">{t('THREE TASKS · THREE ANSWER CONTRACTS', '三种任务 · 三种输出约定')}</text>
         <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('answer contract = the shape Voxt expects back', '输出约定 = Voxt 期望收到的回答形状')}</text>
         {#each [
@@ -186,6 +192,33 @@
         <text x={W / 2} y={phone ? 535 : 340} text-anchor="middle" class="cut">{VOXT_COMPOSE_TASK_COUNT} {t('TASKS', '种任务')} = {VOXT_COMPOSE_TASK_COUNT} {t('ANSWER CONTRACTS', '种输出约定')}</text>
         <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('Constructed answers · later Rewrite turns use plain text.', '构造的回答 · 后续改写轮次使用纯文本。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Invalid first-write JSON becomes cleaned plain text.', '首次写作的 JSON 无效时，按清理后的纯文本处理。')}</text>
+      {:else}
+        <text x={W / 2} y="27" text-anchor="middle" class="title">{t('LONG DICTATION · SPLIT · REJOIN IN ORDER', '长听写 · 分片 · 按顺序合回')}</text>
+        <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('piece = one shorter request from the dictation', '分片 = 长听写拆出的一份较短请求')}</text>
+        <rect x={phone ? 35 : 30} y={phone ? 75 : 150} width={phone ? 230 : 160} height={phone ? 90 : 140} rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2" />
+        <text x={phone ? 150 : 110} y={phone ? 104 : 185} text-anchor="middle" class="label" fill="var(--accent)">1 {t('LONG DICTATION', '段长听写')}</text>
+        <text x={phone ? 150 : 110} y={phone ? 137 : 222} text-anchor="middle" class="value">{t('spoken words', '识别出的原话')}</text>
+        {#if !phone}<text x="110" y="254" text-anchor="middle" class="detail">{t('from Ch. 4', '来自第 4 章')}</text>{/if}
+        <line x1={phone ? 150 : 195} y1={phone ? 170 : 220} x2={phone ? 150 : 240} y2={phone ? 195 : 220} stroke="var(--muted)" stroke-width="2" marker-end="url(#compose-arrow)" />
+        <rect x={phone ? 15 : 250} y={phone ? 205 : 65} width={phone ? 270 : 230} height={phone ? 145 : 275} rx="10" fill="none" stroke="var(--line)" stroke-dasharray="5 4" />
+        <text x={phone ? 150 : 365} y={phone ? 226 : 89} text-anchor="middle" class="label">{VOXT_COMPOSE_PIECE_COUNT} {t('REQUESTS', '个请求')}</text>
+        {#each Array(VOXT_COMPOSE_PIECE_COUNT) as _, i}
+          {@const x = phone ? 25 + i * 87 : 270}
+          {@const y = phone ? 240 : 105 + i * 80}
+          {@const w = phone ? 80 : 190}
+          <rect {x} {y} width={w} height={phone ? 90 : 65} rx="8" fill="var(--bg)" stroke="var(--line)" />
+          <text x={x + w / 2} y={y + 21} text-anchor="middle" class="label">{t('PIECE', '分片')} {i + 1}</text>
+          <text x={x + w / 2} y={y + 43} text-anchor="middle" class="detail">{t('same system', '相同 system')}</text>
+          <text x={x + w / 2} y={y + 65} text-anchor="middle" class="detail">user {i + 1}</text>
+        {/each}
+        <line x1={phone ? 150 : 485} y1={phone ? 355 : 220} x2={phone ? 150 : 530} y2={phone ? 390 : 220} stroke="var(--muted)" stroke-width="2" marker-end="url(#compose-arrow)" />
+        <rect x={phone ? 35 : 540} y={phone ? 400 : 150} width={phone ? 230 : 150} height={phone ? 110 : 140} rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2" />
+        <text x={phone ? 150 : 615} y={phone ? 429 : 183} text-anchor="middle" class="label" fill="var(--accent)">{VOXT_COMPOSE_ORDERED_RESULT_COUNT} {t('ORDERED RESULT', '份有序结果')}</text>
+        <text x={phone ? 150 : 615} y={phone ? 461 : 220} text-anchor="middle" class="value">1 → 2 → 3</text>
+        <text x={phone ? 150 : 615} y={phone ? 486 : 249} text-anchor="middle" class="detail">{t('answers in speech order', '答案按原话顺序')}</text>
+        <text x={W / 2} y={phone ? 555 : 370} text-anchor="middle" class="cut">{VOXT_COMPOSE_PIECE_COUNT} {t('PIECES', '个分片')} → {VOXT_COMPOSE_ORDERED_RESULT_COUNT} {t('ORDERED DICTATION', '段有序听写')}</text>
+        <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('Constructed three-piece example.', '构造的三片示例。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Translate and Rewrite each use one request.', '翻译和改写各用一个请求。')}</text>
       {/if}
     </svg>
   </div>
