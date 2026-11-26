@@ -77,7 +77,7 @@
   const modelRows = $derived([
     { name: 'Qwen3-Omni', batch: 'ready windows', kept: 'codec-state slots', graph: 'exact Code2Wav shapes', batchZh: '准备好的窗口', keptZh: 'codec-state slots', graphZh: '精确 Code2Wav 形状' },
     { name: 'MiniCPM-o · full duplex', batch: 'next chunk per session', kept: 'saved decoder work', graph: 'one chunk-making loop', batchZh: '每个 session 的下个 chunk', keptZh: '已存的解码工作', graphZh: '一个生成 chunk 的循环' },
-    { name: 'Fish S2 Pro', batch: 'completed requests only', kept: 'old code frames only', graph: 'not connected here', batchZh: '只 batch 已完成请求', keptZh: '只保留旧 code frames', graphZh: '这里没有接入' },
+    { name: 'Fish S2 Pro', batch: 'completed requests only', kept: 'codes + sound tail', graph: 'not connected here', batchZh: '只 batch 已完成请求', keptZh: 'codes + 声音尾巴', graphZh: '这里没有接入' },
   ]);
 </script>
 

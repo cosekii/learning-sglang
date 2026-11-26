@@ -247,7 +247,7 @@ $$V_{\mathrm{Qwen}}=(\text{ready windows},\text{codec slots},\text{exact Code2Wa
 
 $$V_{\mathrm{MiniCPM}}=(\text{session chunks},\text{saved work},\text{chunk loop})$$
 
-$$V_{\mathrm{Fish}}=(\text{completed requests only},\text{old code frames},\text{no connected graph})$$
+$$V_{\mathrm{Fish}}=(\text{completed requests only},\text{old code frames + sound tail},\text{no connected graph})$$
 
 Fish's non-streaming default batch cap is 8 with a 2 ms collection wait. Those defaults do not apply to its per-request streaming chunks, and the chapter does not turn them into a throughput claim.
 

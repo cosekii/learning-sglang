@@ -247,7 +247,7 @@ $$V_{\mathrm{Qwen}}=(\text{就绪窗口},\text{codec slots},\text{精确 Code2Wa
 
 $$V_{\mathrm{MiniCPM}}=(\text{session chunks},\text{已存工作},\text{chunk 循环})$$
 
-$$V_{\mathrm{Fish}}=(\text{只含已完成请求},\text{旧 code frames},\text{未接入 graph})$$
+$$V_{\mathrm{Fish}}=(\text{只含已完成请求},\text{旧 code frames + 声音尾巴},\text{未接入 graph})$$
 
 Fish 非流式路径默认最多收集 8 个请求，等待 2 ms。这些默认值不适用于逐请求的流式 chunks，本章也不把它们变成吞吐声明。
 
