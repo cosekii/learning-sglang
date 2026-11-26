@@ -5,21 +5,21 @@
 ### 图上是什么
 
 - 左边宽蓝色框是一条**历史记录**：`kind = transcribe`、`app = Mail`、`text = "send it to Priya."`。
-- 橙色字段 `audio.wav` 是录音；只有设置选择保留录音，或者识别失败、用户取消时才出现。
+- 橙色字段 `audio.wav` 是录音；只有你选择保留录音，或者识别失败、用户取消时才出现。
 - 下面一行是构造的例子：一天 10 次听写，90 天就是 900 条记录。
 - 虚线框说这一章还没加钟；记录和录音都先留着。
 
 ### 一条记录里有什么
 
-`store.Entry` 是一次完成的会话（`Voxt/internal/store/store.go:69`）。这一章用到的字段：
+`store.Entry` 是一次完成的会话；结构体从 `Voxt/internal/store/store.go:69` 开始。这一章用到的字段：
 
 | 字段 | 含义 | 出处 |
 |---|---|---|
-| `Kind` | `transcribe`、`translate` 或 `rewrite` | `store.go:70` |
-| `CreatedAt` | 快捷键按下的时间 | `store.go:71` |
-| `Status` | `done`、`failed` 或 `cancelled` | `store.go:72` |
-| `RawText`、`Result` | 识别听到的、最后交付的文字 | `store.go:85-89` |
-| `Audio` | 录音在音频文件夹里的文件名；`""` 表示没有 | `store.go:134` |
+| `Kind` | `transcribe`、`translate` 或 `rewrite` | `store.go:71` |
+| `CreatedAt` | 快捷键时间；`keep()` 把 `s.StartedAt` 抄进来 | `store.go:72`、`run.go:512` |
+| `Status` | `done`、`failed` 或 `cancelled` | `store.go:73` |
+| `RawText`、`Result` | 识别听到的、最后交付的文字 | `store.go:90`、`store.go:94` |
+| `Audio` | 录音在音频文件夹里的文件名；`""` 表示没有 | `store.go:133` |
 | `AudioUntil` | 只为重试保留的录音到什么时候删 | `store.go:138` |
 
 `session/run.go` 的 `keep()` 只在历史开着时写记录（`inHistory`，`run.go:572`）。它在 `KeepAudio` 开着、或识别失败、或会话被取消时写出 WAV（`keepsRecording`，`run.go:583`）。
@@ -44,19 +44,21 @@ $$ \text{row} = \{\text{kind},\ \text{app},\ \text{text},\ \text{audio}?\} $$
 
 ## 第 2 步 · 两个钟
 
-> **一句话：** 历史记录默认留 90 天，为重试保留的录音留 7 天；第二个钟只在识别失败或取消、并且保存录音关着时存在。
+> **一句话：** 历史记录默认留 90 天，钟从按下快捷键开始；为重试保留的录音留 7 天，钟从失败记录写下开始。
 
 ### 图上是什么
 
-- 上面蓝色条是**历史记录**：左端写下，第 90 天删。
-- 下面橙色条是**重试录音**。它画在同一条 90 天的尺上，所以 7 天显得很短：$90 - 7 = 83$ 天。
+- 上面蓝色条是**历史记录**。起点标着**按下快捷键**，终点是第 90 天。
+- 下面橙色条是**重试录音**。起点标着**失败记录写下**，它画在同一条 90 天的尺上，所以 7 天显得很短：$90 - 7 = 83$ 天。
 - 条件框写着重试录音什么时候存在：识别失败或用户取消，并且保存录音关着。
 
-### 两个默认值
+### 两个默认值和各自的起点
 
 默认设置里 `KeepDays` 是 0（或不在选项里的数），`settings.History.Days()` 返回 90（`Voxt/internal/settings/history.go:39`）。`DefaultKeepDays = 90`（`history.go:28`）；其他选项是 365、180、90、30、7 天（`history.go:34`）。
 
 只为重试保留的录音会拿到 `AudioUntil = now + Config.AudioRetention`，`AudioRetention` 默认是 `7 * 24h`（`Voxt/internal/session/session.go:355`；在 `manager.go:133` 应用默认值）。
+
+两个钟不是从同一个事件开始。`keep()` 保存 `CreatedAt: s.StartedAt`（`Voxt/internal/session/run.go:512`），`StartedAt` 就是快捷键时间（`session.go:169`）。重试副本在失败会话结束时写下，`AudioUntil` 也在那时设置（`run.go:552-553`）。图把两条从同一条左边缘画起，方便比长度；标签写明两个起点事件不同。
 
 $$ T_{\text{row}} = 90\ \text{days},\qquad T_{\text{retry}} = 7\ \text{days} = 7 \times 24 = 168\ \text{hours} $$
 
@@ -64,8 +66,8 @@ $$ T_{\text{row}} = 90\ \text{days},\qquad T_{\text{retry}} = 7\ \text{days} = 7
 |---|---|---|
 | $T_{\text{row}}$ | 记录按年龄留多久 | `settings/history.go:28` |
 | $T_{\text{retry}}$ | 只为重试留的录音留多久 | `session/session.go:355` |
-| 记录钟起点 | `Entry.CreatedAt` | `store.go:71` |
-| 录音钟起点 | 失败记录写下的那一刻 | `run.go:553` |
+| 记录钟起点 | `Entry.CreatedAt`，抄自 `s.StartedAt`（快捷键） | `run.go:512`、`session.go:169` |
+| 录音钟起点 | 失败记录写下的时刻 | `run.go:552-553` |
 
 ### 代入图上的数
 
@@ -77,7 +79,7 @@ $$ T_{\text{row}} = 90\ \text{days},\qquad T_{\text{retry}} = 7\ \text{days} = 7
 
 ### 为什么两个钟不一样
 
-记录是能搜索的文字，留三个月有用。重试录音是一次识别失败后的救援副本，7 天足够你发现失败并点重试。两个钟的起点也不同：记录从快捷键按下开始，重试副本从失败记录写下开始。
+记录是能搜索的文字；重试副本是第二次识别机会。公开代码只给了两个默认值，没有说明为什么选 90 天和 7 天，所以本章不补这个理由。
 
 ### 接下来
 
@@ -104,7 +106,7 @@ $$ \text{cutoff} = \text{now} - 90\ \text{days},\qquad \text{delete row} \iff \t
 |---|---|---|
 | 今天 | 清理跑的那一刻 | `history_settings_ops.go:69` |
 | 90 天 | `History.Days()` | `settings/history.go:39` |
-| `created_at` | 记录写下的时间 | `store.go:71` |
+| `created_at` | 记录里的 `CreatedAt`，也就是快捷键时间 | `store.go:72`、`run.go:512` |
 | `Prune` | 删记录和录音 | `history_retention.go:135` |
 
 ### 代入图上的数
@@ -135,10 +137,10 @@ $$ \text{cutoff} = \text{now} - 90\ \text{days},\qquad \text{delete row} \iff \t
 
 ### 图上是什么
 
-- 三列是三种功能：`transcribe`、`translate`、`rewrite`。
-- 第一列是构造的例子：进 102 条，留最新 100 条，删最旧的 2 条（红色）。
-- 下面两行说每种功能各数各的；N 可选 50、100、300、500、1000，0 表示不限。
-- 最后一行说年龄和条数两条规则一起生效。
+- 宽条是 `transcribe` 的构造例子：一共 102 条，按比例画。蓝色部分是最新的 100 条；细红色部分是最旧的 2 条。
+- 标签写着 `102 − 100 = 2`，条下面的说明写着蓝色占 100/102、红色占 2/102。
+- 下面两个框说 `translate` 和 `rewrite` 也是同一规则，各留自己的最新 N 条，不共用条数。
+- 最下面给出 N 的选项，并说年龄和条数一起生效。
 
 ### 条数怎么执行
 
@@ -150,7 +152,7 @@ $$ \text{delete row} \iff \text{row} \in \{\, \text{rows with } \mathrm{rank}_{\
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
-| `kind` | transcribe、translate 或 rewrite | `store.go:70` |
+| `kind` | transcribe、translate 或 rewrite | `store.go:71` |
 | $N$ | 每种功能留几条 | `settings/history.go:50` |
 | `n > N` | 超过该功能最新 N 条的行 | `history_retention.go:129` |
 | 0 | 不限，默认值 | `settings/history.go:19` |
@@ -162,6 +164,8 @@ $$ \text{delete row} \iff \text{row} \in \{\, \text{rows with } \mathrm{rank}_{\
 | 一种功能的记录 | 102 条 | 构造的例子 |
 | N | 100 | 设置选项之一 |
 | 删掉 | $102 - 100 = 2$ | 该功能最旧的两条 |
+| 蓝色占整条 | $100 / 102 \approx 98\%$ | 图上的比例 |
+| 红色占整条 | $2 / 102 \approx 2\%$ | 图上的比例 |
 
 ### 两条规则，一次删除
 
@@ -177,14 +181,14 @@ $$ \text{delete row} \iff \text{row} \in \{\, \text{rows with } \mathrm{rank}_{\
 
 ## 第 5 步 · 钟 2：重试录音
 
-> **一句话：** 为重试保留的录音留 7 天，每小时检查一次，重试成功马上删。
+> **一句话：** 为重试保留的录音有 7 天寿命，由每小时一次的清扫检查，重试成功马上删。
 
 ### 图上是什么
 
 - 橙色卡是 2026-11-26 写下的一条失败听写，带 `audio.wav`。
 - 上面条是历史记录：90 天。下面条是重试录音：7 天，末端有一条第 7 天的线。
-- 下面文字说，即使保存录音关着，这份副本也留着，因为重试还能用它。
-- 最下面几行说每小时扫一次（`7 × 24 = 168`）；重试成功马上删副本；保存录音开着时，录音跟着记录走 90 天。
+- 下面文字说，即使保存录音关着，这份副本也留着，因为重试还能拿它再跑。
+- 最下面把两个数分开写：重试钟的寿命是 `7 × 24 = 168` 小时，清扫每 1 小时一次。
 
 ### 这份副本什么时候有
 
@@ -200,15 +204,15 @@ $$ \text{AudioUntil} = t_{\text{fail}} + 7\ \text{days} $$
 
 ### 扫描和带守卫的删除
 
-`expireRecordings` 在应用启动时开始，每小时调一次 `History.ExpireAudio`（`Voxt/history_retry.go:89`、`history_retry.go:91`）。查询选 `audio != '' AND audio_until > 0 AND audio_until <= now` 的行；每条删除都带 `WHERE seq = ? AND audio = ? AND audio_until > 0`，所以期间被重试过的行不会被清掉（`Voxt/internal/store/sqlitestore/history.go` 的 `ExpireAudio`）。行更新完再删文件。
+`expireRecordings` 在应用启动时开始，先立刻调一次 `History.ExpireAudio`，之后每次睡 1 小时再调，而且只在应用运行时调（`Voxt/history_retry.go:89`、`history_retry.go:91-107`）。查询选 `audio != '' AND audio_until > 0 AND audio_until <= now` 的行；每条删除都带 `WHERE seq = ? AND audio = ? AND audio_until > 0`，所以期间被重试过的行不会被清掉（`Voxt/internal/store/sqlitestore/history.go` 的 `ExpireAudio`）。行更新完再删文件。
 
 ### 代入图上的数
 
 | 量 | 值 | 从哪来 |
 |---|---|---|
-| 重试天数 | 7 | `DefaultAudioRetention` |
-| 扫描间隔 | 1 小时 | `recordingSweep` |
-| 7 天扫几次 | $7 \times 24 = 168$ | 图上的算式 |
+| 重试寿命 | 7 天 = $7 \times 24 = 168$ 小时 | `DefaultAudioRetention` |
+| 清扫间隔 | 1 小时 | `recordingSweep` |
+| 实际扫几次 | 不固定：启动一次，之后应用运行时每小时一次 | `history_retry.go:91-107` |
 
 ### 成功提前删，保存录音开着就跟着记录走
 
@@ -216,15 +220,15 @@ $$ \text{AudioUntil} = t_{\text{fail}} + 7\ \text{days} $$
 
 ### 边界
 
-重试钟只在识别失败或取消、并且保存录音关着时开始。一次成功、又没选保留录音的听写，一点音频都不留。
+重试钟只在识别失败或取消、并且保存录音关着时开始。一次成功、又没选保留录音的听写，一点音频都不留。代码给了 7 天这个默认值，没有记录为什么选它。
 
 ### 接下来
 
-用户没要求保留的录音，为什么还要留？第 6 步看用掉它的命令。
+第 6 步看这份重试副本用来做什么。
 
 ## 第 6 步 · 重试用那段录音
 
-> **一句话：** 重试把留下的整段录音重新识别，用现在的设置跑语言模型这一步，再原地更新同一条记录，不插入任何文字。
+> **一句话：** 重试把留下的整段录音重新识别，原地更新同一条记录，不插入任何文字；只有该功能有语言模型、并且没走到提前返回时，才跑语言模型那一步。
 
 ### 图上是什么
 
@@ -235,16 +239,18 @@ $$ \text{AudioUntil} = t_{\text{fail}} + 7\ \text{days} $$
 
 ### 重试读什么、写什么
 
-`Manager.Retry` 读记录的 WAV（`Voxt/internal/session/retry.go:50`），缺录音或不是 16 kHz 单声道就拒绝（`retry.go:52`、`retry.go:60`）。它把整份文件重新识别（`retry.go:157`、`retry.go:175`），再用现在的设置跑该功能对应的语言模型步骤：听写走清理，翻译用记录里的目标语言，改写用记录里的选中文字（`retry.go:38-44`）。最后用 `History.Put` 把同一条记录写回（`retry.go:93`）。
+`Manager.Retry` 读记录的 WAV（`Voxt/internal/session/retry.go:54`），缺录音或不是 16 kHz 单声道就拒绝（`retry.go:52`、`retry.go:60`）。它把整份文件重新识别（`retry.go:157`、`retry.go:175`），再用现在的设置跑该功能对应的语言模型步骤：听写走清理，翻译用记录里的目标语言，改写用记录里的选中文字（`retry.go:38-39`）。最后用 `History.Put` 把同一条记录写回（`retry.go:93`）。
+
+不是每次听写重试都会走到语言模型。识别完后，如果整段文字是一个快捷短语，它带着识别文字直接返回（`retry.go:196-200`）；听写清理关着或没有语言模型时也直接返回（`retry.go:201-204`）。翻译和改写则需要语言模型。
 
 $$ \text{row}' = \mathrm{retry}(\text{audio.wav},\ \text{settings now}),\qquad \text{row}'.id = \text{row}.id $$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
-| `audio.wav` | `Entry.Audio` 指的文件 | `store.go:134` |
-| 现在的设置 | 当前的清理和模型选择 | `retry.go:38` |
+| `audio.wav` | `Entry.Audio` 指的文件 | `store.go:133` |
+| 现在的设置 | 当前的清理和模型选择，用到模型时 | `retry.go:37-38`、`retry.go:196-204` |
 | 同一条记录 | ID 不变 | `retry.go:93` |
-| 不插入 | 重试不走交付路径 | `retry.go:38` |
+| 不插入 | 重试不走交付路径 | `retry.go:38-39` |
 
 ### 代入图上的数
 
@@ -252,12 +258,12 @@ $$ \text{row}' = \mathrm{retry}(\text{audio.wav},\ \text{settings now}),\qquad \
 |---|---|---|
 | 文件格式 | 16 kHz 单声道 WAV | `retry.go:60` |
 | 之前的文字 | 失败，没有结果 | 第 5 步的失败记录 |
-| 之后的文字 | 新识别的结果 | `retry.go:81` |
-| 插入的文字 | 没有 | `retry.go:38` |
+| 之后的文字 | 新识别的结果 | `retry.go:195` |
+| 插入的文字 | 没有 | `retry.go:38-39` |
 
 ### 为什么它不抢会话
 
-`Retry` 的注释说它和任何进行中的会话并排跑，从不占用 Manager 的会话，而且只在自己的 goroutine 上阻塞（`retry.go:41-44`）。所以重试不会停掉一次新听写，新听写也不会覆盖被重试的记录。
+`Retry` 的注释说它和任何进行中的会话并排跑，从不占用 Manager 的会话，而且只在自己的 goroutine 上阻塞（`retry.go:43-44`）。所以重试不会停掉一次新听写，新听写也不会覆盖被重试的记录。
 
 ### 边界
 
@@ -269,28 +275,33 @@ $$ \text{row}' = \mathrm{retry}(\text{audio.wav},\ \text{settings now}),\qquad \
 
 ## 第 7 步 · 导出：记录里什么出去
 
-> **一句话：** 导出只写完成的记录，从旧到新，带文字和识别原文；录音、网址、错误、规则名、模型名和计时从不离开。
+> **一句话：** 导出只写完成的记录，从旧到新，带交付的文字和识别原文；录音、网址、错误、内部名字和计时从不离开。
 
 ### 图上是什么
 
-- 左边蓝色卡列出导出字段：`id`、`created_at`、`kind`、`app`、`text`、`heard`、`instruction`、`target_lang`、`selection *`、`typed *`。
-- 星号表示只有打开**包含选中文字**时这个字段才出现。
-- 右边卡列出从不出去的东西：录音、网址、错误信息、规则名、模型名和计时。
-- 下面几行给出范围参数和两种格式。
+- 左边蓝色卡把出去的东西分组：交付的文字、识别听到的原文、应用／时间／功能、口述指令和目标语言，以及只在设置打开时才出去的选中或输入文字。
+- 右边灰卡把留下的东西分组：录音、网址、错误和内部名字、计时。
+- 下面几行说只导完成的记录，从旧到新；失败和取消的记录不出去；挑一天或一段时间。
+- 精确字段名、两种格式和命令参数在深入讲解里，不在舞台上。
 
 ### 导出的那一行
 
-`historyapi.Row` 是导出字段的完整清单（`Voxt/internal/historyapi/row.go:24`）。包注释说，`store.Entry` 新加的字段不会自动跟出去。`Walk` 设置 `Finished` 和 `Oldest`，所以失败和取消的记录不出去，记录从旧到新（`row.go:57`）。`FromEntry` 填这一行，只在设置开着时加 `selection`；`typed` 还要设置开着、并且是带口述指令的改写（`row.go:47-55`）。
+`historyapi.Row` 是导出字段的完整清单；结构体从 `Voxt/internal/historyapi/row.go:22` 开始。包注释说，`store.Entry` 新加的字段不会自动跟出去。`Walk` 设置 `Finished` 和 `Oldest`，所以失败和取消的记录不出去，记录从旧到新（`row.go:56-57`）。`FromEntry` 填这一行，只在设置开着时加 `selection`；`typed` 还要设置开着、并且是带口述指令的改写（`row.go:44-49`）。
 
 $$ \text{export} = \{\text{id},\ \text{created\_at},\ \text{kind},\ \text{app}?,\ \text{text},\ \text{heard},\ \text{instruction}?,\ \text{target\_lang}?,\ \text{selection}?,\ \text{typed}?\} $$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
-| `text` | 交付的结果 | `row.go:35` |
-| `heard` | 清理前的识别文字 | `row.go:36` |
-| `instruction` | 改写的口述指令 | `row.go:37` |
-| `selection` | 选中文字，只在设置开着时 | `row.go:44` |
-| `typed` | 改写的输入框文字，同一设置下 | `row.go:51` |
+| `id` | 记录的 id | `row.go:23` |
+| `created_at` | 记录的本地时间 | `row.go:24` |
+| `kind` | transcribe、translate 或 rewrite | `row.go:25` |
+| `app` | 前台应用，知道时才有 | `row.go:26` |
+| `text` | 交付的结果 | `row.go:27` |
+| `heard` | 清理前的识别文字 | `row.go:28` |
+| `instruction` | 改写的口述指令 | `row.go:29` |
+| `target_lang` | 翻译的目标语言 | `row.go:30` |
+| `selection` | 选中文字，只在设置开着时 | `row.go:31`、`row.go:44-45` |
+| `typed` | 改写的输入框文字，同一设置下 | `row.go:32`、`row.go:46-48` |
 
 ### 代入图上的数
 
@@ -302,7 +313,7 @@ $$ \text{export} = \{\text{id},\ \text{created\_at},\ \text{kind},\ \text{app}?,
 
 ### 格式和范围
 
-`--day YYYY-MM-DD` 取本地日历日，时钟切换时那一天是 23 或 25 小时；`--since T` 和可选的 `--until T` 收 RFC 3339 时间或日期。范围含起点、不含终点（`Voxt/docs/history-access.md`）。`--format jsonl` 一行一个 JSON 对象；`--format md` 一天一节 `## YYYY-MM-DD`（`historyapi/render.go`）。历史页的「导出文字…」用同一份字段和同一个「包含选中文字」设置。
+`--day YYYY-MM-DD` 取本地日历日，时钟切换时那一天是 23 或 25 小时；`--since T` 和可选的 `--until T` 收 RFC 3339 时间或日期。范围含起点、不含终点（`Voxt/docs/history-access.md`）。`--kind` 取 `transcribe`、`translate` 或 `rewrite`。`--format jsonl` 一行一个 JSON 对象；`--format md` 一天一节 `## YYYY-MM-DD`（`historyapi/render.go`）。历史页的「导出文字…」用同一份字段和同一个「包含选中文字」设置。
 
 ### 边界
 
@@ -312,7 +323,7 @@ $$ \text{export} = \{\text{id},\ \text{created\_at},\ \text{kind},\ \text{app}?,
 
 导出可以被打开和关上。第 8 步看这个开关，以及它不保护什么。
 
-## 第 8 步 · 访问开关不是一堵墙
+## 第 8 步 · 开关不保护数据库
 
 > **一句话：** 开关给其他程序开一条会记账的命令；以同一用户身份运行的程序仍能直接读数据库文件，开关开不开都一样。
 
@@ -320,12 +331,12 @@ $$ \text{export} = \{\text{id},\ \text{created\_at},\ \text{kind},\ \text{app}?,
 
 - 左边蓝色框是有文档的那条路：开关关，命令没有回答（退出码 3）；开关开，每次读取记时间、条数和程序名，新名字会提醒，日志里没有文字。
 - 右边灰框是直接路径：`voxtnew.db`，装历史的那一个文件，以用户身份运行的程序能读，不记账，开关改不了这一点。
-- 下面一行说其他账户到不了 socket（权限 0600，在 `~/Library` 里），也没有网络端口。
+- 下面一行说其他账户打不开这条通道（权限 0600，在 `~/Library` 里），也没有网络端口。
 - 虚线框把下一章的问题交给舞台。
 
 ### 开关做什么
 
-`privacy.historyAccess` 默认关着，打开前会问一次。关着时 socket 不存在，`Voxt history` 以退出码 3 失败（`Voxt/docs/history-access.md`；`history_access_controller.go` 的 `syncHistoryAccess`）。开着时，`historyapi.Server` 在每个请求后调审计回调，记下 `At`、`Op`、`Count`、`Program` 和 `As`，不记任何历史文字（`historyapi/server.go:70-78`）。`Listen` 以 `0600` 权限建 socket（`server.go:94`），位置在 `~/Library` 里，不开任何端口。
+`privacy.historyAccess` 默认关着，打开前会问一次。关着时 socket 不存在，`Voxt history` 以退出码 3 失败（`Voxt/docs/history-access.md`；`history_access_controller.go` 的 `syncHistoryAccess`）。开着时，`historyapi.Server` 在每个请求后调审计回调，记下 `At`、`Op`、`Count`、`Program` 和 `As`；记录类型是 `Read`（`historyapi/server.go:63-70`），调用在 `server.go:167-169`。它不记任何历史文字。`Listen` 以 `0600` 权限建 socket（`server.go:101`，chmod 在 `server.go:111`），位置在 `~/Library` 里，不开任何端口。
 
 $$ \text{answer} = \begin{cases} \text{logged read}, & \text{switch on} \\ \text{exit 3}, & \text{switch off} \end{cases} $$
 
@@ -333,8 +344,8 @@ $$ \text{answer} = \begin{cases} \text{logged read}, & \text{switch on} \\ \text
 |---|---|---|
 | `historyAccess` | 开关，默认关 | `settings.md` 隐私表 |
 | 退出码 3 | 没有回答：应用没跑或开关关 | `history_cli.go:27` |
-| 审计行 | 时间、操作、条数、程序，无文字 | `historyapi/server.go:70` |
-| 权限 0600 | 只有这个账户能打开 socket | `server.go:94` |
+| 审计行 | 时间、操作、条数、程序，无文字 | `historyapi/server.go:63-70` |
+| 权限 0600 | 只有这个账户能打开 socket | `server.go:101`、`server.go:111` |
 
 ### 代入图上的数
 
@@ -345,13 +356,13 @@ $$ \text{answer} = \begin{cases} \text{logged read}, & \text{switch on} \\ \text
 | 另一个 macOS 账户 | 到不了 socket | 到不了 socket | 不适用 |
 | 网页或另一台设备 | 没有端口 | 没有端口 | 不适用 |
 
-### 为什么它不是边界
+### 为什么它不保护数据库
 
 Voxt 没有沙箱，数据放在 `~/Library/Application Support/VoxtNew`。同一账户下任何没有沙箱的程序都能直接打开 `voxtnew.db`，这种读取不记账（`Voxt/docs/history-access.md`）。开关让有文档的那条路变成要你打开、而且看得见；它不保护历史不被已经以你身份运行的软件读取。日志里的程序名只是尽力而为，可以伪造。
 
 ### 另一件清理
 
-「清空历史」删掉所有记录和录音，然后压缩数据库（`history.go` 的 `DeleteAll`）。压缩是为了让删掉的文字不留在空闲页里；压缩失败只记日志，不返回错误。它和两个钟不是一回事，只在用户主动要求时跑。
+「清空历史」删掉所有记录和录音，然后压缩数据库（`sqlitestore/history.go:216-243` 的 `DeleteAll`）。压缩是为了让删掉的文字不留在空闲页里；压缩失败只记日志，不返回错误。它和两个钟不是一回事，只在用户主动要求时跑。
 
 ### 接下来
 

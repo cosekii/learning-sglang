@@ -33,8 +33,8 @@
     caption: 'Retry reads that recording, recognizes it again, and runs the current settings. It updates the same row and inserts nothing.',
     captionZh: '重试读那段录音，重新识别，再用现在的设置跑一遍。它改同一条记录，不插入文字。',
   }, {
-    caption: 'Export writes finished rows as JSONL or Markdown. Failed and cancelled rows stay out.',
-    captionZh: '导出把完成的记录写成 JSONL 或 Markdown。失败和取消的记录不出去。',
+    caption: 'Export writes the words of finished rows to a file. Failed and cancelled rows stay out.',
+    captionZh: '导出把完成记录里的文字写进文件。失败和取消的记录不出去。',
   }, {
     caption: 'The access switch opens one logged command. Programs running as you can still open the database directly.',
     captionZh: '访问开关只开一条会记账的命令。你账户里的程序仍能直接打开数据库。',
@@ -43,8 +43,8 @@
     en: 'One finished dictation leaves one row in the history. The row holds the kind, the app, the final text, and sometimes a recording of the voice.',
     zh: '一次听写结束后，历史里留下一条记录。记录里有功能种类、应用、最后的文字，有时还有一段录音。',
   }, {
-    en: 'Two separate clocks. The history row lasts 90 days by default. A recording kept for a retry lasts 7 days; it appears only when recognition failed or the user cancelled, and recordings are off.',
-    zh: '两个分开的钟。历史记录默认留 90 天。为重试留下的录音留 7 天；它只在识别失败或用户取消、并且保存录音关着时出现。',
+    en: 'Two separate clocks. The history row lasts 90 days by default and its clock starts at the shortcut. A recording kept for a retry lasts 7 days and its clock starts when the failed row is written; it appears only when recognition failed or the user cancelled, and recordings are off.',
+    zh: '两个分开的钟。历史记录默认留 90 天，钟从按下快捷键开始。为重试留下的录音留 7 天，钟从失败记录写下开始；它只在识别失败或用户取消、并且保存录音关着时出现。',
   }, {
     en: 'The cleanup deletes a history row when it is older than the cutoff. The cutoff is today minus the keep days, 90 days by default. The row goes with its recording.',
     zh: '历史记录超过分界线时会被清理删掉。分界线是今天减去保留天数，默认 90 天。记录连同录音一起删。',
@@ -55,11 +55,11 @@
     en: 'When recognition failed or the user cancelled, the row keeps its recording for 7 days even if recordings are off. A sweep checks every hour and deletes the recording at its time.',
     zh: '识别失败或用户取消时，即使保存录音关着，记录也会保留录音 7 天。每小时检查一次，到点就删。',
   }, {
-    en: 'Retry opens the kept recording, recognizes the whole file again, and runs the language-model step with the settings as they are now. It updates the same row in place, inserts nothing, and clears a retry-only recording on success.',
-    zh: '重试打开留下的录音，把整份文件重新识别，再用现在的设置跑语言模型这一步。它原地更新同一条记录，不插入文字，成功时删掉只为重试保留的录音。',
+    en: 'Retry opens the kept recording, recognizes the whole file again, and runs the language-model step with the settings as they are now, when the feature has one. A Transcribe retry can stop after a whole-text snippet, with cleanup off, or with no language model. It updates the same row in place, inserts nothing, and clears a retry-only recording on success.',
+    zh: '重试打开留下的录音，把整份文件重新识别，再用现在的设置跑语言模型这一步——前提是这个功能有语言模型。听写重试可能停在整段快捷短语、清理关着或没有语言模型。它原地更新同一条记录，不插入文字，成功时删掉只为重试保留的录音。',
   }, {
-    en: 'Export writes only finished rows, oldest first, as JSONL or Markdown. Each row carries the text and the recognition result. Recordings, web addresses, errors, rule names, model names and timings never go out.',
-    zh: '导出只写完成的记录，从旧到新，格式是 JSONL 或 Markdown。每条记录带文字和识别原文。录音、网址、错误、规则名、模型名和计时从不出去。',
+    en: 'Export writes only finished rows, oldest first, to a file. Each row carries the text and the recognition result. Recordings, web addresses, errors, internal names and timings never go out. The deep dive lists the exact fields, formats and flags.',
+    zh: '导出只把完成的记录从旧到新写进文件。每条记录带文字和识别原文。录音、网址、错误、内部名字和计时从不出去。具体字段、格式和参数见深入讲解。',
   }, {
     en: 'The access switch controls one command for other programs. Off, the command gets no answer. On, every read is logged, and a new program name raises a notice. The switch is not a wall: a program running as the user can open the database file directly.',
     zh: '访问开关只控制给其他程序用的一条命令。关着时命令得不到回答。开着时每次读取都记账，新程序名会提醒。它不是墙：以用户身份运行的程序能直接打开数据库文件。',
@@ -79,7 +79,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived((phone ? [720, 700, 700, 700, 760, 720, 780, 800] : [440, 440, 470, 510, 500, 460, 520, 540])[step]);
+  const H = $derived((phone ? [720, 700, 700, 700, 760, 720, 560, 800] : [440, 440, 470, 510, 500, 460, 430, 540])[step]);
 </script>
 
 <figure class="viz">
@@ -151,7 +151,7 @@
           <text x="280" y="80" text-anchor="end" class="tag strong" fill="var(--accent)">{VOXT_HISTORY_KEEP_DAYS} {t('days', '天')}</text>
           <line x1="20" y1="100" x2="280" y2="100" stroke="var(--line)" stroke-width="2" />
           <rect x="20" y="94" width="260" height="12" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="20" y="128" class="tag">{t('written', '写下')}</text>
+          <text x="20" y="128" class="tag">{t('shortcut', '按下快捷键')}</text>
           <text x="280" y="128" text-anchor="end" class="tag">{t('deleted', '删掉')}</text>
           <text x="20" y="176" class="boxtitle">{t('RETRY RECORDING', '重试录音')}</text>
           <text x="280" y="176" text-anchor="end" class="tag strong" fill="var(--gen)">{VOXT_RETRY_KEEP_DAYS} {t('days', '天')}</text>
@@ -160,23 +160,24 @@
           <line x1="40" y1="183" x2="40" y2="209" stroke="var(--gen)" stroke-width="2" />
           <line x1="40" y1="196" x2="280" y2="196" stroke="var(--line)" stroke-width="2" stroke-dasharray="4 4" />
           <text x="46" y="188" class="tag" fill="var(--gen)">{t('gone at day 7', '第 7 天删')}</text>
-          <text x="20" y="224" class="tag">{t('same 90-day ruler', '同一条 90 天的尺')}</text>
-          <text x="20" y="248" class="tag">{t(`7 days is ${VOXT_HISTORY_SHORTER_DAYS} days shorter.`, `7 天比 90 天短 ${VOXT_HISTORY_SHORTER_DAYS} 天。`)}</text>
-          <rect x="20" y="266" width="260" height="122" rx="8" fill="var(--bg)" stroke="var(--line)" />
-          <text x="34" y="292" class="tag strong">{t('a retry recording is', '重试录音是')}</text>
-          <text x="34" y="316" class="tag">{t('a kept recording of a', '一段留下的录音，')}</text>
-          <text x="34" y="340" class="tag">{t('failed or cancelled dictation, so it', '给失败或取消的听写，')}</text>
-          <text x="34" y="364" class="tag">{t('can be tried again.', '好让它再试一次。')}</text>
-          <rect x="20" y="404" width="260" height="98" rx="8" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />
-          <text x="34" y="430" class="tag strong">{t('when does it exist?', '什么时候才有？')}</text>
-          <text x="34" y="456" class="tag">{t('recognition failed or you cancelled', '识别失败或你取消')}</text>
-          <text x="34" y="480" class="tag">{t('and keep recordings is off', '并且保存录音关着')}</text>
+          <text x="20" y="220" class="tag">{t('failed row written', '失败记录写下')}</text>
+          <text x="20" y="244" class="tag">{t('same 90-day ruler', '同一条 90 天的尺')}</text>
+          <text x="20" y="268" class="tag">{t(`7 days is ${VOXT_HISTORY_SHORTER_DAYS} days shorter.`, `7 天比 90 天短 ${VOXT_HISTORY_SHORTER_DAYS} 天。`)}</text>
+          <rect x="20" y="286" width="260" height="122" rx="8" fill="var(--bg)" stroke="var(--line)" />
+          <text x="34" y="312" class="tag strong">{t('a retry recording is', '重试录音是')}</text>
+          <text x="34" y="336" class="tag">{t('a kept recording of a', '一段留下的录音，')}</text>
+          <text x="34" y="360" class="tag">{t('failed or cancelled dictation, so it', '给失败或取消的听写，')}</text>
+          <text x="34" y="384" class="tag">{t('can be tried again.', '好让它再试一次。')}</text>
+          <rect x="20" y="424" width="260" height="98" rx="8" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />
+          <text x="34" y="450" class="tag strong">{t('when does it exist?', '什么时候才有？')}</text>
+          <text x="34" y="476" class="tag">{t('recognition failed or you cancelled', '识别失败或你取消')}</text>
+          <text x="34" y="500" class="tag">{t('and keep recordings is off', '并且保存录音关着')}</text>
         {:else}
           <text x="20" y="82" class="boxtitle">{t('HISTORY ROW', '历史记录')}</text>
           <text x="660" y="82" text-anchor="end" class="tag strong" fill="var(--accent)">{t('default', '默认')} {VOXT_HISTORY_KEEP_DAYS} {t('days', '天')}</text>
           <line x1="60" y1="110" x2="660" y2="110" stroke="var(--line)" stroke-width="2" />
           <rect x="60" y="104" width="600" height="12" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="60" y="136" class="tag">{t('written', '写下')}</text>
+          <text x="60" y="136" class="tag">{t('shortcut', '按下快捷键')}</text>
           <text x="660" y="136" text-anchor="end" class="tag">{t('deleted at day 90', '第 90 天删')}</text>
           <text x="20" y="178" class="boxtitle">{t('RETRY RECORDING', '重试录音')}</text>
           <text x="660" y="178" text-anchor="end" class="tag strong" fill="var(--gen)">{t('default', '默认')} {VOXT_RETRY_KEEP_DAYS} {t('days', '天')}</text>
@@ -185,7 +186,7 @@
           <line x1="107" y1="193" x2="107" y2="219" stroke="var(--gen)" stroke-width="2" />
           <line x1="107" y1="206" x2="660" y2="206" stroke="var(--line)" stroke-width="2" stroke-dasharray="4 4" />
           <text x="115" y="198" class="tag" fill="var(--gen)">{t('gone at day 7', '第 7 天删')}</text>
-          <text x="60" y="232" class="tag">{t('written', '写下')}</text>
+          <text x="60" y="232" class="tag">{t('failed row written', '失败记录写下')}</text>
           <text x="660" y="232" text-anchor="end" class="tag">{t('same 90-day ruler', '同一条 90 天的尺')}</text>
           <text x="20" y="262" class="tag">{t(`7 days is ${VOXT_HISTORY_SHORTER_DAYS} days shorter than 90.`, `7 天比 90 天短 ${VOXT_HISTORY_SHORTER_DAYS} 天。`)}</text>
           <rect x="20" y="282" width="680" height="84" rx="8" fill="var(--bg)" stroke="var(--line)" />
@@ -240,50 +241,47 @@
         <text x="20" y="22" class="tag strong">{t('CLOCK 1 · COUNT', '钟 1 · 条数')}</text>
         <text x="20" y="46" class="tag">{t('Each kind keeps its newest N rows.', '每种功能各留最新的 N 条。')}</text>
         {#if phone}
-          <rect x="20" y="72" width="260" height="150" rx="10" fill="var(--bg)" stroke="var(--line)" />
+          <rect x="20" y="72" width="260" height="176" rx="10" fill="var(--bg)" stroke="var(--line)" />
           <text x="34" y="98" class="rowlabel">transcribe</text>
-          <text x="34" y="124" class="tag strong">{VOXT_HISTORY_COUNT_ROWS} {t('rows', '条')} → {t('keep', '留')} {VOXT_HISTORY_COUNT_EXAMPLE}</text>
-          <text x="34" y="148" class="tag" fill="var(--eos)">{t('delete the', '删掉最旧的')} {VOXT_HISTORY_COUNT_DELETED}</text>
-          {#each [0, 1, 2, 3] as i}
-            <rect x="34" y={164 + i * 12} width="180" height="7" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
-          {/each}
-          <rect x="34" y="212" width="90" height="7" rx="2" fill="var(--eos-soft)" stroke="var(--eos)" />
-          <text x="130" y="220" class="tag" fill="var(--eos)">{t('oldest 2', '最旧 2 条')}</text>
-          <rect x="20" y="240" width="260" height="86" rx="8" fill="var(--bg)" stroke="var(--line)" />
-          <text x="34" y="266" class="rowlabel">translate</text>
-          <text x="34" y="290" class="tag">{t('same rule, its own count', '同一规则，单独计数')}</text>
-          <text x="34" y="314" class="tag">{t('newest N kept', '留最新 N 条')}</text>
-          <rect x="20" y="336" width="260" height="86" rx="8" fill="var(--bg)" stroke="var(--line)" />
-          <text x="34" y="362" class="rowlabel">rewrite</text>
-          <text x="34" y="386" class="tag">{t('same rule, its own count', '同一规则，单独计数')}</text>
-          <text x="34" y="410" class="tag">{t('newest N kept', '留最新 N 条')}</text>
-          <text x="20" y="452" class="tag strong">{t('N: 50 / 100 / 300 / 500 / 1000', 'N 可选 50 / 100 / 300 / 500 / 1000')}</text>
-          <text x="20" y="476" class="tag">{t('0 = no limit (default)', '0 = 不限（默认）')}</text>
-          <text x="20" y="500" class="tag">{t('age and count run together', '年龄和条数一起生效')}</text>
-          <text x="20" y="524" class="tag">{t('either rule can delete a row', '哪条规则都能删记录')}</text>
+          <text x="34" y="124" class="tag strong">{VOXT_HISTORY_COUNT_ROWS} {t('rows', '条')}</text>
+          <text x="34" y="150" class="tag" fill="var(--accent)">{t('keep newest', '留最新')} {VOXT_HISTORY_COUNT_EXAMPLE}</text>
+          <text x="266" y="150" text-anchor="end" class="tag" fill="var(--eos)">{t('delete', '删')} {VOXT_HISTORY_COUNT_DELETED}</text>
+          <rect x="34" y="162" width="227" height="18" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <rect x="261" y="162" width="5" height="18" rx="1" fill="var(--eos-soft)" stroke="var(--eos)" />
+          <text x="34" y="204" class="tag">{VOXT_HISTORY_COUNT_ROWS} − {VOXT_HISTORY_COUNT_EXAMPLE} = {VOXT_HISTORY_COUNT_DELETED}</text>
+          <text x="34" y="228" class="tag">{t('blue 100/102 · red 2/102', '蓝 100/102 · 红 2/102')}</text>
+          <rect x="20" y="264" width="260" height="96" rx="8" fill="var(--bg)" stroke="var(--line)" />
+          <text x="34" y="290" class="rowlabel">translate</text>
+          <text x="34" y="316" class="tag">{t('same rule, its own newest N', '同一规则，各自留最新 N 条')}</text>
+          <text x="34" y="340" class="tag">{t('no shared count', '不共用条数')}</text>
+          <rect x="20" y="376" width="260" height="96" rx="8" fill="var(--bg)" stroke="var(--line)" />
+          <text x="34" y="402" class="rowlabel">rewrite</text>
+          <text x="34" y="428" class="tag">{t('same rule, its own newest N', '同一规则，各自留最新 N 条')}</text>
+          <text x="34" y="452" class="tag">{t('no shared count', '不共用条数')}</text>
+          <text x="20" y="508" class="tag strong">{t('N: 50 / 100 / 300 / 500 / 1000', 'N 可选 50 / 100 / 300 / 500 / 1000')}</text>
+          <text x="20" y="532" class="tag">{t('0 = no limit (default)', '0 = 不限（默认）')}</text>
+          <text x="20" y="556" class="tag">{t('age and count run together', '年龄和条数一起生效')}</text>
+          <text x="20" y="580" class="tag">{t('either rule can delete a row', '哪条规则都能删记录')}</text>
         {:else}
-          <rect x="20" y="70" width="220" height="300" rx="10" fill="var(--bg)" stroke="var(--line)" />
-          <rect x="250" y="70" width="220" height="300" rx="10" fill="var(--bg)" stroke="var(--line)" />
-          <rect x="480" y="70" width="220" height="300" rx="10" fill="var(--bg)" stroke="var(--line)" />
-          <text x="34" y="98" class="rowlabel">transcribe</text>
-          <text x="264" y="98" class="rowlabel">translate</text>
-          <text x="494" y="98" class="rowlabel">rewrite</text>
-          {#each [0, 1, 2, 3, 4] as i}
-            <rect x="34" y={114 + i * 26} width="192" height="16" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" />
-            <rect x="264" y={114 + i * 26} width="192" height="16" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" />
-            <rect x="494" y={114 + i * 26} width="192" height="16" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" />
-          {/each}
-          <rect x="34" y="244" width="192" height="16" rx="3" fill="var(--eos-soft)" stroke="var(--eos)" />
-          <rect x="34" y="270" width="192" height="16" rx="3" fill="var(--eos-soft)" stroke="var(--eos)" />
-          <text x="34" y="312" class="tag" fill="var(--eos)">{t('oldest', '最旧')} {VOXT_HISTORY_COUNT_DELETED} {t('deleted', '删')}</text>
-          <text x="34" y="336" class="tag strong">{VOXT_HISTORY_COUNT_ROWS} → {VOXT_HISTORY_COUNT_EXAMPLE}</text>
-          <text x="264" y="312" class="tag">{t('newest N kept', '留最新 N 条')}</text>
-          <text x="264" y="336" class="tag">{t('its own count', '单独计数')}</text>
-          <text x="494" y="312" class="tag">{t('newest N kept', '留最新 N 条')}</text>
-          <text x="494" y="336" class="tag">{t('its own count', '单独计数')}</text>
-          <text x="20" y="402" class="tag strong">{t('Each kind counts on its own. N is 50 / 100 / 300 / 500 / 1000, or 0 for no limit.', '每种功能各数各的。N 可选 50 / 100 / 300 / 500 / 1000，0 表示不限。')}</text>
-          <text x="20" y="430" class="tag">{t('Age and count run together: either rule can delete a row.', '年龄和条数一起生效：哪条规则都能删记录。')}</text>
-          <text x="20" y="456" class="tag">{t('The example keeps 100 of each kind; the default has no count limit.', '例子每种留 100 条；默认不限条数。')}</text>
+          <rect x="20" y="70" width="680" height="240" rx="10" fill="var(--bg)" stroke="var(--line)" />
+          <text x="40" y="100" class="rowlabel">transcribe · {t('the example', '例子')}</text>
+          <text x="40" y="124" class="tag strong">{VOXT_HISTORY_COUNT_ROWS} {t('rows', '条')}</text>
+          <text x="330" y="124" class="tag" fill="var(--accent)">{t('keep newest', '留最新')} {VOXT_HISTORY_COUNT_EXAMPLE}</text>
+          <text x="650" y="124" text-anchor="end" class="tag" fill="var(--eos)">{t('delete', '删')} {VOXT_HISTORY_COUNT_DELETED}</text>
+          <rect x="40" y="136" width="588" height="40" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <rect x="628" y="136" width="12" height="40" rx="2" fill="var(--eos-soft)" stroke="var(--eos)" />
+          <text x="40" y="204" class="tag strong">{VOXT_HISTORY_COUNT_ROWS} − {VOXT_HISTORY_COUNT_EXAMPLE} = {VOXT_HISTORY_COUNT_DELETED}</text>
+          <text x="40" y="230" class="tag">{t('The bar length is the row count: 102 rows in all, 100 kept, 2 deleted.', '条长就是条数：一共 102 条，留 100 条，删 2 条。')}</text>
+          <text x="40" y="256" class="tag">{t('Blue is 100/102 of the bar; red is 2/102.', '蓝色占整条的 100/102，红色占 2/102。')}</text>
+          <text x="40" y="288" class="tag">{t('The deleted rows are the oldest of this kind.', '删掉的是这种功能里最旧的记录。')}</text>
+          <rect x="20" y="330" width="330" height="80" rx="8" fill="var(--bg)" stroke="var(--line)" />
+          <text x="34" y="356" class="rowlabel">translate</text>
+          <text x="34" y="382" class="tag">{t('same rule, its own newest N', '同一规则，各自留最新 N 条')}</text>
+          <rect x="370" y="330" width="330" height="80" rx="8" fill="var(--bg)" stroke="var(--line)" />
+          <text x="384" y="356" class="rowlabel">rewrite</text>
+          <text x="384" y="382" class="tag">{t('same rule, its own newest N', '同一规则，各自留最新 N 条')}</text>
+          <text x="20" y="446" class="tag strong">{t('N: 50 / 100 / 300 / 500 / 1000; 0 = no limit (default)', 'N 可选 50 / 100 / 300 / 500 / 1000；0 = 不限（默认）')}</text>
+          <text x="20" y="472" class="tag">{t('Age and count run together: either rule can delete a row.', '年龄和条数一起生效：哪条规则都能删记录。')}</text>
         {/if}
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('history_retention.go · pruneWhere()', 'history_retention.go · pruneWhere()') : t('Source: sqlitestore/history_retention.go pruneWhere() · settings/history.go KeepCountChoices', '出处：sqlitestore/history_retention.go pruneWhere() · settings/history.go KeepCountChoices')}</text>
 
@@ -304,8 +302,8 @@
           <text x="46" y="284" class="tag" fill="var(--gen)">{t('day 7: deleted', '第 7 天：删')}</text>
           <text x="20" y="304" class="tag">{t('kept even when keep recordings is off', '保存录音关着也留')}</text>
           <text x="20" y="328" class="tag">{t('so the dictation can run again', '所以这次听写还能再跑')}</text>
-          <text x="20" y="364" class="tag strong">{t('checked every hour', '每小时检查')}</text>
-          <text x="20" y="388" class="tag">{VOXT_RETRY_KEEP_DAYS} × 24 = {VOXT_RETRY_KEEP_HOURS} {t('hours', '小时')}</text>
+          <text x="20" y="364" class="tag strong">{t('retry clock:', '重试钟：')} {VOXT_RETRY_KEEP_DAYS} × 24 = {VOXT_RETRY_KEEP_HOURS} {t('hours', '小时')}</text>
+          <text x="20" y="388" class="tag">{t('sweep: every 1 hour', '清扫：每 1 小时')}</text>
           <text x="20" y="424" class="tag">{t('successful retry deletes it at once', '重试成功马上删')}</text>
           <text x="20" y="448" class="tag">{t('recordings on: it follows the row', '保存录音开：跟着记录走')}</text>
           <text x="20" y="472" class="tag">{t('so it lasts as long as the row', '所以和记录一样久')}</text>
@@ -326,12 +324,13 @@
           <line x1="107" y1="240" x2="107" y2="264" stroke="var(--gen)" stroke-width="2" />
           <line x1="107" y1="252" x2="660" y2="252" stroke="var(--line)" stroke-width="2" stroke-dasharray="4 4" />
           <text x="115" y="278" class="tag" fill="var(--gen)">{t('day 7: deleted', '第 7 天：删')}</text>
-          <text x="20" y="296" class="tag strong">{t('checked every hour:', '每小时检查：')} {VOXT_RETRY_KEEP_DAYS} × 24 = {VOXT_RETRY_KEEP_HOURS} {t('hours', '小时')}</text>
-          <text x="20" y="322" class="tag">{t('A successful retry deletes it at once.', '重试成功马上删掉它。')}</text>
-          <text x="20" y="348" class="tag">{t('With recordings on, the recording follows the row’s clock.', '保存录音开着时，录音跟着记录的钟走。')}</text>
-          <text x="20" y="386" class="tag strong">{t('Why keep it at all?', '为什么还要留？')}</text>
-          <text x="20" y="410" class="tag">{t('Retry runs the dictation again from this file.', '重试就是拿这段录音再跑一次这次听写。')}</text>
-          <text x="20" y="434" class="tag">{t('When it is gone, Retry says the recording is gone.', '录音没了，重试就说录音已经不在。')}</text>
+          <text x="20" y="296" class="tag strong">{t('retry clock:', '重试钟：')} {VOXT_RETRY_KEEP_DAYS} × 24 = {VOXT_RETRY_KEEP_HOURS} {t('hours', '小时')}</text>
+          <text x="20" y="322" class="tag">{t('sweep: every 1 hour', '清扫：每 1 小时')}</text>
+          <text x="20" y="348" class="tag">{t('A successful retry deletes it at once.', '重试成功马上删掉它。')}</text>
+          <text x="20" y="374" class="tag">{t('With recordings on, the recording follows the row’s clock.', '保存录音开着时，录音跟着记录的钟走。')}</text>
+          <text x="20" y="410" class="tag strong">{t('What the copy is for', '这份副本干什么用')}</text>
+          <text x="20" y="434" class="tag">{t('Retry runs the dictation again from this file.', '重试就是拿这段录音再跑一次这次听写。')}</text>
+          <text x="20" y="458" class="tag">{t('When it is gone, Retry says the recording is gone.', '录音没了，重试就说录音已经不在。')}</text>
         {/if}
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('session.go · session/run.go · history_retry.go', 'session.go · session/run.go · history_retry.go') : t('Source: session/session.go DefaultAudioRetention · session/run.go AudioUntil · history_retry.go hourly sweep', '出处：session/session.go DefaultAudioRetention · session/run.go AudioUntil · history_retry.go 每小时扫一次')}</text>
 
@@ -381,39 +380,43 @@
 
       {:else if step === 6}
         <text x="20" y="22" class="tag strong">{t('EXPORT · WHAT LEAVES THE ROW', '导出 · 记录里什么出去')}</text>
-        <text x="20" y="46" class="tag">{t('Finished rows only, oldest first.', '只导完成的记录，从旧到新。')}</text>
+        <text x="20" y="46" class="tag">{t('Only the words of finished rows leave.', '只有完成记录里的文字出去。')}</text>
         {#if phone}
-          <rect x="20" y="66" width="260" height="320" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="34" y="92" class="rowlabel">{t('one exported row', '一条导出的记录')}</text>
-          {#each ['id', 'created_at', 'kind', 'app', 'text', 'heard (recognized)', t('instruction (spoken)', 'instruction（口述）'), 'target_lang', 'selection *', 'typed *'] as f, i}
-            <text x="34" y={118 + i * 26} class="mono">{f}</text>
-          {/each}
-          <text x="34" y="370" class="tag">{t('* only with include selected text', '* 只在勾选包含选中文字时')}</text>
-          <rect x="20" y="404" width="260" height="190" rx="10" fill="var(--bg)" stroke="var(--line)" />
-          <text x="34" y="430" class="rowlabel">{t('never exported', '从不导出')}</text>
-          {#each [t('recording', '录音'), t('web address', '网址'), t('error message', '错误信息'), t('rule name', '规则名'), t('model name', '模型名'), t('timings', '计时')] as f, i}
-            <text x="34" y={458 + i * 22} class="tag">{f}</text>
-          {/each}
-          <text x="20" y="626" class="tag">{t('--day / --since / --until / --kind', '--day / --since / --until / --kind')}</text>
-          <text x="20" y="650" class="tag">{t('JSONL = one object a line', 'JSONL = 一行一个对象')}</text>
-          <text x="20" y="674" class="tag">{t('Markdown = one section a day', 'Markdown = 一天一节')}</text>
+          <rect x="20" y="66" width="260" height="200" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="34" y="92" class="rowlabel">{t('goes out', '出去')}</text>
+          <text x="34" y="122" class="tag">{t('the delivered words', '交付的文字')}</text>
+          <text x="34" y="148" class="tag">{t('what recognition heard', '识别听到的原文')}</text>
+          <text x="34" y="174" class="tag">{t('the app, the time, the feature', '应用、时间、功能')}</text>
+          <text x="34" y="200" class="tag">{t('the instruction and target language', '口述指令和目标语言')}</text>
+          <text x="34" y="226" class="tag">{t('selected / typed: only with the setting', '选中／输入文字：只在设置打开时')}</text>
+          <rect x="20" y="286" width="260" height="140" rx="10" fill="var(--bg)" stroke="var(--line)" />
+          <text x="34" y="312" class="rowlabel">{t('stays here', '留在这里')}</text>
+          <text x="34" y="342" class="tag">{t('the recording', '录音')}</text>
+          <text x="34" y="368" class="tag">{t('the web address', '网址')}</text>
+          <text x="34" y="394" class="tag">{t('errors and internal names', '错误和内部名字')}</text>
+          <text x="34" y="420" class="tag">{t('timings', '计时')}</text>
+          <text x="20" y="462" class="tag strong">{t('Finished rows only, oldest first.', '只导完成的记录，从旧到新。')}</text>
+          <text x="20" y="488" class="tag">{t('Failed and cancelled rows stay out.', '失败和取消的记录不出去。')}</text>
+          <text x="20" y="514" class="tag">{t('A day or a time range picks the rows.', '挑一天或一段时间。')}</text>
         {:else}
-          <rect x="20" y="66" width="392" height="320" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="34" y="92" class="rowlabel">{t('one exported row', '一条导出的记录')}</text>
-          {#each ['id', 'created_at', 'kind', 'app', 'text', 'heard (recognized)', t('instruction (spoken)', 'instruction（口述）'), 'target_lang', 'selection *', 'typed *'] as f, i}
-            <text x="40" y={122 + i * 25} class="mono">{f}</text>
-          {/each}
-          <text x="40" y="372" class="tag">{t('* only with include selected text', '* 只在勾选包含选中文字时')}</text>
-          <rect x="432" y="66" width="268" height="320" rx="10" fill="var(--bg)" stroke="var(--line)" />
-          <text x="446" y="92" class="rowlabel">{t('never exported', '从不导出')}</text>
-          {#each [t('recording', '录音'), t('web address', '网址'), t('error message', '错误信息'), t('rule name', '规则名'), t('model name', '模型名'), t('timings', '计时')] as f, i}
-            <text x="446" y={124 + i * 28} class="tag">{f}</text>
-          {/each}
-          <text x="446" y="316" class="tag">{t('you get the words, not', '拿到的是文字，不是')}</text>
-          <text x="446" y="340" class="tag">{t('the recording or the run', '录音或运行细节')}</text>
-          <text x="20" y="420" class="tag strong">{t('--day D · --since T [--until T] · --kind transcribe|translate|rewrite', '--day D · --since T [--until T] · --kind transcribe|translate|rewrite')}</text>
-          <text x="20" y="446" class="tag">{t('JSONL: one object a line. Markdown: a section a day.', 'JSONL：一行一个对象。Markdown：一天一节。')}</text>
-          <text x="20" y="472" class="tag">{t('Pick rows by day or time range; a range includes its start, not its end.', '范围含起点、不含终点。')}</text>
+          <rect x="20" y="66" width="400" height="230" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="34" y="92" class="rowlabel">{t('goes out', '出去')}</text>
+          <text x="34" y="124" class="tag">{t('the delivered words', '交付的文字')}</text>
+          <text x="34" y="152" class="tag">{t('what recognition heard', '识别听到的原文')}</text>
+          <text x="34" y="180" class="tag">{t('the app, the time, the feature', '应用、时间、功能')}</text>
+          <text x="34" y="208" class="tag">{t('the instruction and target language', '口述指令和目标语言')}</text>
+          <text x="34" y="236" class="tag">{t('selected / typed: only with the setting', '选中／输入文字：只在设置打开时')}</text>
+          <text x="34" y="272" class="tag">{t('one row per finished dictation', '每次完成的听写一行')}</text>
+          <rect x="440" y="66" width="260" height="230" rx="10" fill="var(--bg)" stroke="var(--line)" />
+          <text x="454" y="92" class="rowlabel">{t('stays here', '留在这里')}</text>
+          <text x="454" y="124" class="tag">{t('the recording', '录音')}</text>
+          <text x="454" y="152" class="tag">{t('the web address', '网址')}</text>
+          <text x="454" y="180" class="tag">{t('errors and internal names', '错误和内部名字')}</text>
+          <text x="454" y="208" class="tag">{t('timings', '计时')}</text>
+          <text x="454" y="252" class="tag">{t('you get the words', '你拿到的是文字')}</text>
+          <text x="20" y="336" class="tag strong">{t('Finished rows only, oldest first.', '只导完成的记录，从旧到新。')}</text>
+          <text x="20" y="362" class="tag">{t('Failed and cancelled rows stay out.', '失败和取消的记录不出去。')}</text>
+          <text x="20" y="396" class="tag">{t('A day or a time range picks the rows.', '挑一天或一段时间。')}</text>
         {/if}
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('historyapi/row.go · Walk()', 'historyapi/row.go · Walk()') : t('Source: historyapi/row.go Row · Walk() · docs/history-access.md', '出处：historyapi/row.go 的 Row · Walk() · docs/history-access.md')}</text>
 
@@ -436,7 +439,7 @@
           <text x="34" y="412" class="tag">{t('the one file that holds the history', '装历史的那一个文件')}</text>
           <text x="34" y="436" class="tag">{t('a program running as you reads it', '以你身份运行的程序能读它')}</text>
           <text x="34" y="460" class="tag">{t('not logged; the switch does not change it', '不记账；开关改不了这一点')}</text>
-          <text x="34" y="484" class="tag">{t('this is not a wall', '这不是一堵墙')}</text>
+          <text x="34" y="484" class="tag">{t('the switch does not block this', '开关挡不住这一点')}</text>
           <text x="20" y="526" class="tag">{t('other accounts cannot open the channel', '其他账户打不开这条通道')}</text>
           <text x="20" y="550" class="tag">{t('there is no network port', '没有网络端口')}</text>
           <rect x="20" y="578" width="260" height="102" rx="8" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />
@@ -463,7 +466,7 @@
           <text x="454" y="252" class="tag">{t('not logged', '不记账')}</text>
           <text x="454" y="276" class="tag">{t('the switch does not change it', '开关改不了这一点')}</text>
           <text x="20" y="336" class="tag">{t('Other accounts cannot open the channel (file mode 0600 inside ~/Library). There is no network port.', '其他账户打不开这条通道（文件权限 0600，在 ~/Library 里）。没有网络端口。')}</text>
-          <text x="20" y="368" class="tag strong">{t('So the switch is opt-in and visible, not a wall around the database.', '所以开关是可选的、看得见的，不是围住数据库的墙。')}</text>
+          <text x="20" y="368" class="tag strong">{t('The switch is opt-in and visible; it does not stop a program running as you.', '这个开关要你打开，而且看得见；它挡不住以你身份运行的程序。')}</text>
           <rect x="20" y="396" width="680" height="84" rx="8" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />
           <text x="34" y="424" class="tag strong">{t('next chapter', '下一章')}</text>
           <text x="34" y="450" class="tag">{t('An audio file you already have becomes SRT or TXT. How does a file become text?', '一个现成的音频文件变成 SRT 或 TXT。文件怎样变成文字？')}</text>
