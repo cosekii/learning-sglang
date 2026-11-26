@@ -22,6 +22,7 @@ export const omniChapters: Chapter[] = [
   { part: 'models', slug: '12-full-duplex-strategies', title: 'Full-duplex strategies and measurement', hook: 'Compare three designs with the same interruption.', titleZh: '全双工策略与测量', hookZh: '用同一次打断比较三种设计。', ready: true },
   { part: 'models', slug: '13-qwen3-omni-deployment', title: 'Deploy and tune Qwen3-Omni', hook: 'Choose text or speech, cards, precision and concurrency together.', titleZh: 'Qwen3-Omni 部署调优', hookZh: '一起选择文本或语音、卡数、精度和并发。', ready: true },
   { part: 'serving', slug: '14-slow-reader-backpressure', title: 'When the client reads too slowly', hook: 'Finished generation can leave audio queued; one shared byte cap chooses which streams fail.', titleZh: '客户端读得太慢', hookZh: '生成结束后，声音仍可能排队；共享字节上限决定哪些流失败。', ready: true },
+  { part: 'serving', slug: '15-router-worker-selection', title: 'Choose a compatible worker', hook: 'Filter capabilities and health, then choose a worker for the next request.', titleZh: '给请求选 worker', hookZh: '先看能力和健康，再为下一个请求选择 worker。', ready: false },
 ];
 
 export const omniHrefOf = (slug: string) => `${import.meta.env.BASE_URL.replace(/\/$/, '')}/omni/ch/${slug}/`;

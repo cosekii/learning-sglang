@@ -4,29 +4,31 @@
 
 ### On the stage
 
-- The generator made ten seconds of audio and released its generation slot.
-- The API process hands audio to the reader. The delivery backlog is audio made but not yet taken by that reader.
-- The reader took four seconds, leaving six seconds in blue. Grey marks audio already read.
+- The generator made ten seconds of audio and has finished.
+- The API process is the server process that hands audio to the reader. The reader is the client taking that audio.
+- The delivery backlog is audio made but not yet taken by the reader. The reader took four seconds, leaving six seconds in blue. Grey marks audio already read.
 - This is a constructed example, not a latency measurement. It excludes socket buffering.
 
 ### Formula
 
 $$
-Q=r\times b\times(G-R)
+Q_{audio}=r_{audio}\times b_{sample}\times(G_{audio}-R_{audio})
 $$
 
 | Symbol | Meaning | Size | Source |
 |---|---|---:|---|
-| $Q$ | Queued audio bytes | 576,000 B | This step |
-| $r$ | Audio samples per second | 24,000 | Qwen3-TTS tuning guide |
-| $b$ | Bytes per float32 sample | 4 B | Same guide |
-| $G$ | Generated audio duration | 10 s | Constructed example |
-| $R$ | Audio duration the reader took | 4 s | Constructed example |
+| $Q_{audio}$ | Queued audio bytes | 576,000 B | This step |
+| $r_{audio}$ | Audio samples per second | 24,000 | Qwen3-TTS tuning guide |
+| $b_{sample}$ | Bytes per sample | 4 B | Same guide |
+| $G_{audio}$ | Generated audio duration | 10 s | Constructed example |
+| $R_{audio}$ | Audio duration the reader took | 4 s | Constructed example |
+
+float32 is the format that stores one audio sample. Each float32 sample occupies 4 B in this example.
 
 ### The numbers on the stage
 
 $$
-Q=24{,}000\times4\times(10-4)=576{,}000\ \text{B}
+Q_{audio}=24{,}000\times4\times(10-4)=576{,}000\ \text{B}
 $$
 
 One second contains $24{,}000\times4=96{,}000\ \text{B}$. Six queued seconds contain six copies of that amount.
@@ -37,41 +39,44 @@ A finished request releases generation capacity, while unread streamed audio can
 
 ### Next
 
-The next step puts one shared byte cap on all waiting audio in this API process.
+The next step puts one shared byte cap on all waiting payloads in this API process.
 
-## Step 2 · All streams share one audio-byte ledger
+## Step 2 · All streams share one payload-byte total
 
-> **In one line:** One API process caps all its streams together, counting audio bytes rather than text or socket buffers.
+> **In one line:** One API process caps all top-level `bytes` payload values together, excluding text and socket buffers.
 
 ### On the stage
 
-- `stream_delivery.max_total_backlog_bytes` is the most queued audio bytes all streams in this process may hold together. Its default is 1 GiB; `none` disables the cap.
-- Stream A carries 6 B of audio and 100 text characters. Blue marks counted audio and grey marks excluded text, so this stream contributes 6 B.
+- `stream_delivery.max_total_backlog_bytes` is the most queued payload bytes all streams in this process may hold together. Its default is 1 GiB; `none` disables the cap.
+- Stream A carries 6 B of audio and 100 text characters. Blue marks counted binary payload and grey marks excluded text, so this stream contributes 6 B.
 - Stream B carries 10 B of audio. Together they hold `6 + 10 = 16 B`.
 - The default cap corresponds to about 3.1 hours of this audio. That comparison conveys size only; it does not predict request length.
 
 ### Formula
 
 $$
-T=\sum_{s=1}^{N}Q_s,\qquad H=\frac{C}{r\times b\times3600}
+T_{queue}=\sum_{s=1}^{N_{streams}}Q_{queue,s},\qquad H_{cap}=\frac{C_{cap}}{r_{audio}\times b_{sample}\times3600}
 $$
 
 | Symbol | Meaning | Size | Source |
 |---|---|---:|---|
-| $T$ | Total queued audio | 16 B | Constructed example |
-| $Q_s$ | Queued audio in stream $s$ | 6 B or 10 B | Constructed example |
-| $N$ | Stream count | 2 | This step |
-| $H$ | Default cap as audio hours | About 3.1 h | This step |
-| $C$ | Default shared cap | 1,073,741,824 B | Config default |
-| $r,b$ | Sample rate and bytes per sample | 24,000 and 4 B | Step 1 |
+| $T_{queue}$ | Total queued payload bytes | 16 B | Constructed example |
+| $s$ | Stream index from 1 to $N_{streams}$ | 1 or 2 | This step |
+| $N_{streams}$ | Stream count | 2 | This step |
+| $Q_{queue,s}$ | Queued payload bytes in stream $s$ | 6 B or 10 B | Constructed example |
+| $H_{cap}$ | Default cap as audio hours | About 3.1 h | This step |
+| $C_{cap}$ | Default shared cap | 1,073,741,824 B | Config default |
+| $r_{audio},b_{sample}$ | Sample rate and bytes per sample | 24,000 and 4 B | Step 1 |
+
+The sum adds each stream's queued payload bytes. “Top-level” means directly inside the message, not inside a nested value. The implementation sums every top-level `bytes` value, including non-audio binary payloads; it does not check for an audio key.
 
 ### The numbers on the stage
 
 $$
-T=6+10=16\ \text{B},\qquad H=\frac{1{,}073{,}741{,}824}{24{,}000\times4\times3600}\approx3.1\ \text{hours}
+T_{queue}=6+10=16\ \text{B},\qquad H_{cap}=\frac{1{,}073{,}741{,}824}{24{,}000\times4\times3600}\approx3.1\ \text{hours}
 $$
 
-The implementation sums only top-level `bytes` values in the payload. It does not measure total process memory or socket buffers. Another API process has its own cap.
+This is not a total-process-memory measurement and does not include socket buffers. Another API process has its own cap.
 
 ### Boundary and sources
 
@@ -79,7 +84,7 @@ The default and config type are in `sglang_omni/config/schema.py:641-648,793-796
 
 ### Next
 
-When the total crosses the cap, the coordinator needs a fair way to choose a stream. The next step defines its reader-idle clock.
+When the total crosses the cap, the coordinator needs a rule for choosing a stream. The next step defines its reader-idle clock.
 
 ## Step 3 · Only reading resets the idle clock
 
@@ -95,22 +100,22 @@ When the total crosses the cap, the coordinator needs a fair way to choose a str
 ### Formula
 
 $$
-I=N-L
+I_{idle}=t_{now}-t_{last}
 $$
 
 | Symbol | Meaning | Size | Source |
 |---|---|---:|---|
-| $I$ | Reader-idle duration | 0 or 2 s | This step |
-| $N$ | Current monotonic time | 2 s | Constructed time |
-| $L$ | Last queue-read time | 0 or 2 s | Constructed time |
+| $I_{idle}$ | Reader-idle duration | 0 or 2 s | This step |
+| $t_{now}$ | Current monotonic time | 2 s | Constructed time |
+| $t_{last}$ | Last queue-read time | 0 or 2 s | Constructed time |
 
 A monotonic clock moves forward and measures intervals. It is not calendar time.
 
 ### The numbers on the stage
 
-- Before reading: $I=2-0=2\ \text{s}$.
-- After reading: $I=2-2=0\ \text{s}$.
-- After producing only: $I=2-0=2\ \text{s}$, with no clock reset.
+- Before reading: $I_{idle}=2-0=2\ \text{s}$.
+- After reading: $I_{idle}=2-2=0\ \text{s}$.
+- After producing only: $I_{idle}=2-0=2\ \text{s}$, with no clock reset.
 
 When an empty backlog receives its first message, the producer sets the clock's starting point. A new backlog therefore has an idle timestamp even without an earlier read.
 
@@ -120,39 +125,40 @@ Read-side accounting and clock resets are in `sglang_omni/pipeline/coordinator.p
 
 ### Next
 
-The next step gives two streams different idle times and backlog sizes to show which one the coordinator chooses.
+The next step gives two streams different idle durations and backlog sizes to show which one the coordinator chooses.
 
 ## Step 4 · The longest-idle reader fails first
 
-> **In one line:** Over the cap, the coordinator picks the oldest idle clock rather than the largest backlog.
+> **In one line:** Over the cap, the coordinator picks the stream with the longest idle time rather than the largest backlog.
 
 ### On the stage
 
 - The cap is 12 B. Initially `req-idle` holds 4 B with 100 idle seconds, while `req-behind` holds 8 B with 2 idle seconds. They total exactly 12 B.
 - `req-behind` adds 4 B, making `12 + 4 = 16 B` and crossing the cap.
-- Orange marks `req-idle` ending and leaving the ledger. Blue marks `req-behind` staying.
-- Removing 4 B returns the total to 12 B. The larger backlog survives because its reader is fresher.
+- Orange marks `req-idle` failing and its 4 B leaving the shared total. Blue marks `req-behind` staying.
+- Removing 4 B returns the total to 12 B. The larger backlog survives because its reader is fresher. Step 8 covers the remaining queue and ID cleanup.
 
 ### Formula
 
 $$
-T_{after}=T_{before}+A-Q_f
+T_{queue,after}=T_{queue,before}+A_{added}-Q_{failed}
 $$
 
 | Symbol | Meaning | Size | Source |
 |---|---|---:|---|
-| $T_{before}$ | Shared backlog before the new message | 12 B | Unit test |
-| $A$ | Added audio | 4 B | Unit test |
-| $Q_f$ | Backlog removed with the failed stream | 4 B | Oldest-idle `req-idle` |
-| $T_{after}$ | Shared backlog after removal | 12 B | This step |
+| $T_{queue,before}$ | Shared backlog before the new message | 12 B | Unit test |
+| $A_{added}$ | Added audio | 4 B | Unit test |
+| $Q_{failed}$ | Backlog removed with the failed stream | 4 B | Longest-idle `req-idle` |
+| $T_{queue,after}$ | Shared backlog after removal | 12 B | This step |
+| $C_{cap}$ | Shared cap in this example | 12 B | Unit test |
 
 ### The numbers on the stage
 
 $$
-T_{after}=12+4-4=12\ \text{B}\leq12\ \text{B}
+T_{queue,after}=12+4-4=12\ \text{B}\leq C_{cap}=12\ \text{B}
 $$
 
-Selection runs only while $T>C$, so equality does not trigger it. Candidates must hold positive undelivered bytes; an empty stream cannot win the oldest-idle comparison.
+Selection runs only while $T_{queue}>C_{cap}$, so equality does not trigger it. Candidates must hold positive undelivered bytes. The oldest last-read timestamp identifies the stream with the longest current idle time.
 
 ### Boundary and sources
 
@@ -160,32 +166,32 @@ The selection and accounting loop is in `sglang_omni/pipeline/coordinator.py:110
 
 ### Next
 
-If removing the oldest stream still leaves too many bytes, the coordinator repeats the same choice on the remaining streams.
+If removing the longest-idle stream still leaves too many bytes, the coordinator repeats the same choice on the remaining streams.
 
 ## Step 5 · Fail another stream until the total fits
 
-> **In one line:** The coordinator repeats the oldest-idle rule until the shared total no longer exceeds the cap.
+> **In one line:** The coordinator repeats the longest-idle rule until the shared total no longer exceeds the cap.
 
 ### On the stage
 
 - All three panels keep the same order: `req-oldest`, `req-older`, `req-fresh`.
 - Initially the first two hold 2 B and 4 B. `req-fresh` grows from 4 B by 6 B to 10 B, making 16 B in total.
-- The first eviction removes `req-oldest` and its 2 B. The remaining 14 B still exceeds 12 B.
-- The second removes `req-older` and its 4 B. Only the fresh stream's 10 B remains, so the loop stops with two failures.
+- The first eviction removes `req-oldest` and its 2 B. `req-fresh` still holds 10 B, so 14 B remains and still exceeds 12 B.
+- The second removes `req-older` and its 4 B. Only the fresh stream's 10 B remains, so the loop stops with two failed streams.
 
 ### Formula
 
 $$
-T_0=16,\qquad T_1=T_0-Q_{oldest},\qquad T_2=T_1-Q_{older}
+T_{queue,0}=16\ \text{B},\qquad T_{queue,1}=T_{queue,0}-Q_{oldest},\qquad T_{queue,2}=T_{queue,1}-Q_{older}
 $$
 
 | Symbol | Meaning | Size | Source |
 |---|---|---:|---|
-| $T_0$ | Total after the new message | 16 B | Unit test |
-| $Q_{oldest}$ | Oldest stream's backlog | 2 B | `req-oldest` |
-| $T_1$ | Total after the first eviction | 14 B | This step |
-| $Q_{older}$ | Next-oldest stream's backlog | 4 B | `req-older` |
-| $T_2$ | Total after the second eviction | 10 B | This step |
+| $T_{queue,0}$ | Total after the new message | 16 B | Unit test |
+| $Q_{oldest}$ | Longest-idle stream's backlog | 2 B | `req-oldest` |
+| $T_{queue,1}$ | Total after the first eviction | 14 B | This step |
+| $Q_{older}$ | Next longest-idle stream's backlog | 4 B | `req-older` |
+| $T_{queue,2}$ | Total after the second eviction | 10 B | This step |
 
 ### The numbers on the stage
 
@@ -193,7 +199,7 @@ $$
 16-2=14\ \text{B}>12\ \text{B},\qquad14-4=10\ \text{B}\leq12\ \text{B}
 $$
 
-Each iteration finds the oldest idle clock among the remaining nonempty streams. The loop neither assumes one eviction is enough nor sorts streams by size.
+Each iteration finds the longest-idle stream among the remaining streams with at least 1 B waiting. The loop neither assumes one eviction is enough nor sorts streams by size.
 
 ### Boundary and sources
 
@@ -209,10 +215,10 @@ The next step separates what failure stops in the generator from what it stops i
 
 ### On the stage
 
-- Both panels hold the same 12 B of queued audio and cross the shared cap.
+- Both panels hold the same 12 B of queued audio. This step's cap is 10 B, so `12 B > 10 B` and both panels cross the cap.
 - On the left, generation is still running. The coordinator broadcasts abort so unfinished stages stop this request, then reports the failure to the reader.
 - On the right, generation has finished. No running generator remains to abort, but the reader still receives the delivery failure.
-- The coordinator does not drop an arbitrary chunk. Ordered audio chunks with a missing segment would form corrupt audio.
+- The coordinator does not drop an arbitrary chunk. A missing middle piece breaks the ordered sound.
 
 ### The two states
 
@@ -225,7 +231,7 @@ A terminal message containing audio passes through the same accounting function.
 
 ### Boundary and sources
 
-The failure-completion path is in `sglang_omni/pipeline/coordinator.py:940-967`. Whole-stream failure and conditional abort are in `1098-1144`. The parameterized running/finished test is `tests/unit_test/pipeline/test_coordinator.py:1465-1505`; terminal-waveform accounting is in `1691-1715`.
+The failure-completion path is in `sglang_omni/pipeline/coordinator.py:940-967`. Whole-stream failure and conditional abort are in `1098-1144`. The running/finished test with its 10 B cap is `tests/unit_test/pipeline/test_coordinator.py:1465-1505`; terminal-waveform accounting is in `1691-1715`, and terminal-waveform self-failure is in `1738-1762`.
 
 ### Next
 
@@ -233,14 +239,18 @@ The reader now has a failed stream. The next step shows how each connection type
 
 ## Step 7 · Different connections report the same failure
 
-> **In one line:** Event connections send an error event; raw PCM carries only samples and must close early.
+> **In one line:** Event connections send an error event; samples-only connections must close early.
 
 ### On the stage
 
-- An event envelope is a named message wrapped around data. SSE and WebSocket can send an `error` beside audio.
-- Both event connections report `The request queue is full.` Partial audio may already have gone out before that error.
-- Raw PCM carries audio samples only. With no event envelope for the error, its connection closes early.
-- Orange marks failure output. All three panels show the same shared-cap failure, not three experiments.
+- An event envelope is a named message wrapped around data. The left event connection can send an `error` beside audio and report `The request queue is full.`
+- Partial audio may already have gone out before that error.
+- The right panel carries only audio samples. With no event envelope for the error, its connection closes early.
+- Orange marks failure output. Both panels show the same shared-cap failure, not two experiments.
+
+### Protocol examples
+
+The left panel's examples are SSE and WebSocket. The right panel's example is raw PCM. These protocol names do not appear on the main stage.
 
 ### The three exits
 
@@ -258,43 +268,45 @@ The three behaviors and the rule that this cap does not refuse new requests are 
 
 ### Next
 
-After the failure goes out, closing the reader performs the final queue and byte cleanup.
+After the failure goes out, taking the error or closing the reader releases the remaining stream queue and ID.
 
-## Step 8 · Closing the reader finishes cleanup
+## Step 8 · Two close cases, two different leftovers
 
-> **In one line:** Closing aborts owned work, removes the queue and backlog, and releases the stream ID.
+> **In one line:** Early close subtracts unread bytes; cap failure already removed them, leaving only the error queue and stream ID to release.
 
 ### On the stage
 
-- On the left, the reader remains open with 12 B queued. The coordinator may still own request work.
-- After a cap failure, the failed stream's queue and ID can remain while the stalled reader stays open.
-- On the right, the reader closes. Abort runs only if the coordinator still owns work; every close removes the stream queue and backlog record.
-- The remaining bytes fall from 12 B to 0, and the reserved stream ID is released.
+- The left panel is an early close with no cap failure. It still has 12 B unread. Closing aborts work if its work record remains, then removes the queue, backlog and stream ID.
+- “Owned” means the request's work record remains in the coordinator's `requests` map. Ch. 3 Step 2 showed that record and the request's taken name.
+- The right panel follows a cap failure. Eviction already removed all counted audio bytes, leaving 0 B. The error remains queued and the stream ID, the stream's name, remains taken.
+- Taking the error or closing the reader releases that queue and ID. The right panel must not subtract another 12 B.
 
 ### Formula
 
 $$
-T_{after}=T_{before}-Q_c
+T_{queue,after}=T_{queue,before}-Q_{close}
 $$
 
 | Symbol | Meaning | Size | Source |
 |---|---|---:|---|
-| $T_{before}$ | Shared backlog before close | 12 B | Constructed example |
-| $Q_c$ | Backlog left by this reader | 12 B | Constructed example |
-| $T_{after}$ | Shared backlog after cleanup | 0 B | This step |
+| $T_{queue,before}$ | Shared backlog before early close | 12 B | Left constructed example |
+| $Q_{close}$ | Unread bytes left by this reader | 12 B | Left constructed example |
+| $T_{queue,after}$ | Shared backlog after early-close cleanup | 0 B | This step |
 
 ### The numbers on the stage
 
+This formula belongs only to the early-close panel:
+
 $$
-T_{after}=12-12=0\ \text{B}
+T_{queue,after}=12-12=0\ \text{B}
 $$
 
-“Still owned” means the request remains in the coordinator's `requests` map. Finished generation is not aborted again when the reader closes. Closing the stream and aborting earlier stage work are separate actions.
+The cap-failure panel already reached 0 B during eviction. Finished generation is not aborted again when the reader closes. Closing the stream and aborting earlier stage work are separate actions.
 
 ### Boundary and sources
 
-Conditional abort, queue removal and accounting on close are in `sglang_omni/pipeline/coordinator.py:497-553`. The early-close test is `tests/unit_test/pipeline/test_coordinator.py:1625-1638`; reservation after a cap failure until reader close is in `1497-1505`.
+Conditional abort, queue removal and accounting on close are in `sglang_omni/pipeline/coordinator.py:497-553`. The early-close test is `tests/unit_test/pipeline/test_coordinator.py:1625-1638`. Audio draining during cap failure and the remaining error queue and ID are in `sglang_omni/pipeline/coordinator.py:1116-1144` and `tests/unit_test/pipeline/test_coordinator.py:1491-1505`.
 
 ### Next
 
-Chapter 15 puts two API processes behind one public URL and follows the router as it chooses a process for the next request.
+A public URL is the address clients use for requests. The planned Chapter 15 puts two API processes behind one public URL and follows the router as it chooses a process for the next request.
