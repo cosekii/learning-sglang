@@ -58,8 +58,8 @@
     caption: 'Voxt recognizes each cue with the Transcribe model.',
     captionZh: 'Voxt 用 Transcribe 的模型逐句识别。',
   }, {
-    caption: 'SRT keeps the cue times; TXT keeps one line per cue.',
-    captionZh: 'SRT 保留每句的时间；TXT 每句一行。',
+    caption: 'SRT keeps the cue times; TXT keeps one line per cue. Recognition failure does not create or overwrite the output.',
+    captionZh: 'SRT 保留每句的时间；TXT 每句一行。识别失败不会创建或覆盖输出。',
   }, {
     caption: 'The file route writes no history and keeps no recording.',
     captionZh: '文件路线不写历史，也不留录音。',
@@ -86,8 +86,8 @@
     en: 'Voxt sends each cue to the speech model chosen for Transcribe. Cue one returns Good morning and cue two returns See you at noon. A cue whose text is empty is left out.',
     zh: 'Voxt 把每一句送给 Transcribe 选定的语音模型。第一句返回 Good morning，第二句返回 See you at noon。文字为空的句子会被丢掉。',
   }, {
-    en: 'The same two cues become SRT numbered cues with start and end times, or TXT with one line per cue. The command writes the file only after the last cue, so a failed run leaves no partial file.',
-    zh: '同样的两句可以写成带起止时间的 SRT 编号字幕，也可以写成每句一行的 TXT。命令在最后一句之后才写文件，失败时不留半个文件。',
+    en: 'The same two cues become SRT numbered cues with start and end times, or TXT with one line per cue. The command opens the output file only after recognition succeeds. Recognition failure does not create or overwrite it. A later disk-write failure can truncate an old file or leave a partial new file.',
+    zh: '同样的两句可以写成带起止时间的 SRT 编号字幕，也可以写成每句一行的 TXT。命令等识别成功后才打开输出文件。识别失败不会创建或覆盖输出。之后的写盘失败可能截断旧文件或留下部分新文件。',
   }, {
     en: 'The file route writes no history row and keeps no recording. It writes one log line with the audio length and the cue count, not the text. The audio goes to the model chosen for Transcribe: on this Mac or a configured remote service. The next chapter asks how model files and app updates reach this Mac.',
     zh: '文件路线不写历史记录，也不留录音。它只写一行日志，记音频长度和句子数，不记文字。声音送给 Transcribe 选定的模型：本机或配置的远端服务。下一章问模型文件和应用更新怎样到达这台 Mac。',
@@ -107,7 +107,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived((phone ? [810, 760, 820, 760, 760, 740, 760, 780, 840] : [470, 430, 450, 460, 450, 440, 430, 470, 520])[step]);
+  const H = $derived((phone ? [810, 760, 820, 760, 760, 740, 760, 650, 840] : [470, 430, 450, 460, 450, 440, 430, 470, 520])[step]);
 
   const srt = (ms: number) => {
     const h = Math.floor(ms / 3_600_000);
@@ -549,8 +549,9 @@
           <text x="400" y="162" class="mono">{VOXT_TRANSCRIBE_CUE_TEXT[1]}</text>
           <text x="540" y="220" text-anchor="middle" class="detail">{t('no numbers, no times', '没有编号，没有时间')}</text>
           <text x="540" y="242" text-anchor="middle" class="detail">{t('easy to read or feed to a script', '方便阅读或交给脚本')}</text>
-          <text x={W / 2} y={H - 34} text-anchor="middle" class="cut">{t('THE FILE IS WRITTEN ONLY AFTER THE LAST CUE', '最后一句之后才写文件')}</text>
-          <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Without -o, the text prints in the terminal; progress prints separately.', '不给 -o 时，文字打印在终端，进度另打印。')}</text>
+          <text x={W / 2} y="420" text-anchor="middle" class="cut">{t('OUTPUT OPENS ONLY AFTER RECOGNITION SUCCEEDS', '识别成功后才打开输出文件')}</text>
+          <text x={W / 2} y={H - 34} text-anchor="middle" class="footnote">{t('Recognition failure: no create or overwrite.', '识别失败：不创建或覆盖输出。')}</text>
+          <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('A later disk-write failure can truncate an old file or leave a partial new one.', '之后的写盘失败可能截断旧文件或留下部分新文件。')}</text>
         {:else}
           <rect x="15" y="68" width="270" height="270" rx="10" fill="var(--bg)" stroke="var(--accent)" />
           <text x="150" y="92" text-anchor="middle" class="label">{t('SRT · CUES WITH TIMES', 'SRT · 带时间的字幕')}</text>
@@ -572,8 +573,9 @@
           <text x="150" y="478" text-anchor="middle" class="detail">{t('no numbers, no times', '没有编号，没有时间')}</text>
           <text x="150" y="500" text-anchor="middle" class="detail">{t('easy to read or feed to a script', '方便阅读或交给脚本')}</text>
 
-          <text x={W / 2} y="552" text-anchor="middle" class="cut">{t('WRITTEN ONLY AFTER THE LAST CUE', '最后一句之后才写文件')}</text>
-          <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Failed run: no partial file.', '失败时不留半个文件。')}</text>
+          <text x={W / 2} y="552" text-anchor="middle" class="cut">{t('OUTPUT OPENS AFTER RECOGNITION', '识别成功后才打开输出')}</text>
+          <text x={W / 2} y={H - 34} text-anchor="middle" class="footnote">{t('Recognition failure: no create or overwrite.', '识别失败：不创建或覆盖输出。')}</text>
+          <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Disk failure may leave a partial file.', '写盘失败可能留下部分文件。')}</text>
         {/if}
       {:else if step === 8}
         <text x={W / 2} y="27" text-anchor="middle" class="title">{t('NO HISTORY OR RECORDING', '不写历史，不留录音')}</text>

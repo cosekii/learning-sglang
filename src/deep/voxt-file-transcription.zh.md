@@ -307,7 +307,7 @@ $$ \text{segments} \le \text{cues},\qquad \text{segment} \text{ is emitted only 
 
 - 左边蓝框是 SRT：每句有编号、`HH:MM:SS,mmm` 格式的开始和结束时间、以及文字。
 - 右边橙框是 TXT：只有每句的文字，每句一行。
-- 下面说：最后一句之后才写文件；不给 `-o` 时，文字打印在终端，进度另打印。
+- 下面说：识别成功后才打开输出文件；识别失败不创建或覆盖输出；之后的写盘失败可能留下部分文件。
 
 ### 两种格式
 
@@ -338,9 +338,9 @@ $$ \text{srtTime}(d) = \text{HH}:\text{MM}:\text{SS},\text{mmm} $$
 
 TXT 只有两行：`Good morning.` 和 `See you at noon.`。
 
-### 为什么失败时没有半个文件
+### 为什么识别失败不会创建或覆盖输出
 
-命令先把结果写进内存里的 `bytes.Buffer`，全部成功后才 `os.WriteFile`（`Voxt/transcribe_cli.go:91-101`）。如果识别在中途失败，`err != nil`，函数提前返回，缓冲区不会落盘。`-o -` 或没有 `-o` 时，它把缓冲区写到标准输出，也不创建文件。
+命令先把结果写进内存里的 `bytes.Buffer`。如果识别在中途失败，`err != nil`，函数在打开输出前返回，所以不会创建新文件，也不会覆盖旧文件（`Voxt/transcribe_cli.go:73-87`）。识别成功后，命令才调用 `os.WriteFile`（`transcribe_cli.go:91-100`）。这个写入不是原子的：写盘失败可能截断旧文件或留下部分新文件，本章不保证所有失败都不留半个文件。`-o -` 或没有 `-o` 时，它把缓冲区写到标准输出，也不创建文件。
 
 ### 接下来
 

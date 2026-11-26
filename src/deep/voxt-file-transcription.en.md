@@ -307,7 +307,7 @@ Each cue now has its text and times. The command turns them into a file. Step 8 
 
 - The blue box on the left is SRT: each cue has a number, an `HH:MM:SS,mmm` start and end, and its text.
 - The orange box on the right is TXT: only the text, one line per cue.
-- The note below says the file is written after the last cue; without `-o`, the text prints in the terminal and progress prints separately.
+- The notes below say the output opens only after recognition succeeds; recognition failure creates or overwrites no output; a later disk-write failure can leave a partial file.
 
 ### The two formats
 
@@ -338,9 +338,9 @@ $$ \text{srtTime}(d) = \text{HH}:\text{MM}:\text{SS},\text{mmm} $$
 
 TXT has two lines: `Good morning.` and `See you at noon.`.
 
-### Why a failed run has no partial file
+### Why recognition failure creates or overwrites no output
 
-The command builds the whole result in an in-memory `bytes.Buffer` and calls `os.WriteFile` only after everything succeeds (`Voxt/transcribe_cli.go:91-101`). If recognition fails midway, `err != nil` and the function returns early, so the buffer never reaches disk. With `-o -` or no `-o`, it writes the buffer to standard output and creates no file.
+The command builds the whole result in an in-memory `bytes.Buffer`. If recognition fails midway, `err != nil` and the function returns before opening the output, so it creates no new file and overwrites no old file (`Voxt/transcribe_cli.go:73-87`). Only after recognition succeeds does the command call `os.WriteFile` (`transcribe_cli.go:91-100`). That write is not atomic: a disk-write failure can truncate an old file or leave a partial new file, so the chapter does not promise that every failure leaves no partial file. With `-o -` or no `-o`, it writes the buffer to standard output and creates no file.
 
 ### Next
 
