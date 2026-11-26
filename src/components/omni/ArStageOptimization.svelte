@@ -11,6 +11,9 @@
     OPT_CACHE_HIT_COUNT,
     OPT_CACHED_TOTAL_MS,
     OPT_CACHE_SAVED_MS,
+    OPT_SINGLE_FLIGHT_FOLLOWER_COUNT,
+    OPT_SINGLE_FLIGHT_COLD_HIT_COUNT,
+    OPT_SINGLE_FLIGHT_GPU_TOTAL_MS,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -21,6 +24,9 @@
   }, {
     caption: 'The cache stores the first result under an exact key. The next two matching requests load it instead of encoding again.',
     captionZh: 'cache 按完整 key 保存首次结果。后两个相同请求直接读取，不再编码。',
+  }, {
+    caption: 'Three matching requests arrive before any result is cached. Single-flight lets two followers share the leader\'s running encode.',
+    captionZh: '三个相同请求同时到达，cache 还是空的。single-flight 让两个 follower 等 leader 的一次编码。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -37,7 +43,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [790, 800][step] : [540, 590][step]);
+  const H = $derived(phone ? [790, 800, 810][step] : [540, 590, 590][step]);
   const requests = [
     { id: 'A', prompt: 'Hello', promptZh: '你好' },
     { id: 'B', prompt: 'Thank you', promptZh: '谢谢' },
@@ -158,6 +164,44 @@
           <text x="150" y="749" text-anchor="middle" class="small">{t('GPU encode only', '只算 GPU encode')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'GPU work only; not request latency.' : 'Approximate GPU-work comparison, not whole-request latency.', phone ? '只算 GPU 工作，不是请求延迟。' : '大致 GPU 工作对照，不是整个请求的延迟。')}</text>
+      {:else if step === 2}
+        <text x={phone ? 18 : 30} y="30" class="title">{t('Share a running encode · 2 of 4', '共享正在做的编码 · 2 / 4')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'single-flight = share one unfinished encode' : 'single-flight = callers with one key share one unfinished encode', phone ? 'single-flight = 共享一次未完成编码' : 'single-flight = 相同 key 的调用共享一次未完成编码')}</text>
+        <text x={phone ? 18 : 30} y="79" class="label">{t('blue = GPU encode · orange = follower wait', '蓝 = GPU encode · 橙 = follower 等待')}</text>
+        {#if !phone}
+          {#each [false, true] as shared}
+            {@const x = shared ? 375 : 30}
+            <rect x={x} y="100" width="315" height="357" rx="12" fill="var(--bg)" stroke={shared ? 'var(--accent)' : 'var(--line)'} />
+            <text x={x + 15} y="126" class="small strong">{shared ? t('WITH SINGLE-FLIGHT', '使用 SINGLE-FLIGHT') : t('THREE INDEPENDENT CALLS', '三次独立调用')}</text>
+            <text x={x + 15} y="151" class="small">{t('A, B, C arrive at 0 · cache empty', 'A、B、C 同时到达 · cache 为空')}</text>
+            {#each requests as request, i}
+              {@const y = 176 + i * 76}
+              <text x={x + 15} y={y + 22} class="small strong">{request.id} · {shared ? (i === 0 ? 'leader' : 'follower') : t('caller', '调用')}</text>
+              <rect x={x + 15} y={y + 34} width="200" height="28" rx="6" fill={shared && i > 0 ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={shared && i > 0 ? 'var(--gen)' : 'var(--accent)'} />
+              <text x={x + 115} y={y + 54} text-anchor="middle" class="small">{shared && i > 0 ? t('wait 250 ms', '等待 250 ms') : t('encode 250 ms', '编码 250 ms')}</text>
+            {/each}
+            <text x={x + 15} y="426" class="result">GPU {t('work', '工作')} = {shared ? `≈${OPT_SINGLE_FLIGHT_GPU_TOTAL_MS}` : `≈${OPT_REFERENCE_TOTAL_MS}`} ms</text>
+          {/each}
+          <text x="360" y="493" text-anchor="middle" class="result">misses = 1 · merged = {OPT_SINGLE_FLIGHT_FOLLOWER_COUNT} · hits = {OPT_SINGLE_FLIGHT_COLD_HIT_COUNT}</text>
+          <text x="360" y="528" text-anchor="middle" class="small">{t('The two followers wait; only duplicate GPU work disappears.', '两个 follower 仍等待；消失的是重复 GPU 工作。')}</text>
+        {:else}
+          {#each [false, true] as shared, panel}
+            {@const y = shared ? 409 : 98}
+            <rect x="18" y={y} width="264" height="289" rx="11" fill="var(--bg)" stroke={shared ? 'var(--accent)' : 'var(--line)'} />
+            <text x="32" y={y + 25} class="small strong">{shared ? t('SINGLE-FLIGHT', 'SINGLE-FLIGHT') : t('INDEPENDENT CALLS', '独立调用')}</text>
+            <text x="32" y={y + 47} class="small">{t('all at 0 · cache empty', '同时到达 · cache 为空')}</text>
+            {#each requests as request, i}
+              {@const rowY = y + 62 + i * 56}
+              <text x="32" y={rowY + 15} class="small strong">{request.id} · {shared ? (i === 0 ? 'leader' : 'follower') : t('caller', '调用')}</text>
+              <rect x="32" y={rowY + 23} width="160" height="23" rx="5" fill={shared && i > 0 ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={shared && i > 0 ? 'var(--gen)' : 'var(--accent)'} />
+              <text x="202" y={rowY + 40} class="small">{shared && i > 0 ? t('wait', '等待') : '250 ms'}</text>
+            {/each}
+            <text x="32" y={y + 259} class="result">GPU = {shared ? `≈${OPT_SINGLE_FLIGHT_GPU_TOTAL_MS}` : `≈${OPT_REFERENCE_TOTAL_MS}`} ms</text>
+          {/each}
+          <text x="150" y="730" text-anchor="middle" class="result">misses 1 · merged {OPT_SINGLE_FLIGHT_FOLLOWER_COUNT} · hits {OPT_SINGLE_FLIGHT_COLD_HIT_COUNT}</text>
+          <text x="150" y="761" text-anchor="middle" class="small">{t('Followers wait; duplicate work goes.', 'follower 等待；重复工作消失。')}</text>
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Constructed example · batching off' : 'Constructed cold-cache comparison; batching is off.', phone ? '构造示例 · 关闭 batching' : '构造冷 cache 对照；关闭 batching。')}</text>
       {/if}
     </svg>
   </div>

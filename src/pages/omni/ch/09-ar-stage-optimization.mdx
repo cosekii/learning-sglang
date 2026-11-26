@@ -17,6 +17,8 @@ Step 1 constructs three prompts that reuse one reference voice. The roughly 250 
 
 Step 2 follows `sglang_omni/scheduling/reference_encoder.py:24-35,84-119,344-413` and `sglang_omni/models/moss_tts/reference_encoder.py:74-105`. The full key covers the input content, model and encoder identity, artifact and options, not the prompt text. One constructed miss and two hits reduce GPU encode work from three passes to one. The 500 ms difference uses Step 1's approximate profile and is not an end-to-end latency result. Loads return copies of the stored tensor.
 
+Step 3 follows `sglang_omni/scheduling/reference_encoder.py:361-413`. With no cached entry, the first caller creates an in-flight future; two later callers join it. The constructed counters are one miss, two merged followers and zero hits. The independent-call comparison turns batching off. MOSS also deduplicates identical identifiers inside its own batch encoder (`sglang_omni/models/moss_tts/reference_encoder.py:113-143`), so this step isolates the generic single-flight rule rather than attributing every deduplication to it.
+
 Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`. The chapter reads source and public results; it does not run a model or benchmark.
 
 </details>
@@ -27,6 +29,8 @@ Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37
 第 1 步构造三个共用一段参考音频的 prompt。约 250 ms 的参考编码耗时来自公开 MOSS-TTS-Local-v1.5 profile，见 `Awesome-ML-SYS-Tutorial/sglang/sglang-omni/moss-tts-local-v15-blog-zh.md:54-58`。它不是本机实测，也不是所有编码器的固定耗时。当前 encoder hook 在 `sglang_omni/models/moss_tts/reference_encoder.py:110-143` 生成参考 codes。地图的四项由后续步骤分别解释。
 
 第 2 步依据 `sglang_omni/scheduling/reference_encoder.py:24-35,84-119,344-413` 和 `sglang_omni/models/moss_tts/reference_encoder.py:74-105`。完整 key 覆盖输入内容、模型和 encoder 身份、结果类型与选项，不含 prompt 文本。构造的一次 miss 和两次 hit 把 GPU encode 从三次减为一次。500 ms 差额沿用第 1 步的约数，不是端到端延迟结果。每次读取返回已存 tensor 的副本。
+
+第 3 步依据 `sglang_omni/scheduling/reference_encoder.py:361-413`。没有缓存项时，首个调用创建 in-flight future，后两个调用加入它。构造计数为一次 miss、两个 merged follower、零次 hit。独立调用对照关闭了 batching。MOSS 也会在自己的 batch encoder 内合并相同标识（`sglang_omni/models/moss_tts/reference_encoder.py:113-143`），所以本步只隔离通用 single-flight 规则，不把所有去重都归给它。
 
 本章代码出处固定到 `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`。本章只读源码和公开结果，没有运行模型或 benchmark。
 

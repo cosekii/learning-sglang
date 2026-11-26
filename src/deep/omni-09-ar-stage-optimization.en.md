@@ -68,3 +68,39 @@ The two hits are counted as two cache hits, not as two 250 ms encodes. The 500 m
 A warm cache helps only after the first result exists. The next step puts all three requests before that first result and shares the encode already in flight.
 
 Sources: `sglang_omni/scheduling/reference_encoder.py:24-35,84-119,344-413`; `sglang_omni/models/moss_tts/reference_encoder.py:74-105`; `tests/unit_test/scheduling/test_reference_encoder.py:85-119,182-193`.
+
+## Step 3 · Share one encode already in flight
+
+**One sentence.** With an empty cache, the first matching request becomes the leader and the other two wait on its future, so three callers share one encode.
+
+### On the stage
+
+- `Single-flight` means that callers with the same key share one unfinished encode. The `leader` runs it. Each `follower` waits for the leader's stored result and then loads its own copy.
+- All three requests arrive while the cache is empty. There is no finished result to hit, so the final counters are `misses=1`, `merged=2`, `hits=0`.
+- The left panel is a counterfactual with three independent calls and batching off. The right panel uses single-flight. Both use the same 250 ms scale.
+- Blue bars are GPU encode work. Orange bars are followers waiting, not extra GPU work. The GPU-work totals sum the blue bars; they do not claim a wall-clock latency for a concurrent batch.
+- MOSS's own batch encoder can also deduplicate identical identifiers within one batch. This step isolates the generic service's single-flight rule by turning that separate batch path off.
+
+### Formula and symbols
+
+$$W_{\mathrm{single\!-\!flight}}=l\times t_{\mathrm{encode}},\qquad f=n-l$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $l$ | Leaders that execute the encode | This cold-cache example, 1 |
+| $n$ | Matching callers arriving before completion | Step 1, 3 |
+| $f$ | Followers merged into the running encode | Calculated here, 2 |
+| $t_{\mathrm{encode}}$ | Approximate leader encode time | Step 1, 250 ms |
+| $W_{\mathrm{single\!-\!flight}}$ | GPU encode work after single-flight | Calculated here |
+
+### The numbers on the stage
+
+$$f=3-1=2,\qquad W_{\mathrm{single\!-\!flight}}=1\times250=250\ \text{ms}$$
+
+Three independent calls would do $3\times250=750$ ms of GPU encode work. Single-flight does not make the two followers return early: they still wait for the leader. It removes duplicate execution, and later requests can use Step 2's completed cache entry.
+
+### Next
+
+The encoder no longer repeats the same work. The AR loop has a different wait: the CPU finishes one step while the GPU could begin the next.
+
+Sources: `sglang_omni/scheduling/reference_encoder.py:361-413`; `tests/unit_test/scheduling/test_reference_encoder.py:131-179`; `sglang_omni/models/moss_tts/reference_encoder.py:113-143`.

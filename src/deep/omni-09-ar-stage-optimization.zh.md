@@ -68,3 +68,39 @@ $$S=750-250=500\ \text{ms}$$
 热 cache 只在首次结果完成后有帮助。下一步把三个请求都放在结果完成之前，让它们共享正在进行的编码。
 
 来源：`sglang_omni/scheduling/reference_encoder.py:24-35,84-119,344-413`；`sglang_omni/models/moss_tts/reference_encoder.py:74-105`；`tests/unit_test/scheduling/test_reference_encoder.py:85-119,182-193`。
+
+## 第 3 步 · 共享正在进行的一次编码
+
+**一句话。** cache 为空时，首个相同请求成为 leader，另外两个等待它的 future，三个调用共享一次编码。
+
+### 图上是什么
+
+- `single-flight` 指相同 key 的调用共享一次尚未完成的编码。`leader` 负责执行，每个 `follower` 等 leader 存好结果，再读取自己的副本。
+- 三个请求到达时 cache 都为空，没有可命中的已完成结果。最终计数是 `misses=1`、`merged=2`、`hits=0`。
+- 左图是关闭 batching 后三次独立调用的反事实对照，右图使用 single-flight。两边使用同一个 250 ms 比例。
+- 蓝条是 GPU encode 工作，橙条是 follower 等待，不是额外 GPU 工作。GPU 工作总量只累加蓝条，不代表并发 batch 的实际墙钟延迟。
+- MOSS 自己的 batch encoder 也能在一个 batch 内合并相同标识。本步关闭这条独立路径，只隔离通用 service 的 single-flight 规则。
+
+### 公式与符号
+
+$$W_{\mathrm{single\!-\!flight}}=l\times t_{\mathrm{encode}},\qquad f=n-l$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $l$ | 实际执行编码的 leader 数 | 本例冷 cache，1 |
+| $n$ | 完成前到达的相同调用数 | 第 1 步，3 |
+| $f$ | 合并到这次编码的 follower 数 | 本步计算，2 |
+| $t_{\mathrm{encode}}$ | leader 一次编码的大致耗时 | 第 1 步，250 ms |
+| $W_{\mathrm{single\!-\!flight}}$ | single-flight 后的 GPU encode 工作 | 本步计算 |
+
+### 代入图上的数
+
+$$f=3-1=2,\qquad W_{\mathrm{single\!-\!flight}}=1\times250=250\ \text{ms}$$
+
+三次独立调用会做 $3\times250=750$ ms 的 GPU encode 工作。single-flight 不会让两个 follower 提前返回，它们仍要等 leader。它减少重复执行，后来的请求再用第 2 步的已完成 cache。
+
+### 接下来
+
+encoder 不再重复同一份工作。AR loop 有另一种等待：CPU 收尾这一步时，GPU 本可以开始下一步。
+
+来源：`sglang_omni/scheduling/reference_encoder.py:361-413`；`tests/unit_test/scheduling/test_reference_encoder.py:131-179`；`sglang_omni/models/moss_tts/reference_encoder.py:113-143`。
