@@ -219,3 +219,42 @@ $$N_{\mathrm{warm}}=2\times2=4,\qquad N_{\mathrm{kept}}=2\times5=10$$
 协议会留下 10 次正式 TTFT。下一步读懂 mean、min、max、stdev，避免一次慢请求被平均数藏起来。
 
 来源：`benchmarks/eval/benchmark_omni_streaming_ttft.py:11-25,59-69,73-95,126-145,224-283,316-365`。
+
+## 第 7 步 · 均值旁边保留离散程度
+
+**一句话。** 同一组五次结果中，一次 2.6 秒把均值抬到 1.60 秒；min、max 和 stdev 能把这次慢运行重新显示出来。
+
+### 图上是什么
+
+- 五根柱使用同一时间比例，四次较快结果是 1.3、1.4、1.3、1.4 秒，橙色慢结果是 2.6 秒。
+- 五个值合计 8.0 秒，所以均值是 1.60 秒。单看均值，看不出四次结果其实都低于它。
+- `min=1.30`、`max=2.60` 给出两端；最大值是最小值的 2 倍。
+- `stdev` 表示各次结果相对均值的离散程度。脚本使用总体标准差 `statistics.pstdev`，本例约为 0.502。
+- 这是同一个 prompt 的五个构造结果，不是把第 6 步两个 prompt 的十次结果混在一起，也不是实测。
+
+### 公式与符号
+
+$$\bar t=\frac{1}{n}\sum_{i=1}^{n}t_i,\qquad \sigma=\sqrt{\frac{1}{n}\sum_{i=1}^{n}(t_i-\bar t)^2}$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $t_i$ | 第 $i$ 次 TTFT | 本步构造的五个值 |
+| $n$ | 结果数 | 本步，5 |
+| $\bar t$ | 平均 TTFT，`ttft_mean` | 本步计算 |
+| $\sigma$ | 总体标准差，`ttft_stdev` | `statistics.pstdev` |
+
+### 代入图上的数
+
+$$\bar t=\frac{1.3+1.4+1.3+1.4+2.6}{5}=\frac{8.0}{5}=1.60\ \text{s}$$
+
+偏差依次为 $-0.3,-0.2,-0.3,-0.2,1.0$ 秒，平方和为 $1.26$：
+
+$$\sigma=\sqrt{\frac{1.26}{5}}=\sqrt{0.252}\approx0.502\ \text{s}$$
+
+均值、min、max、stdev 都不能替代逐条 `per_run`。这五个构造值也没有给出置信区间或统计显著性；真实比较还要保留每轮条件和波动。
+
+### 接下来
+
+最后一页把公平比较需要保留的证据放在一起，并回到第 1 步的问题：缩短的究竟是哪段等待。
+
+来源：`benchmarks/eval/benchmark_omni_streaming_ttft.py:245-296,354-365`；`Awesome-ML-SYS-Tutorial/sglang/sglang-omni/batch.md:221-227`。

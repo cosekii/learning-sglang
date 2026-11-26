@@ -309,3 +309,12 @@ export const STREAM_BENCH_MAX_TOKENS = 256;
 export const STREAM_PARTIAL_START_MIN_CHUNKS = 5;
 export const STREAM_BENCH_WARMUP_PER_LABEL = STREAM_BENCH_PROMPT_COUNT * STREAM_BENCH_WARMUP_PER_PROMPT;
 export const STREAM_BENCH_KEPT_PER_LABEL = STREAM_BENCH_PROMPT_COUNT * STREAM_BENCH_REPEATS_PER_PROMPT;
+
+// Constructed five-run summary using the benchmark's population-stdev rule.
+export const STREAM_EXAMPLE_RUNS_S = [1.3, 1.4, 1.3, 1.4, 2.6] as const;
+export const STREAM_EXAMPLE_RUN_SUM_S = STREAM_EXAMPLE_RUNS_S.reduce((sum, value) => sum + value, 0);
+export const STREAM_EXAMPLE_MEAN_S = STREAM_EXAMPLE_RUN_SUM_S / STREAM_EXAMPLE_RUNS_S.length;
+export const STREAM_EXAMPLE_MIN_S = Math.min(...STREAM_EXAMPLE_RUNS_S);
+export const STREAM_EXAMPLE_MAX_S = Math.max(...STREAM_EXAMPLE_RUNS_S);
+export const STREAM_EXAMPLE_STDEV_S = Math.sqrt(STREAM_EXAMPLE_RUNS_S.reduce((sum, value) => sum + (value - STREAM_EXAMPLE_MEAN_S) ** 2, 0) / STREAM_EXAMPLE_RUNS_S.length);
+export const STREAM_EXAMPLE_MAX_OVER_MIN = STREAM_EXAMPLE_MAX_S / STREAM_EXAMPLE_MIN_S;

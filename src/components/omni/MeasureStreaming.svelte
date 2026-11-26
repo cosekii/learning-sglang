@@ -16,6 +16,8 @@
     STREAM_BENCH_PROMPT_COUNT, STREAM_BENCH_WARMUP_PER_PROMPT, STREAM_BENCH_REPEATS_PER_PROMPT,
     STREAM_BENCH_SEED, STREAM_BENCH_MAX_TOKENS, STREAM_PARTIAL_START_MIN_CHUNKS,
     STREAM_BENCH_WARMUP_PER_LABEL, STREAM_BENCH_KEPT_PER_LABEL,
+    STREAM_EXAMPLE_RUNS_S, STREAM_EXAMPLE_RUN_SUM_S, STREAM_EXAMPLE_MEAN_S,
+    STREAM_EXAMPLE_MIN_S, STREAM_EXAMPLE_MAX_S, STREAM_EXAMPLE_STDEV_S, STREAM_EXAMPLE_MAX_OVER_MIN,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -38,6 +40,9 @@
   }, {
     caption: `Warm up ${STREAM_BENCH_WARMUP_PER_PROMPT} times, then record ${STREAM_BENCH_REPEATS_PER_PROMPT} runs per prompt. Change only the partial-start setting.`,
     captionZh: `每个 prompt 预热 ${STREAM_BENCH_WARMUP_PER_PROMPT} 次，再测 ${STREAM_BENCH_REPEATS_PER_PROMPT} 次。只改 partial-start 设置。`,
+  }, {
+    caption: `One ${STREAM_EXAMPLE_MAX_S.toFixed(1)}-second run lifts the mean to ${STREAM_EXAMPLE_MEAN_S.toFixed(2)}. Report min, max and stdev beside it.`,
+    captionZh: `一次 ${STREAM_EXAMPLE_MAX_S.toFixed(1)} 秒把均值抬到 ${STREAM_EXAMPLE_MEAN_S.toFixed(2)}。还要报告 min、max 和 stdev。`,
   }];
   let step = $state(0);
   $effect(() => {
@@ -54,7 +59,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [590, 650, 600, 650, 610, 680][step] : [430, 460, 480, 480, 460, 500][step]);
+  const H = $derived(phone ? [590, 650, 600, 650, 610, 680, 650][step] : [430, 460, 480, 480, 460, 500, 480][step]);
   const barMax = $derived(phone ? 185 : 400);
   const barScale = $derived(barMax / STREAM_P90_SHARED_S);
   const timeX = (seconds: number) => 60 + (seconds / STREAM_TEACHING_DONE_S) * 600;
@@ -291,6 +296,39 @@
           <text x="34" y="617" class="small">{t('5 measured runs per prompt', '每个 prompt 实测 5 次')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Benchmark protocol · no result claimed' : 'Protocol from the shipped benchmark; no result claimed here.', phone ? 'benchmark 协议 · 不声称结果' : '协议来自随仓库发布的 benchmark；本步不声称性能结果。')}</text>
+      {:else if step === 6}
+        <text x={phone ? 18 : 36} y="30" class="title">{t(phone ? 'The mean hides one slow run' : 'One slow run can hide inside the mean', phone ? '平均数藏起一次慢运行' : '一次慢运行可能被平均数藏起来')}</text>
+        <text x={phone ? 18 : 36} y="55" class="label">{t('stdev = how spread out the runs are around their mean', 'stdev = 各次运行相对均值的离散程度')}</text>
+        <text x={phone ? 18 : 36} y="79" class="label">{t('blue = four faster runs · orange = one slow run', '蓝 = 四次较快运行 · 橙 = 一次慢运行')}</text>
+        <line x1={phone ? 20 : 50} y1="245" x2={phone ? 280 : 670} y2="245" stroke="var(--line)" stroke-width="2" />
+        {#each STREAM_EXAMPLE_RUNS_S as value, i}
+          {@const x = phone ? 25 + i * 51 : 65 + i * 122}
+          {@const height = value * (phone ? 50 : 60)}
+          <rect x={x} y={245 - height} width={phone ? 40 : 86} height={height} rx="5" fill={value === STREAM_EXAMPLE_MAX_S ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={value === STREAM_EXAMPLE_MAX_S ? 'var(--gen)' : 'var(--accent)'} />
+          <text x={x + (phone ? 20 : 43)} y={232 - height} text-anchor="middle" class="result">{value.toFixed(1)}</text>
+          <text x={x + (phone ? 20 : 43)} y="269" text-anchor="middle" class="small">run {i + 1}</text>
+        {/each}
+        <text x={W / 2} y="315" text-anchor="middle" class="result">mean = {STREAM_EXAMPLE_RUN_SUM_S.toFixed(1)} ÷ {STREAM_EXAMPLE_RUNS_S.length} = {STREAM_EXAMPLE_MEAN_S.toFixed(2)} s</text>
+        {#if !phone}
+          {#each [
+            { x: 50, name: 'MIN', value: `${STREAM_EXAMPLE_MIN_S.toFixed(2)} s` },
+            { x: 280, name: 'MAX', value: `${STREAM_EXAMPLE_MAX_S.toFixed(2)} s` },
+            { x: 510, name: 'STDEV · PSTDDEV', value: STREAM_EXAMPLE_STDEV_S.toFixed(2) },
+          ] as item}
+            <rect x={item.x} y="343" width="160" height="65" rx="9" fill="var(--bg)" stroke="var(--line)" />
+            <text x={item.x + 80} y="366" text-anchor="middle" class="small strong">{item.name}</text>
+            <text x={item.x + 80} y="394" text-anchor="middle" class="result">{item.value}</text>
+          {/each}
+          <text x="360" y="444" text-anchor="middle" class="result">max ÷ min = {STREAM_EXAMPLE_MAX_S.toFixed(1)} ÷ {STREAM_EXAMPLE_MIN_S.toFixed(1)} = {STREAM_EXAMPLE_MAX_OVER_MIN.toFixed(0)}×</text>
+        {:else}
+          <rect x="20" y="343" width="260" height="151" rx="10" fill="var(--bg)" stroke="var(--line)" />
+          <text x="40" y="373" class="small strong">MIN = {STREAM_EXAMPLE_MIN_S.toFixed(2)} s</text>
+          <text x="40" y="407" class="small strong">MAX = {STREAM_EXAMPLE_MAX_S.toFixed(2)} s</text>
+          <text x="40" y="441" class="small strong">STDEV = {STREAM_EXAMPLE_STDEV_S.toFixed(2)} · PSTDDEV</text>
+          <text x="150" y="535" text-anchor="middle" class="result">max ÷ min = {STREAM_EXAMPLE_MAX_S.toFixed(1)} ÷ {STREAM_EXAMPLE_MIN_S.toFixed(1)} = {STREAM_EXAMPLE_MAX_OVER_MIN.toFixed(0)}×</text>
+          <text x="150" y="581" text-anchor="middle" class="small strong">{t('Keep every run; read the spread too.', '保留每次结果，也读离散程度。')}</text>
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Constructed five runs, not benchmark output.', '构造的五次运行，不是 benchmark 输出。')}</text>
       {/if}
     </svg>
   </div>

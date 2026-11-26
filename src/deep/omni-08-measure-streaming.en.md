@@ -219,3 +219,42 @@ Warmup and measured requests reuse seed 1000, reducing cold-start and sampling d
 The protocol leaves 10 measured TTFT values. The next step reads mean, min, max and stdev so one slow run cannot hide inside an average.
 
 Sources: `benchmarks/eval/benchmark_omni_streaming_ttft.py:11-25,59-69,73-95,126-145,224-283,316-365`.
+
+## Step 7 · Keep the spread beside the mean
+
+**One sentence.** One 2.6-second run lifts this five-run mean to 1.60 seconds; min, max and stdev make that slow run visible again.
+
+### On the stage
+
+- The five bars share one time scale. The four faster runs are 1.3, 1.4, 1.3 and 1.4 seconds, and the orange run is 2.6 seconds.
+- Their sum is 8.0 seconds, giving a mean of 1.60 seconds. The mean alone hides that all four faster runs sit below it.
+- `Min=1.30` and `max=2.60` show the endpoints. The maximum is twice the minimum.
+- `Stdev` describes spread around the mean. The script uses `statistics.pstdev`, the population standard deviation, giving about 0.502 here.
+- These are five constructed results for one prompt, not a mixture of Step 6's two prompts and not measurements.
+
+### Formula and symbols
+
+$$\bar t=\frac{1}{n}\sum_{i=1}^{n}t_i,\qquad \sigma=\sqrt{\frac{1}{n}\sum_{i=1}^{n}(t_i-\bar t)^2}$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $t_i$ | TTFT in run $i$ | Five constructed values in this step |
+| $n$ | Number of results | 5 in this step |
+| $\bar t$ | Mean TTFT, `ttft_mean` | Calculated here |
+| $\sigma$ | Population standard deviation, `ttft_stdev` | `statistics.pstdev` |
+
+### The numbers on the stage
+
+$$\bar t=\frac{1.3+1.4+1.3+1.4+2.6}{5}=\frac{8.0}{5}=1.60\ \text{s}$$
+
+The deviations are $-0.3,-0.2,-0.3,-0.2,1.0$ seconds, with squared deviations summing to $1.26$:
+
+$$\sigma=\sqrt{\frac{1.26}{5}}=\sqrt{0.252}\approx0.502\ \text{s}$$
+
+Mean, min, max and stdev do not replace individual `per_run` records. These five constructed values provide no confidence interval or significance test. A real comparison also keeps each run's conditions and variability.
+
+### Next
+
+The last step assembles the evidence a fair comparison needs and returns to Step 1's question: which wait actually became shorter?
+
+Sources: `benchmarks/eval/benchmark_omni_streaming_ttft.py:245-296,354-365`; `Awesome-ML-SYS-Tutorial/sglang/sglang-omni/batch.md:221-227`.
