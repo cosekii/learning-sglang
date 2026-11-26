@@ -1,0 +1,29 @@
+---
+layout: ../../../layouts/Chapter.astro
+book: omni
+slug: 14-slow-reader-backpressure
+---
+import SlowReaderBackpressure from '../../../components/omni/SlowReaderBackpressure.svelte';
+import { omniNeighbors } from '../../../omni/chapters';
+import { deepFor } from '../../../deep';
+export const deep = await deepFor('omni-14-slow-reader-backpressure');
+
+<SlowReaderBackpressure client:load {...omniNeighbors('14-slow-reader-backpressure')} deep={deep} />
+
+<details class="i18n-en">
+<summary>Where this chapter's claims come from</summary>
+
+Step 1 uses a constructed ten-second response whose reader has taken four seconds. Qwen3-TTS documents 24 kHz float32 audio at about 96 kB per second, so the six-second backlog is `24,000 × 4 × 6 = 576,000 B`. A finished request releases its generation-capacity slot, but streamed audio can remain in the API process until the client reads it (`docs/cookbook/qwen3_tts/tuning.md:22-26`; `sglang_omni/pipeline/coordinator.py:103-109,213-223`). Socket buffering is deliberately excluded from this teaching arithmetic.
+
+Code references in this chapter pin to `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`. The chapter reads source and unit tests; it does not run a model or measure a server.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的出处</summary>
+
+第 1 步构造一段 10 秒回答，读者只取走 4 秒。Qwen3-TTS 文档给出 24 kHz float32 声音约每秒 96 kB，因此 6 秒积压是 `24,000 × 4 × 6 = 576,000 B`。请求完成后会释放生成容量名额，但流式声音可以留在 API 进程里，直到客户端读取（`docs/cookbook/qwen3_tts/tuning.md:22-26`；`sglang_omni/pipeline/coordinator.py:103-109,213-223`）。这份教学算式不计 socket 缓冲。
+
+本章代码出处固定到 `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`。本章只读源码和单元测试，没有运行模型或测量服务器。
+
+</details>

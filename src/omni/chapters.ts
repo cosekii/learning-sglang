@@ -4,6 +4,7 @@ export const omniParts: Part[] = [
   { id: 'runtime', title: 'From config to a running request', blurb: 'Follow configuration, requests and data through the runtime.', titleZh: '从配置到运行中的请求', blurbZh: '跟着配置、请求和数据走完运行时。' },
   { id: 'performance', title: 'Waiting and memory', blurb: 'Measure the wait, then change the work or the budget.', titleZh: '等待与显存', blurbZh: '先量等待，再改变工作或预算。' },
   { id: 'models', title: 'Real model pipelines', blurb: 'Apply the same maps to Fish S2 Pro, full duplex and Qwen3-Omni.', titleZh: '真实模型流水线', blurbZh: '把同一套图用到 Fish S2 Pro、全双工和 Qwen3-Omni。' },
+  { id: 'serving', title: 'Serve, route and diagnose', blurb: 'Bound delivery, choose workers, handle failures and rebuild requests.', titleZh: '服务、路由与诊断', blurbZh: '限制交付积压、选择 worker、处理故障，再拼回请求。' },
 ];
 
 export const omniChapters: Chapter[] = [
@@ -20,6 +21,7 @@ export const omniChapters: Chapter[] = [
   { part: 'models', slug: '11-fish-s2-pro', title: 'Fish S2 Pro: Dual-AR in practice', hook: 'Two nested loops inside one speech request.', titleZh: 'Fish S2 Pro：Dual-AR 落地', hookZh: '一次语音请求里的两层循环。', ready: true },
   { part: 'models', slug: '12-full-duplex-strategies', title: 'Full-duplex strategies and measurement', hook: 'Compare three designs with the same interruption.', titleZh: '全双工策略与测量', hookZh: '用同一次打断比较三种设计。', ready: true },
   { part: 'models', slug: '13-qwen3-omni-deployment', title: 'Deploy and tune Qwen3-Omni', hook: 'Choose text or speech, cards, precision and concurrency together.', titleZh: 'Qwen3-Omni 部署调优', hookZh: '一起选择文本或语音、卡数、精度和并发。', ready: true },
+  { part: 'serving', slug: '14-slow-reader-backpressure', title: 'When the client reads too slowly', hook: 'Finished generation can leave audio queued; one shared byte cap chooses which streams fail.', titleZh: '客户端读得太慢', hookZh: '生成结束后，声音仍可能排队；共享字节上限决定哪些流失败。', ready: true },
 ];
 
 export const omniHrefOf = (slug: string) => `${import.meta.env.BASE_URL.replace(/\/$/, '')}/omni/ch/${slug}/`;
