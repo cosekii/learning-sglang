@@ -116,7 +116,7 @@
         <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'One URL, two workers' : 'One URL, two different workers', phone ? '一个网址，两个 worker' : '一个网址，两个能力不同的 worker')}</text>
         <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'worker = one Omni server' : 'worker = one Omni server the router can call', phone ? 'worker = 一个 Omni server' : 'worker = router 可以调用的一个 Omni server')}</text>
         <text x={phone ? 18 : 30} y="79" class="label">{t(phone ? 'router = the shared URL that chooses' : 'router = the shared URL that chooses a worker', phone ? 'router = 共用网址，负责选择' : 'router = 共用网址背后的选择者')}</text>
-        <text x={W / 2} y="112" text-anchor="middle" class="result">{ROUTER_WORKER_COUNT} {t('workers', '个 worker')} · 1 {t(phone ? 'image' : 'image request', '个图片请求')} · {phase === 0 ? ROUTER_WORKER_COUNT : ROUTER_COMPATIBLE_WORKER_COUNT} {t(phase === 0 ? 'candidates' : 'candidate', '个候选')}</text>
+        <text x={W / 2} y="112" text-anchor="middle" class="result">{ROUTER_WORKER_COUNT} {t('workers', '个 worker')} · 1 {t(phone ? 'image' : 'image request', '个图片请求')} · {phase === 0 ? ROUTER_WORKER_COUNT : ROUTER_COMPATIBLE_WORKER_COUNT} {t(phase < 2 ? 'to check' : 'compatible', phase < 2 ? '个待检查' : '个兼容')}</text>
         <rect x={phone ? 50 : 260} y="140" width={phone ? 200 : 200} height="75" rx="11" fill="var(--accent-soft)" stroke="var(--accent)" />
         <text x={W / 2} y="169" text-anchor="middle" class="small strong">POST · model M</text>
         <text x={W / 2} y="195" text-anchor="middle" class="small">1 {t('image as input', '张图片作为输入')}</text>
