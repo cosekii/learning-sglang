@@ -4,6 +4,8 @@
 
 ## 本轮记录
 
+- 04:20 复审补齐 Learning SGLang Omni 第 11 章 R6 与原 #4/#5：第 2、3、4、7、8 步加入 `phase` 清理、`nextLap()` 和 `<LoopProgress>`，分别播放 4、3、11、3、4 个相位；第 7 步同一枚 512 尾巴依次留下、使用、释放。第 1、5、6 步按第 8 章静态场景规则评 R6=2。中英桌面／手机两延迟图与 DOM 相位审计通过，**8/8 步易读 12/12、原分 24.00/24、0 内容洞和机械显示洞**。主人目测仍待，未声称视觉验收通过。
+- 动画提交推送至 `ac2f10b`；`build`（51 页）、本章 `transcript`、全章 `readability`、中英三种宽度 `mobile`、中文逐步字号、`deep-check 11`、`zh-check`、16 个深入讲解渲染视图和 `git diff --check` 通过。当前 32 张舞台图、16 张深入讲解图在 `/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-yb53zn2n/opencode/ls-k1-omni11-final/`，20 张两延迟动画图在 `/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-yb53zn2n/opencode/ls-k1-omni11-motion/`。本轮只跑本章检查，未跑全站回归、真实模型、GPU benchmark 或音频质量评测。下一章仍是 `12-full-duplex-strategies`。
 - 04:05 Learning SGLang Omni 第 11 章《Fish S2 Pro：Dual-AR 落地》8 步文本完成：40 帧首个非最后窗口、参考声音编码、Slow prompt、Fast 内层循环、两层 KV 寿命、三种停止出口、重叠流式窗口和非流式 batch。独立冷读与源码复审整改完成，**8/8 步 R1–R5 为 10/10，0 内容洞和机械显示洞**；R6、原 #4/#5 和总分不记，本章为 **text-complete / visual-blocked-on-owner**。
 - 舞台教程与内容整改逐步提交并推送至 `04665a9`，深入讲解溢出修复和评分记录随本轮最后提交；`build`、本章 `transcript`、全章 `readability`、中英三种宽度 `mobile`、中文逐步字号、`deep-check 11`、`zh-check`、16 个深入讲解渲染视图和 `git diff --check` 通过。最终 32 张舞台图与 16 张深入讲解图位于 `/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-yb53zn2n/opencode/ls-k1-omni11-final/`；主模型和独立冷读者均不支持图片输入，未声称目测通过。本轮只跑本章检查，未跑全站回归、真实模型、GPU benchmark 或音频质量评测。本轮类型：**新书**；下一章是 `12-full-duplex-strategies`。
 - 03:15 第 9 章按复审再修：导出拆成两步（第 7 步 JSONL、第 8 步 Markdown），每步只引入一个新格式名，R2 解决；JSONL 的 `app`／`instruction`／`target_lang`／`selection`／`typed` 标成条件字段，空的可选字段不写；Markdown 只写时间、应用、文字；手机第 2 步端点和第 5 步 aria 改成到期＋下一次清扫。重评：9 步每步文本易读 **10/10**（R1–R5）、原分文本项 **20/20**；R6/#4/#5 仍待有图片输入的目视，不记 12/12、24/24 或完成。
@@ -123,7 +125,7 @@
 
 ## Learning SGLang Omni
 
-规划完成：`docs/plan-omni.md` 共 3 部分、13 章；第 1 章已制作 4 步并完成，第 2、3 章各已制作 3 步并完成，第 4 章已制作 4 步并完成，第 5 章已制作 5 步并完成，第 6 章已制作 8 步并完成，第 7 章已制作 6 步并完成，第 8 章已制作 8 步且内容验收完成，第 9 章已制作 7 步且内容验收完成，第 10 章已制作 8 步且文本验收完成，第 11 章已制作 8 步且文本验收完成，图像人工视觉验收待主人。
+规划完成：`docs/plan-omni.md` 共 3 部分、13 章；第 1 章已制作 4 步并完成，第 2、3 章各已制作 3 步并完成，第 4 章已制作 4 步并完成，第 5 章已制作 5 步并完成，第 6 章已制作 8 步并完成，第 7 章已制作 6 步并完成，第 8 章已制作 8 步且内容验收完成，第 9 章已制作 7 步且内容验收完成，第 10 章已制作 8 步且文本验收完成，第 11 章已制作 8 步且自评验收完成，图像人工视觉验收待主人。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
@@ -137,7 +139,7 @@
 | 08 | 08-measure-streaming | 内容完成：8/8 步易读满分、0 内容洞和机械显示洞；图像人工视觉验收待主人 | 24.00 |
 | 09 | 09-ar-stage-optimization | 内容完成：7/7 步易读满分；原分 22/24 暂定（#4/#5 待目视）；图像人工视觉验收待主人 | 22.00 |
 | 10 | 10-vocoder-optimization | 文本完成：8/8 步 R1–R5 为 10/10、0 内容洞和机械显示洞；R6/#4/#5 与总分待目视 | — |
-| 11 | 11-fish-s2-pro | 文本完成：8/8 步 R1–R5 为 10/10、0 内容洞和机械显示洞；R6/#4/#5 与总分待目视 | — |
+| 11 | 11-fish-s2-pro | 自评完成：8/8 步易读 12/12、0 内容洞和机械显示洞；人工视觉验收待主人 | 24.00 |
 | 12 | 12-full-duplex-strategies | 规划 | — |
 | 13 | 13-qwen3-omni-deployment | 规划 | — |
 
