@@ -75,28 +75,28 @@ mask 与响应位置一一对齐：`[1,1,1,1, 0,0,0, 1,1,1,1,1]`。观察位置�
 ### 图上是什么
 
 - `chat template` 把带角色的消息变成模型使用的 token，会添加角色和生成标记。
-- 第一张卡编码固定的 dummy messages，得到 6 个前缀 token。dummy messages 是不含本轮观察的模板消息。
-- 第二张卡编码同样的消息和本轮观察，本构造例共有 9 个 token。
-- 第三张卡从下标 6 开始切片，只保留 `Δ Δ Δ`。
-- `Δ` 是完整的观察增量，包含观察内容，也可能包含 chat template 的生成标记，不能等同于不含模板标记的工具正文。
+- 第一张卡编码固定的 dummy messages，得到 6 个橙色前缀方块。dummy messages 是不含本轮观察的模板消息。
+- 第二张卡编码同样的消息、本轮观察和 `assistant generation prompt`。这个提示是模板加在观察后、要求模型生成下一条助手回复的 token。本构造例共有 9 个 token。
+- 第三张卡从下标 6 开始切片。6 个前缀方块留下，只有 3 个蓝色 `Δ` 方块加入 `Sample.tokens`。
+- `Δ` 是完整的观察增量，包含观察内容和 assistant generation prompt。前后步骤把这个完整 `Δ` 叫作 `O`。
 
 ### 公式与符号
 
-$$\Delta=F[\ell:],\qquad \ell=|E(D)|$$
+$$\Delta=F[\ell:],\qquad \ell=|\operatorname{enc}(U)|$$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
-| $D$ | 不含本轮观察的 dummy messages | 本步 |
-| $E(D)$ | dummy messages 的 token 序列 | 本步构造为 6 个 |
-| $\ell$ | 要裁掉的前缀 token 数 | $E(D)$ 的长度 |
-| $F$ | dummy messages 加本轮观察的完整 token 序列 | 本步构造为 9 个 |
+| $U$ | 不含本轮观察和 assistant generation prompt 的 dummy messages | 本步 |
+| $\operatorname{enc}(U)$ | dummy messages 的 token 序列 | 本步构造为 6 个 |
+| $\ell$ | 要裁掉的前缀 token 数 | $\operatorname{enc}(U)$ 的长度 |
+| $F$ | dummy messages、观察内容和 assistant generation prompt 的完整 token 序列 | 本步构造为 9 个 |
 | $\Delta$ | 实际追加的完整观察 delta | 从 $F$ 的第 $\ell$ 个下标开始切片 |
 
 ### 代入图上的数
 
-$$\ell=6,\qquad \Delta=F[6:],\qquad 9-6=3$$
+$$\ell=|\operatorname{enc}(U)|=6,\qquad \Delta=F[6:],\qquad 9-6=3$$
 
-切片保留下标 6、7、8 的三个 `Δ`。本例把这三个 `Δ` 记为 `O`；若有生成标记，它也占这三个位置之一，不在 `O` 之外额外增加。真实实现当场计算 $\ell$ 并切片，不把 6 写成固定值，也不额外检查 dummy 编码是否真的是完整编码的前缀。本图按它们的共同前缀构造例子。
+切片保留下标 6、7、8 的三个 `Δ`，覆盖观察内容和 assistant generation prompt。这个提示是 `O` 的一部分，不是额外第 4 个 token。真实实现当场计算 $\ell$ 并切片，不把 6 写成固定值，也不额外检查 dummy 编码是否真的是完整编码的前缀。本图按它们的共同前缀构造例子。
 
 ### 接下来
 

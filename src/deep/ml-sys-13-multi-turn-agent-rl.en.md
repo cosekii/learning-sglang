@@ -75,28 +75,28 @@ Sources: `THUDM/slime@cd4a8efc6f8e33364a474cfa70875779ed0a673f`, `examples/searc
 ### On the stage
 
 - A `chat template` turns role-labelled messages into model tokens, adding role and generation markers.
-- The first card encodes fixed dummy messages and yields six prefix tokens. Dummy messages are template messages without this turn's observation.
-- The second card encodes those messages plus the new observation. This constructed example has nine tokens.
-- The third card slices from index 6 and keeps only `Δ Δ Δ`.
-- `Δ` is the complete observation delta. It can include the generation marker as well as observation content, so it is not necessarily only the tool's text without template markers.
+- The first card encodes fixed dummy messages and yields six orange prefix cells. Dummy messages are template messages without this turn's observation.
+- The second card encodes those messages plus the new observation and the `assistant generation prompt`. That prompt is the template's request for the next assistant reply, and it sits after the observation. This constructed example has nine tokens.
+- The third card slices from index 6. The six prefix cells stay behind and only the three blue `Δ` cells join `Sample.tokens`.
+- `Δ` is the complete observation delta: observation content plus the assistant generation prompt. Earlier and later steps call this complete delta `O`.
 
 ### Formula and symbols
 
-$$\Delta=F[\ell:],\qquad \ell=|E(D)|$$
+$$\Delta=F[\ell:],\qquad \ell=|\operatorname{enc}(U)|$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
-| $D$ | Dummy messages without this turn's observation | This step |
-| $E(D)$ | Token sequence for the dummy messages | Constructed here as six tokens |
-| $\ell$ | Prefix tokens to remove | Length of $E(D)$ |
-| $F$ | Full token sequence for dummy messages plus the observation | Constructed here as nine tokens |
+| $U$ | Dummy messages without this turn's observation or assistant generation prompt | This step |
+| $\operatorname{enc}(U)$ | Token sequence for the dummy messages | Constructed here as six tokens |
+| $\ell$ | Prefix tokens to remove | Length of $\operatorname{enc}(U)$ |
+| $F$ | Full token sequence for dummy messages, observation content and assistant generation prompt | Constructed here as nine tokens |
 | $\Delta$ | Complete observation delta that joins the sample | Slice $F$ from index $\ell$ |
 
 ### The numbers on the stage
 
-$$\ell=6,\qquad \Delta=F[6:],\qquad 9-6=3$$
+$$\ell=|\operatorname{enc}(U)|=6,\qquad \Delta=F[6:],\qquad 9-6=3$$
 
-The slice keeps the three `Δ` tokens at indices 6, 7 and 8. This example calls those three tokens `O`; any generation marker occupies one of those positions rather than adding another token. The implementation computes $\ell$ and slices without fixing it at six or checking that the dummy encoding is a prefix of the full encoding. This picture constructs them with that shared prefix.
+The slice keeps the three `Δ` tokens at indices 6, 7 and 8. They cover observation content and the assistant generation prompt, so the prompt is part of `O`, not an extra fourth token. The implementation computes $\ell$ and slices without fixing it at six or checking that the dummy encoding is a prefix of the full encoding. This picture constructs them with that shared prefix.
 
 ### Next
 

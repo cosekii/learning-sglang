@@ -96,14 +96,15 @@
     flow: true,
     nodes: [
       { title: 'DUMMY TEMPLATE', titleZh: '空观察模板', result: `prefix = ${N.AGENT_DUMMY_PREFIX_TOKENS}`, resultZh: `前缀 = ${N.AGENT_DUMMY_PREFIX_TOKENS}`, body: 'encode fixed dummy messages', bodyZh: '编码固定的空观察消息', tone: 'orange' },
-      { title: 'FULL TEMPLATE', titleZh: '完整模板', result: `${N.AGENT_DUMMY_PREFIX_TOKENS} + ${N.AGENT_OBSERVATION_TOKENS} = ${N.AGENT_FORMATTED_OBSERVATION_TOKENS}`, resultZh: `${N.AGENT_DUMMY_PREFIX_TOKENS} + ${N.AGENT_OBSERVATION_TOKENS} = ${N.AGENT_FORMATTED_OBSERVATION_TOKENS}`, body: 'same prefix + new observation', bodyZh: '相同前缀 + 新观察', tone: 'orange' },
+      { title: 'FULL TEMPLATE', titleZh: '完整模板', result: `${N.AGENT_DUMMY_PREFIX_TOKENS} + ${N.AGENT_OBSERVATION_TOKENS} = ${N.AGENT_FORMATTED_OBSERVATION_TOKENS}`, resultZh: `${N.AGENT_DUMMY_PREFIX_TOKENS} + ${N.AGENT_OBSERVATION_TOKENS} = ${N.AGENT_FORMATTED_OBSERVATION_TOKENS}`, body: 'content, then reply prompt', bodyZh: '观察内容，再是回答提示', tone: 'orange' },
       { title: 'APPEND DELTA', titleZh: '追加 DELTA', result: `${N.AGENT_FORMATTED_OBSERVATION_TOKENS} − ${N.AGENT_DUMMY_PREFIX_TOKENS} = ${N.AGENT_OBSERVATION_TOKENS}`, resultZh: `${N.AGENT_FORMATTED_OBSERVATION_TOKENS} − ${N.AGENT_DUMMY_PREFIX_TOKENS} = ${N.AGENT_OBSERVATION_TOKENS}`, body: 'only Δ joins Sample.tokens', bodyZh: '只有 Δ 加入 Sample.tokens', tone: 'blue' },
     ],
     formulas: [
       { en: 'trim = tokens(dummy) = 6', zh: '裁剪长度 = dummy 的 token 数 = 6' },
-      { en: 'formatted = tokens(dummy + observation) = 9', zh: '完整编码 = dummy + 观察的 token 数 = 9' },
+      { en: 'formatted = tokens(dummy + observation + assistant generation prompt) = 9', zh: '完整编码 = dummy + 观察 + assistant generation prompt 的 token 数 = 9' },
       { en: 'prompt_ids = formatted[6:] → Δ Δ Δ', zh: 'prompt_ids = formatted[6:] → Δ Δ Δ' },
-      { en: 'Δ includes any generation marker; this example calls the 3-token Δ O', zh: 'Δ 包含可能的生成标记；本例把 3 个 Δ 记为 O' },
+      { en: 'Δ = observation content + assistant generation prompt', zh: 'Δ = 观察内容 + assistant generation prompt' },
+      { en: 'assistant generation prompt = tokens requesting an assistant reply', zh: 'assistant generation prompt = 要求模型以助手身份回答的 token' },
       { en: 'Next: what if O also carries an image?', zh: '下一步：如果 O 还有图片呢？' },
     ],
     mobile: {
@@ -113,9 +114,10 @@
       legend: 'Orange = prefix · blue = observation · red = current', legendZh: '橙 = 前缀 · 蓝 = 观察 · 红 = 当前',
       formulas: [
         { en: 'trim = tokens(dummy) = 6', zh: '裁剪长度 = dummy 的 token 数 = 6' },
-        { en: 'formatted = dummy + observation = 9', zh: '完整编码 = dummy + 观察 = 9' },
+        { en: 'formatted = dummy + observation + prompt = 9', zh: '完整编码 = dummy + 观察 + 提示 = 9' },
         { en: 'formatted[6:] → Δ Δ Δ', zh: 'formatted[6:] → Δ Δ Δ' },
-        { en: 'Here Δ = O: 3 tokens including any marker', zh: '本例 Δ = O：3 个 token 包含可能的标记' },
+        { en: 'Δ = content + assistant generation prompt', zh: 'Δ = 内容 + assistant generation prompt' },
+        { en: 'That prompt requests an assistant reply', zh: '这个提示要求模型以助手身份回答' },
         { en: 'Next: add an image to O', zh: '下一步：O 里加入图片' },
       ],
     },
@@ -382,6 +384,14 @@
       {#if phase >= 1}{@render tokenStrip(x + 12, y + 82, w - 24, tokenCells('0', N.AGENT_OBSERVATION_TOKENS, 'orange'))}{/if}
     {:else if phase >= 2}
       {@render tokenStrip(x + 10, y + 67, w - 20, [...tokenCells('1', N.AGENT_FIRST_ACTION_TOKENS, 'blue'), ...tokenCells('0', N.AGENT_OBSERVATION_TOKENS, 'orange'), ...tokenCells('1', N.AGENT_SECOND_ACTION_TOKENS, 'blue')])}
+    {/if}
+  {:else if step === 2}
+    {#if i === 0}
+      {@render tokenStrip(x + 12, y + 67, w - 24, tokenCells('', N.AGENT_DUMMY_PREFIX_TOKENS, 'orange'))}
+    {:else if i === 1}
+      {@render tokenStrip(x + 12, y + 67, w - 24, [...tokenCells('', N.AGENT_DUMMY_PREFIX_TOKENS, 'orange'), ...tokenCells('Δ', N.AGENT_OBSERVATION_TOKENS, 'blue')])}
+    {:else if phase >= 2}
+      {@render tokenStrip(x + 12, y + 67, w - 24, tokenCells('Δ', N.AGENT_OBSERVATION_TOKENS, 'blue'))}
     {/if}
   {/if}
   </g>
