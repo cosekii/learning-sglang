@@ -355,7 +355,7 @@
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Opt-in · eager fallback remains' : 'Opt-in audio-layer graphs; eager fallback remains. No timing win claimed.', phone ? '可选开启 · 保留 eager 回退' : '可选 audio 层 graph；保留 eager 回退，不声称耗时收益。')}</text>
       {:else if step === 5}
-        <text x={phone ? 18 : 30} y="30" class="title">{t('Qwen3-Omni audio buckets', 'Qwen3-Omni audio buckets')}</text>
+        <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'Qwen audio buckets · 4 of 4 · 2/2' : 'Qwen3-Omni audio buckets · 4 of 4 · 2/2', phone ? 'Qwen audio buckets · 4 / 4 · 2/2' : 'Qwen3-Omni audio buckets · 4 / 4 · 2/2')}</text>
         <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'bucket = captured size' : 'token bucket = captured input size · Learning SGLang Ch. 11 Steps 10–11 showed pad and crop', phone ? 'bucket = 已 capture 的大小' : 'token bucket = 已 capture 的输入大小 · Learning SGLang 第 11 章第 10–11 步已讲补位和裁切')}</text>
         <text x={phone ? 18 : 30} y="79" class="label">{t(phone ? 'blue real · grey zeros · orange graph' : 'blue = real tokens · grey = zero padding · orange = chosen graph', phone ? '蓝真实 · 灰补零 · 橙 graph' : '蓝 = 真实 token · 灰 = 补零 · 橙 = 选中的 graph')}</text>
         {#if !phone}
@@ -463,7 +463,10 @@
           <text x="150" y="800" text-anchor="middle" class="small strong" style="fill:var(--gen)">{t('deadline: before the current chunk ends', '期限：当前 chunk 播完前')}</text>
           <text x="150" y="837" text-anchor="middle" class="small strong">{t('How can vocoder stay ahead?', 'vocoder 怎样赶在播放前？')}</text>
         {/if}
-        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? '10 frames = 800 ms · Ch. 20 Steps 1–3' : 'Playback durations from Learning SGLang Ch. 20 Steps 1–3, not vocoder compute times.', phone ? '10 frames = 800 ms · 第 20 章' : '播放时长来自 Learning SGLang 第 20 章第 1–3 步，不是 vocoder 计算耗时。')}</text>
+        {#if phone}
+          <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('Learning SGLang Ch. 20 Steps 1–3', 'Learning SGLang 第 20 章第 1–3 步')}</text>
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? '10 frames = 800 ms · playback, not compute' : 'Playback durations from Learning SGLang Ch. 20 Steps 1–3, not vocoder compute times.', phone ? '10 frames = 800 ms · 播放时长，不是计算耗时' : '播放时长来自 Learning SGLang 第 20 章第 1–3 步，不是 vocoder 计算耗时。')}</text>
       {/if}
     </svg>
   </div>
