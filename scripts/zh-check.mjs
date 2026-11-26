@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { launch, sleep } from './lib/browser.mjs';
 import { roster } from './lib/roster.mjs';
 
-const base = 'http://localhost:4321/learning-sglang';
+const base = process.env.BASE || 'http://localhost:4321/learning-sglang';
 const book = process.env.BOOK || 'sglang';
 const bookPrefix = book === 'sglang' ? '' : `/${book}`;
 const only = (process.env.ONLY ?? '').split(',').map((s) => s.trim()).filter(Boolean);
