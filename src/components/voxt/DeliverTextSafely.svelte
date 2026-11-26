@@ -90,6 +90,7 @@
           <path d="M296 166 H392" stroke="var(--muted)" stroke-width="2" marker-end="url(#deliver-arrow)" />
           <text x="300" y="158" class="tag">{t('you switch', '你切了 app')}</text>
         {/if}
+        <text x="20" y={phone ? 458 : 272} class="tag strong">{t('focus: the field where typing goes', '焦点：打字会落下的框')}</text>
         <text x="20" y={phone ? 480 : 300} class="tag strong">{t('The start app is remembered, but it is not the destination.', 'start app 会被记住，但它不是目的地。')}</text>
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Source: Voxt/internal/deliver/deliver.go, package comment', '出处：Voxt/internal/deliver/deliver.go 包注释')}</text>
       {:else if step === 1}
@@ -173,9 +174,9 @@
         {/if}
         <text x="20" y={phone ? 448 : 226} class="mono">{t('inserted:', '贴进去：')} {VOXT_RESTORE_AFTER_INSERT_MS} ms · {t('unknown:', '不确定：')} {VOXT_RESTORE_DEFAULT_MS} ms</text>
         <text x="20" y={phone ? 474 : 252} class="tag">{t('If another app wrote meanwhile, skip the restore.', '这中间别的 app 写过了，就不覆盖。')}</text>
-        <text x={W / 2} y={phone ? 506 : 284} text-anchor="middle" class="tag strong">{t('No paste: the card offers Insert and Copy.', '没贴进去：卡片给 Insert 和 Copy。')}</text>
+        <text x={W / 2} y={phone ? 506 : 284} text-anchor="middle" class="tag strong">{t('Not inserted: the card offers Insert and Copy.', '未贴入：卡片提供 Insert 和 Copy。')}</text>
         <rect x="20" y={phone ? 524 : 306} width={W - 40} height={phone ? 48 : 46} rx="8" fill="var(--bg)" stroke="var(--line)" />
-        <text x="34" y={phone ? 542 : 322} class="rowlabel">{t('landed text', '落地的文字')}</text>
+        <text x="34" y={phone ? 542 : 322} class="rowlabel">{t('answer text', '答案文字')}</text>
         <text x="34" y={phone ? 564 : 342} class="tag">{t('send the deck to ', '把文件发给 ')}<tspan font-weight="600">Priya</tspan></text>
         <text x={W / 2} y={phone ? 620 : 392} text-anchor="middle" class="tag strong">{t('How does Voxt spell "Priya" right next time?', '下一次，Voxt 怎么把 “Priya” 写对？')}</text>
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('helper TextIO.swift · next: names and terms', 'helper TextIO.swift · 下一章：人名和术语') : t('Source: helper TextIO.swift · restore 150 ms after a confirmed paste, else 500 ms', '出处：helper TextIO.swift · 确认贴入后 150 ms 放回，否则 500 ms')}</text>
