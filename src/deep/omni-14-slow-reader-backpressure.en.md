@@ -4,10 +4,11 @@
 
 ### On the stage
 
-- The generator made ten seconds of audio and has finished.
+- The generator made ten seconds of audio and has finished. The reader takes audio at playback speed, while generation can be faster than real time. Once the socket buffer fills, unread audio accumulates in this coordinator queue.
 - The API process is the server process that hands audio to the reader. The reader is the client taking that audio.
 - The delivery backlog is audio made but not yet taken by the reader. The reader took four seconds, leaving six seconds in blue. Grey marks audio already read.
-- This is a constructed example, not a latency measurement. It excludes socket buffering.
+- The formula uses the coordinator's internal 24 kHz float32 payload. HTTP output is mono 16-bit, so the byte count is not a raw PCM delivery count.
+- This is a constructed example, not a latency measurement. Ch. 8 Step 3 showed playback timing. Socket buffering means bytes already handed to the operating system or HTTP runtime; those bytes wait outside the coordinator's ledger.
 
 ### Formula
 
@@ -18,12 +19,12 @@ $$
 | Symbol | Meaning | Size | Source |
 |---|---|---:|---|
 | $Q_{audio}$ | Queued audio bytes | 576,000 B | This step |
-| $r_{audio}$ | Audio samples per second | 24,000 | Qwen3-TTS tuning guide |
-| $b_{sample}$ | Bytes per sample | 4 B | Same guide |
+| $r_{audio}$ | Internal coordinator audio samples per second | 24,000 | Qwen3-TTS tuning guide |
+| $b_{sample}$ | Bytes per internal float32 sample | 4 B | Same guide |
 | $G_{audio}$ | Generated audio duration | 10 s | Constructed example |
 | $R_{audio}$ | Audio duration the reader took | 4 s | Constructed example |
 
-float32 is the format that stores one audio sample. Each float32 sample occupies 4 B in this example.
+float32 is the format that stores one internal audio sample in the coordinator queue. Each float32 sample occupies 4 B in this example. HTTP sends mono 16-bit audio instead, so do not apply the 96,000 B/s figure to raw HTTP delivery.
 
 ### The numbers on the stage
 
@@ -35,7 +36,7 @@ One second contains $24{,}000\times4=96{,}000\ \text{B}$. Six queued seconds con
 
 ### Boundary and sources
 
-A finished request releases generation capacity, while unread streamed audio can remain in the API process (`docs/cookbook/qwen3_tts/tuning.md:22-26`). The coordinator records undelivered bytes for each stream (`sglang_omni/pipeline/coordinator.py:103-109,213-223`).
+A finished request releases generation capacity, while unread streamed audio can remain in the API process (`docs/cookbook/qwen3_tts/tuning.md:22-26`). The coordinator records undelivered bytes for each stream (`sglang_omni/pipeline/coordinator.py:103-109,213-223`). Bytes already handed to the operating system or HTTP runtime are socket-buffered and stay outside that ledger.
 
 ### Next
 
@@ -50,7 +51,7 @@ The next step puts one shared byte cap on all waiting payloads in this API proce
 - `stream_delivery.max_total_backlog_bytes` is the most queued payload bytes all streams in this process may hold together. Its default is 1 GiB; `none` disables the cap.
 - Stream A carries 6 B of audio and 100 text characters. Blue marks counted binary payload and grey marks excluded text, so this stream contributes 6 B.
 - Stream B carries 10 B of audio. Together they hold `6 + 10 = 16 B`.
-- The default cap corresponds to about 3.1 hours of this audio. That comparison conveys size only; it does not predict request length.
+- The default cap corresponds to about 3.1 hours of the coordinator's internal 24 kHz float32 payload. HTTP output is mono 16-bit, so this is not a raw-delivery duration. The comparison conveys size only; it does not predict request length.
 
 ### Formula
 
@@ -76,7 +77,7 @@ $$
 T_{queue}=6+10=16\ \text{B},\qquad H_{cap}=\frac{1{,}073{,}741{,}824}{24{,}000\times4\times3600}\approx3.1\ \text{hours}
 $$
 
-This is not a total-process-memory measurement and does not include socket buffers. Another API process has its own cap.
+This is not a total-process-memory measurement. Socket buffers contain bytes already handed to the operating system or HTTP runtime; those bytes also wait for the client but do not belong to this coordinator ledger. Another API process has its own cap.
 
 ### Boundary and sources
 

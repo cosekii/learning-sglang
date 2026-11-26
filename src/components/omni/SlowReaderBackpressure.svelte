@@ -44,8 +44,8 @@
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
   const steps = [{
-    caption: 'Generation can finish before the reader takes six seconds of audio. Those 576,000 bytes still wait in the API process.',
-    captionZh: '生成结束时，读者还有 6 秒声音没取走。576,000 字节仍留在 API 进程里。',
+    caption: 'Playback-speed reads can lag faster generation. Six unread seconds leave 576,000 bytes waiting in the API process.',
+    captionZh: '读者按播放速度取声音，生成可以更快。6 秒未读声音仍有 576,000 字节，留在 API 进程里。',
   }, {
     caption: 'One API process shares one byte cap across its streams. It counts binary data directly inside each message, not text characters.',
     captionZh: '一个 API 进程里的多路流共用一个字节上限。只数消息里直接放置的二进制数据，不数字符。',
@@ -130,13 +130,17 @@
         <text x={barX + readW + queueW / 2} y={barY + 35} text-anchor="middle" class="tag strong">{DELIVERY_QUEUED_SECONDS} s {t('waiting', '等待')}</text>
         <text x={W / 2} y={barY + 100} text-anchor="middle" class="formula">{DELIVERY_GENERATED_SECONDS} − {DELIVERY_READ_SECONDS} = {DELIVERY_QUEUED_SECONDS} s {t('still queued', '仍在排队')}</text>
         {#if phone}
-          <text x={W / 2} y={barY + 130} text-anchor="middle" class="tag">{bytes(DELIVERY_AUDIO_SAMPLE_RATE)} samples/s × {DELIVERY_AUDIO_BYTES_PER_SAMPLE} B/sample</text>
-          <text x={W / 2} y={barY + 158} text-anchor="middle" class="formula">× {DELIVERY_QUEUED_SECONDS} s = {bytes(DELIVERY_QUEUED_BYTES)} B</text>
+          <text x={W / 2} y={barY + 124} text-anchor="middle" class="tag">{t('coordinator queue: internal 24 kHz float32', 'coordinator 队列：internal 24 kHz float32')}</text>
+          <text x={W / 2} y={barY + 148} text-anchor="middle" class="tag">{t('HTTP output: mono 16-bit', 'HTTP 输出：mono 16-bit')}</text>
+          <text x={W / 2} y={barY + 172} text-anchor="middle" class="tag">{bytes(DELIVERY_AUDIO_SAMPLE_RATE)} samples/s × {DELIVERY_AUDIO_BYTES_PER_SAMPLE} B/sample</text>
+          <text x={W / 2} y={barY + 196} text-anchor="middle" class="formula">× {DELIVERY_QUEUED_SECONDS} s = {bytes(DELIVERY_QUEUED_BYTES)} B</text>
         {:else}
-          <text x={W / 2} y={barY + 137} text-anchor="middle" class="formula">{bytes(DELIVERY_AUDIO_SAMPLE_RATE)} samples/s × {DELIVERY_AUDIO_BYTES_PER_SAMPLE} B/sample × {DELIVERY_QUEUED_SECONDS} s = {bytes(DELIVERY_QUEUED_BYTES)} B</text>
+          <text x={W / 2} y={barY + 124} text-anchor="middle" class="tag">{t('coordinator queue: internal 24 kHz float32 · HTTP output: mono 16-bit', 'coordinator 队列：internal 24 kHz float32 · HTTP 输出：mono 16-bit')}</text>
+          <text x={W / 2} y={barY + 153} text-anchor="middle" class="formula">{bytes(DELIVERY_AUDIO_SAMPLE_RATE)} samples/s × {DELIVERY_AUDIO_BYTES_PER_SAMPLE} B/sample × {DELIVERY_QUEUED_SECONDS} s = {bytes(DELIVERY_QUEUED_BYTES)} B</text>
         {/if}
-        <text x={W / 2} y={barY + (phone ? 222 : 214)} text-anchor="middle" class="rowlabel">{t('What stops this queue from growing?', '怎样阻止这条队列一直变长？')}</text>
-        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Constructed example. Socket buffering is excluded.', '构造算例，不计 socket 缓冲。')}</text>
+        <text x={W / 2} y={barY + (phone ? 230 : 214)} text-anchor="middle" class="rowlabel">{t(phone ? 'Socket full → queue grows. What stops it?' : 'Socket full → this queue grows. What stops it?', 'socket 填满后，积压继续增长。怎样阻止它？')}</text>
+        <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t(phone ? 'Socket buffer = bytes given to OS / HTTP runtime, excluded.' : 'Socket buffer = bytes already given to the OS or HTTP runtime, outside this ledger.', 'socket 缓冲是交给操作系统或 HTTP runtime 的字节，不计入。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Constructed example · playback timing: Ch. 8 Step 3.', '构造算例 · 播放时间线见第 8 章第 3 步。')}</text>
       {:else if step === 1}
         <text x={phone ? 15 : 20} y="26" class="rowlabel">{t('ONE API PROCESS, ONE SHARED BYTE CAP', '一个 API 进程，一个共享字节上限')}</text>
         <text x={phone ? 15 : 20} y="52" class="tag">{phone ? t('cap = total queued message-byte limit', '上限 = 所有流的消息字节总量限制') : t('cap = the most binary data queued by all streams', '上限 = 所有流合计最多能保留的二进制数据')}</text>
@@ -146,6 +150,7 @@
         <text x={W / 2} y="164" text-anchor="middle" class="result">1 GiB = {bytes(DELIVERY_DEFAULT_CAP_BYTES)} B</text>
         <text x={W / 2} y="194" text-anchor="middle" class="tag">{t('per API process', '每个 API 进程')} · none = {t('cap off', '关闭上限')}</text>
         <text x={W / 2} y="219" text-anchor="middle" class="tag">{phone ? `1 GiB ÷ ${bytes(DELIVERY_AUDIO_BYTES_PER_SECOND)} B/s ÷ 3,600 s/h ≈ ${DELIVERY_DEFAULT_CAP_HOURS.toFixed(1)} h` : `${bytes(DELIVERY_DEFAULT_CAP_BYTES)} B ÷ ${bytes(DELIVERY_AUDIO_BYTES_PER_SECOND)} B/s ÷ 3,600 s/h ≈ ${DELIVERY_DEFAULT_CAP_HOURS.toFixed(1)} h`}</text>
+        <text x={W / 2} y="246" text-anchor="middle" class="tag">{t('internal 24 kHz float32 · HTTP output: mono 16-bit', 'internal 24 kHz float32 · HTTP 输出：mono 16-bit')}</text>
         {#each phone ? [
           { x: 15, y: 266, w: 270, name: 'STREAM A', audio: DELIVERY_PAYLOAD_AUDIO_BYTES, text: true },
           { x: 15, y: 472, w: 270, name: 'STREAM B', audio: DELIVERY_OTHER_AUDIO_BYTES, text: false },
@@ -166,7 +171,8 @@
         <rect x={phone ? 15 : 170} y={totalY} width={phone ? 270 : 380} height="72" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
         <text x={W / 2} y={totalY + 29} text-anchor="middle" class="tag strong">{t('SHARED MESSAGE-BYTE TOTAL', '共享消息字节总量')}</text>
         <text x={W / 2} y={totalY + 56} text-anchor="middle" class="result">{DELIVERY_PAYLOAD_AUDIO_BYTES} + {DELIVERY_OTHER_AUDIO_BYTES} = {DELIVERY_PAYLOAD_TOTAL_BYTES} B</text>
-        <text x={W / 2} y={totalY + 101} text-anchor="middle" class="tag">{t('Text and socket buffers stay outside this message-byte total.', '文字和 socket 缓冲不记入这份消息字节总量。')}</text>
+        <text x={W / 2} y={totalY + 96} text-anchor="middle" class="tag">{t('Text is not counted.', '文字不计入。')}</text>
+        <text x={W / 2} y={totalY + 120} text-anchor="middle" class="tag">{t(phone ? 'Socket buffer = bytes given to OS / HTTP runtime, excluded.' : 'Socket buffer = bytes already given to the OS or HTTP runtime, outside this ledger.', 'socket 缓冲是交给操作系统或 HTTP runtime 的字节，不计入。')}</text>
         <text x={W / 2} y={totalY + (phone ? 160 : 151)} text-anchor="middle" class="rowlabel">{t('Over the cap, which stream fails?', '超过上限后，哪一路流失败？')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Constructed payloads. Another API process has its own cap.', '构造的消息内容。另一个 API 进程有自己的上限。')}</text>
       {:else if step === 2}

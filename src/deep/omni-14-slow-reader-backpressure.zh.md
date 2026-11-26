@@ -4,10 +4,11 @@
 
 ### 图上是什么
 
-- 生成器已经做出 10 秒声音，生成已经结束。
+- 生成器已经做出 10 秒声音，生成已经结束。读者按播放速度取声音，生成却可以快于实时。socket 缓冲填满后，未读声音就积在这条 coordinator 队列里。
 - API 进程是服务器里把声音交给读者的进程。读者是取走声音的客户端。
 - 交付积压是已经生成、读者还没取走的声音。读者只取走 4 秒，所以蓝框里还有 6 秒，灰色是已经读取的部分。
-- 这是构造算例，不是实测延迟。图只数等待读取的声音，不数 socket 缓冲。
+- 算式只数 coordinator 队列里的 internal 24 kHz float32 payload。HTTP 输出是 mono 16-bit，所以这些字节不是 raw PCM 的交付字节数。
+- 这是构造算例，不是实测延迟。第 8 章第 3 步已经展示播放时间线。socket 缓冲是已经交给操作系统或 HTTP runtime 的字节；它们也在等客户端，但不属于 coordinator 的账本。
 
 ### 公式
 
@@ -18,12 +19,12 @@ $$
 | 符号 | 是什么 | 大小 | 从哪来 |
 |---|---|---:|---|
 | $Q_{audio}$ | 等待读取的声音字节数 | 576,000 B | 本步 |
-| $r_{audio}$ | 每秒采样数 | 24,000 个 | Qwen3-TTS tuning 文档 |
-| $b_{sample}$ | 每个样本的字节数 | 4 B | 同上 |
+| $r_{audio}$ | coordinator 内部声音的每秒采样数 | 24,000 个 | Qwen3-TTS tuning 文档 |
+| $b_{sample}$ | 每个 internal float32 样本的字节数 | 4 B | 同上 |
 | $G_{audio}$ | 已生成的声音时长 | 10 秒 | 构造算例 |
 | $R_{audio}$ | 读者已取走的声音时长 | 4 秒 | 构造算例 |
 
-float32 是保存一个声音样本的格式。这个例子中，每个 float32 样本占 4 B。
+float32 是 coordinator 队列里保存一个内部声音样本的格式。这个例子中，每个 float32 样本占 4 B。HTTP 交付的是 mono 16-bit 声音，所以不要把 96,000 B/s 直接套到 raw HTTP 输出。
 
 ### 代入图上的数
 
@@ -35,7 +36,7 @@ $$
 
 ### 边界与出处
 
-完成的请求不再占生成容量，但未读取的流式声音仍可能在 API 进程里等待，见 `docs/cookbook/qwen3_tts/tuning.md:22-26`。coordinator 为每一路流记录未交付字节，见 `sglang_omni/pipeline/coordinator.py:103-109,213-223`。
+完成的请求不再占生成容量，但未读取的流式声音仍可能在 API 进程里等待，见 `docs/cookbook/qwen3_tts/tuning.md:22-26`。coordinator 为每一路流记录未交付字节，见 `sglang_omni/pipeline/coordinator.py:103-109,213-223`。已经交给操作系统或 HTTP runtime 的字节进入 socket 缓冲，不在这份账本里。
 
 ### 接下来
 
@@ -50,7 +51,7 @@ $$
 - `stream_delivery.max_total_backlog_bytes` 是这个进程允许所有流合计保留的最大消息字节数。默认 1 GiB，`none` 表示关闭上限。
 - 流 A 的消息带 6 B 声音和 100 个字符。蓝框是计入的二进制内容，灰字是不计入的文字，所以这路只记 6 B。
 - 流 B 带 10 B 声音。两路合计 `6 + 10 = 16 B`。
-- 1 GiB 约能装 3.1 小时的这种声音。这个比较只帮助理解大小，不代表实际请求一定这么长。
+- 1 GiB 约能装 3.1 小时的 coordinator internal 24 kHz float32 payload。HTTP 输出是 mono 16-bit，所以这不是 raw 交付时长。这个比较只帮助理解大小，不代表实际请求一定这么长。
 
 ### 公式
 
@@ -76,7 +77,7 @@ $$
 T_{queue}=6+10=16\ \text{B},\qquad H_{cap}=\frac{1{,}073{,}741{,}824}{24{,}000\times4\times3600}\approx3.1\ \text{小时}
 $$
 
-这不是进程总内存测量，也不包含 socket 缓冲。另一个 API 进程有自己的上限。
+这不是进程总内存测量。socket 缓冲是已经交给操作系统或 HTTP runtime 的字节；它们也在等客户端，但不属于这份 coordinator 账本。另一个 API 进程有自己的上限。
 
 ### 边界与出处
 
