@@ -35,3 +35,30 @@ $$
 下一步画出三种设计的地图，看它们在同一组位置上怎样修改对话记录。
 
 出处：`sglang_omni/pipeline/session_delivery.py:112-128`；`sglang_omni/proto/session.py:19-28`。
+
+## 第 2 步 · 三种策略
+
+> **一句话：** turn-based Qwen、streaming cascade 和 native MiniCPM-o 是处理同一次打断的三种替代系统。
+
+### 图上是什么
+
+- turn-based Qwen3-Omni 用 VAD 找到说话轮次边界。回答时一开口就能打断；800 ms 静音规则用来结束前一段用户说话，不会让打断多等 800 ms。
+- streaming cascade 把三个服务接起来：ASR 把声音变成文字，LLM 写回答文字，TTS 把回答文字变成声音。
+- native MiniCPM-o 4.5 每次读取一秒声音，由同一个模型选择听或说。
+- 橙色卡片给三种设计同一句纠正：「不对，我说的是伦敦。」
+
+### 每种设计保管什么
+
+| 设计 | 对话状态 |
+|---|---|
+| Qwen3-Omni | Session 输入状态、thinker 对话记录和回答交付位置 |
+| Streaming cascade | ASR 状态、对话消息、当前 LLM 回答和 TTS 进度 |
+| MiniCPM-o | 同一个 native session 的听／说单元、模型记录和已交付单元 |
+
+这是一张机制地图，不是速度排名。三种系统的模型和实现都不同。
+
+### 接下来
+
+三种设计修改对话记录以前，Session graph 先删掉尚未进入交付记录的旧回答工作。
+
+出处：`docs/developer_reference/full_duplex_guide.md:391-397,1582-1591,1622-1645`；Learning SGLang 第 21 章第 1–2 步。

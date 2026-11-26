@@ -10,6 +10,7 @@
     DUPLEX_HEARD_MS,
     DUPLEX_DELIVERED_UNPLAYED_MS,
     DUPLEX_DEFAULT_MAX_OUTPUT_LEAD_MS,
+    DUPLEX_NATIVE_UNIT_MS,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -17,6 +18,9 @@
   const steps = [{
     caption: 'Delivery reaches 2.0 seconds, but playback reaches 1.2. The remaining 800 ms is already beyond the server queues.',
     captionZh: '声音已交付 2.0 秒，但只播放了 1.2 秒。其余 800 ms 已不在服务器队列里。',
+  }, {
+    caption: 'Three designs handle the same interruption. A streaming cascade separates recognition, language and speech services.',
+    captionZh: '三种设计处理同一次打断。streaming cascade 让识别、语言模型和语音生成接力。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -33,7 +37,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [650][step] : [540][step]);
+  const H = $derived(phone ? [650, 790][step] : [540, 590][step]);
   const seconds = (ms: number) => (ms / 1000).toFixed(1);
 </script>
 
@@ -77,6 +81,47 @@
           <text x="150" y="617" text-anchor="middle" class="small strong">{t('What enters the next answer?', '多少旧回答进入下次回答？')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? `Constructed times · default lead ≤ ${DUPLEX_DEFAULT_MAX_OUTPUT_LEAD_MS} ms` : `Constructed times. The default output lead is ${DUPLEX_DEFAULT_MAX_OUTPUT_LEAD_MS} ms; delivery is a server ledger, not acoustic proof.`, phone ? `构造时刻 · 默认提前交付 ≤ ${DUPLEX_DEFAULT_MAX_OUTPUT_LEAD_MS} ms` : `构造时刻。默认最多提前交付 ${DUPLEX_DEFAULT_MAX_OUTPUT_LEAD_MS} ms；交付记录不是播放证明。`)}</text>
+      {:else if step === 1}
+        <text x={phone ? 18 : 30} y="30" class="title">{t('Three strategies, one interruption', '三种策略，同一次打断')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t('alternatives, not three stages in one pipeline', '三种替代方案，不是一条流水线里的三段')}</text>
+        <text x={phone ? 18 : 30} y="79" class="label">{t(phone ? 'blue = strategies · orange = interrupt' : 'blue = strategy map · orange = shared interruption', phone ? '蓝 = 策略 · 橙 = 打断' : '蓝 = 策略地图 · 橙 = 共用的打断')}</text>
+        {#if !phone}
+          {#each [
+            { x: 30, n: '1 of 3', name: 'turn-based', model: 'Qwen3-Omni', lines: ['VAD finds the turn end', 'speech onset stops a reply'], linesZh: ['VAD 找到说话结束', '回答时一开口就打断'], ref: 'Ch. 21 Step 1', refZh: '第 21 章第 1 步' },
+            { x: 265, n: '2 of 3', name: 'streaming cascade', model: 'ASR → LLM → TTS', lines: ['ASR: sound → text', 'LLM: text → reply', 'TTS: reply → sound'], linesZh: ['ASR：声音 → 文字', 'LLM：文字 → 回答', 'TTS：回答 → 声音'], ref: 'separate services', refZh: '不同服务接力' },
+            { x: 500, n: '3 of 3', name: 'native full-duplex', model: 'MiniCPM-o 4.5', lines: [`${DUPLEX_NATIVE_UNIT_MS / 1000} s audio units`, 'one model listens or speaks'], linesZh: [`每份声音 ${DUPLEX_NATIVE_UNIT_MS / 1000} 秒`, '同一模型选择听或说'], ref: 'Ch. 21 Steps 1–2', refZh: '第 21 章第 1–2 步' },
+          ] as card}
+            <rect x={card.x} y="112" width="190" height="294" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x={card.x + 16} y="140" class="small strong">{card.n}</text>
+            <text x={card.x + 16} y="174" class="small strong">{card.name}</text>
+            <text x={card.x + 16} y="204" class="code">{card.model}</text>
+            {#each card.lines as line, i}
+              <text x={card.x + 16} y={249 + i * 34} class="small">{t(line, card.linesZh[i])}</text>
+            {/each}
+            <text x={card.x + 16} y="378" class="small">{t(card.ref, card.refZh)}</text>
+          {/each}
+          <rect x="120" y="438" width="480" height="56" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="360" y="472" text-anchor="middle" class="small strong">{t('same interruption: “No, I meant London.”', '同一次打断：「不对，我说的是伦敦。」')}</text>
+          <text x="360" y="538" text-anchor="middle" class="result">{t('Which old outputs can the graph delete first?', '修改对话记录前，图能先删掉哪些旧输出？')}</text>
+        {:else}
+          {#each [
+            { y: 108, n: '1 of 3', name: 'turn-based · Qwen3-Omni', lines: ['VAD finds turn end', 'speech onset stops a reply'], linesZh: ['VAD 找到说话结束', '回答时一开口就打断'] },
+            { y: 282, n: '2 of 3', name: 'streaming cascade', lines: ['ASR: sound → text', 'LLM: text → reply', 'TTS: reply → sound'], linesZh: ['ASR：声音 → 文字', 'LLM：文字 → 回答', 'TTS：回答 → 声音'] },
+            { y: 456, n: '3 of 3', name: 'native full-duplex · MiniCPM-o', lines: [`${DUPLEX_NATIVE_UNIT_MS / 1000} s units · listen or speak`, 'Ch. 21 Steps 1–2'], linesZh: [`每份 ${DUPLEX_NATIVE_UNIT_MS / 1000} 秒 · 选择听或说`, '第 21 章第 1–2 步'] },
+          ] as card}
+            <rect x="18" y={card.y} width="264" height="150" rx="11" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="32" y={card.y + 27} class="small strong">{card.n}</text>
+            <text x="32" y={card.y + 55} class="small strong">{card.name}</text>
+            {#each card.lines as line, i}
+              <text x="32" y={card.y + 88 + i * 27} class="small">{t(line, card.linesZh[i])}</text>
+            {/each}
+          {/each}
+          <rect x="18" y="630" width="264" height="62" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="150" y="656" text-anchor="middle" class="small strong">{t('same interruption', '同一次打断')}</text>
+          <text x="150" y="680" text-anchor="middle" class="small">“No, I meant London.”</text>
+          <text x="150" y="733" text-anchor="middle" class="small strong">{t('Which old outputs can be deleted?', '哪些旧输出能先删掉？')}</text>
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Different systems · not a benchmark' : 'Different models and services; this map does not compare their speed.', phone ? '不同系统 · 不比较速度' : '不同模型和服务；这张地图不比较速度。')}</text>
       {/if}
     </svg>
   </div>
