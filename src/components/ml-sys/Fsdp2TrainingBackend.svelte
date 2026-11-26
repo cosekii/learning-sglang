@@ -88,27 +88,27 @@
       { en: `Training bill: ${FSDP_FORWARD_RESIDENT_GB} + ${FSDP_SHARD_GRADIENT_GB} = ${FSDP_SHARD_STATE_PER_GPU_GB} GB`, zh: `训练账：${FSDP_FORWARD_RESIDENT_GB} + ${FSDP_SHARD_GRADIENT_GB} = ${FSDP_SHARD_STATE_PER_GPU_GB} GB` },
     ],
   }, {
-    caption: 'After forward, the model computes gradients: directions for changing weights. Reduce-scatter sums matching values; each rank keeps one shard.',
-    captionZh: 'Forward 之后，模型算出梯度，也就是修改权重的方向。各 rank 汇总对应值，各留一个分片。',
-    title: 'After forward, keep a summed gradient shard', titleZh: 'Forward 之后，留下汇总后的梯度分片',
-    subtitle: 'reduce-scatter = sum each layer\'s matching gradients, then keep one shard',
-    subtitleZh: 'reduce-scatter = 汇总每层对应的梯度，再各留一个分片',
-    foot: 'Each layer\'s gradient is reduced when ready; parameters are gathered as needed.',
-    footZh: '每层的梯度算好就汇总；参数仍按需聚合。',
-    mobileTitle: 'Keep one summed gradient shard', mobileTitleZh: '留下一个汇总后的梯度分片',
+    caption: 'Each rank scales its loss before backward. The summed, pre-scaled gradients do not multiply the update by eight.',
+    captionZh: 'backward 前先缩放 loss。汇总预缩放梯度，更新不会放大 8 倍。',
+    title: 'Scale loss, then sum the gradients', titleZh: '先缩放 loss，再汇总梯度',
+    subtitle: 'reduce-scatter = sum pre-scaled gradients, then keep one shard',
+    subtitleZh: 'reduce-scatter = 汇总预缩放梯度，再各留一个分片',
+    foot: 'Pinned slime: loss = loss * dp_size / global_batch_size before loss.backward().',
+    footZh: '固定版 slime：loss.backward() 前执行 loss = loss * dp_size / global_batch_size。',
+    mobileTitle: 'Scale loss, then sum gradients', mobileTitleZh: '先缩放 loss，再汇总梯度',
     mobileSubtitle: 'reduce-scatter = sum, then split', mobileSubtitleZh: 'reduce-scatter = 汇总再分片',
-    mobileFoot: 'The optimizer updates after all layers finish.', mobileFootZh: '所有层算完后，优化器才更新权重。',
+    mobileFoot: 'Rank gradients enter the sum already pre-scaled.', mobileFootZh: '各 rank 的梯度先预缩放，再参加汇总。',
     mobileLegend: 'Orange = owned shard · blue = layer gradient', mobileLegendZh: '橙 = 拥有分片 · 蓝 = 本层梯度',
     mobile: [
-      { title: 'LAYER GRADIENT · TEMPORARY', titleZh: '本层梯度 · 临时', body: 'produced after forward', bodyZh: '前向之后算出', tone: 'blue' },
-      { title: 'REDUCE-SCATTER', titleZh: 'REDUCE-SCATTER', body: 'sum matching values, then split', bodyZh: '汇总对应数值，再分片', tone: 'plain' },
+      { title: 'LAYER GRADIENT · TEMPORARY', titleZh: '本层梯度 · 临时', body: 'from the pre-scaled loss', bodyZh: '由预缩放 loss 算出', tone: 'blue' },
+      { title: 'REDUCE-SCATTER', titleZh: 'REDUCE-SCATTER', body: 'sum pre-scaled values, then split', bodyZh: '汇总预缩放值，再分片', tone: 'plain' },
       { title: 'OWNED GRADIENT · ONE SHARD', titleZh: '拥有的梯度 · 一个分片', body: 'this layer\'s reduced shard', bodyZh: '本层汇总后的分片', tone: 'orange' },
       { title: 'OPTIMIZER · AFTER ALL LAYERS', titleZh: '优化器 · 所有层算完后', body: 'update the owned weight shard', bodyZh: '更新拥有的权重分片', tone: 'plain' },
     ],
     formulas: [
-      { en: 'why sum: different examples per rank', zh: '为何汇总：各 rank 用不同例子' },
-      { en: 'examples = training prompts + answers', zh: '例子 = 训练用的 prompt + 回答' },
-      { en: 'gradients: reduce-scatter, layer by layer', zh: '梯度：逐层 reduce-scatter' },
+      { en: 'loss × dp_size ÷ global_batch_size', zh: 'loss × dp_size ÷ global_batch_size' },
+      { en: 'rank gradients are pre-scaled', zh: '各 rank 梯度已预缩放' },
+      { en: 'the sum does not make an 8× update', zh: '求和不会把更新放大 8 倍' },
       { en: 'all layers\' gradients: 8 GB ÷ 8 = 1 GB per rank', zh: '所有层的梯度：8 GB ÷ 8 = 每个 rank 1 GB' },
     ],
   }, {
@@ -269,7 +269,7 @@
       {:else if step === 3}
         {#each [
           { x: 40, title: 'LAYER GRADIENT', titleZh: '本层梯度', result: 'temporary', resultZh: '临时', body: 'after forward', bodyZh: '前向之后算出', tone: 'blue' },
-          { x: 275, title: 'REDUCE-SCATTER', titleZh: 'REDUCE-SCATTER', result: 'sum + split', resultZh: '汇总 + 分片', body: 'across all ranks', bodyZh: '跨所有 rank', tone: 'plain' },
+          { x: 275, title: 'REDUCE-SCATTER', titleZh: 'REDUCE-SCATTER', result: 'sum + split', resultZh: '汇总 + 分片', body: 'pre-scaled, not 8×', bodyZh: '预缩放，不放大 8 倍', tone: 'plain' },
           { x: 510, title: 'OWNED GRADIENT', titleZh: '拥有的梯度', result: 'one shard', resultZh: '一个分片', body: 'this layer\'s shard', bodyZh: '本层的分片', tone: 'orange' },
         ] as node, i}
           <rect x={node.x} y="95" width="170" height="157" rx="12" fill={fill(node.tone)} stroke={stroke(node.tone)} />
@@ -282,11 +282,12 @@
         <rect x="485" y="302" width="220" height="79" rx="11" fill="var(--bg)" stroke="var(--line)" />
         <text x="595" y="332" text-anchor="middle" class="section">{t('OPTIMIZER', '优化器')}</text>
         <text x="595" y="361" text-anchor="middle" class="small">{t('after all layers: update owned weights', '所有层算完后：更新拥有的权重')}</text>
-        <rect x="35" y="292" width="365" height="99" rx="11" fill="var(--bg)" stroke="var(--line)" />
-        <text x="217" y="324" text-anchor="middle" class="small strong">{t('WHY SUM? EACH RANK USED DIFFERENT RECORDS', '为何汇总？各 rank 用了不同训练样本')}</text>
-        <text x="217" y="359" text-anchor="middle" class="small">{t('records = prompts and answers used for training', '训练样本 = 用来训练的 prompt 和回答')}</text>
-        <text x="217" y="383" text-anchor="middle" class="small">{t('all layers\' gradients: 8 GB ÷ 8 = 1 GB per rank', '所有层的梯度：8 GB ÷ 8 = 每个 rank 1 GB')}</text>
-        <text x="360" y="435" text-anchor="middle" class="small">{t('Orange = owned shard · blue = temporary layer gradient', '橙 = 拥有分片 · 蓝 = 临时的本层梯度')}</text>
+        <rect x="35" y="292" width="365" height="124" rx="11" fill="var(--bg)" stroke="var(--line)" />
+        <text x="217" y="320" text-anchor="middle" class="small strong">{t('PRE-SCALE EACH RANK\'S LOSS', '先缩放每个 rank 的 LOSS')}</text>
+        <text x="217" y="350" text-anchor="middle" class="small">{t('loss = loss * dp_size / global_batch_size', 'loss = loss * dp_size / global_batch_size')}</text>
+        <text x="217" y="380" text-anchor="middle" class="small">{t('Different records contribute pre-scaled gradients.', '不同训练样本提供预缩放梯度。')}</text>
+        <text x="217" y="406" text-anchor="middle" class="small">{t('all layers\' gradients: 8 GB ÷ 8 = 1 GB per rank', '所有层的梯度：8 GB ÷ 8 = 每个 rank 1 GB')}</text>
+        <text x="360" y="455" text-anchor="middle" class="small">{t('Orange = owned shard · blue = temporary layer gradient', '橙 = 拥有分片 · 蓝 = 临时的本层梯度')}</text>
       {:else if step === 4}
         <rect x="70" y="88" width="300" height="79" rx="10" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />
         <text x="220" y="119" text-anchor="middle" class="result">{t('training intermediates', '训练中间结果')}</text>

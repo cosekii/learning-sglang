@@ -109,41 +109,47 @@ $$M_0=W_i+O_i,\qquad M_{\text{forward}}\approx M_0+U,\qquad M_{\text{after}}=M_0
 
 来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:18`；`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:53-56,101-105`；`THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7` 的 `slime/backends/fsdp_utils/actor.py:522-535`。
 
-## 第 4 步 · 梯度归约后各留一片
+## 第 4 步 · 先预缩放 loss，再归约梯度
 
-**一句话。** Backward 是 Forward 之后计算梯度的一趟；FSDP 对每层算好的梯度执行 reduce-scatter，让各 rank 合并不同训练样本得到的更新，再各留对应分片。
+**一句话。** slime 在 backward 前缩放每个 rank 的 loss，FSDP 再汇总预缩放梯度并各留对应分片。
 
 ### 图上是什么
 
-- 每个 rank 使用不同的训练样本。汇总对应梯度，就是合并这些样本提供的更新方向。
-- 蓝色临时梯度属于当前一层，不是所有层合计的 8 GB 梯度。FSDP 在每层梯度算好时就执行 reduce-scatter。
+- 每个 rank 使用不同的训练样本。backward 前，slime 执行 `loss = loss * dp_size / global_batch_size`，用这次预缩放配合 DP 求和与梯度累积。
+- 蓝色临时梯度属于当前一层，由预缩放后的 loss 算出。reduce-scatter 仍对对应值求和，不改求平均。
+- 每个输入梯度已经带上 loss 缩放，所以八个 rank 求和不会把更新放大八倍。
 - 橙格是这个 rank 为本层留下的汇总分片。标签写的是所有层的梯度合计：8 GB ÷ 8 = 每个 rank 1 GB，不是本层临时梯度的大小。
 - 所有层算完后，优化器才更新拥有的权重分片，不是图中每流过一个框就更新一次。
 
 ### 公式与符号
 
-$$g_{\ell,i}=S_{\ell,i}\!\left(\sum_{r=1}^{R}g_\ell^{(r)}\right)$$
+$$\mathcal L'_r=\mathcal L_r\frac{R}{B},\qquad g_{\ell,i}=S_{\ell,i}\!\left(\sum_{r=1}^{R}g_\ell^{(r)}\right)$$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
-| $R$ | DP 分片组的 rank 数 | 第 2 步，8 个 rank |
+| $R$ | DP 分片组的 rank 数，即 `dp_size` | 第 2 步，8 个 rank |
+| $B$ | 一次优化器更新使用的 global batch size | 运行配置的 `global_batch_size`；本例未填数值 |
+| $\mathcal L_r$ | rank $r$ 未经 DP 缩放的 loss | 当前 microbatch |
+| $\mathcal L'_r$ | 交给 backward 的预缩放 loss | $\mathcal L_rR/B$ |
 | $\ell$ | 正在汇总的层编号 | 图上当前一层 |
 | $r$ | 提供梯度的 rank | DP 组的一个成员 |
-| $g_\ell^{(r)}$ | rank $r$ 为第 $\ell$ 层算出的梯度 | Forward 之后的 backward |
+| $g_\ell^{(r)}$ | rank $r$ 为第 $\ell$ 层算出的**预缩放梯度** | 对 $\mathcal L'_r$ 做 backward，不是对未缩放的 $\mathcal L_r$ |
 | $S_{\ell,i}$ | 选出第 $\ell$ 层梯度中 rank $i$ 拥有的一片 | FSDP 分片位置 |
 | $g_{\ell,i}$ | rank $i$ 为第 $\ell$ 层留下的汇总梯度片 | reduce-scatter 的结果；大小未给出 |
 
 ### 代入图上的数
 
-图上写的是所有层的梯度合计：8 GB ÷ 8 = 每个 rank 1 GB。这里只算梯度表的分片；第 2 步中每个 rank 的训练状态总量是 8 GB。临时本层梯度和汇总后的本层分片都没有给定大小。优化器在所有层算完后运行，不是每层运行一次。
+本例有 $R=8$ 个 rank。构造显存例没有给 $B$ 填值，所以图中保留符号缩放 $R/B$。顺序是先缩放、再求和。如果对预缩放梯度再求平均，归一化就会改变。
 
-slime 在 actor 中调用 `loss.backward()` 和 `optimizer.step()`。参数聚合和逐层梯度 reduce-scatter 由 FSDP 包装层处理，actor 没有在这些方法旁另写集合通信调用。
+图上写的是所有层的梯度合计：8 GB ÷ 8 = 每个 rank 1 GB。这里只算梯度表的分片；第 2 步中每个 rank 的完整训练状态账是 8 GB。临时本层梯度和汇总后的本层分片都没有给定大小。
+
+slime 在 `loss.backward()` 的上一行执行 loss 缩放，之后调用 `optimizer.step()`。参数聚合和逐层梯度 reduce-scatter 由 FSDP 包装层处理，actor 没有在这些方法旁另写集合通信调用。
 
 ### 接下来
 
-长期分片变小了，完整 unit 和其他临时结果仍要占空间。下一步区分长期保存状态与峰值显存。
+训练状态账变小了，完整 unit 和其他临时结果仍要占空间。下一步区分训练状态账与峰值显存。
 
-来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:19`；`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:47-58`；`THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7` 的 `slime/backends/fsdp_utils/actor.py:687-702,1000-1039`。
+来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:19`；`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:47-58`；`THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7` 的 `slime/backends/fsdp_utils/actor.py:687-702`。
 
 ## 第 5 步 · 训练状态账只是峰值的一部分
 
