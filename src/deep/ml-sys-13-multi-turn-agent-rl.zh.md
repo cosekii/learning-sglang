@@ -222,7 +222,7 @@ $$b_{\text{next}}=12-(4+3+5)=0\Rightarrow\text{TRUNCATED}$$
 - 橙色 server manager 返回 4 个 `A` 方块，不解析或选择工具。
 - 控制权回到 `ToolAgentLoop`：当动作 `A` 含有效工具调用时，出现 4 个蓝色 mask 1 方块，`ToolAgentLoop` 调用工具。
 - 工具或环境返回 3 个橙色 `O` 方块，此时还没标 mask。返回箭头先回到 `ToolAgentLoop`，不是直接回到 server。
-- 若剩余 token 预算装得下 `O`，`ToolAgentLoop` 追加它并标 mask 0。随后第一张卡显示 `P+A+O` 带着同一个 `u` 进入下一次模型调用；装不下就停止。
+- 图中再次循环需要三个条件：工具调用有效、`O` 有余量、轮数未满。满足时，`ToolAgentLoop` 追加 `O` 并标 mask 0，第一张卡显示 `P+A+O` 带着同一个 `u` 进入下一次模型调用。任一停止条件成立都会改为结束循环。
 
 ### 公式与符号
 
@@ -242,7 +242,7 @@ $$A=G(u,P),\qquad O=\operatorname{tool}(A),\qquad P'=P+A+O$$
 
 $$P'=P+A+O,\qquad |A|=4,\quad |O|=3$$
 
-server 只看到输入 token 和采样参数。`ToolAgentLoop` 保有工具状态、停止规则和 mask。图中走的是工具有效且有余量追加 `O` 的路径；没有工具调用、工具返回错误或达到限制时，verl 会停止。第二次模型调用仍使用同一个 `request_id`。
+server 只看到输入 token 和采样参数。`ToolAgentLoop` 保有工具状态、停止规则和 mask。图中走的是工具有效、有余量追加 `O` 且轮数未满的路径；没有工具调用、工具返回错误或达到限制时，verl 会停止。第二次模型调用仍使用同一个 `request_id`。
 
 ### 接下来
 

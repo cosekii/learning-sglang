@@ -230,16 +230,16 @@
     legend: 'Blue = ToolAgentLoop · orange = server or environment · red = current', legendZh: '蓝 = ToolAgentLoop · 橙 = server 或环境 · 红 = 当前',
     flow: true,
     nodes: [
-      { title: 'TOOLAGENTLOOP', titleZh: 'TOOLAGENTLOOP', result: 'P → server', resultZh: 'P → server', body: 'same request_id', bodyZh: '同一个 request_id', tone: 'blue' },
+      { title: 'TOOLAGENTLOOP', titleZh: 'TOOLAGENTLOOP', result: 'P → server', resultZh: 'P → server', body: 'same request_id u', bodyZh: '同一个 request_id u', tone: 'blue' },
       { title: 'SERVER MANAGER', titleZh: 'SERVER MANAGER', result: 'P → action A', resultZh: 'P → 动作 A', body: 'no tool decisions here', bodyZh: '这里不决定工具调用', tone: 'orange' },
       { title: 'TOOLAGENTLOOP', titleZh: 'TOOLAGENTLOOP', result: 'A has a tool call', resultZh: 'A 含有工具调用', body: 'A gets mask 1', bodyZh: 'A 的 mask 为 1', tone: 'blue' },
       { title: 'TOOL / ENV', titleZh: '工具 / 环境', result: 'reply O', resultZh: '回复 O', body: 'mask not set yet', bodyZh: '此时还没标 mask', tone: 'orange' },
     ],
     formulas: [
-      { en: 'same request_id accompanies every model call', zh: '每次模型调用都带同一个 request_id' },
+      { en: 'u = request_id on every model call', zh: 'u = 每次模型调用的 request_id' },
       { en: 'server.generate(prompt_ids) → response_ids', zh: 'server.generate(prompt_ids) → response_ids' },
       { en: 'ToolAgentLoop parses the action and calls the tool', zh: 'ToolAgentLoop 解析动作并调用工具' },
-      { en: 'valid call + room for O: ToolAgentLoop adds O + mask 0, then repeats', zh: '调用有效且 O 有余量：ToolAgentLoop 追加 O 和 mask 0，再循环' },
+      { en: 'valid call + O fits + turns left: ToolAgentLoop adds O + mask 0, then repeats', zh: '调用有效、O 有余量且轮数未满：ToolAgentLoop 追加 O 和 mask 0，再循环' },
       { en: 'Next: pack different-length responses for training', zh: '下一步：把不同长度的响应装进训练 batch' },
     ],
     mobile: {
@@ -248,10 +248,10 @@
       foot: 'Switching to verl; its stop rules differ from slime.', footZh: '改用 verl；它的停止规则与 slime 不同。',
       legend: 'Blue = ToolAgentLoop · orange = server/env', legendZh: '蓝 = ToolAgentLoop · 橙 = server/环境',
       formulas: [
-        { en: 'Same request_id on each model call', zh: '每次模型调用带同一个 request_id' },
+        { en: 'u = request_id on each model call', zh: 'u = 每次模型调用的 request_id' },
         { en: 'generate(prompt_ids) → response_ids', zh: 'generate(prompt_ids) → response_ids' },
         { en: 'ToolAgentLoop parses A and calls the tool', zh: 'ToolAgentLoop 解析 A 并调用工具' },
-        { en: 'If O fits: ToolAgentLoop adds O + mask 0', zh: '若 O 有余量：ToolAgentLoop 加 O 和 mask 0' },
+        { en: 'O fits + turns left: ToolAgentLoop adds mask 0', zh: 'O 有余量且轮数未满：ToolAgentLoop 加 mask 0' },
         { en: 'Next: pack responses for training', zh: '下一步：把响应装进训练 batch' },
       ],
     },

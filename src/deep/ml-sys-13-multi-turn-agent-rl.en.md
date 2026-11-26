@@ -222,7 +222,7 @@ Source: `THUDM/slime@f68dc4a25f362fc0335165a17ff976f5b6f675e1`, `examples/geo3k_
 - The orange server manager returns four `A` cells without parsing or selecting tools.
 - Control returns to `ToolAgentLoop`. When action `A` contains a valid tool call, four blue mask-1 cells appear and `ToolAgentLoop` calls the tool.
 - The tool or environment returns three orange `O` cells without assigning their mask. The return arrow goes back to `ToolAgentLoop`, not directly to the server.
-- If `O` fits the remaining token budget, `ToolAgentLoop` appends it with mask 0. The first card then shows `P+A+O` entering the next model call with the same `u`. Otherwise the loop stops.
+- The pictured repeat needs three conditions: a valid tool call, room for `O`, and a remaining turn. In that case `ToolAgentLoop` appends `O` with mask 0, and the first card shows `P+A+O` entering the next model call with the same `u`. Any stop rule ends the loop instead.
 
 ### Formula and symbols
 
@@ -242,7 +242,7 @@ $$A=G(u,P),\qquad O=\operatorname{tool}(A),\qquad P'=P+A+O$$
 
 $$P'=P+A+O,\qquad |A|=4,\quad |O|=3$$
 
-The server receives input tokens and sampling parameters. `ToolAgentLoop` owns tool state, stop rules and the mask. The picture follows a valid tool call with room to append `O`; verl stops when no tool call exists, a tool returns an error, or a limit is reached. The second model call uses the same `request_id`.
+The server receives input tokens and sampling parameters. `ToolAgentLoop` owns tool state, stop rules and the mask. The picture follows a valid tool call with room to append `O` and a remaining turn; verl stops when no tool call exists, a tool returns an error, or a limit is reached. The second model call uses the same `request_id`.
 
 ### Next
 
