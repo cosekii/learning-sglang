@@ -311,15 +311,21 @@
           { x: 40, y: 116, h: 360, title: 'GENERATION STILL RUNNING', titleZh: '生成仍在运行', running: true },
           { x: 380, y: 116, h: 360, title: 'GENERATION ALREADY FINISHED', titleZh: '生成已经结束', running: false },
         ] as panel}
+          {@const failed = panel.running ? phase >= 1 : phase >= 3}
+          {@const reported = panel.running ? phase >= 2 : phase >= 4}
           <rect x={panel.x} y={panel.y} width={phone ? 270 : 300} height={panel.h} rx="11" fill="var(--bg)" stroke="var(--line)" />
           <text x={panel.x + 16} y={panel.y + 30} class="tag strong">{t(panel.title, panel.titleZh)}</text>
-          <rect x={panel.x + 16} y={panel.y + 52} width={phone ? 238 : 268} height="54" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <rect x={panel.x + 16} y={panel.y + 52} width={phone ? 238 : 268} height="54" rx="8" fill={failed ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={failed ? 'var(--gen)' : 'var(--accent)'} style="transition: fill 400ms, stroke 400ms" />
           <text x={panel.x + 30} y={panel.y + 86} class="result">{DELIVERY_CLOSE_CASE_BYTES} B {t('queued audio', '排队声音')}</text>
           <text x={panel.x + (phone ? 135 : 150)} y={panel.y + 132} text-anchor="middle" class="result">↓</text>
-          <rect x={panel.x + 16} y={panel.y + 150} width={phone ? 238 : 268} height="50" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x={panel.x + 30} y={panel.y + 182} class="tag strong">{DELIVERY_CLOSE_CASE_BYTES} B &gt; {DELIVERY_FAILURE_CAP_BYTES} B · {t('CAP FAILURE', '上限失败')}</text>
-          <text x={panel.x + 20} y={panel.y + 234} class="tag strong">{panel.running ? t('ABORT the generator', '中止生成器') : t('No generator left to abort', '没有还在运行的生成器可中止')}</text>
-          <text x={panel.x + 20} y={panel.y + (phone ? 258 : 270)} class="tag">{t('Send the stream failure to its reader.', '把这条流的失败通知读者。')}</text>
+          <g opacity={failed ? 1 : 0.1} style="transition: opacity 400ms">
+            <rect x={panel.x + 16} y={panel.y + 150} width={phone ? 238 : 268} height="50" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x={panel.x + 30} y={panel.y + 182} class="tag strong">{DELIVERY_CLOSE_CASE_BYTES} B &gt; {DELIVERY_FAILURE_CAP_BYTES} B · {t('CAP FAILURE', '上限失败')}</text>
+          </g>
+          <g opacity={reported ? 1 : 0.1} style="transition: opacity 400ms">
+            <text x={panel.x + 20} y={panel.y + 234} class="tag strong">{panel.running ? t('ABORT the generator', '中止生成器') : t('No generator left to abort', '没有还在运行的生成器可中止')}</text>
+            <text x={panel.x + 20} y={panel.y + (phone ? 258 : 270)} class="tag">{t('Send the stream failure to its reader.', '把这条流的失败通知读者。')}</text>
+          </g>
         {/each}
         <text x={W / 2} y={phone ? 728 : 536} text-anchor="middle" class="rowlabel">{t('What error does the reader receive?', '读者会收到什么错误？')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Same bytes · before or after generation ends', '同一份声音 · 生成前后都可能失败') : t('The same queued bytes can fail before or after generation ends.', '同一份排队声音可能在生成结束前或结束后失败。')}</text>
