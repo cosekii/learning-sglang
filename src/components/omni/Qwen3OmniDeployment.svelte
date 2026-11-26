@@ -30,6 +30,15 @@
     QWEN_INT4_ESTIMATED_MEMORY_GB,
     QWEN_FP8_MEMORY_OF_BF16_PERCENT,
     QWEN_INT4_MEMORY_OF_BF16_PERCENT,
+    QWEN_SPEECH_REPLICA2_COUNT,
+    QWEN_SPEECH_REPLICA2_COPY_COUNT,
+    QWEN_SPEECH_REPLICA2_GPU_COUNT,
+    QWEN_THINKER_MAX_RUNNING_REQUESTS,
+    QWEN_TALKER_MAX_RUNNING_REQUESTS,
+    QWEN_REPLICA2_CODEC_STATE_SLOTS,
+    QWEN_REPLICA2_TALKER_GPU_PERCENT,
+    QWEN_REPLICA2_CODE2WAV_GPU_PERCENT,
+    QWEN_REPLICA2_GPU_PERCENT,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -49,6 +58,9 @@
   }, {
     caption: 'Precision stores each weight with fewer bits. INT4 roughly halves BF16 memory, while its talker stays BF16.',
     captionZh: '精度决定权重占多少 bit。INT4 约省一半，talker 仍用 BF16。',
+  }, {
+    caption: 'Each talker replica admits 32 running requests. Two replicas configure 64 codec states, not double throughput.',
+    captionZh: '每个 talker 副本同时运行至多 32 个请求。两个副本配 64 个状态位，不等于吞吐翻倍。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -65,7 +77,7 @@
     return () => query.removeEventListener('change', update);
   });
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [870, 820, 900, 850, 850][step] : [560, 600, 650, 580, 600][step]);
+  const H = $derived(phone ? [870, 820, 900, 850, 850, 930][step] : [560, 600, 650, 580, 600, 630][step]);
   const budgetSegments = [
     ...COLOCATED_STAGE_SHARES.flatMap((stage) => stage.name === 'thinker' ? [
       { name: 'thinker AR', percent: QWEN_THINKER_EFFECTIVE_AR_PERCENT, kind: 'stage' },
@@ -253,6 +265,47 @@
         {/if}
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('BF16 is the default; native FP8 is not selected by --dtype fp8.', 'BF16 是默认值；native FP8 不是用 --dtype fp8 选择。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Approximate cookbook memory values, not local footprint or quality measurements.', '文档中的近似显存值，不是本地显存或质量实测。')}</text>
+      {:else if step === 5}
+        <text x={phone ? 15 : 20} y="24" class="rowlabel">{t('MORE SPEECH COPIES, EXPLICIT CAPACITY', '更多语音副本，明确算容量')}</text>
+        <text x={phone ? 15 : 20} y="49" class="tag">running cap = {t('most requests one stage works on at once', '一个 stage 同时最多处理的请求数')}</text>
+        <text x={phone ? 15 : 20} y="72" class="tag">codec state slot = {t('saved decoder state for one stream', '一路声音保存的 decoder 状态')}</text>
+        <text x={phone ? 15 : 20} y="95" class="tag">{t('blue = talker · orange = codec capacity · grey = thinker', '蓝 = talker · 橙 = codec 容量 · 灰 = thinker')}</text>
+        {#each phone ? [
+          { x: 15, y: 125, w: 270, h: 340, replica2: false },
+          { x: 15, y: 485, w: 270, h: 390, replica2: true },
+        ] : [
+          { x: 20, y: 125, w: 320, h: 420, replica2: false },
+          { x: 380, y: 125, w: 320, h: 420, replica2: true },
+        ] as panel}
+          <rect x={panel.x} y={panel.y} width={panel.w} height={panel.h} rx="11" fill="var(--bg)" stroke="var(--line)" />
+          <text x={panel.x + 14} y={panel.y + 27} class="rowlabel">{panel.replica2 ? 'REPLICA2' : 'DEFAULT SPEECH'}</text>
+          <text x={panel.x + 14} y={panel.y + 51} class="tag strong">{panel.replica2 ? `${QWEN_SPEECH_REPLICA2_COPY_COUNT} processes · ${QWEN_SPEECH_REPLICA2_GPU_COUNT} GPUs` : `${QWEN_SPEECH_DEFAULT_COPY_COUNT} processes · ${QWEN_SPEECH_DEFAULT_GPU_COUNT} GPUs`}</text>
+          <rect x={panel.x + 14} y={panel.y + 72} width={panel.w - 28} height="65" rx="7" fill="var(--bg)" stroke="var(--faint)" />
+          <text x={panel.x + 25} y={panel.y + 98} class="tag strong">GPU 0 · thinker + code2wav</text>
+          <text x={panel.x + 25} y={panel.y + 123} class="formula">thinker cap = {QWEN_THINKER_MAX_RUNNING_REQUESTS}</text>
+          {#if !panel.replica2}
+            <rect x={panel.x + 14} y={panel.y + 155} width={panel.w - 28} height="70" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x={panel.x + 25} y={panel.y + 181} class="tag strong">GPU 1 · talker_ar × 1</text>
+            <text x={panel.x + 25} y={panel.y + 207} class="formula">talker cap = {QWEN_TALKER_MAX_RUNNING_REQUESTS}</text>
+            <rect x={panel.x + 14} y={panel.y + 244} width={panel.w - 28} height="62" rx="7" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x={panel.x + panel.w / 2} y={panel.y + 281} text-anchor="middle" class="formula">codec_state_slots = {QWEN_TALKER_MAX_RUNNING_REQUESTS} × 1 = {QWEN_TALKER_MAX_RUNNING_REQUESTS}</text>
+            <text x={panel.x + panel.w / 2} y={panel.y + 326} text-anchor="middle" class="tag">{t('one talker and one code2wav process', '一个 talker 和一个 code2wav 进程')}</text>
+          {:else}
+            {#each [0, 1] as replica}
+              <rect x={panel.x + 14} y={panel.y + 150 + replica * 68} width={panel.w - 28} height="58" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
+              <text x={panel.x + 25} y={panel.y + 175 + replica * 68} class="tag strong">GPU {replica + 1} · talker_ar@r{replica} + code2wav@r{replica}</text>
+              <text x={panel.x + 25} y={panel.y + 198 + replica * 68} class="formula">talker cap = {QWEN_TALKER_MAX_RUNNING_REQUESTS}</text>
+            {/each}
+            <rect x={panel.x + 14} y={panel.y + 292} width={panel.w - 28} height="62" rx="7" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x={panel.x + panel.w / 2} y={panel.y + 329} text-anchor="middle" class="formula">codec_state_slots = {QWEN_TALKER_MAX_RUNNING_REQUESTS} × {QWEN_SPEECH_REPLICA2_COUNT} = {QWEN_REPLICA2_CODEC_STATE_SLOTS}</text>
+            <text x={panel.x + 14} y={panel.y + 374} class="tag">{QWEN_REPLICA2_TALKER_GPU_PERCENT}% + {QWEN_REPLICA2_CODE2WAV_GPU_PERCENT}% = {QWEN_REPLICA2_GPU_PERCENT}% {t('per replica GPU', '每个副本 GPU')}</text>
+          {/if}
+        {/each}
+        {#if !phone}
+          <text x="360" y="579" text-anchor="middle" class="tag strong">{t('Caps configure room; they do not measure completed requests per second.', '上限配置容量，不测量每秒完成多少请求。')}</text>
+        {/if}
+        <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('Input encoders and CPU stages stay unchanged.', '输入 encoders 和 CPU stages 保持不变。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Default round-robin pairs r0/r0; custom policies may differ', '默认轮询配对 r0/r0；自定义策略可能不同') : t('Default round-robin pairs matching replicas; a custom policy need not preserve that pairing.', '默认轮询配对相同编号副本；自定义策略不保证这种配对。')}</text>
       {/if}
     </svg>
   </div>

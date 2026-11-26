@@ -181,3 +181,50 @@ $$
 ### 接下来
 
 选好 checkpoint 和布局后，更多同时到来的语音请求可能需要另一对 talker 和 code2wav，而不是换精度。
+
+## 第 6 步 · 两个 talker，64 个 codec 状态位
+
+> **一句话：** replica2 保留一个 64 请求 thinker，增加第二个 32 请求 talker，并配置 64 个 codec 状态位。
+
+### 图上是什么
+
+- 运行上限是一个 stage 同时最多处理多少请求。它是 scheduler 限制，不是实测完成速度。
+- 默认语音有一个上限 64 的 thinker 和一个上限 32 的 talker，code2wav 与 thinker 同卡。
+- replica2 增加第二对 talker 和 code2wav。GPU 1 放 `r0`，GPU 2 放 `r1`。
+- 一个 codec 状态位保存一路声音的 decoder 状态。code2wav 工厂用 talker 上限乘副本数得到 64 个状态位。
+- 每个副本 GPU 给 talker 申报 12.3%，给 code2wav 申报 1.4%。
+
+### 公式
+
+$$
+C=T\times R,\qquad B=P_T+P_C
+$$
+
+| 符号 | 是什么 | 大小 | 从哪来 |
+|---|---|---:|---|
+| $C$ | 配置的 codec 状态位 | 64 | 本步 |
+| $T$ | 每个 talker 的运行请求上限 | 32 | Qwen 语音默认值 |
+| $R$ | talker 进程副本数 | 2 | replica2 YAML |
+| $B$ | 每个副本 GPU 的申报比例 | 13.7% | 本步 |
+| $P_T$ | talker 比例 | 12.3% | replica2 YAML |
+| $P_C$ | code2wav 比例 | 1.4% | replica2 YAML |
+
+### 代入图上的数
+
+$$
+C=32\times2=64\ \text{个状态位}
+$$
+
+$$
+B=12.3\%+1.4\%=13.7\%
+$$
+
+64 个状态位是 code2wav 的工厂配置，用来覆盖 talker 副本可运行的流。它不证明 64 路都能持续运行、64 路声音都不排队，也不证明吞吐翻倍。
+
+### 边界与出处
+
+上限和状态位计算：`sglang_omni/models/qwen3_omni/stages.py:1276-1286`；`sglang_omni/models/qwen3_omni/config.py:37,454-496`；`tests/unit_test/qwen3_omni/test_colocation_config.py:177-203`。位置和比例：`examples/configs/qwen3_omni_speech_replica2.yaml:1-42`。默认轮询让相同数量的副本组一起前进，自定义策略不保证 `r0/r0` 和 `r1/r1` 配对。
+
+### 接下来
+
+下一步核对解析后的配置，再用真实流量测量，不把这些上限当成结果。

@@ -181,3 +181,50 @@ Compatibility: `docs/cookbook/qwen3_omni.md:25-44`. FP8 checkpoint loading: `doc
 ### Next
 
 After choosing a checkpoint and layout, more simultaneous speech requests may require another talker/code2wav pair rather than another precision.
+
+## Step 6 · Two talker copies, 64 codec slots
+
+> **In one line:** Replica2 keeps one 64-request thinker, adds a second 32-request talker and configures 64 codec-state slots.
+
+### On the stage
+
+- The running cap is the most requests a stage may process at once. It is a scheduler limit, not a measured completion rate.
+- Default speech has one thinker capped at 64 and one talker capped at 32. Code2wav shares the thinker's GPU.
+- Replica2 adds a second talker/code2wav pair. GPU 1 holds pair `r0`; GPU 2 holds pair `r1`.
+- A codec-state slot holds decoder state for one stream. The code2wav factory computes 64 slots from the talker cap and replica count.
+- Each replica GPU declares 12.3% for talker and 1.4% for code2wav.
+
+### Formula
+
+$$
+C=T\times R,\qquad B=P_T+P_C
+$$
+
+| Symbol | Meaning | Size | Source |
+|---|---|---:|---|
+| $C$ | Configured codec-state slots | 64 | This step |
+| $T$ | Running-request cap per talker | 32 | Qwen speech default |
+| $R$ | Talker process replicas | 2 | Replica2 YAML |
+| $B$ | Declared fraction per replica GPU | 13.7% | This step |
+| $P_T$ | Talker fraction | 12.3% | Replica2 YAML |
+| $P_C$ | Code2wav fraction | 1.4% | Replica2 YAML |
+
+### The numbers on the stage
+
+$$
+C=32\times2=64\ \text{slots}
+$$
+
+$$
+B=12.3\%+1.4\%=13.7\%
+$$
+
+The 64 slots are a code2wav factory setting that covers streams the talker replicas can run. They do not prove 64 sustainable streams, 64 simultaneous audio outputs without queueing or twice the throughput.
+
+### Boundaries and sources
+
+Caps and slot computation: `sglang_omni/models/qwen3_omni/stages.py:1276-1286`, `sglang_omni/models/qwen3_omni/config.py:37,454-496` and `tests/unit_test/qwen3_omni/test_colocation_config.py:177-203`. Placement and budgets: `examples/configs/qwen3_omni_speech_replica2.yaml:1-42`. Default round-robin advances equal-sized replica sets together, but a custom policy need not preserve `r0/r0` and `r1/r1` pairing.
+
+### Next
+
+The next step checks a resolved configuration and then measures it with real traffic instead of treating these caps as results.
