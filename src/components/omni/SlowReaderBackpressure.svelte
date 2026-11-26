@@ -245,18 +245,22 @@
           <text x={x + 12} y="232" class="tag strong">{stream.bytes} B · idle {stream.idleSeconds} s</text>
           <text x={x + 12} y="255" class="tag">{i === 0 ? t('longest idle time', '最久没读取') : t('larger backlog', '积压更大')}</text>
         {/each}
-        <rect x={phone ? 15 : 170} y="320" width={phone ? 270 : 380} height="66" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
-        <text x={W / 2} y="347" text-anchor="middle" class="tag strong">req-behind + {DELIVERY_IDLE_TRIGGER_BYTES} B</text>
-        <text x={W / 2} y="373" text-anchor="middle" class="result">{DELIVERY_IDLE_BEFORE_BYTES} + {DELIVERY_IDLE_TRIGGER_BYTES} = {DELIVERY_IDLE_OVER_BYTES} B &gt; {DELIVERY_TEST_CAP_BYTES} B</text>
-        <rect x={phone ? 15 : 20} y="412" width={phone ? 270 : 680} height="150" rx="11" fill="var(--bg)" stroke="var(--line)" />
-        <text x={W / 2} y="441" text-anchor="middle" class="tag strong">{t('AFTER · fail req-idle, keep req-behind', '之后 · req-idle 失败，req-behind 保留')}</text>
-        <rect x={phone ? 27 : 40} y="463" width={phone ? 120 : 300} height="72" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
-        <text x={phone ? 39 : 52} y="491" class="mono">req-idle</text>
-        <text x={phone ? 39 : 52} y="518" class="tag strong">FAIL · −{DELIVERY_IDLE_CASE_STREAMS[0].bytes} B</text>
-        <rect x={phone ? 159 : 380} y="463" width={phone ? 120 : 300} height="72" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
-        <text x={phone ? 171 : 392} y="491" class="mono">req-behind</text>
-        <text x={phone ? 171 : 392} y="518" class="tag strong">{DELIVERY_IDLE_AFTER_BYTES} B · {t('KEPT', '保留')}</text>
-        <text x={W / 2} y="596" text-anchor="middle" class="formula">{DELIVERY_IDLE_OVER_BYTES} − {DELIVERY_IDLE_CASE_STREAMS[0].bytes} = {DELIVERY_IDLE_AFTER_BYTES} B ≤ {DELIVERY_TEST_CAP_BYTES} B</text>
+        <g opacity={phase >= 1 ? 1 : 0.18} style="transition: opacity 400ms">
+          <rect x={phone ? 15 : 170} y="320" width={phone ? 270 : 380} height="66" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x={W / 2} y="347" text-anchor="middle" class="tag strong">req-behind + {DELIVERY_IDLE_TRIGGER_BYTES} B</text>
+          <text x={W / 2} y="373" text-anchor="middle" class="result">{DELIVERY_IDLE_BEFORE_BYTES} + {DELIVERY_IDLE_TRIGGER_BYTES} = {DELIVERY_IDLE_OVER_BYTES} B &gt; {DELIVERY_TEST_CAP_BYTES} B</text>
+        </g>
+        <g opacity={phase >= 2 ? 1 : 0.12} style="transition: opacity 500ms">
+          <rect x={phone ? 15 : 20} y="412" width={phone ? 270 : 680} height="150" rx="11" fill="var(--bg)" stroke="var(--line)" />
+          <text x={W / 2} y="441" text-anchor="middle" class="tag strong">{t('AFTER · fail req-idle, keep req-behind', '之后 · req-idle 失败，req-behind 保留')}</text>
+          <rect x={phone ? 27 : 40} y="463" width={phone ? 120 : 300} height="72" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x={phone ? 39 : 52} y="491" class="mono">req-idle</text>
+          <text x={phone ? 39 : 52} y="518" class="tag strong">FAIL · −{DELIVERY_IDLE_CASE_STREAMS[0].bytes} B</text>
+          <rect x={phone ? 159 : 380} y="463" width={phone ? 120 : 300} height="72" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x={phone ? 171 : 392} y="491" class="mono">req-behind</text>
+          <text x={phone ? 171 : 392} y="518" class="tag strong">{DELIVERY_IDLE_AFTER_BYTES} B · {t('KEPT', '保留')}</text>
+          <text x={W / 2} y="596" text-anchor="middle" class="formula">{DELIVERY_IDLE_OVER_BYTES} − {DELIVERY_IDLE_CASE_STREAMS[0].bytes} = {DELIVERY_IDLE_AFTER_BYTES} B ≤ {DELIVERY_TEST_CAP_BYTES} B</text>
+        </g>
         <text x={W / 2} y={phone ? 770 : 626} text-anchor="middle" class="rowlabel">{t('What if one failure is not enough?', '如果失败一路还不够呢？')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Unit-test values; idle timestamps were adjusted.', '单元测试算例；空闲时间戳经过调整。')}</text>
       {:else if step === 4}
