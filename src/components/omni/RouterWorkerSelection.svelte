@@ -133,7 +133,7 @@
             <text x={worker.x + 20} y="397" class="small strong" style={worker.ok ? '' : 'fill:var(--muted)'}>{worker.ok ? t(phase >= 2 ? 'image input ✓ → accepted' : 'image input: not checked', phase >= 2 ? '图片输入 ✓ → 可以接收' : '图片输入：尚未检查') : t(phase >= 1 ? 'image input ✗ → removed' : 'image input: not checked', phase >= 1 ? '图片输入 ✗ → 排除' : '图片输入：尚未检查')}</text>
           {/each}
         {:else}
-          <line x1="150" y1="216" x2="150" y2="244" stroke="var(--accent)" stroke-width="2" marker-end="url(#router-arrow)" opacity={phase >= 3 ? 1 : 0} style="transition: opacity 350ms" />
+          <path d="M 250 195 H 290 V 405 H 280" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#router-arrow)" opacity={phase >= 3 ? 1 : 0} style="transition: opacity 350ms" />
           <rect x="20" y="250" width="260" height="115" rx="11" fill="var(--bg)" stroke={phase >= 1 ? 'var(--fg)' : 'var(--line)'} stroke-width={phase >= 1 ? 3 : 1} style="transition: stroke 350ms, stroke-width 350ms" />
           <text x="36" y="280" class="result">worker A</text>
           <text x="36" y="309" class="small">{t('text input only', '只接收文字输入')}</text>
