@@ -196,36 +196,49 @@ $$B(G) = \sum_{g \in G}(\operatorname{bytes}(g) + 1)$$
 
 词条和别名都讲完了。下一步是另一处设置里的全词典备注，以及 system、history、user 的完整顺序。
 
-## 第 6 步 · 备注进语言模型的提示
+## 第 6 步 · 全词典备注和完整消息顺序
 
-> **一句话：** 备注是你写一次的自由文字，作为单独一层进 system 提示，从不发给识别器，也不进文字稿替换。
+> **一句话：** 整部词典的 `settings.Dictionary.Notes` 作为单独一层进 system；这次请求的输入只在 user，行内备注仍然私有。
 
 ### 图上是什么
 
-- 左边蓝色框是**你的备注**：一段 Markdown，例如「Priya 在设计团队；团队念成 Preeya」。
-- 箭头指向右边 system 提示，标注「单独一层」、排在这次请求的输入之前。
+- 左边蓝色框是**全词典备注**，来源写成 `settings.Dictionary.Notes`，例如「Priya 在设计团队；团队念成 Preeya」。
+- 箭头指向右边 system 提示的备注一层。这里明确写着：这次请求的输入不在 system。
 - 下方橙色框列出**从不发到**的两个地方：语音模型、文字稿替换。
-- 底部一行说：即使词典开着，关掉备注也能让它不进提示。
+- 底部先给消息顺序 `system → history → user`，再说关掉备注能挡住全词典备注。
 
-### 备注放在哪一层
+### 两种备注不是一回事
 
-`PromptDictionary` 只在 `Dictionary.Enabled && !NotesOff` 时返回备注原文（`Voxt/internal/session/text.go:122`）。`addDictionary` 把它去掉首尾空白后，作为 `dictionary` 一层加在任务说明之后、scene／术语表／输入之前（`Voxt/internal/compose/dictionary.go:11`）。层与层之间用空行连接。
+行内的 `store.Term.Note` 是私有备注，源码明确写着「不发送到任何地方」（`internal/store/store.go:215-230`）。本步讲的是另一处 `settings.Dictionary.Notes`：整部词典共用的一段 Markdown，只给语言模型看。
 
-$$\text{system} = [\text{角色},\ \text{任务规则},\ \text{词典}] \oplus [\text{scene},\ \text{术语表},\ \text{输入}]$$
+`PromptDictionary` 只在 `Dictionary.Enabled && !NotesOff` 时返回这段全词典备注（`Voxt/internal/session/text.go:120-126`）。`addDictionary` 去掉首尾空白，把它作为 `dictionary` 一层加在任务说明之后、scene 和术语表之前（`Voxt/internal/compose/dictionary.go:11-17`）。层与层之间用空行连接。
+
+### 公式
+
+$$\text{system} = [\text{任务层},\ \text{全词典备注},\ \text{scene},\ \text{小词典术语表（如有）}]$$
+
+$$\text{messages} = [\text{system},\ \ldots\text{history},\ \text{user}]$$
+
+$$\text{user} = [\text{大词典的 } \langle glossary\rangle\text{（如有）}] \oplus [\langle input\rangle\text{call Priya.}\langle/input\rangle]$$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
-| `Notes` | 你写的备注原文 | 词典设置 |
-| `NotesOff` | 是否把备注挡在提示外 | 词典设置 |
-| `Dictionary` 层 | 备注在 system 提示里的位置 | `compose/dictionary.go:11` |
+| 全词典备注 | 整部词典共用的 `settings.Dictionary.Notes` | `session/text.go:120-126` |
+| scene | 当前任务的其他上下文层 | `compose/dictionary.go:11-17` 的位置关系 |
+| 小词典术语表 | 第 5 步中不超过 30 个词条时放在 system 的内容 | 第 5 步 |
+| messages | 发给语言模型的完整消息序列 | `compose.go:253-258` |
+| history | system 和 user 之间的历史消息；本 Transcribe 示例为空 | `compose.go:253-258`、`387-392` |
+| user | 最后一条用户消息 | `compose.go:253-258` |
+| $\langle input\rangle$ | 包住这次请求替换后输入的标签 | `compose/before.go:13-17` |
+| `call Priya.` | 第 4 步替换后的请求输入 | 第 4、5 步 |
 
-### 为什么备注和术语表不同
+### 为什么全词典备注和术语表不同
 
-术语表是结构化的「词条 → 别名」，由程序按规则挑；备注是自由文字，你说什么模型读什么。备注能放术语表放不下的东西，比如「这个团队把 Priya 念成 Preeya，别改他们的说法」。它只给语言模型看，所以不会改变识别，也不会在文字稿里做替换。
+术语表是结构化的「词条 → 别名」，由程序按规则挑；全词典备注是自由文字，你说什么模型读什么。它能放术语表放不下的说明，比如「这个团队把 Priya 念成 Preeya，别改他们的说法」。它只给语言模型看，所以不会改变识别，也不会在文字稿里做替换。
 
 ### 边界
 
-关掉备注开关只挡住提示，不删掉你已经写的文字。备注为空时这一层不加，system 提示和没有备注时一样。
+关掉备注开关只挡住提示，不删掉已经写的文字。全词典备注为空时这一层不加，system 和没有备注时一样。其他任务可以有 history；本章的 Transcribe 示例没有，它的清理示例位于 system，而不是 history（`compose.go:387-392`）。
 
 ### 接下来
 

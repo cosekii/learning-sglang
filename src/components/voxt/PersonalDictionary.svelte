@@ -27,8 +27,8 @@
     caption: "Small dictionaries put the glossary in system. Large ones put selected terms at the user's start.",
     captionZh: '小词典把术语表放进 system。大词典把选中的词条放在 user 开头。',
   }, {
-    caption: 'Your note is free text for the language model. It never reaches the recognizer.',
-    captionZh: '备注是写给语言模型的自由文字。它不会到识别器那里。',
+    caption: 'Dictionary-wide notes are free text for the language model. They never reach the recognizer.',
+    captionZh: '全词典备注是写给语言模型的自由文字，不会到识别器。',
   }, {
     caption: 'Hints and alias replacement work without the model; the glossary and note do not. How long does Voxt keep the recording?',
     captionZh: '提示和别名替换不需要模型；术语表和备注需要。Voxt 把录音留多久？',
@@ -49,8 +49,8 @@
     en: 'With 30 or fewer distinct enabled terms, all terms become candidates and the glossary sits in the system message. With more than 30, only terms mentioned by the replaced text become candidates; system keeps generic rules, and the selected glossary opens the user message. Both cases take the longest prefix that fits 60 lines and 2000 bytes, stopping at the first line that does not fit. The request input is call Priya after alias replacement. An unchanged system prefix may let the provider reuse its prompt cache, but saves no guaranteed time or tokens.',
     zh: '不超过 30 个不同的启用词条时，全部成为候选，术语表放在 system 消息里。超过 30 个时，只把替换后的文字提到的词条作为候选；system 只留通用规则，选中的 <glossary> 放在 user 开头。两种情况都取同时满足 60 行和 2000 字节的最长前缀，遇到首个放不下的行就停。这次请求的输入是别名替换后的 call Priya。provider 可能复用未变的 system 前缀，但不保证省时或省 token。',
   }, {
-    en: 'The note is free text you write once. It goes into the language model system prompt as its own layer, before this request input, and never to the speech model or the transcript. The notes-off switch keeps it out of the prompt even when the dictionary is on.',
-    zh: '备注是你写一次的一段文字。它作为单独一层进入语言模型的 system 提示，排在这次请求的输入之前，从不去语音模型或文字稿。即使词典开着，关掉备注的开关也能让它不进提示。',
+    en: 'Dictionary-wide settings.Dictionary.Notes is free text, separate from a row’s private store.Term.Note. When enabled, it joins the language model system layers and never goes to the speech model or transcript replacement. Final messages are system, then history, then user; this request input sits only in user. Notes-off keeps the dictionary notes out of the prompt even while the dictionary is on.',
+    zh: '整部词典的 settings.Dictionary.Notes 是自由文字，和行内私有的 store.Term.Note 不同。开启时，它作为单独一层进入语言模型的 system，从不去语音模型或文字稿替换。最终消息顺序是 system、history、user，这次请求的输入只在 user 里。即使词典开着，关掉备注也能让全词典备注不进提示。',
   }, {
     en: 'With the language model off or failing, the speech hints and the alias replacement still work. The glossary and the note do not, because both ride in the language-model prompt. The next chapter asks how long Voxt keeps the recording and its history.',
     zh: '语言模型关掉或失败时，语音提示和别名替换仍然有效。术语表和备注不行，因为两者都搭在语言模型的提示里。下一章看 Voxt 把录音和历史留多久。',
@@ -340,42 +340,45 @@
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('compose.Build · 60 lines · 2000 bytes', 'compose.Build · 60 行 · 2000 字节') : t('Source: compose.Build · GlossaryAllUpTo 30 · 60 lines · 2000 bytes', '出处：compose.Build · GlossaryAllUpTo 30 · 60 行 · 2000 字节')}</text>
 
       {:else if step === 5}
-        <text x="20" y="22" class="tag strong">{t('4 OF 4 · NOTE → MODEL PROMPT', '第 4/4 个 · 备注 → 模型提示')}</text>
-        <text x="20" y="46" class="tag">{t('Free text, not a table.', '自由文字，不是表格。')}</text>
+        <text x="20" y="22" class="tag strong">{t('4 OF 4 · DICTIONARY NOTES → SYSTEM', '第 4/4 个 · 全词典备注 → SYSTEM')}</text>
+        <text x="20" y="46" class="tag">{t('separate from the row’s private note.', '和行内私有备注不是一回事。')}</text>
         {#if phone}
           <rect x="20" y="62" width="260" height="120" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="34" y="86" class="rowlabel">{t('your note', '你的备注')}</text>
-          <text x="34" y="112" class="detail">{t('free text you write once', '你写一次的一段文字')}</text>
+          <text x="34" y="86" class="rowlabel">{t('dictionary-wide notes', '全词典备注')}</text>
+          <text x="34" y="112" class="detail">settings.Dictionary.Notes</text>
           <text x="34" y="136" class="detail">{t('e.g. “Priya is on the design team;', '例如 “Priya 在设计团队；')}</text>
           <text x="34" y="158" class="detail">{t('heard as ‘Preeya’.”', '被听成 ‘Preeya’。”')}</text>
           <path d="M150 182 V204" stroke="var(--accent)" stroke-width="2" marker-end="url(#dict-arrow-accent)" />
           <rect x="20" y="212" width="260" height="96" rx="8" fill="var(--bg)" stroke="var(--line)" />
-          <text x="34" y="236" class="rowlabel">{t('system prompt · own layer', 'system 提示 · 单独一层')}</text>
-          <text x="34" y="262" class="mono">{t('note → before input', '备注 → 输入之前')}</text>
-          <text x="34" y="288" class="detail">{t('the same on every request', '每次请求都一样')}</text>
+          <text x="34" y="236" class="rowlabel">{t('system prompt · notes layer', 'system 提示 · 备注一层')}</text>
+          <text x="34" y="262" class="mono">{t('notes join the system layers', '备注加入 system 各层')}</text>
+          <text x="34" y="288" class="detail">{t('no request input here', '这次请求的输入不在这里')}</text>
           <text x="20" y="340" class="tag strong">{t('never sent to', '从不发到')}</text>
           <text x="20" y="366" class="tag" fill="var(--gen)">✗ {t('speech model', '语音模型')}</text>
           <text x="20" y="390" class="tag" fill="var(--gen)">✗ {t('transcript replacement', '文字稿替换')}</text>
-          <text x="20" y="428" class="tag">{t('notes-off keeps it out', '关掉备注就不进提示')}</text>
-          <text x="20" y="452" class="tag">{t('even while the dictionary is on', '词典开着也一样')}</text>
+          <text x="20" y="428" class="tag">{t('messages: system → history → user', '消息：system → history → user')}</text>
+          <text x="20" y="452" class="tag">{t('this request is in user', '这次请求的输入在 user')}</text>
+          <text x="20" y="490" class="tag">{t('notes-off keeps them out', '关掉备注就不进提示')}</text>
+          <text x="20" y="514" class="tag">{t('even while the dictionary is on', '词典开着也一样')}</text>
         {:else}
           <rect x="20" y="72" width="240" height="140" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="34" y="98" class="rowlabel">{t('your note', '你的备注')}</text>
-          <text x="34" y="126" class="detail">{t('free text you write once', '你写一次的一段文字')}</text>
+          <text x="34" y="98" class="rowlabel">{t('dictionary-wide notes', '全词典备注')}</text>
+          <text x="34" y="126" class="detail">settings.Dictionary.Notes</text>
           <text x="34" y="152" class="detail">{t('“Priya is on the design team;', '“Priya 在设计团队；')}</text>
           <text x="34" y="174" class="detail">{t('heard as ‘Preeya’.”', '被听成 ‘Preeya’。”')}</text>
           <text x="34" y="198" class="detail">{t('any notes that help', '任何有用的说明都行')}</text>
           <path d="M260 142 H312" stroke="var(--accent)" stroke-width="2" marker-end="url(#dict-arrow-accent)" />
           <rect x="324" y="72" width="376" height="140" rx="10" fill="var(--bg)" stroke="var(--line)" />
-          <text x="338" y="98" class="rowlabel">{t('system prompt · its own layer', 'system 提示 · 单独一层')}</text>
-          <text x="338" y="128" class="detail">{t('role · task rules · dictionary · this request', '角色 · 任务规则 · 词典 · 本次请求')}</text>
-          <text x="338" y="156" class="mono">{t('note sits before the input', '备注排在输入之前')}</text>
-          <text x="338" y="186" class="detail">{t('the same on every request', '每次请求都一样')}</text>
+          <text x="338" y="98" class="rowlabel">{t('system prompt · notes layer', 'system 提示 · 备注一层')}</text>
+          <text x="338" y="128" class="detail">{t('role · task rules · dictionary notes', '角色 · 任务规则 · 全词典备注')}</text>
+          <text x="338" y="156" class="mono">{t('notes join the system layers', '备注加入 system 各层')}</text>
+          <text x="338" y="186" class="detail">{t('no request input here', '这次请求的输入不在这里')}</text>
           <rect x="20" y="240" width="680" height="90" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="34" y="266" class="tag strong" fill="var(--gen)">{t('never sent to', '从不发到')}</text>
           <text x="34" y="294" class="tag">✗ {t('speech model (hints come from the term)', '语音模型（提示只来自词条）')}</text>
           <text x="34" y="318" class="tag">✗ {t('the transcript (replacement reads aliases)', '文字稿（替换只读别名）')}</text>
-          <text x="20" y="368" class="tag">{t('Notes-off keeps the note out of the prompt even while the dictionary is on.', '即使词典开着，关掉备注也能让它不进提示。')}</text>
+          <text x="20" y="356" class="tag">{t('messages: system → history → user · this request is in user', '消息：system → history → user · 这次请求的输入在 user')}</text>
+          <text x="20" y="384" class="tag">{t('Notes-off keeps the notes out of the prompt even while the dictionary is on.', '即使词典开着，关掉备注也能让全词典备注不进提示。')}</text>
         {/if}
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('PromptDictionary · compose addDictionary', 'PromptDictionary · compose addDictionary') : t('Source: session/text.go PromptDictionary() · compose/dictionary.go addDictionary()', '出处：session/text.go PromptDictionary() · compose/dictionary.go addDictionary()')}</text>
 

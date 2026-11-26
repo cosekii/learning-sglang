@@ -196,36 +196,49 @@ The glossary only shapes the language model's output; it does not change recogni
 
 Terms and aliases are covered. The next step covers separate dictionary-wide notes and the full system, history, user sequence.
 
-## Step 6 · The note enters the language-model prompt
+## Step 6 · Dictionary notes and the complete message order
 
-> **In one line:** The note is free text you write once; it enters the system prompt as its own layer and never reaches the recognizer or the transcript replacement.
+> **In one line:** Dictionary-wide `settings.Dictionary.Notes` enters system as its own layer; this request's input sits only in user, and each row note stays private.
 
 ### On the stage
 
-- The blue box on the left is **your note**: a Markdown passage such as "Priya is on the design team; heard as Preeya".
-- An arrow points to the system prompt on the right, labelled as its own layer and placed before this request's input.
-- The orange box below lists the two places the note **never** goes: the speech model and the transcript replacement.
-- The bottom line says notes-off keeps the note out of the prompt even while the dictionary is on.
+- The blue box on the left is **dictionary-wide notes**, sourced from `settings.Dictionary.Notes`, such as "Priya is on the design team; heard as Preeya".
+- An arrow points to the notes layer in system on the right, which explicitly says this request's input is not in system.
+- The orange box below lists the two places the notes **never** go: the speech model and transcript replacement.
+- The bottom lines give `system → history → user`, then say notes-off keeps dictionary notes out of the prompt.
 
-### Which layer the note takes
+### The two kinds of note
 
-`PromptDictionary` returns the note only when `Dictionary.Enabled && !NotesOff` (`Voxt/internal/session/text.go:122`). `addDictionary` trims it and adds it as the `dictionary` layer after the task instructions and before scene, glossary and input (`Voxt/internal/compose/dictionary.go:11`). Layers are joined with a blank line.
+A row's `store.Term.Note` is private; the source says “not sent anywhere” (`internal/store/store.go:215-230`). This step concerns separate `settings.Dictionary.Notes`: one Markdown passage shared by the whole dictionary and shown only to the language model.
 
-$$\text{system} = [\text{role},\ \text{task rules},\ \text{dictionary}] \oplus [\text{scene},\ \text{glossary},\ \text{input}]$$
+`PromptDictionary` returns those dictionary notes only when `Dictionary.Enabled && !NotesOff` (`Voxt/internal/session/text.go:120-126`). `addDictionary` trims them and adds the `dictionary` layer after the task instructions and before scene and glossary (`Voxt/internal/compose/dictionary.go:11-17`). Layers are joined with a blank line.
+
+### Formula
+
+$$\text{system} = [\text{task layers},\ \text{dictionary notes},\ \text{scene},\ \text{small-dictionary glossary (if any)}]$$
+
+$$\text{messages} = [\text{system},\ \ldots\text{history},\ \text{user}]$$
+
+$$\text{user} = [\text{large-dictionary } \langle glossary\rangle\text{ (if any)}] \oplus [\langle input\rangle\text{call Priya.}\langle/input\rangle]$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
-| `Notes` | the note as written | dictionary settings |
-| `NotesOff` | whether the note is kept out of the prompt | dictionary settings |
-| `Dictionary` layer | where the note sits in the system prompt | `compose/dictionary.go:11` |
+| dictionary notes | `settings.Dictionary.Notes` shared by the dictionary | `session/text.go:120-126` |
+| scene | the other context layer for this task | placement in `compose/dictionary.go:11-17` |
+| small-dictionary glossary | Step 5's system content with at most 30 terms | Step 5 |
+| messages | the complete sequence sent to the language model | `compose.go:253-258` |
+| history | messages between system and user; empty in this Transcribe example | `compose.go:253-258`, `387-392` |
+| user | the final user message | `compose.go:253-258` |
+| $\langle input\rangle$ | tags around this request's replaced input | `compose/before.go:13-17` |
+| `call Priya.` | the request input after Step 4's replacement | Steps 4 and 5 |
 
-### Why the note differs from the glossary
+### Why dictionary notes differ from the glossary
 
-The glossary is structured "term to aliases" that the program picks by rule; the note is free text, and the model reads whatever you write. The note can carry what the glossary cannot, such as "this team says Priya as Preeya, do not change their wording". It is shown only to the language model, so it changes neither recognition nor the transcript replacement.
+The glossary is structured term-to-alias data selected by rules; dictionary notes are free text, and the model reads whatever you write. Notes can carry what the glossary cannot, such as "this team says Priya as Preeya, do not change their wording". They are shown only to the language model, so they change neither recognition nor transcript replacement.
 
 ### Boundary
 
-Turning notes off only keeps the note out of the prompt; it does not delete the text you wrote. An empty note adds no layer, so the system prompt matches one with no note at all.
+Turning notes off only keeps the notes out of the prompt; it does not delete the text you wrote. Empty dictionary notes add no layer, so system matches one with no notes. Other tasks can have history; this Transcribe example has none, and its cleanup example lives in system rather than history (`compose.go:387-392`).
 
 ### Next
 

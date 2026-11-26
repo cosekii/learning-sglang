@@ -23,7 +23,7 @@ Step 4 reads `dict.Replace` and `matchText`. Enabled terms' aliases are matched;
 
 Step 5 reads `compose.Build`. With at most `GlossaryAllUpTo = 30` distinct terms, all become candidates and the rendered glossary sits in system. With more than 30, only terms or aliases mentioned in the replaced text become candidates; system keeps generic rules and the selected `<glossary>` opens the user message when matches exist (`compose.go:366-377`, `411-416`). In both cases the output is the longest candidate prefix that fits 60 lines and 2000 bytes, stopping at the first over-budget line without truncating it (`compose.go:576-580`). Go's `len(string)` counts UTF-8 bytes; the limit excludes the surrounding tags. The request input is `call Priya.` after alias replacement. An unchanged system prefix may let the provider reuse its prompt cache, with no guaranteed time or token saving (`compose_test.go:574-577`, `595-630`).
 
-Step 6 reads `PromptDictionary` and `addDictionary`: the note is trimmed and added as the `dictionary` layer after the task layers and before scene, glossary and input, so the system-prompt prefix stays stable (`compose/dictionary.go`). It is never passed to ASR or to `dict.Replace`.
+Step 6 reads `PromptDictionary` and `addDictionary`: dictionary-wide `settings.Dictionary.Notes`, not a row's private `store.Term.Note`, is trimmed and added as the `dictionary` system layer after the task layers and before scene and glossary (`compose/dictionary.go:11-17`). Final messages are `[system, …history, user]` (`compose.go:253-258`). This request's replaced input sits inside `<input>` in user, never in system (`compose/before.go:13-17`). Notes go neither to ASR nor to `dict.Replace`. This Transcribe example has no history messages.
 
 Step 7 is a status read: `SpeechHints` and `spoken()`/`dict.Replace` do not call the language model; `Glossary` and `addDictionary` are only used when a cleanup request is built.
 
@@ -44,7 +44,7 @@ Source revision: `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683
 
 第 5 步读 `compose.Build`。不超过 `GlossaryAllUpTo = 30` 个不同词条时，全部先成为候选，术语表放在 system。超过 30 个时，只把替换后的文字提到的词条或别名作为候选；system 只留通用规则，有匹配时选中的 `<glossary>` 放在 user 开头（`compose.go:366-377`、`411-416`）。两种情况都取同时满足 60 行和 2000 字节的最长候选前缀，遇到首个超预算的行就停，不截断那一行（`compose.go:576-580`）。Go 的 `len(string)` 计算 UTF-8 字节，上限不含外层标签。这次请求的输入是别名替换后的 `call Priya.`。provider 可能复用未变的 system 前缀，不保证省时或省 token（`compose_test.go:574-577`、`595-630`）。
 
-第 6 步读 `PromptDictionary` 和 `addDictionary`：备注去掉首尾空白，作为 `dictionary` 一层加在任务说明之后、scene／术语表／输入之前，所以 system 提示的前缀保持不变（`compose/dictionary.go`）。它从不去 ASR，也不进 `dict.Replace`。
+第 6 步读 `PromptDictionary` 和 `addDictionary`：整部词典的 `settings.Dictionary.Notes`，不是行内私有的 `store.Term.Note`，去掉首尾空白后作为 `dictionary` 一层加在任务说明之后、scene 和术语表之前（`compose/dictionary.go:11-17`）。最终消息顺序是 `[system, …history, user]`（`compose.go:253-258`）。这次请求替换后的输入只在 user 的 `<input>` 里，不在 system（`compose/before.go:13-17`）。备注从不去 ASR，也不进 `dict.Replace`。这个 Transcribe 示例没有 history 消息。
 
 第 7 步是状态盘点：`SpeechHints` 和 `spoken()`／`dict.Replace` 不调用语言模型；`Glossary` 和 `addDictionary` 只在组装清理请求时用上。
 
