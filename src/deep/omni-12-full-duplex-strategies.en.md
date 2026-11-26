@@ -93,7 +93,8 @@ Sources: `sglang_omni/pipeline/session_graph.py:108-232,581-619`; `sglang_omni/p
 
 ### On the stage
 
-- The generated reply has 34 rows: three text rows and 31 complete 80 ms sound rows.
+- A row is one token position saved in thinker history.
+- The generated reply has 34 rows: three text rows and 31 complete 80 ms sound rows. The 2.5-second example gives `3 + floor(2,500 ÷ 80) = 34`; those sound rows cover `31 × 80 = 2,480 ms`, leaving a 20 ms tail that is not a complete row.
 - D would permit 28 rows. H moves the cut back to 18 rows.
 - Blue boxes are the rows that remain in thinker history. Grey boxes are removed.
 - The cut counts token positions, not words and not exact acoustic word boundaries.
@@ -107,6 +108,8 @@ $$
 | Symbol | Meaning | Value | Source |
 |---|---|---:|---|
 | $C$ | Reply rows retained after the cut | 18 | This step |
+| $C_D$ | Reply rows allowed by delivered position D | 28 | This step |
+| $C_H$ | Reply rows retained after playback position H | 18 | This step |
 | $P$ | Text rows consumed by talker prefill | 3 | Qwen `PREFILL_TEXT_ROWS` |
 | $D$ | Delivered audio position | 2,000 ms | Step 1 |
 | $H$ | Client-reported playback position | 1,200 ms | Step 1 |
@@ -150,6 +153,7 @@ $$
 | Symbol | Meaning | Value | Source |
 |---|---|---:|---|
 | $E$ | Last retained sentence-ending position | 1,000 ms | This step |
+| $i$ | Sentence number | 1, 2, 3 | Constructed sentence list |
 | $e_i$ | Audio-ending position of sentence $i$ | 1,000; 2,000; 2,500 ms | Constructed progress points |
 | $D$ | Delivered position | 2,000 ms | Step 1 |
 | $H$ | Client playback position | 1,200 ms | Step 1 |
@@ -158,15 +162,15 @@ $$
 
 - At D = 2,000 ms, eligible endings are 1,000 and 2,000 ms, so the dialog retains two sentences.
 - At min(D,H) = 1,200 ms, only 1,000 ms qualifies, so the dialog retains sentence 1.
-- The listener heard 200 ms into sentence 2, but sentence mode cannot retain part of that sentence. The retained prefix is marked uncertain.
+- The listener heard `1,200 − 1,000 = 200 ms` into sentence 2, but sentence mode cannot retain part of that sentence. The retained prefix is marked uncertain.
 
-The default is `method: sentence`. `forced` adds word-ending information for completed sentences. `asr`, or `forced` with `heard_asr_url`, can transcribe the interrupted sentence prefix and retain a strict matching text prefix. Failure, timeout or a mismatched beginning leaves that sentence unheard. Those variants are not part of this stage's comparison.
+The default is `method: sentence`. `forced` adds word-ending information for completed sentences. `asr`, or `forced` with `heard_asr_url`, can transcribe the interrupted sentence prefix and retain a strict matching text prefix. ASR failure, timeout or a mismatched beginning adds no finer prefix for the interrupted sentence. Forced alignment still retains its sentence end and any word ends already reported. Those variants are not part of this stage's comparison.
 
 ### Next
 
 Native MiniCPM-o does not cut text sentences or 80 ms rows. Its client truncate keeps complete one-second units.
 
-Sources: `sglang_omni/models/streaming_cascade/dialog.py:66-78,857-917`; `sglang_omni/models/streaming_cascade/alignment.py:98-138,219-229,370-424`; `tests/unit_test/models/test_streaming_cascade.py:320-348`.
+Sources: `sglang_omni/models/streaming_cascade/dialog.py:66-78,857-917`; `sglang_omni/models/streaming_cascade/alignment.py:98-138,219-229,389-522`; `tests/unit_test/models/test_streaming_cascade.py:320-348`.
 
 ## Step 6 · MiniCPM-o keeps whole units
 
@@ -182,15 +186,17 @@ Sources: `sglang_omni/models/streaming_cascade/dialog.py:66-78,857-917`; `sglang
 ### Formula
 
 $$
-K = \left\lfloor\frac{\min(D,H)}{U}\right\rfloor - 1
+K = \left\lfloor\frac{\min(D,H)}{V}\right\rfloor - 1
 $$
 
 | Symbol | Meaning | Value | Source |
 |---|---|---:|---|
 | $K$ | Zero-based index of the last retained unit | 0 | This step |
+| $K_D$ | Last retained zero-based unit index at delivered position D | 1 | This step |
+| $K_H$ | Last retained zero-based unit index after playback position H | 0 | This step |
 | $D$ | Delivered position | 2,000 ms | Step 1 |
 | $H$ | Client playback position | 1,200 ms | Step 1 |
-| $U$ | Native audio-unit duration | 1,000 ms | Ch. 21 Step 2 |
+| $V$ | Native audio-unit duration | 1,000 ms | Ch. 21 Step 2 |
 
 ### The numbers on the stage
 
@@ -202,7 +208,7 @@ $$
 K_H = \left\lfloor 1{,}200 \div 1{,}000 \right\rfloor - 1 = 0
 $$
 
-The output converter remembers each delivered unit's reply-audio end. `played_through_unit` selects the last delivered unit whose end is at or before H. A position inside a unit rounds down. The thinker drops spoken units after the boundary, restores earlier generated history and refills later input as forced-listen units. It also holds listening until user speech arrives, so silence does not resume the cancelled answer.
+The heard fragment inside unit 1 is `1,200 − 1,000 = 200 ms`. The output converter remembers each delivered unit's reply-audio end. `played_through_unit` selects the last delivered unit whose end is at or before H. A position inside a unit rounds down. The thinker drops spoken units after the boundary, restores earlier generated history and refills later input as forced-listen units. It also holds listening until user speech arrives, so silence does not resume the cancelled answer.
 
 ### Next
 
@@ -216,7 +222,8 @@ Sources: `sglang_omni/models/minicpm_o/session_adapters.py:118-179,219-236,469-5
 
 ### On the stage
 
-- A Unit is one request-backed append through the Session stages.
+- The profiler is the tool that records these server timings.
+- A Unit is the work done for one append through the Session stages.
 - Ready means every required input is present. Admitted means the coordinator accepted the append.
 - The blue interval is 150 ms from ready to admitted. The orange interval is 50 ms from admitted to first output.
 - First output enters the coordinator output buffer. It may be text, so it is not necessarily audio.
@@ -230,8 +237,10 @@ $$
 | Symbol | Meaning | Value | Source |
 |---|---|---:|---|
 | $T$ | Ready-to-first-output duration | 200 ms | This step |
-| $A$ | Ready-to-admitted duration | 150 ms | Profiler golden test |
-| $B$ | Admitted-to-first-output duration | 50 ms | Profiler golden test |
+| $A$ | Ready-to-admitted duration | 150 ms | Fixed profiler test |
+| $B$ | Admitted-to-first-output duration | 50 ms | Fixed profiler test |
+| $start\_timestamp\_ns$ | Interval-start timestamp in nanoseconds | event-dependent | Profiler event |
+| $end\_timestamp\_ns$ | Interval-end timestamp in nanoseconds | event-dependent | Profiler event |
 
 ### The numbers on the stage
 
@@ -259,7 +268,7 @@ Sources: `sglang_omni/profiler/duplex_metrics.py:150-157,282-337`; `docs/develop
 
 - S = 3.0 seconds starts the user's correction. R = 4.0 seconds ends it.
 - L = 4.3 seconds is the end of the old model-speech segment covering S.
-- N = 5.1 seconds is the first new ASR word after R.
+- N = 5.1 seconds is the first new ASR word at or after R.
 - The three small cards recall the same history cut: Qwen keeps 18 rows, the cascade keeps sentence 1 and MiniCPM-o keeps unit 0.
 
 ### Formula
@@ -274,7 +283,7 @@ $$
 | $T_{response}$ | New-reply response wait | 1.1 s | This step |
 | $L$ | End of old model speech covering S | 4.3 s | Constructed recording |
 | $S$ | Interruption onset | 3.0 s | Constructed recording |
-| $N$ | First post-R ASR word start | 5.1 s | Constructed recording |
+| $N$ | First ASR word start at or after R | 5.1 s | Constructed recording |
 | $R$ | Interruption end | 4.0 s | Constructed recording |
 
 ### The numbers on the stage
@@ -287,7 +296,7 @@ $$
 T_{response} = 5.1 - 4.0 = 1.1\ \text{s}
 $$
 
-These are FDB v1.0 definitions. N is an ASR word start, not necessarily an audio-arrival timestamp. If no model speech covers S, the interruption is `not_exercised`, not a successful stop. If speech covers both S and R, the outcome is `speaking_at_end` and response latency is absent. Missing responses and unobserved stops count as infinity for quantile summaries rather than disappearing from the denominator.
+These are FDB v1.0 definitions. N is an ASR word start at or after R, not necessarily an audio-arrival timestamp. If no model speech covers S, the interruption is `not_exercised`, not a successful stop. If speech covers both S and R, the outcome is `speaking_at_end` and response latency is absent. For exercised samples, missing responses and unobserved stops count as infinity for quantile summaries rather than disappearing from the denominator. `not_exercised` and ineligible samples are not in those latency denominators.
 
 ### Next
 
