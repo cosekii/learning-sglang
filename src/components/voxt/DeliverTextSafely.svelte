@@ -20,8 +20,8 @@
     caption: 'Next check: can that focused element take text? If not, the answer goes to the card.',
     captionZh: '再检查焦点能不能收文字。不能就退回答案卡。',
   }, {
-    caption: 'After pasting, read the field again. If it reads the same, the paste is unconfirmed.',
-    captionZh: '贴完再读一次焦点。还是一样，就只是没确认。',
+    caption: 'After pasting, read the field again. An ordinary field that reads the same leaves the paste unconfirmed.',
+    captionZh: '贴完再读一次焦点。普通框读起来一样，就只是没确认。',
   }, {
     caption: 'Save the old clipboard and put it back after the paste. A reader may still need what was there.',
     captionZh: '贴之前记住剪贴板，贴完把原来的放回去。里面可能有读者还要用的东西。',
@@ -36,11 +36,11 @@
     en: 'Three ways to decide whether the focused element takes text. In the start app, an element it cannot read, even a web area, counts as writable. In another app, the element must report editable; a page being read is not enough. A selection replace or Voxt own window needs an editable element. A button or a list never takes text, so the answer goes to the card.',
     zh: '三种判断焦点能不能收文字。在 start app 里，读不出的元素，包括网页区域，都按能写处理。在别的 app 里，元素必须报可编辑；正在阅读的网页不算。要替换选中的文字，或在 Voxt 自己的窗口里，元素必须可编辑。按钮或列表从不收文字，答案就去卡片。',
   }, {
-    en: 'After Command-V, the helper reads the focused field again: its text and its cursor. A different reading is evidence the text landed. The same reading leaves the paste unconfirmed, so the text stays on the clipboard and the card opens. A field that cannot be read, or a web page that never updates, is trusted as inserted.',
-    zh: 'Command-V 之后，helper 再读一次焦点：它的文字和光标。读到不同，是把文字贴进去的证据。读到一样，只说明还没确认，文字留在剪贴板，卡片打开。读不出的元素，或从不更新的网页，按已贴入处理。',
+    en: 'After Command-V, the helper reads the focused field again: its text and its cursor. A different reading is evidence the text landed. An ordinary readable field that reads the same leaves the paste unconfirmed: the text stays on the clipboard and the card opens. A web area or editable web region that reads the same is instead treated as unknown and inserted, because those editors often accept a paste without updating what Accessibility reads. A field that cannot be read is trusted as inserted.',
+    zh: 'Command-V 之后，helper 再读一次焦点：它的文字和光标。读到不同，是把文字贴进去的证据。普通、读得出来的框读到一样，只算没确认：文字留在剪贴板，卡片打开。网页区域或可编辑的网页部分读到一样，则改成 unknown 并按已贴入处理，因为这些编辑器常接受粘贴却不更新 Accessibility 读到的东西。读不出的元素也按已贴入处理。',
   }, {
-    en: 'The clipboard is snapshotted before Command-V and the prepared text is written over it. After a confirmed paste the old clipboard returns after one hundred fifty milliseconds; when the result is unknown it returns after the default five hundred. If another program wrote to the clipboard meanwhile, Voxt does not put the old one back. The fallback card offers Insert and Copy and keeps the text on the clipboard.',
-    zh: 'Command-V 之前先给剪贴板拍快照，再写入准备好的文字。确认贴进去后，一百五十毫秒把原来的剪贴板放回；结果不确定时按默认五百毫秒放回。如果这中间别的程序写了剪贴板，Voxt 不会用旧的覆盖它。退回的卡片提供 Insert 和 Copy，文字留在剪贴板上。',
+    en: 'The clipboard is snapshotted before Command-V and the prepared text is written over it. After a confirmed paste the old clipboard returns after one hundred fifty milliseconds; when the result is unknown it returns after the default five hundred. If another program wrote to the clipboard meanwhile, Voxt does not put the old one back. An unconfirmed posted paste keeps the text on the clipboard, and the fallback card offers Insert and Copy. A password or not-editable check returns before the clipboard is written, so it leaves the clipboard alone. KeepClipboard is the separate switch that keeps the text there on purpose.',
+    zh: 'Command-V 之前先给剪贴板拍快照，再写入准备好的文字。确认贴进去后，一百五十毫秒把原来的剪贴板放回；结果不确定时按默认五百毫秒放回。如果这中间别的程序写了剪贴板，Voxt 不会用旧的覆盖它。发出粘贴但没确认时，文字留在剪贴板，退回的卡片提供 Insert 和 Copy。密码框和不可编辑的检查发生在写剪贴板之前，所以不动剪贴板。KeepClipboard 是另一个开关，故意把文字留在剪贴板上。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -57,7 +57,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived((phone ? [560, 560, 640, 640, 700] : [440, 440, 500, 480, 520])[step]);
+  const H = $derived((phone ? [560, 560, 640, 670, 700] : [440, 440, 500, 480, 520])[step]);
 </script>
 
 <figure class="viz">
@@ -142,14 +142,15 @@
         <rect x={phone ? 20 : 270} y={phone ? 240 : 96} width={phone ? 260 : 210} height={phone ? 96 : 100} rx="10" fill="var(--bg)" stroke="var(--line)" />
         <text x={phone ? 34 : 284} y={phone ? 266 : 122} class="rowlabel">{t('after', '贴之后')}</text>
         <text x={phone ? 34 : 284} y={phone ? 296 : 152} class="tag">{t('field text + cursor', '框里的文字和光标')}</text>
-        <rect x={phone ? 20 : 520} y={phone ? 360 : 96} width={phone ? 260 : 180} height={phone ? 130 : 150} rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <rect x={phone ? 20 : 520} y={phone ? 360 : 96} width={phone ? 260 : 180} height={phone ? 150 : 150} rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
         <text x={phone ? 34 : 534} y={phone ? 388 : 122} class="rowlabel">{t('compare', '比较')}</text>
-        <text x={phone ? 34 : 534} y={phone ? 416 : 150} class="tag strong">{t('different → inserted', '不同 → 贴进去')}</text>
-        <text x={phone ? 34 : 534} y={phone ? 444 : 176} class="tag">{t('same → unconfirmed', '一样 → 没确认')}</text>
-        <text x={phone ? 34 : 534} y={phone ? 472 : 202} class="tag">{t('cannot read → trust', '读不出 → 按贴入')}</text>
-        <text x={W / 2} y={phone ? 525 : 276} text-anchor="middle" class="mono">{t('check waits up to', '最多等')} {VOXT_DELIVER_VERIFY_MS} ms</text>
-        <text x={W / 2} y={phone ? 560 : 312} text-anchor="middle" class="tag strong">{phone ? t('Unconfirmed: text stays on the clipboard.', '没确认：文字留在剪贴板。') : t('A same readable field: unconfirmed; the text stays on the clipboard.', '一样且读得出：没确认；文字留在剪贴板。')}</text>
-        <text x={W / 2} y={phone ? 592 : 348} text-anchor="middle" class="tag">{t('A web page that never updates is trusted.', '从不更新的网页按已贴入处理。')}</text>
+        <text x={phone ? 34 : 534} y={phone ? 414 : 150} class="tag strong">{t('different → inserted', '不同 → 贴进去')}</text>
+        <text x={phone ? 34 : 534} y={phone ? 442 : 174} class="tag">{t('same · field → unconfirmed', '一样 · 普通框 → 没确认')}</text>
+        <text x={phone ? 34 : 534} y={phone ? 470 : 198} class="tag">{t('same · web area → inserted', '一样 · 网页区域 → 贴进去')}</text>
+        <text x={phone ? 34 : 534} y={phone ? 498 : 222} class="tag">{t('cannot read → inserted', '读不出 → 按贴入')}</text>
+        <text x={W / 2} y={phone ? 545 : 276} text-anchor="middle" class="mono">{t('check waits up to', '最多等')} {VOXT_DELIVER_VERIFY_MS} ms</text>
+        <text x={W / 2} y={phone ? 578 : 312} text-anchor="middle" class="tag strong">{phone ? t('Ordinary same: unconfirmed.', '普通框一样：没确认。') : t('An ordinary field that reads the same: unconfirmed, text stays on the clipboard.', '普通框读起来一样：没确认；文字留在剪贴板。')}</text>
+        <text x={W / 2} y={phone ? 610 : 348} text-anchor="middle" class="tag">{phone ? t('Web area same: inserted.', '网页区域一样：按贴入。') : t('A web area that reads the same is trusted as inserted.', '网页区域读起来一样，按已贴入处理。')}</text>
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('deliver.go DefaultVerifyMS · PasteCheck.compare', 'deliver.go DefaultVerifyMS · PasteCheck.compare') : t('Source: deliver.go DefaultVerifyMS = 1000 · a changed reading is evidence, not proof', '出处：deliver.go DefaultVerifyMS = 1000 · 读到变化是证据，不是证明')}</text>
       {:else if step === 4}
         <text x="20" y="22" class="tag strong">{t('clipboard · snapshot, then put it back', '剪贴板 · 先记住，再放回')}</text>
@@ -175,8 +176,8 @@
         <text x={W / 2} y={phone ? 506 : 284} text-anchor="middle" class="tag strong">{t('No paste: the card offers Insert and Copy.', '没贴进去：卡片给 Insert 和 Copy。')}</text>
         <rect x="20" y={phone ? 524 : 306} width={W - 40} height={phone ? 48 : 46} rx="8" fill="var(--bg)" stroke="var(--line)" />
         <text x="34" y={phone ? 542 : 322} class="rowlabel">{t('landed text', '落地的文字')}</text>
-        <text x="34" y={phone ? 564 : 342} class="tag">{t('send the deck to ', '把文件发给 ')}<tspan fill="var(--accent)" font-weight="600">Priya</tspan></text>
-        <text x={W / 2} y={phone ? 620 : 392} text-anchor="middle" class="tag strong" fill="var(--accent)">{t('How does Voxt spell "Priya" right next time?', '下一次，Voxt 怎么把 “Priya” 写对？')}</text>
+        <text x="34" y={phone ? 564 : 342} class="tag">{t('send the deck to ', '把文件发给 ')}<tspan font-weight="600">Priya</tspan></text>
+        <text x={W / 2} y={phone ? 620 : 392} text-anchor="middle" class="tag strong">{t('How does Voxt spell "Priya" right next time?', '下一次，Voxt 怎么把 “Priya” 写对？')}</text>
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('helper TextIO.swift · next: names and terms', 'helper TextIO.swift · 下一章：人名和术语') : t('Source: helper TextIO.swift · restore 150 ms after a confirmed paste, else 500 ms', '出处：helper TextIO.swift · 确认贴入后 150 ms 放回，否则 500 ms')}</text>
       {/if}
     </svg>
