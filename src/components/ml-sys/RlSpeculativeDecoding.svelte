@@ -192,7 +192,7 @@
     legend: 'Orange = original and shifted masks · blue = kept for draft CE', legendZh: '橙 = 原始与移位 mask · 蓝 = 保留给 draft CE',
     flow: true,
     nodes: [
-      { title: 'ORIGINAL MASK', titleZh: '原始 MASK', result: `[${N.SPEC_EXAMPLE_MASK.join(', ')}]`, resultZh: `[${N.SPEC_EXAMPLE_MASK.join(', ')}]`, body: 'one per token', bodyZh: '每个 token 一个', tone: 'orange', compact: true },
+      { title: 'ORIGINAL MASK', titleZh: '原始 MASK', result: `[${N.SPEC_EXAMPLE_MASK.join(', ')}]`, resultZh: `[${N.SPEC_EXAMPLE_MASK.join(', ')}]`, body: 'constructed example', bodyZh: '构造示例', tone: 'orange', compact: true },
       { title: 'SHIFT ONCE', titleZh: '左移一次', result: `[${N.SPEC_MASK_SHIFT_ONCE.join(', ')}]`, resultZh: `[${N.SPEC_MASK_SHIFT_ONCE.join(', ')}]`, body: 'next token', bodyZh: '下一个 token', tone: 'orange', compact: true },
       { title: 'SHIFT TWICE', titleZh: '左移两次', result: `[${N.SPEC_MASK_SHIFT_TWICE.join(', ')}]`, resultZh: `[${N.SPEC_MASK_SHIFT_TWICE.join(', ')}]`, body: 'token after next', bodyZh: '再下一个 token', tone: 'orange', compact: true },
       { title: 'KEEP FOR CE', titleZh: '保留计分', result: `[${N.SPEC_MTP_MASK.join(', ')}]`, resultZh: `[${N.SPEC_MTP_MASK.join(', ')}]`, body: 'both must be 1', bodyZh: '两个都必须是 1', tone: 'blue', compact: true },
