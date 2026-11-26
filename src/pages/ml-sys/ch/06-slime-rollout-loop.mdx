@@ -1,0 +1,53 @@
+---
+layout: ../../../layouts/Chapter.astro
+book: ml-sys
+slug: 06-slime-rollout-loop
+---
+import SlimeRolloutLoop from '../../../components/ml-sys/SlimeRolloutLoop.svelte';
+import { mlSysNeighbors } from '../../../ml-sys/chapters';
+import { deepFor } from '../../../deep';
+export const deep = await deepFor('ml-sys-06-slime-rollout-loop');
+
+<SlimeRolloutLoop client:load {...mlSysNeighbors('06-slime-rollout-loop')} deep={deep} />
+
+<details class="i18n-en">
+<summary>Where this chapter's claims come from</summary>
+
+This chapter follows `Awesome-ML-SYS-Tutorial/rlhf/slime/code-walk-through/readme.md:11-35,71-81` and fixes implementation claims to `THUDM/slime@261ecee700b30429ba2cf4d4c27e3fc7ae0a12c7`. It uses the shipped `scripts/run-qwen3-4B.sh` configuration, not a local training run.
+
+Step 1 reads `--rollout-batch-size 32`, `--n-samples-per-prompt 8` and `--global-batch-size 256` at `run-qwen3-4B.sh:38-53`. The 256-answer count is the product of the first two settings. The loop's purpose comes from the article's Training, Rollout and Data Buffer architecture; the figure does not claim a speedup or measured training benefit.
+
+Step 2 follows `slime/ray/rollout_data_source.py:46-81`: the source slices 32 prompt objects, deep-copies each one eight times and assigns a different sample index. `RolloutDataSourceWithBuffer` may supply unfinished earlier groups first (`rollout_data_source.py:133-152`); the picture starts with an empty buffer and the ordinary global-dataset path.
+
+Step 3 follows `slime/rollout/sglang_rollout.py:65-131,178-194,235-310`. The request asks SGLang for token log probabilities. The returned `Sample` appends response tokens, response text, response length and `rollout_log_probs`. The eight requests in a group run asynchronously. This chapter omits partial rollout and filtering because the pictured starting state needs neither.
+
+Step 4 uses `--rm-type deepscaler` from `run-qwen3-4B.sh:44`. `slime/rollout/rm_hub/__init__.py:29-54` dispatches to `deepscaler.py:4-42`, which returns 1 for a verified math-answer match and 0 otherwise, including missing required structure or labels. The eight scores are constructed teaching values, not measured outputs.
+
+Steps 5 and 6 follow `slime/ray/buffer.py:82-103`. The shipped config selects `--advantage-estimator grpo` and does not disable reward or GRPO standard-deviation normalization (`run-qwen3-4B.sh:80-88`; `slime/utils/arguments.py:546-550,573-584`). The code reshapes rewards into prompt groups, subtracts each group's mean, divides by `torch.std(...) + 1e-6`, and returns both raw and normalized rewards. The example uses the default unbiased standard deviation, whose denominator is 7 for eight values.
+
+Step 7 follows `buffer.py:42-72,105-154` and `train.py:51-62`. The controller flattens the groups and packs tokens, response lengths, normalized rewards, raw rewards, truncation flags, sample indices, loss masks and available rollout log probabilities. `ray.get(actor_model.async_train(...))` waits for the training call. The matching 256-value global batch does not imply one micro-batch or one optimizer update; those internals stay outside the figure.
+
+Step 8 follows `train.py:49-78`: each loop iteration waits for generation, training and then `actor_model.async_update_weights()` before continuing. There is also an initial weight update at lines 43-44. The chapter does not describe the transfer mechanism; that is Chapter 7's subject.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的出处</summary>
+
+本章依据 `Awesome-ML-SYS-Tutorial/rlhf/slime/code-walk-through/readme.md:11-35,71-81`，实现结论固定到 `THUDM/slime@261ecee700b30429ba2cf4d4c27e3fc7ae0a12c7`。数字来自仓库自带的 `scripts/run-qwen3-4B.sh`，不是本机训练结果。
+
+第 1 步读取 `run-qwen3-4B.sh:38-53` 的 `--rollout-batch-size 32`、`--n-samples-per-prompt 8` 和 `--global-batch-size 256`。前两个数相乘得到 256 个回答。循环用途来自文章的 Training、Rollout 和 Data Buffer 架构；图里没有加速比或训练收益结论。
+
+第 2 步依据 `slime/ray/rollout_data_source.py:46-81`：数据源切出 32 个 prompt，各深复制 8 份并分配不同样本编号。`RolloutDataSourceWithBuffer` 也可能先取早前未完成的组（`rollout_data_source.py:133-152`）；图中从空 buffer 和普通全局数据集路径开始。
+
+第 3 步依据 `slime/rollout/sglang_rollout.py:65-131,178-194,235-310`。请求让 SGLang 返回 token log probability。返回的 `Sample` 追加回答 token、文本、长度和 `rollout_log_probs`。同组 8 个请求异步执行。本章从不需要 partial rollout 或过滤的起始状态画起，不展开这两条支路。
+
+第 4 步使用 `run-qwen3-4B.sh:44` 的 `--rm-type deepscaler`。`slime/rollout/rm_hub/__init__.py:29-54` 转到 `deepscaler.py:4-42`；数学答案核对成功返回 1，其余情况返回 0，包括缺少所需结构或标签。8 个分数是构造的教学值，不是实测输出。
+
+第 5、6 步依据 `slime/ray/buffer.py:82-103`。自带配置选择 `--advantage-estimator grpo`，没有关闭 reward 或 GRPO 标准差归一化（`run-qwen3-4B.sh:80-88`；`slime/utils/arguments.py:546-550,573-584`）。代码按 prompt 分组，减组内平均，再除以 `torch.std(...) + 1e-6`，同时返回原始分和归一化分数。示例采用默认的无偏标准差，所以 8 个值的分母是 7。
+
+第 7 步依据 `buffer.py:42-72,105-154` 和 `train.py:51-62`。控制器展开各组，打包 token、回答长度、归一化分数、原始分、截断标记、样本编号、loss mask 和已有的 rollout log probability。`ray.get(actor_model.async_train(...))` 等待训练调用完成。256 与 global batch 相等不代表只有一个 micro-batch 或一次 optimizer 更新，图不展开这些内部过程。
+
+第 8 步依据 `train.py:49-78`：每轮依次等待生成、训练和 `actor_model.async_update_weights()`，然后才进入下一轮。第 43–44 行另有一次初始权重更新。本章不展开传输机制，那是第 7 章的内容。
+
+</details>

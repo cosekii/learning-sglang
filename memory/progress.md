@@ -4,6 +4,8 @@
 
 ## 本轮记录
 
+- 23:14 完成 Learning ML Systems 第 6 章全部 8 步：一轮 256 个回答、prompt 复制、rollout 记录、原始 reward、GRPO 均值中心化、标准差归一化、训练调用和下一轮权重更新。全章 **8/8 步易读 12/12**，平均 **24.00/24**，**0 内容洞、0 最终显示洞**。
+- 本章改动与评分记录提交并推送；`build`、本章 `transcript`、全章 `readability`、中英三种宽度 `mobile`、`deep-check 06`、本章 `zh-check` 和 `git diff --check` 通过。主线程换视角逐张冷读 48 张中英桌面／手机／深入讲解终稿；独立冷读 subagent 因 API key 不可用未运行。最终图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch06-20261125-2253/final/`、`checks/`。本轮只跑本章检查，未跑或等待全站回归。本轮类型：**新书**；下一普通轮按交替规则修旧，下一章是 `07-weight-updates`。
 - 22:52 完成 Learning SGLang Omni 第 7 章全部 6 步：DP9 比例求和、比例与 reserve 合并校验、KV 单次领取、权重共享与私有 KV、MPS 租约和 AuK 串行 offload。全章 **6/6 步易读 12/12**，平均 **24.00/24**，**0 内容洞、0 最终显示洞**。
 - 教程提交 `f19518d` 已推送；本章 `build`、`transcript`、全章 `readability`、中英三种宽度 `mobile`、中文逐步字号、`deep-check 07`、`zh-check` 和 `git diff --check` 通过。主线程换视角逐张冷读 24 张中英桌面／手机终稿；独立冷读 subagent 因 API key 不可用未运行。最终图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-omni-ch07-20261125-2237/final/`、`checks/`。本轮只跑本章检查，未跑或等待全站回归。本轮类型：**新书**；下一普通轮按交替规则修旧。
 - 22:12 修旧 Learning SGLang 第 7 章第 1、2、3、5、7 步：补齐显存与容量算式、两类分配浪费、page 回收和物理读写、完整接纳不等式与代入例。全章中文 **7/7 步易读 12/12**，原分平均 **23.57/24**，**0 中文内容洞、0 最终显示洞**。整步第 1、2、3、5、7 步为 11/12，第 4、6 步为 10/12；余下是受保护英文 R4，第 4、6 步另有英文 R2。
@@ -107,7 +109,7 @@
 
 ## Learning ML Systems
 
-规划完成：`docs/plan-ml-sys.md` 共 3 部分、16 章；第 1 章已制作 7 步并完成，第 2 章已制作 2 步并完成，第 3 章已制作 6 步并完成，第 4 章已制作 7 步并完成，第 5 章已制作 7 步并完成。第 11 章须先补齐训推不一致的原始来源，缺源时先跳过。
+规划完成：`docs/plan-ml-sys.md` 共 3 部分、16 章；第 1 章已制作 7 步并完成，第 2 章已制作 2 步并完成，第 3 章已制作 6 步并完成，第 4 章已制作 7 步并完成，第 5 章已制作 7 步并完成，第 6 章已制作 8 步并完成。第 11 章须先补齐训推不一致的原始来源，缺源时先跳过。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
@@ -116,7 +118,7 @@
 | 03 | 03-hybrid-state-cache | 完成：6/6 步易读满分 | 24.00 |
 | 04 | 04-gpu-communication | 完成：7/7 步易读满分 | 24.00 |
 | 05 | 05-distributed-serving | 完成：7/7 步易读满分 | 24.00 |
-| 06 | 06-slime-rollout-loop | 规划 | — |
+| 06 | 06-slime-rollout-loop | 完成：8/8 步易读满分 | 24.00 |
 | 07 | 07-weight-updates | 规划 | — |
 | 08 | 08-fsdp2-training-backend | 规划 | — |
 | 09 | 09-fp8-rollout-training | 规划 | — |

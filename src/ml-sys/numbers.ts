@@ -112,3 +112,18 @@ export const DYNAMO_TP_RANKS_BY_NODE = Array.from({ length: DYNAMO_NUM_NODES }, 
   Array.from({ length: DYNAMO_TP_PER_NODE }, (_, i) => node * DYNAMO_TP_PER_NODE + i));
 // A small cap for this chapter's adapted smoke request, not a Dynamo default.
 export const DYNAMO_SMOKE_MAX_TOKENS = 8;
+
+// Shipped slime Qwen3-4B config at 261ecee: one rollout feeds one global batch.
+export const SLIME_ROLLOUT_BATCH_SIZE = 32;
+export const SLIME_SAMPLES_PER_PROMPT = 8;
+export const SLIME_SAMPLES_PER_ROUND = SLIME_ROLLOUT_BATCH_SIZE * SLIME_SAMPLES_PER_PROMPT;
+export const SLIME_GLOBAL_BATCH_SIZE = 256;
+
+// Constructed binary rewards for the GRPO arithmetic, not outputs from a training run.
+export const SLIME_EXAMPLE_RAW_REWARDS = [1, 1, 1, 1, 0, 0, 0, 0];
+export const SLIME_EXAMPLE_REWARD_MEAN = SLIME_EXAMPLE_RAW_REWARDS.reduce((sum, reward) => sum + reward, 0) / SLIME_EXAMPLE_RAW_REWARDS.length;
+export const SLIME_EXAMPLE_CENTERED_REWARDS = SLIME_EXAMPLE_RAW_REWARDS.map((reward) => reward - SLIME_EXAMPLE_REWARD_MEAN);
+// torch.std uses the unbiased estimator by default at the pinned slime revision.
+export const SLIME_EXAMPLE_REWARD_STD = Math.sqrt(SLIME_EXAMPLE_CENTERED_REWARDS.reduce((sum, reward) => sum + reward ** 2, 0) / (SLIME_EXAMPLE_CENTERED_REWARDS.length - 1));
+export const SLIME_GRPO_STD_EPSILON = 1e-6;
+export const SLIME_EXAMPLE_NORMALIZED_REWARDS = SLIME_EXAMPLE_CENTERED_REWARDS.map((reward) => reward / (SLIME_EXAMPLE_REWARD_STD + SLIME_GRPO_STD_EPSILON));
