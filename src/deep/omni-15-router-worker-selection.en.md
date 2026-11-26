@@ -163,3 +163,33 @@ The selector lock covers recency, load observation and reservation, preventing t
 The count rises before dispatch. The next step follows the lease that keeps it held through response headers and releases it only at a terminal event.
 
 Sources: `sglang_omni_router/src/worker_pool/mod.rs:565-605,1358-1439`; `sglang_omni_router/src/worker_pool/selection.rs:7-12`; `sglang_omni_router/src/worker_pool/admission.rs:49-88`.
+
+## Step 7 · Hold the lease until a terminal event
+
+**One sentence.** A `RequestLease` increments the chosen worker before dispatch and releases its count only when the request terminates.
+
+### On the stage
+
+- Selection changes worker B's active count from 0 to 1 before the router dispatches the request.
+- Upload and response headers leave the count at 1. Headers begin the downstream response; they do not end the upstream work or release the lease.
+- The terminal card covers response EOF, an upstream error and downstream cancellation or another dropped response. Each path drops the lease once and returns the count to 0.
+- One ordinary request holds one credit. A speech batch holds item-weighted credits, so three items add and later subtract 3.
+
+### The numbers on the stage
+
+| Boundary | Active count | Why |
+|---|---:|---|
+| Before selection | 0 | No worker lease exists |
+| After selection, before dispatch | 1 | `RequestLease::new` adds one credit |
+| Response headers arrive | 1 | The lease moves into `DirectResponseBody` |
+| EOF, error or cancellation | 0 | Dropping the body drops the lease once |
+
+The same lease owns admission permits and any optional WebSocket session permit. Dropping it releases those too. Cumulative dispatch counters remain unchanged; only active load decreases.
+
+For HTTP, this active count is not a per-worker request cap. It feeds least-requests selection, while the worker still owns its execution and queue capacity.
+
+### Next
+
+The worker was healthy when its lease began, but a later failure can still truncate the response. The last step follows that boundary to the next chapter.
+
+Sources: `sglang_omni_router/src/worker_pool/admission.rs:49-88`; `sglang_omni_router/src/http_relay/mod.rs:151-233`; `sglang_omni_router/src/http_relay/response_body.rs:16-101`; `sglang_omni_router/tests/chat_http.rs:901-939,1282-1336,1419-1432`.

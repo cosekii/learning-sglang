@@ -13,6 +13,8 @@
     ROUTER_ROUND_ROBIN_SEQUENCE,
     ROUTER_LEAST_INITIAL_LOADS,
     ROUTER_LEAST_SELECTIONS,
+    ROUTER_LEASE_ACTIVE_BEFORE,
+    ROUTER_LEASE_ACTIVE_DURING,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -35,6 +37,9 @@
   }, {
     caption: 'Least requests picks the smallest active count. Ties use the same rotating order.',
     captionZh: 'least requests 选择活跃数最少的 worker。并列最少时，沿用同一个轮换顺序。',
+  }, {
+    caption: 'Selection increments the worker’s active count before dispatch. Response end, error, or cancellation releases it.',
+    captionZh: '选择后、dispatch 前，worker 活跃数先加一。响应结束、出错或取消时才释放。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -59,7 +64,7 @@
     });
   })();
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [650, 750, 830, 800, 680, 730][step] : [520, 560, 600, 600, 570, 600][step]);
+  const H = $derived(phone ? [650, 750, 830, 800, 680, 730, 760][step] : [520, 560, 600, 600, 570, 600, 560][step]);
 </script>
 
 <figure class="viz">
@@ -250,6 +255,30 @@
         <text x={W / 2} y={phone ? 590 : 515} text-anchor="middle" class="result">B → C → B → C</text>
         <text x={W / 2} y={phone ? 625 : 550} text-anchor="middle" class="small">{t('A never enters a minimum tie in these four rows.', '这四行里，A 从未进入最少并列组。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Router-held work · not GPU usage' : 'Constructed ordinary requests; active counts are router-held work, not GPU usage or worker queues.', phone ? 'router 持有的工作 · 不是 GPU 利用率' : '构造的普通请求；活跃数是 router 持有的工作，不是 GPU 利用率或 worker 队列。')}</text>
+      {:else if step === 6}
+        <text x={phone ? 18 : 30} y="30" class="title">{t('The lease holds the active count', '租约持有这份活跃计数')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'lease = held until the request ends' : 'RequestLease = the reservation held until the request reaches a terminal event', phone ? 'lease = 持有到请求结束' : 'RequestLease = 一直持有到请求到达终止事件的预留')}</text>
+        <text x={phone ? 18 : 30} y="79" class="label">{t('blue = active 1 held · orange = terminal release', '蓝 = 活跃数 1 保持占用 · 橙 = 终止时释放')}</text>
+        {#each [
+          { title: 'SELECT', body: 'before dispatch', value: `${ROUTER_LEASE_ACTIVE_BEFORE} → ${ROUTER_LEASE_ACTIVE_DURING}`, titleZh: '选择', bodyZh: 'dispatch 前', terminal: false },
+          { title: 'UPLOAD', body: 'request sent', value: `${ROUTER_LEASE_ACTIVE_DURING}`, titleZh: '上传', bodyZh: '发送请求', terminal: false },
+          { title: 'HEADERS', body: 'response begins', value: `${ROUTER_LEASE_ACTIVE_DURING}`, titleZh: '响应头', bodyZh: '响应开始', terminal: false },
+          { title: 'TERMINAL', body: 'EOF · error · cancel', value: `${ROUTER_LEASE_ACTIVE_DURING} → ${ROUTER_LEASE_ACTIVE_BEFORE}`, titleZh: '终止', bodyZh: 'EOF · 出错 · 取消', terminal: true },
+        ] as event, i}
+          {@const x = phone ? 20 : 30 + i * 170}
+          {@const y = phone ? 110 + i * 130 : 125}
+          {@const pw = phone ? 260 : 150}
+          <rect x={x} y={y} width={pw} height="105" rx="10" fill={event.terminal ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={event.terminal ? 'var(--gen)' : 'var(--accent)'} />
+          <text x={x + 14} y={y + 28} class="small strong">{t(event.title, event.titleZh)}</text>
+          <text x={x + 14} y={y + 55} class="small">{t(event.body, event.bodyZh)}</text>
+          <text x={x + 14} y={y + 86} class="result">active = {event.value}</text>
+          {#if i < 3}
+            <line x1={phone ? x + pw / 2 : x + pw} y1={phone ? y + 106 : y + 52} x2={phone ? x + pw / 2 : x + pw + 20} y2={phone ? y + 127 : y + 52} stroke="var(--accent)" stroke-width="2" marker-end="url(#router-arrow)" />
+          {/if}
+        {/each}
+        <text x={W / 2} y={phone ? 650 : 310} text-anchor="middle" class="small strong">{t('Response headers do not release the count.', '收到响应头不会释放计数。')}</text>
+        <text x={W / 2} y={phone ? 680 : 345} text-anchor="middle" class="small strong">{t('Each terminal path releases it once.', '每条终止路径都只释放一次。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'One ordinary request = 1 credit' : 'One ordinary request holds one credit; a speech batch holds one credit per item.', phone ? '一个普通请求 = 1 credit' : '一个普通请求持有 1 credit；speech batch 每条目持有 1 credit。')}</text>
       {/if}
     </svg>
   </div>

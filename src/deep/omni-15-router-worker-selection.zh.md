@@ -163,3 +163,33 @@ selector 的锁覆盖最近使用顺序、负载观察和预留，避免两个�
 计数在 dispatch 前增加。下一步跟随租约，看它怎样一直持有到响应头之后，并只在终止事件发生时释放。
 
 来源：`sglang_omni_router/src/worker_pool/mod.rs:565-605,1358-1439`；`sglang_omni_router/src/worker_pool/selection.rs:7-12`；`sglang_omni_router/src/worker_pool/admission.rs:49-88`。
+
+## 第 7 步 · 租约持有到终止事件
+
+**一句话。** `RequestLease` 在 dispatch 前增加被选 worker 的计数，请求终止时才释放。
+
+### 图上是什么
+
+- 选择后、router dispatch 前，worker B 的活跃数从 0 变成 1。
+- 上传和响应头到达时，计数都保持 1。响应头开始下游响应，不代表上游工作结束，也不会释放租约。
+- 终止卡包括响应 EOF、上游错误、下游取消或其他提前丢弃。每条路径都只丢弃一次租约，计数回到 0。
+- 一个普通请求持有 1 credit。speech batch 按条目加权，三个条目会增加 3，之后减去 3。
+
+### 代入图上的数
+
+| 边界 | 活跃数 | 原因 |
+|---|---:|---|
+| 选择前 | 0 | 还没有 worker 租约 |
+| 选择后、dispatch 前 | 1 | `RequestLease::new` 增加 1 credit |
+| 响应头到达 | 1 | 租约移入 `DirectResponseBody` |
+| EOF、出错或取消 | 0 | 丢弃响应体时恰好丢弃一次租约 |
+
+同一个租约还持有 admission permits 和可选的 WebSocket session permit，丢弃时也会释放它们。累计 dispatch 计数不会减少，只有活跃负载减少。
+
+对 HTTP 来说，活跃数不是每个 worker 的请求上限。它供 least-requests 选择使用，worker 仍负责自己的执行和队列容量。
+
+### 接下来
+
+租约开始时 worker 是 healthy，但之后发生故障仍会截断响应。最后一步沿着这个边界进入下一章。
+
+来源：`sglang_omni_router/src/worker_pool/admission.rs:49-88`；`sglang_omni_router/src/http_relay/mod.rs:151-233`；`sglang_omni_router/src/http_relay/response_body.rs:16-101`；`sglang_omni_router/tests/chat_http.rs:901-939,1282-1336,1419-1432`。
