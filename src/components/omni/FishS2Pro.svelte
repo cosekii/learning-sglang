@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import StepControls from '../StepControls.svelte';
+  import LoopProgress from '../LoopProgress.svelte';
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
@@ -89,6 +90,52 @@
     { title: `NEXT · total ${FISH_STREAM_SECOND_TOTAL_FRAMES}`, titleZh: `下次 · 累计 ${FISH_STREAM_SECOND_TOTAL_FRAMES}`, old: FISH_STREAM_LEFT_CONTEXT_FRAMES, added: FISH_STREAM_NEXT_NEW_FRAMES, input: FISH_STREAM_NEXT_INPUT_FRAMES, emitted: '45F' },
     { title: `FINAL · total ${FISH_STREAM_TOTAL_FRAMES}`, titleZh: `最后 · 累计 ${FISH_STREAM_TOTAL_FRAMES}`, old: FISH_STREAM_LEFT_CONTEXT_FRAMES, added: FISH_STREAM_FINAL_NEW_FRAMES, input: FISH_STREAM_FINAL_INPUT_FRAMES, emitted: `5F+${FISH_STREAM_TAIL_SAMPLES}` },
   ];
+
+  // Sequence steps: one walking highlight, and one moving tail badge on the vocoder step.
+  const PHASE_COUNTS = [0, 0, 3, 11, 0, 0, 3, 0];
+  const PHASE_MS = [0, 0, 1100, 650, 0, 0, 1800, 0];
+  const REST_MS = 1800;
+  type Frame = { x: number; y: number; w: number; h: number };
+  const motionFrames = (isPhone: boolean, s: number): Frame[] => {
+    if (s === 2) return isPhone ? [
+      { x: 18, y: 84, w: 264, h: 362 }, { x: 18, y: 488, w: 264, h: 82 }, { x: 18, y: 612, w: 264, h: 86 },
+    ] : [
+      { x: 30, y: 91, w: 300, h: 424 }, { x: 382, y: 221, w: 133, h: 114 }, { x: 562, y: 221, w: 128, h: 114 },
+    ];
+    if (s === 3) return isPhone ? [
+      { x: 32, y: 244, w: 236, h: 60 },
+      ...Array.from({ length: FISH_FAST_REMAINING_ROWS }, (_, i) => ({ x: 32 + i * 26, y: 355, w: 21, h: 44 })),
+      { x: 18, y: 510, w: 264, h: 331 },
+    ] : [
+      { x: 70, y: 287, w: 270, h: 61 },
+      ...Array.from({ length: FISH_FAST_REMAINING_ROWS }, (_, i) => ({ x: 70 + i * 29, y: 400, w: 24, h: 47 })),
+      { x: 428, y: 462, w: 244, h: 93 },
+    ];
+    return [];
+  };
+  const tailFrame = (isPhone: boolean, phase: number): Frame => isPhone
+    ? { x: 180, y: 225 + phase * 220, w: 88, h: 42 }
+    : { x: 600, y: 139 + phase * 140, w: 70, h: 40 };
+  let phase = $state(0);
+  let lap = $state(0), lapMs = $state(0);
+  const nextLap = (ms: number) => untrack(() => { lapMs = ms; lap++; });
+  $effect(() => {
+    const s = step;
+    phase = 0;
+    const count = PHASE_COUNTS[s];
+    if (!count) return;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const run = () => {
+      phase = 0;
+      for (let i = 1; i < count; i++) timers.push(setTimeout(() => (phase = i), i * PHASE_MS[s]));
+      const ms = count * PHASE_MS[s] + REST_MS;
+      timers.push(setTimeout(run, ms));
+      nextLap(ms);
+    };
+    run();
+    return () => timers.forEach(clearTimeout);
+  });
+  const focus = $derived(motionFrames(phone, step)[phase]);
 </script>
 
 <figure class="viz">
@@ -585,6 +632,17 @@
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t(`Completed: max ${FISH_NONSTREAM_MAX_BATCH} · wait up to ${FISH_NONSTREAM_WAIT_MS} ms`, `已完成：最多 ${FISH_NONSTREAM_MAX_BATCH} 个 · 最多等 ${FISH_NONSTREAM_WAIT_MS} ms`) : t(`Completed defaults: max ${FISH_NONSTREAM_MAX_BATCH}, wait up to ${FISH_NONSTREAM_WAIT_MS} ms for more. Streaming stays per request.`, `已完成请求默认最多 ${FISH_NONSTREAM_MAX_BATCH} 个，额外请求最多等 ${FISH_NONSTREAM_WAIT_MS} ms；流式 chunks 仍逐请求运行。`)}</text>
       {/if}
+      {#if PHASE_COUNTS[step] > 0}
+        <LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={68} />
+      {/if}
+      {#if focus}
+        <rect class="motion-focus" x={focus.x - 4} y={focus.y - 4} width={focus.w + 8} height={focus.h + 8} rx="12" fill="none" stroke="var(--eos)" stroke-width="3" />
+      {/if}
+      {#if step === 6}
+        {@const tail = tailFrame(phone, phase)}
+        <rect class="motion-tail" x={tail.x} y={tail.y} width={tail.w} height={tail.h} rx="8" fill="var(--bg)" stroke="var(--muted)" stroke-width="2" />
+        <text class="motion-tail tag strong" x={tail.x + tail.w / 2} y={tail.y + 26} text-anchor="middle">{t(['512 held', 'old 512 used', '512 released'][phase], ['留下 512', '用掉旧 512', '释放 512'][phase])}</text>
+      {/if}
     </svg>
   </div>
   <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh}
@@ -598,6 +656,8 @@
   .result { font-family: var(--mono); font-size: 15px; font-weight: 650; fill: var(--fg); }
   .code { font-family: var(--mono); font-size: 13px; fill: var(--fg); }
   .strong { font-weight: 650; }
+  .motion-focus { pointer-events: none; transition: x 240ms, y 240ms, width 240ms, height 240ms; }
+  .motion-tail { transition: x 240ms, y 240ms; }
   @media (max-width: 900px) {
     .title { font-size: 16px; }
     .label, .small { font-size: 12px; }
