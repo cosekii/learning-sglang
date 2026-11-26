@@ -55,3 +55,49 @@ Route construction and terminal stages: `sglang_omni/models/qwen3_omni/config.py
 ### Next
 
 Once audio activates the talker, its GPU placement changes the first-sound wait.
+
+## Step 3 · Isolate the talker, then check both clocks
+
+> **In one line:** Talker isolation nearly halved p90 first-sound wait at concurrency eight, but increased single-stream total time.
+
+### On the stage
+
+- Both placement panels keep code2wav beside the thinker. Only the talker moves from GPU 0 to GPU 1.
+- The two dark bars use the same scale. At eight concurrent requests, the mean p90 first-sound wait falls from 2.680 to 1.439 seconds.
+- The red card reports a different workload. With one request at a time, total time rises 14–17% after isolation.
+
+### Formula
+
+$$
+\overline{T}=\frac{T_1+T_2}{2},\qquad R=\left(1-\frac{\overline{T}_{alone}}{\overline{T}_{shared}}\right)\times100\%
+$$
+
+| Symbol | Meaning | Size | Source |
+|---|---|---:|---|
+| $T_1,T_2$ | Two measured p90 first-sound values | seconds | Public placement runs |
+| $\overline{T}$ | Their arithmetic mean | seconds | This step |
+| $R$ | Wait reduction after isolation | percent | This step |
+
+### The numbers on the stage
+
+$$
+\overline{T}_{shared}=(2.697+2.663)\div2=2.680\ \text{s}
+$$
+
+$$
+\overline{T}_{alone}=(1.463+1.415)\div2=1.439\ \text{s}
+$$
+
+$$
+R=(1-1.439\div2.680)\times100\%\approx46\%
+$$
+
+The single-stream 14–17% increase is the source's reported range. It has no absolute bar here because the guide does not provide the underlying pair of total times in this table.
+
+### Boundaries and sources
+
+These are public experiments from `docs/cookbook/qwen3_omni/tuning.md:52-69`, not measurements of this chapter's H100 colocated profile. The concurrency-eight experiment holds code2wav placement fixed. The single-stream result shows why first sound and total time need separate verdicts.
+
+### Next
+
+The next step packs all five GPU stages onto one card and accounts for their declared memory shares.

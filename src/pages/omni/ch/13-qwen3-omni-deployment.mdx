@@ -17,6 +17,8 @@ Step 1 counts the shipped startup shapes. Text-only mode defines six stages in o
 
 Step 2 separates server mode from requested output. Both modes accept multimodal input (`docs/cookbook/qwen3_omni.md:206-208`). Text-only joins active input branches at `mm_aggregate`; the speech thinker merges them itself (`sglang_omni/models/qwen3_omni/config.py:136-189,212-254`). A speech request with `modalities: ["text"]` terminates at decode and excludes talker; adding `"audio"` also terminates at code2wav (`sglang_omni/models/qwen3_omni/request_builders.py:200-261`; `tests/unit_test/qwen3_omni/test_pipeline.py:898-930,1935-1947`). The public default is text output, and a text-only server returns no audio when audio is requested (`docs/basic_usage/omni.md:154-170,199-200,386-395`).
 
+Step 3 uses the public placement experiment from Chapter 8 Step 1. At concurrency eight, moving only the talker from the thinker's GPU to its own reduced mean-of-two p90 first sound from 2.680 to 1.439 seconds, about 46%. Code2wav stayed beside the thinker in both arms. The same guide reports a separate single-stream result: isolation improved first sound but increased end-to-end latency by 14–17%, so the chapter does not turn one metric into a universal rule (`docs/cookbook/qwen3_omni/tuning.md:52-69`).
+
 Code references in this chapter pin to `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`. The chapter reads source, shipped configs and public measurements; it does not run a model or benchmark.
 
 </details>
@@ -27,6 +29,8 @@ Code references in this chapter pin to `sglang-omni origin/main@9725235249df8512
 第 1 步数随仓库发布的启动形态。纯文字模式把六个 stage 放在一个 `pipeline` 进程和一张 GPU 上，仍接受多模态输入（`sglang_omni/models/qwen3_omni/config.py:136-147,257-265,412-422`；`docs/cookbook/qwen3_omni.md:46-57`）。默认语音有七个 stage，各住一个进程：image encoder、audio encoder、thinker 和 code2wav 使用 GPU 0，talker 使用 GPU 1，preprocessing 和 decode 是 CPU stage（`config.py:268-318,425-452`）。这些数量不含 HTTP server 和 coordinator。
 
 第 2 步区分服务器模式和请求输出。两种模式都接受多模态输入（`docs/cookbook/qwen3_omni.md:206-208`）。纯文字在 `mm_aggregate` 汇合实际输入分支；语音部署由 thinker 自己汇合（`sglang_omni/models/qwen3_omni/config.py:136-189,212-254`）。语音请求使用 `modalities: ["text"]` 时以 decode 为终点并排除 talker；加入 `"audio"` 后也以 code2wav 为终点（`sglang_omni/models/qwen3_omni/request_builders.py:200-261`；`tests/unit_test/qwen3_omni/test_pipeline.py:898-930,1935-1947`）。公开请求默认只输出文字；向纯文字服务器请求声音也不会返回声音（`docs/basic_usage/omni.md:154-170,199-200,386-395`）。
+
+第 3 步使用第 8 章第 1 步的公开摆卡实验。8 路并发时，只把 talker 从 thinker 所在 GPU 移到另一张卡，两次 p90 首音的均值从 2.680 秒降至 1.439 秒，约 46%。两组实验的 code2wav 都留在 thinker 旁边。同一指南另报单请求结果：独占改善首音，却让端到端延迟增加 14–17%，所以本章不把一项指标写成通用规则（`docs/cookbook/qwen3_omni/tuning.md:52-69`）。
 
 本章代码出处固定到 `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`。本章只读源码、随仓库配置和公开测量，没有运行模型或 benchmark。
 

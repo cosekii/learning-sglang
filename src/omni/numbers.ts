@@ -279,6 +279,8 @@ export const STREAM_P90_SHARED_S = mean(STREAM_P90_SHARED_RUNS_S);
 export const STREAM_P90_ALONE_S = mean(STREAM_P90_ALONE_RUNS_S);
 export const STREAM_P90_EXTRA_S = STREAM_P90_SHARED_S - STREAM_P90_ALONE_S;
 export const STREAM_P90_SOONER_PERCENT = (1 - STREAM_P90_ALONE_S / STREAM_P90_SHARED_S) * 100;
+export const QWEN_PLACEMENT_CONCURRENCY = 8;
+export const QWEN_SINGLE_STREAM_ISOLATION_E2E_INCREASE_PERCENT = [14, 17] as const;
 
 // Constructed request for timer boundaries, not a measured response.
 export const STREAM_TEACHING_SUBMIT_S = 0;
