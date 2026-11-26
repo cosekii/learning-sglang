@@ -243,7 +243,7 @@ $$
 
 - 同一个网格，接着第 4 步（req 6 的粉色 page 已在里面）。
 - 「req 5 结束 · 它的 14 个 page 回到池里」：req 5 的琥珀色格淡出，换成橙色虚线框的空闲格；右边图例里 req 5 变淡，标「· 结束」。
-- 之后一行：现在有 41 个空闲 page，散落各处 · 谁也没移动。
+- 之后一行：27 + 14 = 41 个空闲 page，散落各处；谁也没移动。手机图例只留 req 5 和空闲，其他 request 的颜色沿用前一步。
 - 底部灰色脚注：关闭 prefix caching 时是这样；SGLang 默认把已结束 request 的 page 留在 prefix cache 里，直到需要它们（第 8 章）。
 
 ### 代入图上的数
@@ -259,6 +259,20 @@ $$
 - 释放只是把这些页号标回空闲，不搬数据。
 - 其他 request 的页表只记自己的页号，它们的 page 一个都没动，所以页表不用改。
 - 第 3 步里同样的事件留下固定大小的洞，只有更小的 request 才能用；这里每个空闲 page 都是完整的一份，下一个 request 可以单独拿走，散落和相邻一样好用。
+
+### 从页号到物理读写：mini-sglang 代码导读
+
+主图用页号讲机制。下面用 mini-sglang 固定提交 [`9a91cfa`](https://github.com/sgl-project/mini-sglang/tree/9a91cfafe754aa85daee49998176275667eb58f2) 把图接到代码；它是教学实现，不把这里的变量名当成 SGLang 所有后端的统一实现。
+
+| 环节 | 代码里的对象 | 与本图的关系 |
+|---|---|---|
+| 物理池 | [`MHAKVCache._kv_buffer`](https://github.com/sgl-project/mini-sglang/blob/9a91cfafe754aa85daee49998176275667eb58f2/python/minisgl/kvcache/mha_pool.py) | 形状是 `[2, 层数, 物理页数, p, 本 rank 的 KV head 数, head 维度]`；最前面的 2 分 K、V。按层取 `k_cache(layer_id)`、`v_cache(layer_id)` 是 view，不复制数据。 |
+| 空闲页 | [`CacheManager.free_slots`](https://github.com/sgl-project/mini-sglang/blob/9a91cfafe754aa85daee49998176275667eb58f2/python/minisgl/scheduler/cache.py) | 每页记一个起始 token slot；例如 $p=4$ 时是 `[0, 4, 8]`，分配后再展开成页内各 token 的 slot。 |
+| 本轮写入位置 | `Batch.out_loc` → `store_kv` | scheduler 给本轮新 token 准备物理 slot；attention 把新 K/V 写到这些位置。页表负责持久映射，`out_loc` 只指本轮要写哪里。 |
+| 先写后读 | [`FlashAttentionBackend.forward`](https://github.com/sgl-project/mini-sglang/blob/9a91cfafe754aa85daee49998176275667eb58f2/python/minisgl/attention/fa.py) | 先 `store_kv`，再调用 attention；这样本轮新 token 的 K/V 也在 cache 里，随后能和历史一起读。 |
+| 回收 | `cache_req(..., finished=True)` 与 `_free` | 不再保留的页回到 `free_slots`；可复用前缀与尾部要分开处理，不能把「request 结束」一律等同于「全部立即回池」。 |
+
+注意两种表的粒度：本图 $p=1$ 时页号也就是 token slot；这份 mini 代码的全局 `page_table` 始终记**原始 token slot**，交给 kernel 前才按 $p$ 抽样并除以 $p$ 得到物理页号。它和前文 SGLang 的 `req_to_token` 不能跨实现逐字段照抄。
 
 ### 脚注说的例外
 

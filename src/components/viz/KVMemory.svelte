@@ -58,7 +58,7 @@
     { scene: 'caps', caption: `How many fit? Same card, three context lengths. At 2k tokens each, ${capAt(2048)} requests. At 4k, ${capAt(4096)}. At 8k, ${capAt(8192)}. Compute could take ${BALANCE} per step; at these lengths memory never lets it get there.`, captionZh: `上下文越长，每个 request 的 cache 越大。2k 装 ${capAt(2048)} 个，4k 装 ${capAt(4096)} 个，8k 只装 ${capAt(8192)} 个。`, foot: POOL_FOOT, footZh: POOL_FOOT_ZH },
     { scene: 'reserve', caption: `The naive way: reserve each request's maximum length up front, in one contiguous block. Most never use it, and finished requests leave holes no newcomer fits into. Most of the card, wasted.`, captionZh: `每个 request 先独占一整块，没写的部分也空着。request 结束后，散落的空块又装不下新来者。` },
     { scene: 'alloc', base: pages0, alloc: allocA, owner: 5, name: 'req 6', caption: `<b>Paging</b>: cut the room into fixed-size pages. A newcomer's cache isn't one block; it's however many pages it needs, taken from anywhere that's free, with the page numbers written in its table. No holes, no pages held in advance.`, captionZh: `<b>Paging</b>：把空间切成固定大小的 page。req 6 任取 5 个空闲 page，位置不限。` },
-    { scene: 'free', caption: `When a request finishes, its pages go straight back to the pool. No compaction, nobody else moves. The pool just has more free pages, wherever they happen to be.`, captionZh: `request 结束时，它的 page 直接回到池里。不做整理，谁也不移动。池里只是多了些空闲 page，位置随意。`, foot: `with prefix caching off · SGLang keeps a finished request's pages in its prefix cache until it needs them (chapter ${CH_PREFIX})`, footZh: `关闭 prefix caching · SGLang 把已结束 request 的 page 留在 prefix cache 里，直到需要它们（第 ${CH_PREFIX} 章）` },
+    { scene: 'free', caption: `When a request finishes, its pages go straight back to the pool. No compaction, nobody else moves. The pool just has more free pages, wherever they happen to be.`, captionZh: `request 结束后，它的 page 直接变回空闲。别人的 page 不移动，也不用整理。`, foot: `with prefix caching off · SGLang keeps a finished request's pages in its prefix cache until it needs them (chapter ${CH_PREFIX})`, footZh: `关闭 prefix caching · SGLang 把已结束 request 的 page 留在 prefix cache 里，直到需要它们（第 ${CH_PREFIX} 章）` },
     { scene: 'alloc', base: pages2, alloc: allocB, owner: 6, name: 'req 7', caption: `The next newcomer takes what it needs from those, or any other free pages. Its table lists them, and the attention kernel follows the table. vLLM pages ${VLLM_PAGE_TOKENS} tokens at a time; SGLang, ${SGLANG_PAGE_TOKENS}.`, captionZh: `页表是按顺序记页号的清单。req 7 记下 8 个页号，attention 照表读。` },
     { scene: 'closing', caption: `Admission is a count: free pages against pages needed. Yes: admit and write the table. No: wait for a finish. If the running requests themselves run out, one is retracted. Sharing pages: next chapter.`, captionZh: `接纳是计数：空闲 page 对所需 page。够：接纳并写表。不够：等一个 request 结束。运行中的 request 耗尽 page 时，撤回一个。共享 page：下一章。` },
   ];
@@ -84,7 +84,7 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg class:step-one={step === 0 && $lang === 'zh'} class:step-two={step === 1 && $lang === 'zh'} class:step-three={step === 2 && $lang === 'zh'} class:step-four={step === 3 && $lang === 'zh'} class:step-six={step === 5} viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="KV memory, step {step + 1}">
+    <svg class:step-one={step === 0 && $lang === 'zh'} class:step-two={step === 1 && $lang === 'zh'} class:step-three={step === 2 && $lang === 'zh'} class:step-four={step === 3 && $lang === 'zh'} class:step-five={step === 4 && $lang === 'zh'} class:step-six={step === 5} viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="KV memory, step {step + 1}">
       <defs>
         <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
           <rect width="6" height="6" fill="#e0f2fe" />
@@ -214,8 +214,9 @@
         {@const vllmPages = Math.ceil(tokenCount / VLLM_PAGE_TOKENS)}
         {@const vllmSlots = vllmPages * VLLM_PAGE_TOKENS}
         <g transition:fade={{ duration: 250 }}>
-          <text x={PG.x} y="40" class="rowlabel desktop-only">{t(`the ${HBM_GB - W_GB} GB after the weights, cut into pages · ${COLS * ROWS} shown of many thousands`, step === 5 ? `权重之外的 ${HBM_GB - W_GB} GB 教学容量 · 画出 ${COLS * ROWS} 个 page` : `${HBM_GB - W_GB} GB ÷ ${KB_TOK} KB ≈ 49 万个 page · 画出 ${COLS * ROWS} 个`)}</text>
-          {#if step === 3 && $lang === 'zh'}<text x={PG.x} y="40" class="rowlabel phone-only">{HBM_GB - W_GB} GB ÷ {KB_TOK} KB ≈ 49 万个 page · 画出 {COLS * ROWS} 个</text>{/if}
+          <text x={PG.x} y="40" class="rowlabel desktop-only">{t(`the ${HBM_GB - W_GB} GB after the weights, cut into pages · ${COLS * ROWS} shown of many thousands`, step === 5 ? `权重之外的 ${HBM_GB - W_GB} GB 教学容量 · 画出 ${COLS * ROWS} 个 page` : `${HBM_GB - W_GB} GB ÷ ${KB_TOK} KiB ≈ 49 万个 page · 画出 ${COLS * ROWS} 个`)}</text>
+          {#if step === 3 && $lang === 'zh'}<text x={PG.x} y="40" class="rowlabel phone-only">{HBM_GB - W_GB} GB ÷ {KB_TOK} KiB ≈ 49 万个 page · 画出 {COLS * ROWS} 个</text>{/if}
+          {#if step === 4 && $lang === 'zh'}<text x={PG.x} y="40" class="rowlabel phone-only">{HBM_GB - W_GB} GB 切成 page · 画出 {COLS * ROWS} 个</text>{/if}
           {#if step === 5}<text x={PG.x} y="40" class="rowlabel phone-only">{t(`${HBM_GB - W_GB} GB in pages · ${COLS * ROWS} shown`, `${HBM_GB - W_GB} GB 切成 page · 画出 ${COLS * ROWS} 个`)}</text>{/if}
 
           <!-- the grid (fades in once; steps 4 → 5 → 6 keep it mounted so nothing replays) -->
@@ -245,8 +246,9 @@
           <!-- legend -->
           {#each owners.slice(0, cur.scene === 'alloc' && owner === 6 ? 7 : cur.scene === 'alloc' ? 6 : 6) as c, r}
             {@const gone = (cur.scene === 'free' && r === FINISHED && phase >= 1) || (cur.scene === 'alloc' && owner === 6 && r === FINISHED)}
-            <rect class:past-key={r < 6} x="608" y={PG.y + r * 20} width="12" height="12" rx="2" fill={c} opacity={gone ? 0.25 : 0.85} />
-            <text class:past-key={r < 6} x="626" y={PG.y + r * 20 + 10} class="tag" opacity={gone ? 0.5 : 1}>req {r + 1}{gone ? t(' · done', ' · 结束') : ''}</text>
+            <rect class:past-key={r < 6 && !(cur.scene === 'free' && r === FINISHED)} x="608" y={PG.y + r * 20} width="12" height="12" rx="2" fill={c} opacity={gone ? 0.25 : 0.85} />
+            <text class:past-key={r < 6 && !(cur.scene === 'free' && r === FINISHED)} class:desktop-only={cur.scene === 'free' && r === FINISHED} x="626" y={PG.y + r * 20 + 10} class="tag" opacity={gone ? 0.5 : 1}>req {r + 1}{gone ? t(' · done', ' · 结束') : ''}</text>
+            {#if cur.scene === 'free' && r === FINISHED}<text x="626" y={PG.y + r * 20 + 10} class="tag phone-only" opacity={gone ? 0.5 : 1}>req 5</text>{/if}
           {/each}
           <rect x="608" y={PG.y + 7 * 20} width="12" height="12" rx="2" fill="white" stroke="var(--line)" stroke-dasharray="3 2" /><text x="626" y={PG.y + 7 * 20 + 10} class="tag">{t('free', '空闲')}</text>
 
@@ -307,7 +309,7 @@
               <text x={PG.x} y={STRIP.y + 16} class="legend" in:fade><tspan class="strong">req {FINISHED + 1}</tspan> {t(`finished · its ${freed.length} pages go back to the pool`, `结束 · 它的 ${freed.length} 个 page 回到池里`)}</text>
             {/if}
             {#if phase >= 2}
-              <text x={PG.x} y={PG.y + ROWS * (CELL + GAP) + 26} class="legend" in:fade>{t(`${freeOf(pages2).length} free pages now, scattered · nobody else moved`, `现在有 ${freeOf(pages2).length} 个空闲 page，散落各处 · 谁也没移动`)}</text>
+              <text x={PG.x} y={PG.y + ROWS * (CELL + GAP) + 26} class="legend" in:fade>{t(`${freeOf(pages2).length} free pages now, scattered · nobody else moved`, `27 + 14 = ${freeOf(pages2).length} 个空闲 page，散落各处；谁也没移动`)}</text>
             {/if}
           {/if}
         </g>
@@ -404,12 +406,13 @@
   .legend.muted, .legend .muted { fill: var(--muted); font-weight: 400; }
   .phone-only { display: none; }
   @media (max-width: 900px) {
-    .step-one .desktop-only, .step-one .context-label, .step-two .desktop-only, .step-three .desktop-only, .step-three .hole-label, .step-four .desktop-only, .step-four .past-key, .step-six .desktop-only, .step-six .past-key { display: none; }
-    .step-one .phone-only, .step-two .phone-only, .step-three .phone-only, .step-four .phone-only, .step-six .phone-only { display: inline; }
+    .step-one .desktop-only, .step-one .context-label, .step-two .desktop-only, .step-three .desktop-only, .step-three .hole-label, .step-four .desktop-only, .step-four .past-key, .step-five .desktop-only, .step-five .past-key, .step-six .desktop-only, .step-six .past-key { display: none; }
+    .step-one .phone-only, .step-two .phone-only, .step-three .phone-only, .step-four .phone-only, .step-five .phone-only, .step-six .phone-only { display: inline; }
     .step-one .rowlabel, .step-one .legend, .step-one .tag, .step-one .pt, .step-one .steplabel, .step-one .footnote,
     .step-two .rowlabel, .step-two .legend, .step-two .steplabel, .step-two .footnote,
     .step-three .rowlabel, .step-three .legend, .step-three .tag,
     .step-four .rowlabel, .step-four .legend, .step-four .tag, .step-four .pt,
+    .step-five .rowlabel, .step-five .legend, .step-five .tag, .step-five .footnote,
     .step-six .rowlabel, .step-six .legend, .step-six .tag, .step-six .pt { font-size: 23px; }
   }
 </style>
