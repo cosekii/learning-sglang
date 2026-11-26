@@ -47,8 +47,8 @@ $$ \text{模型字节} = \sum_{f \in \text{文件}} \text{大小}(f), \qquad \te
 
 ### 图上是什么
 
-- 左边蓝色卡片：模型的网上地址，仓库 `mlx-community/Qwen3-ASR-1.7B-8bit`，以及缩短显示的提交 `a8379a2`。提交就是一个确定的版本。
-- 右边文件面板：九个文件，2.47 GB。`model.safetensors` 是 2.46 GB，用 LFS SHA-256 `bf304b…` 校验；`vocab.json` 是 2.78 MB，用 git blob ID 校验；还有七个文件。
+- 左边蓝色卡片：模型的网上地址，仓库 `mlx-community/Qwen3-ASR-1.7B-8bit`，以及缩短显示的提交 `a8379a2`。固定快照就是一个确定的版本。
+- 右边文件面板：九个文件，2.47 GB 来自第 1 步的求和。`model.safetensors` 是 2.46 GB，SHA-256 `bf304b…` 是根据字节算出的指纹；`vocab.json` 是 2.78 MB，git blob ID 是 git 的字节指纹；还有七个文件。
 - 下面是磁盘路径 `models--mlx-community--Qwen3-ASR-1.7B-8bit` / `snapshots/a8379a2e2f9e313c9292cdf1af4055ab56d50d55`。文件夹用完整提交，不用短标签。
 - 两行：仓库会变，所以提交固定了测试过的文件；指纹能发现文件变了或坏了。
 
@@ -75,13 +75,13 @@ $$ \text{LFS 文件：}\ \mathrm{SHA256}(\text{文件}) = \text{清单里的哈�
 |---|---|---|
 | 文件数 | 目录列出的 | 9 |
 | 权重 | `model.safetensors` | 2,463,307,541 B = 2.46 GB |
-| 总数 | 九个大小相加 | 2,467,856,503 B = 2.47 GB |
+| 总数 | 第 1 步的九文件求和 | 2,467,856,503 B = 2.47 GB |
 
 ### 为什么用提交，不用名字
 
 Hugging Face 仓库在 tag 移动后可能加文件或改文件。目录里存的是提交 ID，所以应用只要它测试过的那批文件（`internal/models/catalog.go:105-114`）。`Accept` 再列几个运行时验证过的提交：磁盘上有其中一个，就用它，不再下固定的那个（`catalog.go:108-111`）。
 
-完整性校验是另一半。大权重文件在 Hub 上放在 Git LFS 里，blob 的名字就是 SHA-256（`catalog.go:84-94`）。`Entry` 只给 LFS 文件复制目录里的 SHA-256；下载按这个指纹核对，被截断或损坏会报错，不会加载。非 LFS 文件在下载条目里留空 SHA-256，改用 git blob ID 核对（`hub.go:28-44`、`internal/models/models_test.go:235-250`）。哈希是内容的指纹：字节相同，ID 就相同。
+完整性校验是另一半。大权重文件在 Hub 上放在 Git LFS（Large File Storage，大文件存储）里，blob 的名字就是 SHA-256（`catalog.go:84-94`）。`Entry` 只给 LFS 文件复制目录里的 SHA-256；下载按这个指纹核对，被截断或损坏会报错，不会加载。非 LFS 文件在下载条目里留空 SHA-256，改用 git blob ID 核对（`hub.go:28-44`、`internal/models/models_test.go:235-250`）。哈希是内容的指纹：字节相同，ID 就相同。
 
 ### 接下来
 

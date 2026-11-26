@@ -46,8 +46,8 @@
     en: 'The 2.47 gigabyte model arrives separately and is about nine times the 280 megabyte app. The total is 2,467,856,503 bytes; divided by 280,000,000 app bytes, the ratio is about 8.8. Three things have different lifetimes: model files on disk, one speech-server process in memory, and the app bundle on disk. Automatic mode stops an idle speech server after ten minutes, but its files stay. An app update replaces only the app bundle.',
     zh: '2.47 GB 模型单独下载，约是 280 MB 应用的 9 倍。模型共 2,467,856,503 字节，除以应用的字节数 280,000,000，约为 8.8 倍。三样东西有不同寿命：磁盘上的模型文件、内存里的一个语音服务器进程、磁盘上的应用包。自动模式让空闲十分钟的语音服务器退出，但文件留着。应用更新只换应用包。',
   }, {
-    en: 'A model is pinned to one online repository and one commit, with nine files. The largest file is 2.46 gigabytes. The commit fixes the tested version. LFS files use SHA-256 fingerprints; other files use git blob IDs. The snapshot folder on disk uses the full forty-character commit.',
-    zh: '模型固定在一个网上仓库和一个提交上，共有九个文件。最大的文件是 2.46 GB。提交固定了测试过的版本。LFS 文件用 SHA-256 指纹校验，其他文件用 git blob ID。磁盘上的快照文件夹使用完整的 40 位提交。',
+    en: 'A pinned snapshot means one exact version. The commit fixes nine tested files. A fingerprint is an ID made from a file\'s bytes, so it catches a changed or broken file. Large files use a SHA-256 fingerprint; other files use git\'s content ID, called a git blob ID. The total is the nine-file sum from Step 1. The snapshot folder on disk uses the full forty-character commit.',
+    zh: '固定快照就是一个确定的版本。提交固定了测试过的九个文件。指纹是根据文件字节算出的标记，能发现文件变了或坏了。大文件用 SHA-256 指纹，其他文件用 git 的内容标记 git blob ID。总数来自第 1 步的九文件求和。磁盘上的快照文件夹使用完整的 40 位提交。',
   }, {
     en: 'One download job brings the model and the small models it needs. A cancel keeps the bytes already here and the next start continues. LFS files are checked with SHA-256 and other files with git blob IDs; a mismatch is an error. Two gigabytes must stay free. The 1.24 megabyte Silero voice detector finds speech and rides in the same job.',
     zh: '一个下载任务带来模型和它需要的小模型。取消后已经下到的字节留着，下次接着下。LFS 文件用 SHA-256 校验，其他文件用 git blob ID，不对就报错。磁盘上要留 2 GB 空位。1.24 MB 的 Silero 语音检测器负责找出语音，也在同一个任务里。',
@@ -180,22 +180,22 @@
         {/if}
       {:else if step === 1}
         <text x={W / 2} y={phone ? 25 : 27} text-anchor="middle" class="title">{t('MODEL FILES · ONE PINNED SNAPSHOT', '模型文件 · 一个固定快照')}</text>
-        <text x={W / 2} y={phone ? 47 : 50} text-anchor="middle" class="subtitle">{t('one exact set of files + their fingerprints', '一批确定的文件 + 每个文件的指纹')}</text>
+        <text x={W / 2} y={phone ? 47 : 50} text-anchor="middle" class="subtitle">{t('pinned = exact version · fingerprint = byte ID', '固定 = 版本确定 · 指纹 = 字节标记')}</text>
         {#if !phone}
           <rect x="20" y="74" width="250" height="110" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="40" y="98" class="label">{t('REPO · ONLINE HOME', '仓库 · 网上地址')}</text>
           <text x="40" y="122" class="mono">mlx-community/</text>
           <text x="40" y="142" class="mono">Qwen3-ASR-1.7B-8bit</text>
-          <text x="40" y="168" class="label">{t('commit · version', '提交 · 版本')} {commitShort}</text>
+          <text x="40" y="168" class="label">{t('commit = exact version', '提交 = 确定的版本')} {commitShort}</text>
           <line x1="272" y1="129" x2="294" y2="129" stroke="var(--muted)" stroke-width="2" marker-end="url(#ms-arrow)" />
           <rect x="300" y="74" width="400" height="190" rx="10" fill="var(--bg)" stroke="var(--line)" />
-          <text x="316" y="98" class="label">{t(`${VOXT_MODEL_FILE_COUNT} FILES · ${gb} GB`, `${VOXT_MODEL_FILE_COUNT} 个文件 · ${gb} GB`)}</text>
+          <text x="316" y="98" class="label">{t(`${VOXT_MODEL_FILE_COUNT} FILES · STEP 1 TOTAL = ${gb} GB`, `${VOXT_MODEL_FILE_COUNT} 个文件 · 第 1 步总数 = ${gb} GB`)}</text>
           <text x="316" y="124" class="mono">model.safetensors</text>
           <text x="684" y="124" text-anchor="end" class="mono">{weightsGb} GB</text>
-          <text x="316" y="142" class="mono small">{t('LFS: SHA-256 bf304b…', 'LFS：SHA-256 bf304b…')}</text>
+          <text x="316" y="142" class="mono small">{t('SHA-256 bf304b… = fingerprint from bytes', 'SHA-256 bf304b… = 字节指纹')}</text>
           <text x="316" y="172" class="mono">vocab.json</text>
           <text x="684" y="172" text-anchor="end" class="mono">{vocabMb} MB</text>
-          <text x="316" y="190" class="mono small">{t('git blob ID checked', '用 git blob ID 校验')}</text>
+          <text x="316" y="190" class="mono small">{t("git blob ID = git's byte fingerprint", 'git blob ID = git 的字节指纹')}</text>
           <text x="316" y="220" class="detail">{t(`… and ${VOXT_MODEL_FILE_COUNT - 2} more files`, `… 还有 ${VOXT_MODEL_FILE_COUNT - 2} 个文件`)}</text>
           <text x="316" y="246" class="mono small">snapshots/{VOXT_MODEL_COMMIT}</text>
           <text x="40" y="316" class="label">{t("ON DISK · THIS COMMIT'S FILES", '在磁盘上 · 这个提交的文件')}</text>
@@ -211,14 +211,14 @@
           <text x="30" y="86" class="label">{t('REPO · ONLINE HOME', '仓库 · 网上地址')}</text>
           <text x="30" y="108" class="mono">mlx-community/</text>
           <text x="30" y="128" class="mono">Qwen3-ASR-1.7B-8bit</text>
-          <text x="30" y="154" class="label">{t('commit · version', '提交 · 版本')} {commitShort}</text>
+          <text x="30" y="154" class="label">{t('commit = exact version', '提交 = 确定的版本')} {commitShort}</text>
           <line x1="150" y1="176" x2="150" y2="196" stroke="var(--muted)" stroke-width="2" marker-end="url(#ms-arrow)" />
           <rect x="15" y="202" width="270" height="240" rx="10" fill="var(--bg)" stroke="var(--line)" />
-          <text x="30" y="226" class="label">{t(`${VOXT_MODEL_FILE_COUNT} FILES · ${gb} GB`, `${VOXT_MODEL_FILE_COUNT} 个文件 · ${gb} GB`)}</text>
+          <text x="30" y="226" class="label">{t(`${VOXT_MODEL_FILE_COUNT} FILES · STEP 1 TOTAL = ${gb} GB`, `${VOXT_MODEL_FILE_COUNT} 个文件 · 第 1 步总数 = ${gb} GB`)}</text>
           <text x="30" y="254" class="mono">model.safetensors</text>
-          <text x="30" y="272" class="mono small">{weightsGb} GB · {t('bf304b…', 'bf304b…')}</text>
+          <text x="30" y="272" class="mono small">{weightsGb} GB · {t('SHA-256 = byte fingerprint', 'SHA-256 = 字节指纹')}</text>
           <text x="30" y="300" class="mono">vocab.json</text>
-          <text x="30" y="318" class="mono small">{vocabMb} MB · {t('git blob ID checked', '用 git blob ID 校验')}</text>
+          <text x="30" y="318" class="mono small">{vocabMb} MB · {t('git blob ID = byte fingerprint', 'git blob ID = 字节指纹')}</text>
           <text x="30" y="348" class="detail">{t(`… and ${VOXT_MODEL_FILE_COUNT - 2} more files`, `… 还有 ${VOXT_MODEL_FILE_COUNT - 2} 个文件`)}</text>
           <text x="30" y="382" class="mono small">models--mlx-community--</text>
           <text x="30" y="402" class="mono small">Qwen3-ASR-1.7B-8bit/snapshots/</text>

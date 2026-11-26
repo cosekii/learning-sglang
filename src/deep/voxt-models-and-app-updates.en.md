@@ -47,8 +47,8 @@ Step 2 looks at what exactly is stored: one pinned commit and a file list with h
 
 ### On the stage
 
-- Left blue card: the model's online home, repo `mlx-community/Qwen3-ASR-1.7B-8bit`, and the abbreviated commit label `a8379a2`. A commit is one exact version.
-- Right file panel: nine files, 2.47 GB. `model.safetensors` is 2.46 GB and uses LFS SHA-256 `bf304b…`; `vocab.json` is 2.78 MB and is checked by its git blob ID; seven more files follow.
+- Left blue card: the model's online home, repo `mlx-community/Qwen3-ASR-1.7B-8bit`, and the abbreviated commit label `a8379a2`. A pinned snapshot is one exact version.
+- Right file panel: nine files, with the 2.47 GB total summed in Step 1. `model.safetensors` is 2.46 GB, and SHA-256 `bf304b…` is a fingerprint made from its bytes; `vocab.json` is 2.78 MB, and its git blob ID is git's byte fingerprint; seven more files follow.
 - Below: the on-disk path `models--mlx-community--Qwen3-ASR-1.7B-8bit` / `snapshots/a8379a2e2f9e313c9292cdf1af4055ab56d50d55`. The folder uses the full commit, not the short label.
 - Two lines: a repo can change, so the commit fixes the tested files; a fingerprint catches a changed or broken file.
 
@@ -75,13 +75,13 @@ $$ \text{LFS file: }\ \mathrm{SHA256}(\text{file}) = \text{listed hash}, \qquad 
 |---|---|---|
 | files | the catalogue lists them | 9 |
 | weights | `model.safetensors` | 2,463,307,541 B = 2.46 GB |
-| total | sum of the nine sizes | 2,467,856,503 B = 2.47 GB |
+| total | Step 1's nine-file sum | 2,467,856,503 B = 2.47 GB |
 
 ### Why a commit, not a name
 
 A Hugging Face repo can gain files or change them after a tag moves. The catalogue stores the commit ID, so the app asks for exactly the files it was tested with (`internal/models/catalog.go:105-114`). `Accept` adds other commits the runtimes were checked with: one of them on disk is used instead of downloading the pinned one (`catalog.go:108-111`).
 
-The integrity check is the second half. For a large weight file the Hub keeps the blob in Git LFS, and its name is the SHA-256 (`catalog.go:84-94`). `Entry` copies the catalogue's SHA-256 only for an LFS file; the download checks that fingerprint, so a truncated or corrupted file produces an error instead of loading. Non-LFS files leave that SHA-256 field empty in the download entry and are checked by their git blob ID (`hub.go:28-44`, `internal/models/models_test.go:235-250`). A hash is only a content fingerprint: matching bytes produce the same ID.
+The integrity check is the second half. For a large weight file the Hub keeps the blob in Git Large File Storage (LFS), and its name is the SHA-256 (`catalog.go:84-94`). `Entry` copies the catalogue's SHA-256 only for an LFS file; the download checks that fingerprint, so a truncated or corrupted file produces an error instead of loading. Non-LFS files leave that SHA-256 field empty in the download entry and are checked by their git blob ID (`hub.go:28-44`, `internal/models/models_test.go:235-250`). A hash is only a content fingerprint: matching bytes produce the same ID.
 
 ### Next
 
