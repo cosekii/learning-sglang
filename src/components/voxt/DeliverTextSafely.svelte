@@ -11,8 +11,8 @@
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
   const steps = [{
-    caption: 'You press the shortcut in one app, then switch. The text goes where the focus is now, not back to the start app.',
-    captionZh: '你在一个 app 按快捷键，之后可能切走。文字去此刻的焦点，不回按快捷键的那个 app。',
+    caption: 'You press the shortcut in one app, then may switch. The text goes to the current focus, not necessarily back to the start app.',
+    captionZh: '你在一个 app 按快捷键，之后可能切走。文字去此刻的焦点，不一定回按快捷键的那个 app。',
   }, {
     caption: 'First check: is the focused field a password field? If it is, nothing is typed.',
     captionZh: '先检查焦点是不是密码框。是的话，一个字都不贴。',
@@ -27,8 +27,8 @@
     captionZh: '贴之前记住剪贴板，贴完把原来的放回去。里面可能有读者还要用的东西。',
   }];
   const ariaLabels = [{
-    en: 'Two windows: the start app where the shortcut was pressed, and the front app now. The prepared text travels to the front app, because the focused element there is where typing would go.',
-    zh: '两个窗口：按快捷键时的 start app，和此刻在前面的 front app。准备好的文字去 front app，因为那里有焦点的元素才是打字会去的地方。',
+    en: 'Two windows: the start app where the shortcut was pressed, and the front app now; they can be the same app. The prepared text travels to the front app, because the focused element there is where typing would go.',
+    zh: '两个窗口：按快捷键时的 start app，和此刻在前面的 front app；两者可以是同一个 app。准备好的文字去 front app，因为那里有焦点的元素才是打字会去的地方。',
   }, {
     en: 'The front app has a focused password field, shown as dots with the subrole AXSecureTextField. A password field stops the delivery, so nothing is pasted and the answer card is shown instead.',
     zh: 'front app 里有一个获得焦点的密码框，画成圆点，subrole 是 AXSecureTextField。密码框会挡住投递，什么也不贴，改为显示答案卡。',
@@ -72,7 +72,7 @@
         </marker>
       </defs>
       {#if step === 0}
-        <text x="20" y="22" class="tag strong">{t('start app ≠ front app', 'start app ≠ front app')}</text>
+        <text x="20" y="22" class="tag strong">{t('start app can differ from front app', 'start app 和 front app 可以不同')}</text>
         <text x="20" y="46" class="tag">{t('start app: the app in front when you pressed the shortcut.', 'start app：按快捷键那一刻在前面的 app。')}</text>
         <text x="20" y="68" class="tag">{t('front app now: the app in front when the text is ready.', 'front app now：文字准备好那一刻在前面的 app。')}</text>
         <rect x="20" y="96" width={phone ? 260 : 260} height="140" rx="12" fill="var(--bg)" stroke="var(--line)" />
@@ -91,7 +91,7 @@
           <text x="300" y="158" class="tag">{t('you switch', '你切了 app')}</text>
         {/if}
         <text x="20" y={phone ? 458 : 272} class="tag strong">{t('focus: the field where typing goes', '焦点：打字会落下的框')}</text>
-        <text x="20" y={phone ? 480 : 300} class="tag strong">{t('The start app is remembered, but it is not the destination.', 'start app 会被记住，但它不是目的地。')}</text>
+        <text x="20" y={phone ? 480 : 300} class="tag strong">{phone ? t('Remembered, but not automatically the destination.', '会被记住，但不一定是目的地。') : t('The start app is remembered, but it is not automatically the destination.', 'start app 会被记住，但它不一定是目的地。')}</text>
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Source: Voxt/internal/deliver/deliver.go, package comment', '出处：Voxt/internal/deliver/deliver.go 包注释')}</text>
       {:else if step === 1}
         <text x="20" y="22" class="tag strong">{t('gate 1 · password field', '第一道门 · 密码框')}</text>
@@ -174,7 +174,7 @@
         {/if}
         <text x="20" y={phone ? 448 : 226} class="mono">{t('inserted:', '贴进去：')} {VOXT_RESTORE_AFTER_INSERT_MS} ms · {t('unknown:', '不确定：')} {VOXT_RESTORE_DEFAULT_MS} ms</text>
         <text x="20" y={phone ? 474 : 252} class="tag">{t('If another app wrote meanwhile, skip the restore.', '这中间别的 app 写过了，就不覆盖。')}</text>
-        <text x={W / 2} y={phone ? 506 : 284} text-anchor="middle" class="tag strong">{t('Not inserted: the card offers Insert and Copy.', '未贴入：卡片提供 Insert 和 Copy。')}</text>
+        <text x={W / 2} y={phone ? 506 : 284} text-anchor="middle" class="tag strong">{t('Paste unconfirmed: the card offers Insert and Copy.', '粘贴未确认：卡片提供 Insert 和 Copy。')}</text>
         <rect x="20" y={phone ? 524 : 306} width={W - 40} height={phone ? 48 : 46} rx="8" fill="var(--bg)" stroke="var(--line)" />
         <text x="34" y={phone ? 542 : 322} class="rowlabel">{t('answer text', '答案文字')}</text>
         <text x="34" y={phone ? 564 : 342} class="tag">{t('send the deck to ', '把文件发给 ')}<tspan font-weight="600">Priya</tspan></text>
