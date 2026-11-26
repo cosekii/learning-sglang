@@ -245,7 +245,7 @@
           <rect x="20" y="230" width="260" height="52" rx="8" fill="var(--bg)" stroke="var(--line)" />
           <text x="150" y="262" text-anchor="middle" class="tag">{t('language-model cleanup', '语言模型清理')}</text>
           <text x="20" y="312" class="tag strong">{t('matching rules', '匹配规则')}</text>
-          <text x="20" y="338" class="tag">{t('Latin (like English): whole words, any case', '拉丁文字（如英文）：整词，不分大小写')}</text>
+          <text x="20" y="338" class="tag">{t('Latin: whole words; punctuation ends unchecked', '拉丁：整词；标点端不查边界')}</text>
           <text x="20" y="362" class="tag">{t('Chinese / Japanese / Korean: anywhere', '中日韩：任意位置')}</text>
           <text x="20" y="386" class="tag">{t('same spot: the longest wins', '同一位置：最长的胜出')}</text>
           <text x="20" y="410" class="tag">{t('a correct term is left alone', '已经对的词条不动')}</text>
@@ -266,7 +266,7 @@
           <text x="428" y="126" class="detail">{t('the text it receives is already right', '它收到的文字已经对了')}</text>
           <rect x="20" y="164" width="370" height="150" rx="10" fill="var(--bg)" stroke="var(--line)" />
           <text x="34" y="190" class="rowlabel">{t('matching rules', '匹配规则')}</text>
-          <text x="34" y="218" class="tag">{t('Latin script (like English): whole words, any case', '拉丁文字（如英文）：整词，不分大小写')}</text>
+          <text x="34" y="218" class="tag">{t('Latin: whole words; a punctuation end skips its check', '拉丁：整词；标点端不查边界')}</text>
           <text x="34" y="242" class="tag">{t('Chinese / Japanese / Korean: anywhere', '中日韩：任意位置都能匹配')}</text>
           <text x="34" y="266" class="tag">{t('when several could match at one spot, the longest wins', '同一位置有多个能匹配时，最长的胜出')}</text>
           <text x="34" y="290" class="tag">{t('a term already written stays', '已经写对的词条保持原样')}</text>
