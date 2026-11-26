@@ -79,3 +79,55 @@ Public baseline: same as Step 1.
 - Message order and system/user responsibilities: `Voxt/internal/compose/compose.go:260-309,394-444`.
 - Stable dictionary prefix and the large-dictionary user block: `Voxt/internal/compose/compose.go:517-599`; `Voxt/internal/compose/dictionary.go:5-17`.
 - Escaping matching closing tags: `Voxt/internal/compose/compose.go:361-378`.
+
+## Step 3 · Five parts form a cleanup request
+
+> **In one line:** A Transcribe prompt can be simplified into four system instruction layers and one user input: five functional parts in one prompt.
+
+### On the stage
+
+- `ROLE` tells the model which role should perform the work.
+- `CLEANUP` describes fillers, repetitions and recognition artifacts to address. It guides the model rather than running a fixed text replacement.
+- `TASK` names this job as tidying one dictation.
+- `OUTPUT` asks the model to place its answer inside `<output>`, so the response cleaner knows which span to extract.
+- The blue `USER` card wraps this run's recognized text, “Good morning.”, in `<input>`. The input value is constructed.
+- This functional map omits input-form, `structure` or `form`, example, dictionary and scene layers. It is not the complete source `Layers` list.
+
+### Formula
+
+$$
+L=I+U
+$$
+
+| Symbol | Meaning | Where it comes from |
+|---|---|---|
+| $L$ | Number of prompt parts drawn in this step | Calculated here |
+| $I$ | Number of system instruction layers | Role, cleanup, task and output contract: 4 |
+| $U$ | Number of user inputs | One constructed recognition result |
+
+### The numbers on the stage
+
+| Quantity | Arithmetic | Result |
+|---|---|---:|
+| Prompt parts in this picture | $4+1$ | 5 |
+
+This counts parts in the teaching picture, not tokens, bytes or requests. All five parts belong to one model request.
+
+### What full assembly can add
+
+The public `Layers` list can include input form, optional `before`, basic cleanup, `structure` or `form`, task, shared dictionary material and the output contract. With cleanup enabled, the example is appended inside the system prompt rather than added as a history turn.
+
+A nonblank `TaskPrompt` selects the full custom-prompt branch. It does not append one sentence to the built-in role and output contract; that branch explicitly decides which cleanup behavior to retain.
+
+### Next
+
+The Transcribe request is assembled. The next step compares all three tasks' input and output contracts to show why they cannot share one response-cleaning rule.
+
+### Sources
+
+Public baseline: same as Step 1.
+
+- Transcribe layer assembly and output contract: `Voxt/internal/compose/compose.go:307-408`.
+- Cleanup example inside the system prompt: `Voxt/internal/compose/example.go:9-45`.
+- Full custom-prompt branch: `Voxt/internal/compose/compose_full.go:8-79`.
+- Representative layer lists: `Voxt/internal/compose/compose_test.go:146-185`.

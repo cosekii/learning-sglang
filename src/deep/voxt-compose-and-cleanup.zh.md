@@ -79,3 +79,55 @@ Voxt 用 XML 形状的标签包住输入，例如 `<input>…</input>`。如果�
 - 消息顺序与 system/user 分工：`Voxt/internal/compose/compose.go:260-309,394-444`。
 - 词典稳定前缀与大词典的 user 块：`Voxt/internal/compose/compose.go:517-599`；`Voxt/internal/compose/dictionary.go:5-17`。
 - 同名闭合标签转义：`Voxt/internal/compose/compose.go:361-378`。
+
+## 第 3 步 · 五部分组成整理请求
+
+> **一句话：** 整理听写 prompt 可以简化看成四层 system 说明和一份 user 输入，合起来是五个功能部分。
+
+### 图上是什么
+
+- `ROLE` 告诉模型以什么角色完成工作。
+- `CLEANUP` 说明要处理哪些口头填充、重复和识别痕迹；它不是对文本执行固定替换的程序。
+- `TASK` 指明这次要整理一段听写。
+- `OUTPUT` 要求模型把结果放进 `<output>`，让后面的清理程序知道该取哪一段。
+- 蓝色 `USER` 用 `<input>` 包住本次识别文字 “Good morning.”。输入值是构造示例。
+- 本图按功能省略输入格式、`structure` 或 `form`、示例、词典和场景等层，不把五个部分当成源码 `Layers` 的完整列表。
+
+### 公式
+
+$$
+L=I+U
+$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $L$ | 本图列出的 prompt 功能部分数 | 本步计算 |
+| $I$ | system 中的说明层数 | 角色、清理、任务、输出约定，共 4 层 |
+| $U$ | user 中的本次输入份数 | 1 份构造的识别文字 |
+
+### 代入图上的数
+
+| 要算的量 | 算式 | 结果 |
+|---|---|---:|
+| 本图的 prompt 部分 | $4+1$ | 5 个 |
+
+这是教学图的计数，不是 token 数、字节数或请求条数。五部分仍属于同一次模型请求。
+
+### 完整组装还有哪些层
+
+公开 `Layers` 会按配置加入输入格式、可选 `before`、基本清理、`structure` 或 `form`、任务、共享词典和输出约定。开启清理时，示例追加在 system prompt 内部，不会为了示例增加一轮 history。
+
+如果 `TaskPrompt` 非空，Voxt 进入完整自定义 prompt 分支。它不是把一句话附到内置角色和输出约定后面；保留下来的清理由自定义分支明确处理。
+
+### 接下来
+
+整理听写的请求已经组好。下一步对照三种任务的输入和输出约定，看为什么不能共用一套答案清理规则。
+
+### 源码出处
+
+公开基线同第 1 步。
+
+- Transcribe 的层组装与输出约定：`Voxt/internal/compose/compose.go:307-408`。
+- 清理示例位于 system prompt 内部：`Voxt/internal/compose/example.go:9-45`。
+- 完整自定义 prompt 分支：`Voxt/internal/compose/compose_full.go:8-79`。
+- 代表性层列表：`Voxt/internal/compose/compose_test.go:146-185`。

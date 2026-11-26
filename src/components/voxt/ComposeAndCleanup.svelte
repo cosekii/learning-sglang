@@ -4,7 +4,7 @@
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
-  import { VOXT_COMPOSE_TASK_COUNT } from '../../voxt/numbers';
+  import { VOXT_COMPOSE_PROMPT_PART_COUNT, VOXT_COMPOSE_TASK_COUNT } from '../../voxt/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
@@ -14,6 +14,9 @@
   }, {
     caption: 'Stable instructions stay in system. This run’s input stays in user.',
     captionZh: '固定说明放进 system。本次输入放进 user。',
+  }, {
+    caption: 'Four instruction layers join one input. They form one Transcribe cleanup prompt.',
+    captionZh: '四层说明加入一份输入，组成整理听写的 prompt。',
   }];
   const ariaLabels = [{
     en: 'After recognition, one result can take one of three task routes. Transcribe treats words such as Good morning as text to tidy. Translate treats them as text to translate. Rewrite treats words such as Make it shorter as an instruction. Selected or typed text can supply the content to rewrite.',
@@ -21,6 +24,9 @@
   }, {
     en: 'One request orders its messages as system, optional history, then user. System holds reusable role, task and output instructions. History can hold examples or earlier turns. User holds this run’s recognized text, selection, typed text or instruction.',
     zh: '一个请求的消息顺序是 system、可选的 history、user。system 保存可复用的角色、任务和输出说明。history 可以保存示例或前几轮对话。user 保存本次的识别文字、选区、框内输入或指令。',
+  }, {
+    en: 'A simplified Transcribe cleanup prompt has five functional parts. Four system instruction layers cover the role, cleanup rules, task and output contract. One user message supplies the recognized text inside an input wrapper. Four plus one makes five parts in one prompt.',
+    zh: '一个简化的整理听写 prompt 有五个功能部分。system 的四层说明分别是角色、清理规则、任务和输出约定。一条 user 消息把识别文字放进 input 包裹。四加一组成一个 prompt 的五个部分。',
   }];
   const tasks = [
     { name: 'TRANSCRIBE', nameZh: '整理听写', output: '“Good morning.”', note: 'words to tidy', noteZh: '要整理的文字' },
@@ -42,7 +48,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived((phone ? [680, 620] : [480, 410])[step]);
+  const H = $derived((phone ? [680, 620, 670] : [480, 410, 460])[step]);
 </script>
 
 <figure class="viz">
@@ -82,7 +88,7 @@
       <text x={W / 2} y={phone ? 595 : 425} text-anchor="middle" class="cut">1 × {VOXT_COMPOSE_TASK_COUNT} = {VOXT_COMPOSE_TASK_COUNT} {t('ROUTE CHOICES · CHOOSE 1', '条路线选择 · 选 1 条')}</text>
       <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('Rewrite can also use selected or typed text.', '改写还可以使用选区或框内输入。')}</text>
       <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Constructed inputs · each run chooses one route.', '构造的输入 · 每次运行选择一条路线。')}</text>
-      {:else}
+      {:else if step === 1}
         <text x={W / 2} y="27" text-anchor="middle" class="title">{t('ONE REQUEST · ORDERED MESSAGES', '一个请求 · 按顺序排列的消息')}</text>
         <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('message = one labelled parcel for the model', '消息 = 交给模型的一份带标签内容')}</text>
         {#each [
@@ -113,6 +119,37 @@
         <text x={W / 2} y={phone ? 565 : 325} text-anchor="middle" class="cut">{t('REUSE THE INSTRUCTIONS · REPLACE THE INPUT', '复用说明 · 替换本次输入')}</text>
         <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('User text cannot literally close its wrapper.', '用户文本不能原样闭合自己的包裹标签。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Matching closing tags are escaped.', '同名闭合标签会被转义。')}</text>
+      {:else}
+        <text x={W / 2} y="27" text-anchor="middle" class="title">{t('TRANSCRIBE + CLEANUP · ONE PROMPT', '整理听写 + 清理 · 一份 prompt')}</text>
+        <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('prompt = the complete instructions and input', 'prompt = 完整的说明和输入')}</text>
+        <rect x={phone ? 20 : 30} y={phone ? 72 : 75} width={phone ? 260 : 400} height={phone ? 350 : 290} rx="11" fill="var(--bg)" stroke="var(--fg)" stroke-width="1.5" />
+        <text x={phone ? 150 : 230} y={phone ? 98 : 102} text-anchor="middle" class="label">SYSTEM · 4 {t('INSTRUCTION LAYERS', '层说明')}</text>
+        {#each [
+          { name: '1 · ROLE', nameZh: '1 · 角色', detail: 'who should do the work', detailZh: '谁来做这项工作' },
+          { name: '2 · CLEANUP', nameZh: '2 · 清理规则', detail: 'which fillers and repeats to remove', detailZh: '去掉哪些口头填充和重复' },
+          { name: '3 · TASK', nameZh: '3 · 任务', detail: 'tidy this dictation', detailZh: '整理这段听写' },
+          { name: '4 · OUTPUT', nameZh: '4 · 输出约定', detail: 'put the answer in <output>', detailZh: '把答案放进 <output>' },
+        ] as layer, i}
+          {@const x = phone ? 35 : 50}
+          {@const y = phone ? 112 + i * 73 : 115 + i * 60}
+          {@const w = phone ? 230 : 360}
+          <rect {x} {y} width={w} height={phone ? 62 : 50} rx="8" fill="white" stroke="var(--line)" />
+          <text x={x + 14} y={y + (phone ? 23 : 20)} class="label">{t(layer.name, layer.nameZh)}</text>
+          <text x={x + 14} y={y + (phone ? 47 : 39)} class="detail">{t(layer.detail, layer.detailZh)}</text>
+        {/each}
+        {#if phone}
+          <line x1="150" y1="426" x2="150" y2="450" stroke="var(--muted)" stroke-width="2" marker-end="url(#compose-arrow)" />
+        {:else}
+          <line x1="435" y1="220" x2="475" y2="220" stroke="var(--muted)" stroke-width="2" marker-end="url(#compose-arrow)" />
+        {/if}
+        <rect x={phone ? 35 : 485} y={phone ? 460 : 145} width={phone ? 230 : 200} height={phone ? 100 : 150} rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2" />
+        <text x={phone ? 150 : 585} y={phone ? 487 : 174} text-anchor="middle" class="label" fill="var(--accent)">USER · 1 {t('INPUT', '份输入')}</text>
+        <text x={phone ? 150 : 585} y={phone ? 516 : 213} text-anchor="middle" class="mono">&lt;input&gt;</text>
+        <text x={phone ? 150 : 585} y={phone ? 541 : 244} text-anchor="middle" class="value small">“Good morning.”</text>
+        {#if !phone}<text x="585" y="272" text-anchor="middle" class="mono">&lt;/input&gt;</text>{/if}
+        <text x={W / 2} y={phone ? 595 : 390} text-anchor="middle" class="cut">4 + 1 = {VOXT_COMPOSE_PROMPT_PART_COUNT} {t('PARTS · ONE PROMPT', '个部分 · 一份 prompt')}</text>
+        <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('Simplified map · form and example layers omitted.', '简化图 · 省略格式和示例层。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('The input value is constructed.', '输入值是构造的。')}</text>
       {/if}
     </svg>
   </div>
