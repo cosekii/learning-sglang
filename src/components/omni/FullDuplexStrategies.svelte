@@ -27,6 +27,12 @@
     DUPLEX_PROFILER_READY_TO_ADMITTED_MS,
     DUPLEX_PROFILER_ADMITTED_TO_OUTPUT_MS,
     DUPLEX_PROFILER_READY_TO_OUTPUT_MS,
+    DUPLEX_INTERRUPTION_START_MS,
+    DUPLEX_INTERRUPTION_END_MS,
+    DUPLEX_OLD_REPLY_STOP_MS,
+    DUPLEX_NEW_REPLY_WORD_MS,
+    DUPLEX_STOP_WAIT_MS,
+    DUPLEX_RESPONSE_WAIT_MS,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -52,6 +58,9 @@
   }, {
     caption: 'The profiler adds 150 ms admission and 50 ms to first output. That 200 ms does not measure playback or interruption stop.',
     captionZh: 'profiler 把 150 ms 接纳等待与 50 ms 首输出等待相加。这 200 ms 不测量播放或停答。',
+  }, {
+    caption: 'The listener waits 1.3 seconds for old-audio stop and 1.1 for reply. Next, which Qwen deployment belongs on these clocks?',
+    captionZh: '旧声音停止等了 1.3 秒，新回答开始等了 1.1 秒。下一步，该把哪种 Qwen 部署放上这些时钟？',
   }];
   let step = $state(0);
   $effect(() => {
@@ -68,8 +77,9 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [650, 790, 790, 760, 830, 830, 760][step] : [540, 590, 570, 610, 640, 640, 590][step]);
+  const H = $derived(phone ? [650, 790, 790, 760, 830, 830, 760, 800][step] : [540, 590, 570, 610, 640, 640, 590, 640][step]);
   const seconds = (ms: number) => (ms / 1000).toFixed(1);
+  const listenerX = (ms: number) => 80 + (ms - DUPLEX_INTERRUPTION_START_MS) * 0.2;
 </script>
 
 <figure class="viz">
@@ -372,6 +382,61 @@
           <text x="150" y="690" text-anchor="middle" class="small strong">{t('Next: listener-side waits', '下一步：听者测量的等待')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Profiler golden-test values' : 'Golden-test values. Each interval is calculated per Unit before aggregation.', phone ? 'profiler 黄金测试数值' : '黄金测试数值。每段间隔先在每个 Unit 内计算，再做汇总。')}</text>
+      {:else if step === 7}
+        <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'Listener timing' : 'Listener timing · one recorded interruption', phone ? '听者计时' : '听者计时 · 一次录下的打断')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'S = user starts · R = user ends' : 'S = interruption starts · R = interruption ends', phone ? 'S = 开始打断 · R = 打断结束' : 'S = 开始打断 · R = 打断结束')}</text>
+        <text x={phone ? 18 : 30} y="79" class="label">{t(phone ? 'orange = user · red = old · blue = new' : 'orange = user correction · red = old reply · blue = new reply', phone ? '橙 = 用户 · 红 = 旧回答 · 蓝 = 新回答' : '橙 = 用户纠正 · 红 = 旧回答 · 蓝 = 新回答')}</text>
+        {#if !phone}
+          <text x="30" y="122" class="small strong">{t('USER', '用户')}</text>
+          <rect x={listenerX(DUPLEX_INTERRUPTION_START_MS)} y="112" width={(DUPLEX_INTERRUPTION_END_MS - DUPLEX_INTERRUPTION_START_MS) * 0.2} height="45" rx="7" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="80" y="97" text-anchor="middle" class="result">S · 3.0</text>
+          <text x="280" y="97" text-anchor="middle" class="result">R · 4.0</text>
+          <text x="180" y="141" text-anchor="middle" class="small strong">“No, I meant London.”</text>
+          <text x="30" y="222" class="small strong">{t('OLD REPLY', '旧回答')}</text>
+          <rect x="80" y="203" width={(DUPLEX_OLD_REPLY_STOP_MS - DUPLEX_INTERRUPTION_START_MS) * 0.2} height="45" rx="7" fill="var(--eos-soft)" stroke="var(--eos)" />
+          <text x="340" y="190" text-anchor="middle" class="result">L · 4.3</text>
+          <text x="340" y="232" text-anchor="middle" class="small strong">{t('last old sample', '旧声音最后一点')}</text>
+          <text x="30" y="322" class="small strong">{t('NEW REPLY', '新回答')}</text>
+          <rect x="280" y="303" width={(DUPLEX_NEW_REPLY_WORD_MS - DUPLEX_INTERRUPTION_END_MS) * 0.2} height="45" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" stroke-dasharray="5 3" />
+          <rect x="500" y="303" width="150" height="45" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="500" y="290" text-anchor="middle" class="result">N · 5.1</text>
+          <text x="575" y="332" text-anchor="middle" class="small strong">{t('first new ASR word', '新回答首个 ASR 词')}</text>
+          <rect x="50" y="384" width="295" height="70" rx="10" fill="var(--eos-soft)" stroke="var(--eos)" />
+          <text x="197" y="413" text-anchor="middle" class="small strong">{t('old reply stops', '旧回答停止')}</text>
+          <text x="197" y="440" text-anchor="middle" class="result">L − S = 4.3 − 3.0 = {seconds(DUPLEX_STOP_WAIT_MS)} s</text>
+          <rect x="375" y="384" width="295" height="70" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="522" y="413" text-anchor="middle" class="small strong">{t('new reply responds', '新回答回应')}</text>
+          <text x="522" y="440" text-anchor="middle" class="result">N − R = 5.1 − 4.0 = {seconds(DUPLEX_RESPONSE_WAIT_MS)} s</text>
+          {#each [
+            { x: 50, name: 'Qwen', value: `${DUPLEX_QWEN_HEARD_ROWS} rows` },
+            { x: 265, name: 'cascade', value: `sentence ${DUPLEX_CASCADE_HEARD_SENTENCES}` },
+            { x: 480, name: 'MiniCPM-o', value: `unit ${DUPLEX_NATIVE_LAST_HEARD_UNIT}` },
+          ] as result}
+            <rect x={result.x} y="486" width="190" height="55" rx="9" fill="var(--bg)" stroke="var(--line)" />
+            <text x={result.x + 95} y="509" text-anchor="middle" class="small strong">{result.name}</text>
+            <text x={result.x + 95} y="531" text-anchor="middle" class="result">{result.value}</text>
+          {/each}
+          <text x="360" y="590" text-anchor="middle" class="small strong">{t('Next: choose the Qwen3-Omni deployment to put on these clocks.', '下一步：选择要放上这些时钟的 Qwen3-Omni 部署。')}</text>
+        {:else}
+          <rect x="18" y="106" width="264" height="68" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="150" y="133" text-anchor="middle" class="small strong">{t('USER CORRECTION', '用户纠正')}</text>
+          <text x="150" y="158" text-anchor="middle" class="result">S = 3.0 · R = 4.0</text>
+          <rect x="18" y="194" width="264" height="82" rx="9" fill="var(--eos-soft)" stroke="var(--eos)" />
+          <text x="150" y="221" text-anchor="middle" class="small strong">{t('OLD REPLY STOPS AT L = 4.3', '旧回答在 L = 4.3 停止')}</text>
+          <text x="150" y="251" text-anchor="middle" class="result">L − S = {seconds(DUPLEX_STOP_WAIT_MS)} s</text>
+          <rect x="18" y="296" width="264" height="82" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="150" y="323" text-anchor="middle" class="small strong">{t('NEW ASR WORD AT N = 5.1', '新 ASR 词在 N = 5.1 出现')}</text>
+          <text x="150" y="353" text-anchor="middle" class="result">N − R = {seconds(DUPLEX_RESPONSE_WAIT_MS)} s</text>
+          <rect x="18" y="407" width="264" height="119" rx="10" fill="var(--bg)" stroke="var(--line)" />
+          <text x="150" y="438" text-anchor="middle" class="small strong">{t('SAME HISTORY CUT AS STEPS 4–6', '与第 4–6 步相同的历史切点')}</text>
+          <text x="150" y="470" text-anchor="middle" class="result">Qwen {DUPLEX_QWEN_HEARD_ROWS} · cascade {DUPLEX_CASCADE_HEARD_SENTENCES}</text>
+          <text x="150" y="501" text-anchor="middle" class="result">MiniCPM-o unit {DUPLEX_NATIVE_LAST_HEARD_UNIT}</text>
+          <text x="150" y="582" text-anchor="middle" class="small">{t('The two clocks use recorded speech.', '两个时钟都使用录下的语音。')}</text>
+          <text x="150" y="610" text-anchor="middle" class="small">{t('They do not reuse the server clock.', '不复用服务器时钟。')}</text>
+          <text x="150" y="680" text-anchor="middle" class="small strong">{t('Next: Qwen3-Omni deployment', '下一步：Qwen3-Omni 部署调优')}</text>
+          <text x="150" y="710" text-anchor="middle" class="small">{t('Which deployment belongs on these clocks?', '哪种部署该放上这些时钟？')}</text>
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Constructed FDB v1.0 example' : 'Constructed FDB v1.0 example. N is the first post-R ASR word, not necessarily first audio.', phone ? '构造的 FDB v1.0 算例' : '构造的 FDB v1.0 算例。N 是 R 后首个 ASR 词，不一定是首个声音。')}</text>
       {/if}
     </svg>
   </div>

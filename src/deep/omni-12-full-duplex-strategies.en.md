@@ -250,3 +250,47 @@ This clock explains server admission and output production. It has no endpoint f
 The listener-side evaluation measures the old reply's stop and the new reply's response from the recorded speech.
 
 Sources: `sglang_omni/profiler/duplex_metrics.py:150-157,282-337`; `docs/developer_reference/profiler.md:144-196`; `tests/unit_test/profiler/test_duplex_metrics.py:318-344`.
+
+## Step 8 · Two listener-side clocks
+
+> **In one line:** The constructed recording gives a 1.3-second old-reply stop wait and a 1.1-second new-reply response wait.
+
+### On the stage
+
+- S = 3.0 seconds starts the user's correction. R = 4.0 seconds ends it.
+- L = 4.3 seconds is the end of the old model-speech segment covering S.
+- N = 5.1 seconds is the first new ASR word after R.
+- The three small cards recall the same history cut: Qwen keeps 18 rows, the cascade keeps sentence 1 and MiniCPM-o keeps unit 0.
+
+### Formula
+
+$$
+T_{stop} = L - S,\qquad T_{response} = N - R
+$$
+
+| Symbol | Meaning | Value | Source |
+|---|---|---:|---|
+| $T_{stop}$ | Old-reply stop wait | 1.3 s | This step |
+| $T_{response}$ | New-reply response wait | 1.1 s | This step |
+| $L$ | End of old model speech covering S | 4.3 s | Constructed recording |
+| $S$ | Interruption onset | 3.0 s | Constructed recording |
+| $N$ | First post-R ASR word start | 5.1 s | Constructed recording |
+| $R$ | Interruption end | 4.0 s | Constructed recording |
+
+### The numbers on the stage
+
+$$
+T_{stop} = 4.3 - 3.0 = 1.3\ \text{s}
+$$
+
+$$
+T_{response} = 5.1 - 4.0 = 1.1\ \text{s}
+$$
+
+These are FDB v1.0 definitions. N is an ASR word start, not necessarily an audio-arrival timestamp. If no model speech covers S, the interruption is `not_exercised`, not a successful stop. If speech covers both S and R, the outcome is `speaking_at_end` and response latency is absent. Missing responses and unobserved stops count as infinity for quantile summaries rather than disappearing from the denominator.
+
+### Next
+
+Chapter 13 chooses a Qwen3-Omni deployment. Its configuration, memory budget and concurrency should be checked with explicit server and listener clocks rather than one combined number.
+
+Sources: `benchmarks/duplex/unified_v10.py:165-174,193-225,423-442,473-507`.

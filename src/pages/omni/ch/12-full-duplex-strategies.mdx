@@ -27,6 +27,8 @@ Step 6 follows MiniCPM-o's client `response.cancel` and `conversation.item.trunc
 
 Step 7 uses the duplex profiler's golden example: ready→admitted is 150 ms and admitted→first output is 50 ms, so ready→first output is 200 ms (`tests/unit_test/profiler/test_duplex_metrics.py:318-344`). The implementation computes each interval per request-backed Unit before aggregation (`sglang_omni/profiler/duplex_metrics.py:150-157,282-337`). Ready means all required input is present; admitted means the coordinator accepts the append. First output is the first model-content chunk entering the coordinator output buffer, potentially text, not client first audio (`docs/developer_reference/profiler.md:144-196`). The profiler has no playback-stop endpoint.
 
+Step 8 uses constructed timestamps under unified FDB v1.0. Stop time is the end of the model-speech segment covering interruption onset S minus S. Response time is the first post-R ASR word start N minus interruption end R (`benchmarks/duplex/unified_v10.py:165-174,193-225`). Thus the constructed old-audio stop wait is 4.3−3.0=1.3 seconds and response wait is 5.1−4.0=1.1 seconds. N is an ASR word boundary, not necessarily first audio. If no model speech covers S, the sample is `not_exercised`; if speech covers both S and R, it is `speaking_at_end`, with no response latency. The closing deployment question belongs to Chapter 13.
+
 Code references in this chapter pin to `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`. The chapter reads source and tests; it does not run a model or benchmark.
 
 </details>
@@ -47,6 +49,8 @@ Code references in this chapter pin to `sglang-omni origin/main@9725235249df8512
 第 6 步跟随 MiniCPM-o 的客户端 `response.cancel` 和 `conversation.item.truncate`。cancel 先保留到 adapter 最后交付的单元。客户端 truncate 再只保留声音在 H 前已经全部结束的已交付单元，后续 truncate 只能继续往前挪（`sglang_omni/models/minicpm_o/session_adapters.py:469-516,553-640`）。所以 D=2.0 秒保留 unit 0 和 unit 1，H=1.2 秒只保留 unit 0。unit 1 中被听过的 200 ms 无法进入整单元历史。thinker 删除之后的 spoken units，恢复之前的生成记录，并把后续用户输入作为强制 listening 单元补回（`session_adapters.py:118-179,219-236`）。这不同于模型自己决定停止说话。
 
 第 7 步使用 duplex profiler 的黄金测试算例：就绪到接纳是 150 ms，接纳到首个输出是 50 ms，所以就绪到首个输出是 200 ms（`tests/unit_test/profiler/test_duplex_metrics.py:318-344`）。实现先在每个请求支持的 Unit 内计算各段间隔，再做汇总（`sglang_omni/profiler/duplex_metrics.py:150-157,282-337`）。就绪表示需要的输入到齐，接纳表示 coordinator 接受 append。首个输出是进入 coordinator 输出缓冲的第一段模型内容，可能是文字，不是客户端首音（`docs/developer_reference/profiler.md:144-196`）。profiler 没有播放停止端点。
+
+第 8 步使用 unified FDB v1.0 的构造时刻。停答时间等于覆盖打断起点 S 的模型语音段结束时刻减 S。回应时间等于 R 后首个 ASR 词开始时刻 N 减打断结束时刻 R（`benchmarks/duplex/unified_v10.py:165-174,193-225`）。所以构造的旧声音停止等待是 4.3−3.0=1.3 秒，回应等待是 5.1−4.0=1.1 秒。N 是 ASR 词边界，不一定是首个声音。如果 S 时没有模型语音，样本是 `not_exercised`；如果 S 和 R 都被模型语音覆盖，样本是 `speaking_at_end`，没有回应延迟。章末部署问题由第 13 章回答。
 
 本章代码出处固定到 `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`。本章只读源码和测试，没有运行模型或 benchmark。
 
