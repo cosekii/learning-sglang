@@ -15,8 +15,8 @@
     caption: 'Recognition wrote Preeya. You meant Priya; one dictionary row pairs them.',
     captionZh: '识别写成了 Preeya。你要的是 Priya，词典里一行把两者配起来。',
   }, {
-    caption: 'One row has a term, aliases and a note. They go to four different places.',
-    captionZh: '一行里有词条、别名和备注。它们分别去四个地方。',
+    caption: 'One row helps three ways. Dictionary-wide notes are the fourth.',
+    captionZh: '一行词条有三个去处。整部词典的备注是第四个。',
   }, {
     caption: 'Only the enabled term goes to the speech model as a hint. An alias stays out.',
     captionZh: '发给语音模型的提示只含启用的词条。别名不进去。',
@@ -37,8 +37,8 @@
     en: 'Your voice says call Priya, but the speech model writes call Preeya, the wrong name. A dictionary row fixes this once: a term with its aliases, and an optional private note.',
     zh: '你的声音说 call Priya，语音模型却写成 call Preeya，名字错了。词典里一行就能一次修好：一个词条、它的别名，和可选的私有备注。',
   }, {
-    en: 'One dictionary row has three parts. The term is the spelling you want. Aliases are what recognition tends to write instead. The note is free text you write once. The four destinations are the speech model (a hint list from the term), the transcript (alias replacement), the language model glossary (term and aliases), and the language model prompt (the note).',
-    zh: '一行词典有三部分。词条是你想要的写法。别名是识别常写成的样子。备注是你写一次的自由文字。四个去处是：语音模型（来自词条的提示表）、文字稿（替换别名）、语言模型术语表（词条和别名）、语言模型提示（备注）。',
+    en: 'One dictionary row has three parts. The term is the spelling you want. Aliases are what recognition tends to write instead. The row note is private and is not sent anywhere. The row helps in three places: speech hints from the term, alias replacement in the transcript, and a language-model glossary made only from the term and aliases. The fourth destination is separate: dictionary-wide settings.Dictionary.Notes goes to the language-model prompt when notes are enabled.',
+    zh: '一行词典有三部分。词条是你想要的写法，别名是识别常写成的样子，行内备注是私有的，不发送到任何地方。这行有三个去处：词条去语音模型当提示，别名在文字稿里换回词条，只有词条和别名组成语言模型术语表。第四个去处来自另一处设置：整部词典的 settings.Dictionary.Notes 在备注开启时进入语言模型提示。',
   }, {
     en: 'The enabled terms alone are sent to the speech model as hints, the most recently changed first. The alias is not sent, because it is exactly what recognition gets wrong. The dictionary settings must have both the dictionary and the speech hints on.',
     zh: '只有启用的词条会作为提示发给语音模型，最近改过的排前面。别名不发，因为别名正是识别会写错的样子。词典设置里要同时打开词典和语音提示。',
@@ -147,19 +147,19 @@
 
       {:else if step === 1}
         <text x="20" y="22" class="tag strong">{t('ONE ROW · FOUR DESTINATIONS', '一行 · 四个去处')}</text>
-        <text x="20" y="46" class="tag">{t('its three parts travel, but not together.', '三个部分都出发，但不一起走。')}</text>
+        <text x="20" y="46" class="tag">{t('the row’s own note stays private.', '行内备注只留在这里。')}</text>
         {#if phone}
           <rect x="20" y="62" width="260" height="132" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="34" y="86" class="rowlabel">{t('term', '词条')} <tspan class="mono" fill="var(--accent)">{VOXT_DICT_TERM}</tspan></text>
           <text x="34" y="116" class="rowlabel">{t('alias', '别名')} <tspan class="mono" fill="var(--gen)">{VOXT_DICT_ALIAS}</tspan></text>
-          <text x="34" y="146" class="rowlabel">{t('note', '备注')} <tspan class="detail">{t('free text', '自由文字')}</tspan></text>
+          <text x="34" y="146" class="rowlabel">{t('row note', '行内备注')} <tspan class="detail">{t('private · not sent', '私有 · 不发送')}</tspan></text>
           <text x="34" y="176" class="detail">{t('the row you typed once', '你写一次的那行')}</text>
           <path d="M150 194 V214" stroke="var(--muted)" stroke-width="2" marker-end="url(#dict-arrow)" />
           {#each [
             { y: 222, name: t('1 · SPEECH MODEL', '1 · 语音模型'), part: t('term → hint', '词条 → 提示'), note: t('needs dictionary + speech hints', '需要词典 + 语音提示') },
             { y: 320, name: t('2 · TRANSCRIPT', '2 · 文字稿'), part: t('alias → term', '别名 → 词条'), note: t('needs dictionary', '需要词典') },
             { y: 418, name: t('3 · LANGUAGE MODEL · glossary', '3 · 语言模型 · 术语表'), part: t('term + alias', '词条 + 别名'), note: t('needs dictionary + glossary', '需要词典 + 术语表') },
-            { y: 516, name: t('4 · LANGUAGE MODEL · note', '4 · 语言模型 · 备注'), part: t('note', '备注'), note: t('needs dictionary, notes not off', '需要词典，备注未关') },
+            { y: 516, name: t('4 · LANGUAGE MODEL · dictionary notes', '4 · 语言模型 · 全词典备注'), part: t('settings.Dictionary.Notes', 'settings.Dictionary.Notes'), note: t('needs dictionary, notes not off', '需要词典，备注未关') },
           ] as d}
             <rect x="20" y={d.y} width="260" height="86" rx="8" fill="var(--bg)" stroke="var(--line)" />
             <text x="34" y={d.y + 24} class="tag strong">{d.name}</text>
@@ -173,19 +173,21 @@
           <text x="34" y="162" class="mono strong" fill="var(--accent)">{VOXT_DICT_TERM}</text>
           <text x="34" y="200" class="tag strong">{t('aliases', '别名')}</text>
           <text x="34" y="222" class="mono strong" fill="var(--gen)">{VOXT_DICT_ALIAS}</text>
-          <text x="34" y="260" class="tag strong">{t('note', '备注')}</text>
-          <text x="34" y="282" class="detail">{t('free text you write', '你写的自由文字')}</text>
+          <text x="34" y="260" class="tag strong">{t('row note', '行内备注')}</text>
+          <text x="34" y="282" class="detail">{t('private · not sent anywhere', '私有 · 不发送到任何地方')}</text>
           <text x="34" y="348" class="detail">{t('typed once, reused every dictation', '写一次，每次听写都用')}</text>
           {#each [
             { y: 66, name: t('1 · SPEECH MODEL · hints', '1 · 语音模型 · 提示'), part: t('term only', '只发词条'), note: t('dictionary + speech hints', '词典 + 语音提示') },
             { y: 156, name: t('2 · TRANSCRIPT · replace', '2 · 文字稿 · 替换'), part: t('alias → term', '别名 → 词条'), note: t('dictionary on', '词典开着') },
             { y: 246, name: t('3 · LANGUAGE MODEL · glossary', '3 · 语言模型 · 术语表'), part: t('term + aliases', '词条 + 别名'), note: t('dictionary + glossary', '词典 + 术语表') },
-            { y: 336, name: t('4 · LANGUAGE MODEL · note', '4 · 语言模型 · 备注'), part: t('the note as written', '原样的备注'), note: t('dictionary on, notes not off', '词典开着，备注未关') },
+            { y: 336, name: t('4 · LANGUAGE MODEL · dictionary notes', '4 · 语言模型 · 全词典备注'), part: t('settings.Dictionary.Notes', 'settings.Dictionary.Notes'), note: t('dictionary + notes on', '词典 + 备注开启') },
           ] as d, i}
             <rect x="300" y={d.y} width="400" height="72" rx="8" fill="var(--bg)" stroke="var(--line)" />
             <text x="314" y={d.y + 26} class="tag strong">{d.name}</text>
             <text x="314" y={d.y + 50} class="detail">{d.part} · {d.note}</text>
-            <line x1="244" y1={[146, 208, 222, 282][i]} x2="292" y2={d.y + 36} stroke="var(--muted)" stroke-width="1.5" marker-end="url(#dict-arrow)" />
+            {#if i < 3}
+              <line x1="244" y1={[146, 208, 222][i]} x2="292" y2={d.y + 36} stroke="var(--muted)" stroke-width="1.5" marker-end="url(#dict-arrow)" />
+            {/if}
           {/each}
         {/if}
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('switches: dictionary, hints, glossary, notes off', '开关：词典、提示、术语表、关闭备注') : t('Switches: dictionary on/off · speech hints · glossary · notes off', '开关：词典开/关 · 语音提示 · 术语表 · 关闭备注')}</text>

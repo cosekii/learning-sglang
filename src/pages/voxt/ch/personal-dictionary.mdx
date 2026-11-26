@@ -15,7 +15,7 @@ export const deep = await deepFor('voxt-personal-dictionary');
 
 Step 1 reads the term and its parts. A term is `store.Term`: `Term`, `Aliases`, `Note`, `Enabled`, timestamps. `Clean` trims each to one line, drops empty aliases, the term itself and case-insensitive duplicates, and keeps at most `MaxAliases = 10`; `Check` refuses an empty term, a newline, or more than `MaxTermChars = 80` runes (`dict.go`).
 
-Step 2 reads the four destinations and their switches. `SpeechHints` returns `dict.Hints` only when `Dictionary.Enabled && Dictionary.ASRHints` (`session/run_audio.go`). `spoken()` replaces aliases only when `Dictionary.Enabled` (`session/cleanup.go`). `glossary()` builds `compose.Term` list only when `Dictionary.Enabled && Dictionary.Glossary` (`session/run_transcribe.go`). `PromptDictionary` returns `Notes` only when `Dictionary.Enabled && !NotesOff` (`session/text.go`).
+Step 2 reads the four destinations and their switches. A row's `store.Term.Note` is private and is not sent anywhere (`internal/store/store.go:215-230`). `SpeechHints` returns `dict.Hints` only when `Dictionary.Enabled && Dictionary.ASRHints` (`session/run_audio.go`). `spoken()` replaces aliases only when `Dictionary.Enabled` (`session/cleanup.go`). `glossary()` copies only `Term` and `Aliases` into `compose.Term`, only when `Dictionary.Enabled && Dictionary.Glossary` (`session/run_transcribe.go:110-120`). The separate dictionary-wide `settings.Dictionary.Notes` goes to `PromptDictionary` only when `Dictionary.Enabled && !NotesOff` (`session/text.go:120-126`).
 
 Step 3 reads `dict.Hints`: it clones the terms, sorts stable by `UpdatedAt` descending, keeps enabled ones once (ignoring case via lower-cased key), and returns each term as one line. Aliases are not included; the doc comment says they are what recognition gets wrong.
 
@@ -36,7 +36,7 @@ Source revision: `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683
 
 第 1 步读词条和它的组成部分。一个词条是 `store.Term`：`Term`、`Aliases`、`Note`、`Enabled` 和两个时间。`Clean` 把它压成单行，丢掉空别名、词条本身和仅大小写不同的重复别名，最多留 `MaxAliases = 10` 个；`Check` 拒绝空词条、含换行、或超过 `MaxTermChars = 80` 个字符的词条（`dict.go`）。
 
-第 2 步读四个去处和它们的开关。`SpeechHints` 只在 `Dictionary.Enabled && Dictionary.ASRHints` 时返回 `dict.Hints`（`session/run_audio.go`）。`spoken()` 只在 `Dictionary.Enabled` 时替换别名（`session/cleanup.go`）。`glossary()` 只在 `Dictionary.Enabled && Dictionary.Glossary` 时组装 `compose.Term`（`session/run_transcribe.go`）。`PromptDictionary` 只在 `Dictionary.Enabled && !NotesOff` 时返回 `Notes`（`session/text.go`）。
+第 2 步读四个去处和它们的开关。行内的 `store.Term.Note` 是私有的，不发送到任何地方（`internal/store/store.go:215-230`）。`SpeechHints` 只在 `Dictionary.Enabled && Dictionary.ASRHints` 时返回 `dict.Hints`（`session/run_audio.go`）。`spoken()` 只在 `Dictionary.Enabled` 时替换别名（`session/cleanup.go`）。`glossary()` 只在 `Dictionary.Enabled && Dictionary.Glossary` 时把 `Term` 和 `Aliases` 复制进 `compose.Term`，不复制备注（`session/run_transcribe.go:110-120`）。另一处整部词典的 `settings.Dictionary.Notes` 只在 `Dictionary.Enabled && !NotesOff` 时交给 `PromptDictionary`（`session/text.go:120-126`）。
 
 第 3 步读 `dict.Hints`：复制词条，按 `UpdatedAt` 从新到旧稳定排序，启用的只留一次（用小写键忽略大小写），每条词条压成单行返回。别名不在里面；注释说别名正是识别会写错的东西。
 

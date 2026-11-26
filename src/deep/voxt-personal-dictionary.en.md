@@ -29,13 +29,13 @@ One row has three parts, and they do not travel together; the next step shows wh
 
 ## Step 2 · One row, four destinations
 
-> **In one line:** The term goes to the speech model as a hint, the alias goes into the transcript as a replacement, term and alias go into the language-model glossary, and the note goes into the language-model prompt.
+> **In one line:** The term goes to the speech model, the alias goes into transcript replacement, and only the term and aliases enter the glossary; the row note stays private, while separate dictionary-wide `settings.Dictionary.Notes` enters the language-model prompt.
 
 ### On the stage
 
-- The blue box on the left is the dictionary row: term, alias, note.
-- The four boxes on the right are the destinations; each box names the switches it needs.
-- Four thin lines run from the three parts to the four boxes.
+- The blue box on the left is the dictionary row: term, alias and row note. The row note is marked private and is not sent.
+- The four boxes on the right are the destinations, each with its switches. The fourth comes from separate `settings.Dictionary.Notes`.
+- Three thin lines run from the term and aliases to the first three boxes; the row note has no arrow.
 
 ### The four destinations and their switches
 
@@ -43,14 +43,16 @@ One row has three parts, and they do not travel together; the next step shows wh
 |---|---|---|---|
 | speech model · hints | only enabled terms | dictionary on + speech hints on | `session/run_audio.go:36` |
 | transcript · replace | aliases become the term | dictionary on | `session/cleanup.go:69` |
-| language model · glossary | terms + aliases | dictionary on + glossary on | `session/run_transcribe.go:110` |
-| language model · note | the note as written | dictionary on, notes not off | `session/text.go:122` |
+| language model · glossary | copies only terms + aliases, never row notes | dictionary on + glossary on | `session/run_transcribe.go:110-120` |
+| language model · dictionary notes | separate `settings.Dictionary.Notes` | dictionary on, notes not off | `session/text.go:120-126` |
+
+The source marks a row's `store.Term.Note` as “not sent anywhere” (`internal/store/store.go:215-230`). `glossary()` constructs each `compose.Term` with only `Term` and `Aliases`, so a row note cannot ride along in the glossary either.
 
 The switches live in `settings.Dictionary`: `Enabled`, `ASRHints`, `Glossary`, `NotesOff` (`Voxt/internal/settings/settings.go:285-306`). By default `Enabled`, `ASRHints` and `Glossary` are on (`settings.go:393`).
 
 ### Why the split
 
-The four places take different input. The recognizer knows only a word list and does not know an "alias" is the wrong spelling; the text replacement reads aliases and ignores the note; the language model can read both the term and the note. One switch for everything would hide which step each switch controls.
+The four places take different input. The recognizer reads a word list, replacement reads aliases, the glossary copies only terms and aliases, and dictionary-wide notes come from separate settings. The row note belongs to none of these sending routes.
 
 ### Next
 
