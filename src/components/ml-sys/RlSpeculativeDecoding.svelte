@@ -218,6 +218,39 @@
         { en: 'Next: compare speed and training cost', zh: '下一步：比较加速与训练成本' },
       ],
     },
+  }, {
+    caption: 'Online training gives the highest reported rollout throughput. It is 36.8% above no speculation.',
+    captionZh: '在线训练的 rollout 吞吐最高。比不用投机高 36.8%。',
+    title: 'Compare rollout throughput on one scale', titleZh: '用同一比例比较 rollout 吞吐',
+    subtitle: 'same MiMo-7B-RL H200 experiment · tokens generated per second', subtitleZh: '同一 MiMo-7B-RL H200 实验 · 每秒生成 token 数',
+    foot: 'Reported summary table; no whole-round time or exact acceptance lengths.',
+    footZh: '文章汇总表；没有整轮时间或精确的接受长度。',
+    legend: 'Grey = no spec · orange = frozen · blue = online · one scale', legendZh: '灰 = 不用投机 · 橙 = 冻结 · 蓝 = 在线 · 同一比例',
+    nodes: [
+      { title: 'NO SPEC', titleZh: '不用投机', result: `${N.SPEC_NO_SPEC_ROLLOUT_TOKENS_S} tokens/s`, resultZh: `${N.SPEC_NO_SPEC_ROLLOUT_TOKENS_S} token/s`, body: 'target decodes normally', bodyZh: 'target 平常 decode', tone: 'plain', bar: N.SPEC_NO_SPEC_ROLLOUT_TOKENS_S / N.SPEC_ONLINE_ROLLOUT_TOKENS_S, compact: true },
+      { title: 'FROZEN SPEC', titleZh: '冻结投机', result: `${N.SPEC_FROZEN_ROLLOUT_TOKENS_S} tokens/s`, resultZh: `${N.SPEC_FROZEN_ROLLOUT_TOKENS_S} token/s`, body: 'draft never trains', bodyZh: 'draft 不训练', tone: 'orange', bar: N.SPEC_FROZEN_ROLLOUT_TOKENS_S / N.SPEC_ONLINE_ROLLOUT_TOKENS_S, compact: true },
+      { title: 'ONLINE SPEC', titleZh: '在线投机', result: `${N.SPEC_ONLINE_ROLLOUT_TOKENS_S} tokens/s`, resultZh: `${N.SPEC_ONLINE_ROLLOUT_TOKENS_S} token/s`, body: 'draft trains too', bodyZh: 'draft 也训练', tone: 'blue', bar: 1, compact: true },
+    ],
+    formulas: [
+      { en: `frozen vs no: ${N.SPEC_FROZEN_ROLLOUT_TOKENS_S} ÷ ${N.SPEC_NO_SPEC_ROLLOUT_TOKENS_S} − 1 = ${(N.SPEC_FROZEN_OVER_NO_SPEC * 100).toFixed(1)}%`, zh: `冻结对不用：${N.SPEC_FROZEN_ROLLOUT_TOKENS_S} ÷ ${N.SPEC_NO_SPEC_ROLLOUT_TOKENS_S} − 1 = ${(N.SPEC_FROZEN_OVER_NO_SPEC * 100).toFixed(1)}%` },
+      { en: `online vs frozen: ${N.SPEC_ONLINE_ROLLOUT_TOKENS_S} ÷ ${N.SPEC_FROZEN_ROLLOUT_TOKENS_S} − 1 = ${(N.SPEC_ONLINE_OVER_FROZEN * 100).toFixed(1)}%`, zh: `在线对冻结：${N.SPEC_ONLINE_ROLLOUT_TOKENS_S} ÷ ${N.SPEC_FROZEN_ROLLOUT_TOKENS_S} − 1 = ${(N.SPEC_ONLINE_OVER_FROZEN * 100).toFixed(1)}%` },
+      { en: `online vs no: ${N.SPEC_ONLINE_ROLLOUT_TOKENS_S} ÷ ${N.SPEC_NO_SPEC_ROLLOUT_TOKENS_S} − 1 = ${(N.SPEC_ONLINE_OVER_NO_SPEC * 100).toFixed(1)}%`, zh: `在线对不用：${N.SPEC_ONLINE_ROLLOUT_TOKENS_S} ÷ ${N.SPEC_NO_SPEC_ROLLOUT_TOKENS_S} − 1 = ${(N.SPEC_ONLINE_OVER_NO_SPEC * 100).toFixed(1)}%` },
+      { en: 'Ch. 15 Step 8: more tokens per target pass can raise throughput', zh: '第 15 章第 8 步：每次 target 计算接收更多 token 可提高吞吐' },
+      { en: 'Next: what training time does online learning add?', zh: '下一步：在线学习增加多少训练时间？' },
+    ],
+    mobile: {
+      title: 'Rollout throughput, one scale', titleZh: '同一比例比较 rollout 吞吐',
+      subtitle: 'Same H200 test · generated tokens/s', subtitleZh: '同一 H200 实验 · 每秒生成 token',
+      foot: 'Reported table; no whole-round or exact accept data.', footZh: '文章汇总表；没有整轮或精确接受长度。',
+      legend: 'Grey = none · orange = frozen · blue = online', legendZh: '灰 = 不用 · 橙 = 冻结 · 蓝 = 在线',
+      formulas: [
+        { en: 'Frozen vs no: 20.1%', zh: '冻结对不用：20.1%' },
+        { en: 'Online vs frozen: 13.9%', zh: '在线对冻结：13.9%' },
+        { en: 'Online vs no: 36.8%', zh: '在线对不用：36.8%' },
+        { en: 'Ch. 15 Step 8 links accepted tokens to cost', zh: '第 15 章第 8 步把接受 token 与成本相连' },
+        { en: 'Next: the training-time cost', zh: '下一步：训练时间成本' },
+      ],
+    },
   }];
   let step = $state(0);
   $effect(() => {

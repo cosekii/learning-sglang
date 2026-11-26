@@ -195,3 +195,38 @@ slime 在移位前先把 prompt 部分补成 0，再按 context parallelism 的�
 下一步回到公开实验，比较三种配置的 rollout 吞吐，看在线训练 draft 的收益有多大。
 
 来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:144-176`；`THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a` 的 `slime/backends/megatron_utils/model.py:408-467`、`docker/patch/latest/megatron.patch:158-191`。
+
+## 第 7 步 · 用同一比例比较 rollout 吞吐
+
+**一句话。** 公开汇总表中，在线训练 draft 的 rollout 吞吐最高，比冻结 draft 高 13.9%，比不用投机高 36.8%。
+
+### 图上是什么
+
+- 灰柱不用投机，吞吐为 1219 token/s；橙柱使用冻结 draft，为 1464；蓝柱在线训练 draft，为 1667。
+- 三柱使用同一比例，数值都是文章报告的每秒生成 token 数，不是本章实测。
+- 第 1 本第 15 章第 8 步说明每次 target 计算正式接收更多 token，可以摊薄每次计算的成本。本步只使用这个机制，不搬用别章的模型数字。
+
+### 公式与符号
+
+$$g_{a:b}=\frac{T_a-T_b}{T_b}$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $T_a,T_b$ | 两种配置的 rollout 吞吐 | 公开汇总表 |
+| $g_{a:b}$ | 配置 $a$ 相对配置 $b$ 的提升 | 本步计算 |
+| $a,b$ | no、frozen、online 中的两个配置 | 图上三柱 |
+
+### 代入图上的数
+
+$$g_{frozen:no}=1464/1219-1=20.1\%$$
+$$g_{online:frozen}=1667/1464-1=13.9\%,\qquad g_{online:no}=1667/1219-1=36.8\%$$
+
+文章还报告长尾阶段吞吐：不用投机 47、冻结 57、在线 65 token/s。对应在线相对冻结为 $65/57-1=14.0\%$，长尾指多数请求已结束、少数慢请求仍在生成的阶段。它与整批 rollout 吞吐是两个指标。
+
+接受长度上升和 MTP loss 下降来自文章的曲线描述，本步没有从图片读取精确数值。汇总表也没有统一的 rollout token 数与整轮时间线，因此 36.8% 不是端到端 RL 加速比，也不能证明所有负载的 reward 都不变。
+
+### 接下来
+
+下一步看在线训练额外付出的训练秒数，并标明为什么不能把吞吐提升直接当成整轮收益。
+
+来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:66-114`。

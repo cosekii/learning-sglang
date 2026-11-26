@@ -27,6 +27,8 @@ Step 5 follows `readme.md:58-60,184-234` and `megatron.patch:170-179,596-603`. D
 
 Step 6 follows `readme.md:144-176`, `slime/backends/megatron_utils/model.py:408-467`, and `megatron.patch:158-191`. slime reconstructs the response mask with prompt zeros, applies context-parallel slicing and padding, then aligns it. For one MTP layer, position `t` keeps CE only when both `t+1` and `t+2` are valid. The constructed mask gives `[1,0,1,1,0] → [0,1,1,0,0] × [1,1,0,0,0] = [0,1,0,0,0]`. This step covers selection, not the implementation's normalization denominator or deeper MTP stacks.
 
+Step 7 uses the summary table at `readme.md:66-94`. Rollout throughput is 1,219 tokens/s without speculation, 1,464 with a frozen draft and 1,667 with online training. The derived gains are 20.1%, 13.9% and 36.8%. Ch. 15 Step 8 supplies the cost link from accepted tokens per target pass to throughput. The article's acceptance-length plot supplies no exact values here, and this table alone cannot prove a whole-round speedup or universal reward equivalence.
+
 Further reading: [zero-to-sglang Part II Chapter 10: Speculative Decoding](https://zero-to-sglang.datawhale.cc/eng/part2/Chapter10_Speculative-Decoding.html) and its [code walkthrough](https://zero-to-sglang.datawhale.cc/eng/part2/Chapter10_Speculative-Decoding_code.html).
 
 </details>
@@ -47,6 +49,8 @@ Further reading: [zero-to-sglang Part II Chapter 10: Speculative Decoding](https
 第 5 步依据 `readme.md:58-60,184-234` 和 `megatron.patch:170-179,596-603`。detach 保留前向数值，同时挡住辅助 CE 通向 target 主干、embedding 和共享输出层的梯度。共享输出层就是图上的打分表，负责把 hidden state 变成 token 分数。MTP 的 hidden 输出没有 detach，所以 draft 仍能学习。主 RL 损失仍会更新 target 和共享参数。
 
 第 6 步依据 `readme.md:144-176`、`slime/backends/megatron_utils/model.py:408-467` 和 `megatron.patch:158-191`。slime 先为 prompt 补 0，重建 response mask，再按 context parallelism 切分并对齐补齐。只有 `t+1` 和 `t+2` 都有效，位置 `t` 才计入这层 MTP 的 CE。构造 mask 得到 `[1,0,1,1,0] → [0,1,1,0,0] × [1,1,0,0,0] = [0,1,0,0,0]`。本步只讲位置选择，不讲实现的归一化分母或更深的 MTP 堆叠。
+
+第 7 步依据 `readme.md:66-94` 的汇总表。不用投机的 rollout 吞吐是 1219 token/s，冻结 draft 是 1464，在线训练是 1667，对应提升 20.1%、13.9% 和 36.8%。第 1 本第 15 章第 8 步给出每次 target 计算接受的 token 数与成本的关系。文章的接受长度曲线没有在这里换算成精确数值；这张表不能单独证明整轮加速或任意情况下的 reward 等价。
 
 延伸阅读：[zero-to-sglang 第 2 部分第 10 章：投机解码](https://zero-to-sglang.datawhale.cc/ch/part2/%E7%AC%AC10%E7%AB%A0_%E6%8A%95%E6%9C%BA%E8%A7%A3%E7%A0%81.html)及其[代码走读](https://zero-to-sglang.datawhale.cc/ch/part2/%E7%AC%AC10%E7%AB%A0_%E6%8A%95%E6%9C%BA%E8%A7%A3%E7%A0%81_%E4%BB%A3%E7%A0%81.html)。
 

@@ -195,3 +195,38 @@ Before shifting, slime pads the prompt portion with zeros, then slices and align
 The next step returns to the public experiment and compares rollout throughput for all three configurations.
 
 Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:144-176`; `THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a`, `slime/backends/megatron_utils/model.py:408-467` and `docker/patch/latest/megatron.patch:158-191`.
+
+## Step 7 · Compare rollout throughput on one scale
+
+**One sentence.** The public summary table gives online draft training the highest rollout throughput: 13.9% over frozen and 36.8% over no speculation.
+
+### On the stage
+
+- The grey bar has no speculation and reaches 1,219 tokens/s. The orange frozen-draft bar reaches 1,464 and the blue online-draft bar reaches 1,667.
+- All three bars use one scale. The values are reported generated tokens per second, not local measurements.
+- Ch. 15 Step 8 explains how committing more tokens per target pass can spread the pass's cost over more output. This step uses that mechanism without importing another chapter's model numbers.
+
+### Formula and symbols
+
+$$g_{a:b}=\frac{T_a-T_b}{T_b}$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $T_a,T_b$ | Rollout throughput for two configurations | Public summary table |
+| $g_{a:b}$ | Gain of configuration $a$ over configuration $b$ | Computed here |
+| $a,b$ | Two of no, frozen and online | The three stage bars |
+
+### The numbers on the stage
+
+$$g_{frozen:no}=1464/1219-1=20.1\%$$
+$$g_{online:frozen}=1667/1464-1=13.9\%,\qquad g_{online:no}=1667/1219-1=36.8\%$$
+
+The article also reports long-tail throughput of 47, 57 and 65 tokens/s for no, frozen and online. Online is $65/57-1=14.0\%$ above frozen there. Long tail means most requests have finished while a few slow responses are still generating. It is a separate metric from whole-batch rollout throughput.
+
+The article describes rising acceptance length and falling MTP loss in plots; this step extracts no exact values from those images. The summary table lacks a common rollout token count and whole-round timeline. Its 36.8% figure is not an end-to-end RL speedup and does not prove unchanged rewards for every workload.
+
+### Next
+
+The next step measures the added training seconds and explains why throughput gain alone cannot establish a whole-round win.
+
+Source: `Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:66-114`.
