@@ -147,8 +147,8 @@ Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:19`; `Awesome-ML-SYS
 ### On the stage
 
 - The orange bottom band is the persistent 8 GB from Step 2. It does not disappear between units.
-- The blue `Umax` band is the largest full unit that needs to exist at once. Step 3 called the current unit `U`; `Umax` is the largest such temporary unit relevant to peak memory.
-- The grey band contains activations and other temporary results. Activations are intermediate values needed for training and change with batch size. No exact total is drawn because the source does not provide one.
+- The blue band is the largest borrowed full layer from Step 3. The formula below calls its unknown size $U_{\max}$; Step 3 called the current layer's size $U$.
+- The grey band contains training intermediates and other temporary results. The formula below calls activation memory $A$. Activations are intermediate values needed for training and change with batch size. No exact total is drawn because the source does not provide one.
 
 ### Formula and symbols
 
