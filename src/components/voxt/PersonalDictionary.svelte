@@ -209,7 +209,7 @@
           <text x="20" y="370" class="tag strong" fill="var(--gen)">{VOXT_DICT_ALIAS} ✗</text>
           <text x="20" y="394" class="tag">{t('an alias is not a hint', '别名不当提示')}</text>
           <text x="20" y="418" class="tag">{t('it is what recognition gets wrong', '它正是识别会写错的')}</text>
-          <text x="20" y="458" class="tag">{t('fewer slots: terms are cut from the end', '槽位更少：从末尾开始删')}</text>
+          <text x="20" y="458" class="tag">{t('fewer slots: drop the tail; keep the front', '槽位更少：从末尾删，前面的新词条留下')}</text>
         {:else}
           <rect x="20" y="72" width="300" height="190" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="34" y="98" class="rowlabel">{t('enabled terms', '启用的词条')}</text>
@@ -226,7 +226,7 @@
           <rect x="20" y="286" width="680" height="72" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="34" y="312" class="tag strong" fill="var(--gen)">{VOXT_DICT_ALIAS} ✗</text>
           <text x="34" y="338" class="detail">{t('An alias is not sent: it is what recognition gets wrong.', '别名不发：它正是识别会写错的样子。')}</text>
-          <text x="20" y="390" class="tag">{t('A service with room for fewer hints takes them from the end of the list.', '槽位更少的服务，从列表末尾开始取。')}</text>
+          <text x="20" y="390" class="tag">{t('A service with fewer slots drops hints from the end, keeping the newest-first prefix.', '槽位更少的服务从末尾删，保留列表前面的新词条。')}</text>
         {/if}
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('dict.Hints · enabled terms, newest first', 'dict.Hints · 启用的词条，最近优先') : t('Source: dict.Hints() · enabled terms, each once, newest change first', '出处：dict.Hints() · 启用的词条各一次，最近改过优先')}</text>
 

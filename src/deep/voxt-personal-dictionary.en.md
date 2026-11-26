@@ -67,7 +67,7 @@ The next four steps walk this map one destination at a time, each marked "k of 4
 - The blue box on the left lists two enabled terms: `Priya` and `MOSS-Transcribe`.
 - An arrow points to the speech model on the right, which lists the same two words.
 - The orange box below, `Preeya ✗`, says the alias is not sent.
-- The bottom line says a service with fewer hint slots takes them from the end of the list.
+- The bottom line says a service with fewer hint slots drops hints from the end, keeping the newest-first prefix.
 
 ### How the list is ordered
 
@@ -88,7 +88,7 @@ An alias is exactly what recognition gets wrong. Sending it as a hint tells the 
 
 ### Boundary
 
-Some recognition services take only tens of hints; the `dict.Hints` comment says they cut the list from the end. So the list is newest-changed first: the terms at the front survive.
+Some recognition services take only tens of hints; the `dict.Hints` comment says they cut the list from the end. Truncating the tail preserves the prefix, so newest-changed terms survive at the front.
 
 ### Next
 
