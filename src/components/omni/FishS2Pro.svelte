@@ -647,7 +647,7 @@
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t(`Completed: max ${FISH_NONSTREAM_MAX_BATCH} · wait up to ${FISH_NONSTREAM_WAIT_MS} ms`, `已完成：最多 ${FISH_NONSTREAM_MAX_BATCH} 个 · 最多等 ${FISH_NONSTREAM_WAIT_MS} ms`) : t(`Completed defaults: max ${FISH_NONSTREAM_MAX_BATCH}, wait up to ${FISH_NONSTREAM_WAIT_MS} ms for more. Streaming stays per request.`, `已完成请求默认最多 ${FISH_NONSTREAM_MAX_BATCH} 个，额外请求最多等 ${FISH_NONSTREAM_WAIT_MS} ms；流式 chunks 仍逐请求运行。`)}</text>
       {/if}
       {#if PHASE_COUNTS[step] > 0}
-        <LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={68} />
+        <LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={68} label={t('loops · red = current', '循环 · 红框 = 当前')} />
       {/if}
       {#if focus}
         <rect class="motion-focus" x={focus.x - 4} y={focus.y - 4} width={focus.w + 8} height={focus.h + 8} rx="12" fill="none" stroke="var(--eos)" stroke-width="3" />
