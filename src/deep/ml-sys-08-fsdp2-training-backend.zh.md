@@ -187,12 +187,12 @@ $$M_{\text{peak}}\approx M_i+U_{\max}+A+T_{\text{other}}$$
 
 ### 公式与符号
 
-$$W_j=\mathcal{R}(P_{j,i}),\qquad B_k=\{W_j\mid j\in J_k\}$$
+$$W_j=\mathcal{R}(P_j),\qquad B_k=\{W_j\mid j\in J_k\}$$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
-| $P_{j,i}$ | rank $i$ 拥有的参数 $j$ 分片 | FSDP2 模型状态 |
-| $\mathcal{R}$ | 把分片重新分布为 `Replicate()` | slime 更新器 |
+| $P_j$ | 参数 $j$ 在整个 DP 组上分片保存的 DTensor | FSDP2 模型状态 |
+| $\mathcal{R}$ | 把 $P_j$ 的所有分片重新分布为 `Replicate()` | slime 更新器 |
 | $W_j$ | 参数 $j$ 的完整逻辑权重张量 | 重新分布的结果 |
 | $J_k$ | 装入第 $k$ 桶的参数索引 | 按大小限制的更新循环 |
 | $B_k$ | 一桶完整权重张量 | 交给更新器的桶 |

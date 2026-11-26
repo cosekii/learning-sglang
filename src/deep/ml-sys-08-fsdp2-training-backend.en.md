@@ -187,12 +187,12 @@ Sources: `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:31,93-107`; `Aw
 
 ### Formula and symbols
 
-$$W_j=\mathcal{R}(P_{j,i}),\qquad B_k=\{W_j\mid j\in J_k\}$$
+$$W_j=\mathcal{R}(P_j),\qquad B_k=\{W_j\mid j\in J_k\}$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
-| $P_{j,i}$ | Rank $i$'s shard of parameter $j$ | FSDP2 model state |
-| $\mathcal{R}$ | Redistribute shards to `Replicate()` | Slime updater |
+| $P_j$ | Sharded DTensor for parameter $j$ across the DP group | FSDP2 model state |
+| $\mathcal{R}$ | Redistribute all of $P_j$'s shards to `Replicate()` | Slime updater |
 | $W_j$ | Full logical weight tensor for parameter $j$ | Result of redistribution |
 | $J_k$ | Parameter indices grouped into bucket $k$ | Size-bounded updater loop |
 | $B_k$ | One bucket of full weight tensors | Bucket handed to the updater |
