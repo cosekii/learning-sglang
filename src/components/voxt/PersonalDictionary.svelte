@@ -30,8 +30,8 @@
     caption: 'Dictionary-wide notes are free text for the language model. They never reach the recognizer.',
     captionZh: '全词典备注是写给语言模型的自由文字，不会到识别器。',
   }, {
-    caption: 'Hints and alias replacement work without the model; the glossary and note do not. How long does Voxt keep the recording?',
-    captionZh: '提示和别名替换不需要模型；术语表和备注需要。Voxt 把录音留多久？',
+    caption: 'Hints and alias replacement work without the model; the glossary and dictionary notes do not. How long does Voxt keep the recording?',
+    captionZh: '提示和别名替换不需要模型；术语表和全词典备注需要。Voxt 把录音留多久？',
   }];
   const ariaLabels = [{
     en: 'Your voice says call Priya, but the speech model writes call Preeya, the wrong name. A dictionary row fixes this once: a term with its aliases, and an optional private note.',
@@ -52,8 +52,8 @@
     en: 'Dictionary-wide settings.Dictionary.Notes is free text, separate from a row’s private store.Term.Note. When enabled, it joins the language model system layers and never goes to the speech model or transcript replacement. Final messages are system, then history, then user; this request input sits only in user. Notes-off keeps the dictionary notes out of the prompt even while the dictionary is on.',
     zh: '整部词典的 settings.Dictionary.Notes 是自由文字，和行内私有的 store.Term.Note 不同。开启时，它作为单独一层进入语言模型的 system，从不去语音模型或文字稿替换。最终消息顺序是 system、history、user，这次请求的输入只在 user 里。即使词典开着，关掉备注也能让全词典备注不进提示。',
   }, {
-    en: 'With the language model off or failing, the speech hints and the alias replacement still work. The glossary and the note do not, because both ride in the language-model prompt. The next chapter asks how long Voxt keeps the recording and its history.',
-    zh: '语言模型关掉或失败时，语音提示和别名替换仍然有效。术语表和备注不行，因为两者都搭在语言模型的提示里。下一章看 Voxt 把录音和历史留多久。',
+    en: 'With the language model off or failing, the speech hints and the alias replacement still work. The glossary and dictionary-wide notes do not, because both ride in the language-model messages. The next chapter asks how long Voxt keeps the recording and its history.',
+    zh: '语言模型关掉或失败时，语音提示和别名替换仍然有效。术语表和全词典备注不行，因为两者都随语言模型消息发送。下一章看 Voxt 把录音和历史留多久。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -70,7 +70,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived((phone ? [640, 720, 640, 700, 760, 620, 620] : [470, 520, 430, 450, 500, 430, 480])[step]);
+  const H = $derived((phone ? [640, 720, 640, 700, 760, 620, 620] : [470, 520, 430, 450, 500, 430, 560])[step]);
 </script>
 
 <figure class="viz">
@@ -391,7 +391,7 @@
             { y: 80, name: t('speech hints', '语音提示'), without: true, note: t('from the term', '来自词条') },
             { y: 160, name: t('alias → term', '别名 → 词条'), without: true, note: t('before cleanup', '清理之前') },
             { y: 240, name: t('glossary', '术语表'), without: false, note: t('inside the prompt', '在提示里') },
-            { y: 320, name: t('note', '备注'), without: false, note: t('inside the prompt', '在提示里') },
+            { y: 320, name: t('dictionary notes', '全词典备注'), without: false, note: t('inside the prompt', '在提示里') },
           ] as r}
             <rect x="20" y={r.y} width="260" height="66" rx="8" fill="var(--bg)" stroke="var(--line)" />
             <text x="34" y={r.y + 26} class="tag strong">{r.name}</text>
@@ -409,7 +409,7 @@
             { y: 82, name: t('speech hints', '语音提示'), without: true, note: t('from the term', '来自词条') },
             { y: 154, name: t('alias → term', '别名 → 词条'), without: true, note: t('before cleanup', '清理之前') },
             { y: 226, name: t('glossary', '术语表'), without: false, note: t('inside the prompt', '在提示里') },
-            { y: 298, name: t('note', '备注'), without: false, note: t('inside the prompt', '在提示里') },
+            { y: 298, name: t('dictionary notes', '全词典备注'), without: false, note: t('inside the prompt', '在提示里') },
           ] as r}
             <rect x="20" y={r.y} width="510" height="58" rx="8" fill="var(--bg)" stroke="var(--line)" />
             <text x="34" y={r.y + 24} class="tag strong">{r.name}</text>
@@ -419,7 +419,9 @@
           {/each}
           <text x="20" y="390" class="tag">{t('Hints and alias replacement run outside the language model, so they survive its failure.', '提示和别名替换在语言模型之外运行，所以模型失败也还在。')}</text>
           <text x="20" y="414" class="tag">{t('The master dictionary switch turns all four off.', '词典总开关一关，四个都不走。')}</text>
-          <rect x="20" y="436" width="680" height="0" />
+          <rect x="20" y="436" width="680" height="86" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-dasharray="5 4" />
+          <text x="34" y="462" class="rowlabel">{t('the recording → history', '录音 → 历史')}</text>
+          <text x="34" y="492" class="tag strong">{t('kept for how long?', '留多久？')}</text>
         {/if}
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('recording → history: next chapter', '录音 → 历史：下一章') : t('The recording and its history are next. Source: session/cleanup.go spoken()', '接下来看录音和历史。出处：session/cleanup.go spoken()')}</text>
       {/if}

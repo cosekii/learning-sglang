@@ -246,25 +246,25 @@ The four destinations are covered. The final step asks what survives when the la
 
 ## Step 7 · What survives without the language model
 
-> **In one line:** Speech hints and alias replacement run outside the language model and survive its failure; the glossary and the note vanish with it.
+> **In one line:** Speech hints and alias replacement run outside the language model and survive its failure; the glossary and dictionary notes vanish with it.
 
 ### On the stage
 
-- Four rows list speech hints, alias replacement, glossary and note, each with where it goes.
+- Four rows list speech hints, alias replacement, glossary and dictionary notes, each with where it goes.
 - The orange column on the right is the model-off state: the first two are ✓, the last two are ✗.
 - The two lower lines say the first two run outside the language model, and the master dictionary switch turns all four off.
 - The dashed box at the bottom hands the topic to the next chapter: how long the recording and its history last.
 
 ### Why the first two survive
 
-`SpeechHints` calls `dict.Hints` only when a recognition request is sent (`session/run_audio.go:36`); `spoken()` calls `dict.Replace` only right before cleanup (`session/cleanup.go:68`). Neither needs the language model. The glossary is assembled by `glossary()` and the note is added by `addDictionary`, both only while a cleanup request is built; without the model there is no such request.
+`SpeechHints` calls `dict.Hints` only when a recognition request is sent (`session/run_audio.go:36`); `spoken()` calls `dict.Replace` only right before cleanup (`session/cleanup.go:68`). Neither needs the language model. The glossary is assembled by `glossary()` and dictionary notes are added by `addDictionary`, both only while a cleanup request is built; without the model there is no such request.
 
 | Destination | With model off | Reason |
 |---|---|---|
 | speech hints | still works | sent to the recognizer, not through the language model |
 | alias replacement | still works | runs right after recognition, before cleanup |
 | glossary | gone | sent with the language-model prompt |
-| note | gone | sent with the language-model prompt |
+| dictionary notes | gone | sent with the language-model messages |
 
 ### The master switch
 
