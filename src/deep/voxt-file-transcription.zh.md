@@ -6,23 +6,13 @@
 
 - 左栏是**听写**：麦克风和 helper 送来的声音，经过一次听写 session，最后变成光标处的文字，并可能写一条历史记录。
 - 右栏是**文件**：磁盘上的 `meeting.m4a`，标着「1 小时会议 · 压缩 M4A」，经过 `Voxt transcribe`，最后得到 `meeting.srt` 或 `talk.txt`。
-- 下面的算式推出解码后的大小：3,600 × 16,000 × 2 B = 115,200,000 B = 115.2 MB PCM，不是压缩 M4A 的大小；每张手机照片按 4 MB 算，115.2 ÷ 4 ≈ 29 张。下面还说两条都用 Voxt 和语音模型，文件路线没有听写 session 和历史记录。
+- 下面三行：一小时的会议是 3,600 秒的声音，本来就在文件里；两条都用 Voxt 和语音模型；文件路线没有听写 session 和历史记录。解码后的大小是第 2 步的算式。
 
 ### 为什么是另一条路线
 
-一小时的会议是 3,600 秒。按第 2 步的 16 kHz、16 位单声道，PCM 是：
+区别在于结果去哪里、由什么开始。听写是为光标抓一段声音；录音本来就已经是一个文件，想要的结果是磁盘上的 SRT 或 TXT。这个文件之后用来存档、当字幕播放，或交给脚本，所以文件路线不写历史记录，也不打开听写 session。
 
-$$ 3{,}600 \times 16{,}000 \times 2 = 115{,}200{,}000\ \text{B} = 115.2\ \text{MB} $$
-
-一张手机照片按 4 MB 算，约等于 $115.2 / 4 \approx 29$ 张。这个长度不适合放进一次按键的听写，输出也不是光标处的文字，所以文件有自己的路线。
-
-| 符号 | 是什么 | 从哪来 |
-|---|---|---|
-| 3,600 s | 一小时的会议 | 构造的例子 |
-| 16,000 | 每秒采样数 | `asr.SampleRate`，第 2 步 |
-| 2 B | 每个样本的字节数 | 16 位 PCM |
-| 115.2 MB | 这段 PCM 的大小 | 本步算式 |
-| 4 MB | 一张手机照片的估算 | 构造的比较 |
+长度不是分开的理由。更新日志写明录音已经没有时长限制（`Voxt/CHANGELOG.md:531`），`audio.maxSeconds = 0` 也表示不限时（`Voxt/docs/settings.md:150`）。图上的「一小时会议」（3,600 秒）只是尺度例子，不是听写做不到的上限。
 
 ### 代码里的两条路
 
@@ -71,6 +61,8 @@ $$ \text{PCM bytes} = T \times f_s \times b,\qquad \text{WAV bytes} = \text{PCM 
 | PCM | $8 \times 16{,}000 \times 2$ | 256,000 B |
 | WAV | $256{,}000 + 44$ | 256,044 B |
 | 时间 | $8 \times 16{,}000 \times 2 \div 32{,}000$ | 8 s（回到原时长） |
+| 一小时会议 | $3{,}600 \times 16{,}000 \times 2$ | 115,200,000 B = 115.2 MB |
+| 手机照片 | $115.2 \div 4$ | 约 29 张 |
 
 `afconvert` 也能读 mp4、mov 里的声音，所以视频不用先单独抽音轨。`decodeAudio` 的注释写明了这一点（`transcribe_cli.go:111-112`）。
 
@@ -85,7 +77,7 @@ PCM 已经能送进模型了，但模型在运行中的 Voxt 里。第 3 步讲�
 ### 图上是什么
 
 - 上面是命令、`transcribe.sock` 和运行中的 Voxt。socket 上写「只有你的账户」。
-- 虚线框上方是请求：`{"op":"transcribe","bytes":256000,"lang":""}`。
+- 虚线框上方是默认请求：`{"op":"transcribe","bytes":256000}`。
 - 中间上半是一段还在向右送的 PCM，写着 256,000 字节；下半是从右边回来的回复。
 - 下面写着：最后一块 PCM 还没传完，回复就可能到了。
 
@@ -94,10 +86,10 @@ PCM 已经能送进模型了，但模型在运行中的 Voxt 里。第 3 步讲�
 请求是**一行 JSON**，后面直接跟 PCM：
 
 ```json
-{"op":"transcribe","bytes":256000,"lang":""}
+{"op":"transcribe","bytes":256000}
 ```
 
-`Request` 的三个字段就是这三个（`Voxt/internal/fileasr/socket.go:34-39`）。`lang` 为空表示应用用听写的语言提示；命令给了 `--lang` 就填进来（`transcribe_socket.go:77-79`）。一行请求最多 4 KiB（`socket.go:25-29`）。
+`Request` 有三个字段（`Voxt/internal/fileasr/socket.go:34-39`），但 `Lang` 带 `json:"lang,omitempty"`（`socket.go:38`），`Transcribe` 又直接 `json.Marshal` 这个结构（`socket.go:146`）。没给 `--lang` 时，这个键不在线上；Unmarshal 之后字段是 `""`，应用就用听写的语言提示（`transcribe_socket.go:77-79`）。一行请求最多 4 KiB（`socket.go:25-29`）。
 
 回复是**每句一行 JSON**，最后一行是 `done`：
 

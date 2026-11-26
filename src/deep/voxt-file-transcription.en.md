@@ -6,23 +6,13 @@
 
 - The left column is **dictation**: the microphone and helper send sound, one dictation session handles it, and the result appears at the cursor and may also be written to history.
 - The right column is **file**: `meeting.m4a` on disk, marked "1-hour meeting · compressed M4A", goes through `Voxt transcribe` and becomes `meeting.srt` or `talk.txt`.
-- The lines below derive the decoded size: 3,600 × 16,000 × 2 B = 115,200,000 B = 115.2 MB PCM, not the compressed M4A size; at 4 MB per photo, 115.2 ÷ 4 ≈ 29 photos. They also say both routes use Voxt and a speech model, and the file route has no dictation session or history row.
+- The lines below say: a one-hour meeting is 3,600 s of sound already in a file; both routes use Voxt and a speech model; the file route has no dictation session or history row. The decoded size is Step 2's arithmetic.
 
 ### Why this needs its own route
 
-A one-hour meeting is 3,600 seconds. At Step 2's 16 kHz, 16-bit mono, its PCM is:
+The difference is where the result goes and what starts it. A dictation captures sound for the cursor; a recording already exists as a file, and the wanted result is SRT or TXT on disk. That file is then archived, played as subtitles, or fed to a script, so the file route writes no history entry and opens no dictation session.
 
-$$ 3{,}600 \times 16{,}000 \times 2 = 115{,}200{,}000\ \text{B} = 115.2\ \text{MB} $$
-
-At 4 MB per phone photo, that is $115.2 / 4 \approx 29$ photos. A recording that long does not fit a hotkey dictation, and its output is not text at a cursor, so the file route exists on its own.
-
-| Symbol | What it is | Where it comes from |
-|---|---|---|
-| 3,600 s | a one-hour meeting | constructed example |
-| 16,000 | samples per second | `asr.SampleRate`, Step 2 |
-| 2 B | bytes per sample | 16-bit PCM |
-| 115.2 MB | the size of that PCM | this step's arithmetic |
-| 4 MB | an estimated phone photo | a constructed comparison |
+Length does not force the split. The changelog removed the recording length limit (`Voxt/CHANGELOG.md:531`), and `audio.maxSeconds = 0` means no limit (`Voxt/docs/settings.md:150`). The stage's one-hour meeting (3,600 s) is a scale example, not a limit that dictation cannot reach.
 
 ### The two routes in code
 
@@ -71,6 +61,8 @@ $$ \text{PCM bytes} = T \times f_s \times b,\qquad \text{WAV bytes} = \text{PCM 
 | PCM | $8 \times 16{,}000 \times 2$ | 256,000 B |
 | WAV | $256{,}000 + 44$ | 256,044 B |
 | duration | $8 \times 16{,}000 \times 2 \div 32{,}000$ | 8 s (back to the original) |
+| one-hour meeting | $3{,}600 \times 16{,}000 \times 2$ | 115,200,000 B = 115.2 MB |
+| phone photos | $115.2 \div 4$ | about 29 |
 
 `afconvert` also reads the sound of mp4 and mov videos, so a video needs no separate audio extraction. The comment on `decodeAudio` says so (`transcribe_cli.go:111-112`).
 
@@ -85,7 +77,7 @@ The PCM can go to the model now, but the model lives inside the running Voxt. St
 ### On the stage
 
 - The top row is the command, `transcribe.sock` and the running Voxt. The socket says "your account only".
-- The line above the dashed box is the request: `{"op":"transcribe","bytes":256000,"lang":""}`.
+- The line above the dashed box is the default request: `{"op":"transcribe","bytes":256000}`.
 - The upper lane is PCM still moving right, marked 256,000 bytes; the lower lane is replies coming back from the right.
 - The line below says: a reply can arrive before the last PCM byte.
 
@@ -94,10 +86,10 @@ The PCM can go to the model now, but the model lives inside the running Voxt. St
 The request is **one JSON line**, followed directly by the PCM:
 
 ```json
-{"op":"transcribe","bytes":256000,"lang":""}
+{"op":"transcribe","bytes":256000}
 ```
 
-These are the three fields of `Request` (`Voxt/internal/fileasr/socket.go:34-39`). An empty `lang` tells the app to use dictation's language hint; when the command gives `--lang`, that value is filled in (`transcribe_socket.go:77-79`). One request line is at most 4 KiB (`socket.go:25-29`).
+`Request` has three fields (`Voxt/internal/fileasr/socket.go:34-39`), but `Lang` carries `json:"lang,omitempty"` (`socket.go:38`) and `Transcribe` marshals the struct directly (`socket.go:146`). With no `--lang`, the key is absent from the wire; after Unmarshal the field is `""`, which tells the app to use dictation's language hint (`transcribe_socket.go:77-79`). One request line is at most 4 KiB (`socket.go:25-29`).
 
 The reply is **one JSON line per cue**, ending with a `done` line:
 

@@ -9,6 +9,7 @@
     VOXT_TRANSCRIBE_PCM_BYTES,
     VOXT_TRANSCRIBE_WAV_BYTES,
     VOXT_TRANSCRIBE_MEETING_SECONDS,
+    VOXT_TRANSCRIBE_MEETING_BYTES,
     VOXT_TRANSCRIBE_MEETING_MB,
     VOXT_TRANSCRIBE_PHOTO_MB,
     VOXT_CUTTER_FRAME_MS,
@@ -29,6 +30,7 @@
     VOXT_TRANSCRIBE_MAX_REQUEST_BYTES,
     VOXT_WAV_HEADER_BYTES,
     VOXT_PCM_BYTES_PER_SECOND,
+    VOXT_PCM_BYTES_PER_SAMPLE,
     VOXT_CAPTURE_SAMPLE_RATE,
   } from '../../voxt/numbers';
 
@@ -105,7 +107,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived((phone ? [810, 760, 820, 760, 760, 740, 760, 780, 840] : [490, 430, 450, 460, 450, 440, 430, 470, 520])[step]);
+  const H = $derived((phone ? [810, 760, 820, 760, 760, 740, 760, 780, 840] : [470, 430, 450, 460, 450, 440, 430, 470, 520])[step]);
 
   const srt = (ms: number) => {
     const h = Math.floor(ms / 3_600_000);
@@ -116,7 +118,7 @@
   };
   const sec = (ms: number) => (ms / 1000).toFixed(2);
   const arrow = '-->';
-  const requestLine = JSON.stringify({ op: 'transcribe', bytes: VOXT_TRANSCRIBE_PCM_BYTES, lang: '' });
+  const requestLine = JSON.stringify({ op: 'transcribe', bytes: VOXT_TRANSCRIBE_PCM_BYTES });
   const requestSplit = requestLine.indexOf('"bytes"');
   const requestHead = requestLine.slice(0, requestSplit);
   const requestTail = requestLine.slice(requestSplit);
@@ -178,13 +180,11 @@
           <text x="535" y="328" text-anchor="middle" class="detail">{t('subtitle file / plain text', '字幕文件 / 纯文本')}</text>
 
           <text x="28" y="370" class="pt">·</text>
-          <text x="38" y="370" class="detail">{t(`decoded PCM: ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} × 16,000 × 2 B = 115,200,000 B`, `解码后的 PCM：${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} × 16,000 × 2 B = 115,200,000 B`)}</text>
-          <text x="38" y="390" class="detail">{t(`= ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} MB, not the compressed M4A size`, `= ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} MB，不是压缩 M4A 的大小`)}</text>
-          <text x="38" y="410" class="detail">{t(`4 MB per photo → ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} ÷ 4 ≈ ${photoCount} photos`, `每张手机照片 4 MB → ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} ÷ 4 ≈ ${photoCount} 张`)}</text>
-          <text x="28" y="432" class="pt">·</text>
-          <text x="38" y="432" class="detail">{t('both use Voxt and a speech model', '两条都用 Voxt 和语音模型')}</text>
-          <text x="28" y="454" class="pt">·</text>
-          <text x="38" y="454" class="detail">{t('the file route skips the dictation session and its history row', '文件路线不经过听写 session，也没有历史记录')}</text>
+          <text x="38" y="370" class="detail">{t(`a one-hour meeting is ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} s of sound, already in a file`, `一小时的会议是 ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} 秒的声音，本来就在文件里`)}</text>
+          <text x="28" y="392" class="pt">·</text>
+          <text x="38" y="392" class="detail">{t('both use Voxt and a speech model', '两条都用 Voxt 和语音模型')}</text>
+          <text x="28" y="414" class="pt">·</text>
+          <text x="38" y="414" class="detail">{t('the file route skips the dictation session and its history row', '文件路线不经过听写 session，也没有历史记录')}</text>
           <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Orange marks the route this chapter follows.', '橙色是本章要走的路线。')}</text>
         {:else}
           <rect x="15" y="68" width="270" height="250" rx="12" fill="var(--bg)" stroke="var(--accent)" />
@@ -214,14 +214,13 @@
           <text x="150" y="559" text-anchor="middle" class="detail">{t('subtitle file / plain text', '字幕文件 / 纯文本')}</text>
 
           <text x="20" y="606" class="pt">·</text>
-          <text x="30" y="606" class="detail">{t(`3,600 × 16,000 × 2 B`, `3,600 × 16,000 × 2 B`)}</text>
-          <text x="30" y="628" class="detail">{t(`= 115,200,000 B = ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} MB PCM`, `= 115,200,000 B = ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} MB PCM`)}</text>
-          <text x="30" y="650" class="detail">{t(`4 MB/photo → 115.2 ÷ 4 ≈ ${photoCount}`, `每张照片 4 MB → 115.2 ÷ 4 ≈ ${photoCount} 张`)}</text>
+          <text x="30" y="606" class="detail">{t(`a one-hour meeting is ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} s`, `一小时的会议是 ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} 秒`)}</text>
+          <text x="30" y="628" class="detail">{t('of sound, already in a file', '的声音，本来就在文件里')}</text>
+          <text x="20" y="650" class="pt">·</text>
+          <text x="30" y="650" class="detail">{t('both use Voxt and a speech model', '两条都用 Voxt 和语音模型')}</text>
           <text x="20" y="672" class="pt">·</text>
-          <text x="30" y="672" class="detail">{t('both use Voxt and a speech model', '两条都用 Voxt 和语音模型')}</text>
-          <text x="20" y="694" class="pt">·</text>
-          <text x="30" y="694" class="detail">{t('the file route skips the dictation session', '文件路线不经过听写 session')}</text>
-          <text x="30" y="716" class="detail">{t('and writes no history row', '也不写历史记录')}</text>
+          <text x="30" y="672" class="detail">{t('the file route skips the dictation session', '文件路线不经过听写 session')}</text>
+          <text x="30" y="694" class="detail">{t('and writes no history row', '也不写历史记录')}</text>
           <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Orange marks the route this chapter follows.', '橙色是本章要走的路线。')}</text>
         {/if}
       {:else if step === 1}
@@ -242,10 +241,12 @@
           <text x="598" y="108" text-anchor="middle" class="label">audio.wav</text>
           <text x="598" y="132" text-anchor="middle" class="detail">{t('temporary file', '临时文件')}</text>
 
-          <rect x="70" y="200" width="580" height="100" rx="10" fill="var(--bg)" stroke="var(--line)" />
-          <text x="360" y="226" text-anchor="middle" class="formula">{VOXT_TRANSCRIBE_DEMO_SECONDS} s × {VOXT_CAPTURE_SAMPLE_RATE.toLocaleString('en-US')} × 2 B = {pcm} B PCM</text>
+          <rect x="70" y="200" width="580" height="140" rx="10" fill="var(--bg)" stroke="var(--line)" />
+          <text x="360" y="226" text-anchor="middle" class="formula">{VOXT_TRANSCRIBE_DEMO_SECONDS} s × {VOXT_CAPTURE_SAMPLE_RATE.toLocaleString('en-US')} × {VOXT_PCM_BYTES_PER_SAMPLE} B = {pcm} B PCM</text>
           <text x="360" y="255" text-anchor="middle" class="formula">+ {VOXT_WAV_HEADER_BYTES} B {t('WAV header', 'WAV 文件头')} = {VOXT_TRANSCRIBE_WAV_BYTES.toLocaleString('en-US')} B</text>
           <text x="360" y="282" text-anchor="middle" class="detail">{t('about 256 KB, smaller than one phone photo', '约 256 KB，比一张手机照片小')}</text>
+          <text x="360" y="308" text-anchor="middle" class="formula">{t(`one hour: ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} × ${VOXT_CAPTURE_SAMPLE_RATE.toLocaleString('en-US')} × ${VOXT_PCM_BYTES_PER_SAMPLE} B`, `一小时：${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} × ${VOXT_CAPTURE_SAMPLE_RATE.toLocaleString('en-US')} × ${VOXT_PCM_BYTES_PER_SAMPLE} B`)}</text>
+          <text x="360" y="330" text-anchor="middle" class="formula">{t(`= ${VOXT_TRANSCRIBE_MEETING_BYTES.toLocaleString('en-US')} B = ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} MB (≈${photoCount} photos at ${VOXT_TRANSCRIBE_PHOTO_MB} MB each)`, `= ${VOXT_TRANSCRIBE_MEETING_BYTES.toLocaleString('en-US')} B = ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} MB（每张 ${VOXT_TRANSCRIBE_PHOTO_MB} MB，≈${photoCount} 张）`)}</text>
           <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('The temporary WAV is deleted after the command reads the PCM.', '命令读完 PCM 后就删掉这个临时 WAV。')}</text>
         {:else}
           <rect x="40" y="70" width="220" height="62" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
@@ -262,12 +263,15 @@
           <text x="150" y="316" text-anchor="middle" class="label">audio.wav</text>
           <text x="150" y="337" text-anchor="middle" class="detail">{t('temporary file', '临时文件')}</text>
 
-          <rect x="20" y="380" width="260" height="170" rx="10" fill="var(--bg)" stroke="var(--line)" />
-          <text x="150" y="406" text-anchor="middle" class="formula">8 s × 16,000 × 2 B</text>
+          <rect x="20" y="380" width="260" height="230" rx="10" fill="var(--bg)" stroke="var(--line)" />
+          <text x="150" y="406" text-anchor="middle" class="formula">{VOXT_TRANSCRIBE_DEMO_SECONDS} s × {VOXT_CAPTURE_SAMPLE_RATE.toLocaleString('en-US')} × {VOXT_PCM_BYTES_PER_SAMPLE} B</text>
           <text x="150" y="434" text-anchor="middle" class="formula">= {pcm} B PCM</text>
           <text x="150" y="466" text-anchor="middle" class="formula">+ {VOXT_WAV_HEADER_BYTES} B {t('header', '文件头')}</text>
           <text x="150" y="494" text-anchor="middle" class="formula">= {VOXT_TRANSCRIBE_WAV_BYTES.toLocaleString('en-US')} B</text>
           <text x="150" y="526" text-anchor="middle" class="detail">{t('about 256 KB', '约 256 KB')}</text>
+          <text x="150" y="552" text-anchor="middle" class="formula">{t(`one hour: ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} × ${VOXT_CAPTURE_SAMPLE_RATE.toLocaleString('en-US')} × ${VOXT_PCM_BYTES_PER_SAMPLE} B`, `一小时：${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} × ${VOXT_CAPTURE_SAMPLE_RATE.toLocaleString('en-US')} × ${VOXT_PCM_BYTES_PER_SAMPLE} B`)}</text>
+          <text x="150" y="574" text-anchor="middle" class="formula">{t(`= ${VOXT_TRANSCRIBE_MEETING_BYTES.toLocaleString('en-US')} B = ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} MB`, `= ${VOXT_TRANSCRIBE_MEETING_BYTES.toLocaleString('en-US')} B = ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} MB`)}</text>
+          <text x="150" y="596" text-anchor="middle" class="detail">{t(`≈${photoCount} photos at ${VOXT_TRANSCRIBE_PHOTO_MB} MB each`, `每张 ${VOXT_TRANSCRIBE_PHOTO_MB} MB，≈${photoCount} 张`)}</text>
           <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Temporary WAV: deleted after reading.', '读完 PCM 后删掉临时 WAV。')}</text>
         {/if}
       {:else if step === 2}
