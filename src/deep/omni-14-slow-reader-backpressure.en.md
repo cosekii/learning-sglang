@@ -38,3 +38,45 @@ A finished request releases generation capacity, while unread streamed audio can
 ### Next
 
 The next step puts one shared byte cap on all waiting audio in this API process.
+
+## Step 2 · All streams share one audio-byte ledger
+
+> **In one line:** One API process caps all its streams together, counting audio bytes rather than text or socket buffers.
+
+### On the stage
+
+- `stream_delivery.max_total_backlog_bytes` is the most queued audio bytes all streams in this process may hold together. Its default is 1 GiB; `none` disables the cap.
+- Stream A carries 6 B of audio and 100 text characters. Blue marks counted audio and grey marks excluded text, so this stream contributes 6 B.
+- Stream B carries 10 B of audio. Together they hold `6 + 10 = 16 B`.
+- The default cap corresponds to about 3.1 hours of this audio. That comparison conveys size only; it does not predict request length.
+
+### Formula
+
+$$
+T=\sum_{s=1}^{N}Q_s,\qquad H=\frac{C}{r\times b\times3600}
+$$
+
+| Symbol | Meaning | Size | Source |
+|---|---|---:|---|
+| $T$ | Total queued audio | 16 B | Constructed example |
+| $Q_s$ | Queued audio in stream $s$ | 6 B or 10 B | Constructed example |
+| $N$ | Stream count | 2 | This step |
+| $H$ | Default cap as audio hours | About 3.1 h | This step |
+| $C$ | Default shared cap | 1,073,741,824 B | Config default |
+| $r,b$ | Sample rate and bytes per sample | 24,000 and 4 B | Step 1 |
+
+### The numbers on the stage
+
+$$
+T=6+10=16\ \text{B},\qquad H=\frac{1{,}073{,}741{,}824}{24{,}000\times4\times3600}\approx3.1\ \text{hours}
+$$
+
+The implementation sums only top-level `bytes` values in the payload. It does not measure total process memory or socket buffers. Another API process has its own cap.
+
+### Boundary and sources
+
+The default and config type are in `sglang_omni/config/schema.py:641-648,793-796`. The per-process boundary and `none` behavior are in `docs/cookbook/qwen3_tts/tuning.md:24-28`. The accounting function is in `sglang_omni/pipeline/coordinator.py:91-100`.
+
+### Next
+
+When the total crosses the cap, the coordinator needs a fair way to choose a stream. The next step defines its reader-idle clock.

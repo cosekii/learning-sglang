@@ -39,6 +39,9 @@
   const steps = [{
     caption: 'Generation can finish before the reader takes six seconds of audio. Those 576,000 bytes still wait in the API process.',
     captionZh: '生成结束时，读者还有 6 秒声音没取走。576,000 字节仍留在 API 进程里。',
+  }, {
+    caption: 'One API process shares one byte cap across its streams. It counts audio bytes, not text characters.',
+    captionZh: '一个 API 进程里的多路流共用一个字节上限。只数声音字节，不数字符。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -55,7 +58,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? 760 : 560);
+  const H = $derived(phone ? [760, 900, 760, 850, 900, 800, 850, 900][step] : [560, 680, 620, 650, 680, 610, 640, 650][step]);
   const bytes = (n: number) => n.toLocaleString('en-US');
 </script>
 
@@ -105,6 +108,38 @@
         <text x={W / 2} y={barY + 169} text-anchor="middle" class="tag">{t(`${bytes(DELIVERY_AUDIO_BYTES_PER_SECOND)} B each second × 6 seconds`, `每秒 ${bytes(DELIVERY_AUDIO_BYTES_PER_SECOND)} 字节 × 6 秒`)}</text>
         <text x={W / 2} y={barY + (phone ? 222 : 214)} text-anchor="middle" class="rowlabel">{t('What stops this queue from growing?', '怎样阻止这条队列一直变长？')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Constructed example. Socket buffering is excluded.', '构造算例，不计 socket 缓冲。')}</text>
+      {:else if step === 1}
+        <text x={phone ? 15 : 20} y="26" class="rowlabel">{t('ONE API PROCESS, ONE SHARED BYTE CAP', '一个 API 进程，一个共享字节上限')}</text>
+        <text x={phone ? 15 : 20} y="52" class="tag">{t('cap = the most queued audio bytes all its streams may hold', '上限 = 这里所有流合计最多能保留的声音字节')}</text>
+        <text x={phone ? 15 : 20} y="76" class="tag">{t('blue = counted audio · grey = not counted', '蓝 = 计入的声音 · 灰 = 不计入')}</text>
+        <rect x={phone ? 15 : 70} y="102" width={phone ? 270 : 580} height="132" rx="11" fill="var(--bg)" stroke="var(--line)" />
+        <text x={W / 2} y="132" text-anchor="middle" class="mono">stream_delivery.max_total_backlog_bytes</text>
+        <text x={W / 2} y="164" text-anchor="middle" class="result">1 GiB = {bytes(DELIVERY_DEFAULT_CAP_BYTES)} B</text>
+        <text x={W / 2} y="194" text-anchor="middle" class="tag">{t('per API process', '每个 API 进程')} · none = {t('cap off', '关闭上限')}</text>
+        <text x={W / 2} y="219" text-anchor="middle" class="tag">{bytes(DELIVERY_DEFAULT_CAP_BYTES)} ÷ {bytes(DELIVERY_AUDIO_BYTES_PER_SECOND)} ≈ {DELIVERY_DEFAULT_CAP_HOURS.toFixed(1)} h {t('of audio', '声音')}</text>
+        {#each phone ? [
+          { x: 15, y: 266, w: 270, name: 'STREAM A', audio: DELIVERY_PAYLOAD_AUDIO_BYTES, text: true },
+          { x: 15, y: 472, w: 270, name: 'STREAM B', audio: DELIVERY_OTHER_AUDIO_BYTES, text: false },
+        ] : [
+          { x: 40, y: 266, w: 300, name: 'STREAM A', audio: DELIVERY_PAYLOAD_AUDIO_BYTES, text: true },
+          { x: 380, y: 266, w: 300, name: 'STREAM B', audio: DELIVERY_OTHER_AUDIO_BYTES, text: false },
+        ] as card}
+          <rect x={card.x} y={card.y} width={card.w} height="174" rx="11" fill="var(--bg)" stroke="var(--line)" />
+          <text x={card.x + 16} y={card.y + 28} class="tag strong">{card.name}</text>
+          <rect x={card.x + 16} y={card.y + 45} width={card.w - 32} height="42" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x={card.x + 28} y={card.y + 72} class="mono">audio_waveform: {card.audio} B</text>
+          {#if card.text}
+            <text x={card.x + 20} y={card.y + 115} class="tag" fill="var(--muted)">text: {DELIVERY_PAYLOAD_TEXT_CHARS} {t('characters', '个字符')}</text>
+          {/if}
+          <text x={card.x + 20} y={card.y + 151} class="result">{t('COUNT', '计入')} = {card.audio} B</text>
+        {/each}
+        {@const totalY = phone ? 686 : 474}
+        <rect x={phone ? 15 : 170} y={totalY} width={phone ? 270 : 380} height="72" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x={W / 2} y={totalY + 29} text-anchor="middle" class="tag strong">{t('SHARED AUDIO-BYTE LEDGER', '共享声音字节账')}</text>
+        <text x={W / 2} y={totalY + 56} text-anchor="middle" class="result">{DELIVERY_PAYLOAD_AUDIO_BYTES} + {DELIVERY_OTHER_AUDIO_BYTES} = {DELIVERY_PAYLOAD_TOTAL_BYTES} B</text>
+        <text x={W / 2} y={totalY + 101} text-anchor="middle" class="tag">{t('Text and socket buffers stay outside this audio-byte ledger.', '文字和 socket 缓冲不记入这份声音字节账。')}</text>
+        <text x={W / 2} y={totalY + (phone ? 160 : 151)} text-anchor="middle" class="rowlabel">{t('Over the cap, which stream fails?', '超过上限后，哪一路流失败？')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Constructed payloads. Another API process has its own cap.', '构造的消息内容。另一个 API 进程有自己的上限。')}</text>
       {/if}
     </svg>
   </div>

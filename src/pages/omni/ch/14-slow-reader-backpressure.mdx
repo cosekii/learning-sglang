@@ -15,6 +15,8 @@ export const deep = await deepFor('omni-14-slow-reader-backpressure');
 
 Step 1 uses a constructed ten-second response whose reader has taken four seconds. Qwen3-TTS documents 24 kHz float32 audio at about 96 kB per second, so the six-second backlog is `24,000 × 4 × 6 = 576,000 B`. A finished request releases its generation-capacity slot, but streamed audio can remain in the API process until the client reads it (`docs/cookbook/qwen3_tts/tuning.md:22-26`; `sglang_omni/pipeline/coordinator.py:103-109,213-223`). Socket buffering is deliberately excluded from this teaching arithmetic.
 
+Step 2 shows the shipped `stream_delivery.max_total_backlog_bytes` default: 1 GiB per coordinator/API process, with `none` disabling the cap (`sglang_omni/config/schema.py:641-648,793-796`; `docs/cookbook/qwen3_tts/tuning.md:24-28`). The accounting sums only top-level `bytes` values in a message payload. The constructed six-byte audio payload and 100-character string therefore contribute six bytes, not 106 (`sglang_omni/pipeline/coordinator.py:91-100`). Text, socket buffers, total process memory and other API processes sit outside this ledger.
+
 Code references in this chapter pin to `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`. The chapter reads source and unit tests; it does not run a model or measure a server.
 
 </details>
@@ -23,6 +25,8 @@ Code references in this chapter pin to `sglang-omni origin/main@9725235249df8512
 <summary>本章说法的出处</summary>
 
 第 1 步构造一段 10 秒回答，读者只取走 4 秒。Qwen3-TTS 文档给出 24 kHz float32 声音约每秒 96 kB，因此 6 秒积压是 `24,000 × 4 × 6 = 576,000 B`。请求完成后会释放生成容量名额，但流式声音可以留在 API 进程里，直到客户端读取（`docs/cookbook/qwen3_tts/tuning.md:22-26`；`sglang_omni/pipeline/coordinator.py:103-109,213-223`）。这份教学算式不计 socket 缓冲。
+
+第 2 步展示随仓库发布的 `stream_delivery.max_total_backlog_bytes` 默认值：每个 coordinator／API 进程 1 GiB，`none` 关闭上限（`sglang_omni/config/schema.py:641-648,793-796`；`docs/cookbook/qwen3_tts/tuning.md:24-28`）。记账只累加消息内容顶层的 `bytes` 值，所以构造的 6 字节声音和 100 字符文字合计仍只计 6 字节，不是 106（`sglang_omni/pipeline/coordinator.py:91-100`）。文字、socket 缓冲、进程总内存和其他 API 进程都不在这份账里。
 
 本章代码出处固定到 `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`。本章只读源码和单元测试，没有运行模型或测量服务器。
 
