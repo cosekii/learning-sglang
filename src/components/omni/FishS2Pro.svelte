@@ -18,6 +18,11 @@
     FISH_FAST_REMAINING_ROWS,
     FISH_FAST_CALLS_PER_FRAME,
     FISH_ENGINE_ROWS_PER_FRAME,
+    FISH_REQUEST_DEFAULT_MAX_TOKENS,
+    FISH_ENGINE_MAX_NEW_TOKENS,
+    FISH_TEACHING_PROMPT_TOKENS,
+    FISH_TEACHING_CONTEXT_REMAINING,
+    FISH_TEACHING_GENERATION_BUDGET,
     VOC_FISH_CODEBOOK_ROWS,
   } from '../../omni/numbers';
 
@@ -38,6 +43,9 @@
   }, {
     caption: 'Slow AR keeps earlier frames. Fast AR starts fresh for every frame.',
     captionZh: 'Slow AR 会记住之前的帧。Fast AR 每帧都重新开始。',
+  }, {
+    caption: 'Stopping has three exits: EOS, length and abort. Abort delivers no remaining sound.',
+    captionZh: '停止有 EOS、长度用尽和中止三条路。中止不会交付剩余声音。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -54,7 +62,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [710, 800, 790, 900, 790][step] : [540, 630, 600, 650, 600][step]);
+  const H = $derived(phone ? [710, 800, 790, 900, 790, 880][step] : [540, 630, 600, 650, 600, 630][step]);
   const fmt = (value: number) => value.toLocaleString('en-US', { maximumFractionDigits: 0 });
 </script>
 
@@ -365,6 +373,78 @@
           <text x="32" y="687" class="small">10 {t('positions only', '个位置仅限本帧')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Slow prefix reuse ≠ reference-code cache' : 'Slow prefix reuse and the Step 2 reference-code cache are different mechanisms.', phone ? 'Slow 前缀复用 ≠ 参考 code 缓存' : 'Slow 前缀复用与第 2 步的参考 code 缓存是不同机制。')}</text>
+      {:else if step === 5}
+        <text x={phone ? 18 : 30} y="30" class="title">{t('Three exits from the same loops', '同一组循环的三个出口')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'blue = accepted output · orange = not delivered' : 'blue = accepted sound · orange = terminal work or output not delivered', phone ? '蓝 = 接受输出 · 橙 = 不交付' : '蓝 = 接受的声音 · 橙 = 不交付的结束工作或输出')}</text>
+        {#if !phone}
+          {#each [0, 1, 2] as kind}
+            {@const x = 30 + kind * 225}
+            <rect x={x} y="91" width="210" height="467" rx="12" fill="var(--bg)" stroke={kind === 0 ? 'var(--gen)' : kind === 1 ? 'var(--accent)' : 'var(--line)'} />
+            <text x={x + 16} y="123" class="result" style={kind === 0 ? 'fill:var(--gen)' : kind === 1 ? 'fill:var(--accent)' : ''}>{kind === 0 ? 'EOS' : kind === 1 ? t('LENGTH', '长度用尽') : t('ABORT', '中止')}</text>
+            {#if kind === 0}
+              <rect x={x + 16} y="147" width="178" height="58" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+              <text x={x + 105} y="182" text-anchor="middle" class="small strong">Slow → &lt;|im_end|&gt;</text>
+              <text x={x + 16} y="241" class="small strong">{t('Fast AR still runs', 'Fast AR 仍然运行')}</text>
+              <text x={x + 16} y="278" class="small">{t('drop the terminal frame', '丢掉结束帧')}</text>
+              <rect x={x + 16} y="308" width="178" height="67" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+              <text x={x + 105} y="337" text-anchor="middle" class="small strong">{t('keep earlier frames', '保留之前的帧')}</text>
+              <text x={x + 105} y="361" text-anchor="middle" class="small">finish_reason = stop</text>
+              <text x={x + 16} y="422" class="small">{t('immediate EOS:', '立即遇到 EOS：')}</text>
+              <text x={x + 16} y="451" class="small">0 {t('accepted frames', '个接受帧')}</text>
+              <text x={x + 16} y="487" class="small strong">→ {t('error, not empty audio', '报错，不返回空声音')}</text>
+            {:else if kind === 1}
+              <rect x={x + 16} y="147" width="178" height="58" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+              <text x={x + 105} y="182" text-anchor="middle" class="small strong">{t('budget reached', '达到生成预算')}</text>
+              <text x={x + 16} y="241" class="small strong">{t('keep accepted frames', '保留接受的帧')}</text>
+              <text x={x + 16} y="278" class="small">finish_reason = length</text>
+              <text x={x + 16} y="329" class="small">{t('constructed prompt', '构造 prompt')}</text>
+              <text x={x + 16} y="357" class="code">P = {fmt(FISH_TEACHING_PROMPT_TOKENS)} tokens</text>
+              <text x={x + 16} y="397" class="code">4096 − 1 − 1000</text>
+              <text x={x + 16} y="426" class="code">= {fmt(FISH_TEACHING_CONTEXT_REMAINING)}</text>
+              <text x={x + 16} y="466" class="code">min({FISH_REQUEST_DEFAULT_MAX_TOKENS}, {FISH_ENGINE_MAX_NEW_TOKENS},</text>
+              <text x={x + 16} y="493" class="code">{fmt(FISH_TEACHING_CONTEXT_REMAINING)}) = {FISH_TEACHING_GENERATION_BUDGET}</text>
+              <text x={x + 16} y="531" class="small strong">{t('effective budget', '有效生成预算')}</text>
+            {:else}
+              <rect x={x + 16} y="147" width="178" height="58" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+              <text x={x + 105} y="182" text-anchor="middle" class="small strong">{t('cancel request', '取消请求')}</text>
+              <text x={x + 16} y="241" class="small strong">{t('clear stream state', '清理流状态')}</text>
+              <text x={x + 16} y="278" class="small">{t('suppress pending chunks', '拦截待送 chunks')}</text>
+              <text x={x + 16} y="315" class="small">{t('suppress final success', '拦截最终成功输出')}</text>
+              <rect x={x + 16} y="347" width="178" height="73" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+              <text x={x + 105} y="377" text-anchor="middle" class="small strong">{t('no remaining sound', '不交付剩余声音')}</text>
+              <text x={x + 105} y="402" text-anchor="middle" class="small">{t('from this request', '来自这个请求')}</text>
+              <text x={x + 16} y="468" class="small">{t('already delivered chunks', '已经交付的 chunks')}</text>
+              <text x={x + 16} y="498" class="small">{t('cannot be recalled', '无法收回')}</text>
+            {/if}
+          {/each}
+        {:else}
+          {#each [0, 1, 2] as kind}
+            {@const y = 82 + kind * 250}
+            <rect x="18" y={y} width="264" height="230" rx="11" fill="var(--bg)" stroke={kind === 0 ? 'var(--gen)' : kind === 1 ? 'var(--accent)' : 'var(--line)'} />
+            <text x="32" y={y + 29} class="result" style={kind === 0 ? 'fill:var(--gen)' : kind === 1 ? 'fill:var(--accent)' : ''}>{kind === 0 ? 'EOS' : kind === 1 ? t('LENGTH', '长度用尽') : t('ABORT', '中止')}</text>
+            {#if kind === 0}
+              <text x="32" y={y + 65} class="small strong">Slow → &lt;|im_end|&gt; · {t('Fast runs', 'Fast 仍运行')}</text>
+              <text x="32" y={y + 98} class="small">{t('drop terminal frame · keep earlier', '丢结束帧 · 保留之前帧')}</text>
+              <rect x="32" y={y + 116} width="236" height="43" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+              <text x="150" y={y + 144} text-anchor="middle" class="small strong">finish_reason = stop</text>
+              <text x="32" y={y + 193} class="small strong">0 {t('accepted frames', '个接受帧')} → {t('error', '报错')}</text>
+            {:else if kind === 1}
+              <text x="32" y={y + 65} class="small strong">{t('keep accepted frames', '保留接受的帧')}</text>
+              <text x="32" y={y + 96} class="small">finish_reason = length</text>
+              <text x="32" y={y + 130} class="code">P = {fmt(FISH_TEACHING_PROMPT_TOKENS)}</text>
+              <text x="32" y={y + 158} class="code">4096 − 1 − 1000 = {fmt(FISH_TEACHING_CONTEXT_REMAINING)}</text>
+              <text x="32" y={y + 188} class="code">min(1024,2048,3095) = {FISH_TEACHING_GENERATION_BUDGET}</text>
+              <text x="32" y={y + 216} class="small strong">{t('effective budget', '有效生成预算')}</text>
+            {:else}
+              <text x="32" y={y + 65} class="small strong">{t('clear stream state', '清理流状态')}</text>
+              <text x="32" y={y + 98} class="small">{t('suppress pending + final success', '拦截待送和最终成功输出')}</text>
+              <rect x="32" y={y + 116} width="236" height="43" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+              <text x="150" y={y + 144} text-anchor="middle" class="small strong">{t('no remaining sound', '不交付剩余声音')}</text>
+              <text x="32" y={y + 193} class="small">{t('delivered chunks stay delivered', '已交付 chunks 不会收回')}</text>
+            {/if}
+          {/each}
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'The 1,000-token prompt is constructed' : 'The 1,000-token prompt is constructed; the three limits and default request cap come from source.', phone ? '1,000-token prompt 是构造算例' : '1,000-token prompt 是构造值；三项限制和请求默认上限来自源码。')}</text>
       {/if}
     </svg>
   </div>

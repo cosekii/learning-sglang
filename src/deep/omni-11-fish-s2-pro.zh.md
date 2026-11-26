@@ -212,3 +212,48 @@ Fast 第 0 次调用先重置内层 KV，再处理新帧的 0–9 位置，不�
 第 6 步跟随同一个循环走到 EOS、长度用尽和中止三个出口。
 
 出处：`models/fishaudio_s2_pro/model_runner.py:62-100,148-191`；`models/fishaudio_s2_pro/sglang_model.py:365-382,484-488`；`models/fishaudio_s2_pro/request_builders.py:65-78,160-168`；`models/fishaudio_s2_pro/fish_speech/models/text2semantic/audio_decoder.py:394-411,505-526,547-595`。
+
+## 第 6 步 · 三种停止方式
+
+> **一句话：** EOS 和长度用尽可以返回已接受的帧，中止会拦截仍待交付的输出。
+
+### 图上是什么
+
+- EOS 是 `<|im_end|>` token。Fast AR 仍会为这次 Slow 输出执行内层工作。
+- 收集器不追加也不发送 EOS 结束帧，但保留之前接受的帧。
+- 长度用尽在生成预算处停止，返回接受的帧，并写 `finish_reason="length"`。
+- 中止清理流状态，拦截待送 chunks 和最终成功 payload。
+- 蓝框是接受的输出，橙框是收集器不交付的工作或输出。
+
+### 公式
+
+$$
+M = \min(M_{\text{request}},2048,\max(4096-1-P,1))
+$$
+
+| 符号 | 是什么 | 算例大小 | 从哪来 |
+|---|---|---:|---|
+| $M$ | 有效生成预算 | 1,024 tokens | 本步公式 |
+| $M_{\text{request}}$ | 请求上限 | 默认 1,024 | `engine_builder.py` |
+| $P$ | prompt token 数 | 构造值 1,000 | 本步算例 |
+| $4096-1-P$ | 预留一个 token 后的上下文空间 | 3,095 | engine 预算规则 |
+
+### 代入图上的数
+
+$$
+4096 - 1 - 1000 = 3095
+$$
+
+$$
+M = \min(1024,2048,3095) = 1024\ \text{tokens}
+$$
+
+1,000-token prompt 是构造值，三项限制和请求默认上限来自源码。
+
+立即遇到 EOS 会得到零个接受帧。结果适配会报「generated no audio codec tokens」，不返回空声音。中止不能收回已经交付的 chunks。
+
+### 接下来
+
+第 7 步跟随接受的帧进入流式 vocoder 的重叠窗口。
+
+出处：`models/fishaudio_s2_pro/model_runner.py:48-76`；`models/fishaudio_s2_pro/request_builders.py:148-167,192-202,233-248`；`models/fishaudio_s2_pro/engine_builder.py:87-100`；`tests/unit_test/fishaudio_s2_pro/test_tts.py:486-531,616-673`。

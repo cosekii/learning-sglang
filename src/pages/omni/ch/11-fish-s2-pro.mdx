@@ -23,6 +23,8 @@ Step 4 follows a nonterminal frame in `sglang_omni/models/fishaudio_s2_pro/sglan
 
 Step 5 follows `model_runner.py:62-100,148-191` and `sglang_model.py:365-382,484-488`. The previous frame's raw token and all ten DAC codes feed the next Slow input. Slow KV retains the prompt and earlier frames through SGLang. `request_builders.py:65-78,160-168` fingerprints all ten reference rows so references that share only code 0 cannot incorrectly share a prefix. Fast KV covers positions 0–9 inside one frame and resets before the next Slow output (`fish_speech/models/text2semantic/audio_decoder.py:394-411,505-526,547-595`). Reference-code caching from Step 2 is a separate CPU artifact cache.
 
+Step 6 follows `model_runner.py:48-76` and `request_builders.py:148-167,192-202,233-248`. EOS is `<|im_end|>`: Fast AR still runs for that Slow output, but the collector drops the terminal frame. Earlier accepted frames remain. An immediate EOS leaves no audio codes and produces an error instead of empty audio. Length exhaustion retains accepted frames with `finish_reason="length"`. The effective cap is `min(request max, 2048, max(4096−1−prompt tokens,1))`; the request default is 1,024 (`engine_builder.py:87-100`). Abort suppresses pending chunks and terminal success output and clears stream state. It cannot recall chunks already delivered.
+
 Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`. Fetching a newer ref failed with `Operation not permitted`. The chapter reads source; it does not run a model or benchmark.
 
 </details>
@@ -39,6 +41,8 @@ Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37
 第 4 步跟随一个非结束帧，见 `sglang_omni/models/fishaudio_s2_pro/sglang_model.py:294-300,418-510`。Fast AR 是内层循环。第 0 次调用接收投影后的 Slow 隐藏状态，不提供 vocoder code。第 1–9 次调用通过 argmax 选出其余九个 codes。engine 保存 Slow 原始 token、由它得到的 code 0 和这九个 codes，共 11 行。`streaming_vocoder.py:88-106` 去掉原始 token，把其余十行送入 vocoder。1+9=10 次 Fast 调用，code 9 之后没有第 11 次调用。
 
 第 5 步依据 `model_runner.py:62-100,148-191` 和 `sglang_model.py:365-382,484-488`。上一帧的原始 token 和全部十个 DAC codes 会进入下一次 Slow 输入。Slow KV 通过 SGLang 保留 prompt 和之前的帧。`request_builders.py:65-78,160-168` 对全部十行参考 codes 做指纹，避免只有 code 0 相同的参考声音错误共享前缀。Fast KV 只覆盖一帧内的 0–9 位置，在下一次 Slow 输出前重置（`fish_speech/models/text2semantic/audio_decoder.py:394-411,505-526,547-595`）。第 2 步的参考 code 缓存是另一种 CPU 成品缓存。
+
+第 6 步依据 `model_runner.py:48-76` 和 `request_builders.py:148-167,192-202,233-248`。EOS 是 `<|im_end|>`：Fast AR 仍会为这次 Slow 输出运行，但收集器丢掉结束帧，保留之前接受的帧。立即遇到 EOS 会留下零个音频 codes，随后报错，不返回空声音。长度用尽会保留接受的帧，并写 `finish_reason="length"`。有效上限是 `min(请求上限, 2048, max(4096−1−prompt tokens,1))`，请求默认上限是 1,024（`engine_builder.py:87-100`）。中止会清掉流状态，拦截待送 chunks 和最终成功输出，但不能收回已经交付的 chunks。
 
 本章代码出处固定到 `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`。获取更新 ref 时出现 `Operation not permitted`。本章只读源码，没有运行模型或 benchmark。
 

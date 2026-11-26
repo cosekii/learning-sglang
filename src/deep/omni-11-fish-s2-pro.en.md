@@ -212,3 +212,48 @@ The picture compares feedback with cache lifetime. It does not claim that Fish's
 Step 6 follows the same loop to its three exits: EOS, length exhaustion and abort.
 
 Sources: `models/fishaudio_s2_pro/model_runner.py:62-100,148-191`; `models/fishaudio_s2_pro/sglang_model.py:365-382,484-488`; `models/fishaudio_s2_pro/request_builders.py:65-78,160-168`; `models/fishaudio_s2_pro/fish_speech/models/text2semantic/audio_decoder.py:394-411,505-526,547-595`.
+
+## Step 6 · Three ways to stop
+
+> **In one line:** EOS and length can return accepted frames, while abort suppresses output that is still pending.
+
+### On the stage
+
+- EOS is the `<|im_end|>` token. Fast AR still performs its inner work for that Slow output.
+- The collector does not append or stream the terminal EOS frame. Earlier accepted frames remain.
+- Length stops at the generation budget and returns accepted frames with `finish_reason="length"`.
+- Abort clears stream state and suppresses pending chunks and the final success payload.
+- Blue boxes are accepted output. Orange boxes mark work or output that the collector does not deliver.
+
+### Formula
+
+$$
+M = \min(M_{\text{request}},2048,\max(4096-1-P,1))
+$$
+
+| Symbol | What it is | Value in the example | Where it comes from |
+|---|---|---:|---|
+| $M$ | Effective generation budget | 1,024 tokens | This formula |
+| $M_{\text{request}}$ | Request's maximum | 1,024, the default | `engine_builder.py` |
+| $P$ | Prompt token count | 1,000, constructed | This teaching example |
+| $4096-1-P$ | Context room after reserving one token | 3,095 | Engine budget rule |
+
+### The numbers on the stage
+
+$$
+4096 - 1 - 1000 = 3095
+$$
+
+$$
+M = \min(1024,2048,3095) = 1024\ \text{tokens}
+$$
+
+The 1,000-token prompt is constructed. The three limits and the default request cap come from source.
+
+An immediate EOS produces zero accepted frames. Result adaptation raises “generated no audio codec tokens” rather than returning empty audio. Abort does not recall chunks already delivered.
+
+### Next
+
+Step 7 follows accepted frames into the streaming vocoder's overlapping windows.
+
+Sources: `models/fishaudio_s2_pro/model_runner.py:48-76`; `models/fishaudio_s2_pro/request_builders.py:148-167,192-202,233-248`; `models/fishaudio_s2_pro/engine_builder.py:87-100`; `tests/unit_test/fishaudio_s2_pro/test_tts.py:486-531,616-673`.
