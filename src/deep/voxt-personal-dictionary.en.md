@@ -5,8 +5,9 @@
 ### On the stage
 
 - The grey box on the left is **your voice**, saying "call Priya".
-- The **speech model** in the middle turns sound into words; the orange box is its recognized text, `call Preeya.`
-- Below it, you meant `call Priya.`, and the stage says you fix the name by hand every time.
+- The **speech model** turns sound into words; the orange box keeps what it wrote, `call Preeya.`
+- A separate box after it shows the text after the dictionary replaces the alias, `call Priya.`
+- Below, you meant `call Priya.`, and the stage says you fix the name by hand every time.
 - The blue box at the bottom is one dictionary row: term `Priya`, alias `Preeya`, note "on the design team".
 
 ### The three parts
@@ -155,8 +156,10 @@ Replacement only fixes aliases. If recognition writes a wrong form that is neith
 ### On the stage
 
 - Left panel, at most 30 distinct terms: system holds general rules, `- Priya (heard as: Preeya)` and `- MOSS-Transcribe`, while user holds `call Priya.`. Both terms from Step 3 are here.
-- Right panel, more than 30 distinct terms: system holds only generic rules; user opens with `<glossary>`, then contains `call Priya.`. A term appears when the text mentions it or any of its aliases, so `MOSS-Transcribe` is there only if this text names it or one of its aliases.
-- Both user panels use `call Priya.` because Step 4 has already replaced `Preeya` with `Priya`; the language model receives the replaced text (`session/run.go:301-312`).
+- Right panel, more than 30 distinct terms: system holds only generic rules. A separate compose area shows the input and its candidates, and the user message holds only the final glossary and input.
+- Example A names a term: the compose area lists `Priya` as a candidate, then the user message opens with `<glossary>` and contains `call Priya.`.
+- Example B switches the input to `call Sam.`, which names no term. No candidate appears, so the user message is only `call Sam.`, with no `<glossary>` block.
+- The glossary example uses `call Priya.` because Step 4 has already replaced `Preeya` with `Priya`; the language model receives the replaced text (`session/run.go:301-312`).
 - The bottom line states the selection rule: at most 30 terms puts all of them in; more than 30 keeps only the terms the text mentions by name or alias. The 60-line and 2000-byte caps belong to the formula below.
 
 ### Candidates and message placement

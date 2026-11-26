@@ -35,8 +35,8 @@
     captionZh: '提示和别名替换不需要模型；术语表和全词典备注需要。Voxt 把录音留多久？',
   }];
   const ariaLabels = [{
-    en: 'Your voice says call Priya, but the speech model writes call Preeya, the wrong name. A dictionary row fixes this once: a term with its aliases, and an optional private note.',
-    zh: '你的声音说 call Priya，语音模型却写成 call Preeya，名字错了。词典里一行就能一次修好：一个词条、它的别名，和可选的私有备注。',
+    en: 'Your voice says call Priya, but the speech model writes call Preeya, the wrong name. A separate box shows the text after the dictionary replaces the alias with the term. One dictionary row does this once: a term with its aliases, and an optional private note.',
+    zh: '你的声音说 call Priya，语音模型却写成 call Preeya，名字错了。另一个框显示词典把别名换回词条后的文字。词典里一行就能一次修好：一个词条、它的别名，和可选的私有备注。',
   }, {
     en: 'One dictionary row has three parts. The term is the spelling you want. Aliases are what recognition tends to write instead. The row note is private and is not sent anywhere. The row helps in three places: speech hints from the term (a word list the recognizer can expect), alias replacement in the transcript, and a language-model glossary made only from the term and aliases (a term list the model should keep as written). The fourth destination is separate: dictionary-wide settings.Dictionary.Notes goes to the language-model prompt when notes are enabled.',
     zh: '一行词典有三部分。词条是你想要的写法，别名是识别常写成的样子，行内备注是私有的，不发送到任何地方。这行有三个去处：词条去语音模型当提示（一份给识别器的词表），别名在文字稿里换回词条，只有词条和别名组成语言模型术语表（一份让模型照写的词条表）。第四个去处来自另一处设置：整部词典的 settings.Dictionary.Notes 在备注开启时进入语言模型提示。',
@@ -47,8 +47,8 @@
     en: 'After recognition, enabled aliases are replaced by their term in the text, before any language-model cleanup. A Latin alias like Preeya matches whole words, ignoring case: a letter or digit outside Han, Hiragana, Katakana and Hangul on either side blocks the match. A side of the alias that ends in punctuation skips that side’s boundary check. Aliases written in Han, Hiragana, Katakana or Hangul match anywhere; when several aliases could match at the same spot, the longest wins. A term already written correctly is left alone, so this works with the language model off or failing.',
     zh: '识别之后、语言模型清理之前，启用的别名会在文字里换回词条。像 Preeya 这样的拉丁别名按整词匹配、不分大小写：旁边紧挨着汉字、平假名、片假名、韩文以外的字母或数字就不匹配。若别名某一端是标点，那一端不查边界。用汉字、平假名、片假名或韩文写的别名可以在任意位置匹配；同一位置有多个别名能匹配时，最长的胜出。已经写对的词条保持原样，所以语言模型关掉或失败时这一步照样有效。',
   }, {
-    en: 'With 30 or fewer distinct enabled terms, all terms become candidates and the rendered glossary sits in the system message. With more than 30, a term becomes a candidate when the replaced text mentions it or any of its aliases; system keeps generic rules, and the rendered glossary opens the user message only when at least one candidate line is kept. The request input is call Priya after alias replacement.',
-    zh: '不超过 30 个不同的启用词条时，全部成为候选，渲染出的术语表放在 system 消息里。超过 30 个时，替换后的文字提到某个词条本身或它的任一别名，那个词条才成为候选；system 只留通用规则，渲染出的术语表非空时才放在 user 开头。这次请求的输入是别名替换后的 call Priya。',
+    en: 'With 30 or fewer distinct enabled terms, all terms become candidates and the rendered glossary sits in the system message. With more than 30, a term becomes a candidate when the replaced text mentions it or any of its aliases; system keeps generic rules. A separate compose area shows the input and its candidates. The rendered glossary opens the user message only when at least one candidate line fits the budget; example A names a term and gets a glossary, while example B names none and the user message stays plain. The request input is call Priya after alias replacement.',
+    zh: '不超过 30 个不同的启用词条时，全部成为候选，渲染出的术语表放在 system 消息里。超过 30 个时，替换后的文字提到某个词条本身或它的任一别名，那个词条才成为候选；system 只留通用规则。另一个「组装」区显示输入和它的候选。渲染出的术语表非空时才放在 user 开头；例 A 点名词条，所以有术语表，例 B 没点到，user 就只有普通消息。这次请求的输入是别名替换后的 call Priya。',
   }, {
     en: 'Dictionary-wide settings.Dictionary.Notes is free text, separate from a row’s private store.Term.Note. When enabled, it joins the language model system layers and never goes to the speech model or transcript replacement. Final messages are system, then history, then user; this request input sits only in user. Notes-off keeps the dictionary notes out of the prompt even while the dictionary is on.',
     zh: '整部词典的 settings.Dictionary.Notes 是自由文字，和行内私有的 store.Term.Note 不同。开启时，它作为单独一层进入语言模型的 system，从不去语音模型或文字稿替换。最终消息顺序是 system、history、user，这次请求的输入只在 user 里。即使词典开着，关掉备注也能让全词典备注不进提示。',
@@ -71,25 +71,25 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived((phone ? [640, 720, 640, 700, 760, 620, 620] : [470, 520, 430, 450, 500, 430, 560])[step]);
+  const H = $derived((phone ? [640, 720, 640, 700, 820, 620, 620] : [470, 520, 430, 450, 600, 430, 560])[step]);
 
-  const PHASE_COUNTS = [3, 5, 3, 5, 4, 3, 4];
+  const PHASE_COUNTS = [3, 5, 3, 5, 3, 3, 4];
   const PHASE_MS = 800;
   const REST_MS = 1200;
   const motionFrames = (isPhone: boolean, s: number): { x: number; y: number; w: number; h: number }[] => (isPhone ? [
-    [{ x: 28, y: 406, w: 244, h: 24 }, { x: 28, y: 436, w: 244, h: 24 }, { x: 28, y: 466, w: 244, h: 24 }],
+    [{ x: 20, y: 174, w: 260, h: 46 }, { x: 20, y: 342, w: 260, h: 196 }, { x: 20, y: 230, w: 260, h: 52 }],
     [{ x: 20, y: 62, w: 260, h: 132 }, { x: 20, y: 222, w: 260, h: 86 }, { x: 20, y: 320, w: 260, h: 86 }, { x: 20, y: 418, w: 260, h: 86 }, { x: 20, y: 516, w: 260, h: 86 }],
-    [{ x: 20, y: 62, w: 260, h: 150 }, { x: 20, y: 244, w: 260, h: 96 }, { x: 20, y: 348, w: 260, h: 44 }],
+    [{ x: 20, y: 62, w: 260, h: 150 }, { x: 20, y: 244, w: 260, h: 96 }, { x: 20, y: 244, w: 260, h: 96 }],
     [{ x: 20, y: 62, w: 260, h: 58 }, { x: 20, y: 146, w: 260, h: 58 }, { x: 20, y: 230, w: 260, h: 52 }, { x: 20, y: 306, w: 260, h: 134 }, { x: 20, y: 454, w: 260, h: 70 }],
-    [{ x: 20, y: 62, w: 260, h: 230 }, { x: 20, y: 308, w: 260, h: 272 }, { x: 34, y: 426, w: 232, h: 132 }, { x: 20, y: 308, w: 260, h: 272 }],
+    [{ x: 34, y: 348, w: 232, h: 26 }, { x: 34, y: 374, w: 232, h: 26 }, { x: 34, y: 400, w: 232, h: 88 }],
     [{ x: 20, y: 62, w: 260, h: 120 }, { x: 20, y: 212, w: 260, h: 96 }, { x: 20, y: 330, w: 260, h: 70 }],
     [{ x: 20, y: 80, w: 260, h: 66 }, { x: 20, y: 160, w: 260, h: 66 }, { x: 20, y: 240, w: 260, h: 66 }, { x: 20, y: 320, w: 260, h: 66 }],
   ] : [
-    [{ x: 30, y: 305, w: 180, h: 60 }, { x: 220, y: 305, w: 180, h: 60 }, { x: 410, y: 305, w: 270, h: 60 }],
+    [{ x: 348, y: 66, w: 150, h: 82 }, { x: 20, y: 240, w: 680, h: 150 }, { x: 512, y: 66, w: 188, h: 82 }],
     [{ x: 20, y: 78, w: 220, h: 300 }, { x: 300, y: 66, w: 400, h: 72 }, { x: 300, y: 156, w: 400, h: 72 }, { x: 300, y: 246, w: 400, h: 72 }, { x: 300, y: 336, w: 400, h: 72 }],
-    [{ x: 20, y: 72, w: 300, h: 190 }, { x: 384, y: 96, w: 316, h: 140 }, { x: 20, y: 286, w: 680, h: 72 }],
+    [{ x: 20, y: 72, w: 300, h: 190 }, { x: 384, y: 96, w: 316, h: 140 }, { x: 384, y: 96, w: 316, h: 140 }],
     [{ x: 20, y: 76, w: 150, h: 66 }, { x: 204, y: 76, w: 176, h: 66 }, { x: 414, y: 76, w: 286, h: 66 }, { x: 20, y: 164, w: 370, h: 176 }, { x: 410, y: 164, w: 290, h: 150 }],
-    [{ x: 20, y: 72, w: 340, h: 250 }, { x: 380, y: 72, w: 320, h: 250 }, { x: 394, y: 192, w: 292, h: 130 }, { x: 380, y: 72, w: 320, h: 250 }],
+    [{ x: 354, y: 160, w: 332, h: 26 }, { x: 354, y: 186, w: 332, h: 26 }, { x: 354, y: 212, w: 332, h: 90 }],
     [{ x: 20, y: 72, w: 240, h: 140 }, { x: 324, y: 72, w: 376, h: 140 }, { x: 20, y: 240, w: 680, h: 90 }],
     [{ x: 20, y: 82, w: 510, h: 58 }, { x: 20, y: 154, w: 510, h: 58 }, { x: 20, y: 226, w: 510, h: 58 }, { x: 20, y: 298, w: 510, h: 58 }],
   ])[s];
@@ -98,8 +98,8 @@
   let lap = $state(0), lapMs = $state(0);
   const nextLap = (ms: number) => untrack(() => { lapMs = ms; lap++; });
   const routePayload = (i: number) => t(
-    ['sent: Priya', 'sent: Preeya → Priya', 'sent: Priya + Preeya', 'sent: notes text'][i],
-    ['发送：Priya', '发送：Preeya → Priya', '发送：Priya + Preeya', '发送：备注文字'][i],
+    ['sent: Priya', 'replace: Preeya → Priya', 'sent: Priya + Preeya', 'sent: notes text'][i],
+    ['发送：Priya', '替换：Preeya → Priya', '发送：Priya + Preeya', '发送：备注文字'][i],
   );
   $effect(() => {
     const s = step;
@@ -139,60 +139,71 @@
         <text x="20" y="22" class="tag strong">{t('RECOGNITION HEARD IT WRONG', '识别听错了')}</text>
         <text x="20" y="46" class="tag">{t('One spoken sentence, one wrong word.', '一句话，一个词听错。')}</text>
         {#if phone}
-          <rect x="20" y="62" width="260" height="58" rx="8" fill="var(--faint)" />
-          <text x="34" y="86" class="rowlabel">{t('your voice', '你的声音')}</text>
-          <text x="34" y="108" class="tag">“call Priya”</text>
-          <path d="M150 120 V140" stroke="var(--muted)" stroke-width="2" marker-end="url(#dict-arrow)" />
-          <rect x="20" y="146" width="260" height="58" rx="8" fill="var(--bg)" stroke="var(--line)" />
-          <text x="34" y="170" class="rowlabel">{t('speech model', '语音模型')}</text>
-          <text x="34" y="192" class="tag">{t('writes words', '写出文字')}</text>
-          <path d="M150 204 V224" stroke="var(--muted)" stroke-width="2" marker-end="url(#dict-arrow)" />
-          <rect x="20" y="230" width="260" height="58" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="34" y="254" class="rowlabel">{t('recognized text', '识别文字')}</text>
-          <text x="34" y="276" class="tag strong">call <tspan fill={phase >= 2 ? 'var(--accent)' : 'var(--gen)'} font-weight={phase >= 2 ? '600' : '400'}>{phase >= 2 ? VOXT_DICT_TERM : VOXT_DICT_ALIAS}</tspan>.</text>
-          {#if phase === 1}
-            <text x="20" y="316" class="tag">{t('row matches: Preeya → Priya', '这一行匹配：Preeya → Priya')}</text>
+          <rect x="20" y="62" width="260" height="46" rx="8" fill="var(--faint)" />
+          <text x="34" y="80" class="rowlabel">{t('your voice', '你的声音')}</text>
+          <text x="34" y="100" class="tag">“call Priya”</text>
+          <path d="M150 110 V118" stroke="var(--muted)" stroke-width="2" marker-end="url(#dict-arrow)" />
+          <rect x="20" y="118" width="260" height="46" rx="8" fill="var(--bg)" stroke="var(--line)" />
+          <text x="34" y="136" class="rowlabel">{t('speech model', '语音模型')}</text>
+          <text x="34" y="156" class="tag">{t('writes words', '写出文字')}</text>
+          <path d="M150 166 V174" stroke="var(--muted)" stroke-width="2" marker-end="url(#dict-arrow)" />
+          <rect x="20" y="174" width="260" height="46" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="34" y="192" class="rowlabel">{t('recognized text', '识别文字')}</text>
+          <text x="34" y="212" class="tag strong">call <tspan fill="var(--gen)">{VOXT_DICT_ALIAS}</tspan>.</text>
+          <path d="M150 222 V230" stroke="var(--muted)" stroke-width="2" marker-end="url(#dict-arrow)" />
+          <rect x="20" y="230" width="260" height="52" rx="8" fill={phase >= 2 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={phase >= 2 ? 'var(--accent)' : 'var(--line)'} />
+          <text x="34" y="248" class="rowlabel">{t('after replacement', '替换后')}</text>
+          {#if phase >= 2}
+            <text x="34" y="272" class="tag strong">call <tspan fill="var(--accent)" font-weight="600">{VOXT_DICT_TERM}</tspan>.</text>
           {:else}
-            <text x="20" y="316" class="tag">{t('you meant: ', '你想要的：')}<tspan fill="var(--accent)" font-weight="600">call {VOXT_DICT_TERM}.</tspan></text>
+            <text x="34" y="272" class="detail">{t('waiting for the row', '等这一行')}</text>
           {/if}
-          <text x="20" y="348" class="tag strong">{t('fixing by hand: 6 deletes + 5 keys = 11 keystrokes', '手动改：删 6 个字符 + 打 5 个字符 = 11 次按键')}</text>
+          <text x="20" y="298" class="tag">{t('you meant: ', '你想要的：')}<tspan fill="var(--accent)" font-weight="600">call {VOXT_DICT_TERM}.</tspan></text>
+          <text x="20" y="322" class="tag strong">{t('fixing by hand: 6 deletes + 5 keys = 11 keystrokes', '手动改：删 6 个字符 + 打 5 个字符 = 11 次按键')}</text>
         {:else}
           <rect x="20" y="66" width="150" height="82" rx="8" fill="var(--faint)" />
           <text x="34" y="92" class="rowlabel">{t('your voice', '你的声音')}</text>
           <text x="34" y="120" class="tag">“call Priya”</text>
-          <path d="M170 107 H192" stroke="var(--muted)" stroke-width="2" marker-end="url(#dict-arrow)" />
-          <rect x="204" y="66" width="150" height="82" rx="8" fill="var(--bg)" stroke="var(--line)" />
-          <text x="218" y="92" class="rowlabel">{t('speech model', '语音模型')}</text>
-          <text x="218" y="120" class="tag">{t('writes words', '写出文字')}</text>
-          <path d="M354 107 H376" stroke="var(--muted)" stroke-width="2" marker-end="url(#dict-arrow)" />
-          <rect x="388" y="66" width="312" height="82" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="402" y="92" class="rowlabel">{t('recognized text', '识别文字')}</text>
-          <text x="402" y="122" class="tag strong">call <tspan fill={phase >= 2 ? 'var(--accent)' : 'var(--gen)'} font-weight={phase >= 2 ? '600' : '400'}>{phase >= 2 ? VOXT_DICT_TERM : VOXT_DICT_ALIAS}</tspan>.</text>
-          <text x="402" y="138" class="tag">{phase === 1 ? t('the row matches Preeya → Priya', '这一行把 Preeya 匹配到 Priya') : phase >= 2 ? t('the text becomes call Priya.', '文字变成 call Priya.') : t('the wrong name lands as written', '错的名字就这样落下')}</text>
+          <path d="M170 107 H184" stroke="var(--muted)" stroke-width="2" marker-end="url(#dict-arrow)" />
+          <rect x="184" y="66" width="150" height="82" rx="8" fill="var(--bg)" stroke="var(--line)" />
+          <text x="198" y="92" class="rowlabel">{t('speech model', '语音模型')}</text>
+          <text x="198" y="120" class="tag">{t('writes words', '写出文字')}</text>
+          <path d="M334 107 H348" stroke="var(--muted)" stroke-width="2" marker-end="url(#dict-arrow)" />
+          <rect x="348" y="66" width="150" height="82" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="362" y="92" class="rowlabel">{t('recognized text', '识别文字')}</text>
+          <text x="362" y="120" class="tag strong">call <tspan fill="var(--gen)">{VOXT_DICT_ALIAS}</tspan>.</text>
+          <path d="M498 107 H512" stroke="var(--muted)" stroke-width="2" marker-end="url(#dict-arrow)" />
+          <rect x="512" y="66" width="188" height="82" rx="8" fill={phase >= 2 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={phase >= 2 ? 'var(--accent)' : 'var(--line)'} />
+          <text x="526" y="92" class="rowlabel">{t('after replacement', '替换后')}</text>
+          {#if phase >= 2}
+            <text x="526" y="120" class="tag strong">call <tspan fill="var(--accent)" font-weight="600">{VOXT_DICT_TERM}</tspan>.</text>
+          {:else}
+            <text x="526" y="120" class="detail">{t('waiting for the row', '等这一行')}</text>
+          {/if}
           <text x="20" y="184" class="tag">{t('you meant: ', '你想要的：')}<tspan fill="var(--accent)" font-weight="600">call {VOXT_DICT_TERM}.</tspan></text>
           <text x="20" y="208" class="tag strong">{t('fixing by hand: 6 deletes + 5 keys = 11 keystrokes', '手动改：删 6 个字符 + 打 5 个字符 = 11 次按键')}</text>
         {/if}
         {#if phone}
-          <rect x="20" y="368" width="260" height="196" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="34" y="394" class="rowlabel">{t('dictionary row', '词典一行')}</text>
-          <text x="34" y="422" class="tag">{t('term', '词条')}</text>
-          <text x="266" y="422" text-anchor="end" class="mono strong" fill="var(--accent)">{VOXT_DICT_TERM}</text>
-          <text x="34" y="452" class="tag">{t('alias', '别名')}</text>
-          <text x="266" y="452" text-anchor="end" class="mono strong" fill="var(--gen)">{VOXT_DICT_ALIAS}</text>
-          <text x="34" y="482" class="tag">{t('note', '备注')}</text>
-          <text x="266" y="482" text-anchor="end" class="detail">{t('on the design team', '在设计团队里')}</text>
-          <text x="34" y="520" class="tag">{t('the alias is what recognition writes.', '别名就是识别会写的样子。')}</text>
-          <text x="34" y="544" class="tag">{t('the term is what you want instead.', '词条是你要换成的写法。')}</text>
+          <rect x="20" y="342" width="260" height="196" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="34" y="368" class="rowlabel">{t('dictionary row', '词典一行')}</text>
+          <text x="34" y="396" class="tag">{t('term', '词条')}</text>
+          <text x="266" y="396" text-anchor="end" class="mono strong" fill="var(--accent)">{VOXT_DICT_TERM}</text>
+          <text x="34" y="426" class="tag">{t('alias', '别名')}</text>
+          <text x="266" y="426" text-anchor="end" class="mono strong" fill="var(--gen)">{VOXT_DICT_ALIAS}</text>
+          <text x="34" y="456" class="tag">{t('note', '备注')}</text>
+          <text x="266" y="456" text-anchor="end" class="detail">{t('on the design team', '在设计团队里')}</text>
+          <text x="34" y="494" class="tag">{phase >= 1 ? t('alias Preeya matches the word above', '别名 Preeya 匹配上面的文字') : t('the alias is what recognition writes.', '别名就是识别会写的样子。')}</text>
+          <text x="34" y="518" class="tag">{t('the term is what you want instead.', '词条是你要换成的写法。')}</text>
         {:else}
-          <rect x="20" y="262" width="680" height="150" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="34" y="288" class="rowlabel">{t('dictionary row', '词典一行')}</text>
-          <text x="40" y="326" class="tag strong">{t('term', '词条')}</text>
-          <text x="40" y="352" class="mono strong" fill="var(--accent)">{VOXT_DICT_TERM}</text>
-          <text x="230" y="326" class="tag strong">{t('aliases', '别名')}</text>
-          <text x="230" y="352" class="mono strong" fill="var(--gen)">{VOXT_DICT_ALIAS}</text>
-          <text x="420" y="326" class="tag strong">{t('note', '备注')}</text>
-          <text x="420" y="352" class="detail">{t('on the design team', '在设计团队里')}</text>
-          <text x="34" y="388" class="tag">{t('the alias is what recognition writes; the term is what you want; the note is free text.', '别名是识别会写的样子；词条是你要的写法；备注是自由文字。')}</text>
+          <rect x="20" y="240" width="680" height="150" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="34" y="266" class="rowlabel">{t('dictionary row', '词典一行')}</text>
+          <text x="40" y="304" class="tag strong">{t('term', '词条')}</text>
+          <text x="40" y="330" class="mono strong" fill="var(--accent)">{VOXT_DICT_TERM}</text>
+          <text x="230" y="304" class="tag strong">{t('aliases', '别名')}</text>
+          <text x="230" y="330" class="mono strong" fill="var(--gen)">{VOXT_DICT_ALIAS}</text>
+          <text x="420" y="304" class="tag strong">{t('note', '备注')}</text>
+          <text x="420" y="330" class="detail">{t('on the design team', '在设计团队里')}</text>
+          <text x="34" y="366" class="tag">{phase >= 1 ? t('alias Preeya matches the recognized word', '别名 Preeya 匹配上面的识别文字') : t('the alias is what recognition writes; the term is what you want; the note is free text.', '别名是识别会写的样子；词条是你要的写法；备注是自由文字。')}</text>
         {/if}
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('source: dict.go · Term, Aliases', '出处：dict.go · Term、Aliases') : t('Source: Voxt/internal/dict/dict.go · a term carries aliases and a note', '出处：Voxt/internal/dict/dict.go · 一个词条带别名和备注')}</text>
 
@@ -214,7 +225,7 @@
           ] as d, i}
             <rect x="20" y={d.y} width="260" height="86" rx="8" fill="var(--bg)" stroke="var(--line)" />
             <text x="34" y={d.y + 24} class="tag strong">{d.name}</text>
-            <text x="34" y={d.y + 50} class="detail">{phase === i + 1 ? routePayload(i) : d.part}</text>
+            <text x="34" y={d.y + 50} class="detail">{phase >= i + 1 ? routePayload(i) : d.part}</text>
             <text x="34" y={d.y + 72} class="detail">{d.note}</text>
           {/each}
         {:else}
@@ -235,7 +246,7 @@
           ] as d, i}
             <rect x="300" y={d.y} width="400" height="72" rx="8" fill="var(--bg)" stroke="var(--line)" />
             <text x="314" y={d.y + 26} class="tag strong">{d.name}</text>
-            <text x="314" y={d.y + 50} class="detail">{phase === i + 1 ? routePayload(i) : d.part} · {d.note}</text>
+            <text x="314" y={d.y + 50} class="detail">{phase >= i + 1 ? routePayload(i) : d.part} · {d.note}</text>
             {#if i < 3}
               <line x1="244" y1={[146, 208, 222][i]} x2="292" y2={d.y + 36} stroke="var(--muted)" stroke-width="1.5" marker-end="url(#dict-arrow)" />
             {/if}
@@ -293,8 +304,9 @@
           <text x="34" y="170" class="rowlabel">{phase >= 1 ? t('replaced', '替换后') : t('before the swap', '换之前')}</text>
           <text x="34" y="192" class="tag">call <tspan fill={phase >= 1 ? 'var(--accent)' : 'var(--gen)'} font-weight={phase >= 1 ? '600' : '400'}>{phase >= 1 ? VOXT_DICT_TERM : VOXT_DICT_ALIAS}</tspan>.</text>
           <path d="M150 204 V224" stroke="var(--muted)" stroke-width="2" marker-end="url(#dict-arrow)" />
-          <rect x="20" y="230" width="260" height="52" rx="8" fill="var(--bg)" stroke="var(--line)" />
-          <text x="150" y="262" text-anchor="middle" class="tag">{phase >= 2 ? t('receives: call Priya.', '收到：call Priya.') : t('waits for plain text', '等纯文字')}</text>
+          <rect x="20" y="230" width="260" height="60" rx="8" fill="var(--bg)" stroke="var(--line)" />
+          <text x="34" y="252" class="rowlabel">{t('language-model cleanup', '语言模型清理')}</text>
+          <text x="34" y="274" class="tag">{phase >= 2 ? t('receives: call Priya.', '收到：call Priya.') : t('waits for plain text', '等纯文字')}</text>
           <text x="20" y="312" class="tag strong">{t('matching rules', '匹配规则')}</text>
           <text x="20" y="336" class="tag">{t('Preeya: whole words, any case', 'Preeya：整词，不分大小写')}</text>
           <text x="20" y="360" class="tag">{t('alias ends in punctuation: that end is not checked', '别名以标点结尾：那一端不查边界')}</text>
@@ -335,83 +347,83 @@
         <text x="20" y="22" class="tag strong">{t('3 OF 4 · GLOSSARY → MODEL MESSAGES', '第 3/4 个 · 术语表 → 模型消息')}</text>
         <text x="20" y="46" class="tag">{t('its place depends on the dictionary size.', '位置由词典大小决定。')}</text>
         {#if phone}
-          <rect x="20" y="62" width="260" height="230" rx="8" fill="var(--bg)" stroke="var(--line)" />
-          <text x="34" y="86" class="rowlabel">≤ {VOXT_DICT_GLOSSARY_ALL_UP_TO} · {t('GLOSSARY IN SYSTEM', '术语表在 SYSTEM')}</text>
-          <rect x="34" y="100" width="232" height="92" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="46" y="122" class="detail">system</text>
-          <text x="46" y="142" class="detail">{t('general rules', '通用规则')}</text>
-          <text x="46" y="164" class="mono">- {VOXT_DICT_TERM} ({VOXT_DICT_ALIAS})</text>
-          <text x="46" y="184" class="mono">- {VOXT_DICT_SECOND_TERM}</text>
-          <rect x="34" y="204" width="232" height="64" rx="6" fill="var(--bg)" stroke="var(--line)" />
-          <text x="46" y="226" class="detail">user</text>
-          <text x="46" y="254" class="tag">call {VOXT_DICT_TERM}.</text>
+          <rect x="20" y="62" width="260" height="190" rx="8" fill="var(--bg)" stroke="var(--line)" />
+          <text x="34" y="84" class="rowlabel">≤ {VOXT_DICT_GLOSSARY_ALL_UP_TO} · {t('GLOSSARY IN SYSTEM', '术语表在 SYSTEM')}</text>
+          <rect x="34" y="94" width="232" height="84" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="46" y="112" class="detail">system</text>
+          <text x="46" y="130" class="detail">{t('general rules', '通用规则')}</text>
+          <text x="46" y="150" class="mono">- {VOXT_DICT_TERM} ({VOXT_DICT_ALIAS})</text>
+          <text x="46" y="168" class="mono">- {VOXT_DICT_SECOND_TERM}</text>
+          <rect x="34" y="186" width="232" height="54" rx="6" fill="var(--bg)" stroke="var(--line)" />
+          <text x="46" y="204" class="detail">user</text>
+          <text x="46" y="226" class="tag">call {VOXT_DICT_TERM}.</text>
 
-          <rect x="20" y="308" width="260" height="272" rx="8" fill="var(--bg)" stroke="var(--line)" />
-          <text x="34" y="332" class="rowlabel">&gt; {VOXT_DICT_GLOSSARY_ALL_UP_TO} · {t('GLOSSARY IN USER', '术语表在 USER')}</text>
-          <rect x="34" y="346" width="232" height="68" rx="6" fill="var(--bg)" stroke="var(--line)" />
-          <text x="46" y="368" class="detail">system</text>
-          <text x="46" y="392" class="detail">{t('generic rules only', '只有通用规则')}</text>
-          <rect x="34" y="426" width="232" height="132" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="46" y="448" class="detail">user</text>
-          {#if phase === 0}
-            <text x="46" y="480" class="detail">{t('no glossary line yet', '还没有术语表行')}</text>
-            <text x="46" y="516" class="tag">call {VOXT_DICT_TERM}.</text>
-          {:else if phase === 1}
-            <text x="46" y="480" class="detail">{t('candidate: Priya', '候选：Priya')}</text>
-            <text x="46" y="506" class="detail">{t('the text names it', '文字点名了它')}</text>
-            <text x="46" y="540" class="tag">call {VOXT_DICT_TERM}.</text>
-          {:else if phase === 3}
-            <text x="46" y="474" class="mono">{t('<glossary>', '<glossary>')}</text>
-            <text x="46" y="498" class="detail">{t('matched terms', '匹配到的词条')}</text>
-            <text x="46" y="522" class="mono">{t('</glossary>', '</glossary>')}</text>
-            <text x="46" y="548" class="tag">call {VOXT_DICT_TERM}.</text>
+          <rect x="20" y="262" width="260" height="430" rx="8" fill="var(--bg)" stroke="var(--line)" />
+          <text x="34" y="286" class="rowlabel">&gt; {VOXT_DICT_GLOSSARY_ALL_UP_TO} · {t('GLOSSARY IN USER', '术语表在 USER')}</text>
+          <rect x="34" y="298" width="232" height="40" rx="6" fill="var(--bg)" stroke="var(--line)" />
+          <text x="46" y="316" class="detail">system</text>
+          <text x="46" y="334" class="detail">{t('generic rules only', '只有通用规则')}</text>
+
+          <rect x="34" y="344" width="232" height="180" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="46" y="364" class="tag strong">{t('A · input: call Priya.', 'A · 输入：call Priya.')}</text>
+          <text x="46" y="386" class="tag">{t('candidates: ', '候选：')}<tspan class="mono">{phase >= 1 ? VOXT_DICT_TERM : '—'}</tspan></text>
+          {#if phase >= 2}
+            <text x="46" y="412" class="mono">&lt;glossary&gt;</text>
+            <text x="46" y="432" class="detail">- {VOXT_DICT_TERM} ({t('heard as', '可能被听成')}: {VOXT_DICT_ALIAS})</text>
+            <text x="46" y="452" class="mono">&lt;/glossary&gt;</text>
+            <text x="46" y="478" class="tag">call {VOXT_DICT_TERM}.</text>
           {:else}
-            <text x="46" y="480" class="detail">{t('no match, or caps block all', '没有匹配，或被上限挡住')}</text>
-            <text x="46" y="506" class="detail">{t('glossary empty → none added', '术语表为空 → 不加')}</text>
-            <text x="46" y="540" class="tag">call {VOXT_DICT_TERM}.</text>
+            <text x="46" y="412" class="tag">call {VOXT_DICT_TERM}.</text>
+            <text x="46" y="434" class="detail">{t('no glossary line yet', '还没有术语表行')}</text>
           {/if}
 
-          <text x="20" y="612" class="tag">{t('≤30: all terms · >30: text names term or alias', '≤30：全部词条 · >30：文字点名词条或别名')}</text>
-          <text x="20" y="634" class="tag">{t('→ that term becomes a candidate', '→ 那个词条成为候选')}</text>
+          <rect x="34" y="534" width="232" height="110" rx="6" fill="var(--bg)" stroke="var(--line)" />
+          <text x="46" y="554" class="tag strong">{t('B · input: call Sam.', 'B · 输入：call Sam.')}</text>
+          <text x="46" y="576" class="tag">{t('candidates: none', '候选：无')}</text>
+          <text x="46" y="600" class="tag">call Sam.</text>
+          <text x="46" y="622" class="detail">{t('no glossary: no term named', '没有术语表：没点到词条')}</text>
+
+          <text x="20" y="724" class="tag">{t('≤30: all terms · >30: only terms the text names', '≤30：全部词条 · >30：只留文字点到的词条')}</text>
+          <text x="20" y="746" class="tag">{t('only lines that fit the budget stay', '只留放得下的行')}</text>
         {:else}
-          <rect x="20" y="72" width="340" height="250" rx="10" fill="var(--bg)" stroke="var(--line)" />
+          <rect x="20" y="72" width="300" height="250" rx="10" fill="var(--bg)" stroke="var(--line)" />
           <text x="34" y="96" class="rowlabel">≤ {VOXT_DICT_GLOSSARY_ALL_UP_TO} · {t('GLOSSARY IN SYSTEM', '术语表在 SYSTEM')}</text>
-          <rect x="34" y="108" width="312" height="104" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <rect x="34" y="108" width="272" height="104" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="48" y="128" class="detail">system</text>
           <text x="48" y="150" class="detail">{t('general rules', '通用规则')}</text>
           <text x="48" y="174" class="mono">- {VOXT_DICT_TERM} ({t('heard as', '可能被听成')}: {VOXT_DICT_ALIAS})</text>
           <text x="48" y="196" class="mono">- {VOXT_DICT_SECOND_TERM}</text>
-          <rect x="34" y="224" width="312" height="70" rx="7" fill="var(--bg)" stroke="var(--line)" />
+          <rect x="34" y="224" width="272" height="70" rx="7" fill="var(--bg)" stroke="var(--line)" />
           <text x="48" y="246" class="detail">user</text>
           <text x="48" y="274" class="tag">call {VOXT_DICT_TERM}.</text>
 
-          <rect x="380" y="72" width="320" height="250" rx="10" fill="var(--bg)" stroke="var(--line)" />
-          <text x="394" y="96" class="rowlabel">&gt; {VOXT_DICT_GLOSSARY_ALL_UP_TO} · {t('GLOSSARY IN USER', '术语表在 USER')}</text>
-          <rect x="394" y="108" width="292" height="72" rx="7" fill="var(--bg)" stroke="var(--line)" />
-          <text x="408" y="130" class="detail">system</text>
-          <text x="408" y="156" class="detail">{t('generic rules only', '只有通用规则')}</text>
-          <rect x="394" y="192" width="292" height="130" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="408" y="214" class="detail">user</text>
-          {#if phase === 0}
-            <text x="408" y="246" class="detail">{t('no glossary line yet', '还没有术语表行')}</text>
-            <text x="408" y="290" class="tag">call {VOXT_DICT_TERM}.</text>
-          {:else if phase === 1}
-            <text x="408" y="246" class="detail">{t('candidate: Priya', '候选：Priya')}</text>
-            <text x="408" y="272" class="detail">{t('the text names it', '文字点名了它')}</text>
-            <text x="408" y="306" class="tag">call {VOXT_DICT_TERM}.</text>
-          {:else if phase === 3}
-            <text x="408" y="240" class="mono">{t('<glossary>', '<glossary>')}</text>
-            <text x="408" y="264" class="detail">{t('matched terms', '匹配到的词条')}</text>
-            <text x="408" y="288" class="mono">{t('</glossary>', '</glossary>')}</text>
-            <text x="408" y="312" class="tag">call {VOXT_DICT_TERM}.</text>
+          <rect x="340" y="72" width="360" height="400" rx="10" fill="var(--bg)" stroke="var(--line)" />
+          <text x="354" y="96" class="rowlabel">&gt; {VOXT_DICT_GLOSSARY_ALL_UP_TO} · {t('GLOSSARY IN USER', '术语表在 USER')}</text>
+          <rect x="354" y="108" width="332" height="40" rx="7" fill="var(--bg)" stroke="var(--line)" />
+          <text x="368" y="126" class="detail">system</text>
+          <text x="368" y="144" class="detail">{t('generic rules only', '只有通用规则')}</text>
+
+          <rect x="354" y="156" width="332" height="160" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="368" y="176" class="tag strong">{t('A · input: call Priya.', 'A · 输入：call Priya.')}</text>
+          <text x="368" y="198" class="tag">{t('candidates: ', '候选：')}<tspan class="mono">{phase >= 1 ? VOXT_DICT_TERM : '—'}</tspan></text>
+          {#if phase >= 2}
+            <text x="368" y="220" class="mono">&lt;glossary&gt;</text>
+            <text x="368" y="240" class="detail">- {VOXT_DICT_TERM} ({t('heard as', '可能被听成')}: {VOXT_DICT_ALIAS})</text>
+            <text x="368" y="260" class="mono">&lt;/glossary&gt;</text>
+            <text x="368" y="286" class="tag">call {VOXT_DICT_TERM}.</text>
           {:else}
-            <text x="408" y="246" class="detail">{t('no match, or caps block all', '没有匹配，或被上限挡住')}</text>
-            <text x="408" y="272" class="detail">{t('glossary empty → none added', '术语表为空 → 不加')}</text>
-            <text x="408" y="306" class="tag">call {VOXT_DICT_TERM}.</text>
+            <text x="368" y="230" class="tag">call {VOXT_DICT_TERM}.</text>
+            <text x="368" y="252" class="detail">{t('no glossary line yet', '还没有术语表行')}</text>
           {/if}
 
-          <text x="20" y="352" class="tag">{t('≤30: all terms · >30: text names term or alias', '≤30：全部词条 · >30：文字点名词条或别名')}</text>
-          <text x="20" y="374" class="tag">{t('→ that term becomes a candidate', '→ 那个词条成为候选')}</text>
+          <rect x="354" y="326" width="332" height="110" rx="7" fill="var(--bg)" stroke="var(--line)" />
+          <text x="368" y="346" class="tag strong">{t('B · input: call Sam.', 'B · 输入：call Sam.')}</text>
+          <text x="368" y="368" class="tag">{t('candidates: none', '候选：无')}</text>
+          <text x="368" y="392" class="tag">call Sam.</text>
+          <text x="368" y="414" class="detail">{t('no glossary: no term named', '没有术语表：没点到词条')}</text>
+
+          <text x="20" y="504" class="tag">{t('≤30: all terms · >30: only terms the text names', '≤30：全部词条 · >30：只留文字点到的词条')}</text>
+          <text x="20" y="526" class="tag">{t('only lines that fit the budget stay', '只留放得下的行')}</text>
         {/if}
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('compose.Build · GlossaryAllUpTo 30', 'compose.Build · GlossaryAllUpTo 30') : t('Source: compose.Build · GlossaryAllUpTo 30', '出处：compose.Build · GlossaryAllUpTo 30')}</text>
 
@@ -473,7 +485,7 @@
             { y: 240, name: t('glossary', '术语表'), without: false, note: t('inside the prompt', '在提示里') },
             { y: 320, name: t('dictionary notes', '全词典备注'), without: false, note: t('inside the prompt', '在提示里') },
           ] as r, i}
-            {@const solved = phase === PHASE_COUNTS[step] - 1 || phase > i}
+            {@const solved = phase >= i}
             <rect x="20" y={r.y} width="260" height="66" rx="8" fill="var(--bg)" stroke="var(--line)" />
             <text x="34" y={r.y + 26} class="tag strong">{r.name}</text>
             <text x="34" y={r.y + 50} class="detail">{r.note}</text>
@@ -492,7 +504,7 @@
             { y: 226, name: t('glossary', '术语表'), without: false, note: t('inside the prompt', '在提示里') },
             { y: 298, name: t('dictionary notes', '全词典备注'), without: false, note: t('inside the prompt', '在提示里') },
           ] as r, i}
-            {@const solved = phase === PHASE_COUNTS[step] - 1 || phase > i}
+            {@const solved = phase >= i}
             <rect x="20" y={r.y} width="510" height="58" rx="8" fill="var(--bg)" stroke="var(--line)" />
             <text x="34" y={r.y + 24} class="tag strong">{r.name}</text>
             <text x="34" y={r.y + 45} class="detail">{r.note}</text>
@@ -518,5 +530,6 @@
 </figure>
 
 <style>
+  .detail { font-size: 11px; fill: var(--fg); }
   .motion-focus { pointer-events: none; transition: x 240ms, y 240ms, width 240ms, height 240ms; }
 </style>

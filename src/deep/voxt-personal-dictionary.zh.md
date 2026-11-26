@@ -5,7 +5,8 @@
 ### 图上是什么
 
 - 左边灰色框是**你的声音**，说着 “call Priya”。
-- 中间的**语音模型**（speech model）把声音变成文字，橙色框是它写出来的识别文字 `call Preeya.`。
+- 中间的**语音模型**（speech model）把声音变成文字，橙色框保留它写出来的识别文字 `call Preeya.`。
+- 后面的另一个框显示词典把别名换回词条后的文字 `call Priya.`。
 - 下面说你要的是 `call Priya.`，并指出这个名字每次都得手动改。
 - 底部蓝色框是词典的一行：词条 `Priya`、别名 `Preeya`、备注「在设计团队里」。
 
@@ -155,8 +156,10 @@ $$\text{替换}(\text{Preeya}) = \text{Priya}\quad\text{当词典和词条都启
 ### 图上是什么
 
 - 左面板是不超过 30 个不同词条：system 里有通用规则、`- Priya (heard as: Preeya)` 和 `- MOSS-Transcribe`，user 里是 `call Priya.`。第 3 步的两个词条都在。
-- 右面板是超过 30 个不同词条：system 只有通用规则；user 先放 `<glossary>`，再写 `call Priya.`。文字提到某个词条本身或它的任一别名，那个词条才进表，所以 `MOSS-Transcribe` 只有这段文字点到它或它的别名时才在。
-- 两个 user 都用 `call Priya.`，因为第 4 步已把 `Preeya` 换成 `Priya`，语言模型收到的是替换后的文字（`session/run.go:301-312`）。
+- 右面板是超过 30 个不同词条：system 只有通用规则。另一个「组装」区显示输入和它的候选，user 消息只放最终术语表和输入。
+- 例 A 点名词条：组装区列出候选 `Priya`，随后 user 消息先放 `<glossary>`，再写 `call Priya.`。
+- 例 B 把输入换成 `call Sam.`，它没点名词条。没有候选，user 就只有 `call Sam.`，也没有 `<glossary>` 块。
+- 有术语表的例子用 `call Priya.`，因为第 4 步已把 `Preeya` 换成 `Priya`，语言模型收到的是替换后的文字（`session/run.go:301-312`）。
 - 底部那行只讲候选规则：不超过 30 个词条时全部放进去，超过 30 个只留文字点到词条或它的别名的那些。60 行和 2000 字节的上限在下面的公式里。
 
 ### 候选和发送位置
