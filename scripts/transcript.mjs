@@ -11,7 +11,7 @@
 // Edit the component or the MDX, then regenerate.
 //
 // usage: node scripts/transcript.mjs [baseUrl]        (default http://localhost:4321/learning-sglang)
-//   WAIT=ms      settle time per step (default 3400, enough for the slowest within-step phases)
+//   WAIT=ms      initial settle time per step (default 3400; a viz can expose its final phase for deterministic capture)
 //   ONLY=13      regenerate one chapter by number
 //   BOOK=omni ONLY=1  regenerate one Omni chapter
 //   JOBS=4       chapters rendered concurrently, one tab each
@@ -29,6 +29,25 @@ const budget = Number(process.env.LINES) || 3;   // the caption budget from Step
 const outDir = 'transcript';
 mkdirSync(outDir, { recursive: true });
 const chapters = selectedChapters();
+
+// A viz can expose its current and final phases; other vizzes keep the fixed-wait contract.
+const SETTLE_ANIMATION = `(() => {
+  const root = document.querySelector('.viz');
+  if (!root?.hasAttribute('data-animation-step')) return false;
+  const expectedStep = String(Number(new URLSearchParams(location.search).get('step')) - 1);
+  const deadline = Date.now() + 12000;
+  return new Promise((resolve, reject) => {
+    const check = () => {
+      if (root.getAttribute('data-animation-step') === expectedStep) {
+        const finalPhase = root.getAttribute('data-animation-final-phase');
+        if (root.getAttribute('data-animation-phase') === finalPhase) { resolve(true); return; }
+      }
+      if (Date.now() >= deadline) { reject(new Error('animation did not reach the requested step\\'s final phase')); return; }
+      setTimeout(check, 50);
+    };
+    check();
+  });
+})()`;
 
 // Runs in the page. Returns the step counter, the caption, the stage's text in document order
 // (every SVG <text> plus any HTML leaf inside .canvas, the container every viz uses), and the rule checks.
@@ -126,6 +145,8 @@ const transcribe = async (ch) => {
   for (let n = 1, total = 1; n <= total; n++) {
     await page.goto(`${base}${chapterUrl(ch)}?step=${n}`);
     await sleep(waitMs);
+    const phaseSettled = await page.evaluate(SETTLE_ANIMATION);
+    if (phaseSettled) await sleep(700);
     const s = await page.evaluate(EXTRACT);
     if (s.step !== n) throw new Error(`${ch.slug}: opened step ${n}, the counter says ${s.step}`);
     await page.evaluate(`document.documentElement.dataset.lang = 'zh'; window.dispatchEvent(new CustomEvent('langchange', { detail: 'zh' }))`);
