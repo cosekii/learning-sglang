@@ -101,6 +101,26 @@
       { en: 'forward computes outputs · backward computes gradients', zh: '前向算输出 · 反向算梯度' },
       { en: 'Chapter 8 example: optimizer tables stay 48 GB, not 24 GB', zh: '第 8 章算例：优化器表仍是 48 GB，不是 24 GB' },
     ],
+  }, {
+    caption: 'The update path expands FP8 weights to BF16, then quantizes them again for rollout. Transfer time is unmeasured.',
+    captionZh: '更新通道先把 FP8 权重还原为 BF16，再为 rollout 转成 FP8。传输耗时未测。',
+    title: 'Export · 3 of 4: FP8 → BF16 → FP8', titleZh: '导出 · 3/4：FP8 → BF16 → FP8',
+    subtitle: 'dequantize = restore BF16 values from FP8 values and scales',
+    subtitleZh: '反量化 = 用 FP8 数值和 scale 还原 BF16 数值',
+    foot: 'Documented update path; scales, exclusions and transfer time are not measured here.',
+    footZh: '文档中的更新路径；这里不测量 scale、排除项和传输时间。',
+    legend: 'Orange = BF16 · blue = FP8', legendZh: '橙 = BF16 · 蓝 = FP8',
+    flow: true,
+    nodes: [
+      { title: 'TRAINING FP8', titleZh: '训练端 FP8', result: 'weights', resultZh: '权重', body: 'start here', bodyZh: '从这里开始', tone: 'blue' },
+      { title: 'BF16', titleZh: 'BF16', result: 'dequantize', resultZh: '反量化', body: 'expand to 16 bits', bodyZh: '还原成 16 位', tone: 'orange' },
+      { title: 'ROLLOUT FP8', titleZh: 'ROLLOUT FP8', result: 'quantize again', resultZh: '再次量化', body: 'eligible weights only', bodyZh: '仅限可转换权重', tone: 'blue', compact: true },
+    ],
+    formulas: [
+      { en: 'eligible values P: FP8 raw payload = P bytes', zh: '可转换数值 P：FP8 原始负载 = P 字节' },
+      { en: 'the same P values in BF16 = 2P bytes', zh: '同样的 P 个数值，BF16 = 2P 字节' },
+      { en: 'scales + excluded tensors are extra · transfer time unknown', zh: 'scale 和未转换张量另算 · 传输时间未知' },
+    ],
   }];
   let step = $state(0);
   $effect(() => {

@@ -143,3 +143,37 @@ Qwen3-4B 脚本组合了 `--bf16`、`--fp8-format e4m3`、`--fp8-recipe blockwis
 Rollout 仍需拿到训练后的权重。下一步沿着更新通道，看 FP8 权重先还原为 BF16，再重新量化，而不是沿一条不变的 FP8 线路直接发送。
 
 来源：`THUDM/slime@15fbd2ef82c765fe22f78e288db2bb79ebf582bd` 的 `examples/low_precision/run-qwen3-4b-fp8.sh:117-143` 和 `examples/low_precision/README.md:21-23,51-54`；`Awesome-ML-SYS-Tutorial/rlhf/slime/fp8/readme.md:118-132`。
+
+## 第 5 步 · 导出时先反量化，再重新量化
+
+**一句话。** 文档中的 RL 更新先把训练端 FP8 权重反量化为 BF16，再为 SGLang rollout 量化成 FP8，不是直接发送同一份不变的 FP8 表示。
+
+### 图上是什么
+
+- 训练卡从 FP8 权重开始。Megatron 把它们反量化为 BF16，交给更新路径。
+- 中间卡用 FP8 数值和 scale 还原 16 位数值，这就是反量化。
+- slime 再把这些 BF16 权重量化为 rollout 使用的 FP8。新的 FP8 表示和 scale 不必与训练端完全相同。
+
+### 公式与符号
+
+$$W_8\xrightarrow{\mathcal{D}}W_{16}\xrightarrow{\mathcal{Q}}W'_8$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $W_8$ | 训练端 FP8 权重 | FP8 训练配置 |
+| $\mathcal{D}$ | 用 FP8 数值和 scale 反量化 | Megatron 更新路径 |
+| $W_{16}$ | 交给更新路径的 BF16 权重 | 中间表示 |
+| $\mathcal{Q}$ | 为 SGLang rollout 做量化 | slime 的 FP8 更新支持 |
+| $W'_8$ | rollout 端 FP8 权重 | 第二次转换的结果 |
+
+### 代入图上的数
+
+若有 $P$ 个可转换数值，FP8 原始负载为 $P$ 字节，BF16 为 $2P$ 字节。沿用第 1 步构造的 $P=4\times10^9$，分别是 4 GB 和 8 GB，另加 scale 和未转换部分。来源没有给出更新延迟，所以这些字节不能推出传输时间。
+
+checkpoint 路径也会反量化为 BF16 `torch_dist`。FP8 评估需要经过 Hugging Face 格式转换回去。通过 `--fp8-param-gather` 驻留 FP8 权重需要 TE FusedAdam，并与 Adam CPU offload 冲突，所以显存结果取决于启用的配置。
+
+### 接下来
+
+字节算式只给理论上限，不等于实测结果。下一步对照一次公开训练，它的时间和显存收益都没有达到减半。
+
+来源：`THUDM/slime@15fbd2ef82c765fe22f78e288db2bb79ebf582bd` 的 `examples/low_precision/README.md:42-64`；`Awesome-ML-SYS-Tutorial/rlhf/slime/fp8/readme.md:182`。

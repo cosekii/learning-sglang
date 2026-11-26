@@ -23,6 +23,8 @@ Step 3 follows `examples/low_precision/README.md:23-27` and `tools/convert_hf_to
 
 Step 4 follows `examples/low_precision/run-qwen3-4b-fp8.sh:117-143` and `examples/low_precision/README.md:21-23,51-54`. Supported `Linear` and `GroupLinear` matrix multiplications use FP8 in forward and backward; higher-precision regions remain, including attention softmax and gradient accumulation. Chapter 8's constructed 48 GB optimizer state is not halved because no cited source quantizes it to FP8.
 
+Step 5 follows `examples/low_precision/README.md:42-64`. Megatron dequantizes FP8 weights to BF16 for the update, and slime quantizes them to FP8 for SGLang rollout. Checkpoints also use BF16 `torch_dist`. The P-byte and 2P-byte payloads are constructed arithmetic with scales and exclusions left out; no transfer latency is claimed.
+
 </details>
 
 <details class="i18n-zh">
@@ -37,5 +39,7 @@ Step 4 follows `examples/low_precision/run-qwen3-4b-fp8.sh:117-143` and `example
 第 3 步依据固定 slime 版本的 `examples/low_precision/README.md:23-27` 和 `tools/convert_hf_to_fp8.py:179-188`。可转换权重提前离线量化并保存 scale，激活值在支持的矩阵乘法需要时动态量化。embedding 和 `lm_head` 保留原精度。本章不声称 FP8 KV cache，也不给出 rollout 延迟实测。
 
 第 4 步依据 `examples/low_precision/run-qwen3-4b-fp8.sh:117-143` 和 `examples/low_precision/README.md:21-23,51-54`。支持的 `Linear` 和 `GroupLinear` 矩阵乘法在前向和反向使用 FP8，attention softmax 和梯度累加等区域保持高精度。引用来源没有把优化器状态量化为 FP8，所以第 8 章构造的 48 GB 优化器状态不能减半。
+
+第 5 步依据 `examples/low_precision/README.md:42-64`。Megatron 为更新把 FP8 权重反量化为 BF16，slime 再为 SGLang rollout 量化成 FP8。checkpoint 也使用 BF16 `torch_dist`。P 字节与 2P 字节是构造算式，不含 scale 和排除项，不据此声称传输加速。
 
 </details>

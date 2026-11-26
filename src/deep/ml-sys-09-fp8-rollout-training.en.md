@@ -143,3 +143,37 @@ The Qwen3-4B script combines `--bf16`, `--fp8-format e4m3`, `--fp8-recipe blockw
 Rollout still needs the trained weights. The next step follows the update path, which expands FP8 weights to BF16 and then quantizes them again instead of sending one unchanged FP8 wire.
 
 Sources: `THUDM/slime@15fbd2ef82c765fe22f78e288db2bb79ebf582bd`, `examples/low_precision/run-qwen3-4b-fp8.sh:117-143` and `examples/low_precision/README.md:21-23,51-54`; `Awesome-ML-SYS-Tutorial/rlhf/slime/fp8/readme.md:118-132`.
+
+## Step 5 · Dequantize and quantize again for export
+
+**One sentence.** The documented RL update dequantizes training-side FP8 weights to BF16, then quantizes them to FP8 for SGLang rollout instead of sending one unchanged FP8 representation.
+
+### On the stage
+
+- The training card starts with FP8 weights. Megatron dequantizes them to BF16 for the update path.
+- The middle card restores 16-bit values from FP8 values and scales. This is dequantization.
+- Slime quantizes those BF16 weights to FP8 for rollout. The new FP8 representation and scales need not be identical to the training-side representation.
+
+### Formula and symbols
+
+$$W_8\xrightarrow{\mathcal{D}}W_{16}\xrightarrow{\mathcal{Q}}W'_8$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $W_8$ | Training-side FP8 weights | FP8 training configuration |
+| $\mathcal{D}$ | Dequantization using FP8 values and scales | Megatron update path |
+| $W_{16}$ | BF16 weights handed to the update | Intermediate representation |
+| $\mathcal{Q}$ | Quantization for SGLang rollout | Slime's FP8 update support |
+| $W'_8$ | Rollout-side FP8 weights | Result of the second conversion |
+
+### The numbers on the stage
+
+For $P$ eligible values, the raw FP8 payload is $P$ bytes and the raw BF16 payload is $2P$ bytes. Reusing Step 1's constructed $P=4\times10^9$ gives 4 GB and 8 GB before scales and exclusions. The source supplies no update latency, so this arithmetic does not predict transfer time.
+
+The checkpoint path also dequantizes to BF16 `torch_dist`. FP8 evaluation requires conversion back through Hugging Face format. Resident FP8 weights through `--fp8-param-gather` require TE FusedAdam and conflict with Adam CPU offload, so the memory result depends on the enabled configuration.
+
+### Next
+
+Byte arithmetic gives an upper bound, not the measured result. The next step compares one public training run whose time and memory savings were smaller than half.
+
+Sources: `THUDM/slime@15fbd2ef82c765fe22f78e288db2bb79ebf582bd`, `examples/low_precision/README.md:42-64`; `Awesome-ML-SYS-Tutorial/rlhf/slime/fp8/readme.md:182`.
