@@ -1,0 +1,29 @@
+---
+layout: ../../../layouts/Chapter.astro
+book: omni
+slug: 09-ar-stage-optimization
+---
+import ArStageOptimization from '../../../components/omni/ArStageOptimization.svelte';
+import { omniNeighbors } from '../../../omni/chapters';
+import { deepFor } from '../../../deep';
+export const deep = await deepFor('omni-09-ar-stage-optimization');
+
+<ArStageOptimization client:load {...omniNeighbors('09-ar-stage-optimization')} deep={deep} />
+
+<details class="i18n-en">
+<summary>Where this chapter's claims come from</summary>
+
+Step 1 constructs three prompts that reuse one reference voice. The roughly 250 ms reference encode comes from the public MOSS-TTS-Local-v1.5 profile in `Awesome-ML-SYS-Tutorial/sglang/sglang-omni/moss-tts-local-v15-blog-zh.md:54-58`; it is not a local measurement or a universal encoder latency. The current encoder hook produces reference codes in `sglang_omni/models/moss_tts/reference_encoder.py:110-143`. The four map entries are the mechanisms explained by the following steps.
+
+Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`. The chapter reads source and public results; it does not run a model or benchmark.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的出处</summary>
+
+第 1 步构造三个共用一段参考音频的 prompt。约 250 ms 的参考编码耗时来自公开 MOSS-TTS-Local-v1.5 profile，见 `Awesome-ML-SYS-Tutorial/sglang/sglang-omni/moss-tts-local-v15-blog-zh.md:54-58`。它不是本机实测，也不是所有编码器的固定耗时。当前 encoder hook 在 `sglang_omni/models/moss_tts/reference_encoder.py:110-143` 生成参考 codes。地图的四项由后续步骤分别解释。
+
+本章代码出处固定到 `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`。本章只读源码和公开结果，没有运行模型或 benchmark。
+
+</details>

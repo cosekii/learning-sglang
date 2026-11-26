@@ -322,3 +322,8 @@ export const STREAM_EXAMPLE_SQUARED_DEVIATION_SUM = STREAM_EXAMPLE_RUNS_S.reduce
 export const STREAM_EXAMPLE_STDEV_S = Math.sqrt(STREAM_EXAMPLE_SQUARED_DEVIATION_SUM / STREAM_EXAMPLE_RUNS_S.length);
 export const STREAM_EXAMPLE_MAX_OVER_MIN = STREAM_EXAMPLE_MAX_S / STREAM_EXAMPLE_MIN_S;
 export const STREAM_EXAMPLE_FAST_MEAN_S = STREAM_EXAMPLE_RUNS_S.slice(0, 4).reduce((sum, value) => sum + value, 0) / 4;
+
+// Public MOSS-TTS-Local-v1.5 reference-encoder profile and a three-request teaching example.
+export const OPT_REFERENCE_ENCODE_MS = 250;
+export const OPT_REFERENCE_REQUEST_COUNT = 3;
+export const OPT_REFERENCE_TOTAL_MS = OPT_REFERENCE_REQUEST_COUNT * OPT_REFERENCE_ENCODE_MS;
