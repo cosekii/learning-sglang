@@ -243,7 +243,7 @@ Source: `Awesome-ML-SYS-Tutorial/sglang/latency-accelerate-for-weight-updates/re
 - `Weights v1` are the model numbers transferred in this chapter. `Gradients` describe how those numbers should change.
 - The optimizer is the training component that updates weights. Its state is the extra set of tables it saves for later updates.
 - These three kinds of saved tables fill the orange box. Activations and temporary allocations also use memory, but this step deliberately excludes them; it covers only the tables FSDP2 divides.
-- The three blue-outlined GPU cards contain question marks. The figure does not answer how their shares are chosen.
+- The three blue-outlined GPU cards contain question marks. Three GPUs are illustrative, not a sourced GPU count. The figure does not answer how their shares are chosen.
 
 ### Formula and symbols
 

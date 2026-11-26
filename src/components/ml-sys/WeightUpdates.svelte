@@ -166,10 +166,10 @@
     captionZh: '训练还要保存梯度和优化器记录。这些表装不下时，每张 GPU 该留哪一片？',
     title: 'The next limit is training\'s saved tables', titleZh: '下一个限制是训练长期保存的表',
     subtitle: 'saved tables = weights, gradients and optimizer state; activations are outside this step', subtitleZh: '长期保存的表 = 权重、梯度和优化器状态；本步不展开激活',
-    foot: 'Next: FSDP2, a way to divide these tables across GPUs.', footZh: '下一章：FSDP2，把这些表分到多张 GPU 的办法。',
+    foot: 'Example only: three GPUs; no sourced count. Next: FSDP2 divides these tables.', footZh: '三张 GPU 只是示例，来源未指定数量。下一章：FSDP2 分这些表。',
     mobileTitle: 'Training\'s saved tables', mobileTitleZh: '训练长期保存的表',
     mobileSubtitle: 'weights + gradients + optimizer state', mobileSubtitleZh: '权重 + 梯度 + 优化器状态',
-    mobileFoot: 'Next: FSDP2 divides these tables.', mobileFootZh: '下一章：FSDP2 分这些表。',
+    mobileFoot: 'Three GPUs are an example; FSDP2 is next.', mobileFootZh: '三张 GPU 只是示例；下一章讲 FSDP2。',
     mobile: [
       { title: 'WEIGHTS v1', titleZh: '权重 v1', body: 'the model numbers', bodyZh: '模型的数字', tone: 'orange' },
       { title: 'GRADIENTS', titleZh: '梯度', body: 'directions for changing weights', bodyZh: '修改权重的方向', tone: 'orange' },
