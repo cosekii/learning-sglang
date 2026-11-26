@@ -17,6 +17,9 @@
   }, {
     caption: 'Same worker contracts can skip body classification. Otherwise the router reads routing facts before choosing a worker.',
     captionZh: 'worker 契约相同时，可以跳过请求体分类。契约不同时，router 先读路由事实，再选择 worker。',
+  }, {
+    caption: 'One profile row must satisfy the whole request. A cannot combine M from row 1 with image support from row 2.',
+    captionZh: '同一个 profile 行必须满足整个请求。A 不能把第 1 行的 M 和第 2 行的图片能力拼起来。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -33,7 +36,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [650, 750][step] : [520, 560][step]);
+  const H = $derived(phone ? [650, 750, 830][step] : [520, 560, 600][step]);
 </script>
 
 <figure class="viz">
@@ -100,6 +103,50 @@
         <text x={W / 2} y={phone ? 665 : 405} text-anchor="middle" class="small strong">{t('Direct: select, then stream the body.', 'direct：先选择，再流式发送请求体。')}</text>
         <text x={W / 2} y={phone ? 692 : 440} text-anchor="middle" class="small strong">{t('Classified: forward the original bytes after selection.', 'classified：选择后转发原始字节。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Direct needs identical worker contracts' : 'Direct requires the whole cohort to have one default model and equivalent profiles.', phone ? 'direct 要求 worker 契约一致' : 'direct 要求整组 worker 使用同一默认模型和等价 profiles。')}</text>
+      {:else if step === 2}
+        <text x={phone ? 18 : 30} y="30" class="title">{t('Match one whole profile row', '用一整行 profile 匹配请求')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t('profile row = one supported combination of capabilities', 'profile 行 = worker 支持的一种完整能力组合')}</text>
+        <text x={phone ? 18 : 30} y="79" class="label">{t('blue = matches every fact · grey = misses at least one', '蓝 = 每项都匹配 · 灰 = 至少缺一项')}</text>
+        <rect x={phone ? 18 : 30} y="100" width={phone ? 264 : 660} height="75" rx="11" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x={W / 2} y="129" text-anchor="middle" class="small strong">REQUEST</text>
+        <text x={W / 2} y="156" text-anchor="middle" class="code">model M · image → WAV · stream</text>
+        {#if !phone}
+          <rect x="30" y="205" width="315" height="285" rx="12" fill="var(--bg)" stroke="var(--line)" />
+          <text x="48" y="235" class="result">worker A</text>
+          <rect x="48" y="257" width="279" height="65" rx="8" fill="var(--bg)" stroke="var(--faint)" />
+          <text x="62" y="283" class="small">row 1 · model M</text>
+          <text x="62" y="307" class="small">text → text · no stream</text>
+          <rect x="48" y="338" width="279" height="65" rx="8" fill="var(--bg)" stroke="var(--faint)" />
+          <text x="62" y="364" class="small">row 2 · model N</text>
+          <text x="62" y="388" class="small">image → WAV · stream</text>
+          <text x="48" y="449" class="result">0 + 0 = 0 {t('matching rows', '行匹配')}</text>
+          <rect x="375" y="205" width="315" height="285" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="393" y="235" class="result">worker B</text>
+          <rect x="393" y="257" width="279" height="92" rx="8" fill="var(--bg)" stroke="var(--accent)" />
+          <text x="407" y="283" class="small">row 1 · model M</text>
+          <text x="407" y="309" class="small">image → WAV · stream</text>
+          <text x="407" y="334" class="small strong">{t('every fact matches', '每项都匹配')}</text>
+          <text x="393" y="449" class="result">1 {t('matching row', '行匹配')}</text>
+        {:else}
+          <rect x="18" y="200" width="264" height="260" rx="12" fill="var(--bg)" stroke="var(--line)" />
+          <text x="34" y="230" class="result">worker A</text>
+          <rect x="34" y="250" width="232" height="70" rx="8" fill="var(--bg)" stroke="var(--faint)" />
+          <text x="46" y="277" class="small">row 1 · model M</text>
+          <text x="46" y="302" class="small">text → text · no stream</text>
+          <rect x="34" y="335" width="232" height="70" rx="8" fill="var(--bg)" stroke="var(--faint)" />
+          <text x="46" y="362" class="small">row 2 · model N</text>
+          <text x="46" y="387" class="small">image → WAV · stream</text>
+          <text x="34" y="438" class="result">0 + 0 = 0 {t('rows', '行')}</text>
+          <rect x="18" y="485" width="264" height="200" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="34" y="515" class="result">worker B</text>
+          <rect x="34" y="535" width="232" height="85" rx="8" fill="var(--bg)" stroke="var(--accent)" />
+          <text x="46" y="562" class="small">row 1 · model M</text>
+          <text x="46" y="587" class="small">image → WAV · stream</text>
+          <text x="46" y="611" class="small strong">{t('all facts match', '每项都匹配')}</text>
+          <text x="34" y="657" class="result">1 {t('matching row', '行匹配')}</text>
+        {/if}
+        <text x={W / 2} y={phone ? 730 : 535} text-anchor="middle" class="small strong">{t('No cross-row combinations.', '不能跨行拼出请求需要的能力。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Constructed rows · model N is a different model', '构造行 · model N 是另一个模型')}</text>
       {/if}
     </svg>
   </div>

@@ -43,3 +43,29 @@ direct 不会跳过兼容性或 health。它复用已证明的共同契约，然
 分类得到的事实必须匹配 worker 的 profile。下一步看为什么 worker 不能把不同 profile 行里的能力拼起来。
 
 来源：`sglang_omni_router/src/http_generation/mod.rs:82-153`；`sglang_omni_router/src/http_generation/classify.rs:48-120`；`sglang_omni_router/src/worker_pool/mod.rs:804-840`。
+
+## 第 3 步 · 要求一整行 profile 匹配
+
+**一句话。** 只有 worker 的同一个 profile 行满足请求的所有路由事实，这个 worker 才兼容。
+
+### 图上是什么
+
+- `profile 行` 是模型、模态、响应格式和流式模式的一种受支持组合。router 不能从不同格子里各挑一项。
+- 请求需要 model M、图片输入、WAV 输出和流式模式。model N 是另一个模型。
+- A 的第 1 行有 M，但接收文字且不支持流式。第 2 行有所需媒体和流式模式，却使用 N。两行都不匹配，所以 A 有 $0+0=0$ 行匹配。
+- B 的一行包含全部四项事实，所以 B 有一行匹配。匹配行多支持一些能力也可以，缺少要求的能力则不行。
+
+### 代入图上的数
+
+| worker | 第 1 行 | 第 2 行 | 匹配行数 |
+|---|---|---|---:|
+| A | 输入、输出和流式事实不符 | model M 不符 | $0+0=0$ |
+| B | 每项都匹配 | 不需要 | $1$ |
+
+router 使用“任意一整行匹配即可”的检查。它不会对多行取并集，因为 worker 没有声明拼起来的执行路径。
+
+### 接下来
+
+兼容 profile 是静态配置。下一步加入会变化的 health 信号，它能让兼容 worker 暂时退出候选。
+
+来源：`sglang_omni_router/src/worker_pool/profile.rs:754-904,1129-1131,1311-1334`。

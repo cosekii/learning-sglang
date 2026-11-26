@@ -43,3 +43,29 @@ The direct path does not skip compatibility or health. It reuses a proven shared
 The classified facts must match one worker profile. The next step shows why a worker cannot combine pieces from different profile rows.
 
 Sources: `sglang_omni_router/src/http_generation/mod.rs:82-153`; `sglang_omni_router/src/http_generation/classify.rs:48-120`; `sglang_omni_router/src/worker_pool/mod.rs:804-840`.
+
+## Step 3 · Require one complete profile row
+
+**One sentence.** A worker is compatible only when one profile row satisfies every routing fact in the request.
+
+### On the stage
+
+- A `profile row` is one supported combination of model, modalities, response format and stream mode. It is not a menu from which the router may choose separate cells.
+- The request needs model M, image input, WAV output and streaming. Model N is a different model.
+- A's first row has M but accepts text and does not stream. A's second row has the requested media and stream mode but uses N. Neither row matches, so A has $0+0=0$ matching rows.
+- B's single row contains all four facts, so B has one matching row. Extra capabilities on that row would also be allowed; missing required capabilities would not.
+
+### The numbers on the stage
+
+| Worker | Row 1 | Row 2 | Matching rows |
+|---|---|---|---:|
+| A | Misses input, output and stream facts | Misses model M | $0+0=0$ |
+| B | Matches every fact | Not needed | $1$ |
+
+The router uses an any-row check: one complete matching row is enough. It never takes a union across rows, because the worker did not advertise that combined execution path.
+
+### Next
+
+A compatible profile is static configuration. The next step adds the changing health signal that can temporarily remove a compatible worker.
+
+Sources: `sglang_omni_router/src/worker_pool/profile.rs:754-904,1129-1131,1311-1334`.
