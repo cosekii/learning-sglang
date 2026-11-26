@@ -21,9 +21,9 @@ Step 3 reads the handoff. The socket is `transcribe.sock` in the app's data fold
 
 Step 4 reads the end of a cue. `Cutter` works in 10 ms slices at 16 kHz (`Voxt/internal/meeting/cutter.go:9-19`). It ends a cue after 450 ms of quiet (`cutter.go:70-74`).
 
-Step 5 reads the start and the minimum. `startUtterance` starts a cue 300 ms before its speech (`cutter.go:95-105`), and `finalize` drops a cue with less than 350 ms of voiced sound (`cutter.go:119-127`).
+Step 5 reads the start and the minimum. `startUtterance` starts a cue 300 ms before its speech (`cutter.go:95-105`). On the pause path, `finalize(end, true)` drops a cue with less than 350 ms of voiced sound (`cutter.go:119-127`); at EOF, `fileasr.Run` calls `c.Flush()` (`fileasr.go:67-68`), which emits the remaining cue without that check (`cutter.go:84-92`).
 
-Step 6 reads the length cap. When a cue reaches 7 s without a 450 ms pause, `cutAtQuietest` searches the last second and cuts inside the quietest 100 ms window (`cutter.go:75-78`, `cutter.go:130-147`). The rest of the buffer continues as the next cue.
+Step 6 reads the length cap. When a cue reaches 7 s without a 450 ms pause, `cutAtQuietest` searches the last second and cuts at the midpoint of the quietest 100 ms window (`cutter.go:75-78`, `cutter.go:130-147`, `cutter.go:189-199`). The rest of the buffer continues as the next cue.
 
 Step 7 reads recognition. `fileasr.Run` cuts the stream and calls the recognizer once per cue, in order, dropping a cue whose trimmed text is empty (`Voxt/internal/fileasr/fileasr.go:39-74`). `fileRecognizer` uses the model chosen for Transcribe and uses the command's `--lang`, or dictation's language hint when it is empty (`transcribe_socket.go:58-88`). A missing `--lang` is left out of the wire (`omitempty`) and reaches the app as `lang:""` (`socket.go:35-39`).
 
@@ -46,9 +46,9 @@ Source revision: `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683
 
 第 4 步读一句的结束。`Cutter` 在 16 kHz 上按 10 ms 一小片工作（`Voxt/internal/meeting/cutter.go:9-19`）。安静满 450 ms 就结束一句（`cutter.go:70-74`）。
 
-第 5 步读起点和最短长度。`startUtterance` 让一句从讲话前 300 ms 开始（`cutter.go:95-105`），`finalize` 丢掉讲话不足 350 ms 的句子（`cutter.go:119-127`）。
+第 5 步读起点和最短长度。`startUtterance` 让一句从讲话前 300 ms 开始（`cutter.go:95-105`）。停顿结束时，`finalize(end, true)` 丢掉讲话不足 350 ms 的句子（`cutter.go:119-127`）；文件读完时，`fileasr.Run` 调用 `c.Flush()`（`fileasr.go:67-68`），直接把剩下的句子交出来，不查这个门槛（`cutter.go:84-92`）。
 
-第 6 步读长度上限。一句到 7 秒还没有 450 ms 停顿时，`cutAtQuietest` 在最后 1 秒里找最安静的 100 ms 窗口切开（`cutter.go:75-78`、`cutter.go:130-147`）。剩下的缓冲继续当作下一句。
+第 6 步读长度上限。一句到 7 秒还没有 450 ms 停顿时，`cutAtQuietest` 在最后 1 秒里找最安静的 100 ms 窗口，在它的中点切开（`cutter.go:75-78`、`cutter.go:130-147`、`cutter.go:189-199`）。剩下的缓冲继续当作下一句。
 
 第 7 步读识别。`fileasr.Run` 切开数据流，按顺序对每句调用一次识别器，文字去掉空白后为空就丢掉（`Voxt/internal/fileasr/fileasr.go:39-74`）。`fileRecognizer` 用 Transcribe 选定的模型，`--lang` 给了就用它，没给就用听写的语言提示（`transcribe_socket.go:58-88`）。没给 `--lang` 时这个键不在线上（`omitempty`），到应用时是 `lang:""`（`socket.go:35-39`）。
 

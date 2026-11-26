@@ -29,9 +29,9 @@
 ### 图上是什么
 
 - 左边橙色框是输入的 `talk.m4a`，标着 8 秒。
-- 中间蓝色框是 `afconvert`，写着 `-f WAVE -d LEI16@16000 -c 1`。
+- 中间蓝色框是 Mac 声音工具；图上写 `16 kHz · 单声道 · 16 位`，精确命令在下面。
 - 右边蓝色框是临时文件 `audio.wav`。
-- 下面是字节算式，最后一行把 256 KB 比作「比一张手机照片小」。
+- 下面是字节算式；8 秒的两行把 256 KB 比作「比一张手机照片小」，再下面两行算一小时的大小。
 
 ### 解码命令和字节数
 
@@ -110,8 +110,18 @@ $$ \text{reply}_i \text{ can arrive while } \text{uploaded bytes} < \text{Reques
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
 | $\text{reply}_i$ | 第 $i$ 句的回复 | `socket.go:41-46` |
+| $\text{uploaded bytes}$ | $\text{reply}_i$ 到达时应用已经收到的 PCM 字节 | `socket.go:168-176`；从 0 到 `Request.Bytes` |
 | `Request.Bytes` | 整段 PCM 的字节数 | `socket.go:35-39`，本步 256,000 |
 | 64,000 | 每次读的字节数 | `fileasr.go:36-37` |
+
+### 代入图上的数
+
+| 量 | 算式 | 结果 |
+|---|---|---|
+| `Request.Bytes` | $8 \times 16{,}000 \times 2$ | 256,000 B |
+| 一次读取 | $64{,}000 \div 32{,}000$ | 2 s |
+| 第 1 句回复到达时的 uploaded bytes | 构造：读完两次 | 128,000 B（4 s），小于 256,000 B |
+| 请求行上限 | $4 \times 1{,}024$ | 4,096 B |
 
 ### socket 在哪里，谁能打开
 
@@ -142,6 +152,7 @@ $$ \text{cue end} = \text{last speech} + 450\ \text{ms} $$
 |---|---|---|
 | last speech | 最后一个超过能量门槛的小片 | `cutterSpeechRMS = 800`，`cutter.go:18` |
 | 450 ms | 结束一句的安静长度 | `cutterSilenceCut`，`cutter.go:12` |
+| cue end | 这一句结束的时刻 | `finalize`，`cutter.go:119-127`；本步 3.35 s |
 | 10 ms | 一个切句小片 | `cutterFrame`，`cutter.go:11` |
 
 ### 代入图上的数
@@ -163,7 +174,7 @@ $$ \text{cue end} = \text{last speech} + 450\ \text{ms} $$
 
 ## 第 5 步 · 提前 300 ms 开始
 
-> **一句话：** 新的一句从讲话前 300 ms 开始，这样第一个辅音不会被切掉；讲话不足 350 ms 的句子会丢掉。
+> **一句话：** 新的一句从讲话前 300 ms 开始，这样第一个辅音不会被切掉；停顿结束时，讲话不足 350 ms 的一句会丢掉；录音结尾剩下的部分由 `Flush` 直接交出，不经过这个检查。
 
 ### 图上是什么
 
@@ -175,16 +186,18 @@ $$ \text{cue end} = \text{last speech} + 450\ \text{ms} $$
 
 `startUtterance` 把起点往前减 `cutterPreRoll = 300 ms`，但不小于 0（`cutter.go:95-105`）。它保留的是进入讲话前 `cutterPreRoll` 长的一段环形缓冲（`appendRing`，`cutter.go:111-117`）。
 
-短句在 `finalize` 里被拒绝：`voicedDur < cutterMinUtterance`（350 ms）时返回 `false`（`cutter.go:119-127`）。调用方仍然清空缓冲，所以短句不会留下来。
+短句在 `finalize(end, true)` 里被拒绝：`voicedDur < cutterMinUtterance`（350 ms）时返回 `false`（`cutter.go:119-127`）。这只走停顿结束这条路。文件读完时，`fileasr.Run` 调用 `c.Flush()`（`fileasr.go:67-68`），`Flush` 直接把剩下的缓冲交出来，不调用 `finalize`，也不查 350 ms（`cutter.go:84-92`）。
 
-$$ \text{cue start} = \max(0,\ \text{speech onset} - 300\ \text{ms}),\qquad \text{keep cue} \iff \text{voiced} \ge 350\ \text{ms} $$
+$$ \text{cue start} = \max(0,\ \text{speech onset} - 300\ \text{ms}),\qquad \text{keep}_{\text{pause}} \iff \text{voiced} \ge 350\ \text{ms} $$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
 | speech onset | 第一个讲话小片 | `cutterSpeechRMS = 800` |
 | 300 ms | 句首提前量 | `cutterPreRoll`，`cutter.go:15` |
-| voiced | 一句里讲话帧的总长 | `voicedDur`，`cutter.go:28` |
-| 350 ms | 一句至少要有多少讲话 | `cutterMinUtterance`，`cutter.go:13` |
+| cue start | 这一句开始的地方 | $\max(0,\ \text{speech onset} - 300\ \text{ms})$ |
+| voiced | 一句里讲话小片的总长 | `voicedDur`，`cutter.go:28` |
+| 350 ms | 停顿结束时一句至少要有的讲话 | `cutterMinUtterance`，`cutter.go:13` |
+| $\text{keep}_{\text{pause}}$ | 停顿结束这条路是否留下这一句 | `finalize(end, true)`，`cutter.go:119-127` |
 
 ### 代入图上的数
 
@@ -192,7 +205,8 @@ $$ \text{cue start} = \max(0,\ \text{speech onset} - 300\ \text{ms}),\qquad \tex
 |---|---|---|
 | 第 2 句讲话开始 | 3.70 s | 构造 |
 | 第 2 句开始 | 3.40 s | $3.70 - 0.30$ |
-| 一句只有 200 ms 讲话 | 丢掉 | $200 < 350$ |
+| 停顿结束、只有 200 ms 讲话的一句 | 丢掉 | $200 < 350$ |
+| 录音结尾剩下的 200 ms | 留下 | `Flush` 不查门槛，`cutter.go:84-92` |
 
 ### 接下来
 
@@ -213,14 +227,16 @@ $$ \text{cue start} = \max(0,\ \text{speech onset} - 300\ \text{ms}),\qquad \tex
 
 `pushFrame` 在 `end - c.utterStart >= cutterMaxSegment` 且没有触发 450 ms 规则时调用 `cutAtQuietest`（`cutter.go:75-78`）。`cutterMaxSegment` 是 7 秒。`cutAtQuietest` 搜索 `cutterQuietSearch = 1 s`、窗口 `cutterQuietWindow = 100 ms`（`cutter.go:16-17`、`cutter.go:130-147`）。
 
-$$ \text{search} = [\,7 - 1,\ 7\,]\ \text{s},\qquad \text{cut} = \arg\min_{w \subset \text{search}} \mathrm{RMS}(w) $$
+$$ \text{search} = [\,7 - 1,\ 7\,]\ \text{s},\qquad w^* = \arg\min_{w \subset \text{search}} \mathrm{RMS}(w),\qquad \text{cut} = \text{mid}(w^*) $$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
 | 7 s | 一句的长度上限 | `cutterMaxSegment`，`cutter.go:14` |
 | search | 最后 1 秒 | `cutterQuietSearch`，`cutter.go:16` |
 | $w$ | 100 ms 的窗口 | `cutterQuietWindow`，`cutter.go:17` |
+| $w^*$ | 最安静的窗口 | `quietestCutOffset`，`cutter.go:189-199` |
 | RMS | 窗口内的声音能量 | `frameRMS`，`cutter.go:165` |
+| cut | $w^*$ 的中点 | `bestOff + winBytes/2`，`cutter.go:198`；本步 6.5 s |
 
 ### 代入图上的数
 
@@ -232,7 +248,7 @@ $$ \text{search} = [\,7 - 1,\ 7\,]\ \text{s},\qquad \text{cut} = \arg\min_{w \su
 | 第 1 段 | 0–6.5 s | 切点 |
 | 第 2 段 | 6.5–9 s | $9 - 6.5 = 2.5$ |
 
-切点不是固定的 6.5 s。图上的 6.5 是构造例子，安静窗就放在这里，所以「最安静的 100 ms」和切点对得上。真实切点由最后 1 秒里哪个 100 ms 窗口最安静决定。`cutAtQuietest` 把切点之后的缓冲留在 `c.buf`，并把 `utterStart` 设成切点（`cutter.go:135-146`）。
+切点不是固定的 6.5 s。图上的 6.5 是构造例子，安静窗 6.45–6.55 s 就放在这里，中点是 6.5。真实切点是最后 1 秒里最安静的 100 ms 窗口中点。`cutAtQuietest` 把切点之后的缓冲留在 `c.buf`，并把 `utterStart` 设成切点（`cutter.go:135-146`）。
 
 ### 接下来
 
@@ -355,9 +371,19 @@ $$ \text{log} = \{\text{audio length},\ \text{segment count},\ \text{error?}\} $
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
+| $\text{log}$ | 写进应用日志的那一条 | `core.LogEntry`，`transcribe_socket.go:90-98` |
 | audio length | PCM 字节换算出的时长 | `req.Bytes/2/16000`，`socket.go:53-55` |
 | segment count | 回给命令的句子数 | `fileasr.go:53-55` |
 | error | 失败时的错误 | `transcribe_socket.go:95-97` |
+
+### 代入图上的数
+
+| 量 | 算式 | 结果 |
+|---|---|---|
+| audio length | $256{,}000 \div 2 \div 16{,}000$ | 8 s |
+| segment count | 两句的回复 | 2 |
+| 日志行 | 时长取整到秒，再接句数 | `transcribed a file for the command line: 8s of audio, 2 segments` |
+| error | 这次运行没有 | 不写 |
 
 ### 声音的去向
 

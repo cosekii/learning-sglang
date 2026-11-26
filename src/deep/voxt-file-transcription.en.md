@@ -29,9 +29,9 @@ The file first has to become sound the speech model can read. Step 2 covers deco
 ### On the stage
 
 - The orange box on the left is the input `talk.m4a`, marked 8 seconds.
-- The blue box in the middle is `afconvert`, with `-f WAVE -d LEI16@16000 -c 1`.
+- The blue box in the middle is the Mac sound tool; the stage shows `16 kHz · mono · 16-bit`, and the exact command is below.
 - The blue box on the right is the temporary file `audio.wav`.
-- The byte arithmetic is below it; the last line compares 256 KB to "smaller than one phone photo".
+- The byte arithmetic is below it; the 8-second lines compare 256 KB to "smaller than one phone photo", and the two lines after that compute the one-hour size.
 
 ### The decode command and the bytes
 
@@ -110,8 +110,18 @@ $$ \text{reply}_i \text{ can arrive while } \text{uploaded bytes} < \text{Reques
 | Symbol | What it is | Where it comes from |
 |---|---|---|
 | $\text{reply}_i$ | the reply for cue $i$ | `socket.go:41-46` |
+| $\text{uploaded bytes}$ | PCM bytes the app has received when $\text{reply}_i$ arrives | `socket.go:168-176`; from 0 up to `Request.Bytes` |
 | `Request.Bytes` | the PCM's total byte count | `socket.go:35-39`, 256,000 here |
 | 64,000 | bytes read at a time | `fileasr.go:36-37` |
+
+### Plugging in the stage's numbers
+
+| Quantity | Arithmetic | Result |
+|---|---|---|
+| `Request.Bytes` | $8 \times 16{,}000 \times 2$ | 256,000 B |
+| one read | $64{,}000 \div 32{,}000$ | 2 s |
+| uploaded bytes when cue 1's reply arrives | constructed: after two reads | 128,000 B (4 s), less than 256,000 B |
+| request-line cap | $4 \times 1{,}024$ | 4,096 B |
 
 ### Where the socket lives, and who can open it
 
@@ -142,6 +152,7 @@ $$ \text{cue end} = \text{last speech} + 450\ \text{ms} $$
 |---|---|---|
 | last speech | the last slice over the energy gate | `cutterSpeechRMS = 800`, `cutter.go:18` |
 | 450 ms | quiet that ends a cue | `cutterSilenceCut`, `cutter.go:12` |
+| cue end | the time the cue ends | `finalize`, `cutter.go:119-127`; 3.35 s here |
 | 10 ms | one cutter slice | `cutterFrame`, `cutter.go:11` |
 
 ### Plugging in the stage's numbers
@@ -163,7 +174,7 @@ The start of a cue has one more rule. Step 5 covers the 300 ms lead-in.
 
 ## Step 5 · Starting 300 ms early
 
-> **In one line:** A new cue starts 300 ms before its speech, so the first consonant is not cut off; a cue with less than 350 ms of speech is dropped.
+> **In one line:** A new cue starts 300 ms before its speech, so the first consonant is not cut off; when a pause ends a cue, less than 350 ms of speech is dropped, while the last part at EOF is flushed without that check.
 
 ### On the stage
 
@@ -175,16 +186,18 @@ The start of a cue has one more rule. Step 5 covers the 300 ms lead-in.
 
 `startUtterance` moves the start back by `cutterPreRoll = 300 ms`, but not below 0 (`cutter.go:95-105`). It keeps the ring buffer from before the speech (`appendRing`, `cutter.go:111-117`).
 
-A short cue is refused in `finalize`: `voicedDur < cutterMinUtterance` (350 ms) returns `false` (`cutter.go:119-127`). The caller still clears the buffer, so the short cue does not stay.
+A short cue is refused in `finalize(end, true)`: `voicedDur < cutterMinUtterance` (350 ms) returns `false` (`cutter.go:119-127`). This runs on the pause path. When the file ends, `fileasr.Run` calls `c.Flush()` (`fileasr.go:67-68`), and `Flush` emits the remaining buffer directly, without calling `finalize` and without the 350 ms check (`cutter.go:84-92`).
 
-$$ \text{cue start} = \max(0,\ \text{speech onset} - 300\ \text{ms}),\qquad \text{keep cue} \iff \text{voiced} \ge 350\ \text{ms} $$
+$$ \text{cue start} = \max(0,\ \text{speech onset} - 300\ \text{ms}),\qquad \text{keep}_{\text{pause}} \iff \text{voiced} \ge 350\ \text{ms} $$
 
 | Symbol | What it is | Where it comes from |
 |---|---|---|
 | speech onset | the first voiced slice | `cutterSpeechRMS = 800` |
 | 300 ms | lead-in at the start | `cutterPreRoll`, `cutter.go:15` |
+| cue start | where the cue begins | $\max(0,\ \text{speech onset} - 300\ \text{ms})$ |
 | voiced | total voiced time in the cue | `voicedDur`, `cutter.go:28` |
-| 350 ms | the least speech a cue needs | `cutterMinUtterance`, `cutter.go:13` |
+| 350 ms | the least speech a pause-ended cue needs | `cutterMinUtterance`, `cutter.go:13` |
+| $\text{keep}_{\text{pause}}$ | whether the pause path keeps the cue | `finalize(end, true)`, `cutter.go:119-127` |
 
 ### Plugging in the stage's numbers
 
@@ -192,7 +205,8 @@ $$ \text{cue start} = \max(0,\ \text{speech onset} - 300\ \text{ms}),\qquad \tex
 |---|---|---|
 | cue 2 speech starts | 3.70 s | constructed |
 | cue 2 starts | 3.40 s | $3.70 - 0.30$ |
-| a cue with 200 ms of speech | dropped | $200 < 350$ |
+| a pause-ended cue with 200 ms of speech | dropped | $200 < 350$ |
+| the last 200 ms at EOF | kept | `Flush` skips the check, `cutter.go:84-92` |
 
 ### Next
 
@@ -213,14 +227,16 @@ If someone keeps talking, the 450 ms rule never fires. Step 6 covers the 7-secon
 
 When `end - c.utterStart >= cutterMaxSegment` and the 450 ms rule did not fire, `pushFrame` calls `cutAtQuietest` (`cutter.go:75-78`). `cutterMaxSegment` is 7 seconds. `cutAtQuietest` searches `cutterQuietSearch = 1 s` with a `cutterQuietWindow = 100 ms` window (`cutter.go:16-17`, `cutter.go:130-147`).
 
-$$ \text{search} = [\,7 - 1,\ 7\,]\ \text{s},\qquad \text{cut} = \arg\min_{w \subset \text{search}} \mathrm{RMS}(w) $$
+$$ \text{search} = [\,7 - 1,\ 7\,]\ \text{s},\qquad w^* = \arg\min_{w \subset \text{search}} \mathrm{RMS}(w),\qquad \text{cut} = \text{mid}(w^*) $$
 
 | Symbol | What it is | Where it comes from |
 |---|---|---|
 | 7 s | the length cap of one cue | `cutterMaxSegment`, `cutter.go:14` |
 | search | the last second | `cutterQuietSearch`, `cutter.go:16` |
 | $w$ | a 100 ms window | `cutterQuietWindow`, `cutter.go:17` |
+| $w^*$ | the quietest window | `quietestCutOffset`, `cutter.go:189-199` |
 | RMS | sound energy inside the window | `frameRMS`, `cutter.go:165` |
+| cut | the midpoint of $w^*$ | `bestOff + winBytes/2`, `cutter.go:198`; 6.5 s here |
 
 ### Plugging in the stage's numbers
 
@@ -232,7 +248,7 @@ $$ \text{search} = [\,7 - 1,\ 7\,]\ \text{s},\qquad \text{cut} = \arg\min_{w \su
 | piece 1 | 0–6.5 s | the cut |
 | piece 2 | 6.5–9 s | $9 - 6.5 = 2.5$ |
 
-The cut is not fixed at 6.5 s. The 6.5 in this step is a constructed example, and the quiet window is placed there, so "the quietest 100 ms" and the cut agree. The real cut follows whichever 100 ms window is quietest in the last second. `cutAtQuietest` keeps the sound after the cut in `c.buf` and sets `utterStart` to the cut (`cutter.go:135-146`).
+The cut is not fixed at 6.5 s. The 6.5 in this step is a constructed example, and the quiet window 6.45–6.55 s is placed there, so its midpoint is 6.5. The real cut is the midpoint of whichever 100 ms window is quietest in the last second. `cutAtQuietest` keeps the sound after the cut in `c.buf` and sets `utterStart` to the cut (`cutter.go:135-146`).
 
 ### Next
 
@@ -355,9 +371,19 @@ $$ \text{log} = \{\text{audio length},\ \text{segment count},\ \text{error?}\} $
 
 | Symbol | What it is | Where it comes from |
 |---|---|---|
+| $\text{log}$ | the one entry written to the app's log | `core.LogEntry`, `transcribe_socket.go:90-98` |
 | audio length | the duration computed from the PCM bytes | `req.Bytes/2/16000`, `socket.go:53-55` |
 | segment count | the cues sent back to the command | `fileasr.go:53-55` |
 | error | the failure text when there is one | `transcribe_socket.go:95-97` |
+
+### Plugging in the stage's numbers
+
+| Quantity | Arithmetic | Result |
+|---|---|---|
+| audio length | $256{,}000 \div 2 \div 16{,}000$ | 8 s |
+| segment count | the two cues' replies | 2 |
+| log line | length rounded to the second, then the count | `transcribed a file for the command line: 8s of audio, 2 segments` |
+| error | none on this run | absent |
 
 ### Where the audio goes
 

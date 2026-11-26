@@ -40,8 +40,8 @@
     caption: 'A dictation ends at a cursor. A file ends as SRT or TXT.',
     captionZh: '听写的结果落在光标处。文件转写的结果是 SRT 或 TXT。',
   }, {
-    caption: 'The command asks macOS afconvert for 16 kHz mono PCM.',
-    captionZh: '命令让 macOS 的 afconvert 把文件转成 16 kHz 单声道 PCM。',
+    caption: 'The command uses a Mac tool to turn the file into 16 kHz mono PCM.',
+    captionZh: '命令用 Mac 工具把文件转成 16 kHz 单声道 PCM。',
   }, {
     caption: 'It sends that PCM to the running Voxt over a local socket.',
     captionZh: '它把 PCM 通过本机 socket 送给正在运行的 Voxt。',
@@ -68,8 +68,8 @@
     en: 'Two routes. A dictation goes from the microphone through a dictation session, its cleanup and a history row to the cursor. A file goes from disk through Voxt transcribe to SRT or TXT; it reuses the model set for Transcribe but opens no session and runs no cleanup. A one-hour meeting is 3600 seconds, 115.2 megabytes of PCM, about 29 phone photos.',
     zh: '两条路线。听写从麦克风经过听写 session、整理和历史记录，到光标处的文字。文件从磁盘经过 Voxt transcribe 到 SRT 或 TXT；它复用 Transcribe 选定的模型，但不打开 session，也不做整理。一小时的会议是 3600 秒、115.2 MB 的 PCM，约等于 29 张手机照片。',
   }, {
-    en: 'A constructed eight-second file is decoded by macOS afconvert to 16 kHz mono PCM, held as a temporary WAV. Eight seconds times 32000 bytes a second is 256000 PCM bytes, plus a 44-byte header.',
-    zh: '构造的八秒文件由 macOS 的 afconvert 转成 16 kHz 单声道 PCM，放进一个临时 WAV。八秒乘每秒 32000 字节是 256000 字节 PCM，再加 44 字节文件头。',
+    en: 'A constructed eight-second file is decoded by a Mac sound tool to 16 kHz mono PCM, held as a temporary file. Eight seconds times 32000 bytes a second is 256000 PCM bytes, plus a 44-byte header.',
+    zh: '构造的八秒文件由 Mac 的声音工具转成 16 kHz 单声道 PCM，放进一个临时文件。八秒乘每秒 32000 字节是 256000 字节 PCM，再加 44 字节文件头。',
   }, {
     en: 'The command sends one JSON request line and 256000 PCM bytes to the running Voxt through a local socket named transcribe.sock. The command writes the PCM while it reads replies, and the app cuts and recognizes the stream as it arrives, so one reply for each finished piece of speech can come back before the last PCM byte.',
     zh: '命令把一行 JSON 请求和 256000 字节 PCM，通过名为 transcribe.sock 的本机 socket 送给运行中的 Voxt。命令一边写 PCM 一边读回复，应用边收边切句、识别，所以最后一块 PCM 还没传完，就可能已经有句子回来。',
@@ -169,7 +169,7 @@
           <text x="535" y="94" text-anchor="middle" class="label amber">{t('FILE · TO SRT OR TXT', '文件 · 到 SRT 或 TXT')}</text>
           <rect x="395" y="110" width="280" height="50" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="535" y="131" text-anchor="middle" class="detail">{t('meeting.m4a on disk', '磁盘上的 meeting.m4a')}</text>
-          <text x="535" y="149" text-anchor="middle" class="detail">{t('1-hour meeting · compressed M4A', '1 小时会议 · 压缩 M4A')}</text>
+          <text x="535" y="149" text-anchor="middle" class="detail">{t('1-hour meeting · compressed sound (M4A)', '1 小时会议 · 压缩声音（M4A）')}</text>
           <line x1="535" y1="160" x2="535" y2="185" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
           <rect x="395" y="193" width="280" height="60" rx="9" fill="var(--bg)" stroke="var(--line)" />
           <text x="535" y="215" text-anchor="middle" class="label">{t('Voxt transcribe', 'Voxt transcribe')}</text>
@@ -203,7 +203,7 @@
           <rect x="15" y="330" width="270" height="250" rx="12" fill="var(--bg)" stroke="var(--gen)" />
           <text x="150" y="354" text-anchor="middle" class="label amber">{t('FILE · TO SRT OR TXT', '文件 · 到 SRT 或 TXT')}</text>
           <rect x="30" y="368" width="240" height="44" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="150" y="395" text-anchor="middle" class="detail">{t('1-hour meeting · compressed M4A', '1 小时会议 · 压缩 M4A')}</text>
+          <text x="150" y="395" text-anchor="middle" class="detail">{t('1-hour meeting · sound (M4A)', '1 小时会议 · 声音（M4A）')}</text>
           <line x1="150" y1="412" x2="150" y2="432" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
           <rect x="30" y="440" width="240" height="52" rx="8" fill="var(--bg)" stroke="var(--line)" />
           <text x="150" y="462" text-anchor="middle" class="label">{t('Voxt transcribe', 'Voxt transcribe')}</text>
@@ -232,10 +232,9 @@
           <text x="95" y="132" text-anchor="middle" class="detail">8 s {t('of sound', '声音')}</text>
           <line x1="172" y1="119" x2="212" y2="119" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
           <rect x="218" y="70" width="230" height="98" rx="9" fill="var(--bg)" stroke="var(--accent)" />
-          <text x="333" y="94" text-anchor="middle" class="label">afconvert</text>
-          <text x="333" y="115" text-anchor="middle" class="detail">{t('macOS file-to-sound tool', 'Mac 自带的转声音工具')}</text>
-          <text x="333" y="136" text-anchor="middle" class="mono">-f WAVE -d LEI16@16000 -c 1</text>
-          <text x="333" y="155" text-anchor="middle" class="detail">{t('also reads mp4 / mov sound', '也能读 mp4 / mov 的声音')}</text>
+          <text x="333" y="94" text-anchor="middle" class="label">{t('Mac sound tool', 'Mac 声音工具')}</text>
+          <text x="333" y="115" text-anchor="middle" class="detail">{t('macOS\'s own converter', 'Mac 自带的转换器')}</text>
+          <text x="333" y="136" text-anchor="middle" class="mono">{t('16 kHz · mono · 16-bit', '16 kHz · 单声道 · 16 位')}</text>
           <line x1="450" y1="119" x2="490" y2="119" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
           <rect x="496" y="80" width="204" height="78" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="598" y="108" text-anchor="middle" class="label">audio.wav</text>
@@ -243,21 +242,20 @@
 
           <rect x="70" y="200" width="580" height="140" rx="10" fill="var(--bg)" stroke="var(--line)" />
           <text x="360" y="226" text-anchor="middle" class="formula">{VOXT_TRANSCRIBE_DEMO_SECONDS} s × {VOXT_CAPTURE_SAMPLE_RATE.toLocaleString('en-US')} × {VOXT_PCM_BYTES_PER_SAMPLE} B = {pcm} B PCM</text>
-          <text x="360" y="255" text-anchor="middle" class="formula">+ {VOXT_WAV_HEADER_BYTES} B {t('WAV header', 'WAV 文件头')} = {VOXT_TRANSCRIBE_WAV_BYTES.toLocaleString('en-US')} B</text>
+          <text x="360" y="255" text-anchor="middle" class="formula">+ {VOXT_WAV_HEADER_BYTES} B {t('file header', '文件头')} = {VOXT_TRANSCRIBE_WAV_BYTES.toLocaleString('en-US')} B</text>
           <text x="360" y="282" text-anchor="middle" class="detail">{t('about 256 KB, smaller than one phone photo', '约 256 KB，比一张手机照片小')}</text>
           <text x="360" y="308" text-anchor="middle" class="formula">{t(`one hour: ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} × ${VOXT_CAPTURE_SAMPLE_RATE.toLocaleString('en-US')} × ${VOXT_PCM_BYTES_PER_SAMPLE} B`, `一小时：${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} × ${VOXT_CAPTURE_SAMPLE_RATE.toLocaleString('en-US')} × ${VOXT_PCM_BYTES_PER_SAMPLE} B`)}</text>
           <text x="360" y="330" text-anchor="middle" class="formula">{t(`= ${VOXT_TRANSCRIBE_MEETING_BYTES.toLocaleString('en-US')} B = ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} MB (≈${photoCount} photos at ${VOXT_TRANSCRIBE_PHOTO_MB} MB each)`, `= ${VOXT_TRANSCRIBE_MEETING_BYTES.toLocaleString('en-US')} B = ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} MB（每张 ${VOXT_TRANSCRIBE_PHOTO_MB} MB，≈${photoCount} 张）`)}</text>
-          <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Constructed 8-second example; the temporary WAV is deleted after reading the PCM.', '构造的 8 秒例子；命令读完 PCM 后就删掉临时 WAV。')}</text>
+          <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Constructed 8-second example; the temporary file is deleted after reading the PCM.', '构造的 8 秒例子；命令读完 PCM 后就删掉临时文件。')}</text>
         {:else}
           <rect x="40" y="70" width="220" height="62" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="150" y="95" text-anchor="middle" class="label amber">talk.m4a · 8 s</text>
           <text x="150" y="116" text-anchor="middle" class="detail">{t('on disk', '磁盘上')}</text>
           <line x1="150" y1="132" x2="150" y2="158" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
           <rect x="30" y="166" width="240" height="92" rx="9" fill="var(--bg)" stroke="var(--accent)" />
-          <text x="150" y="190" text-anchor="middle" class="label">afconvert</text>
-          <text x="150" y="211" text-anchor="middle" class="detail">{t('macOS file-to-sound tool', 'Mac 自带的转声音工具')}</text>
-          <text x="150" y="232" text-anchor="middle" class="mono">LEI16@16000 · mono</text>
-          <text x="150" y="250" text-anchor="middle" class="detail">{t('reads mp4 / mov too', '也能读 mp4 / mov')}</text>
+          <text x="150" y="190" text-anchor="middle" class="label">{t('Mac sound tool', 'Mac 声音工具')}</text>
+          <text x="150" y="211" text-anchor="middle" class="detail">{t('macOS\'s own converter', 'Mac 自带的转换器')}</text>
+          <text x="150" y="232" text-anchor="middle" class="mono">{t('16 kHz · mono · 16-bit', '16 kHz · 单声道 · 16 位')}</text>
           <line x1="150" y1="258" x2="150" y2="284" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
           <rect x="40" y="292" width="220" height="60" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="150" y="316" text-anchor="middle" class="label">audio.wav</text>
@@ -272,7 +270,7 @@
           <text x="150" y="552" text-anchor="middle" class="formula">{t(`one hour: ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} × ${VOXT_CAPTURE_SAMPLE_RATE.toLocaleString('en-US')} × ${VOXT_PCM_BYTES_PER_SAMPLE} B`, `一小时：${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} × ${VOXT_CAPTURE_SAMPLE_RATE.toLocaleString('en-US')} × ${VOXT_PCM_BYTES_PER_SAMPLE} B`)}</text>
           <text x="150" y="574" text-anchor="middle" class="formula">{t(`= ${VOXT_TRANSCRIBE_MEETING_BYTES.toLocaleString('en-US')} B = ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} MB`, `= ${VOXT_TRANSCRIBE_MEETING_BYTES.toLocaleString('en-US')} B = ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} MB`)}</text>
           <text x="150" y="596" text-anchor="middle" class="detail">{t(`≈${photoCount} photos at ${VOXT_TRANSCRIBE_PHOTO_MB} MB each`, `每张 ${VOXT_TRANSCRIBE_PHOTO_MB} MB，≈${photoCount} 张`)}</text>
-          <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Constructed 8 s example; WAV deleted after reading.', '构造的 8 秒例子；读完删掉临时 WAV。')}</text>
+          <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Constructed 8 s example; file deleted after reading.', '构造的 8 秒例子；读完删掉临时文件。')}</text>
         {/if}
       {:else if step === 2}
         <text x={W / 2} y="27" text-anchor="middle" class="title">{t('SEND THE PCM TO THE RUNNING APP', '把 PCM 送给运行中的应用')}</text>
