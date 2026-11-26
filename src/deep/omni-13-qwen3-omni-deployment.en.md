@@ -281,8 +281,8 @@ The final step puts configuration, waiting, data and memory on one decision shee
 - The goal is eight concurrent spoken requests with earlier first audio.
 - The starting route requests text and audio from the default speech graph. BF16 is the initial checkpoint because it is the default, not because this chapter measured it as best.
 - GPU 0 holds the input encoders, thinker and code2wav; GPU 1 holds the talker. This TP1 starting hypothesis is motivated by Step 3's different H200/TP2 experiment and requires a local A/B comparison.
-- The talker cap has 24 unallocated slots after subtracting the example's eight requests. No second pair is added before a queue is measured.
-- The evidence row uses target concurrency `c = 8`. It separates server metrics from listener metrics and retains output quality and raw repeats. For an odd number of results, the median is the middle first-audio value; for an even number, it is the mean of the two middle values. The p90 boundary was defined in Step 3.
+- The talker cap has 24 requests of headroom after subtracting the example's eight requests. No second pair is added before a queue is measured.
+- The evidence row compares A, the shared talker, with B, the isolated talker, at target concurrency `c = 8`. It separates server metrics from listener metrics and retains raw repeats. Ch. 8 Step 8 supplies the output-quality checks: completion, word errors and voice match where applicable. For an odd number of results, the median is the middle first-audio value; for an even number, it is the mean of the two middle values. Step 3 defined the p90 boundary.
 - The bottom map closes the book: Chapters 1–3 cover configuration, routes and binding; 4–6 waiting rules, data and queues; 7–8 memory and measurement; 9–12 optimization and model strategies.
 
 ### Formula
@@ -293,17 +293,17 @@ $$
 
 | Symbol | Meaning | Size | Source |
 |---|---|---:|---|
-| $V$ | Unallocated talker running-cap slots | 24 | This step |
+| $V$ | Requests of talker-cap headroom | 24 | This step |
 | $X$ | Running-request cap per talker | 32 | Step 6 |
 | $I$ | Expected concurrent requests in this example | 8 | Constructed goal |
 
 ### The numbers on the stage
 
 $$
-V=32-8=24\ \text{unallocated cap slots}
+V=32-8=24\ \text{requests of headroom}
 $$
 
-These are scheduler slots below the configured cap, not measured spare throughput or free GPU memory. A real queue, rising first audio tails or another bottleneck must be observed before adding replicas.
+This headroom sits below the configured cap. It is not measured spare throughput or free GPU memory. A real queue, rising first audio tails or another bottleneck must be observed before adding replicas.
 
 ### Decision boundary
 

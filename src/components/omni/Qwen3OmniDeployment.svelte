@@ -110,7 +110,7 @@
   const speechGpu1 = QWEN_SPEECH_DEFAULT_STAGE_PROCESSES.filter((stage) => stage.gpu === 1);
 
   // One walking outline shows each scene in reading order.
-  const PHASE_COUNTS = [3, 3, 4, 4, 3, 4, 4, 0];
+  const PHASE_COUNTS = [3, 3, 4, 4, 3, 4, 4, 6];
   const PHASE_MS = 1500;
   const REST_MS = 1800;
   type Frame = { x: number; y: number; w: number; h: number };
@@ -185,6 +185,21 @@
       { x: 395, y: 179, w: 290, h: 172 },
       { x: 395, y: 359, w: 290, h: 60 },
       { x: 395, y: 431, w: 290, h: 60 },
+    ];
+    if (s === 7) return isPhone ? [
+      { x: 15, y: 105, w: 270, h: 88 },
+      { x: 15, y: 205, w: 270, h: 88 },
+      { x: 15, y: 305, w: 270, h: 88 },
+      { x: 15, y: 405, w: 270, h: 188 },
+      { x: 15, y: 605, w: 270, h: 106 },
+      { x: 15, y: 730, w: 270, h: 318 },
+    ] : [
+      { x: 20, y: 105, w: 680, h: 65 },
+      { x: 20, y: 180, w: 680, h: 65 },
+      { x: 20, y: 255, w: 680, h: 65 },
+      { x: 20, y: 330, w: 680, h: 140 },
+      { x: 20, y: 480, w: 680, h: 65 },
+      { x: 20, y: 585, w: 680, h: 134 },
     ];
     return [];
   };
@@ -462,16 +477,16 @@
           { label: 'ROUTE', labelZh: '路线', a: 'modalities=["text", "audio"]', aZh: 'modalities=["text", "audio"]', b: 'default speech graph · text + sound', bZh: '默认语音图 · 文字 + 声音', evidence: false },
           { label: 'PRECISION', labelZh: '精度', a: 'BF16 checkpoint first', aZh: '先用 BF16 checkpoint', b: 'FP8 or INT4 needs memory + quality evidence', bZh: '换 FP8 或 INT4 要有显存和质量证据', evidence: false },
           { label: 'PLACEMENT', labelZh: '摆卡', a: 'GPU 0: encoders + thinker + code2wav', aZh: 'GPU 0：encoders + thinker + code2wav', b: 'GPU 1: talker · 2 GPUs · 7 processes', bZh: 'GPU 1：talker · 2 张卡 · 7 个进程', evidence: false },
-          { label: 'CAPACITY', labelZh: '容量', a: `8 ≤ ${QWEN_TALKER_MAX_RUNNING_REQUESTS} talker running cap`, aZh: `8 ≤ talker 运行上限 ${QWEN_TALKER_MAX_RUNNING_REQUESTS}`, b: `32 − 8 = ${QWEN_EXAMPLE_UNALLOCATED_TALKER_SLOTS} unallocated cap slots · no replica yet`, bZh: `32 − 8 = ${QWEN_EXAMPLE_UNALLOCATED_TALKER_SLOTS} 个未占上限 · 先不加副本`, evidence: false },
-          { label: 'EVIDENCE', labelZh: '证据', a: 'c=8 · server: first audio median/p90 · total · failures · memory', aZh: 'c=8 · 服务器：首音中位数/p90 · 总耗时 · 失败 · 显存', b: 'listener: stalls · L−S · N−R · quality · raw repeats', bZh: '听者：卡顿 · L−S · N−R · 质量 · 原始重复', evidence: true },
+          { label: 'CAPACITY', labelZh: '容量', a: `8 ≤ ${QWEN_TALKER_MAX_RUNNING_REQUESTS} talker running cap`, aZh: `8 ≤ talker 运行上限 ${QWEN_TALKER_MAX_RUNNING_REQUESTS}`, b: `32 − 8 = ${QWEN_EXAMPLE_UNALLOCATED_TALKER_SLOTS} requests of talker-cap headroom · no replica yet`, bZh: `32 − 8 = ${QWEN_EXAMPLE_UNALLOCATED_TALKER_SLOTS} 个请求的 talker 上限余量 · 先不加副本`, evidence: false },
+          { label: 'EVIDENCE', labelZh: '证据', a: 'A=shared talker · B=talker alone · c=8 · first audio median/p90', aZh: 'A=talker 共用 · B=talker 独占 · c=8 · 首音中位数/p90', b: 'total · failures · memory · stalls · stop/response waits · Ch. 8 Step 8 quality · raw repeats', bZh: '总耗时 · 失败 · 显存 · 卡顿 · 停答/回应等待 · 第 8 章第 8 步质量检查 · 原始重复', evidence: true },
         ] as row, i}
           {@const y = phone ? 105 + i * 100 : 105 + i * 75}
           <rect x={phone ? 15 : 20} {y} width={phone ? 270 : 680} height={phone ? (row.evidence ? 106 : 88) : 65} rx="8" fill={row.evidence ? 'var(--gen-soft)' : 'var(--accent-soft)'} fill-opacity="0.25" stroke={row.evidence ? 'var(--gen)' : 'var(--accent)'} />
           <text x={phone ? 29 : 34} y={y + 24} class="tag strong" fill={row.evidence ? 'var(--gen)' : 'var(--accent)'}>{t(row.label, row.labelZh)}</text>
-          <text x={phone ? 29 : 170} y={y + (phone ? 49 : 25)} class="tag strong">{phone && row.evidence ? t('c=8 · first audio median/p90 · total', 'c=8 · 首音中位数/p90 · 总耗时') : t(row.a, row.aZh)}</text>
-          <text x={phone ? 29 : 170} y={y + (phone ? 73 : 49)} class="tag">{phone && row.evidence ? t('memory · failures · stalls · L−S · N−R', '显存 · 失败 · 卡顿 · L−S · N−R') : t(row.b, row.bZh)}</text>
+          <text x={phone ? 29 : 170} y={y + (phone ? 49 : 25)} class="tag strong">{phone && row.evidence ? t('A=shared · B=alone · c=8 · raw repeats', 'A=共用 · B=独占 · c=8 · 原始重复') : t(row.a, row.aZh)}</text>
+          <text x={phone ? 29 : 170} y={y + (phone ? 73 : 49)} class="tag">{phone && row.evidence ? t('first audio median/p90 · total · failures', '首音中位数/p90 · 总耗时 · 失败') : t(row.b, row.bZh)}</text>
           {#if phone && row.evidence}
-            <text x="29" y={y + 97} class="tag">{t('quality · raw repeats', '质量 · 原始重复')}</text>
+            <text x="29" y={y + 97} class="tag">{t('memory · stalls · Ch. 8 Step 8 quality', '显存 · 卡顿 · 第 8 章第 8 步质量检查')}</text>
           {/if}
         {/each}
         <text x={W / 2} y={phone ? 738 : 593} text-anchor="middle" class="rowlabel">{t('THE WHOLE-BOOK CHECK', '全书检查')}</text>
