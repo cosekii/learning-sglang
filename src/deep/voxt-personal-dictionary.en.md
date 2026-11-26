@@ -39,12 +39,14 @@ One row has three parts. The next step shows where the term and aliases go, and 
 
 ### The four destinations and their switches
 
-| Destination | Gets | Switch | Source |
-|---|---|---|---|
-| speech model · hints | only enabled terms | dictionary on + speech hints on | `session/run_audio.go:36` |
-| transcript · replace | aliases become the term | dictionary on | `session/cleanup.go:69` |
-| language model · glossary | copies only terms + aliases, never row notes | dictionary on + glossary on | `session/run_transcribe.go:110-120` |
-| language model · dictionary notes | separate `settings.Dictionary.Notes` | dictionary on, notes not off | `session/text.go:120-126` |
+| Destination | Gets | Switch |
+|---|---|---|
+| speech model · hints | only enabled terms | dictionary on + speech hints on |
+| transcript · replace | aliases become the term | dictionary on |
+| language model · glossary | copies only terms + aliases, never row notes | dictionary on + glossary on |
+| language model · dictionary notes | separate `settings.Dictionary.Notes` | dictionary on, notes not off |
+
+Sources: `run_audio.go:36`, `cleanup.go:69`, `run_transcribe.go:110-120`, `text.go:120-126`.
 
 The source marks a row's `store.Term.Note` as “not sent anywhere” (`internal/store/store.go:215-230`). `glossary()` constructs each `compose.Term` with only `Term` and `Aliases`, so a row note cannot ride along in the glossary either.
 
@@ -64,10 +66,10 @@ The next four steps walk this map one destination at a time, each marked "k of 4
 
 ### On the stage
 
-- The blue box on the left lists two enabled terms: `Priya` and `MOSS-Transcribe`.
+- The blue box on the left lists two enabled terms: `Priya` and `MOSS-Transcribe`. `MOSS-Transcribe` is the dictionary's other term; the first two steps drew only `Priya`.
 - An arrow points to the speech model on the right, which lists the same two words.
 - The orange box below, `Preeya ✗`, says the alias is not sent.
-- The bottom line says a service with fewer hint slots drops hints from the end, keeping the newest-first prefix.
+- The bottom line says a service with fewer hint slots drops hints from the end, so the newest-changed terms stay at the front.
 
 ### How the list is ordered
 
@@ -88,7 +90,7 @@ An alias is exactly what recognition gets wrong. Sending it as a hint tells the 
 
 ### Boundary
 
-Some recognition services accept a limited number of hints; the `dict.Hints` comment says they cut the list from the end. Truncating the tail preserves the prefix, so newest-changed terms survive at the front.
+Some recognition services accept a limited number of hints; the `dict.Hints` comment says they cut the list from the end. Truncating the tail keeps the front of the list, so newest-changed terms survive.
 
 ### Next
 
@@ -109,7 +111,7 @@ The next step takes the recognized text and swaps the alias back to the term.
 
 `dict.Replace` looks only at enabled terms (`Voxt/internal/dict/alias.go:25`):
 
-- A Latin alias matches **whole words**, ignoring case; it counts as a word only when both ends are letters or digits (`wordRune`, `alias.go:192`).
+- A Latin alias is checked at each end only when that end of the alias is itself a letter or digit (`wordRune`, `alias.go:187-197`). `Preeya` starts and ends with letters, so neither side may touch another letter or digit. An alias that ends in punctuation skips the check on that side, so `Priya!` can match inside `Priya!next`.
 - Chinese, Japanese and Korean aliases match anywhere, because those scripts do not write spaces between words.
 - When several patterns match at one place, the **longest** wins (patterns are sorted by size descending, `alias.go:73`).
 - A term already written as itself is left alone, so running this twice does not break it (`alias.go:90`).
@@ -136,10 +138,10 @@ Replacement only fixes aliases. If recognition writes a wrong form that is neith
 
 ### On the stage
 
-- Left panel, at most 30 distinct terms: system holds general rules and `- Priya (heard as: Preeya)`, while user holds `call Priya.`.
-- Right panel, more than 30 distinct terms: system holds only generic rules; user opens with `<glossary>`, then contains `call Priya.`.
+- Left panel, at most 30 distinct terms: system holds general rules, `- Priya (heard as: Preeya)` and `- MOSS-Transcribe`, while user holds `call Priya.`. Both terms from Step 3 are here.
+- Right panel, more than 30 distinct terms: system holds only generic rules; user opens with `<glossary>`, then contains `call Priya.`. Only terms the text mentions appear, so `MOSS-Transcribe` is there only if this text mentions it.
 - Both user panels use `call Priya.` because Step 4 has already replaced `Preeya` with `Priya`; the language model receives the replaced text (`session/run.go:301-312`).
-- The bottom lines cover candidates, both caps and the cache boundary: select candidates first, then take the longest prefix. A provider may reuse unchanged system, with no guaranteed time or token saving.
+- The bottom lines say which terms become candidates and that lines are kept in order until the next would pass 60 lines or 2000 bytes (about one page of text). The cache and token caveat is detailed below.
 
 ### Candidates and message placement
 
@@ -175,9 +177,11 @@ $$B(G) = \sum_{g \in G}\operatorname{bytes}(g) + \max(|G| - 1, 0)$$
 
 The loop breaks at the first line that does not fit. It does not skip that line to seek a shorter later one, and it never truncates a line. Newlines appear only between lines, so $N$ lines have $N-1$ separators.
 
-### Plugging in the stage's numbers
+The “longest prefix” here is just the first N candidate lines, kept in order. 2000 bytes is about one page of plain text; because a Chinese character takes 3 bytes, the same cap holds fewer Chinese characters than ASCII letters.
 
-This constructed example has three candidate lines of 900 bytes each:
+### A constructed example (not drawn on the stage)
+
+This example is not on the stage; it has three candidate lines of 900 bytes each:
 
 | Candidate | Output bytes if added | Result |
 |---|---|---|
@@ -189,7 +193,7 @@ So $G$ contains only the first two complete lines. If line 61 crosses the line c
 
 ### What the cache can promise
 
-For a small dictionary, the glossary lives in system, and system does not vary with this dictation's text. With other settings unchanged, the provider **may** reuse the prompt cache for that unchanged prefix; the tests prove only that the system string is independent of the input (`compose_test.go:574-577`, `595-630`). They do not guarantee a cache hit, retention, time savings or token savings.
+For a small dictionary, the glossary lives in system, and system does not vary with this dictation's text. With other settings unchanged, the provider **may** reuse the prompt cache for that unchanged prefix; the tests prove only that the system string is independent of the input (`compose_test.go:574-577`, `595-630`). In plain terms, the model service may already hold that unchanged opening text and skip re-reading it, which could save time and tokens; nothing here promises it.
 
 ### Boundary
 

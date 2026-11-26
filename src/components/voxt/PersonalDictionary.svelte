@@ -18,7 +18,7 @@
     caption: 'One row helps three ways. Dictionary-wide notes are the fourth.',
     captionZh: '一行词条有三个去处。整部词典的备注是第四个。',
   }, {
-    caption: 'Only the enabled term goes to the speech model as a hint. An alias stays out.',
+    caption: 'Only enabled terms go to the speech model as hints. An alias stays out.',
     captionZh: '发给语音模型的提示只含启用的词条。别名不进去。',
   }, {
     caption: 'Aliases become the term before cleanup. This works without the language model.',
@@ -37,14 +37,14 @@
     en: 'Your voice says call Priya, but the speech model writes call Preeya, the wrong name. A dictionary row fixes this once: a term with its aliases, and an optional private note.',
     zh: '你的声音说 call Priya，语音模型却写成 call Preeya，名字错了。词典里一行就能一次修好：一个词条、它的别名，和可选的私有备注。',
   }, {
-    en: 'One dictionary row has three parts. The term is the spelling you want. Aliases are what recognition tends to write instead. The row note is private and is not sent anywhere. The row helps in three places: speech hints from the term, alias replacement in the transcript, and a language-model glossary made only from the term and aliases. The fourth destination is separate: dictionary-wide settings.Dictionary.Notes goes to the language-model prompt when notes are enabled.',
-    zh: '一行词典有三部分。词条是你想要的写法，别名是识别常写成的样子，行内备注是私有的，不发送到任何地方。这行有三个去处：词条去语音模型当提示，别名在文字稿里换回词条，只有词条和别名组成语言模型术语表。第四个去处来自另一处设置：整部词典的 settings.Dictionary.Notes 在备注开启时进入语言模型提示。',
+    en: 'One dictionary row has three parts. The term is the spelling you want. Aliases are what recognition tends to write instead. The row note is private and is not sent anywhere. The row helps in three places: speech hints from the term (a word list the recognizer can expect), alias replacement in the transcript, and a language-model glossary made only from the term and aliases (a term list the model should keep as written). The fourth destination is separate: dictionary-wide settings.Dictionary.Notes goes to the language-model prompt when notes are enabled.',
+    zh: '一行词典有三部分。词条是你想要的写法，别名是识别常写成的样子，行内备注是私有的，不发送到任何地方。这行有三个去处：词条去语音模型当提示（一份给识别器的词表），别名在文字稿里换回词条，只有词条和别名组成语言模型术语表（一份让模型照写的词条表）。第四个去处来自另一处设置：整部词典的 settings.Dictionary.Notes 在备注开启时进入语言模型提示。',
   }, {
-    en: 'The enabled terms alone are sent to the speech model as hints, the most recently changed first. The alias is not sent, because it is exactly what recognition gets wrong. The dictionary settings must have both the dictionary and the speech hints on.',
-    zh: '只有启用的词条会作为提示发给语音模型，最近改过的排前面。别名不发，因为别名正是识别会写错的样子。词典设置里要同时打开词典和语音提示。',
+    en: 'The enabled terms alone are sent to the speech model as hints, the most recently changed first. The alias is not sent, because it is exactly what recognition gets wrong. The dictionary settings must have both the dictionary and the speech hints on. A service with fewer hint slots drops hints from the end, so the newest-changed terms stay at the front.',
+    zh: '只有启用的词条会作为提示发给语音模型，最近改过的排前面。别名不发，因为别名正是识别会写错的样子。词典设置里要同时打开词典和语音提示。槽位更少的服务从末尾删提示，最近改过的词条留在前面。',
   }, {
-    en: 'After recognition, enabled aliases are replaced by their term in the text, before any language-model cleanup. Latin aliases match whole words ignoring case; Chinese, Japanese and Korean aliases match anywhere; the longest match wins. A term already written correctly is left alone, so this works with the language model off or failing.',
-    zh: '识别之后、语言模型清理之前，启用的别名会在文字里换回词条。拉丁别名按整词匹配、不分大小写；中日韩别名可以在任意位置匹配；最长的那次胜出。已经写对的词条保持原样，所以语言模型关掉或失败时这一步照样有效。',
+    en: 'After recognition, enabled aliases are replaced by their term in the text, before any language-model cleanup. A Latin alias like Preeya matches whole words, ignoring case; a side of the alias that ends in punctuation skips that side’s boundary check. Chinese, Japanese and Korean aliases match anywhere; when several aliases could match at the same spot, the longest wins. A term already written correctly is left alone, so this works with the language model off or failing.',
+    zh: '识别之后、语言模型清理之前，启用的别名会在文字里换回词条。像 Preeya 这样的拉丁别名按整词匹配、不分大小写；若别名某一端是标点，那一端不查边界。中日韩别名可以在任意位置匹配；同一位置有多个别名能匹配时，最长的胜出。已经写对的词条保持原样，所以语言模型关掉或失败时这一步照样有效。',
   }, {
     en: 'With 30 or fewer distinct enabled terms, all terms become candidates and the glossary sits in the system message. With more than 30, only terms mentioned by the replaced text become candidates; system keeps generic rules, and the selected glossary opens the user message. Both cases take the longest prefix that fits 60 lines and 2000 bytes, stopping at the first line that does not fit. The request input is call Priya after alias replacement. An unchanged system prefix may let the provider reuse its prompt cache, but saves no guaranteed time or tokens.',
     zh: '不超过 30 个不同的启用词条时，全部成为候选，术语表放在 system 消息里。超过 30 个时，只把替换后的文字提到的词条作为候选；system 只留通用规则，选中的 <glossary> 放在 user 开头。两种情况都取同时满足 60 行和 2000 字节的最长前缀，遇到首个放不下的行就停。这次请求的输入是别名替换后的 call Priya。provider 可能复用未变的 system 前缀，但不保证省时或省 token。',
@@ -52,8 +52,8 @@
     en: 'Dictionary-wide settings.Dictionary.Notes is free text, separate from a row’s private store.Term.Note. When enabled, it joins the language model system layers and never goes to the speech model or transcript replacement. Final messages are system, then history, then user; this request input sits only in user. Notes-off keeps the dictionary notes out of the prompt even while the dictionary is on.',
     zh: '整部词典的 settings.Dictionary.Notes 是自由文字，和行内私有的 store.Term.Note 不同。开启时，它作为单独一层进入语言模型的 system，从不去语音模型或文字稿替换。最终消息顺序是 system、history、user，这次请求的输入只在 user 里。即使词典开着，关掉备注也能让全词典备注不进提示。',
   }, {
-    en: 'With the language model off or failing, the speech hints and the alias replacement still work. The glossary and dictionary-wide notes do not, because both ride in the language-model messages. The next chapter asks how long Voxt keeps the recording and its history.',
-    zh: '语言模型关掉或失败时，语音提示和别名替换仍然有效。术语表和全词典备注不行，因为两者都随语言模型消息发送。下一章看 Voxt 把录音和历史留多久。',
+    en: 'With the language model off or failing, the speech hints and the alias replacement still work. The glossary and dictionary-wide notes do not, because both ride in the language-model messages. The master dictionary switch turns all four off. The next chapter asks how long Voxt keeps the recording and its history.',
+    zh: '语言模型关掉或失败时，语音提示和别名替换仍然有效。术语表和全词典备注不行，因为两者都随语言模型消息发送。词典总开关一关，四个都不走。下一章看 Voxt 把录音和历史留多久。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -147,7 +147,7 @@
 
       {:else if step === 1}
         <text x="20" y="22" class="tag strong">{t('THREE ROW ROUTES + ONE SETTINGS ROUTE', '词条三个去处 + 设置一个去处')}</text>
-        <text x="20" y="46" class="tag">{t('the row’s own note stays private.', '行内备注只留在这里。')}</text>
+        <text x="20" y="46" class="tag">{t(phone ? 'hint: a word list · glossary: a term list' : 'hint: a word list for the recognizer · glossary: a term list for the model', 'hint：给识别器的词表 · glossary：给模型的词条表')}</text>
         {#if phone}
           <rect x="20" y="62" width="260" height="132" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="34" y="86" class="rowlabel">{t('term', '词条')} <tspan class="mono" fill="var(--accent)">{VOXT_DICT_TERM}</tspan></text>
@@ -197,9 +197,9 @@
         <text x="20" y="46" class="tag">{t('A word list you give the recognizer.', '发给识别器的一份词表。')}</text>
         {#if phone}
           <rect x="20" y="62" width="260" height="150" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="34" y="86" class="rowlabel">{t('enabled terms', '启用的词条')}</text>
+          <text x="34" y="86" class="rowlabel">{t('enabled terms (switched on)', '启用的词条（开着的）')}</text>
           <text x="34" y="114" class="mono strong">{VOXT_DICT_TERM}</text>
-          <text x="34" y="140" class="mono strong">{VOXT_DICT_SECOND_TERM}</text>
+          <text x="34" y="140" class="mono strong">{VOXT_DICT_SECOND_TERM} <tspan class="detail" font-weight="400">{t('· second term', '· 第二个词条')}</tspan></text>
           <text x="34" y="176" class="detail">{t('newest change first', '最近改的排前面')}</text>
           <path d="M150 212 V236" stroke="var(--accent)" stroke-width="2" marker-end="url(#dict-arrow-accent)" />
           <rect x="20" y="244" width="260" height="96" rx="8" fill="var(--bg)" stroke="var(--line)" />
@@ -209,12 +209,12 @@
           <text x="20" y="370" class="tag strong" fill="var(--gen)">{VOXT_DICT_ALIAS} ✗</text>
           <text x="20" y="394" class="tag">{t('an alias is not a hint', '别名不当提示')}</text>
           <text x="20" y="418" class="tag">{t('it is what recognition gets wrong', '它正是识别会写错的')}</text>
-          <text x="20" y="458" class="tag">{t('fewer slots: drop the tail; keep the front', '槽位更少：从末尾删，前面的新词条留下')}</text>
+          <text x="20" y="458" class="tag">{t('fewer slots: drop the end; newest stay first', '槽位更少：从末尾删，最近改的排前面')}</text>
         {:else}
           <rect x="20" y="72" width="300" height="190" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="34" y="98" class="rowlabel">{t('enabled terms', '启用的词条')}</text>
+          <text x="34" y="98" class="rowlabel">{t('enabled terms (switched on)', '启用的词条（开着的）')}</text>
           <text x="34" y="132" class="mono strong">{VOXT_DICT_TERM}</text>
-          <text x="34" y="162" class="mono strong">{VOXT_DICT_SECOND_TERM}</text>
+          <text x="34" y="162" class="mono strong">{VOXT_DICT_SECOND_TERM} <tspan class="detail" font-weight="400">{t('· second term', '· 第二个词条')}</tspan></text>
           <text x="34" y="200" class="detail">{t('most recently changed first', '最近改过的排前面')}</text>
           <text x="34" y="226" class="detail">{VOXT_DICT_TERM_COUNT} {t('terms →', '个词条 →')} {VOXT_DICT_HINT_COUNT} {t('hints', '条提示')}</text>
           <path d="M320 160 H372" stroke="var(--accent)" stroke-width="2" marker-end="url(#dict-arrow-accent)" />
@@ -226,7 +226,7 @@
           <rect x="20" y="286" width="680" height="72" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="34" y="312" class="tag strong" fill="var(--gen)">{VOXT_DICT_ALIAS} ✗</text>
           <text x="34" y="338" class="detail">{t('An alias is not sent: it is what recognition gets wrong.', '别名不发：它正是识别会写错的样子。')}</text>
-          <text x="20" y="390" class="tag">{t('A service with fewer slots drops hints from the end, keeping the newest-first prefix.', '槽位更少的服务从末尾删，保留列表前面的新词条。')}</text>
+          <text x="20" y="390" class="tag">{t('A service with fewer slots drops hints from the end, so the newest-changed terms stay at the front.', '槽位更少的服务从末尾删，最近改过的词条就留在前面。')}</text>
         {/if}
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('dict.Hints · enabled terms, newest first', 'dict.Hints · 启用的词条，最近优先') : t('Source: dict.Hints() · enabled terms, each once, newest change first', '出处：dict.Hints() · 启用的词条各一次，最近改过优先')}</text>
 
@@ -245,9 +245,9 @@
           <rect x="20" y="230" width="260" height="52" rx="8" fill="var(--bg)" stroke="var(--line)" />
           <text x="150" y="262" text-anchor="middle" class="tag">{t('language-model cleanup', '语言模型清理')}</text>
           <text x="20" y="312" class="tag strong">{t('matching rules', '匹配规则')}</text>
-          <text x="20" y="338" class="tag">{t('Latin: whole words, any case', '拉丁：整词，不分大小写')}</text>
+          <text x="20" y="338" class="tag">{t('Latin (like English): whole words, any case', '拉丁文字（如英文）：整词，不分大小写')}</text>
           <text x="20" y="362" class="tag">{t('Chinese / Japanese / Korean: anywhere', '中日韩：任意位置')}</text>
-          <text x="20" y="386" class="tag">{t('longest match wins', '最长的那次胜出')}</text>
+          <text x="20" y="386" class="tag">{t('same spot: the longest wins', '同一位置：最长的胜出')}</text>
           <text x="20" y="410" class="tag">{t('a correct term is left alone', '已经对的词条不动')}</text>
           <rect x="20" y="432" width="260" height="70" rx="8" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />
           <text x="34" y="456" class="tag strong">{t('model off or failed?', '模型关了或失败？')}</text>
@@ -266,9 +266,9 @@
           <text x="428" y="126" class="detail">{t('the text it receives is already right', '它收到的文字已经对了')}</text>
           <rect x="20" y="164" width="370" height="150" rx="10" fill="var(--bg)" stroke="var(--line)" />
           <text x="34" y="190" class="rowlabel">{t('matching rules', '匹配规则')}</text>
-          <text x="34" y="218" class="tag">{t('Latin: whole words, ignoring case', '拉丁：整词匹配，不分大小写')}</text>
+          <text x="34" y="218" class="tag">{t('Latin script (like English): whole words, any case', '拉丁文字（如英文）：整词，不分大小写')}</text>
           <text x="34" y="242" class="tag">{t('Chinese / Japanese / Korean: anywhere', '中日韩：任意位置都能匹配')}</text>
-          <text x="34" y="266" class="tag">{t('at each place the longest match wins', '每个位置最长的那次胜出')}</text>
+          <text x="34" y="266" class="tag">{t('when several could match at one spot, the longest wins', '同一位置有多个能匹配时，最长的胜出')}</text>
           <text x="34" y="290" class="tag">{t('a term already written stays', '已经写对的词条保持原样')}</text>
           <rect x="410" y="164" width="290" height="150" rx="10" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />
           <text x="424" y="190" class="rowlabel">{t('with the model off or failing', '模型关掉或失败时')}</text>
@@ -286,8 +286,9 @@
           <text x="34" y="86" class="rowlabel">≤ {VOXT_DICT_GLOSSARY_ALL_UP_TO} · {t('GLOSSARY IN SYSTEM', '术语表在 SYSTEM')}</text>
           <rect x="34" y="100" width="232" height="92" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="46" y="122" class="detail">system</text>
-          <text x="46" y="144" class="detail">{t('general rules', '通用规则')}</text>
-          <text x="46" y="172" class="mono">- {VOXT_DICT_TERM} ({VOXT_DICT_ALIAS})</text>
+          <text x="46" y="142" class="detail">{t('general rules', '通用规则')}</text>
+          <text x="46" y="164" class="mono">- {VOXT_DICT_TERM} ({VOXT_DICT_ALIAS})</text>
+          <text x="46" y="184" class="mono">- {VOXT_DICT_SECOND_TERM}</text>
           <rect x="34" y="204" width="232" height="64" rx="6" fill="var(--bg)" stroke="var(--line)" />
           <text x="46" y="226" class="detail">user</text>
           <text x="46" y="254" class="tag">call {VOXT_DICT_TERM}.</text>
@@ -304,18 +305,17 @@
           <text x="46" y="522" class="mono">{t('</glossary>', '</glossary>')}</text>
           <text x="46" y="548" class="tag">call {VOXT_DICT_TERM}.</text>
 
-          <text x="20" y="612" class="tag">{t('candidates: ≤30 all · >30 mentioned', '候选：≤30 全部 · >30 只挑提到的')}</text>
-          <text x="20" y="640" class="tag">{t('longest prefix: ≤60 lines + ≤2000 bytes', '最长前缀：≤60 行 + ≤2000 字节')}</text>
-          <text x="20" y="668" class="tag">{t('stop at the first line that does not fit', '首个放不下的行就停')}</text>
-          <text x="20" y="696" class="tag">{t('provider may reuse system · no saving promised', 'provider 可能复用 system，不保证省时省 token')}</text>
+          <text x="20" y="612" class="tag">{t('≤30 all terms · >30 only mentioned', '≤30 全部词条 · >30 只留提到的')}</text>
+          <text x="20" y="640" class="tag">{t('keep lines until the next passes 60 lines or 2000 bytes', '按顺序保留，直到下一行超过 60 行或 2000 字节')}</text>
+          <text x="20" y="664" class="tag">{t('about one page of text', '约一页普通文字')}</text>
         {:else}
           <rect x="20" y="72" width="340" height="250" rx="10" fill="var(--bg)" stroke="var(--line)" />
           <text x="34" y="96" class="rowlabel">≤ {VOXT_DICT_GLOSSARY_ALL_UP_TO} · {t('GLOSSARY IN SYSTEM', '术语表在 SYSTEM')}</text>
           <rect x="34" y="108" width="312" height="104" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="48" y="130" class="detail">system</text>
-          <text x="48" y="152" class="detail">{t('general rules', '通用规则')}</text>
-          <text x="48" y="180" class="mono">- {VOXT_DICT_TERM} ({t('heard as', '可能被听成')}: {VOXT_DICT_ALIAS})</text>
-          <text x="48" y="202" class="detail">{t('all distinct terms are candidates', '全部不同词条先成为候选')}</text>
+          <text x="48" y="128" class="detail">system</text>
+          <text x="48" y="150" class="detail">{t('general rules', '通用规则')}</text>
+          <text x="48" y="174" class="mono">- {VOXT_DICT_TERM} ({t('heard as', '可能被听成')}: {VOXT_DICT_ALIAS})</text>
+          <text x="48" y="196" class="mono">- {VOXT_DICT_SECOND_TERM}</text>
           <rect x="34" y="224" width="312" height="70" rx="7" fill="var(--bg)" stroke="var(--line)" />
           <text x="48" y="246" class="detail">user</text>
           <text x="48" y="274" class="tag">call {VOXT_DICT_TERM}.</text>
@@ -332,10 +332,8 @@
           <text x="408" y="288" class="mono">{t('</glossary>', '</glossary>')}</text>
           <text x="408" y="312" class="tag">call {VOXT_DICT_TERM}.</text>
 
-          <text x="20" y="352" class="tag">{t('candidates: ≤30 all distinct · >30 mentioned only', '候选：≤30 全部不同词条 · >30 只挑文字提到的')}</text>
-          <text x="20" y="380" class="tag">{t('take the longest prefix that fits 60 lines and 2000 bytes', '取同时满足 60 行和 2000 字节的最长前缀')}</text>
-          <text x="20" y="408" class="tag">{t('stop at the first line that does not fit; never cut a line in half', '首个超预算的行就停，不把一行截半')}</text>
-          <text x="20" y="436" class="tag">{t('provider may reuse unchanged system · no guaranteed time or token savings', 'provider 可能复用未变的 system 前缀，不保证省时省 token')}</text>
+          <text x="20" y="352" class="tag">{t('≤30 all terms · >30 only terms the text mentions', '≤30 全部词条 · >30 只留文字提到的')}</text>
+          <text x="20" y="380" class="tag">{t('keep lines until the next would pass 60 lines or 2000 bytes (about one page of text)', '按顺序保留，直到下一行超过 60 行或 2000 字节（约一页文字）')}</text>
         {/if}
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('compose.Build · 60 lines · 2000 bytes', 'compose.Build · 60 行 · 2000 字节') : t('Source: compose.Build · GlossaryAllUpTo 30 · 60 lines · 2000 bytes', '出处：compose.Build · GlossaryAllUpTo 30 · 60 行 · 2000 字节')}</text>
 
