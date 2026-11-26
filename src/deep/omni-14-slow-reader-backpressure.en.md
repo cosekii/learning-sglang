@@ -259,3 +259,42 @@ The three behaviors and the rule that this cap does not refuse new requests are 
 ### Next
 
 After the failure goes out, closing the reader performs the final queue and byte cleanup.
+
+## Step 8 · Closing the reader finishes cleanup
+
+> **In one line:** Closing aborts owned work, removes the queue and backlog, and releases the stream ID.
+
+### On the stage
+
+- On the left, the reader remains open with 12 B queued. The coordinator may still own request work.
+- After a cap failure, the failed stream's queue and ID can remain while the stalled reader stays open.
+- On the right, the reader closes. Abort runs only if the coordinator still owns work; every close removes the stream queue and backlog record.
+- The remaining bytes fall from 12 B to 0, and the reserved stream ID is released.
+
+### Formula
+
+$$
+T_{after}=T_{before}-Q_c
+$$
+
+| Symbol | Meaning | Size | Source |
+|---|---|---:|---|
+| $T_{before}$ | Shared backlog before close | 12 B | Constructed example |
+| $Q_c$ | Backlog left by this reader | 12 B | Constructed example |
+| $T_{after}$ | Shared backlog after cleanup | 0 B | This step |
+
+### The numbers on the stage
+
+$$
+T_{after}=12-12=0\ \text{B}
+$$
+
+“Still owned” means the request remains in the coordinator's `requests` map. Finished generation is not aborted again when the reader closes. Closing the stream and aborting earlier stage work are separate actions.
+
+### Boundary and sources
+
+Conditional abort, queue removal and accounting on close are in `sglang_omni/pipeline/coordinator.py:497-553`. The early-close test is `tests/unit_test/pipeline/test_coordinator.py:1625-1638`; reservation after a cap failure until reader close is in `1497-1505`.
+
+### Next
+
+Chapter 15 puts two API processes behind one public URL and follows the router as it chooses a process for the next request.

@@ -64,6 +64,9 @@
   }, {
     caption: 'SSE and WebSocket readers get an error event. Raw PCM closes early because it has no event envelope.',
     captionZh: 'SSE 和 WebSocket 读者收到错误事件。raw PCM 没有事件外壳，只能提前断开。',
+  }, {
+    caption: 'Closing the reader aborts unfinished work and removes its queue. When two API processes share one URL, which takes the next request?',
+    captionZh: '关闭读者会中止未完成工作，并删掉剩余队列。两个 API 进程中，谁接收下一个请求？',
   }];
   let step = $state(0);
   $effect(() => {
@@ -305,6 +308,38 @@
         <text x={W / 2} y={phone ? 724 : 526} text-anchor="middle" class="tag">{t('This cap does not refuse new requests.', '这个上限不会因此拒绝新请求。')}</text>
         <text x={W / 2} y={phone ? 782 : 580} text-anchor="middle" class="rowlabel">{t('What remains until the reader closes?', '读者关闭以前，还留着什么？')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('SSE · WebSocket · raw PCM: different envelopes', '三种连接的错误外壳不同') : t('Speech SSE, speech WebSocket and raw PCM have different envelopes.', '语音 SSE、语音 WebSocket 和 raw PCM 的消息外壳不同。')}</text>
+      {:else if step === 7}
+        <text x={phone ? 15 : 20} y="26" class="rowlabel">{t('CLOSING THE READER RELEASES THE REST', '关闭读者，释放剩余资源')}</text>
+        <text x={phone ? 15 : 20} y="52" class="tag">{t('close = the reader stops taking messages', '关闭 = 读者不再从队列取消息')}</text>
+        <text x={phone ? 15 : 20} y="76" class="tag">{t('blue = remaining queue · orange = unfinished work to abort', '蓝 = 剩余队列 · 橙 = 需要中止的未完成工作')}</text>
+        {#each phone ? [
+          { x: 15, y: 112, h: 280, title: 'READER OPEN', titleZh: '读者还开着', closed: false },
+          { x: 15, y: 428, h: 280, title: 'READER CLOSED', titleZh: '读者已经关闭', closed: true },
+        ] : [
+          { x: 40, y: 112, h: 330, title: 'READER OPEN', titleZh: '读者还开着', closed: false },
+          { x: 380, y: 112, h: 330, title: 'READER CLOSED', titleZh: '读者已经关闭', closed: true },
+        ] as panel}
+          <rect x={panel.x} y={panel.y} width={phone ? 270 : 300} height={panel.h} rx="11" fill="var(--bg)" stroke="var(--line)" />
+          <text x={panel.x + 16} y={panel.y + 30} class="tag strong">{t(panel.title, panel.titleZh)}</text>
+          {#if !panel.closed}
+            <rect x={panel.x + 16} y={panel.y + 54} width={phone ? 238 : 268} height="60" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x={panel.x + 28} y={panel.y + 91} class="result">{DELIVERY_CLOSE_CASE_BYTES} B {t('still queued', '仍在队列')}</text>
+            <text x={panel.x + 20} y={panel.y + 150} class="tag">{t('request work may still be owned', '请求工作可能仍被持有')}</text>
+            <text x={panel.x + 20} y={panel.y + 180} class="tag">{t('after cap failure: stream ID reserved', '上限失败后：流 ID 仍保留')}</text>
+            <text x={panel.x + 20} y={panel.y + 224} class="tag strong">{t('The stalled reader must close.', '停住的读者需要关闭。')}</text>
+          {:else}
+            <rect x={panel.x + 16} y={panel.y + 54} width={phone ? 238 : 268} height="60" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x={panel.x + 28} y={panel.y + 91} class="tag strong">{t('ABORT only if work is still owned', '只有工作仍被持有时才中止')}</text>
+            <text x={panel.x + 20} y={panel.y + 150} class="tag">{t('remove stream queue + backlog', '删除流队列和积压记录')}</text>
+            <text x={panel.x + 20} y={panel.y + 180} class="result">{DELIVERY_CLOSE_CASE_BYTES} B → 0 B</text>
+            <text x={panel.x + 20} y={panel.y + 224} class="tag strong">{t('release the reserved stream ID', '释放保留的流 ID')}</text>
+          {/if}
+        {/each}
+        <text x={W / 2} y={phone ? 752 : 486} text-anchor="middle" class="tag strong">{t('NEXT · TWO API PROCESSES SHARE ONE PUBLIC URL', '下一步 · 两个 API 进程共用一个公开网址')}</text>
+        <rect x={phone ? 15 : 220} y={phone ? 776 : 510} width={phone ? 270 : 280} height="48" rx="9" fill="var(--bg)" stroke="var(--line)" />
+        <text x={W / 2} y={phone ? 807 : 541} text-anchor="middle" class="tag strong">{t('same public URL', '同一个公开网址')}</text>
+        <text x={W / 2} y={phone ? 850 : 584} text-anchor="middle" class="rowlabel">{phone ? t('A or B: who takes the next request?', 'A 还是 B：谁接收下一个请求？') : t('API process A or B: who takes the next request?', 'API 进程 A 还是 B：谁接收下一个请求？')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Both close tests release the backlog', '两种关闭测试都会释放积压') : t('Early-close and cap-failure tests both release the remaining backlog.', '提前关闭和上限失败的测试都会释放剩余积压。')}</text>
       {/if}
     </svg>
   </div>
