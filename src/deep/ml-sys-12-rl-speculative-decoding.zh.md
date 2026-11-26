@@ -1,11 +1,11 @@
 ## 第 1 步 · target 改变时，draft 也学习
 
-**一句话。** RL 每轮更新 target，冻结 draft 仍用旧权重；公开实验中，让 draft 在线学习把 rollout 吞吐从 1464 提到 1667 token/s。
+**一句话。** 每种配置的主 RL 都更新 target；“冻结”只指辅助 CE 不训练 MTP 层，“在线”则指辅助 CE 训练 MTP 层。
 
 ### 图上是什么
 
 - 第一行算式表示第 6 章的 RL 循环：下一轮使用更新后的 target 权重。
-- 橙色卡是冻结 draft：生成候选时仍读旧权重。蓝色卡是在线 draft：也从每批 RL 数据学习。
+- 橙色卡不让辅助 CE 训练 MTP 层；辅助 CE 是教 draft 给 token 打分的额外惩罚。蓝色卡用这个惩罚训练 MTP 层。两种配置的主 RL 都更新 target 主干和共享的 embedding／LM head。
 - 两条柱使用同一比例，分别表示 1464 和 1667 token/s。draft 先猜、target 再验证的流程见第 1 本第 15 章第 3 步。
 
 ### 公式与符号
@@ -23,7 +23,7 @@ $$g=\frac{T_o-T_f}{T_f}$$
 $$T_o-T_f=1667-1464=203\ \text{token/s}$$
 $$g=(1667-1464)/1464=13.9\%$$
 
-在线训练 draft 指 RL 训练 target 的同时也训练 draft，不是另外离线做一次训练。这个配置实际训练 checkpoint 自带的 multi-token prediction（MTP）层，也就是模型里负责一次猜多个后续 token 的一层；外部独立 draft model 的训练在该固定版本尚未实现。
+在线训练 draft 指 RL 训练 target 的同时，用辅助 CE 训练 checkpoint 自带的 multi-token prediction（MTP）层，不是另外离线做一次训练。“冻结”只排除这条辅助 CE 路径；两种配置的主 RL 损失都仍更新 target 主干以及与 draft 共享的 embedding／LM head。外部独立 draft model 的训练在该固定版本尚未实现。
 
 ### 接下来
 

@@ -25,11 +25,12 @@
     footZh: '文章报告的 MiMo-7B-RL H200 集群实验；不是本地实测或整轮加速。',
     legend: 'Orange = frozen draft · blue = online draft · bars share one scale', legendZh: '橙 = 冻结 draft · 蓝 = 在线 draft · 柱使用同一比例',
     nodes: [
-      { title: 'FROZEN DRAFT', titleZh: '冻结 DRAFT', result: `${N.SPEC_FROZEN_ROLLOUT_TOKENS_S} tokens/s`, resultZh: `${N.SPEC_FROZEN_ROLLOUT_TOKENS_S} token/s`, body: 'draft weights stay fixed', bodyZh: 'draft 权重保持不变', tone: 'orange', bar: N.SPEC_FROZEN_ROLLOUT_TOKENS_S / N.SPEC_ONLINE_ROLLOUT_TOKENS_S },
-      { title: 'ONLINE DRAFT', titleZh: '在线 DRAFT', result: `${N.SPEC_ONLINE_ROLLOUT_TOKENS_S} tokens/s`, resultZh: `${N.SPEC_ONLINE_ROLLOUT_TOKENS_S} token/s`, body: 'draft weights update too', bodyZh: 'draft 权重也更新', tone: 'blue', bar: 1 },
+      { title: 'FROZEN DRAFT', titleZh: '冻结 DRAFT', result: `${N.SPEC_FROZEN_ROLLOUT_TOKENS_S} tokens/s`, resultZh: `${N.SPEC_FROZEN_ROLLOUT_TOKENS_S} token/s`, body: 'MTP layer stays frozen', bodyZh: 'MTP 层保持冻结', tone: 'orange', bar: N.SPEC_FROZEN_ROLLOUT_TOKENS_S / N.SPEC_ONLINE_ROLLOUT_TOKENS_S },
+      { title: 'ONLINE DRAFT', titleZh: '在线 DRAFT', result: `${N.SPEC_ONLINE_ROLLOUT_TOKENS_S} tokens/s`, resultZh: `${N.SPEC_ONLINE_ROLLOUT_TOKENS_S} token/s`, body: 'MTP layer updates too', bodyZh: 'MTP 层也更新', tone: 'blue', bar: 1 },
     ],
     formulas: [
       { en: 'RL round 1 → round 2: target weights change', zh: 'RL 第 1 轮 → 第 2 轮：target 权重改变' },
+      { en: 'both: main RL updates target + shared tables', zh: '两种配置：主 RL 都更新 target 和共享表' },
       { en: 'Learning SGLang Ch. 15 Step 3: draft guesses; target verifies', zh: '第 1 本第 15 章第 3 步：draft 猜，target 验证' },
       { en: `${N.SPEC_ONLINE_ROLLOUT_TOKENS_S} − ${N.SPEC_FROZEN_ROLLOUT_TOKENS_S} = ${N.SPEC_ONLINE_ROLLOUT_TOKENS_S - N.SPEC_FROZEN_ROLLOUT_TOKENS_S} more tokens/s`, zh: `${N.SPEC_ONLINE_ROLLOUT_TOKENS_S} − ${N.SPEC_FROZEN_ROLLOUT_TOKENS_S} = 每秒多 ${N.SPEC_ONLINE_ROLLOUT_TOKENS_S - N.SPEC_FROZEN_ROLLOUT_TOKENS_S} token` },
       { en: `gain = ${N.SPEC_ONLINE_ROLLOUT_TOKENS_S} ÷ ${N.SPEC_FROZEN_ROLLOUT_TOKENS_S} − 1 = ${(N.SPEC_ONLINE_OVER_FROZEN * 100).toFixed(1)}%`, zh: `提升 = ${N.SPEC_ONLINE_ROLLOUT_TOKENS_S} ÷ ${N.SPEC_FROZEN_ROLLOUT_TOKENS_S} − 1 = ${(N.SPEC_ONLINE_OVER_FROZEN * 100).toFixed(1)}%` },
@@ -42,6 +43,7 @@
       legend: 'Orange = frozen · blue = online · one scale', legendZh: '橙 = 冻结 · 蓝 = 在线 · 同一比例',
       formulas: [
         { en: 'RL changes target weights', zh: 'RL 会改变 target 权重' },
+        { en: 'Both: main RL updates shared target tables', zh: '两种配置：主 RL 都更新 target 共享表' },
         { en: 'Learning SGLang Ch. 15 Step 3', zh: '第 1 本第 15 章第 3 步' },
         { en: '1667 − 1464 = 203 more tokens/s', zh: '1667 − 1464 = 每秒多 203 token' },
         { en: '1667 ÷ 1464 − 1 = 13.9%', zh: '1667 ÷ 1464 − 1 = 13.9%' },

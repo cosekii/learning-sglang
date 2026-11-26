@@ -1,11 +1,11 @@
 ## Step 1 · Train the draft as the target changes
 
-**One sentence.** RL updates the target while a frozen draft keeps old weights; the public experiment reports 1,667 tokens/s with online draft training versus 1,464 frozen.
+**One sentence.** RL updates the target in every configuration; frozen means auxiliary CE does not train the MTP layer, while online means it does.
 
 ### On the stage
 
 - The first line recalls Chapter 6's RL loop: the next round uses updated target weights.
-- The orange card is the frozen draft, whose guesses still use old weights. The blue card is the online draft, which learns from each RL batch too.
+- The orange card leaves the MTP layer without auxiliary CE, an extra penalty that teaches draft token scores. The blue card trains the MTP layer with that penalty. Main RL updates the target trunk and shared embedding/LM head in both configurations.
 - Both bars use one scale for 1,464 and 1,667 tokens/s. Learning SGLang Ch. 15 Step 3 supplies the existing draft–verify rule: the draft guesses and the target verifies.
 
 ### Formula and symbols
@@ -23,7 +23,7 @@ $$g=\frac{T_o-T_f}{T_f}$$
 $$T_o-T_f=1667-1464=203\ \text{tokens/s}$$
 $$g=(1667-1464)/1464=13.9\%$$
 
-Online draft training means training the draft while RL trains the target, rather than running a separate offline job. This configuration trains the checkpoint's built-in multi-token prediction (MTP) layer, which guesses several future tokens. Training an external standalone draft model is not yet implemented at the pinned revision.
+Online draft training means training the checkpoint's built-in multi-token prediction (MTP) layer with auxiliary CE while RL trains the target, rather than running a separate offline job. “Frozen” excludes only that auxiliary CE path. The main RL loss still updates the target trunk and the embedding/LM head shared with the draft in both configurations. Training an external standalone draft model is not yet implemented at the pinned revision.
 
 ### Next
 
