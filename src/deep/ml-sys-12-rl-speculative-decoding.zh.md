@@ -205,6 +205,8 @@ slime 在移位前先把 prompt 部分补成 0，再按 context parallelism 的�
 
 - 灰柱不用投机，吞吐为 1219 token/s；橙柱使用冻结 draft，为 1464；蓝柱在线训练 draft，为 1667。
 - 三柱使用同一比例，数值都是文章报告的每秒生成 token 数，不是本章实测。
+- “冻结”和“在线”只描述辅助 CE 是否训练 MTP 层。两种配置的主 RL 都更新 target 主干和共享的 embedding／LM head。
+- target 漂移可能扩大 draft 与 target 的概率差距，减少接受的 token。在线辅助 CE 训练 MTP 跟随这些更新。文章报告的 accept length 上升与 MTP loss 下降符合这个方向，但没有单独证明因果关系，也不能证明其他负载有同样收益。
 - 第 1 本第 15 章第 8 步说明每次 target 计算正式接收更多 token，可以摊薄每次计算的成本。本步只使用这个机制，不搬用别章的模型数字。
 
 ### 公式与符号

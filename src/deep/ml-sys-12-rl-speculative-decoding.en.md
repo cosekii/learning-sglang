@@ -205,6 +205,8 @@ Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:144-176`; `THUDM/sli
 
 - The grey bar has no speculation and reaches 1,219 tokens/s. The orange frozen-draft bar reaches 1,464 and the blue online-draft bar reaches 1,667.
 - All three bars use one scale. The values are reported generated tokens per second, not local measurements.
+- Frozen and online describe only auxiliary CE on the MTP layer. Main RL updates the target trunk and shared embedding/LM head in both configurations.
+- Target drift can widen the draft–target probability gap and reduce accepted tokens. Online auxiliary CE trains MTP to follow those updates. The article's reported accept-length increase and MTP-loss decrease match that direction, without proving causation or gains on other workloads.
 - Learning SGLang Ch. 15 Step 8 explains how committing more tokens per target pass can spread the pass's cost over more output. This step uses that mechanism without importing another chapter's model numbers.
 
 ### Formula and symbols
