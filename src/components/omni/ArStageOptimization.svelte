@@ -14,6 +14,11 @@
     OPT_SINGLE_FLIGHT_FOLLOWER_COUNT,
     OPT_SINGLE_FLIGHT_COLD_HIT_COUNT,
     OPT_SINGLE_FLIGHT_GPU_TOTAL_MS,
+    OPT_AUDIO_TOKEN_BUCKETS,
+    OPT_AUDIO_REAL_TOKENS,
+    OPT_AUDIO_BUCKET_TOKENS,
+    OPT_AUDIO_PADDING_TOKENS,
+    OPT_AUDIO_GRAPH_COUNT,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -33,6 +38,9 @@
   }, {
     caption: 'The audio encoder can capture its layer stack once. Matching calls replay those kernels as one graph.',
     captionZh: 'audio encoder 可以把整层序列录一次。匹配的调用把同一组 kernels 作为一张 graph 重放。',
+  }, {
+    caption: `A ${OPT_AUDIO_REAL_TOKENS}-token input uses the ${OPT_AUDIO_BUCKET_TOKENS}-token graph. It pads ${OPT_AUDIO_PADDING_TOKENS} zeros, replays, then keeps the first ${OPT_AUDIO_REAL_TOKENS} outputs.`,
+    captionZh: `${OPT_AUDIO_REAL_TOKENS} 个 token 选用 ${OPT_AUDIO_BUCKET_TOKENS} 格 graph。补 ${OPT_AUDIO_PADDING_TOKENS} 个零后重放，只留前 ${OPT_AUDIO_REAL_TOKENS} 份输出。`,
   }];
   let step = $state(0);
   $effect(() => {
@@ -49,7 +57,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [790, 800, 810, 760, 810][step] : [540, 590, 590, 570, 560][step]);
+  const H = $derived(phone ? [790, 800, 810, 760, 810, 800][step] : [540, 590, 590, 570, 560, 600][step]);
   const requests = [
     { id: 'A', prompt: 'Hello', promptZh: '你好' },
     { id: 'B', prompt: 'Thank you', promptZh: '谢谢' },
@@ -327,6 +335,58 @@
           <text x="150" y="754" text-anchor="middle" class="small strong">{t('Same kernels; new submission path.', 'kernels 不变；提交路径改变。')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Opt-in · eager fallback remains' : 'Opt-in audio-layer graphs; eager fallback remains. No timing win claimed.', phone ? '可选开启 · 保留 eager 回退' : '可选 audio 层 graph；保留 eager 回退，不声称耗时收益。')}</text>
+      {:else if step === 5}
+        <text x={phone ? 18 : 30} y="30" class="title">{t('Choose a captured size · 4 of 4', '选择已录制的大小 · 4 / 4')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'bucket = one captured input size' : 'token bucket = one captured input size; choose the smallest that fits', phone ? 'bucket = 一种已 capture 的输入大小' : 'token bucket = 一种已 capture 的输入大小；选择能装下的最小值')}</text>
+        <text x={phone ? 18 : 30} y="79" class="label">{t(phone ? 'blue real · grey zeros · orange graph' : 'blue = real tokens · grey = zero padding · orange = chosen graph', phone ? '蓝真实 · 灰补零 · 橙 graph' : '蓝 = 真实 token · 灰 = 补零 · 橙 = 选中的 graph')}</text>
+        {#if !phone}
+          <text x="30" y="105" class="small strong">{OPT_AUDIO_GRAPH_COUNT} {t('CAPTURED SIZES', '种已录制大小')}</text>
+          {#each OPT_AUDIO_TOKEN_BUCKETS as bucket, i}
+            {@const x = 30 + i * 105}
+            <rect x={x} y="120" width="100" height="58" rx="8" fill={bucket === OPT_AUDIO_BUCKET_TOKENS ? 'var(--gen-soft)' : 'var(--bg)'} stroke={bucket === OPT_AUDIO_BUCKET_TOKENS ? 'var(--gen)' : 'var(--line)'} />
+            <text x={x + 50} y="155" text-anchor="middle" class="result">{bucket}</text>
+          {/each}
+          <text x="360" y="211" text-anchor="middle" class="result">{OPT_AUDIO_REAL_TOKENS} {t('real tokens', '真实 token')} → {OPT_AUDIO_BUCKET_TOKENS}-token graph</text>
+          <rect x="120" y="239" width={480 * OPT_AUDIO_REAL_TOKENS / OPT_AUDIO_BUCKET_TOKENS} height="52" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <rect x={120 + 480 * OPT_AUDIO_REAL_TOKENS / OPT_AUDIO_BUCKET_TOKENS} y="239" width={480 * OPT_AUDIO_PADDING_TOKENS / OPT_AUDIO_BUCKET_TOKENS} height="52" fill="var(--bg)" stroke="var(--faint)" />
+          <text x={120 + 240 * OPT_AUDIO_REAL_TOKENS / OPT_AUDIO_BUCKET_TOKENS} y="271" text-anchor="middle" class="small strong">{OPT_AUDIO_REAL_TOKENS} real</text>
+          <text x={120 + 480 * (OPT_AUDIO_REAL_TOKENS + OPT_AUDIO_PADDING_TOKENS / 2) / OPT_AUDIO_BUCKET_TOKENS} y="271" text-anchor="middle" class="small">{OPT_AUDIO_PADDING_TOKENS} zeros</text>
+          <text x="360" y="320" text-anchor="middle" class="result">{OPT_AUDIO_BUCKET_TOKENS} − {OPT_AUDIO_REAL_TOKENS} = {OPT_AUDIO_PADDING_TOKENS} {t('zero positions', '个补零位置')}</text>
+          <line x1="360" y1="338" x2="360" y2="360" stroke="var(--gen)" stroke-width="3" />
+          <rect x="245" y="366" width="230" height="60" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="360" y="403" text-anchor="middle" class="small strong">{OPT_AUDIO_BUCKET_TOKENS}-token graph replay</text>
+          <line x1="360" y1="427" x2="360" y2="449" stroke="var(--gen)" stroke-width="3" />
+          <rect x="120" y="455" width={480 * OPT_AUDIO_REAL_TOKENS / OPT_AUDIO_BUCKET_TOKENS} height="49" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <rect x={120 + 480 * OPT_AUDIO_REAL_TOKENS / OPT_AUDIO_BUCKET_TOKENS} y="455" width={480 * OPT_AUDIO_PADDING_TOKENS / OPT_AUDIO_BUCKET_TOKENS} height="49" fill="white" stroke="var(--faint)" stroke-dasharray="5 4" />
+          <text x={120 + 240 * OPT_AUDIO_REAL_TOKENS / OPT_AUDIO_BUCKET_TOKENS} y="486" text-anchor="middle" class="small strong">output[:{OPT_AUDIO_REAL_TOKENS}]</text>
+          <text x={120 + 480 * (OPT_AUDIO_REAL_TOKENS + OPT_AUDIO_PADDING_TOKENS / 2) / OPT_AUDIO_BUCKET_TOKENS} y="486" text-anchor="middle" class="small">{t('cropped', '裁掉')}</text>
+          <text x="360" y="542" text-anchor="middle" class="small">{t('No matching graph or above 4096 tokens → run the original layers eagerly.', '无匹配 graph 或超过 4096 token → 按原层序列 eager 运行。')}</text>
+        {:else}
+          <text x="18" y="103" class="small strong">{OPT_AUDIO_GRAPH_COUNT} {t('CAPTURED SIZES', '种录制大小')}</text>
+          {#each OPT_AUDIO_TOKEN_BUCKETS as bucket, i}
+            {@const x = 18 + (i % 3) * 90}
+            {@const y = 116 + Math.floor(i / 3) * 66}
+            <rect x={x} y={y} width="82" height="54" rx="7" fill={bucket === OPT_AUDIO_BUCKET_TOKENS ? 'var(--gen-soft)' : 'var(--bg)'} stroke={bucket === OPT_AUDIO_BUCKET_TOKENS ? 'var(--gen)' : 'var(--line)'} />
+            <text x={x + 41} y={y + 34} text-anchor="middle" class="result">{bucket}</text>
+          {/each}
+          <text x="150" y="275" text-anchor="middle" class="result">{OPT_AUDIO_REAL_TOKENS} → {OPT_AUDIO_BUCKET_TOKENS}-token graph</text>
+          <rect x="30" y="300" width={240 * OPT_AUDIO_REAL_TOKENS / OPT_AUDIO_BUCKET_TOKENS} height="49" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <rect x={30 + 240 * OPT_AUDIO_REAL_TOKENS / OPT_AUDIO_BUCKET_TOKENS} y="300" width={240 * OPT_AUDIO_PADDING_TOKENS / OPT_AUDIO_BUCKET_TOKENS} height="49" fill="var(--bg)" stroke="var(--faint)" />
+          <text x={30 + 120 * OPT_AUDIO_REAL_TOKENS / OPT_AUDIO_BUCKET_TOKENS} y="330" text-anchor="middle" class="small strong">{OPT_AUDIO_REAL_TOKENS} real</text>
+          <text x={30 + 240 * (OPT_AUDIO_REAL_TOKENS + OPT_AUDIO_PADDING_TOKENS / 2) / OPT_AUDIO_BUCKET_TOKENS} y="330" text-anchor="middle" class="small">{OPT_AUDIO_PADDING_TOKENS} zeros</text>
+          <text x="150" y="377" text-anchor="middle" class="result">{OPT_AUDIO_BUCKET_TOKENS} − {OPT_AUDIO_REAL_TOKENS} = {OPT_AUDIO_PADDING_TOKENS}</text>
+          <rect x="50" y="402" width="200" height="57" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="150" y="437" text-anchor="middle" class="small strong">{OPT_AUDIO_BUCKET_TOKENS}-token replay</text>
+          <rect x="30" y="492" width={240 * OPT_AUDIO_REAL_TOKENS / OPT_AUDIO_BUCKET_TOKENS} height="49" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <rect x={30 + 240 * OPT_AUDIO_REAL_TOKENS / OPT_AUDIO_BUCKET_TOKENS} y="492" width={240 * OPT_AUDIO_PADDING_TOKENS / OPT_AUDIO_BUCKET_TOKENS} height="49" fill="white" stroke="var(--faint)" stroke-dasharray="5 4" />
+          <text x={30 + 120 * OPT_AUDIO_REAL_TOKENS / OPT_AUDIO_BUCKET_TOKENS} y="522" text-anchor="middle" class="small strong">[:{OPT_AUDIO_REAL_TOKENS}]</text>
+          <text x={30 + 240 * (OPT_AUDIO_REAL_TOKENS + OPT_AUDIO_PADDING_TOKENS / 2) / OPT_AUDIO_BUCKET_TOKENS} y="522" text-anchor="middle" class="small">{t('cropped', '裁掉')}</text>
+          <text x="150" y="584" text-anchor="middle" class="small">{t('Padding has separate attention windows.', 'padding 有独立 attention window。')}</text>
+          <text x="150" y="628" text-anchor="middle" class="small">{t('No match or >4096 tokens', '无匹配或超过 4096 token')}</text>
+          <text x="150" y="657" text-anchor="middle" class="small strong">→ {t('run the original layers eagerly', '按原层序列 eager 运行')}</text>
+          <text x="150" y="704" text-anchor="middle" class="small">{t('Only the first 300 outputs remain.', '只保留前 300 份输出。')}</text>
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Constructed shapes · no timing result' : 'Constructed tensor shapes; padding has separate attention windows. No timing result.', phone ? '构造形状 · 无耗时结果' : '构造 tensor 形状；padding 有独立 attention window，无耗时结果。')}</text>
       {/if}
     </svg>
   </div>

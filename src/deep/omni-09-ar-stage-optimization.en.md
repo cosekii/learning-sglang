@@ -168,3 +168,40 @@ This step does not assign $k$ or a time saving. It compares $k$ individual kerne
 A graph has a fixed captured input size. The next step shows how 300 real tokens select and pad into one of the six captured sizes.
 
 Sources: Learning SGLang Ch. 11 Step 1; `sglang_omni/models/qwen3_omni/components/audio_layer_graph.py:163-221`; `sglang_omni/models/qwen3_omni/components/audio_encoder.py:170-197,200-268`.
+
+## Step 6 · Select a token bucket and crop the padding
+
+**One sentence.** A 300-token input selects the smallest sufficient captured bucket, 512, pads 212 positions in separate attention windows, replays and returns only the first 300 outputs.
+
+### On the stage
+
+- A `token bucket` is one captured input size. The six default graphs have 128, 256, 512, 1024, 2048 and 4096 tokens. The selector picks the smallest available graph that can fit the real tokens and required segment slots.
+- Blue positions are the 300 real tokens. Grey positions are the 212 zero-filled padding positions. Orange marks the selected 512-token graph.
+- The replay copies real hidden states into the captured buffer, zeros the remainder and updates the segment boundaries. Padding forms its own attention windows, so real tokens do not attend to it.
+- The returned slice is `output[:300]`. Padding computes extra positions, but those positions do not become outputs for this request.
+- Inputs above 4096 tokens, invalid segments, insufficient segment slots, a device or process mismatch, and unavailable capture all decline replay. The caller then uses the eager layer stack.
+
+### Formula and symbols
+
+$$b=\min\{b_i\mid b_i\geq n\},\qquad p=b-n$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $n$ | Real input tokens | Constructed here, 300 |
+| $b_i$ | One captured bucket size | `DEFAULT_TOKEN_BUCKETS` |
+| $b$ | Smallest sufficient selected bucket | This example, 512 |
+| $p$ | Zero-filled positions before replay | Calculated here, 212 |
+
+### The numbers on the stage
+
+$$b=\min\{512,1024,2048,4096\}=512$$
+
+$$p=512-300=212$$
+
+The bucket must also have enough segment slots for the real segments and the window-bounded padding segments. This example assumes valid segments with sufficient slots, so token count determines the choice. The arithmetic describes shape, not a latency measurement.
+
+### Next
+
+The four mechanisms now have distinct jobs and limits. The last step places them on one map and follows the frames into the vocoder.
+
+Sources: `sglang_omni/models/qwen3_omni/components/audio_layer_graph.py:22-23,223-275`; `tests/unit_test/qwen3_omni/test_audio_layer_graph.py:105-154`.

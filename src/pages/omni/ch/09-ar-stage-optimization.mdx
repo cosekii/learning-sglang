@@ -23,6 +23,8 @@ Step 4 follows `sglang_omni/model_runner/base.py:502-605` and `sglang_omni/sched
 
 Step 5 follows `sglang_omni/models/qwen3_omni/components/audio_layer_graph.py:163-221` and `sglang_omni/models/qwen3_omni/components/audio_encoder.py:170-268`. The graph records the audio layer stack, not one kernel or the whole request. Matching calls replay that stack while input copies and metadata updates remain outside it. The option defaults off. Capture failure or a nonmatching input falls back to the original eager layers; no timing win is claimed.
 
+Step 6 follows `sglang_omni/models/qwen3_omni/components/audio_layer_graph.py:22-23,223-275`. The default buckets are 128 through 4096 tokens. The constructed 300-token example selects 512, adds 212 zero positions and returns `output[:300]`. Padding receives separate attention windows. Selection also checks segment validity and slots; unavailable or nonmatching graphs fall back to eager execution. These numbers describe tensor shape, not a timing result.
+
 Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`. The chapter reads source and public results; it does not run a model or benchmark.
 
 </details>
@@ -39,6 +41,8 @@ Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37
 第 4 步依据 `sglang_omni/model_runner/base.py:502-605` 和 `sglang_omni/scheduling/omni_scheduler.py:5125-5197`。launch 发布一步并记录 event，不等待 GPU；resolve 再处理上一个 pending step。event 未完成时仍要同步等待。图中只有顺序，没有填写节省时间。MOSS-TTS-Local 从 device 快照 resolve，默认关闭异步 decode（`sglang_omni/models/moss_tts_local/stages.py:326-346`），公开测量为性能中性，见 `Awesome-ML-SYS-Tutorial/sglang/sglang-omni/moss-tts-local-v15-blog-zh.md:210-216`。
 
 第 5 步依据 `sglang_omni/models/qwen3_omni/components/audio_layer_graph.py:163-221` 和 `sglang_omni/models/qwen3_omni/components/audio_encoder.py:170-268`。graph 录制 audio 层序列，不等于一个 kernel，也不覆盖整个请求。匹配调用重放层序列，输入拷贝和 metadata 更新仍在外面。该选项默认关闭。capture 失败或输入不匹配会回退到原来的 eager 层；本步不声称耗时收益。
+
+第 6 步依据 `sglang_omni/models/qwen3_omni/components/audio_layer_graph.py:22-23,223-275`。默认 bucket 从 128 到 4096 token。构造的 300-token 输入选择 512，补 212 个零位置，再返回 `output[:300]`。padding 使用独立 attention window。选择时还检查 segment 和 slots；没有可用或匹配的 graph 就回退 eager。这些数字描述 tensor 形状，不是耗时结果。
 
 本章代码出处固定到 `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`。本章只读源码和公开结果，没有运行模型或 benchmark。
 

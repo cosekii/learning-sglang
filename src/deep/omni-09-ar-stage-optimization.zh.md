@@ -168,3 +168,40 @@ $$D_{\mathrm{eager}}=k,\qquad D_{\mathrm{graph}}=1$$
 graph 的输入大小在 capture 时固定。下一步看 300 个真实 token 怎样选择并补进六个已录大小之一。
 
 来源：Learning SGLang 第 11 章第 1 步；`sglang_omni/models/qwen3_omni/components/audio_layer_graph.py:163-221`；`sglang_omni/models/qwen3_omni/components/audio_encoder.py:170-197,200-268`。
+
+## 第 6 步 · 选择 token bucket，再裁掉 padding
+
+**一句话。** 300 个 token 选择能装下的最小 bucket 512，在独立 attention window 补 212 个位置，重放后只返回前 300 份输出。
+
+### 图上是什么
+
+- `token bucket` 是一种已 capture 的输入大小。六个默认 graph 分别是 128、256、512、1024、2048、4096 token。selector 选择能装下真实 token 和所需 segment slots 的最小 graph。
+- 蓝色位置是 300 个真实 token，灰色位置是 212 个补零位置，橙色是选中的 512-token graph。
+- replay 把真实 hidden states 拷进已 capture 的 buffer，剩余位置补零，再更新分段边界。padding 有自己的 attention window，真实 token 不会注意到它。
+- 返回切片是 `output[:300]`。padding 也参与计算，但不会成为这次请求的输出。
+- 超过 4096 token、segment 无效、segment slots 不足、device 或进程不匹配、capture 不可用，都会拒绝 replay。调用方随后使用 eager 层序列。
+
+### 公式与符号
+
+$$b=\min\{b_i\mid b_i\geq n\},\qquad p=b-n$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $n$ | 真实输入 token 数 | 本步构造，300 |
+| $b_i$ | 一个已 capture 的 bucket 大小 | `DEFAULT_TOKEN_BUCKETS` |
+| $b$ | 能装下的最小 bucket | 本例，512 |
+| $p$ | replay 前补零的位置数 | 本步计算，212 |
+
+### 代入图上的数
+
+$$b=\min\{512,1024,2048,4096\}=512$$
+
+$$p=512-300=212$$
+
+bucket 还必须有足够的 segment slots，容纳真实分段和按 window 上限拆开的 padding 分段。本例假设 segment 有效且 slots 足够，所以 token 数决定选择。这些算式只描述形状，不是延迟测量。
+
+### 接下来
+
+四种机制的分工和边界已经讲完。最后一步把它们放回一张地图，再跟着 frames 进入 vocoder。
+
+来源：`sglang_omni/models/qwen3_omni/components/audio_layer_graph.py:22-23,223-275`；`tests/unit_test/qwen3_omni/test_audio_layer_graph.py:105-154`。

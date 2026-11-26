@@ -35,7 +35,7 @@ Read it to check wording and numbers across chapters without opening the compone
 | omni | 06 | [Queues, batches and backpressure](omni/06-batching-backpressure.md) | 8 |
 | omni | 07 | [A shared GPU budget](omni/07-shared-gpu-budgets.md) | 6 |
 | omni | 08 | [Measure first sound and stalls](omni/08-measure-streaming.md) | 8 |
-| omni | 09 | [Optimize AR and encoders](omni/09-ar-stage-optimization.md) | 5 |
+| omni | 09 | [Optimize AR and encoders](omni/09-ar-stage-optimization.md) | 6 |
 | ml-sys | 01 | [Measure one inference request](ml-sys/01-measure-inference.md) | 7 |
 | ml-sys | 02 | [The full GPU memory budget](ml-sys/02-inference-memory-budget.md) | 2 |
 | ml-sys | 03 | [Prefix state in hybrid models](ml-sys/03-hybrid-state-cache.md) | 6 |
