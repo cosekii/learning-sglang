@@ -273,59 +273,103 @@ $$ \text{row}' = \mathrm{retry}(\text{audio.wav},\ \text{settings now}),\qquad \
 
 记录和录音都有自己的钟。第 7 步看别的程序导出历史时，哪些东西会离开这台 Mac。
 
-## 第 7 步 · 导出：记录里什么出去
+## 第 7 步 · JSONL 导出：一行一个对象
 
-> **一句话：** 导出只写完成的记录，从旧到新；JSONL 带全部导出字段，Markdown 只带时间、应用和交付文字；录音、网址、错误、内部名字和计时从不离开。
+> **一句话：** JSONL 导出每行写一个 JSON 对象，从旧到新；它支持整份 `Row` 结构，但空的可选字段不写。
 
 ### 图上是什么
 
-- 表的每一行是一个导出字段，两列是两种格式。
-- JSONL 留表里所有字段；Markdown 只留 `created_at`、`app` 和 `text`。
-- `selection` 和 `typed` 后面的 `*` 表示只在「包含选中文字」打开时才出现。
-- 下面列出两种格式都不带的东西：录音、网址、错误和内部名字、计时。只导完成的记录；失败和取消的不出去。
+- 表的每一行是 `historyapi.Row` 的一个字段；右列写着它什么时候会进对象。
+- `id`、`created_at`、`kind`、`text`、`heard` 总是有。
+- `app` 只在知道应用时有；`instruction` 只在带口述的改写里有；`target_lang` 只在翻译里有；`selection` 只在「包含选中文字」打开时有；`typed` 还要同时满足该设置、改写和口述。
+- 下面两行说：结构里有十个字段，但空的可选字段不写。
 
-### 导出的那一行
+### 对象和字段
 
-`historyapi.Row` 是导出字段的完整清单；结构体从 `Voxt/internal/historyapi/row.go:22` 开始。JSONL 把整行编码（`render.go:38-42`）。包注释说，`store.Entry` 新加的字段不会自动跟出去。Markdown 只写每天一个 `## YYYY-MM-DD` 节和每行一条 `- HH:MM · App: text`（`render.go:47-65`），所以 `id`、`kind`、`heard`、`instruction`、`target_lang`、`selection`、`typed` 不在 Markdown 文件里。`Walk` 设置 `Finished` 和 `Oldest`，所以失败和取消的记录不出去，记录从旧到新（`row.go:56-57`）。`FromEntry` 填这一行，只在设置开着时加 `selection`；`typed` 还要设置开着、并且是带口述指令的改写（`row.go:44-49`）。
+`historyapi.Row` 是结构定义；结构体从 `Voxt/internal/historyapi/row.go:22` 开始。`omitempty` 标在 `app`、`instruction`、`target_lang`、`selection`、`typed` 上（`row.go:26`、`row.go:29-32`）。JSONL 渲染器把整行编码（`render.go:38-42`），所以空的可选字段连键都不出现。
 
-$$ \text{export} = \{\text{id},\ \text{created\_at},\ \text{kind},\ \text{app}?,\ \text{text},\ \text{heard},\ \text{instruction}?,\ \text{target\_lang}?,\ \text{selection}?,\ \text{typed}?\} $$
+$$ \text{object} = \{\text{id},\ \text{created\_at},\ \text{kind},\ \text{app}?,\ \text{text},\ \text{heard},\ \text{instruction}?,\ \text{target\_lang}?,\ \text{selection}?,\ \text{typed}?\} $$
 
-| 符号 | 是什么 | 从哪来 |
+| 字段 | 什么时候进对象 | 从哪来 |
 |---|---|---|
-| `id` | 记录的 id | `row.go:23` |
-| `created_at` | 记录的本地时间 | `row.go:24` |
-| `kind` | transcribe、translate 或 rewrite | `row.go:25` |
-| `app` | 前台应用，知道时才有 | `row.go:26` |
-| `text` | 交付的结果 | `row.go:27` |
-| `heard` | 清理前的识别文字 | `row.go:28` |
-| `instruction` | 改写的口述指令 | `row.go:29` |
-| `target_lang` | 翻译的目标语言 | `row.go:30` |
-| `selection` | 选中文字，只在设置开着时 | `row.go:31`、`row.go:44-45` |
-| `typed` | 改写的输入框文字，同一设置下 | `row.go:32`、`row.go:46-48` |
+| `id` | 总是 | `row.go:23` |
+| `created_at` | 总是 | `row.go:24` |
+| `kind` | 总是 | `row.go:25` |
+| `app` | 知道应用时（`omitempty`） | `row.go:26` |
+| `text` | 总是 | `row.go:27` |
+| `heard` | 总是 | `row.go:28` |
+| `instruction` | 带口述的改写（`omitempty`） | `row.go:29`、`row.go:44-49` |
+| `target_lang` | 翻译（`omitempty`） | `row.go:30` |
+| `selection` | 包含选中文字打开时（`omitempty`） | `row.go:31`、`row.go:44-45` |
+| `typed` | 该设置 + 改写 + 口述（`omitempty`） | `row.go:32`、`row.go:46-48` |
 
 ### 代入图上的数
 
-| 字段 | 图上有没有 | 条件 |
-|---|---|---|
-| `selection` | 带星号；只在 JSONL | 包含选中文字开着 |
-| `typed` | 带星号；只在 JSONL | 包含选中文字开着，且有改写指令 |
-| `created_at`、`app`、`text` | 两种都有 | 总是 |
-| `id`、`kind`、`heard`、`instruction`、`target_lang` | 只在 JSONL | 总是 |
-| 录音、网址、错误、规则、模型、计时 | 从不 | `history-access.md` |
+| 记录 | `app` | `instruction` | `target_lang` | 对象里的键 |
+|---|---|---|---|---|
+| 听写，应用未知 | 没有 | 没有 | 没有 | 10 个里的 8 个 |
+| 听写，Mail | `Mail` | 没有 | 没有 | 10 个里的 9 个 |
+| 翻译 | `Mail` | 没有 | 有 | 10 个 |
+| 带口述的改写 | `Mail` | 有 | 没有 | 10 个 |
 
-### 格式和范围
+`selection` 和 `typed` 还要设置打开才加，所以键数可能更少。重点不是数键，而是上表哪几个字段可能缺席。
 
-`--day YYYY-MM-DD` 取本地日历日，时钟切换时那一天是 23 或 25 小时；`--since T` 和可选的 `--until T` 收 RFC 3339 时间或日期。范围含起点、不含终点（`Voxt/docs/history-access.md`）。`--kind` 取 `transcribe`、`translate` 或 `rewrite`。`--format jsonl` 一行一个 JSON 对象，带上面全部字段（`render.go:38-42`）；`--format md` 一天一节 `## YYYY-MM-DD`，只带时间、应用和文字（`render.go:47-65`）。历史页的「导出文字…」用同一份字段和同一个「包含选中文字」设置。
+### 参数和范围
+
+`--format jsonl` 一行写一个 JSON 对象（`render.go:38-42`）。`--day YYYY-MM-DD` 取本地日历日，时钟切换时那一天是 23 或 25 小时；`--since T` 和可选的 `--until T` 收 RFC 3339 时间或日期。范围含起点、不含终点（`Voxt/docs/history-access.md`）。`--kind` 取 `transcribe`、`translate` 或 `rewrite`。
 
 ### 边界
 
-导出命令需要第 8 步的访问开关，但历史页的「导出文字…」不需要：那是你自己在操作。手工导出的文件归你，自动清理和「清空历史」都不碰它。
+JSONL 支持整份 `Row` 结构，不代表每一行都有全部键。录音、网址、错误、规则／模型名和计时不在 `Row` 里，所以两种格式都不写。导出命令需要第 9 步的访问开关；历史页的「导出文字…」不需要。
 
 ### 接下来
 
-导出可以被打开和关上。第 8 步看这个开关，以及它不保护什么。
+另一种格式 Markdown 写的字段少得多。第 8 步看它的每行。
 
-## 第 8 步 · 开关不保护数据库
+## 第 8 步 · Markdown 导出：一天一节
+
+> **一句话：** Markdown 导出按本地日期分组，每行只写时间、知道时的应用和交付文字。
+
+### 图上是什么
+
+- 代码卡里是一个 `## 2026-11-26` 日标题和三行记录。
+- 每行是 `- HH:MM · App: text`；应用未知时是 `- HH:MM ·: text`。
+- 下面几行列出 Markdown 文件里没有的东西：`id`、`kind`、`heard`、`instruction`、`target_lang`、`selection`、`typed`。两种格式都没有录音、网址、错误、内部名字和计时。
+
+### Markdown 的那一行
+
+渲染器按记录自己的本地日期分组（`render.go:45-57`），再写一行（`render.go:59-65`）：
+
+$$ \text{line} = \texttt{"- "} + \text{HH:MM} + (\text{" · "} + \text{app} + \text{":"})? + \text{" "} + \text{text} $$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| `## YYYY-MM-DD` | 每个本地日期一节 | `render.go:48-57` |
+| `HH:MM` | 记录的本地时间 | `render.go:59` |
+| `app` | 应用名，空时不写 | `render.go:60-64` |
+| `text` | 交付的文字 | `render.go:65` |
+
+### 代入图上的数
+
+| 记录 | Markdown 行 | 丢掉的字段 |
+|---|---|---|
+| 听写，Mail，09:14 | `- 09:14 · Mail: send it to Priya.` | id、功能、识别原文、口述指令、目标语言、选中、输入 |
+| 听写，应用未知 | `- 09:20 ·: no app name` | 同上，再加 app |
+| 带口述的改写 | `- 09:31 · Notes: buy milk` | 口述指令和其余字段 |
+
+### 参数和范围
+
+`--format md` 一天一节 `## YYYY-MM-DD`，只带时间、应用和文字（`render.go:47-65`）。范围参数和第 7 步一样：`--day`、`--since` 加可选的 `--until`、`--kind`。导出的文件归你；自动清理和「清空历史」都不碰它。
+
+### 边界
+
+Markdown 有意丢掉字段：它适合阅读和做笔记，不是完整备份。需要 `id`、功能、识别原文、口述指令或选中文字时，用 JSONL。
+
+### 接下来
+
+两种格式的命令都要访问开关。第 9 步看开关做什么、不保护什么。
+
+## 第 9 步 · 开关不保护数据库
 
 > **一句话：** 开关给其他程序开一条会记账的命令；以同一用户身份运行的程序仍能直接读数据库文件，开关开不开都一样。
 

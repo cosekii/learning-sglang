@@ -273,59 +273,103 @@ Retry uses the current settings, not the settings from the day of the failure. A
 
 The row and the recording have their clocks. Step 7 shows what leaves the Mac when a program exports the history.
 
-## Step 7 · Export: what leaves the row
+## Step 7 · JSONL export: one object a line
 
-> **In one line:** Export writes only finished rows, oldest first; JSONL carries every exported field, Markdown only time, app and the delivered text; recordings, addresses, errors, internal names and timings never leave.
+> **In one line:** The JSONL export writes one JSON object per line, oldest first; it supports the whole `Row` schema but leaves out empty optional fields.
 
 ### On the stage
 
-- The table's rows are the exported fields; the two columns are the two formats.
-- JSONL keeps every row of the table; Markdown keeps only `created_at`, `app` and `text`.
-- The `*` on `selection` and `typed` means those two appear only when include selected text is on.
-- The lower lines list what neither format writes: the recording, the web address, errors and internal names, and timings. Finished rows only; failed and cancelled rows stay out.
+- The rows are the ten fields of `historyapi.Row`; the right column says when each one is in the object.
+- `id`, `created_at`, `kind`, `text` and `heard` are always there.
+- `app` is there only when the app is known. `instruction` only for a Rewrite with spoken words. `target_lang` only for a Translate. `selection` only with include selected text on. `typed` needs that setting, a Rewrite, and spoken words.
+- The lower lines say the schema has all ten fields, but empty optional fields are left out.
 
-### The exported row
+### The object and its fields
 
-`historyapi.Row` is the complete list of exported fields; the struct starts at `Voxt/internal/historyapi/row.go:22`. The JSONL renderer encodes the whole row (`render.go:38-42`). The package comment says a new `store.Entry` field does not come along by itself. The Markdown renderer writes only a `## YYYY-MM-DD` section per day and a `- HH:MM · App: text` line per row (`render.go:47-65`), so `id`, `kind`, `heard`, `instruction`, `target_lang`, `selection` and `typed` are not in a Markdown file. `Walk` sets `Finished` and `Oldest`, so failed and cancelled rows stay out and rows come oldest first (`row.go:56-57`). `FromEntry` fills the row and adds `selection` only when the setting is on; `typed` needs the setting and a Rewrite with a spoken instruction (`row.go:44-49`).
+`historyapi.Row` is the schema; the struct starts at `Voxt/internal/historyapi/row.go:22`. The `omitempty` tags are on `app`, `instruction`, `target_lang`, `selection` and `typed` (`row.go:26`, `row.go:29-32`). The JSONL renderer encodes the whole row (`render.go:38-42`), so an empty optional field produces no key.
 
-$$ \text{export} = \{\text{id},\ \text{created\_at},\ \text{kind},\ \text{app}?,\ \text{text},\ \text{heard},\ \text{instruction}?,\ \text{target\_lang}?,\ \text{selection}?,\ \text{typed}?\} $$
+$$ \text{object} = \{\text{id},\ \text{created\_at},\ \text{kind},\ \text{app}?,\ \text{text},\ \text{heard},\ \text{instruction}?,\ \text{target\_lang}?,\ \text{selection}?,\ \text{typed}?\} $$
 
-| Symbol | Meaning | Source |
+| Field | When it is in the object | Source |
 |---|---|---|
-| `id` | the entry's id | `row.go:23` |
-| `created_at` | the row's local time | `row.go:24` |
-| `kind` | transcribe, translate or rewrite | `row.go:25` |
-| `app` | the app in front, when known | `row.go:26` |
-| `text` | the delivered result | `row.go:27` |
-| `heard` | the recognition text before cleanup | `row.go:28` |
-| `instruction` | Rewrite's spoken instruction | `row.go:29` |
-| `target_lang` | Translate's target | `row.go:30` |
-| `selection` | selected text, only with the setting | `row.go:31`, `row.go:44-45` |
-| `typed` | Rewrite's typed text, under the same setting | `row.go:32`, `row.go:46-48` |
+| `id` | always | `row.go:23` |
+| `created_at` | always | `row.go:24` |
+| `kind` | always | `row.go:25` |
+| `app` | when the app is known (`omitempty`) | `row.go:26` |
+| `text` | always | `row.go:27` |
+| `heard` | always | `row.go:28` |
+| `instruction` | Rewrite with a spoken instruction (`omitempty`) | `row.go:29`, `row.go:44-49` |
+| `target_lang` | Translate (`omitempty`) | `row.go:30` |
+| `selection` | include selected text on (`omitempty`) | `row.go:31`, `row.go:44-45` |
+| `typed` | include selected text on, a Rewrite, and spoken words (`omitempty`) | `row.go:32`, `row.go:46-48` |
 
 ### Plugging in the stage's numbers
 
-| Field | Present on the stage? | Condition |
-|---|---|---|
-| `selection` | starred; JSONL only | include selected text on |
-| `typed` | starred; JSONL only | include selected text on, and a Rewrite instruction exists |
-| `created_at`, `app`, `text` | both formats | always |
-| `id`, `kind`, `heard`, `instruction`, `target_lang` | JSONL only | always |
-| recording, URL, error, rule, model, timings | never | `history-access.md` |
+| Row | `app` | `instruction` | `target_lang` | keys in the object |
+|---|---|---|---|---|
+| Transcribe, unknown app | absent | absent | absent | 8 of 10 |
+| Transcribe, Mail | `Mail` | absent | absent | 9 of 10 |
+| Translate | `Mail` | absent | present | 10 of 10 |
+| Rewrite with spoken words | `Mail` | present | absent | 10 of 10 |
 
-### Formats and ranges
+`selection` and `typed` add themselves only with the setting, so the count can be lower. The exact key count is not the point; the table above says which fields can be missing.
 
-`--day YYYY-MM-DD` takes the local calendar day, 23 or 25 hours long when the clocks change; `--since T` and an optional `--until T` take RFC 3339 times or dates. A range includes its start and excludes its end (`Voxt/docs/history-access.md`). `--kind` takes `transcribe`, `translate` or `rewrite`. `--format jsonl` writes one JSON object a line with every field above (`render.go:38-42`); `--format md` writes a `## YYYY-MM-DD` section a day with only time, app and text (`render.go:47-65`). Export text from the History page uses the same row and the same selected-text setting.
+### Flags and ranges
+
+`--format jsonl` writes one JSON object a line (`render.go:38-42`). `--day YYYY-MM-DD` takes the local calendar day, 23 or 25 hours long when the clocks change; `--since T` and an optional `--until T` take RFC 3339 times or dates. A range includes its start and excludes its end (`Voxt/docs/history-access.md`). `--kind` takes `transcribe`, `translate` or `rewrite`.
 
 ### Boundary
 
-The export command needs the access switch from Step 8, but the History page's **Export text…** does not: you are the one running it. A file exported by hand is yours; the automatic clean-up and Clear the history do not touch it.
+JSONL supports the whole `Row` schema, not every key on every row. Recordings, web addresses, errors, rule/model names and timings are not in `Row`, so no format writes them. The export command needs the access switch in Step 9; the History page's **Export text…** does not.
 
 ### Next
 
-Export can be turned on and off. Step 8 shows the switch and what it does not protect.
+The other format, Markdown, writes far fewer fields. Step 8 shows its lines.
 
-## Step 8 · The switch does not protect the database
+## Step 8 · Markdown export: a day section
+
+> **In one line:** The Markdown export groups rows by local day and writes only a time, the app when known, and the delivered text on each line.
+
+### On the stage
+
+- The code card shows a `## 2026-11-26` day heading and three lines.
+- Each line is `- HH:MM · App: text`; when the app is unknown it is just `- HH:MM ·: text`.
+- The lower lines list what a Markdown file does not contain: `id`, `kind`, `heard`, `instruction`, `target_lang`, `selection`, `typed`. Neither format contains recordings, web addresses, errors, internal names or timings.
+
+### The Markdown line
+
+The renderer groups by the row's own local day (`render.go:45-57`), then writes one line (`render.go:59-65`):
+
+$$ \text{line} = \texttt{"- "} + \text{HH:MM} + (\text{" · "} + \text{app} + \text{":"})? + \text{" "} + \text{text} $$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| `## YYYY-MM-DD` | one section per local day | `render.go:48-57` |
+| `HH:MM` | the row's local time | `render.go:59` |
+| `app` | the app name, omitted when empty | `render.go:60-64` |
+| `text` | the delivered text | `render.go:65` |
+
+### Plugging in the stage's numbers
+
+| Row | Markdown line | Fields dropped |
+|---|---|---|
+| Transcribe, Mail, 09:14 | `- 09:14 · Mail: send it to Priya.` | id, kind, heard, instruction, target_lang, selection, typed |
+| Transcribe, unknown app | `- 09:20 ·: no app name` | the same, plus app |
+| Rewrite with spoken words | `- 09:31 · Notes: buy milk` | instruction and the rest |
+
+### Flags and ranges
+
+`--format md` writes a `## YYYY-MM-DD` section a day with only time, app and text (`render.go:47-65`). The range flags are the same as Step 7: `--day`, `--since` with an optional `--until`, and `--kind`. The exported file is yours; the automatic clean-up and Clear the history do not touch it.
+
+### Boundary
+
+Markdown is lossy on purpose: it is for reading and notes, not for a complete copy. Use JSONL when you need `id`, `kind`, the recognized text, the instruction or the selected text.
+
+### Next
+
+Both formats need the access switch for the command. Step 9 shows what the switch does and does not protect.
+
+## Step 9 · The switch does not protect the database
 
 > **In one line:** The switch opens one logged command for other programs; a program running as the same user can still read the database file directly, whether the switch is on or off.
 

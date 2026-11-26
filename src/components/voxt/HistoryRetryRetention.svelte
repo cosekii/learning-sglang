@@ -33,8 +33,11 @@
     caption: 'Retry reads that recording, recognizes it again, and runs the current settings. It updates the same row and inserts nothing.',
     captionZh: '重试读那段录音，重新识别，再用现在的设置跑一遍。它改同一条记录，不插入文字。',
   }, {
-    caption: 'The format decides which fields leave. JSONL keeps all; Markdown keeps time, app and text.',
-    captionZh: '格式决定哪些字段出去。JSONL 留全部；Markdown 只留时间、应用和文字。',
+    caption: 'The JSONL export writes one object a line. Each object keeps the row’s fields.',
+    captionZh: 'JSONL 导出每行一个对象。每个对象保留记录里的字段。',
+  }, {
+    caption: 'The Markdown export groups rows by day. Each line has time, app and text.',
+    captionZh: 'Markdown 导出按天分组。每行只有时间、应用和文字。',
   }, {
     caption: 'The access switch opens one logged command. Programs running as you can still open the database directly.',
     captionZh: '访问开关只开一条会记账的命令。你账户里的程序仍能直接打开数据库。',
@@ -52,14 +55,17 @@
     en: 'The cleanup also keeps at most N entries of each kind. Transcribe, translate and rewrite each count on their own. Zero means no limit, which is the default.',
     zh: '清理还给每种功能各留最多 N 条。听写、翻译、改写各自计数。设 0 表示不限，这是默认。',
   }, {
-    en: 'When recognition failed or the user cancelled, the row keeps its recording for 7 days even if recordings are off. A sweep checks every hour and deletes the recording at its time.',
-    zh: '识别失败或用户取消时，即使保存录音关着，记录也会保留录音 7 天。每小时检查一次，到点就删。',
+    en: 'When recognition failed or the user cancelled, the row keeps its recording for 7 days even if recordings are off. A sweep runs every hour; the copy goes at the first sweep after its time.',
+    zh: '识别失败或用户取消时，即使保存录音关着，记录也会保留录音 7 天。每小时扫一次；到期后的第一次清扫才删。',
   }, {
     en: 'Retry opens the kept recording, recognizes the whole file again, and runs the language-model step with the settings as they are now, when the feature has one. A Transcribe retry can stop after a whole-text snippet, with cleanup off, or with no language model. It updates the same row in place, inserts nothing, and clears a retry-only recording on success.',
     zh: '重试打开留下的录音，把整份文件重新识别，再用现在的设置跑语言模型这一步——前提是这个功能有语言模型。听写重试可能停在整段快捷短语、清理关着或没有语言模型。它原地更新同一条记录，不插入文字，成功时删掉只为重试保留的录音。',
   }, {
-    en: 'Export writes only finished rows, oldest first, in one of two formats. JSONL writes every exported field: id, time, kind, app, delivered text, heard text, instruction, target language, and selected or typed text when the setting is on. Markdown writes only time, app and the delivered text. Recordings, web addresses, errors, internal names and timings never go out. The deep dive lists the flags and range rules.',
-    zh: '导出只把完成的记录从旧到新写进两种格式之一。JSONL 写全部导出字段：id、时间、功能、应用、交付文字、识别原文、口述指令、目标语言，以及设置打开时的选中或输入文字。Markdown 只写时间、应用和交付文字。录音、网址、错误、内部名字和计时从不出去。参数和范围规则见深入讲解。',
+    en: 'The JSONL export writes one JSON object per line, oldest first. It supports the whole Row schema: id, time, kind, app, text, heard, instruction, target language, selection and typed. Empty optional fields are omitted, so a Transcribe row with an unknown app has no app key, and it has no instruction or target language. selection needs include selected text; typed also needs a Rewrite with a spoken instruction. Neither format writes recordings, web addresses, errors, internal names or timings.',
+    zh: 'JSONL 导出每行一个 JSON 对象，从旧到新。它支持整份 Row 结构：id、时间、功能、应用、文字、识别原文、口述指令、目标语言、选中文字和输入文字。空的可选字段不写，所以应用未知的听写没有 app 键，也没有口述指令和目标语言。选中文字要打开「包含选中文字」；输入文字还要是带口述指令的改写。录音、网址、错误、内部名字和计时两种格式都不写。',
+  }, {
+    en: 'The Markdown export groups rows by local day. Each line has the time, the app when known, and the delivered text. It leaves out id, kind, heard, instruction, target language, selection and typed. Neither format writes recordings, web addresses, errors, internal names or timings.',
+    zh: 'Markdown 导出按本地日期分组。每行只有时间、知道时的应用、交付的文字。它不带 id、功能、识别原文、口述指令、目标语言、选中文字和输入文字。录音、网址、错误、内部名字和计时两种格式都不写。',
   }, {
     en: 'The access switch controls one command for other programs. Off, the command gets no answer. On, every read is logged, and a new program name raises a notice. The switch is not a wall: a program running as the user can open the database file directly.',
     zh: '访问开关只控制给其他程序用的一条命令。关着时命令得不到回答。开着时每次读取都记账，新程序名会提醒。它不是墙：以用户身份运行的程序能直接打开数据库文件。',
@@ -79,7 +85,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived((phone ? [720, 700, 700, 700, 760, 720, 600, 800] : [440, 440, 470, 510, 500, 460, 580, 540])[step]);
+  const H = $derived((phone ? [720, 700, 700, 700, 760, 720, 430, 410, 800] : [440, 440, 470, 510, 500, 460, 400, 360, 540])[step]);
 </script>
 
 <figure class="viz">
@@ -152,7 +158,7 @@
           <line x1="20" y1="100" x2="280" y2="100" stroke="var(--line)" stroke-width="2" />
           <rect x="20" y="94" width="260" height="12" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="20" y="128" class="tag">{t('shortcut', '按下快捷键')}</text>
-          <text x="280" y="128" text-anchor="end" class="tag">{t('deleted', '删掉')}</text>
+          <text x="280" y="128" text-anchor="end" class="tag">{t('expires', '到期')}</text>
           <text x="20" y="176" class="boxtitle">{t('RETRY RECORDING', '重试录音')}</text>
           <text x="280" y="176" text-anchor="end" class="tag strong" fill="var(--gen)">{VOXT_RETRY_KEEP_DAYS} {t('days', '天')}</text>
           <line x1="20" y1="196" x2="280" y2="196" stroke="var(--line)" stroke-width="2" />
@@ -205,7 +211,7 @@
           <rect x="20" y="140" width="260" height="86" rx="8" fill="var(--eos-soft)" stroke="var(--eos)" />
           <text x="34" y="166" class="tag strong">{VOXT_HISTORY_OLD_DAYS} {t('days old', '天前')}</text>
           <text x="34" y="190" class="mono">{VOXT_HISTORY_OLD_DATE}</text>
-          <text x="34" y="214" class="tag strong" fill="var(--eos)">{t('older than cutoff → deleted', '早于分界线 → 删掉')}</text>
+          <text x="34" y="214" class="tag strong" fill="var(--eos)">{t('older than cutoff → cleanup deletes', '早于分界线 → 清理时删')}</text>
           <rect x="20" y="240" width="260" height="86" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="34" y="266" class="tag strong">{VOXT_HISTORY_KEPT_DAYS} {t('days old', '天前')}</text>
           <text x="34" y="290" class="mono">{VOXT_HISTORY_KEPT_DATE}</text>
@@ -223,7 +229,7 @@
           <rect x="40" y="132" width="296" height="112" rx="10" fill="var(--eos-soft)" stroke="var(--eos)" />
           <text x="56" y="160" class="rowlabel">{t('OLDER', '更早')}</text>
           <text x="56" y="190" class="tag strong">{VOXT_HISTORY_OLD_DAYS} {t('days old', '天前')} · {VOXT_HISTORY_OLD_DATE}</text>
-          <text x="56" y="218" class="tag strong" fill="var(--eos)">{t('deleted, with its recording', '删掉，录音一起')}</text>
+          <text x="56" y="218" class="tag strong" fill="var(--eos)">{t('at cleanup, with its recording', '清理时删，录音一起')}</text>
           <rect x="384" y="132" width="296" height="112" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="400" y="160" class="rowlabel">{t('NEWER', '更晚')}</text>
           <text x="400" y="190" class="tag strong">{VOXT_HISTORY_KEPT_DAYS} {t('days old', '天前')} · {VOXT_HISTORY_KEPT_DATE}</text>
@@ -379,68 +385,83 @@
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('session/retry.go · Retry()', 'session/retry.go · Retry()') : t('Source: session/retry.go Retry() · ErrNoRecording · History.Put()', '出处：session/retry.go Retry() · ErrNoRecording · History.Put()')}</text>
 
       {:else if step === 6}
-        <text x="20" y="22" class="tag strong">{t('EXPORT · THE FORMAT DECIDES', '导出 · 格式决定字段')}</text>
+        <text x="20" y="22" class="tag strong">{t('EXPORT · JSONL · ONE OBJECT A LINE', '导出 · JSONL · 一行一个对象')}</text>
         {#if phone}
-          <text x="20" y="46" class="tag">{t('JSONL keeps every field.', 'JSONL 留全部字段。')}</text>
-          <text x="20" y="66" class="tag">{t('Markdown keeps time, app and text.', 'Markdown 只留时间、应用和文字。')}</text>
-          <text x="190" y="94" text-anchor="middle" class="boxtitle">JSONL</text>
-          <text x="250" y="94" text-anchor="middle" class="boxtitle">Markdown</text>
+          <text x="20" y="46" class="tag">{t('The whole row schema.', '整份记录结构。')}</text>
+          <text x="20" y="66" class="tag">{t('Empty optional fields are left out.', '空的可选字段不写。')}</text>
+          <text x="34" y="98" class="boxtitle">{t('field', '字段')}</text>
+          <text x="266" y="98" text-anchor="end" class="boxtitle">{t('when it is there', '什么时候有')}</text>
           {#each [
-            { name: 'id', j: true, m: false },
-            { name: 'created_at', j: true, m: true },
-            { name: 'kind', j: true, m: false },
-            { name: 'app', j: true, m: true },
-            { name: 'text', j: true, m: true },
-            { name: 'heard', j: true, m: false },
-            { name: 'instruction', j: true, m: false },
-            { name: 'target_lang', j: true, m: false },
-            { name: 'selection *', j: true, m: false },
-            { name: 'typed *', j: true, m: false },
+            { name: 'id', en: 'always', zh: '总是' },
+            { name: 'created_at', en: 'always', zh: '总是' },
+            { name: 'kind', en: 'always', zh: '总是' },
+            { name: 'app', en: 'when known', zh: '知道时' },
+            { name: 'text', en: 'always', zh: '总是' },
+            { name: 'heard', en: 'always', zh: '总是' },
+            { name: 'instruction', en: 'Rewrite + words', zh: '改写 + 口述' },
+            { name: 'target_lang', en: 'Translate', zh: '翻译' },
+            { name: 'selection', en: 'with the setting', zh: '设置打开时' },
+            { name: 'typed', en: 'setting + Rewrite + words', zh: '设置 + 改写 + 口述' },
           ] as f, i}
-            <text x="34" y={120 + i * 22} class="mono">{f.name}</text>
-            <text x="190" y={120 + i * 22} text-anchor="middle" class="tag strong" fill={f.j ? 'var(--accent)' : 'var(--muted)'}>{f.j ? '✓' : '✗'}</text>
-            <text x="250" y={120 + i * 22} text-anchor="middle" class="tag strong" fill={f.m ? 'var(--accent)' : 'var(--muted)'}>{f.m ? '✓' : '✗'}</text>
+            <text x="34" y={122 + i * 22} class="mono">{f.name}</text>
+            <text x="266" y={122 + i * 22} text-anchor="end" class="tag">{t(f.en, f.zh)}</text>
           {/each}
-          <text x="20" y="352" class="tag">{t('✓ kept · ✗ dropped', '✓ 保留 · ✗ 不带')}</text>
-          <text x="20" y="374" class="tag">{t('* selection / typed only with the setting', '* 选中／输入文字只在设置打开时')}</text>
-          <text x="20" y="408" class="tag strong">{t('Never in either format', '两种格式都不带')}</text>
-          <text x="20" y="432" class="tag">{t('the recording', '录音')}</text>
-          <text x="20" y="454" class="tag">{t('the web address', '网址')}</text>
-          <text x="20" y="476" class="tag">{t('errors and internal names', '错误和内部名字')}</text>
-          <text x="20" y="498" class="tag">{t('timings', '计时')}</text>
-          <text x="20" y="526" class="tag">{t('Finished rows only; failed and cancelled stay out.', '只导完成的记录；失败和取消的不出去。')}</text>
+          <text x="20" y="352" class="tag strong">{t('One object a line.', '一行一个对象。')}</text>
+          <text x="20" y="376" class="tag">{t('The schema has all ten fields.', '结构里有十个字段。')}</text>
+          <text x="20" y="400" class="tag">{t('Only empty optional fields are absent.', '只有空的可选字段不写。')}</text>
         {:else}
-          <text x="20" y="46" class="tag">{t('The file format decides which fields leave.', '文件格式决定哪些字段出去。')}</text>
-          <text x="430" y="88" text-anchor="middle" class="boxtitle">JSONL</text>
-          <text x="590" y="88" text-anchor="middle" class="boxtitle">Markdown</text>
+          <text x="20" y="46" class="tag">{t('The whole row schema, minus empty optional fields.', '整份记录结构，去掉空的可选字段。')}</text>
+          <text x="40" y="88" class="boxtitle">{t('field', '字段')}</text>
+          <text x="360" y="88" class="boxtitle">{t('when it is in the object', '什么时候写进去')}</text>
           {#each [
-            { name: 'id', j: true, m: false },
-            { name: 'created_at', j: true, m: true },
-            { name: 'kind', j: true, m: false },
-            { name: 'app', j: true, m: true },
-            { name: 'text', j: true, m: true },
-            { name: 'heard', j: true, m: false },
-            { name: 'instruction', j: true, m: false },
-            { name: 'target_lang', j: true, m: false },
-            { name: 'selection *', j: true, m: false },
-            { name: 'typed *', j: true, m: false },
+            { name: 'id', en: 'always', zh: '总是' },
+            { name: 'created_at', en: 'always', zh: '总是' },
+            { name: 'kind', en: 'always', zh: '总是' },
+            { name: 'app', en: 'when known', zh: '知道时' },
+            { name: 'text', en: 'always', zh: '总是' },
+            { name: 'heard', en: 'always', zh: '总是' },
+            { name: 'instruction', en: 'Rewrite with spoken words', zh: '改写且有口述' },
+            { name: 'target_lang', en: 'Translate', zh: '翻译' },
+            { name: 'selection', en: 'include selected text on', zh: '包含选中文字打开时' },
+            { name: 'typed', en: 'that setting + Rewrite + spoken words', zh: '该设置 + 改写 + 口述' },
           ] as f, i}
             <text x="40" y={118 + i * 22} class="mono">{f.name}</text>
-            <text x="430" y={118 + i * 22} text-anchor="middle" class="tag strong" fill={f.j ? 'var(--accent)' : 'var(--muted)'}>{f.j ? '✓' : '✗'}</text>
-            <text x="590" y={118 + i * 22} text-anchor="middle" class="tag strong" fill={f.m ? 'var(--accent)' : 'var(--muted)'}>{f.m ? '✓' : '✗'}</text>
+            <text x="360" y={118 + i * 22} class="tag">{t(f.en, f.zh)}</text>
           {/each}
-          <text x="40" y="356" class="tag">{t('✓ kept · ✗ dropped', '✓ 保留 · ✗ 不带')}</text>
-          <text x="40" y="378" class="tag">{t('* selection / typed only with include selected text', '* 选中／输入文字只在「包含选中文字」打开时')}</text>
-          <text x="20" y="414" class="tag strong">{t('Never in either format', '两种格式都不带')}</text>
-          <text x="20" y="438" class="tag">{t('the recording', '录音')}</text>
-          <text x="20" y="460" class="tag">{t('the web address', '网址')}</text>
-          <text x="20" y="482" class="tag">{t('errors and internal names', '错误和内部名字')}</text>
-          <text x="20" y="504" class="tag">{t('timings', '计时')}</text>
-          <text x="20" y="540" class="tag">{t('Finished rows only, oldest first; failed and cancelled stay out.', '只导完成的记录，从旧到新；失败和取消的不出去。')}</text>
+          <text x="20" y="346" class="tag strong">{t('One object a line. The schema supports all ten fields; empty optional fields are left out.', '一行一个对象。结构支持全部十个字段；空的可选字段不写。')}</text>
+          <text x="20" y="370" class="tag">{t('A Transcribe row with an unknown app has no app key, and no instruction or target language.', '应用未知的听写没有 app 键，也没有口述指令和目标语言。')}</text>
         {/if}
-        <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('historyapi/row.go · render.go', 'historyapi/row.go · render.go') : t('Source: historyapi/row.go Row · render.go Markdown · Walk()', '出处：historyapi/row.go 的 Row · render.go 的 Markdown · Walk()')}</text>
+        <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('historyapi/row.go · FromEntry · render.go', 'historyapi/row.go · FromEntry · render.go') : t('Source: historyapi/row.go Row tags · FromEntry · render.go JSONL', '出处：historyapi/row.go 的 Row 标签 · FromEntry · render.go 的 JSONL')}</text>
 
       {:else if step === 7}
+        <text x="20" y="22" class="tag strong">{t('EXPORT · MARKDOWN · A DAY SECTION', '导出 · MARKDOWN · 一天一节')}</text>
+        {#if phone}
+          <text x="20" y="46" class="tag">{t('Rows grouped by local day.', '记录按本地日期分组。')}</text>
+          <text x="20" y="66" class="tag">{t('Each line has time, app and text.', '每行只有时间、应用和文字。')}</text>
+          <rect x="20" y="90" width="260" height="160" rx="8" fill="var(--bg)" stroke="var(--line)" />
+          <text x="34" y="122" class="mono">## 2026-11-26</text>
+          <text x="34" y="152" class="mono">- 09:14 · Mail: hello Priya.</text>
+          <text x="34" y="180" class="mono">- 09:20 ·: no app name</text>
+          <text x="34" y="208" class="mono">- 09:31 · Notes: buy milk</text>
+          <text x="20" y="278" class="tag">{t('Only time, app (when known), text.', '只有时间、应用（知道时）和文字。')}</text>
+          <text x="20" y="306" class="tag">{t('No id, kind, heard, instruction,', '不带 id、功能、识别原文、口述指令、')}</text>
+          <text x="20" y="328" class="tag">{t('target_lang, selection, typed.', '目标语言、选中和输入文字。')}</text>
+          <text x="20" y="358" class="tag">{t('Never either: recording, web address,', '两种都不带：录音、网址、')}</text>
+          <text x="20" y="380" class="tag">{t('errors, internal names, timings.', '错误、内部名字、计时。')}</text>
+        {:else}
+          <text x="20" y="46" class="tag">{t('Rows grouped by local day.', '记录按本地日期分组。')}</text>
+          <rect x="20" y="80" width="680" height="150" rx="8" fill="var(--bg)" stroke="var(--line)" />
+          <text x="40" y="112" class="mono">## 2026-11-26</text>
+          <text x="40" y="142" class="mono">- 09:14 · Mail: send it to Priya.</text>
+          <text x="40" y="170" class="mono">- 09:20 ·: no app name</text>
+          <text x="40" y="198" class="mono">- 09:31 · Notes: buy milk</text>
+          <text x="20" y="258" class="tag">{t('Each line: time, app (when known), text.', '每行：时间、应用（知道时）、文字。')}</text>
+          <text x="20" y="286" class="tag">{t('Not in a Markdown file: id, kind, heard, instruction, target_lang, selection, typed.', 'Markdown 文件里没有：id、功能、识别原文、口述指令、目标语言、选中和输入文字。')}</text>
+          <text x="20" y="314" class="tag">{t('Never in either format: recording, web address, errors, internal names, timings.', '两种格式都没有：录音、网址、错误、内部名字、计时。')}</text>
+        {/if}
+        <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('historyapi/render.go · markdown()', 'historyapi/render.go · markdown()') : t('Source: historyapi/render.go Renderer.markdown()', '出处：historyapi/render.go 的 Renderer.markdown()')}</text>
+
+      {:else if step === 8}
         <text x="20" y="22" class="tag strong">{t('THE ACCESS SWITCH', '访问开关')}</text>
         <text x="20" y="46" class="tag">{t('One logged command, only while the switch is on.', '一条会记账的命令，只在开关打开时。')}</text>
         {#if phone}
