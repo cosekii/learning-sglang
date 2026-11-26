@@ -42,7 +42,7 @@
 - `BOOK=voxt ONLY=11 node scripts/transcript.mjs http://localhost:4322/learning-sglang`：6 步，无出界、重叠或脚注告警。
 - `BOOK=voxt ONLY=11 node scripts/readability.mjs http://localhost:4322/learning-sglang`：6 步，0 机械问题。
 - `BOOK=voxt node scripts/deep-check.mjs 11`：通过。
-- `BOOK=voxt ONLY=11 node scripts/zh-check.mjs http://localhost:4322/learning-sglang`：通过。
+- `BASE=http://localhost:4322/learning-sglang BOOK=voxt ONLY=11 node scripts/zh-check.mjs`：通过。
 - 英中本章 `mobile`：360、390、430 px 无布局断裂。
 - 第 3 步额外用 bounding box 检查英中手机两行文字，360／390／430 px 均无纵向重叠。
 

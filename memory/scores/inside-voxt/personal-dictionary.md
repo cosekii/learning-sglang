@@ -42,7 +42,7 @@
 
 ## 机械门槛（本轮修复后）
 
-`npm run build`（60 页）；`BOOK=voxt ONLY=8 npm run transcript`（7 步，exit 0，无出界/重叠/脚注告警，与已提交 transcript 无差异）；`BOOK=voxt ONLY=8 npm run readability`（7/7，0 机械问题）；`BOOK=voxt node scripts/deep-check.mjs 8`（ok）；`BOOK=voxt ONLY=8 node scripts/zh-check.mjs`（all clear）；英中本章 `mobile`（360/390/430，无布局断裂）；中文逐步字号 `mobile`（1–7，无 layout break）。
+`npm run build`（60 页）；`BOOK=voxt ONLY=8 node scripts/transcript.mjs http://localhost:4322/learning-sglang`（7 步，exit 0，无出界/重叠/脚注告警，与已提交 transcript 无差异）；`BOOK=voxt ONLY=8 node scripts/readability.mjs http://localhost:4322/learning-sglang`（7/7，0 机械问题）；`BOOK=voxt node scripts/deep-check.mjs 8`（ok）；`BASE=http://localhost:4322/learning-sglang BOOK=voxt ONLY=8 node scripts/zh-check.mjs`（all clear）；英中本章 `mobile`（360/390/430，无布局断裂）；中文逐步字号 `mobile`（1–7，无 layout break）。
 
 ## 待办
 

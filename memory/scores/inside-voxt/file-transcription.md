@@ -50,7 +50,7 @@
 - `BOOK=voxt ONLY=10 node scripts/transcript.mjs http://localhost:4322/learning-sglang`：9 步，无出界、重叠或脚注告警。
 - `BOOK=voxt ONLY=10 node scripts/readability.mjs http://localhost:4322/learning-sglang`：9 步，0 机械问题。
 - `BOOK=voxt node scripts/deep-check.mjs 10`：通过。
-- `BOOK=voxt ONLY=10 node scripts/zh-check.mjs http://localhost:4322/learning-sglang`：通过。
+- `BASE=http://localhost:4322/learning-sglang BOOK=voxt ONLY=10 node scripts/zh-check.mjs`：通过。
 - 英中本章 `mobile`：360、390、430 px 无布局断裂。
 
 ## 待办与边界
