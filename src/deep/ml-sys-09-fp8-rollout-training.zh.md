@@ -188,13 +188,14 @@ checkpoint 使用 BF16 `torch_dist`，只有源权重是 FP8 时才先反量化�
 
 ### 图上是什么
 
-- 时间栏分别把前向和反向相加。BF16 为 $463+1{,}567=2{,}030$ ms，FP8 为 $529+1{,}061=1{,}590$ ms。两条时间柱都把 BF16 的 2,030 ms 作为满宽。
+- 时间栏分别把前向和反向相加。BF16 为 463 + 1,567 = 2,030 ms，FP8 为 529 + 1,061 = 1,590 ms。两条时间柱都把 BF16 的 2,030 ms 作为满宽。
 - 显存栏对照 68.1 GB 和 58.3 GB。两条显存柱都把 BF16 的 68.1 GB 作为满宽。
 - 底部拆开总时间：前向从 463 升到 529 ms，反向从 1,567 降到 1,061 ms。净收益小于反向单项收益。
 
 ### 公式与符号
 
-$$\Delta T=T_{16}-T_8,\qquad r_T=\Delta T/T_{16},\qquad r_M=(M_{16}-M_8)/M_{16}$$
+$$\Delta T=T_{16}-T_8,\qquad r_T=\Delta T/T_{16}$$
+$$r_M=(M_{16}-M_8)/M_{16}$$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
@@ -206,10 +207,12 @@ $$\Delta T=T_{16}-T_8,\qquad r_T=\Delta T/T_{16},\qquad r_M=(M_{16}-M_8)/M_{16}$
 
 ### 代入图上的数
 
-$$2{,}030-1{,}590=440\ \text{ms},\qquad 440/2{,}030=21.7\%$$
-$$68.1-58.3=9.8\ \text{GB},\qquad 9.8/68.1=14.4\%$$
+$$2{,}030-1{,}590=440\ \text{ms}$$
+$$440/2{,}030=21.7\%$$
+$$68.1-58.3=9.8\ \text{GB}$$
+$$9.8/68.1=14.4\%$$
 
-吞吐量从 340 升到 376 TFLOP/s，增幅为 $376/340-1=10.6\%$。这是 InfiR2 非 RL 实验中的 Qwen2.5-1.5B，8k 上下文，TP 1、CP 1、micro-batch 2。micro-batch 是一大组训练数据里先处理的一小份。论文的效率小节没有注明 GPU。其方案使用 UE8M0 scale，只保存指数，因此只能表示 2 的幂。该行不是 slime FP32-scale RL 配置的实测。
+吞吐量从 340 升到 376 TFLOP/s，增幅为 376 / 340 − 1 = 10.6%。这是 InfiR2 非 RL 实验中的 Qwen2.5-1.5B，8k 上下文，TP 1、CP 1、micro-batch 2。micro-batch 是一大组训练数据里先处理的一小份。论文的效率小节没有注明 GPU。其方案使用 UE8M0 scale，只保存指数，因此只能表示 2 的幂。该行不是 slime FP32-scale RL 配置的实测。
 
 额外的转置 FP8 输出和高精度保存张量使显存不能简单减半。量化工作也可能让前向变慢，即使反向矩阵乘法加速。
 
@@ -217,7 +220,7 @@ $$68.1-58.3=9.8\ \text{GB},\qquad 9.8/68.1=14.4\%$$
 
 实测收益并不一致。下一步用真实和模拟量化分离数值误差，不把所有差异都归到 FP8 kernel。
 
-来源：`InfiR2 arXiv:2509.22536v4` §5.1.1、§5.4 表 6；`Awesome-ML-SYS-Tutorial/rlhf/slime/fp8/readme.md:140-182`；`NVIDIA/TransformerEngine@8ef8285c40542c8c3724f9b3eadbb006793958f0` 的 `transformer_engine/common/transpose/quantize_transpose_square_blockwise.cu:462-485,513-524`。
+来源：[InfiR2 arXiv:2509.22536v4](https://arxiv.org/html/2509.22536v4) §5.1.1、§5.4 表 6；`Awesome-ML-SYS-Tutorial/rlhf/slime/fp8/readme.md:140-182`；[TransformerEngine@8ef8285c](https://github.com/NVIDIA/TransformerEngine/tree/8ef8285c40542c8c3724f9b3eadbb006793958f0) 的 [`quantize_transpose_square_blockwise.cu:462-485,513-524`](https://github.com/NVIDIA/TransformerEngine/blob/8ef8285c40542c8c3724f9b3eadbb006793958f0/transformer_engine/common/transpose/quantize_transpose_square_blockwise.cu#L462-L485)。
 
 ## 第 7 步 · 用模拟量化分离舍入损失
 
