@@ -197,14 +197,14 @@ $$
 ### 公式
 
 $$
-C=T\times R,\qquad B=P_T+P_C
+Z=X\times Y,\qquad B=P_T+P_C
 $$
 
 | 符号 | 是什么 | 大小 | 从哪来 |
 |---|---|---:|---|
-| $C$ | 配置的 codec 状态位 | 64 | 本步 |
-| $T$ | 每个 talker 的运行请求上限 | 32 | Qwen 语音默认值 |
-| $R$ | talker 进程副本数 | 2 | replica2 YAML |
+| $Z$ | 配置的 codec 状态位 | 64 | 本步 |
+| $X$ | 每个 talker 的运行请求上限 | 32 | Qwen 语音默认值 |
+| $Y$ | talker 进程副本数 | 2 | replica2 YAML |
 | $B$ | 每个副本 GPU 的申报比例 | 13.7% | 本步 |
 | $P_T$ | talker 比例 | 12.3% | replica2 YAML |
 | $P_C$ | code2wav 比例 | 1.4% | replica2 YAML |
@@ -212,7 +212,7 @@ $$
 ### 代入图上的数
 
 $$
-C=32\times2=64\ \text{个状态位}
+Z=32\times2=64\ \text{个状态位}
 $$
 
 $$
@@ -228,3 +228,42 @@ $$
 ### 接下来
 
 下一步核对解析后的配置，再用真实流量测量，不把这些上限当成结果。
+
+## 第 7 步 · 就绪不是 benchmark
+
+> **一句话：** readiness 证明一个小请求能跑完；部署比较需要受控流量，以及分开的服务器和听者时钟。
+
+### 图上是什么
+
+- readiness 发送一张小图、一秒声音和一条短指令，每个生成 token 的 stage 最多生成 8 个新 token。
+- 测量计划固定输入、采样、硬件和预热，只改一个部署选择。
+- 示例 sweep 在并发 1 和 16 各重复 5 次，每组共十次测量。
+- 服务器时钟记录首音、总耗时、吞吐和失败。听者时钟记录卡顿，以及第 12 章第 8 步的停答 `L−S` 和回应 `N−R`。
+
+### 公式
+
+$$
+J=K\times Q
+$$
+
+| 符号 | 是什么 | 大小 | 从哪来 |
+|---|---|---:|---|
+| $J$ | 每组比较测量的次数 | 10 | 本步 |
+| $K$ | 并发档数 | 2：1 和 16 | 文档中的 sweep |
+| $Q$ | 每档重复次数 | 5 | 文档中的 sweep |
+
+### 代入图上的数
+
+$$
+J=2\times5=10\ \text{次测量 / 组}
+$$
+
+预热另算。按照第 8 章第 8 步，同一次运行里的请求不变成独立实验重复。p99 至少需要 100 个测量样本，所以这组十次示例不能支持 p99。
+
+### 做法与出处
+
+先用 `sgl-omni config resolve --config <config.yaml> --show config` 解析配置（`docs/basic_usage/process_topology.md:52-53`）。readiness 的定义见 `docs/cookbook/qwen3_omni.md:202-204` 和 `sglang_omni/models/qwen3_omni/config.py:328-366`。SeedTTS sweep 和百分位指导见 `benchmarks/README.md:249-288`。除时间外也检查输出质量：完成情况、词错误，以及适用时的声音匹配。
+
+### 接下来
+
+最后一步把配置、等待、数据和显存放进全书共用的一张决策表。

@@ -197,14 +197,14 @@ After choosing a checkpoint and layout, more simultaneous speech requests may re
 ### Formula
 
 $$
-C=T\times R,\qquad B=P_T+P_C
+Z=X\times Y,\qquad B=P_T+P_C
 $$
 
 | Symbol | Meaning | Size | Source |
 |---|---|---:|---|
-| $C$ | Configured codec-state slots | 64 | This step |
-| $T$ | Running-request cap per talker | 32 | Qwen speech default |
-| $R$ | Talker process replicas | 2 | Replica2 YAML |
+| $Z$ | Configured codec-state slots | 64 | This step |
+| $X$ | Running-request cap per talker | 32 | Qwen speech default |
+| $Y$ | Talker process replicas | 2 | Replica2 YAML |
 | $B$ | Declared fraction per replica GPU | 13.7% | This step |
 | $P_T$ | Talker fraction | 12.3% | Replica2 YAML |
 | $P_C$ | Code2wav fraction | 1.4% | Replica2 YAML |
@@ -212,7 +212,7 @@ $$
 ### The numbers on the stage
 
 $$
-C=32\times2=64\ \text{slots}
+Z=32\times2=64\ \text{slots}
 $$
 
 $$
@@ -228,3 +228,42 @@ Caps and slot computation: `sglang_omni/models/qwen3_omni/stages.py:1276-1286`, 
 ### Next
 
 The next step checks a resolved configuration and then measures it with real traffic instead of treating these caps as results.
+
+## Step 7 · Readiness is not a benchmark
+
+> **In one line:** Readiness proves one small request can finish; a deployment comparison needs controlled traffic and separate server and listener clocks.
+
+### On the stage
+
+- Readiness sends a small image, one second of audio and a short instruction. Each token-generating stage is capped at eight new tokens.
+- The measurement plan holds inputs, sampling, hardware and warmup fixed while changing one deployment choice.
+- The example sweep uses concurrency 1 and 16 with five repeats at each level: ten measured runs per arm.
+- The server clock covers first audio, total time, throughput and failures. The listener clock covers stalls, stop wait `L−S` and response wait `N−R` from Chapter 12 Step 8.
+
+### Formula
+
+$$
+J=K\times Q
+$$
+
+| Symbol | Meaning | Size | Source |
+|---|---|---:|---|
+| $J$ | Measured runs per comparison arm | 10 | This step |
+| $K$ | Concurrency levels | 2: 1 and 16 | Documented sweep |
+| $Q$ | Repeats at each level | 5 | Documented sweep |
+
+### The numbers on the stage
+
+$$
+J=2\times5=10\ \text{runs per arm}
+$$
+
+Warmup runs are separate. Requests inside one run do not become independent experiment repeats, following Chapter 8 Step 8. A p99 estimate needs at least 100 measured samples, so this ten-run example does not support p99.
+
+### Procedure and sources
+
+Resolve the configuration with `sgl-omni config resolve --config <config.yaml> --show config` (`docs/basic_usage/process_topology.md:52-53`). Readiness is defined in `docs/cookbook/qwen3_omni.md:202-204` and `sglang_omni/models/qwen3_omni/config.py:328-366`. The SeedTTS sweep and percentile guidance are in `benchmarks/README.md:249-288`. Compare output quality as well as time: completion, word errors and voice match where applicable.
+
+### Next
+
+The final step puts configuration, waiting, data and memory on one decision sheet for the whole book.

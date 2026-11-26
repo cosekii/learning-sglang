@@ -110,6 +110,14 @@ export const QWEN_REPLICA2_TALKER_GPU_PERCENT = 12.3;
 export const QWEN_REPLICA2_CODE2WAV_GPU_PERCENT = 1.4;
 export const QWEN_REPLICA2_GPU_PERCENT = QWEN_REPLICA2_TALKER_GPU_PERCENT + QWEN_REPLICA2_CODE2WAV_GPU_PERCENT;
 
+// Qwen readiness and a documented SeedTTS comparison sweep.
+export const QWEN_WARMUP_AUDIO_SECONDS = 1;
+export const QWEN_WARMUP_MAX_NEW_TOKENS = 8;
+export const QWEN_BENCH_CONCURRENCIES = [1, 16] as const;
+export const QWEN_BENCH_REPEATS = 5;
+export const QWEN_BENCH_RUNS_PER_ARM = QWEN_BENCH_CONCURRENCIES.length * QWEN_BENCH_REPEATS;
+export const QWEN_P99_MIN_SAMPLES = 100;
+
 // A minimal tensor-parallel layout: one logical stage, one process per rank.
 export const TP_EXAMPLE_SIZE = 2;
 export const TP_EXAMPLE_STAGE_COUNT = 1;
