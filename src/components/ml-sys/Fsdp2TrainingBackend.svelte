@@ -303,14 +303,14 @@
         <text x="360" y="448" text-anchor="middle" class="small">{t('Orange = owned state · blue = borrowed layer · grey = intermediates + other', '橙 = 拥有状态 · 蓝 = 临时完整层 · 灰 = 中间结果和其他临时显存')}</text>
       {:else if step === 5}
         {#each [
-          { x: 25, title: 'WEIGHT SHARDS', titleZh: '权重分片', result: 'weights only', body: 'grad + opt stay', bodyZh: '梯度和优化器留下', tone: 'orange' },
-          { x: 205, title: 'REPLICATE()', titleZh: 'REPLICATE()', result: 'full tensor', body: 'one parameter', bodyZh: '一个参数', tone: 'plain' },
-          { x: 385, title: 'BUCKET', titleZh: '一桶', result: 'full tensors', body: 'wait + send', bodyZh: '等待并发送', tone: 'blue' },
-          { x: 565, title: 'ROLLOUT', titleZh: 'ROLLOUT', result: 'v1', body: 'Ch. 7 Step 5 · handoff', bodyZh: '第 7 章第 5 步交接', tone: 'plain' },
+          { x: 25, title: 'WEIGHT SHARDS', titleZh: '权重分片', result: 'weights only', resultZh: '仅权重', body: 'grad + opt stay', bodyZh: '梯度和优化器留下', tone: 'orange' },
+          { x: 205, title: 'REPLICATE()', titleZh: 'REPLICATE()', result: 'full tensor', resultZh: '完整张量', body: 'one parameter', bodyZh: '一个参数', tone: 'plain' },
+          { x: 385, title: 'BUCKET', titleZh: '一桶', result: 'full tensors', resultZh: '完整张量', body: 'wait + send', bodyZh: '等待并发送', tone: 'blue' },
+          { x: 565, title: 'ROLLOUT', titleZh: 'ROLLOUT', result: 'v1', resultZh: 'v1', body: 'Ch. 7 Step 5 · handoff', bodyZh: '第 7 章第 5 步交接', tone: 'plain' },
         ] as node, i}
           <rect x={node.x} y="95" width="130" height="151" rx="12" fill={fill(node.tone)} stroke={stroke(node.tone)} stroke-dasharray={node.tone === 'plain' ? '5 4' : '0'} />
           <text x={node.x + 65} y="127" text-anchor="middle" class="small strong">{t(node.title, node.titleZh)}</text>
-          <text x={node.x + 65} y="170" text-anchor="middle" class="result">{node.result}</text>
+          <text x={node.x + 65} y="170" text-anchor="middle" class="result">{t(node.result, node.resultZh)}</text>
           <text x={node.x + 65} y="212" text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
           {#if i < 3}
             <line x1={node.x + 130} y1="171" x2={node.x + 170} y2="171" stroke="var(--line)" stroke-width="2.5" marker-end="url(#fsdp-arrow-plain)" />
