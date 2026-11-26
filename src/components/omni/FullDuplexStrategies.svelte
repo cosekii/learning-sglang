@@ -283,7 +283,7 @@
             <text x={panel.x + 160} y="420" text-anchor="middle" class="result">{t(`KEEP ${panel.kept} SENTENCE${panel.kept === 1 ? '' : 'S'}`, `保留 ${panel.kept} 句`)}</text>
           {/each}
           <text x="360" y="486" text-anchor="middle" class="result">{t('last sentence end ≤ min(D, H) = 1,200 ms', '最后保留句的结束时刻 ≤ min(D, H) = 1,200 ms')}</text>
-          <text x="360" y="526" text-anchor="middle" class="small strong">{t('Sentence 2 finished at 2.0 s, so H removes the whole sentence.', '第 2 句在 2.0 秒才结束，所以 H 会删掉整句。')}</text>
+          <text x="360" y="526" text-anchor="middle" class="small strong">{t('No gaps · sentence 2 = 1.0–2.0 s · 1,200 − 1,000 = 200 ms heard · DROP sentence 2', '句间无空档 · 第 2 句 = 1.0–2.0 秒 · 1,200 − 1,000 = 200 ms 已听 · 删除第 2 句')}</text>
           <text x="360" y="586" text-anchor="middle" class="result">{t('How does native MiniCPM-o cut one-second units?', 'native MiniCPM-o 怎样裁切一秒单元？')}</text>
         {:else}
           {#each [
@@ -299,8 +299,8 @@
             <text x="150" y={panel.y + 199} text-anchor="middle" class="result">{t(`KEEP ${panel.kept}`, `保留 ${panel.kept} 句`)}</text>
           {/each}
           <text x="150" y="607" text-anchor="middle" class="result">min(D, H) = 1,200 ms</text>
-          <text x="150" y="638" text-anchor="middle" class="small">{t('Sentence 2 ends at 2.0 s.', '第 2 句在 2.0 秒结束。')}</text>
-          <text x="150" y="663" text-anchor="middle" class="small">{t('H removes the whole sentence.', 'H 因此删掉整句。')}</text>
+          <text x="150" y="638" text-anchor="middle" class="small">{t('No gaps · sentence 2 = 1.0–2.0 s', '句间无空档 · 第 2 句 = 1.0–2.0 秒')}</text>
+          <text x="150" y="663" text-anchor="middle" class="small">{t('1,200 − 1,000 = 200 ms heard · DROP', '1,200 − 1,000 = 200 ms 已听 · 删除')}</text>
           <text x="150" y="723" text-anchor="middle" class="small strong">{t('Next: native one-second units', '下一步：native 的一秒单元')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Default: sentence alignment' : 'Default method: sentence. Forced or ASR alignment can retain finer prefixes; not drawn here.', phone ? '默认使用句子对齐' : '默认 method: sentence。forced 或 ASR 对齐能保留更细前缀，本图不展开。')}</text>
@@ -397,17 +397,17 @@
           <text x="30" y="122" class="small strong">{t('USER', '用户')}</text>
           <rect x={listenerX(DUPLEX_INTERRUPTION_START_MS)} y="112" width={(DUPLEX_INTERRUPTION_END_MS - DUPLEX_INTERRUPTION_START_MS) * 0.2} height="45" rx="7" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="80" y="97" text-anchor="middle" class="result">S · {seconds(DUPLEX_INTERRUPTION_START_MS)}</text>
-          <text x="280" y="97" text-anchor="middle" class="result">R · {seconds(DUPLEX_INTERRUPTION_END_MS)}</text>
-          <text x="180" y="141" text-anchor="middle" class="small strong">“No, I meant London.”</text>
+          <text x="380" y="97" text-anchor="middle" class="result">R · {seconds(DUPLEX_INTERRUPTION_END_MS)}</text>
+          <text x="230" y="141" text-anchor="middle" class="small strong">“No, I meant London.”</text>
           <text x="30" y="222" class="small strong">{t('OLD REPLY', '旧回答')}</text>
           <rect x="80" y="203" width={(DUPLEX_OLD_REPLY_STOP_MS - DUPLEX_INTERRUPTION_START_MS) * 0.2} height="45" rx="7" fill="var(--eos-soft)" stroke="var(--eos)" />
           <text x="340" y="190" text-anchor="middle" class="result">L · {seconds(DUPLEX_OLD_REPLY_STOP_MS)}</text>
           <text x="340" y="232" text-anchor="middle" class="small strong">{t('old speech segment ends', '旧语音段结束')}</text>
           <text x="30" y="322" class="small strong">{t('NEW REPLY', '新回答')}</text>
-          <rect x="280" y="303" width={(DUPLEX_NEW_REPLY_WORD_MS - DUPLEX_INTERRUPTION_END_MS) * 0.2} height="45" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" stroke-dasharray="5 3" />
-          <rect x="500" y="303" width="150" height="45" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="500" y="290" text-anchor="middle" class="result">N · {seconds(DUPLEX_NEW_REPLY_WORD_MS)}</text>
-          <text x="575" y="332" text-anchor="middle" class="small strong">{t('first ASR word', '首个 ASR 词')}</text>
+          <rect x="380" y="303" width={(DUPLEX_NEW_REPLY_WORD_MS - DUPLEX_INTERRUPTION_END_MS) * 0.2} height="45" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" stroke-dasharray="5 3" />
+          <rect x="600" y="303" width="90" height="45" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="600" y="290" text-anchor="middle" class="result">N · {seconds(DUPLEX_NEW_REPLY_WORD_MS)}</text>
+          <text x="645" y="332" text-anchor="middle" class="small strong">{t('first ASR word', '首个 ASR 词')}</text>
           <rect x="50" y="384" width="295" height="70" rx="10" fill="var(--eos-soft)" stroke="var(--eos)" />
           <text x="197" y="413" text-anchor="middle" class="small strong">{t('old reply stops', '旧回答停止')}</text>
           <text x="197" y="440" text-anchor="middle" class="result">L − S = {seconds(DUPLEX_OLD_REPLY_STOP_MS)} − {seconds(DUPLEX_INTERRUPTION_START_MS)} = {seconds(DUPLEX_STOP_WAIT_MS)} s</text>
@@ -443,7 +443,8 @@
           <text x="150" y="680" text-anchor="middle" class="small strong">{t('Next: Qwen3-Omni deployment', '下一步：Qwen3-Omni 部署调优')}</text>
           <text x="150" y="710" text-anchor="middle" class="small">{t('Which deployment belongs on these clocks?', '哪种部署该放上这些时钟？')}</text>
         {/if}
-        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Constructed FDB v1.0 example' : 'Constructed FDB v1.0 example. N is the first ASR word at or after R, not necessarily first audio.', phone ? '构造的 FDB v1.0 算例' : '构造的 FDB v1.0 算例。N 是不早于 R 的首个 ASR 词，不一定是首个声音。')}</text>
+        <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('Full-Duplex Bench (FDB) v1.0 scores recorded speech.', 'Full-Duplex Bench (FDB) v1.0 给录下的语音评分。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Constructed · N = first ASR word at/after R' : 'Constructed example. N is the first ASR word at or after R, not necessarily first audio.', phone ? '构造算例 · N = 不早于 R 的首个 ASR 词' : '构造算例。N 是不早于 R 的首个 ASR 词，不一定是首个声音。')}</text>
       {/if}
     </svg>
   </div>

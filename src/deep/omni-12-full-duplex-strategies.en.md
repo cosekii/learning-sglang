@@ -139,7 +139,7 @@ Sources: `sglang_omni/models/qwen3_omni/thinker_session.py:38-42,87-89,167-223`;
 
 ### On the stage
 
-- The same three constructed sentences end at 1.0, 2.0 and 2.5 seconds.
+- The same three constructed sentences end at 1.0, 2.0 and 2.5 seconds. The reply has no gaps, so sentence 2 spans 1.0–2.0 seconds.
 - Before client H arrives, D retains sentences 1 and 2.
 - After client H arrives, the smaller 1.2-second cut retains only sentence 1.
 - Blue sentence cards remain in dialog history. Grey cards are removed.
@@ -266,9 +266,9 @@ Sources: `sglang_omni/profiler/duplex_metrics.py:150-157,282-337`; `docs/develop
 
 ### On the stage
 
-- S = 3.0 seconds starts the user's correction. R = 4.0 seconds ends it.
+- S = 3.0 seconds starts the user's correction. R = 4.5 seconds ends it.
 - L = 4.3 seconds is the end of the old model-speech segment covering S.
-- N = 5.1 seconds is the first new ASR word at or after R.
+- N = 5.6 seconds is the first new ASR word at or after R.
 - The three small cards recall the same history cut: Qwen keeps 18 rows, the cascade keeps sentence 1 and MiniCPM-o keeps unit 0.
 
 ### Formula
@@ -283,8 +283,8 @@ $$
 | $T_{response}$ | New-reply response wait | 1.1 s | This step |
 | $L$ | End of old model speech covering S | 4.3 s | Constructed recording |
 | $S$ | Interruption onset | 3.0 s | Constructed recording |
-| $N$ | First ASR word start at or after R | 5.1 s | Constructed recording |
-| $R$ | Interruption end | 4.0 s | Constructed recording |
+| $N$ | First ASR word start at or after R | 5.6 s | Constructed recording |
+| $R$ | Interruption end | 4.5 s | Constructed recording |
 
 ### The numbers on the stage
 
@@ -293,10 +293,10 @@ T_{stop} = 4.3 - 3.0 = 1.3\ \text{s}
 $$
 
 $$
-T_{response} = 5.1 - 4.0 = 1.1\ \text{s}
+T_{response} = 5.6 - 4.5 = 1.1\ \text{s}
 $$
 
-These are FDB v1.0 definitions. N is an ASR word start at or after R, not necessarily an audio-arrival timestamp. If no model speech covers S, the interruption is `not_exercised`, not a successful stop. If speech covers both S and R, the outcome is `speaking_at_end` and response latency is absent. For exercised samples, missing responses and unobserved stops count as infinity for quantile summaries rather than disappearing from the denominator. `not_exercised` and ineligible samples are not in those latency denominators.
+These are Full-Duplex Bench (FDB) v1.0 definitions; the bench scores recorded speech. N is an ASR word start at or after R, not necessarily an audio-arrival timestamp. This example has L = 4.3 before R = 4.5, so old speech does not cover R and response latency exists. If no model speech covers S, the interruption is `not_exercised`, not a successful stop. If speech covers both S and R, the outcome is `speaking_at_end` and response latency is absent. For exercised samples, missing responses and unobserved stops count as infinity for quantile summaries rather than disappearing from the denominator. `not_exercised` and ineligible samples are not in those latency denominators.
 
 ### Next
 

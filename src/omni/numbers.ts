@@ -507,11 +507,11 @@ export const DUPLEX_PROFILER_READY_TO_ADMITTED_MS = 150;
 export const DUPLEX_PROFILER_ADMITTED_TO_OUTPUT_MS = 50;
 export const DUPLEX_PROFILER_READY_TO_OUTPUT_MS = DUPLEX_PROFILER_READY_TO_ADMITTED_MS + DUPLEX_PROFILER_ADMITTED_TO_OUTPUT_MS;
 
-// Constructed listener-side timestamps for the FDB v1.0 stop and response definitions.
+// Constructed listener-side timestamps for the Full-Duplex Bench (FDB) v1.0 stop and response definitions.
 export const DUPLEX_INTERRUPTION_START_MS = 3000;
-export const DUPLEX_INTERRUPTION_END_MS = 4000;
+export const DUPLEX_INTERRUPTION_END_MS = 4500;
 export const DUPLEX_OLD_REPLY_STOP_MS = 4300;
-export const DUPLEX_NEW_REPLY_WORD_MS = 5100;
+export const DUPLEX_NEW_REPLY_WORD_MS = 5600;
 export const DUPLEX_STOP_WAIT_MS = DUPLEX_OLD_REPLY_STOP_MS - DUPLEX_INTERRUPTION_START_MS;
 export const DUPLEX_RESPONSE_WAIT_MS = DUPLEX_NEW_REPLY_WORD_MS - DUPLEX_INTERRUPTION_END_MS;
 
