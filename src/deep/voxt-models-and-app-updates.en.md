@@ -215,7 +215,7 @@ $$ \text{in-app update done} \iff \text{bundle replaced} \land \text{app restart
 | check | every 24 hours by default; the user can disable automatic checks | `Voxt/updates.go:68-74`, `179-209`; `updates_github.go:361-387` |
 | install | manual by default; optional automatic installation can install without asking | `updates.go:4-6`, `179-209`; `docs/release.md:406-410` |
 | replace with a feed | the updater replaces `Voxt.app` while the old version runs, using a delta when available | `updates.go:12-16` |
-| fallback without a feed | a release build cannot update itself; it offers the disk image or release page | `updates_github.go:3-18`, `361-387` |
+| fallback without a feed | a release build cannot update itself; a matching disk image downloads, and the release page opens only when none matches | `updates_github.go:3-18`, `361-387` |
 | mismatch | the helper on disk is the new version's; the supervisor does not start it | `updates.go:12-16` |
 | restart | a card offers Restart Voxt; a restart finishes an in-app update | `updates.go:245-253` |
 | watch | the running app looks for an installed update every minute | `updates.go:114-116`, `213-228` |

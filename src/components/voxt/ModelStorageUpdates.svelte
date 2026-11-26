@@ -34,8 +34,8 @@
     caption: 'Using a model starts its server. Ten idle minutes request a stop; its files stay.',
     captionZh: '使用模型会启动服务器。空闲 10 分钟请求停止，文件留着。',
   }, {
-    caption: 'A release build with a feed updates in-app; without one, a DMG or release page.',
-    captionZh: '发布版有更新源时应用内更新。没有时提供 DMG 或发布页。',
+    caption: 'A feed updates a release build; without one, a matching DMG, else the release page.',
+    captionZh: '有更新源时发布版在应用内更新。无源时，有匹配 DMG 就安装，没有才开发布页。',
   }, {
     caption: 'Downloads, unloads, and in-app updates finish in three different ways.',
     captionZh: '下载、卸载和应用内更新，各有不同的完成条件。',
@@ -360,7 +360,7 @@
         {/if}
       {:else if step === 4}
         <text x={W / 2} y={phone ? 25 : 27} text-anchor="middle" class="title">{t('ONE APP UPDATE · TWO ROUTES', '一次应用更新 · 两条路')}</text>
-        <text x={W / 2} y={phone ? 47 : 50} text-anchor="middle" class="subtitle">{t('feed → in-app · feedless release → DMG/page', '有更新源：应用内 · 无源发布版：DMG 或发布页')}</text>
+        <text x={W / 2} y={phone ? 47 : 50} text-anchor="middle" class="subtitle">{t('feed → in-app · no feed: matching DMG, else page', '有源：应用内 · 无源：匹配 DMG，否则发布页')}</text>
         {#if !phone}
           <rect x="20" y="72" width="330" height="170" rx="12" fill="var(--bg)" stroke="var(--line)" />
           <text x="185" y="96" text-anchor="middle" class="label">{t('WITH UPDATE LIST · IN-APP', '有更新清单 · 应用内更新')}</text>
@@ -376,9 +376,9 @@
           <rect x="370" y="72" width="330" height="170" rx="12" fill="var(--bg)" stroke="var(--line)" />
           <text x="535" y="96" text-anchor="middle" class="label">{t('NO FEED · RELEASE BUILD', '没有更新源 · 发布版')}</text>
           <rect x="390" y="112" width="290" height="60" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="535" y="138" text-anchor="middle" class="detail">{t('matching DMG or release page', '匹配的 DMG 或发布页')}</text>
-          <text x="535" y="158" text-anchor="middle" class="detail">{t('on disk', '下载到磁盘')}</text>
-          <text x="535" y="196" text-anchor="middle" class="detail">{t('download it, or open the release page', '下载安装，或打开发布页')}</text>
+          <text x="535" y="138" text-anchor="middle" class="detail">{t('matching DMG', '匹配的 DMG')}</text>
+          <text x="535" y="158" text-anchor="middle" class="detail">{t('download and install', '下载安装')}</text>
+          <text x="535" y="196" text-anchor="middle" class="detail">{t('no match → release page', '没有匹配 → 发布页')}</text>
           <text x="535" y="220" text-anchor="middle" class="detail">{t('development builds have no update', '开发版没有更新')}</text>
 
           <rect x="20" y="256" width="680" height="44" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
@@ -415,8 +415,8 @@
           <rect x="15" y="234" width="270" height="130" rx="10" fill="var(--bg)" stroke="var(--line)" />
           <text x="150" y="258" text-anchor="middle" class="label">{t('NO FEED · RELEASE BUILD', '没有更新源 · 发布版')}</text>
           <rect x="30" y="272" width="240" height="42" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="150" y="297" text-anchor="middle" class="detail">{t('matching DMG or release page', '匹配的 DMG 或发布页')}</text>
-          <text x="150" y="334" text-anchor="middle" class="detail">{t('download, or open the release page', '下载安装，或打开发布页')}</text>
+          <text x="150" y="297" text-anchor="middle" class="detail">{t('matching DMG', '匹配的 DMG')}</text>
+          <text x="150" y="334" text-anchor="middle" class="detail">{t('no match → release page', '没有匹配 → 发布页')}</text>
           <text x="150" y="354" text-anchor="middle" class="detail">{t('dev build: no update route', '开发版没有更新')}</text>
 
           <rect x="15" y="378" width="270" height="44" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
