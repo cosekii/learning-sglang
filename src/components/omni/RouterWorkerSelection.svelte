@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import StepControls from '../StepControls.svelte';
+  import LoopProgress from '../LoopProgress.svelte';
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
@@ -69,6 +70,27 @@
   })();
   const W = $derived(phone ? 300 : 720);
   const H = $derived(phone ? [650, 750, 830, 840, 680, 730, 760, 880][step] : [520, 560, 600, 600, 570, 600, 560, 650][step]);
+
+  // Each step reveals one routing event at a time, then holds the finished scene before looping.
+  const PHASE_COUNTS = [2, 5, 4, 6, 7, 6, 5, 5];
+  const PHASE_MS = 1100, REST_MS = 2500;
+  let phase = $state(0);
+  let lap = $state(0), lapMs = $state(0);
+  const nextLap = (ms: number) => untrack(() => { lapMs = ms; lap++; });
+  $effect(() => {
+    const count = PHASE_COUNTS[step];
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { phase = count - 1; return; }
+    const ms = count * PHASE_MS + REST_MS;
+    let raf = 0, t0 = 0;
+    const tick = (now: number) => {
+      if (!t0 || now - t0 >= ms) { t0 = now; nextLap(ms); }
+      phase = Math.min(count - 1, Math.floor((now - t0) / PHASE_MS));
+      raf = requestAnimationFrame(tick);
+    };
+    phase = 0;
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  });
 </script>
 
 <figure class="viz">
@@ -92,23 +114,23 @@
         <text x={W / 2} y="195" text-anchor="middle" class="small">1 {t('image as input', '张图片作为输入')}</text>
         {#if !phone}
           <line x1="310" y1="216" x2="190" y2="280" stroke="var(--faint)" stroke-width="2" stroke-dasharray="5 4" />
-          <line x1="410" y1="216" x2="530" y2="280" stroke="var(--accent)" stroke-width="2" marker-end="url(#router-arrow)" />
+          <line x1="410" y1="216" x2="530" y2="280" stroke="var(--accent)" stroke-width="2" marker-end="url(#router-arrow)" opacity={phase >= 1 ? 1 : 0} style="transition: opacity 350ms" />
           {#each [
             { x: 50, name: 'worker A', ability: 'text input only', abilityZh: '只接收文字输入', result: 'cannot accept this image', resultZh: '不能接收这张图片', ok: false },
             { x: 410, name: 'worker B', ability: 'image input → text', abilityZh: '图片输入 → 文字', result: 'accepts this request', resultZh: '可以接收这个请求', ok: true },
           ] as worker}
-            <rect x={worker.x} y="285" width="260" height="145" rx="12" fill={worker.ok ? 'var(--accent-soft)' : 'var(--bg)'} stroke={worker.ok ? 'var(--accent)' : 'var(--line)'} />
+            <rect x={worker.x} y="285" width="260" height="145" rx="12" fill={worker.ok && phase >= 1 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={worker.ok && phase >= 1 ? 'var(--accent)' : 'var(--line)'} style="transition: fill 350ms, stroke 350ms" />
             <text x={worker.x + 20} y="317" class="result">{worker.name}</text>
             <text x={worker.x + 20} y="351" class="small">{t(worker.ability, worker.abilityZh)}</text>
             <text x={worker.x + 20} y="397" class="small strong" style={worker.ok ? '' : 'fill:var(--muted)'}>{t(worker.result, worker.resultZh)}</text>
           {/each}
         {:else}
-          <line x1="150" y1="216" x2="150" y2="244" stroke="var(--accent)" stroke-width="2" marker-end="url(#router-arrow)" />
+          <line x1="150" y1="216" x2="150" y2="244" stroke="var(--accent)" stroke-width="2" marker-end="url(#router-arrow)" opacity={phase >= 1 ? 1 : 0} style="transition: opacity 350ms" />
           <rect x="20" y="250" width="260" height="115" rx="11" fill="var(--bg)" stroke="var(--line)" />
           <text x="36" y="280" class="result">worker A</text>
           <text x="36" y="309" class="small">{t('text input only', '只接收文字输入')}</text>
           <text x="36" y="341" class="small" style="fill:var(--muted)">{t('cannot accept this image', '不能接收这张图片')}</text>
-          <rect x="20" y="385" width="260" height="115" rx="11" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <rect x="20" y="385" width="260" height="115" rx="11" fill={phase >= 1 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={phase >= 1 ? 'var(--accent)' : 'var(--line)'} style="transition: fill 350ms, stroke 350ms" />
           <text x="36" y="415" class="result">worker B</text>
           <text x="36" y="444" class="small">{t('image input → text', '图片输入 → 文字')}</text>
           <text x="36" y="476" class="small strong">{t('accepts this request', '可以接收这个请求')}</text>
@@ -345,6 +367,7 @@
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Next chapter: worker failure and graceful exit.', '下一章：worker 故障与退出。')}</text>
       {/if}
+      {#if step === 0}<LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={4} label={t('loops', '循环')} />{/if}
     </svg>
   </div>
   <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh}
