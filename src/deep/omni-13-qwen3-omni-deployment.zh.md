@@ -141,7 +141,7 @@ $$
 
 ### 边界与出处
 
-配置数值来自 `examples/configs/qwen3_omni_colocated_h100_bf16.yaml:7-20`。预留机制见 `sglang_omni/models/qwen3_omni/stages.py:155-215,1230-1243,1358-1373`；encoder 余量说明见 `sglang_omni/scheduling/sglang_backend/server_args_builder.py:176-210`。没有显式 `thinker.engine.mem_fraction_static` 时，工厂推导 73%；显式匹配时跳过预留，冲突时拒绝（`tests/unit_test/qwen3_omni/test_sglang_ar_budget.py:491-511,540-562`）。按字节申报 KV 会跳过比例调整（`stages.py:1384-1402`）。同卡校验见 `sglang_omni/models/qwen3_omni/placement.py:55-60,84-108,122-187`。
+配置数值来自 `examples/configs/qwen3_omni_colocated_h100_bf16.yaml:7-20`。预留机制见 `sglang_omni/models/qwen3_omni/stages.py:155-215,1230-1243,1358-1373`；encoder 余量说明见 `backend/server_args_builder.py:176-210`，其中 `backend/` 是 sglang_omni/scheduling/sglang_backend/ 的缩写。没有显式 `thinker.engine.mem_fraction_static` 时，工厂推导 73%；显式匹配时跳过预留，冲突时拒绝（`tests/unit_test/qwen3_omni/test_sglang_ar_budget.py:491-511,540-562`）。按字节申报 KV 会跳过比例调整（`stages.py:1384-1402`）。同卡校验见 `sglang_omni/models/qwen3_omni/placement.py:55-60,84-108,122-187`。
 
 ### 接下来
 
@@ -180,7 +180,7 @@ $$
 
 ### 边界与出处
 
-BF16 是默认值。FP8 checkpoint 自带精度配置，`--dtype fp8` 不是选择机制（`docs/cookbook/qwen3_omni.md:153-169`；`sglang_omni/models/weight_loader.py:19-42`）。INT4 的 stage 边界与估计见 `docs/cookbook/qwen3_omni.md:181-200`。code2wav 的默认 dtype 见 `sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:146-154,1230-1260` 和 `sglang_omni/models/weight_loader.py:19-26`。兼容矩阵允许三种精度用于纯文字输出、thinker/talker 分卡的 TP1 或 TP2，以及同卡 TP1（`docs/cookbook/qwen3_omni.md:25-44`）。本章不声称本地显存、速度或准确率测量。
+BF16 是默认值。FP8 checkpoint 自带精度配置，`--dtype fp8` 不是选择机制（`docs/cookbook/qwen3_omni.md:153-169`；`sglang_omni/models/weight_loader.py:19-42`）。INT4 的 stage 边界与估计见 `docs/cookbook/qwen3_omni.md:181-200`。code2wav 的默认 dtype 见 `components/code2wav_scheduler.py:146-154,1230-1260` 和 `sglang_omni/models/weight_loader.py:19-26`。本步和下一步用 `components/` 缩写 sglang_omni/models/qwen3_omni/components/。兼容矩阵允许三种精度用于纯文字输出、thinker/talker 分卡的 TP1 或 TP2，以及同卡 TP1（`docs/cookbook/qwen3_omni.md:25-44`）。本章不声称本地显存、速度或准确率测量。
 
 ### 接下来
 
@@ -223,7 +223,7 @@ $$
 B=12.3\%+1.4\%=13.7\%
 $$
 
-64 个状态位是每个 code2wav 进程的工厂配置，用来覆盖 talker 副本可运行的流。每个 codec 副本各有一个 64 位状态池；这个算式不是全部署共享一个池，也不证明有 128 路可持续流。状态池满了不会拒绝请求，而会退回看左侧上下文的无状态解码（`sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:296-314`）。状态位不证明 64 路可持续运行或吞吐翻倍。
+64 个状态位是每个 code2wav 进程的工厂配置，用来覆盖 talker 副本可运行的流。每个 codec 副本各有一个 64 位状态池；这个算式不是全部署共享一个池，也不证明有 128 路可持续流。状态池满了不会拒绝请求，而会退回看左侧上下文的无状态解码（`components/code2wav_scheduler.py:296-314`）。状态位不证明 64 路可持续运行或吞吐翻倍。
 
 ### 边界与出处
 

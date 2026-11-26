@@ -141,7 +141,7 @@ The subtraction uses fractions of the whole card, so it removes five percentage 
 
 ### Boundaries and sources
 
-The config values come from `examples/configs/qwen3_omni_colocated_h100_bf16.yaml:7-20`. The reserve mechanism is in `sglang_omni/models/qwen3_omni/stages.py:155-215,1230-1243,1358-1373`; encoder headroom is described in `sglang_omni/scheduling/sglang_backend/server_args_builder.py:176-210`. With no explicit `thinker.engine.mem_fraction_static`, the factory derives 73%. A matching explicit fraction skips the reserve; a conflicting fraction is rejected (`tests/unit_test/qwen3_omni/test_sglang_ar_budget.py:491-511,540-562`). A byte-sized KV declaration skips the fraction adjustment (`stages.py:1384-1402`). Colocated validation is in `sglang_omni/models/qwen3_omni/placement.py:55-60,84-108,122-187`.
+The config values come from `examples/configs/qwen3_omni_colocated_h100_bf16.yaml:7-20`. The reserve mechanism is in `sglang_omni/models/qwen3_omni/stages.py:155-215,1230-1243,1358-1373`; encoder headroom is described in `backend/server_args_builder.py:176-210`, where `backend/` abbreviates sglang_omni/scheduling/sglang_backend/. With no explicit `thinker.engine.mem_fraction_static`, the factory derives 73%. A matching explicit fraction skips the reserve; a conflicting fraction is rejected (`tests/unit_test/qwen3_omni/test_sglang_ar_budget.py:491-511,540-562`). A byte-sized KV declaration skips the fraction adjustment (`stages.py:1384-1402`). Colocated validation is in `sglang_omni/models/qwen3_omni/placement.py:55-60,84-108,122-187`.
 
 ### Next
 
@@ -180,7 +180,7 @@ These ratios come from approximate values. Bit counts alone cannot produce them 
 
 ### Boundaries and sources
 
-BF16 is the default. The FP8 checkpoint supplies its own precision config; `--dtype fp8` is not the selection mechanism (`docs/cookbook/qwen3_omni.md:153-169`; `sglang_omni/models/weight_loader.py:19-42`). The INT4 stage boundary and estimates are in `docs/cookbook/qwen3_omni.md:181-200`. Code2wav's default dtype is resolved in `sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:146-154,1230-1260` and `sglang_omni/models/weight_loader.py:19-26`. The compatibility matrix permits each precision for text-only output, separate thinker/talker cards at TP1 or TP2, or one shared card at TP1 (`docs/cookbook/qwen3_omni.md:25-44`). The chapter does not claim a local memory, speed or accuracy measurement.
+BF16 is the default. The FP8 checkpoint supplies its own precision config; `--dtype fp8` is not the selection mechanism (`docs/cookbook/qwen3_omni.md:153-169`; `sglang_omni/models/weight_loader.py:19-42`). The INT4 stage boundary and estimates are in `docs/cookbook/qwen3_omni.md:181-200`. Code2wav's default dtype is resolved in `components/code2wav_scheduler.py:146-154,1230-1260` and `sglang_omni/models/weight_loader.py:19-26`. Here and in Step 6, `components/` abbreviates sglang_omni/models/qwen3_omni/components/. The compatibility matrix permits each precision for text-only output, separate thinker/talker cards at TP1 or TP2, or one shared card at TP1 (`docs/cookbook/qwen3_omni.md:25-44`). The chapter does not claim a local memory, speed or accuracy measurement.
 
 ### Next
 
@@ -223,7 +223,7 @@ $$
 B=12.3\%+1.4\%=13.7\%
 $$
 
-The 64 slots are a per-code2wav-process factory setting that covers streams the talker replicas can run. Each codec replica owns a separate 64-slot pool; the formula does not describe one deployment-wide pool or 128 sustainable streams. A full pool does not reject a stream. That stream falls back to stateless decoding with left-context frames (`sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:296-314`). The slots do not prove 64 sustainable streams or twice the throughput.
+The 64 slots are a per-code2wav-process factory setting that covers streams the talker replicas can run. Each codec replica owns a separate 64-slot pool; the formula does not describe one deployment-wide pool or 128 sustainable streams. A full pool does not reject a stream. That stream falls back to stateless decoding with left-context frames (`components/code2wav_scheduler.py:296-314`). The slots do not prove 64 sustainable streams or twice the throughput.
 
 ### Boundaries and sources
 
