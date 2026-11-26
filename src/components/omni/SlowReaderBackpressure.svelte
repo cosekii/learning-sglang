@@ -58,6 +58,9 @@
   }, {
     caption: 'The coordinator fails another oldest-idle stream until the total fits. This example fails two.',
     captionZh: 'coordinator 继续让最久没读的流失败，直到总量合格。这里失败两路。',
+  }, {
+    caption: 'A cap failure ends the whole stream. It aborts generation only if generation is still running.',
+    captionZh: '超过上限会结束整条流。只有还在生成时，才中止生成。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -244,6 +247,29 @@
         <text x={W / 2} y={phone ? 806 : 536} text-anchor="middle" class="result">failed_stream_count = {DELIVERY_REPEAT_FAILED_COUNT}</text>
         <text x={W / 2} y={phone ? 850 : 584} text-anchor="middle" class="rowlabel">{t('What does a failed stream stop doing?', '失败的流会停止哪些工作？')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Unit-test values. Fresh holds 4 + 6 = 10 B in every panel.', '单元测试算例。三幅图里 fresh 都是 4 + 6 = 10 B。')}</text>
+      {:else if step === 5}
+        <text x={phone ? 15 : 20} y="26" class="rowlabel">{t('FAIL THE WHOLE STREAM, NOT ONE CHUNK', '结束整条流，不只丢一个 chunk')}</text>
+        <text x={phone ? 15 : 20} y="52" class="tag">{t('abort = stop unfinished request work · orange = failure path', '中止 = 停止还没完成的请求工作 · 橙 = 失败路径')}</text>
+        <text x={phone ? 15 : 20} y="76" class="tag">{t('Dropping single chunks would corrupt the audio.', '只丢几个 chunk 会弄坏声音，所以整条流失败。')}</text>
+        {#each phone ? [
+          { x: 15, y: 116, h: 272, title: 'GENERATION STILL RUNNING', titleZh: '生成仍在运行', running: true },
+          { x: 15, y: 424, h: 272, title: 'GENERATION ALREADY FINISHED', titleZh: '生成已经结束', running: false },
+        ] : [
+          { x: 40, y: 116, h: 360, title: 'GENERATION STILL RUNNING', titleZh: '生成仍在运行', running: true },
+          { x: 380, y: 116, h: 360, title: 'GENERATION ALREADY FINISHED', titleZh: '生成已经结束', running: false },
+        ] as panel}
+          <rect x={panel.x} y={panel.y} width={phone ? 270 : 300} height={panel.h} rx="11" fill="var(--bg)" stroke="var(--line)" />
+          <text x={panel.x + 16} y={panel.y + 30} class="tag strong">{t(panel.title, panel.titleZh)}</text>
+          <rect x={panel.x + 16} y={panel.y + 52} width={phone ? 238 : 268} height="54" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x={panel.x + 30} y={panel.y + 86} class="result">{DELIVERY_CLOSE_CASE_BYTES} B {t('queued audio', '排队声音')}</text>
+          <text x={panel.x + (phone ? 135 : 150)} y={panel.y + 132} text-anchor="middle" class="result">↓</text>
+          <rect x={panel.x + 16} y={panel.y + 150} width={phone ? 238 : 268} height="50" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x={panel.x + 30} y={panel.y + 182} class="tag strong">{t('CAP FAILURE · whole stream', '超过上限 · 整条流失败')}</text>
+          <text x={panel.x + 20} y={panel.y + 234} class="tag strong">{panel.running ? t('ABORT the generator', '中止生成器') : t('No generator left to abort', '没有还在运行的生成器可中止')}</text>
+          <text x={panel.x + 20} y={panel.y + (phone ? 258 : 270)} class="tag">{t('Send the stream failure to its reader.', '把这条流的失败通知读者。')}</text>
+        {/each}
+        <text x={W / 2} y={phone ? 728 : 536} text-anchor="middle" class="rowlabel">{t('What error does the reader receive?', '读者会收到什么错误？')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Same bytes · before or after generation ends', '同一份声音 · 生成前后都可能失败') : t('The same queued bytes can fail before or after generation ends.', '同一份排队声音可能在生成结束前或结束后失败。')}</text>
       {/if}
     </svg>
   </div>

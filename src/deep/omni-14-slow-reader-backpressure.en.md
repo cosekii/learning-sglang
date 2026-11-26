@@ -202,3 +202,31 @@ The `while` loop and failure count are in `sglang_omni/pipeline/coordinator.py:1
 ### Next
 
 The next step separates what failure stops in the generator from what it stops in delivery.
+
+## Step 6 · Fail the whole stream, abort only running work
+
+> **In one line:** A cap failure ends the whole stream; generation needs an abort only while it is still running.
+
+### On the stage
+
+- Both panels hold the same 12 B of queued audio and cross the shared cap.
+- On the left, generation is still running. The coordinator broadcasts abort so unfinished stages stop this request, then reports the failure to the reader.
+- On the right, generation has finished. No running generator remains to abort, but the reader still receives the delivery failure.
+- The coordinator does not drop an arbitrary chunk. Ordered audio chunks with a missing segment would form corrupt audio.
+
+### The two states
+
+| State | Generator | Reader |
+|---|---|---|
+| Generation running | Abort broadcast | Stream failure |
+| Generation finished | No work left to abort | Stream failure |
+
+A terminal message containing audio passes through the same accounting function. Finished generation therefore does not rule out a later delivery-cap failure. A successful abort releases request ownership; the ownership-retention path after an abort-transport failure is outside this chapter.
+
+### Boundary and sources
+
+The failure-completion path is in `sglang_omni/pipeline/coordinator.py:940-967`. Whole-stream failure and conditional abort are in `1098-1144`. The parameterized running/finished test is `tests/unit_test/pipeline/test_coordinator.py:1465-1505`; terminal-waveform accounting is in `1691-1715`.
+
+### Next
+
+The reader now has a failed stream. The next step shows how each connection type reports that failure.
