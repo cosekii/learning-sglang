@@ -129,33 +129,34 @@ Some elements tell nothing; a web area container often does not update its value
 
 ## Step 5 · Snapshot the clipboard and put it back
 
-> **In one line:** The old clipboard is saved before the paste and restored after it, unless another program wrote to it meanwhile.
+> **In one line:** The old clipboard is saved before ⌘V and put back on a 150 ms budget counted from ⌘V, unless another program wrote to it meanwhile.
 
 ### On the stage
 
 - The blue box is the saved old clipboard.
 - The orange box is the prepared text, written over the clipboard just before ⌘V.
 - The last blue box is the restore: the old clipboard comes back.
+- The stage says the 150 ms budget starts at ⌘V and checking time is subtracted; the unknown case waits 500 ms after the check.
 
 ### The timing
 
-The paste restores the old clipboard after the text showed, or after a delay when the result is unknown:
+The confirmed restore counts from the moment ⌘V is posted, not from the moment a change is seen. Time already spent verifying and sending post-paste keys is subtracted; if the budget is gone, the restore happens immediately. The unknown case waits the default `RestoreDelayMS` after the check.
 
-$$t_{\text{restore}} = \begin{cases}150\text{ ms} & \text{confirmed insert}\\[2pt] 500\text{ ms} & \text{unknown outcome}\end{cases}$$
-
-Before restoring, the helper compares the pasteboard's change count. If another program wrote meanwhile, it leaves that write alone.
+$$t_{\text{restore}}=\begin{cases}\max(0,\;150\text{ ms}-(\text{now}-\text{posted})) & \text{confirmed}\\[2pt] 500\text{ ms} & \text{unknown}\end{cases}$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
-| $t_{\text{restore}}$ | when the old clipboard comes back | result of the two cases below |
-| 150 ms | restore after the text showed | `Voxt/helper/Sources/VoxtNewHelper/TextIO.swift:367` |
-| 500 ms | default `RestoreDelayMS` for unknown | `TextIO.swift:367` |
+| $t_{\text{restore}}$ | time left before the restore runs | the two cases below |
+| `posted` | when ⌘V was posted | `Voxt/helper/Sources/VoxtNewHelper/TextIO.swift:309-310` |
+| `now` | when the restore runs | `TextIO.swift:367-378` |
+| 150 ms | confirmed budget counted from `posted` | `TextIO.swift:367` |
+| 500 ms | default `RestoreDelayMS`, unknown, after the check | `TextIO.swift:367` |
 | `changeCount` | did someone else write meanwhile | `TextIO.swift:365-372` |
 
 ### Why restore
 
-The clipboard is shared by every app. Leaving the transcribed text there quietly replaces whatever the user copied earlier. Restoring returns the user's clipboard. Only an unconfirmed posted paste keeps the text on the clipboard, so the card's Copy still works; a password or not-editable check returns before the clipboard is written and leaves it alone. `KeepClipboard` is the separate switch that leaves the text there on purpose.
+The clipboard is shared by every app. Leaving the transcribed text there quietly replaces whatever the user copied earlier. Restoring returns the user's clipboard. The helper reports the text as kept only when the result is unchanged and `changeCount` is still ours (`TextIO.swift:364-365`); another program's newer write stays instead. The card's Copy does not depend on that paste: it writes the answer text itself (`session_overlay_actions.go:20-25`). When the card is off, the app copies the result and shows the notice (`session_link.go:375-379`); `CopyResult` can copy a carded result too (`session_link.go:321-323`). `KeepClipboard` is the separate switch that leaves the text there on purpose.
 
 ### Boundaries
 
-This step does not recover a clipboard that another app changed between the snapshot and the restore; it only avoids overwriting that newer change. The next chapter asks where names and terms come from as references.
+This step does not recover a clipboard that another app changed between the snapshot and the restore; it only avoids overwriting that newer change. Application code can still copy the result after a secure or not-editable exit, so the helper's "stops before the clipboard write" is not a whole-app guarantee. The next chapter asks where names and terms come from as references.

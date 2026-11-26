@@ -39,8 +39,8 @@
     en: 'After Command-V, the helper reads the focused field again: its text and its cursor. A different reading is evidence the text landed. An ordinary readable field that reads the same leaves the paste unconfirmed; the same exit as Step 2: card when on, or copy and notice when off. A web area or editable web region that reads the same is instead treated as unknown and inserted, because those editors often accept a paste without updating what Accessibility reads. A field that cannot be read is trusted as inserted.',
     zh: 'Command-V 之后，helper 再读一次焦点：它的文字和光标。读到不同，是把文字贴进去的证据。普通、读得出来的框读到一样，只算没确认；出口是第 2 步的：开卡片或复制并提示。网页区域或可编辑的网页部分读到一样，则改成 unknown 并按已贴入处理，因为这些编辑器常接受粘贴却不更新 Accessibility 读到的东西。读不出的元素也按已贴入处理。',
   }, {
-    en: 'The clipboard is snapshotted before Command-V and the prepared text is written over it. After a confirmed paste the old clipboard returns after one hundred fifty milliseconds; when the result is unknown it returns after the default five hundred. If another program wrote to the clipboard meanwhile, Voxt does not put the old one back. An unconfirmed posted paste keeps the text on the clipboard, and the fallback card offers Insert and Copy. A password or not-editable check returns before the clipboard is written, so it leaves the clipboard alone. KeepClipboard is the separate switch that keeps the text there on purpose.',
-    zh: 'Command-V 之前先给剪贴板拍快照，再写入准备好的文字。确认贴进去后，一百五十毫秒把原来的剪贴板放回；结果不确定时按默认五百毫秒放回。如果这中间别的程序写了剪贴板，Voxt 不会用旧的覆盖它。发出粘贴但没确认时，文字留在剪贴板，退回的卡片提供 Insert 和 Copy。密码框和不可编辑的检查发生在写剪贴板之前，所以不动剪贴板。KeepClipboard 是另一个开关，故意把文字留在剪贴板上。',
+    en: 'The clipboard is snapshotted before Command-V and the prepared text is written over it. The 150 ms restore budget starts when Command-V is posted, not when confirmation is seen; time already spent checking and sending post-paste keys is subtracted, and the restore is immediate once that budget has passed. When the result is unknown, the default 500 ms delay starts after the check. If another program wrote to the clipboard meanwhile, Voxt leaves that newer write. An unconfirmed posted paste reports the text as kept only when the clipboard is still ours. The card offers Insert and Copy, and its Copy writes the answer text on its own. A password or not-editable check returns before the clipboard is written, but the app may still copy the result when the card is off, or when CopyResult is on. KeepClipboard is the separate switch that keeps the text there on purpose.',
+    zh: 'Command-V 之前先给剪贴板拍快照，再写入准备好的文字。150 ms 的放回预算从发出 Command-V 起算，不是从看到确认起算；已经花在检查和发粘贴后按键上的时间会减掉，预算用完就立刻放回。结果不确定时，默认的 500 ms 从查完才开始等。这中间别的程序写了剪贴板，Voxt 就留着那次更新的写入。发出粘贴但没确认时，只有剪贴板仍是我们的，才把文字算作保留。卡片提供 Insert 和 Copy，卡片的 Copy 自己写答案文字。密码框和不可编辑的检查在写剪贴板之前返回，但卡片关着或开了 CopyResult 时，app 仍可能复制结果。KeepClipboard 是另一个开关，故意把文字留下。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -181,14 +181,15 @@
           <path d="M240 138 H262" stroke="var(--muted)" stroke-width="2" marker-end="url(#deliver-arrow)" />
           <path d="M490 138 H512" stroke="var(--muted)" stroke-width="2" marker-end="url(#deliver-arrow)" />
         {/if}
-        <text x="20" y={phone ? 448 : 226} class="mono">{t('inserted:', '贴进去：')} {VOXT_RESTORE_AFTER_INSERT_MS} ms · {t('unknown:', '不确定：')} {VOXT_RESTORE_DEFAULT_MS} ms</text>
-        <text x="20" y={phone ? 474 : 252} class="tag">{t('If another app wrote meanwhile, skip the restore.', '这中间别的 app 写过了，就不覆盖。')}</text>
-        <text x={W / 2} y={phone ? 506 : 284} text-anchor="middle" class="tag strong">{t('Paste unconfirmed: the card offers Insert and Copy.', '粘贴未确认：卡片提供 Insert 和 Copy。')}</text>
-        <rect x="20" y={phone ? 524 : 306} width={W - 40} height={phone ? 48 : 46} rx="8" fill="var(--bg)" stroke="var(--line)" />
-        <text x="34" y={phone ? 542 : 322} class="rowlabel">{t('answer text', '答案文字')}</text>
-        <text x="34" y={phone ? 564 : 342} class="tag">{t('send the deck to ', '把文件发给 ')}<tspan font-weight="600">Priya</tspan></text>
-        <text x={W / 2} y={phone ? 620 : 392} text-anchor="middle" class="tag strong">{t('How does Voxt spell "Priya" right next time?', '下一次，Voxt 怎么把 “Priya” 写对？')}</text>
-        <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('helper TextIO.swift · next: names and terms', 'helper TextIO.swift · 下一章：人名和术语') : t('Source: helper TextIO.swift · restore 150 ms after a confirmed paste, else 500 ms', '出处：helper TextIO.swift · 确认贴入后 150 ms 放回，否则 500 ms')}</text>
+        <text x="20" y={phone ? 448 : 226} class="mono">{phone ? t('150 ms from ⌘V · 500 ms after check', '150 ms 从 ⌘V · 500 ms 查完后') : t('inserted 150 ms from ⌘V · unknown 500 ms after the check', '贴入 150 ms 从 ⌘V 起 · 不确定 500 ms 从查完起')}</text>
+        <text x="20" y={phone ? 472 : 250} class="tag">{phone ? t('150 ms from ⌘V; checking time subtracted.', '150 ms 从 ⌘V；检查时间减掉。') : t('The 150 ms budget counts from ⌘V; checking time is subtracted.', '150 ms 预算从 ⌘V 起算；检查时间会减掉。')}</text>
+        <text x="20" y={phone ? 496 : 274} class="tag">{phone ? t('Another app wrote meanwhile: skip restore.', '这中间别的 app 写过：不覆盖。') : t('If another app wrote meanwhile, skip the restore.', '这中间别的 app 写过了，就不覆盖。')}</text>
+        <text x={W / 2} y={phone ? 528 : 304} text-anchor="middle" class="tag strong">{phone ? t('Unconfirmed: card on, else copy + notice.', '未确认：开卡片，否则复制并提示。') : t('Paste unconfirmed: card if on, else copied + notice.', '粘贴未确认：开卡片则显示卡片，否则复制并提示。')}</text>
+        <rect x="20" y={phone ? 544 : 320} width={W - 40} height={phone ? 48 : 46} rx="8" fill="var(--bg)" stroke="var(--line)" />
+        <text x="34" y={phone ? 562 : 336} class="rowlabel">{t('answer text', '答案文字')}</text>
+        <text x="34" y={phone ? 584 : 356} class="tag">{t('send the deck to ', '把文件发给 ')}<tspan font-weight="600">Priya</tspan></text>
+        <text x={W / 2} y={phone ? 632 : 400} text-anchor="middle" class="tag strong">{t('How does Voxt spell "Priya" right next time?', '下一次，Voxt 怎么把 “Priya” 写对？')}</text>
+        <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('TextIO.swift · restore counts from ⌘V', 'TextIO.swift · 放回从 ⌘V 起算') : t('Source: helper TextIO.swift · restore counts from ⌘V; 150 ms if inserted, else 500 ms', '出处：helper TextIO.swift · 放回从 ⌘V 起算；贴入 150 ms，否则 500 ms')}</text>
       {/if}
     </svg>
   </div>

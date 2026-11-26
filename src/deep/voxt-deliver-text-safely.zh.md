@@ -129,33 +129,34 @@ $$\text{compare} = \begin{cases}\text{changed} & \text{任何能比的部分不�
 
 ## 第 5 步 · 给剪贴板拍快照，再放回去
 
-> **一句话：** 贴之前先记住旧剪贴板，贴完放回去；这中间别的程序写过，就不覆盖。
+> **一句话：** 贴之前先记住旧剪贴板，贴完按从 ⌘V 起算的 150 ms 预算放回；这中间别的程序写过，就不覆盖。
 
 ### 图上是什么
 
 - 蓝色框是记住的旧剪贴板。
 - 橙色框是准备好的文字，在 ⌘V 前一刻写上去，暂时占用剪贴板。
 - 最后一个蓝色框是放回：旧剪贴板回来。
+- 图上写清 150 ms 预算从 ⌘V 起算、检查时间会减掉；不确定的情况在查完后再等 500 ms。
 
 ### 时间
 
-文字显示了就放回，结果不确定就等一个默认时间：
+确认贴入的放回从发出 ⌘V 那一刻起算，不是从看到变化起算。已经花在校验和发粘贴后按键上的时间会减掉；预算用完就立刻放回。不确定的情况在查完之后等默认的 `RestoreDelayMS`。
 
-$$t_{\text{restore}} = \begin{cases}150\text{ ms} & \text{确认贴入}\\[2pt] 500\text{ ms} & \text{结果不确定}\end{cases}$$
-
-放回之前，helper 比较剪贴板的 change count。这中间别的程序写过，就留着那次写入。
+$$t_{\text{restore}}=\begin{cases}\max(0,\;150\text{ ms}-(\text{now}-\text{posted})) & \text{确认贴入}\\[2pt] 500\text{ ms} & \text{不确定}\end{cases}$$
 
 | 符号 | 含义 | 出处 |
 |---|---|---|
-| $t_{\text{restore}}$ | 旧剪贴板什么时候回来 | 下面两种情况的结果 |
-| 150 ms | 文字显示后放回 | `Voxt/helper/Sources/VoxtNewHelper/TextIO.swift:367` |
-| 500 ms | 不确定时默认的 `RestoreDelayMS` | `TextIO.swift:367` |
+| $t_{\text{restore}}$ | 放回前还剩多久 | 下面两种情况 |
+| `posted` | 发出 ⌘V 的时间 | `Voxt/helper/Sources/VoxtNewHelper/TextIO.swift:309-310` |
+| `now` | 执行放回的时间 | `TextIO.swift:367-378` |
+| 150 ms | 从 `posted` 起算的确认预算 | `TextIO.swift:367` |
+| 500 ms | 不确定时查完后等默认 `RestoreDelayMS` | `TextIO.swift:367` |
 | `changeCount` | 中间有没有别人写过 | `TextIO.swift:365-372` |
 
 ### 为什么放回
 
-剪贴板是每个 app 共用的。把转写文字一直留在上面，就悄悄替掉了用户之前复制的东西。放回是把用户的剪贴板还给他。只有发出粘贴但没确认时，才把文字留在剪贴板，卡片的 Copy 才用得上；密码框和不可编辑的检查在写剪贴板之前就返回，不动剪贴板。`KeepClipboard` 是另一个开关，故意把文字留下。
+剪贴板是每个 app 共用的。把转写文字一直留在上面，就悄悄替掉了用户之前复制的东西。放回是把用户的剪贴板还给他。只有结果没确认、而且 `changeCount` 仍是我们的，helper 才把文字算作保留（`TextIO.swift:364-365`）；别的程序的新写入会留着。卡片的 Copy 不依赖这次粘贴：它自己写答案文字（`session_overlay_actions.go:20-25`）。卡片关着时，app 复制结果并显示提示（`session_link.go:375-379`）；`CopyResult` 也可能复制带卡片的结果（`session_link.go:321-323`）。`KeepClipboard` 是另一个开关，故意把文字留下。
 
 ### 边界
 
-这一步不负责救回快照到放回之间被别的 app 改掉的剪贴板，只避免覆盖那次更新的写入。下一章问的是人名和术语作为参考从哪里来。
+这一步不负责救回快照到放回之间被别的 app 改掉的剪贴板，只避免覆盖那次更新的写入。密码框或不可编辑的出口之后，app 后面的代码仍可能复制结果，所以 helper 的「在写剪贴板前停下」不是整个 app 的保证。下一章问的是人名和术语作为参考从哪里来。
