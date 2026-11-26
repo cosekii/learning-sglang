@@ -38,6 +38,26 @@
       { en: `whole-model update = ${UPDATE_DEBUG_INITIAL_S} s`, zh: `完整更新 = ${UPDATE_DEBUG_INITIAL_S} 秒` },
       { en: `one parameter: inside ${UPDATE_DEBUG_INNER_S} s · whole call ${UPDATE_DEBUG_OUTER_S} s`, zh: `一个参数：内部 ${UPDATE_DEBUG_INNER_S} 秒 · 整个调用 ${UPDATE_DEBUG_OUTER_S} 秒` },
     ],
+  }, {
+    caption: 'A checkpoint is a saved copy of the weights. Every rollout engine can read the same checkpoint.',
+    captionZh: 'Checkpoint 是保存下来的整套权重。每个 rollout 都能读同一份 checkpoint。',
+    title: 'Three channels · 1 of 3: the disk checkpoint', titleZh: '三条通道 · 第 1 条：磁盘 checkpoint',
+    subtitle: 'checkpoint = a saved copy of all weights that another process can read', subtitleZh: 'checkpoint = 存下来的整套权重，别的进程可以读取',
+    foot: 'Disk speed depends on storage; the source gives no disk timing.', footZh: '磁盘路线快慢取决于存储；来源没有给出磁盘计时。',
+    mobileTitle: '1 of 3 · disk checkpoint', mobileTitleZh: '第 1 条 · 磁盘 checkpoint',
+    mobileSubtitle: 'checkpoint = saved weights', mobileSubtitleZh: 'checkpoint = 存好的整套权重',
+    mobileFoot: 'No disk timing is claimed.', mobileFootZh: '来源没有磁盘计时。',
+    mobile: [
+      { title: 'TRAINING WRITES v1', titleZh: '训练端写入 v1', body: 'save one complete copy', bodyZh: '存下一整套权重', tone: 'blue' },
+      { title: 'CHECKPOINT v1', titleZh: 'CHECKPOINT v1', body: 'the saved weight file', bodyZh: '保存权重的文件', tone: 'blue' },
+      { title: 'EVERY ROLLOUT READS', titleZh: '每个 ROLLOUT 读取', body: 'the same checkpoint', bodyZh: '读同一份 checkpoint', tone: 'blue' },
+      { title: 'LOAD_WEIGHTS', titleZh: 'LOAD_WEIGHTS', body: 'replace the old weights', bodyZh: '替换旧权重', tone: 'blue' },
+    ],
+    formulas: [
+      { en: 'disk = write v1, then read v1', zh: '磁盘路线 = 先写 v1，再读 v1' },
+      { en: 'distributed = broadcast values', zh: 'distributed = 广播权重数值' },
+      { en: 'tensor = send GPU handles', zh: 'tensor = 发送 GPU 定位句柄' },
+    ],
   }];
   let step = $state(0);
   $effect(() => {
@@ -54,7 +74,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [480][step] : [410][step]);
+  const H = $derived(phone ? [480, 620][step] : [410, 480][step]);
 </script>
 
 <figure class="viz">
@@ -106,6 +126,31 @@
         <text x="530" y="265" text-anchor="middle" class="small strong">{t('DEBUG TIME', '调试耗时')}</text>
         <text x="530" y="302" text-anchor="middle" class="big">{UPDATE_DEBUG_INITIAL_S} s</text>
         <text x="530" y="328" text-anchor="middle" class="small">{t(`one call: ${UPDATE_DEBUG_INNER_S} s inside, ${UPDATE_DEBUG_OUTER_S} s outside`, `一次调用：内部 ${UPDATE_DEBUG_INNER_S} 秒，外部 ${UPDATE_DEBUG_OUTER_S} 秒`)}</text>
+      {:else if step === 1}
+        {#each [
+          { x: 30, title: '1 · DISK', titleZh: '1 · 磁盘', body: 'checkpoint file', bodyZh: 'checkpoint 文件', selected: true },
+          { x: 265, title: '2 · DISTRIBUTED', titleZh: '2 · DISTRIBUTED', body: 'broadcast values', bodyZh: '广播权重数值', selected: false },
+          { x: 500, title: '3 · TENSOR', titleZh: '3 · TENSOR', body: 'GPU handles', bodyZh: 'GPU 定位句柄', selected: false },
+        ] as route}
+          <rect x={route.x} y="82" width="190" height="99" rx="12" fill={route.selected ? 'var(--accent-soft)' : 'var(--bg)'} stroke={route.selected ? 'var(--accent)' : 'var(--line)'} />
+          <text x={route.x + 95} y="112" text-anchor="middle" class="small strong">{t(route.title, route.titleZh)}</text>
+          <text x={route.x + 95} y="143" text-anchor="middle" class="small">{t(route.body, route.bodyZh)}</text>
+          <text x={route.x + 95} y="165" text-anchor="middle" class="small">{route.selected ? t('write, then read', '先写入，再读取') : t('next steps', '后面两步')}</text>
+        {/each}
+        {#each [
+          { x: 25, title: 'TRAINING', titleZh: '训练端', body: 'write v1', bodyZh: '写入 v1' },
+          { x: 200, title: 'CHECKPOINT', titleZh: 'CHECKPOINT', body: 'saved v1', bodyZh: '存好的 v1' },
+          { x: 375, title: 'ROLLOUT A + B', titleZh: 'ROLLOUT A + B', body: 'read same v1', bodyZh: '读同一 v1' },
+          { x: 550, title: 'MODEL', titleZh: '模型', body: 'load v1', bodyZh: '装入 v1' },
+        ] as node, i}
+          <rect x={node.x} y="222" width="145" height="105" rx="11" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x={node.x + 72.5} y="255" text-anchor="middle" class="small strong">{t(node.title, node.titleZh)}</text>
+          <text x={node.x + 72.5} y="293" text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
+          {#if i < 3}<line x1={node.x + 145} y1="274" x2={node.x + 168} y2="274" stroke="var(--accent)" stroke-width="2.5" marker-end="url(#update-arrow-blue)" />{/if}
+        {/each}
+        <text x="360" y="366" text-anchor="middle" class="code">update_weights_from_disk → model.load_weights</text>
+        <text x="360" y="403" text-anchor="middle" class="small">{t('The same saved file can also serve a newly added rollout engine.', '新加入的 rollout 也能读取这份已保存的权重。')}</text>
+        <text x="360" y="433" text-anchor="middle" class="small">{t('Blue = the disk route · grey = the two direct alternatives', '蓝 = 磁盘路线 · 灰 = 另外两条直接通道')}</text>
       {/if}
       {#if cur.foot2}
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t(cur.foot2, cur.foot2Zh ?? cur.foot2)}</text>
@@ -122,6 +167,7 @@
   .label { font-size: 13px; fill: var(--fg); }
   .small { font-size: 13px; fill: var(--fg); }
   .section { font-family: var(--mono); font-size: 15px; font-weight: 700; fill: var(--fg); }
+  .code { font-family: var(--mono); font-size: 13px; fill: var(--fg); }
   .strong { font-weight: 650; }
   .result { font-family: var(--mono); font-size: 15px; font-weight: 650; fill: var(--fg); }
   .big { font-family: var(--mono); font-size: 26px; font-weight: 700; fill: var(--fg); }
@@ -129,6 +175,7 @@
     .title { font-size: 16px; }
     .label, .small { font-size: 12px; }
     .section { font-size: 13px; }
+    .code { font-size: 12px; }
     .result { font-size: 12px; }
   }
 </style>

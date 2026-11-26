@@ -17,6 +17,8 @@ This chapter follows `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-1.md` and `
 
 Step 1 uses the debug note at `latency-accelerate-for-weight-updates/readme.md:556-558,980-1007`. The nominal size is `1,000,000,000 parameters × 2 bytes = 2 GB` in decimal units. The 7.047-second full update, the 0.001-second `ModelRunner` example and the 0.033-second outer call are one author's distributed-update measurements, not a controlled comparison of transport methods.
 
+Step 2 compares the three interfaces at `sys-design/readme-1.md:400-409` and opens the disk route. `update_weights_from_disk` reads a saved checkpoint and eventually calls the model's weight loader. The same checkpoint can serve existing and newly added rollout engines. Storage speed and loader behavior determine its wait; the sources provide no disk timing. The pinned implementation is `sgl-project/sglang@392e441ad17c78b68638f2d959fcf592d19b4834`, `python/sglang/srt/model_executor/model_runner.py:641-694`.
+
 </details>
 
 <details class="i18n-zh">
@@ -25,5 +27,7 @@ Step 1 uses the debug note at `latency-accelerate-for-weight-updates/readme.md:5
 本章依据 `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-1.md` 和 `Awesome-ML-SYS-Tutorial/sglang/latency-accelerate-for-weight-updates/readme.md`。第 6 章已经说明 slime 会等 `actor_model.async_update_weights()` 完成再开始下一轮，本章打开这个更新框。
 
 第 1 步使用 `latency-accelerate-for-weight-updates/readme.md:556-558,980-1007` 的调试记录。权重大小按 `1,000,000,000 个参数 × 2 字节 = 2 GB` 计算，采用十进制单位。完整更新 7.047 秒、`ModelRunner` 示例 0.001 秒、外部调用 0.033 秒都是一位作者对 distributed 更新的测量，不是传输方式的对照实验。
+
+第 2 步依据 `sys-design/readme-1.md:400-409` 比较三个接口，并展开磁盘路线。`update_weights_from_disk` 读取保存的 checkpoint，最后调用模型的权重加载器。现有和新加入的 rollout 都能读同一份 checkpoint。等待取决于存储和加载过程，来源没有给出磁盘计时。固定实现为 `sgl-project/sglang@392e441ad17c78b68638f2d959fcf592d19b4834` 的 `python/sglang/srt/model_executor/model_runner.py:641-694`。
 
 </details>
