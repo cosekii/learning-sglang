@@ -4,6 +4,8 @@
 
 ## 本轮记录
 
+- 00:05 完成 Inside Voxt 第 7 章全部 5 步：start app 与 front app 的区别、密码框挡住投递、焦点能不能收文字的三条规则、贴完复查焦点、剪贴板快照与放回。全章 **5/5 步易读 12/12**，平均 **24.00/24**，**0 内容洞**。
+- 本章 `build`、`transcript`、全章 `readability`（0 机械问题）、`deep-check 07`、`zh-check`、中英本章 `mobile`、中文逐步字号 `mobile` 和 `git diff --check` 通过。只跑本章检查，未跑或等待全站回归。本轮模型不能读图，像素级目视终检留给主人/复审者；布局由 transcript、`zh-check` 和三种宽度 `mobile` 代理。本轮类型：**新书**；下一章是 `08-personal-dictionary`。
 - 23:56 完成 Inside Voxt 第 6 章全部 8 步：三条任务路线、消息顺序、整理 prompt 的五部分、三种回答约定、长听写按序分片、失败片保留原话、Translate / Rewrite 失败出口、截断回答进入答案卡。全章 **8/8 步易读 12/12**，平均 **23.88/24**，**0 内容洞、0 最终显示洞**。
 - 教程逐步提交并推送至 `5bff5f4`；`build`、本章 `transcript`、全章 `readability`、中英三种宽度本章 `mobile`、`deep-check 06`、本章 `zh-check` 和 `git diff --check` 通过。独立模拟冷读整改后复读无必须修项；主线程逐张检查 40 张中英桌面／手机／深入讲解终稿。最终图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-voxt-ch06-20261125-2319/final/`、`checks/`。本轮只跑本章检查，未跑全站回归、真实模型或 Voxt 产品测试。本轮类型：**新书**；下一普通轮按交替规则修旧，下一章是 `deliver-text-safely`。
 - 23:14 完成 Learning ML Systems 第 6 章全部 8 步：一轮 256 个回答、prompt 复制、rollout 记录、原始 reward、GRPO 均值中心化、标准差归一化、训练调用和下一轮权重更新。全章 **8/8 步易读 12/12**，平均 **24.00/24**，**0 内容洞、0 最终显示洞**。
@@ -134,7 +136,7 @@
 
 ## Inside Voxt
 
-规划完成：`docs/plan-voxt.md` 共 3 部分、16 章；第 1 章已制作 4 步并完成，第 2 章已制作 3 步并完成，第 3 章已制作 8 步并完成，第 4 章已制作 7 步并完成，第 5 章已制作 5 步并完成，第 6 章已制作 8 步并完成。事实来源只使用 `sglang-omni` 的 `origin/main` 公开代码和文档。
+规划完成：`docs/plan-voxt.md` 共 3 部分、16 章；第 1 章已制作 4 步并完成，第 2 章已制作 3 步并完成，第 3 章已制作 8 步并完成，第 4 章已制作 7 步并完成，第 5 章已制作 5 步并完成，第 6 章已制作 8 步并完成，第 7 章已制作 5 步并完成。事实来源只使用 `sglang-omni` 的 `origin/main` 公开代码和文档。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
@@ -144,7 +146,7 @@
 | 04 | speech-recognition-routes | 完成：7/7 步易读满分 | 23.86 |
 | 05 | language-model-connection | 完成：5/5 步易读满分 | 24.00 |
 | 06 | compose-and-cleanup | 完成：8/8 步易读满分 | 23.88 |
-| 07 | deliver-text-safely | 规划 | — |
+| 07 | deliver-text-safely | 完成：5/5 步易读满分 | 24.00 |
 | 08 | personal-dictionary | 规划 | — |
 | 09 | history-retry-retention | 规划 | — |
 | 10 | file-transcription | 规划 | — |
