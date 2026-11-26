@@ -4,6 +4,7 @@
 
 ## 本轮记录
 
+- 01:00 第五轮按源码复审修 Inside Voxt 第 7 章 5 个内容洞：目的地改成焦点的所属进程（不总是前台 app）；卡片只在功能开关打开时出现、关时复制并提示；按钮/列表规则收窄并补卡片 Insert 例外；没确认不再保证文字留在剪贴板；150 ms 放回从 ⌘V 起算并减去已花时间。transcript、15 张舞台图和 10 张深入讲解图重生成，本章门槛重跑通过。视觉/独立冷读仍待有图片输入的复审者，本章保持待目视。
 - 数值复审继续修 Learning ML Systems 第 7 章：第 7 步补每 tensor 一次 30 ms 与 `4.845 ÷ 0.030 = 161.5`，约 160 次调用，并改清英文照片像素说明。第 7 步 R1 与原 #3 文本复核通过；R6 与总分继续不记。**本章仍未完成**，等待 vision-capable reviewer 或主人检查 48 张终稿。
 - 00:40 完成 Learning SGLang Omni 第 8 章全部 8 步的内容制作与独立 transcript 冷读：首音 p90 对照、首个 audio delta 的 TTFT 边界、chunk 空档、通信 trace、host／GPU event 等待、partial-start 单变量协议、逐次离散程度和完整比较证据。全章 **8/8 步易读 12/12**，平均 **24.00/24**，**0 内容洞、0 机械显示洞**；图像人工视觉验收待主人。
 - 逐步提交并推送；`build`、本章 `transcript`、全章 `readability`、中英三种宽度 `mobile`、中文目标步字号、`deep-check 08`、本章 `zh-check`、16 个深入讲解渲染视图和 `git diff --check` 通过。独立冷读 subagent 复审至 8/8 步没有必须修内容项；它和主模型均不支持图像输入，未声称截图目测已完成。最终 44 张图位于 `/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-v14569g1/opencode/ls-k1-omni08-final/`。本轮只跑本章检查，未跑全站回归、真实服务、GPU benchmark 或音频质量评测。本轮类型：**新书**；下一普通轮按交替规则修旧，下一章是 `09-ar-stage-optimization`。
@@ -161,7 +162,7 @@
 | 04 | speech-recognition-routes | 完成：7/7 步易读满分 | 23.86 |
 | 05 | language-model-connection | 完成：5/5 步易读满分 | 24.00 |
 | 06 | compose-and-cleanup | 完成：8/8 步易读满分 | 23.88 |
-| 07 | deliver-text-safely | 待目视：5/5 文本项通过；无图片输入复审者，R6/#4/#5 未评 | — |
+| 07 | deliver-text-safely | 待目视：5 个源码级内容洞已修；R6/#4/#5 未评 | — |
 | 08 | personal-dictionary | 规划 | — |
 | 09 | history-retry-retention | 规划 | — |
 | 10 | file-transcription | 规划 | — |
