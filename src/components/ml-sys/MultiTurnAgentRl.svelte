@@ -54,17 +54,17 @@
       ],
     },
   }, {
-    caption: 'Mask 1 learns from model actions; mask 0 skips tool replies. Nine of twelve response tokens teach the model.',
-    captionZh: 'mask 1 学习模型动作，mask 0 跳过工具回复。12 个响应 token 中有 9 个参与训练。',
+    caption: 'Mask 1 selects model actions for training; mask 0 skips tool replies. Nine of twelve response tokens teach the model.',
+    captionZh: 'mask 1 选择模型动作参与训练，mask 0 跳过工具回复。12 个响应 token 中有 9 个参与训练。',
     title: 'Give each response token a loss mask', titleZh: '给每个响应 token 一个 loss mask',
     subtitle: 'loss mask: 1 = learn from this token · 0 = skip it', subtitleZh: 'loss mask：1 = 学习这个 token · 0 = 跳过',
     foot: 'The mask selects training tokens; it does not remove context.', footZh: 'mask 只选择训练 token，不会删掉上下文。',
     legend: 'Blue = learn · orange = skip · red = current', legendZh: '蓝 = 学习 · 橙 = 跳过 · 红 = 当前',
     compare: true,
     nodes: [
-      { title: 'MODEL ACTIONS', titleZh: '模型动作', result: `A(4) + B(5) = ${N.AGENT_MODEL_ACTION_TOKENS}`, resultZh: `A(4) + B(5) = ${N.AGENT_MODEL_ACTION_TOKENS}`, body: 'mask 1 for every action token', bodyZh: '每个动作 token 的 mask 都是 1', tone: 'blue' },
-      { title: 'TOOL REPLY', titleZh: '工具回复', result: 'O = 3', resultZh: 'O = 3', body: 'mask 0 for every observation token', bodyZh: '每个观察 token 的 mask 都是 0', tone: 'orange' },
-      { title: 'FOR TRAINING', titleZh: '用于训练', result: `${N.AGENT_MODEL_ACTION_TOKENS} of ${N.AGENT_RESPONSE_TOKENS}`, resultZh: `${N.AGENT_RESPONSE_TOKENS} 个中的 ${N.AGENT_MODEL_ACTION_TOKENS} 个`, body: 'O remains context, not a lesson', bodyZh: 'O 留作上下文，不参与学习', tone: 'blue' },
+      { title: 'MODEL ACTIONS', titleZh: '模型动作', result: `A(4) + B(5) = ${N.AGENT_MODEL_ACTION_TOKENS}`, resultZh: `A(4) + B(5) = ${N.AGENT_MODEL_ACTION_TOKENS}`, body: 'action tokens: mask 1', bodyZh: '动作 token：mask 1', tone: 'blue' },
+      { title: 'TOOL REPLY', titleZh: '工具回复', result: 'O = 3', resultZh: 'O = 3', body: 'observation tokens: mask 0', bodyZh: '观察 token：mask 0', tone: 'orange' },
+      { title: 'FOR TRAINING', titleZh: '用于训练', result: `${N.AGENT_MODEL_ACTION_TOKENS} of ${N.AGENT_RESPONSE_TOKENS}`, resultZh: `${N.AGENT_RESPONSE_TOKENS} 个中的 ${N.AGENT_MODEL_ACTION_TOKENS} 个`, body: 'O stays context; loss skipped', bodyZh: 'O 留作上下文，不参与学习', tone: 'blue' },
     ],
     formulas: [
       { en: 'response order: A(4) → O(3) → B(5)', zh: '响应顺序：A(4) → O(3) → B(5)' },
@@ -373,6 +373,16 @@
       {@const visible = phase === 0 ? N.AGENT_PROMPT_TOKENS : phase === 1 ? N.AGENT_SECOND_CALL_INPUT_TOKENS : all.length}
       {@render tokenStrip(x + 10, y + 67, w - 20, all.slice(0, visible))}
     {/if}
+  {:else if step === 1}
+    {#if i === 0}
+      {@render tokenStrip(x + 12, y + 58, w - 24, [...tokenCells('A', N.AGENT_FIRST_ACTION_TOKENS, 'blue'), ...tokenCells('B', N.AGENT_SECOND_ACTION_TOKENS, 'blue')])}
+      {@render tokenStrip(x + 12, y + 82, w - 24, tokenCells('1', N.AGENT_MODEL_ACTION_TOKENS, 'blue'))}
+    {:else if i === 1}
+      {@render tokenStrip(x + 12, y + 58, w - 24, tokenCells('O', N.AGENT_OBSERVATION_TOKENS, 'orange'))}
+      {#if phase >= 1}{@render tokenStrip(x + 12, y + 82, w - 24, tokenCells('0', N.AGENT_OBSERVATION_TOKENS, 'orange'))}{/if}
+    {:else if phase >= 2}
+      {@render tokenStrip(x + 10, y + 67, w - 20, [...tokenCells('1', N.AGENT_FIRST_ACTION_TOKENS, 'blue'), ...tokenCells('0', N.AGENT_OBSERVATION_TOKENS, 'orange'), ...tokenCells('1', N.AGENT_SECOND_ACTION_TOKENS, 'blue')])}
+    {/if}
   {/if}
   </g>
 {/snippet}
@@ -392,7 +402,7 @@
             <text x="150" y={y + 20} text-anchor="middle" class={node.title === 'RESPONSE ATTENTION MASK' ? 'tiny strong' : 'small strong'}>{t(node.title, node.titleZh)}</text>
             <text x="150" y={y + 43} text-anchor="middle" class="result">{resultFor(i)}</text>
             {@render mechanism(i, 25, y, 250)}
-            <text x="150" y={y + 110} text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
+            <text x="150" y={y + 114} text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
             {#if cur.flow && i < cur.nodes.length - 1}<line x1="150" y1={y + 120} x2="150" y2={y + 132} stroke="var(--line)" stroke-width="2.5" marker-end="url(#agent-arrow)" />{/if}
           </g>
         {/each}

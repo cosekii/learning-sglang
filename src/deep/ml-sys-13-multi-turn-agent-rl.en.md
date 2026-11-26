@@ -40,9 +40,9 @@ Sources: `THUDM/slime@cd4a8efc6f8e33364a474cfa70875779ed0a673f`, `examples/searc
 ### On the stage
 
 - The response keeps Step 1's `A → O → B` order.
-- The blue action spans `A` and `B` have mask 1, giving $4+5=9$ tokens.
-- The orange observation span `O` has mask 0 on all three tokens.
-- Mask 0 does not delete `O`. The next model call still reads it, but training does not compute a learning loss for those positions.
+- The blue action cells `A` and `B` receive a second row of blue mask-1 cells, giving $4+5=9$ tokens.
+- The orange observation cells `O` then receive orange mask-0 cells on all three tokens.
+- The final training card assembles all twelve mask cells in response order. Mask 0 does not delete `O`: the next model call still reads it, but training computes no learning loss for those positions.
 
 ### Formula and symbols
 
