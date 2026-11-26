@@ -31,7 +31,7 @@
     caption: 'One download job has four parts: resume, room, checks, and needs.',
     captionZh: '一个下载任务有四部分：续传、空位、校验和所需模型。',
   }, {
-    caption: 'Using a model starts its server. Ten idle minutes ask it to stop; its files stay.',
+    caption: 'Using a model starts its server. Ten idle minutes request a stop; its files stay.',
     captionZh: '使用模型会启动服务器。空闲 10 分钟请求停止，文件留着。',
   }, {
     caption: 'A release build with a feed updates in-app; without one, a DMG or release page.',
@@ -195,7 +195,7 @@
           <text x="316" y="172" class="mono">vocab.json</text>
           <text x="684" y="172" text-anchor="end" class="mono">{vocabMb} MB</text>
           <text x="316" y="190" class="mono small">{t("git blob ID = git's byte fingerprint", 'git blob ID = git 的字节指纹')}</text>
-          <text x="316" y="208" class="mono small">{vocabBytes} B = {vocabMb} MB</text>
+          <text x="316" y="208" class="mono small">{vocabBytes} B ≈ {vocabMb} MB</text>
           <text x="316" y="230" class="detail">{t(`… and ${VOXT_MODEL_FILE_COUNT - 2} more files`, `… 还有 ${VOXT_MODEL_FILE_COUNT - 2} 个文件`)}</text>
           <text x="316" y="254" class="mono small">snapshots/{VOXT_MODEL_COMMIT}</text>
           <text x="40" y="316" class="label">{t("ON DISK · THIS COMMIT'S FILES", '在磁盘上 · 这个提交的文件')}</text>
@@ -219,7 +219,7 @@
           <text x="30" y="272" class="mono small">{weightsGb} GB · {t('SHA-256 = byte fingerprint', 'SHA-256 = 字节指纹')}</text>
           <text x="30" y="300" class="mono">vocab.json</text>
           <text x="30" y="318" class="mono small">{vocabMb} MB · {t('git blob ID = byte fingerprint', 'git blob ID = 字节指纹')}</text>
-          <text x="30" y="336" class="mono small">{vocabBytes} B = {vocabMb} MB</text>
+          <text x="30" y="336" class="mono small">{vocabBytes} B ≈ {vocabMb} MB</text>
           <text x="30" y="364" class="detail">{t(`… and ${VOXT_MODEL_FILE_COUNT - 2} more files`, `… 还有 ${VOXT_MODEL_FILE_COUNT - 2} 个文件`)}</text>
           <text x="30" y="382" class="mono small">models--mlx-community--</text>
           <text x="30" y="402" class="mono small">Qwen3-ASR-1.7B-8bit/snapshots/</text>
@@ -283,8 +283,8 @@
 
           <rect x="15" y="300" width="270" height="76" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="30" y="324" class="label">{t('CHECK · SHA-256 OR GIT BLOB ID', '校验 · SHA-256 或 GIT BLOB ID')}</text>
-          <text x="150" y="358" text-anchor="middle" class="result">{t('each file', '每个文件')}</text>
-          <text x="270" y="358" text-anchor="end" class="detail">{t('mismatch → error', '不对就报错')}</text>
+          <text x="150" y="346" text-anchor="middle" class="result">{t('each file', '每个文件')}</text>
+          <text x="150" y="368" text-anchor="middle" class="detail">{t('mismatch → error', '不对就报错')}</text>
 
           <rect x="15" y="390" width="270" height="76" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="30" y="414" class="label">{t('NEEDS · SILERO VAD', '一起装 · SILERO VAD')}</text>
@@ -353,7 +353,7 @@
           <text x="222" y="549" text-anchor="middle" class="label">{t('2 · delete', '2 · 删除')}</text>
           <text x="30" y="592" class="detail">{t('requests: unload, then delete', '先请求卸载，再请求删除')}</text>
           <text x="30" y="614" class="detail">{t('no wait for the process', '不等待进程退出')}</text>
-          <text x="30" y="644" class="detail">{t('idle → stop now', '空闲 → 现在停')}</text>
+          <text x="30" y="644" class="detail">{t('idle → stop request', '空闲 → 请求停止')}</text>
           <text x="30" y="666" class="detail">{t('busy → stop after use', '忙碌 → 用完再停')}</text>
           <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('Settings: 5, 15, 30, 60 min, or keep until quit.', '设置：5、15、30 或 60 分钟，或留到退出应用。')}</text>
           <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Sources: omni/runtime.go, local/library.go.', '出处：omni/runtime.go、local/library.go。')}</text>

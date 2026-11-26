@@ -75,7 +75,7 @@ $$ \text{LFS file: }\ \mathrm{SHA256}(\text{file}) = \text{listed hash}, \qquad 
 |---|---|---|
 | files | the catalogue lists them | 9 |
 | weights | `model.safetensors` | 2,463,307,541 B = 2.46 GB |
-| `vocab.json` | 2,776,833 B | 2.78 MB |
+| `vocab.json` | 2,776,833 B ÷ 1,000,000 | 2.78 MB |
 | total | Step 1's nine-file sum | 2,467,856,503 B = 2.47 GB |
 
 ### Why a commit, not a name
