@@ -65,8 +65,8 @@
     captionZh: '文件路线不写历史，也不留录音。',
   }];
   const ariaLabels = [{
-    en: 'Two routes. A dictation goes from the microphone through a dictation session, its cleanup and a history row to the cursor. A file goes from disk through Voxt transcribe to SRT or TXT; it reuses the model set for Transcribe but opens no session and runs no cleanup. A one-hour meeting is 3600 seconds, 115.2 megabytes of PCM, about 29 phone photos.',
-    zh: '两条路线。听写从麦克风经过听写 session、整理和历史记录，到光标处的文字。文件从磁盘经过 Voxt transcribe 到 SRT 或 TXT；它复用 Transcribe 选定的模型，但不打开 session，也不做整理。一小时的会议是 3600 秒、115.2 MB 的 PCM，约等于 29 张手机照片。',
+    en: 'Two routes. A dictation goes from the microphone through a dictation session and cleanup to the cursor, with a history row when history is enabled. A file goes from disk through Voxt transcribe to SRT or TXT; it reuses the model set for Transcribe but opens no session and runs no cleanup. A one-hour meeting is 3600 seconds, 115.2 megabytes of PCM, about 29 phone photos.',
+    zh: '两条路线。听写从麦克风经过听写 session 和整理，到光标处的文字；历史开启时还会写一条历史记录。文件从磁盘经过 Voxt transcribe 到 SRT 或 TXT；它复用 Transcribe 选定的模型，但不打开 session，也不做整理。一小时的会议是 3600 秒、115.2 MB 的 PCM，约等于 29 张手机照片。',
   }, {
     en: 'A constructed eight-second file is decoded by a Mac sound tool to 16 kHz mono PCM, held as a temporary file. Eight seconds times 32000 bytes a second is 256000 PCM bytes, plus a 44-byte header.',
     zh: '构造的八秒文件由 Mac 的声音工具转成 16 kHz 单声道 PCM，放进一个临时文件。八秒乘每秒 32000 字节是 256000 字节 PCM，再加 44 字节文件头。',
@@ -163,7 +163,7 @@
           <line x1="185" y1="253" x2="185" y2="278" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
           <rect x="45" y="286" width="280" height="52" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="185" y="309" text-anchor="middle" class="label">{t('TEXT AT THE CURSOR', '光标处的文字')}</text>
-          <text x="185" y="328" text-anchor="middle" class="detail">{t('plus a history row', '外加一条历史记录')}</text>
+          <text x="185" y="328" text-anchor="middle" class="detail">{t('history row if enabled', '历史开启时写一条')}</text>
 
           <rect x="370" y="70" width="330" height="280" rx="12" fill="var(--bg)" stroke="var(--gen)" />
           <text x="535" y="94" text-anchor="middle" class="label amber">{t('FILE · TO SRT OR TXT', '文件 · 到 SRT 或 TXT')}</text>
@@ -198,7 +198,7 @@
           <line x1="150" y1="230" x2="150" y2="250" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
           <rect x="30" y="258" width="240" height="48" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="150" y="280" text-anchor="middle" class="label">{t('TEXT AT THE CURSOR', '光标处的文字')}</text>
-          <text x="150" y="297" text-anchor="middle" class="detail">{t('plus a history row', '外加一条历史记录')}</text>
+          <text x="150" y="297" text-anchor="middle" class="detail">{t('history row if enabled', '历史开启时写一条')}</text>
 
           <rect x="15" y="330" width="270" height="250" rx="12" fill="var(--bg)" stroke="var(--gen)" />
           <text x="150" y="354" text-anchor="middle" class="label amber">{t('FILE · TO SRT OR TXT', '文件 · 到 SRT 或 TXT')}</text>

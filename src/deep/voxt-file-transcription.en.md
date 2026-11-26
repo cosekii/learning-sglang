@@ -16,7 +16,7 @@ Length does not force the split. The changelog removed the recording length limi
 
 ### The two routes in code
 
-`runTranscribeCLI` passes the command's arguments, standard output, standard error, the socket path and a decode function to `transcribeCLI` (`Voxt/transcribe_cli.go:35-39`). The command itself does no dictation and touches no history. On the app side, `fileRecognizer` calls `asr.Recognize` directly (`Voxt/transcribe_socket.go:84-87`); it does not go through the session's cleanup, delivery or history writing.
+`runTranscribeCLI` passes the command's arguments, standard output, standard error, the socket path and a decode function to `transcribeCLI` (`Voxt/transcribe_cli.go:35-39`). The command itself does no dictation and touches no history. Dictation writes history only when `Privacy.KeepHistory` is enabled, which is the default; it writes none when the setting is off (`Voxt/internal/session/run.go:572-576`, `Voxt/internal/settings/settings.go:373-380`). On the app side, `fileRecognizer` calls `asr.Recognize` directly (`Voxt/transcribe_socket.go:84-87`); it does not go through the session's cleanup, delivery or history writing.
 
 ### Next
 

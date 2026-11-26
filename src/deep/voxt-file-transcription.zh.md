@@ -16,7 +16,7 @@
 
 ### 代码里的两条路
 
-`runTranscribeCLI` 只把命令参数、标准输出、标准错误、socket 路径和一个解码函数交给 `transcribeCLI`（`Voxt/transcribe_cli.go:35-39`）。命令本身不做听写，也不碰历史。应用一侧的 `fileRecognizer` 直接调用 `asr.Recognize`（`Voxt/transcribe_socket.go:84-87`），没有经过 `session` 的整理、交付和历史写入。
+`runTranscribeCLI` 只把命令参数、标准输出、标准错误、socket 路径和一个解码函数交给 `transcribeCLI`（`Voxt/transcribe_cli.go:35-39`）。命令本身不做听写，也不碰历史。听写只在 `Privacy.KeepHistory` 开启时写历史，默认开启；关闭时不写（`Voxt/internal/session/run.go:572-576`、`Voxt/internal/settings/settings.go:373-380`）。应用一侧的 `fileRecognizer` 直接调用 `asr.Recognize`（`Voxt/transcribe_socket.go:84-87`），没有经过 `session` 的整理、交付和历史写入。
 
 ### 接下来
 
