@@ -82,6 +82,39 @@
         { en: 'Next: encode only the new observation', zh: '下一步：只编码新的观察' },
       ],
     },
+  }, {
+    caption: 'The chat template adds six preamble tokens again. Keep only three new observation tokens.',
+    captionZh: 'chat template 又加了 6 个前缀 token。只保留 3 个新观察 token。',
+    title: 'Append only the observation delta', titleZh: '只追加观察带来的新 token',
+    subtitle: 'delta = new tokens left after removing the repeated prefix', subtitleZh: 'delta = 去掉重复前缀后剩下的新 token',
+    foot: 'Constructed counts; the real trim length comes from the tokenizer.', footZh: '构造数量；真实裁剪长度由 tokenizer 算出。',
+    legend: 'Orange = repeated prefix · blue = appended observation · red = current', legendZh: '橙 = 重复前缀 · 蓝 = 追加的观察 · 红 = 当前',
+    flow: true,
+    nodes: [
+      { title: 'DUMMY TEMPLATE', titleZh: '空观察模板', result: `prefix = ${N.AGENT_DUMMY_PREFIX_TOKENS}`, resultZh: `前缀 = ${N.AGENT_DUMMY_PREFIX_TOKENS}`, body: 'encode fixed dummy messages', bodyZh: '编码固定的空观察消息', tone: 'orange' },
+      { title: 'FULL TEMPLATE', titleZh: '完整模板', result: `${N.AGENT_DUMMY_PREFIX_TOKENS} + ${N.AGENT_OBSERVATION_TOKENS} = ${N.AGENT_FORMATTED_OBSERVATION_TOKENS}`, resultZh: `${N.AGENT_DUMMY_PREFIX_TOKENS} + ${N.AGENT_OBSERVATION_TOKENS} = ${N.AGENT_FORMATTED_OBSERVATION_TOKENS}`, body: 'same prefix + new observation', bodyZh: '相同前缀 + 新观察', tone: 'orange' },
+      { title: 'APPEND DELTA', titleZh: '追加 DELTA', result: `${N.AGENT_FORMATTED_OBSERVATION_TOKENS} − ${N.AGENT_DUMMY_PREFIX_TOKENS} = ${N.AGENT_OBSERVATION_TOKENS}`, resultZh: `${N.AGENT_FORMATTED_OBSERVATION_TOKENS} − ${N.AGENT_DUMMY_PREFIX_TOKENS} = ${N.AGENT_OBSERVATION_TOKENS}`, body: 'only O joins Sample.tokens', bodyZh: '只有 O 加入 Sample.tokens', tone: 'blue' },
+    ],
+    formulas: [
+      { en: 'trim = tokens(dummy) = 6', zh: '裁剪长度 = dummy 的 token 数 = 6' },
+      { en: 'formatted = tokens(dummy + observation) = 9', zh: '完整编码 = dummy + 观察的 token 数 = 9' },
+      { en: 'prompt_ids = formatted[6:] → O O O', zh: 'prompt_ids = formatted[6:] → O O O' },
+      { en: 'the 6-token prefix is not appended again', zh: '6 个前缀 token 不会再次追加' },
+      { en: 'Next: what if O also carries an image?', zh: '下一步：如果 O 还有图片呢？' },
+    ],
+    mobile: {
+      title: 'Keep only the new observation', titleZh: '只保留新的观察 token',
+      subtitle: 'delta = tokens after the shared prefix', subtitleZh: 'delta = 去掉共同前缀后的 token',
+      foot: 'Constructed counts; real trimming uses the tokenizer.', footZh: '构造数量；真实裁剪由 tokenizer 计算。',
+      legend: 'Orange = prefix · blue = observation · red = current', legendZh: '橙 = 前缀 · 蓝 = 观察 · 红 = 当前',
+      formulas: [
+        { en: 'trim = tokens(dummy) = 6', zh: '裁剪长度 = dummy 的 token 数 = 6' },
+        { en: 'formatted = dummy + observation = 9', zh: '完整编码 = dummy + 观察 = 9' },
+        { en: 'formatted[6:] → O O O', zh: 'formatted[6:] → O O O' },
+        { en: 'Do not append the prefix again', zh: '不要再次追加前缀' },
+        { en: 'Next: add an image to O', zh: '下一步：O 里加入图片' },
+      ],
+    },
   }];
   let step = $state(0);
   $effect(() => {

@@ -69,3 +69,38 @@ mask 与响应位置一一对齐：`[1,1,1,1, 0,0,0, 1,1,1,1,1]`。观察位置�
 文本观察要追加到已有 token 后面。下一步处理 chat template 自动重复添加的前缀。
 
 来源：`THUDM/slime@cd4a8efc6f8e33364a474cfa70875779ed0a673f` 的 `examples/search-r1/generate_with_search.py:180-200,209-232`；`THUDM/slime@f68dc4a25f362fc0335165a17ff976f5b6f675e1` 的 `examples/geo3k_vlm_multi_turn/rollout.py:309-350`。
+
+## 第 3 步 · 只追加观察 delta
+
+**一句话。** 用空观察模板的长度裁掉完整编码的前缀，只把 3 个新观察 token 加进 `Sample.tokens`。
+
+### 图上是什么
+
+- 第一张卡编码固定的 dummy messages，得到 6 个前缀 token。dummy messages 是不含本轮观察的模板消息。
+- 第二张卡编码同样的消息和本轮观察，本构造例共有 9 个 token。
+- 第三张卡从下标 6 开始切片，只保留 `O O O`。
+- 这样不会每轮都重复追加 system 或工具说明前缀。
+
+### 公式与符号
+
+$$\Delta=F[\ell:],\qquad \ell=|E(D)|$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $D$ | 不含本轮观察的 dummy messages | 本步 |
+| $E(D)$ | dummy messages 的 token 序列 | 本步构造为 6 个 |
+| $\ell$ | 要裁掉的前缀 token 数 | $E(D)$ 的长度 |
+| $F$ | dummy messages 加本轮观察的完整 token 序列 | 本步构造为 9 个 |
+| $\Delta$ | 实际追加的观察 token | 从 $F$ 的第 $\ell$ 个下标开始切片 |
+
+### 代入图上的数
+
+$$\ell=6,\qquad \Delta=F[6:],\qquad 9-6=3$$
+
+切片保留下标 6、7、8 的三个 `O`。真实实现当场计算 $\ell$，不把 6 写成固定值；这里的 6 和 9 只是便于检查切片的位置例。
+
+### 接下来
+
+观察也可以带图片。下一步把同一图片的 rollout 输入与训练输入分开跟踪。
+
+来源：`THUDM/slime@f68dc4a25f362fc0335165a17ff976f5b6f675e1` 的 `examples/geo3k_vlm_multi_turn/rollout.py:54-107`。

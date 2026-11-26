@@ -69,3 +69,38 @@ The mask aligns with every response position: `[1,1,1,1, 0,0,0, 1,1,1,1,1]`. Obs
 The text observation joins the existing tokens. The next step removes the prefix that a chat template would otherwise repeat.
 
 Sources: `THUDM/slime@cd4a8efc6f8e33364a474cfa70875779ed0a673f`, `examples/search-r1/generate_with_search.py:180-200,209-232`; `THUDM/slime@f68dc4a25f362fc0335165a17ff976f5b6f675e1`, `examples/geo3k_vlm_multi_turn/rollout.py:309-350`.
+
+## Step 3 · Append only the observation delta
+
+**One sentence.** Trim the full encoding by the dummy template's length, then append only the three new observation tokens to `Sample.tokens`.
+
+### On the stage
+
+- The first card encodes fixed dummy messages and yields six prefix tokens. Dummy messages are template messages without this turn's observation.
+- The second card encodes those messages plus the new observation. This constructed example has nine tokens.
+- The third card slices from index 6 and keeps only `O O O`.
+- The system or tool preamble does not join the context again on every turn.
+
+### Formula and symbols
+
+$$\Delta=F[\ell:],\qquad \ell=|E(D)|$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $D$ | Dummy messages without this turn's observation | This step |
+| $E(D)$ | Token sequence for the dummy messages | Constructed here as six tokens |
+| $\ell$ | Prefix tokens to remove | Length of $E(D)$ |
+| $F$ | Full token sequence for dummy messages plus the observation | Constructed here as nine tokens |
+| $\Delta$ | Observation tokens that actually join the sample | Slice $F$ from index $\ell$ |
+
+### The numbers on the stage
+
+$$\ell=6,\qquad \Delta=F[6:],\qquad 9-6=3$$
+
+The slice keeps the three `O` tokens at indices 6, 7 and 8. The implementation computes $\ell$ each time instead of fixing it at six. Six and nine only make this positional example easy to check.
+
+### Next
+
+An observation can also carry an image. The next step separates that image's rollout input from its training input.
+
+Source: `THUDM/slime@f68dc4a25f362fc0335165a17ff976f5b6f675e1`, `examples/geo3k_vlm_multi_turn/rollout.py:54-107`.
