@@ -17,6 +17,8 @@ This chapter follows `Awesome-ML-SYS-Tutorial/rlhf/slime/fp8/readme.md`. Constru
 
 Step 1 uses the article's BF16 and FP8 storage discussion at `readme.md:40-54`. The 4B eligible-weight example is constructed from Chapter 8: `4B × 2 B = 8 GB` and `4B × 1 B = 4 GB`. The 2.39 ms and 1.19 ms figures divide those byte counts by the shared H100 bandwidth of 3.35 TB/s. They are ideal read lower bounds, not rollout latency. Scales and every other tensor are excluded.
 
+Step 2 follows the scale and rounding mechanism at `readme.md:90-124` and the pinned converter at `tools/convert_hf_to_fp8.py:31-71,142-146`. The three-value example is constructed. E4M3 stores 176 for the scaled middle value, which restores to 3.142857. The 128 × 128 block accounting includes one 4-byte FP32 scale and does not generalize to the whole checkpoint.
+
 </details>
 
 <details class="i18n-zh">
@@ -25,5 +27,7 @@ Step 1 uses the article's BF16 and FP8 storage discussion at `readme.md:40-54`. 
 本章依据 `Awesome-ML-SYS-Tutorial/rlhf/slime/fp8/readme.md`。构造算式与公开测量分别标明。实现引用固定到 `THUDM/slime@15fbd2ef82c765fe22f78e288db2bb79ebf582bd`，这是本章选择的可复现版本，不是文章给出的固定版本。
 
 第 1 步依据 `readme.md:40-54` 的 BF16 与 FP8 存储讨论。4B 个可转换权重沿用第 8 章构造示例：`4B × 2 字节 = 8 GB`，`4B × 1 字节 = 4 GB`。2.39 ms 和 1.19 ms 用共享 H100 带宽 3.35 TB/s 计算，只是理想读取下限，不是 rollout 延迟。scale 和其他张量均不计入。
+
+第 2 步依据 `readme.md:90-124` 的 scale 与舍入机制，以及固定版本 `tools/convert_hf_to_fp8.py:31-71,142-146`。三个数的例子是构造算例。E4M3 把缩放后的中间值存为 176，还原为 3.142857。128 × 128 分块的字节账只包含一个 4 字节 FP32 scale，不能外推为整个 checkpoint 的节省比例。
 
 </details>

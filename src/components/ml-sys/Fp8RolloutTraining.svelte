@@ -43,6 +43,27 @@
       { en: `Ideal BF16 read: ${N.FP8_BF16_WEIGHT_GB} ÷ ${BW} = ${N.FP8_BF16_IDEAL_READ_MS.toFixed(2)} ms`, zh: `BF16 理想读取：${N.FP8_BF16_WEIGHT_GB} ÷ ${BW} = ${N.FP8_BF16_IDEAL_READ_MS.toFixed(2)} ms` },
       { en: `Ideal FP8 read: ${N.FP8_WEIGHT_GB} ÷ ${BW} = ${N.FP8_IDEAL_READ_MS.toFixed(2)} ms`, zh: `FP8 理想读取：${N.FP8_WEIGHT_GB} ÷ ${BW} = ${N.FP8_IDEAL_READ_MS.toFixed(2)} ms` },
     ],
+  }, {
+    caption: 'One group shares a scale, its largest magnitude divided by 448. Rounding changes 3.2 to 3.142857.',
+    captionZh: '一组数共用一个缩放因子。3.2 舍入后还原为约 3.142857。',
+    title: 'One scale fits a group into FP8', titleZh: '一个 scale 把一组数装进 FP8',
+    subtitle: 'scale = one shared divisor for a group of values', subtitleZh: 'scale = 一组数共用的除数',
+    foot: 'Constructed example; 448 is the largest finite value in this FP8 format.',
+    footZh: '构造算例；448 是这种 FP8 格式能表示的最大有限值。',
+    legend: 'Orange = high-precision values · blue = FP8 values · dashed = scale', legendZh: '橙 = 高精度数值 · 蓝 = FP8 数值 · 虚线 = scale',
+    flow: true,
+    nodes: [
+      { title: 'ORIGINAL', titleZh: '原数', result: '[1, 3.2, 8]', resultZh: '[1, 3.2, 8]', body: 'one group', bodyZh: '一组三个数', tone: 'orange', compact: true },
+      { title: 'SCALE', titleZh: 'SCALE', result: '8 ÷ 448 = 1/56', resultZh: '8 ÷ 448 = 1/56', body: 'largest ÷ 448', bodyZh: '最大绝对值 ÷ 448', tone: 'plain', compact: true },
+      { title: 'FP8 VALUES', titleZh: 'FP8 数值', result: '[56, 176, 448]', resultZh: '[56, 176, 448]', body: 'rounded', bodyZh: '舍入后的值', tone: 'blue', compact: true },
+      { title: 'RESTORED', titleZh: '还原值', result: '[1, 3.142857, 8]', resultZh: '[1, 3.142857, 8]', body: 'scale × FP8 value', bodyZh: 'scale × FP8 数值', tone: 'orange', compact: true },
+    ],
+    formulas: [
+      { en: 'scale = max(|1|, |3.2|, |8|) ÷ 448 = 1/56', zh: 'scale = max(|1|, |3.2|, |8|) ÷ 448 = 1/56' },
+      { en: `3.2 ÷ (1/56) = ${N.FP8_EXAMPLE_SCALED_MIDDLE.toFixed(1)} → FP8 176`, zh: `3.2 ÷ (1/56) = ${N.FP8_EXAMPLE_SCALED_MIDDLE.toFixed(1)} → FP8 176` },
+      { en: `176 × (1/56) = ${N.FP8_EXAMPLE_RESTORED[1].toFixed(6)}`, zh: `176 × (1/56) = ${N.FP8_EXAMPLE_RESTORED[1].toFixed(6)}` },
+      { en: `absolute error = |3.2 − 3.142857| = ${N.FP8_EXAMPLE_MIDDLE_ERROR.toFixed(6)}`, zh: `绝对误差 = |3.2 − 3.142857| = ${N.FP8_EXAMPLE_MIDDLE_ERROR.toFixed(6)}` },
+    ],
   }];
   let step = $state(0);
   $effect(() => {
