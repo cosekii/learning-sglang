@@ -145,17 +145,19 @@
           {@const x = phone ? 18 : classified ? 375 : 30}
           {@const y = phone ? classified ? 390 : 105 : 110}
           {@const pw = phone ? 264 : 315}
-          <rect x={x} y={y} width={pw} height="250" rx="12" fill={classified ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={classified ? 'var(--gen)' : 'var(--accent)'} />
+          {@const factsAt = classified ? 3 : 1}
+          {@const selectAt = classified ? 4 : 2}
+          <rect x={x} y={y} width={pw} height="250" rx="12" fill={classified ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={classified ? 'var(--gen)' : 'var(--accent)'} stroke-width={phase === factsAt || phase === selectAt ? 3 : 1} style="transition: stroke-width 250ms" />
           <text x={x + 16} y={y + 30} class="small strong">{classified ? 'CLASSIFIED' : 'DIRECT'}</text>
           <text x={x + 16} y={y + 59} class="small">{classified ? t('workers accept different requests', 'worker 接收不同请求') : t('same model + same request abilities', '相同模型 + 相同请求能力')}</text>
-          <rect x={x + 16} y={y + 82} width={pw - 32} height="57" rx="8" fill="var(--bg)" stroke="var(--line)" />
-          <text x={x + pw / 2} y={y + 116} text-anchor="middle" class="small">{classified ? t('read body once → routing facts', '请求体读一次 → 路由事实') : t('known shared contract', '已知的共同契约')}</text>
-          <line x1={x + pw / 2} y1={y + 140} x2={x + pw / 2} y2={y + 164} stroke={classified ? 'var(--gen)' : 'var(--accent)'} stroke-width="2" marker-end={classified ? 'url(#router-arrow-gen)' : 'url(#router-arrow)'} />
-          <rect x={x + 16} y={y + 171} width={pw - 32} height="57" rx="8" fill="var(--bg)" stroke="var(--line)" />
-          <text x={x + pw / 2} y={y + 205} text-anchor="middle" class="small strong">{t('select a worker', '选择 worker')}</text>
+          <rect x={x + 16} y={y + 82} width={pw - 32} height="57" rx="8" fill="var(--bg)" stroke="var(--line)" opacity={phase >= factsAt ? 1 : 0.2} style="transition: opacity 350ms" />
+          <text x={x + pw / 2} y={y + 116} text-anchor="middle" class="small" opacity={phase >= factsAt ? 1 : 0.2} style="transition: opacity 350ms">{classified ? t('read body once → routing facts', '请求体读一次 → 路由事实') : t('known shared contract', '已知的共同契约')}</text>
+          <line x1={x + pw / 2} y1={y + 140} x2={x + pw / 2} y2={y + 164} stroke={classified ? 'var(--gen)' : 'var(--accent)'} stroke-width="2" marker-end={classified ? 'url(#router-arrow-gen)' : 'url(#router-arrow)'} opacity={phase >= selectAt ? 1 : 0.15} style="transition: opacity 350ms" />
+          <rect x={x + 16} y={y + 171} width={pw - 32} height="57" rx="8" fill="var(--bg)" stroke="var(--line)" opacity={phase >= selectAt ? 1 : 0.2} style="transition: opacity 350ms" />
+          <text x={x + pw / 2} y={y + 205} text-anchor="middle" class="small strong" opacity={phase >= selectAt ? 1 : 0.2} style="transition: opacity 350ms">{t('select a worker', '选择 worker')}</text>
         {/each}
-        <text x={W / 2} y={phone ? 665 : 405} text-anchor="middle" class="small strong">{t('Direct: select, then stream the body.', 'direct：先选择，再流式发送请求体。')}</text>
-        <text x={W / 2} y={phone ? 692 : 440} text-anchor="middle" class="small strong">{t(phone ? 'Classified: select → forward original bytes.' : 'Classified: forward the original bytes after selection.', 'classified：选择后转发原始字节。')}</text>
+        <text x={W / 2} y={phone ? 665 : 405} text-anchor="middle" class="small strong" opacity={phase >= 2 ? 1 : 0.15} style="transition: opacity 350ms">{t('Direct: select, then stream the body.', 'direct：先选择，再流式发送请求体。')}</text>
+        <text x={W / 2} y={phone ? 692 : 440} text-anchor="middle" class="small strong" opacity={phase >= 4 ? 1 : 0.15} style="transition: opacity 350ms">{t(phone ? 'Classified: select → forward original bytes.' : 'Classified: forward the original bytes after selection.', 'classified：选择后转发原始字节。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Direct needs matching request abilities' : 'Direct requires one default model and equivalent request abilities across the worker group.', phone ? 'direct 要求请求能力一致' : 'direct 要求整组 worker 有同一默认模型和等价请求能力。')}</text>
       {:else if step === 2}
         <text x={phone ? 18 : 30} y="30" class="title">{t('Match one whole profile row', '用一整行 profile 匹配请求')}</text>
@@ -367,7 +369,7 @@
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Next chapter: worker failure and graceful exit.', '下一章：worker 故障与退出。')}</text>
       {/if}
-      {#if step === 0}<LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={4} label={t('loops', '循环')} />{/if}
+      {#if step <= 1}<LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={4} label={t('loops', '循环')} />{/if}
     </svg>
   </div>
   <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh}
