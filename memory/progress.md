@@ -4,6 +4,9 @@
 
 ## 本轮记录
 
+- 06:20 收尾 Inside Voxt 第 10 章《文件转写的另一条传送带》9 步：上一轮已建好页面但未记录评分和进度，本轮做独立文本冷读并修完两轮问题——第 6 步「7 秒」改成触发时刻不是切点；第 4 步 10 ms 改成切句器小片，与第 3 章 100 ms 音频帧分开；补齐 `mono`、`segment`、`log` 的大白话；第 1 步写明文件路线复用 Transcribe 的模型但不做整理、不开 session；第 2 步标注构造的 8 秒例子；第 8 步展开 SRT 时间格式；第 3 步避免在 cue 定义前使用 cue。**9/9 步文本易读 10/10（R1–R5）、原分文本项 20/20、0 未决文本洞**；R6/#4/#5 无图不评，不记 12/12、24/24 或完成。
+- 改动提交并推送；`build`（54 页）、本章 `transcript`、`readability`（0 机械问题）、`deep-check 10`、本章 `zh-check`、中英三种宽度 `mobile`、中文逐步字号（1–9）和 `git diff --check` 通过。截图 27 张在 `/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-iwsgbvyh/opencode/ls-volt-ch10-final/{en-desktop,zh-desktop,zh-phone}/`。本轮只跑本章检查，未跑全站回归、真实 Voxt 应用或真实识别。本轮类型：**收尾/修旧**；下一普通轮做 Voxt 第 11 章 `models-and-app-updates`。
+
 - 05:30 完成 Learning SGLang Omni 第 12 章《全双工策略与测量》8 步：交付／播放位置差、三种策略地图、Session 删除边界、Qwen 18 行切点、cascade 句子前缀、MiniCPM-o 整单元切点、profiler 服务器时钟和听者双时钟。独立冷读与源码复审整改完成，**8/8 步易读 12/12、原分 24.00/24、0 内容洞和机械显示洞**；主人目测仍待。
 - 八个步骤与复审整改逐步提交并推送至 `aa07c07`，评分与深入讲解溢出修复随本轮最后提交；`build`（53 页）、本章 `transcript`、全章 `readability`、中英三种宽度 `mobile`、中文逐步字号、`deep-check 12`、`zh-check`、16 个深入讲解 DOM 审计和 `git diff --check` 通过。最终 32 张舞台图与 16 张深入讲解图在 `/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-dxfqpth1/opencode/ls-k1-omni12-final/`。本轮只跑本章检查，未跑全站回归、真实模型、GPU benchmark 或音频质量评测。本轮类型：**新书**；下一章是 `13-qwen3-omni-deployment`。
 
@@ -171,7 +174,7 @@
 
 ## Inside Voxt
 
-规划完成：`docs/plan-voxt.md` 共 3 部分、16 章；第 1 章已制作 4 步并完成，第 2 章已制作 3 步并完成，第 3 章已制作 8 步并完成，第 4 章已制作 7 步并完成，第 5 章已制作 5 步并完成，第 6 章已制作 8 步并完成，第 7 章已制作 5 步，待目视，第 8 章已制作 7 步、内容完成，待目视，第 9 章已制作 9 步、文本完成，待目视。事实来源只使用 `sglang-omni` 的 `origin/main` 公开代码和文档。
+规划完成：`docs/plan-voxt.md` 共 3 部分、16 章；第 1 章已制作 4 步并完成，第 2 章已制作 3 步并完成，第 3 章已制作 8 步并完成，第 4 章已制作 7 步并完成，第 5 章已制作 5 步并完成，第 6 章已制作 8 步并完成，第 7 章已制作 5 步，待目视，第 8 章已制作 7 步、内容完成，待目视，第 9 章已制作 9 步、文本完成，待目视，第 10 章已制作 9 步、文本完成，待目视。事实来源只使用 `sglang-omni` 的 `origin/main` 公开代码和文档。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
@@ -184,7 +187,7 @@
 | 07 | deliver-text-safely | 待目视：5 个源码级内容洞已修；R6/#4/#5 未评 | — |
 | 08 | personal-dictionary | 内容完成：7/7 步文本 R1–R5、0 内容洞；R6/#4/#5 待目视 | — |
 | 09 | history-retry-retention | 文本完成、待目视：9 步每步文本易读 10/10、原分文本项 20/20；R2 已拆分解决；R6/#4/#5 无图不评，不记总分 | — |
-| 10 | file-transcription | 规划 | — |
+| 10 | file-transcription | 文本完成、待目视：9 步每步文本易读 10/10、原分文本项 20/20、0 未决文本洞；R6/#4/#5 无图不评，不记总分 | — |
 | 11 | models-and-app-updates | 规划 | — |
 | 12 | meeting-capture-modes | 规划 | — |
 | 13 | meeting-live-and-final | 规划 | — |
