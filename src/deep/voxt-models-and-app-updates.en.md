@@ -184,10 +184,10 @@ Step 5 turns to the third thing: the app bundle and its updater.
 
 ### On the stage
 
-- Left panel: a constructed example update, `Voxt 2.0` running now and `Voxt 2.1` on disk. With the update list, the updater replaces the bundle.
-- Right panel: **the model folder**, `SGLang Omni/models`, 2.47 GB, and an app update does not touch it.
+- Left panel: the in-app route with an update list. The constructed example has `Voxt 2.0` running and `Voxt 2.1` on disk, and the updater replaces the bundle.
+- Right panel: the installer route without an update list. The `Voxt installer` is downloaded to disk and installed by the user; the app does not replace itself.
+- Middle strip: **the model folder**, `SGLang Omni/models`, 2.47 GB, untouched by both update routes.
 - Bottom flow, **until restart**: the old version keeps running → the helper on disk is already the new one → the app's helper manager refuses it because its version does not match the running app.
-- The two routes at the top: with Voxt's update list, replace in the app and restart; without the list, offer an installer.
 
 ### Formula
 

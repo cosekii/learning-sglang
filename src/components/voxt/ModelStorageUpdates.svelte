@@ -74,7 +74,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived((phone ? [660, 610, 700, 820, 680, 640] : [470, 450, 460, 480, 430, 560])[step]);
+  const H = $derived((phone ? [660, 610, 700, 820, 730, 640] : [470, 450, 460, 480, 480, 560])[step]);
 
   const gb = VOXT_MODEL_TOTAL_GB.toFixed(2);
   const weightsGb = (VOXT_MODEL_WEIGHTS_BYTES / 1_000_000_000).toFixed(2);
@@ -360,7 +360,7 @@
         <text x={W / 2} y={phone ? 47 : 50} text-anchor="middle" class="subtitle">{t("Voxt's update list → in-app · no list → installer", '有 Voxt 更新清单：应用内 · 没有：安装包')}</text>
         {#if !phone}
           <rect x="20" y="72" width="330" height="170" rx="12" fill="var(--bg)" stroke="var(--line)" />
-          <text x="185" y="96" text-anchor="middle" class="label">{t('THE APP · EXAMPLE UPDATE', '应用 · 更新示例')}</text>
+          <text x="185" y="96" text-anchor="middle" class="label">{t('WITH UPDATE LIST · IN-APP', '有更新清单 · 应用内更新')}</text>
           <rect x="40" y="112" width="110" height="50" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="95" y="134" text-anchor="middle" class="detail">{t('Voxt 2.0', 'Voxt 2.0')}</text>
           <text x="95" y="151" text-anchor="middle" class="detail">{t('running now', '正在运行')}</text>
@@ -370,30 +370,36 @@
           <text x="256" y="151" text-anchor="middle" class="detail">{t('on disk', '在磁盘上')}</text>
           <text x="185" y="192" text-anchor="middle" class="detail">{t('the updater replaces the bundle', '更新器替换整个应用包')}</text>
 
-          <rect x="370" y="72" width="330" height="170" rx="12" fill="var(--bg)" stroke="var(--accent)" />
-          <text x="535" y="96" text-anchor="middle" class="label blue">{t('THE MODEL FOLDER', '模型文件夹')}</text>
+          <rect x="370" y="72" width="330" height="170" rx="12" fill="var(--bg)" stroke="var(--line)" />
+          <text x="535" y="96" text-anchor="middle" class="label">{t('NO UPDATE LIST · INSTALLER', '没有更新清单 · 安装包')}</text>
           <rect x="390" y="112" width="290" height="60" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="535" y="138" text-anchor="middle" class="mono">SGLang Omni/models</text>
-          <text x="535" y="158" text-anchor="middle" class="detail">{gb} GB</text>
-          <text x="535" y="196" text-anchor="middle" class="detail">{t('an app update does not touch it', '应用更新不碰它')}</text>
+          <text x="535" y="138" text-anchor="middle" class="detail">{t('Voxt installer', 'Voxt 安装包')}</text>
+          <text x="535" y="158" text-anchor="middle" class="detail">{t('on disk', '下载到磁盘')}</text>
+          <text x="535" y="196" text-anchor="middle" class="detail">{t('download it, then install it yourself', '下载后由用户安装')}</text>
+          <text x="535" y="220" text-anchor="middle" class="detail">{t('the app does not replace itself', '应用不直接替换自己')}</text>
 
-          <text x="40" y="270" class="label">{t('UNTIL RESTART', '重启之前')}</text>
-          <rect x="40" y="286" width="150" height="54" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="115" y="310" text-anchor="middle" class="detail">{t('old version', '旧版本')}</text>
-          <text x="115" y="328" text-anchor="middle" class="detail">{t('keeps running', '照常运行')}</text>
-          <line x1="194" y1="313" x2="222" y2="313" stroke="var(--muted)" stroke-width="2" marker-end="url(#ms-arrow)" />
-          <rect x="228" y="286" width="200" height="54" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="328" y="310" text-anchor="middle" class="detail">{t('helper on disk', '磁盘上的 helper')}</text>
-          <text x="328" y="328" text-anchor="middle" class="detail">{t('is already the new one', '已经是新的')}</text>
-          <line x1="432" y1="313" x2="460" y2="313" stroke="var(--muted)" stroke-width="2" marker-end="url(#ms-arrow)" />
-          <rect x="466" y="286" width="214" height="54" rx="8" fill="var(--eos-soft)" stroke="var(--eos)" />
-          <text x="573" y="310" text-anchor="middle" class="detail">{t("app's helper manager refuses it", '应用的 helper 管理器不启动它')}</text>
-          <text x="573" y="328" text-anchor="middle" class="detail">{t('mismatch with the app', '和应用的版本对不上')}</text>
-          <text x={W / 2} y="378" text-anchor="middle" class="cut">{t('A CARD ASKS: RESTART VOXT TO FINISH', '卡片提示：重启 Voxt 才算装完')}</text>
+          <rect x="20" y="256" width="680" height="44" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="40" y="283" class="label blue">{t('MODEL FOLDER', '模型文件夹')}</text>
+          <text x="190" y="283" class="mono">SGLang Omni/models · {gb} GB</text>
+          <text x="680" y="283" text-anchor="end" class="detail">{t('untouched by both routes', '两条路都不碰它')}</text>
+
+          <text x="40" y="324" class="label">{t('UNTIL RESTART', '重启之前')}</text>
+          <rect x="40" y="340" width="150" height="54" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="115" y="364" text-anchor="middle" class="detail">{t('old version', '旧版本')}</text>
+          <text x="115" y="382" text-anchor="middle" class="detail">{t('keeps running', '照常运行')}</text>
+          <line x1="194" y1="367" x2="222" y2="367" stroke="var(--muted)" stroke-width="2" marker-end="url(#ms-arrow)" />
+          <rect x="228" y="340" width="200" height="54" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="328" y="364" text-anchor="middle" class="detail">{t('helper on disk', '磁盘上的 helper')}</text>
+          <text x="328" y="382" text-anchor="middle" class="detail">{t('is already the new one', '已经是新的')}</text>
+          <line x1="432" y1="367" x2="460" y2="367" stroke="var(--muted)" stroke-width="2" marker-end="url(#ms-arrow)" />
+          <rect x="466" y="340" width="214" height="54" rx="8" fill="var(--eos-soft)" stroke="var(--eos)" />
+          <text x="573" y="364" text-anchor="middle" class="detail">{t("app's helper manager refuses it", '应用的 helper 管理器不启动它')}</text>
+          <text x="573" y="382" text-anchor="middle" class="detail">{t('mismatch with the app', '和应用的版本对不上')}</text>
+          <text x={W / 2} y="432" text-anchor="middle" class="cut">{t('A CARD ASKS: RESTART VOXT TO FINISH', '卡片提示：重启 Voxt 才算装完')}</text>
           <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Sources: Voxt/updates.go, updates_github.go, docs/release.md.', '出处：Voxt/updates.go、updates_github.go、docs/release.md。')}</text>
         {:else}
           <rect x="15" y="64" width="270" height="150" rx="10" fill="var(--bg)" stroke="var(--line)" />
-          <text x="150" y="88" text-anchor="middle" class="label">{t('THE APP · EXAMPLE UPDATE', '应用 · 更新示例')}</text>
+          <text x="150" y="88" text-anchor="middle" class="label">{t('WITH UPDATE LIST · IN-APP', '有更新清单 · 应用内更新')}</text>
           <rect x="30" y="102" width="100" height="44" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="80" y="120" text-anchor="middle" class="detail">{t('Voxt 2.0', 'Voxt 2.0')}</text>
           <text x="80" y="137" text-anchor="middle" class="detail">{t('running', '在运行')}</text>
@@ -403,21 +409,24 @@
           <text x="216" y="137" text-anchor="middle" class="detail">{t('on disk', '在磁盘上')}</text>
           <text x="150" y="172" text-anchor="middle" class="detail">{t('the updater replaces the app', '更新器替换整个应用')}</text>
 
-          <rect x="15" y="234" width="270" height="130" rx="10" fill="var(--bg)" stroke="var(--accent)" />
-          <text x="150" y="258" text-anchor="middle" class="label blue">{t('THE MODEL FOLDER', '模型文件夹')}</text>
+          <rect x="15" y="234" width="270" height="130" rx="10" fill="var(--bg)" stroke="var(--line)" />
+          <text x="150" y="258" text-anchor="middle" class="label">{t('NO UPDATE LIST · INSTALLER', '没有更新清单 · 安装包')}</text>
           <rect x="30" y="272" width="240" height="42" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="150" y="293" text-anchor="middle" class="mono">SGLang Omni/models</text>
-          <text x="150" y="309" text-anchor="middle" class="detail">{gb} GB</text>
-          <text x="150" y="346" text-anchor="middle" class="detail">{t('an app update does not touch it', '应用更新不碰它')}</text>
+          <text x="150" y="297" text-anchor="middle" class="detail">{t('Voxt installer · on disk', 'Voxt 安装包 · 下载到磁盘')}</text>
+          <text x="150" y="334" text-anchor="middle" class="detail">{t('download, then install yourself', '下载后由用户安装')}</text>
+          <text x="150" y="354" text-anchor="middle" class="detail">{t('the app does not replace itself', '应用不直接替换自己')}</text>
 
-          <text x="30" y="398" class="label">{t('UNTIL RESTART', '重启之前')}</text>
-          <rect x="15" y="412" width="270" height="46" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="150" y="440" text-anchor="middle" class="detail">{t('old version keeps running', '旧版本照常运行')}</text>
-          <rect x="15" y="470" width="270" height="46" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="150" y="498" text-anchor="middle" class="detail">{t('helper on disk is new', '磁盘上的 helper 已是新的')}</text>
-          <rect x="15" y="528" width="270" height="46" rx="8" fill="var(--eos-soft)" stroke="var(--eos)" />
-          <text x="150" y="556" text-anchor="middle" class="detail">{t("app's helper manager refuses it", '应用的 helper 管理器不启动它')}</text>
-          <text x="150" y="604" text-anchor="middle" class="cut">{t('RESTART VOXT TO FINISH', '重启 Voxt 才算装完')}</text>
+          <rect x="15" y="378" width="270" height="44" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="150" y="405" text-anchor="middle" class="detail">{t(`model folder · ${gb} GB · untouched`, `模型文件夹 · ${gb} GB · 两条路都不碰`)}</text>
+
+          <text x="30" y="446" class="label">{t('UNTIL RESTART', '重启之前')}</text>
+          <rect x="15" y="460" width="270" height="46" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="150" y="488" text-anchor="middle" class="detail">{t('old version keeps running', '旧版本照常运行')}</text>
+          <rect x="15" y="518" width="270" height="46" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="150" y="546" text-anchor="middle" class="detail">{t('helper on disk is new', '磁盘上的 helper 已是新的')}</text>
+          <rect x="15" y="576" width="270" height="46" rx="8" fill="var(--eos-soft)" stroke="var(--eos)" />
+          <text x="150" y="604" text-anchor="middle" class="detail">{t("app's helper manager refuses it", '应用的 helper 管理器不启动它')}</text>
+          <text x="150" y="652" text-anchor="middle" class="cut">{t('RESTART VOXT TO FINISH', '重启 Voxt 才算装完')}</text>
           <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Sources: updates.go, updates_github.go.', '出处：updates.go、updates_github.go。')}</text>
         {/if}
       {:else if step === 5}
