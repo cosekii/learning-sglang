@@ -111,8 +111,8 @@ The next step takes the recognized text and swaps the alias back to the term.
 
 `dict.Replace` looks only at enabled terms (`Voxt/internal/dict/alias.go:25`):
 
-- A Latin alias is checked at each end only when that end of the alias is itself a letter or digit (`wordRune`, `alias.go:187-197`). `Preeya` starts and ends with letters, so neither side may touch another letter or digit. An alias that ends in punctuation skips the check on that side, so `Priya!` can match inside `Priya!next`.
-- Chinese, Japanese and Korean aliases match anywhere, because those scripts do not write spaces between words.
+- A Latin alias is checked at each end only when that end of the alias is itself a letter or digit outside Chinese, Japanese and Korean (`wordRune`, `alias.go:140-147`, `190-197`). `Preeya` starts and ends with letters, so neither side may touch another non-CJK letter or digit; a CJK character next to it does not block the match. An alias that ends in punctuation skips the check on that side, so `Priya!` can match inside `Priya!next`.
+- Han, Hiragana, Katakana and Hangul are not word runes, so Chinese, Japanese and Korean aliases match anywhere.
 - When several patterns match at one place, the **longest** wins (patterns are sorted by size descending, `alias.go:73`).
 - A term already written as itself is left alone, so running this twice does not break it (`alias.go:90`).
 
@@ -177,7 +177,7 @@ $$B(G) = \sum_{g \in G}\operatorname{bytes}(g) + \max(|G| - 1, 0)$$
 
 The loop breaks at the first line that does not fit. It does not skip that line to seek a shorter later one, and it never truncates a line. Newlines appear only between lines, so $N$ lines have $N-1$ separators.
 
-The “longest prefix” here is just the first N candidate lines, kept in order. 2000 bytes is about one page of plain text; because a Chinese character takes 3 bytes, the same cap holds fewer Chinese characters than ASCII letters.
+The “longest prefix” here is just the first N candidate lines, kept in order. 2000 bytes is about one page of plain text; a common Chinese character usually takes 3 bytes, and some take 4, so the same cap holds fewer Chinese characters than ASCII letters.
 
 ### A constructed example (not drawn on the stage)
 

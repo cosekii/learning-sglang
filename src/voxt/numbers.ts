@@ -131,7 +131,7 @@ export const VOXT_DELIVER_VERIFY_MS = 1000;
 export const VOXT_RESTORE_AFTER_INSERT_MS = 150;
 export const VOXT_RESTORE_DEFAULT_MS = 500;
 
-// Constructed dictionary example: one term, the alias recognition hears, and a note.
+// Constructed dictionary example: two terms, the alias recognition hears, and a note.
 export const VOXT_DICT_TERM = 'Priya';
 export const VOXT_DICT_ALIAS = 'Preeya';
 export const VOXT_DICT_SECOND_TERM = 'MOSS-Transcribe';
