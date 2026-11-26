@@ -19,6 +19,8 @@ Step 1 uses the public three-arm experiment at `readme.md:66-94`: MiMo-7B-RL on 
 
 Step 2 follows `readme.md:25-30` and the pinned `docker/patch/latest/megatron.patch:152-179`. The example sequence is constructed. A hidden state is the target's computed representation at one token position; the training path reuses the target forward's hidden states rather than running another rollout.
 
+Step 3 follows `readme.md:31-46` and `megatron.patch:152-190`. One left shift aligns token `b` with position `a`; the embedding table turns that token ID into model numbers. The MiMo example joins `h(a)` with `e(b)` to train the prediction of `c`, two positions after `a`. This is the desired task, not a claim that an untrained draft already predicts `c`. The stage's dash marks no real token beyond the sequence; the implementation pads with zero.
+
 Further reading: [zero-to-sglang Part II Chapter 10: Speculative Decoding](https://zero-to-sglang.datawhale.cc/eng/part2/Chapter10_Speculative-Decoding.html) and its [code walkthrough](https://zero-to-sglang.datawhale.cc/eng/part2/Chapter10_Speculative-Decoding_code.html).
 
 </details>
@@ -31,6 +33,8 @@ Further reading: [zero-to-sglang Part II Chapter 10: Speculative Decoding](https
 第 1 步依据 `readme.md:66-94` 的三组公开实验：MiMo-7B-RL、H200、DAPO-Math-17k，最长回答 24k。冻结 draft 的 rollout 吞吐为 1464 token/s，在线训练 draft 为 1667，提升 13.9%。这里只比较 rollout 吞吐，不声称端到端 RL 加速。draft–verify 机制只回指第 1 本第 15 章第 3 步，不重复讲。
 
 第 2 步依据 `readme.md:25-30` 和固定版本 `docker/patch/latest/megatron.patch:152-179`。五个 token 是构造示例。hidden state 是 target 在一个 token 位置算出的表示；训练路径复用 target 前向已经算出的 hidden state，不额外做一次 rollout。
+
+第 3 步依据 `readme.md:31-46` 和 `megatron.patch:152-190`。序列左移一次后，token `b` 与位置 `a` 对齐；embedding 表把 token 编号变成模型用的数。MiMo 示例合并 `h(a)` 与 `e(b)`，学习预测 `a` 后两个位置的 `c`。这是训练目标，不表示未训练的 draft 已经能猜出 `c`。图上的横线表示序列结尾后没有真实 token；实现用 0 补齐。
 
 延伸阅读：[zero-to-sglang 第 2 部分第 10 章：投机解码](https://zero-to-sglang.datawhale.cc/ch/part2/%E7%AC%AC10%E7%AB%A0_%E6%8A%95%E6%9C%BA%E8%A7%A3%E7%A0%81.html)及其[代码走读](https://zero-to-sglang.datawhale.cc/ch/part2/%E7%AC%AC10%E7%AB%A0_%E6%8A%95%E6%9C%BA%E8%A7%A3%E7%A0%81_%E4%BB%A3%E7%A0%81.html)。
 

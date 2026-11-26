@@ -61,3 +61,38 @@ $$h_t=H(x_{\le t})$$
 draft 还需要知道下一个输入 token。下一步把 token 序列左移，再转成 embedding，与这些笔记对齐。
 
 来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:25-30`；`THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a` 的 `docker/patch/latest/megatron.patch:152-179`。
+
+## 第 3 步 · 把 target 笔记与下一个 token 配对
+
+**一句话。** token 左移一次并转成 embedding，位置 $t$ 就能把 $h_t$ 与 $e_{t+1}$ 拼起来，学习预测 $x_{t+2}$。
+
+### 图上是什么
+
+- 原序列仍是 `[a,b,c,d,e]`。左移后变成 `[b,c,d,e,—]`，所以位置 `a` 对应下一个 token `b`。
+- embedding 卡把移位后的 token 编号转成模型用的数，写成 `[e(b),e(c),…]`。
+- 最后的预测任务把 $h(a)$ 与 $e(b)$ 拼接，目标是 `c`。这是希望 draft 学会的对应关系，不是保证它当前已经猜对。
+
+### 公式与符号
+
+$$u_t=\operatorname{concat}(h_t,e_{t+1})$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $h_t$ | 位置 $t$ 的 target 内部笔记 | 第 2 步 |
+| $e_{t+1}$ | 下一个 token 的 embedding，即模型用的数 | 本步左移后查 embedding 表 |
+| $\operatorname{concat}$ | 把两组数并排拼接，不是相加 | 本步定义为 join |
+| $u_t$ | draft 在位置 $t$ 收到的配对输入 | 本步计算 |
+
+### 代入图上的数
+
+$$u_a=\operatorname{concat}(h(a),e(b))$$
+
+在位置 `a`，下一个 token 是 `b`，再下一个就是 `c`，所以训练任务是从 $u_a$ 预测 `c`。横线只表示序列外没有真实 token，固定实现用 0 补齐，不会多出一个叫“—”的 token。
+
+本图按公开实验的 MiMo 排列画 `hidden state` 在前、embedding 在后。其他模型的 projection 排列可以不同，不能把“join”理解成跨模型统一的半块顺序。
+
+### 接下来
+
+下一步把移位后的 token 再左移一次，得到每个位置的训练标签，并计算 cross entropy。
+
+来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:31-46`；`THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a` 的 `docker/patch/latest/megatron.patch:152-190` 和 `slime_plugins/mbridge/mimo.py:106-120`。

@@ -61,3 +61,38 @@ The first position gives $h(a)=H(a)$ and the second gives $h(b)=H(a,b)$. Five po
 The draft also needs the next input token. The next step shifts the token sequence left and turns the shifted tokens into embeddings aligned with these notes.
 
 Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:25-30`; `THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a`, `docker/patch/latest/megatron.patch:152-179`.
+
+## Step 3 · Pair target notes with the next token
+
+**One sentence.** Shift and embed the tokens once so position $t$ can combine $h_t$ with $e_{t+1}$ and learn to predict $x_{t+2}$.
+
+### On the stage
+
+- The original sequence remains `[a,b,c,d,e]`. One left shift gives `[b,c,d,e,—]`, aligning token `b` with position `a`.
+- The embedding card turns shifted token IDs into model numbers, written `[e(b),e(c),…]`.
+- The prediction task joins $h(a)$ with $e(b)$ and uses `c` as its desired output. This is the training task, not a guarantee that the current draft already predicts correctly.
+
+### Formula and symbols
+
+$$u_t=\operatorname{concat}(h_t,e_{t+1})$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $h_t$ | Target internal notes at position $t$ | Step 2 |
+| $e_{t+1}$ | The next token's embedding, its model-number form | Shift and embedding lookup in this step |
+| $\operatorname{concat}$ | Place two collections of numbers side by side, not add them | Defined as join in this step |
+| $u_t$ | Paired draft input at position $t$ | Computed here |
+
+### The numbers on the stage
+
+$$u_a=\operatorname{concat}(h(a),e(b))$$
+
+At position `a`, the next token is `b` and the token after that is `c`. The training task therefore maps $u_a$ to `c`. The dash marks no real token beyond the sequence. The implementation pads with zero instead of creating a token named “—”.
+
+The diagram follows the public MiMo experiment's order: hidden state first, embedding second. Other models can arrange their projection halves differently, so join does not define a universal half order.
+
+### Next
+
+The next step shifts the tokens again to make the training labels and computes cross entropy.
+
+Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:31-46`; `THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a`, `docker/patch/latest/megatron.patch:152-190` and `slime_plugins/mbridge/mimo.py:106-120`.

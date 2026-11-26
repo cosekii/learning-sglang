@@ -80,6 +80,41 @@
         { en: 'Next: add a token clue', zh: '下一步：加入 token 线索' },
       ],
     },
+  }, {
+    caption: 'Shift the tokens left once. h(a) and e(b) form the input for predicting c.',
+    captionZh: 'token 序列先左移一格。h(a) 与 e(b) 合并后预测 c。',
+    title: 'Pair target notes with the next token', titleZh: '把 target 笔记与下一个 token 配对',
+    subtitle: 'embedding = a token ID turned into model numbers', subtitleZh: 'embedding = 把 token 编号变成模型用的数',
+    foot: '— means no token beyond the end; join places two lists side by side.',
+    footZh: '— 表示结尾后没有 token；join 表示把两组数并排拼接。',
+    legend: 'Orange = tokens and target notes · blue = embeddings and prediction task', legendZh: '橙 = token 与 target 笔记 · 蓝 = embedding 与预测任务',
+    flow: true,
+    nodes: [
+      { title: 'TOKENS', titleZh: 'TOKEN 序列', result: '[a, b, c, d, e]', resultZh: '[a, b, c, d, e]', body: 'the same five positions', bodyZh: '同样的五个位置', tone: 'orange', compact: true },
+      { title: 'SHIFT LEFT ONCE', titleZh: '左移一格', result: '[b, c, d, e, —]', resultZh: '[b, c, d, e, —]', body: 'next token here', bodyZh: '这里看下一个 token', tone: 'orange', compact: true },
+      { title: 'EMBEDDING', titleZh: 'EMBEDDING', result: '[e(b), e(c), …]', resultZh: '[e(b), e(c), …]', body: 'IDs to model numbers', bodyZh: '编号变成模型用的数', tone: 'blue', compact: true },
+      { title: 'PREDICTION TASK', titleZh: '预测任务', result: 'predict c', resultZh: '预测 c', body: 'join h(a) with e(b)', bodyZh: '合并 h(a) 与 e(b)', tone: 'blue', compact: true },
+    ],
+    formulas: [
+      { en: 'at position a: the next token is b', zh: '在位置 a：下一个 token 是 b' },
+      { en: 'e(b) = embedding of token b', zh: 'e(b) = token b 的 embedding' },
+      { en: 'join(h(a), e(b)) → predict c', zh: 'join(h(a), e(b)) → 预测 c' },
+      { en: 'join is not arithmetic addition', zh: 'join 是拼接，不是算术相加' },
+      { en: 'c is two positions after a', zh: 'c 在 a 后面两个位置' },
+    ],
+    mobile: {
+      title: 'Pair notes with the next token', titleZh: '笔记与下一个 token 配对',
+      subtitle: 'embedding = token ID as model numbers', subtitleZh: 'embedding = token 编号变成模型数值',
+      foot: '— means no token; join means concatenate.', footZh: '— 表示没有 token；join 表示拼接。',
+      legend: 'Orange = tokens · blue = embeddings and task', legendZh: '橙 = token · 蓝 = embedding 与任务',
+      formulas: [
+        { en: 'At a: the next token is b', zh: '位置 a 的下一个是 b' },
+        { en: 'e(b) = embedding of b', zh: 'e(b) = b 的 embedding' },
+        { en: 'join(h(a), e(b)) → predict c', zh: 'join(h(a), e(b)) → 预测 c' },
+        { en: 'join is not addition', zh: 'join 不是相加' },
+        { en: 'c is two positions after a', zh: 'c 在 a 后两个位置' },
+      ],
+    },
   }];
   let step = $state(0);
   $effect(() => {
