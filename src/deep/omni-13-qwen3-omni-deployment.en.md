@@ -193,8 +193,8 @@ After choosing a checkpoint and layout, more simultaneous speech requests may re
 ### On the stage
 
 - The running cap is the most requests a stage may process at once. It is a scheduler limit, not a measured completion rate.
-- Default speech has one thinker capped at 64 and one talker capped at 32. Code2wav shares the thinker's GPU.
-- Replica2 adds a second talker/code2wav pair. GPU 1 holds pair `r0`; GPU 2 holds pair `r1`.
+- Default speech keeps `image_encoder`, `audio_encoder`, the 64-request thinker and code2wav on GPU 0. Its one talker is capped at 32.
+- Replica2 keeps both encoders and the thinker on GPU 0, then adds a second talker/code2wav pair. GPU 1 holds pair `r0`; GPU 2 holds pair `r1`.
 - A codec-state slot holds decoder state for one stream. Each code2wav process computes 64 slots from the talker cap and replica count, then owns an independent pool.
 - Each replica GPU declares 12.3% for talker and 1.4% for code2wav.
 
@@ -270,7 +270,7 @@ Resolve the configuration with `sgl-omni config resolve --config <config.yaml> -
 
 ### Next
 
-The final step puts configuration, waiting, data and memory on one decision sheet for the whole book.
+The final step puts configuration, waiting, data and memory on one decision sheet reviewing Chapters 1–12.
 
 ## Step 8 · One deployment decision sheet
 
@@ -283,7 +283,7 @@ The final step puts configuration, waiting, data and memory on one decision shee
 - GPU 0 holds the input encoders, thinker and code2wav; GPU 1 holds the talker. This TP1 starting hypothesis is motivated by Step 3's different H200/TP2 experiment and requires a local precision A/B with this layout fixed.
 - The talker cap has 24 requests of headroom after subtracting the example's eight requests. No second pair is added before a queue is measured.
 - Both evidence arms keep the same two-GPU TP1 hardware, request route, code2wav placement and isolated talker. Arm A uses the default BF16 checkpoint; arm B uses the native FP8 checkpoint, changing only checkpoint precision. At `c = 8`, compare first-audio median and custom p90, total time, failures, memory and listener metrics, and retain per-run raw results. Ch. 8 Step 8 supplies the output-quality checks: completion, word errors and voice match where applicable. Those checks sit outside the generate-only sweep. For an odd number of results, the median is the middle first-audio value; for an even number, it is the mean of the two middle values. Step 3 defined the p90 boundary, and Step 7 defined the custom reduction.
-- The bottom map closes the book: Chapters 1–3 cover configuration, routes and binding; 4–6 waiting rules, data and queues; 7–8 memory and measurement; 9–12 optimization and model strategies.
+- The bottom map reviews Chapters 1–12: Chapters 1–3 cover configuration, routes and binding; 4–6 waiting rules, data and queues; 7–8 memory and measurement; 9–12 optimization and model strategies.
 
 ### Formula
 
@@ -311,4 +311,4 @@ This is a constructed TP1 starting hypothesis from H200/TP2 evidence, not a benc
 
 ### Next
 
-The next part follows the running service. Chapter 14 answers the closing question: after generation finishes, what happens when a client reads too slowly and audio remains queued in the API process?
+The next part follows the running service. The closing cue is `client ← queued audio`. Chapter 14 answers the closing question: after generation finishes, what happens when a client reads too slowly and audio remains queued in the API process?

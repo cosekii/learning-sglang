@@ -67,14 +67,14 @@
     caption: 'Precision is the number of bits used to store each weight. INT4 roughly halves the BF16 estimate; its talker and code2wav stay BF16.',
     captionZh: '精度是保存每个权重所用的 bit 数。INT4 约省一半，它的 talker 和 code2wav 仍用 BF16。',
   }, {
-    caption: 'Default code2wav configures 32 slots. In Replica2, each code2wav process configures 64 slots, not double throughput.',
-    captionZh: '默认 code2wav 配 32 个状态位。replica2 每个 code2wav 配 64 个，不等于吞吐翻倍。',
+    caption: 'Both panels keep 2 encoders + thinker on GPU 0. Default code2wav has 32 slots; Replica2 gives each process 64, not double throughput.',
+    captionZh: '两幅图都把两个 encoder 和 thinker 留在 GPU 0。默认 32 个状态位；replica2 每进程 64 个，不代表吞吐翻倍。',
   }, {
     caption: 'Readiness uses small inputs and at most eight tokens per generating stage. Measure real traffic with fixed settings and separate clocks.',
     captionZh: '就绪检查用小输入，每个生成 stage 最多 8 token。再用真实流量测量，基准客户端和听者分别计时。',
   }, {
-    caption: 'One decision sheet records the route, placement, precision, capacity and evidence. Once serving starts, what happens when a client reads too slowly?',
-    captionZh: '一张决策表记录路线、摆卡、精度、容量和证据。开始服务后，客户端读得太慢会怎样？',
+    caption: 'One decision sheet records the route, placement, precision, capacity and evidence. Next: client ← queued audio; what happens when the client reads too slowly?',
+    captionZh: '一张决策表记录路线、摆卡、精度、容量和证据。client ← queued audio：客户端读得太慢会怎样？',
   }];
   let step = $state(0);
   $effect(() => {
@@ -390,7 +390,7 @@
         <text x={phone ? 15 : 20} y="24" class="rowlabel">{t('MORE SPEECH COPIES, EXPLICIT CAPACITY', '更多语音副本，明确算容量')}</text>
         <text x={phone ? 15 : 20} y="49" class="tag">running cap = {t('most requests one stage works on at once', '一个 stage 同时最多处理的请求数')}</text>
         <text x={phone ? 15 : 20} y="72" class="tag">codec state slot = {t('saved decoder state for one stream', '一路声音保存的 decoder 状态')}</text>
-        <text x={phone ? 15 : 20} y="95" class="tag">{t('blue = talker · orange = codec capacity · white box = thinker', '蓝 = talker · 橙 = codec 容量 · 白框 = thinker')}</text>
+        <text x={phone ? 15 : 20} y="95" class="tag">{phone ? t('blue=talker · orange=codec · white=GPU 0', '蓝=talker · 橙=codec · 白=GPU 0') : t('blue = talker · orange = codec capacity · white box = GPU 0 stages', '蓝 = talker · 橙 = codec 容量 · 白框 = GPU 0 stages')}</text>
         {#each phone ? [
           { x: 15, y: 125, w: 270, h: 340, replica2: false },
           { x: 15, y: 485, w: 270, h: 390, replica2: true },
@@ -402,7 +402,7 @@
           <text x={panel.x + 14} y={panel.y + 27} class="rowlabel">{panel.replica2 ? 'REPLICA2' : 'DEFAULT SPEECH'}</text>
           <text x={panel.x + 14} y={panel.y + 51} class="tag strong">{panel.replica2 ? `5 + 2 + 2 = ${QWEN_SPEECH_REPLICA2_COPY_COUNT} processes · ${QWEN_SPEECH_REPLICA2_GPU_COUNT} GPUs` : `${QWEN_SPEECH_DEFAULT_COPY_COUNT} processes · ${QWEN_SPEECH_DEFAULT_GPU_COUNT} GPUs`}</text>
           <rect x={panel.x + 14} y={panel.y + 72} width={panel.w - 28} height="65" rx="7" fill="var(--bg)" stroke="var(--faint)" />
-          <text x={panel.x + 25} y={panel.y + 98} class="tag strong">{panel.replica2 ? 'GPU 0 · thinker' : 'GPU 0 · thinker + code2wav'}</text>
+          <text x={panel.x + 25} y={panel.y + 98} class="tag strong">{panel.replica2 ? 'GPU 0 · 2 encoders + thinker' : 'GPU 0 · 2 encoders + thinker + code2wav'}</text>
           <text x={panel.x + 25} y={panel.y + 123} class="formula">thinker cap = {QWEN_THINKER_MAX_RUNNING_REQUESTS}</text>
           {#if !panel.replica2}
             <rect x={panel.x + 14} y={panel.y + 155} width={panel.w - 28} height="70" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
@@ -490,7 +490,7 @@
             <text x="29" y={y + 97} class="tag">{t('memory · stalls · failures · Ch. 8 Step 8 quality', '显存 · 卡顿 · 失败 · 第 8 章第 8 步质量检查')}</text>
           {/if}
         {/each}
-        <text x={W / 2} y={phone ? 738 : 593} text-anchor="middle" class="rowlabel">{t('THE WHOLE-BOOK CHECK', '全书检查')}</text>
+        <text x={W / 2} y={phone ? 738 : 593} text-anchor="middle" class="rowlabel">{t('CHAPTERS 1–12 REVIEW', '第 1–12 章回顾')}</text>
         {#each [
           { ref: 'Ch. 1–3', refZh: '第 1–3 章', text: 'config · route · binding', textZh: '配置 · 路线 · 绑定' },
           { ref: 'Ch. 4–6', refZh: '第 4–6 章', text: 'waiting rules · data · queues', textZh: '等待规则 · 数据 · 队列' },
@@ -503,7 +503,12 @@
           <text x={x + 12} y={y + 21} class="tag strong">{t(card.ref, card.refZh)}</text>
           <text x={x + 12} y={y + (phone ? 39 : 43)} class="tag">{t(card.text, card.textZh)}</text>
         {/each}
-        <text x={W / 2} y={phone ? 1038 : 709} text-anchor="middle" class="tag strong">{phone ? t('Serving starts. What if the client reads too slowly?', '开始服务后，客户端读得太慢会怎样？') : t('The deployment is serving. What happens when its client reads too slowly?', '部署开始服务后，客户端读得太慢会发生什么？')}</text>
+        {#if phone}
+          <text x={W / 2} y="1013" text-anchor="middle" class="tag strong">client ← queued audio</text>
+          <text x={W / 2} y="1038" text-anchor="middle" class="tag strong">{t('What if the client reads too slowly?', '客户端读得太慢会怎样？')}</text>
+        {:else}
+          <text x={W / 2} y="709" text-anchor="middle" class="tag strong">{t('client ← queued audio · What happens when the client reads too slowly?', 'client ← queued audio · 客户端读得太慢会怎样？')}</text>
+        {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Constructed TP1 hypothesis · local A/B required', '构造的 TP1 假设 · 仍需本地 A/B') : t('Constructed TP1 hypothesis from H200/TP2 evidence; local A/B required. No local model run.', '由 H200/TP2 证据构造的 TP1 假设，仍需本地 A/B；未运行模型。')}</text>
       {/if}
       {#if PHASE_COUNTS[step] > 0}
