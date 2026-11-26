@@ -301,7 +301,7 @@
         <text x="610" y="247" text-anchor="middle" class="small">rank 2</text>
         <text x="530" y="286" text-anchor="middle" class="result">world size = 1 + 2 = {UPDATE_GROUP_SIZE_TP_TWO}</text>
         <text x="530" y="310" text-anchor="middle" class="small">{t('three members in this example', '本例组内三个成员')}</text>
-        <text x="360" y="355" text-anchor="middle" class="code">allocate → broadcast full tensor → keep own part → load own part</text>
+        <text x="360" y="355" text-anchor="middle" class="code">{t('make receiving space → broadcast full tensor → keep own part → load own part', '分配接收空间 → 广播完整张量 → 留下自己的部分 → 装入自己的部分')}</text>
         <text x="360" y="390" text-anchor="middle" class="small">{t('Orange = sends values · blue = receives values', '橙 = 发出数值 · 蓝 = 接收数值')}</text>
         <text x="360" y="422" text-anchor="middle" class="small">{t('Distributed channel = broadcast full tensors through this group', 'Distributed 通道 = 通过这个组广播完整张量')}</text>
       {:else if step === 3}
