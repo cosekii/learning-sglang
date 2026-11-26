@@ -17,17 +17,17 @@
 | alias | what recognition tends to write instead; one term can have several | `Preeya` |
 | note | free text you write once, optional | on the design team |
 
-`store.Term` also has `Enabled` and two timestamps; the app uses them to decide whether the row is active now (`Voxt/internal/dict/dict.go`). `Check` refuses an empty term, a newline, or more than `MaxTermChars = 80` runes (`dict.go:70`); `Clean` keeps at most `MaxAliases = 10` aliases (`dict.go:50`).
+`store.Term` also has `Enabled` and two timestamps. `Enabled` controls whether the row is active, while `UpdatedAt` controls hint order in Step 3 (`Voxt/internal/dict/dict.go`). `Check` refuses an empty term, a newline, or more than `MaxTermChars = 80` runes (`dict.go:70`); `Clean` keeps at most `MaxAliases = 10` aliases (`dict.go:50`).
 
 ### Why the cost comes first
 
-Without this product name, recognition writes it wrong every time and you fix it by hand every time. The dictionary does that work once: fill one row, and every later dictation uses it. Step 2 splits the row into four destinations.
+When recognition does not know this person's name, it writes the name wrong and you fix it by hand each time. The dictionary does that work once: fill one row, and every later dictation uses it. Step 2 shows the row's three routes and separate dictionary-wide notes.
 
 ### Next
 
-One row has three parts, and they do not travel together; the next step shows where each part goes.
+One row has three parts. The next step shows where the term and aliases go, and why the row note stays behind.
 
-## Step 2 · One row, four destinations
+## Step 2 · Three row routes and one settings route
 
 > **In one line:** The term goes to the speech model, the alias goes into transcript replacement, and only the term and aliases enter the glossary; the row note stays private, while separate dictionary-wide `settings.Dictionary.Notes` enters the language-model prompt.
 

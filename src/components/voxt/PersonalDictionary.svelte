@@ -146,7 +146,7 @@
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('source: dict.go · Term, Aliases', '出处：dict.go · Term、Aliases') : t('Source: Voxt/internal/dict/dict.go · a term carries aliases and a note', '出处：Voxt/internal/dict/dict.go · 一个词条带别名和备注')}</text>
 
       {:else if step === 1}
-        <text x="20" y="22" class="tag strong">{t('ONE ROW · FOUR DESTINATIONS', '一行 · 四个去处')}</text>
+        <text x="20" y="22" class="tag strong">{t('THREE ROW ROUTES + ONE SETTINGS ROUTE', '词条三个去处 + 设置一个去处')}</text>
         <text x="20" y="46" class="tag">{t('the row’s own note stays private.', '行内备注只留在这里。')}</text>
         {#if phone}
           <rect x="20" y="62" width="260" height="132" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
