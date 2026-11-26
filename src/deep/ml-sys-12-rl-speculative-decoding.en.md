@@ -162,3 +162,36 @@ The implementation detaches the embedding output and target hidden state, then c
 The next step uses a loss mask to select CE positions, excluding positions without two valid future tokens.
 
 Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:58-60,184-234`; `THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a`, `docker/patch/latest/megatron.patch:170-179,596-603`.
+
+## Step 6 · Keep positions with two valid future tokens
+
+**One sentence.** Shift the loss mask twice and multiply the results, counting position $t$ only when both $t+1$ and $t+2$ are valid.
+
+### On the stage
+
+- The original mask is `[1,0,1,1,0]`: 1 marks a valid token and 0 skips it.
+- One left shift gives `[0,1,1,0,0]`, checking intermediate token $t+1$. Two shifts give `[1,1,0,0,0]`, checking target token $t+2$.
+- Their product is `[0,1,0,0,0]`. The second position survives even though its original mask is 0 because this rule checks the next two tokens.
+
+### Formula and symbols
+
+$$m^{\mathrm{MTP}}_t=m_{t+1}m_{t+2}$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $m_t$ | Original loss mask at position $t$ | Constructed sequence in this step |
+| $m_{t+1}$ | Whether the intermediate token is valid | First shift |
+| $m_{t+2}$ | Whether the target token is valid | Second shift |
+| $m^{\mathrm{MTP}}_t$ | Whether this position counts for one-layer MTP CE | Product in this step |
+
+### The numbers on the stage
+
+With zero-based indexing, $t=1$ is the second position. $m_2=1$ and $m_3=1$, so $m^{\mathrm{MTP}}_1=1\times1=1$. Original $m_1=0$ is absent from this formula because the current position is neither the intermediate nor the target token being checked.
+
+Before shifting, slime pads the prompt portion with zeros, then slices and aligns the mask under context parallelism. This diagram covers only the one-layer intersection. The implementation's CE normalization denominator and deeper-stack mask progression require separate code reading and do not follow from this picture.
+
+### Next
+
+The next step returns to the public experiment and compares rollout throughput for all three configurations.
+
+Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:144-176`; `THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a`, `slime/backends/megatron_utils/model.py:408-467` and `docker/patch/latest/megatron.patch:158-191`.

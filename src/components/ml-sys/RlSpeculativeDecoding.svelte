@@ -183,6 +183,41 @@
         { en: 'Main RL loss still updates them', zh: '主 RL 损失仍更新它们' },
       ],
     },
+  }, {
+    caption: 'Shift the loss mask twice and multiply. Two valid future tokens keep a position.',
+    captionZh: 'loss mask 左移两次后相乘。两个后续 token 都有效才计分。',
+    title: 'Count only positions with two valid future tokens', titleZh: '只有两个后续 token 都有效才计分',
+    subtitle: 'loss mask = 1 counts a position; 0 skips it', subtitleZh: 'loss mask = 1 计分，0 跳过',
+    foot: 'This selects positions; it does not define the CE averaging denominator.',
+    footZh: '这里只选择计分位置，不定义 CE 平均时分母。',
+    legend: 'Orange = shifted masks · blue = positions kept for CE', legendZh: '橙 = 移位后的 mask · 蓝 = 保留计分的位置',
+    flow: true,
+    nodes: [
+      { title: 'ORIGINAL MASK', titleZh: '原始 MASK', result: `[${N.SPEC_EXAMPLE_MASK.join(', ')}]`, resultZh: `[${N.SPEC_EXAMPLE_MASK.join(', ')}]`, body: 'one per token', bodyZh: '每个 token 一个', tone: 'orange', compact: true },
+      { title: 'SHIFT ONCE', titleZh: '左移一次', result: `[${N.SPEC_MASK_SHIFT_ONCE.join(', ')}]`, resultZh: `[${N.SPEC_MASK_SHIFT_ONCE.join(', ')}]`, body: 'next token', bodyZh: '下一个 token', tone: 'orange', compact: true },
+      { title: 'SHIFT TWICE', titleZh: '左移两次', result: `[${N.SPEC_MASK_SHIFT_TWICE.join(', ')}]`, resultZh: `[${N.SPEC_MASK_SHIFT_TWICE.join(', ')}]`, body: 'token after next', bodyZh: '再下一个 token', tone: 'orange', compact: true },
+      { title: 'KEEP FOR CE', titleZh: '保留计分', result: `[${N.SPEC_MTP_MASK.join(', ')}]`, resultZh: `[${N.SPEC_MTP_MASK.join(', ')}]`, body: 'both must be 1', bodyZh: '两个都必须是 1', tone: 'blue', compact: true },
+    ],
+    formulas: [
+      { en: 'keep = shift once × shift twice', zh: '保留 = 左移一次 × 左移两次' },
+      { en: 'second position: 1 × 1 = 1 · original mask is 0', zh: '第二个位置：1 × 1 = 1 · 原始 mask 是 0' },
+      { en: 'position t checks tokens t+1 and t+2, not its own mask', zh: '位置 t 检查 t+1 与 t+2，不看自己的 mask' },
+      { en: '1 counts the position · 0 leaves it out', zh: '1 让这个位置计分 · 0 让它跳过' },
+      { en: 'Next: does faster rollout outweigh extra training?', zh: '下一步：rollout 加速能盖住额外训练吗？' },
+    ],
+    mobile: {
+      title: 'Keep two valid future tokens', titleZh: '两个后续 token 都有效才计分',
+      subtitle: 'loss mask = 1 counts; 0 skips', subtitleZh: 'loss mask = 1 计分，0 跳过',
+      foot: 'Position selection only, not CE normalization.', footZh: '只选计分位置，不定义 CE 分母。',
+      legend: 'Orange = shifted masks · blue = kept', legendZh: '橙 = 移位 mask · 蓝 = 保留计分',
+      formulas: [
+        { en: 'keep = shift once × shift twice', zh: '保留 = 左移一次 × 左移两次' },
+        { en: 'Second position: 1 × 1 = 1', zh: '第二个位置：1 × 1 = 1' },
+        { en: 'Its original mask is 0', zh: '它的原始 mask 是 0' },
+        { en: 'Check t+1 and t+2, not t', zh: '检查 t+1 与 t+2，不看 t' },
+        { en: 'Next: compare speed and training cost', zh: '下一步：比较加速与训练成本' },
+      ],
+    },
   }];
   let step = $state(0);
   $effect(() => {

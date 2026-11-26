@@ -25,6 +25,8 @@ Step 4 follows `readme.md:46-60` and `megatron.patch:581-603`. Rolling the shift
 
 Step 5 follows `readme.md:58-60,184-234` and `megatron.patch:170-179,596-603`. Detach preserves forward values while blocking the auxiliary CE branch from the target trunk, embedding and shared output layer. The shared output layer is the stage's score table, which turns hidden states into token scores. The MTP hidden output is not detached, so the draft remains trainable. The main RL loss still updates the target and shared parameters.
 
+Step 6 follows `readme.md:144-176`, `slime/backends/megatron_utils/model.py:408-467`, and `megatron.patch:158-191`. slime reconstructs the response mask with prompt zeros, applies context-parallel slicing and padding, then aligns it. For one MTP layer, position `t` keeps CE only when both `t+1` and `t+2` are valid. The constructed mask gives `[1,0,1,1,0] → [0,1,1,0,0] × [1,1,0,0,0] = [0,1,0,0,0]`. This step covers selection, not the implementation's normalization denominator or deeper MTP stacks.
+
 Further reading: [zero-to-sglang Part II Chapter 10: Speculative Decoding](https://zero-to-sglang.datawhale.cc/eng/part2/Chapter10_Speculative-Decoding.html) and its [code walkthrough](https://zero-to-sglang.datawhale.cc/eng/part2/Chapter10_Speculative-Decoding_code.html).
 
 </details>
@@ -43,6 +45,8 @@ Further reading: [zero-to-sglang Part II Chapter 10: Speculative Decoding](https
 第 4 步依据 `readme.md:46-60` 和 `megatron.patch:581-603`。实现把移位后的 token 再左移一次，得到标签 `[c,d,e,0,0]`；图上用横线表示这些不存在的位置。cross entropy 比较 draft 的 token 分数与标签。公开配置使用 `--mtp-loss-scaling-factor 0.2`；这是辅助损失，不是 target 的第二个 RL 目标。
 
 第 5 步依据 `readme.md:58-60,184-234` 和 `megatron.patch:170-179,596-603`。detach 保留前向数值，同时挡住辅助 CE 通向 target 主干、embedding 和共享输出层的梯度。共享输出层就是图上的打分表，负责把 hidden state 变成 token 分数。MTP 的 hidden 输出没有 detach，所以 draft 仍能学习。主 RL 损失仍会更新 target 和共享参数。
+
+第 6 步依据 `readme.md:144-176`、`slime/backends/megatron_utils/model.py:408-467` 和 `megatron.patch:158-191`。slime 先为 prompt 补 0，重建 response mask，再按 context parallelism 切分并对齐补齐。只有 `t+1` 和 `t+2` 都有效，位置 `t` 才计入这层 MTP 的 CE。构造 mask 得到 `[1,0,1,1,0] → [0,1,1,0,0] × [1,1,0,0,0] = [0,1,0,0,0]`。本步只讲位置选择，不讲实现的归一化分母或更深的 MTP 堆叠。
 
 延伸阅读：[zero-to-sglang 第 2 部分第 10 章：投机解码](https://zero-to-sglang.datawhale.cc/ch/part2/%E7%AC%AC10%E7%AB%A0_%E6%8A%95%E6%9C%BA%E8%A7%A3%E7%A0%81.html)及其[代码走读](https://zero-to-sglang.datawhale.cc/ch/part2/%E7%AC%AC10%E7%AB%A0_%E6%8A%95%E6%9C%BA%E8%A7%A3%E7%A0%81_%E4%BB%A3%E7%A0%81.html)。
 

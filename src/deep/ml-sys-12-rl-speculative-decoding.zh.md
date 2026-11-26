@@ -162,3 +162,36 @@ $$g^{\mathrm{CE}}_{\theta_{\mathrm{shared}}}=0,\qquad g^{\mathrm{CE}}_{\theta_{\
 下一步用 loss mask 决定哪些位置计入 CE，避免没有两个有效后续 token 的位置教错 draft。
 
 来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:58-60,184-234`；`THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a` 的 `docker/patch/latest/megatron.patch:170-179,596-603`。
+
+## 第 6 步 · 两个后续 token 都有效才计分
+
+**一句话。** loss mask 左移两次后相乘，位置 $t$ 只有在 $t+1$ 和 $t+2$ 都有效时才计入 draft 的 CE。
+
+### 图上是什么
+
+- 原始 mask 是 `[1,0,1,1,0]`，1 表示这个 token 有效，0 表示跳过。
+- 左移一次得到 `[0,1,1,0,0]`，检查中间 token $t+1$；左移两次得到 `[1,1,0,0,0]`，检查目标 token $t+2$。
+- 两列相乘得到 `[0,1,0,0,0]`。第二个位置保留，尽管它的原始 mask 是 0，因为这里检查的是后两个 token。
+
+### 公式与符号
+
+$$m^{\mathrm{MTP}}_t=m_{t+1}m_{t+2}$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $m_t$ | 位置 $t$ 的原始 loss mask | 本步构造序列 |
+| $m_{t+1}$ | 中间 token 是否有效 | 左移一次 |
+| $m_{t+2}$ | 目标 token 是否有效 | 左移两次 |
+| $m^{\mathrm{MTP}}_t$ | 这个位置是否计入一层 MTP 的 CE | 本步相乘 |
+
+### 代入图上的数
+
+从 0 开始编号，$t=1$ 是第二个位置：$m_2=1$ 且 $m_3=1$，所以 $m^{\mathrm{MTP}}_1=1\times1=1$。原始 $m_1=0$ 不进入这条公式，因为当前位置不是本步要检查的中间 token 或目标 token。
+
+slime 在移位前先把 prompt 部分补成 0，再按 context parallelism 的规则切分并对齐 mask。这里只展示一层 MTP 的位置交集；实现的 CE 归一化分母和多层 MTP 的掩码推进需要另看代码，不能从这张图推断。
+
+### 接下来
+
+下一步回到公开实验，比较三种配置的 rollout 吞吐，看在线训练 draft 的收益有多大。
+
+来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:144-176`；`THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a` 的 `slime/backends/megatron_utils/model.py:408-467`、`docker/patch/latest/megatron.patch:158-191`。

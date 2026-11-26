@@ -277,3 +277,9 @@ export const INT4_EXAMPLE_MIDDLE_ERROR = Math.abs(INT4_EXAMPLE_RESTORED[1] - INT
 export const SPEC_FROZEN_ROLLOUT_TOKENS_S = 1464;
 export const SPEC_ONLINE_ROLLOUT_TOKENS_S = 1667;
 export const SPEC_ONLINE_OVER_FROZEN = SPEC_ONLINE_ROLLOUT_TOKENS_S / SPEC_FROZEN_ROLLOUT_TOKENS_S - 1;
+
+// Constructed one-layer MTP mask example from Awesome-ML-SYS slime/spec/readme.md:158-176.
+export const SPEC_EXAMPLE_MASK = [1, 0, 1, 1, 0];
+export const SPEC_MASK_SHIFT_ONCE = SPEC_EXAMPLE_MASK.map((_, i) => SPEC_EXAMPLE_MASK[i + 1] ?? 0);
+export const SPEC_MASK_SHIFT_TWICE = SPEC_MASK_SHIFT_ONCE.map((_, i) => SPEC_MASK_SHIFT_ONCE[i + 1] ?? 0);
+export const SPEC_MTP_MASK = SPEC_MASK_SHIFT_ONCE.map((value, i) => value * SPEC_MASK_SHIFT_TWICE[i]);
