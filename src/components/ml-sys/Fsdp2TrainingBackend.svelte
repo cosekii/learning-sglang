@@ -46,15 +46,15 @@
     title: 'FSDP2 keeps one slice of each table', titleZh: 'FSDP2 让每个 rank 各留一片',
     subtitle: 'shard = one rank\'s part · DP group = ranks sharing one model',
     subtitleZh: 'shard = 一个 rank 的一片 · DP 组 = 共同分担一个模型的 rank',
-    foot: 'Equal slices simplify the layout; DP size is the mesh size, not always the physical GPU count.',
-    footZh: '等分只是简化画法；DP 大小取决于 mesh，不一定等于物理 GPU 数。',
+    foot: 'Equal slices simplify the layout; DP size counts the ranks in the sharding group and can differ from the physical GPU count.',
+    footZh: '等分只是简化画法；DP 大小是分片组里的 rank 数，不一定等于物理 GPU 数。',
     mobileTitle: 'Each rank owns 8 GB', mobileTitleZh: '每个 rank 拥有 8 GB',
     mobileSubtitle: 'shard = one rank\'s part · DP 8', mobileSubtitleZh: 'shard = 一个 rank 的一片 · DP 8',
     mobileFoot: 'Equal slices are a teaching simplification.', mobileFootZh: '等分只是教学简化。',
     mobile: [
       { title: 'FSDP2 · DP GROUP 8', titleZh: 'FSDP2 · DP 组 8', body: 'divide the same tables, not the models', bodyZh: '分同样的表，不是分成 8 个模型', tone: 'blue' },
       { title: 'EACH RANK OWNS', titleZh: '每个 rank 拥有', body: '1 + 1 + 6 = 8 GB', bodyZh: '1 + 1 + 6 = 8 GB', tone: 'blue' },
-      { title: '8 RANKS TOGETHER', titleZh: '8 个 rank 合计', body: '8 × 8 = 64 GB, not 512 GB', bodyZh: '8 × 8 = 64 GB，不是 512 GB', tone: 'orange' },
+      { title: '8 RANKS TOGETHER', titleZh: '8 个 rank 合计', body: '8 × 8 = 64 GB, not 512 GB', bodyZh: '8 × 8 = 64 GB，不是 512 GB', tone: 'blue' },
     ],
     formulas: [
       { en: `${FSDP_FULL_STATE_PER_GPU_GB} GB ÷ ${FSDP_DP_SIZE} = ${FSDP_SHARD_STATE_PER_GPU_GB} GB per rank`, zh: `${FSDP_FULL_STATE_PER_GPU_GB} GB ÷ ${FSDP_DP_SIZE} = 每个 rank ${FSDP_SHARD_STATE_PER_GPU_GB} GB` },

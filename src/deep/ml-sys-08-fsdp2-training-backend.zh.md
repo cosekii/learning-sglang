@@ -65,7 +65,7 @@ $$M_i=64\ \text{GB}/8=8\ \text{GB},\qquad C_{\text{shard}}=8\times8\ \text{GB}=6
 
 ### FSDP2 与 DTensor
 
-FSDP2 把每个参数表示为 DTensor：逻辑张量、分布信息和本地分片一起记录，不需要 FSDP1 的模块级 `FlatParameter`。slime 计算 `dp_size = world_size // cp_size`，并把 DP mesh 传给 `fully_shard`。启用 CP 时，物理 GPU 数和 DP 分片数可以不同；本例取 CP 1。
+FSDP2 把每个参数表示为 DTensor：逻辑张量、分布信息和本地分片一起记录。FSDP1 可以把模块的参数拼成一张扁平表，称为 `FlatParameter`。slime 的 `world_size` 是所有 rank 的数量。context parallelism（CP）把序列分给 `cp_size` 个 rank，`dp_size = world_size // cp_size` 则是分片组里的 rank 数。rank 的排列布局称为 mesh，slime 把 DP mesh 传给 `fully_shard`。启用 CP 时，物理 GPU 数和 DP 分片数可以不同；本例取 CP 1。
 
 ### 接下来
 

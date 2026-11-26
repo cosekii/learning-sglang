@@ -65,7 +65,7 @@ The per-rank breakdown is $8/8=1$ GB of weights, $8/8=1$ GB of gradients and $48
 
 ### FSDP2 and DTensor
 
-FSDP2 represents each parameter as a DTensor: the logical tensor plus its distribution metadata and local shards. It does not need FSDP1's module-wide `FlatParameter`. Slime computes `dp_size = world_size // cp_size` and passes the DP mesh to `fully_shard`. With CP enabled, physical GPU count and DP shard count can differ; this example uses CP 1.
+FSDP2 represents each parameter as a DTensor: the logical tensor plus its distribution metadata and local shards. FSDP1 could instead join a module's parameters into one flat table called `FlatParameter`. Slime's `world_size` counts all ranks. Context parallelism (CP) splits a sequence across `cp_size` ranks, while `dp_size = world_size // cp_size` counts the ranks in the sharding group. The rank layout is called a mesh, and slime passes the DP mesh to `fully_shard`. With CP enabled, physical GPU count and DP shard count can differ; this example uses CP 1.
 
 ### Next
 
