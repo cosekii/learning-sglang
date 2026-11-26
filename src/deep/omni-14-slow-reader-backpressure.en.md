@@ -230,3 +230,32 @@ The failure-completion path is in `sglang_omni/pipeline/coordinator.py:940-967`.
 ### Next
 
 The reader now has a failed stream. The next step shows how each connection type reports that failure.
+
+## Step 7 · Different connections report the same failure
+
+> **In one line:** Event connections send an error event; raw PCM carries only samples and must close early.
+
+### On the stage
+
+- An event envelope is a named message wrapped around data. SSE and WebSocket can send an `error` beside audio.
+- Both event connections report `The request queue is full.` Partial audio may already have gone out before that error.
+- Raw PCM carries audio samples only. With no event envelope for the error, its connection closes early.
+- Orange marks failure output. All three panels show the same shared-cap failure, not three experiments.
+
+### The three exits
+
+| Connection | How the reader sees the end |
+|---|---|
+| Speech SSE | `error` event |
+| Speech WebSocket | `error` event |
+| Raw PCM | Early stream close |
+
+After emitting audio, SSE also writes `partial_audio=true` and `action=discard`, telling the client to discard the incomplete audio. Realtime-session output budgets and close codes use a separate protocol and sit outside this step.
+
+### Boundary and sources
+
+The three behaviors and the rule that this cap does not refuse new requests are in `docs/cookbook/qwen3_tts/tuning.md:24-28`. The SSE error frame and partial-audio markers are in `sglang_omni/serve/speech_streaming.py:202-228`. This is not a pre-response HTTP 503.
+
+### Next
+
+After the failure goes out, closing the reader performs the final queue and byte cleanup.

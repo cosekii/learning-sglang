@@ -25,6 +25,8 @@ Step 5 reproduces the second 12 B unit test. The streams hold 2, 4 and 4 B; the 
 
 Step 6 keeps the whole stream intact: dropping selected chunks would corrupt its audio. On a cap failure, a still-owned running request enters the failure completion path, broadcasts abort and sends the failure to its stream queue. If generation already finished, no running generation remains to abort; a terminal waveform can itself trip the cap (`sglang_omni/pipeline/coordinator.py:940-967,1027-1029,1098-1144`; `tests/unit_test/pipeline/test_coordinator.py:1465-1505,1691-1715`).
 
+Step 7 follows the speech-serving failure envelopes documented in `docs/cookbook/qwen3_tts/tuning.md:24-28`. SSE and speech WebSocket readers receive an error event containing `The request queue is full.`; raw PCM has no event envelope and closes early. The SSE implementation emits an error frame and marks `partial_audio=true, action=discard` when audio already went out (`sglang_omni/serve/speech_streaming.py:202-228`). This is not a new pre-response HTTP 503, and this cap does not refuse new requests.
+
 Code references in this chapter pin to `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`. The chapter reads source and unit tests; it does not run a model or measure a server.
 
 </details>
@@ -43,6 +45,8 @@ Code references in this chapter pin to `sglang-omni origin/main@9725235249df8512
 第 5 步复现第二个 12 B 单元测试。三路流分别有 2、4、4 B，最新读取的流再增加 6 B，总量变成 16 B。最老的 2 B 流失败后还剩 14 B，仍然超限；再让次老的 4 B 流失败，剩下 10 B，`failed_stream_count` 增加到 2（`sglang_omni/pipeline/coordinator.py:1102-1131`；`tests/unit_test/pipeline/test_coordinator.py:1544-1569`）。一次淘汰不保证能恢复预算。
 
 第 6 步保持整条流完整：只丢选中的 chunks 会弄坏声音。超过上限时，仍由 coordinator 持有的运行中请求进入失败完成路径，广播 abort，并把失败送入流队列。生成已经完成时，没有还在运行的生成可中止；最后一条带声音的完成消息本身也能触发上限（`sglang_omni/pipeline/coordinator.py:940-967,1027-1029,1098-1144`；`tests/unit_test/pipeline/test_coordinator.py:1465-1505,1691-1715`）。
+
+第 7 步遵循 `docs/cookbook/qwen3_tts/tuning.md:24-28` 记录的语音服务失败外壳。SSE 和语音 WebSocket 读者收到含 `The request queue is full.` 的错误事件；raw PCM 没有事件外壳，会提前关闭。SSE 实现发出错误帧，在已经发出声音时标记 `partial_audio=true, action=discard`（`sglang_omni/serve/speech_streaming.py:202-228`）。这不是响应前的 HTTP 503，这个上限也不会拒绝新请求。
 
 本章代码出处固定到 `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`。本章只读源码和单元测试，没有运行模型或测量服务器。
 

@@ -61,6 +61,9 @@
   }, {
     caption: 'A cap failure ends the whole stream. It aborts generation only if generation is still running.',
     captionZh: '超过上限会结束整条流。只有还在生成时，才中止生成。',
+  }, {
+    caption: 'SSE and WebSocket readers get an error event. Raw PCM closes early because it has no event envelope.',
+    captionZh: 'SSE 和 WebSocket 读者收到错误事件。raw PCM 没有事件外壳，只能提前断开。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -270,6 +273,38 @@
         {/each}
         <text x={W / 2} y={phone ? 728 : 536} text-anchor="middle" class="rowlabel">{t('What error does the reader receive?', '读者会收到什么错误？')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Same bytes · before or after generation ends', '同一份声音 · 生成前后都可能失败') : t('The same queued bytes can fail before or after generation ends.', '同一份排队声音可能在生成结束前或结束后失败。')}</text>
+      {:else if step === 6}
+        <text x={phone ? 15 : 20} y="26" class="rowlabel">{t('THE READER LEARNS THAT DELIVERY FAILED', '读者得知交付失败')}</text>
+        <text x={phone ? 15 : 20} y="52" class="tag">{t('event envelope = a named message wrapped around data', '事件外壳 = 包住数据、带有名字的消息')}</text>
+        <text x={phone ? 15 : 20} y="76" class="tag">{t('orange = failure output · all three show the same cap failure', '橙 = 失败输出 · 三种连接遇到同一个上限失败')}</text>
+        {#each phone ? [
+          { x: 15, y: 116, h: 276, title: 'EVENT CONNECTIONS', titleZh: '带事件的连接', raw: false },
+          { x: 15, y: 428, h: 250, title: 'RAW PCM', titleZh: 'raw PCM', raw: true },
+        ] : [
+          { x: 40, y: 126, h: 350, title: 'EVENT CONNECTIONS', titleZh: '带事件的连接', raw: false },
+          { x: 380, y: 126, h: 350, title: 'RAW PCM', titleZh: 'raw PCM', raw: true },
+        ] as panel}
+          <rect x={panel.x} y={panel.y} width={phone ? 270 : 300} height={panel.h} rx="11" fill="var(--bg)" stroke="var(--line)" />
+          <text x={panel.x + 16} y={panel.y + 30} class="tag strong">{t(panel.title, panel.titleZh)}</text>
+          {#if !panel.raw}
+            <text x={panel.x + 16} y={panel.y + 60} class="tag">SSE · WebSocket</text>
+            <text x={panel.x + 16} y={panel.y + 88} class="tag">{t('carry named events beside audio', '除了声音，还能携带带名字的事件')}</text>
+            <rect x={panel.x + 16} y={panel.y + 116} width={phone ? 238 : 268} height="88" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x={panel.x + 28} y={panel.y + 147} class="tag strong">error</text>
+            <text x={panel.x + 28} y={panel.y + 177} class="mono">The request queue is full.</text>
+            <text x={panel.x + 20} y={panel.y + 240} class="tag">{t('The error can follow partial audio.', '错误之前可能已经交付部分声音。')}</text>
+          {:else}
+            <text x={panel.x + 16} y={panel.y + 60} class="tag">{t('audio samples only', '只有声音样本')}</text>
+            <text x={panel.x + 16} y={panel.y + 88} class="tag">{t('no event envelope for an error', '没有装错误的事件外壳')}</text>
+            <rect x={panel.x + 16} y={panel.y + 116} width={phone ? 238 : 268} height="88" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x={panel.x + 28} y={panel.y + 147} class="tag strong">{t('CONNECTION CLOSED EARLY', '连接提前关闭')}</text>
+            <text x={panel.x + 28} y={panel.y + 177} class="tag">{t('no error event', '没有错误事件')}</text>
+            <text x={panel.x + 20} y={panel.y + 240} class="tag">{t('The reader sees the stream end.', '读者看到流提前结束。')}</text>
+          {/if}
+        {/each}
+        <text x={W / 2} y={phone ? 724 : 526} text-anchor="middle" class="tag">{t('This cap does not refuse new requests.', '这个上限不会因此拒绝新请求。')}</text>
+        <text x={W / 2} y={phone ? 782 : 580} text-anchor="middle" class="rowlabel">{t('What remains until the reader closes?', '读者关闭以前，还留着什么？')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('SSE · WebSocket · raw PCM: different envelopes', '三种连接的错误外壳不同') : t('Speech SSE, speech WebSocket and raw PCM have different envelopes.', '语音 SSE、语音 WebSocket 和 raw PCM 的消息外壳不同。')}</text>
       {/if}
     </svg>
   </div>
