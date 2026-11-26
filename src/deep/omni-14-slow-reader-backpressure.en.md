@@ -216,7 +216,7 @@ The next step separates what failure stops in the generator from what it stops i
 
 ### On the stage
 
-- Both panels hold the same 12 B of queued audio. This step's cap is 10 B, so `12 B > 10 B` and both panels cross the cap.
+- Both panels start with the same 12 B of queued audio. This step's cap is 10 B, so `12 B > 10 B` and both panels cross the cap. The queued audio then falls to 0 B.
 - On the left, generation is still running. The coordinator broadcasts abort so unfinished stages stop this request, then reports the failure to the reader.
 - On the right, generation has finished. No running generator remains to abort, but the reader still receives the delivery failure.
 - The coordinator does not drop an arbitrary chunk. A missing middle piece breaks the ordered sound.

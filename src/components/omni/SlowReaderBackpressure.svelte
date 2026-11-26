@@ -316,7 +316,7 @@
           <rect x={panel.x} y={panel.y} width={phone ? 270 : 300} height={panel.h} rx="11" fill="var(--bg)" stroke="var(--line)" />
           <text x={panel.x + 16} y={panel.y + 30} class="tag strong">{t(panel.title, panel.titleZh)}</text>
           <rect x={panel.x + 16} y={panel.y + 52} width={phone ? 238 : 268} height="54" rx="8" fill={failed ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={failed ? 'var(--gen)' : 'var(--accent)'} style="transition: fill 400ms, stroke 400ms" />
-          <text x={panel.x + 30} y={panel.y + 86} class="result">{DELIVERY_CLOSE_CASE_BYTES} B {t('queued audio', '排队声音')}</text>
+          <text x={panel.x + 30} y={panel.y + 86} class="result">{failed ? `${DELIVERY_CLOSE_CASE_BYTES} B → 0 B` : `${DELIVERY_CLOSE_CASE_BYTES} B ${t('queued audio', '排队声音')}`}</text>
           <text x={panel.x + (phone ? 135 : 150)} y={panel.y + 132} text-anchor="middle" class="result">↓</text>
           <g opacity={failed ? 1 : 0.1} style="transition: opacity 400ms">
             <rect x={panel.x + 16} y={panel.y + 150} width={phone ? 238 : 268} height="50" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
