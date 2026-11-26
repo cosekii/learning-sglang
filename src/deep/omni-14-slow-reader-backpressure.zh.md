@@ -240,7 +240,7 @@ $$
 
 ## 第 7 步 · 响应开始前后，失败输出不同
 
-> **一句话：** 首个声音前，HTTP 返回 JSON 503；开始后的失败按连接改用 error 事件或响应流提前结束。
+> **一句话：** 首个声音前，HTTP SSE 和 raw audio 返回 JSON 503；开始后的失败按连接改用 error 事件或响应流提前结束。
 
 ### 图上是什么
 
@@ -260,7 +260,7 @@ $$
 | 语音 WebSocket | `error` 事件和自己的完成处理 |
 | raw HTTP audio，响应开始后 | 响应流提前结束，没有通用错误外壳 |
 
-SSE 在已经发出声音时还会写入 `partial_audio=true` 和 `action=discard`，提示客户端丢掉不完整声音。实时 session 的输出预算和 close code 是另一套协议，不在本步范围内。这个上限不在 admission 拒绝新请求。
+SSE 在已经发出声音时还会写入 `partial_audio=true` 和 `action=discard`，提示客户端丢掉不完整声音。WebSocket 的完成路径不在本步展开。实时 session 的输出预算和 close code 是另一套协议，不在本步范围内。这个上限不在 admission 拒绝新请求。
 
 ### 边界与出处
 
@@ -306,7 +306,7 @@ $$
 ### 两种清理保证
 
 - 队列清理：取走错误或关闭读者会释放流队列和剩余积压。
-- 流 ID 清理：只有 abort 成功、ownership 已完成或后续恢复时才释放 ID。abort transport 失败时，请求的工作记录可能继续占用 ID。
+- 流 ID 清理：只有 abort 成功、ownership 已完成或后续恢复时才释放 ID。ownership 已完成表示不需要再次 abort；后续恢复机制不在本章展开。abort transport 失败时，请求的工作记录可能继续占用 ID。
 
 ### 边界与出处
 

@@ -240,7 +240,7 @@ The reader now has a failed stream. The next step shows how each connection type
 
 ## Step 7 · Failure output before and after the response starts
 
-> **In one line:** HTTP returns JSON 503 before first audio; later failures use an error event or an early response-stream ending, depending on the connection.
+> **In one line:** HTTP SSE and raw audio return JSON 503 before first audio; later failures use an error event or an early response-stream ending, depending on the connection.
 
 ### On the stage
 
@@ -260,7 +260,7 @@ The reader now has a failed stream. The next step shows how each connection type
 | Speech WebSocket | `error` event and its own completion handling |
 | Raw HTTP audio, after the response starts | Response stream ends early; no general error envelope |
 
-After emitting audio, SSE also writes `partial_audio=true` and `action=discard`, telling the client to discard the incomplete audio. Realtime-session output budgets and close codes use a separate protocol and sit outside this step. This cap does not refuse new requests at admission.
+After emitting audio, SSE also writes `partial_audio=true` and `action=discard`, telling the client to discard the incomplete audio. The WebSocket completion path is deliberately not expanded. Realtime-session output budgets and close codes use a separate protocol and sit outside this step. This cap does not refuse new requests at admission.
 
 ### Boundary and sources
 
@@ -306,7 +306,7 @@ The cap-failure panel already reached 0 B during eviction. Finished generation i
 ### Two cleanup guarantees
 
 - Queue cleanup: taking the error or closing the reader releases the stream queue and remaining backlog.
-- Stream-ID cleanup: a successful abort, ownership that was already complete, or later recovery releases the ID. Abort-transport failure can leave the request work record holding it.
+- Stream-ID cleanup: only a successful abort, already-complete ownership, or later recovery releases the ID. Already-complete ownership needs no new abort. The recovery mechanism is outside this chapter. Abort-transport failure can leave the request work record holding the ID.
 
 ### Boundary and sources
 

@@ -62,10 +62,10 @@
     caption: 'A cap failure ends the whole stream. It aborts generation only if generation is still running.',
     captionZh: '超过上限会结束整条流。只有还在生成时，才中止生成。',
   }, {
-    caption: 'Before first audio, HTTP returns JSON 503. After SSE starts, an error event reports failure; raw response streams only end early.',
-    captionZh: '首个声音前，HTTP 返回 JSON 503。SSE 开始后改发 error 事件，raw 响应流只能提前结束。',
+    caption: 'Before first audio, HTTP SSE and raw audio return JSON 503. After SSE starts, an error event reports failure; raw response streams only end early.',
+    captionZh: '首个声音前，HTTP SSE 和 raw audio 返回 JSON 503。SSE 开始后改发 error 事件，raw 响应流只能提前结束。',
   }, {
-    caption: 'Closing frees queue bytes, not necessarily the stream ID. Two API processes share one URL: which takes the next request?',
+    caption: 'Closing releases the queue and backlog but may keep the stream ID. Two API processes share one URL: which takes the next request?',
     captionZh: '关闭会释放队列和积压，但不保证释放流 ID。两个 API 进程共用网址，谁接收下个请求？',
   }];
   let step = $state(0);
@@ -317,7 +317,7 @@
             <text x={panel.x + 20} y={panel.y + 240} class="tag">{t('The reader sees the response stream end.', '读者看到响应流提前结束。')}</text>
           {/if}
         {/each}
-        <text x={W / 2} y={phone ? 724 : 526} text-anchor="middle" class="tag">{t('This cap does not refuse new requests.', '这个上限不会因此拒绝新请求。')}</text>
+        <text x={W / 2} y={phone ? 724 : 526} text-anchor="middle" class="tag">{t('This cap does not reject a request when it arrives.', '这个上限不在请求到达时拒绝它。')}</text>
         <text x={W / 2} y={phone ? 782 : 580} text-anchor="middle" class="rowlabel">{t('What remains until the reader closes?', '读者关闭以前，还留着什么？')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Constructed failure; no live connection was measured.', '构造失败场景，未测量真实连接。')}</text>
       {:else if step === 7}
