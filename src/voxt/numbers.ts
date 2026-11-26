@@ -202,8 +202,11 @@ export const VOXT_TRANSCRIBE_SPEECH_ENDS_MS = [2900, 7400];
 export const VOXT_TRANSCRIBE_CUE_TEXT = ['Good morning.', 'See you at noon.'];
 
 // Constructed nine-second stretch with no 450 ms pause: the 7-second cap cuts it.
+// The input quiet window is 6.45–6.55 s; the first speech frame is buffered twice,
+// so the reported cut moves one 10 ms frame later, to 6.51 s.
 export const VOXT_TRANSCRIBE_LONG_SECONDS = 9;
-export const VOXT_TRANSCRIBE_CUT_MS = 6500;
+export const VOXT_TRANSCRIBE_INPUT_QUIET_MS = 6500;
+export const VOXT_TRANSCRIBE_CUT_MS = 6510;
 export const VOXT_TRANSCRIBE_REMAIN_MS = VOXT_TRANSCRIBE_LONG_SECONDS * 1000 - VOXT_TRANSCRIBE_CUT_MS;
 
 // Public request-line cap (Voxt/internal/fileasr/socket.go).

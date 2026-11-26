@@ -26,6 +26,7 @@
     VOXT_TRANSCRIBE_CUE_TEXT,
     VOXT_TRANSCRIBE_LONG_SECONDS,
     VOXT_TRANSCRIBE_CUT_MS,
+    VOXT_TRANSCRIBE_INPUT_QUIET_MS,
     VOXT_TRANSCRIBE_REMAIN_MS,
     VOXT_TRANSCRIBE_MAX_REQUEST_BYTES,
     VOXT_WAV_HEADER_BYTES,
@@ -80,8 +81,8 @@
     en: 'A new cue starts 300 ms before its first speech frame, so the first consonant is not lost. Cue two starts at 3.40 seconds while its speech starts at 3.70.',
     zh: '新的一句在第一个讲话帧前 300 ms 开始，这样第一个辅音不会被切掉。第 2 句从 3.40 秒开始，而讲话从 3.70 秒开始。',
   }, {
-    en: 'A constructed nine-second stretch never pauses for 450 ms. At seven seconds the cutter searches the last second for the quietest 100 ms and cuts at 6.5 seconds. The rest becomes the next cue.',
-    zh: '构造的九秒连续讲话没有 450 ms 的停顿。到七秒时，切句器在最后 1 秒里找最安静的 100 ms，在 6.5 秒切开。剩下的成为下一句。',
+    en: 'A constructed nine-second stretch never pauses for 450 ms. At seven seconds the cutter searches the last second for the quietest 100 ms and reports the cut at 6.51 seconds. The rest becomes the next cue.',
+    zh: '构造的九秒连续讲话没有 450 ms 的停顿。到七秒时，切句器在最后 1 秒里找最安静的 100 ms，报告切点在 6.51 秒。剩下的成为下一句。',
   }, {
     en: 'Voxt sends each cue to the speech model chosen for Transcribe. Cue one returns Good morning and cue two returns See you at noon. A cue whose text is empty is left out.',
     zh: 'Voxt 把每一句送给 Transcribe 选定的语音模型。第一句返回 Good morning，第二句返回 See you at noon。文字为空的句子会被丢掉。',
@@ -127,8 +128,8 @@
   const photoCount = Math.round(VOXT_TRANSCRIBE_MEETING_MB / VOXT_TRANSCRIBE_PHOTO_MB);
   const searchStartMs = VOXT_CUTTER_MAX_SEGMENT_S * 1000 - VOXT_CUTTER_QUIET_SEARCH_MS;
   const searchEndMs = VOXT_CUTTER_MAX_SEGMENT_S * 1000;
-  const quietFromMs = VOXT_TRANSCRIBE_CUT_MS - VOXT_CUTTER_QUIET_WINDOW_MS / 2;
-  const quietToMs = VOXT_TRANSCRIBE_CUT_MS + VOXT_CUTTER_QUIET_WINDOW_MS / 2;
+  const quietFromMs = VOXT_TRANSCRIBE_INPUT_QUIET_MS - VOXT_CUTTER_QUIET_WINDOW_MS / 2;
+  const quietToMs = VOXT_TRANSCRIBE_INPUT_QUIET_MS + VOXT_CUTTER_QUIET_WINDOW_MS / 2;
 </script>
 
 <figure class="viz">
@@ -468,7 +469,7 @@
           <text x="50" y="264" class="detail">{t(`cut inside the quietest ${VOXT_CUTTER_QUIET_WINDOW_MS} ms`, `在最安静的 ${VOXT_CUTTER_QUIET_WINDOW_MS} ms 里切`)}</text>
           <text x="40" y="290" class="pt">·</text>
           <text x="50" y="290" class="detail">{t(`the rest is ${sec(VOXT_TRANSCRIBE_REMAIN_MS)} s and becomes the next cue`, `剩下 ${sec(VOXT_TRANSCRIBE_REMAIN_MS)} 秒，成为下一句`)}</text>
-          <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Constructed 9-second stretch; the quiet window is placed at the cut.', '构造的 9 秒连续讲话；安静窗就放在切点。')}</text>
+          <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Constructed 9-second stretch; quiet 6.45–6.55 s, reported cut 6.51 s.', '构造的 9 秒连续讲话；安静窗 6.45–6.55 秒，报告切点 6.51 秒。')}</text>
         {:else}
           <text x="70" y="82" text-anchor="middle" class="label">{t('CUE 1', '第 1 段')}</text>
           <text x="225" y="82" text-anchor="middle" class="label">{t('CUE 2', '第 2 段')}</text>

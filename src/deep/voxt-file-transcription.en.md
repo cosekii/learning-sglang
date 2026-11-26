@@ -184,7 +184,7 @@ The start of a cue has one more rule. Step 5 covers the 300 ms lead-in.
 
 ### The start and the minimum
 
-`pushFrame` adds the current frame to the ring before it calls `startUtterance` (`cutter.go:51-62`, `95-105`). `startUtterance` copies the whole ring into the cue buffer, then the loop appends the same first speech frame again (`cutter.go:63-69`). With a full 300 ms ring, the cue therefore holds 290 ms of earlier sound and the first 10 ms speech frame twice. The reported start is still `speech onset − 300 ms`.
+`pushFrame` adds the current frame to the ring before it calls `startUtterance` (`cutter.go:51-62`, `95-105`). `startUtterance` copies the whole ring into the cue buffer, then the loop appends the same first speech frame again (`cutter.go:62`). With a full 300 ms ring, the cue therefore holds 290 ms of earlier sound and the first 10 ms speech frame twice. The reported start is still `speech onset − 300 ms`.
 
 A short cue is refused in `finalize(end, true)`: `voicedDur < cutterMinUtterance` (350 ms) returns `false` (`cutter.go:119-127`). This runs on the pause path. When the file ends, `fileasr.Run` calls `c.Flush()` (`fileasr.go:67-68`), and `Flush` emits the remaining buffer directly, without calling `finalize` and without the 350 ms check (`cutter.go:84-92`).
 
@@ -218,10 +218,10 @@ If someone keeps talking, the 450 ms rule never fires. Step 6 covers the 7-secon
 
 ### On the stage
 
-- The two blue rules are piece 1, 0–6.5 s, and piece 2, 6.5–9 s.
+- The two blue rules are piece 1, 0–6.51 s, and piece 2, 6.51–9 s.
 - The waveform is blue except for a small grey stretch at 6.45–6.55 s: a constructed quiet window.
-- The orange box marks the 6.0–7.0 s search range, and the dashed line falls on the 6.5 s cut.
-- The three lines below say: 7 s arrived without a pause, cut inside the quietest 100 ms, and the remaining 2.5 s becomes the next cue.
+- The orange box marks the 6.0–7.0 s search range, and the dashed line falls on the 6.51 s reported cut.
+- The three lines below say: 7 s arrived without a pause, cut inside the quietest 100 ms, and the remaining 2.49 s becomes the next cue.
 
 ### Trigger and cut point
 
@@ -236,7 +236,7 @@ $$ \text{search} = [\,7 - 1,\ 7\,]\ \text{s},\qquad w^* = \arg\min_{w \subset \t
 | $w$ | a 100 ms window | `cutterQuietWindow`, `cutter.go:17` |
 | $w^*$ | the quietest window | `quietestCutOffset`, `cutter.go:189-199` |
 | RMS | sound energy inside the window | `frameRMS`, `cutter.go:165` |
-| cut | the midpoint of $w^*$ | `bestOff + winBytes/2`, `cutter.go:198`; 6.5 s here |
+| cut | the midpoint of $w^*$ in the buffer | `bestOff + winBytes/2`, `cutter.go:198`; 6.51 s here |
 
 ### Plugging in the stage's numbers
 
@@ -244,11 +244,18 @@ $$ \text{search} = [\,7 - 1,\ 7\,]\ \text{s},\qquad w^* = \arg\min_{w \subset \t
 |---|---|---|
 | continuous speech | 9 s | constructed |
 | search range | 6.0–7.0 s | $7 - 1$ to $7$ |
-| quiet window | 6.45–6.55 s | constructed around 6.5 s |
-| piece 1 | 0–6.5 s | the cut |
-| piece 2 | 6.5–9 s | $9 - 6.5 = 2.5$ |
+| input quiet window | 6.45–6.55 s | constructed |
+| buffer at 7 s | 701 frames | 700 input frames plus a second copy of the first speech frame |
+| search start in the buffer | frame 601 | $701 - 100$ |
+| quiet frames in the buffer | 646–655 | input frames 645–654, shifted by the duplicate |
+| best offset | 45 frames | $646 - 601$ |
+| reported cut | 6.51 s | $(601 + 45 + 5) \times 10$ ms |
+| piece 1 | 0–6.51 s | the cut |
+| piece 2 | 6.51–9 s | $9 - 6.51 = 2.49$ |
 
-The cut is not fixed at 6.5 s. The 6.5 in this step is a constructed example, and the quiet window 6.45–6.55 s is placed there, so its midpoint is 6.5. The real cut is the midpoint of whichever 100 ms window is quietest in the last second. `cutAtQuietest` keeps the sound after the cut in `c.buf` and sets `utterStart` to the cut (`cutter.go:135-146`).
+The first speech frame is stored twice. `pushFrame` adds it to the ring, `startUtterance` copies the whole ring (now holding that frame) into `c.buf`, and `pushFrame` then appends the same frame again (`cutter.go:51-62`). That extra frame shifts every later sample by 10 ms: the input quiet window at 6.45–6.55 s sits at buffer frames 646–655. The buffer holds 701 frames when input time reaches 7 s, so `quietestCutOffset` searches from buffer frame 601. The quiet window's offset is 45 frames, and the function adds half a window, 5 frames (`cutter.go:179-199`). The reported cut is therefore 6.51 s, one frame after the input window's 6.50 s midpoint. The next cue starts at that cut, so 2.49 s remains to 9 s.
+
+The cut is not fixed at 6.51 s. The quiet window in this step is constructed, and the reported cut follows whichever 100 ms window is quietest in the last second. `cutAtQuietest` keeps the sound after the cut in `c.buf` and sets `utterStart` to the cut (`cutter.go:135-146`).
 
 ### Next
 
