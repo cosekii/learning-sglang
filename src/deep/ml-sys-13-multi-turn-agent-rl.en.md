@@ -252,13 +252,13 @@ Sources: `verl-project/verl@c5b189a1af496d0bc68320cd1d5bd7a1f1e3638a`, `verl/exp
 
 ## Step 8 · Right-pad responses into a training batch
 
-**One sentence.** The configured `response_length` is twelve, so Sample B gains five empty cells after seven response tokens, and both masks exclude padding.
+**One sentence.** The configured `response_length` is twelve, so Sample S2 gains five empty cells after seven response tokens, and both masks exclude padding.
 
 ### On the stage
 
 - This example configures `actor_rollout_ref.rollout.response_length` as twelve. It does not choose the width from the longest response in the current batch.
-- In the first card, Sample A's row has twelve blue real-response cells and already matches the configured width.
-- Sample B's row starts with four blue `A` cells and three blue `O` cells. Five orange right-side padding cells then bring it to twelve cells.
+- In the first card, Sample S1's row has twelve blue real-response cells and already matches the configured width.
+- Sample S2's row starts with four blue `A` cells and three blue `O` cells. Five orange right-side padding cells then bring it to twelve cells.
 - The response-mask card assigns 1 to the four actions and 0 to the three observations and five padding cells. Observations and padding do not teach the model.
 - The response `attention_mask` card assigns 1 to all seven real responses and 0 to padding. Other batch fields stay outside this step.
 
@@ -275,9 +275,9 @@ $$M=M_{\text{raw}}\odot Z$$
 
 ### The numbers on the stage
 
-B's raw response mask is `[1,1,1,1,0,0,0,0,0,0,0,0]`, and its response attention mask is `[1,1,1,1,1,1,1,0,0,0,0,0]`. Their elementwise product leaves response mask 0 on observations and padding.
+S2's raw response mask is `[1,1,1,1,0,0,0,0,0,0,0,0]`, and its response attention mask is `[1,1,1,1,1,1,1,0,0,0,0,0]`. Their elementwise product leaves response mask 0 on observations and padding.
 
-Sample B's width comes from the configuration: $7+5=12$. A longer response cannot exceed that configuration; the pinned implementation truncates to `response_length` before padding. Padding aligns tensor shapes without adding interaction content.
+Sample S2's width comes from the configuration: $7+5=12$. A longer response cannot exceed that configuration; the pinned implementation truncates to `response_length` before padding. Padding aligns tensor shapes without adding interaction content.
 
 ### Next
 

@@ -264,14 +264,14 @@
     legend: 'Blue = real data · orange = padding · red = current', legendZh: '蓝 = 真实数据 · 橙 = padding · 红 = 当前',
     compare: true,
     nodes: [
-      { title: 'TWO SAMPLES', titleZh: '两个样本', result: 'A: 12 · B: 7 + 5', resultZh: 'A：12 · B：7 + 5', body: 'right-pad B to configured 12', bodyZh: 'B 右侧补齐到配置的 12 格', tone: 'orange' },
-      { title: 'RESPONSE MASK', titleZh: 'RESPONSE MASK', result: 'B: 1×4, 0×8', resultZh: 'B：1×4，0×8', body: 'skip O and padding', bodyZh: '跳过 O 和 padding', tone: 'blue' },
-      { title: 'RESPONSE ATTENTION MASK', titleZh: '响应 ATTENTION MASK', result: 'B: 1×7, 0×5', resultZh: 'B：1×7，0×5', body: 'real responses only', bodyZh: '只保留真实响应', tone: 'blue' },
+      { title: 'TWO SAMPLES', titleZh: '两个样本', result: 'S1: 12 · S2: 7 + 5', resultZh: 'S1：12 · S2：7 + 5', body: 'right-pad S2 to configured 12', bodyZh: 'S2 右侧补齐到配置的 12 格', tone: 'orange' },
+      { title: 'RESPONSE MASK', titleZh: 'RESPONSE MASK', result: 'S2: 1×4, 0×8', resultZh: 'S2：1×4，0×8', body: 'skip O and padding', bodyZh: '跳过 O 和 padding', tone: 'blue' },
+      { title: 'RESPONSE ATTENTION MASK', titleZh: '响应 ATTENTION MASK', result: 'S2: 1×7, 0×5', resultZh: 'S2：1×7，0×5', body: 'real responses only', bodyZh: '只保留真实响应', tone: 'blue' },
     ],
     formulas: [
-      { en: `B response: ${N.AGENT_SHORT_RESPONSE_TOKENS} real + ${N.AGENT_SHORT_PADDING_TOKENS} pad = ${N.AGENT_RESPONSE_TOKENS} cells`, zh: `B 响应：${N.AGENT_SHORT_RESPONSE_TOKENS} 真实 + ${N.AGENT_SHORT_PADDING_TOKENS} padding = ${N.AGENT_RESPONSE_TOKENS} 格` },
-      { en: 'B response_mask: 1×4 → 0×3 → 0×5', zh: 'B response_mask：1×4 → 0×3 → 0×5' },
-      { en: 'B attention_mask: 1×7 → 0×5', zh: 'B attention_mask：1×7 → 0×5' },
+      { en: `S2 response: ${N.AGENT_SHORT_RESPONSE_TOKENS} real + ${N.AGENT_SHORT_PADDING_TOKENS} pad = ${N.AGENT_RESPONSE_TOKENS} cells`, zh: `S2 响应：${N.AGENT_SHORT_RESPONSE_TOKENS} 真实 + ${N.AGENT_SHORT_PADDING_TOKENS} padding = ${N.AGENT_RESPONSE_TOKENS} 格` },
+      { en: 'S2 response_mask: 1×4 → 0×3 → 0×5', zh: 'S2 response_mask：1×4 → 0×3 → 0×5' },
+      { en: 'S2 attention_mask: 1×7 → 0×5', zh: 'S2 attention_mask：1×7 → 0×5' },
       { en: 'response_mask = raw mask × response attention mask', zh: 'response_mask = 原始 mask × 响应 attention mask' },
       { en: 'Next: which takes longest: making A, getting O, or training this batch?', zh: '下一章：生成 A、得到 O 和训练这个 batch，哪段等待最长？' },
     ],
@@ -281,7 +281,7 @@
       foot: 'Constructed config, not the batch maximum.', footZh: '构造的配置长度，不是 batch 最大值。',
       legend: 'Blue = real · orange = padding · red = current', legendZh: '蓝 = 真实 · 橙 = padding · 红 = 当前',
       formulas: [
-        { en: 'B response: 7 real + 5 pad = 12', zh: 'B 响应：7 真实 + 5 padding = 12 格' },
+        { en: 'S2 response: 7 real + 5 pad = 12', zh: 'S2 响应：7 真实 + 5 padding = 12 格' },
         { en: 'response_mask: 1×4 → 0×3 → 0×5', zh: 'response_mask：1×4 → 0×3 → 0×5' },
         { en: 'attention_mask: 1×7 → 0×5', zh: 'attention_mask：1×7 → 0×5' },
         { en: 'response_mask = raw mask × attention', zh: 'response_mask = 原始 mask × attention' },
@@ -464,9 +464,9 @@
     {/if}
   {:else if step === 7}
     {#if i === 0}
-      <text x={x + 10} y={y + 72} class="tiny">A</text>
+      <text x={x + 10} y={y + 72} class="tiny">S1</text>
       {@render tokenStrip(x + 26, y + 58, w - 36, tokenCells('', N.AGENT_RESPONSE_TOKENS, 'blue'))}
-      <text x={x + 10} y={y + 98} class="tiny">B</text>
+      <text x={x + 10} y={y + 98} class="tiny">S2</text>
       {@const real = [...tokenCells('A', N.AGENT_FIRST_ACTION_TOKENS, 'blue'), ...tokenCells('O', N.AGENT_OBSERVATION_TOKENS, 'blue')]}
       {@render tokenStrip(x + 26, y + 84, w - 36, phase >= 1 ? [...real, ...tokenCells('', N.AGENT_SHORT_PADDING_TOKENS, 'orange')] : real)}
     {:else if i === 1 && phase >= 2}

@@ -252,13 +252,13 @@ server 只看到输入 token 和采样参数。`ToolAgentLoop` 保有工具状�
 
 ## 第 8 步 · 右侧 padding 对齐训练 batch
 
-**一句话。** 配置的 `response_length` 是 12，样本 B 的 7 个响应 token 右侧补 5 格，两种 mask 都排除 padding。
+**一句话。** 配置的 `response_length` 是 12，样本 S2 的 7 个响应 token 右侧补 5 格，两种 mask 都排除 padding。
 
 ### 图上是什么
 
 - 本例把 `actor_rollout_ref.rollout.response_length` 配置为 12，不是从当前 batch 的最长响应临时决定。
-- 第一张卡里，样本 A 这一行有 12 个蓝色真实响应方块，已经符合配置宽度。
-- 样本 B 这一行先有 4 个蓝色 `A` 方块和 3 个蓝色 `O` 方块，随后右侧补进 5 个橙色 padding 方块，凑成 12 格。
+- 第一张卡里，样本 S1 这一行有 12 个蓝色真实响应方块，已经符合配置宽度。
+- 样本 S2 这一行先有 4 个蓝色 `A` 方块和 3 个蓝色 `O` 方块，随后右侧补进 5 个橙色 padding 方块，凑成 12 格。
 - response mask 卡给 4 个动作标 1，给 3 个观察和 5 个 padding 标 0。观察和 padding 都不参与学习。
 - 响应 `attention_mask` 卡给 7 个真实响应标 1，给 padding 标 0。本步不展开其他 batch 字段。
 
@@ -275,9 +275,9 @@ $$M=M_{\text{raw}}\odot Z$$
 
 ### 代入图上的数
 
-B 的原始 response mask 为 `[1,1,1,1,0,0,0,0,0,0,0,0]`，响应 attention mask 为 `[1,1,1,1,1,1,1,0,0,0,0,0]`。逐元素相乘后，观察与 padding 的 response mask 都是 0。
+S2 的原始 response mask 为 `[1,1,1,1,0,0,0,0,0,0,0,0]`，响应 attention mask 为 `[1,1,1,1,1,1,1,0,0,0,0,0]`。逐元素相乘后，观察与 padding 的 response mask 都是 0。
 
-样本 B 的宽度来自配置：$7+5=12$。如果换一条更长的响应，也不能超出这个配置；pinned 实现先按 `response_length` 截断，再 padding。padding 只让张量形状对齐，不增加交互内容。
+样本 S2 的宽度来自配置：$7+5=12$。如果换一条更长的响应，也不能超出这个配置；pinned 实现先按 `response_length` 截断，再 padding。padding 只让张量形状对齐，不增加交互内容。
 
 ### 接下来
 
