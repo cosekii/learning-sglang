@@ -382,7 +382,7 @@
         <text x={W / 2} y={phone ? 735 : 495} text-anchor="middle" class="small strong" opacity={phase >= 4 ? 1 : 0.12} style="transition: opacity 350ms">{t('This response stops; B does not continue it.', '这个响应停止，B 不会接着发送。')}</text>
         <text x={W / 2} y={phone ? 778 : 545} text-anchor="middle" class="result" style="fill:var(--gen)">{t(phone ? 'What does the client receive?' : 'What does the client receive, and when do later requests avoid C?', phone ? '客户端会收到什么？' : '客户端会收到什么？后续请求何时不再选择 C？')}</text>
         {#if phone}
-          <text x="150" y="815" text-anchor="middle" class="result" style="fill:var(--gen)">后续请求何时不再选择 C？</text>
+          <text x="150" y="815" text-anchor="middle" class="result" style="fill:var(--gen)">{t('When do later requests avoid C?', '后续请求何时不再选择 C？')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Next chapter: worker failure and graceful exit.', '下一章：worker 故障与退出。')}</text>
       {/if}
