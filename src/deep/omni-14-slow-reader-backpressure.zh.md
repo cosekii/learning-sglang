@@ -228,7 +228,7 @@ $$
 | 生成仍在运行 | 广播 abort | 收到流失败 |
 | 生成已经结束 | 没有可中止的工作 | 收到流失败 |
 
-最后一条带声音的完成消息也经过同一记账函数，所以「生成已经结束」不等于「不会再超过交付上限」。成功的 abort 会释放请求所有权；transport 失败时保留所有权的恢复路径不在本章展开。
+最后一条带声音的完成消息也经过同一记账函数，所以「生成已经结束」不等于「不会再超过交付上限」。成功的 abort 会释放请求所有权；第 8 步说明 abort transport 失败后的保留路径。
 
 ### 边界与出处
 
@@ -270,16 +270,16 @@ SSE 在已经发出声音时还会写入 `partial_audio=true` 和 `action=discar
 
 下一步分开队列清理和流 ID 释放。
 
-## 第 8 步 · 两种关闭情况，两种剩余内容
+## 第 8 步 · 队列清理不保证释放流 ID
 
-> **一句话：** 提前关闭要减去未读字节；上限失败后这些字节已经归零，只剩错误队列和流 ID 要释放。
+> **一句话：** 关闭会释放队列和剩余积压；abort transport 失败时，请求的工作记录仍可能占住流 ID。
 
 ### 图上是什么
 
-- 左图是没有上限失败的提前关闭。12 B 仍未读取，关闭时如果工作记录还在就中止工作，然后删除队列、积压和流 ID。
+- 左图是没有上限失败的提前关闭。12 B 仍未读取，关闭时如果工作记录还在就中止工作，并删除队列和积压。abort transport 失败时，工作记录和流 ID 可能留下。
 - 「仍持有」指请求的工作记录还在 coordinator 的 `requests` 里。第 3 章第 2 步已经展示工作记录和请求名字的关系。
 - 右图是上限失败之后。淘汰已经减去全部声音字节，所以是 0 B；错误仍在队列里，流 ID 这个名字仍被占用。
-- 读者取走错误或关闭后，剩余队列和流 ID 都释放。右图不能再减一次 12 B。
+- 取走错误或关闭读者会释放队列和剩余积压，不会再减一次 12 B。abort transport 失败时，工作记录和流 ID 仍可能留下。
 
 ### 公式
 
@@ -303,10 +303,15 @@ $$
 
 右图在上限失败时已经变成 0 B。已经完成的生成不会因为读者关闭而再次中止，关闭流本身的清理和前一阶段 abort 是两件事。
 
+### 两种清理保证
+
+- 队列清理：取走错误或关闭读者会释放流队列和剩余积压。
+- 流 ID 清理：只有 abort 成功、ownership 已完成或后续恢复时才释放 ID。abort transport 失败时，请求的工作记录可能继续占用 ID。
+
 ### 边界与出处
 
-关闭时的条件 abort、队列删除和扣账见 `sglang_omni/pipeline/coordinator.py:497-553`。提前关闭测试见 `tests/unit_test/pipeline/test_coordinator.py:1625-1638`。上限失败时清空声音消息、保留错误队列和 ID 见 `sglang_omni/pipeline/coordinator.py:1116-1144` 及 `tests/unit_test/pipeline/test_coordinator.py:1491-1505`。
+关闭时的条件 abort、队列删除和扣账见 `sglang_omni/pipeline/coordinator.py:497-553`。提前关闭测试见 `tests/unit_test/pipeline/test_coordinator.py:1625-1638`。上限失败时清空声音消息和保留错误队列见 `sglang_omni/pipeline/coordinator.py:1116-1144` 及 `tests/unit_test/pipeline/test_coordinator.py:1491-1505`。abort transport 失败、保留工作记录和释放路径见 `sglang_omni/pipeline/coordinator.py:534-554,733-740,761-835,940-958` 及 `tests/unit_test/pipeline/test_coordinator.py:1643-1664`。
 
 ### 接下来
 
-公开网址是客户端发送请求的地址。规划中的第 15 章把两个 API 进程放到同一个公开网址后，跟着 router 看下一个请求如何选择进程。
+公开网址是客户端发送请求的地址。第 15 章把两个 API 进程放到同一个公开网址后，跟着 router 看下一个请求如何选择进程。

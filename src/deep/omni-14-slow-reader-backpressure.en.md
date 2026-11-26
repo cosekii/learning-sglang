@@ -228,7 +228,7 @@ The next step separates what failure stops in the generator from what it stops i
 | Generation running | Abort broadcast | Stream failure |
 | Generation finished | No work left to abort | Stream failure |
 
-A terminal message containing audio passes through the same accounting function. Finished generation therefore does not rule out a later delivery-cap failure. A successful abort releases request ownership; the ownership-retention path after an abort-transport failure is outside this chapter.
+A terminal message containing audio passes through the same accounting function. Finished generation therefore does not rule out a later delivery-cap failure. A successful abort releases request ownership; Step 8 covers retention after an abort-transport failure.
 
 ### Boundary and sources
 
@@ -270,16 +270,16 @@ The pre-audio JSON 503 paths are in `sglang_omni/serve/openai_api.py:2202-2260,1
 
 The next step separates queue cleanup from stream-ID release.
 
-## Step 8 · Two close cases, two different leftovers
+## Step 8 · Queue cleanup does not guarantee stream-ID release
 
-> **In one line:** Early close subtracts unread bytes; cap failure already removed them, leaving only the error queue and stream ID to release.
+> **In one line:** Closing releases the queue and remaining backlog; the request work record can still hold the stream ID after an abort-transport failure.
 
 ### On the stage
 
-- The left panel is an early close with no cap failure. It still has 12 B unread. Closing aborts work if its work record remains, then removes the queue, backlog and stream ID.
+- The left panel is an early close with no cap failure. It still has 12 B unread. Closing aborts work if its work record remains and removes the queue and backlog. Abort-transport failure can leave the work record and stream ID behind.
 - “Owned” means the request's work record remains in the coordinator's `requests` map. Ch. 3 Step 2 showed that record and the request's taken name.
 - The right panel follows a cap failure. Eviction already removed all counted audio bytes, leaving 0 B. The error remains queued and the stream ID, the stream's name, remains taken.
-- Taking the error or closing the reader releases that queue and ID. The right panel must not subtract another 12 B.
+- Taking the error or closing the reader releases the queue and remaining backlog without subtracting another 12 B. Abort-transport failure can still leave the work record and stream ID behind.
 
 ### Formula
 
@@ -303,10 +303,15 @@ $$
 
 The cap-failure panel already reached 0 B during eviction. Finished generation is not aborted again when the reader closes. Closing the stream and aborting earlier stage work are separate actions.
 
+### Two cleanup guarantees
+
+- Queue cleanup: taking the error or closing the reader releases the stream queue and remaining backlog.
+- Stream-ID cleanup: a successful abort, ownership that was already complete, or later recovery releases the ID. Abort-transport failure can leave the request work record holding it.
+
 ### Boundary and sources
 
-Conditional abort, queue removal and accounting on close are in `sglang_omni/pipeline/coordinator.py:497-553`. The early-close test is `tests/unit_test/pipeline/test_coordinator.py:1625-1638`. Audio draining during cap failure and the remaining error queue and ID are in `sglang_omni/pipeline/coordinator.py:1116-1144` and `tests/unit_test/pipeline/test_coordinator.py:1491-1505`.
+Conditional abort, queue removal and accounting on close are in `sglang_omni/pipeline/coordinator.py:497-553`. The early-close test is `tests/unit_test/pipeline/test_coordinator.py:1625-1638`. Audio draining during cap failure and the remaining error queue are in `sglang_omni/pipeline/coordinator.py:1116-1144` and `tests/unit_test/pipeline/test_coordinator.py:1491-1505`. Abort-transport failure, retained work records and the release paths are in `sglang_omni/pipeline/coordinator.py:534-554,733-740,761-835,940-958` and `tests/unit_test/pipeline/test_coordinator.py:1643-1664`.
 
 ### Next
 
-A public URL is the address clients use for requests. The planned Chapter 15 puts two API processes behind one public URL and follows the router as it chooses a process for the next request.
+A public URL is the address clients use for requests. Chapter 15 puts two API processes behind one public URL and follows the router as it chooses a process for the next request.

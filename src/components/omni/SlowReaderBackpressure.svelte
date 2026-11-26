@@ -65,8 +65,8 @@
     caption: 'Before first audio, HTTP returns JSON 503. After SSE starts, an error event reports failure; raw response streams only end early.',
     captionZh: '首个声音前，HTTP 返回 JSON 503。SSE 开始后改发 error 事件，raw 响应流只能提前结束。',
   }, {
-    caption: 'Closing the reader releases its queue and aborts owned work. When two API processes share one URL, which takes the next request?',
-    captionZh: '关闭读者会释放队列，并中止仍持有的工作。两个 API 进程共用一个公开网址时，谁接收下一个请求？',
+    caption: 'Closing frees queue bytes, not necessarily the stream ID. Two API processes share one URL: which takes the next request?',
+    captionZh: '关闭会释放队列和积压，但不保证释放流 ID。两个 API 进程共用网址，谁接收下个请求？',
   }];
   let step = $state(0);
   $effect(() => {
@@ -338,13 +338,15 @@
             <text x={panel.x + 28} y={panel.y + 90} class="result">{DELIVERY_CLOSE_CASE_BYTES} B {t('unread before close', '关闭前未读')}</text>
             <text x={panel.x + 20} y={panel.y + 146} class="tag">{t('close: abort if the work record remains', '关闭：工作记录还在就中止')}</text>
             <text x={panel.x + 20} y={panel.y + 178} class="result">{DELIVERY_CLOSE_CASE_BYTES} B → 0 B</text>
-            <text x={panel.x + 20} y={panel.y + 214} class="tag">{t('queue + backlog + stream ID removed', '队列 + 积压 + 流 ID 都删除')}</text>
+            <text x={panel.x + 20} y={panel.y + 214} class="tag">{t('queue + backlog removed', '队列 + 积压都删除')}</text>
+            <text x={panel.x + 20} y={panel.y + 246} class="tag strong">{t('abort message fails → work record + ID can remain', 'abort 消息没送到 → 工作记录和流 ID 可能保留')}</text>
           {:else}
             <rect x={panel.x + 16} y={panel.y + 54} width={phone ? 238 : 268} height="58" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
             <text x={panel.x + 28} y={panel.y + 90} class="result">0 B audio · {t('error waiting', '错误等待读取')}</text>
             <text x={panel.x + 20} y={panel.y + 146} class="tag">{t('stream ID = the stream’s name · still taken', '流 ID = 流的名字 · 仍被占用')}</text>
             <text x={panel.x + 20} y={panel.y + 178} class="tag">{t('take the error OR close the reader', '取走错误，或关闭读者')}</text>
-            <text x={panel.x + 20} y={panel.y + 214} class="tag strong">{t('queue + stream ID released · 0 B', '队列 + 流 ID 都释放 · 0 B')}</text>
+            <text x={panel.x + 20} y={panel.y + 214} class="tag strong">{t('queue + backlog released · 0 B', '队列 + 积压都释放 · 0 B')}</text>
+            <text x={panel.x + 20} y={panel.y + 246} class="tag strong">{t('abort message fails → work record + ID can remain', 'abort 消息没送到 → 工作记录和流 ID 可能保留')}</text>
           {/if}
         {/each}
         <text x={W / 2} y={phone ? 752 : 486} text-anchor="middle" class="tag strong">{t('NEXT · TWO API PROCESSES SHARE ONE PUBLIC URL', '下一步 · 两个 API 进程共用一个公开网址')}</text>
