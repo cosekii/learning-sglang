@@ -1,0 +1,520 @@
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import StepControls from '../StepControls.svelte';
+  import type { NavLink } from '../../chapters';
+  import { lang } from '../../i18n';
+  import type { Deep } from '../../deep';
+  import {
+    VOXT_MODEL_FILE_COUNT,
+    VOXT_MODEL_WEIGHTS_BYTES,
+    VOXT_MODEL_VOCAB_BYTES,
+    VOXT_MODEL_TOTAL_BYTES,
+    VOXT_MODEL_TOTAL_GB,
+    VOXT_MODEL_VAD_BYTES,
+    VOXT_MODEL_JOB_BYTES,
+    VOXT_MODEL_APP_RATIO,
+    VOXT_APP_MB,
+    VOXT_DOWNLOAD_RESERVE_GB,
+    VOXT_SERVER_IDLE_MINUTES,
+    VOXT_SERVER_START_TIMEOUT_S,
+    VOXT_UPDATE_CHECK_HOURS,
+    VOXT_MODEL_COMMIT,
+  } from '../../voxt/numbers';
+
+  let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
+  const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
+  const steps = [{
+    caption: 'Three things: model files, model processes, the app bundle.',
+    captionZh: '三样东西：模型文件、模型进程、应用本身。',
+  }, {
+    caption: "One pinned snapshot names the model's exact files and their fingerprints.",
+    captionZh: '一个固定快照写清模型的文件和指纹。',
+  }, {
+    caption: 'One download job has four parts: resume, room, checks, and needs.',
+    captionZh: '一个下载任务有四部分：续传、空位、校验和所需模型。',
+  }, {
+    caption: 'One server lifetime runs from first use through idle waiting to unload.',
+    captionZh: '服务器的一生：首次使用、空闲等待，最后卸载。',
+  }, {
+    caption: 'An app update has two routes; neither touches the model folder.',
+    captionZh: '应用更新有两条路，都不动模型文件夹。',
+  }, {
+    caption: 'Three endings: files checked, process gone, feed-updated app restarted.',
+    captionZh: '三种收尾：文件验完、进程退出、应用内更新后重启。',
+  }];
+  const ariaLabels = [{
+    en: 'Three things, not one. Model files are 2.47 gigabytes on disk in the model library. The speech server is a running program that loads a model into memory; the Silero voice detector can run beside it. The 0.1.0-beta.1 app bundle is 280 megabytes on disk. Blue marks a file on disk; amber marks a running program. The model arrives after install. Automatic mode stops an idle speech server after ten minutes. An in-app update replaces only the app bundle.',
+    zh: '三样东西，不是一样。模型文件是磁盘上模型库里的 2.47 GB。语音服务器是把模型读进内存的运行程序，Silero 语音检测器可以在旁边运行。0.1.0-beta.1 应用包是磁盘上的 280 MB。蓝色是磁盘上的文件，橙色是运行的程序。模型装好应用后再下载。自动模式让空闲十分钟的语音服务器退出。应用内更新只换应用包。',
+  }, {
+    en: 'A model is pinned to one online repository and one commit, with nine files. The largest file is 2.46 gigabytes. The commit fixes the tested version. LFS files use SHA-256 fingerprints; other files use git blob IDs. The snapshot folder on disk uses the full forty-character commit.',
+    zh: '模型固定在一个网上仓库和一个提交上，共有九个文件。最大的文件是 2.46 GB。提交固定了测试过的版本。LFS 文件用 SHA-256 指纹校验，其他文件用 git blob ID。磁盘上的快照文件夹使用完整的 40 位提交。',
+  }, {
+    en: 'One download job brings the model and the small models it needs. A cancel keeps the bytes already here and the next start continues. LFS files are checked with SHA-256 and other files with git blob IDs; a mismatch is an error. Two gigabytes must stay free. The 1.24 megabyte Silero voice detector finds speech and rides in the same job.',
+    zh: '一个下载任务带来模型和它需要的小模型。取消后已经下到的字节留着，下次接着下。LFS 文件用 SHA-256 校验，其他文件用 git blob ID，不对就报错。磁盘上要留 2 GB 空位。1.24 MB 的 Silero 语音检测器负责找出语音，也在同一个任务里。',
+  }, {
+    en: 'The model files stay on disk. Using a model starts the speech server, a separate program that loads the model into memory. The Silero voice detector has its own small server. Automatic mode stops a server after ten idle minutes; Settings offers other durations or keep until quit. The next use starts it again, but a server not ready in 180 seconds is stopped. Delete requests unloading and then file removal without waiting; a busy server exits after its uses end.',
+    zh: '模型文件留在磁盘上。用模型会启动语音服务器，它是把模型读进内存的另一个程序。Silero 语音检测器有自己的小服务器。自动模式让空闲十分钟后退出，设置里可以改时间或一直留到退出应用。下次用会再启动；180 秒还没就绪就停止。删除先请求卸载，再请求删文件，不等待进程退出；忙碌的服务器等这次用完再退出。',
+  }, {
+    en: "Release builds with Voxt's signed update feed check daily by default, and installation is manual by default. The updater replaces the app bundle while the old version runs. Until a restart the helper on disk is the new version, so the supervisor refuses to start it and a card asks to restart. Release builds without a feed offer an external installer instead. The model folder is not touched.",
+    zh: '带 Voxt 签名更新源的发布构建默认每天检查，默认由用户安装。更新器在旧版本运行时替换应用包。重启之前，磁盘上的 helper 已经是新版本，管理器就不启动它，卡片请用户重启。没有更新源的发布构建改为提供外部安装包。模型文件夹不动。',
+  }, {
+    en: 'Three things finish in three ways. A download is done when every integrity check passes and the files sit in the library. An unload is done when the server process exits and frees memory. An in-app update is done after the app bundle is replaced and the app restarts. Updating the app downloads no model, stopping the server deletes no file, and deleting a model updates no app.',
+    zh: '三件事有三种收尾。下载在校验全部通过、文件进入模型库时完成。卸载在服务器进程退出、内存释放时完成。应用内更新在应用包被替换、应用重启后完成。更新应用不下载模型，停服务器不删文件，删模型不更新应用。',
+  }];
+  let step = $state(0);
+  $effect(() => {
+    const q = Number(new URLSearchParams(window.location.search).get('step'));
+    if (q >= 1 && q <= steps.length) step = q - 1;
+  });
+  let phone = $state(false);
+  onMount(() => {
+    const query = window.matchMedia('(max-width: 600px)');
+    const update = () => (phone = query.matches);
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  });
+  const cur = $derived(steps[step]);
+  const W = $derived(phone ? 300 : 720);
+  const H = $derived((phone ? [660, 610, 760, 820, 840, 860] : [470, 450, 460, 480, 480, 530])[step]);
+
+  const gb = VOXT_MODEL_TOTAL_GB.toFixed(2);
+  const weightsGb = (VOXT_MODEL_WEIGHTS_BYTES / 1_000_000_000).toFixed(2);
+  const vocabMb = (VOXT_MODEL_VOCAB_BYTES / 1_000_000).toFixed(2);
+  const vadMb = (VOXT_MODEL_VAD_BYTES / 1_000_000).toFixed(2);
+  const vadShare = (VOXT_MODEL_VAD_BYTES / VOXT_MODEL_JOB_BYTES * 100).toFixed(2);
+  const commitShort = VOXT_MODEL_COMMIT.slice(0, 7);
+  const ratio = Math.round(VOXT_MODEL_APP_RATIO);
+  const totalBytes = VOXT_MODEL_TOTAL_BYTES.toLocaleString('en-US');
+  const vadBytes = VOXT_MODEL_VAD_BYTES.toLocaleString('en-US');
+  const jobBytes = VOXT_MODEL_JOB_BYTES.toLocaleString('en-US');
+</script>
+
+<figure class="viz">
+  <div class="canvas">
+    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={t(ariaLabels[step].en, ariaLabels[step].zh)}>
+      <defs>
+        <marker id="ms-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 z" fill="var(--muted)" />
+        </marker>
+      </defs>
+
+      {#if step === 0}
+        <text x={W / 2} y={phone ? 25 : 27} text-anchor="middle" class="title">{t('THREE THINGS, NOT ONE', '三样东西，不是一样')}</text>
+        <text x={W / 2} y={phone ? 47 : 50} text-anchor="middle" class="subtitle">{t('files on disk · a program in memory · the app bundle', '磁盘上的文件 · 内存里的进程 · 应用本身')}</text>
+        {#if !phone}
+          <rect x="20" y="72" width="212" height="225" rx="12" fill="var(--bg)" stroke="var(--accent)" />
+          <text x="126" y="98" text-anchor="middle" class="label blue">{t('MODEL FILES', '模型文件')}</text>
+          <text x="126" y="145" text-anchor="middle" class="result">{gb} GB</text>
+          <text x="126" y="178" text-anchor="middle" class="detail">{t(`${VOXT_MODEL_FILE_COUNT} files in the model library`, `模型库里 ${VOXT_MODEL_FILE_COUNT} 个文件`)}</text>
+          <text x="126" y="200" text-anchor="middle" class="detail">{t('on disk, in Application Support', '在磁盘的 Application Support 里')}</text>
+          <text x="126" y="222" text-anchor="middle" class="detail">{t('downloaded after install', '装好应用后再下载')}</text>
+
+          <rect x="254" y="72" width="212" height="225" rx="12" fill="var(--bg)" stroke="var(--gen)" />
+          <text x="360" y="98" text-anchor="middle" class="label amber">{t('SPEECH SERVER', '语音服务器')}</text>
+          <text x="360" y="145" text-anchor="middle" class="result">{t('1 ASR process', '1 个 ASR 进程')}</text>
+          <text x="360" y="178" text-anchor="middle" class="detail">{t('loads a model into memory', '把模型读进内存')}</text>
+          <text x="360" y="200" text-anchor="middle" class="detail">{t('stays after use', '用完后还会留着')}</text>
+          <text x="360" y="222" text-anchor="middle" class="detail">{t('Automatic: idle 10 min → exits', '自动模式：空闲 10 分钟 → 退出')}</text>
+
+          <rect x="488" y="72" width="212" height="225" rx="12" fill="var(--bg)" stroke="var(--accent)" />
+          <text x="594" y="98" text-anchor="middle" class="label blue">{t('VOXT.APP', '应用本身')}</text>
+          <text x="594" y="145" text-anchor="middle" class="result">{VOXT_APP_MB} MB</text>
+          <text x="594" y="178" text-anchor="middle" class="detail">{t('0.1.0-beta.1 bundle', '0.1.0-beta.1 程序包')}</text>
+          <text x="594" y="200" text-anchor="middle" class="detail">{t('helper + omni runtime', 'helper + omni 运行时')}</text>
+          <text x="594" y="222" text-anchor="middle" class="detail">{t('installed separately', '单独安装')}</text>
+
+          <rect x="150" y="316" width="12" height="12" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="168" y="326" class="detail">{t('a file on disk', '磁盘上的文件')}</text>
+          <rect x="360" y="316" width="12" height="12" rx="2" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="378" y="326" class="detail">{t('a running program', '运行的程序')}</text>
+
+          <text x="28" y="360" class="pt">·</text>
+          <text x="38" y="360" class="detail">{t('the model arrives later, not inside the app', '模型是后来下载的，不在应用里面')}</text>
+          <text x="28" y="386" class="pt">·</text>
+          <text x="38" y="386" class="detail">{t('Automatic stops an idle server; its files stay', '自动模式会停空闲服务器，文件留着')}</text>
+          <text x="28" y="412" class="pt">·</text>
+          <text x="38" y="412" class="detail">{t('an app update replaces the bundle, not the model folder', '应用更新换的是应用，不是模型文件夹')}</text>
+          <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t(`Model ≈ ${ratio}× the 0.1.0-beta.1 app. Sources: docs/release.md, internal/models/hub.go.`, `模型约是 0.1.0-beta.1 应用的 ${ratio} 倍。出处：docs/release.md、internal/models/hub.go。`)}</text>
+        {:else}
+          <rect x="15" y="64" width="270" height="112" rx="10" fill="var(--bg)" stroke="var(--accent)" />
+          <text x="150" y="86" text-anchor="middle" class="label blue">{t('MODEL FILES', '模型文件')}</text>
+          <text x="150" y="118" text-anchor="middle" class="result">{gb} GB</text>
+          <text x="150" y="142" text-anchor="middle" class="detail">{t(`${VOXT_MODEL_FILE_COUNT} files · model library`, `${VOXT_MODEL_FILE_COUNT} 个文件 · 模型库`)}</text>
+          <text x="150" y="162" text-anchor="middle" class="detail">{t('downloaded later', '后来才下载')}</text>
+
+          <rect x="15" y="186" width="270" height="100" rx="10" fill="var(--bg)" stroke="var(--gen)" />
+          <text x="150" y="208" text-anchor="middle" class="label amber">{t('SPEECH SERVER', '语音服务器')}</text>
+          <text x="150" y="240" text-anchor="middle" class="result">{t('1 ASR process', '1 个 ASR 进程')}</text>
+          <text x="150" y="262" text-anchor="middle" class="detail">{t('loads a model into memory', '把模型读进内存')}</text>
+          <text x="150" y="280" text-anchor="middle" class="detail">{t('Automatic: idle 10 min → exits', '自动模式：空闲 10 分钟 → 退出')}</text>
+
+          <rect x="15" y="296" width="270" height="100" rx="10" fill="var(--bg)" stroke="var(--accent)" />
+          <text x="150" y="318" text-anchor="middle" class="label blue">{t('VOXT.APP', '应用本身')}</text>
+          <text x="150" y="350" text-anchor="middle" class="result">{VOXT_APP_MB} MB</text>
+          <text x="150" y="372" text-anchor="middle" class="detail">{t('0.1.0-beta.1 bundle', '0.1.0-beta.1 程序包')}</text>
+          <text x="150" y="390" text-anchor="middle" class="detail">{t('not the model', '不是模型')}</text>
+
+          <rect x="30" y="414" width="12" height="12" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="48" y="424" class="detail">{t('a file on disk', '磁盘上的文件')}</text>
+          <rect x="160" y="414" width="12" height="12" rx="2" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="178" y="424" class="detail">{t('a running program', '运行的程序')}</text>
+
+          <text x="20" y="458" class="pt">·</text>
+          <text x="30" y="458" class="detail">{t('the model arrives later,', '模型是后来下载的，')}</text>
+          <text x="30" y="478" class="detail">{t('not inside the app', '不在应用里面')}</text>
+          <text x="20" y="504" class="pt">·</text>
+          <text x="30" y="504" class="detail">{t('Automatic stops an idle server;', '自动模式会停空闲服务器，')}</text>
+          <text x="30" y="524" class="detail">{t('its files stay', '文件留着')}</text>
+          <text x="20" y="550" class="pt">·</text>
+          <text x="30" y="550" class="detail">{t('an app update replaces the app,', '应用更新换的是应用，')}</text>
+          <text x="30" y="570" class="detail">{t('not the model folder', '不是模型文件夹')}</text>
+          <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t(`Model ≈ ${ratio}× the beta.1 app. Source: docs/release.md.`, `模型约是 beta.1 应用的 ${ratio} 倍。出处：docs/release.md。`)}</text>
+        {/if}
+      {:else if step === 1}
+        <text x={W / 2} y={phone ? 25 : 27} text-anchor="middle" class="title">{t('MODEL FILES · ONE PINNED SNAPSHOT', '模型文件 · 一个固定快照')}</text>
+        <text x={W / 2} y={phone ? 47 : 50} text-anchor="middle" class="subtitle">{t('one exact set of files + their fingerprints', '一批确定的文件 + 每个文件的指纹')}</text>
+        {#if !phone}
+          <rect x="20" y="74" width="250" height="110" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="40" y="98" class="label">{t('REPO · ONLINE HOME', '仓库 · 网上地址')}</text>
+          <text x="40" y="122" class="mono">mlx-community/</text>
+          <text x="40" y="142" class="mono">Qwen3-ASR-1.7B-8bit</text>
+          <text x="40" y="168" class="label">{t('commit · version', '提交 · 版本')} {commitShort}</text>
+          <line x1="272" y1="129" x2="294" y2="129" stroke="var(--muted)" stroke-width="2" marker-end="url(#ms-arrow)" />
+          <rect x="300" y="74" width="400" height="190" rx="10" fill="var(--bg)" stroke="var(--line)" />
+          <text x="316" y="98" class="label">{t(`${VOXT_MODEL_FILE_COUNT} FILES · ${gb} GB`, `${VOXT_MODEL_FILE_COUNT} 个文件 · ${gb} GB`)}</text>
+          <text x="316" y="124" class="mono">model.safetensors</text>
+          <text x="684" y="124" text-anchor="end" class="mono">{weightsGb} GB</text>
+          <text x="316" y="142" class="mono small">{t('LFS: SHA-256 bf304b…', 'LFS：SHA-256 bf304b…')}</text>
+          <text x="316" y="172" class="mono">vocab.json</text>
+          <text x="684" y="172" text-anchor="end" class="mono">{vocabMb} MB</text>
+          <text x="316" y="190" class="mono small">{t('git blob ID checked', '用 git blob ID 校验')}</text>
+          <text x="316" y="220" class="detail">{t(`… and ${VOXT_MODEL_FILE_COUNT - 2} more files`, `… 还有 ${VOXT_MODEL_FILE_COUNT - 2} 个文件`)}</text>
+          <text x="316" y="246" class="mono small">snapshots/{VOXT_MODEL_COMMIT}</text>
+          <text x="40" y="316" class="label">{t("ON DISK · THIS COMMIT'S FILES", '在磁盘上 · 这个提交的文件')}</text>
+          <text x="40" y="340" class="mono small">models--mlx-community--Qwen3-ASR-1.7B-8bit</text>
+          <text x="40" y="358" class="mono small">  snapshots/{VOXT_MODEL_COMMIT}</text>
+          <text x="28" y="392" class="pt">·</text>
+          <text x="38" y="392" class="detail">{t('a repo can change; the commit fixes the tested files', '仓库会变；提交固定了测试过的文件')}</text>
+          <text x="28" y="416" class="pt">·</text>
+          <text x="38" y="416" class="detail">{t('a fingerprint catches a changed or broken file', '指纹能发现文件变了或坏了')}</text>
+          <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Sources: internal/models/catalog.go, hub.go.', '出处：internal/models/catalog.go、hub.go。')}</text>
+        {:else}
+          <rect x="15" y="64" width="270" height="110" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="30" y="86" class="label">{t('REPO · ONLINE HOME', '仓库 · 网上地址')}</text>
+          <text x="30" y="108" class="mono">mlx-community/</text>
+          <text x="30" y="128" class="mono">Qwen3-ASR-1.7B-8bit</text>
+          <text x="30" y="154" class="label">{t('commit · version', '提交 · 版本')} {commitShort}</text>
+          <line x1="150" y1="176" x2="150" y2="196" stroke="var(--muted)" stroke-width="2" marker-end="url(#ms-arrow)" />
+          <rect x="15" y="202" width="270" height="240" rx="10" fill="var(--bg)" stroke="var(--line)" />
+          <text x="30" y="226" class="label">{t(`${VOXT_MODEL_FILE_COUNT} FILES · ${gb} GB`, `${VOXT_MODEL_FILE_COUNT} 个文件 · ${gb} GB`)}</text>
+          <text x="30" y="254" class="mono">model.safetensors</text>
+          <text x="30" y="272" class="mono small">{weightsGb} GB · {t('bf304b…', 'bf304b…')}</text>
+          <text x="30" y="300" class="mono">vocab.json</text>
+          <text x="30" y="318" class="mono small">{vocabMb} MB · {t('git blob ID checked', '用 git blob ID 校验')}</text>
+          <text x="30" y="348" class="detail">{t(`… and ${VOXT_MODEL_FILE_COUNT - 2} more files`, `… 还有 ${VOXT_MODEL_FILE_COUNT - 2} 个文件`)}</text>
+          <text x="30" y="382" class="mono small">models--mlx-community--</text>
+          <text x="30" y="402" class="mono small">Qwen3-ASR-1.7B-8bit/snapshots/</text>
+          <text x="30" y="422" class="mono small">{VOXT_MODEL_COMMIT}</text>
+          <text x="20" y="474" class="pt">·</text>
+          <text x="30" y="474" class="detail">{t('a repo can change; the commit', '仓库会变；提交')}</text>
+          <text x="30" y="494" class="detail">{t('fixes the tested files', '固定了测试过的文件')}</text>
+          <text x="20" y="520" class="pt">·</text>
+          <text x="30" y="520" class="detail">{t('a fingerprint catches', '指纹能发现文件')}</text>
+          <text x="30" y="540" class="detail">{t('a changed or broken file', '变了或坏了')}</text>
+          <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Source: internal/models/catalog.go.', '出处：internal/models/catalog.go。')}</text>
+        {/if}
+      {:else if step === 2}
+        <text x={W / 2} y={phone ? 25 : 27} text-anchor="middle" class="title">{t('ONE DOWNLOAD JOB · FOUR PARTS', '一个下载任务 · 四个部分')}</text>
+        <text x={W / 2} y={phone ? 47 : 50} text-anchor="middle" class="subtitle">{t('resume · room · checks · needs', '续传 · 空位 · 校验 · 所需模型')}</text>
+        {#if !phone}
+          <rect x="30" y="74" width="660" height="120" rx="10" fill="var(--bg)" stroke="var(--line)" />
+          <text x="50" y="98" class="label">{t('DOWNLOAD · ONE JOB', '下载 · 一个任务')}</text>
+          <rect x="50" y="112" width="620" height="26" rx="6" fill="var(--accent-soft)" stroke="var(--line)" />
+          <rect x="50" y="112" width="248" height="26" rx="6" fill="var(--accent)" />
+          <line x1="298" y1="106" x2="298" y2="144" stroke="var(--eos)" stroke-width="2" />
+          <text x="50" y="162" class="detail">{t('Cancel keeps these bytes; the next start continues from here.', '取消后这些字节留着；下次从这里接着下。')}</text>
+          <text x="670" y="162" text-anchor="end" class="mono">{gb} GB</text>
+
+          <rect x="30" y="212" width="200" height="116" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="130" y="236" text-anchor="middle" class="label">{t('ROOM', '空位')}</text>
+          <text x="130" y="268" text-anchor="middle" class="result">{VOXT_DOWNLOAD_RESERVE_GB} GB</text>
+          <text x="130" y="292" text-anchor="middle" class="detail">{t('must stay free', '必须空着')}</text>
+          <text x="130" y="312" text-anchor="middle" class="detail">{t('on the disk', '在磁盘上')}</text>
+
+          <rect x="260" y="212" width="200" height="116" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="360" y="236" text-anchor="middle" class="label">{t('CHECK · EACH FILE', '校验 · 每个文件')}</text>
+          <text x="360" y="268" text-anchor="middle" class="result">{t('LFS: SHA-256', 'LFS：SHA-256')}</text>
+          <text x="360" y="292" text-anchor="middle" class="detail">{t('others: git blob ID', '其他文件：git blob ID')}</text>
+          <text x="360" y="312" text-anchor="middle" class="detail">{t('mismatch → error', '不对就报错')}</text>
+
+          <rect x="490" y="212" width="200" height="116" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="590" y="236" text-anchor="middle" class="label">{t('NEEDS', '一起装')}</text>
+          <text x="590" y="268" text-anchor="middle" class="result">{vadMb} MB</text>
+          <text x="590" y="292" text-anchor="middle" class="detail">{t('Silero VAD', 'Silero VAD')}</text>
+          <text x="590" y="312" text-anchor="middle" class="detail">{t('finds speech', '找出语音')}</text>
+
+          <text x={W / 2} y="360" text-anchor="middle" class="formula">{totalBytes} B + {vadBytes} B = {jobBytes} B</text>
+          <text x={W / 2} y="386" text-anchor="middle" class="detail">{t(`The VAD is ${vadShare}% of the job; the model still needs it.`, `VAD 只占 ${vadShare}%，但模型离不开它。`)}</text>
+          <text x={W / 2} y="412" text-anchor="middle" class="cut">{t('CANCEL KEEPS THE PARTIAL FILES', '取消会保留已下载的文件')}</text>
+          <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Sources: internal/models/manager.go, catalog.go.', '出处：internal/models/manager.go、catalog.go。')}</text>
+        {:else}
+          <rect x="15" y="64" width="270" height="130" rx="10" fill="var(--bg)" stroke="var(--line)" />
+          <text x="30" y="88" class="label">{t('DOWNLOAD · ONE JOB', '下载 · 一个任务')}</text>
+          <rect x="30" y="102" width="240" height="24" rx="6" fill="var(--accent-soft)" stroke="var(--line)" />
+          <rect x="30" y="102" width="96" height="24" rx="6" fill="var(--accent)" />
+          <line x1="126" y1="96" x2="126" y2="132" stroke="var(--eos)" stroke-width="2" />
+          <text x="30" y="148" class="detail">{t('Cancel keeps the bytes.', '取消后字节留着。')}</text>
+          <text x="30" y="168" class="mono">{gb} GB</text>
+          <text x="270" y="168" text-anchor="end" class="detail">{t('total', '总共')}</text>
+
+          <rect x="15" y="210" width="270" height="76" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="30" y="234" class="label">{t('ROOM', '空位')}</text>
+          <text x="150" y="268" text-anchor="middle" class="result">{VOXT_DOWNLOAD_RESERVE_GB} GB</text>
+          <text x="270" y="268" text-anchor="end" class="detail">{t('must stay free', '必须空着')}</text>
+
+          <rect x="15" y="300" width="270" height="76" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="30" y="324" class="label">{t('CHECK · LFS SHA-256 / OTHERS GIT BLOB', '校验 · LFS 用 SHA-256 / 其他用 git blob')}</text>
+          <text x="150" y="358" text-anchor="middle" class="result">{t('each file', '每个文件')}</text>
+          <text x="270" y="358" text-anchor="end" class="detail">{t('mismatch → error', '不对就报错')}</text>
+
+          <rect x="15" y="390" width="270" height="76" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="30" y="414" class="label">{t('NEEDS · SILERO VAD', '一起装 · SILERO VAD')}</text>
+          <text x="150" y="448" text-anchor="middle" class="result">{vadMb} MB</text>
+          <text x="270" y="448" text-anchor="end" class="detail">{t('finds speech', '找出语音')}</text>
+
+          <text x={W / 2} y="500" text-anchor="middle" class="formula">{totalBytes} B</text>
+          <text x={W / 2} y="522" text-anchor="middle" class="formula">+ {vadBytes} B = {jobBytes} B</text>
+          <text x={W / 2} y="552" text-anchor="middle" class="detail">{t(`VAD = ${vadShare}% of the job`, `VAD 只占 ${vadShare}%`)}</text>
+          <text x={W / 2} y="586" text-anchor="middle" class="cut">{t('CANCEL KEEPS THE PARTIAL FILES', '取消会保留已下载的文件')}</text>
+          <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Sources: models/manager.go, catalog.go.', '出处：models/manager.go、catalog.go。')}</text>
+        {/if}
+      {:else if step === 3}
+        <text x={W / 2} y={phone ? 25 : 27} text-anchor="middle" class="title">{t("ONE SERVER'S LIFE", '服务器的一生')}</text>
+        <text x={W / 2} y={phone ? 47 : 50} text-anchor="middle" class="subtitle">{t('first use · idle wait · unload', '首次使用 · 空闲等待 · 卸载')}</text>
+        {#if !phone}
+          <rect x="20" y="72" width="300" height="190" rx="12" fill="var(--bg)" stroke="var(--accent)" />
+          <text x="170" y="96" text-anchor="middle" class="label blue">{t('ON DISK', '在磁盘上')}</text>
+          <text x="170" y="120" text-anchor="middle" class="detail">{t('the snapshot folder', '快照文件夹')}</text>
+          <text x="170" y="144" text-anchor="middle" class="mono">Qwen3-ASR-1.7B-8bit</text>
+          <text x="170" y="168" text-anchor="middle" class="label">{gb} GB</text>
+          <text x="170" y="196" text-anchor="middle" class="detail">{t('stays after the server exits', '服务器退出后还留着')}</text>
+          <line x1="322" y1="167" x2="352" y2="167" stroke="var(--muted)" stroke-width="2" marker-end="url(#ms-arrow)" />
+          <rect x="358" y="72" width="342" height="190" rx="12" fill="var(--bg)" stroke="var(--gen)" />
+          <text x="529" y="96" text-anchor="middle" class="label amber">{t('IN MEMORY', '在内存里')}</text>
+          <text x="529" y="122" text-anchor="middle" class="mono">qwen3_asr_server</text>
+          <text x="529" y="148" text-anchor="middle" class="detail">{t('loads the model from the folder', '从这个文件夹读模型')}</text>
+          <text x="529" y="172" text-anchor="middle" class="detail">{t('one ASR model; VAD runs beside it', '一个 ASR 模型；VAD 在旁边运行')}</text>
+          <text x="529" y="196" text-anchor="middle" class="label">{t(`Automatic: idle ${VOXT_SERVER_IDLE_MINUTES} min → exits`, `自动模式：空闲 ${VOXT_SERVER_IDLE_MINUTES} 分钟 → 退出`)}</text>
+          <text x="529" y="222" text-anchor="middle" class="detail">{t(`next use → restart; ${VOXT_SERVER_START_TIMEOUT_S} s (3 min) not ready → stop`, `下次用 → 重启；${VOXT_SERVER_START_TIMEOUT_S} 秒（3 分钟）未就绪 → 停止`)}</text>
+
+          <rect x="20" y="284" width="680" height="110" rx="10" fill="var(--bg)" stroke="var(--line)" />
+          <text x="40" y="308" class="label">{t('DELETE A MODEL', '删一个模型')}</text>
+          <rect x="60" y="324" width="150" height="44" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="135" y="351" text-anchor="middle" class="label">{t('1 · request unload', '1 · 请求卸载')}</text>
+          <line x1="214" y1="346" x2="242" y2="346" stroke="var(--muted)" stroke-width="2" marker-end="url(#ms-arrow)" />
+          <rect x="248" y="324" width="180" height="44" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="338" y="351" text-anchor="middle" class="label">{t('2 · request delete', '2 · 请求删除')}</text>
+          <text x="448" y="342" class="detail">{t('no wait for the process;', '不等待进程退出；')}</text>
+          <text x="448" y="362" class="detail">{t('a busy server exits after its uses', '忙碌的服务器等用完再退出')}</text>
+          <text x="40" y="388" class="detail">{t('idle server: stop now · busy server: stop after use', '空闲服务器：现在停 · 忙碌服务器：用完再停')}</text>
+          <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('Settings: 5–60 min, or keep until quit.', '设置：5–60 分钟，或一直留到退出应用。')}</text>
+          <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Sources: internal/omni/runtime.go, internal/local/library.go.', '出处：internal/omni/runtime.go、internal/local/library.go。')}</text>
+        {:else}
+          <rect x="15" y="64" width="270" height="170" rx="10" fill="var(--bg)" stroke="var(--accent)" />
+          <text x="150" y="88" text-anchor="middle" class="label blue">{t('ON DISK', '在磁盘上')}</text>
+          <text x="150" y="112" text-anchor="middle" class="detail">{t('the snapshot folder', '快照文件夹')}</text>
+          <text x="150" y="136" text-anchor="middle" class="mono">Qwen3-ASR-1.7B-8bit</text>
+          <text x="150" y="160" text-anchor="middle" class="label">{gb} GB</text>
+          <text x="150" y="186" text-anchor="middle" class="detail">{t('stays after the server exits', '服务器退出后还留着')}</text>
+          <line x1="150" y1="240" x2="150" y2="268" stroke="var(--muted)" stroke-width="2" marker-end="url(#ms-arrow)" />
+          <rect x="15" y="274" width="270" height="190" rx="10" fill="var(--bg)" stroke="var(--gen)" />
+          <text x="150" y="298" text-anchor="middle" class="label amber">{t('IN MEMORY', '在内存里')}</text>
+          <text x="150" y="322" text-anchor="middle" class="mono">qwen3_asr_server</text>
+          <text x="150" y="346" text-anchor="middle" class="detail">{t('loads the model from the folder', '从文件夹读模型')}</text>
+          <text x="150" y="368" text-anchor="middle" class="detail">{t('one ASR model; VAD runs beside it', '一个 ASR 模型；VAD 在旁边运行')}</text>
+          <text x="150" y="394" text-anchor="middle" class="label">{t(`Automatic: idle ${VOXT_SERVER_IDLE_MINUTES} min → exits`, `自动模式：空闲 ${VOXT_SERVER_IDLE_MINUTES} 分钟 → 退出`)}</text>
+          <text x="150" y="420" text-anchor="middle" class="detail">{t('next use → restart', '下次用 → 再启动')}</text>
+          <text x="150" y="444" text-anchor="middle" class="detail">{t(`${VOXT_SERVER_START_TIMEOUT_S} s (3 min) not ready → stop`, `${VOXT_SERVER_START_TIMEOUT_S} 秒（3 分钟）未就绪 → 停止`)}</text>
+
+          <rect x="15" y="486" width="270" height="200" rx="10" fill="var(--bg)" stroke="var(--line)" />
+          <text x="30" y="510" class="label">{t('DELETE A MODEL', '删一个模型')}</text>
+          <rect x="30" y="524" width="110" height="40" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="85" y="549" text-anchor="middle" class="label">{t('1 · unload', '1 · 卸载')}</text>
+          <line x1="144" y1="544" x2="168" y2="544" stroke="var(--muted)" stroke-width="2" marker-end="url(#ms-arrow)" />
+          <rect x="174" y="524" width="96" height="40" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="222" y="549" text-anchor="middle" class="label">{t('2 · delete', '2 · 删除')}</text>
+          <text x="30" y="592" class="detail">{t('requests: unload, then delete', '先请求卸载，再请求删除')}</text>
+          <text x="30" y="614" class="detail">{t('no wait for the process', '不等待进程退出')}</text>
+          <text x="30" y="644" class="detail">{t('idle → stop now', '空闲 → 现在停')}</text>
+          <text x="30" y="666" class="detail">{t('busy → stop after use', '忙碌 → 用完再停')}</text>
+          <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('Settings: 5–60 min, or keep until quit.', '设置：5–60 分钟，或留到退出应用。')}</text>
+          <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Sources: omni/runtime.go, local/library.go.', '出处：omni/runtime.go、local/library.go。')}</text>
+        {/if}
+      {:else if step === 4}
+        <text x={W / 2} y={phone ? 25 : 27} text-anchor="middle" class="title">{t('ONE APP UPDATE · TWO ROUTES', '一次应用更新 · 两条路')}</text>
+        <text x={W / 2} y={phone ? 47 : 50} text-anchor="middle" class="subtitle">{t('release builds · feed: in-app · no feed: installer', '发布构建 · 有更新源：应用内 · 无更新源：安装包')}</text>
+        {#if !phone}
+          <rect x="20" y="72" width="330" height="170" rx="12" fill="var(--bg)" stroke="var(--line)" />
+          <text x="185" y="96" text-anchor="middle" class="label">{t('THE APP · EXAMPLE UPDATE', '应用 · 更新示例')}</text>
+          <rect x="40" y="112" width="110" height="50" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="95" y="134" text-anchor="middle" class="detail">{t('Voxt 2.0', 'Voxt 2.0')}</text>
+          <text x="95" y="151" text-anchor="middle" class="detail">{t('running now', '正在运行')}</text>
+          <line x1="154" y1="137" x2="176" y2="137" stroke="var(--muted)" stroke-width="2" marker-end="url(#ms-arrow)" />
+          <rect x="182" y="112" width="148" height="50" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="256" y="134" text-anchor="middle" class="detail">{t('Voxt 2.1', 'Voxt 2.1')}</text>
+          <text x="256" y="151" text-anchor="middle" class="detail">{t('on disk', '在磁盘上')}</text>
+          <text x="185" y="192" text-anchor="middle" class="detail">{t('the updater replaces the bundle', '更新器替换整个应用包')}</text>
+          <text x="185" y="216" text-anchor="middle" class="detail">{t('delta = changed parts only, when available', '增量 = 有变化的部分，有就用')}</text>
+
+          <rect x="370" y="72" width="330" height="170" rx="12" fill="var(--bg)" stroke="var(--accent)" />
+          <text x="535" y="96" text-anchor="middle" class="label blue">{t('THE MODEL FOLDER', '模型文件夹')}</text>
+          <rect x="390" y="112" width="290" height="60" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="535" y="138" text-anchor="middle" class="mono">SGLang Omni/models</text>
+          <text x="535" y="158" text-anchor="middle" class="detail">{gb} GB</text>
+          <text x="535" y="196" text-anchor="middle" class="detail">{t('an app update does not touch it', '应用更新不碰它')}</text>
+
+          <text x="40" y="270" class="label">{t('UNTIL RESTART', '重启之前')}</text>
+          <rect x="40" y="286" width="150" height="54" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="115" y="310" text-anchor="middle" class="detail">{t('old version', '旧版本')}</text>
+          <text x="115" y="328" text-anchor="middle" class="detail">{t('keeps running', '照常运行')}</text>
+          <line x1="194" y1="313" x2="222" y2="313" stroke="var(--muted)" stroke-width="2" marker-end="url(#ms-arrow)" />
+          <rect x="228" y="286" width="200" height="54" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="328" y="310" text-anchor="middle" class="detail">{t('helper on disk', '磁盘上的 helper')}</text>
+          <text x="328" y="328" text-anchor="middle" class="detail">{t('is already the new one', '已经是新的')}</text>
+          <line x1="432" y1="313" x2="460" y2="313" stroke="var(--muted)" stroke-width="2" marker-end="url(#ms-arrow)" />
+          <rect x="466" y="286" width="214" height="54" rx="8" fill="var(--eos-soft)" stroke="var(--eos)" />
+          <text x="573" y="310" text-anchor="middle" class="detail">{t("app's helper manager refuses it", '应用的 helper 管理器不启动它')}</text>
+          <text x="573" y="328" text-anchor="middle" class="detail">{t('mismatch with the app', '和应用的版本对不上')}</text>
+          <text x={W / 2} y="378" text-anchor="middle" class="cut">{t('A CARD ASKS: RESTART VOXT TO FINISH', '卡片提示：重启 Voxt 才算装完')}</text>
+          <text x={W / 2} y="410" text-anchor="middle" class="detail">{t(`Defaults: ${VOXT_UPDATE_CHECK_HOURS} h checks · manual install · Beta = pre-release`, `默认：每 ${VOXT_UPDATE_CHECK_HOURS} 小时检查 · 手动安装 · Beta = 预发布版`)}</text>
+          <text x={W / 2} y="434" text-anchor="middle" class="detail">{t('Beta switch in Settings · no feed → installer download', 'Beta 在设置里开关 · 无更新源 → 下载安装包')}</text>
+          <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Sources: Voxt/updates.go, updates_github.go, docs/release.md.', '出处：Voxt/updates.go、updates_github.go、docs/release.md。')}</text>
+        {:else}
+          <rect x="15" y="64" width="270" height="150" rx="10" fill="var(--bg)" stroke="var(--line)" />
+          <text x="150" y="88" text-anchor="middle" class="label">{t('THE APP · EXAMPLE UPDATE', '应用 · 更新示例')}</text>
+          <rect x="30" y="102" width="100" height="44" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="80" y="120" text-anchor="middle" class="detail">{t('Voxt 2.0', 'Voxt 2.0')}</text>
+          <text x="80" y="137" text-anchor="middle" class="detail">{t('running', '在运行')}</text>
+          <line x1="134" y1="124" x2="156" y2="124" stroke="var(--muted)" stroke-width="2" marker-end="url(#ms-arrow)" />
+          <rect x="162" y="102" width="108" height="44" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="216" y="120" text-anchor="middle" class="detail">{t('Voxt 2.1', 'Voxt 2.1')}</text>
+          <text x="216" y="137" text-anchor="middle" class="detail">{t('on disk', '在磁盘上')}</text>
+          <text x="150" y="172" text-anchor="middle" class="detail">{t('the updater replaces the app', '更新器替换整个应用')}</text>
+          <text x="150" y="194" text-anchor="middle" class="detail">{t('delta = changed parts only, when available', '增量 = 有变化的部分，有就用')}</text>
+
+          <rect x="15" y="234" width="270" height="130" rx="10" fill="var(--bg)" stroke="var(--accent)" />
+          <text x="150" y="258" text-anchor="middle" class="label blue">{t('THE MODEL FOLDER', '模型文件夹')}</text>
+          <rect x="30" y="272" width="240" height="42" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="150" y="293" text-anchor="middle" class="mono">SGLang Omni/models</text>
+          <text x="150" y="309" text-anchor="middle" class="detail">{gb} GB</text>
+          <text x="150" y="346" text-anchor="middle" class="detail">{t('an app update does not touch it', '应用更新不碰它')}</text>
+
+          <text x="30" y="398" class="label">{t('UNTIL RESTART', '重启之前')}</text>
+          <rect x="15" y="412" width="270" height="46" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="150" y="440" text-anchor="middle" class="detail">{t('old version keeps running', '旧版本照常运行')}</text>
+          <rect x="15" y="470" width="270" height="46" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="150" y="498" text-anchor="middle" class="detail">{t('helper on disk is new', '磁盘上的 helper 已是新的')}</text>
+          <rect x="15" y="528" width="270" height="46" rx="8" fill="var(--eos-soft)" stroke="var(--eos)" />
+          <text x="150" y="556" text-anchor="middle" class="detail">{t("app's helper manager refuses it", '应用的 helper 管理器不启动它')}</text>
+          <text x="150" y="604" text-anchor="middle" class="cut">{t('RESTART VOXT TO FINISH', '重启 Voxt 才算装完')}</text>
+          <text x="150" y="632" text-anchor="middle" class="detail">{t(`Defaults: ${VOXT_UPDATE_CHECK_HOURS} h checks · manual · Beta`, `默认：${VOXT_UPDATE_CHECK_HOURS} 小时检查 · 手动 · Beta`)}</text>
+          <text x="150" y="660" text-anchor="middle" class="detail">{t('Beta = pre-release · Settings switch', 'Beta = 预发布版 · 设置开关')}</text>
+          <text x="150" y="688" text-anchor="middle" class="detail">{t('No feed → installer download', '无更新源 → 下载安装包')}</text>
+          <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Sources: updates.go, updates_github.go.', '出处：updates.go、updates_github.go。')}</text>
+        {/if}
+      {:else if step === 5}
+        <text x={W / 2} y={phone ? 25 : 27} text-anchor="middle" class="title">{t('THREE THINGS, THREE ENDINGS', '三件事，三种收尾')}</text>
+        <text x={W / 2} y={phone ? 47 : 50} text-anchor="middle" class="subtitle">{t('download · unload · update', '下载 · 卸载 · 更新')}</text>
+        {#if !phone}
+          <text x="40" y="84" class="label">{t('THING', '东西')}</text>
+          <text x="270" y="84" class="label">{t('ACTION', '动作')}</text>
+          <text x="450" y="84" class="label">{t('DONE WHEN', '算完成的条件')}</text>
+          <line x1="20" y1="96" x2="700" y2="96" stroke="var(--line)" />
+
+          <text x="40" y="128" class="label blue">{t('model files', '模型文件')}</text>
+          <text x="270" y="128" class="detail">{t('download', '下载')}</text>
+          <text x="450" y="128" class="detail">{t('every hash passes;', '哈希全部通过；')}</text>
+          <text x="450" y="148" class="detail">{t('files sit in the library', '文件进入模型库')}</text>
+          <line x1="20" y1="168" x2="700" y2="168" stroke="var(--line)" />
+
+          <text x="40" y="200" class="label amber">{t('speech server', '语音服务器')}</text>
+          <text x="270" y="200" class="detail">{t('unload', '卸载')}</text>
+          <text x="450" y="200" class="detail">{t('the process exits;', '进程退出；')}</text>
+          <text x="450" y="220" class="detail">{t('memory is freed', '内存释放')}</text>
+          <line x1="20" y1="240" x2="700" y2="240" stroke="var(--line)" />
+
+          <text x="40" y="272" class="label blue">{t('app bundle', '应用包')}</text>
+          <text x="270" y="272" class="detail">{t('in-app update', '应用内更新')}</text>
+          <text x="450" y="272" class="detail">{t('the bundle is replaced;', '应用包被替换；')}</text>
+          <text x="450" y="292" class="detail">{t('the app restarts', '应用重启')}</text>
+          <line x1="20" y1="312" x2="700" y2="312" stroke="var(--line)" />
+
+          <text x="28" y="346" class="pt">·</text>
+          <text x="38" y="346" class="detail">{t('updating the app downloads no model', '更新应用不下载模型')}</text>
+          <text x="28" y="372" class="pt">·</text>
+          <text x="38" y="372" class="detail">{t('stopping the server deletes no file', '停服务器不删文件')}</text>
+          <text x="28" y="398" class="pt">·</text>
+          <text x="38" y="398" class="detail">{t('deleting a model updates no app', '删模型不更新应用')}</text>
+          <text x={W / 2} y={H - 48} text-anchor="middle" class="cut">{t('THE APP AND MODELS ARE READY.', '应用和模型就绪了。')}</text>
+          <text x={W / 2} y={H - 28} text-anchor="middle" class="cut">{t('WHAT DOES A MEETING RECORD?', '会议要录下什么？')}</text>
+          <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Sources: models, omni/runtime.go, updates.go.', '出处：models、omni/runtime.go、updates.go。')}</text>
+        {:else}
+          <rect x="15" y="64" width="270" height="92" rx="10" fill="var(--bg)" stroke="var(--line)" />
+          <text x="30" y="88" class="label blue">{t('model files', '模型文件')}</text>
+          <text x="30" y="112" class="detail">{t('download', '下载')}</text>
+          <text x="30" y="136" class="detail">{t('done: hashes pass,', '完成：哈希通过，')}</text>
+          <text x="30" y="152" class="detail">{t('files in the library', '文件进了模型库')}</text>
+
+          <rect x="15" y="166" width="270" height="92" rx="10" fill="var(--bg)" stroke="var(--line)" />
+          <text x="30" y="190" class="label amber">{t('speech server', '语音服务器')}</text>
+          <text x="30" y="214" class="detail">{t('unload', '卸载')}</text>
+          <text x="30" y="238" class="detail">{t('done: process exits,', '完成：进程退出，')}</text>
+          <text x="30" y="254" class="detail">{t('memory freed', '内存释放')}</text>
+
+          <rect x="15" y="268" width="270" height="92" rx="10" fill="var(--bg)" stroke="var(--line)" />
+          <text x="30" y="292" class="label blue">{t('app bundle', '应用包')}</text>
+          <text x="30" y="316" class="detail">{t('in-app update', '应用内更新')}</text>
+          <text x="30" y="340" class="detail">{t('done: bundle replaced,', '完成：应用包替换，')}</text>
+          <text x="30" y="356" class="detail">{t('app restarts', '应用重启')}</text>
+
+          <text x="20" y="394" class="pt">·</text>
+          <text x="30" y="394" class="detail">{t('an update downloads no model', '更新不下载模型')}</text>
+          <text x="20" y="420" class="pt">·</text>
+          <text x="30" y="420" class="detail">{t('a stop deletes no file', '停服务器不删文件')}</text>
+          <text x="20" y="446" class="pt">·</text>
+          <text x="30" y="446" class="detail">{t('a delete updates no app', '删模型不更新应用')}</text>
+
+          <text x={W / 2} y={H - 60} text-anchor="middle" class="cut">{t('THE APP + MODELS ARE READY.', '应用和模型就绪了。')}</text>
+          <text x={W / 2} y={H - 34} text-anchor="middle" class="cut">{t('WHAT DOES A MEETING RECORD?', '会议要录下什么？')}</text>
+          <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Sources: models, runtime.go, updates.go.', '出处：models、runtime.go、updates.go。')}</text>
+        {/if}
+      {/if}
+    </svg>
+  </div>
+  <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh}
+    deep={deep?.en[step]} deepZh={deep?.zh[step]} onchange={(s) => (step = s)} {prev} {next} />
+</figure>
+
+<style>
+  .title { font-size: 16px; font-weight: 650; fill: var(--fg); }
+  .subtitle { font-size: 13px; font-weight: 600; fill: var(--accent); }
+  .label { font-size: 12px; font-weight: 700; fill: var(--fg); }
+  .detail { font-size: 11px; fill: var(--fg); }
+  .cut { font-size: 12px; font-weight: 650; fill: var(--accent); }
+  .formula { font-family: var(--mono); font-size: 12px; font-weight: 650; fill: var(--fg); }
+  .result { font-size: 20px; font-weight: 650; fill: var(--fg); }
+  .mono { font-family: var(--mono); font-size: 11.5px; fill: var(--fg); }
+  .mono.small { font-size: 10.5px; }
+  .blue { fill: var(--accent); }
+  .amber { fill: var(--gen); }
+  .footnote { font-size: 10.5px; }
+  .pt { font-size: 11px; fill: var(--muted); }
+  @media (max-width: 600px) {
+    .title { font-size: 13px; }
+    .subtitle, .label, .detail, .cut, .formula, .footnote { font-size: 11px; }
+    .mono { font-size: 10.5px; }
+    .mono.small { font-size: 9.5px; }
+    .result { font-size: 16px; }
+  }
+</style>

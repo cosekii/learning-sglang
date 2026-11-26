@@ -1,0 +1,53 @@
+---
+layout: ../../../layouts/Chapter.astro
+book: voxt
+slug: models-and-app-updates
+---
+import ModelStorageUpdates from '../../../components/voxt/ModelStorageUpdates.svelte';
+import { voxtNeighbors } from '../../../voxt/chapters';
+import { deepFor } from '../../../deep';
+export const deep = await deepFor('voxt-models-and-app-updates');
+
+<ModelStorageUpdates client:load {...voxtNeighbors('models-and-app-updates')} deep={deep} />
+
+<details class="i18n-en">
+<summary>Where this chapter's claims come from</summary>
+
+Step 1 separates three things. The app is 280 MB and the dmg 45 MB (`Voxt/docs/release.md`, the 0.1.0-beta.1 size table). The default speech model is the catalogue's `asr.accurate` entry: nine files totalling 2,467,856,503 bytes, of which `model.safetensors` is 2,463,307,541 (`Voxt/internal/models/catalog.go:199-215`). The model library defaults to `~/Library/Application Support/SGLang Omni/models` (`Voxt/internal/models/hub.go:106-119`, `catalog.go:6-14`). The app bundle carries the helper and the omni runtime (`docs/release.md`).
+
+Step 2 reads the pin. Each entry has a Hugging Face repo, one pinned revision, accepted other commits, and a file list with sizes and catalogue fingerprints (`catalog.go:84-154`). `Entry` copies the listed SHA-256 only for LFS files; non-LFS files are checked by git blob ID (`hub.go:28-44`, `internal/models/models_test.go:235-250`). The shown entry's revision is `a8379a2e2f9e313c9292cdf1af4055ab56d50d55` (`catalog.go:203`). The snapshot folder is `$HUB/models--<owner>--<name>/snapshots/<commit>`, using that full revision (`hub.go:89-104`).
+
+Step 3 reads the download. `Entry` turns the catalogue into hfhub's files: only the listed files, with SHA-256 verification for LFS and git blob IDs for the others (`hub.go:28-44`). A mismatch is an error; no automatic second fetch is claimed. `Manager.Download` adds the entry's missing needs, sums their sizes, and runs one job whose `run` loop fetches the models in sequence (`Voxt/internal/models/manager.go:254-291`, `319-339`). A cancel keeps what arrived (`manager.go:293-303`); partial blobs resume (`internal/models/manager_test.go:458-482`), and a stopped download's `Done` is what it kept (`manager.go:60-63`). `ReserveBytes` is the room a download leaves free; zero means hfhub's 2 GB (`manager.go:33-35`). The default speech model needs Silero VAD (`catalog.go:201`), whose two files are 463 and 1,237,860 bytes (`catalog.go:350-356`).
+
+Step 4 reads the runtime. `Runtime` starts a server when a model is acquired and retires another speech model's server (`Voxt/internal/omni/runtime.go:122-143`, `191-228`). Automatic keeps `DefaultIdleTimeout` = 10 minutes; Settings can choose 5, 15, 30 or 60 minutes, or keep until quit (`Voxt/models_controller.go:280-306`, `Voxt/internal/settings/models.go:105-135`). `DefaultStartTimeout` = 180 s is a readiness timeout that stops a server which never becomes ready, not a promised load time (`runtime.go:29-30`, `44-46`). Silero has its own `silero_vad_server` beside the ASR server (`Voxt/internal/omni/models.go:60-63`, `Voxt/internal/omni/vad.go:23-44`). `Library.Delete` calls `Unload` and then requests `models.Manager.Delete` without waiting for process exit (`Voxt/internal/local/library.go:70-82`, `runtime.go:249-266`). An idle process stops asynchronously; a busy process stops after its uses end (`Voxt/internal/omni/server.go:215-229`, `253-287`). The following delete request goes through external actnowkit; its busy-model outcome is outside this chapter (`Voxt/internal/models/claims.go:40-54`).
+
+Step 5 separates two release-update paths. With Voxt's signed feed, MyGo's updater checks every 24 hours by default, installs manually by default (a delta when available), replaces `Voxt.app` while the old version runs, then offers a restart (`Voxt/updates.go:1-16`, `68-74`, `179-209`). Automatic checks can be disabled, and optional automatic installation can install without asking; automatic installation defaults off (`updates.go:179-209`, `docs/release.md:406-410`). Until a restart the helper on disk is the new version's, so the supervisor does not start it (`helper.FailUpdated`) and a card asks to restart (`updates.go:12-16`, `245-253`); the running app watches for this every minute (`updates.go:114-116`, `213-228`). A release build without a feed cannot update itself: the GitHub fallback offers a disk image or release page (`Voxt/updates_github.go:3-18`, `361-387`). `BuildBackend` selects feed, GitHub fallback or no updater (`Voxt/internal/updates/updates.go:13-22`, `Voxt/main.go:127-136`). The beta channel is a Settings switch, on by default while the running version is a beta (`updates.go:18-24`, `187-203`). Models are not in the app (`docs/release.md`).
+
+Step 6 is the boundary between those three mechanisms, taken from the same files.
+
+Constructed parts: the 2.47 GB total is the decimal size of the bytes above; the model-to-app ratio (about 9×) is that total divided by the documented 0.1.0-beta.1 app's 280 MB. The `Voxt 2.0 → 2.1` update is a constructed example. No real download, update, or model process was run.
+
+Source revision: `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`. The deep dive lists exact files and lines.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的出处</summary>
+
+第 1 步分清三样东西。应用是 280 MB，dmg 是 45 MB（`Voxt/docs/release.md`，0.1.0-beta.1 的大小表）。默认语音模型是目录里的 `asr.accurate`：九个文件共 2,467,856,503 字节，其中 `model.safetensors` 是 2,463,307,541 字节（`Voxt/internal/models/catalog.go:199-215`）。模型库默认是 `~/Library/Application Support/SGLang Omni/models`（`Voxt/internal/models/hub.go:106-119`、`catalog.go:6-14`）。应用包里有 helper 和 omni 运行时（`docs/release.md`）。
+
+第 2 步读固定版本。每个条目有一个 Hugging Face 仓库、一个固定提交、可以接受的其他提交，以及一张带大小和目录指纹的文件清单（`catalog.go:84-154`）。`Entry` 只给 LFS 文件复制清单里的 SHA-256，非 LFS 文件用 git blob ID 校验（`hub.go:28-44`、`internal/models/models_test.go:235-250`）。图上的条目提交是 `a8379a2e2f9e313c9292cdf1af4055ab56d50d55`（`catalog.go:203`）。快照文件夹是 `$HUB/models--<owner>--<name>/snapshots/<commit>`，使用完整提交（`hub.go:89-104`）。
+
+第 3 步读下载。`Entry` 把目录条目变成 hfhub 的文件：只下清单里的文件，LFS 用 SHA-256 校验，其他文件用 git blob ID（`hub.go:28-44`）。校验不对会报错，本章不声称自动再下一遍。`Manager.Download` 加上条目缺少的依赖，把大小加起来，运行一个任务，由 `run` 循环按顺序下载这些模型（`Voxt/internal/models/manager.go:254-291`、`319-339`）。取消后已经下到的留着（`manager.go:293-303`）；半成品 blob 可以续传（`internal/models/manager_test.go:458-482`），停下的下载 `Done` 就是留下的字节（`manager.go:60-63`）。`ReserveBytes` 是下载要在磁盘上留的空位；零表示 hfhub 的 2 GB（`manager.go:33-35`）。默认语音模型需要 Silero VAD（`catalog.go:201`），它两个文件是 463 和 1,237,860 字节（`catalog.go:350-356`）。
+
+第 4 步读运行时。`Runtime` 在获取模型时启动服务器，切换时让另一个语音模型的服务器退出（`Voxt/internal/omni/runtime.go:122-143`、`191-228`）。自动模式保留 `DefaultIdleTimeout` = 10 分钟；设置可以选 5、15、30 或 60 分钟，也可以留到退出应用（`Voxt/models_controller.go:280-306`、`Voxt/internal/settings/models.go:105-135`）。`DefaultStartTimeout` = 180 秒是就绪超时，会停止一直没有就绪的服务器，不是承诺的加载时间（`runtime.go:29-30`、`44-46`）。Silero 在 ASR 服务器旁边有自己的 `silero_vad_server`（`Voxt/internal/omni/models.go:60-63`、`Voxt/internal/omni/vad.go:23-44`）。`Library.Delete` 调用 `Unload` 后请求 `models.Manager.Delete`，不等待进程退出（`Voxt/internal/local/library.go:70-82`、`runtime.go:249-266`）。空闲进程异步停止，忙碌进程等使用结束后停止（`Voxt/internal/omni/server.go:215-229`、`253-287`）。随后的删除请求经过外部 actnowkit，忙碌模型的删除结果不在本章范围内（`Voxt/internal/models/claims.go:40-54`）。
+
+第 5 步分清两条发布更新路线。有 Voxt 签名更新源时，MyGo updater 默认每 24 小时检查，默认由用户安装（有增量就用增量），在旧版本运行时替换 `Voxt.app`，然后提示重启（`Voxt/updates.go:1-16`、`68-74`、`179-209`）。自动检查可以关闭；可选的自动安装可以不询问就装，但默认关闭（`updates.go:179-209`、`docs/release.md:406-410`）。重启之前，磁盘上的 helper 已经是新版本，所以管理器不启动它（`helper.FailUpdated`），卡片请用户重启（`updates.go:12-16`、`245-253`）；运行中的应用每分钟看一次（`updates.go:114-116`、`213-228`）。没有更新源的发布构建不能直接更新自己，GitHub 回退改为提供 dmg 或发布页（`Voxt/updates_github.go:3-18`、`361-387`）。`BuildBackend` 选择签名 feed、GitHub 回退或没有更新器（`Voxt/internal/updates/updates.go:13-22`、`Voxt/main.go:127-136`）。beta 通道是设置里的开关，当前版本是 beta 时默认打开（`updates.go:18-24`、`187-203`）。模型不在应用里（`docs/release.md`）。
+
+第 6 步是这三种机制之间的边界，来自同一批文件。
+
+构造的部分：2.47 GB 是上面字节的十进制大小；模型约是 0.1.0-beta.1 应用的 9 倍，是这个总数除以文档记录的 280 MB。`Voxt 2.0 → 2.1` 是构造的更新示例。没有真的运行下载、更新或模型进程。
+
+本章源码版本：`sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`。精确文件和行号见深入讲解。
+
+</details>

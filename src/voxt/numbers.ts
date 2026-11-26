@@ -208,3 +208,30 @@ export const VOXT_TRANSCRIBE_REMAIN_MS = VOXT_TRANSCRIBE_LONG_SECONDS * 1000 - V
 
 // Public request-line cap (Voxt/internal/fileasr/socket.go).
 export const VOXT_TRANSCRIBE_MAX_REQUEST_BYTES = 4096;
+
+// Public model catalogue: the default Qwen3-ASR 1.7B (8bit) snapshot and the
+// Silero VAD it needs (Voxt/internal/models/catalog.go). Decimal MB/GB.
+export const VOXT_MODEL_FILE_COUNT = 9;
+export const VOXT_MODEL_WEIGHTS_BYTES = 2463307541;
+export const VOXT_MODEL_VOCAB_BYTES = 2776833;
+export const VOXT_MODEL_TOTAL_BYTES = 2467856503;
+export const VOXT_MODEL_TOTAL_GB = VOXT_MODEL_TOTAL_BYTES / 1_000_000_000;
+export const VOXT_MODEL_VAD_BYTES = 1238323;
+export const VOXT_MODEL_JOB_BYTES = VOXT_MODEL_TOTAL_BYTES + VOXT_MODEL_VAD_BYTES;
+
+// Public 0.1.0-beta.1 release sizes (Voxt/docs/release.md): app 280 MB, dmg 45 MB.
+export const VOXT_APP_MB = 280;
+export const VOXT_APP_DMG_MB = 45;
+export const VOXT_MODEL_APP_RATIO = VOXT_MODEL_TOTAL_BYTES / 1_000_000 / VOXT_APP_MB;
+
+// Public download and speech-runtime defaults (internal/models/manager.go,
+// internal/omni/runtime.go).
+export const VOXT_DOWNLOAD_RESERVE_GB = 2;
+export const VOXT_SERVER_IDLE_MINUTES = 10;
+export const VOXT_SERVER_START_TIMEOUT_S = 180;
+export const VOXT_UPDATE_CHECK_HOURS = 24;
+export const VOXT_UPDATE_BUNDLE_WATCH_MINUTES = 1;
+
+// Pinned snapshot shown on the stage.
+export const VOXT_MODEL_REPO = 'mlx-community/Qwen3-ASR-1.7B-8bit';
+export const VOXT_MODEL_COMMIT = 'a8379a2e2f9e313c9292cdf1af4055ab56d50d55';

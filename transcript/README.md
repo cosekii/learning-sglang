@@ -63,3 +63,4 @@ Read it to check wording and numbers across chapters without opening the compone
 | voxt | 08 | [Your small dictionary](voxt/personal-dictionary.md) | 7 |
 | voxt | 09 | [History and retry expiration](voxt/history-retry-retention.md) | 9 |
 | voxt | 10 | [A separate file-transcription route](voxt/file-transcription.md) | 9 |
+| voxt | 11 | [Model storage and app updates](voxt/models-and-app-updates.md) | 6 |
