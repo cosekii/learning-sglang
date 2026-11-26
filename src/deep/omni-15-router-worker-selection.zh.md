@@ -69,3 +69,35 @@ router 使用“任意一整行匹配即可”的检查。它不会对多行取�
 兼容 profile 是静态配置。下一步加入会变化的 health 信号，它能让兼容 worker 暂时退出候选。
 
 来源：`sglang_omni_router/src/worker_pool/profile.rs:754-904,1129-1131,1311-1334`。
+
+## 第 4 步 · 按 health 过滤
+
+**一句话。** 兼容 worker 连续通过足够多次 health probe 后，才能进入选择。
+
+### 图上是什么
+
+- `health probe` 是向 worker 配置的健康网址发送 HTTP GET。任意 2xx 状态算成功，其他状态、传输错误或超时算失败。
+- 每个 worker 从不可选择的 `UNKNOWN` 开始。左图连续两次 200 后成为 `HEALTHY`，右图连续三次失败后成为 `UNHEALTHY`。
+- 只有 `HEALTHY` 能进入选择，`UNKNOWN` 和 `UNHEALTHY` 都被排除。
+- 两次成功和三次失败是随仓库发布的默认值，不是固定协议规则。部署者可以配置两个门槛。
+
+### 代入图上的数
+
+| 探测结果 | 成功连击 | 失败连击 | 状态 |
+|---|---:|---:|---|
+| 起点 | 0 | 0 | UNKNOWN |
+| 200 | 1 | 0 | UNKNOWN |
+| 200 | 2 | 0 | HEALTHY |
+| 另一次起点后的 503 | 0 | 1 | UNKNOWN |
+| timeout | 0 | 2 | UNKNOWN |
+| 503 | 0 | 3 | UNHEALTHY |
+
+成功会把失败连击清零，失败会把成功连击清零。worker 成为 unhealthy 后，单独一次成功仍保持 unhealthy，直到成功次数达到门槛。成为 healthy 后，单独一次失败也仍保持 healthy，直到失败次数达到门槛。
+
+应用响应不会直接设置这些状态。传输或协议失败可以请求立即探测，但 health 仍由普通探测门槛决定。
+
+### 接下来
+
+剩下的 worker 既兼容又 healthy。下一步用 round robin 在它们之间轮换，不比较活跃请求数。
+
+来源：`sglang_omni_router/src/worker_pool/health.rs:10-17,211-308`；`sglang_omni_router/src/worker_pool/mod.rs:124-126`；`sglang_omni_router/src/config.rs:290-325`；`sglang_omni_router/src/http_relay/mod.rs:188-226`。

@@ -69,3 +69,35 @@ The router uses an any-row check: one complete matching row is enough. It never 
 A compatible profile is static configuration. The next step adds the changing health signal that can temporarily remove a compatible worker.
 
 Sources: `sglang_omni_router/src/worker_pool/profile.rs:754-904,1129-1131,1311-1334`.
+
+## Step 4 · Filter by health
+
+**One sentence.** A compatible worker enters selection only after enough consecutive successful health probes.
+
+### On the stage
+
+- A `health probe` is an HTTP GET to the worker's configured health URL. Any 2xx status counts as success. Another status, a transport error or a timeout counts as failure.
+- Every worker starts `UNKNOWN`, which is not selectable. The left panel reaches `HEALTHY` after two consecutive 200 responses. The right panel reaches `UNHEALTHY` after three consecutive failures.
+- Only `HEALTHY` enters selection. `UNKNOWN` and `UNHEALTHY` are both excluded.
+- Two successes and three failures are shipped defaults, not fixed protocol rules. Operators can configure both thresholds.
+
+### The numbers on the stage
+
+| Probe result | Success streak | Failure streak | State |
+|---|---:|---:|---|
+| Start | 0 | 0 | UNKNOWN |
+| 200 | 1 | 0 | UNKNOWN |
+| 200 | 2 | 0 | HEALTHY |
+| 503 after a separate start | 0 | 1 | UNKNOWN |
+| Timeout | 0 | 2 | UNKNOWN |
+| 503 | 0 | 3 | UNHEALTHY |
+
+A success resets the failure streak to zero. A failure resets the success streak to zero. After a worker becomes unhealthy, one success leaves it unhealthy until the success threshold is reached. After it becomes healthy, one failure leaves it healthy until the failure threshold is reached.
+
+Application responses do not directly set these states. A transport or protocol failure can request an immediate probe, but the ordinary probe thresholds decide health.
+
+### Next
+
+The remaining workers are compatible and healthy. The next step uses round robin to rotate through them without comparing active-request counts.
+
+Sources: `sglang_omni_router/src/worker_pool/health.rs:10-17,211-308`; `sglang_omni_router/src/worker_pool/mod.rs:124-126`; `sglang_omni_router/src/config.rs:290-325`; `sglang_omni_router/src/http_relay/mod.rs:188-226`.

@@ -19,6 +19,8 @@ Step 2 separates the two request paths in `sglang_omni_router/src/http_generatio
 
 Step 3 follows the correlated-profile rule in `sglang_omni_router/src/worker_pool/profile.rs:754-904`. One individual row must satisfy the complete requirement; set-valued capabilities may contain extras, but facts cannot come from different rows. The constructed A rows follow the cross-row regression test at `profile.rs:1311-1334`: model M from one row cannot combine with another row's modalities and stream mode. B has one complete matching row.
 
+Step 4 follows `sglang_omni_router/src/worker_pool/health.rs:10-17,231-308` and the default thresholds in `sglang_omni_router/src/config.rs:290-325`. Workers start unknown; only healthy workers are routable (`worker_pool/mod.rs:124-126`). Any 2xx probe status succeeds, while another status, transport error or timeout fails. Two consecutive successes mark healthy and three consecutive failures mark unhealthy by default. A success resets the failure streak, a failure resets the success streak, and one later result does not immediately reverse a reached state.
+
 Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`. Examples are constructed from source rules; the chapter does not run a router or benchmark.
 
 </details>
@@ -31,6 +33,8 @@ Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37
 第 2 步分开 `sglang_omni_router/src/http_generation/mod.rs:82-153` 的两条请求路径。direct 组有同一个具体默认模型和等价 generation profiles，启动时由 `worker_pool/mod.rs:804-840` 验证；它先选择，再流式发送请求体。异构组先缓冲并分类请求体，再选择，随后转发原始字节（`http_generation/classify.rs:48-120`）。分类不做完整应用校验，也不重建 JSON。
 
 第 3 步依据 `sglang_omni_router/src/worker_pool/profile.rs:754-904` 的相关联 profile 规则。同一个独立行必须满足完整要求；集合能力可以多出一些，但不能从不同行拼事实。构造的 A 两行来自 `profile.rs:1311-1334` 的跨行回归测试：不能把一行的 model M 与另一行的模态和流式模式拼起来。B 有一行完整匹配。
+
+第 4 步依据 `sglang_omni_router/src/worker_pool/health.rs:10-17,231-308` 和 `sglang_omni_router/src/config.rs:290-325` 的默认门槛。worker 从 unknown 开始，只有 healthy 可路由（`worker_pool/mod.rs:124-126`）。探测状态为任意 2xx 就算成功，其他状态、传输错误或超时算失败。默认连续 2 次成功转为 healthy，连续 3 次失败转为 unhealthy。成功会清空失败连击，失败会清空成功连击；已经达到某个状态后，单独一次相反结果不会立刻翻转它。
 
 本章代码出处固定到 `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`。示例按源码规则构造，本章没有运行 router 或 benchmark。
 
