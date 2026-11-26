@@ -33,7 +33,7 @@
 协调 `983469c` 仍判 NO-GO 的机制与舞台事实：
 
 - 第 1 步：原识别框不再被替换结果覆盖。识别框固定显示 `call Preeya.`，另加独立「替换后」框在第三相显示 `call Priya.`；高亮依次指向识别框、词典行、替换框。关闭原 #10 的舞台事实扣分（待复审）。
-- 第 5 步：内部 `candidate` 移出 user，放进两条例子的组装区。右面板并排显示例 A（输入 `call Priya.`，候选 `Priya`，user 有 `<glossary>` 和输入）与例 B（输入 `call Sam.`，候选 `none`，user 只有 `call Sam.`）。两个输入不同，不再由同一 `call Priya.` 产生互斥结果；每相只推进 A 的「无候选→候选→术语表」。
+- 第 5 步：右面板并排显示例 A（输入 `call Priya.`）和例 B（输入 `call Sam.`）。每个例子各有带标签的「组装」框，只放 input 和 candidates；另有单独的「user · 消息」框，只在术语表非空时放 `<glossary>`，再放输入。例 A 有 glossary，例 B 只有 `call Sam.`。底部候选规则恢复「文字点名词条本身或它的任一别名 → 那个词条成为候选」，桌面与手机同步，不再只写在 ARIA 或深入讲解；每相只推进 A 的「无候选→候选→术语表」。
 - 第 2 步：四个去处的 payload 改为累积；文字稿写 `replace: Preeya → Priya`，不再写 `sent:`。
 - 第 3 步：第二条提示和 `2 hints` 出现时，聚焦回到正在变化的语音模型框。
 - 第 7 步：`solved = phase >= i`，每相只让当前行出现标记，末相不再一次补两行。
@@ -53,7 +53,7 @@
 - `BOOK=voxt ONLY=8 npm run transcript -- http://localhost:4379/learning-sglang`：7 步，无 caption／出界／重叠／脚注告警；生成 transcript 已提交。共享 CDP 9334 被另一运行占用，临时用 `CDP_PORT` 派生端口，运行后已还原 `scripts/transcript.mjs`。
 - `BOOK=voxt ONLY=8 npm run readability`：7/7，0 机械问题。`BOOK=voxt node scripts/deep-check.mjs 8`、`BASE=http://localhost:4379/learning-sglang BOOK=voxt ONLY=8 node scripts/zh-check.mjs`：通过。
 - 英中全章 `mobile`（360/390/430）无布局断裂；中文第 1／2／3／4／5／7 步逐步字号门通过。
-- 截图在 `.bot/out/voxt08-shot/`（英文桌面第 1、2、3、4、5、7 步，中文手机第 4、5 步）。当前模型不能读 PNG，未把这些图记成已读视觉证据。
+- 截图在 `.bot/out/voxt08-shot2/`（英文桌面第 5 步两个相位、中文手机第 5 步；上一轮其余步的图在 `.bot/out/voxt08-shot/`）。当前模型不能读 PNG，未把这些图记成已读视觉证据。
 
 ## 提交
 
@@ -65,3 +65,8 @@
 
 - 等协调人复审第 1、2、3、5、7 步的新相位图和两处舞台事实；复审通过后才做 Voxt 11，再 10，最后 `12-meeting-capture-modes`。
 - 未跑全站回归、真实 Voxt、模型或语音服务；主人最终验收另计。
+
+## 复审后跟进（同日）
+
+- 复审指出第 5 步仍把 input、candidates、glossary 和最终消息混在同一个 rect 里，没有可见的 compose／user 分区；可见候选规则也漏了别名。本轮把每个例子拆成带标签的「组装」框（input＋candidates）和单独的「user · 消息」框（非空术语表＋输入）；底部候选规则恢复「文字点名词条本身或它的任一别名 → 那个词条成为候选」。双语深入讲解、ARIA 和 transcript 同步。
+- 重跑 60 页 build、本章 transcript、readability、deep-check、zh-check、英中全章 mobile 和中文第 5 步字号门，均通过。截图在 `.bot/out/voxt08-shot2/`。按复审要求，这次只有第 5 步一个 `[d]` 教程提交，另加一条记录提交。
