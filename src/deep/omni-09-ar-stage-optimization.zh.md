@@ -168,7 +168,10 @@ $$D_{\mathrm{eager}}=k,\qquad D_{\mathrm{graph}}=1$$
 
 graph 的输入大小在 capture 时固定。下一步看 300 个真实 token 怎样选择并补进六个已录大小之一。
 
-来源：Learning SGLang 第 11 章第 1 步；`sglang_omni/models/qwen3_omni/components/audio_layer_graph.py:163-221`；`sglang_omni/models/qwen3_omni/components/audio_encoder.py:170-197,200-268`。
+来源：Learning SGLang 第 11 章第 1 步；`sglang_omni/models/qwen3_omni/components/`：
+
+- `audio_layer_graph.py:163-221`
+- `audio_encoder.py:170-197,200-268`
 
 ## 第 6 步 · 选择 token bucket，再裁掉 padding
 
@@ -206,7 +209,10 @@ bucket 还必须有足够的 segment slots，容纳真实分段和按 window 上
 
 四种机制的分工和边界已经讲完。最后一步把它们放回一张地图，再跟着 frames 进入 vocoder。
 
-来源：`sglang_omni/models/qwen3_omni/components/audio_layer_graph.py:22-23,223-275`；`tests/unit_test/qwen3_omni/test_audio_layer_graph.py:105-154`。
+来源：
+
+- `sglang_omni/models/qwen3_omni/components/`：`audio_layer_graph.py:22-23,223-275`
+- `tests/unit_test/qwen3_omni/test_audio_layer_graph.py:105-154`
 
 ## 第 7 步 · 跟着 frames 进入 vocoder
 

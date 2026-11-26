@@ -168,7 +168,10 @@ This step does not assign $k$ or a time saving. It compares $k$ individual kerne
 
 A graph has a fixed captured input size. The next step shows how 300 real tokens select and pad into one of the six captured sizes.
 
-Sources: Learning SGLang Ch. 11 Step 1; `sglang_omni/models/qwen3_omni/components/audio_layer_graph.py:163-221`; `sglang_omni/models/qwen3_omni/components/audio_encoder.py:170-197,200-268`.
+Sources: Learning SGLang Ch. 11 Step 1; `sglang_omni/models/qwen3_omni/components/`:
+
+- `audio_layer_graph.py:163-221`
+- `audio_encoder.py:170-197,200-268`
 
 ## Step 6 · Select a token bucket and crop the padding
 
@@ -206,7 +209,10 @@ The bucket must also have enough segment slots for the real segments and the win
 
 The four mechanisms now have distinct jobs and limits. The last step places them on one map and follows the frames into the vocoder.
 
-Sources: `sglang_omni/models/qwen3_omni/components/audio_layer_graph.py:22-23,223-275`; `tests/unit_test/qwen3_omni/test_audio_layer_graph.py:105-154`.
+Sources:
+
+- `sglang_omni/models/qwen3_omni/components/`: `audio_layer_graph.py:22-23,223-275`
+- `tests/unit_test/qwen3_omni/test_audio_layer_graph.py:105-154`
 
 ## Step 7 · Follow the frames into the vocoder
 
