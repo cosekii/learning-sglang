@@ -127,3 +127,11 @@ export const SLIME_EXAMPLE_CENTERED_REWARDS = SLIME_EXAMPLE_RAW_REWARDS.map((rew
 export const SLIME_EXAMPLE_REWARD_STD = Math.sqrt(SLIME_EXAMPLE_CENTERED_REWARDS.reduce((sum, reward) => sum + reward ** 2, 0) / (SLIME_EXAMPLE_CENTERED_REWARDS.length - 1));
 export const SLIME_GRPO_STD_EPSILON = 1e-6;
 export const SLIME_EXAMPLE_NORMALIZED_REWARDS = SLIME_EXAMPLE_CENTERED_REWARDS.map((reward) => reward / (SLIME_EXAMPLE_REWARD_STD + SLIME_GRPO_STD_EPSILON));
+
+// One author's Llama-3.2-1B weight-update debug log, not a transport benchmark.
+export const UPDATE_DEBUG_PARAMS = 1_000_000_000;
+export const UPDATE_DEBUG_BF16_BYTES = 2;
+export const UPDATE_DEBUG_WEIGHT_GB = UPDATE_DEBUG_PARAMS * UPDATE_DEBUG_BF16_BYTES / 1_000_000_000;
+export const UPDATE_DEBUG_INITIAL_S = 7.047;
+export const UPDATE_DEBUG_INNER_S = 0.001;
+export const UPDATE_DEBUG_OUTER_S = 0.033;
