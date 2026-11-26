@@ -1,0 +1,234 @@
+## Step 1 · The word recognition heard wrong
+
+> **In one line:** Recognition writes Priya as Preeya, and one dictionary row pairs the wanted term with the alias recognition writes.
+
+### On the stage
+
+- The grey box on the left is **your voice**, saying "send it to Preeya".
+- The **speech model** in the middle turns sound into words; the orange box is its recognized text, `call Preeya.`
+- Below it, you meant `call Priya.`, and the stage says you fix the name by hand every time.
+- The blue box at the bottom is one dictionary row: term `Priya`, alias `Preeya`, note "on the design team".
+
+### The three parts
+
+| Part | Meaning | Example |
+|---|---|---|
+| term | the correct spelling you want | `Priya` |
+| alias | what recognition tends to write instead; one term can have several | `Preeya` |
+| note | free text you write once, optional | on the design team |
+
+`store.Term` also has `Enabled` and two timestamps; the app uses them to decide whether the row is active now (`Voxt/internal/dict/dict.go`). `Check` refuses an empty term, a newline, or more than `MaxTermChars = 80` runes (`dict.go:70`); `Clean` keeps at most `MaxAliases = 10` aliases (`dict.go:50`).
+
+### Why the cost comes first
+
+Without this product name, recognition writes it wrong every time and you fix it by hand every time. The dictionary does that work once: fill one row, and every later dictation uses it. Step 2 splits the row into four destinations.
+
+### Next
+
+One row has three parts, and they do not travel together; the next step shows where each part goes.
+
+## Step 2 · One row, four destinations
+
+> **In one line:** The term goes to the speech model as a hint, the alias goes into the transcript as a replacement, term and alias go into the language-model glossary, and the note goes into the language-model prompt.
+
+### On the stage
+
+- The blue box on the left is the dictionary row: term, alias, note.
+- The four boxes on the right are the destinations; each box names the switches it needs.
+- Four thin lines run from the three parts to the four boxes.
+
+### The four destinations and their switches
+
+| Destination | Gets | Switch | Source |
+|---|---|---|---|
+| speech model · hints | only enabled terms | dictionary on + speech hints on | `session/run_audio.go:36` |
+| transcript · replace | aliases become the term | dictionary on | `session/cleanup.go:69` |
+| language model · glossary | terms + aliases | dictionary on + glossary on | `session/run_transcribe.go:110` |
+| language model · note | the note as written | dictionary on, notes not off | `session/text.go:122` |
+
+The switches live in `settings.Dictionary`: `Enabled`, `ASRHints`, `Glossary`, `NotesOff` (`Voxt/internal/settings/settings.go:285-306`). By default `Enabled`, `ASRHints` and `Glossary` are on (`settings.go:393`).
+
+### Why the split
+
+The four places take different input. The recognizer knows only a word list and does not know an "alias" is the wrong spelling; the text replacement reads aliases and ignores the note; the language model can read both the term and the note. One switch for everything would hide which step each switch controls.
+
+### Next
+
+The next four steps walk this map one destination at a time, each marked "k of 4".
+
+## Step 3 · Terms become speech hints
+
+> **In one line:** Enabled terms are ordered most-recently-changed first and sent to the speech model as hints; aliases stay out.
+
+### On the stage
+
+- The blue box on the left lists two enabled terms: `Priya` and `MOSS-Transcribe`.
+- An arrow points to the speech model on the right, which lists the same two words.
+- The orange box below, `Preeya ✗`, says the alias is not sent.
+- The bottom line says a service with fewer hint slots takes them from the end of the list.
+
+### How the list is ordered
+
+`dict.Hints` clones the terms and sorts them stably by `UpdatedAt`, newest first (`Voxt/internal/dict/dict.go:95`). It then keeps them in order when they are enabled, non-empty, and not seen before ignoring case (`dict.go:100-103`). So two terms in give two hints out.
+
+$$\text{hints} = [\text{enabled terms, sorted by } UpdatedAt \text{ newest first}]$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| term `Priya` | the spelling the user wants | Step 1 |
+| alias `Preeya` | what recognition tends to write | Step 1 |
+| `UpdatedAt` | when the term last changed | this step, `dict.go:95` |
+| `ASRHints` | whether terms go to the speech model | dictionary settings |
+
+### Why the alias stays out
+
+An alias is exactly what recognition gets wrong. Sending it as a hint tells the recognizer to lean toward that spelling and pins the error in place. The hint list carries correct terms only.
+
+### Boundary
+
+Some recognition services take only tens of hints; the `dict.Hints` comment says they cut the list from the end. So the list is newest-changed first: the terms at the front survive.
+
+### Next
+
+The next step takes the recognized text and swaps the alias back to the term.
+
+## Step 4 · Aliases become the term before cleanup
+
+> **In one line:** After recognition, enabled aliases are replaced by their term before any cleanup, so this path does not need the language model.
+
+### On the stage
+
+- The orange box is the recognized text `call Preeya.`
+- An arrow points to the blue box with `call Priya.` after replacement.
+- Further right is the **language-model cleanup**: the text it receives is already right.
+- Two lower boxes: matching rules on the left; a dashed box on the right says with the model off or failing, the result is still `call Priya.`
+
+### Matching rules
+
+`dict.Replace` looks only at enabled terms (`Voxt/internal/dict/alias.go:25`):
+
+- A Latin alias matches **whole words**, ignoring case; it counts as a word only when both ends are letters or digits (`wordRune`, `alias.go:192`).
+- Chinese, Japanese and Korean aliases match anywhere, because those scripts do not write spaces between words.
+- When several patterns match at one place, the **longest** wins (patterns are sorted by size descending, `alias.go:73`).
+- A term already written as itself is left alone, so running this twice does not break it (`alias.go:90`).
+
+$$\text{replace}(\text{Preeya}) = \text{Priya}\quad\text{when the dictionary and the term are enabled}$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| recognized text | what the speech model wrote | the speech model from Step 3 |
+| alias | the spelling being replaced | Step 1 |
+| term | the correct spelling it becomes | Step 1 |
+
+### Why this does not depend on the model
+
+This is the one path that still works when the language model is missing or errors. `spoken()` calls `dict.Replace(raw, r.terms)` at `session/cleanup.go:68`; `session/run.go:301` hands it the recognized text first, and `run.go:312` enters cleanup only after that. The order is what guarantees it.
+
+### Next
+
+Replacement only fixes aliases. If recognition writes a wrong form that is neither the term nor any alias, the next step's glossary reminds the language model.
+
+## Step 5 · Term and aliases enter the language-model glossary
+
+> **In one line:** The language model reads a glossary line such as "Priya, heard as Preeya" in its system prompt and is reminded to write the right spelling.
+
+### On the stage
+
+- The left side is the system prompt: role, task, output rules, and the blue **glossary** block reading `- Priya (heard as: Preeya)`.
+- The right side is the user message holding this dictation, `send it to Preeya`.
+- The bottom line says a small dictionary goes in whole and a large one only sends terms the text mentions, up to 60 lines or 2000 characters.
+- The orange label says this step needs the language model.
+
+### How the glossary is filled
+
+`compose.Glossary` de-duplicates the terms, then decides how many to send (`Voxt/internal/compose/compose.go:523`):
+
+- $n \le 30$ (`GlossaryAllUpTo`): send all, in their order.
+- $n > 30$: send only terms the text mentions (the term or an alias, ignoring case and spaces, `-`, `_`).
+- Either way, stop at 60 lines (`MaxGlossaryTerms`) or 2000 characters (`MaxGlossaryChars`).
+
+$$\text{terms sent} = \begin{cases} \min(n, 60) & n \le 30 \\ \min(m, 60) & n > 30 \end{cases}$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $n$ | number of distinct terms | this step |
+| $m$ | number of terms the text mentions | this step |
+| 30 / 60 / 2000 | all-in threshold / line cap / char cap | `compose.go:248-250` |
+| system prompt | the rules that repeat every request | Ch. 6 Step 2 |
+
+### Why a small dictionary goes in whole
+
+With 30 terms or fewer, sending all of them keeps the system prompt identical from one dictation to the next. The identical prefix stays in the model's prompt cache, saving time and tokens. A large dictionary would only spend tokens and distract the model with unrelated terms, so only the mentioned ones go.
+
+### Boundary
+
+The glossary only shapes the language model's output; it does not change recognition and does not force the model to comply. With the glossary switch off, `glossary()` returns empty (`run_transcribe.go:110-112`).
+
+### Next
+
+Terms and aliases are covered. The last part of the row is the note you write.
+
+## Step 6 · The note enters the language-model prompt
+
+> **In one line:** The note is free text you write once; it enters the system prompt as its own layer and never reaches the recognizer or the transcript replacement.
+
+### On the stage
+
+- The blue box on the left is **your note**: a Markdown passage such as "Priya is on the design team; heard as Preeya".
+- An arrow points to the system prompt on the right, labelled as its own layer and placed before this request's input.
+- The orange box below lists the two places the note **never** goes: the speech model and the transcript replacement.
+- The bottom line says notes-off keeps the note out of the prompt even while the dictionary is on.
+
+### Which layer the note takes
+
+`PromptDictionary` returns the note only when `Dictionary.Enabled && !NotesOff` (`Voxt/internal/session/text.go:122`). `addDictionary` trims it and adds it as the `dictionary` layer after the task instructions and before scene, glossary and input (`Voxt/internal/compose/dictionary.go:11`). Layers are joined with a blank line.
+
+$$\text{system} = [\text{role},\ \text{task rules},\ \text{dictionary}] \oplus [\text{scene},\ \text{glossary},\ \text{input}]$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| `Notes` | the note as written | dictionary settings |
+| `NotesOff` | whether the note is kept out of the prompt | dictionary settings |
+| `Dictionary` layer | where the note sits in the system prompt | `compose/dictionary.go:11` |
+
+### Why the note differs from the glossary
+
+The glossary is structured "term to aliases" that the program picks by rule; the note is free text, and the model reads whatever you write. The note can carry what the glossary cannot, such as "this team says Priya as Preeya, do not change their wording". It is shown only to the language model, so it changes neither recognition nor the transcript replacement.
+
+### Boundary
+
+Turning notes off only keeps the note out of the prompt; it does not delete the text you wrote. An empty note adds no layer, so the system prompt matches one with no note at all.
+
+### Next
+
+The four destinations are covered. The final step asks what survives when the language model is away.
+
+## Step 7 · What survives without the language model
+
+> **In one line:** Speech hints and alias replacement run outside the language model and survive its failure; the glossary and the note vanish with it.
+
+### On the stage
+
+- Four rows list speech hints, alias replacement, glossary and note, each with where it goes.
+- The orange column on the right is the model-off state: the first two are ✓, the last two are ✗.
+- The two lower lines say the first two run outside the language model, and the master dictionary switch turns all four off.
+- The dashed box at the bottom hands the topic to the next chapter: how long the recording and its history last.
+
+### Why the first two survive
+
+`SpeechHints` calls `dict.Hints` only when a recognition request is sent (`session/run_audio.go:36`); `spoken()` calls `dict.Replace` only right before cleanup (`session/cleanup.go:68`). Neither needs the language model. The glossary is assembled by `glossary()` and the note is added by `addDictionary`, both only while a cleanup request is built; without the model there is no such request.
+
+| Destination | With model off | Reason |
+|---|---|---|
+| speech hints | still works | sent to the recognizer, not through the language model |
+| alias replacement | still works | runs right after recognition, before cleanup |
+| glossary | gone | sent with the language-model prompt |
+| note | gone | sent with the language-model prompt |
+
+### The master switch
+
+With `Dictionary.Enabled` off, `SpeechHints`, `spoken()`, `glossary()` and `PromptDictionary` all return empty, so all four stop together. The other three switches (speech hints, glossary, notes off) each control one destination.
+
+### Next
+
+The dictionary only fixes the words. The recording and its history are still there; the next chapter asks how long they last and how they expire.

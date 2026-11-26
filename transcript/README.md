@@ -50,3 +50,4 @@ Read it to check wording and numbers across chapters without opening the compone
 | voxt | 05 | [The language-model connection](voxt/language-model-connection.md) | 5 |
 | voxt | 06 | [The text workshop](voxt/compose-and-cleanup.md) | 8 |
 | voxt | 07 | [Checks before text lands](voxt/deliver-text-safely.md) | 5 |
+| voxt | 08 | [Your small dictionary](voxt/personal-dictionary.md) | 7 |

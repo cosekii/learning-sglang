@@ -1,0 +1,53 @@
+---
+layout: ../../../layouts/Chapter.astro
+book: voxt
+slug: personal-dictionary
+---
+import PersonalDictionary from '../../../components/voxt/PersonalDictionary.svelte';
+import { voxtNeighbors } from '../../../voxt/chapters';
+import { deepFor } from '../../../deep';
+export const deep = await deepFor('voxt-personal-dictionary');
+
+<PersonalDictionary client:load {...voxtNeighbors('personal-dictionary')} deep={deep} />
+
+<details class="i18n-en">
+<summary>Where this chapter's claims come from</summary>
+
+Step 1 reads the term and its parts. A term is `store.Term`: `Term`, `Aliases`, `Note`, `Enabled`, timestamps. `Clean` trims each to one line, drops empty aliases, the term itself and case-insensitive duplicates, and keeps at most `MaxAliases = 10`; `Check` refuses an empty term, a newline, or more than `MaxTermChars = 80` runes (`dict.go`).
+
+Step 2 reads the four destinations and their switches. `SpeechHints` returns `dict.Hints` only when `Dictionary.Enabled && Dictionary.ASRHints` (`session/run_audio.go`). `spoken()` replaces aliases only when `Dictionary.Enabled` (`session/cleanup.go`). `glossary()` builds `compose.Term` list only when `Dictionary.Enabled && Dictionary.Glossary` (`session/run_transcribe.go`). `PromptDictionary` returns `Notes` only when `Dictionary.Enabled && !NotesOff` (`session/text.go`).
+
+Step 3 reads `dict.Hints`: it clones the terms, sorts stable by `UpdatedAt` descending, keeps enabled ones once (ignoring case via lower-cased key), and returns each term as one line. Aliases are not included; the doc comment says they are what recognition gets wrong.
+
+Step 4 reads `dict.Replace` and `matchText`. Enabled terms' aliases are matched; Latin aliases need word boundaries on both ends (`wordRune`), CJK aliases match anywhere; patterns are sorted longest first; a term already written as itself is kept (it is only added as a pattern when `highlight`). `spoken()` in `session/cleanup.go` calls `dict.Replace(raw, r.terms)` and is called before `transcribe()` in `session/run.go:301,312`.
+
+Step 5 reads `compose.Glossary`: a dictionary of at most `GlossaryAllUpTo = 30` terms goes in whole; a larger one keeps only terms whose spelling or alias appears in the text (spaces, `-`, `_` removed, case-folded), then stops at `MaxGlossaryTerms = 60` lines or `MaxGlossaryChars = 2000` characters. Lines read `- Term (heard as: alias)`; Chinese uses `（可能被听成：…）`.
+
+Step 6 reads `PromptDictionary` and `addDictionary`: the note is trimmed and added as the `dictionary` layer after the task layers and before scene, glossary and input, so the system-prompt prefix stays stable (`compose/dictionary.go`). It is never passed to ASR or to `dict.Replace`.
+
+Step 7 is a status read: `SpeechHints` and `spoken()`/`dict.Replace` do not call the language model; `Glossary` and `addDictionary` are only used when a cleanup request is built.
+
+Source revision: `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`. The deep dive lists exact files and lines.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的出处</summary>
+
+第 1 步读词条和它的组成部分。一个词条是 `store.Term`：`Term`、`Aliases`、`Note`、`Enabled` 和两个时间。`Clean` 把它压成单行，丢掉空别名、词条本身和仅大小写不同的重复别名，最多留 `MaxAliases = 10` 个；`Check` 拒绝空词条、含换行、或超过 `MaxTermChars = 80` 个字符的词条（`dict.go`）。
+
+第 2 步读四个去处和它们的开关。`SpeechHints` 只在 `Dictionary.Enabled && Dictionary.ASRHints` 时返回 `dict.Hints`（`session/run_audio.go`）。`spoken()` 只在 `Dictionary.Enabled` 时替换别名（`session/cleanup.go`）。`glossary()` 只在 `Dictionary.Enabled && Dictionary.Glossary` 时组装 `compose.Term`（`session/run_transcribe.go`）。`PromptDictionary` 只在 `Dictionary.Enabled && !NotesOff` 时返回 `Notes`（`session/text.go`）。
+
+第 3 步读 `dict.Hints`：复制词条，按 `UpdatedAt` 从新到旧稳定排序，启用的只留一次（用小写键忽略大小写），每条词条压成单行返回。别名不在里面；注释说别名正是识别会写错的东西。
+
+第 4 步读 `dict.Replace` 和 `matchText`。匹配启用词条的别名；拉丁别名两端要单词边界（`wordRune`），中日韩别名任意位置匹配；模式按长度从长到短排序；已经按词条写好的原文保持原样（只在 `highlight` 时把词条本身也当模式）。`session/cleanup.go` 的 `spoken()` 调用 `dict.Replace(raw, r.terms)`，并在 `session/run.go:301,312` 里排在 `transcribe()` 之前。
+
+第 5 步读 `compose.Glossary`：不超过 `GlossaryAllUpTo = 30` 个词条的词典整份放进去；更大的词典只留文字里出现过的词条（去掉空格、`-`、`_`，再折成小写后比较），然后停在 `MaxGlossaryTerms = 60` 行或 `MaxGlossaryChars = 2000` 个字符。每行是 `- Term (heard as: alias)`；中文用 `（可能被听成：…）`。
+
+第 6 步读 `PromptDictionary` 和 `addDictionary`：备注去掉首尾空白，作为 `dictionary` 一层加在任务说明之后、scene／术语表／输入之前，所以 system 提示的前缀保持不变（`compose/dictionary.go`）。它从不去 ASR，也不进 `dict.Replace`。
+
+第 7 步是状态盘点：`SpeechHints` 和 `spoken()`／`dict.Replace` 不调用语言模型；`Glossary` 和 `addDictionary` 只在组装清理请求时用上。
+
+本章源码版本：`sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`。精确文件和行号见深入讲解。
+
+</details>
