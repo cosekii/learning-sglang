@@ -257,12 +257,12 @@
       ],
     },
   }, {
-    caption: 'The reported training metric is 7 seconds higher online. Its measurement window is unspecified.',
-    captionZh: '报告的训练指标在线版高 7 秒。原文没说测量窗口。',
+    caption: 'The reported training metric is 7 seconds higher online. Which training steps it covers is unspecified.',
+    captionZh: '报告的训练指标在线版高 7 秒。原文没说这些秒数覆盖哪些训练步。',
     title: 'The online draft’s reported metric is 7 seconds higher', titleZh: '在线 draft 的报告指标高 7 秒',
-    subtitle: 'reported training metric in seconds · measurement window unspecified', subtitleZh: '报告的训练指标，单位为秒 · 测量窗口未说明',
-    foot: 'Window unspecified; this is not a full RL-round timeline.',
-    footZh: '测量窗口未说明；这不是完整 RL 轮次时间线。',
+    subtitle: 'reported training seconds · which training steps they cover is not reported', subtitleZh: '报告的训练秒数 · 覆盖哪些训练步未说明',
+    foot: 'This is not a full RL-round timeline.',
+    footZh: '这不是完整 RL 轮次时间线。',
     legend: 'Grey = no spec · orange = frozen · blue = online · one scale', legendZh: '灰 = 不用投机 · 橙 = 冻结 · 蓝 = 在线 · 同一比例',
     nodes: [
       { title: 'NO SPEC', titleZh: '不用投机', result: `${N.SPEC_NO_SPEC_TRAIN_S} s`, resultZh: `${N.SPEC_NO_SPEC_TRAIN_S} 秒`, body: 'no draft training', bodyZh: '不训练 draft', tone: 'plain', bar: N.SPEC_NO_SPEC_TRAIN_S / N.SPEC_ONLINE_TRAIN_S, compact: true },
@@ -279,8 +279,8 @@
     ],
     mobile: {
       title: 'Reported metric is 7 seconds higher', titleZh: '报告指标高 7 秒',
-      subtitle: 'Training metric in seconds · window unspecified', subtitleZh: '训练指标，单位为秒 · 窗口未说明',
-      foot: 'Window unspecified; not a full-round timeline.', footZh: '窗口未说明；不是整轮时间线。',
+      subtitle: 'Training seconds · steps covered not reported', subtitleZh: '训练秒数 · 覆盖哪些训练步未说明',
+      foot: 'Not a full RL-round timeline.', footZh: '这不是整轮时间线。',
       legend: 'Grey = none · orange = frozen · blue = online', legendZh: '灰 = 不用 · 橙 = 冻结 · 蓝 = 在线',
       formulas: [
         { en: 'Online − no: 148 − 141 = 7 s', zh: '在线 − 不用：148 − 141 = 7 秒' },

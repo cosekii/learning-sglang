@@ -236,7 +236,7 @@ Source: `Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:66-114`.
 
 ## Step 8 · Online draft training adds 7 seconds
 
-**One sentence.** The same public table lists a training metric of 141, 143 and 148 seconds; online is 7 seconds higher, but the article leaves its measurement window unspecified and cannot establish a whole-round speedup.
+**One sentence.** The same public table lists a training metric of 141, 143 and 148 seconds. Online is 7 seconds higher, but the article does not say which training steps those seconds cover, so the values cannot establish a whole-round speedup.
 
 ### On the stage
 
@@ -259,7 +259,7 @@ $$\Delta T_{a:b}=T^{train}_a-T^{train}_b,\qquad c_{a:b}=\frac{T^{train}_a}{T^{tr
 $$\Delta T_{online:no}=148-141=7\ \text{s},\qquad c_{online:no}=148/141-1=5.0\%$$
 $$\Delta T_{online:frozen}=148-143=5\ \text{s},\qquad c_{online:frozen}=148/143-1=3.5\%$$
 
-Step 7 reports tokens/s, while this step reports a training metric in seconds. The article does not say which measurement window the 141, 143 and 148 seconds cover. It also omits a common rollout token count and complete round timeline, so these values cannot produce an end-to-end gain. The 5.0% figure is an increase in this reported metric, not a claim that the whole round becomes 5.0% slower.
+Step 7 reports tokens/s, while this step reports a training metric in seconds. The article does not say which training steps the 141, 143 and 148 seconds cover. It also omits a common rollout token count and complete round timeline, so these values cannot produce an end-to-end gain. The 5.0% figure is an increase in this reported metric, not a claim that the whole round becomes 5.0% slower.
 
 ### Next
 
