@@ -5,11 +5,11 @@
 ### On the stage
 
 - Left blue panel: **model files**, 2.47 GB, nine files in the model library, on disk under Application Support, downloaded after install.
-- Middle amber panel: **speech server**, one ASR process, loads a model into memory, stays after use, and exits after ten idle minutes in Automatic mode. Step 4 shows the Silero VAD server beside it.
+- Middle amber panel: **speech server**, one ASR process, loads a model into memory, stays after use, and is asked to stop after ten idle minutes in Automatic mode. Step 4 shows the Silero VAD server beside it.
 - Right blue panel: **app bundle**, 280 MB for the documented 0.1.0-beta.1 build, the program the user opens, installed separately from models.
 - The top arithmetic is 2,467,856,503 ÷ 280,000,000 ≈ 8.8, shown as about 9×. The bottom arithmetic adds the largest file and the other eight.
 - The legend says blue = a file on disk, amber = a running program.
-- Three lines below: the model arrives later, Automatic stops an idle server and its files stay, an app update replaces the bundle and not the model folder.
+- Three lines below: the model arrives later, Automatic asks an idle server to stop and its files stay, an app update replaces the bundle and not the model folder.
 
 ### Formula
 
@@ -75,6 +75,7 @@ $$ \text{LFS file: }\ \mathrm{SHA256}(\text{file}) = \text{listed hash}, \qquad 
 |---|---|---|
 | files | the catalogue lists them | 9 |
 | weights | `model.safetensors` | 2,463,307,541 B = 2.46 GB |
+| `vocab.json` | 2,776,833 B | 2.78 MB |
 | total | Step 1's nine-file sum | 2,467,856,503 B = 2.47 GB |
 
 ### Why a commit, not a name
@@ -135,7 +136,7 @@ Step 4 turns from the files to the process that reads them.
 
 ## Step 4 · The speech server
 
-> **In one line:** Files stay on disk; using a model starts a separate server process, Automatic mode stops it after ten idle minutes, and Settings can change that lifetime.
+> **In one line:** Files stay on disk; using a model starts a separate server process, Automatic mode asks it to stop after ten idle minutes, and Settings can change that lifetime.
 
 ### On the stage
 
@@ -186,7 +187,7 @@ Step 5 turns to the third thing: the app bundle and its updater.
 ### On the stage
 
 - Left panel: the in-app route with an update list. The constructed example has `Voxt 2.0` running and `Voxt 2.1` on disk, and the updater replaces the bundle.
-- Right panel: a release build without a feed uses the installer route. The `Voxt installer` is downloaded to disk and installed by the user; the app does not replace itself. A development build has no update route.
+- Right panel: a release build without a feed gets a matching disk image (DMG), or the release page when no DMG matches. The user downloads and installs it; the app does not replace itself. A development build has no update route.
 - Middle strip: **the model folder**, `SGLang Omni/models`, 2.47 GB, untouched by both update routes.
 - Bottom flow, **until restart**: the old version keeps running → the helper on disk is already the new one → the app's helper manager refuses it because its version does not match the running app.
 

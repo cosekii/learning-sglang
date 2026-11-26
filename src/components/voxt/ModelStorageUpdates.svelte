@@ -34,8 +34,8 @@
     caption: 'Using a model starts its server. Ten idle minutes ask it to stop; its files stay.',
     captionZh: '使用模型会启动服务器。空闲 10 分钟请求停止，文件留着。',
   }, {
-    caption: 'A release build with an update list updates in-app. Without one, it offers an installer.',
-    captionZh: '发布版有更新清单时应用内更新。没有时，提供一个安装包。',
+    caption: 'A release build with a feed updates in-app; without one, a DMG or release page.',
+    captionZh: '发布版有更新源时应用内更新。没有时提供 DMG 或发布页。',
   }, {
     caption: 'Downloads, unloads, and in-app updates finish in three different ways.',
     captionZh: '下载、卸载和应用内更新，各有不同的完成条件。',
@@ -53,8 +53,8 @@
     en: 'The model files stay on disk. Using a model starts the speech server, a separate program that loads the model into memory. The Silero voice detector has its own small server. Automatic mode asks the speech server to stop after ten idle minutes; the unload finishes when the process exits. Settings offers 5, 15, 30 or 60 minutes, or keep until quit. The next use starts it again. Delete requests unloading and then file removal without waiting; a busy server exits after its uses end.',
     zh: '模型文件留在磁盘上。用模型会启动语音服务器，它是把模型读进内存的另一个程序。Silero 语音检测器有自己的小服务器。自动模式在空闲十分钟后请求语音服务器停止，卸载在进程退出时才算完成；设置里可以选 5、15、30 或 60 分钟，也可以一直留到退出应用。下次用会再启动。删除先请求卸载，再请求删文件，不等待进程退出；忙碌的服务器等这次用完再退出。',
   }, {
-    en: "Voxt's update list is its signed list of new app versions. A release build with that list lets the updater replace the app bundle while the old version runs; a card then asks for a restart. Until the restart, the helper on disk is the new version, so the app's helper manager refuses to start it. A release build without the list offers an external installer instead. Development builds have no update route. Neither route touches the model folder.",
-    zh: 'Voxt 的更新清单是它签名的新版本清单。发布版有这个清单时，更新器在旧版本运行时替换应用包，然后卡片请用户重启。重启之前，磁盘上的 helper 已经是新版本，应用的 helper 管理器就不启动它。发布版没有这个清单时，提供外部安装包；开发版没有更新路线。两条路都不动模型文件夹。',
+    en: "Voxt's update list is its signed list of new app versions. A release build with that list lets the updater replace the app bundle while the old version runs; a card then asks for a restart. Until the restart, the helper on disk is the new version, so the app's helper manager refuses to start it. A release build without the list offers a matching DMG or, when none matches, the release page. Development builds have no update route. Neither route touches the model folder.",
+    zh: 'Voxt 的更新清单是它签名的新版本清单。发布版有这个清单时，更新器在旧版本运行时替换应用包，然后卡片请用户重启。重启之前，磁盘上的 helper 已经是新版本，应用的 helper 管理器就不启动它。发布版没有这个清单时，提供匹配的 DMG；没有匹配的 DMG 就提供发布页。开发版没有更新路线。两条路都不动模型文件夹。',
   }, {
     en: 'Three things finish in three ways. A download is done when every content check passes and the files sit in the library. An unload is done when the server process exits and frees memory. An in-app update is done after the app bundle is replaced and the app restarts. Updating the app downloads no model, stopping the server deletes no file, and deleting a model updates no app. The next panel asks which sounds Voxt records in a meeting: the microphone, other apps, or both.',
     zh: '三件事有三种收尾。下载在校验全部通过、文件进入模型库时完成。卸载在服务器进程退出、内存释放时完成。应用内更新在应用包被替换、应用重启后完成。更新应用不下载模型，停服务器不删文件，删模型不更新应用。下一幅图问会议会录下哪些声音：麦克风、其他应用，还是两者都录。',
@@ -118,7 +118,7 @@
           <text x="360" y="145" text-anchor="middle" class="result">{t('1 ASR process', '1 个 ASR 进程')}</text>
           <text x="360" y="178" text-anchor="middle" class="detail">{t('loads a model into memory', '把模型读进内存')}</text>
           <text x="360" y="200" text-anchor="middle" class="detail">{t('stays after use', '用完后还会留着')}</text>
-          <text x="360" y="222" text-anchor="middle" class="detail">{t('Automatic: idle 10 min → stop request', '自动模式：空闲 10 分钟 → 退出')}</text>
+          <text x="360" y="222" text-anchor="middle" class="detail">{t('Automatic: idle 10 min → stop request', '自动模式：空闲 10 分钟 → 请求停止')}</text>
 
           <rect x="488" y="72" width="212" height="225" rx="12" fill="var(--bg)" stroke="var(--accent)" />
           <text x="594" y="98" text-anchor="middle" class="label blue">{t('APP BUNDLE', '应用包')}</text>
@@ -135,7 +135,7 @@
           <text x="28" y="360" class="pt">·</text>
           <text x="38" y="360" class="detail">{t('the model arrives later, not inside the app', '模型是后来下载的，不在应用里面')}</text>
           <text x="28" y="386" class="pt">·</text>
-          <text x="38" y="386" class="detail">{t('Automatic stops an idle server; its files stay', '自动模式会停空闲服务器，文件留着')}</text>
+          <text x="38" y="386" class="detail">{t('Automatic asks an idle server to stop; its files stay', '自动模式会请求空闲服务器停止，文件留着')}</text>
           <text x="28" y="412" class="pt">·</text>
           <text x="38" y="412" class="detail">{t('an app update replaces the bundle, not the model folder', '应用更新换的是应用，不是模型文件夹')}</text>
           <text x={W / 2} y="438" text-anchor="middle" class="formula">{weightsBytes} B + {otherBytes} B = {totalBytes} B</text>
@@ -151,7 +151,7 @@
           <text x="150" y="208" text-anchor="middle" class="label amber">{t('SPEECH SERVER', '语音服务器')}</text>
           <text x="150" y="240" text-anchor="middle" class="result">{t('1 ASR process', '1 个 ASR 进程')}</text>
           <text x="150" y="262" text-anchor="middle" class="detail">{t('loads a model into memory', '把模型读进内存')}</text>
-          <text x="150" y="280" text-anchor="middle" class="detail">{t('Automatic: idle 10 min → stop request', '自动模式：空闲 10 分钟 → 退出')}</text>
+          <text x="150" y="280" text-anchor="middle" class="detail">{t('Automatic: idle 10 min → stop request', '自动模式：空闲 10 分钟 → 请求停止')}</text>
 
           <rect x="15" y="296" width="270" height="100" rx="10" fill="var(--bg)" stroke="var(--accent)" />
           <text x="150" y="318" text-anchor="middle" class="label blue">{t('APP BUNDLE', '应用包')}</text>
@@ -168,7 +168,7 @@
           <text x="30" y="458" class="detail">{t('the model arrives later,', '模型是后来下载的，')}</text>
           <text x="30" y="478" class="detail">{t('not inside the app', '不在应用里面')}</text>
           <text x="20" y="504" class="pt">·</text>
-          <text x="30" y="504" class="detail">{t('Automatic stops an idle server;', '自动模式会停空闲服务器，')}</text>
+          <text x="30" y="504" class="detail">{t('Automatic asks an idle server to stop;', '自动模式会请求空闲服务器停止，')}</text>
           <text x="30" y="524" class="detail">{t('its files stay', '文件留着')}</text>
           <text x="20" y="550" class="pt">·</text>
           <text x="30" y="550" class="detail">{t('an app update replaces the app,', '应用更新换的是应用，')}</text>
@@ -314,7 +314,7 @@
           <text x="529" y="122" text-anchor="middle" class="mono">qwen3_asr_server</text>
           <text x="529" y="148" text-anchor="middle" class="detail">{t('loads the model from the folder', '从这个文件夹读模型')}</text>
           <text x="529" y="172" text-anchor="middle" class="detail">{t('VAD has its own small server', 'VAD 有自己的小服务器')}</text>
-          <text x="529" y="196" text-anchor="middle" class="label">{t(`Automatic: idle ${VOXT_SERVER_IDLE_MINUTES} min → stop request`, `自动模式：空闲 ${VOXT_SERVER_IDLE_MINUTES} 分钟 → 退出`)}</text>
+          <text x="529" y="196" text-anchor="middle" class="label">{t(`Automatic: idle ${VOXT_SERVER_IDLE_MINUTES} min → stop request`, `自动模式：空闲 ${VOXT_SERVER_IDLE_MINUTES} 分钟 → 请求停止`)}</text>
           <text x="529" y="222" text-anchor="middle" class="detail">{t('next use → restart', '下次用 → 再启动')}</text>
 
           <rect x="20" y="284" width="680" height="110" rx="10" fill="var(--bg)" stroke="var(--line)" />
@@ -341,7 +341,7 @@
           <text x="150" y="322" text-anchor="middle" class="mono">qwen3_asr_server</text>
           <text x="150" y="346" text-anchor="middle" class="detail">{t('loads the model from the folder', '从文件夹读模型')}</text>
           <text x="150" y="368" text-anchor="middle" class="detail">{t('VAD has its own small server', 'VAD 有自己的小服务器')}</text>
-          <text x="150" y="394" text-anchor="middle" class="label">{t(`Automatic: idle ${VOXT_SERVER_IDLE_MINUTES} min → stop request`, `自动模式：空闲 ${VOXT_SERVER_IDLE_MINUTES} 分钟 → 退出`)}</text>
+          <text x="150" y="394" text-anchor="middle" class="label">{t(`Automatic: idle ${VOXT_SERVER_IDLE_MINUTES} min → stop request`, `自动模式：空闲 ${VOXT_SERVER_IDLE_MINUTES} 分钟 → 请求停止`)}</text>
           <text x="150" y="420" text-anchor="middle" class="detail">{t('next use → restart', '下次用 → 再启动')}</text>
 
           <rect x="15" y="486" width="270" height="200" rx="10" fill="var(--bg)" stroke="var(--line)" />
@@ -360,7 +360,7 @@
         {/if}
       {:else if step === 4}
         <text x={W / 2} y={phone ? 25 : 27} text-anchor="middle" class="title">{t('ONE APP UPDATE · TWO ROUTES', '一次应用更新 · 两条路')}</text>
-        <text x={W / 2} y={phone ? 47 : 50} text-anchor="middle" class="subtitle">{t("Voxt's update list → in-app · no list → installer", '有 Voxt 更新清单：应用内 · 没有：安装包')}</text>
+        <text x={W / 2} y={phone ? 47 : 50} text-anchor="middle" class="subtitle">{t('feed → in-app · feedless release → DMG/page', '有更新源：应用内 · 无源发布版：DMG 或发布页')}</text>
         {#if !phone}
           <rect x="20" y="72" width="330" height="170" rx="12" fill="var(--bg)" stroke="var(--line)" />
           <text x="185" y="96" text-anchor="middle" class="label">{t('WITH UPDATE LIST · IN-APP', '有更新清单 · 应用内更新')}</text>
@@ -376,9 +376,9 @@
           <rect x="370" y="72" width="330" height="170" rx="12" fill="var(--bg)" stroke="var(--line)" />
           <text x="535" y="96" text-anchor="middle" class="label">{t('NO FEED · RELEASE BUILD', '没有更新源 · 发布版')}</text>
           <rect x="390" y="112" width="290" height="60" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="535" y="138" text-anchor="middle" class="detail">{t('Voxt installer', 'Voxt 安装包')}</text>
+          <text x="535" y="138" text-anchor="middle" class="detail">{t('matching DMG or release page', '匹配的 DMG 或发布页')}</text>
           <text x="535" y="158" text-anchor="middle" class="detail">{t('on disk', '下载到磁盘')}</text>
-          <text x="535" y="196" text-anchor="middle" class="detail">{t('download it, then install it yourself', '下载后由用户安装')}</text>
+          <text x="535" y="196" text-anchor="middle" class="detail">{t('download it, or open the release page', '下载安装，或打开发布页')}</text>
           <text x="535" y="220" text-anchor="middle" class="detail">{t('development builds have no update', '开发版没有更新')}</text>
 
           <rect x="20" y="256" width="680" height="44" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
@@ -413,11 +413,11 @@
           <text x="150" y="172" text-anchor="middle" class="detail">{t('the updater replaces the app', '更新器替换整个应用')}</text>
 
           <rect x="15" y="234" width="270" height="130" rx="10" fill="var(--bg)" stroke="var(--line)" />
-          <text x="150" y="258" text-anchor="middle" class="label">{t('NO UPDATE LIST · INSTALLER', '没有更新清单 · 安装包')}</text>
+          <text x="150" y="258" text-anchor="middle" class="label">{t('NO FEED · RELEASE BUILD', '没有更新源 · 发布版')}</text>
           <rect x="30" y="272" width="240" height="42" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="150" y="297" text-anchor="middle" class="detail">{t('Voxt installer · on disk', 'Voxt 安装包 · 下载到磁盘')}</text>
-          <text x="150" y="334" text-anchor="middle" class="detail">{t('download, then install yourself', '下载后由用户安装')}</text>
-          <text x="150" y="354" text-anchor="middle" class="detail">{t('the app does not replace itself', '应用不直接替换自己')}</text>
+          <text x="150" y="297" text-anchor="middle" class="detail">{t('matching DMG or release page', '匹配的 DMG 或发布页')}</text>
+          <text x="150" y="334" text-anchor="middle" class="detail">{t('download, or open the release page', '下载安装，或打开发布页')}</text>
+          <text x="150" y="354" text-anchor="middle" class="detail">{t('dev build: no update route', '开发版没有更新')}</text>
 
           <rect x="15" y="378" width="270" height="44" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="150" y="405" text-anchor="middle" class="detail">{t(`model folder · ${gb} GB · untouched`, `模型文件夹 · ${gb} GB · 两条路都不碰`)}</text>
