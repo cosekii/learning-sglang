@@ -26,6 +26,7 @@
 
 - 阅读 [Jay Alammar《The Illustrated Transformer》](https://jalammar.github.io/illustrated-transformer/) 并打开多头回收图，对照第 6、14 步中文截图、累计 transcript 和深入讲解。范例在多头分步计算后用同一例子回收成一张总图；本章第 6 步目前只用文字说 `32 × 128 = 4,096` 和 `W_O`，缺少可核对的形状回收图。具体改法并入 Z03，本轮不试改满分步骤。
 - EVAL 复核：第 6 步整步易读 **12/12**、原分 **24/24**、**0 洞**，R1 为「五列 value 各乘自己的权重，再合成 ␣is 的输出，␣France 的 0.53 权重最大」；第 14 步中文易读 **12/12**、原分 **24/24**、**0 洞**，整步仍 **11/12**，只余受保护英文 R4。章均分保持 **24.00/24**，未把参考范例的额外覆盖记成冷读洞。
+- 独立模拟冷读只看中文截图与累计 transcript（深入讲解仅用于原第 10、12 项），确认第 6、14 步均 **12/12、24/24、0 内容洞、0 桌面显示洞**，无必须修项；未重放动画，手机布局由本章 `mobile` 检查覆盖。
 - 对照截图：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-autonomous-transformer-20261126-0000/final/`。`transcript`、中英本章 `mobile`、`deep-check 02`、本章 `zh-check`、`build` 与 `git diff --check` 通过；`readability` 保留既有 **9** 个受保护英文机械问题。未跑全站回归。
 
 ## 第 3 步三排分工整改（12:10 轮）
