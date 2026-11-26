@@ -137,14 +137,15 @@
       {:else if step === 1}
         <text x={phone ? 18 : 30} y="30" class="title">{t('Reuse a finished result · 1 of 4', '复用已完成的结果 · 1 / 4')}</text>
         <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'cache = saved output found by a key' : 'cache = saved output · exact key = every identity field matches', phone ? 'cache = 按 key 找已存结果' : 'cache = 已存结果 · 完整 key = 每个身份字段都匹配')}</text>
+        <text x={phone ? 18 : 30} y="79" class="label">{t('blue = GPU encode · orange = cached codes', '蓝 = GPU encode · 橙 = 已存 codes')}</text>
         {#if !phone}
-          <rect x="30" y="78" width="660" height="112" rx="11" fill="var(--bg)" stroke="var(--line)" />
-          <text x="45" y="102" class="small strong">{t('K = CACHE IDENTITY · ALL PARTS MUST MATCH', 'K = cache 身份 · 所有部分都必须匹配')}</text>
-          <text x="45" y="127" class="code">model + version + encoder settings + result type</text>
-          <text x="45" y="150" class="code">audio content + encode choices</text>
-          <text x="45" y="174" class="small">{t('choices can change codes · prompt text is not in K', 'choices 会改变 codes · prompt 文本不在 K 里')}</text>
+          <rect x="30" y="102" width="660" height="112" rx="11" fill="var(--bg)" stroke="var(--line)" />
+          <text x="45" y="126" class="small strong">{t('K = CACHE IDENTITY · ALL PARTS MUST MATCH', 'K = cache 身份 · 所有部分都必须匹配')}</text>
+          <text x="45" y="151" class="code">model + version + encoder settings + result type</text>
+          <text x="45" y="174" class="code">audio content + encode choices</text>
+          <text x="45" y="198" class="small">{t('choices can change codes · prompt text is not in K', 'choices 会改变 codes · prompt 文本不在 K 里')}</text>
           {#each requests as request, i}
-            {@const y = 205 + i * 61}
+            {@const y = 229 + i * 61}
             <text x="30" y={y + 25} class="small strong">{request.id}</text>
             <rect x="62" y={y} width="48" height="35" rx="7" fill="var(--bg)" stroke="var(--line)" />
             <text x="86" y={y + 23} text-anchor="middle" class="code">K</text>
@@ -164,14 +165,14 @@
           <text x="505" y="483" class="result">−≈{OPT_CACHE_SAVED_MS} ms</text>
           <text x="360" y="532" text-anchor="middle" class="small">{t('one miss + two hits · copies protect cached codes from edits', '一次 miss + 两次 hit · 副本保护已存 codes 不被修改')}</text>
         {:else}
-          <rect x="18" y="78" width="264" height="134" rx="11" fill="var(--bg)" stroke="var(--line)" />
-          <text x="32" y="102" class="small strong">{t('K = CACHE IDENTITY · MATCH ALL', 'K = cache 身份 · 全部匹配')}</text>
-          <text x="32" y="126" class="code">model + version + settings</text>
-          <text x="32" y="148" class="code">result type + audio + choices</text>
-          <text x="32" y="171" class="small">{t('choices can change codes', 'choices 会改变 codes')}</text>
-          <text x="32" y="195" class="small">{t('prompt text is not in K', 'prompt 文本不在 K 里')}</text>
+          <rect x="18" y="102" width="264" height="134" rx="11" fill="var(--bg)" stroke="var(--line)" />
+          <text x="32" y="126" class="small strong">{t('K = CACHE IDENTITY · MATCH ALL', 'K = cache 身份 · 全部匹配')}</text>
+          <text x="32" y="150" class="code">model + version + settings</text>
+          <text x="32" y="172" class="code">result type + audio + choices</text>
+          <text x="32" y="195" class="small">{t('choices can change codes', 'choices 会改变 codes')}</text>
+          <text x="32" y="219" class="small">{t('prompt text is not in K', 'prompt 文本不在 K 里')}</text>
           {#each requests as request, i}
-            {@const y = 230 + i * 91}
+            {@const y = 254 + i * 82}
             <rect x="18" y={y} width="264" height="76" rx="9" fill="var(--bg)" stroke="var(--line)" />
             <text x="32" y={y + 24} class="small strong">{request.id} · K · {i === 0 ? 'miss' : 'hit'}</text>
             <rect x="32" y={y + 36} width="115" height="29" rx="6" fill={i === 0 ? 'var(--accent-soft)' : 'var(--gen-soft)'} stroke={i === 0 ? 'var(--accent)' : 'var(--gen)'} />
@@ -203,7 +204,7 @@
               {@const y = 176 + i * 76}
               <text x={x + 15} y={y + 22} class="small strong">{request.id} · {shared ? (i === 0 ? t('does the work', '负责编码') : t('waits for A', '等待 A')) : t('caller', '调用')}</text>
               <rect x={x + 15} y={y + 34} width="200" height="28" rx="6" fill={shared && i > 0 ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={shared && i > 0 ? 'var(--gen)' : 'var(--accent)'} />
-              <text x={x + 115} y={y + 54} text-anchor="middle" class="small">{shared && i > 0 ? t('wait 250 → copy', '等 250 → 副本') : t('encode 250 ms', '编码 250 ms')}</text>
+              <text x={x + 115} y={y + 54} text-anchor="middle" class="small">{shared && i > 0 ? t(`wait ${OPT_REFERENCE_ENCODE_MS} → copy`, `等 ${OPT_REFERENCE_ENCODE_MS} → 副本`) : t(`encode ${OPT_REFERENCE_ENCODE_MS} ms`, `编码 ${OPT_REFERENCE_ENCODE_MS} ms`)}</text>
             {/each}
             <text x={x + 15} y="426" class="result">GPU {t('work', '工作')} = {shared ? `≈${OPT_SINGLE_FLIGHT_GPU_TOTAL_MS}` : `≈${OPT_REFERENCE_TOTAL_MS}`} ms</text>
           {/each}
@@ -220,7 +221,7 @@
               {@const rowY = y + 62 + i * 56}
               <text x="32" y={rowY + 15} class="small strong">{request.id} · {shared ? (i === 0 ? t('does the work', '负责编码') : t('waits for A', '等待 A')) : t('caller', '调用')}</text>
               <rect x="32" y={rowY + 23} width="160" height="23" rx="5" fill={shared && i > 0 ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={shared && i > 0 ? 'var(--gen)' : 'var(--accent)'} />
-              <text x="202" y={rowY + 40} class="small">{shared && i > 0 ? t('wait→copy', '等→副本') : '250 ms'}</text>
+              <text x="202" y={rowY + 40} class="small">{shared && i > 0 ? t('wait→copy', '等→副本') : `${OPT_REFERENCE_ENCODE_MS} ms`}</text>
             {/each}
             <text x="32" y={y + 259} class="result">GPU = {shared ? `≈${OPT_SINGLE_FLIGHT_GPU_TOTAL_MS}` : `≈${OPT_REFERENCE_TOTAL_MS}`} ms</text>
           {/each}
@@ -303,8 +304,8 @@
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Ordering only · MOSS default off' : 'Constructed ordering; no speedup claimed. MOSS-TTS-Local defaults async decode off.', phone ? '只看顺序 · MOSS 默认关闭' : '构造顺序，不声称加速。MOSS-TTS-Local 默认关闭异步 decode。')}</text>
       {:else if step === 4}
-        <text x={phone ? 18 : 30} y="30" class="title">{t('Qwen3-Omni audio graph · 4 of 4', 'Qwen3-Omni audio graph · 4 / 4')}</text>
-        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'CUDA graph = record once, then replay' : 'Ch. 11 Step 1: a CUDA graph records launches, then replays them', phone ? 'CUDA graph = 录一次，再重放' : 'Ch. 11 Step 1：CUDA graph 录下 launches，再重放')}</text>
+        <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'Qwen audio graph · 4 of 4 · 1/2' : 'Qwen3-Omni audio graph · 4 of 4 · 1/2', phone ? 'Qwen audio graph · 4 / 4 · 1/2' : 'Qwen3-Omni audio graph · 4 / 4 · 1/2')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'CUDA graph = record once, then replay' : 'Learning SGLang Ch. 11 Step 1: a CUDA graph records launches, then replays them', phone ? 'CUDA graph = 录一次，再重放' : 'Learning SGLang 第 11 章第 1 步：CUDA graph 录下 launches，再重放')}</text>
         <text x={phone ? 18 : 30} y="79" class="label">{t(phone ? 'blue kernels · orange graph · grey CPU' : 'blue = GPU kernels · orange = graph · grey = CPU dispatch', phone ? '蓝 kernels · 橙 graph · 灰 CPU' : '蓝 = GPU kernels · 橙 = graph · 灰 = CPU dispatch')}</text>
         {#if !phone}
           {#each [false, true] as graphed}
@@ -354,8 +355,8 @@
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Opt-in · eager fallback remains' : 'Opt-in audio-layer graphs; eager fallback remains. No timing win claimed.', phone ? '可选开启 · 保留 eager 回退' : '可选 audio 层 graph；保留 eager 回退，不声称耗时收益。')}</text>
       {:else if step === 5}
-        <text x={phone ? 18 : 30} y="30" class="title">{t('Qwen3-Omni audio buckets · 4 of 4', 'Qwen3-Omni audio buckets · 4 / 4')}</text>
-        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'bucket = captured size · Ch. 11 Steps 10–11' : 'token bucket = captured input size · Ch. 11 Steps 10–11 showed pad and crop', phone ? 'bucket = 已 capture 的大小 · Ch. 11 Steps 10–11' : 'token bucket = 已 capture 的输入大小 · Ch. 11 Steps 10–11 已讲补位和裁切')}</text>
+        <text x={phone ? 18 : 30} y="30" class="title">{t('Qwen3-Omni audio buckets', 'Qwen3-Omni audio buckets')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'bucket = captured size' : 'token bucket = captured input size · Learning SGLang Ch. 11 Steps 10–11 showed pad and crop', phone ? 'bucket = 已 capture 的大小' : 'token bucket = 已 capture 的输入大小 · Learning SGLang 第 11 章第 10–11 步已讲补位和裁切')}</text>
         <text x={phone ? 18 : 30} y="79" class="label">{t(phone ? 'blue real · grey zeros · orange graph' : 'blue = real tokens · grey = zero padding · orange = chosen graph', phone ? '蓝真实 · 灰补零 · 橙 graph' : '蓝 = 真实 token · 灰 = 补零 · 橙 = 选中的 graph')}</text>
         {#if !phone}
           <text x="30" y="105" class="small strong">{OPT_AUDIO_GRAPH_COUNT} {t('DEFAULT SIZES · DEFAULT_TOKEN_BUCKETS', '种默认大小 · DEFAULT_TOKEN_BUCKETS')}</text>
@@ -405,6 +406,9 @@
           <text x="150" y="652" text-anchor="middle" class="small">{t('No match or >4096 tokens', '无匹配或超过 4096 token')}</text>
           <text x="150" y="681" text-anchor="middle" class="small strong">→ {t('run the original layers eagerly', '按原层序列 eager 运行')}</text>
           <text x="150" y="727" text-anchor="middle" class="small">{t('Only the first 300 outputs remain.', '只保留前 300 份输出。')}</text>
+        {/if}
+        {#if phone}
+          <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('Learning SGLang Ch. 11 Steps 10–11: pad + crop', 'Learning SGLang 第 11 章第 10–11 步：补位和裁切')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Constructed shapes · no timing result' : 'Constructed tensor shapes; real outputs cannot read padding. No timing result.', phone ? '构造形状 · 无耗时结果' : '构造 tensor 形状；真实输出读不到 padding，无耗时结果。')}</text>
       {:else if step === 6}
