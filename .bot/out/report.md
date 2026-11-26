@@ -1,8 +1,18 @@
 # lane k1 本轮报告
 
-日期：2026-11-26。只处理 Learning SGLang Omni 第 14、15 章及其评分记录；未碰其他书、第 1 本受保护英文原文或 `.bot/memory/`。
+日期：2026-11-26。只处理 Learning SGLang Omni 第 11、13、14、15 章的评分记录；未改教程源码，未碰其他书、第 1 本受保护英文原文或 `.bot/memory/`。
 
 ## 已处理的 review 项
+
+### Omni 11 `fish-s2-pro`
+
+- 按协调对 `1df0d34…d86329d` 的 GO 结论同步评分卡和 progress 表：R1–R5 **80/80**、原十个非视觉项 **160/160**、R6 **16/16**、原 #4/#5 **32/32**、原十二项 **192/192**。
+- cached-prefix／fingerprint 已关闭，不再保留 **191/192** 和协调待审记录；live cache-hit 与主人最终验收另计。
+
+### Omni 13 `qwen3-omni-deployment`
+
+- 按协调对 `720a6f7` 的内容与已读静态视图 GO 结论同步评分卡和 progress 表：R1–R5 **80/80**、原十个非视觉项 **160/160**、原 #4/#5 **32/32**、原十二项 **192/192**。
+- 第 6 步改为 **10/10、0 个未决文本洞**，不再保留默认 32 主语洞。完整动画 R6 未重评，主人视觉验收仍待；不重做教程，不记 `complete-under-EVAL`。
 
 ### Omni 14 `slow-reader-backpressure`
 
@@ -31,9 +41,10 @@
 
 - `e0c915f [k1] Sync Omni 14 coordinator scores`：已推 `origin/tutorials`。
 - `24338ba [k1] Fix Omni 15 English phone handoff`：rebase 后已推 `origin/tutorials`。
-- 第 15 章评分卡、progress 和本报告随记录提交推送。
+- `fa4112c [k1] Record Omni 15 animation checks`：已推第 15 章评分卡、progress 和报告。
+- 本次只补 Omni 11／13 评分卡、progress 表和本报告，随 `[k1]` 记录提交推送。
 
 ## 剩余
 
-- 等协调人读取 Omni 15 相位实图并确认机制 R6；主人最终视觉验收另计。复审通过前不开第 16 章。
-- 未跑全站回归、真实 router、模型、GPU benchmark、故障注入或 reduced-motion 动态切换。
+- 本轮待办只剩协调人读取 Omni 15 相位实图并确认机制 R6，以及主人最终验收。Omni 15 不记 `complete-under-EVAL`，不开第 16 章。
+- 本次只有记录改动，未重跑教程门槛，未跑全站回归、真实 router、模型、GPU benchmark、故障注入或 reduced-motion 动态切换。
