@@ -311,4 +311,4 @@ This is a constructed TP1 starting hypothesis from H200/TP2 evidence, not a benc
 
 ### Next
 
-This closes Learning SGLang Omni. The decision sheet records what was chosen, which earlier mechanism each choice uses and which evidence could change it.
+The next part follows the running service. Chapter 14 answers the closing question: after generation finishes, what happens when a client reads too slowly and audio remains queued in the API process?
