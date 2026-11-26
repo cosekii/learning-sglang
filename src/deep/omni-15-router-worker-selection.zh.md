@@ -20,3 +20,26 @@ router 的 typed-image 集成测试使用同样边界：图片请求只会到 pr
 router 需要请求事实才能过滤 profile。下一步看它什么时候能沿用已知契约，什么时候必须分类请求体。
 
 来源：`sglang_omni_router/tests/chat_http.rs:1075-1098`；`sglang_omni_router/src/worker_pool/mod.rs:338-373,544-578`。
+
+## 第 2 步 · 选择前先确定路由事实
+
+**一句话。** 同构 worker 可以共用 direct 路由契约；异构 worker 需要 router 先分类每个请求体。
+
+### 图上是什么
+
+- `classify` 是从请求体读取路由事实：模型、内容形式、输入和输出模态、响应格式、流式模式。它不是完整应用校验。
+- direct 面板要求整组 worker 有同一个具体默认模型和等价 generation profiles。router 已知每个候选 worker 接收同一契约，所以先选择，再流式发送请求体。
+- classified 面板的 worker 契约不同。router 把请求体读一次，完成分类并选择 worker，然后转发原始字节。
+- 两条路都在路由事实确定后选择。classified 路径分类时不占上游连接。
+
+### 为什么有两条路
+
+请求体分类要占内存和 CPU。同构组可以在启动时证明请求内容不会改变兼容 worker 集合，因此省去每个请求的分类工作。worker 数量本身不能决定走哪条路。
+
+direct 不会跳过兼容性或 health。它复用已证明的共同契约，然后执行相同的 health 检查、选择策略和 worker 负载计数。
+
+### 接下来
+
+分类得到的事实必须匹配 worker 的 profile。下一步看为什么 worker 不能把不同 profile 行里的能力拼起来。
+
+来源：`sglang_omni_router/src/http_generation/mod.rs:82-153`；`sglang_omni_router/src/http_generation/classify.rs:48-120`；`sglang_omni_router/src/worker_pool/mod.rs:804-840`。

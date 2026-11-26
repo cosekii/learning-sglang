@@ -14,6 +14,9 @@
   const steps = [{
     caption: 'Two workers share one URL, but only B accepts this image. The router must check compatibility before taking turns.',
     captionZh: '两个 worker 共用一个网址，但只有 B 接收这张图片。router 轮流选择前，必须先检查是否兼容。',
+  }, {
+    caption: 'Same worker contracts can skip body classification. Otherwise the router reads routing facts before choosing a worker.',
+    captionZh: 'worker 契约相同时，可以跳过请求体分类。契约不同时，router 先读路由事实，再选择 worker。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -30,7 +33,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [650][step] : [520][step]);
+  const H = $derived(phone ? [650, 750][step] : [520, 560][step]);
 </script>
 
 <figure class="viz">
@@ -39,6 +42,9 @@
       <defs>
         <marker id="router-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
           <path d="M0,0 L8,4 L0,8 z" fill="var(--accent)" />
+        </marker>
+        <marker id="router-arrow-gen" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 z" fill="var(--gen)" />
         </marker>
       </defs>
       {#if step === 0}
@@ -74,6 +80,26 @@
         {/if}
         <text x={W / 2} y={phone ? 545 : 470} text-anchor="middle" class="small strong">{t('Taking turns alone cannot answer who can accept it.', '只看轮流顺序，无法知道谁能接收这个请求。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Constructed profiles from the router’s typed-image routing test.', '构造能力行来自 router 的 typed-image 路由测试。')}</text>
+      {:else if step === 1}
+        <text x={phone ? 18 : 30} y="30" class="title">{t('How the router learns the request', 'router 怎样知道请求要做什么')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'classify = read routing facts from the body' : 'classify = read the body for model, input, output, format and stream mode', phone ? '分类 = 从请求体读路由事实' : 'classify = 读请求体里的模型、输入、输出、格式和流式模式')}</text>
+        <text x={phone ? 18 : 30} y="79" class="label">{t('Both paths finish routing facts before selection.', '两条路都先确定路由事实，再选择 worker。')}</text>
+        {#each [false, true] as classified}
+          {@const x = phone ? 18 : classified ? 375 : 30}
+          {@const y = phone ? classified ? 390 : 105 : 110}
+          {@const pw = phone ? 264 : 315}
+          <rect x={x} y={y} width={pw} height="250" rx="12" fill={classified ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={classified ? 'var(--gen)' : 'var(--accent)'} />
+          <text x={x + 16} y={y + 30} class="small strong">{classified ? 'CLASSIFIED' : 'DIRECT'}</text>
+          <text x={x + 16} y={y + 59} class="small">{classified ? t('worker contracts differ', 'worker 契约不同') : t('same default model + profiles', '相同默认模型 + 相同 profiles')}</text>
+          <rect x={x + 16} y={y + 82} width={pw - 32} height="57" rx="8" fill="var(--bg)" stroke="var(--line)" />
+          <text x={x + pw / 2} y={y + 116} text-anchor="middle" class="small">{classified ? t('read body once → routing facts', '请求体读一次 → 路由事实') : t('known shared contract', '已知的共同契约')}</text>
+          <line x1={x + pw / 2} y1={y + 140} x2={x + pw / 2} y2={y + 164} stroke={classified ? 'var(--gen)' : 'var(--accent)'} stroke-width="2" marker-end={classified ? 'url(#router-arrow-gen)' : 'url(#router-arrow)'} />
+          <rect x={x + 16} y={y + 171} width={pw - 32} height="57" rx="8" fill="var(--bg)" stroke="var(--line)" />
+          <text x={x + pw / 2} y={y + 205} text-anchor="middle" class="small strong">{t('select a worker', '选择 worker')}</text>
+        {/each}
+        <text x={W / 2} y={phone ? 665 : 405} text-anchor="middle" class="small strong">{t('Direct: select, then stream the body.', 'direct：先选择，再流式发送请求体。')}</text>
+        <text x={W / 2} y={phone ? 692 : 440} text-anchor="middle" class="small strong">{t('Classified: forward the original bytes after selection.', 'classified：选择后转发原始字节。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Direct needs identical worker contracts' : 'Direct requires the whole cohort to have one default model and equivalent profiles.', phone ? 'direct 要求 worker 契约一致' : 'direct 要求整组 worker 使用同一默认模型和等价 profiles。')}</text>
       {/if}
     </svg>
   </div>

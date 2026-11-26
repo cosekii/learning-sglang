@@ -20,3 +20,26 @@ The router's typed-image integration test uses the same boundary: the image requ
 The router needs request facts before it can filter profiles. The next step shows when it can reuse a known contract and when it must classify the body.
 
 Sources: `sglang_omni_router/tests/chat_http.rs:1075-1098`; `sglang_omni_router/src/worker_pool/mod.rs:338-373,544-578`.
+
+## Step 2 · Learn routing facts before selection
+
+**One sentence.** Homogeneous workers can share a direct routing contract; heterogeneous workers need the router to classify each request body first.
+
+### On the stage
+
+- `Classify` means reading the body for routing facts: model, content forms, input and output modalities, response format and stream mode. It does not mean full application validation.
+- The direct panel requires one concrete default model and equivalent generation profiles across the cohort. The router already knows that every eligible worker accepts the same contract, so it selects and then streams the body.
+- The classified panel has different worker contracts. The router reads the body once, finishes classification, selects a worker, then forwards the original bytes.
+- Both paths choose only after their routing facts are settled. The classified path does not hold an upstream connection while it classifies.
+
+### Why two paths exist
+
+Body classification has a memory and CPU cost. A homogeneous cohort can prove at startup that request content cannot change its compatible worker set, so it avoids that per-request work. Worker count alone does not decide the path.
+
+The direct path does not skip compatibility or health. It reuses a proven shared contract, then applies the same health checks, selection policy and worker-load accounting.
+
+### Next
+
+The classified facts must match one worker profile. The next step shows why a worker cannot combine pieces from different profile rows.
+
+Sources: `sglang_omni_router/src/http_generation/mod.rs:82-153`; `sglang_omni_router/src/http_generation/classify.rs:48-120`; `sglang_omni_router/src/worker_pool/mod.rs:804-840`.

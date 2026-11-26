@@ -15,6 +15,8 @@ export const deep = await deepFor('omni-15-router-worker-selection');
 
 Step 1 constructs two worker profiles from the typed-image routing case in `sglang_omni_router/tests/chat_http.rs:1075-1098`. Worker A accepts text; worker B accepts typed image input. One image request has one compatible worker, so turn order cannot replace compatibility filtering. The ordinary selection path filters profiles before health and policy selection (`sglang_omni_router/src/worker_pool/mod.rs:338-373,544-578`). The example does not measure latency or claim that two workers always need request-body classification.
 
+Step 2 separates the two request paths in `sglang_omni_router/src/http_generation/mod.rs:82-153`. A direct cohort shares one concrete default model and equivalent generation profiles, proved at startup in `worker_pool/mod.rs:804-840`. It selects before streaming the request body. A heterogeneous cohort buffers and classifies the body before selection, then forwards the original bytes (`http_generation/classify.rs:48-120`). Classification does not perform full application validation or rebuild the JSON.
+
 Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`. Examples are constructed from source rules; the chapter does not run a router or benchmark.
 
 </details>
@@ -23,6 +25,8 @@ Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37
 <summary>本章说法的出处</summary>
 
 第 1 步根据 `sglang_omni_router/tests/chat_http.rs:1075-1098` 的 typed-image 路由用例构造两个 worker 能力。worker A 接收文字，worker B 接收 typed image 输入。一个图片请求只有一个兼容 worker，所以轮流顺序不能代替兼容性过滤。普通选择路径先过滤 profile，再检查 health 和选择策略（`sglang_omni_router/src/worker_pool/mod.rs:338-373,544-578`）。本例不测量延迟，也不声称两个 worker 一定需要请求体分类。
+
+第 2 步分开 `sglang_omni_router/src/http_generation/mod.rs:82-153` 的两条请求路径。direct 组有同一个具体默认模型和等价 generation profiles，启动时由 `worker_pool/mod.rs:804-840` 验证；它先选择，再流式发送请求体。异构组先缓冲并分类请求体，再选择，随后转发原始字节（`http_generation/classify.rs:48-120`）。分类不做完整应用校验，也不重建 JSON。
 
 本章代码出处固定到 `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`。示例按源码规则构造，本章没有运行 router 或 benchmark。
 
