@@ -76,7 +76,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived((phone ? [660, 610, 760, 820, 840, 860] : [470, 450, 460, 480, 480, 530])[step]);
+  const H = $derived((phone ? [660, 610, 700, 820, 840, 860] : [470, 450, 460, 480, 480, 530])[step]);
 
   const gb = VOXT_MODEL_TOTAL_GB.toFixed(2);
   const weightsGb = (VOXT_MODEL_WEIGHTS_BYTES / 1_000_000_000).toFixed(2);
@@ -251,8 +251,8 @@
 
           <rect x="260" y="212" width="200" height="116" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="360" y="236" text-anchor="middle" class="label">{t('CHECK · EACH FILE', '校验 · 每个文件')}</text>
-          <text x="360" y="268" text-anchor="middle" class="result">{t('LFS: SHA-256', 'LFS：SHA-256')}</text>
-          <text x="360" y="292" text-anchor="middle" class="detail">{t('others: git blob ID', '其他文件：git blob ID')}</text>
+          <text x="360" y="268" text-anchor="middle" class="result">{t('SHA-256', 'SHA-256')}</text>
+          <text x="360" y="292" text-anchor="middle" class="detail">{t('or git blob ID', '或 git blob ID')}</text>
           <text x="360" y="312" text-anchor="middle" class="detail">{t('mismatch → error', '不对就报错')}</text>
 
           <rect x="490" y="212" width="200" height="116" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
@@ -262,7 +262,7 @@
           <text x="590" y="312" text-anchor="middle" class="detail">{t('finds speech', '找出语音')}</text>
 
           <text x={W / 2} y="360" text-anchor="middle" class="formula">{totalBytes} B + {vadBytes} B = {jobBytes} B</text>
-          <text x={W / 2} y="386" text-anchor="middle" class="detail">{t(`The VAD is ${vadShare}% of the job; the model still needs it.`, `VAD 只占 ${vadShare}%，但模型离不开它。`)}</text>
+          <text x={W / 2} y="386" text-anchor="middle" class="formula">{vadBytes} ÷ {jobBytes} × 100 ≈ {vadShare}%</text>
           <text x={W / 2} y="412" text-anchor="middle" class="cut">{t('CANCEL KEEPS THE PARTIAL FILES', '取消会保留已下载的文件')}</text>
           <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Sources: internal/models/manager.go, catalog.go.', '出处：internal/models/manager.go、catalog.go。')}</text>
         {:else}
@@ -281,7 +281,7 @@
           <text x="270" y="268" text-anchor="end" class="detail">{t('must stay free', '必须空着')}</text>
 
           <rect x="15" y="300" width="270" height="76" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="30" y="324" class="label">{t('CHECK · LFS SHA-256 / OTHERS GIT BLOB', '校验 · LFS 用 SHA-256 / 其他用 git blob')}</text>
+          <text x="30" y="324" class="label">{t('CHECK · SHA-256 OR GIT BLOB ID', '校验 · SHA-256 或 GIT BLOB ID')}</text>
           <text x="150" y="358" text-anchor="middle" class="result">{t('each file', '每个文件')}</text>
           <text x="270" y="358" text-anchor="end" class="detail">{t('mismatch → error', '不对就报错')}</text>
 
@@ -292,8 +292,9 @@
 
           <text x={W / 2} y="500" text-anchor="middle" class="formula">{totalBytes} B</text>
           <text x={W / 2} y="522" text-anchor="middle" class="formula">+ {vadBytes} B = {jobBytes} B</text>
-          <text x={W / 2} y="552" text-anchor="middle" class="detail">{t(`VAD = ${vadShare}% of the job`, `VAD 只占 ${vadShare}%`)}</text>
-          <text x={W / 2} y="586" text-anchor="middle" class="cut">{t('CANCEL KEEPS THE PARTIAL FILES', '取消会保留已下载的文件')}</text>
+          <text x={W / 2} y="548" text-anchor="middle" class="formula">{vadBytes} ÷ {jobBytes}</text>
+          <text x={W / 2} y="570" text-anchor="middle" class="formula">× 100 ≈ {vadShare}%</text>
+          <text x={W / 2} y="610" text-anchor="middle" class="cut">{t('CANCEL KEEPS THE PARTIAL FILES', '取消会保留已下载的文件')}</text>
           <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Sources: models/manager.go, catalog.go.', '出处：models/manager.go、catalog.go。')}</text>
         {/if}
       {:else if step === 3}

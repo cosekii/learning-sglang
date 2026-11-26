@@ -95,8 +95,8 @@ Step 3 follows one download: what it carries, when it can stop, and what it chec
 
 - Top panel: a download bar with the part already here. The red line is the cancel point; the text says the next start continues from there. The total is 2.47 GB.
 - Three cards: **room** 2 GB must stay free; **check** every file, using SHA-256 for LFS and git blob IDs for the others, with an error on a mismatch; **needs** the 1.24 MB Silero VAD, a small model that finds speech, in the same job.
-- Formula: 2,467,856,503 B + 1,238,323 B = 2,469,094,826 B.
-- A line says the VAD is 0.05% of the job, and the model still needs it.
+- Formula: 2,467,856,503 B + 1,238,323 B = 2,469,094,826 B; 1,238,323 ÷ 2,469,094,826 × 100 ≈ 0.05%.
+- **Needs** says the model requires the VAD; cancelling keeps the partial files.
 
 ### Formula
 
