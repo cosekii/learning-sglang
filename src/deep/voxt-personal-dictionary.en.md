@@ -130,37 +130,63 @@ This is the one path that still works when the language model is missing or erro
 
 Replacement only fixes aliases. If recognition writes a wrong form that is neither the term nor any alias, the next step's glossary reminds the language model.
 
-## Step 5 · Term and aliases enter the language-model glossary
+## Step 5 · Which message holds the glossary
 
-> **In one line:** The language model reads a glossary line such as "Priya, heard as Preeya" in its system prompt and is reminded to write the right spelling.
+> **In one line:** A small dictionary puts the glossary in system; a large one puts only selected terms at the start of user, before this request's input.
 
 ### On the stage
 
-- The left side is the system prompt: role, task, output rules, and the blue **glossary** block reading `- Priya (heard as: Preeya)`.
-- The right side is the user message holding this dictation, `send it to Preeya`.
-- The bottom line says a small dictionary goes in whole and a large one only sends terms the text mentions, up to 60 lines or 2000 characters.
-- The orange label says this step needs the language model.
+- Left panel, at most 30 distinct terms: system holds general rules and `- Priya (heard as: Preeya)`, while user holds `call Priya.`.
+- Right panel, more than 30 distinct terms: system holds only generic rules; user opens with `<glossary>`, then contains `call Priya.`.
+- Both user panels use `call Priya.` because Step 4 has already replaced `Preeya` with `Priya`; the language model receives the replaced text (`session/run.go:301-312`).
+- The bottom lines cover candidates, both caps and the cache boundary: select candidates first, then take the longest prefix. A provider may reuse unchanged system, with no guaranteed time or token saving.
 
-### How the glossary is filled
+### Candidates and message placement
 
-`compose.Glossary` de-duplicates the terms, then decides how many to send (`Voxt/internal/compose/compose.go:523`):
+`compose.Build` de-duplicates terms, then selects candidates by the distinct-term count (`Voxt/internal/compose/compose.go:366-377`, `585-599`):
 
-- $n \le 30$ (`GlossaryAllUpTo`): send all, in their order.
-- $n > 30$: send only terms the text mentions (the term or an alias, ignoring case and spaces, `-`, `_`).
-- Either way, stop at 60 lines (`MaxGlossaryTerms`) or 2000 characters (`MaxGlossaryChars`).
+| Distinct terms | Candidates | System | User |
+|---|---|---|---|
+| $n \le 30$ | all distinct terms in dictionary order | generic rules + the rendered glossary | the replaced input |
+| $n > 30$ | only terms or aliases mentioned in the replaced text | generic rules only | `<glossary>` first when matches exist, then the replaced input |
 
-$$\text{terms sent} = \begin{cases} \min(n, 60) & n \le 30 \\ \min(m, 60) & n > 30 \end{cases}$$
+With no matches from a large dictionary, user has no `<glossary>` block, while system's generic instruction remains (`compose.go:411-416`).
+
+### Formula
+
+$$C = \begin{cases}\text{all distinct terms} & n \le 30 \\\text{terms mentioned by the text} & n > 30\end{cases}$$
+
+$$G = \text{the longest prefix of } C \text{ with } |G| \le 60 \text{ and } B(G) \le 2000$$
+
+$$B(G) = \sum_{g \in G}(\operatorname{bytes}(g) + 1)$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
-| $n$ | number of distinct terms | this step |
-| $m$ | number of terms the text mentions | this step |
-| 30 / 60 / 2000 | all-in threshold / line cap / char cap | `compose.go:248-250` |
-| system prompt | the rules that repeat every request | Ch. 6 Step 2 |
+| $n$ | number of enabled terms after de-duplication | `distinctTerms`, `compose.go:585-599` |
+| $C$ | candidate lines in dictionary order | this step's selection rule |
+| $G$ | the consecutive prefix actually sent | `compose.go:576-580` |
+| $g$ | one complete glossary line | `- Term (heard as: alias)` |
+| $\operatorname{bytes}(g)$ | the line's UTF-8 byte count | Go's `len(string)` |
+| $B(G)$ | line bytes plus newline separators, excluding `<glossary>` tags | `compose.go:576-580` |
+| 30 / 60 / 2000 | all-candidates threshold / line cap / byte cap | `compose.go:244-250` |
 
-### Why a small dictionary goes in whole
+The loop breaks at the first line that does not fit. It does not skip that line to seek a shorter later one, and it never truncates a line.
 
-With 30 terms or fewer, sending all of them keeps the system prompt identical from one dictation to the next. The identical prefix stays in the model's prompt cache, saving time and tokens. A large dictionary would only spend tokens and distract the model with unrelated terms, so only the mentioned ones go.
+### Plugging in the stage's numbers
+
+This constructed example has three candidate lines of 900 bytes each:
+
+| Candidate | Bytes after adding it | Result |
+|---|---|---|
+| line 1 | $900 + 1 = 901$ | kept |
+| line 2 | $901 + 900 + 1 = 1802$ | kept |
+| line 3 | $1802 + 900 + 1 = 2703$ | over 2000, stop |
+
+So $G$ contains only the first two complete lines. If line 61 crosses the line cap instead, output stops after line 60.
+
+### What the cache can promise
+
+For a small dictionary, the glossary lives in system, and system does not vary with this dictation's text. With other settings unchanged, the provider **may** reuse the prompt cache for that unchanged prefix; the tests prove only that the system string is independent of the input (`compose_test.go:574-577`, `595-630`). They do not guarantee a cache hit, retention, time savings or token savings.
 
 ### Boundary
 
@@ -168,7 +194,7 @@ The glossary only shapes the language model's output; it does not change recogni
 
 ### Next
 
-Terms and aliases are covered. The last part of the row is the note you write.
+Terms and aliases are covered. The next step covers separate dictionary-wide notes and the full system, history, user sequence.
 
 ## Step 6 · The note enters the language-model prompt
 

@@ -21,7 +21,7 @@ Step 3 reads `dict.Hints`: it clones the terms, sorts stable by `UpdatedAt` desc
 
 Step 4 reads `dict.Replace` and `matchText`. Enabled terms' aliases are matched; Latin aliases need word boundaries on both ends (`wordRune`), CJK aliases match anywhere; patterns are sorted longest first; a term already written as itself is kept (it is only added as a pattern when `highlight`). `spoken()` in `session/cleanup.go` calls `dict.Replace(raw, r.terms)` and is called before `transcribe()` in `session/run.go:301,312`.
 
-Step 5 reads `compose.Glossary`: a dictionary of at most `GlossaryAllUpTo = 30` terms goes in whole; a larger one keeps only terms whose spelling or alias appears in the text (spaces, `-`, `_` removed, case-folded), then stops at `MaxGlossaryTerms = 60` lines or `MaxGlossaryChars = 2000` characters. Lines read `- Term (heard as: alias)`; Chinese uses `（可能被听成：…）`.
+Step 5 reads `compose.Build`. With at most `GlossaryAllUpTo = 30` distinct terms, all become candidates and the rendered glossary sits in system. With more than 30, only terms or aliases mentioned in the replaced text become candidates; system keeps generic rules and the selected `<glossary>` opens the user message when matches exist (`compose.go:366-377`, `411-416`). In both cases the output is the longest candidate prefix that fits 60 lines and 2000 bytes, stopping at the first over-budget line without truncating it (`compose.go:576-580`). Go's `len(string)` counts UTF-8 bytes; the limit excludes the surrounding tags. The request input is `call Priya.` after alias replacement. An unchanged system prefix may let the provider reuse its prompt cache, with no guaranteed time or token saving (`compose_test.go:574-577`, `595-630`).
 
 Step 6 reads `PromptDictionary` and `addDictionary`: the note is trimmed and added as the `dictionary` layer after the task layers and before scene, glossary and input, so the system-prompt prefix stays stable (`compose/dictionary.go`). It is never passed to ASR or to `dict.Replace`.
 
@@ -42,7 +42,7 @@ Source revision: `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683
 
 第 4 步读 `dict.Replace` 和 `matchText`。匹配启用词条的别名；拉丁别名两端要单词边界（`wordRune`），中日韩别名任意位置匹配；模式按长度从长到短排序；已经按词条写好的原文保持原样（只在 `highlight` 时把词条本身也当模式）。`session/cleanup.go` 的 `spoken()` 调用 `dict.Replace(raw, r.terms)`，并在 `session/run.go:301,312` 里排在 `transcribe()` 之前。
 
-第 5 步读 `compose.Glossary`：不超过 `GlossaryAllUpTo = 30` 个词条的词典整份放进去；更大的词典只留文字里出现过的词条（去掉空格、`-`、`_`，再折成小写后比较），然后停在 `MaxGlossaryTerms = 60` 行或 `MaxGlossaryChars = 2000` 个字符。每行是 `- Term (heard as: alias)`；中文用 `（可能被听成：…）`。
+第 5 步读 `compose.Build`。不超过 `GlossaryAllUpTo = 30` 个不同词条时，全部先成为候选，术语表放在 system。超过 30 个时，只把替换后的文字提到的词条或别名作为候选；system 只留通用规则，有匹配时选中的 `<glossary>` 放在 user 开头（`compose.go:366-377`、`411-416`）。两种情况都取同时满足 60 行和 2000 字节的最长候选前缀，遇到首个超预算的行就停，不截断那一行（`compose.go:576-580`）。Go 的 `len(string)` 计算 UTF-8 字节，上限不含外层标签。这次请求的输入是别名替换后的 `call Priya.`。provider 可能复用未变的 system 前缀，不保证省时或省 token（`compose_test.go:574-577`、`595-630`）。
 
 第 6 步读 `PromptDictionary` 和 `addDictionary`：备注去掉首尾空白，作为 `dictionary` 一层加在任务说明之后、scene／术语表／输入之前，所以 system 提示的前缀保持不变（`compose/dictionary.go`）。它从不去 ASR，也不进 `dict.Replace`。
 

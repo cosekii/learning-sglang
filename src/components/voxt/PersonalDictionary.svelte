@@ -6,7 +6,7 @@
   import type { Deep } from '../../deep';
   import {
     VOXT_DICT_TERM, VOXT_DICT_ALIAS, VOXT_DICT_SECOND_TERM, VOXT_DICT_TERM_COUNT,
-    VOXT_DICT_HINT_COUNT, VOXT_DICT_GLOSSARY_ALL_UP_TO, VOXT_DICT_GLOSSARY_MAX_TERMS, VOXT_DICT_GLOSSARY_MAX_CHARS,
+    VOXT_DICT_HINT_COUNT, VOXT_DICT_GLOSSARY_ALL_UP_TO, VOXT_DICT_GLOSSARY_MAX_TERMS, VOXT_DICT_GLOSSARY_MAX_BYTES,
   } from '../../voxt/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -24,8 +24,8 @@
     caption: 'Aliases become the term before cleanup. This works without the language model.',
     captionZh: '别名在清理之前就换成词条。没有语言模型也照样换。',
   }, {
-    caption: 'The language model gets the term and how it is heard. This needs the model.',
-    captionZh: '语言模型收到词条和它可能被听成的样子。这一步需要模型。',
+    caption: "Small dictionaries put the glossary in system. Large ones put selected terms at the user's start.",
+    captionZh: '小词典把术语表放进 system。大词典把选中的词条放在 user 开头。',
   }, {
     caption: 'Your note is free text for the language model. It never reaches the recognizer.',
     captionZh: '备注是写给语言模型的自由文字。它不会到识别器那里。',
@@ -46,8 +46,8 @@
     en: 'After recognition, enabled aliases are replaced by their term in the text, before any language-model cleanup. Latin aliases match whole words ignoring case; Chinese, Japanese and Korean aliases match anywhere; the longest match wins. A term already written correctly is left alone, so this works with the language model off or failing.',
     zh: '识别之后、语言模型清理之前，启用的别名会在文字里换回词条。拉丁别名按整词匹配、不分大小写；中日韩别名可以在任意位置匹配；最长的那次胜出。已经写对的词条保持原样，所以语言模型关掉或失败时这一步照样有效。',
   }, {
-    en: 'The same enabled terms and aliases go to the language model as a glossary line such as Priya, heard as Preeya. A dictionary of up to 30 terms goes in whole. A larger one sends only the terms the text mentions, capped at 60 lines and 2000 characters. This needs the language model; the glossary switch must be on.',
-    zh: '同一批启用的词条和别名会作为术语表一行交给语言模型，例如 Priya 可能被听成 Preeya。词典不超过 30 个词条就整份放进去。更大的词典只发文字里提到的词条，最多 60 行、2000 字符。这一步需要语言模型；术语表开关要打开。',
+    en: 'With 30 or fewer distinct enabled terms, all terms become candidates and the glossary sits in the system message. With more than 30, only terms mentioned by the replaced text become candidates; system keeps generic rules, and the selected glossary opens the user message. Both cases take the longest prefix that fits 60 lines and 2000 bytes, stopping at the first line that does not fit. The request input is call Priya after alias replacement. An unchanged system prefix may let the provider reuse its prompt cache, but saves no guaranteed time or tokens.',
+    zh: '不超过 30 个不同的启用词条时，全部成为候选，术语表放在 system 消息里。超过 30 个时，只把替换后的文字提到的词条作为候选；system 只留通用规则，选中的 <glossary> 放在 user 开头。两种情况都取同时满足 60 行和 2000 字节的最长前缀，遇到首个放不下的行就停。这次请求的输入是别名替换后的 call Priya。provider 可能复用未变的 system 前缀，但不保证省时或省 token。',
   }, {
     en: 'The note is free text you write once. It goes into the language model system prompt as its own layer, before this request input, and never to the speech model or the transcript. The notes-off switch keeps it out of the prompt even when the dictionary is on.',
     zh: '备注是你写一次的一段文字。它作为单独一层进入语言模型的 system 提示，排在这次请求的输入之前，从不去语音模型或文字稿。即使词典开着，关掉备注的开关也能让它不进提示。',
@@ -70,7 +70,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived((phone ? [640, 720, 640, 700, 660, 620, 620] : [470, 520, 430, 450, 470, 430, 480])[step]);
+  const H = $derived((phone ? [640, 720, 640, 700, 760, 620, 620] : [470, 520, 430, 450, 500, 430, 480])[step]);
 </script>
 
 <figure class="viz">
@@ -279,43 +279,65 @@
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('dict.Replace · spoken() before transcribe()', 'dict.Replace · transcribe() 前的 spoken()') : t('Source: dict.Replace() · session.cleanup.go spoken() runs before transcribe()', '出处：dict.Replace() · session.cleanup.go 的 spoken() 在 transcribe() 之前')}</text>
 
       {:else if step === 4}
-        <text x="20" y="22" class="tag strong">{t('3 OF 4 · TERM + ALIASES → GLOSSARY', '第 3/4 个 · 词条 + 别名 → 术语表')}</text>
-        <text x="20" y="46" class="tag">{t('A line in the language-model prompt.', '语言模型提示里的一行。')}</text>
+        <text x="20" y="22" class="tag strong">{t('3 OF 4 · GLOSSARY → MODEL MESSAGES', '第 3/4 个 · 术语表 → 模型消息')}</text>
+        <text x="20" y="46" class="tag">{t('its place depends on the dictionary size.', '位置由词典大小决定。')}</text>
         {#if phone}
-          <rect x="20" y="62" width="260" height="196" rx="8" fill="var(--bg)" stroke="var(--line)" />
-          <text x="34" y="86" class="rowlabel">{t('system prompt', 'system 提示')}</text>
-          <text x="34" y="116" class="mono">{t('role · task · output', '角色 · 任务 · 输出')}</text>
-          <rect x="34" y="132" width="232" height="76" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="46" y="156" class="detail">{t('glossary', '术语表')}</text>
-          <text x="46" y="180" class="mono">- {VOXT_DICT_TERM}</text>
-          <text x="46" y="198" class="detail">({t('heard as', '可能被听成')}: {VOXT_DICT_ALIAS})</text>
-          <text x="34" y="236" class="detail">{t('the model reads it before the text', '模型先读它，再读文字')}</text>
-          <text x="20" y="292" class="tag strong">{t('dictionary size decides', '词典大小决定发多少')}</text>
-          <text x="20" y="318" class="tag">≤ {VOXT_DICT_GLOSSARY_ALL_UP_TO} {t('terms → all sent', '个词条 → 全部发')}</text>
-          <text x="20" y="342" class="tag">&gt; {VOXT_DICT_GLOSSARY_ALL_UP_TO} → {t('only terms the text mentions', '只发文字里提到的')}</text>
-          <text x="20" y="366" class="tag">{t('cap', '上限')}: {VOXT_DICT_GLOSSARY_MAX_TERMS} {t('lines', '行')} / {VOXT_DICT_GLOSSARY_MAX_CHARS} {t('chars', '字符')}</text>
-          <text x="20" y="404" class="tag strong" fill="var(--gen)">{t('needs the language model', '需要语言模型')}</text>
+          <rect x="20" y="62" width="260" height="230" rx="8" fill="var(--bg)" stroke="var(--line)" />
+          <text x="34" y="86" class="rowlabel">≤ {VOXT_DICT_GLOSSARY_ALL_UP_TO} · {t('GLOSSARY IN SYSTEM', '术语表在 SYSTEM')}</text>
+          <rect x="34" y="100" width="232" height="92" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="46" y="122" class="detail">system</text>
+          <text x="46" y="144" class="detail">{t('general rules', '通用规则')}</text>
+          <text x="46" y="172" class="mono">- {VOXT_DICT_TERM} ({VOXT_DICT_ALIAS})</text>
+          <rect x="34" y="204" width="232" height="64" rx="6" fill="var(--bg)" stroke="var(--line)" />
+          <text x="46" y="226" class="detail">user</text>
+          <text x="46" y="254" class="tag">call {VOXT_DICT_TERM}.</text>
+
+          <rect x="20" y="308" width="260" height="272" rx="8" fill="var(--bg)" stroke="var(--line)" />
+          <text x="34" y="332" class="rowlabel">&gt; {VOXT_DICT_GLOSSARY_ALL_UP_TO} · {t('GLOSSARY IN USER', '术语表在 USER')}</text>
+          <rect x="34" y="346" width="232" height="68" rx="6" fill="var(--bg)" stroke="var(--line)" />
+          <text x="46" y="368" class="detail">system</text>
+          <text x="46" y="392" class="detail">{t('generic rules only', '只有通用规则')}</text>
+          <rect x="34" y="426" width="232" height="132" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="46" y="448" class="detail">user</text>
+          <text x="46" y="474" class="mono">{t('<glossary>', '<glossary>')}</text>
+          <text x="46" y="498" class="detail">{t('mentioned terms only', '只放文字提到的词条')}</text>
+          <text x="46" y="522" class="mono">{t('</glossary>', '</glossary>')}</text>
+          <text x="46" y="548" class="tag">call {VOXT_DICT_TERM}.</text>
+
+          <text x="20" y="612" class="tag">{t('candidates: ≤30 all · >30 mentioned', '候选：≤30 全部 · >30 只挑提到的')}</text>
+          <text x="20" y="640" class="tag">{t('longest prefix: ≤60 lines + ≤2000 bytes', '最长前缀：≤60 行 + ≤2000 字节')}</text>
+          <text x="20" y="668" class="tag">{t('stop at the first line that does not fit', '首个放不下的行就停')}</text>
+          <text x="20" y="696" class="tag">{t('provider may reuse system · no saving promised', 'provider 可能复用 system，不保证省时省 token')}</text>
         {:else}
-          <rect x="20" y="72" width="360" height="200" rx="10" fill="var(--bg)" stroke="var(--line)" />
-          <text x="34" y="98" class="rowlabel">{t('system prompt', 'system 提示')}</text>
-          <text x="34" y="126" class="detail">{t('role · task · output rules', '角色 · 任务 · 输出约定')}</text>
-          <rect x="34" y="142" width="332" height="112" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="48" y="166" class="detail">{t('glossary layer', '术语表一层')}</text>
-          <text x="48" y="194" class="mono">- {VOXT_DICT_TERM}</text>
-          <text x="48" y="220" class="detail">({t('heard as', '可能被听成')}: {VOXT_DICT_ALIAS})</text>
-          <text x="48" y="244" class="detail">{t('the model writes these terms as listed', '模型照这里列的写法输出')}</text>
-          <path d="M380 170 H408" stroke="var(--muted)" stroke-width="2" marker-end="url(#dict-arrow)" />
-          <rect x="420" y="96" width="280" height="152" rx="10" fill="var(--bg)" stroke="var(--line)" />
-          <text x="434" y="122" class="rowlabel">{t('user message', 'user 消息')}</text>
-          <text x="434" y="150" class="tag">“send it to {VOXT_DICT_ALIAS}”</text>
-          <text x="434" y="178" class="detail">{t('this request’s dictation', '这次请求的听写')}</text>
-          <text x="434" y="212" class="detail">{t('system stays the same', 'system 保持不变')}</text>
-          <text x="434" y="234" class="detail">{t('the prompt cache keeps it', 'prompt 缓存能留住它')}</text>
-          <text x="20" y="312" class="tag strong">{t('A small dictionary goes in whole; a large one only sends the terms the text mentions.', '小词典整份放进去；大词典只发文字里提到的词条。')}</text>
-          <text x="20" y="338" class="tag">≤ {VOXT_DICT_GLOSSARY_ALL_UP_TO} {t('terms', '个词条')} → {t('all', '全部')} · &gt; {VOXT_DICT_GLOSSARY_ALL_UP_TO} → {t('mentioned only', '只发提到的')} · {VOXT_DICT_GLOSSARY_MAX_TERMS} {t('lines', '行')} / {VOXT_DICT_GLOSSARY_MAX_CHARS} {t('chars', '字符')}</text>
-          <text x="20" y="372" class="tag strong" fill="var(--gen)">{t('needs the language model', '这一步需要语言模型')}</text>
+          <rect x="20" y="72" width="340" height="250" rx="10" fill="var(--bg)" stroke="var(--line)" />
+          <text x="34" y="96" class="rowlabel">≤ {VOXT_DICT_GLOSSARY_ALL_UP_TO} · {t('GLOSSARY IN SYSTEM', '术语表在 SYSTEM')}</text>
+          <rect x="34" y="108" width="312" height="104" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="48" y="130" class="detail">system</text>
+          <text x="48" y="152" class="detail">{t('general rules', '通用规则')}</text>
+          <text x="48" y="180" class="mono">- {VOXT_DICT_TERM} ({t('heard as', '可能被听成')}: {VOXT_DICT_ALIAS})</text>
+          <text x="48" y="202" class="detail">{t('all distinct terms are candidates', '全部不同词条先成为候选')}</text>
+          <rect x="34" y="224" width="312" height="70" rx="7" fill="var(--bg)" stroke="var(--line)" />
+          <text x="48" y="246" class="detail">user</text>
+          <text x="48" y="274" class="tag">call {VOXT_DICT_TERM}.</text>
+
+          <rect x="380" y="72" width="320" height="250" rx="10" fill="var(--bg)" stroke="var(--line)" />
+          <text x="394" y="96" class="rowlabel">&gt; {VOXT_DICT_GLOSSARY_ALL_UP_TO} · {t('GLOSSARY IN USER', '术语表在 USER')}</text>
+          <rect x="394" y="108" width="292" height="72" rx="7" fill="var(--bg)" stroke="var(--line)" />
+          <text x="408" y="130" class="detail">system</text>
+          <text x="408" y="156" class="detail">{t('generic rules only', '只有通用规则')}</text>
+          <rect x="394" y="192" width="292" height="130" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="408" y="214" class="detail">user</text>
+          <text x="408" y="240" class="mono">{t('<glossary>', '<glossary>')}</text>
+          <text x="408" y="264" class="detail">{t('mentioned terms only', '只放文字提到的词条')}</text>
+          <text x="408" y="288" class="mono">{t('</glossary>', '</glossary>')}</text>
+          <text x="408" y="312" class="tag">call {VOXT_DICT_TERM}.</text>
+
+          <text x="20" y="352" class="tag">{t('candidates: ≤30 all distinct · >30 mentioned only', '候选：≤30 全部不同词条 · >30 只挑文字提到的')}</text>
+          <text x="20" y="380" class="tag">{t('take the longest prefix that fits 60 lines and 2000 bytes', '取同时满足 60 行和 2000 字节的最长前缀')}</text>
+          <text x="20" y="408" class="tag">{t('stop at the first line that does not fit; never cut a line in half', '首个超预算的行就停，不把一行截半')}</text>
+          <text x="20" y="436" class="tag">{t('provider may reuse unchanged system · no guaranteed time or token savings', 'provider 可能复用未变的 system 前缀，不保证省时省 token')}</text>
         {/if}
-        <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('compose.Glossary · limits 30 / 60 / 2000', 'compose.Glossary · 上限 30 / 60 / 2000') : t('Source: compose.Glossary() · GlossaryAllUpTo 30 · 60 lines · 2000 chars', '出处：compose.Glossary() · GlossaryAllUpTo 30 · 60 行 · 2000 字符')}</text>
+        <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('compose.Build · 60 lines · 2000 bytes', 'compose.Build · 60 行 · 2000 字节') : t('Source: compose.Build · GlossaryAllUpTo 30 · 60 lines · 2000 bytes', '出处：compose.Build · GlossaryAllUpTo 30 · 60 行 · 2000 字节')}</text>
 
       {:else if step === 5}
         <text x="20" y="22" class="tag strong">{t('4 OF 4 · NOTE → MODEL PROMPT', '第 4/4 个 · 备注 → 模型提示')}</text>

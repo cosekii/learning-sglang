@@ -143,7 +143,7 @@ export const VOXT_DICT_MAX_TERM_CHARS = 80;
 export const VOXT_DICT_MAX_ALIASES = 10;
 export const VOXT_DICT_GLOSSARY_ALL_UP_TO = 30;
 export const VOXT_DICT_GLOSSARY_MAX_TERMS = 60;
-export const VOXT_DICT_GLOSSARY_MAX_CHARS = 2000;
+export const VOXT_DICT_GLOSSARY_MAX_BYTES = 2000;
 
 // Public history retention defaults (Voxt/internal/settings/history.go; Voxt/internal/session/session.go).
 export const VOXT_HISTORY_KEEP_DAYS = 90;
