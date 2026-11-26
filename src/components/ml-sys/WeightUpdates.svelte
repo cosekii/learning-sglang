@@ -4,7 +4,7 @@
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
-  import { UPDATE_DEBUG_BF16_BYTES, UPDATE_DEBUG_WEIGHT_GB, UPDATE_DEBUG_INITIAL_S, UPDATE_DEBUG_INNER_S, UPDATE_DEBUG_OUTER_S, UPDATE_GROUP_SIZE_TP_ONE, UPDATE_GROUP_SIZE_TP_TWO, UPDATE_EXAMPLE_FULL_ROWS, UPDATE_EXAMPLE_FULL_COLS, UPDATE_EXAMPLE_FSDP_TP, UPDATE_EXAMPLE_FSDP_ROWS, UPDATE_EXAMPLE_FULL_ELEMENTS, UPDATE_DEBUG_SLEEP_COUNT, UPDATE_DEBUG_SLEEP_MS, UPDATE_DEBUG_SLEEP_TOTAL_MS, UPDATE_DEBUG_OUTER_MS, UPDATE_DEBUG_INNER_MS, UPDATE_DEBUG_OTHER_MS, UPDATE_DEBUG_NO_SLEEP_S, UPDATE_DEBUG_SAVED_S, UPDATE_DEBUG_SPEEDUP, UPDATE_DEBUG_YARDSTICK_MS, UPDATE_DEBUG_FULL_YARDSTICK_RATIO } from '../../ml-sys/numbers';
+  import { UPDATE_DEBUG_BF16_BYTES, UPDATE_DEBUG_WEIGHT_GB, UPDATE_DEBUG_INITIAL_S, UPDATE_DEBUG_INNER_S, UPDATE_DEBUG_OUTER_S, UPDATE_GROUP_SIZE_TP_ONE, UPDATE_GROUP_SIZE_TP_TWO, UPDATE_EXAMPLE_FULL_ROWS, UPDATE_EXAMPLE_FULL_COLS, UPDATE_EXAMPLE_FSDP_TP, UPDATE_EXAMPLE_FSDP_ROWS, UPDATE_EXAMPLE_FULL_ELEMENTS, UPDATE_DEBUG_SLEEP_COUNT, UPDATE_DEBUG_SLEEP_MS, UPDATE_DEBUG_SLEEP_TOTAL_MS, UPDATE_DEBUG_OUTER_MS, UPDATE_DEBUG_INNER_MS, UPDATE_DEBUG_OTHER_MS, UPDATE_DEBUG_NO_SLEEP_S, UPDATE_DEBUG_SAVED_S, UPDATE_DEBUG_SPEEDUP, UPDATE_DEBUG_YARDSTICK_MS, UPDATE_DEBUG_FULL_YARDSTICK_RATIO, UPDATE_DEBUG_SLEEP_CALLS } from '../../ml-sys/numbers';
 
   type Tone = 'plain' | 'blue' | 'orange';
   type MobileItem = { title: string; titleZh: string; body: string; bodyZh: string; tone: Tone };
@@ -96,7 +96,7 @@
     ],
     formulas: [
       { en: `4 × 256 × 1024 = ${UPDATE_EXAMPLE_FULL_ELEMENTS.toLocaleString('en-US')}`, zh: `4 × 256 × 1024 = ${UPDATE_EXAMPLE_FULL_ELEMENTS.toLocaleString('en-US')} 个数` },
-      { en: '= one 1024×1024 photo', zh: '= 一张 1024×1024 照片的像素数' },
+      { en: '= the pixels in a 1024×1024 photo', zh: '= 一张 1024×1024 照片的像素数' },
       { en: 'rank 0 collects all location notes', zh: 'rank 0 收拢所有位置便签' },
     ],
   }, {
@@ -141,14 +141,14 @@
       { en: 'automatic rollback is not shown', zh: '图中没有自动回滚或崩溃安全保证' },
     ],
   }, {
-    caption: `Three ${UPDATE_DEBUG_SLEEP_MS} ms sleeps sat outside ModelRunner. Removing them cut this full update from ${UPDATE_DEBUG_INITIAL_S} to ${UPDATE_DEBUG_NO_SLEEP_S} seconds.`,
-    captionZh: `ModelRunner 外面有 3 次 ${UPDATE_DEBUG_SLEEP_MS} ms 的 sleep。去掉后，这次完整更新从 ${UPDATE_DEBUG_INITIAL_S} 秒降到 ${UPDATE_DEBUG_NO_SLEEP_S} 秒。`,
+    caption: `Three ${UPDATE_DEBUG_SLEEP_MS} ms sleeps ran once per tensor. About 160 repetitions explain the ${UPDATE_DEBUG_SAVED_S}-second saving.`,
+    captionZh: `每个张量都有 3 次 ${UPDATE_DEBUG_SLEEP_MS} ms 的 sleep。约 160 次调用合计少等 ${UPDATE_DEBUG_SAVED_S} 秒。`,
     title: 'Measure the whole call, not only ModelRunner', titleZh: '测量整个调用，不能只测 ModelRunner',
     subtitle: 'ModelRunner = model-owning code on each inference rank · outer timer = whole call', subtitleZh: 'ModelRunner = 每个推理 rank 上持有模型的代码 · 外部计时 = 整个调用',
     foot: 'Successive measurements in one debug note; not a general speedup.', footZh: '同一调试记录里的前后测量，不是普遍加速结论。',
     mobileTitle: 'Time the whole call', mobileTitleZh: '测量整个调用',
     mobileSubtitle: 'ModelRunner = model-owning code', mobileSubtitleZh: 'ModelRunner = 持有模型的代码',
-    mobileFoot: 'One debug run, not a general result.', mobileFootZh: '一次调试结果，不是普遍结论。',
+    mobileFoot: 'about 160 calls · not an exact tensor count', mobileFootZh: '约 160 次调用，不是精确张量数。',
     mobile: [
       { title: 'OUTER CALL · 33 ms', titleZh: '外部调用 · 33 ms', body: 'ModelRunner reports only 1 ms', bodyZh: 'ModelRunner 只报告 1 ms', tone: 'orange' },
       { title: '3 SLEEPS · 30 ms', titleZh: '3 次 SLEEP · 30 ms', body: 'fixed waits outside ModelRunner', bodyZh: 'ModelRunner 外面的固定等待', tone: 'orange' },
@@ -159,6 +159,7 @@
       { en: '1 + 30 + 2 = 33 ms, rounded', zh: '1 + 30 + 2 = 33 ms，均为舍入值' },
       { en: '7.047 − 2.202 = 4.845 s saved', zh: '7.047 − 2.202 = 少等 4.845 秒' },
       { en: '7.047 ÷ 2.202 ≈ 3.20×', zh: '7.047 ÷ 2.202 ≈ 3.20 倍' },
+      { en: `4.845 s ÷ 0.030 s ≈ ${UPDATE_DEBUG_SLEEP_CALLS.toFixed(1)} calls`, zh: `4.845 秒 ÷ 0.030 秒 ≈ ${UPDATE_DEBUG_SLEEP_CALLS.toFixed(1)} 次调用` },
     ],
   }, {
     caption: 'Training also keeps gradients and optimizer records. If these tables do not fit, what should each GPU keep?',
@@ -315,7 +316,7 @@
         <text x="535" y="130" text-anchor="middle" class="section">FULL_TENSOR()</text>
         <text x="535" y="158" text-anchor="middle" class="result">[{UPDATE_EXAMPLE_FULL_ROWS}, {UPDATE_EXAMPLE_FULL_COLS}]</text>
         <text x="360" y="193" text-anchor="middle" class="small">{t('Each training piece has 256 rows and 1024 columns.', '每块训练分片有 256 行、1024 列。')}</text>
-        <text x="360" y="220" text-anchor="middle" class="result">{UPDATE_EXAMPLE_FSDP_TP} × {UPDATE_EXAMPLE_FSDP_ROWS} × {UPDATE_EXAMPLE_FULL_COLS} = {UPDATE_EXAMPLE_FULL_ELEMENTS.toLocaleString('en-US')} {t('= one 1024×1024 photo', '= 一张 1024×1024 照片的像素数')}</text>
+        <text x="360" y="220" text-anchor="middle" class="result">{UPDATE_EXAMPLE_FSDP_TP} × {UPDATE_EXAMPLE_FSDP_ROWS} × {UPDATE_EXAMPLE_FULL_COLS} = {UPDATE_EXAMPLE_FULL_ELEMENTS.toLocaleString('en-US')} {t('= the pixels in a 1024×1024 photo', '= 一张 1024×1024 照片的像素数')}</text>
         <text x="360" y="251" text-anchor="middle" class="code">serialize = bundle the location notes</text>
         <rect x="40" y="274" width="270" height="116" rx="12" fill="var(--gen-soft)" stroke="var(--gen)" />
         <text x="175" y="307" text-anchor="middle" class="section">LOCATION NOTE</text>
@@ -385,6 +386,7 @@
         <rect x="160" y="150" width={500 * UPDATE_DEBUG_NO_SLEEP_S / UPDATE_DEBUG_INITIAL_S} height="38" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
         <text x={175 + 500 * UPDATE_DEBUG_NO_SLEEP_S / UPDATE_DEBUG_INITIAL_S} y="175" class="result">{UPDATE_DEBUG_NO_SLEEP_S} s</text>
         <text x="360" y="224" text-anchor="middle" class="result">{UPDATE_DEBUG_INITIAL_S} − {UPDATE_DEBUG_NO_SLEEP_S} = {UPDATE_DEBUG_SAVED_S} s {t('saved', '少等')} · ≈ {UPDATE_DEBUG_SPEEDUP.toFixed(2)}×</text>
+        <text x="360" y="250" text-anchor="middle" class="result">{UPDATE_DEBUG_SAVED_S} s ÷ 0.030 s ≈ {UPDATE_DEBUG_SLEEP_CALLS.toFixed(1)} {t('calls · about 160', '次调用 · 约 160 次')}</text>
         <text x="360" y="278" text-anchor="middle" class="small strong">{t('ONE PARAMETER · OUTER CALL = 33 ms, ROUNDED', '一个参数 · 外部调用 = 33 ms，均为舍入值')}</text>
         <rect x="200" y="302" width="10" height="48" fill="var(--accent-soft)" stroke="var(--accent)" />
         {#each [0, 1, 2] as i}
@@ -397,7 +399,7 @@
         <text x="520" y="374" text-anchor="middle" class="small">{UPDATE_DEBUG_OTHER_MS} ms</text>
         <text x="520" y="394" text-anchor="middle" class="small">{t('other', '其他')}</text>
         <text x="360" y="427" text-anchor="middle" class="result">{UPDATE_DEBUG_INNER_MS} + {UPDATE_DEBUG_SLEEP_TOTAL_MS} + {UPDATE_DEBUG_OTHER_MS} = {UPDATE_DEBUG_OUTER_MS} ms</text>
-        <text x="360" y="462" text-anchor="middle" class="small">{t('Each sleep is a programmed 10 ms pause outside ModelRunner.', '每次 sleep 都是 ModelRunner 外面一次编程设定的 10 ms 暂停。')}</text>
+        <text x="360" y="462" text-anchor="middle" class="small">{t('Each tensor pays three 10 ms pauses; 161.5 is not an exact tensor count.', '每个张量都有 3 次 10 ms 暂停；161.5 不是精确张量数。')}</text>
         <text x="360" y="490" text-anchor="middle" class="small">{t('Both full-update bars use the same seconds scale.', '两条完整更新柱使用相同的秒数比例。')}</text>
       {:else if step === 7}
         <rect x="25" y="82" width="670" height="195" rx="13" fill="var(--bg)" stroke="var(--gen)" />

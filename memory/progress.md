@@ -4,6 +4,7 @@
 
 ## 本轮记录
 
+- 数值复审继续修 Learning ML Systems 第 7 章：第 7 步补每 tensor 一次 30 ms 与 `4.845 ÷ 0.030 = 161.5`，约 160 次调用，并改清英文照片像素说明。第 7 步 R1 与原 #3 文本复核通过；R6 与总分继续不记。**本章仍未完成**，等待 vision-capable reviewer 或主人检查 48 张终稿。
 - 00:40 完成 Learning SGLang Omni 第 8 章全部 8 步的内容制作与独立 transcript 冷读：首音 p90 对照、首个 audio delta 的 TTFT 边界、chunk 空档、通信 trace、host／GPU event 等待、partial-start 单变量协议、逐次离散程度和完整比较证据。全章 **8/8 步易读 12/12**，平均 **24.00/24**，**0 内容洞、0 机械显示洞**；图像人工视觉验收待主人。
 - 逐步提交并推送；`build`、本章 `transcript`、全章 `readability`、中英三种宽度 `mobile`、中文目标步字号、`deep-check 08`、本章 `zh-check`、16 个深入讲解渲染视图和 `git diff --check` 通过。独立冷读 subagent 复审至 8/8 步没有必须修内容项；它和主模型均不支持图像输入，未声称截图目测已完成。最终 44 张图位于 `/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-v14569g1/opencode/ls-k1-omni08-final/`。本轮只跑本章检查，未跑全站回归、真实服务、GPU benchmark 或音频质量评测。本轮类型：**新书**；下一普通轮按交替规则修旧，下一章是 `09-ar-stage-optimization`。
 - 00:45 第四轮修 Inside Voxt 第 7 章：第 1 步把「≠ / 不回 / 不是目的地」改成「可以不同 / 不一定回 / 不一定是目的地」，aria 补「可以是同一个 app」；第 5 步兜底改「粘贴未确认：卡片提供 Insert 和 Copy。」。重生成 transcript 与 15 张舞台图、10 张深入讲解图（`ls-voxt-ch07-final2-20261126`），重跑本章门槛均通过。视觉评审仍待有图片输入的复审者，本章保持待目视，不给总分。
@@ -11,7 +12,7 @@
 - 00:35 第三轮修 Inside Voxt 第 7 章：第 1 步舞台补「焦点：打字会落下的框」；第 5 步兜底改「未贴入：卡片提供 Insert 和 Copy。」并把「落地的文字」改成「答案文字」；双语深入讲解第 1 步标题改「可以不是同一个 app」。尝试找有图片输入的复审者看 15 张舞台图和 10 张深入讲解图：`general` 子代理返回 `NO_IMAGE_INPUT`，`pstack-reviewer` 的模型配置不存在。R6、#4、#5 仍无目视结果，本章保持待目视，不给总分。
 - 00:08 修旧 Learning SGLang 第 14 章第 5、7、9、11、12 步：改清 prefill/decode 两条执行路径，补固定版本源码，修正 `cutedsl_mla`、Triton page、MPS 默认例外与 MHA/GQA 共用关系，并加中文手机大字专版。五步中文易读均 **12/12**、原分均 **24/24**、**0 内容洞**；第 9、11、12 步原分由 **23、23、22** 升为 **24**，章均分 **23.69→24.00/24**。
 - `build`、本章 `transcript`、整改步中文三宽度 `mobile`、`deep-check 14`、本章 `zh-check` 和 `git diff --check` 通过。独立冷读首轮发现第 5、12 步两处矛盾，修后复读均为 12/12、0 洞；主线程打开全部整改步桌面／手机终稿，英文第 12 步改前后像素一致。材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch14-repair-20261126-0008/final/`、`checks/`。整步保留第 7、9、11、12 步 9 个受保护英文 R4 问题，第 5 步另有 2 个受保护英文 R2/R4 问题；未跑全站回归。本轮类型：**修旧**；下一普通轮做新书，下次整点轮换第 3 项「复盘自己」。
-- 复审继续修 Learning ML Systems 第 7 章：第 1 步画出 `WHOLE CALL` 并标 `model code`，第 5 步写明转换为 rollout 模型布局，第 3 步改为 plain wording；hook 收窄为三条路线与安全替换时刻。R1–R5 为 **8/8 步 10/10**，**R6 全部未验证，原 12 项总分不记**；文本与机械检查完成，视觉复核留给 vision-capable reviewer 或主人。
+- 复审继续修 Learning ML Systems 第 7 章：第 1 步画出 `WHOLE CALL` 并标 `model code`，第 5 步写明转换为 rollout 模型布局，第 3 步改为 plain wording；hook 收窄为三条路线与安全替换时刻。R1–R5 为 **8/8 步 10/10**，**R6 全部未验证，原 12 项总分不记**；文本与机械门槛通过，视觉复核留给 vision-capable reviewer 或主人。
 - 00:25 按第二轮复审继续修 Inside Voxt 第 7 章：第 4 步把「一样=没确认」收窄到普通可读框，并把「一样且网页区域 → 贴入」画成比较框里的第四条出口；第 5 步去掉 `Priya` 和问句的蓝色，只留加粗当锚点；剪贴板兜底改为只有「发出粘贴但没确认」才留文字，密码框/不可编辑在写剪贴板前返回，`KeepClipboard` 单列；第 1 步复述改成「文字去此刻焦点，不一定回 start app」。评分卡、progress、report 相应改为待目视，不标完成。
 - 00:21 完成 Learning ML Systems 第 7 章全部 8 步：更新耗时、三条通道、distributed 广播、tensor 位置便签、分桶、版本边界、外部等待和训练保存的表。R1–R5 为 **8/8 步 10/10**，**R6 未验证、不记总分**，**0 已知文本洞**；视觉终检待主人。
 - 本章 `build`、`transcript`、全章 `readability`（0 机械问题）、中英三种宽度 `mobile`、`deep-check 07`、`zh-check` 和 `git diff --check` 通过。独立文本冷读整改后终审无阻塞内容洞；48 张中英桌面／手机／深入讲解图已生成，8 个抽屉均经浏览器断言打开。材料：`/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-4_anc940/opencode/ls-k2-mlsys-ch07/final/`。本轮模型不能读图，视觉终检留给主人。只跑本章检查，未跑全站回归、真实训练、权重传输或性能基准。本轮类型：**新书**；下一章是 `08-fsdp2-training-backend`。
@@ -127,7 +128,7 @@
 
 ## Learning ML Systems
 
-规划完成：`docs/plan-ml-sys.md` 共 3 部分、16 章；第 1 章已制作 7 步并完成，第 2 章已制作 2 步并完成，第 3 章已制作 6 步并完成，第 4 章已制作 7 步并完成，第 5 章已制作 7 步并完成，第 6 章已制作 8 步并完成，第 7 章已制作 8 步且 R1–R5 与机械检查完成，R6 和视觉终检待主人。第 11 章须先补齐训推不一致的原始来源，缺源时先跳过。
+规划完成：`docs/plan-ml-sys.md` 共 3 部分、16 章；第 1 章已制作 7 步并完成，第 2 章已制作 2 步并完成，第 3 章已制作 6 步并完成，第 4 章已制作 7 步并完成，第 5 章已制作 7 步并完成，第 6 章已制作 8 步并完成，第 7 章已制作 8 步但尚未完成，R1–R5 与机械门槛已通过，R6 和视觉终检待主人。第 11 章须先补齐训推不一致的原始来源，缺源时先跳过。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
@@ -137,7 +138,7 @@
 | 04 | 04-gpu-communication | 完成：7/7 步易读满分 | 24.00 |
 | 05 | 05-distributed-serving | 完成：7/7 步易读满分 | 24.00 |
 | 06 | 06-slime-rollout-loop | 完成：8/8 步易读满分 | 24.00 |
-| 07 | 07-weight-updates | 文本与机械检查完成：8/8 步 R1–R5 为 10/10，含带宽与像素对照；R6 与视觉终检待主人 | —（视觉后评） |
+| 07 | 07-weight-updates | 未完成：8 步已制作，R1–R5 为 10/10，含带宽与像素对照；R6 与视觉终检待主人 | —（视觉后评） |
 | 08 | 08-fsdp2-training-backend | 规划 | — |
 | 09 | 09-fp8-rollout-training | 规划 | — |
 | 10 | 10-int4-qat-rollout | 规划 | — |

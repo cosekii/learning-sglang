@@ -161,3 +161,5 @@ export const UPDATE_DEBUG_SPEEDUP = UPDATE_DEBUG_INITIAL_S / UPDATE_DEBUG_NO_SLE
 // Decimal GB ÷ TB/s gives milliseconds; this HBM yardstick is not a transport prediction.
 export const UPDATE_DEBUG_YARDSTICK_MS = UPDATE_DEBUG_WEIGHT_GB / BW;
 export const UPDATE_DEBUG_FULL_YARDSTICK_RATIO = Math.round((UPDATE_DEBUG_INITIAL_S * 1000 / UPDATE_DEBUG_YARDSTICK_MS) / 100) * 100;
+// Approximate sleep-block repetitions inferred from rounded full-update times, not an exact tensor count.
+export const UPDATE_DEBUG_SLEEP_CALLS = UPDATE_DEBUG_SAVED_S * 1000 / UPDATE_DEBUG_SLEEP_TOTAL_MS;

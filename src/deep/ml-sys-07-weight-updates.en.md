@@ -196,17 +196,18 @@ Sources: `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-1.md:268-287`; `verl/wo
 
 ## Step 7 · Find the fixed wait outside ModelRunner
 
-**One sentence.** Three 10 ms sleeps outside `ModelRunner` explain most of the 33 ms outer call, and removing them shortened this full update from 7.047 to 2.202 seconds.
+**One sentence.** Three 10 ms sleeps run once per tensor, and about 160 repetitions explain the 4.845-second saving from 7.047 to 2.202 seconds.
 
 ### On the stage
 
 - The two full-update bars use one scale. Removing the sleeps leaves a 2.202-second bar beside the original 7.047-second bar.
-- The lower strip decomposes one rounded 33 ms outer call into 1 ms inside `ModelRunner`, three 10 ms sleeps and 2 ms of other rounded time.
+- The lower strip decomposes one rounded 33 ms outer call into 1 ms inside `ModelRunner`, three 10 ms sleeps and 2 ms of other rounded time. The source loop pays that 30 ms block once per tensor.
+- The full-model saving divided by 0.030 s gives 161.5 repetitions, about 160. This is an approximate repetition count inferred from rounded times, not an exact tensor count.
 - `ModelRunner` is the model-owning code on each inference rank, and a `sleep` is a programmed pause. Timing only the inner operation misses those pauses. The debug note also synchronizes CUDA around the measured GPU region so its CPU timer waits for queued work.
 
 ### Formula and symbols
 
-$$T_{\text{outer}}\approx T_{\text{inner}}+n\,t_s+T_{\text{other}},\qquad S=T_0-T_1,\qquad Q=T_0/T_1$$
+$$T_{\text{outer}}\approx T_{\text{inner}}+n\,t_s+T_{\text{other}},\qquad S=T_0-T_1,\qquad Q=T_0/T_1,\qquad N=S/(n\,t_s)$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
@@ -215,13 +216,15 @@ $$T_{\text{outer}}\approx T_{\text{inner}}+n\,t_s+T_{\text{other}},\qquad S=T_0-
 | $T_{\text{other}}$ | Remaining rounded outer time | 2 ms |
 | $T_0,T_1$ | Full update before and after sleep removal | 7.047 and 2.202 s |
 | $S,Q$ | Saved seconds and time ratio | Derived here |
+| $N$ | Approximate update-call count | $S/(3\times0.010\ \text{s})\approx161.5$, about 160 |
 
 ### The numbers on the stage
 
 $$1+3\times10+2=33\ \text{ms}$$
 $$S=7.047-2.202=4.845\ \text{s},\qquad Q=7.047/2.202\approx3.20$$
+$$N=4.845\ \text{s}/0.030\ \text{s}=161.5\ \text{calls}\approx160\ \text{calls}$$
 
-The values are rounded successive measurements from one author's setup. They do not establish a general 3.20× improvement.
+The values are rounded successive measurements from one author's setup. The 161.5 quotient is not an exact tensor count. They do not establish a general 3.20× improvement.
 
 ### Next
 
