@@ -84,7 +84,7 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg class:step-four={step === 3 && $lang === 'zh'} class:step-six={step === 5} viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="KV memory, step {step + 1}">
+    <svg class:step-one={step === 0 && $lang === 'zh'} class:step-four={step === 3 && $lang === 'zh'} class:step-six={step === 5} viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="KV memory, step {step + 1}">
       <defs>
         <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
           <rect width="6" height="6" fill="#e0f2fe" />
@@ -106,20 +106,27 @@
             {@const xs = x0 + running.slice(0, i).reduce((a, c) => a + seqGB(c * 1024), 0) * pxPerGB}
             {@const w = seqGB(ctxK * 1024) * pxPerGB - 1}
             <rect x={xs} y={BAR.y + 1} width={w} height={BAR.h - 2} rx="2" fill="#0891b2" opacity={0.5 + 0.3 * (i % 2)} in:fly={{ x: -6, delay: 150 + i * 90, duration: 250 }} />
-            {#if w > 26}<text x={xs + w / 2} y={BAR.y + 27} text-anchor="middle" class="steplabel">{ctxK}k</text>{/if}
+            {#if w > 26}<text x={xs + w / 2} y={BAR.y + 27} text-anchor="middle" class="steplabel context-label">{ctxK}k</text>{/if}
           {/each}
           <!-- brackets -->
           <g in:fade={{ delay: 1100 }}>
             <path d="M {x0} {BAR.y + BAR.h + 8} V {BAR.y + BAR.h + 16} H {xEnd} V {BAR.y + BAR.h + 8}" fill="none" stroke="var(--fg)" stroke-width="1.5" />
-            <text x={(x0 + xEnd) / 2} y={BAR.y + BAR.h + 32} text-anchor="middle" class="tag strong">{t(`room for KV cache · ${HBM_GB - W_GB} GB`, `KV cache 的空间 · ${HBM_GB - W_GB} GB`)}</text>
+            <text x={(x0 + xEnd) / 2} y={BAR.y + BAR.h + 32} text-anchor="middle" class="tag strong desktop-only">{t(`room for KV cache · ${HBM_GB - W_GB} GB`, `KV cache：80 − 16 = ${HBM_GB - W_GB} GB = 4 × 权重`)}</text>
+            <text x={(x0 + xEnd) / 2} y={BAR.y + BAR.h + 32} text-anchor="middle" class="tag strong phone-only">KV cache：{HBM_GB - W_GB} GB = 4 × 权重</text>
           </g>
           <g in:fade={{ delay: 1600 }}>
             <path d="M {x0} {BAR.y - 8} V {BAR.y - 16} H {xUsed - 2} V {BAR.y - 8}" fill="none" stroke="#0891b2" stroke-width="1.5" />
-            <text x={(x0 + xUsed) / 2} y={BAR.y - 22} text-anchor="middle" class="tag" fill="#0891b2">{t(`in use · ${usedGB.toFixed(0)} GB, ${running.length} requests`, `已用 · ${usedGB.toFixed(0)} GB，${running.length} 个 request`)}</text>
+            <text x={(x0 + xUsed) / 2} y={BAR.y - 22} text-anchor="middle" class="tag desktop-only" fill="#0891b2">{t(`in use · ${usedGB.toFixed(0)} GB, ${running.length} requests`, `已用 · ${usedGB.toFixed(0)} GB，${running.length} 个 request`)}</text>
+            <text x={(x0 + xUsed) / 2} y={BAR.y - 22} text-anchor="middle" class="tag phone-only" fill="#0891b2">已用 {usedGB.toFixed(0)} GB</text>
             <path d="M {xUsed + 2} {BAR.y - 8} V {BAR.y - 16} H {xEnd} V {BAR.y - 8}" fill="none" stroke="var(--gen)" stroke-width="1.5" />
-            <text x={(xUsed + xEnd) / 2} y={BAR.y - 22} text-anchor="middle" class="tag strong" fill="var(--gen)">{t(`empty right now · ${(HBM_GB - W_GB - usedGB).toFixed(0)} GB`, `当前空闲 · ${(HBM_GB - W_GB - usedGB).toFixed(0)} GB`)}</text>
+            <text x={(xUsed + xEnd) / 2} y={BAR.y - 22} text-anchor="middle" class="tag strong desktop-only" fill="var(--gen)">{t(`empty right now · ${(HBM_GB - W_GB - usedGB).toFixed(0)} GB`, `当前空闲 · ${(HBM_GB - W_GB - usedGB).toFixed(0)} GB`)}</text>
+            <text x={(xUsed + xEnd) / 2} y={BAR.y - 22} text-anchor="middle" class="tag strong phone-only" fill="var(--gen)">空闲 {(HBM_GB - W_GB - usedGB).toFixed(0)} GB</text>
           </g>
-          <text x={BAR.x} y={BAR.y + 110} class="legend" in:fade={{ delay: 2100 }}>{t(`each running request grows ${KB_TOK} KB per step; the empty part is what newcomers can be admitted into`, `每个运行中的 request 每步增长 ${KB_TOK} KB；空闲部分用来接纳新 request`)}</text>
+          {#if $lang === 'zh'}<text x={BAR.x - 10} y={BAR.y + 110} class="pt">·</text><text x={BAR.x - 10} y={BAR.y + 134} class="pt">·</text>{/if}
+          <text x={BAR.x} y={BAR.y + 110} class="legend desktop-only" in:fade={{ delay: 2100 }}>{t(`each running request grows ${KB_TOK} KB per step; the empty part is what newcomers can be admitted into`, `8 个 request 共 228k token；每个 token 占 ${KB_TOK} KiB`)}</text>
+          {#if $lang === 'zh'}<text x={BAR.x} y={BAR.y + 134} class="legend desktop-only" in:fade={{ delay: 2100 }}>228k × {KB_TOK} KiB ≈ 31 GB；64 − 31 ≈ 33 GB 空闲</text>{/if}
+          <text x={BAR.x} y={BAR.y + 110} class="legend phone-only">228k token × {KB_TOK} KiB ≈ 31 GB</text>
+          <text x={BAR.x} y={BAR.y + 134} class="legend phone-only">64 − 31 ≈ 33 GB 空闲</text>
         </g>
       {/if}
 
@@ -364,7 +371,14 @@
         </g>
       {/if}
       {#if cur.foot}
-        {#key cur.foot}<text x={W / 2} y={H - 10} text-anchor="middle" class="footnote" in:fade>{t(cur.foot ?? '', cur.footZh ?? '')}</text>{/key}
+        {#key cur.foot}
+          {#if $lang === 'zh'}
+            <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote desktop-only" in:fade>{cur.footZh}</text>
+            <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote phone-only">{step === 4 ? '关闭 prefix caching：结束就还 page' : '教学按 64 GB；SGLang 实际池约 55 GB'}</text>
+          {:else}
+            <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote" in:fade>{cur.foot}</text>
+          {/if}
+        {/key}
       {/if}
     </svg>
   </div>
@@ -381,8 +395,9 @@
   .legend.muted, .legend .muted { fill: var(--muted); font-weight: 400; }
   .phone-only { display: none; }
   @media (max-width: 900px) {
-    .step-four .desktop-only, .step-four .past-key, .step-six .desktop-only, .step-six .past-key { display: none; }
-    .step-four .phone-only, .step-six .phone-only { display: inline; }
+    .step-one .desktop-only, .step-one .context-label, .step-four .desktop-only, .step-four .past-key, .step-six .desktop-only, .step-six .past-key { display: none; }
+    .step-one .phone-only, .step-four .phone-only, .step-six .phone-only { display: inline; }
+    .step-one .rowlabel, .step-one .legend, .step-one .tag, .step-one .pt, .step-one .steplabel, .step-one .footnote,
     .step-four .rowlabel, .step-four .legend, .step-four .tag, .step-four .pt,
     .step-six .rowlabel, .step-six .legend, .step-six .tag, .step-six .pt { font-size: 23px; }
   }

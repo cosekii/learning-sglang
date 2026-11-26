@@ -29,13 +29,14 @@ $$
 | $M_{\text{HBM}}$ | 一块 H100 的显存 | 80 GB | `src/numbers.ts` 的 `HBM_GB` |
 | $M_W$ | 权重字节数 | 16 GB | 第 4 章第 2 步；`W_GB` |
 | $M_{\text{room}}$ | 权重之外、KV cache 能用的空间 | | 本步 |
-| $m_{kv}$ | 一个 token 在全部层的 k、v | 128 KB | 第 3 章第 9 步；`KB_PER_TOKEN` |
+| $m_{kv}$ | 一个 token 在全部层的 k、v | 128 KiB | 第 3 章第 9 步；`KB_PER_TOKEN` |
 | $c$ | 一个 request 的上下文长度（token 数） | | 第 4 章第 6 步 |
 | $M_{\text{seq}}(c)$ | 一个上下文为 $c$ 的 request 的 cache | | 本步 |
-| $c_r$ | 第 $r$ 个运行中 request 的上下文 | 图上 8 个 | 本步 |
+| $c_r$ | 第 $r$ 个运行中 request 的上下文，$c_r=T_r+g_r$ | 图上 8 个 | 本步 |
+| $T_r,g_r$ | 第 $r$ 个 request 的 prompt 长度、已生成 token 数 | | 第 3 章第 9 步 |
 | $M_{\text{used}}, M_{\text{empty}}$ | 已用、空闲 | | 本步 |
 
-单位：128 KB 按 1 KB = 1,024 B 算（131,072 B），GB 按 10⁹ B 算，和组件一致。
+单位先写清楚：$m_{kv}=131{,}072\ \mathrm B=128\ \mathrm{KiB}$；十进制的 GB 按 $10^9$ B 算，二进制的 GiB 按 $1{,}024^3$ B 算。
 
 ### 代入图上的数
 
@@ -45,14 +46,26 @@ $$
 | 8 个 request 的上下文合计 | 24 + 36 + 12 + 48 + 20 + 32 + 40 + 16 | 228k token | |
 | $M_{\text{used}}$ | 228 × 1,024 × 131,072 B | 30.6 GB | 31 GB |
 | $M_{\text{empty}}$ | 64 − 30.6 | 33.4 GB | 33 GB |
-| 每步增长 | 8 × 128 KB | 1 MB | |
+| 每步增长 | 8 × 128 KiB | 1 MiB ≈ 1.049 MB | |
 
-每个 decode 步，每个运行中的 request 多一个 token，cache 多 128 KB。所以就算没有新来者，空闲部分也在一步步缩小。
+每个 decode 步，每个运行中的 request 多一个 token，cache 多 128 KiB。所以就算没有新来者，空闲部分也在一步步缩小。
+
+### 不等长 request 怎样分阶段算
+
+第 3 章第 9 步已经给出两请求算例；这里把同一本账接到本步的 $c_r=T_r+g_r$：
+
+| 算什么 | 公式 | 两个 request 的算例 |
+|---|---|---|
+| 所有 prefill 结束 | $M_{\text{prefill}}=m_{kv}\sum_rT_r$ | $T_1=3,T_2=5$：$8m_{kv}=1\ \mathrm{MiB}$ |
+| 第一轮 decode 新增 | $\Delta M=m_{kv}B$ | 两人各写 1 个：$2m_{kv}=256\ \mathrm{KiB}$ |
+| 全部生成结束 | $M_{\text{final}}=m_{kv}\sum_r(T_r+g_r)$ | $g_1=2,g_2=1$：$11m_{kv}=1{,}408\ \mathrm{KiB}$ |
+
+$B$ 是这一轮仍在生成的 request 数。先按 bytes 算，再换成 MiB 或 GiB；这里只算逻辑数据量，分页后的物理分配见第 6 步。
 
 ### 为什么 SGLang 的池子约 55 GB
 
 - SGLang 用 `--mem-fraction-static`（记作 $f$）规定「权重 + KV cache 池」最多占显存的比例，其余留给计算时的中间结果（activations）和 CUDA graph（第 11 章）。
-- $f$ 不设时由 SGLang 按显存估算：一张 80 GB 的卡至少留 10 GB（GiB），chunk 大小 8,192 时留得更多，得到约 0.83。
+- $f$ 不设时由 SGLang 按显存估算：一张 80 GB 的卡至少留 10 GiB，chunk 大小 8,192 时留得更多，得到约 0.83。
 - 图上的 80 GB 是标称值；这张卡实际约 79.6 GiB ≈ 85.5 GB（10⁹ B）。所以池子 ≈ 0.83 × 85.5 − 16 ≈ 55 GB。用标称值算 0.83 × 80 − 16 只有 50 GB，差别来自 GiB 和 GB。
 - 图上省略了 $f$，按 64 GB 讲，本章的结论不受影响。
 
