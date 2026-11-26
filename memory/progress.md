@@ -4,6 +4,9 @@
 
 ## 本轮记录
 
+- 07:37 完成 Learning ML Systems 第 10 章《INT4 QAT 与 rollout》9 步：原始 INT4 负载、32 权重组 scale、fake quantization、STE、真实导出、4 位打包、Marlin 更新顺序、W4A16 计算和八卡容量。独立冷读与源码复审整改完成，**9/9 步易读 12/12、原分 24.00/24、0 未决内容洞和机械显示洞**；主人 PNG 目测仍待。
+- 九个步骤与复审整改逐步提交并推送至 `4821fa9`，评分记录随本轮最后提交；`build`（55 页）、本章 `transcript`、全章 `readability`、中英三种宽度 `mobile`、18 个逐步字号与布局视图、`deep-check 10`、`zh-check`、18 个深入讲解 DOM 审计和 `git diff --check` 通过。最终 54 张图在 `/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-uqyyaaql/opencode/ls-k2-mlsys10/final/`。本轮只跑本章检查，未跑全站回归、真实训练、权重更新、GPU benchmark 或质量评测。本轮类型：**新书**；下一章是 `11-train-inference-mismatch`，仍须先补源，缺源时按规划跳过。
+
 - 06:55 按复审修 Inside Voxt 第 10 章：第 5 步把「不足 350 ms 就丢」收窄到停顿结束的 `finalize` 路径，文件结尾 `Flush` 不查这个门槛；第 6 步先写 `w* = argmin RMS(w)`，再写 `cut = mid(w*)`；第 3、4、5、9 步深度讲解补齐 `uploaded bytes`、`cue end`、`cue start`、`keep_pause`、`log` 的符号和代入数；第 1 步把 `compressed M4A` 改成有解释的「压缩声音（M4A）」；第 2 步把 `afconvert`、`LEI16@16000`、`WAV` 移出舞台，只留「Mac 声音工具 / 16 kHz · mono · 16-bit」；第 1 步 #1 因没有数字代价记 1。**9/9 步文本易读 10/10（R1–R5）、原分文本 19/20（#1=1）、0 未决文本洞**；R6/#4/#5 无图不评，本章仍未完成。
 - 改动提交并推送；`build`（54 页）、本章 `transcript`、`readability`（0 机械问题）、`deep-check 10`、本章 `zh-check`、中英三种宽度 `mobile`、中文逐步字号（1–9）和 `git diff --check` 通过。截图 27 张在 `/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-iwsgbvyh/opencode/ls-volt-ch10-final/{en-desktop,zh-desktop,zh-phone}/`；`Read` 打开 PNG 返回 `Cannot read image`，目视仍待。本轮只跑本章检查，未跑全站回归、真实 Voxt 应用或真实识别。本轮类型：**修旧**；下一普通轮做 Voxt 第 11 章 `models-and-app-updates`。
 - 06:20 完成 Learning SGLang Omni 第 13 章《Qwen3-Omni 部署调优》8 步文本：两种启动形态、输出路线、H200/TP2 talker 摆卡、单卡 78→73 预算、BF16/FP8/INT4、replica2 每进程容量、readiness 与测量、全书部署决策表。独立冷读与源码复审整改完成，**8/8 步 R1–R5 为 10/10、原分 24.00/24、0 内容洞和机械显示洞**；R6 未评分，不记易读总分或 complete-under-EVAL，主人目测仍待。
@@ -153,7 +156,7 @@
 
 ## Learning ML Systems
 
-规划完成：`docs/plan-ml-sys.md` 共 3 部分、16 章；第 1 章已制作 7 步并完成，第 2 章已制作 2 步并完成，第 3 章已制作 6 步并完成，第 4 章已制作 7 步并完成，第 5 章已制作 7 步并完成，第 6 章已制作 8 步并完成，第 7 章已制作 8 步但尚未完成，R1–R5 与机械门槛已通过，R6 和视觉终检待主人。第 11 章须先补齐训推不一致的原始来源，缺源时先跳过。
+规划完成：`docs/plan-ml-sys.md` 共 3 部分、16 章；第 1 章已制作 7 步并完成，第 2 章已制作 2 步并完成，第 3 章已制作 6 步并完成，第 4 章已制作 7 步并完成，第 5 章已制作 7 步并完成，第 6 章已制作 8 步并完成，第 7 章已制作 8 步并完成静态场景复核，第 10 章已制作 9 步并完成。第 8、9 章的评分记录仍是既有台账欠项，本轮不追记分数。第 11 章须先补齐训推不一致的原始来源，缺源时先跳过。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
@@ -166,7 +169,7 @@
 | 07 | 07-weight-updates | 完成：8/8 步静态场景易读 12/12、原分 24/24；R6／#4／#5 按组件与 transcript 复核 | 24.00 |
 | 08 | 08-fsdp2-training-backend | 规划 | — |
 | 09 | 09-fp8-rollout-training | 规划 | — |
-| 10 | 10-int4-qat-rollout | 规划 | — |
+| 10 | 10-int4-qat-rollout | 完成：9/9 步易读 12/12、原分 24/24；独立冷读与源码复审通过 | 24.00 |
 | 11 | 11-train-inference-mismatch | 待补源 | — |
 | 12 | 12-rl-speculative-decoding | 规划 | — |
 | 13 | 13-multi-turn-agent-rl | 规划 | — |
