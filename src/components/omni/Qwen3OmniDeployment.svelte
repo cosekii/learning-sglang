@@ -110,7 +110,7 @@
   const speechGpu1 = QWEN_SPEECH_DEFAULT_STAGE_PROCESSES.filter((stage) => stage.gpu === 1);
 
   // One walking outline shows each scene in reading order.
-  const PHASE_COUNTS = [3, 3, 4, 0, 0, 0, 0, 0];
+  const PHASE_COUNTS = [3, 3, 4, 4, 0, 0, 0, 0];
   const PHASE_MS = 1500;
   const REST_MS = 1800;
   type Frame = { x: number; y: number; w: number; h: number };
@@ -143,6 +143,17 @@
       { x: 380, y: 105, w: 320, h: 165 },
       { x: 20, y: 280, w: 680, h: 198 },
       { x: 20, y: 495, w: 680, h: 70 },
+    ];
+    if (s === 3) return isPhone ? [
+      { x: 25.8, y: 125, w: 210.6, h: 65 },
+      { x: 222.9, y: 125, w: 13.5, h: 65 },
+      { x: 25.8, y: 125, w: 197.1, h: 65 },
+      { x: 15, y: 95, w: 270, h: 100 },
+    ] : [
+      { x: 47.2, y: 125, w: 530.4, h: 65 },
+      { x: 543.6, y: 125, w: 34, h: 65 },
+      { x: 47.2, y: 125, w: 496.4, h: 65 },
+      { x: 20, y: 95, w: 680, h: 100 },
     ];
     return [];
   };
