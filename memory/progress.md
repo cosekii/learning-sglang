@@ -4,6 +4,9 @@
 
 ## 本轮记录
 
+- 08:27 完成 Learning ML Systems 第 12 章《RL 中的投机解码》8 步：在线 draft 的公开收益、target hidden state、next-token embedding、二移标签与 CE、detach、loss mask、rollout 吞吐和训练指标。独立冷读与源码复审整改完成，**8/8 步易读 12/12、原分 24.00/24、0 未决内容洞和机械显示洞**；主人 PNG 目测仍待。
+- 八个步骤与复审整改逐步提交并推送，评分记录随本轮最后提交；`build`（57 页）、本章 `transcript`、全章 `readability`、中英三种宽度 `mobile`、8 个逐步中文字号与布局视图、`deep-check 12`、`zh-check`、16 个深入讲解 DOM 审计和 `git diff --check` 通过。最终 40 张图在 `/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-ixtb_f0p/opencode/ls-k2-mlsys12/`。本轮只跑本章检查，未跑全站回归、真实训练、rollout、GPU benchmark 或质量评测。本轮类型：**新书**；第 11 章仍须先补源，下一章是 `13-multi-turn-agent-rl`。
+
 - 07:37 完成 Learning ML Systems 第 10 章《INT4 QAT 与 rollout》9 步：原始 INT4 负载、32 权重组 scale、fake quantization、STE、真实导出、4 位打包、Marlin 更新顺序、W4A16 计算和八卡容量。独立冷读与源码复审整改完成，**9/9 步易读 12/12、原分 24.00/24、0 未决内容洞和机械显示洞**；主人 PNG 目测仍待。
 - 九个步骤与复审整改逐步提交并推送至 `4821fa9`，评分记录随本轮最后提交；`build`（55 页）、本章 `transcript`、全章 `readability`、中英三种宽度 `mobile`、18 个逐步字号与布局视图、`deep-check 10`、`zh-check`、18 个深入讲解 DOM 审计和 `git diff --check` 通过。最终 54 张图在 `/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-uqyyaaql/opencode/ls-k2-mlsys10/final/`。本轮只跑本章检查，未跑全站回归、真实训练、权重更新、GPU benchmark 或质量评测。本轮类型：**新书**；下一章是 `11-train-inference-mismatch`，仍须先补源，缺源时按规划跳过。
 
@@ -158,7 +161,7 @@
 
 ## Learning ML Systems
 
-规划完成：`docs/plan-ml-sys.md` 共 3 部分、16 章；第 1 章已制作 7 步并完成，第 2 章已制作 2 步并完成，第 3 章已制作 6 步并完成，第 4 章已制作 7 步并完成，第 5 章已制作 7 步并完成，第 6 章已制作 8 步并完成，第 7 章已制作 8 步并完成静态场景复核，第 10 章已制作 9 步并完成。第 8、9 章的评分记录仍是既有台账欠项，本轮不追记分数。第 11 章须先补齐训推不一致的原始来源，缺源时先跳过。
+规划完成：`docs/plan-ml-sys.md` 共 3 部分、16 章；第 1 章已制作 7 步并完成，第 2 章已制作 2 步并完成，第 3 章已制作 6 步并完成，第 4 章已制作 7 步并完成，第 5 章已制作 7 步并完成，第 6 章已制作 8 步并完成，第 7 章已制作 8 步并完成静态场景复核，第 10 章已制作 9 步并完成，第 12 章已制作 8 步并完成。第 8、9 章的评分记录仍是既有台账欠项，本轮不追记分数。第 11 章须先补齐训推不一致的原始来源，缺源时先跳过。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
@@ -173,7 +176,7 @@
 | 09 | 09-fp8-rollout-training | 规划 | — |
 | 10 | 10-int4-qat-rollout | 完成：9/9 步易读 12/12、原分 24/24；独立冷读与源码复审通过 | 24.00 |
 | 11 | 11-train-inference-mismatch | 待补源 | — |
-| 12 | 12-rl-speculative-decoding | 规划 | — |
+| 12 | 12-rl-speculative-decoding | 完成：8/8 步易读 12/12、原分 24/24；独立冷读与源码复审通过 | 24.00 |
 | 13 | 13-multi-turn-agent-rl | 规划 | — |
 | 14 | 14-profile-rl-systems | 规划 | — |
 | 15 | 15-memory-snapshot-debugging | 规划 | — |
