@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import StepControls from '../StepControls.svelte';
+  import LoopProgress from '../LoopProgress.svelte';
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
@@ -85,6 +86,27 @@
   const W = $derived(phone ? 300 : 720);
   const H = $derived(phone ? [760, 900, 760, 850, 900, 800, 850, 900][step] : [560, 680, 620, 650, 680, 610, 640, 650][step]);
   const bytes = (n: number) => n.toLocaleString('en-US');
+
+  // Each step plays its mechanism in held phases, then rests on the finished scene before looping.
+  const PHASE_COUNTS = [4, 4, 4, 4, 4, 5, 4, 5];
+  const PHASE_MS = 1100, REST_MS = 2500;
+  let phase = $state(0);
+  let lap = $state(0), lapMs = $state(0);
+  const nextLap = (ms: number) => untrack(() => { lapMs = ms; lap++; });
+  $effect(() => {
+    const count = PHASE_COUNTS[step];
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { phase = count - 1; return; }
+    const ms = count * PHASE_MS + REST_MS;
+    let raf = 0, t0 = 0;
+    const tick = (now: number) => {
+      if (!t0 || now - t0 >= ms) { t0 = now; nextLap(ms); }
+      phase = Math.min(count - 1, Math.floor((now - t0) / PHASE_MS));
+      raf = requestAnimationFrame(tick);
+    };
+    phase = 0;
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  });
 </script>
 
 <figure class="viz">
@@ -121,23 +143,28 @@
         {/if}
         {@const barY = phone ? 446 : 278}
         {@const barX = phone ? 15 : 120}
-        {@const readW = phone ? 96 : 192}
-        {@const queueW = phone ? 144 : 288}
+        {@const unitW = phone ? 24 : 48}
+        {@const readW = phase >= 1 ? DELIVERY_READ_SECONDS * unitW : 0}
+        {@const queueW = (DELIVERY_GENERATED_SECONDS - (phase >= 1 ? DELIVERY_READ_SECONDS : 0)) * unitW}
         <text x={barX} y={barY - 18} class="tag strong">{t('THE SAME 10 SECONDS OF AUDIO', '同一段 10 秒声音')}</text>
-        <rect x={barX} y={barY} width={readW} height="58" rx="7" fill="var(--bg)" stroke="var(--faint)" />
-        <rect x={barX + readW} y={barY} width={queueW} height="58" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
-        <text x={barX + readW / 2} y={barY + 35} text-anchor="middle" class="tag">{DELIVERY_READ_SECONDS} s {t('read', '已读')}</text>
-        <text x={barX + readW + queueW / 2} y={barY + 35} text-anchor="middle" class="tag strong">{DELIVERY_QUEUED_SECONDS} s {t('waiting', '等待')}</text>
-        <text x={W / 2} y={barY + 100} text-anchor="middle" class="formula">{DELIVERY_GENERATED_SECONDS} − {DELIVERY_READ_SECONDS} = {DELIVERY_QUEUED_SECONDS} s {t('still queued', '仍在排队')}</text>
-        {#if phone}
-          <text x={W / 2} y={barY + 124} text-anchor="middle" class="tag">{t('coordinator queue: internal 24 kHz float32', 'coordinator 队列：internal 24 kHz float32')}</text>
-          <text x={W / 2} y={barY + 148} text-anchor="middle" class="tag">{t('HTTP output: mono 16-bit', 'HTTP 输出：mono 16-bit')}</text>
-          <text x={W / 2} y={barY + 172} text-anchor="middle" class="tag">{bytes(DELIVERY_AUDIO_SAMPLE_RATE)} samples/s × {DELIVERY_AUDIO_BYTES_PER_SAMPLE} B/sample</text>
-          <text x={W / 2} y={barY + 196} text-anchor="middle" class="formula">× {DELIVERY_QUEUED_SECONDS} s = {bytes(DELIVERY_QUEUED_BYTES)} B</text>
-        {:else}
-          <text x={W / 2} y={barY + 124} text-anchor="middle" class="tag">{t('coordinator queue: internal 24 kHz float32 · HTTP output: mono 16-bit', 'coordinator 队列：internal 24 kHz float32 · HTTP 输出：mono 16-bit')}</text>
-          <text x={W / 2} y={barY + 153} text-anchor="middle" class="formula">{bytes(DELIVERY_AUDIO_SAMPLE_RATE)} samples/s × {DELIVERY_AUDIO_BYTES_PER_SAMPLE} B/sample × {DELIVERY_QUEUED_SECONDS} s = {bytes(DELIVERY_QUEUED_BYTES)} B</text>
-        {/if}
+        <rect x={barX} y={barY} width={readW} height="58" rx="7" fill="var(--bg)" stroke="var(--faint)" style="transition: width 700ms" />
+        <rect x={barX + readW} y={barY} width={queueW} height="58" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" style="transition: x 700ms, width 700ms" />
+        <g style:opacity={phase >= 1 ? 1 : 0} style="transition: opacity 250ms">
+          <text x={barX + DELIVERY_READ_SECONDS * unitW / 2} y={barY + 35} text-anchor="middle" class="tag">{DELIVERY_READ_SECONDS} s {t('read', '已读')}</text>
+          <text x={barX + DELIVERY_READ_SECONDS * unitW + DELIVERY_QUEUED_SECONDS * unitW / 2} y={barY + 35} text-anchor="middle" class="tag strong">{DELIVERY_QUEUED_SECONDS} s {t('waiting', '等待')}</text>
+        </g>
+        <g style:opacity={phase >= 2 ? 1 : 0} style="transition: opacity 300ms">
+          <text x={W / 2} y={barY + 100} text-anchor="middle" class="formula">{DELIVERY_GENERATED_SECONDS} − {DELIVERY_READ_SECONDS} = {DELIVERY_QUEUED_SECONDS} s {t('still queued', '仍在排队')}</text>
+          {#if phone}
+            <text x={W / 2} y={barY + 124} text-anchor="middle" class="tag">{t('coordinator queue: internal 24 kHz float32', 'coordinator 队列：internal 24 kHz float32')}</text>
+            <text x={W / 2} y={barY + 148} text-anchor="middle" class="tag">{t('HTTP output: mono 16-bit', 'HTTP 输出：mono 16-bit')}</text>
+            <text x={W / 2} y={barY + 172} text-anchor="middle" class="tag">{bytes(DELIVERY_AUDIO_SAMPLE_RATE)} samples/s × {DELIVERY_AUDIO_BYTES_PER_SAMPLE} B/sample</text>
+            <text x={W / 2} y={barY + 196} text-anchor="middle" class="formula">× {DELIVERY_QUEUED_SECONDS} s = {bytes(DELIVERY_QUEUED_BYTES)} B</text>
+          {:else}
+            <text x={W / 2} y={barY + 124} text-anchor="middle" class="tag">{t('coordinator queue: internal 24 kHz float32 · HTTP output: mono 16-bit', 'coordinator 队列：internal 24 kHz float32 · HTTP 输出：mono 16-bit')}</text>
+            <text x={W / 2} y={barY + 153} text-anchor="middle" class="formula">{bytes(DELIVERY_AUDIO_SAMPLE_RATE)} samples/s × {DELIVERY_AUDIO_BYTES_PER_SAMPLE} B/sample × {DELIVERY_QUEUED_SECONDS} s = {bytes(DELIVERY_QUEUED_BYTES)} B</text>
+          {/if}
+        </g>
         <text x={W / 2} y={barY + (phone ? 230 : 214)} text-anchor="middle" class="rowlabel">{t(phone ? 'Socket full → queue grows. What stops it?' : 'Socket full → this queue grows. What stops it?', 'socket 填满后，积压继续增长。怎样阻止它？')}</text>
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t(phone ? 'Socket buffer = bytes given to OS / HTTP runtime, excluded.' : 'Socket buffer = bytes already given to the OS or HTTP runtime, outside this ledger.', 'socket 缓冲是交给操作系统或 HTTP runtime 的字节，不计入。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Constructed example · playback timing: Ch. 8 Step 3.', '构造算例 · 播放时间线见第 8 章第 3 步。')}</text>
@@ -355,6 +382,7 @@
         <text x={W / 2} y={phone ? 850 : 584} text-anchor="middle" class="rowlabel">{phone ? t('A or B: who takes the next request?', 'A 还是 B：谁接收下一个请求？') : t('API process A or B: who takes the next request?', 'API 进程 A 还是 B：谁接收下一个请求？')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Early close: unread → 0 · cap failure: already 0', '提前关闭：未读变 0 · 上限失败：已经为 0') : t('Early close releases unread bytes. Cap failure already removed them.', '提前关闭会释放未读字节；上限失败时这些字节已经移除。')}</text>
       {/if}
+      <LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={4} label={t('loops', '循环')} />
     </svg>
   </div>
   <StepControls bind:step total={steps.length} caption={cur.caption} captionZh={cur.captionZh} {prev} {next} deep={deep?.en[step]} deepZh={deep?.zh[step]} />
