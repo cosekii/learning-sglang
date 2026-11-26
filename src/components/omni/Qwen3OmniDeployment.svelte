@@ -110,7 +110,7 @@
   const speechGpu1 = QWEN_SPEECH_DEFAULT_STAGE_PROCESSES.filter((stage) => stage.gpu === 1);
 
   // One walking outline shows each scene in reading order.
-  const PHASE_COUNTS = [3, 0, 0, 0, 0, 0, 0, 0];
+  const PHASE_COUNTS = [3, 3, 0, 0, 0, 0, 0, 0];
   const PHASE_MS = 1500;
   const REST_MS = 1800;
   type Frame = { x: number; y: number; w: number; h: number };
@@ -123,6 +123,15 @@
       { x: 35, y: 172, w: 290, h: 255 },
       { x: 395, y: 174, w: 290, h: 154 },
       { x: 395, y: 330, w: 290, h: 117 },
+    ];
+    if (s === 1) return isPhone ? [
+      { x: 15, y: 120, w: 270, h: 190 },
+      { x: 15, y: 325, w: 270, h: 190 },
+      { x: 15, y: 530, w: 270, h: 220 },
+    ] : [
+      { x: 20, y: 122, w: 680, h: 125 },
+      { x: 20, y: 262, w: 680, h: 125 },
+      { x: 20, y: 402, w: 680, h: 145 },
     ];
     return [];
   };
@@ -212,7 +221,7 @@
           { y: 262, h: 125, title: 'SPEECH SERVER · modalities=["text"]', titleZh: '语音服务器 · modalities=["text"]', lines: ['preprocessing + active encoders → thinker → decode → text', 'SKIP talker_ar and code2wav'], linesZh: ['preprocessing + 实际用到的 encoders → thinker → decode → 文字', '跳过 talker_ar 和 code2wav'], speech: false },
           { y: 402, h: 145, title: 'SPEECH SERVER · modalities=["text", "audio"]', titleZh: '语音服务器 · modalities=["text", "audio"]', lines: ['preprocessing + active encoders → thinker', 'thinker → decode → text  ·  thinker → talker_ar → code2wav → sound'], linesZh: ['preprocessing + 实际用到的 encoders → thinker', 'thinker → decode → 文字 · thinker → talker_ar → code2wav → 声音'], speech: true },
         ] as panel}
-          <rect x={phone ? 15 : 20} y={panel.y} width={phone ? 270 : 680} height={panel.h} rx="11" fill={panel.speech ? 'var(--accent-soft)' : 'var(--bg)'} stroke={panel.speech ? 'var(--accent)' : 'var(--line)'} />
+          <rect x={phone ? 15 : 20} y={panel.y} width={phone ? 270 : 680} height={panel.h} rx="11" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x={phone ? 28 : 34} y={panel.y + 27} class="tag strong">{t(panel.title, panel.titleZh)}</text>
           {#each panel.lines as line, i}
             <text x={phone ? 28 : 34} y={panel.y + 62 + i * (phone ? 36 : 34)} class={i === panel.lines.length - 1 && !panel.speech ? 'tag' : 'mono'} fill={i === panel.lines.length - 1 && !panel.speech ? 'var(--muted)' : 'var(--text)'}>{t(line, panel.linesZh[i])}</text>
