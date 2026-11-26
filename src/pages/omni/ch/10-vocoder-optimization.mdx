@@ -17,6 +17,8 @@ Step 1 follows Qwen3-Omni's default streaming Code2Wav windows in `sglang_omni/m
 
 Step 2 follows `sglang_omni/scheduling/streaming_vocoder.py:819-842` and `sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:999-1079`. The constructed comparison changes three independent `[B=1,T=10]` first-window calls into one `[B=3,T=10]` call. Real groups also require matching first/later kind and slot/stateless mode. They contain at most eight replay rows and do not pad unlike lengths into one replay. `tests/unit_test/qwen3_omni/test_code2wav_batching.py:111-191` checks shared rows and the first/later boundary. The 3→1 count is not a timing result.
 
+Step 3 follows `sglang_omni/models/qwen3_omni/components/codec_state_pool.py:13-24,63-115` and `code2wav_scheduler.py:296-327,999-1011,1283-1300`. A slot holds K/V rings, convolution histories, overlap samples and stream position. The first window writes state; a later slot-backed window reads only 10 new frames instead of 25 old plus 10 new. A request without a free slot remains stateless for life, and a short stream ending before its first threshold window decodes statelessly. The 35→10 comparison counts input frames, not latency or memory savings.
+
 Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`. The chapter reads source and public results; it does not run a model or benchmark.
 
 </details>
@@ -27,6 +29,8 @@ Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37
 第 1 步依据 Qwen3-Omni 默认的流式 Code2Wav 窗口，见 `sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:79-109,999-1011`。后续无状态窗口读取 25 帧旧内容和 10 帧新内容，只输出那 10 帧新内容。Learning SGLang 第 20 章第 1–3 步已经说明，这 10 帧代表 800 ms 播放。地图三项是跨请求 batching、保留 codec 状态和精确形状 CUDA graph，后续步骤分别解释。帧数描述输入工作量，不是耗时。
 
 第 2 步依据 `sglang_omni/scheduling/streaming_vocoder.py:819-842` 和 `sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:999-1079`。构造对照把三次独立 `[B=1,T=10]` 首个窗口调用变成一次 `[B=3,T=10]` 调用。真实分组还要求首个/后续类型和 slot/无状态模式匹配，每次最多重放八行，不把不同长度补进同一次 replay。`tests/unit_test/qwen3_omni/test_code2wav_batching.py:111-191` 检查共享行和首个/后续边界。3→1 是调用数，不是耗时结果。
+
+第 3 步依据 `sglang_omni/models/qwen3_omni/components/codec_state_pool.py:13-24,63-115` 和 `code2wav_scheduler.py:296-327,999-1011,1283-1300`。slot 保存 K/V 环、卷积历史、重叠样本和流位置。首个窗口写入状态；后续 slot 窗口只读取 10 帧新内容，不再读取 25 帧旧内容加 10 帧新内容。没有空 slot 的请求始终走无状态路径，首个阈值窗口前结束的短流也无状态解码。35→10 比较输入帧数，不是延迟或显存收益。
 
 本章代码出处固定到 `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`。本章只读源码和公开结果，没有运行模型或 benchmark。
 

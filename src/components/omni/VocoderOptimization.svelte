@@ -22,6 +22,9 @@
   }, {
     caption: 'Three matching windows share one model call. Each request still gets its own sound chunk.',
     captionZh: '三个匹配窗口共用一次模型调用。每个请求仍拿到自己的声音 chunk。',
+  }, {
+    caption: 'A codec-state slot keeps decoder work between windows. The next window reads only 10 new frames.',
+    captionZh: 'codec-state slot 保存窗口之间的解码工作。下个窗口只读 10 帧新内容。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -38,7 +41,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [790, 850][step] : [570, 630][step]);
+  const H = $derived(phone ? [790, 850, 850][step] : [570, 630, 640][step]);
   const roadmap = $derived([
     { title: 'ready windows', body: 'decode them together', titleZh: '准备好的窗口', bodyZh: '放在一起解码' },
     { title: 'earlier decoder work', body: 'keep it for next time', titleZh: '之前算过的内容', bodyZh: '留给下个窗口' },
@@ -145,6 +148,39 @@
           <text x="360" y="582" text-anchor="middle" class="small">{t('Batching changes the call boundary, not who owns each output.', 'batching 改变调用边界，不改变每份输出的归属。')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Constructed shapes · matching also checks kind + state' : 'Constructed shapes; grouping also checks first/later kind and slot/stateless mode.', phone ? '构造形状 · 还检查窗口类型和状态模式' : '构造形状；分组还检查首个/后续类型和 slot/无状态模式。')}</text>
+      {:else if step === 2}
+        <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'Keep decoder work · 2 of 3 · 1/2' : 'Keep decoder work between windows · 2 of 3 · 1/2', phone ? '保留解码工作 · 2 / 3 · 1/2' : '在窗口之间保留解码工作 · 2 / 3 · 1/2')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'slot = one request’s saved decoder work' : 'codec-state slot = one request’s saved decoder work', phone ? 'slot = 一个请求已存的解码工作' : 'codec-state slot = 一个请求已存的解码工作')}</text>
+        <text x={phone ? 18 : 30} y="79" class="label">{t(phone ? 'blue new · orange saved · grey repeated' : 'blue = new frames · orange = saved work · grey = old frames decoded again', phone ? '蓝新帧 · 橙已存 · 灰重算' : '蓝 = 新帧 · 橙 = 已存工作 · 灰 = 再次解码的旧帧')}</text>
+        {#each [false, true] as slot}
+          {@const x = phone ? 18 : slot ? 375 : 30}
+          {@const y = phone ? slot ? 465 : 102 : 102}
+          {@const pw = phone ? 264 : 315}
+          {@const ph = phone ? 340 : 405}
+          <rect x={x} y={y} width={pw} height={ph} rx="12" fill="var(--bg)" stroke={slot ? 'var(--gen)' : 'var(--line)'} />
+          <text x={x + 15} y={y + 28} class="small strong">{slot ? t('WITH A SLOT', '使用 SLOT') : t('WITHOUT A SLOT', '不用 SLOT')}</text>
+          <text x={x + 15} y={y + 52} class="small">{t('the same later window', '同一个后续窗口')}</text>
+          <rect x={x + 15} y={y + 76} width="132" height="80" rx="8" fill={slot ? 'var(--gen-soft)' : 'white'} stroke={slot ? 'var(--gen)' : 'var(--faint)'} />
+          <text x={x + 81} y={y + 107} text-anchor="middle" class="result">{slot ? t('saved work', '已存工作') : `${VOC_LEFT_CONTEXT_FRAMES} ${t('old frames', '帧旧内容')}`}</text>
+          <text x={x + 81} y={y + 135} text-anchor="middle" class="small">{slot ? t('read from the slot', '从 slot 读取') : t('decode again', '再次解码')}</text>
+          <rect x={x + 155} y={y + 76} width={pw - 170} height="80" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x={x + 155 + (pw - 170) / 2} y={y + 107} text-anchor="middle" class="result">{VOC_NEW_FRAMES} {t('new', '帧新内容')}</text>
+          <text x={x + 155 + (pw - 170) / 2} y={y + 135} text-anchor="middle" class="small">{t('decode + emit', '解码并输出')}</text>
+          <line x1={x + pw / 2} y1={y + 158} x2={x + pw / 2} y2={y + 183} stroke="var(--accent)" stroke-width="2" marker-end="url(#voc-arrow)" />
+          <rect x={x + 45} y={y + 191} width={pw - 90} height="48" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x={x + pw / 2} y={y + 221} text-anchor="middle" class="small strong">vocoder</text>
+          <rect x={x + 45} y={y + 255} width={pw - 90} height="44" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x={x + pw / 2} y={y + 283} text-anchor="middle" class="small strong">{VOC_NEW_FRAMES} {t('new frames out', '帧新内容输出')}</text>
+          <text x={x + 15} y={y + 330} class="result">{t('input', '输入')} = {slot ? VOC_NEW_FRAMES : VOC_STATELESS_INPUT_FRAMES} {t('frames', '帧')}</text>
+          {#if !phone}
+            <text x={x + 15} y={y + 370} class="small">{slot ? t('the slot supplies earlier context', 'slot 提供旧上下文') : `${VOC_LEFT_CONTEXT_FRAMES} + ${VOC_NEW_FRAMES} = ${VOC_STATELESS_INPUT_FRAMES}`}</text>
+          {/if}
+        {/each}
+        {#if !phone}
+          <text x="360" y="548" text-anchor="middle" class="result">{VOC_STATELESS_INPUT_FRAMES} {t('input frames', '帧输入')} → {VOC_NEW_FRAMES} {t('input frames', '帧输入')} · {VOC_NEW_FRAMES} {t('emitted in both', '两种都输出 10 帧')}</text>
+          <text x="360" y="583" text-anchor="middle" class="small">{t('The slot replaces repeated decoding with saved decoder work.', 'slot 用已存解码工作替代重复解码。')}</text>
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Frame counts, not latency · first window writes state' : 'Input-frame counts, not latency. The first window writes the slot; no free slot keeps the stateless path.', phone ? '帧数不是耗时 · 首个窗口写入状态' : '输入帧数不是耗时。首个窗口写入 slot；没有空 slot 就走无状态路径。')}</text>
       {/if}
     </svg>
   </div>

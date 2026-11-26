@@ -65,3 +65,38 @@ The group still returns three sound chunks. The scheduler can replay at most eig
 Batching shares a call across requests. The next mechanism reduces repeated frames inside one request by keeping its decoder work between windows.
 
 Sources: `sglang_omni/scheduling/streaming_vocoder.py:819-842`; `sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:999-1079`; `tests/unit_test/qwen3_omni/test_code2wav_batching.py:111-191`.
+
+## Step 3 · Keep decoder work between windows
+
+**One sentence.** A codec-state slot retains one stream's decoder state, so its later window decodes only 10 new frames instead of reading 25 old frames again.
+
+### On the stage
+
+- A `codec-state slot` is storage for one request's saved decoder work. It holds transformer K/V rings, causal-convolution histories, transposed-convolution overlap samples and the stream's frame position.
+- The left panel repeats Step 1: 25 old frames and 10 new frames enter the vocoder. The right panel reads earlier work from the slot and gives the vocoder only the 10 new frames.
+- Both panels emit the same number of new frames. Orange is saved work, grey is old input decoded again, and blue is new input and output.
+- The first window creates the state and writes it into the slot. Only later windows can reuse it. A stream claims its slot when its first codes arrive and releases it on completion or abort.
+- Slots are finite. If none is free, that request keeps the stateless left-context path for its lifetime. A stream ending before its first full window also decodes without slot state.
+
+### Formula and symbols
+
+$$I_{\mathrm{stateless}}=c+n,\qquad I_{\mathrm{slot}}=n$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $c$ | Old frames decoded again without a slot | Step 1, 25 |
+| $n$ | New frames in the later window | Step 1, 10 |
+| $I_{\mathrm{stateless}}$ | Input frames without retained state | Calculated here, 35 |
+| $I_{\mathrm{slot}}$ | Input frames with retained state | Calculated here, 10 |
+
+### The numbers on the stage
+
+$$I_{\mathrm{stateless}}=25+10=35,\qquad I_{\mathrm{slot}}=10$$
+
+The slot avoids 25 input frames in this later window. This is a frame-count comparison, not a 3.5× latency claim. The slot also consumes memory, and writing the first state adds work.
+
+### Next
+
+The next step puts public first-window and later-window timings on one scale, including the first window's extra state-writing cost.
+
+Sources: `sglang_omni/models/qwen3_omni/components/codec_state_pool.py:13-24,63-115`; `sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:296-327,999-1011,1230-1246,1283-1300`; `sglang_omni/models/qwen3_omni/components/code2wav.py:380-402,419-462`.

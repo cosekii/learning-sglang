@@ -65,3 +65,38 @@ $$C_{\mathrm{separate}}=3,\qquad C_{\mathrm{batch}}=1$$
 batching 让多个请求共享一次调用。下一种机制保留单个请求在窗口之间的解码工作，减少窗口内重复读取的帧。
 
 来源：`sglang_omni/scheduling/streaming_vocoder.py:819-842`；`sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:999-1079`；`tests/unit_test/qwen3_omni/test_code2wav_batching.py:111-191`。
+
+## 第 3 步 · 在窗口之间保留解码工作
+
+**一句话。** codec-state slot 保留一条流的解码状态，后续窗口只解码 10 帧新内容，不再读取 25 帧旧内容。
+
+### 图上是什么
+
+- `codec-state slot` 是保存一个请求解码工作的存储位置。里面有 transformer K/V 环、因果卷积历史、转置卷积的重叠样本和流的帧位置。
+- 左图重复第 1 步：25 帧旧内容和 10 帧新内容进入 vocoder。右图从 slot 读取旧工作，只给 vocoder 输入 10 帧新内容。
+- 两图输出的新帧数相同。橙色是已存工作，灰色是再次解码的旧输入，蓝色是新输入和输出。
+- 首个窗口创建状态并写入 slot，后续窗口才能复用。首份 codes 到达时流领取 slot，完成或取消时释放。
+- slot 数量有限。没有空 slot 时，这个请求整个生命周期都走原来的左文无状态路径。首个完整窗口之前就结束的流也不用 slot 状态。
+
+### 公式与符号
+
+$$I_{\mathrm{stateless}}=c+n,\qquad I_{\mathrm{slot}}=n$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $c$ | 没有 slot 时再次解码的旧帧数 | 第 1 步，25 |
+| $n$ | 后续窗口里的新帧数 | 第 1 步，10 |
+| $I_{\mathrm{stateless}}$ | 不保留状态时的输入帧数 | 本步计算，35 |
+| $I_{\mathrm{slot}}$ | 保留状态时的输入帧数 | 本步计算，10 |
+
+### 代入图上的数
+
+$$I_{\mathrm{stateless}}=25+10=35,\qquad I_{\mathrm{slot}}=10$$
+
+slot 让这个后续窗口少读 25 帧输入。这是帧数对照，不是 3.5 倍延迟收益。slot 也占显存，首次写入状态还会增加工作。
+
+### 接下来
+
+下一步把公开的首窗口和后续窗口耗时放到同一比例，包含首窗口写入状态的额外成本。
+
+来源：`sglang_omni/models/qwen3_omni/components/codec_state_pool.py:13-24,63-115`；`sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:296-327,999-1011,1230-1246,1283-1300`；`sglang_omni/models/qwen3_omni/components/code2wav.py:380-402,419-462`。
