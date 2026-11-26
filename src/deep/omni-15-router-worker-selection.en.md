@@ -133,8 +133,8 @@ Sources: `sglang_omni_router/src/worker_pool/selection.rs:14-23,49-60`; `sglang_
 ### On the stage
 
 - `Active requests` are selected responses that have not finished. These are the router's held admission credits, not GPU utilization or the worker's internal queue.
-- This is a fresh example with initial recency $[A,B,C]$, not a continuation of Step 5. The table reads A, B and C before each choice. After each choice, that worker gains one active request before the next row.
-- B and C initially tie at zero, so B goes first. C is then the unique minimum at zero. They tie at one in row 3, so B goes before C again.
+- This is a fresh example with initial recency (the turn order) $[A,B,C]$, not a continuation of Step 5. Each request holds two states: first the row reads A, B and C, finds the minimum and scans recency; then it writes the selected worker's before $\rightarrow$ after count and moves that worker to the back. The next row uses those updated values.
+- B and C initially tie at zero, so recency selects B. C is then the unique minimum at zero. They tie at one in row 3, so B goes before C again.
 - A has two active requests throughout and never enters the minimum set in these rows. With the same initial recency $[A,B,C]$ and loads $[2,0,0]$, round robin selects A, while least requests selects B.
 
 ### Formula and symbols

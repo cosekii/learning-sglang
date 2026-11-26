@@ -62,17 +62,25 @@
   const cur = $derived(steps[step]);
   const leastSteps = (() => {
     const loads = [...ROUTER_LEAST_INITIAL_LOADS];
-    return ROUTER_LEAST_SELECTIONS.map((selected) => {
-      const before = [...loads];
+    let recency = ROUTER_ROUND_ROBIN_WORKERS.map((_, worker) => worker);
+    return ROUTER_LEAST_SELECTIONS.map((expectedSelected) => {
+      const before = [...loads], recencyBefore = [...recency];
+      const minimum = Math.min(...before);
+      const tied = recency.filter((worker) => before[worker] === minimum);
+      const selected = tied[0];
+      if (selected !== expectedSelected) throw new Error(`least-requests example expected ${expectedSelected}, got ${selected}`);
       loads[selected] += 1;
-      return { before, selected, after: [...loads] };
+      recency = [...recency.filter((worker) => worker !== selected), selected];
+      return { before, selected, after: [...loads], minimum, tied, recencyBefore, recencyAfter: [...recency] };
     });
   })();
+  const orderText = (order: number[]) => `[${order.map((worker) => ROUTER_ROUND_ROBIN_WORKERS[worker]).join(',')}]`;
+  const LEAST_FINAL_PHASE = leastSteps.length * 2 + 1;
   const W = $derived(phone ? 300 : 720);
   const H = $derived(phone ? [650, 750, 830, 840, 680, 730, 760, 880][step] : [520, 560, 600, 600, 570, 600, 560, 650][step]);
 
   // Each step reveals one routing event at a time, then holds the finished scene before looping.
-  const PHASE_COUNTS = [4, 5, 4, 6, 7, 6, 5, 5];
+  const PHASE_COUNTS = [4, 5, 4, 6, 7, LEAST_FINAL_PHASE + 1, 5, 5];
   const PHASE_MS = 1100, REST_MS = 2500;
   let phase = $state(0);
   let lap = $state(0), lapMs = $state(0);
@@ -266,6 +274,7 @@
         <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'Least requests · active counts' : 'Least requests compares active work', 'least requests 比较活跃工作数')}</text>
         <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'active = selected and not finished' : 'active requests = selected work whose response has not finished', phone ? '活跃 = 已选择但还没结束' : 'active requests = 已选择但响应还没结束的工作')}</text>
         <text x={phone ? 18 : 30} y="79" class="label">{t(phone ? 'New example · selected worker +1.' : 'New example · selected worker +1 before next row.', '新例子 · 每行选择后，被选 worker 加 1。')}</text>
+        <text x={phone ? 18 : 50} y="104" class="small" opacity={phase === 0 ? 1 : 0.45} style="transition: opacity 350ms">{phone ? t(`recency = order ${orderText(leastSteps[0].recencyBefore)} · active [${leastSteps[0].before.join(',')}]`, `recency = 顺序 ${orderText(leastSteps[0].recencyBefore)} · 活跃数 [${leastSteps[0].before.join(',')}]`) : t(`start: recency = turn order ${orderText(leastSteps[0].recencyBefore)} · active [${leastSteps[0].before.join(',')}]`, `起点：recency = 轮换顺序 ${orderText(leastSteps[0].recencyBefore)} · 活跃数 [${leastSteps[0].before.join(',')}]`)}</text>
         {#if !phone}
           <text x="70" y="125" class="small strong">REQUEST</text>
           <text x="200" y="125" class="small strong">A</text>
@@ -280,25 +289,32 @@
           <text x="202" y="125" class="small strong">{t('CHOICE', '选择')}</text>
         {/if}
         {#each leastSteps as row, i}
-          {@const y = phone ? 145 + i * 105 : 145 + i * 86}
-          {@const minimum = Math.min(...row.before)}
-          {@const tied = row.before.map((load, worker) => load === minimum ? ROUTER_ROUND_ROBIN_WORKERS[worker] : null).filter(Boolean).join(',')}
-          <g opacity={phase === i + 1 ? 1 : phase > i + 1 ? 0.45 : 0.12} style="transition: opacity 350ms">
-            <rect x={phone ? 18 : 50} y={y} width={phone ? 264 : 620} height={phone ? 88 : 68} rx="9" fill="var(--bg)" stroke={phase === i + 1 ? 'var(--fg)' : 'var(--line)'} stroke-width={phase === i + 1 ? 3 : 1} />
-            <text x={phone ? 28 : 70} y={y + 29} class="small">{i + 1}</text>
-            {#each row.before as load, worker}
-              <text x={phone ? 67 + worker * 45 : 200 + worker * 100} y={y + 29} class="result">{load}</text>
-            {/each}
-            <text x={phone ? 202 : 515} y={y + 29} class="result">{ROUTER_ROUND_ROBIN_WORKERS[row.selected]}</text>
-            <text x={phone ? 28 : 200} y={y + 56} class="small">min = {minimum} · {tied} {tied.includes(',') ? t('tie', '并列') : t('only', '唯一最少')}</text>
+          {@const y = phone ? 145 + i * 112 : 145 + i * 90}
+          {@const selectAt = i * 2 + 1}
+          {@const updateAt = selectAt + 1}
+          {@const shown = phase >= selectAt}
+          {@const updated = phase >= updateAt}
+          {@const current = phase === selectAt || phase === updateAt}
+          {@const tied = row.tied.map((worker) => ROUTER_ROUND_ROBIN_WORKERS[worker]).join(',')}
+          <g opacity={shown ? current ? 1 : 0.55 : 0.12} style="transition: opacity 350ms">
+            <rect x={phone ? 18 : 50} y={y} width={phone ? 264 : 620} height={phone ? 100 : 78} rx="9" fill="var(--bg)" stroke={current ? phase === updateAt ? 'var(--accent)' : 'var(--fg)' : 'var(--line)'} stroke-width={current ? 3 : 1} style="transition: stroke 250ms, stroke-width 250ms" />
+            <text x={phone ? 28 : 70} y={y + (phone ? 25 : 24)} class="small">{i + 1}</text>
+            {#if shown}
+              {#each row.before as load, worker}
+                <text x={phone ? 67 + worker * 45 : 200 + worker * 100} y={y + (phone ? 25 : 24)} class="result" style={updated && worker === row.selected ? 'fill:var(--accent)' : ''}>{updated && worker === row.selected ? `${load}→${row.after[worker]}` : load}</text>
+              {/each}
+              <text x={phone ? 202 : 515} y={y + (phone ? 25 : 24)} class="result">{ROUTER_ROUND_ROBIN_WORKERS[row.selected]}</text>
+              <text x={phone ? 28 : 200} y={y + (phone ? 52 : 46)} class="small">min = {row.minimum} · {tied} {row.tied.length > 1 ? t('tie', '并列') : t('only', '唯一最少')}</text>
+              <text x={phone ? 28 : 200} y={y + (phone ? 78 : 68)} class="small">{updated ? t(`recency ${orderText(row.recencyBefore)} → ${orderText(row.recencyAfter)}`, `顺序 ${orderText(row.recencyBefore)} → ${orderText(row.recencyAfter)}`) : t(`recency scan ${orderText(row.recencyBefore)} → ${ROUTER_ROUND_ROBIN_WORKERS[row.selected]}`, `按顺序扫描 ${orderText(row.recencyBefore)} → ${ROUTER_ROUND_ROBIN_WORKERS[row.selected]}`)}</text>
+            {/if}
           </g>
         {/each}
-        <text x={W / 2} y={phone ? 590 : 515} text-anchor="middle" class="result" opacity={phase >= 5 ? 1 : 0.12} style="transition: opacity 350ms">B → C → B → C</text>
+        <text x={W / 2} y={phone ? 615 : 525} text-anchor="middle" class="result" opacity={phase >= LEAST_FINAL_PHASE ? 1 : 0.12} style="transition: opacity 350ms">B → C → B → C</text>
         {#if phone}
-          <text x={W / 2} y="620" text-anchor="middle" class="small" opacity={phase >= 5 ? 1 : 0.12} style="transition: opacity 350ms">{t('Same [A,B,C], loads [2,0,0]', '同为 [A,B,C]，负载 [2,0,0]')}</text>
-          <text x={W / 2} y="650" text-anchor="middle" class="small strong" opacity={phase >= 5 ? 1 : 0.12} style="transition: opacity 350ms">{t('round robin → A · least requests → B', 'round robin → A · least requests → B')}</text>
+          <text x={W / 2} y="645" text-anchor="middle" class="small" opacity={phase >= LEAST_FINAL_PHASE ? 1 : 0.12} style="transition: opacity 350ms">{t('Same [A,B,C], loads [2,0,0]', '同为 [A,B,C]，负载 [2,0,0]')}</text>
+          <text x={W / 2} y="675" text-anchor="middle" class="small strong" opacity={phase >= LEAST_FINAL_PHASE ? 1 : 0.12} style="transition: opacity 350ms">{t('round robin → A · least requests → B', 'round robin → A · least requests → B')}</text>
         {:else}
-          <text x={W / 2} y="550" text-anchor="middle" class="small strong" opacity={phase >= 5 ? 1 : 0.12} style="transition: opacity 350ms">{t('Same [A,B,C], loads [2,0,0]: round robin → A · least requests → B', '同为 [A,B,C]，负载 [2,0,0]：round robin → A · least requests → B')}</text>
+          <text x={W / 2} y="560" text-anchor="middle" class="small strong" opacity={phase >= LEAST_FINAL_PHASE ? 1 : 0.12} style="transition: opacity 350ms">{t('Same [A,B,C], loads [2,0,0]: round robin → A · least requests → B', '同为 [A,B,C]，负载 [2,0,0]：round robin → A · least requests → B')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Router-held work · not GPU usage' : 'Constructed ordinary requests; active counts are router-held work, not GPU usage or worker queues.', phone ? 'router 持有的工作 · 不是 GPU 利用率' : '构造的普通请求；活跃数是 router 持有的工作，不是 GPU 利用率或 worker 队列。')}</text>
       {:else if step === 6}
