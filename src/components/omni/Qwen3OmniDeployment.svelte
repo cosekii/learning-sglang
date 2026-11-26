@@ -310,7 +310,7 @@
         {#if !phone}
           <text x="360" y="579" text-anchor="middle" class="tag strong">{t('Caps configure room; they do not measure completed requests per second.', '上限配置容量，不测量每秒完成多少请求。')}</text>
         {/if}
-        <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{phone ? t('unchanged: preprocessing · image/audio encoders · decode', '不变：preprocessing · image/audio encoders · decode') : t('Unchanged: preprocessing · image_encoder · audio_encoder · decode', '不变：preprocessing · image_encoder · audio_encoder · decode')}</text>
+        <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{phone ? t('unchanged: preprocessing · 2 encoders · thinker · decode', '不变：preprocessing · 2 encoders · thinker · decode') : t('Unchanged: preprocessing · image_encoder · audio_encoder · thinker · decode', '不变：preprocessing · image_encoder · audio_encoder · thinker · decode')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Pairing keeps codec on one GPU; custom policies differ', '配对让 codec 留在一卡；自定义策略可能不同') : t('Default pairing keeps each codec stream on one GPU; a custom policy need not preserve it.', '默认配对让每路 codec 留在一卡；自定义策略不保证这种配对。')}</text>
       {:else if step === 6}
         <text x={phone ? 15 : 20} y="24" class="rowlabel">{t('TWO CHECKS ANSWER TWO QUESTIONS', '两种检查回答两个问题')}</text>
