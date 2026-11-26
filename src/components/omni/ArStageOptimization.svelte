@@ -30,6 +30,9 @@
   }, {
     caption: 'Async decode launches step N before resolving step N−1. GPU work and CPU bookkeeping can overlap.',
     captionZh: '异步 decode 先启动第 N 步，再处理第 N−1 步。GPU 计算和 CPU 收尾可以重叠。',
+  }, {
+    caption: 'The audio encoder can capture its layer stack once. Matching calls replay those kernels as one graph.',
+    captionZh: 'audio encoder 可以把整层序列录一次。匹配的调用把同一组 kernels 作为一张 graph 重放。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -46,7 +49,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [790, 800, 810, 760][step] : [540, 590, 590, 570][step]);
+  const H = $derived(phone ? [790, 800, 810, 760, 810][step] : [540, 590, 590, 570, 560][step]);
   const requests = [
     { id: 'A', prompt: 'Hello', promptZh: '你好' },
     { id: 'B', prompt: 'Thank you', promptZh: '谢谢' },
@@ -273,6 +276,57 @@
           <text x="150" y="608" text-anchor="middle" class="small">{t('same work, new order', '工作相同，顺序不同')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Ordering only · MOSS default off' : 'Constructed ordering; no speedup claimed. MOSS-TTS-Local defaults async decode off.', phone ? '只看顺序 · MOSS 默认关闭' : '构造顺序，不声称加速。MOSS-TTS-Local 默认关闭异步 decode。')}</text>
+      {:else if step === 4}
+        <text x={phone ? 18 : 30} y="30" class="title">{t('Replay recorded kernels · 4 of 4', '重放录下的 kernels · 4 / 4')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'CUDA graph = record once, then replay' : 'Ch. 11 Step 1: a CUDA graph records launches, then replays them', phone ? 'CUDA graph = 录一次，再重放' : 'Ch. 11 Step 1：CUDA graph 录下 launches，再重放')}</text>
+        <text x={phone ? 18 : 30} y="79" class="label">{t(phone ? 'blue kernels · orange graph · grey CPU' : 'blue = GPU kernels · orange = graph · grey = CPU dispatch', phone ? '蓝 kernels · 橙 graph · 灰 CPU' : '蓝 = GPU kernels · 橙 = graph · 灰 = CPU dispatch')}</text>
+        {#if !phone}
+          {#each [false, true] as graphed}
+            {@const x = graphed ? 375 : 30}
+            <rect x={x} y="102" width="315" height="389" rx="12" fill="var(--bg)" stroke={graphed ? 'var(--gen)' : 'var(--line)'} />
+            <text x={x + 15} y="128" class="small strong">{graphed ? t('CUDA GRAPH', 'CUDA GRAPH') : t('EAGER · EVERY CALL', 'EAGER · 每次调用')}</text>
+            <rect x={x + 45} y="143" width="225" height="35" rx="7" fill="white" stroke={graphed ? 'var(--gen)' : 'var(--faint)'} />
+            <text x={x + 157} y="166" text-anchor="middle" class="small">{graphed ? t('capture once · replay per match', '录一次 · 匹配时重放') : t('CPU dispatches every kernel', 'CPU 逐个 dispatch kernels')}</text>
+            {#if graphed}
+              <rect x={x + 24} y="190" width="267" height="250" rx="10" fill="var(--gen-soft)" fill-opacity="0.35" stroke="var(--gen)" stroke-width="2" />
+              <text x={x + 39} y="210" class="small strong">GRAPH</text>
+              <line x1={x + 157} y1="179" x2={x + 157} y2="189" stroke="var(--gen)" stroke-width="3" />
+            {/if}
+            {#each [t('attention', '注意力'), 'MLP', t('attention', '注意力'), 'MLP', '…'] as kernel, i}
+              {@const y = 222 + i * 43}
+              <rect x={x + 52} y={y} width="211" height="30" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+              <text x={x + 157} y={y + 21} text-anchor="middle" class="small">{kernel}</text>
+              {#if !graphed}
+                <line x1={x + 157} y1={y - 11} x2={x + 157} y2={y - 3} stroke="var(--faint)" stroke-width="2" />
+              {/if}
+            {/each}
+            <text x={x + 157} y="469" text-anchor="middle" class="small strong">{graphed ? t('one graph replay for the stack', '整层序列一次 graph replay') : t('one dispatch per kernel', '每个 kernel 一次 dispatch')}</text>
+          {/each}
+          <text x="360" y="522" text-anchor="middle" class="small strong">{t('Same kernels and math; only the CPU submission path changes.', 'kernels 和数学不变；改变的是 CPU 提交路径。')}</text>
+        {:else}
+          {#each [false, true] as graphed, panel}
+            {@const y = graphed ? 423 : 98}
+            <rect x="18" y={y} width="264" height="303" rx="11" fill="var(--bg)" stroke={graphed ? 'var(--gen)' : 'var(--line)'} />
+            <text x="32" y={y + 24} class="small strong">{graphed ? 'CUDA GRAPH' : 'EAGER'}</text>
+            <rect x="32" y={y + 37} width="236" height="32" rx="6" fill="white" stroke={graphed ? 'var(--gen)' : 'var(--faint)'} />
+            <text x="150" y={y + 58} text-anchor="middle" class="small">{graphed ? t('capture once · replay', '录一次 · 重放') : t('CPU dispatches each kernel', 'CPU 逐个 dispatch')}</text>
+            {#if graphed}
+              <rect x="27" y={y + 78} width="246" height="181" rx="8" fill="var(--gen-soft)" fill-opacity="0.35" stroke="var(--gen)" />
+              <text x="39" y={y + 97} class="small strong">GRAPH</text>
+            {/if}
+            {#each [t('attention', '注意力'), 'MLP', t('attention', '注意力'), 'MLP', '…'] as kernel, i}
+              {@const ky = y + 105 + i * 31}
+              <rect x="58" y={ky} width="184" height="24" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+              <text x="150" y={ky + 17} text-anchor="middle" class="small">{kernel}</text>
+              {#if !graphed}
+                <line x1="150" y1={ky - 7} x2="150" y2={ky - 2} stroke="var(--faint)" stroke-width="2" />
+              {/if}
+            {/each}
+            <text x="150" y={y + 282} text-anchor="middle" class="small strong">{graphed ? t('one graph replay', '一次 graph replay') : t('dispatch per kernel', '逐个 dispatch')}</text>
+          {/each}
+          <text x="150" y="754" text-anchor="middle" class="small strong">{t('Same kernels; new submission path.', 'kernels 不变；提交路径改变。')}</text>
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Opt-in · eager fallback remains' : 'Opt-in audio-layer graphs; eager fallback remains. No timing win claimed.', phone ? '可选开启 · 保留 eager 回退' : '可选 audio 层 graph；保留 eager 回退，不声称耗时收益。')}</text>
       {/if}
     </svg>
   </div>

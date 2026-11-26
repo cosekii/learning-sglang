@@ -136,3 +136,35 @@ $$I_{\mathrm{overlap}}=I_{\mathrm{launch},N}\cap I_{\mathrm{resolve},N-1}$$
 重叠能藏住部分 CPU 等待，但没有减少 GPU 工作。下一项机制减少提交 audio encoder kernels 的 CPU launch。
 
 来源：`sglang_omni/model_runner/base.py:137-166,502-516,577-605`；`sglang_omni/scheduling/omni_scheduler.py:5125-5197`；`sglang_omni/models/moss_tts_local/stages.py:326-346`；`Awesome-ML-SYS-Tutorial/sglang/sglang-omni/moss-tts-local-v15-blog-zh.md:210-216`。
+
+## 第 5 步 · 录下 audio 层序列，再重放
+
+**一句话。** Qwen3-Omni 可以把 audio encoder 的层序列录成 CUDA graph，匹配输入时重放这些 kernels，不再逐个 dispatch。
+
+### 图上是什么
+
+- Learning SGLang 第 11 章第 1 步讲过 `CUDA graph`：先录下一串 kernel，再重放。本步把这个办法用到 Qwen3-Omni 的 audio encoder。
+- 两幅图都有相同的 attention 和 MLP kernels。`Eager` 每次调用都逐个 dispatch。graph 图先录下层序列，匹配调用时提交一次 graph replay。
+- 蓝框是 GPU kernels，橙色是 graph 边界和重放路径，灰箭头是 CPU dispatch。graph 里的 kernels 和模型数学不变。
+- `一张 graph` 不等于一个 kernel，也不覆盖整个请求。输入拷贝和 metadata 更新仍在层序列 replay 前后进行。
+- 这条路径由 `enable_layer_cuda_graph` 主动打开，需要 CUDA 和受支持的 packed attention。capture 失败或没有匹配 graph 时，`GraphedLayerStack.forward` 会按原层序列 eager 运行。
+
+### 公式与符号
+
+$$D_{\mathrm{eager}}=k,\qquad D_{\mathrm{graph}}=1$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $k$ | 录制的层序列里的 kernel launch 数 | 模型真实层序列，本步不虚构数量 |
+| $D_{\mathrm{eager}}$ | 不用 graph 时这些 kernels 的 CPU dispatch 数 | Eager 图 |
+| $D_{\mathrm{graph}}$ | 匹配层序列 replay 的 graph 提交数 | Graph 图 |
+
+### 代入图上的数
+
+本步不填写 $k$ 或节省时间，只比较 $k$ 次单独 kernel dispatch 和一次 graph 提交。capture、预热有启动成本，replay 前后的拷贝也还在，所以 $D_{\mathrm{graph}}=1$ 不是整个请求的 launch 总数。
+
+### 接下来
+
+graph 的输入大小在 capture 时固定。下一步看 300 个真实 token 怎样选择并补进六个已录大小之一。
+
+来源：Learning SGLang 第 11 章第 1 步；`sglang_omni/models/qwen3_omni/components/audio_layer_graph.py:163-221`；`sglang_omni/models/qwen3_omni/components/audio_encoder.py:170-197,200-268`。

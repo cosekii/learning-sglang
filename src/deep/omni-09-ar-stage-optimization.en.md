@@ -136,3 +136,35 @@ This step assigns no milliseconds. It shows only the order `launch(N)` before `r
 Overlap can hide some CPU waiting without removing GPU work. The next mechanism reduces the CPU launches that submit the audio encoder's kernels.
 
 Sources: `sglang_omni/model_runner/base.py:137-166,502-516,577-605`; `sglang_omni/scheduling/omni_scheduler.py:5125-5197`; `sglang_omni/models/moss_tts_local/stages.py:326-346`; `Awesome-ML-SYS-Tutorial/sglang/sglang-omni/moss-tts-local-v15-blog-zh.md:210-216`.
+
+## Step 5 · Capture the audio layer stack, then replay it
+
+**One sentence.** Qwen3-Omni can record its audio encoder's layer stack in a CUDA graph and replay the recorded kernels for a matching input instead of dispatching each one again.
+
+### On the stage
+
+- Learning SGLang Ch. 11 Step 1 introduced `CUDA graph`: record a kernel sequence once, then replay it. This step applies that idea to Qwen3-Omni's audio encoder.
+- Both panels contain the same attention and MLP kernels. `Eager` dispatches them on every call. The graph panel records the layer stack and submits one graph replay for a matching call.
+- Blue boxes are GPU kernels. Orange marks the graph boundary and its replay path. Grey arrows are CPU dispatch. The kernels and model math do not change inside the graph.
+- `One graph` does not mean one kernel, and it does not cover the whole request. Input copies and metadata updates still surround the layer-stack replay.
+- This path is opt-in through `enable_layer_cuda_graph`. It needs CUDA and supported packed attention. If capture fails or no graph matches, `GraphedLayerStack.forward` runs the original layers eagerly.
+
+### Formula and symbols
+
+$$D_{\mathrm{eager}}=k,\qquad D_{\mathrm{graph}}=1$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $k$ | Kernel launches in the recorded layer stack | The model's actual layer stack; no count invented here |
+| $D_{\mathrm{eager}}$ | CPU dispatches for those kernels without a graph | Eager panel |
+| $D_{\mathrm{graph}}$ | Graph submissions for one matching layer-stack replay | Graph panel |
+
+### The numbers on the stage
+
+This step does not assign $k$ or a time saving. It compares $k$ individual kernel dispatches with one graph submission for the recorded stack. Capture and warmup have their own startup cost, and the copies around replay remain, so $D_{\mathrm{graph}}=1$ is not an end-to-end launch count.
+
+### Next
+
+A graph has a fixed captured input size. The next step shows how 300 real tokens select and pad into one of the six captured sizes.
+
+Sources: Learning SGLang Ch. 11 Step 1; `sglang_omni/models/qwen3_omni/components/audio_layer_graph.py:163-221`; `sglang_omni/models/qwen3_omni/components/audio_encoder.py:170-197,200-268`.

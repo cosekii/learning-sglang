@@ -21,6 +21,8 @@ Step 3 follows `sglang_omni/scheduling/reference_encoder.py:361-413`. With no ca
 
 Step 4 follows `sglang_omni/model_runner/base.py:502-605` and `sglang_omni/scheduling/omni_scheduler.py:5125-5197`. Launch publishes a step and records an event without waiting; resolve consumes the previous pending step. An unfinished event still requires synchronization. The diagram shows ordering only and assigns no saved time. MOSS-TTS-Local resolves from a device snapshot, defaults async decode off (`sglang_omni/models/moss_tts_local/stages.py:326-346`), and reports neutral public measurements in `Awesome-ML-SYS-Tutorial/sglang/sglang-omni/moss-tts-local-v15-blog-zh.md:210-216`.
 
+Step 5 follows `sglang_omni/models/qwen3_omni/components/audio_layer_graph.py:163-221` and `sglang_omni/models/qwen3_omni/components/audio_encoder.py:170-268`. The graph records the audio layer stack, not one kernel or the whole request. Matching calls replay that stack while input copies and metadata updates remain outside it. The option defaults off. Capture failure or a nonmatching input falls back to the original eager layers; no timing win is claimed.
+
 Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`. The chapter reads source and public results; it does not run a model or benchmark.
 
 </details>
@@ -35,6 +37,8 @@ Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37
 第 3 步依据 `sglang_omni/scheduling/reference_encoder.py:361-413`。没有缓存项时，首个调用创建 in-flight future，后两个调用加入它。构造计数为一次 miss、两个 merged follower、零次 hit。独立调用对照关闭了 batching。MOSS 也会在自己的 batch encoder 内合并相同标识（`sglang_omni/models/moss_tts/reference_encoder.py:113-143`），所以本步只隔离通用 single-flight 规则，不把所有去重都归给它。
 
 第 4 步依据 `sglang_omni/model_runner/base.py:502-605` 和 `sglang_omni/scheduling/omni_scheduler.py:5125-5197`。launch 发布一步并记录 event，不等待 GPU；resolve 再处理上一个 pending step。event 未完成时仍要同步等待。图中只有顺序，没有填写节省时间。MOSS-TTS-Local 从 device 快照 resolve，默认关闭异步 decode（`sglang_omni/models/moss_tts_local/stages.py:326-346`），公开测量为性能中性，见 `Awesome-ML-SYS-Tutorial/sglang/sglang-omni/moss-tts-local-v15-blog-zh.md:210-216`。
+
+第 5 步依据 `sglang_omni/models/qwen3_omni/components/audio_layer_graph.py:163-221` 和 `sglang_omni/models/qwen3_omni/components/audio_encoder.py:170-268`。graph 录制 audio 层序列，不等于一个 kernel，也不覆盖整个请求。匹配调用重放层序列，输入拷贝和 metadata 更新仍在外面。该选项默认关闭。capture 失败或输入不匹配会回退到原来的 eager 层；本步不声称耗时收益。
 
 本章代码出处固定到 `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`。本章只读源码和公开结果，没有运行模型或 benchmark。
 
