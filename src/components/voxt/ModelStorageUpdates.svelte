@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import StepControls from '../StepControls.svelte';
+  import LoopProgress from '../LoopProgress.svelte';
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
@@ -76,6 +77,45 @@
   const W = $derived(phone ? 300 : 720);
   const H = $derived((phone ? [660, 610, 700, 820, 730, 640] : [470, 450, 460, 480, 480, 560])[step]);
 
+  const PHASE_COUNTS = [3, 3, 3, 3, 3, 3];
+  const PHASE_MS = 900;
+  const REST_MS = 2200;
+  let phase = $state(0);
+  let lap = $state(0), lapMs = $state(0);
+  const nextLap = (ms: number) => untrack(() => { lapMs = ms; lap++; });
+  $effect(() => {
+    const s = step;
+    phase = 0;
+    const count = PHASE_COUNTS[s];
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const run = () => {
+      phase = 0;
+      for (let i = 1; i < count; i++) timers.push(setTimeout(() => (phase = i), i * PHASE_MS));
+      const ms = count * PHASE_MS + REST_MS;
+      timers.push(setTimeout(run, ms));
+      nextLap(ms);
+    };
+    run();
+    return () => timers.forEach(clearTimeout);
+  });
+  const motionFrames = (isPhone: boolean, s: number): { x: number; y: number; w: number; h: number }[] => (isPhone ? [
+    [{ x: 15, y: 64, w: 270, h: 112 }, { x: 30, y: 586, w: 240, h: 56 }, { x: 15, y: 296, w: 270, h: 100 }],
+    [{ x: 15, y: 64, w: 270, h: 110 }, { x: 15, y: 202, w: 270, h: 240 }, { x: 20, y: 370, w: 270, h: 60 }],
+    [{ x: 15, y: 62, w: 270, h: 134 }, { x: 15, y: 62, w: 270, h: 134 }, { x: 15, y: 300, w: 270, h: 76 }],
+    [{ x: 15, y: 64, w: 270, h: 170 }, { x: 15, y: 274, w: 270, h: 190 }, { x: 15, y: 274, w: 270, h: 190 }],
+    [{ x: 15, y: 64, w: 270, h: 150 }, { x: 15, y: 576, w: 270, h: 46 }, { x: 40, y: 636, w: 220, h: 26 }],
+    [{ x: 15, y: 64, w: 270, h: 92 }, { x: 15, y: 166, w: 270, h: 92 }, { x: 15, y: 268, w: 270, h: 92 }],
+  ] : [
+    [{ x: 20, y: 72, w: 212, h: 225 }, { x: 190, y: 414, w: 340, h: 34 }, { x: 488, y: 72, w: 212, h: 225 }],
+    [{ x: 20, y: 74, w: 250, h: 190 }, { x: 300, y: 74, w: 400, h: 190 }, { x: 36, y: 304, w: 320, h: 60 }],
+    [{ x: 30, y: 72, w: 660, h: 124 }, { x: 30, y: 72, w: 660, h: 124 }, { x: 256, y: 208, w: 208, h: 124 }],
+    [{ x: 20, y: 72, w: 300, h: 190 }, { x: 356, y: 72, w: 346, h: 190 }, { x: 356, y: 72, w: 346, h: 190 }],
+    [{ x: 20, y: 72, w: 330, h: 170 }, { x: 460, y: 334, w: 224, h: 66 }, { x: 120, y: 414, w: 480, h: 28 }],
+    [{ x: 30, y: 110, w: 660, h: 60 }, { x: 30, y: 182, w: 660, h: 60 }, { x: 30, y: 254, w: 660, h: 60 }],
+  ])[s];
+  const frames = $derived(motionFrames(phone, step));
+  const focus = $derived(frames[Math.min(phase, frames.length - 1)]);
+
   const gb = VOXT_MODEL_TOTAL_GB.toFixed(2);
   const weightsGb = (VOXT_MODEL_WEIGHTS_BYTES / 1_000_000_000).toFixed(2);
   const vocabMb = (VOXT_MODEL_VOCAB_BYTES / 1_000_000).toFixed(2);
@@ -104,12 +144,12 @@
 
       {#if step === 0}
         <text x={W / 2} y={phone ? 25 : 27} text-anchor="middle" class="title">{t(`THE MODEL IS ABOUT ${ratio}× THE APP`, `模型约是应用的 ${ratio} 倍`)}</text>
-        <text x={W / 2} y={phone ? 47 : 50} text-anchor="middle" class="subtitle">{totalBytes} ÷ {appBytes} ≈ {ratioExact}×</text>
+        <text x={W / 2} y={phone ? 47 : 50} text-anchor="middle" class="subtitle">{phase === 0 ? t('the model is not downloaded yet', '模型还没下载') : phase === 1 ? `${totalBytes} B` : `${totalBytes} ÷ ${appBytes} ≈ ${ratioExact}×`}</text>
         {#if !phone}
           <rect x="20" y="72" width="212" height="225" rx="12" fill="var(--bg)" stroke="var(--accent)" />
           <text x="126" y="98" text-anchor="middle" class="label blue">{t('MODEL FILES', '模型文件')}</text>
-          <text x="126" y="145" text-anchor="middle" class="result">{gb} GB</text>
-          <text x="126" y="178" text-anchor="middle" class="detail">{t(`${VOXT_MODEL_FILE_COUNT} files in the model library`, `模型库里 ${VOXT_MODEL_FILE_COUNT} 个文件`)}</text>
+          <text x="126" y="145" text-anchor="middle" class="result">{phase === 0 ? '0 B' : `${gb} GB`}</text>
+          <text x="126" y="178" text-anchor="middle" class="detail">{phase === 0 ? t('0 files · not yet downloaded', '0 个文件 · 还没下载') : t(`${VOXT_MODEL_FILE_COUNT} files in the model library`, `模型库里 ${VOXT_MODEL_FILE_COUNT} 个文件`)}</text>
           <text x="126" y="200" text-anchor="middle" class="detail">{t('on disk, in Application Support', '在磁盘的 Application Support 里')}</text>
           <text x="126" y="222" text-anchor="middle" class="detail">{t('downloaded after install', '装好应用后再下载')}</text>
 
@@ -138,13 +178,13 @@
           <text x="38" y="386" class="detail">{t('Automatic asks an idle server to stop; its files stay', '自动模式会请求空闲服务器停止，文件留着')}</text>
           <text x="28" y="412" class="pt">·</text>
           <text x="38" y="412" class="detail">{t('an app update replaces the bundle, not the model folder', '应用更新换的是应用，不是模型文件夹')}</text>
-          <text x={W / 2} y="438" text-anchor="middle" class="formula">{weightsBytes} B + {otherBytes} B = {totalBytes} B</text>
+          <text x={W / 2} y="438" text-anchor="middle" class="formula">{phase === 0 ? t('waiting for the download', '等待下载') : `${weightsBytes} B + ${otherBytes} B = ${totalBytes} B`}</text>
           <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Sources: catalog.go:205-213, docs/release.md.', '出处：catalog.go:205-213、docs/release.md。')}</text>
         {:else}
           <rect x="15" y="64" width="270" height="112" rx="10" fill="var(--bg)" stroke="var(--accent)" />
           <text x="150" y="86" text-anchor="middle" class="label blue">{t('MODEL FILES', '模型文件')}</text>
-          <text x="150" y="118" text-anchor="middle" class="result">{gb} GB</text>
-          <text x="150" y="142" text-anchor="middle" class="detail">{t(`${VOXT_MODEL_FILE_COUNT} files · model library`, `${VOXT_MODEL_FILE_COUNT} 个文件 · 模型库`)}</text>
+          <text x="150" y="118" text-anchor="middle" class="result">{phase === 0 ? '0 B' : `${gb} GB`}</text>
+          <text x="150" y="142" text-anchor="middle" class="detail">{phase === 0 ? t('0 files · not yet downloaded', '0 个文件 · 还没下载') : t(`${VOXT_MODEL_FILE_COUNT} files · model library`, `${VOXT_MODEL_FILE_COUNT} 个文件 · 模型库`)}</text>
           <text x="150" y="162" text-anchor="middle" class="detail">{t('downloaded later', '后来才下载')}</text>
 
           <rect x="15" y="186" width="270" height="100" rx="10" fill="var(--bg)" stroke="var(--gen)" />
@@ -173,7 +213,7 @@
           <text x="20" y="550" class="pt">·</text>
           <text x="30" y="550" class="detail">{t('an app update replaces the app,', '应用更新换的是应用，')}</text>
           <text x="30" y="570" class="detail">{t('not the model folder', '不是模型文件夹')}</text>
-          <text x={W / 2} y="608" text-anchor="middle" class="formula">{weightsBytes} B + {otherBytes} B</text>
+          <text x={W / 2} y="608" text-anchor="middle" class="formula">{phase === 0 ? t('waiting for the download', '等待下载') : `${weightsBytes} B + ${otherBytes} B`}</text>
           <text x={W / 2} y="630" text-anchor="middle" class="formula">= {totalBytes} B</text>
           <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Sources: catalog.go:205-213, docs/release.md.', '出处：catalog.go:205-213、docs/release.md。')}</text>
         {/if}
@@ -191,12 +231,12 @@
           <text x="316" y="98" class="label">{t(`${VOXT_MODEL_FILE_COUNT} FILES · STEP 1 TOTAL = ${gb} GB`, `${VOXT_MODEL_FILE_COUNT} 个文件 · 第 1 步总数 = ${gb} GB`)}</text>
           <text x="316" y="124" class="mono">model.safetensors</text>
           <text x="684" y="124" text-anchor="end" class="mono">{weightsGb} GB</text>
-          <text x="316" y="142" class="mono small">{t('SHA-256 bf304b… = fingerprint from bytes', 'SHA-256 bf304b… = 字节指纹')}</text>
+          <text x="316" y="142" class="mono small">{phase >= 1 ? '✓ ' : ''}{t('SHA-256 bf304b… = fingerprint from bytes', 'SHA-256 bf304b… = 字节指纹')}</text>
           <text x="316" y="172" class="mono">vocab.json</text>
           <text x="684" y="172" text-anchor="end" class="mono">{vocabMb} MB</text>
-          <text x="316" y="190" class="mono small">{t("git blob ID = git's byte fingerprint", 'git blob ID = git 的字节指纹')}</text>
+          <text x="316" y="190" class="mono small">{phase >= 2 ? '✓ ' : ''}{t("git blob ID = git's byte fingerprint", 'git blob ID = git 的字节指纹')}</text>
           <text x="316" y="208" class="mono small">{vocabBytes} B ≈ {vocabMb} MB</text>
-          <text x="316" y="230" class="detail">{t(`… and ${VOXT_MODEL_FILE_COUNT - 2} more files`, `… 还有 ${VOXT_MODEL_FILE_COUNT - 2} 个文件`)}</text>
+          <text x="316" y="230" class="detail">{phase >= 2 ? t('all checks pass', '校验全部通过') : t(`… and ${VOXT_MODEL_FILE_COUNT - 2} more files`, `… 还有 ${VOXT_MODEL_FILE_COUNT - 2} 个文件`)}</text>
           <text x="316" y="254" class="mono small">snapshots/{VOXT_MODEL_COMMIT}</text>
           <text x="40" y="316" class="label">{t("ON DISK · THIS COMMIT'S FILES", '在磁盘上 · 这个提交的文件')}</text>
           <text x="40" y="340" class="mono small">models--mlx-community--Qwen3-ASR-1.7B-8bit</text>
@@ -216,11 +256,11 @@
           <rect x="15" y="202" width="270" height="240" rx="10" fill="var(--bg)" stroke="var(--line)" />
           <text x="30" y="226" class="label">{t(`${VOXT_MODEL_FILE_COUNT} FILES · STEP 1 TOTAL = ${gb} GB`, `${VOXT_MODEL_FILE_COUNT} 个文件 · 第 1 步总数 = ${gb} GB`)}</text>
           <text x="30" y="254" class="mono">model.safetensors</text>
-          <text x="30" y="272" class="mono small">{weightsGb} GB · {t('SHA-256 = byte fingerprint', 'SHA-256 = 字节指纹')}</text>
+          <text x="30" y="272" class="mono small">{phase >= 1 ? '✓ ' : ''}{weightsGb} GB · {t('SHA-256 = byte fingerprint', 'SHA-256 = 字节指纹')}</text>
           <text x="30" y="300" class="mono">vocab.json</text>
-          <text x="30" y="318" class="mono small">{vocabMb} MB · {t('git blob ID = byte fingerprint', 'git blob ID = 字节指纹')}</text>
+          <text x="30" y="318" class="mono small">{phase >= 2 ? '✓ ' : ''}{vocabMb} MB · {t('git blob ID = byte fingerprint', 'git blob ID = 字节指纹')}</text>
           <text x="30" y="336" class="mono small">{vocabBytes} B ≈ {vocabMb} MB</text>
-          <text x="30" y="364" class="detail">{t(`… and ${VOXT_MODEL_FILE_COUNT - 2} more files`, `… 还有 ${VOXT_MODEL_FILE_COUNT - 2} 个文件`)}</text>
+          <text x="30" y="364" class="detail">{phase >= 2 ? t('all checks pass', '校验全部通过') : t(`… and ${VOXT_MODEL_FILE_COUNT - 2} more files`, `… 还有 ${VOXT_MODEL_FILE_COUNT - 2} 个文件`)}</text>
           <text x="30" y="382" class="mono small">models--mlx-community--</text>
           <text x="30" y="402" class="mono small">Qwen3-ASR-1.7B-8bit/snapshots/</text>
           <text x="30" y="422" class="mono small">{VOXT_MODEL_COMMIT}</text>
@@ -239,10 +279,10 @@
           <rect x="30" y="74" width="660" height="120" rx="10" fill="var(--bg)" stroke="var(--line)" />
           <text x="50" y="98" class="label">{t('DOWNLOAD · ONE JOB', '下载 · 一个任务')}</text>
           <rect x="50" y="112" width="620" height="26" rx="6" fill="var(--accent-soft)" stroke="var(--line)" />
-          <rect x="50" y="112" width="248" height="26" rx="6" fill="var(--accent)" />
-          <line x1="298" y1="106" x2="298" y2="144" stroke="var(--eos)" stroke-width="2" />
-          <text x="50" y="162" class="detail">{t('Cancel keeps these bytes; the next start continues from here.', '取消后这些字节留着；下次从这里接着下。')}</text>
-          <text x="670" y="162" text-anchor="end" class="mono">{gb} GB</text>
+          <rect x="50" y="112" width={phase === 0 ? 248 : 620} height="26" rx="6" fill="var(--accent)" />
+          {#if phase === 0}<line x1="298" y1="106" x2="298" y2="144" stroke="var(--eos)" stroke-width="2" />{/if}
+          <text x="50" y="162" class="detail">{phase === 0 ? t('Cancel here; these bytes stay.', '在这里取消；这些字节留着。') : phase === 1 ? t('The next start continues from here.', '下次从这里接着下。') : t('Checks: all 9 files pass; the job is done.', '校验：9 个文件全部通过；任务完成。')}</text>
+          <text x="670" y="162" text-anchor="end" class="mono">{gb} GB{phase === 2 ? ' ✓' : ''}</text>
 
           <rect x="30" y="212" width="200" height="116" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="130" y="236" text-anchor="middle" class="label">{t('ROOM', '空位')}</text>
@@ -270,10 +310,10 @@
           <rect x="15" y="64" width="270" height="130" rx="10" fill="var(--bg)" stroke="var(--line)" />
           <text x="30" y="88" class="label">{t('DOWNLOAD · ONE JOB', '下载 · 一个任务')}</text>
           <rect x="30" y="102" width="240" height="24" rx="6" fill="var(--accent-soft)" stroke="var(--line)" />
-          <rect x="30" y="102" width="96" height="24" rx="6" fill="var(--accent)" />
-          <line x1="126" y1="96" x2="126" y2="132" stroke="var(--eos)" stroke-width="2" />
-          <text x="30" y="148" class="detail">{t('Cancel keeps the bytes.', '取消后字节留着。')}</text>
-          <text x="30" y="168" class="mono">{gb} GB</text>
+          <rect x="30" y="102" width={phase === 0 ? 96 : 240} height="24" rx="6" fill="var(--accent)" />
+          {#if phase === 0}<line x1="126" y1="96" x2="126" y2="132" stroke="var(--eos)" stroke-width="2" />{/if}
+          <text x="30" y="148" class="detail">{phase === 0 ? t('cancel keeps the bytes', '取消后字节留着') : phase === 1 ? t('next start continues', '下次接着下') : t('all checks pass; done', '校验全过；完成')}</text>
+          <text x="30" y="168" class="mono">{gb} GB{phase === 2 ? ' ✓' : ''}</text>
           <text x="270" y="168" text-anchor="end" class="detail">{t('total', '总共')}</text>
 
           <rect x="15" y="210" width="270" height="76" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
@@ -314,8 +354,8 @@
           <text x="529" y="122" text-anchor="middle" class="mono">qwen3_asr_server</text>
           <text x="529" y="148" text-anchor="middle" class="detail">{t('loads the model from the folder', '从这个文件夹读模型')}</text>
           <text x="529" y="172" text-anchor="middle" class="detail">{t('VAD has its own small server', 'VAD 有自己的小服务器')}</text>
-          <text x="529" y="196" text-anchor="middle" class="label">{t(`Automatic: idle ${VOXT_SERVER_IDLE_MINUTES} min → stop request`, `自动模式：空闲 ${VOXT_SERVER_IDLE_MINUTES} 分钟 → 请求停止`)}</text>
-          <text x="529" y="222" text-anchor="middle" class="detail">{t('next use → restart', '下次用 → 再启动')}</text>
+          <text x="529" y="196" text-anchor="middle" class="label">{phase === 0 ? t('starting… → ready', '启动中… → 就绪') : phase === 1 ? t(`ready · idle ${VOXT_SERVER_IDLE_MINUTES}/${VOXT_SERVER_IDLE_MINUTES} min`, `就绪 · 空闲 ${VOXT_SERVER_IDLE_MINUTES}/${VOXT_SERVER_IDLE_MINUTES} 分钟`) : t('stop request sent', '已发停止请求')}</text>
+          <text x="529" y="222" text-anchor="middle" class="detail">{phase === 0 ? t('files stay on disk', '文件留在磁盘') : phase === 1 ? t('next use → restart', '下次用 → 再启动') : t('process exits → memory freed', '进程退出 → 内存释放')}</text>
 
           <rect x="20" y="284" width="680" height="110" rx="10" fill="var(--bg)" stroke="var(--line)" />
           <text x="40" y="308" class="label">{t('DELETE MODEL FILES', '删除模型文件')}</text>
@@ -341,8 +381,8 @@
           <text x="150" y="322" text-anchor="middle" class="mono">qwen3_asr_server</text>
           <text x="150" y="346" text-anchor="middle" class="detail">{t('loads the model from the folder', '从文件夹读模型')}</text>
           <text x="150" y="368" text-anchor="middle" class="detail">{t('VAD has its own small server', 'VAD 有自己的小服务器')}</text>
-          <text x="150" y="394" text-anchor="middle" class="label">{t(`Automatic: idle ${VOXT_SERVER_IDLE_MINUTES} min → stop request`, `自动模式：空闲 ${VOXT_SERVER_IDLE_MINUTES} 分钟 → 请求停止`)}</text>
-          <text x="150" y="420" text-anchor="middle" class="detail">{t('next use → restart', '下次用 → 再启动')}</text>
+          <text x="150" y="394" text-anchor="middle" class="label">{phase === 0 ? t('starting… → ready', '启动中… → 就绪') : phase === 1 ? t(`ready · idle ${VOXT_SERVER_IDLE_MINUTES}/${VOXT_SERVER_IDLE_MINUTES} min`, `就绪 · 空闲 ${VOXT_SERVER_IDLE_MINUTES}/${VOXT_SERVER_IDLE_MINUTES} 分钟`) : t('stop request sent', '已发停止请求')}</text>
+          <text x="150" y="420" text-anchor="middle" class="detail">{phase === 0 ? t('files stay on disk', '文件留在磁盘') : phase === 1 ? t('next use → restart', '下次用 → 再启动') : t('process exits → memory freed', '进程退出 → 内存释放')}</text>
 
           <rect x="15" y="486" width="270" height="200" rx="10" fill="var(--bg)" stroke="var(--line)" />
           <text x="30" y="510" class="label">{t('DELETE MODEL FILES', '删除模型文件')}</text>
@@ -398,7 +438,7 @@
           <rect x="466" y="340" width="214" height="54" rx="8" fill="var(--eos-soft)" stroke="var(--eos)" />
           <text x="573" y="364" text-anchor="middle" class="detail">{t("app's helper manager refuses it", '应用的 helper 管理器不启动它')}</text>
           <text x="573" y="382" text-anchor="middle" class="detail">{t('mismatch with the app', '和应用的版本对不上')}</text>
-          <text x={W / 2} y="432" text-anchor="middle" class="cut">{t('A CARD ASKS: RESTART VOXT TO FINISH', '卡片提示：重启 Voxt 才算装完')}</text>
+          <text x={W / 2} y="432" text-anchor="middle" class="cut">{phase === 0 ? t('THE UPDATER REPLACES THE BUNDLE', '更新器替换整个应用包') : phase === 1 ? t('UNTIL RESTART: HELPER REFUSED', '重启前：helper 被拒') : t('RESTART VOXT → UPDATE DONE', '重启 Voxt → 更新完成')}</text>
           <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Sources: Voxt/updates.go, updates_github.go, docs/release.md.', '出处：Voxt/updates.go、updates_github.go、docs/release.md。')}</text>
         {:else}
           <rect x="15" y="64" width="270" height="150" rx="10" fill="var(--bg)" stroke="var(--line)" />
@@ -430,7 +470,7 @@
           <rect x="15" y="576" width="270" height="46" rx="8" fill="var(--eos-soft)" stroke="var(--eos)" />
           <text x="150" y="596" text-anchor="middle" class="detail">{t("app's helper manager refuses it", '应用的 helper 管理器不启动它')}</text>
           <text x="150" y="616" text-anchor="middle" class="detail">{t('version does not match the app', '和应用的版本对不上')}</text>
-          <text x="150" y="652" text-anchor="middle" class="cut">{t('RESTART VOXT TO FINISH', '重启 Voxt 才算装完')}</text>
+          <text x="150" y="652" text-anchor="middle" class="cut">{phase === 0 ? t('UPDATER REPLACES THE BUNDLE', '更新器替换整个应用包') : phase === 1 ? t('UNTIL RESTART: HELPER REFUSED', '重启前：helper 被拒') : t('RESTART → UPDATE DONE', '重启 → 更新完成')}</text>
           <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Sources: updates.go, updates_github.go.', '出处：updates.go、updates_github.go。')}</text>
         {/if}
       {:else if step === 5}
@@ -446,18 +486,21 @@
           <text x="270" y="128" class="detail">{t('download', '下载')}</text>
           <text x="450" y="128" class="detail">{t('every content check passes;', '内容校验全部通过；')}</text>
           <text x="450" y="148" class="detail">{t('files sit in the library', '文件进入模型库')}</text>
+          <text x="690" y="148" text-anchor="end" class="label">{phase >= 0 ? '✓' : ''}</text>
           <line x1="20" y1="168" x2="700" y2="168" stroke="var(--line)" />
 
           <text x="40" y="200" class="label amber">{t('speech server', '语音服务器')}</text>
           <text x="270" y="200" class="detail">{t('unload', '卸载')}</text>
           <text x="450" y="200" class="detail">{t('the process exits;', '进程退出；')}</text>
           <text x="450" y="220" class="detail">{t('memory is freed', '内存释放')}</text>
+          <text x="690" y="220" text-anchor="end" class="label">{phase >= 1 ? '✓' : ''}</text>
           <line x1="20" y1="240" x2="700" y2="240" stroke="var(--line)" />
 
           <text x="40" y="272" class="label blue">{t('app bundle', '应用包')}</text>
           <text x="270" y="272" class="detail">{t('in-app update', '应用内更新')}</text>
           <text x="450" y="272" class="detail">{t('the bundle is replaced;', '应用包被替换；')}</text>
           <text x="450" y="292" class="detail">{t('the app restarts', '应用重启')}</text>
+          <text x="690" y="292" text-anchor="end" class="label">{phase >= 2 ? '✓' : ''}</text>
           <line x1="20" y1="312" x2="700" y2="312" stroke="var(--line)" />
 
           <text x="28" y="346" class="pt">·</text>
@@ -474,18 +517,21 @@
         {:else}
           <rect x="15" y="64" width="270" height="92" rx="10" fill="var(--bg)" stroke="var(--line)" />
           <text x="30" y="88" class="label blue">{t('model files', '模型文件')}</text>
+          <text x="270" y="88" text-anchor="end" class="label">{phase >= 0 ? '✓' : ''}</text>
           <text x="30" y="112" class="detail">{t('download', '下载')}</text>
           <text x="30" y="136" class="detail">{t('done: checks pass,', '完成：校验通过，')}</text>
           <text x="30" y="152" class="detail">{t('files in the library', '文件进了模型库')}</text>
 
           <rect x="15" y="166" width="270" height="92" rx="10" fill="var(--bg)" stroke="var(--line)" />
           <text x="30" y="190" class="label amber">{t('speech server', '语音服务器')}</text>
+          <text x="270" y="190" text-anchor="end" class="label">{phase >= 1 ? '✓' : ''}</text>
           <text x="30" y="214" class="detail">{t('unload', '卸载')}</text>
           <text x="30" y="238" class="detail">{t('done: process exits,', '完成：进程退出，')}</text>
           <text x="30" y="254" class="detail">{t('memory freed', '内存释放')}</text>
 
           <rect x="15" y="268" width="270" height="92" rx="10" fill="var(--bg)" stroke="var(--line)" />
           <text x="30" y="292" class="label blue">{t('app bundle', '应用包')}</text>
+          <text x="270" y="292" text-anchor="end" class="label">{phase >= 2 ? '✓' : ''}</text>
           <text x="30" y="316" class="detail">{t('in-app update', '应用内更新')}</text>
           <text x="30" y="340" class="detail">{t('done: bundle replaced,', '完成：应用包替换，')}</text>
           <text x="30" y="356" class="detail">{t('app restarts', '应用重启')}</text>
@@ -504,6 +550,10 @@
           <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Sources: models, runtime.go, updates.go.', '出处：models、runtime.go、updates.go。')}</text>
         {/if}
       {/if}
+      {#if focus}
+        <rect class="motion-focus" x={focus.x - 4} y={focus.y - 4} width={focus.w + 8} height={focus.h + 8} rx="10" fill="none" stroke="var(--eos)" stroke-width="3" />
+      {/if}
+      <LoopProgress ms={lapMs} {lap} x={phone ? 236 : 640} y={phone ? H - 44 : 20} />
     </svg>
   </div>
   <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh}
@@ -524,6 +574,7 @@
   .amber { fill: var(--gen); }
   .footnote { font-size: 10.5px; }
   .pt { font-size: 11px; fill: var(--muted); }
+  .motion-focus { pointer-events: none; transition: x 240ms, y 240ms, width 240ms, height 240ms; }
   @media (max-width: 600px) {
     .title { font-size: 13px; }
     .subtitle, .label, .detail, .cut, .formula, .footnote { font-size: 11px; }
