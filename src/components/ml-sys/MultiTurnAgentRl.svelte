@@ -182,6 +182,39 @@
         { en: 'Next: when does interaction stop?', zh: '下一步：交互何时停止？' },
       ],
     },
+  }, {
+    caption: 'Three conditions can end the loop. Token exhaustion truncates; the other two complete.',
+    captionZh: '三个条件都能结束循环。token 耗尽会截断，另外两种会完成。',
+    title: 'Three exits from the interaction loop', titleZh: '交互循环的三个出口',
+    subtitle: 'alternatives: the loop takes the first exit it reaches', subtitleZh: '三种备选条件：循环走到哪个出口就停在哪里',
+    foot: 'Constructed alternatives; finish=length also truncates, and abort means cancelled.', footZh: '构造备选情形；finish=length 也会截断，abort 表示被取消。',
+    legend: 'Orange = limit · blue = finished · red = current', legendZh: '橙 = 达到限制 · 蓝 = 已完成 · 红 = 当前',
+    compare: true,
+    nodes: [
+      { title: 'MAX TURNS', titleZh: '最大轮数', result: `turn ${N.AGENT_EXAMPLE_MAX_TURNS} of ${N.AGENT_EXAMPLE_MAX_TURNS}`, resultZh: `第 ${N.AGENT_EXAMPLE_MAX_TURNS} / ${N.AGENT_EXAMPLE_MAX_TURNS} 轮`, body: 'after this turn → COMPLETED', bodyZh: '本轮结束后 → COMPLETED', tone: 'blue' },
+      { title: 'TOKEN BUDGET', titleZh: 'TOKEN 预算', result: `${N.AGENT_EXAMPLE_TOKEN_BUDGET} − ${N.AGENT_RESPONSE_TOKENS} = 0`, resultZh: `${N.AGENT_EXAMPLE_TOKEN_BUDGET} − ${N.AGENT_RESPONSE_TOKENS} = 0`, body: 'no room → TRUNCATED', bodyZh: '没有余量 → TRUNCATED', tone: 'orange' },
+      { title: 'ENV DONE', titleZh: '环境完成', result: 'done = True', resultZh: 'done = True', body: 'before observation → COMPLETED', bodyZh: '追加观察前 → COMPLETED', tone: 'blue' },
+    ],
+    formulas: [
+      { en: 'max_turns reached → COMPLETED', zh: '达到 max_turns → COMPLETED' },
+      { en: 'remaining token budget ≤ 0 → TRUNCATED', zh: '剩余 token 预算 ≤ 0 → TRUNCATED' },
+      { en: 'env done = True → COMPLETED before observation', zh: 'env done = True → 追加观察前 COMPLETED' },
+      { en: 'TRUNCATED = cut off by a limit · COMPLETED = finished', zh: 'TRUNCATED = 被限制截断 · COMPLETED = 已完成' },
+      { en: 'Next: which object owns this loop in AgentLoop?', zh: '下一步：AgentLoop 中谁管理这个循环？' },
+    ],
+    mobile: {
+      title: 'Three exits from the loop', titleZh: '交互循环的三个出口',
+      subtitle: 'Alternatives: take the first exit reached', subtitleZh: '备选条件：走到哪个出口就停在哪里',
+      foot: 'Constructed alternatives; abort means cancelled.', footZh: '构造备选情形；abort 表示被取消。',
+      legend: 'Orange = limit · blue = finished · red = current', legendZh: '橙 = 达到限制 · 蓝 = 已完成 · 红 = 当前',
+      formulas: [
+        { en: 'max_turns reached → COMPLETED', zh: '达到 max_turns → COMPLETED' },
+        { en: 'Token budget ≤ 0 → TRUNCATED', zh: 'token 预算 ≤ 0 → TRUNCATED' },
+        { en: 'done=True → COMPLETED before observation', zh: 'done=True → 追加观察前 COMPLETED' },
+        { en: 'TRUNCATED = limited · COMPLETED = finished', zh: 'TRUNCATED = 被截断 · COMPLETED = 已完成' },
+        { en: 'Next: who owns the AgentLoop?', zh: '下一步：谁管理 AgentLoop？' },
+      ],
+    },
   }];
   let step = $state(0);
   $effect(() => {

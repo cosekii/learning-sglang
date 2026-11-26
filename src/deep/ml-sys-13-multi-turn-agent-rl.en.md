@@ -176,3 +176,39 @@ The implementation first builds `k → [T0, T1]`, then runs `torch.cat([T0, T1],
 The context and multimodal inputs are ready. The next step checks the conditions that end this interaction trajectory.
 
 Source: `THUDM/slime@f68dc4a25f362fc0335165a17ff976f5b6f675e1`, `examples/geo3k_vlm_multi_turn/rollout.py:115-138,300-306`.
+
+## Step 6 · Three stop exits
+
+**One sentence.** Maximum turns and environment completion produce `COMPLETED`; an exhausted token budget produces `TRUNCATED`.
+
+### On the stage
+
+- The three cards are alternative exits, not three states that one run passes through in sequence.
+- Reaching `max_turns` stops after this turn with `COMPLETED`.
+- A remaining token budget at or below zero stops with `TRUNCATED`, meaning a length limit cut the trajectory off.
+- An environment result of `done=True` stops with `COMPLETED` before appending that observation.
+- An inference result of `finish=length` also truncates. `abort` means cancelled. The cards do not expand those two exits.
+
+### Formula and symbols
+
+$$b_{\text{next}}=b-n,\qquad b_{\text{next}}\le 0\Rightarrow \text{TRUNCATED}$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $b$ | Remaining token budget | Constructed value: 12 |
+| $n$ | Action or observation tokens just appended | Step 1: 12 total |
+| $b_{\text{next}}$ | Budget left after the append | Subtraction in this step |
+| `max_turns` | Maximum allowed interaction turns | Constructed value: 2 |
+| `done` | Boolean through which the environment requests an exit | Environment interface in this step |
+
+### The numbers on the stage
+
+$$b_{\text{next}}=12-(4+3+5)=0\Rightarrow\text{TRUNCATED}$$
+
+This is the constructed budget exit. The maximum-turn exit instead finishes after turn 2 with `COMPLETED`. If the environment returns `done=True` first, the loop also stops before the observation with `COMPLETED`. One run cannot take all three alternatives.
+
+### Next
+
+Stop rules belong to interaction management, not one token-generation call. The next step shows how AgentLoop separates those jobs.
+
+Source: `THUDM/slime@f68dc4a25f362fc0335165a17ff976f5b6f675e1`, `examples/geo3k_vlm_multi_turn/rollout.py:283-290,320-366`.

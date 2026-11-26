@@ -176,3 +176,39 @@ $$R_k=2+1=3$$
 所有上下文与多模态输入都已收好。下一步检查哪些条件会结束这条交互轨迹。
 
 来源：`THUDM/slime@f68dc4a25f362fc0335165a17ff976f5b6f675e1` 的 `examples/geo3k_vlm_multi_turn/rollout.py:115-138,300-306`。
+
+## 第 6 步 · 三个停止出口
+
+**一句话。** 最大轮数和环境完成标记为 `COMPLETED`，token 预算耗尽标记为 `TRUNCATED`。
+
+### 图上是什么
+
+- 三张卡是备选出口，不是同一次运行连续经过的三个状态。
+- 达到 `max_turns` 时，本轮收尾后停止，状态为 `COMPLETED`。
+- 剩余 token 预算不大于 0 时停止，状态为 `TRUNCATED`，表示被长度限制截断。
+- 环境返回 `done=True` 时停止，状态为 `COMPLETED`，不再追加这次观察。
+- 推理返回 `finish=length` 也会截断；`abort` 表示被取消。这两个出口没有在卡片上展开。
+
+### 公式与符号
+
+$$b_{\text{next}}=b-n,\qquad b_{\text{next}}\le 0\Rightarrow \text{TRUNCATED}$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $b$ | 当前剩余 token 预算 | 本步构造值，12 |
+| $n$ | 刚追加的动作或观察 token 数 | 第 1 步，合计 12 |
+| $b_{\text{next}}$ | 追加后的剩余预算 | 本步相减 |
+| `max_turns` | 允许的最大交互轮数 | 本步构造值，2 |
+| `done` | 环境决定是否结束的布尔值 | 本步环境接口 |
+
+### 代入图上的数
+
+$$b_{\text{next}}=12-(4+3+5)=0\Rightarrow\text{TRUNCATED}$$
+
+这是预算出口的构造例。若走最大轮数出口，则第 2 轮结束后为 `COMPLETED`；若环境先返回 `done=True`，也在追加观察前以 `COMPLETED` 停止。三种情形不能混成同一次运行的结果。
+
+### 接下来
+
+停止规则属于交互管理，不属于单次 token 生成。下一步看 AgentLoop 怎样把这两件事拆开。
+
+来源：`THUDM/slime@f68dc4a25f362fc0335165a17ff976f5b6f675e1` 的 `examples/geo3k_vlm_multi_turn/rollout.py:283-290,320-366`。
