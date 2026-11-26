@@ -104,3 +104,41 @@ $$w=0.35\rightarrow q=4\rightarrow\hat{w}=0.40$$
 前向可以计算，但普通反向传播会卡在舍入处。下一步看 STE 怎样给梯度一条近似通道。
 
 来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:37-49,63-78`；`THUDM/slime@58525eb986c66a271aa31077e17b8afebe704b4f` 的 `docker/patch/latest/megatron.patch:124-150` 和 `scripts/low_precision/run-kimi-k2-Thinking-int4.sh:158-170`。
+
+## 第 4 步 · STE 让梯度绕过舍入
+
+**一句话。** Straight-through estimator（STE）在反向时把整段模拟量化当成恒等映射，让 BF16 模型参数继续收到梯度。
+
+### 图上是什么
+
+- 左卡是后续计算传回的 `grad_output`。
+- 中间蓝色虚线卡是 STE 捷径，输出同一个 `grad_output`，不经过舍入的真实导数。
+- 右卡是收到梯度的 BF16 模型参数，因此仍能更新。前向的 $0.35\rightarrow0.40$ 误差保持不变。
+
+### 公式与符号
+
+前向仍按第 3 步计算 $\hat w$。反向改用近似：
+
+$$\frac{\partial \hat w}{\partial w}\approx1,\qquad g_w=g_{\hat w}$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $w$ | 保存的 BF16 模型参数 | 第 3 步 |
+| $\hat w$ | 舍入再还原后的前向权重 | 第 3 步 |
+| $\partial\hat w/\partial w$ | 前向还原权重对保存权重的导数 | STE 在这里近似为 1 |
+| $g_{\hat w}$ | 后续计算传回的梯度，即代码的 `grad_output` | 反向输入 |
+| $g_w$ | 传给保存权重的梯度 | STE 原样返回 $g_{\hat w}$ |
+
+### 代入图上的数
+
+固定代码只有一句 `return grad_output, None`：第一个返回值对应输入权重，第二个对应不可训练的 `group_size`。它不计算 scale 梯度，也不加 clipping mask。
+
+普通 `round` 的导数在几乎所有位置为 0，在跳变处不可导。STE 是训练近似，不会让舍入变得真正可导，也不会修复前向误差。
+
+模型参数由配置的 `--bf16` 设为 BF16。这个 recipe 还开启 `--use-precision-aware-optimizer`，但没有覆盖 `--main-params-dtype`，其默认值是 FP32。因此不能把模型参数和优化器主参数都叫作“BF16 master weights”。
+
+### 接下来
+
+训练完成一轮后，更新通道要生成 rollout 真正保存的整数编码和 scale。下一步看 real quantization。
+
+来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:37-39`；`THUDM/slime@58525eb986c66a271aa31077e17b8afebe704b4f` 的 `docker/patch/latest/megatron.patch:112-122` 和 recipe；`NVIDIA/Megatron-LM@3714d81d418c9f1bca4594fc35f9e8289f652862` 的 `megatron/training/arguments.py:751-765,3475-3484`。

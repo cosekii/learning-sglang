@@ -104,3 +104,41 @@ The article's asymmetric comparisons explain why the two sides must pair. QAT wi
 The forward pass works, but ordinary backpropagation stalls at rounding. The next step shows how STE creates an approximate gradient path.
 
 Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:37-49,63-78`; `THUDM/slime@58525eb986c66a271aa31077e17b8afebe704b4f`, `docker/patch/latest/megatron.patch:124-150` and `scripts/low_precision/run-kimi-k2-Thinking-int4.sh:158-170`.
+
+## Step 4 · Pass gradients around rounding with STE
+
+**One sentence.** A straight-through estimator (STE) treats the complete fake-quantization round trip as identity during backpropagation, so BF16 model parameters still receive gradients.
+
+### On the stage
+
+- The left card receives `grad_output` from later computation.
+- The dashed blue STE card returns the same `grad_output` without using rounding's ordinary derivative.
+- The right BF16 model-weight card receives that gradient and can update. The forward error from 0.35 to 0.40 remains.
+
+### Formula and symbols
+
+The forward pass still computes $\hat w$ as in Step 3. Backpropagation uses an approximation:
+
+$$\frac{\partial \hat w}{\partial w}\approx1,\qquad g_w=g_{\hat w}$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $w$ | Stored BF16 model parameter | Step 3 |
+| $\hat w$ | Rounded and restored forward weight | Step 3 |
+| $\partial\hat w/\partial w$ | Derivative of the restored weight with respect to the stored weight | Approximated as 1 by STE |
+| $g_{\hat w}$ | Gradient returned by later computation, called `grad_output` in code | Backward input |
+| $g_w$ | Gradient passed to the stored weight | STE returns $g_{\hat w}$ unchanged |
+
+### The numbers on the stage
+
+The pinned backward implementation is exactly `return grad_output, None`. The first value belongs to the input weight; the second belongs to the non-trainable `group_size`. It computes neither a scale gradient nor a clipping mask.
+
+Ordinary rounding has derivative zero almost everywhere and no derivative at its jumps. STE is a training approximation. It does not make rounding truly differentiable or remove forward error.
+
+The recipe's `--bf16` configuration sets model parameters to BF16. It also enables `--use-precision-aware-optimizer` without overriding `--main-params-dtype`, whose default is FP32. Model parameters and optimizer main parameters therefore must not share one “BF16 master weights” label.
+
+### Next
+
+After a training round, the update path must produce the integer codes and scales that rollout actually stores. The next step follows real quantization.
+
+Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:37-39`; `THUDM/slime@58525eb986c66a271aa31077e17b8afebe704b4f`, `docker/patch/latest/megatron.patch:112-122` and the recipe; `NVIDIA/Megatron-LM@3714d81d418c9f1bca4594fc35f9e8289f652862`, `megatron/training/arguments.py:751-765,3475-3484`.

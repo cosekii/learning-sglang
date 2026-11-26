@@ -130,6 +130,40 @@
         { en: 'Next: how does a gradient cross?', zh: '下一步：梯度怎样穿过？' },
       ],
     },
+  }, {
+    caption: 'Rounding blocks the usual gradient. STE passes the incoming gradient straight to the BF16 weight.',
+    captionZh: '普通梯度过不了舍入。STE 把梯度原样传给 BF16 权重。',
+    title: 'STE passes gradients around rounding', titleZh: 'STE 让梯度绕过舍入',
+    subtitle: 'STE = straight-through estimator, a gradient shortcut', subtitleZh: 'STE = 直通估计器，一条梯度捷径',
+    foot: 'Pinned backward: return grad_output, None. STE is an approximation.',
+    footZh: '固定版本的反向：return grad_output, None。STE 是近似。',
+    legend: 'Blue = gradient path · orange = BF16 model weight', legendZh: '蓝 = 梯度路径 · 橙 = BF16 模型权重',
+    flow: true,
+    nodes: [
+      { title: 'INCOMING GRAD', titleZh: '收到的梯度', result: 'grad_output', resultZh: 'grad_output', body: 'from later compute', bodyZh: '来自后面的计算', tone: 'blue', compact: true },
+      { title: 'STE SHORTCUT', titleZh: 'STE 捷径', result: 'same grad_output', resultZh: '同一个 grad_output', body: 'skip the round trip', bodyZh: '绕过舍入往返', tone: 'blue', compact: true, dashed: true },
+      { title: 'BF16 WEIGHT', titleZh: 'BF16 权重', result: 'can update', resultZh: '可以更新', body: 'receives the gradient', bodyZh: '收到这份梯度', tone: 'orange', compact: true },
+    ],
+    formulas: [
+      { en: 'backward: grad_output → same grad_output', zh: '反向：grad_output → 同一个 grad_output' },
+      { en: 'STE treats the whole round trip as identity for gradients', zh: 'STE 算梯度时把整个往返当成原样传递' },
+      { en: 'forward error remains: 0.35 → 0.40', zh: '前向误差仍在：0.35 → 0.40' },
+      { en: 'model parameters: BF16 · optimizer main parameters: FP32 by default', zh: '模型参数：BF16 · 优化器主参数默认：FP32' },
+      { en: 'STE is not the true derivative of rounding', zh: 'STE 不是舍入的真实导数' },
+    ],
+    mobile: {
+      title: 'STE skips rounding for gradients', titleZh: 'STE 让梯度绕过舍入',
+      subtitle: 'STE = a gradient shortcut', subtitleZh: 'STE = 一条梯度捷径',
+      foot: 'Backward returns grad_output. STE is approximate.', footZh: '反向原样返回 grad_output。STE 是近似。',
+      legend: 'Blue = gradients · orange = BF16 weight', legendZh: '蓝 = 梯度 · 橙 = BF16 权重',
+      formulas: [
+        { en: 'Backward: grad_output → same grad_output', zh: '反向：grad_output → 同一个 grad_output' },
+        { en: 'STE treats the round trip as identity', zh: 'STE 把往返当成原样传递' },
+        { en: 'Forward error remains: 0.35 → 0.40', zh: '前向误差仍在：0.35 → 0.40' },
+        { en: 'Model: BF16 · optimizer main: FP32 default', zh: '模型：BF16 · 优化器主参数默认：FP32' },
+        { en: 'STE is not rounding’s true derivative', zh: 'STE 不是舍入的真实导数' },
+      ],
+    },
   }];
   let step = $state(0);
   $effect(() => {
