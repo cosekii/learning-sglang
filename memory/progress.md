@@ -4,6 +4,9 @@
 
 ## 本轮记录
 
+- 13:32 完成 Learning ML Systems 第 13 章《多轮智能体 RL》8 步：有序 Sample、loss mask、观察 delta、VLM 图片双路径、按 key 合并、slime 停止出口、verl AgentLoop 分工和配置长度 padding。先同步第 10／12 章协调逐步评分表。第 13 章作者自评 **R1–R5 80/80、非视觉原项 160/160、机制 R6 16/16、0 未决内容洞**；原 #4／#5／#6 与主人最终视觉验收仍待，不记原十二项总分或整章完成。
+- 八个步骤与冷读整改逐步提交并推送；`build`（60 页）、本章 `transcript`、全章 `readability`、中英三种宽度 `mobile`、`deep-check 13`、`zh-check`、8 步真实相位与 ARIA DOM 审计、16 个深入讲解 DOM 审计和 `git diff --check` 通过。独立冷读三轮后无必须修项。最终图在 `.bot/out/ml13/`，深入讲解图在 `.bot/out/ml13-deep/`；当前模型不能读 PNG。只跑本章检查，未跑全站回归、真实训练、rollout、VLM 或 benchmark。本轮类型：**新书**；下一章是 `14-profile-rl-systems`。
+
 - 13:17 修旧 Learning SGLang Omni 第 15 章五组返工：第 4 步解释 2xx 和 timeout，第 6 步补同状态策略对照，第 7 步用活跃数 +1 凭证解释 RequestLease，第 8 步标明新构造例并移除未解释的 `drain`。协调基线为 R1–R5 **76/80**、原非视觉项 **138/144**；独立冷读支持本轮 **80/80、144/144**，协调复审仍待。组件没有机制动画，R6 **0/16**，不开第 16 章。
 - 第 4、6、7、8 步及第 4 步补漏均逐步提交并推送；`build`（60 页）、本章 `transcript`、`readability`、英文全章及中文整改步 `mobile`、`deep-check 15`、`zh-check` 和 `git diff --check` 通过。32 张舞台与深入讲解图在 `.bot/out/omni15/`；当前模型不能读图，不记新增视觉分。本轮只跑本章检查，未跑全站回归、真实 router、模型、GPU benchmark 或故障注入。本轮类型：**修旧**；等待两章协调复审，不开新章。
 
@@ -193,7 +196,7 @@
 | 10 | 10-int4-qat-rollout | 协调内容返工通过：90/90、180/180、静态 R6 18/18、原 #4/#5 36/36、原十二项 216/216、0 未决内容洞；当前动画硬门与最终视觉验收待 | 24.00 |
 | 11 | 11-train-inference-mismatch | 待补源 | — |
 | 12 | 12-rl-speculative-decoding | 协调内容返工通过：80/80、160/160、静态 R6 16/16、原 #4/#5 32/32、原十二项 192/192、0 未决内容洞；当前动画硬门与最终视觉验收待 | 24.00 |
-| 13 | 13-multi-turn-agent-rl | 在做：已有第 1 步草稿，计划 8 步；当前动画硬门未过 | — |
+| 13 | 13-multi-turn-agent-rl | 文本与动画完成：R1–R5 80/80、非视觉原项 160/160、机制 R6 16/16、0 未决内容洞；原 #4/#5/#6 与最终视觉验收待 | — |
 | 14 | 14-profile-rl-systems | 规划 | — |
 | 15 | 15-memory-snapshot-debugging | 规划 | — |
 | 16 | 16-engineering-practice | 规划 | — |
