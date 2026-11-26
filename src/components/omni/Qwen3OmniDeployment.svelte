@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import StepControls from '../StepControls.svelte';
+  import LoopProgress from '../LoopProgress.svelte';
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
@@ -107,6 +108,44 @@
   const isCpuStage = (name: string) => name === 'preprocessing' || name === 'decode';
   const speechGpu0 = QWEN_SPEECH_DEFAULT_STAGE_PROCESSES.filter((stage) => stage.gpu === 0);
   const speechGpu1 = QWEN_SPEECH_DEFAULT_STAGE_PROCESSES.filter((stage) => stage.gpu === 1);
+
+  // One walking outline shows each scene in reading order.
+  const PHASE_COUNTS = [3, 0, 0, 0, 0, 0, 0, 0];
+  const PHASE_MS = 1500;
+  const REST_MS = 1800;
+  type Frame = { x: number; y: number; w: number; h: number };
+  const motionFrames = (isPhone: boolean, s: number): Frame[] => {
+    if (s === 0) return isPhone ? [
+      { x: 30, y: 170, w: 240, h: 192 },
+      { x: 30, y: 522, w: 240, h: 153 },
+      { x: 30, y: 684, w: 240, h: 116 },
+    ] : [
+      { x: 35, y: 172, w: 290, h: 255 },
+      { x: 395, y: 174, w: 290, h: 154 },
+      { x: 395, y: 330, w: 290, h: 117 },
+    ];
+    return [];
+  };
+  let phase = $state(0);
+  let lap = $state(0), lapMs = $state(0);
+  const nextLap = (ms: number) => untrack(() => { lapMs = ms; lap++; });
+  $effect(() => {
+    const s = step;
+    phase = 0;
+    const count = PHASE_COUNTS[s];
+    if (!count) return;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const run = () => {
+      phase = 0;
+      for (let i = 1; i < count; i++) timers.push(setTimeout(() => (phase = i), i * PHASE_MS));
+      const ms = count * PHASE_MS + REST_MS;
+      timers.push(setTimeout(run, ms));
+      nextLap(ms);
+    };
+    run();
+    return () => timers.forEach(clearTimeout);
+  });
+  const focus = $derived(motionFrames(phone, step)[phase]);
 </script>
 
 <figure class="viz">
@@ -115,7 +154,7 @@
       {#if step === 0}
         <text x={phone ? 15 : 20} y="24" class="rowlabel">{t('ONE MODEL, TWO STARTUP SHAPES', '同一个模型，两种启动形态')}</text>
         <text x={phone ? 15 : 20} y="49" class="tag">{t('deployment = the stages, processes and cards you start', 'deployment = 你启动的 stage、进程和卡')}</text>
-        <text x={phone ? 15 : 20} y="72" class="tag">{phone ? t('blue = GPU · white box = CPU · dashed = one process', '蓝 = GPU · 白框 = CPU · 虚线框 = 一个进程') : t('blue = GPU stage · white box = CPU stage · one dashed box = one process', '蓝 = GPU stage · 白框 = CPU stage · 一个虚线框 = 一个进程')}</text>
+        <text x={phone ? 15 : 20} y="72" class="tag">{phone ? t('blue = GPU · white = CPU · dashed = shared process', '蓝 = GPU · 白框 = CPU · 虚线 = 共用进程') : t('blue = GPU stage · white box = CPU stage · dashed = shared process', '蓝 = GPU stage · 白框 = CPU stage · 虚线 = 共用进程')}</text>
         {#each phone ? [
           { x: 15, y: 100, w: 270, h: 330, speech: false },
           { x: 15, y: 450, w: 270, h: 370, speech: true },
@@ -133,9 +172,9 @@
               {@const col = phone ? 0 : i % 2}
               {@const row = phone ? i : Math.floor(i / 2)}
               <rect x={panel.x + 27 + col * 132} y={panel.y + 105 + row * (phone ? 25 : 67)} width={phone ? 216 : 122} height={phone ? 21 : 54} rx="5" fill={isCpuStage(stage) ? 'var(--bg)' : 'var(--accent-soft)'} stroke={isCpuStage(stage) ? 'var(--faint)' : 'var(--accent)'} />
-              <text x={panel.x + 35 + col * 132} y={panel.y + 120 + row * (phone ? 25 : 67)} class={stage === 'mm_aggregate' ? 'tag strong' : 'mono'}>{stage === 'mm_aggregate' ? t('join inputs', '汇合输入') : stage}</text>
+              <text x={panel.x + 35 + col * 132} y={panel.y + 120 + row * (phone ? 25 : 67)} class="mono">{stage === 'mm_aggregate' ? (phone ? t('mm_aggregate · joins', 'mm_aggregate · 汇合') : stage) : stage}</text>
               {#if !phone}
-                <text x={panel.x + 35 + col * 132} y={panel.y + 143 + row * 67} class="tag">{isCpuStage(stage) ? 'CPU' : 'GPU 0'}</text>
+                <text x={panel.x + 35 + col * 132} y={panel.y + 143 + row * 67} class="tag">{stage === 'mm_aggregate' ? t('join inputs · GPU 0', '汇合输入 · GPU 0') : isCpuStage(stage) ? 'CPU' : 'GPU 0'}</text>
               {/if}
             {/each}
             <text x={panel.x + panel.w / 2} y={panel.y + (phone ? 295 : 354)} text-anchor="middle" class="formula">{QWEN_TEXT_STAGE_COUNT} stages · {QWEN_TEXT_PROCESS_COUNT} process</text>
@@ -389,7 +428,17 @@
         <text x={W / 2} y={phone ? 1038 : 709} text-anchor="middle" class="tag strong">{phone ? t('Change one choice after records name the problem.', '记录指出问题后，再改一个选择。') : t('Change one choice only after these records identify the problem to solve.', '只有记录指出要解决什么问题，才改一个选择。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Constructed TP1 hypothesis · local A/B required', '构造的 TP1 假设 · 仍需本地 A/B') : t('Constructed TP1 hypothesis from H200/TP2 evidence; local A/B required. No local model run.', '由 H200/TP2 证据构造的 TP1 假设，仍需本地 A/B；未运行模型。')}</text>
       {/if}
+      {#if PHASE_COUNTS[step] > 0}
+        <LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={4} label={t('loops · red = current', '循环 · 红框 = 当前')} />
+      {/if}
+      {#if focus}
+        <rect class="motion-focus" x={focus.x - 4} y={focus.y - 4} width={focus.w + 8} height={focus.h + 8} rx="12" fill="none" stroke="var(--eos)" stroke-width="3" />
+      {/if}
     </svg>
   </div>
   <StepControls bind:step total={steps.length} caption={cur.caption} captionZh={cur.captionZh} {prev} {next} deep={deep?.en[step]} deepZh={deep?.zh[step]} />
 </figure>
+
+<style>
+  .motion-focus { pointer-events: none; transition: x 240ms, y 240ms, width 240ms, height 240ms; }
+</style>
