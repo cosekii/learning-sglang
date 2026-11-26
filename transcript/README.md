@@ -55,4 +55,4 @@ Read it to check wording and numbers across chapters without opening the compone
 | voxt | 07 | [Checks before text lands](voxt/deliver-text-safely.md) | 5 |
 | voxt | 08 | [Your small dictionary](voxt/personal-dictionary.md) | 7 |
 | voxt | 09 | [History and retry expiration](voxt/history-retry-retention.md) | 9 |
-| voxt | 10 | [A separate file-transcription route](voxt/file-transcription.md) | 8 |
+| voxt | 10 | [A separate file-transcription route](voxt/file-transcription.md) | 9 |
