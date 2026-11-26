@@ -229,3 +229,55 @@ Public baseline: same as Step 1.
 - Thresholds, language boundaries and ordered joins: `Voxt/internal/compose/pieces.go:18-27,102-190`.
 - Up to four concurrent remote pieces and ordered drafts: `Voxt/internal/session/cleanup_together.go:14-21,42-103`.
 - Streaming publication interval: `Voxt/internal/session/write.go:17-18`; `Voxt/internal/session/cleanup_together.go:67-74`.
+
+## Step 6 · Keep recognized words when one piece fails
+
+> **In one line:** If cleanup fails for one Transcribe piece, that piece keeps its recognized words while the other pieces can still be cleaned, and the dictation finishes degraded.
+
+### On the stage
+
+- Blue pieces 1 and 3 succeed and keep `CLEANED 1` and `CLEANED 3`.
+- Orange piece 2 fails and keeps `RECOGNIZED 2`. All three outputs still join in Step 5's order.
+- `DONE` ends the session. `ProblemLLM` records the language-model failure, and `Degraded = true` says that recognized words remain in the result.
+- The failure is constructed; no real model was called. A late answer cannot replace the chosen result.
+
+### Formula
+
+$$
+D=J(c_1,r_2,c_3)
+$$
+
+| Symbol | Meaning | Where it comes from |
+|---|---|---|
+| $D$ | One result joined in order | This step's ordered result |
+| $c_i$ | Cleaned answer for piece $i$ | Pieces 1 and 3 on this stage |
+| $r_2$ | Recognized words retained for piece 2 | This step's constructed failure |
+| $J$ | Function that joins answers in piece order | `compose.JoinParts` from Step 5 |
+
+### The numbers on the stage
+
+| Quantity | Arithmetic | Result |
+|---|---|---:|
+| Pieces joined | $2+1$ | 3 |
+| Ordered results | $J(c_1,r_2,c_3)$ | 1 |
+
+One failed piece does not turn successful pieces back into recognized text. The error still reaches the session, so the result is degraded `Done` with `ProblemLLM`, rather than success without a warning.
+
+### Other recognized-text exits
+
+Manual Skip or a configured soft deadline can select the whole recognized input. Those branches do not assign `ProblemLLM`. The soft deadline starts at Stop. A cleanup candidate wins only when both completion and publication happen strictly before that deadline. After Voxt chooses recognized text, a late candidate cannot replace it.
+
+“Recognized text” here means the input to cleanup after applicable dictionary alias replacement. It can differ from the original `Raw` retained in history. Cancellation is a separate end state and does not deliver a late result.
+
+### Next
+
+Transcribe can finish with recognized pieces. Translate and Rewrite give their speech different roles, so the next step compares their retry and failure exits.
+
+### Sources
+
+Public baseline: same as Step 1.
+
+- A failed piece retains its recognized text: `Voxt/internal/session/cleanup.go:399-431`; `Voxt/internal/session/cleanup_together.go:77-103`.
+- Formation of `Done + ProblemLLM + Degraded`: `Voxt/internal/session/cleanup.go:204-224`.
+- Skip, soft deadlines and the single choice point: `Voxt/internal/session/cleanup.go:162-224`; `Voxt/internal/session/cleanup_manager.go:29-45,47-132`.
+- Recognized input versus dictionary replacement: `Voxt/internal/session/cleanup.go:64-77`.

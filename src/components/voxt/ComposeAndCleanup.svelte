@@ -4,7 +4,7 @@
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
-  import { VOXT_COMPOSE_ORDERED_RESULT_COUNT, VOXT_COMPOSE_PIECE_COUNT, VOXT_COMPOSE_PROMPT_PART_COUNT, VOXT_COMPOSE_TASK_COUNT } from '../../voxt/numbers';
+  import { VOXT_COMPOSE_CLEANED_PIECE_COUNT, VOXT_COMPOSE_FAILED_PIECE_COUNT, VOXT_COMPOSE_ORDERED_RESULT_COUNT, VOXT_COMPOSE_PIECE_COUNT, VOXT_COMPOSE_PROMPT_PART_COUNT, VOXT_COMPOSE_TASK_COUNT } from '../../voxt/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
@@ -23,6 +23,9 @@
   }, {
     caption: 'Long dictation is split into pieces. Their answers rejoin in speech order.',
     captionZh: '长听写会分成几片。各片答案按原话顺序合回来。',
+  }, {
+    caption: 'A failed piece keeps its recognized words. Other pieces can still be cleaned.',
+    captionZh: '失败的分片保留识别原话。其他分片仍能使用清理结果。',
   }];
   const ariaLabels = [{
     en: 'After recognition, one result can take one of three task routes. Transcribe treats words such as Good morning as text to tidy. Translate treats them as text to translate. Rewrite treats words such as Make it shorter as an instruction. Selected or typed text can supply the content to rewrite.',
@@ -39,6 +42,9 @@
   }, {
     en: 'One constructed long dictation becomes three requests. Every request has the same system instructions and a different user piece. The three answers join in their original order as one dictation. Translate and Rewrite do not split this way.',
     zh: '一段构造的长听写变成三个请求。每个请求使用相同的 system 说明和不同的 user 分片。三份答案按原顺序合成一段听写。翻译和改写不按这种方式分片。',
+  }, {
+    en: 'In the same three-piece dictation, pieces one and three have cleaned answers. Piece two fails and keeps its recognized words. The three outputs still join in order. The session ends Done with ProblemLLM and Degraded true because one piece was not cleaned.',
+    zh: '同一段三片听写中，第一片和第三片得到清理结果。第二片失败并保留识别原话。三份输出仍按顺序合回。因为有一片没有清理，会话以 Done、ProblemLLM 和 Degraded 为 true 结束。',
   }];
   const tasks = [
     { name: 'TRANSCRIBE', nameZh: '整理听写', output: '“Good morning.”', note: 'words to tidy', noteZh: '要整理的文字' },
@@ -60,7 +66,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived((phone ? [680, 620, 670, 660, 650] : [480, 410, 460, 420, 430])[step]);
+  const H = $derived((phone ? [680, 620, 670, 660, 650, 650] : [480, 410, 460, 420, 430, 430])[step]);
 </script>
 
 <figure class="viz">
@@ -192,7 +198,7 @@
         <text x={W / 2} y={phone ? 535 : 340} text-anchor="middle" class="cut">{VOXT_COMPOSE_TASK_COUNT} {t('TASKS', '种任务')} = {VOXT_COMPOSE_TASK_COUNT} {t('ANSWER CONTRACTS', '种输出约定')}</text>
         <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('Constructed answers · later Rewrite turns use plain text.', '构造的回答 · 后续改写轮次使用纯文本。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Invalid first-write JSON becomes cleaned plain text.', '首次写作的 JSON 无效时，按清理后的纯文本处理。')}</text>
-      {:else}
+      {:else if step === 4}
         <text x={W / 2} y="27" text-anchor="middle" class="title">{t('LONG DICTATION · SPLIT · REJOIN IN ORDER', '长听写 · 分片 · 按顺序合回')}</text>
         <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('piece = one shorter request from the dictation', '分片 = 长听写拆出的一份较短请求')}</text>
         <rect x={phone ? 35 : 30} y={phone ? 75 : 150} width={phone ? 230 : 160} height={phone ? 90 : 140} rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2" />
@@ -219,6 +225,35 @@
         <text x={W / 2} y={phone ? 555 : 370} text-anchor="middle" class="cut">{VOXT_COMPOSE_PIECE_COUNT} {t('PIECES', '个分片')} → {VOXT_COMPOSE_ORDERED_RESULT_COUNT} {t('ORDERED DICTATION', '段有序听写')}</text>
         <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('Constructed three-piece example.', '构造的三片示例。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Translate and Rewrite each use one request.', '翻译和改写各用一个请求。')}</text>
+      {:else}
+        <text x={W / 2} y="27" text-anchor="middle" class="title">{t('TRANSCRIBE · ONE PIECE FAILS', '整理听写 · 一片失败')}</text>
+        <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('degraded = finished with some recognized words left', 'degraded = 完成，但仍有原话分片')}</text>
+        {#each Array(VOXT_COMPOSE_PIECE_COUNT) as _, i}
+          {@const failed = i === 1}
+          {@const x = phone ? 25 : 25 + i * 230}
+          {@const y = phone ? 70 + i * 130 : 80}
+          {@const w = phone ? 250 : 210}
+          <rect {x} {y} width={w} height={phone ? 110 : 190} rx="10" fill={failed ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={failed ? 'var(--gen)' : 'var(--accent)'} stroke-width="1.5" />
+          <text x={x + w / 2} y={y + 23} text-anchor="middle" class="label">{t('PIECE', '分片')} {i + 1}</text>
+          <text x={x + w / 2} y={y + 46} text-anchor="middle" class="detail">{failed ? t('CLEANUP FAILED', '清理失败') : t('CLEANUP OK', '清理成功')}</text>
+          {#if phone}
+            <text x={x + 14} y={y + 83} class="detail">{t('KEEPS', '保留')}</text>
+            <text x={x + w - 14} y={y + 83} text-anchor="end" class="value small" fill={failed ? 'var(--gen)' : 'var(--accent)'}>{failed ? t('RECOGNIZED 2', '识别原话 2') : t(`CLEANED ${i + 1}`, `清理结果 ${i + 1}`)}</text>
+          {:else}
+            <line x1={x + w / 2} y1={y + 61} x2={x + w / 2} y2={y + 88} stroke="var(--muted)" stroke-width="2" marker-end="url(#compose-arrow)" />
+            <text x={x + w / 2} y={y + 113} text-anchor="middle" class="detail">{t('KEEPS', '保留')}</text>
+            <text x={x + w / 2} y={y + 146} text-anchor="middle" class="value small" fill={failed ? 'var(--gen)' : 'var(--accent)'}>{failed ? t('RECOGNIZED 2', '识别原话 2') : t(`CLEANED ${i + 1}`, `清理结果 ${i + 1}`)}</text>
+          {/if}
+        {/each}
+        <text x={W / 2} y={phone ? 490 : 320} text-anchor="middle" class="cut">{VOXT_COMPOSE_CLEANED_PIECE_COUNT} {t('CLEANED', '片清理')} + {VOXT_COMPOSE_FAILED_PIECE_COUNT} {t('RECOGNIZED', '片原话')} → {VOXT_COMPOSE_ORDERED_RESULT_COUNT} {t('ORDERED RESULT', '段有序结果')}</text>
+        {#if phone}
+          <text x={W / 2} y="540" text-anchor="middle" class="label">DONE · ProblemLLM</text>
+          <text x={W / 2} y="563" text-anchor="middle" class="label">Degraded = true</text>
+        {:else}
+          <text x={W / 2} y="365" text-anchor="middle" class="label">DONE · ProblemLLM · Degraded = true</text>
+        {/if}
+        <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('Constructed failure in piece 2.', '构造第二片失败的情形。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Late answers cannot replace the chosen result.', '迟到的答案不能替换已选定的结果。')}</text>
       {/if}
     </svg>
   </div>

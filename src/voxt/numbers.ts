@@ -113,3 +113,7 @@ export const VOXT_COMPOSE_PROMPT_PART_COUNT = 5;
 // Constructed long dictation: three pieces rejoin as one ordered result.
 export const VOXT_COMPOSE_PIECE_COUNT = 3;
 export const VOXT_COMPOSE_ORDERED_RESULT_COUNT = 1;
+
+// The same constructed dictation: one failed piece keeps its recognized text.
+export const VOXT_COMPOSE_FAILED_PIECE_COUNT = 1;
+export const VOXT_COMPOSE_CLEANED_PIECE_COUNT = VOXT_COMPOSE_PIECE_COUNT - VOXT_COMPOSE_FAILED_PIECE_COUNT;
