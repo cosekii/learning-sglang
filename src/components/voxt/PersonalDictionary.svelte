@@ -6,7 +6,7 @@
   import type { Deep } from '../../deep';
   import {
     VOXT_DICT_TERM, VOXT_DICT_ALIAS, VOXT_DICT_SECOND_TERM, VOXT_DICT_TERM_COUNT,
-    VOXT_DICT_HINT_COUNT, VOXT_DICT_GLOSSARY_ALL_UP_TO, VOXT_DICT_GLOSSARY_MAX_TERMS, VOXT_DICT_GLOSSARY_MAX_BYTES,
+    VOXT_DICT_HINT_COUNT, VOXT_DICT_GLOSSARY_ALL_UP_TO,
   } from '../../voxt/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -43,11 +43,11 @@
     en: 'The enabled terms alone are sent to the speech model as hints, the most recently changed first. The alias is not sent, because it is exactly what recognition gets wrong. The dictionary settings must have both the dictionary and the speech hints on. A service with fewer hint slots drops hints from the end, so the newest-changed terms stay at the front.',
     zh: '只有启用的词条会作为提示发给语音模型，最近改过的排前面。别名不发，因为别名正是识别会写错的样子。词典设置里要同时打开词典和语音提示。槽位更少的服务从末尾删提示，最近改过的词条留在前面。',
   }, {
-    en: 'After recognition, enabled aliases are replaced by their term in the text, before any language-model cleanup. A Latin alias like Preeya matches whole words, ignoring case: a non-CJK letter or digit on either side blocks the match. A side of the alias that ends in punctuation skips that side’s boundary check. Chinese, Japanese and Korean aliases match anywhere; when several aliases could match at the same spot, the longest wins. A term already written correctly is left alone, so this works with the language model off or failing.',
-    zh: '识别之后、语言模型清理之前，启用的别名会在文字里换回词条。像 Preeya 这样的拉丁别名按整词匹配、不分大小写：旁边紧挨着非中日韩的字母或数字就不匹配。若别名某一端是标点，那一端不查边界。中日韩别名可以在任意位置匹配；同一位置有多个别名能匹配时，最长的胜出。已经写对的词条保持原样，所以语言模型关掉或失败时这一步照样有效。',
+    en: 'After recognition, enabled aliases are replaced by their term in the text, before any language-model cleanup. A Latin alias like Preeya matches whole words, ignoring case: a letter or digit outside Han, Hiragana, Katakana and Hangul on either side blocks the match. A side of the alias that ends in punctuation skips that side’s boundary check. Aliases written in Han, Hiragana, Katakana or Hangul match anywhere; when several aliases could match at the same spot, the longest wins. A term already written correctly is left alone, so this works with the language model off or failing.',
+    zh: '识别之后、语言模型清理之前，启用的别名会在文字里换回词条。像 Preeya 这样的拉丁别名按整词匹配、不分大小写：旁边紧挨着汉字、平假名、片假名、韩文以外的字母或数字就不匹配。若别名某一端是标点，那一端不查边界。用汉字、平假名、片假名或韩文写的别名可以在任意位置匹配；同一位置有多个别名能匹配时，最长的胜出。已经写对的词条保持原样，所以语言模型关掉或失败时这一步照样有效。',
   }, {
-    en: 'With 30 or fewer distinct enabled terms, all terms become candidates and the glossary sits in the system message. With more than 30, only terms mentioned by the replaced text become candidates; system keeps generic rules, and the selected glossary opens the user message. Both cases take the longest prefix that fits 60 lines and 2000 bytes, stopping at the first line that does not fit. The request input is call Priya after alias replacement. An unchanged system prefix may let the provider reuse its prompt cache, but saves no guaranteed time or tokens.',
-    zh: '不超过 30 个不同的启用词条时，全部成为候选，术语表放在 system 消息里。超过 30 个时，只把替换后的文字提到的词条作为候选；system 只留通用规则，选中的 <glossary> 放在 user 开头。两种情况都取同时满足 60 行和 2000 字节的最长前缀，遇到首个放不下的行就停。这次请求的输入是别名替换后的 call Priya。provider 可能复用未变的 system 前缀，但不保证省时或省 token。',
+    en: 'With 30 or fewer distinct enabled terms, all terms become candidates and the glossary sits in the system message. With more than 30, only terms or aliases mentioned by the replaced text become candidates; system keeps generic rules, and the selected glossary opens the user message when matches exist. The request input is call Priya after alias replacement.',
+    zh: '不超过 30 个不同的启用词条时，全部成为候选，术语表放在 system 消息里。超过 30 个时，只把替换后的文字提到的词条或别名作为候选；system 只留通用规则，有匹配时选中的 <glossary> 放在 user 开头。这次请求的输入是别名替换后的 call Priya。',
   }, {
     en: 'Dictionary-wide settings.Dictionary.Notes is free text, separate from a row’s private store.Term.Note. When enabled, it joins the language model system layers and never goes to the speech model or transcript replacement. Final messages are system, then history, then user; this request input sits only in user. Notes-off keeps the dictionary notes out of the prompt even while the dictionary is on.',
     zh: '整部词典的 settings.Dictionary.Notes 是自由文字，和行内私有的 store.Term.Note 不同。开启时，它作为单独一层进入语言模型的 system，从不去语音模型或文字稿替换。最终消息顺序是 system、history、user，这次请求的输入只在 user 里。即使词典开着，关掉备注也能让全词典备注不进提示。',
@@ -247,7 +247,7 @@
           <text x="20" y="312" class="tag strong">{t('matching rules', '匹配规则')}</text>
           <text x="20" y="336" class="tag">{t('Preeya: whole words, any case', 'Preeya：整词，不分大小写')}</text>
           <text x="20" y="360" class="tag">{t('alias ends in punctuation: that end is not checked', '别名以标点结尾：那一端不查边界')}</text>
-          <text x="20" y="384" class="tag">{t('Chinese / Japanese / Korean: anywhere', '中日韩：任意位置')}</text>
+          <text x="20" y="384" class="tag">{t('Han / Hiragana / Katakana / Hangul: anywhere', '汉字/平假名/片假名/韩文：任意位置')}</text>
           <text x="20" y="408" class="tag">{t('same spot: the longest wins', '同一位置：最长的胜出')}</text>
           <text x="20" y="432" class="tag">{t('a correct term is left alone', '已经对的词条不动')}</text>
           <rect x="20" y="454" width="260" height="70" rx="8" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />
@@ -269,7 +269,7 @@
           <text x="34" y="190" class="rowlabel">{t('matching rules', '匹配规则')}</text>
           <text x="34" y="216" class="tag">{t('Preeya: whole words, any case', 'Preeya：整词，不分大小写')}</text>
           <text x="34" y="240" class="tag">{t('alias ends in punctuation: that end is not checked', '别名以标点结尾：那一端不查边界')}</text>
-          <text x="34" y="264" class="tag">{t('Chinese / Japanese / Korean: anywhere', '中日韩：任意位置都能匹配')}</text>
+          <text x="34" y="264" class="tag">{t('Han / Hiragana / Katakana / Hangul: anywhere', '汉字/平假名/片假名/韩文：任意位置都能匹配')}</text>
           <text x="34" y="288" class="tag">{t('when several could match at one spot, the longest wins', '同一位置有多个能匹配时，最长的胜出')}</text>
           <text x="34" y="312" class="tag">{t('a term already written stays', '已经写对的词条保持原样')}</text>
           <rect x="410" y="164" width="290" height="150" rx="10" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />

@@ -111,8 +111,8 @@ The next step takes the recognized text and swaps the alias back to the term.
 
 `dict.Replace` looks only at enabled terms (`Voxt/internal/dict/alias.go:25`):
 
-- A Latin alias is checked at each end only when that end of the alias is itself a letter or digit outside Chinese, Japanese and Korean (`wordRune`, `alias.go:140-147`, `190-197`). `Preeya` starts and ends with letters, so neither side may touch another non-CJK letter or digit; a CJK character next to it does not block the match. An alias that ends in punctuation skips the check on that side, so `Priya!` can match inside `Priya!next`.
-- Han, Hiragana, Katakana and Hangul are not word runes, so Chinese, Japanese and Korean aliases match anywhere.
+- A Latin alias is checked at each end only when that end of the alias is itself a letter or digit outside Han, Hiragana, Katakana and Hangul (`wordRune`, `alias.go:140-147`, `190-197`). `Preeya` starts and ends with letters, so neither side may touch another letter or digit outside those four scripts; a Han, Hiragana, Katakana or Hangul character next to it does not block the match. An alias that ends in punctuation skips the check on that side, so `Priya!` can match inside `Priya!next`.
+- Han, Hiragana, Katakana and Hangul are not word runes, so aliases written in those scripts match anywhere.
 - When several patterns match at one place, the **longest** wins (patterns are sorted by size descending, `alias.go:73`).
 - A term already written as itself is left alone, so running this twice does not break it (`alias.go:90`).
 
@@ -141,7 +141,7 @@ Replacement only fixes aliases. If recognition writes a wrong form that is neith
 - Left panel, at most 30 distinct terms: system holds general rules, `- Priya (heard as: Preeya)` and `- MOSS-Transcribe`, while user holds `call Priya.`. Both terms from Step 3 are here.
 - Right panel, more than 30 distinct terms: system holds only generic rules; user opens with `<glossary>`, then contains `call Priya.`. Only terms the text mentions appear, so `MOSS-Transcribe` is there only if this text mentions it.
 - Both user panels use `call Priya.` because Step 4 has already replaced `Preeya` with `Priya`; the language model receives the replaced text (`session/run.go:301-312`).
-- The bottom lines say which terms become candidates and that lines are kept in order until the next would pass 60 lines or 2000 bytes (about one page of text). The cache and token caveat is detailed below.
+- The bottom line states the selection rule: at most 30 terms puts all of them in; more than 30 keeps only the terms the text mentions. The 60-line and 2000-byte caps belong to the formula below.
 
 ### Candidates and message placement
 
