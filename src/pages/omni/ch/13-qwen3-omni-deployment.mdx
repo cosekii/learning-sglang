@@ -1,0 +1,29 @@
+---
+layout: ../../../layouts/Chapter.astro
+book: omni
+slug: 13-qwen3-omni-deployment
+---
+import Qwen3OmniDeployment from '../../../components/omni/Qwen3OmniDeployment.svelte';
+import { omniNeighbors } from '../../../omni/chapters';
+import { deepFor } from '../../../deep';
+export const deep = await deepFor('omni-13-qwen3-omni-deployment');
+
+<Qwen3OmniDeployment client:load {...omniNeighbors('13-qwen3-omni-deployment')} deep={deep} />
+
+<details class="i18n-en">
+<summary>Where this chapter's claims come from</summary>
+
+Step 1 counts the shipped startup shapes. Text-only mode defines six stages in one `pipeline` process on one GPU and still accepts multimodal input (`sglang_omni/models/qwen3_omni/config.py:136-147,257-265,412-422`; `docs/cookbook/qwen3_omni.md:46-57`). Default speech defines seven stages, each in its own process: image encoder, audio encoder, thinker and code2wav use GPU 0, talker uses GPU 1, and preprocessing and decode are CPU stages (`config.py:268-318,425-452`). These counts exclude the HTTP server and coordinator.
+
+Code references in this chapter pin to `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`. The chapter reads source, shipped configs and public measurements; it does not run a model or benchmark.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的出处</summary>
+
+第 1 步数随仓库发布的启动形态。纯文字模式把六个 stage 放在一个 `pipeline` 进程和一张 GPU 上，仍接受多模态输入（`sglang_omni/models/qwen3_omni/config.py:136-147,257-265,412-422`；`docs/cookbook/qwen3_omni.md:46-57`）。默认语音有七个 stage，各住一个进程：image encoder、audio encoder、thinker 和 code2wav 使用 GPU 0，talker 使用 GPU 1，preprocessing 和 decode 是 CPU stage（`config.py:268-318,425-452`）。这些数量不含 HTTP server 和 coordinator。
+
+本章代码出处固定到 `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`。本章只读源码、随仓库配置和公开测量，没有运行模型或 benchmark。
+
+</details>

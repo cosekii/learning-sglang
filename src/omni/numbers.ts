@@ -52,6 +52,12 @@ const processNameForStage = (stage: string) => COLOCATED_PROCESS_GROUPS.find((gr
 export const COLOCATED_INTERNAL_EDGE_COUNT = COLOCATED_REQUEST_EDGES.filter((edge) => processNameForStage(edge.from) === processNameForStage(edge.to)).length;
 export const COLOCATED_CROSS_PROCESS_EDGE_COUNT = COLOCATED_REQUEST_EDGE_COUNT - COLOCATED_INTERNAL_EDGE_COUNT;
 
+// Qwen3-Omni text-only and default-speech startup shapes.
+export const QWEN_TEXT_STAGES = ['preprocessing', 'image_encoder', 'audio_encoder', 'mm_aggregate', 'thinker', 'decode'] as const;
+export const QWEN_TEXT_STAGE_COUNT = QWEN_TEXT_STAGES.length;
+export const QWEN_TEXT_PROCESS_COUNT = 1;
+export const QWEN_TEXT_GPU_COUNT = 1;
+
 // Default Qwen speech stages and the shipped replica2 overrides on sglang-omni origin/main.
 // At this revision each stage has its own process and one TP rank.
 export const QWEN_SPEECH_DEFAULT_STAGE_PROCESSES = [
