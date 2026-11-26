@@ -179,3 +179,36 @@ $$
 第 5 步跟着这些 codes 进入下一个 Slow 帧，比较两层循环分别记住什么。
 
 出处：`models/fishaudio_s2_pro/sglang_model.py:294-300,418-510`；`models/fishaudio_s2_pro/payload_types.py:35-50`；`models/fishaudio_s2_pro/streaming_vocoder.py:88-106`；`models/fishaudio_s2_pro/fish_speech/tokenizer.py:19-37`。
+
+## 第 5 步 · 两层循环记住不同的状态
+
+> **一句话：** 下一帧复用 Slow 工作和十个 code 值，Fast AR 则清空内层 KV。
+
+### 图上是什么
+
+- 蓝色反馈箭头把上一帧的全部十个 DAC codes 送回下一次 Slow 输入。
+- 橙色 Slow KV 横跨 prompt 和每个 accepted 帧。KV 是第 1 本第 3 章讲过的注意力 key、value 工作。
+- 灰色 Fast KV 在帧边界结束，下一帧重新开始内层循环。
+- 相同的 Slow 前缀可以复用 SGLang KV。其指纹覆盖全部十行参考 codes，不只看 code 0。
+
+### 代入图上的数
+
+一个完成帧返回 $1+9=10$ 个 DAC codes。下一个 Slow 位置把这十份 codec embeddings 和原始语义 token embedding 合并，沿用第 3 步的 $1/\sqrt{11}$ 规则。
+
+Fast 第 0 次调用先重置内层 KV，再处理新帧的 0–9 位置，不读上一帧的 Fast 位置。
+
+### 三种复用
+
+| 保存内容 | 保存多久 | 谁保存 |
+|---|---|---|
+| 参考 codes | 跨匹配请求，以 CPU 副本返回 | `ReferenceEncodeService` |
+| Slow 注意力 KV | prompt 和之前的帧；匹配前缀可共享 | SGLang |
+| Fast 注意力 KV | 只到本帧内部位置结束 | Fast AR |
+
+这张图比较反馈和 cache 寿命，没有声称 Fish 流式 vocoder 保留 Qwen 式 codec 执行状态。
+
+### 接下来
+
+第 6 步跟随同一个循环走到 EOS、长度用尽和中止三个出口。
+
+出处：`models/fishaudio_s2_pro/model_runner.py:62-100,148-191`；`models/fishaudio_s2_pro/sglang_model.py:365-382,484-488`；`models/fishaudio_s2_pro/request_builders.py:65-78,160-168`；`models/fishaudio_s2_pro/fish_speech/models/text2semantic/audio_decoder.py:394-411,505-526,547-595`。

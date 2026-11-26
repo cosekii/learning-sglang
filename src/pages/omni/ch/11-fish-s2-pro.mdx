@@ -21,6 +21,8 @@ Step 3 follows `sglang_omni/models/fishaudio_s2_pro/tokenizer.py:53-73,94-162` a
 
 Step 4 follows a nonterminal frame in `sglang_omni/models/fishaudio_s2_pro/sglang_model.py:294-300,418-510`. Fast AR is the inner loop. Call 0 receives the projected Slow hidden state and does not supply a vocoder code. Calls 1–9 choose the nine remaining codes by argmax. The engine stores the raw Slow token, its derived code 0 and those nine codes: 11 rows. `streaming_vocoder.py:88-106` drops the raw token and sends the other ten rows to the vocoder. The 1+9=10 Fast-call count has no eleventh call after code 9.
 
+Step 5 follows `model_runner.py:62-100,148-191` and `sglang_model.py:365-382,484-488`. The previous frame's raw token and all ten DAC codes feed the next Slow input. Slow KV retains the prompt and earlier frames through SGLang. `request_builders.py:65-78,160-168` fingerprints all ten reference rows so references that share only code 0 cannot incorrectly share a prefix. Fast KV covers positions 0–9 inside one frame and resets before the next Slow output (`fish_speech/models/text2semantic/audio_decoder.py:394-411,505-526,547-595`). Reference-code caching from Step 2 is a separate CPU artifact cache.
+
 Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`. Fetching a newer ref failed with `Operation not permitted`. The chapter reads source; it does not run a model or benchmark.
 
 </details>
@@ -35,6 +37,8 @@ Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37
 第 3 步依据 `sglang_omni/models/fishaudio_s2_pro/tokenizer.py:53-73,94-162` 和 `model_runner.py:288-356`。Slow AR 是沿时间轴走的外层循环。目标文字使用普通 tokens。每个参考帧由 code 0 形成一个语义 token，同时十行 codes 都会改变这个位置的模型输入。精确的 embedding 平均是 `(文字 embedding + 十个 codec embeddings) ÷ sqrt(11)`，见 `fish_speech/models/text2semantic/audio_decoder.py:597-612`。多个参考声音沿时间拼接；没有参考声音时会省略 system 声音块。
 
 第 4 步跟随一个非结束帧，见 `sglang_omni/models/fishaudio_s2_pro/sglang_model.py:294-300,418-510`。Fast AR 是内层循环。第 0 次调用接收投影后的 Slow 隐藏状态，不提供 vocoder code。第 1–9 次调用通过 argmax 选出其余九个 codes。engine 保存 Slow 原始 token、由它得到的 code 0 和这九个 codes，共 11 行。`streaming_vocoder.py:88-106` 去掉原始 token，把其余十行送入 vocoder。1+9=10 次 Fast 调用，code 9 之后没有第 11 次调用。
+
+第 5 步依据 `model_runner.py:62-100,148-191` 和 `sglang_model.py:365-382,484-488`。上一帧的原始 token 和全部十个 DAC codes 会进入下一次 Slow 输入。Slow KV 通过 SGLang 保留 prompt 和之前的帧。`request_builders.py:65-78,160-168` 对全部十行参考 codes 做指纹，避免只有 code 0 相同的参考声音错误共享前缀。Fast KV 只覆盖一帧内的 0–9 位置，在下一次 Slow 输出前重置（`fish_speech/models/text2semantic/audio_decoder.py:394-411,505-526,547-595`）。第 2 步的参考 code 缓存是另一种 CPU 成品缓存。
 
 本章代码出处固定到 `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`。获取更新 ref 时出现 `Operation not permitted`。本章只读源码，没有运行模型或 benchmark。
 

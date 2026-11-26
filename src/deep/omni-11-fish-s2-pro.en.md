@@ -179,3 +179,36 @@ One Slow choice creates one derived code 0. Nine Fast choices create codes 1–9
 Step 5 follows these codes into the next Slow frame and compares what the two loops retain.
 
 Sources: `models/fishaudio_s2_pro/sglang_model.py:294-300,418-510`; `models/fishaudio_s2_pro/payload_types.py:35-50`; `models/fishaudio_s2_pro/streaming_vocoder.py:88-106`; `models/fishaudio_s2_pro/fish_speech/tokenizer.py:19-37`.
+
+## Step 5 · The two loops keep different state
+
+> **In one line:** The next frame reuses Slow work and ten code values, while Fast AR clears its inner KV.
+
+### On the stage
+
+- The blue feedback arrow returns all ten previous DAC codes to the next Slow input.
+- Orange Slow KV spans the prompt and every accepted frame. KV means attention's saved key and value work from Learning SGLang Ch. 3.
+- Grey Fast KV ends at the frame boundary. A fresh inner loop starts for the next frame.
+- A matching Slow prefix can reuse SGLang KV. Its fingerprint covers all ten reference rows, not just code 0.
+
+### The numbers on the stage
+
+One completed frame returns $1+9=10$ DAC codes. The next Slow position combines those ten codec embeddings with the raw semantic token embedding, using the same $1/\sqrt{11}$ rule as Step 3.
+
+Fast call 0 resets its inner KV before positions 0–9 of the new frame. It does not read the previous frame's Fast positions.
+
+### Three kinds of reuse
+
+| Saved thing | Lifetime | Owner |
+|---|---|---|
+| Reference codes | Matching requests, as CPU copies | `ReferenceEncodeService` |
+| Slow attention KV | Prompt and earlier frames; matching prefixes may share | SGLang |
+| Fast attention KV | Positions inside one frame only | Fast AR |
+
+The picture compares feedback with cache lifetime. It does not claim that Fish's streaming vocoder retains Qwen-style codec execution state.
+
+### Next
+
+Step 6 follows the same loop to its three exits: EOS, length exhaustion and abort.
+
+Sources: `models/fishaudio_s2_pro/model_runner.py:62-100,148-191`; `models/fishaudio_s2_pro/sglang_model.py:365-382,484-488`; `models/fishaudio_s2_pro/request_builders.py:65-78,160-168`; `models/fishaudio_s2_pro/fish_speech/models/text2semantic/audio_decoder.py:394-411,505-526,547-595`.
