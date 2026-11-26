@@ -16,6 +16,9 @@
     DUPLEX_QWEN_GENERATED_ROWS,
     DUPLEX_QWEN_DELIVERED_ROWS,
     DUPLEX_QWEN_HEARD_ROWS,
+    DUPLEX_CASCADE_SENTENCE_ENDS_MS,
+    DUPLEX_CASCADE_DELIVERED_SENTENCES,
+    DUPLEX_CASCADE_HEARD_SENTENCES,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -32,6 +35,9 @@
   }, {
     caption: 'Qwen keeps the smaller of delivered and played positions. At 1.2 seconds, its history keeps 18 reply rows.',
     captionZh: 'Qwen 取交付和播放位置的较小者。1.2 秒对应保留 18 行回答。',
+  }, {
+    caption: 'Sentence alignment keeps the last sentence that finished before the cut. At 1.2 seconds, only sentence 1 remains.',
+    captionZh: '句子对齐保留切点前最后一句完整声音。1.2 秒时只剩第 1 句。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -48,7 +54,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [650, 790, 790, 760][step] : [540, 590, 570, 610][step]);
+  const H = $derived(phone ? [650, 790, 790, 760, 830][step] : [540, 590, 570, 610, 640][step]);
   const seconds = (ms: number) => (ms / 1000).toFixed(1);
 </script>
 
@@ -227,6 +233,46 @@
           <text x="150" y="652" text-anchor="middle" class="small strong">{t('Next: cascade text history', '下一步：cascade 的文字记录')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Complete 80 ms rows only' : 'Only complete 80 ms codec rows count; this is a token-history cut, not word alignment.', phone ? '只数完整的 80 ms 行' : '只数完整的 80 ms codec 行；这是 token 记录切点，不是逐词对齐。')}</text>
+      {:else if step === 4}
+        <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? '2 of 3 · streaming cascade' : 'History repair · 2 of 3 · streaming cascade', phone ? '2/3 · streaming cascade' : '对话记录修复 · 2/3 · streaming cascade')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'alignment = text matched to audio times' : 'alignment = matching reply text to audio end times', phone ? '对齐 = 文字对应声音结束时刻' : '对齐 = 把回答文字对应到声音结束时刻')}</text>
+        <text x={phone ? 18 : 30} y="79" class="label">{t(phone ? 'blue = kept · grey = removed' : 'blue = sentences kept · grey = sentences removed', phone ? '蓝 = 保留 · 灰 = 删除' : '蓝 = 保留的句子 · 灰 = 删除的句子')}</text>
+        {#if !phone}
+          {#each [
+            { x: 30, cut: DUPLEX_DELIVERED_MS, kept: DUPLEX_CASCADE_DELIVERED_SENTENCES, title: 'BEFORE CLIENT H · D = 2.0 s', titleZh: '客户端 H 之前 · D = 2.0 秒' },
+            { x: 370, cut: Math.min(DUPLEX_DELIVERED_MS, DUPLEX_HEARD_MS), kept: DUPLEX_CASCADE_HEARD_SENTENCES, title: 'AFTER CLIENT H · min = 1.2 s', titleZh: '客户端 H 之后 · 较小值 = 1.2 秒' },
+          ] as panel}
+            <rect x={panel.x} y="112" width="320" height="329" rx="12" fill="var(--bg)" stroke="var(--line)" />
+            <text x={panel.x + 16} y="141" class="small strong">{t(panel.title, panel.titleZh)}</text>
+            {#each ['Paris is cold.', 'Bring a coat.', 'See you there.'] as sentence, i}
+              <rect x={panel.x + 16} y={169 + i * 71} width="288" height="54" rx="8" fill={i < panel.kept ? 'var(--accent-soft)' : 'var(--bg)'} stroke={i < panel.kept ? 'var(--accent)' : 'var(--faint)'} />
+              <text x={panel.x + 30} y={191 + i * 71} class="small strong">{i + 1} · {sentence}</text>
+              <text x={panel.x + 30} y={213 + i * 71} class="small">{t('audio ends', '声音结束')} · {seconds(DUPLEX_CASCADE_SENTENCE_ENDS_MS[i])} s · {i < panel.kept ? t('KEEP', '保留') : t('DROP', '删除')}</text>
+            {/each}
+            <text x={panel.x + 160} y="420" text-anchor="middle" class="result">{t(`KEEP ${panel.kept} SENTENCE${panel.kept === 1 ? '' : 'S'}`, `保留 ${panel.kept} 句`)}</text>
+          {/each}
+          <text x="360" y="486" text-anchor="middle" class="result">{t('last sentence end ≤ min(D, H) = 1,200 ms', '最后保留句的结束时刻 ≤ min(D, H) = 1,200 ms')}</text>
+          <text x="360" y="526" text-anchor="middle" class="small strong">{t('Sentence 2 finished at 2.0 s, so H removes the whole sentence.', '第 2 句在 2.0 秒才结束，所以 H 会删掉整句。')}</text>
+          <text x="360" y="586" text-anchor="middle" class="result">{t('How does native MiniCPM-o cut one-second units?', 'native MiniCPM-o 怎样裁切一秒单元？')}</text>
+        {:else}
+          {#each [
+            { y: 108, kept: DUPLEX_CASCADE_DELIVERED_SENTENCES, title: 'BEFORE H · D = 2.0 s', titleZh: 'H 之前 · D = 2.0 秒' },
+            { y: 347, kept: DUPLEX_CASCADE_HEARD_SENTENCES, title: 'AFTER H · min = 1.2 s', titleZh: 'H 之后 · 较小值 = 1.2 秒' },
+          ] as panel}
+            <rect x="18" y={panel.y} width="264" height="217" rx="11" fill="var(--bg)" stroke="var(--line)" />
+            <text x="32" y={panel.y + 28} class="small strong">{t(panel.title, panel.titleZh)}</text>
+            {#each DUPLEX_CASCADE_SENTENCE_ENDS_MS as end, i}
+              <rect x="32" y={panel.y + 46 + i * 43} width="236" height="35" rx="6" fill={i < panel.kept ? 'var(--accent-soft)' : 'var(--bg)'} stroke={i < panel.kept ? 'var(--accent)' : 'var(--faint)'} />
+              <text x="42" y={panel.y + 69 + i * 43} class="small">{i + 1} · {seconds(end)} s · {i < panel.kept ? t('KEEP', '保留') : t('DROP', '删除')}</text>
+            {/each}
+            <text x="150" y={panel.y + 199} text-anchor="middle" class="result">{t(`KEEP ${panel.kept}`, `保留 ${panel.kept} 句`)}</text>
+          {/each}
+          <text x="150" y="607" text-anchor="middle" class="result">min(D, H) = 1,200 ms</text>
+          <text x="150" y="638" text-anchor="middle" class="small">{t('Sentence 2 ends at 2.0 s.', '第 2 句在 2.0 秒结束。')}</text>
+          <text x="150" y="663" text-anchor="middle" class="small">{t('H removes the whole sentence.', 'H 因此删掉整句。')}</text>
+          <text x="150" y="723" text-anchor="middle" class="small strong">{t('Next: native one-second units', '下一步：native 的一秒单元')}</text>
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Default: sentence alignment' : 'Default method: sentence. Forced or ASR alignment can retain finer prefixes; not drawn here.', phone ? '默认使用句子对齐' : '默认 method: sentence。forced 或 ASR 对齐能保留更细前缀，本图不展开。')}</text>
       {/if}
     </svg>
   </div>

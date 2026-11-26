@@ -129,3 +129,41 @@ The normal graph sends `reply.delivered` as `qwen.truncate`. A later client trun
 The streaming cascade stores text messages rather than Qwen's codec-row history, so it needs a text-to-audio alignment rule.
 
 Sources: `sglang_omni/models/qwen3_omni/thinker_session.py:38-42,87-89,167-223`; `sglang_omni/models/qwen3_omni/session_input.py:184-205,253-260`; `tests/unit_test/qwen3_omni/test_session_input.py:87-138`.
+
+## Step 5 · The cascade aligns sentences
+
+> **In one line:** Default sentence alignment retains only sentence 1 at the 1.2-second cut.
+
+### On the stage
+
+- The same three constructed sentences end at 1.0, 2.0 and 2.5 seconds.
+- Before client H arrives, D retains sentences 1 and 2.
+- After client H arrives, the smaller 1.2-second cut retains only sentence 1.
+- Blue sentence cards remain in dialog history. Grey cards are removed.
+
+### Formula
+
+$$
+E = \max\{e_i \mid e_i \leq \min(D,H)\}
+$$
+
+| Symbol | Meaning | Value | Source |
+|---|---|---:|---|
+| $E$ | Last retained sentence-ending position | 1,000 ms | This step |
+| $e_i$ | Audio-ending position of sentence $i$ | 1,000; 2,000; 2,500 ms | Constructed progress points |
+| $D$ | Delivered position | 2,000 ms | Step 1 |
+| $H$ | Client playback position | 1,200 ms | Step 1 |
+
+### The numbers on the stage
+
+- At D = 2,000 ms, eligible endings are 1,000 and 2,000 ms, so the dialog retains two sentences.
+- At min(D,H) = 1,200 ms, only 1,000 ms qualifies, so the dialog retains sentence 1.
+- The listener heard 200 ms into sentence 2, but sentence mode cannot retain part of that sentence. The retained prefix is marked uncertain.
+
+The default is `method: sentence`. `forced` adds word-ending information for completed sentences. `asr`, or `forced` with `heard_asr_url`, can transcribe the interrupted sentence prefix and retain a strict matching text prefix. Failure, timeout or a mismatched beginning leaves that sentence unheard. Those variants are not part of this stage's comparison.
+
+### Next
+
+Native MiniCPM-o does not cut text sentences or 80 ms rows. Its client truncate keeps complete one-second units.
+
+Sources: `sglang_omni/models/streaming_cascade/dialog.py:66-78,857-917`; `sglang_omni/models/streaming_cascade/alignment.py:98-138,219-229,370-424`; `tests/unit_test/models/test_streaming_cascade.py:320-348`.

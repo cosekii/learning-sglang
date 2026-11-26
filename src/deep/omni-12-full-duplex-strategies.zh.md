@@ -129,3 +129,41 @@ $$
 streaming cascade 保存文字消息，不保存 Qwen 的 codec 行记录，因此需要一套文字与声音的对齐规则。
 
 出处：`sglang_omni/models/qwen3_omni/thinker_session.py:38-42,87-89,167-223`；`sglang_omni/models/qwen3_omni/session_input.py:184-205,253-260`；`tests/unit_test/qwen3_omni/test_session_input.py:87-138`。
+
+## 第 5 步 · cascade 对齐句子
+
+> **一句话：** 默认句子对齐在 1.2 秒切点只保留第 1 句。
+
+### 图上是什么
+
+- 同样三句构造回答分别在 1.0、2.0、2.5 秒结束。
+- 客户端 H 到达以前，D 保留第 1、2 句。
+- 客户端 H 到达以后，较小的 1.2 秒切点只保留第 1 句。
+- 蓝色句子卡留在 dialog 记录里，灰色句子卡被删除。
+
+### 公式
+
+$$
+E = \max\{e_i \mid e_i \leq \min(D,H)\}
+$$
+
+| 符号 | 是什么 | 大小 | 从哪来 |
+|---|---|---:|---|
+| $E$ | 最后保留句的声音结束位置 | 1,000 ms | 本步 |
+| $e_i$ | 第 $i$ 句的声音结束位置 | 1,000；2,000；2,500 ms | 构造进度点 |
+| $D$ | 已交付位置 | 2,000 ms | 第 1 步 |
+| $H$ | 客户端播放位置 | 1,200 ms | 第 1 步 |
+
+### 代入图上的数
+
+- D = 2,000 ms 时，1,000 和 2,000 ms 都符合，所以 dialog 保留两句。
+- min(D,H) = 1,200 ms 时，只有 1,000 ms 符合，所以 dialog 保留第 1 句。
+- 听者已经听到第 2 句的 200 ms，但句子模式不能保留这句的一部分，因此保留前缀会标成不确定。
+
+默认是 `method: sentence`。`forced` 为完整句子增加词结束位置。`asr`，或配置 `heard_asr_url` 的 `forced`，可以转写被打断句子的声音前缀，再保留严格匹配的文字前缀。失败、超时或开头不匹配都会让这句按未听过处理。这些变体不进入本步对照图。
+
+### 接下来
+
+native MiniCPM-o 不裁切文字句子或 80 ms 行。客户端 truncate 保留完整的一秒单元。
+
+出处：`sglang_omni/models/streaming_cascade/dialog.py:66-78,857-917`；`sglang_omni/models/streaming_cascade/alignment.py:98-138,219-229,370-424`；`tests/unit_test/models/test_streaming_cascade.py:320-348`。
