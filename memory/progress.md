@@ -4,6 +4,7 @@
 
 ## 本轮记录
 
+- 00:25 按第二轮复审继续修 Inside Voxt 第 7 章：第 4 步把「一样=没确认」收窄到普通可读框，并把「一样且网页区域 → 贴入」画成比较框里的第四条出口；第 5 步去掉 `Priya` 和问句的蓝色，只留加粗当锚点；剪贴板兜底改为只有「发出粘贴但没确认」才留文字，密码框/不可编辑在写剪贴板前返回，`KeepClipboard` 单列；第 1 步复述改成「文字去此刻焦点，不一定回 start app」。评分卡、progress、report 相应改为待目视，不标完成。
 - 00:15 按复审修 Inside Voxt 第 7 章 6 处事实/评估问题：第 3 步把「网页从不收文字」收窄到别的 app（start app 里 `AXWebArea` 不走 `nonText`）；第 4 步把「一样=没贴进去」改为「一样=没确认」，并补 `AXWebArea` / 可编辑网页区域改成 unknown 再按已贴入处理的例外；第 4 步主图去掉 length/digest/selection/marker，改成「框里的文字和光标」；深入讲解修正第 1、2 步不存在的描述并补 `f.Role`、`t_restore`；第 5 步加「落地的文字」卡（`Priya` 高亮）并把章末问句锚在它上面；评分卡只记文本与机械检查，目视项待主人，不再声称 12/12、24/24。
 - 00:00 整点自主优化第 2 项「向好的范例学」：阅读 Jay Alammar《The Illustrated Transformer》，对照 Learning SGLang 第 2 章第 6、14 步。范例在分步后用同一例子回收多头总图；本章第 6 步只有 `32 × 128 = 4,096` 和 `W_O` 的文字说明，已把 `4096 → 32 个 128 → concat 4096 → W_O → 4096` 的具体补图方案并入 Z03。
 - 本轮只更新想法、评分记录和记忆，不试改满分步骤。第 6 步整步易读 **12/12**、原分 **24/24**、**0 洞**；第 14 步中文易读 **12/12**、原分 **24/24**、**0 洞**，整步仍 **11/12**，只余受保护英文 R4；章均分保持 **24.00/24**。截图：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-autonomous-transformer-20261126-0000/final/`。`transcript`、中英本章 `mobile`、`deep-check 02`、本章 `zh-check`、`build` 和 `git diff --check` 通过；`readability` 保留既有 9 个受保护英文机械问题，未跑全站回归。本轮类型：**自主优化**；下一普通轮按交替规则修旧，下次整点轮换第 3 项「复盘自己」。
@@ -139,7 +140,7 @@
 
 ## Inside Voxt
 
-规划完成：`docs/plan-voxt.md` 共 3 部分、16 章；第 1 章已制作 4 步并完成，第 2 章已制作 3 步并完成，第 3 章已制作 8 步并完成，第 4 章已制作 7 步并完成，第 5 章已制作 5 步并完成，第 6 章已制作 8 步并完成，第 7 章已制作 5 步并完成。事实来源只使用 `sglang-omni` 的 `origin/main` 公开代码和文档。
+规划完成：`docs/plan-voxt.md` 共 3 部分、16 章；第 1 章已制作 4 步并完成，第 2 章已制作 3 步并完成，第 3 章已制作 8 步并完成，第 4 章已制作 7 步并完成，第 5 章已制作 5 步并完成，第 6 章已制作 8 步并完成，第 7 章已制作 5 步，待目视。事实来源只使用 `sglang-omni` 的 `origin/main` 公开代码和文档。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
@@ -149,7 +150,7 @@
 | 04 | speech-recognition-routes | 完成：7/7 步易读满分 | 23.86 |
 | 05 | language-model-connection | 完成：5/5 步易读满分 | 24.00 |
 | 06 | compose-and-cleanup | 完成：8/8 步易读满分 | 23.88 |
-| 07 | deliver-text-safely | 完成：5/5 步文本冷读通过；图表目视待主人 | — |
+| 07 | deliver-text-safely | 待目视：5/5 步文本冷读通过；图表未目视 | — |
 | 08 | personal-dictionary | 规划 | — |
 | 09 | history-retry-retention | 规划 | — |
 | 10 | file-transcription | 规划 | — |
