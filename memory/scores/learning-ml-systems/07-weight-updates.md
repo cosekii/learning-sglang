@@ -1,6 +1,6 @@
 # 第 7 章评分卡 · text-complete / visual-blocked-on-owner
 
-日期：2026-11-26。当前只给 R1–R5 的文本分。R6 和原 #4／#5 必须等 vision-capable reviewer 或主人看完截图后评分；原 12 项总分也留到那时再给。`ready` 已改为 `false`，不再把本章当完成章发布；不再做文字重写，下一单元是 `08-fsdp2-training-backend`。
+日期：2026-11-26。当前只给 R1–R5 的文本分。R6 和原 #4／#5 必须等 vision-capable reviewer 或主人看完截图后评分；原 12 项总分也留到那时再给。`ready` 已恢复为 `true`，因为现有 transcript／mobile／deep-check 只选择 ready 章；这不代表完成。本章仍是 text-complete / visual-blocked-on-owner，不再做文字重写，下一单元是 `08-fsdp2-training-backend`。
 材料：最终中英桌面、390×1400 中英手机、双语深入讲解共 48 张图位于 `/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-lyljndnh/opencode/ls-k2-mlsys07/`。360／390／430 px 的中英手机布局由本章 `mobile` 检查覆盖。
 
 | 步 | R1–R5 /10 | R1 小学生复述 | R6 /2 | 原 12 项总分 | 已知文本洞数 | 日期 |
@@ -36,5 +36,6 @@
 - 数值矛盾复审为第 7 步补上每 tensor 一次与约 160 次调用的乘数，`4.845 ÷ 0.030 = 161.5`，并将英文照片说明改为 `the pixels in a 1024×1024 photo`。专项复读为「Multiplier and photo wording are clear; no contradiction.」
 - 01:39 独立文本冷读又发现 11 项问题：第 1 步单位歧义，第 3 步接收空间与中文流程，第 4 步两种 rank 0、访问范围与中文标签，第 5 步等待对象、桶数和驻留符号，第 6 步旧 KV 复用，第 7 步 `$T_{\text{outer}}$`，第 8 步示例 GPU 数量。逐项修复后，复审确认 11 项全部解决；第 4、8 步 R2 按第 2、3 步同一地图／流程标准校准为满分，最终 8/8 步 R1–R5 为 10/10，非视觉原 12 项无新增扣分。
 - `build`、本章 `transcript`、全章 `readability`（8 步、0 机械问题）、中英三种宽度 `mobile`、中文目标步字号、`deep-check 07`、本章 `zh-check` 和 `git diff --check` 均通过。16 个深入讲解视图另经浏览器断言均为 `aria-expanded=true` 且有对应正文，无残留 `$`、KaTeX 错误或横向溢出。
+- 恢复 `ready: true` 后，又在 4323 端口重跑本章 `transcript`、`mobile`、`readability`、`deep-check 07` 和 `zh-check`，全部通过；这些机械结果不替代 R6、原 #4／#5 的视觉评分。
 - 最终 48 张截图已在上述目录重新生成并核对文件齐全；主模型、`general` 和另行尝试的 `explore` 都返回 `NO_IMAGE_INPUT`，未宣称逐张视觉检查通过。R6、原 #4／#5 和总分留给 vision-capable reviewer 或主人。
 - 实现结论固定到 `volcengine/verl@0508af25b66e839772fba8e79d97896bf0d843d3` 与 `sgl-project/sglang@392e441ad17c78b68638f2d959fcf592d19b4834`，机制数字来自规划列出的公开文章。未跑全站回归、真实训练、权重传输或性能基准。
