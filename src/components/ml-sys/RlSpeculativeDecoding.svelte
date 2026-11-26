@@ -266,7 +266,7 @@
     legend: 'Grey = no spec · orange = frozen · blue = online · one scale', legendZh: '灰 = 不用投机 · 橙 = 冻结 · 蓝 = 在线 · 同一比例',
     nodes: [
       { title: 'NO SPEC', titleZh: '不用投机', result: `${N.SPEC_NO_SPEC_TRAIN_S} s`, resultZh: `${N.SPEC_NO_SPEC_TRAIN_S} 秒`, body: 'no draft training', bodyZh: '不训练 draft', tone: 'plain', bar: N.SPEC_NO_SPEC_TRAIN_S / N.SPEC_ONLINE_TRAIN_S, compact: true },
-      { title: 'FROZEN SPEC', titleZh: '冻结投机', result: `${N.SPEC_FROZEN_TRAIN_S} s`, resultZh: `${N.SPEC_FROZEN_TRAIN_S} 秒`, body: 'draft stays frozen', bodyZh: 'draft 保持冻结', tone: 'orange', bar: N.SPEC_FROZEN_TRAIN_S / N.SPEC_ONLINE_TRAIN_S, compact: true },
+      { title: 'FROZEN SPEC', titleZh: '冻结投机', result: `${N.SPEC_FROZEN_TRAIN_S} s`, resultZh: `${N.SPEC_FROZEN_TRAIN_S} 秒`, body: 'no auxiliary CE on MTP', bodyZh: 'MTP 层不受辅助 CE 训练', tone: 'orange', bar: N.SPEC_FROZEN_TRAIN_S / N.SPEC_ONLINE_TRAIN_S, compact: true },
       { title: 'ONLINE SPEC', titleZh: '在线投机', result: `${N.SPEC_ONLINE_TRAIN_S} s`, resultZh: `${N.SPEC_ONLINE_TRAIN_S} 秒`, body: 'draft learns too', bodyZh: 'draft 也学习', tone: 'blue', bar: 1, compact: true },
     ],
     formulas: [
