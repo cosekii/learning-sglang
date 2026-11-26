@@ -4,7 +4,7 @@
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
-  import { UPDATE_DEBUG_BF16_BYTES, UPDATE_DEBUG_WEIGHT_GB, UPDATE_DEBUG_INITIAL_S, UPDATE_DEBUG_INNER_S, UPDATE_DEBUG_OUTER_S, UPDATE_GROUP_SIZE_TP_ONE, UPDATE_GROUP_SIZE_TP_TWO, UPDATE_EXAMPLE_FULL_ROWS, UPDATE_EXAMPLE_FULL_COLS, UPDATE_EXAMPLE_FSDP_TP, UPDATE_EXAMPLE_FSDP_ROWS, UPDATE_EXAMPLE_FULL_ELEMENTS } from '../../ml-sys/numbers';
+  import { UPDATE_DEBUG_BF16_BYTES, UPDATE_DEBUG_WEIGHT_GB, UPDATE_DEBUG_INITIAL_S, UPDATE_DEBUG_INNER_S, UPDATE_DEBUG_OUTER_S, UPDATE_GROUP_SIZE_TP_ONE, UPDATE_GROUP_SIZE_TP_TWO, UPDATE_EXAMPLE_FULL_ROWS, UPDATE_EXAMPLE_FULL_COLS, UPDATE_EXAMPLE_FSDP_TP, UPDATE_EXAMPLE_FSDP_ROWS, UPDATE_EXAMPLE_FULL_ELEMENTS, UPDATE_DEBUG_SLEEP_COUNT, UPDATE_DEBUG_SLEEP_MS, UPDATE_DEBUG_SLEEP_TOTAL_MS, UPDATE_DEBUG_OUTER_MS, UPDATE_DEBUG_INNER_MS, UPDATE_DEBUG_OTHER_MS, UPDATE_DEBUG_NO_SLEEP_S, UPDATE_DEBUG_SAVED_S, UPDATE_DEBUG_SPEEDUP } from '../../ml-sys/numbers';
 
   type Tone = 'plain' | 'blue' | 'orange';
   type MobileItem = { title: string; titleZh: string; body: string; bodyZh: string; tone: Tone };
@@ -137,6 +137,26 @@
       { en: 'start after every parameter updates', zh: '每个参数都更新完，才开始' },
       { en: 'never generate with v0 + v1 mixed', zh: '绝不能新旧权重混着生成' },
     ],
+  }, {
+    caption: `Three ${UPDATE_DEBUG_SLEEP_MS} ms sleeps sat outside ModelRunner. Removing them cut this full update from ${UPDATE_DEBUG_INITIAL_S} to ${UPDATE_DEBUG_NO_SLEEP_S} seconds.`,
+    captionZh: `ModelRunner 外面有 3 次 ${UPDATE_DEBUG_SLEEP_MS} ms 的 sleep。去掉后，这次完整更新从 ${UPDATE_DEBUG_INITIAL_S} 秒降到 ${UPDATE_DEBUG_NO_SLEEP_S} 秒。`,
+    title: 'Measure the whole call, not only ModelRunner', titleZh: '测量整个调用，不能只测 ModelRunner',
+    subtitle: 'outer timer = whole request · inner timer = ModelRunner only', subtitleZh: '外部计时 = 整个请求 · 内部计时 = 只测 ModelRunner',
+    foot: 'Successive measurements in one debug note; not a general speedup.', footZh: '同一调试记录里的前后测量，不是普遍加速结论。',
+    mobileTitle: 'Time the whole call', mobileTitleZh: '测量整个调用',
+    mobileSubtitle: 'inner timer misses outside waits', mobileSubtitleZh: '内部计时漏掉外面的等待',
+    mobileFoot: 'One debug run, not a general result.', mobileFootZh: '一次调试结果，不是普遍结论。',
+    mobile: [
+      { title: 'OUTER CALL · 33 ms', titleZh: '外部调用 · 33 ms', body: 'ModelRunner reports only 1 ms', bodyZh: 'ModelRunner 只报告 1 ms', tone: 'orange' },
+      { title: '3 SLEEPS · 30 ms', titleZh: '3 次 SLEEP · 30 ms', body: 'fixed waits outside ModelRunner', bodyZh: 'ModelRunner 外面的固定等待', tone: 'orange' },
+      { title: 'REMOVE THE SLEEPS', titleZh: '去掉这些 SLEEP', body: 'full update becomes 2.202 s', bodyZh: '完整更新变成 2.202 秒', tone: 'blue' },
+    ],
+    formulas: [
+      { en: '3 × 10 ms = 30 ms', zh: '3 × 10 ms = 30 ms' },
+      { en: '1 + 30 + 2 = 33 ms, rounded', zh: '1 + 30 + 2 = 33 ms，均为舍入值' },
+      { en: '7.047 − 2.202 = 4.845 s saved', zh: '7.047 − 2.202 = 少等 4.845 秒' },
+      { en: '7.047 ÷ 2.202 ≈ 3.20×', zh: '7.047 ÷ 2.202 ≈ 3.20 倍' },
+    ],
   }];
   let step = $state(0);
   $effect(() => {
@@ -153,7 +173,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [480, 620, 510, 620, 620, 640][step] : [410, 480, 460, 500, 490, 490][step]);
+  const H = $derived(phone ? [480, 620, 510, 620, 620, 640, 520][step] : [410, 480, 460, 500, 490, 490, 520][step]);
 </script>
 
 <figure class="viz">
@@ -331,6 +351,28 @@
         {/each}
         <text x="360" y="411" text-anchor="middle" class="small strong">{t('If any parameter fails, discard the partially updated model.', '只要一个参数失败，就弃用这套只更新了一部分的模型。')}</text>
         <text x="360" y="447" text-anchor="middle" class="small">{t('Blue = complete versions · orange = update work · red outline = unsafe mixture', '蓝 = 完整版本 · 橙 = 更新工作 · 红框 = 危险的新旧混合')}</text>
+      {:else if step === 6}
+        <text x="35" y="104" class="small strong">{t('WITH SLEEPS', '保留 SLEEP')}</text>
+        <rect x="160" y="82" width="500" height="38" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x="645" y="107" text-anchor="end" class="result">{UPDATE_DEBUG_INITIAL_S} s</text>
+        <text x="35" y="172" class="small strong">{t('WITHOUT SLEEPS', '去掉 SLEEP')}</text>
+        <rect x="160" y="150" width={500 * UPDATE_DEBUG_NO_SLEEP_S / UPDATE_DEBUG_INITIAL_S} height="38" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x={175 + 500 * UPDATE_DEBUG_NO_SLEEP_S / UPDATE_DEBUG_INITIAL_S} y="175" class="result">{UPDATE_DEBUG_NO_SLEEP_S} s</text>
+        <text x="360" y="224" text-anchor="middle" class="result">{UPDATE_DEBUG_INITIAL_S} − {UPDATE_DEBUG_NO_SLEEP_S} = {UPDATE_DEBUG_SAVED_S} s {t('saved', '少等')} · ≈ {UPDATE_DEBUG_SPEEDUP.toFixed(2)}×</text>
+        <text x="360" y="278" text-anchor="middle" class="small strong">{t('ONE PARAMETER · OUTER CALL = 33 ms, ROUNDED', '一个参数 · 外部调用 = 33 ms，均为舍入值')}</text>
+        <rect x="200" y="302" width="10" height="48" fill="var(--accent-soft)" stroke="var(--accent)" />
+        {#each [0, 1, 2] as i}
+          <rect x={210 + i * 100} y="302" width="100" height="48" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x={260 + i * 100} y="331" text-anchor="middle" class="small">{UPDATE_DEBUG_SLEEP_MS} ms</text>
+        {/each}
+        <rect x="510" y="302" width="20" height="48" fill="var(--bg)" stroke="var(--line)" />
+        <text x="205" y="374" text-anchor="middle" class="small">{UPDATE_DEBUG_INNER_MS} ms</text>
+        <text x="205" y="394" text-anchor="middle" class="small">{t('inside', '内部')}</text>
+        <text x="520" y="374" text-anchor="middle" class="small">{UPDATE_DEBUG_OTHER_MS} ms</text>
+        <text x="520" y="394" text-anchor="middle" class="small">{t('other', '其他')}</text>
+        <text x="360" y="427" text-anchor="middle" class="result">{UPDATE_DEBUG_INNER_MS} + {UPDATE_DEBUG_SLEEP_TOTAL_MS} + {UPDATE_DEBUG_OTHER_MS} = {UPDATE_DEBUG_OUTER_MS} ms</text>
+        <text x="360" y="462" text-anchor="middle" class="small">{t('Three orange sleeps sit outside ModelRunner.', '三个橙色 sleep 都在 ModelRunner 外面。')}</text>
+        <text x="360" y="490" text-anchor="middle" class="small">{t('Both full-update bars use the same seconds scale.', '两条完整更新柱使用相同的秒数比例。')}</text>
       {/if}
       {#if cur.foot2}
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t(cur.foot2, cur.foot2Zh ?? cur.foot2)}</text>

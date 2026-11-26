@@ -186,3 +186,38 @@ $$U=\bigwedge_{i=1}^{n}u_i,\qquad \text{开始 rollout}\Rightarrow U$$
 这个边界保证生成不会读到混合版本，却没有说明等待在哪里。下一步给外部调用计时，找出 `ModelRunner` 外面固定的 CPU sleep。
 
 来源：`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-1.md:268-287`；`verl/workers/sharding_manager/fsdp_sglang.py:98-135,164-188`；`Awesome-ML-SYS-Tutorial/sglang/latency-accelerate-for-weight-updates/readme.md:451-458,1011-1058`。
+
+## 第 7 步 · 找出 ModelRunner 外面的固定等待
+
+**一句话。** `ModelRunner` 外面的三次 10 ms sleep 解释了 33 ms 外部调用的大部分等待，去掉后这次完整更新从 7.047 秒降到 2.202 秒。
+
+### 图上是什么
+
+- 两条完整更新柱使用同一比例。去掉 sleep 后的 2.202 秒柱与原来的 7.047 秒柱并排。
+- 下方长条把舍入后的 33 ms 外部调用拆成：`ModelRunner` 内部 1 ms、三次 10 ms sleep、其他舍入时间 2 ms。
+- 只测内部会漏掉固定 sleep。调试记录还在 GPU 计时区域前后同步 CUDA，避免 CPU 计时器越过排队的工作。
+
+### 公式与符号
+
+$$T_{\text{outer}}\approx T_{\text{inner}}+n\,t_s+T_{\text{other}},\qquad S=T_0-T_1,\qquad Q=T_0/T_1$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $T_{\text{inner}}$ | `ModelRunner` 操作耗时 | 舍入为 1 ms |
+| $n,t_s$ | sleep 次数与每次时长 | $3\times10$ ms |
+| $T_{\text{other}}$ | 剩余的外部耗时 | 舍入为 2 ms |
+| $T_0,T_1$ | 去掉 sleep 前后的完整更新耗时 | 7.047 和 2.202 秒 |
+| $S,Q$ | 少等秒数与前后时间比 | 本步计算 |
+
+### 代入图上的数
+
+$$1+3\times10+2=33\ \text{ms}$$
+$$S=7.047-2.202=4.845\ \text{s},\qquad Q=7.047/2.202\approx3.20$$
+
+这些数字是一位作者在同一调试过程中的舍入测量，不能据此宣称普遍有 3.20 倍改善。
+
+### 接下来
+
+去掉固定等待并不会缩小训练状态。最后一步留下显存问题：完整训练状态装不下时，怎样让每个训练进程只保存一部分？
+
+来源：`Awesome-ML-SYS-Tutorial/sglang/latency-accelerate-for-weight-updates/readme.md:584-605,980-1007,1023-1030,1061-1065`。

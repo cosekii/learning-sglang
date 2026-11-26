@@ -186,3 +186,38 @@ The figure assigns no parameter count. If any $u_i$ fails, the model may contain
 This boundary makes replacement safe to read, but it says nothing about where the wait lies. The next step times the outer call and finds fixed CPU-side sleeps outside `ModelRunner`.
 
 Sources: `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-1.md:268-287`; `verl/workers/sharding_manager/fsdp_sglang.py:98-135,164-188`; `Awesome-ML-SYS-Tutorial/sglang/latency-accelerate-for-weight-updates/readme.md:451-458,1011-1058`.
+
+## Step 7 · Find the fixed wait outside ModelRunner
+
+**One sentence.** Three 10 ms sleeps outside `ModelRunner` explain most of the 33 ms outer call, and removing them shortened this full update from 7.047 to 2.202 seconds.
+
+### On the stage
+
+- The two full-update bars use one scale. Removing the sleeps leaves a 2.202-second bar beside the original 7.047-second bar.
+- The lower strip decomposes one rounded 33 ms outer call into 1 ms inside `ModelRunner`, three 10 ms sleeps and 2 ms of other rounded time.
+- Timing only the inner operation misses the fixed sleeps. The debug note also synchronizes CUDA around the measured GPU region so its CPU timer waits for queued work.
+
+### Formula and symbols
+
+$$T_{\text{outer}}\approx T_{\text{inner}}+n\,t_s+T_{\text{other}},\qquad S=T_0-T_1,\qquad Q=T_0/T_1$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $T_{\text{inner}}$ | `ModelRunner` operation time | Rounded 1 ms |
+| $n,t_s$ | Sleep count and duration | $3\times10$ ms |
+| $T_{\text{other}}$ | Remaining rounded outer time | 2 ms |
+| $T_0,T_1$ | Full update before and after sleep removal | 7.047 and 2.202 s |
+| $S,Q$ | Saved seconds and time ratio | Derived here |
+
+### The numbers on the stage
+
+$$1+3\times10+2=33\ \text{ms}$$
+$$S=7.047-2.202=4.845\ \text{s},\qquad Q=7.047/2.202\approx3.20$$
+
+The values are rounded successive measurements from one author's setup. They do not establish a general 3.20× improvement.
+
+### Next
+
+Removing a fixed wait does not shrink the training state. The final step leaves the remaining memory question: how can training keep only slices when the full state does not fit?
+
+Source: `Awesome-ML-SYS-Tutorial/sglang/latency-accelerate-for-weight-updates/readme.md:584-605,980-1007,1023-1030,1061-1065`.
