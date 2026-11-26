@@ -10,7 +10,7 @@
 
 ### Formula and symbols
 
-$$M=P(b_w+b_g+b_o),\qquad C=N M,\qquad f=M/80\ \text{GB}$$
+$$M=P(b_w+b_g+b_o),\qquad C=N M,\qquad f=M/(80\ \text{GB})$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
@@ -27,7 +27,7 @@ $$M=P(b_w+b_g+b_o),\qquad C=N M,\qquad f=M/80\ \text{GB}$$
 $$M=4{,}000{,}000{,}000\times(2+2+12)=64{,}000{,}000{,}000\ \text{bytes}=64\ \text{GB}$$
 $$C=8\times64\ \text{GB}=512\ \text{GB},\qquad f=64/80=0.8=80\%$$
 
-The optimizer convention is FP32 master weights, momentum and variance. It belongs to this worked example, not to every possible FSDP2 configuration. No activation, gather buffer or runtime allocation is included yet.
+The optimizer convention has three FP32 tables: master weights, the full-precision weight copy used for updates; momentum, a running average of gradients; and variance, a running average of squared gradients. It belongs to this worked example, not to every possible FSDP2 configuration. No activation, gather buffer or runtime allocation is included yet.
 
 ### Next
 

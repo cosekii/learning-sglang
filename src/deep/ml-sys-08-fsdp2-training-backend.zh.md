@@ -10,7 +10,7 @@
 
 ### 公式与符号
 
-$$M=P(b_w+b_g+b_o),\qquad C=N M,\qquad f=M/80\ \text{GB}$$
+$$M=P(b_w+b_g+b_o),\qquad C=N M,\qquad f=M/(80\ \text{GB})$$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
@@ -27,7 +27,7 @@ $$M=P(b_w+b_g+b_o),\qquad C=N M,\qquad f=M/80\ \text{GB}$$
 $$M=4{,}000{,}000{,}000\times(2+2+12)=64{,}000{,}000{,}000\ \text{字节}=64\ \text{GB}$$
 $$C=8\times64\ \text{GB}=512\ \text{GB},\qquad f=64/80=0.8=80\%$$
 
-优化器约定是 FP32 master 权重、momentum 和 variance。它只属于这个算例，不代表所有 FSDP2 配置。激活、聚合缓冲和运行时分配尚未计入。
+优化器约定有 3 张 FP32 表：master 权重是用于更新的全精度权重副本，momentum 是梯度的滑动平均值，variance 是梯度平方的滑动平均值。它只属于这个算例，不代表所有 FSDP2 配置。激活、聚合缓冲和运行时分配尚未计入。
 
 ### 接下来
 
