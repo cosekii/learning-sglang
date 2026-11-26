@@ -48,6 +48,38 @@
         { en: 'How does the draft learn?', zh: 'draft 怎样学习？' },
       ],
     },
+  }, {
+    caption: 'Each position has one hidden state. It holds the target’s internal notes at that position.',
+    captionZh: '每个位置都有一个 hidden state。它是 target 的内部笔记。',
+    title: 'The target leaves notes at every token', titleZh: 'target 在每个 token 位置留下笔记',
+    subtitle: 'hidden state = computed notes at one token position', subtitleZh: 'hidden state = 一个 token 位置算出的内部笔记',
+    foot: 'The five letters are example tokens; h(a) is computed notes, not another token.',
+    footZh: '五个字母是示例 token；h(a) 是算出的笔记，不是新 token。',
+    legend: 'Orange = target tokens and compute · blue = hidden states', legendZh: '橙 = target 的 token 和计算 · 蓝 = hidden state',
+    flow: true,
+    nodes: [
+      { title: 'TARGET TOKENS', titleZh: 'TARGET 的 TOKEN', result: '[a, b, c, d, e]', resultZh: '[a, b, c, d, e]', body: 'one example sequence', bodyZh: '一条示例序列', tone: 'orange', compact: true },
+      { title: 'TARGET FORWARD', titleZh: 'TARGET 前向', result: 'reads all five positions', resultZh: '读取全部五个位置', body: 'the usual model pass', bodyZh: '平常的模型计算', tone: 'orange', compact: true },
+      { title: 'HIDDEN STATES', titleZh: 'HIDDEN STATE', result: '[h(a), h(b), …]', resultZh: '[h(a), h(b), …]', body: 'one note per position', bodyZh: '每个位置一份笔记', tone: 'blue', compact: true },
+    ],
+    formulas: [
+      { en: 'h(a) = target notes after processing position a', zh: 'h(a) = target 处理位置 a 后留下的笔记' },
+      { en: 'each h contains numbers computed by the target', zh: '每个 h 都装着 target 算出的数' },
+      { en: 'Ch. 15 Step 5: target hidden states can feed a drafter', zh: '第 15 章第 5 步：target 的 hidden state 可交给 draft' },
+      { en: 'Next: which token clue joins h(a)?', zh: '下一步：哪个 token 线索与 h(a) 合并？' },
+    ],
+    mobile: {
+      title: 'Target notes at each token', titleZh: '每个 token 位置的笔记',
+      subtitle: 'hidden state = notes at one position', subtitleZh: 'hidden state = 一个位置的内部笔记',
+      foot: 'Letters are tokens; h(a) is computed notes.', footZh: '字母是 token；h(a) 是算出的笔记。',
+      legend: 'Orange = target · blue = hidden states', legendZh: '橙 = target · 蓝 = hidden state',
+      formulas: [
+        { en: 'h(a) = notes for position a', zh: 'h(a) = 位置 a 的笔记' },
+        { en: 'Each h holds computed numbers', zh: '每个 h 都装着算出的数' },
+        { en: 'Ch. 15 Step 5 uses these notes', zh: '第 15 章第 5 步用过这些笔记' },
+        { en: 'Next: add a token clue', zh: '下一步：加入 token 线索' },
+      ],
+    },
   }];
   let step = $state(0);
   $effect(() => {
