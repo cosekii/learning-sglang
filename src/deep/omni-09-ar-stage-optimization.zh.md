@@ -104,3 +104,35 @@ $$f=3-1=2,\qquad W_{\mathrm{single\!-\!flight}}=1\times250=250\ \text{ms}$$
 encoder 不再重复同一份工作。AR loop 有另一种等待：CPU 收尾这一步时，GPU 本可以开始下一步。
 
 来源：`sglang_omni/scheduling/reference_encoder.py:361-413`；`tests/unit_test/scheduling/test_reference_encoder.py:131-179`；`sglang_omni/models/moss_tts/reference_encoder.py:113-143`。
+
+## 第 4 步 · 先启动下一步，再收尾上一步
+
+**一句话。** 异步 decode 保留一步在途：调度器先启动第 N 步，再收尾第 N−1 步，此时 GPU 工作可以仍在运行。
+
+### 图上是什么
+
+- `launch` 构造并启动一个 GPU decode step，发布 resolve 需要的数据并记录完成 event，不等待 GPU。
+- `resolve` 检查 event，收集每个请求的结果，完成采样并发出输出。event 尚未就绪时，resolve 会同步等待，不再重叠。
+- `SYNC` 把一步的 launch、resolve 都做完才启动下一步。`ASYNC` 先启动第 N 步，再收尾第 N−1 步。两幅图使用相同的蓝色 GPU 块和橙色 CPU 块。
+- 重叠区域只表示一种可行顺序，不是实测时长。图中没有画 D2H 拷贝：MOSS-TTS-Local 从 device 侧快照 resolve，Higgs 则可以使用 pinned host staging buffer。
+- 异步 decode 改的是调度顺序，不改模型数学。MOSS-TTS-Local 当前默认关闭它；公开测量只报告跨会话噪声内的表现，不保证加速。
+
+### 公式与符号
+
+$$I_{\mathrm{overlap}}=I_{\mathrm{launch},N}\cap I_{\mathrm{resolve},N-1}$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $I_{\mathrm{launch},N}$ | 启动并在 GPU 上运行第 N 步的区间 | 图上构造的顺序 |
+| $I_{\mathrm{resolve},N-1}$ | CPU 收尾第 N−1 步的区间 | 图上构造的顺序 |
+| $I_{\mathrm{overlap}}$ | 两个区间可以共同存在的时间 | ASYNC 图 |
+
+### 代入图上的数
+
+本步不填毫秒数，只看 `launch(N)` 排在 `resolve(N−1)` 前。调度器先把新启动的 step 存为 pending，再 resolve 上一个 pending step。空 batch、不合格 batch 和低于配置阈值的 batch 会先清空在途 step，再走同步路径。
+
+### 接下来
+
+重叠能藏住部分 CPU 等待，但没有减少 GPU 工作。下一项机制减少提交 audio encoder kernels 的 CPU launch。
+
+来源：`sglang_omni/model_runner/base.py:137-166,502-516,577-605`；`sglang_omni/scheduling/omni_scheduler.py:5125-5197`；`sglang_omni/models/moss_tts_local/stages.py:326-346`；`Awesome-ML-SYS-Tutorial/sglang/sglang-omni/moss-tts-local-v15-blog-zh.md:210-216`。

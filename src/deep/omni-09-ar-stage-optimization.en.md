@@ -104,3 +104,35 @@ Three independent calls would do $3\times250=750$ ms of GPU encode work. Single-
 The encoder no longer repeats the same work. The AR loop has a different wait: the CPU finishes one step while the GPU could begin the next.
 
 Sources: `sglang_omni/scheduling/reference_encoder.py:361-413`; `tests/unit_test/scheduling/test_reference_encoder.py:131-179`; `sglang_omni/models/moss_tts/reference_encoder.py:113-143`.
+
+## Step 4 · Launch the next step before resolving the previous one
+
+**One sentence.** Async decode keeps one step in flight: the scheduler launches step N, then resolves step N−1 while that GPU work can still be running.
+
+### On the stage
+
+- `Launch` builds and starts a GPU decode step, publishes its resolve payload and records a completion event without waiting for the GPU.
+- `Resolve` checks that event, collects each request's result, finishes sampling and emits output. If the event is not ready, resolve synchronizes instead of overlapping.
+- `SYNC` runs launch and resolve for one step before starting the next. `ASYNC` starts step N before resolving step N−1. The same blue GPU and orange CPU blocks appear in both panels.
+- The shaded overlap is a possible ordering, not a measured duration. The diagram does not show a D2H copy: MOSS-TTS-Local resolves from a device-side snapshot, while Higgs can use a pinned host staging buffer.
+- Async decode changes the schedule, not the model math. MOSS-TTS-Local currently defaults it off, and its public measurements report performance within session noise rather than a guaranteed speedup.
+
+### Formula and symbols
+
+$$I_{\mathrm{overlap}}=I_{\mathrm{launch},N}\cap I_{\mathrm{resolve},N-1}$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $I_{\mathrm{launch},N}$ | Time interval in which step N is launched and runs on the GPU | Constructed ordering on the stage |
+| $I_{\mathrm{resolve},N-1}$ | Interval in which the CPU resolves step N−1 | Constructed ordering on the stage |
+| $I_{\mathrm{overlap}}$ | Time when those two intervals can coexist | The async panel |
+
+### The numbers on the stage
+
+This step assigns no milliseconds. It shows only the order `launch(N)` before `resolve(N−1)`. The scheduler holds the newly launched step as pending, then resolves the previous pending step. Empty batches, ineligible batches and batches below the configured threshold use the synchronous path after draining any pending step.
+
+### Next
+
+Overlap can hide some CPU waiting without removing GPU work. The next mechanism reduces the CPU launches that submit the audio encoder's kernels.
+
+Sources: `sglang_omni/model_runner/base.py:137-166,502-516,577-605`; `sglang_omni/scheduling/omni_scheduler.py:5125-5197`; `sglang_omni/models/moss_tts_local/stages.py:326-346`; `Awesome-ML-SYS-Tutorial/sglang/sglang-omni/moss-tts-local-v15-blog-zh.md:210-216`.

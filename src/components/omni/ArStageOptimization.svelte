@@ -27,6 +27,9 @@
   }, {
     caption: 'Three matching requests arrive before any result is cached. Single-flight lets two followers share the leader\'s running encode.',
     captionZh: '三个相同请求同时到达，cache 还是空的。single-flight 让两个 follower 等 leader 的一次编码。',
+  }, {
+    caption: 'Async decode launches step N before resolving step N−1. GPU work and CPU bookkeeping can overlap.',
+    captionZh: '异步 decode 先启动第 N 步，再处理第 N−1 步。GPU 计算和 CPU 收尾可以重叠。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -43,7 +46,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [790, 800, 810][step] : [540, 590, 590][step]);
+  const H = $derived(phone ? [790, 800, 810, 760][step] : [540, 590, 590, 570][step]);
   const requests = [
     { id: 'A', prompt: 'Hello', promptZh: '你好' },
     { id: 'B', prompt: 'Thank you', promptZh: '谢谢' },
@@ -202,6 +205,74 @@
           <text x="150" y="761" text-anchor="middle" class="small">{t('Followers wait; duplicate work goes.', 'follower 等待；重复工作消失。')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Constructed example · batching off' : 'Constructed cold-cache comparison; batching is off.', phone ? '构造示例 · 关闭 batching' : '构造冷 cache 对照；关闭 batching。')}</text>
+      {:else if step === 3}
+        <text x={phone ? 18 : 30} y="30" class="title">{t('Overlap GPU and CPU · 3 of 4', '让 GPU 和 CPU 同时工作 · 3 / 4')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'L = launch GPU · R = resolve on CPU' : 'launch = start the GPU step · resolve = collect and emit on CPU', phone ? 'L = 启动 GPU · R = CPU 收尾' : 'launch = 启动 GPU 这一步 · resolve = CPU 收集并发出结果')}</text>
+        <text x={phone ? 18 : 30} y="79" class="label">{t('blue = GPU work · orange = CPU bookkeeping', '蓝 = GPU 工作 · 橙 = CPU 收尾')}</text>
+        {#if !phone}
+          <rect x="30" y="103" width="660" height="158" rx="12" fill="var(--bg)" stroke="var(--line)" />
+          <text x="45" y="130" class="small strong">SYNC · {t('finish one step before starting the next', '完成一步，再开始下一步')}</text>
+          {#each [
+            { x: 60, w: 130, name: 'launch N−1', color: 'accent' },
+            { x: 190, w: 110, name: 'resolve N−1', color: 'gen' },
+            { x: 300, w: 130, name: 'launch N', color: 'accent' },
+            { x: 430, w: 110, name: 'resolve N', color: 'gen' },
+          ] as block}
+            <rect x={block.x} y="158" width={block.w} height="57" rx="7" fill={`var(--${block.color}-soft)`} stroke={`var(--${block.color})`} />
+            <text x={block.x + block.w / 2} y="192" text-anchor="middle" class="small strong">{block.name}</text>
+          {/each}
+          <text x="360" y="241" text-anchor="middle" class="small">{t('GPU and CPU take turns', 'GPU 和 CPU 轮流工作')}</text>
+          <rect x="30" y="286" width="660" height="222" rx="12" fill="var(--bg)" stroke="var(--accent)" />
+          <text x="45" y="313" class="small strong">ASYNC · {t('launch N before resolve N−1', '先 launch N，再 resolve N−1')}</text>
+          <text x="45" y="359" class="small strong">GPU</text>
+          <rect x="110" y="332" width="130" height="50" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="175" y="362" text-anchor="middle" class="small strong">launch N−1</text>
+          <rect x="240" y="332" width="130" height="50" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="305" y="362" text-anchor="middle" class="small strong">launch N</text>
+          <text x="45" y="424" class="small strong">CPU</text>
+          <rect x="240" y="397" width="110" height="50" rx="7" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="295" y="427" text-anchor="middle" class="small strong">resolve N−1</text>
+          <rect x="350" y="397" width="110" height="50" rx="7" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="405" y="427" text-anchor="middle" class="small strong">resolve N</text>
+          <line x1="240" y1="324" x2="240" y2="456" stroke="var(--line)" stroke-dasharray="4 3" />
+          <line x1="370" y1="324" x2="370" y2="390" stroke="var(--line)" stroke-dasharray="4 3" />
+          <text x="360" y="482" text-anchor="middle" class="small strong">{t('launch N and resolve N−1 can run at the same time', 'launch N 和 resolve N−1 可以同时运行')}</text>
+        {:else}
+          <rect x="18" y="101" width="264" height="166" rx="11" fill="var(--bg)" stroke="var(--line)" />
+          <text x="32" y="127" class="small strong">SYNC · {t('one step at a time', '一次完成一步')}</text>
+          {#each [
+            { name: 'L', n: 'N−1', color: 'accent' },
+            { name: 'R', n: 'N−1', color: 'gen' },
+            { name: 'L', n: 'N', color: 'accent' },
+            { name: 'R', n: 'N', color: 'gen' },
+          ] as block, i}
+            {@const x = 18 + i * 60}
+            <rect x={x} y="153" width="60" height="64" rx="6" fill={`var(--${block.color}-soft)`} stroke={`var(--${block.color})`} />
+            <text x={x + 30} y="180" text-anchor="middle" class="small strong">{block.name}</text>
+            <text x={x + 30} y="202" text-anchor="middle" class="small">{block.n}</text>
+          {/each}
+          <text x="150" y="246" text-anchor="middle" class="small">{t('GPU and CPU take turns', 'GPU 和 CPU 轮流工作')}</text>
+          <rect x="18" y="291" width="264" height="338" rx="11" fill="var(--bg)" stroke="var(--accent)" />
+          <text x="32" y="317" class="small strong">ASYNC · {t('one step ahead', '向前重叠一步')}</text>
+          <text x="32" y="360" class="small strong">GPU</text>
+          <rect x="78" y="337" width="60" height="62" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="108" y="364" text-anchor="middle" class="small strong">L</text>
+          <text x="108" y="386" text-anchor="middle" class="small">N−1</text>
+          <rect x="138" y="337" width="60" height="62" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="168" y="364" text-anchor="middle" class="small strong">L</text>
+          <text x="168" y="386" text-anchor="middle" class="small">N</text>
+          <text x="32" y="464" class="small strong">CPU</text>
+          <rect x="138" y="441" width="60" height="62" rx="6" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="168" y="468" text-anchor="middle" class="small strong">R</text>
+          <text x="168" y="490" text-anchor="middle" class="small">N−1</text>
+          <rect x="198" y="441" width="60" height="62" rx="6" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="228" y="468" text-anchor="middle" class="small strong">R</text>
+          <text x="228" y="490" text-anchor="middle" class="small">N</text>
+          <text x="150" y="548" text-anchor="middle" class="small strong">{t('L(N) starts before R(N−1)', 'L(N) 先于 R(N−1)')}</text>
+          <text x="150" y="580" text-anchor="middle" class="small">{t('GPU and CPU can overlap', 'GPU 和 CPU 可以重叠')}</text>
+          <text x="150" y="608" text-anchor="middle" class="small">{t('same work, new order', '工作相同，顺序不同')}</text>
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Ordering only · MOSS default off' : 'Constructed ordering; no speedup claimed. MOSS-TTS-Local defaults async decode off.', phone ? '只看顺序 · MOSS 默认关闭' : '构造顺序，不声称加速。MOSS-TTS-Local 默认关闭异步 decode。')}</text>
       {/if}
     </svg>
   </div>
