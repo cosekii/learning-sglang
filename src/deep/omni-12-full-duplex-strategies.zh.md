@@ -214,7 +214,7 @@ unit 1 里被听过的片段是 `1,200 − 1,000 = 200 ms`。output converter �
 
 下一步区分服务器的 Unit profiler 时钟、客户端播放和打断测量。
 
-出处：`sglang_omni/models/minicpm_o/session_adapters.py:118-179,219-236,469-516,553-640`；`tests/unit_test/minicpm_o/test_realtime_session_params.py:253-317`。
+出处：`sglang_omni/models/minicpm_o/session_adapters.py:118-179,219-236,469-516,553-640`。
 
 ## 第 7 步 · profiler 的服务器时钟
 

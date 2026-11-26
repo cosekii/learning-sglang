@@ -214,7 +214,7 @@ The heard fragment inside unit 1 is `1,200 − 1,000 = 200 ms`. The output conve
 
 The next step separates the server's Unit profiler clock from client playback and interruption measurements.
 
-Sources: `sglang_omni/models/minicpm_o/session_adapters.py:118-179,219-236,469-516,553-640`; `tests/unit_test/minicpm_o/test_realtime_session_params.py:253-317`.
+Sources: `sglang_omni/models/minicpm_o/session_adapters.py:118-179,219-236,469-516,553-640`.
 
 ## Step 7 · The profiler's server clock
 
