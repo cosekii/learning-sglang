@@ -120,18 +120,18 @@
       { en: 'arrange → wait for SGLang → clear', zh: '排好权重 → 等 SGLang 装入 → 清空' },
     ],
   }, {
-    caption: 'Generation must not read a half-updated model. The next rollout waits for every parameter and old-KV invalidation.',
-    captionZh: '生成不能读到只更新一半的模型。下一轮要等参数全部更新，并清掉旧缓存。',
+    caption: 'Generation must not read a half-updated model. The next rollout waits for every parameter and cannot reuse old KV.',
+    captionZh: '生成不能读到只更新一半的模型。下一轮要等参数全部更新，也不能复用旧 KV。',
     title: 'Replace one whole version, never a mixture', titleZh: '换成完整的新版本，不能新旧混用',
     subtitle: 'version boundary = generation pauses while any parameter is changing', subtitleZh: '版本边界 = 只要还有参数在变化，生成就暂停',
     foot: 'Slime clears old KV before buckets; verl, another RL framework, flushes on the last parameter.', footZh: 'slime 在分桶前清旧 KV；另一个 RL 框架 verl 在最后参数时清理。',
     mobileTitle: 'No old-and-new mixture', mobileTitleZh: '不能新旧混用',
     mobileSubtitle: 'generation pauses during replacement', mobileSubtitleZh: '替换期间暂停生成',
-    mobileFoot: 'Old KV also must be invalidated.', mobileFootZh: '旧 KV 也必须失效。',
+    mobileFoot: 'Old KV cannot be reused.', mobileFootZh: '旧 KV 也不能复用。',
     mobile: [
       { title: 'ROLLOUT 0 STOPS', titleZh: '第 0 轮停止', body: 'no new generation', bodyZh: '不再生成', tone: 'blue' },
       { title: 'DRAIN ACTIVE REQUESTS', titleZh: '等当前请求结束', body: 'no reader inside the update', bodyZh: '更新时没有读者', tone: 'orange' },
-      { title: 'UPDATE EVERY PARAMETER', titleZh: '更新每个参数', body: 'invalidate KV made under v0', bodyZh: '让 v0 产生的 KV 失效', tone: 'orange' },
+      { title: 'UPDATE EVERY PARAMETER', titleZh: '更新每个参数', body: 'do not reuse KV from v0', bodyZh: '不复用 v0 留下的 KV', tone: 'orange' },
       { title: 'AWAIT COMPLETION', titleZh: '等待全部完成', body: 'required: discard partial failure', bodyZh: '部分失败必须整套弃用', tone: 'orange' },
       { title: 'ROLLOUT 1 USES v1', titleZh: '第 1 轮使用 v1', body: 'one complete version', bodyZh: '完整的同一版本', tone: 'blue' },
     ],
@@ -364,7 +364,7 @@
         <text x="590" y="124" text-anchor="middle" class="section">{t('AFTER', '更新后')}</text>
         <text x="590" y="165" text-anchor="middle" class="big">v1</text>
         <text x="590" y="191" text-anchor="middle" class="small">{t('one complete version', '完整的一套新权重')}</text>
-        <text x="360" y="244" text-anchor="middle" class="small strong">{t('KV produced under v0 must also become invalid.', 'v0 产生的 KV 也必须失效。')}</text>
+        <text x="360" y="244" text-anchor="middle" class="small strong">{t('KV saved under v0 cannot be reused with v1.', 'v0 留下的 KV 不能给 v1 继续用。')}</text>
         {#each [
           { x: 45, title: 'WAIT', titleZh: '等待', body: 'requests finish', bodyZh: '当前请求结束' },
           { x: 215, title: 'UPDATE ALL', titleZh: '全部更新', body: 'every parameter', bodyZh: '每个参数' },

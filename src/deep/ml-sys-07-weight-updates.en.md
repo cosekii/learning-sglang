@@ -166,7 +166,7 @@ Source: `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-1.md:254-272,280-296,329
 
 ## Step 6 · Close the version boundary before rollout
 
-**One sentence.** Rollout resumes only after active requests finish, every parameter updates, old KV state becomes invalid and the update call completes.
+**One sentence.** Rollout resumes only after active requests finish, every parameter updates, old KV cannot be reused and the update call completes.
 
 ### On the stage
 
