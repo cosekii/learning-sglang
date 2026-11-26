@@ -148,6 +148,40 @@
         { en: 'Next: merge the training chunks', zh: '下一步：合并训练张量' },
       ],
     },
+  }, {
+    caption: 'Training buffers each turn’s tensors. One concat per key makes a three-row result.',
+    captionZh: '训练先按轮保存张量。最后每个 key 拼一次，得到 3 行。',
+    title: 'Merge each tensor key once', titleZh: '每个 tensor key 只拼接一次',
+    subtitle: 'concat = join rows along dimension 0, the first axis', subtitleZh: 'concat = 沿第 0 维，也就是第一条轴拼接行',
+    foot: 'Constructed rows and key k; only tensor values join.', footZh: '构造行数和 key k；只有张量值参与拼接。',
+    legend: 'Orange = turn chunks · blue = merged tensor · red = current', legendZh: '橙 = 各轮片段 · 蓝 = 合并张量 · 红 = 当前',
+    flow: true,
+    nodes: [
+      { title: 'INITIAL CHUNK', titleZh: '初始片段', result: 'k: 2 rows', resultZh: 'k：2 行', body: 'T0 from the initial input', bodyZh: '初始输入的 T0', tone: 'orange' },
+      { title: 'OBSERVATION CHUNK', titleZh: '观察片段', result: 'k: 1 row', resultZh: 'k：1 行', body: 'T1 from the observation', bodyZh: '观察输入的 T1', tone: 'orange' },
+      { title: 'CONCAT DIM 0', titleZh: '沿第 0 维拼接', result: '2 + 1 = 3 rows', resultZh: '2 + 1 = 3 行', body: 'one concat for key k', bodyZh: 'key k 只拼一次', tone: 'blue' },
+      { title: 'TRAINING INPUT', titleZh: '训练输入', result: 'k: 3 rows', resultZh: 'k：3 行', body: 'non-tensors are ignored', bodyZh: '非张量字段被忽略', tone: 'blue' },
+    ],
+    formulas: [
+      { en: 'collect by key: k → [T0, T1]', zh: '按 key 收集：k → [T0, T1]' },
+      { en: 'torch.cat([T0, T1], dim=0)', zh: 'torch.cat([T0, T1], dim=0)' },
+      { en: '2 rows + 1 row = 3 rows', zh: '2 行 + 1 行 = 3 行' },
+      { en: 'one concat per key · non-tensor fields are ignored', zh: '每个 key 只拼一次 · 非张量字段被忽略' },
+      { en: 'Next: when does the interaction stop?', zh: '下一步：交互什么时候停止？' },
+    ],
+    mobile: {
+      title: 'Merge each key once', titleZh: '每个 key 只拼接一次',
+      subtitle: 'concat = join rows on the first axis', subtitleZh: 'concat = 沿第一条轴拼接行',
+      foot: 'Constructed rows; only tensor values join.', footZh: '构造行数；只有张量值参与拼接。',
+      legend: 'Orange = chunks · blue = merged · red = current', legendZh: '橙 = 片段 · 蓝 = 合并 · 红 = 当前',
+      formulas: [
+        { en: 'Collect by key: k → [T0, T1]', zh: '按 key 收集：k → [T0, T1]' },
+        { en: 'torch.cat([T0, T1], dim=0)', zh: 'torch.cat([T0, T1], dim=0)' },
+        { en: '2 rows + 1 row = 3 rows', zh: '2 行 + 1 行 = 3 行' },
+        { en: 'One concat per key; ignore non-tensors', zh: '每个 key 拼一次；忽略非张量' },
+        { en: 'Next: when does interaction stop?', zh: '下一步：交互何时停止？' },
+      ],
+    },
   }];
   let step = $state(0);
   $effect(() => {

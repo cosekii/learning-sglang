@@ -53,7 +53,7 @@ Read it to check wording and numbers across chapters without opening the compone
 | ml-sys | 09 | [FP8 rollout and training](ml-sys/09-fp8-rollout-training.md) | 8 |
 | ml-sys | 10 | [INT4 QAT and rollout](ml-sys/10-int4-qat-rollout.md) | 9 |
 | ml-sys | 12 | [Speculative decoding in RL](ml-sys/12-rl-speculative-decoding.md) | 8 |
-| ml-sys | 13 | [Multi-turn agent RL](ml-sys/13-multi-turn-agent-rl.md) | 4 |
+| ml-sys | 13 | [Multi-turn agent RL](ml-sys/13-multi-turn-agent-rl.md) | 5 |
 | voxt | 01 | [The journey of one sentence](voxt/one-dictation.md) | 4 |
 | voxt | 02 | [Hotkeys and permissions](voxt/helper-permissions-hotkeys.md) | 3 |
 | voxt | 03 | [From microphone to audio frames](voxt/microphone-to-voice-frames.md) | 8 |

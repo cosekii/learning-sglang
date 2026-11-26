@@ -140,3 +140,39 @@ Rollout keeps both images for the next call. The training buffer keeps two tenso
 Training wants merged tensors. The next step groups values by dictionary key and concatenates each group once.
 
 Source: `THUDM/slime@f68dc4a25f362fc0335165a17ff976f5b6f675e1`, `examples/geo3k_vlm_multi_turn/rollout.py:90-112,250-280,341-359`.
+
+## Step 5 · Concatenate each key once
+
+**One sentence.** Gather each turn's tensors by key, then run one `torch.cat` per key, producing three rows in this example.
+
+### On the stage
+
+- The initial chunk `T0` and observation chunk `T1` share the constructed key `k`.
+- Their tables have two rows and one row under `k`.
+- The merge concatenates along dimension 0, placing the second chunk after the first.
+- The final training input has three rows under `k`. Non-tensor fields do not join. A key also gets no merged value when not all its values are tensors.
+
+### Formula and symbols
+
+$$C_k=\operatorname{cat}([T_{0,k},T_{1,k}],\ dim=0),\qquad R_k=R_{0,k}+R_{1,k}$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $k$ | Constructed key shared by both dictionaries | This step |
+| $T_{0,k}$ | Tensor under key $k$ in the initial dictionary | Step 4's $T_0$ |
+| $T_{1,k}$ | Tensor under key $k$ in the observation dictionary | Step 4's $T_1$ |
+| $C_k$ | Merged tensor | One `torch.cat` in this step |
+| $R_{0,k},R_{1,k}$ | Row counts along dimension 0 | Constructed values: 2 and 1 |
+| $R_k$ | Merged row count along dimension 0 | Sum in this step |
+
+### The numbers on the stage
+
+$$R_k=2+1=3$$
+
+The implementation first builds `k → [T0, T1]`, then runs `torch.cat([T0, T1], dim=0)` once. The chunks retain their initial-then-observation order.
+
+### Next
+
+The context and multimodal inputs are ready. The next step checks the conditions that end this interaction trajectory.
+
+Source: `THUDM/slime@f68dc4a25f362fc0335165a17ff976f5b6f675e1`, `examples/geo3k_vlm_multi_turn/rollout.py:115-138,300-306`.
