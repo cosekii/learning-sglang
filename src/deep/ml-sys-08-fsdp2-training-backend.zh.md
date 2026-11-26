@@ -75,28 +75,31 @@ FSDP2 把每个参数表示为 DTensor：逻辑张量、分布信息和本地分
 
 ## 第 3 步 · 前向计算先借来完整一层
 
-**一句话。** 前向计算先 all-gather 当前 unit 的参数分片，用完整一层计算，再释放临时副本。
+**一句话。** `zero_grad` 清掉旧梯度分片后，初始 forward 保留 7 GB，再临时聚齐完整一层。
 
 ### 图上是什么
 
-- 橙色 8 GB 是第 2 步中一个 rank 长期保存的状态。
+- 橙格保存第 2 步的 1 GB 权重分片和 6 GB 优化器相关表。slime 在初始 forward 前调用 `optimizer.zero_grad(set_to_none=True)`，所以这里没有 1 GB 梯度分片。
 - `All-gather` 表示每个 rank 都拿出自己的分片，共同重建完整一层。实现把一起聚合的层或参数组称为 unit。
-- 蓝色完整一层的临时大小记作 $U$。计算使用完整层，随后 `RELEASE` 删除临时副本，长期保存的 8 GB 仍在。
+- 蓝色完整一层的临时大小记作 $U$。计算使用完整层，随后 `RELEASE` 删除临时副本，7 GB 权重和优化器表仍在。
+- 最后一行恢复第 2 步的完整训练状态账：backward 加入 1 GB 梯度分片，得到 `7 + 1 = 8 GB`。
 
 ### 公式与符号
 
-$$M_{\text{forward}}\approx M_i+U,\qquad M_{\text{after}}=M_i$$
+$$M_0=W_i+O_i,\qquad M_{\text{forward}}\approx M_0+U,\qquad M_{\text{after}}=M_0$$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
-| $M_i$ | 这个 rank 长期保存的状态 | 第 2 步，8 GB |
+| $W_i$ | 这个 rank 拥有的权重分片 | 第 2 步，1 GB |
+| $O_i$ | 这个 rank 拥有的优化器相关表 | 第 2 步，6 GB |
+| $M_0$ | `zero_grad` 后初始 forward 的常驻量 | $W_i+O_i=7$ GB |
 | $U$ | 当前计算 unit 的完整参数临时字节数 | unit 大小，来源未给数值 |
-| $M_{\text{forward}}$ | 计算这个 unit 时的占用 | 长期状态加临时 unit |
-| $M_{\text{after}}$ | 释放这个 unit 后的占用 | 回到长期状态 |
+| $M_{\text{forward}}$ | 计算这个 unit 时的占用 | 起始表加临时 unit |
+| $M_{\text{after}}$ | 释放这个 unit 后的占用 | backward 保存梯度前回到 $M_0$ |
 
 ### 代入图上的数
 
-已给出的数只有 $M_i=8$ GB。图中不给 $U$ 填值，因此无法算出数值化的前向峰值。这里只画 $8\ \text{GB}+U\rightarrow8\ \text{GB}$ 的边界，不声称实测总量。
+初始 forward 的边界是 $1+6=7$ GB，所以图中画 $7\ \text{GB}+U\rightarrow7\ \text{GB}$。图中不给 $U$ 填值，也不声称实测峰值。只有同时保存梯度分片时，完整训练状态账才是 $7+1=8$ GB。
 
 这次 all-gather 重建的是参数；前向计算不对梯度执行 all-gather。
 
@@ -104,7 +107,7 @@ $$M_{\text{forward}}\approx M_i+U,\qquad M_{\text{after}}=M_i$$
 
 反向计算也需要参数值，但它新产生的是梯度。下一步看梯度为什么用 reduce-scatter，并回到各 rank 的分片。
 
-来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:18`；`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:53-56,101-105`。
+来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:18`；`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:53-56,101-105`；`THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7` 的 `slime/backends/fsdp_utils/actor.py:522-535`。
 
 ## 第 4 步 · 梯度归约后各留一片
 
@@ -142,39 +145,39 @@ slime 在 actor 中调用 `loss.backward()` 和 `optimizer.step()`。参数聚�
 
 来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:19`；`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:47-58`；`THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7` 的 `slime/backends/fsdp_utils/actor.py:687-702,1000-1039`。
 
-## 第 5 步 · 长期状态只是峰值的一部分
+## 第 5 步 · 训练状态账只是峰值的一部分
 
-**一句话。** 8 GB 长期状态一直存在，最大聚合 unit、激活和其他临时结果还会增加显存，但来源没有给出总量。
+**一句话。** 完整训练状态账是 8 GB，最大聚合 unit、激活和其他临时结果还会把峰值推高。
 
 ### 图上是什么
 
-- 橙色底格是第 2 步长期保存的 8 GB，不会在 unit 之间消失。
-- 蓝格是第 3 步借来的最大完整层。下面的公式把它的未知大小记作 $U_{\max}$；第 3 步把当前层的大小记作 $U$。
-- 灰格包含训练中间结果和其他临时结果。下面的公式把激活显存记作 $A$。激活是训练需要的中间值，随 batch 大小变化。来源没有给出总量，所以图中不填精确总显存。
+- 橙色底格是第 2 步的完整 8 GB 训练状态账。它包括梯度分片，是逻辑账和峰值状态账，不是 forward 的永久常驻下限。第 3 步中，`zero_grad` 清掉梯度分片后，forward 从 7 GB 开始。
+- 蓝格是第 3 步借来的最大完整层，来源没有给出它的大小。
+- 灰格包含训练中间结果和其他临时结果。激活是训练需要的中间值，随 batch 大小变化。来源没有给出总量，所以图中不填精确总显存。
 
 ### 公式与符号
 
-$$M_{\text{peak}}\approx M_i+U_{\max}+A+T_{\text{other}}$$
+$$M_{\text{state}}=W_i+G_i+O_i,\qquad M_{\text{peak}}>M_{\text{state}}$$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
-| $M_i$ | 长期拥有的训练状态 | 第 2 步，8 GB |
-| $U_{\max}$ | 临时拼出的最大完整 unit | unit 大小，未给数值 |
-| $A$ | 激活占用的显存 | 训练中间结果，随 batch 变化 |
-| $T_{\text{other}}$ | 其他临时分配 | 本章不量化 |
-| $M_{\text{peak}}$ | 最忙时需要的显存 | 只表示边界，不是实测总量 |
+| $W_i$ | 这个 rank 拥有的权重分片 | 第 2 步，1 GB |
+| $G_i$ | 保存梯度时，这个 rank 拥有的梯度分片 | 第 2 步，1 GB |
+| $O_i$ | 这个 rank 拥有的优化器相关表 | 第 2 步，6 GB |
+| $M_{\text{state}}$ | 完整训练状态账 | 第 2 步，$1+1+6=8$ GB |
+| $M_{\text{peak}}$ | 最忙时需要的显存 | 大于 8 GB 训练账，精确总量未知 |
 
 ### 代入图上的数
 
-唯一给出的数是 $M_i=8$ GB。其他项未知，所以图中只写 $M_{\text{peak}}>8$ GB，不编造总量。这个近似分解只是阅读辅助，不保证所有分配都能简单相加且没有重叠。
+完整训练状态账是 $M_{\text{state}}=1+1+6=8$ GB。临时层和中间结果使 $M_{\text{peak}}>8$ GB，但大小未知。`zero_grad` 后的初始 forward 则从 $W_i+O_i=7$ GB 开始，再加临时层。
 
-链接来源在 FSDP1 Stage 3 小节给出最大完整 FSDP unit 的公式。本章只借用类别区分，明确不把该公式当成 FSDP2/slime 的精确峰值测量。
+链接来源在 FSDP1 Stage 3 小节给出最大完整 FSDP unit 的公式。本章只借用类别区分，不把该公式当成 FSDP2/slime 的精确峰值测量，也不假设所有分配都能简单相加且没有重叠。
 
 ### 接下来
 
 训练结束后，rollout 需要完整的新参数值，不需要梯度和优化器状态。下一步把完整权重张量装进桶，交给已有更新路径。
 
-来源：`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:31,93-107`；`Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:18-19`。
+来源：`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:31,93-107`；`Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:18-19`；`THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7` 的 `slime/backends/fsdp_utils/actor.py:522-535`。
 
 ## 第 6 步 · 把完整权重张量装桶导出
 

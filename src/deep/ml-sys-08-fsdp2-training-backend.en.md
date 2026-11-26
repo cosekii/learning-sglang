@@ -75,28 +75,31 @@ Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:16-23`; `Awesome-ML-
 
 ## Step 3 · Borrow a full layer for forward computation
 
-**One sentence.** Forward all-gathers the current unit's parameter shards, computes with the full layer and releases the temporary copy.
+**One sentence.** After `zero_grad` clears the old gradient shard, forward starts with 7 GB and temporarily gathers one full layer.
 
 ### On the stage
 
-- The orange 8 GB box is the persistent state owned by one rank from Step 2.
+- The orange box holds the 1 GB weight shard and 6 GB of optimizer-related tables from Step 2. The 1 GB gradient shard is absent because slime calls `optimizer.zero_grad(set_to_none=True)` before this initial forward.
 - `All-gather` means every rank contributes its shard so the group can reconstruct one full layer. The implementation calls the layer or parameter group gathered together a unit.
-- The blue full layer has temporary size `U`. Computation uses that full layer, then `RELEASE` removes the temporary copy. The persistent 8 GB remains.
+- The blue full layer has temporary size `U`. Computation uses that full layer, then `RELEASE` removes the temporary copy. The 7 GB of weights and optimizer tables remains.
+- The last line restores the full training-state bill from Step 2: backward adds the 1 GB gradient shard, giving `7 + 1 = 8 GB`.
 
 ### Formula and symbols
 
-$$M_{\text{forward}}\approx M_i+U,\qquad M_{\text{after}}=M_i$$
+$$M_0=W_i+O_i,\qquad M_{\text{forward}}\approx M_0+U,\qquad M_{\text{after}}=M_0$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
-| $M_i$ | Persistent state owned by this rank | Step 2, 8 GB |
+| $W_i$ | Weight shard owned by this rank | Step 2, 1 GB |
+| $O_i$ | Optimizer-related tables owned by this rank | Step 2, 6 GB |
+| $M_0$ | Residency at initial forward after `zero_grad` | $W_i+O_i=7$ GB |
 | $U$ | Temporary bytes for the full unit being computed | Unit size; no source value |
-| $M_{\text{forward}}$ | Residency while this unit is computed | Owned state plus the temporary unit |
-| $M_{\text{after}}$ | Residency after the unit is released | Back to owned state |
+| $M_{\text{forward}}$ | Residency while this unit is computed | Starting tables plus the temporary unit |
+| $M_{\text{after}}$ | Residency after the unit is released | Back to $M_0$ before backward stores gradients |
 
 ### The numbers on the stage
 
-The only supplied number is $M_i=8$ GB. The figure does not assign a value to $U$, so it cannot produce a numeric forward peak. It shows only the boundary $8\ \text{GB}+U\rightarrow8\ \text{GB}$, not a measured total.
+The initial forward boundary is $1+6=7$ GB, so the figure shows $7\ \text{GB}+U\rightarrow7\ \text{GB}$. It does not assign a value to $U$ or claim a measured peak. The complete training-state bill is $7+1=8$ GB only when the gradient shard is also stored.
 
 This all-gather reconstructs parameters; forward computation does not all-gather gradients.
 
@@ -104,7 +107,7 @@ This all-gather reconstructs parameters; forward computation does not all-gather
 
 Backward also needs parameter values, but its new output is a gradient. The next step shows why gradients use reduce-scatter and return to owned slices.
 
-Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:18`; `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:53-56,101-105`.
+Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:18`; `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:53-56,101-105`; `THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7`, `slime/backends/fsdp_utils/actor.py:522-535`.
 
 ## Step 4 · Reduce gradients back to owned slices
 
@@ -142,39 +145,39 @@ Persistent shards are smaller, but full units and other temporary results still 
 
 Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:19`; `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:47-58`; `THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7`, `slime/backends/fsdp_utils/actor.py:687-702,1000-1039`.
 
-## Step 5 · Owned state is only one part of peak memory
+## Step 5 · The training-state bill is only one part of peak memory
 
-**One sentence.** The 8 GB owned state persists, while the largest gathered unit, activations and other temporary results add memory whose total is not supplied.
+**One sentence.** The complete training-state bill is 8 GB, and the largest gathered unit, activations and other temporary results raise the peak above it.
 
 ### On the stage
 
-- The orange bottom band is the persistent 8 GB from Step 2. It does not disappear between units.
-- The blue band is the largest borrowed full layer from Step 3. The formula below calls its unknown size $U_{\max}$; Step 3 called the current layer's size $U$.
-- The grey band contains training intermediates and other temporary results. The formula below calls activation memory $A$. Activations are intermediate values needed for training and change with batch size. No exact total is drawn because the source does not provide one.
+- The orange bottom band is the complete 8 GB training-state bill from Step 2. It includes the gradient shard, so it is a logical and peak-state account, not a permanent forward residency floor. Step 3 starts forward with 7 GB after `zero_grad` clears that shard.
+- The blue band is the largest borrowed full layer from Step 3. Its size is not supplied.
+- The grey band contains training intermediates and other temporary results. Activations are intermediate values needed for training and change with batch size. No exact total is drawn because the source does not provide one.
 
 ### Formula and symbols
 
-$$M_{\text{peak}}\approx M_i+U_{\max}+A+T_{\text{other}}$$
+$$M_{\text{state}}=W_i+G_i+O_i,\qquad M_{\text{peak}}>M_{\text{state}}$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
-| $M_i$ | Persistent owned training state | Step 2, 8 GB |
-| $U_{\max}$ | Largest full unit temporarily materialized | Unit sizes; no numeric value supplied |
-| $A$ | Activation memory | Intermediate training results; batch-dependent |
-| $T_{\text{other}}$ | Other temporary allocations | Not quantified in this chapter |
-| $M_{\text{peak}}$ | Memory needed at the busiest point | Boundary only, not a measured total |
+| $W_i$ | Weight shard owned by this rank | Step 2, 1 GB |
+| $G_i$ | Gradient shard owned by this rank when gradients are stored | Step 2, 1 GB |
+| $O_i$ | Optimizer-related tables owned by this rank | Step 2, 6 GB |
+| $M_{\text{state}}$ | Complete training-state bill | Step 2, $1+1+6=8$ GB |
+| $M_{\text{peak}}$ | Memory needed at the busiest point | Greater than the 8 GB bill; exact total unknown |
 
 ### The numbers on the stage
 
-The only numeric term is $M_i=8$ GB. Since the other terms are unknown, the figure concludes $M_{\text{peak}}>8$ GB rather than inventing a total. The approximate decomposition is a reading aid, not a guarantee that every allocation can simply be added without overlap.
+The complete bill is $M_{\text{state}}=1+1+6=8$ GB. Temporary layers and intermediates make $M_{\text{peak}}>8$ GB, but their sizes are unknown. After `zero_grad`, the initial forward instead starts at $W_i+O_i=7$ GB before adding its temporary layer.
 
-The linked source gives a formula with the largest fully materialized FSDP unit in its FSDP1 Stage 3 section. This chapter borrows the category distinction and explicitly does not present that formula as an exact FSDP2/slime peak measurement.
+The linked source gives a formula with the largest fully materialized FSDP unit in its FSDP1 Stage 3 section. This chapter borrows only the category distinction. It does not present that formula as an exact FSDP2/slime peak measurement or assume that every allocation overlaps in one simple sum.
 
 ### Next
 
 After training, rollout needs complete new parameter values, not gradients or optimizer state. The next step gathers full weight tensors into buckets for the existing update path.
 
-Sources: `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:31,93-107`; `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:18-19`.
+Sources: `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:31,93-107`; `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:18-19`; `THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7`, `slime/backends/fsdp_utils/actor.py:522-535`.
 
 ## Step 6 · Export full weight tensors in buckets
 

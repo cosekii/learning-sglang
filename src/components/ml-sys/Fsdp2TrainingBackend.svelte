@@ -5,7 +5,7 @@
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
   import { HBM_GB } from '../../numbers';
-  import { FSDP_EXAMPLE_PARAMS_B, FSDP_DP_SIZE, FSDP_FULL_WEIGHT_GB, FSDP_FULL_GRADIENT_GB, FSDP_FULL_OPTIMIZER_GB, FSDP_FULL_STATE_PER_GPU_GB, FSDP_FULL_CLUSTER_STATE_GB, FSDP_FULL_CARD_SHARE, FSDP_SHARD_WEIGHT_GB, FSDP_SHARD_GRADIENT_GB, FSDP_SHARD_OPTIMIZER_GB, FSDP_SHARD_STATE_PER_GPU_GB, FSDP_SHARD_CLUSTER_STATE_GB } from '../../ml-sys/numbers';
+  import { FSDP_EXAMPLE_PARAMS_B, FSDP_DP_SIZE, FSDP_FULL_WEIGHT_GB, FSDP_FULL_GRADIENT_GB, FSDP_FULL_OPTIMIZER_GB, FSDP_FULL_STATE_PER_GPU_GB, FSDP_FULL_CLUSTER_STATE_GB, FSDP_FULL_CARD_SHARE, FSDP_SHARD_WEIGHT_GB, FSDP_SHARD_GRADIENT_GB, FSDP_SHARD_OPTIMIZER_GB, FSDP_SHARD_STATE_PER_GPU_GB, FSDP_FORWARD_RESIDENT_GB, FSDP_SHARD_CLUSTER_STATE_GB } from '../../ml-sys/numbers';
 
   type Tone = 'plain' | 'blue' | 'orange';
   type MobileItem = { title: string; titleZh: string; body: string; bodyZh: string; tone: Tone };
@@ -65,27 +65,27 @@
       { en: 'Each GPU keeps one-eighth of its old copy', zh: '每张 GPU 只留原来的八分之一' },
     ],
   }, {
-    caption: 'Forward computes with current weights. It temporarily rebuilds one full layer, then releases it.',
-    captionZh: 'Forward 用当前权重计算。它先临时拼出完整一层，算完释放。',
-    title: 'Forward borrows a full layer, then releases it', titleZh: 'Forward 先借来完整一层，用完释放',
+    caption: `zero_grad clears the old gradient shard. Forward starts with ${FSDP_FORWARD_RESIDENT_GB} GB, then temporarily adds one full layer.`,
+    captionZh: `zero_grad 清掉旧梯度分片。Forward 先保留 ${FSDP_FORWARD_RESIDENT_GB} GB，再临时加入完整一层。`,
+    title: `Forward starts with ${FSDP_FORWARD_RESIDENT_GB} GB, then borrows a layer`, titleZh: `Forward 先保留 ${FSDP_FORWARD_RESIDENT_GB} GB，再借来一层`,
     subtitle: 'all-gather = rebuild one full layer from every rank\'s shard',
     subtitleZh: 'all-gather = 从各 rank 的分片拼出完整一层',
-    foot: 'U is the temporary full layer\'s memory size; the source supplies no value.',
-    footZh: 'U 是临时完整层的显存大小；来源没有给出数值。',
-    mobileTitle: 'Borrow a layer, then release it', mobileTitleZh: '借来一层，用完释放',
+    foot: 'Initial forward after zero_grad(set_to_none=True); U has no supplied value.',
+    footZh: '本步是 zero_grad(set_to_none=True) 后的初始 forward；U 大小未知。',
+    mobileTitle: `Forward starts with ${FSDP_FORWARD_RESIDENT_GB} GB`, mobileTitleZh: `Forward 先保留 ${FSDP_FORWARD_RESIDENT_GB} GB`,
     mobileSubtitle: 'all-gather = rebuild a full layer', mobileSubtitleZh: 'all-gather = 拼出完整一层',
-    mobileFoot: 'U is temporary memory; no value is supplied.', mobileFootZh: 'U 是临时显存，数值未知。',
-    mobileLegend: 'Orange = owned state · blue = temporary layer', mobileLegendZh: '橙 = 拥有状态 · 蓝 = 临时完整层',
+    mobileFoot: 'Initial forward after zero_grad; U is unknown.', mobileFootZh: 'zero_grad 后的初始 forward；U 大小未知。',
+    mobileLegend: 'Orange = weights + optimizer · blue = temporary layer', mobileLegendZh: '橙 = 权重 + 优化器 · 蓝 = 临时完整层',
     mobile: [
-      { title: 'OWNED SHARDS', titleZh: '拥有的分片', body: '8 GB stay on this rank', bodyZh: '这个 rank 长期保存 8 GB', tone: 'orange' },
+      { title: 'WEIGHTS + OPTIMIZER', titleZh: '权重 + 优化器', body: `${FSDP_SHARD_WEIGHT_GB} GB + ${FSDP_SHARD_OPTIMIZER_GB} GB = ${FSDP_FORWARD_RESIDENT_GB} GB`, bodyZh: `${FSDP_SHARD_WEIGHT_GB} GB + ${FSDP_SHARD_OPTIMIZER_GB} GB = ${FSDP_FORWARD_RESIDENT_GB} GB`, tone: 'orange' },
       { title: 'ALL-GATHER · ONE LAYER', titleZh: 'ALL-GATHER · 完整一层', body: 'every rank contributes its shard', bodyZh: '每个 rank 都拿出自己的一片', tone: 'plain' },
       { title: 'FULL LAYER · U', titleZh: '完整一层 · U', body: 'temporary memory, size unknown', bodyZh: '临时显存，大小未知', tone: 'blue' },
-      { title: 'RELEASE', titleZh: '释放', body: 'return to 8 GB owned', bodyZh: '回到长期保存的 8 GB', tone: 'plain' },
+      { title: 'RELEASE', titleZh: '释放', body: `${FSDP_FORWARD_RESIDENT_GB} GB remains`, bodyZh: `仍留 ${FSDP_FORWARD_RESIDENT_GB} GB`, tone: 'plain' },
     ],
     formulas: [
-      { en: 'During compute: 8 GB + U', zh: '计算时：8 GB + U' },
-      { en: 'After release: 8 GB owned', zh: '释放后：长期保存 8 GB' },
-      { en: 'U is not a measured value', zh: 'U 不是实测数值' },
+      { en: `During compute: ${FSDP_FORWARD_RESIDENT_GB} GB + U`, zh: `计算时：${FSDP_FORWARD_RESIDENT_GB} GB + U` },
+      { en: `After release: ${FSDP_FORWARD_RESIDENT_GB} GB`, zh: `释放后：${FSDP_FORWARD_RESIDENT_GB} GB` },
+      { en: `Training bill: ${FSDP_FORWARD_RESIDENT_GB} + ${FSDP_SHARD_GRADIENT_GB} = ${FSDP_SHARD_STATE_PER_GPU_GB} GB`, zh: `训练账：${FSDP_FORWARD_RESIDENT_GB} + ${FSDP_SHARD_GRADIENT_GB} = ${FSDP_SHARD_STATE_PER_GPU_GB} GB` },
     ],
   }, {
     caption: 'After forward, the model computes gradients: directions for changing weights. Reduce-scatter sums matching values; each rank keeps one shard.',
@@ -112,24 +112,24 @@
       { en: 'all layers\' gradients: 8 GB ÷ 8 = 1 GB per rank', zh: '所有层的梯度：8 GB ÷ 8 = 每个 rank 1 GB' },
     ],
   }, {
-    caption: `The owned shards total ${FSDP_SHARD_STATE_PER_GPU_GB} GB. Peak memory also includes the largest borrowed layer and training intermediates.`,
-    captionZh: `长期分片合计 ${FSDP_SHARD_STATE_PER_GPU_GB} GB。峰值还包括最大临时完整层和训练中间结果。`,
-    title: 'Owned 8 GB is not the peak', titleZh: '长期保存 8 GB，不等于峰值',
-    subtitle: 'peak = saved state plus temporary memory needed at the busiest moment',
-    subtitleZh: '峰值 = 保存状态 + 最忙时需要的临时显存',
+    caption: `The full training-state bill is ${FSDP_SHARD_STATE_PER_GPU_GB} GB. Temporary layers and intermediates raise the peak above it.`,
+    captionZh: `完整训练状态账是 ${FSDP_SHARD_STATE_PER_GPU_GB} GB。临时层和中间结果还会抬高峰值。`,
+    title: `The ${FSDP_SHARD_STATE_PER_GPU_GB} GB training bill is below the peak`, titleZh: `${FSDP_SHARD_STATE_PER_GPU_GB} GB 训练账不是峰值`,
+    subtitle: 'peak = training state plus temporary memory at the busiest moment',
+    subtitleZh: '峰值 = 训练状态 + 最忙时的临时显存',
     foot: 'The source supplies no exact FSDP2 peak total.',
     footZh: '来源没有给出 FSDP2 的精确峰值总量。',
-    mobileTitle: 'Owned 8 GB is not the peak', mobileTitleZh: '长期 8 GB，不是峰值',
-    mobileSubtitle: 'peak = saved state + temporary work', mobileSubtitleZh: '峰值 = 保存状态 + 临时工作',
+    mobileTitle: `The ${FSDP_SHARD_STATE_PER_GPU_GB} GB bill is below the peak`, mobileTitleZh: `${FSDP_SHARD_STATE_PER_GPU_GB} GB 训练账不是峰值`,
+    mobileSubtitle: 'peak = training state + temporary work', mobileSubtitleZh: '峰值 = 训练状态 + 临时工作',
     mobileFoot: 'No exact FSDP2 peak is supplied.', mobileFootZh: '来源没有给出 FSDP2 的精确峰值。',
-    mobileLegend: 'Orange = owned · blue = layer · grey = intermediates', mobileLegendZh: '橙 = 拥有 · 蓝 = 完整层 · 灰 = 中间结果',
+    mobileLegend: 'Orange = training bill · blue = layer · grey = intermediates', mobileLegendZh: '橙 = 训练账 · 蓝 = 完整层 · 灰 = 中间结果',
     mobile: [
-      { title: 'OWNED STATE · 8 GB', titleZh: '长期状态 · 8 GB', body: 'weights + gradients + optimizer', bodyZh: '权重 + 梯度 + 优化器状态', tone: 'orange' },
+      { title: `TRAINING BILL · ${FSDP_SHARD_STATE_PER_GPU_GB} GB`, titleZh: `训练状态账 · ${FSDP_SHARD_STATE_PER_GPU_GB} GB`, body: 'weights + gradients + optimizer', bodyZh: '权重 + 梯度 + 优化器状态', tone: 'orange' },
       { title: 'LARGEST BORROWED LAYER', titleZh: '最大临时完整层', body: 'temporary full values, size unknown', bodyZh: '临时完整数值，大小未知', tone: 'blue' },
       { title: 'INTERMEDIATES + OTHER · ?', titleZh: '中间结果 + 其他 · ?', body: 'temporary results, no source total', bodyZh: '临时结果，来源未给总量', tone: 'plain' },
     ],
     formulas: [
-      { en: 'Peak is greater than 8 GB', zh: '峰值大于 8 GB' },
+      { en: `Peak is greater than ${FSDP_SHARD_STATE_PER_GPU_GB} GB`, zh: `峰值大于 ${FSDP_SHARD_STATE_PER_GPU_GB} GB` },
       { en: 'No exact total is claimed', zh: '不填精确总量' },
     ],
   }, {
@@ -248,10 +248,10 @@
         <text x="360" y="450" text-anchor="middle" class="small">{t('Orange = full copies · blue = owned shards', '橙 = 完整副本 · 蓝 = 拥有的分片')}</text>
       {:else if step === 2}
         {#each [
-          { x: 25, title: 'OWNED SHARDS', titleZh: '拥有的分片', result: '8 GB', resultZh: '8 GB', body: 'persistent', bodyZh: '长期保存', tone: 'orange' },
+          { x: 25, title: 'WEIGHTS + OPT', titleZh: '权重 + 优化器', result: `${FSDP_FORWARD_RESIDENT_GB} GB`, resultZh: `${FSDP_FORWARD_RESIDENT_GB} GB`, body: 'after zero_grad', bodyZh: 'zero_grad 之后', tone: 'orange' },
           { x: 205, title: 'ALL-GATHER', titleZh: 'ALL-GATHER', result: 'one layer', resultZh: '一层', body: 'from every rank', bodyZh: '来自每个 rank', tone: 'plain' },
           { x: 385, title: 'FULL LAYER', titleZh: '完整一层', result: 'U', resultZh: 'U', body: 'compute', bodyZh: '计算', tone: 'blue' },
-          { x: 565, title: 'RELEASE', titleZh: '释放', result: 'U gone', resultZh: 'U 已释放', body: 'owned 8 GB', bodyZh: '仍保存 8 GB', tone: 'plain' },
+          { x: 565, title: 'RELEASE', titleZh: '释放', result: 'U gone', resultZh: 'U 已释放', body: `${FSDP_FORWARD_RESIDENT_GB} GB remains`, bodyZh: `仍留 ${FSDP_FORWARD_RESIDENT_GB} GB`, tone: 'plain' },
         ] as node, i}
           <rect x={node.x} y="105" width="130" height="151" rx="12" fill={fill(node.tone)} stroke={stroke(node.tone)} stroke-dasharray={node.tone === 'plain' ? '5 4' : '0'} />
           <text x={node.x + 65} y="137" text-anchor="middle" class="small strong">{t(node.title, node.titleZh)}</text>
@@ -261,10 +261,11 @@
             <line x1={node.x + 130} y1="181" x2={node.x + 170} y2="181" stroke="var(--line)" stroke-width="2.5" marker-end="url(#fsdp-arrow-plain)" />
           {/if}
         {/each}
-        <text x="360" y="304" text-anchor="middle" class="result">{t('DURING COMPUTE', '计算时')} · 8 GB + U</text>
-        <text x="360" y="342" text-anchor="middle" class="result">{t('AFTER RELEASE', '释放后')} · 8 GB</text>
-        <text x="360" y="383" text-anchor="middle" class="small">{t('Forward gathers parameters, not gradients.', '前向聚合的是参数，不是梯度。')}</text>
-        <text x="360" y="429" text-anchor="middle" class="small">{t('Orange = persistent state · blue = temporary full values', '橙 = 长期保存状态 · 蓝 = 临时完整数值')}</text>
+        <text x="360" y="304" text-anchor="middle" class="result">{t('DURING COMPUTE', '计算时')} · {FSDP_FORWARD_RESIDENT_GB} GB + U</text>
+        <text x="360" y="342" text-anchor="middle" class="result">{t('AFTER RELEASE', '释放后')} · {FSDP_FORWARD_RESIDENT_GB} GB</text>
+        <text x="360" y="383" text-anchor="middle" class="small">{FSDP_SHARD_WEIGHT_GB} GB {t('weights', '权重')} + {FSDP_SHARD_OPTIMIZER_GB} GB {t('optimizer', '优化器')} = {FSDP_FORWARD_RESIDENT_GB} GB</text>
+        <text x="360" y="409" text-anchor="middle" class="small">{t('Backward adds the', 'Backward 加入')} {FSDP_SHARD_GRADIENT_GB} GB {t('gradient shard', '梯度分片')}：{FSDP_FORWARD_RESIDENT_GB} + {FSDP_SHARD_GRADIENT_GB} = {FSDP_SHARD_STATE_PER_GPU_GB} GB</text>
+        <text x="360" y="449" text-anchor="middle" class="small">{t('Orange = weights + optimizer · blue = temporary full values', '橙 = 权重 + 优化器 · 蓝 = 临时完整数值')}</text>
       {:else if step === 3}
         {#each [
           { x: 40, title: 'LAYER GRADIENT', titleZh: '本层梯度', result: 'temporary', resultZh: '临时', body: 'after forward', bodyZh: '前向之后算出', tone: 'blue' },
@@ -294,13 +295,15 @@
         <text x="220" y="208" text-anchor="middle" class="result">{t('largest borrowed layer', '最大临时完整层')}</text>
         <text x="220" y="237" text-anchor="middle" class="small">{t('temporary, size unknown', '临时占用，大小未知')}</text>
         <rect x="70" y="266" width="300" height="89" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
-        <text x="220" y="302" text-anchor="middle" class="big">8 GB</text>
-        <text x="220" y="334" text-anchor="middle" class="small">{t('owned weights + gradients + optimizer state', '拥有的权重 + 梯度 + 优化器状态')}</text>
+        <text x="220" y="302" text-anchor="middle" class="big">{FSDP_SHARD_STATE_PER_GPU_GB} GB</text>
+        <text x="220" y="334" text-anchor="middle" class="small">{t('weights + gradients + optimizer state', '权重 + 梯度 + 优化器状态')}</text>
         <text x="420" y="125" class="small">{t('intermediates = values made during training', '中间结果 = 训练时算出的值')}</text>
         <text x="420" y="199" class="small">{t('the biggest layer borrowed at once', '同一时刻借来的最大一层')}</text>
         <text x="420" y="286" class="small">{t('? = no exact total in the source', '? = 来源没有精确总量')}</text>
-        <text x="360" y="401" text-anchor="middle" class="result">{t('PEAK', '峰值')} &gt; 8 GB · {t('exact total unknown', '精确总量未知')}</text>
-        <text x="360" y="448" text-anchor="middle" class="small">{t('Orange = owned state · blue = borrowed layer · grey = intermediates + other', '橙 = 拥有状态 · 蓝 = 临时完整层 · 灰 = 中间结果和其他临时显存')}</text>
+        <text x="420" y="322" class="small">{FSDP_SHARD_STATE_PER_GPU_GB} GB {t('is the training-state bill,', '是完整训练状态账，')}</text>
+        <text x="420" y="346" class="small">{t('not a permanent forward floor.', '不是 forward 的永久常驻量。')}</text>
+        <text x="360" y="411" text-anchor="middle" class="result">{t('PEAK', '峰值')} &gt; {FSDP_SHARD_STATE_PER_GPU_GB} GB · {t('exact total unknown', '精确总量未知')}</text>
+        <text x="360" y="458" text-anchor="middle" class="small">{t('Orange = training-state bill · blue = borrowed layer · grey = intermediates + other', '橙 = 训练状态账 · 蓝 = 临时完整层 · 灰 = 中间结果和其他临时显存')}</text>
       {:else if step === 5}
         {#each [
           { x: 25, title: 'WEIGHT SHARDS', titleZh: '权重分片', result: 'weights only', resultZh: '仅权重', body: 'grad + opt stay', bodyZh: '梯度和优化器留下', tone: 'orange' },
