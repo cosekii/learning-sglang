@@ -46,3 +46,36 @@ Public baseline: `sglang-omni@3a31bd72e034db37ce5115a03dd4827b449683be`; paths a
 - Recognition passes through `spoken(raw)` before task routing: `Voxt/internal/session/run.go:250-327`.
 - Translate and Rewrite input arrangements: `Voxt/internal/session/write.go:27-61`.
 - Dictionary replacement versus history's recognized wording: `Voxt/internal/session/cleanup.go:64-77`.
+
+## Step 2 · Separate stable instructions from this run's input
+
+> **In one line:** A request orders messages as `system → history → user`, keeping stable instructions in `system` and this run's input in `user`.
+
+### On the stage
+
+- `system` carries reusable instructions for the model: role, task and output contract, plus cleanup rules when used. Its content stays stable across runs.
+- The dashed `history` card is optional. It can hold examples or earlier conversation turns; a request omits it when none are needed.
+- The blue `user` card holds this run's input: recognized text, a selection, typed text or a Rewrite instruction. Each task chooses its own fields.
+- These labelled parcels form an ordered message list for Chapter 5's request route. “Stable” describes the content, not a latency or cache measurement.
+
+### Why keep input out of the stable instructions
+
+`compose.Build` validates the task and selects templates before constructing the system prefix, optional history and user message. A new dictation replaces its own input without rewriting the role and task instructions.
+
+A small dictionary can remain in the stable system prefix. Above the public threshold, only matching terms enter a `<glossary>` block at the start of the user message, so each dictation does not change the system prompt. The main picture leaves the threshold and alias rules to the dictionary chapter.
+
+### The input-wrapper boundary
+
+Voxt wraps inputs in XML-shaped tags such as `<input>…</input>`. If user text contains the matching closing tag, the composer escapes it so the text cannot literally close its own wrapper. These tags are prompt conventions, not executable input.
+
+### Next
+
+The message positions are separated. The next step opens one Transcribe cleanup request and stacks its role, cleanup, task, input and output contract into a complete prompt.
+
+### Sources
+
+Public baseline: same as Step 1.
+
+- Message order and system/user responsibilities: `Voxt/internal/compose/compose.go:260-309,394-444`.
+- Stable dictionary prefix and the large-dictionary user block: `Voxt/internal/compose/compose.go:517-599`; `Voxt/internal/compose/dictionary.go:5-17`.
+- Escaping matching closing tags: `Voxt/internal/compose/compose.go:361-378`.
