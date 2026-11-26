@@ -129,3 +129,36 @@ The pinned recipe sets `--mtp-loss-scaling-factor 0.2`, so the auxiliary term en
 The next step shows how detach lets this auxiliary CE train the draft without sending its gradients into the target trunk and shared tables.
 
 Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:46-60`; `THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a`, `docs/zh/advanced/speculative-decoding.md:24-38` and `docker/patch/latest/megatron.patch:581-603`.
+
+## Step 5 · Keep the draft lesson on the draft
+
+**One sentence.** Detach reuses target and shared-table values in the forward pass but cuts auxiliary CE gradients; the main RL loss is unaffected.
+
+### On the stage
+
+- The blue path between CE and the draft layer stays open, so draft parameters learn from Step 4's labels.
+- The orange target trunk is detached. Auxiliary CE cannot propagate into target hidden states.
+- The shared tables are the embedding and shared score table. The score table is the LM head, which turns hidden states into token scores; this CE branch uses detached parameter copies.
+- The final line says the main RL loss still trains the target, embedding and LM head. Blocking CE does not leave those tables untrained.
+
+### Formula and symbols
+
+$$g^{\mathrm{CE}}_{\theta_{\mathrm{shared}}}=0,\qquad g^{\mathrm{CE}}_{\theta_{\mathrm{MTP}}}\ \text{is computed normally}$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $\theta_{\mathrm{shared}}$ | Shared parameters in the target trunk, embedding and LM head | Steps 2, 3 and 5 |
+| $\theta_{\mathrm{MTP}}$ | Parameters of the draft's built-in MTP layer | Step 1 |
+| $g^{\mathrm{CE}}_{\theta}$ | Auxiliary CE gradient with respect to parameters $\theta$ | Backward path in this step |
+
+### The numbers on the stage
+
+This step constructs no gradient values. The left equation sets the shared-parameter gradient from auxiliary CE to zero on this branch. The right side leaves the MTP path open; it does not guarantee a nonzero value at every position. Main-loss gradients use a separate path and are outside the left equation.
+
+The implementation detaches the embedding output and target hidden state, then calls the shared LM head with `functional_call` and detached parameters. It does not detach the MTP hidden output, so CE can still reach the MTP layer.
+
+### Next
+
+The next step uses a loss mask to select CE positions, excluding positions without two valid future tokens.
+
+Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:58-60,184-234`; `THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a`, `docker/patch/latest/megatron.patch:170-179,596-603`.

@@ -129,3 +129,36 @@ $$\mathcal L_{\mathrm{MTP}}=-\log p_{\mathrm{draft}}(x_{t+2}\mid u_t)$$
 下一步看 `detach` 怎样让这份辅助 CE 更新 draft，同时不把它的梯度送进 target 主干和共享表。
 
 来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:46-60`；`THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a` 的 `docs/zh/advanced/speculative-decoding.md:24-38`、`docker/patch/latest/megatron.patch:581-603`。
+
+## 第 5 步 · detach 把 draft 的课程留在 draft
+
+**一句话。** detach 让前向继续使用 target 和共享表的数值，却只切断辅助 CE 的梯度；主 RL 损失不受影响。
+
+### 图上是什么
+
+- 蓝色 CE 和 draft 层之间的梯度路径畅通，所以 draft 参数能从第 4 步的标签学习。
+- 橙色 target 主干被 detach，辅助 CE 不能继续向 target hidden state 回传。
+- 共享表包含 embedding 与共享打分表。打分表就是 LM head，把 hidden state 变成 token 分数；这条 CE 分支使用 detach 后的参数副本。
+- 最后一行单独说明主 RL 损失仍训练 target、embedding 和 LM head，不能把“CE 被挡住”误读成这些表完全不训练。
+
+### 公式与符号
+
+$$g^{\mathrm{CE}}_{\theta_{\mathrm{shared}}}=0,\qquad g^{\mathrm{CE}}_{\theta_{\mathrm{MTP}}}\ \text{正常计算}$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $\theta_{\mathrm{shared}}$ | target 主干、embedding 和 LM head 的共享参数 | 第 2、3、5 步 |
+| $\theta_{\mathrm{MTP}}$ | draft 自带 MTP 层的参数 | 第 1 步 |
+| $g^{\mathrm{CE}}_{\theta}$ | 辅助 CE 对参数 $\theta$ 的梯度 | 本步反向路径 |
+
+### 代入图上的数
+
+本步不构造梯度数值。左式表示辅助 CE 对共享参数的梯度被这条分支切为 0；右式表示 MTP 参数的梯度路径保留，并不保证每个位置都得到非零值。主 RL 损失的梯度是另一条路径，不在左式里。
+
+实现先对 embedding 输出和 target hidden state 做 detach，再用 `functional_call` 调用共享 LM head，并传入 detach 后的参数。MTP 自己的 hidden 输出没有 detach，所以 CE 仍能回到 MTP 层。
+
+### 接下来
+
+下一步用 loss mask 决定哪些位置计入 CE，避免没有两个有效后续 token 的位置教错 draft。
+
+来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:58-60,184-234`；`THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a` 的 `docker/patch/latest/megatron.patch:170-179,596-603`。

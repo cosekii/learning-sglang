@@ -149,6 +149,40 @@
         { en: 'Next: teach only the draft', zh: '下一步：只训练 draft' },
       ],
     },
+  }, {
+    caption: 'Detach keeps values but blocks CE gradients. The main RL loss still updates the target.',
+    captionZh: 'detach 保留数值，挡住 CE 梯度。主 RL 损失仍更新 target。',
+    title: 'Detach keeps the draft lesson on the draft', titleZh: 'detach 把 draft 的课程留在 draft',
+    subtitle: 'detach = use the value, stop this branch’s gradient', subtitleZh: 'detach = 数值照用，挡住这条分支的梯度',
+    foot: 'Only auxiliary CE is blocked here; draft parameters remain trainable.',
+    footZh: '这里只挡辅助 CE 的梯度；draft 参数仍可训练。',
+    legend: 'Blue = CE gradient passes · orange = CE gradient blocked', legendZh: '蓝 = CE 梯度通过 · 橙 = CE 梯度被挡住',
+    nodes: [
+      { title: 'DRAFT CE', titleZh: 'DRAFT 的 CE', result: '0.2 × CE', resultZh: '0.2 × CE', body: 'auxiliary lesson', bodyZh: '辅助课程', tone: 'blue', compact: true },
+      { title: 'DRAFT LAYER', titleZh: 'DRAFT 层', result: 'gradient passes', resultZh: '梯度通过', body: 'learns from CE', bodyZh: '从 CE 学习', tone: 'blue', compact: true },
+      { title: 'TARGET TRUNK', titleZh: 'TARGET 主干', result: 'detach', resultZh: 'detach', body: 'CE gradient stops', bodyZh: 'CE 梯度停下', tone: 'orange', compact: true, dashed: true },
+      { title: 'SHARED TABLES', titleZh: '共享表', result: 'detached copies', resultZh: 'detach 的副本', body: 'CE gradient stops', bodyZh: 'CE 梯度停下', tone: 'orange', compact: true, dashed: true },
+    ],
+    formulas: [
+      { en: 'CE → draft parameters: gradient passes', zh: 'CE → draft 参数：梯度通过' },
+      { en: 'CE ✕→ target hidden states', zh: 'CE ✕→ target 的 hidden state' },
+      { en: 'CE ✕→ embedding and shared score table', zh: 'CE ✕→ embedding 与共享打分表' },
+      { en: 'score table = turns hidden notes into token scores', zh: '打分表 = 把内部笔记变成 token 分数' },
+      { en: 'main RL loss still updates target and shared tables', zh: '主 RL 损失仍更新 target 与共享表' },
+    ],
+    mobile: {
+      title: 'Keep the lesson on the draft', titleZh: '把课程留在 draft',
+      subtitle: 'detach = use values, block this gradient', subtitleZh: 'detach = 用数值，挡住这条梯度',
+      foot: 'Only auxiliary CE is blocked; the draft learns.', footZh: '只挡辅助 CE；draft 仍会学习。',
+      legend: 'Blue = gradient passes · orange = blocked', legendZh: '蓝 = 梯度通过 · 橙 = 梯度被挡',
+      formulas: [
+        { en: 'CE → draft: gradient passes', zh: 'CE → draft：梯度通过' },
+        { en: 'CE ✕→ target hidden states', zh: 'CE ✕→ target 的 hidden state' },
+        { en: 'CE ✕→ embedding and score table', zh: 'CE ✕→ embedding 与打分表' },
+        { en: 'Score table turns notes into scores', zh: '打分表把笔记变成 token 分数' },
+        { en: 'Main RL loss still updates them', zh: '主 RL 损失仍更新它们' },
+      ],
+    },
   }];
   let step = $state(0);
   $effect(() => {
