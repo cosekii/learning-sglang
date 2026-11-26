@@ -8,6 +8,8 @@ export const COLOCATED_STAGE_SHARES = [
 ] as const;
 export const COLOCATED_USED_PERCENT = COLOCATED_STAGE_SHARES.reduce((sum, stage) => sum + stage.percent, 0);
 export const COLOCATED_FREE_PERCENT = 100 - COLOCATED_USED_PERCENT;
+export const QWEN_THINKER_ENCODER_RESERVE_PERCENT = 5;
+export const QWEN_THINKER_EFFECTIVE_AR_PERCENT = COLOCATED_STAGE_SHARES.find((stage) => stage.name === 'thinker')!.percent - QWEN_THINKER_ENCODER_RESERVE_PERCENT;
 
 // COLOCATED_SPEECH_PROCESSES in sglang_omni/models/qwen3_omni/config.py.
 export const COLOCATED_PROCESS_GROUPS = [

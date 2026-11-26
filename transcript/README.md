@@ -39,7 +39,7 @@ Read it to check wording and numbers across chapters without opening the compone
 | omni | 10 | [Optimize the streaming vocoder](omni/10-vocoder-optimization.md) | 8 |
 | omni | 11 | [Fish S2 Pro: Dual-AR in practice](omni/11-fish-s2-pro.md) | 8 |
 | omni | 12 | [Full-duplex strategies and measurement](omni/12-full-duplex-strategies.md) | 8 |
-| omni | 13 | [Deploy and tune Qwen3-Omni](omni/13-qwen3-omni-deployment.md) | 3 |
+| omni | 13 | [Deploy and tune Qwen3-Omni](omni/13-qwen3-omni-deployment.md) | 4 |
 | ml-sys | 01 | [Measure one inference request](ml-sys/01-measure-inference.md) | 7 |
 | ml-sys | 02 | [The full GPU memory budget](ml-sys/02-inference-memory-budget.md) | 2 |
 | ml-sys | 03 | [Prefix state in hybrid models](ml-sys/03-hybrid-state-cache.md) | 6 |

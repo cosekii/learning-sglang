@@ -101,3 +101,42 @@ These are public experiments from `docs/cookbook/qwen3_omni/tuning.md:52-69`, no
 ### Next
 
 The next step packs all five GPU stages onto one card and accounts for their declared memory shares.
+
+## Step 4 · The 78% thinker share becomes 73% AR
+
+> **In one line:** The colocated thinker subtracts a 5% encoder reserve from its declared 78% share before sizing its AR engine.
+
+### On the stage
+
+- The stacked bar splits one H100 into declared stage fractions, the thinker's encoder reserve and the 6% outside these fractions.
+- The thinker's original 78% appears as two segments: 73% for its effective AR budget and 5% for `encoder_mem_reserve`.
+- The other stage shares stay at 2%, 2%, 10% and 2%.
+- This colocated layout permits only TP 1 and no talker/code2wav process replicas. Every GPU stage must declare a budget.
+
+### Formula
+
+$$
+A=S-E
+$$
+
+| Symbol | Meaning | Size | Source |
+|---|---|---:|---|
+| $A$ | Effective thinker AR fraction | 73% | This step |
+| $S$ | Declared thinker stage fraction | 78% | H100 BF16 YAML |
+| $E$ | Encoder reserve subtracted before AR sizing | 5% | Thinker factory default |
+
+### The numbers on the stage
+
+$$
+A=78\%-5\%=73\%
+$$
+
+The declared stage total remains `2 + 2 + 78 + 10 + 2 = 94%`. Splitting 78% into 73% and 5% does not add another 5% to the card. The remaining `100 − 94 = 6%` is outside these declarations, not a measured free-memory reading.
+
+### Boundaries and sources
+
+The YAML values come from `examples/configs/qwen3_omni_colocated_h100_bf16.yaml:7-20`. The reserve mechanism is in `sglang_omni/models/qwen3_omni/stages.py:1230-1243,1358-1373`; the same reserve rule is tested in `tests/unit_test/qwen3_omni/test_sglang_ar_budget.py:476-488,514-537`. An explicit matching AR fraction or a byte-sized KV declaration changes this path. Colocated validation is in `sglang_omni/models/qwen3_omni/placement.py:55-60,84-108,122-187`.
+
+### Next
+
+Memory also depends on the checkpoint's precision, so the next step compares BF16, native FP8 and AutoRound INT4.

@@ -19,6 +19,8 @@ Step 2 separates server mode from requested output. Both modes accept multimodal
 
 Step 3 uses the public placement experiment from Chapter 8 Step 1. At concurrency eight, moving only the talker from the thinker's GPU to its own reduced mean-of-two p90 first sound from 2.680 to 1.439 seconds, about 46%. Code2wav stayed beside the thinker in both arms. The same guide reports a separate single-stream result: isolation improved first sound but increased end-to-end latency by 14–17%, so the chapter does not turn one metric into a universal rule (`docs/cookbook/qwen3_omni/tuning.md:52-69`).
 
+Step 4 starts with the H100 BF16 colocated YAML's declared `2 + 2 + 78 + 10 + 2 = 94%` (`examples/configs/qwen3_omni_colocated_h100_bf16.yaml:1-20`). The thinker factory defaults `encoder_mem_reserve` to 0.05 and subtracts it before deriving the AR budget when the colocated stage fraction is not matched by an explicit `mem_fraction_static`; the effective AR fraction is therefore `0.78 − 0.05 = 0.73` (`sglang_omni/models/qwen3_omni/stages.py:1230-1243,1358-1373`; `tests/unit_test/qwen3_omni/test_sglang_ar_budget.py:476-488,514-537`). Colocation requires one common GPU, TP 1, no talker/code2wav process replicas and a declared budget for every GPU stage (`sglang_omni/models/qwen3_omni/placement.py:55-60,84-108,122-187`). These are configuration arithmetic and validation rules, not measured occupancy.
+
 Code references in this chapter pin to `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`. The chapter reads source, shipped configs and public measurements; it does not run a model or benchmark.
 
 </details>
@@ -31,6 +33,8 @@ Code references in this chapter pin to `sglang-omni origin/main@9725235249df8512
 第 2 步区分服务器模式和请求输出。两种模式都接受多模态输入（`docs/cookbook/qwen3_omni.md:206-208`）。纯文字在 `mm_aggregate` 汇合实际输入分支；语音部署由 thinker 自己汇合（`sglang_omni/models/qwen3_omni/config.py:136-189,212-254`）。语音请求使用 `modalities: ["text"]` 时以 decode 为终点并排除 talker；加入 `"audio"` 后也以 code2wav 为终点（`sglang_omni/models/qwen3_omni/request_builders.py:200-261`；`tests/unit_test/qwen3_omni/test_pipeline.py:898-930,1935-1947`）。公开请求默认只输出文字；向纯文字服务器请求声音也不会返回声音（`docs/basic_usage/omni.md:154-170,199-200,386-395`）。
 
 第 3 步使用第 8 章第 1 步的公开摆卡实验。8 路并发时，只把 talker 从 thinker 所在 GPU 移到另一张卡，两次 p90 首音的均值从 2.680 秒降至 1.439 秒，约 46%。两组实验的 code2wav 都留在 thinker 旁边。同一指南另报单请求结果：独占改善首音，却让端到端延迟增加 14–17%，所以本章不把一项指标写成通用规则（`docs/cookbook/qwen3_omni/tuning.md:52-69`）。
+
+第 4 步从 H100 BF16 同卡 YAML 的 `2 + 2 + 78 + 10 + 2 = 94%` 开始（`examples/configs/qwen3_omni_colocated_h100_bf16.yaml:1-20`）。thinker 工厂默认 `encoder_mem_reserve` 为 0.05；当同卡 stage 比例没有匹配显式 `mem_fraction_static` 时，会先减去这份预留再推导 AR 预算，所以有效 AR 比例是 `0.78 − 0.05 = 0.73`（`sglang_omni/models/qwen3_omni/stages.py:1230-1243,1358-1373`；`tests/unit_test/qwen3_omni/test_sglang_ar_budget.py:476-488,514-537`）。同卡要求五个 GPU stage 共用一卡、TP 为 1、talker 和 code2wav 不复制进程，并且每个 GPU stage 都申报预算（`sglang_omni/models/qwen3_omni/placement.py:55-60,84-108,122-187`）。这些是配置算式与校验规则，不是实测占用。
 
 本章代码出处固定到 `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`。本章只读源码、随仓库配置和公开测量，没有运行模型或 benchmark。
 

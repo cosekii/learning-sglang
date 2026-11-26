@@ -101,3 +101,42 @@ $$
 ### 接下来
 
 下一步把五个 GPU stage 装进一张卡，并核算它们申报的显存份额。
+
+## 第 4 步 · thinker 的 78% 变成 73% AR
+
+> **一句话：** 同卡 thinker 先给 encoder 留下 5%，再把其余 73% 作为 AR 的有效预算。
+
+### 图上是什么
+
+- 堆叠条把一张 H100 分成各 stage 的申报比例、thinker 的 encoder 预留，以及比例之外的 6%。
+- thinker 原来的 78% 拆成两段：73% 是有效 AR 预算，5% 是 `encoder_mem_reserve`。
+- 其他 stage 份额仍是 2%、2%、10% 和 2%。
+- 这套同卡布局只能 TP 1，talker 和 code2wav 不能复制进程，每个 GPU stage 都要申报预算。
+
+### 公式
+
+$$
+A=S-E
+$$
+
+| 符号 | 是什么 | 大小 | 从哪来 |
+|---|---|---:|---|
+| $A$ | thinker 的有效 AR 比例 | 73% | 本步 |
+| $S$ | thinker 申报的 stage 比例 | 78% | H100 BF16 YAML |
+| $E$ | AR 定预算前减去的 encoder 预留 | 5% | thinker 工厂默认值 |
+
+### 代入图上的数
+
+$$
+A=78\%-5\%=73\%
+$$
+
+申报的 stage 总和仍是 `2 + 2 + 78 + 10 + 2 = 94%`。把 78% 拆成 73% 和 5%，不会给整卡多加 5%。其余 `100 − 94 = 6%` 在申报比例之外，不是实测空闲显存。
+
+### 边界与出处
+
+YAML 数值来自 `examples/configs/qwen3_omni_colocated_h100_bf16.yaml:7-20`。预留机制见 `sglang_omni/models/qwen3_omni/stages.py:1230-1243,1358-1373`；同一规则在 `tests/unit_test/qwen3_omni/test_sglang_ar_budget.py:476-488,514-537` 有测试。显式匹配 AR 比例或按字节申报 KV 会走不同路径。同卡校验见 `sglang_omni/models/qwen3_omni/placement.py:55-60,84-108,122-187`。
+
+### 接下来
+
+显存也取决于 checkpoint 的精度，下一步对照 BF16、native FP8 和 AutoRound INT4。

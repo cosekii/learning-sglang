@@ -17,6 +17,11 @@
     STREAM_P90_SOONER_PERCENT,
     QWEN_PLACEMENT_CONCURRENCY,
     QWEN_SINGLE_STREAM_ISOLATION_E2E_INCREASE_PERCENT,
+    COLOCATED_STAGE_SHARES,
+    COLOCATED_USED_PERCENT,
+    COLOCATED_FREE_PERCENT,
+    QWEN_THINKER_ENCODER_RESERVE_PERCENT,
+    QWEN_THINKER_EFFECTIVE_AR_PERCENT,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -30,6 +35,9 @@
   }, {
     caption: 'At eight requests, isolation cut p90 first sound from 2.68 to 1.44 seconds. Single-stream total time rose 14–17% instead.',
     captionZh: '8 路并发时，p90 首音几乎减半。单请求总耗时却增加 14–17%。',
+  }, {
+    caption: 'The thinker declares 78%, then subtracts a 5% encoder reserve. Its effective AR budget is 73%.',
+    captionZh: 'thinker 申报 78%，再减 5% 预留。AR 实际预算为 73%。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -46,7 +54,15 @@
     return () => query.removeEventListener('change', update);
   });
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [870, 820, 900][step] : [560, 600, 650][step]);
+  const H = $derived(phone ? [870, 820, 900, 850][step] : [560, 600, 650, 580][step]);
+  const budgetSegments = [
+    ...COLOCATED_STAGE_SHARES.flatMap((stage) => stage.name === 'thinker' ? [
+      { name: 'thinker AR', percent: QWEN_THINKER_EFFECTIVE_AR_PERCENT, kind: 'stage' },
+      { name: 'encoder reserve', percent: QWEN_THINKER_ENCODER_RESERVE_PERCENT, kind: 'reserve' },
+    ] : [{ name: stage.name, percent: stage.percent, kind: 'stage' }]),
+    { name: 'outside fractions', percent: COLOCATED_FREE_PERCENT, kind: 'outside' },
+  ];
+  const budgetX = (index: number, width: number) => budgetSegments.slice(0, index).reduce((sum, segment) => sum + segment.percent, 0) * width / 100;
   const isCpuStage = (name: string) => name === 'preprocessing' || name === 'decode';
   const speechGpu0 = QWEN_SPEECH_DEFAULT_STAGE_PROCESSES.filter((stage) => stage.gpu === 0);
   const speechGpu1 = QWEN_SPEECH_DEFAULT_STAGE_PROCESSES.filter((stage) => stage.gpu === 1);
@@ -164,6 +180,34 @@
         <text x={W / 2} y={phone ? 791 : 552} text-anchor="middle" class="formula" fill="var(--eos)">+{QWEN_SINGLE_STREAM_ISOLATION_E2E_INCREASE_PERCENT[0]}–{QWEN_SINGLE_STREAM_ISOLATION_E2E_INCREASE_PERCENT[1]}% {t('with talker isolation', 'talker 独占后增加')}</text>
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('Code2wav stayed beside the thinker in both arms.', '两组实验的 code2wav 都留在 thinker 旁边。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Public experiments · not this H100 profile', '公开实验 · 不是这份 H100 配置实测') : t('Public placement experiments, not measurements of the H100 colocated profile.', '公开摆卡实验，不是这份 H100 同卡配置的实测。')}</text>
+      {:else if step === 3}
+        <text x={phone ? 15 : 20} y="24" class="rowlabel">{t('ONE H100 · THE THINKER SHARE IS SPLIT', '一张 H100 · THINKER 份额还要再分')}</text>
+        <text x={phone ? 15 : 20} y="49" class="tag">encoder reserve = {phone ? t('5% off the thinker AR budget', 'thinker AR 预算先减 5%') : t('5% subtracted before sizing the thinker AR engine', '给 thinker AR engine 定预算前先减去的 5%')}</text>
+        <text x={phone ? 15 : 20} y="72" class="tag">{t('blue = stage fraction · orange = reserve · grey = outside fractions', '蓝 = stage 比例 · 橙 = 预留 · 灰 = 比例之外')}</text>
+        <text x={W / 2} y="103" text-anchor="middle" class="formula">{phone ? `78−5=${QWEN_THINKER_EFFECTIVE_AR_PERCENT}% AR · declared=${COLOCATED_USED_PERCENT}%` : `78% − 5% = ${QWEN_THINKER_EFFECTIVE_AR_PERCENT}% AR · 2 + 2 + 78 + 10 + 2 = ${COLOCATED_USED_PERCENT}%`}</text>
+        <rect x={phone ? 15 : 20} y="125" width={phone ? 270 : 680} height="65" rx="8" fill="var(--bg)" stroke="var(--line)" />
+        {#each budgetSegments as segment, i}
+          <rect x={(phone ? 15 : 20) + budgetX(i, phone ? 270 : 680)} y="125" width={segment.percent * (phone ? 270 : 680) / 100} height="65" fill={segment.kind === 'reserve' ? 'var(--gen)' : segment.kind === 'outside' ? 'var(--bg)' : 'var(--accent)'} stroke={segment.kind === 'outside' ? 'var(--faint)' : 'none'} stroke-dasharray={segment.kind === 'outside' ? '4 3' : 'none'} />
+        {/each}
+        <text x={phone ? 15 : 20} y="222" class="tag strong">{t('SEGMENT', '分段')}</text>
+        <text x={phone ? 282 : 700} y="222" text-anchor="end" class="tag strong">{t('CARD SHARE', '整卡比例')}</text>
+        {#each budgetSegments as segment, i}
+          {@const y = 254 + i * (phone ? 42 : 32)}
+          <rect x={phone ? 15 : 20} y={y - 12} width="12" height="12" rx="2" fill={segment.kind === 'reserve' ? 'var(--gen)' : segment.kind === 'outside' ? 'var(--bg)' : 'var(--accent)'} stroke={segment.kind === 'outside' ? 'var(--faint)' : 'none'} />
+          <text x={phone ? 36 : 41} y={y} class={segment.name.includes('thinker') || segment.name.includes('encoder') ? 'mono strong' : 'mono'}>{segment.name}</text>
+          <text x={phone ? 282 : 700} y={y} text-anchor="end" class="formula">{segment.percent}%</text>
+        {/each}
+        <rect x={phone ? 15 : 20} y={phone ? 575 : 480} width={phone ? 270 : 680} height={phone ? 150 : 52} rx="9" fill="var(--bg)" stroke="var(--line)" />
+        {#if phone}
+          <text x="28" y="604" class="tag strong">{t('COLOCATED RULES', '同卡规则')}</text>
+          <text x="28" y="633" class="tag">{t('one common GPU · TP = 1 only', '五个 GPU stage 同卡 · 只能 TP = 1')}</text>
+          <text x="28" y="661" class="tag">{t('no talker or code2wav process replicas', 'talker 和 code2wav 不能复制进程')}</text>
+          <text x="28" y="689" class="tag">{t('every GPU stage declares a budget', '每个 GPU stage 都要申报预算')}</text>
+        {:else}
+          <text x="360" y="512" text-anchor="middle" class="tag strong">{t('one GPU · TP = 1 only · no AR process replicas · every GPU stage declares a budget', '五个 GPU stage 同卡 · 只能 TP = 1 · AR 不能复制进程 · 每个 GPU stage 都要申报预算')}</text>
+        {/if}
+        <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('The 6% grey segment is outside declarations, not measured free memory.', '灰色 6% 在申报比例之外，不是实测空闲显存。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Next: choose how many bits each weight uses.', '下一步：每个权重用多少 bit。')}</text>
       {/if}
     </svg>
   </div>
