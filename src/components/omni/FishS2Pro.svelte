@@ -344,7 +344,7 @@
           <rect x="30" y="88" width="350" height="508" rx="12" fill="var(--bg)" stroke="var(--line)" />
           <rect x="52" y="113" width="306" height="76" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="205" y="143" text-anchor="middle" class="result" style="fill:var(--gen)">Slow AR · {t('one choice', '一个选择')}</text>
-          <text x="205" y="171" text-anchor="middle" class="small">{t('raw token for Slow · code 0 for vocoder', 'raw token 给 Slow · code 0 给 vocoder')}</text>
+          <text x="205" y="171" text-anchor="middle" class="small">{t('Slow raw semantic_token → sem_id (code 0)', 'Slow 原始 semantic_token → sem_id（code 0）')}</text>
           <line x1="205" y1="193" x2="205" y2="227" stroke="var(--accent)" stroke-width="2" marker-end="url(#fish-arrow)" />
           <rect x="52" y="239" width="306" height="302" rx="10" fill="white" stroke="var(--accent)" />
           <text x="70" y="267" class="result" style="fill:var(--accent)">Fast AR · {t('inside one frame', '在一帧内')}</text>
@@ -375,7 +375,7 @@
         {:else}
           <rect x="18" y="82" width="264" height="73" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="150" y="112" text-anchor="middle" class="result" style="fill:var(--gen)">Slow AR · {t('one choice', '一个选择')}</text>
-          <text x="150" y="139" text-anchor="middle" class="small">{t('raw token for Slow · code 0 for vocoder', 'raw token 给 Slow · code 0 给 vocoder')}</text>
+          <text x="150" y="139" text-anchor="middle" class="small">{t('Slow raw semantic_token → sem_id (code 0)', 'Slow 原始 semantic_token → sem_id（code 0）')}</text>
           <line x1="150" y1="159" x2="150" y2="185" stroke="var(--accent)" stroke-width="2" marker-end="url(#fish-arrow)" />
           <rect x="18" y="197" width="264" height="282" rx="10" fill="white" stroke="var(--accent)" />
           <text x="32" y="225" class="result" style="fill:var(--accent)">Fast AR · {t('inside one frame', '在一帧内')}</text>
@@ -422,8 +422,9 @@
           <rect x="48" y="331" width="279" height="59" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="187" y="367" text-anchor="middle" class="small strong">{t('KV kept across both frames', 'KV 横跨两帧保留')}</text>
           <text x="48" y="425" class="small strong">{t('keeps prompt + earlier frames', '保留 prompt + 之前的帧')}</text>
-          <text x="48" y="455" class="small">{t('same voice + text → shared KV', '相同声音 + 文字 → 共享 KV')}</text>
-          <text x="48" y="493" class="small">{t('all 10 reference rows must match', '全部十行参考 codes 都要匹配')}</text>
+          <text x="48" y="455" class="small">{t('same full prompt → can share KV', '完整 prompt 相同 → 可以共享 KV')}</text>
+          <text x="48" y="489" class="small">{t('all 10 reference rows must match', '全部十行参考 codes 都要匹配')}</text>
+          <text x="48" y="517" class="small">{t('cached KV may be gone', 'KV cache 可能已清除')}</text>
           <rect x="375" y="198" width="315" height="329" rx="12" fill="var(--bg)" stroke="var(--line)" />
           <text x="393" y="227" class="result">Fast AR · {t('inner KV', '内层 KV')}</text>
           <rect x="393" y="250" width="112" height="58" rx="8" fill="white" stroke="var(--line)" />
@@ -447,21 +448,23 @@
           <rect x="171" y="102" width="97" height="58" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="219" y="127" text-anchor="middle" class="small strong">frame f+1</text>
           <text x="219" y="150" text-anchor="middle" class="small">Slow input</text>
-          <rect x="18" y="205" width="264" height="235" rx="11" fill="var(--bg)" stroke="var(--line)" />
+          <rect x="18" y="205" width="264" height="260" rx="11" fill="var(--bg)" stroke="var(--line)" />
           <text x="32" y="234" class="result" style="fill:var(--gen)">Slow AR · {t('outer KV', '外层 KV')}</text>
           <text x="32" y="267" class="small">frame f → frame f+1</text>
           <rect x="32" y="287" width="236" height="48" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="150" y="317" text-anchor="middle" class="small strong">{t('KV kept across frames', 'KV 跨帧保留')}</text>
           <text x="32" y="369" class="small strong">{t('prompt + earlier frames', 'prompt + 之前的帧')}</text>
-          <text x="32" y="400" class="small">{t('same 10 rows + text → shared KV', '相同十行 + 文字 → 共享 KV')}</text>
-          <rect x="18" y="462" width="264" height="246" rx="11" fill="var(--bg)" stroke="var(--line)" />
-          <text x="32" y="491" class="result">Fast AR · {t('inner KV', '内层 KV')}</text>
-          <text x="32" y="524" class="small">frame f → frame f+1</text>
-          <rect x="32" y="544" width="236" height="48" rx="8" fill="var(--bg)" stroke="var(--faint)" stroke-dasharray="5 4" />
-          <text x="150" y="574" text-anchor="middle" class="small strong">{t('old KV cleared · fresh 0–9', '旧 KV 清空 · 新的 0–9')}</text>
-          <text x="32" y="626" class="small strong">{t('reset before every frame', '每帧前都重置')}</text>
-          <text x="32" y="657" class="small">{t('no previous Fast positions', '不读之前的 Fast 位置')}</text>
-          <text x="32" y="687" class="small">10 {t('positions only', '个位置仅限本帧')}</text>
+          <text x="32" y="400" class="small">{t('same full prompt → can share KV', '完整 prompt 相同 → 可以共享 KV')}</text>
+          <text x="32" y="425" class="small">{t('all 10 reference rows must match', '全部十行参考 codes 都要匹配')}</text>
+          <text x="32" y="450" class="small">{t('cached KV may be gone', 'KV cache 可能已清除')}</text>
+          <rect x="18" y="487" width="264" height="246" rx="11" fill="var(--bg)" stroke="var(--line)" />
+          <text x="32" y="516" class="result">Fast AR · {t('inner KV', '内层 KV')}</text>
+          <text x="32" y="549" class="small">frame f → frame f+1</text>
+          <rect x="32" y="569" width="236" height="48" rx="8" fill="var(--bg)" stroke="var(--faint)" stroke-dasharray="5 4" />
+          <text x="150" y="599" text-anchor="middle" class="small strong">{t('old KV cleared · fresh 0–9', '旧 KV 清空 · 新的 0–9')}</text>
+          <text x="32" y="651" class="small strong">{t('reset before every frame', '每帧前都重置')}</text>
+          <text x="32" y="682" class="small">{t('no previous Fast positions', '不读之前的 Fast 位置')}</text>
+          <text x="32" y="712" class="small">10 {t('positions only', '个位置仅限本帧')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Fast reset keeps other frames out' : 'Fast KV resets so one frame cannot read another frame’s inner positions.', phone ? 'Fast 重置，避免读到别帧的位置' : 'Fast KV 每帧重置，避免读到其他帧的内层位置。')}</text>
       {:else if step === 5}
@@ -470,8 +473,8 @@
         {#if !phone}
           {#each [0, 1, 2] as kind}
             {@const x = 30 + kind * 225}
-            <rect x={x} y="91" width="210" height="467" rx="12" fill="var(--bg)" stroke={kind === 0 ? 'var(--gen)' : kind === 1 ? 'var(--accent)' : 'var(--line)'} />
-            <text x={x + 16} y="123" class="result" style={kind === 0 ? 'fill:var(--gen)' : kind === 1 ? 'fill:var(--accent)' : ''}>{kind === 0 ? 'EOS' : kind === 1 ? t('LENGTH', '长度用尽') : t('ABORT', '中止')}</text>
+            <rect x={x} y="91" width="210" height="467" rx="12" fill="var(--bg)" stroke={kind === 0 ? 'var(--gen)' : kind === 1 ? 'var(--gen)' : 'var(--line)'} />
+            <text x={x + 16} y="123" class="result" style={kind === 0 ? 'fill:var(--gen)' : kind === 1 ? 'fill:var(--gen)' : ''}>{kind === 0 ? 'EOS' : kind === 1 ? t('LENGTH', '长度用尽') : t('ABORT', '中止')}</text>
             {#if kind === 0}
               <rect x={x + 16} y="147" width="178" height="58" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
               <text x={x + 105} y="182" text-anchor="middle" class="small strong">Slow → &lt;|im_end|&gt;</text>
@@ -484,10 +487,11 @@
               <text x={x + 16} y="451" class="small">0 {t('accepted frames', '个接受帧')}</text>
               <text x={x + 16} y="487" class="small strong">→ {t('error, not empty audio', '报错，不返回空声音')}</text>
             {:else if kind === 1}
-              <rect x={x + 16} y="147" width="178" height="58" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+              <rect x={x + 16} y="147" width="178" height="58" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
               <text x={x + 105} y="182" text-anchor="middle" class="small strong">{t('generation limit reached', '达到生成上限')}</text>
-              <text x={x + 16} y="241" class="small strong">{t('keep earlier sound frames', '保留之前的声音帧')}</text>
-              <text x={x + 16} y="278" class="small">finish_reason = length</text>
+              <rect x={x + 16} y="222" width="178" height="43" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+              <text x={x + 105} y="249" text-anchor="middle" class="small strong">{t('keep earlier sound frames', '保留之前的声音帧')}</text>
+              <text x={x + 16} y="293" class="small">finish_reason = length</text>
             {:else}
               <rect x={x + 16} y="147" width="178" height="58" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
               <text x={x + 105} y="182" text-anchor="middle" class="small strong">{t('cancel request', '取消请求')}</text>
@@ -504,8 +508,8 @@
         {:else}
           {#each [0, 1, 2] as kind}
             {@const y = 82 + kind * 250}
-            <rect x="18" y={y} width="264" height="230" rx="11" fill="var(--bg)" stroke={kind === 0 ? 'var(--gen)' : kind === 1 ? 'var(--accent)' : 'var(--line)'} />
-            <text x="32" y={y + 29} class="result" style={kind === 0 ? 'fill:var(--gen)' : kind === 1 ? 'fill:var(--accent)' : ''}>{kind === 0 ? 'EOS' : kind === 1 ? t('LENGTH', '长度用尽') : t('ABORT', '中止')}</text>
+            <rect x="18" y={y} width="264" height="230" rx="11" fill="var(--bg)" stroke={kind === 0 ? 'var(--gen)' : kind === 1 ? 'var(--gen)' : 'var(--line)'} />
+            <text x="32" y={y + 29} class="result" style={kind === 0 ? 'fill:var(--gen)' : kind === 1 ? 'fill:var(--gen)' : ''}>{kind === 0 ? 'EOS' : kind === 1 ? t('LENGTH', '长度用尽') : t('ABORT', '中止')}</text>
             {#if kind === 0}
               <text x="32" y={y + 65} class="small strong">{t('EOS = model says “done”', 'EOS = 模型说“结束了”')}</text>
               <text x="32" y={y + 98} class="small">{t('drop terminal frame · keep earlier', '丢结束帧 · 保留之前帧')}</text>
@@ -513,8 +517,11 @@
               <text x="150" y={y + 144} text-anchor="middle" class="small strong">finish_reason = stop</text>
               <text x="32" y={y + 193} class="small strong">0 {t('accepted frames', '个接受帧')} → {t('error', '报错')}</text>
             {:else if kind === 1}
-              <text x="32" y={y + 65} class="small strong">{t('keep earlier sound frames', '保留之前的声音帧')}</text>
-              <text x="32" y={y + 96} class="small">finish_reason = length</text>
+              <rect x="32" y={y + 52} width="236" height="43" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+              <text x="150" y={y + 80} text-anchor="middle" class="small strong">{t('generation limit reached', '达到生成上限')}</text>
+              <text x="32" y={y + 121} class="small">finish_reason = length</text>
+              <rect x="32" y={y + 140} width="236" height="43" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+              <text x="150" y={y + 168} text-anchor="middle" class="small strong">{t('keep earlier sound frames', '保留之前的声音帧')}</text>
             {:else}
               <text x="32" y={y + 65} class="small strong">{t('stop the request', '停止这个请求')}</text>
               <text x="32" y={y + 98} class="small">{t('no waiting sound or final success', '不送等待声音和最终成功输出')}</text>
@@ -527,7 +534,7 @@
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'EOS = <|im_end|> · delivered sound is not recalled' : 'EOS is the <|im_end|> token. Abort cannot recall sound already delivered.', phone ? 'EOS 是 <|im_end|> · 已交付声音不会收回' : 'EOS 是 <|im_end|> token。中止不能收回已经交付的声音。')}</text>
       {:else if step === 6}
         <text x={phone ? 18 : 30} y="30" class="title">{t('One constructed 90-frame stream', '构造的 90 帧流')}</text>
-        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'blue = new · orange = old frames read again' : 'blue = new frames · orange = old frames read again · grey = held sound tail', phone ? '蓝 = 新帧 · 橙 = 重读旧帧' : '蓝 = 新帧 · 橙 = 重读旧帧 · 灰 = 留下的声音尾巴')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'blue=new · orange=old · grey=retained tail' : 'blue = new frames · orange = old frames read again · grey = held sound tail', phone ? '蓝=新 · 橙=重读 · 灰=保留的声音尾巴' : '蓝 = 新帧 · 橙 = 重读旧帧 · 灰 = 留下的声音尾巴')}</text>
         {#if !phone}
           {#each streamEvents as event, i}
             {@const y = 91 + i * 140}
@@ -647,7 +654,7 @@
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t(`Completed: max ${FISH_NONSTREAM_MAX_BATCH} · wait up to ${FISH_NONSTREAM_WAIT_MS} ms`, `已完成：最多 ${FISH_NONSTREAM_MAX_BATCH} 个 · 最多等 ${FISH_NONSTREAM_WAIT_MS} ms`) : t(`Completed defaults: max ${FISH_NONSTREAM_MAX_BATCH}, wait up to ${FISH_NONSTREAM_WAIT_MS} ms for more. Streaming stays per request.`, `已完成请求默认最多 ${FISH_NONSTREAM_MAX_BATCH} 个，额外请求最多等 ${FISH_NONSTREAM_WAIT_MS} ms；流式 chunks 仍逐请求运行。`)}</text>
       {/if}
       {#if PHASE_COUNTS[step] > 0}
-        <LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={68} label={t('loops · red = current', '循环 · 红框 = 当前')} />
+        <LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={68} label={step === 6 ? t('loops', '循环') : t('loops · red = current', '循环 · 红框 = 当前')} />
       {/if}
       {#if focus}
         <rect class="motion-focus" x={focus.x - 4} y={focus.y - 4} width={focus.w + 8} height={focus.h + 8} rx="12" fill="none" stroke="var(--eos)" stroke-width="3" />

@@ -150,7 +150,7 @@ Slow AR 的选择开启一帧。第 4 步打开内层 Fast AR 循环，补齐 vo
 ### 图上是什么
 
 - Fast AR 是内层循环，只在一个音频帧里工作。
-- Slow AR 先产生原始语义 token，engine 再由它得到 vocoder 的 `code 0`。
+- Slow AR 先产生原始 `semantic_token`，engine 再由它得到 vocoder 的 `sem_id`（code 0），两者都保存。
 - Fast 第 0 次调用接收 Slow 算出的数，其输出分数不当作 vocoder 选择。
 - Fast 第 1–9 次调用各选一个剩余 code。
 - 橙色是 Slow 原始 token，蓝色是送进 vocoder 的十行。
@@ -177,16 +177,16 @@ $$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
-| $raw$ | Slow AR 的语义词表 token | `sglang_model.py` 的 Slow 输出 |
+| $raw$ | Slow AR 在语义词表里的原始 `semantic_token` | `sglang_model.py` 的 Slow 输出 |
 | $B$ | 附加语义词表起点，这个 checkpoint 是 151,678 | `request_builders.py:133-137` |
-| $c_0$ | 从 $raw$ 得到的语义 DAC code | 本步公式 |
+| $c_0$ | 从 $raw$ 得到的 `sem_id`，即语义 DAC code | 本步公式 |
 | $N_{\text{Fast}}$ | 本帧 Fast 调用数，包含第 0 次 | Fast 循环 |
 | $N_{\text{engine}}$ | 保存行数：一个原始 token 加十个 DAC codes | `payload_types.py` |
 | $N_{\text{DAC}}$ | 去掉 $raw$ 后送入 vocoder 的行数 | `streaming_vocoder.py` |
 
 ### 代入图上的数
 
-一次 Slow 选择得到一个 code 0，九次 Fast 选择得到 code 1–9。第 0 次 Fast 调用提供上下文，不增加一行，所以一共是十次 Fast 调用和十一行保存结果。
+一次 Slow 选择得到一个 code 0，九次 Fast 选择得到 code 1–9。第 0 次 Fast 调用提供上下文，不增加一行，所以一共是十次 Fast 调用和十一行保存结果。原始 `semantic_token` 和派生的 `sem_id` 两行都会保存。
 
 ### 接下来
 
@@ -205,9 +205,23 @@ $$
 - 蓝色反馈箭头把上一帧的全部十个 DAC codes 送回下一次 Slow 输入。
 - 橙色 Slow KV 横跨 prompt 和每个 accepted 帧。KV 是第 1 本第 3 章讲过的注意力 key、value 工作。
 - 灰色 Fast KV 在帧边界结束，下一帧重新开始内层循环。
-- 相同的 Slow 前缀可以复用 SGLang KV。其指纹覆盖全部十行参考 codes，不只看 code 0。
+- 完整 prompt 相同且 KV 仍在 cache 里时，可以复用 SGLang KV。指纹覆盖全部十行参考 codes，不只看 code 0；匹配不保证命中。
 
-### 代入图上的数
+### 公式与代入图上的数
+
+$$
+x_{f+1}=\frac{e_{\text{text}}(raw_f)+\sum_{r=0}^{9}e_r(c_{r,f})}{\sqrt{11}}
+$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $x_{f+1}$ | 下一个 Slow 位置的输入 embedding | 本步反馈构造 |
+| $f$ | 已完成帧的编号 | 本步 |
+| $raw_f$ | 上一帧保存的原始 `semantic_token` | 第 4 步；`sglang_model.py` |
+| $c_{r,f}$ | 上一帧第 $r$ 行的 DAC code，第 0 行是 `sem_id` | 第 4 步 |
+| $e_{\text{text}}$ | 原始语义 token 的 embedding | tokenizer 和 model runner |
+| $e_r$ | 第 $r$ 行的 codec embedding | `audio_decoder.py` |
+| $\sqrt{11}$ | 一份文字加十份 codec embeddings 的缩放 | `audio_decoder.py:597-612` |
 
 一个完成帧返回 $1+9=10$ 个 DAC codes。下一个 Slow 位置把这十份 codec embeddings 和原始语义 token embedding 合并，沿用第 3 步的 $1/\sqrt{11}$ 规则。
 
@@ -218,7 +232,7 @@ Fast 第 0 次调用先重置内层 KV，再处理新帧的 0–9 位置，不�
 | 保存内容 | 保存多久 | 谁保存 |
 |---|---|---|
 | 参考 codes | 跨匹配请求，以 CPU 副本返回 | `ReferenceEncodeService` |
-| Slow 注意力 KV | prompt 和之前的帧；匹配前缀可共享 | SGLang |
+| Slow 注意力 KV | prompt 和之前的帧；完整 prompt 相同且仍在 cache 时可共享 | SGLang |
 | Fast 注意力 KV | 只到本帧内部位置结束 | Fast AR |
 
 这张图比较反馈和 cache 寿命，没有声称 Fish 流式 vocoder 保留 Qwen 式 codec 执行状态。
@@ -310,7 +324,17 @@ $$
 (40F-512)+45F+(5F+512)=90F
 $$
 
+| 符号 | 是什么 | 本例大小 | 从哪来 |
+|---|---|---:|---|
+| $F$ | 一个 codec 帧代表的声音采样点 | 2,048 | 第 1 步的默认 DAC 几何 |
+| $N_{\text{in}}$ | 一个窗口读取的帧数 | 40、65、25 | 构造的 90 帧流和默认窗口规则 |
+| $N_{\text{new}}$ | 该窗口到达的新帧数 | 40、45、5 | 最多 45 新帧规则下的构造到达 |
+| $N_{\text{out}}$ | 该窗口输出的采样点 | $40F-512$、$45F$、$5F+512$ | 输出和交叉混合规则 |
+| $512$ | 留给下一窗口的声音尾巴采样点 | 512 | 默认流式窗口值 |
+
 多出的 40 帧输入是重复工作，不是额外输出。中间调用输出 $45F+512-512=45F$：它用掉首个尾巴，同时留下新的尾巴，最后一次再释放第二个尾巴。每段 512 采样点尾巴代表 512 ÷ 44,100 ≈ 11.6 ms 声音。旧帧会再次解码，不会再次播放。
+
+较小的后续窗口可以更早交付每一段新声音，但也要更频繁地重读 20 帧上下文。这是机制上的取舍，不是 Fish 的实测延迟结果。
 
 ### 接下来
 

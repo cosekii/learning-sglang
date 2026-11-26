@@ -150,7 +150,7 @@ Sources: `fish/tokenizer.py:53-73,94-162`; `fish/model_runner.py:288-356`; `fish
 ### On the stage
 
 - Fast AR is the inner loop: it stays inside one audio frame.
-- Slow AR first produces a raw semantic token. The engine derives vocoder `code 0` from that token.
+- Slow AR first produces raw `semantic_token`. The engine derives `sem_id`, the vocoder's `code 0`, from that token and saves both.
 - Fast call 0 receives Slow's computed numbers. Its output scores are not used as a vocoder choice.
 - Fast calls 1–9 each choose one remaining code.
 - Orange marks Slow's raw token. Blue marks the ten rows sent to the vocoder.
@@ -177,16 +177,16 @@ $$
 
 | Symbol | What it is | Where it comes from |
 |---|---|---|
-| $raw$ | Slow AR's semantic-vocabulary token | Slow output in `sglang_model.py` |
+| $raw$ | Slow AR's raw `semantic_token` in the semantic vocabulary | Slow output in `sglang_model.py` |
 | $B$ | Added semantic-vocabulary base, 151,678 in this checkpoint | `request_builders.py:133-137` |
-| $c_0$ | Semantic DAC code derived from $raw$ | This formula |
+| $c_0$ | `sem_id`, the semantic DAC code derived from $raw$ | This formula |
 | $N_{\text{Fast}}$ | Fast calls for this frame, including call 0 | Fast loop |
 | $N_{\text{engine}}$ | Stored rows: one raw token plus ten DAC codes | `payload_types.py` |
 | $N_{\text{DAC}}$ | Rows sent to the vocoder after dropping $raw$ | `streaming_vocoder.py` |
 
 ### The numbers on the stage
 
-One Slow choice creates one derived code 0. Nine Fast choices create codes 1–9. The initial Fast call supplies context but no additional row, so there are ten Fast calls and eleven stored rows.
+One Slow choice creates one derived code 0. Nine Fast choices create codes 1–9. The initial Fast call supplies context but no additional row, so there are ten Fast calls and eleven stored rows. Both the raw `semantic_token` and derived `sem_id` rows are saved.
 
 ### Next
 
@@ -205,9 +205,23 @@ Sources: `fish/sglang_model.py:294-300,418-510`; `fish/payload_types.py:35-50`; 
 - The blue feedback arrow returns all ten previous DAC codes to the next Slow input.
 - Orange Slow KV spans the prompt and every accepted frame. KV means attention's saved key and value work from Learning SGLang Ch. 3.
 - Grey Fast KV ends at the frame boundary. A fresh inner loop starts for the next frame.
-- A matching Slow prefix can reuse SGLang KV. Its fingerprint covers all ten reference rows, not just code 0.
+- The same full prompt can reuse SGLang KV if that KV is still cached. Its fingerprint covers all ten reference rows, not just code 0; a match does not guarantee a hit.
 
-### The numbers on the stage
+### Formula and the numbers on the stage
+
+$$
+x_{f+1}=\frac{e_{\text{text}}(raw_f)+\sum_{r=0}^{9}e_r(c_{r,f})}{\sqrt{11}}
+$$
+
+| Symbol | What it is | Where it comes from |
+|---|---|---|
+| $x_{f+1}$ | Input embedding for the next Slow position | This feedback construction |
+| $f$ | Completed frame index | This step |
+| $raw_f$ | Previous frame's saved raw `semantic_token` | Step 4; `sglang_model.py` |
+| $c_{r,f}$ | Previous frame's DAC code in row $r$, with `sem_id` in row 0 | Step 4 |
+| $e_{\text{text}}$ | Raw semantic-token embedding | Tokenizer and model runner |
+| $e_r$ | Codec embedding for row $r$ | `audio_decoder.py` |
+| $\sqrt{11}$ | Scale for one text plus ten codec embeddings | `audio_decoder.py:597-612` |
 
 One completed frame returns $1+9=10$ DAC codes. The next Slow position combines those ten codec embeddings with the raw semantic token embedding, using the same $1/\sqrt{11}$ rule as Step 3.
 
@@ -218,7 +232,7 @@ Fast call 0 resets its inner KV before positions 0–9 of the new frame. It does
 | Saved thing | Lifetime | Owner |
 |---|---|---|
 | Reference codes | Matching requests, as CPU copies | `ReferenceEncodeService` |
-| Slow attention KV | Prompt and earlier frames; matching prefixes may share | SGLang |
+| Slow attention KV | Prompt and earlier frames; the same full prompt may share while cached | SGLang |
 | Fast attention KV | Positions inside one frame only | Fast AR |
 
 The picture compares feedback with cache lifetime. It does not claim that Fish's streaming vocoder retains Qwen-style codec execution state.
@@ -310,7 +324,17 @@ $$
 (40F-512)+45F+(5F+512)=90F
 $$
 
+| Symbol | What it is | Value in this example | Where it comes from |
+|---|---|---:|---|
+| $F$ | Audio samples represented by one codec frame | 2,048 | Step 1's shipped DAC geometry |
+| $N_{\text{in}}$ | Frames read by one window | 40, 65, 25 | Constructed 90-frame stream and shipped window rules |
+| $N_{\text{new}}$ | New frames arriving in that window | 40, 45, 5 | Constructed arrivals under the 45-new maximum |
+| $N_{\text{out}}$ | Samples emitted by that window | $40F-512$, $45F$, $5F+512$ | Emission and crossfade rules |
+| $512$ | Sound-tail samples held for the next window | 512 | Shipped streaming-window default |
+
 The 40 extra input frames are repeated work, not extra output. The middle call emits $45F+512-512=45F$: it uses the first tail and holds a fresh one. The final flush releases that second tail. Each 512-sample tail represents 512 ÷ 44,100 ≈ 11.6 ms of sound. Old frames are decoded again but not played again.
+
+Smaller later windows can deliver each new piece earlier, but they reread the 20-frame context more often. This is a mechanism trade-off, not a measured Fish latency result.
 
 ### Next
 
