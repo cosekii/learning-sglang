@@ -4,6 +4,8 @@
 
 ## 本轮记录
 
+- 22:52 完成 Learning SGLang Omni 第 7 章全部 6 步：DP9 比例求和、比例与 reserve 合并校验、KV 单次领取、权重共享与私有 KV、MPS 租约和 AuK 串行 offload。全章 **6/6 步易读 12/12**，平均 **24.00/24**，**0 内容洞、0 最终显示洞**。
+- 教程提交 `f19518d` 已推送；本章 `build`、`transcript`、全章 `readability`、中英三种宽度 `mobile`、中文逐步字号、`deep-check 07`、`zh-check` 和 `git diff --check` 通过。主线程换视角逐张冷读 24 张中英桌面／手机终稿；独立冷读 subagent 因 API key 不可用未运行。最终图与日志：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-omni-ch07-20261125-2237/final/`、`checks/`。本轮只跑本章检查，未跑或等待全站回归。本轮类型：**新书**；下一普通轮按交替规则修旧。
 - 22:12 修旧 Learning SGLang 第 7 章第 1、2、3、5、7 步：补齐显存与容量算式、两类分配浪费、page 回收和物理读写、完整接纳不等式与代入例。全章中文 **7/7 步易读 12/12**，原分平均 **23.57/24**，**0 中文内容洞、0 最终显示洞**。整步第 1、2、3、5、7 步为 11/12，第 4、6 步为 10/12；余下是受保护英文 R4，第 4、6 步另有英文 R2。
 - 教程逐步提交并推送至 `c9e25e7`。`build`、本章 `transcript`、本章及整改步中文 `mobile`、`deep-check 07`、本章 `zh-check` 和 `git diff --check` 通过；全章 `readability` 中文 0 问题，保留 9 个受保护英文机械问题。七步英文桌面图均与改前逐像素一致。独立冷读 subagent 因 API key 不可用未运行，主线程换视角逐张冷读整改步中文桌面／手机终稿。材料：`/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ch07-repair-20261125-2212/final/`、`checks/`。本轮只跑本章检查；后台全站回归最后通过的是 `633b1df`。本轮类型：**修旧**；下一普通轮做新书。
 - 21:33 完成 Inside Voxt 第 5 章全部 5 步：请求的三项内容、本机与外部地址、模型设置与 Keychain 分管、请求体字段、Authorization 请求头与下一章交接。全章 **5/5 步易读 12/12**，平均 **24.00/24**，**0 内容洞、0 最终显示洞**。
@@ -85,7 +87,7 @@
 
 ## Learning SGLang Omni
 
-规划完成：`docs/plan-omni.md` 共 3 部分、13 章；第 1 章已制作 4 步并完成，第 2、3 章各已制作 3 步并完成，第 4 章已制作 4 步并完成，第 5 章已制作 5 步并完成，第 6 章已制作 8 步并完成。
+规划完成：`docs/plan-omni.md` 共 3 部分、13 章；第 1 章已制作 4 步并完成，第 2、3 章各已制作 3 步并完成，第 4 章已制作 4 步并完成，第 5 章已制作 5 步并完成，第 6 章已制作 8 步并完成，第 7 章已制作 6 步并完成。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
@@ -95,7 +97,7 @@
 | 04 | 04-readiness-contracts | 完成：4/4 步易读满分 | 24.00 |
 | 05 | 05-data-lifetime | 完成：5/5 步易读满分 | 24.00 |
 | 06 | 06-batching-backpressure | 完成：8/8 步易读满分 | 24.00 |
-| 07 | 07-shared-gpu-budgets | 规划 | — |
+| 07 | 07-shared-gpu-budgets | 完成：6/6 步易读满分 | 24.00 |
 | 08 | 08-measure-streaming | 规划 | — |
 | 09 | 09-ar-stage-optimization | 规划 | — |
 | 10 | 10-vocoder-optimization | 规划 | — |
