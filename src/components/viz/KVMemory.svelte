@@ -105,7 +105,7 @@
           {#each running as ctxK, i}
             {@const xs = x0 + running.slice(0, i).reduce((a, c) => a + seqGB(c * 1024), 0) * pxPerGB}
             {@const w = seqGB(ctxK * 1024) * pxPerGB - 1}
-            <rect x={xs} y={BAR.y + 1} width={w} height={BAR.h - 2} rx="2" fill="#0891b2" opacity={0.5 + 0.3 * (i % 2)} in:fly={{ x: -6, delay: 150 + i * 90, duration: 250 }} />
+            <rect x={xs} y={BAR.y + 1} width={w} height={BAR.h - 2} rx="2" fill="#0891b2" opacity={0.5 + 0.3 * (i % 2)} in:fly={{ x: $lang === 'zh' ? 0 : -6, delay: $lang === 'zh' ? 0 : 150 + i * 90, duration: $lang === 'zh' ? 0 : 250 }} />
             {#if w > 26}<text x={xs + w / 2} y={BAR.y + 27} text-anchor="middle" class="steplabel context-label">{ctxK}k</text>{/if}
           {/each}
           <!-- brackets -->

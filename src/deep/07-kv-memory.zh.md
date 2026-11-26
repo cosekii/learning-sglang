@@ -391,7 +391,7 @@ $$
 `PrefillAdder` 不只数这一步要写的 page，还要给回答留地方。先把核心判断统一成 **token 位置**的账；不同后端另有保留量时，还要再扣掉那些余量：
 
 $$
-E_{\text{new}}=U_{\text{new}}+\min(N_{\text{new}},4096)
+E_{\text{new}}=U_{\text{new}}+\min(N_{\text{new}},4096)+C_{\text{new}}
 $$
 
 $$
@@ -407,11 +407,14 @@ $$
 | $U_{\text{new}}$ | 新来者尚未缓存的 prompt token 数 | prompt 长度减去可复用前缀；第 8 章 |
 | $N_{\text{new}},N_j$ | 新来者、第 $j$ 个运行中 request 的 `max_new_tokens` | 请求参数 |
 | $W_j$ | 第 $j$ 个运行中 request 已生成的 token 数 | 当前输出 |
-| $E_{\text{new}}$ | 新来者的未缓存输入与输出上限估计 | 本步 |
+| $E_{\text{new}}$ | 新来者的未缓存输入、输出上限估计与实现余量 | 本步 |
+| $C_{\text{new}}$ | 页对齐和后端保留的 token 位置；主图把它收在「新来估计」里 | v0.5.18 普通路径另计每 request 一页，即 $p$ 个 token；其他后端按各自规则 |
 | $R_{\text{running}}$ | 所有运行中 request 的剩余输出预留合计 | 本步 |
 | $A_{\text{available}}$ | 空闲及可驱逐前缀能提供的 KV token 位置 | allocator 与前缀 cache；锁定中的前缀不算可驱逐 |
 | $\rho$ | 剩余输出预计会真正写出的比例 | 从 0.7 起，随未发生撤回的 decode 步衰减；约 600 步后为 $0.7\times0.14\approx0.1$，撤回时按已写 token 重新估计 |
 | 4,096 | 单次估算的输出上限 | `SGLANG_CLIP_MAX_NEW_TOKENS_ESTIMATION` |
+
+这些来源可在固定版本核对：[`PrefillAdder` 的可用量、运行预留和新来者检查](https://github.com/sgl-project/sglang/blob/v0.5.18/python/sglang/srt/managers/schedule_policy.py)、[`NewTokenRatioTracker`](https://github.com/sgl-project/sglang/blob/v0.5.18/python/sglang/srt/managers/scheduler_components/new_token_ratio_tracker.py)、[`ScheduleBatch.retract_decode`](https://github.com/sgl-project/sglang/blob/v0.5.18/python/sglang/srt/managers/schedule_batch.py)。不等式是普通 KV 池的核心账，不冒充 SWA、混合状态等后端的完整公式。
 
 **估计不等于实际分配。** 通过检查不代表把未来回答的 page 全部分出去；实际 prefill／decode 才按 token 写到哪里分配，$p>1$ 时再按页取整。估计偏乐观、后来真放不下时，才走下面的撤回。可复用前缀会减少 $U_{\text{new}}$，可驱逐前缀会增加 $A_{\text{available}}$；如何锁定和驱逐属于第 8 章。
 
