@@ -107,13 +107,21 @@ $$g=\max(0,2.5-2.2)=0.3\ \text{s}$$
 
 $$\frac{g}{d}=\frac{0.3}{0.8}=37.5\%$$
 
-若 chunk 2 在 2.2 秒前到达，$\max$ 会把负数收成 0，不把提前到达记成负空档。当前 benchmark 在每次 audio delta 到达时增加 `audio_chunks`，但没有保存每个 $a_i$。要得到真实 $g$，需要在客户端增加逐块到达时间记录，并采用同一播放规则；现有脚本没有直接输出这个指标。
+若 chunk 2 在 2.2 秒前到达，$\max$ 会把负数收成 0，不把提前到达记成负空档。
+
+### 已发布的连续性统计
+
+`benchmarks/metrics/playback_continuity.py` 对每个 chunk 使用同一播放规则，并使用每块的实测时长。每块在到达时或前一块播完时开始，取两者中较晚的时刻。`compute_max_playback_underrun_s` 记录一个请求里最长的静音空档；少于两个 chunk 的请求返回 N/A。
+
+跨请求汇总时，`max_playback_underrun_max_s` 是这些逐请求最长空档里的最大值。`c50`、`c100`、`c200` 是最长空档分别不超过 50、100、200 ms 的已统计请求百分比。`playback_continuity_requests` 记录参与统计的多 chunk 请求数，`playback_continuity_na_requests` 记录排除的单 chunk 请求数。
+
+第 2 步的 TTFT 脚本只增加 `audio_chunks`，不保存每个 $a_i$，也不计算这个指标。TTS benchmark 会记录 HTTP chunk 到达时刻和实测时长，再调用连续性 helper。图上的 0.3 秒空档和固定 800 ms chunk 都是构造教学值，不是 benchmark 输出。
 
 ### 接下来
 
 到达时间能指出空档，却还不能解释等待发生在哪一段交接。下一步打开通信 trace，把一次交接拆成带时间戳的事件。
 
-来源：`benchmarks/eval/benchmark_omni_streaming_ttft.py:179-205`；Learning SGLang 第 20 章第 1 步。
+来源：`benchmarks/eval/benchmark_omni_streaming_ttft.py:179-205`；`benchmarks/metrics/playback_continuity.py:11-83`；`benchmarks/metrics/performance.py:50-60,177-181,272-273`；`benchmarks/tasks/tts.py:1272-1306`；Learning SGLang 第 20 章第 1 步。
 
 ## 第 4 步 · 打开通信 trace
 

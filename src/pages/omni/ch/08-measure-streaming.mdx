@@ -17,7 +17,7 @@ Step 1 repeats the PR #1235 measurements already shown in Learning SGLang Ch. 19
 
 Step 2 follows `benchmarks/eval/benchmark_omni_streaming_ttft.py:148-205`. The client starts `time.perf_counter()` before streaming the POST. It assigns TTFT only when a delta contains nonempty `audio.data`; text-only deltas do not stop that timer. It measures total time after the stream finishes and requires at least one audio delta. The displayed 0.0, 1.4 and 3.2 seconds are constructed teaching times, not benchmark output.
 
-Step 3 constructs two arrivals at 1.4 and 2.5 seconds around the 800 ms playback chunk from Learning SGLang Ch. 20 Step 1. Chunk 1 therefore plays until 2.2 seconds, leaving a 0.3-second gap. The current TTFT script counts audio chunks but does not store their individual arrival times or calculate stalls. This step shows the additional per-chunk timing arithmetic; it does not claim a shipped stall metric or a measured 0.3-second result.
+Step 3 constructs two arrivals at 1.4 and 2.5 seconds around the 800 ms playback chunk from Learning SGLang Ch. 20 Step 1. Chunk 1 therefore plays until 2.2 seconds, leaving a 0.3-second gap. Separately, `benchmarks/metrics/playback_continuity.py:11-83` implements the shipped TTS continuity metric: each chunk starts at its arrival or the previous chunk's end, whichever is later, using measured chunk durations. It keeps each multi-chunk request's longest underrun, reports the largest of those per-request values, and reports `c50`, `c100` and `c200`, the percentages whose longest underrun is at most 50, 100 and 200 ms. One-chunk requests are N/A and do not enter those rates. The TTFT script in Step 2 only counts audio chunks; it does not calculate this metric. The constructed 0.3-second example is not benchmark output.
 
 Step 4 follows `sglang_omni/profiler/comm_trace.py:14-34`, `sglang_omni/comm/engine.py:376-393` and `sglang_omni/pipeline/stage/runtime.py:665-682`. `SGLANG_OMNI_COMM_TRACE=1` enables JSON log records. `ts_ns` comes from `time.time_ns`; `elapsed_ms` measures the local `perf_counter_ns` interval around this read, not the whole request. Object `obj-17` is a constructed identifier, not a captured log.
 
@@ -40,7 +40,7 @@ Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37
 
 第 2 步依据 `benchmarks/eval/benchmark_omni_streaming_ttft.py:148-205`。客户端在流式 POST 前调用 `time.perf_counter()` 开始计时。只有 delta 含有非空 `audio.data` 时才记录 TTFT，纯文字 delta 不会让 TTFT 停表。流结束后才记录总时间；若一直没有 audio delta，测试会报错。图上的 0.0、1.4、3.2 秒是构造教学时刻，不是 benchmark 输出。
 
-第 3 步围绕 Learning SGLang 第 20 章第 1 步的 800 ms 播放 chunk，构造 1.4、2.5 秒两次到达。chunk 1 因此在 2.2 秒播完，留下 0.3 秒空档。当前 TTFT 脚本只统计 audio chunk 数，不保存逐块到达时刻，也不计算卡顿。本步展示需要补充的逐块计时算式，不声称已有卡顿指标，也不把 0.3 秒当成实测结果。
+第 3 步围绕 Learning SGLang 第 20 章第 1 步的 800 ms 播放 chunk，构造 1.4、2.5 秒两次到达。chunk 1 因此在 2.2 秒播完，留下 0.3 秒空档。另有已发布的 TTS 连续性指标 `benchmarks/metrics/playback_continuity.py:11-83`：每块在到达时或前一块播完时开始，取两者中较晚的时刻，并使用实测 chunk 时长。它记录每个多 chunk 请求的最长 underrun，报告这些逐请求值里的最大值，还报告 `c50`、`c100`、`c200`，即最长 underrun 分别不超过 50、100、200 ms 的请求百分比。单 chunk 请求记为 N/A，不进入这些比例。第 2 步的 TTFT 脚本只统计 audio chunk 数，不计算这个指标。构造的 0.3 秒不是 benchmark 输出。
 
 第 4 步依据 `sglang_omni/profiler/comm_trace.py:14-34`、`sglang_omni/comm/engine.py:376-393` 和 `sglang_omni/pipeline/stage/runtime.py:665-682`。`SGLANG_OMNI_COMM_TRACE=1` 打开 JSON 日志。`ts_ns` 来自 `time.time_ns`；`elapsed_ms` 用 `perf_counter_ns` 计算这次读取的局部耗时，不是整个请求。对象 `obj-17` 是构造标识符，不是抓取的日志。
 

@@ -107,13 +107,21 @@ $$g=\max(0,2.5-2.2)=0.3\ \text{s}$$
 
 $$\frac{g}{d}=\frac{0.3}{0.8}=37.5\%$$
 
-If chunk 2 arrives before 2.2 seconds, `max` clamps the negative result to zero instead of reporting negative silence. The current benchmark increments `audio_chunks` on every audio delta but does not store each $a_i$. Measuring a real $g$ requires per-chunk arrival records and the same playback rule. The shipped script does not print this metric.
+If chunk 2 arrives before 2.2 seconds, `max` clamps the negative result to zero instead of reporting negative silence.
+
+### The shipped continuity statistics
+
+`benchmarks/metrics/playback_continuity.py` applies the same playback rule to every chunk, using each chunk's measured duration. A chunk starts when it arrives or when the previous chunk ends, whichever is later. `compute_max_playback_underrun_s` keeps the longest silent gap in one request and returns N/A for a request with fewer than two chunks.
+
+Across requests, `max_playback_underrun_max_s` is the largest of those per-request longest gaps. `c50`, `c100` and `c200` are the percentages of scored requests whose longest gap is at most 50, 100 and 200 ms. `playback_continuity_requests` counts scored multi-chunk requests; `playback_continuity_na_requests` counts the excluded one-chunk requests.
+
+Step 2's TTFT script increments `audio_chunks` but does not store each $a_i$ or calculate this metric. The TTS benchmark records HTTP chunk arrival times and measured durations before calling the continuity helper. The stage's 0.3-second gap and fixed 800 ms chunks are constructed teaching values, not benchmark output.
 
 ### Next
 
 Arrival times locate the gap without explaining which hand-off caused it. The next step enables communication tracing and places timestamped events on that hand-off.
 
-Sources: `benchmarks/eval/benchmark_omni_streaming_ttft.py:179-205`; Learning SGLang Ch. 20 Step 1.
+Sources: `benchmarks/eval/benchmark_omni_streaming_ttft.py:179-205`; `benchmarks/metrics/playback_continuity.py:11-83`; `benchmarks/metrics/performance.py:50-60,177-181,272-273`; `benchmarks/tasks/tts.py:1272-1306`; Learning SGLang Ch. 20 Step 1.
 
 ## Step 4 · Enable communication tracing
 

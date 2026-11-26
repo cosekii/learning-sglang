@@ -11,6 +11,7 @@
     STREAM_TEACHING_TTFT_S, STREAM_TEACHING_TOTAL_S,
     STREAM_CHUNK_DURATION_S, STREAM_CHUNK1_ARRIVAL_S, STREAM_CHUNK1_END_S,
     STREAM_CHUNK2_ARRIVAL_S, STREAM_CHUNK2_END_S, STREAM_STALL_S, STREAM_STALL_CHUNK_PERCENT,
+    STREAM_CONTINUITY_THRESHOLDS_MS,
     STREAM_TRACE_OBJECT_ID,
     STREAM_TRACE_HOST_WAIT_MS, STREAM_TRACE_GPU_EVENT_MS, STREAM_TRACE_HOST_REST_MS,
     STREAM_BENCH_PROMPT_COUNT, STREAM_BENCH_WARMUP_PER_PROMPT, STREAM_BENCH_REPEATS_PER_PROMPT,
@@ -64,7 +65,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [590, 650, 600, 540, 610, 680, 700, 720][step] : [430, 460, 480, 480, 460, 520, 540, 500][step]);
+  const H = $derived(phone ? [590, 650, 750, 540, 610, 680, 700, 720][step] : [430, 460, 660, 480, 460, 520, 540, 500][step]);
   const barMax = $derived(phone ? 185 : 400);
   const barScale = $derived(barMax / STREAM_P90_SHARED_S);
   const timeX = (seconds: number) => 60 + (seconds / STREAM_TEACHING_DONE_S) * 600;
@@ -179,11 +180,23 @@
         <text x={W / 2} y="370" text-anchor="middle" class="result">chunk 1 {t('ends', '结束')} = {STREAM_CHUNK1_ARRIVAL_S.toFixed(1)} + {STREAM_CHUNK_DURATION_S.toFixed(1)} = {STREAM_CHUNK1_END_S.toFixed(1)} s</text>
         <text x={W / 2} y="407" text-anchor="middle" class="result">stall = max(0, {STREAM_CHUNK2_ARRIVAL_S.toFixed(1)} − {STREAM_CHUNK1_END_S.toFixed(1)}) = {STREAM_STALL_S.toFixed(1)} s</text>
         <text x={W / 2} y={phone ? 449 : 450} text-anchor="middle" class="small strong">{STREAM_STALL_S.toFixed(1)} ÷ {STREAM_CHUNK_DURATION_S.toFixed(1)} = {STREAM_STALL_CHUNK_PERCENT.toFixed(1)}% {t('of one chunk', '一个 chunk')}</text>
-        {#if phone}
-          <text x="150" y="493" text-anchor="middle" class="small">{t('Keep every audio arrival time', '记录每个声音块的到达时刻')}</text>
-          <text x="150" y="521" text-anchor="middle" class="small">{t('to find this gap in a real run.', '就能在实测中找出空档。')}</text>
+        {#if !phone}
+          <rect x="36" y="480" width="648" height="150" rx="12" fill="var(--bg)" stroke="var(--line)" />
+          <text x="56" y="507" class="small strong">REAL BENCHMARK · playback_continuity.py</text>
+          <text x="56" y="535" class="small">{t('one request → longest underrun = its longest silent gap', '一个请求 → 最长 underrun = 它最长的静音空档')}</text>
+          <text x="56" y="563" class="small">{t('all requests → max underrun = the worst of those values', '全部请求 → max underrun = 这些值里最大的一个')}</text>
+          <text x="56" y="591" class="small">c{STREAM_CONTINUITY_THRESHOLDS_MS.join(' / c')} = % {t('with longest gap ≤', '最长空档 ≤')} {STREAM_CONTINUITY_THRESHOLDS_MS.join(' / ')} ms</text>
+          <text x="56" y="617" class="small">{t('multi-chunk requests only · one chunk = N/A', '只统计多 chunk 请求 · 单 chunk = N/A')}</text>
+        {:else}
+          <rect x="20" y="485" width="260" height="200" rx="12" fill="var(--bg)" stroke="var(--line)" />
+          <text x="34" y="512" class="small strong">REAL BENCHMARK</text>
+          <text x="34" y="542" class="small">{t('one request → longest gap', '一个请求 → 最长空档')}</text>
+          <text x="34" y="572" class="small">{t('all → worst of those gaps', '全部 → 这些空档的最大值')}</text>
+          <text x="34" y="602" class="small">c{STREAM_CONTINUITY_THRESHOLDS_MS.join(' / c')}</text>
+          <text x="34" y="632" class="small">% {t('with gap ≤', '最长空档 ≤')} {STREAM_CONTINUITY_THRESHOLDS_MS.join(' / ')} ms</text>
+          <text x="34" y="662" class="small">{t('multi-chunk only · 1 chunk = N/A', '只算多 chunk · 单 chunk = N/A')}</text>
         {/if}
-        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Constructed times · 800 ms from Ch. 20' : 'Constructed arrival times; the 800 ms chunk follows Learning SGLang Ch. 20.', phone ? '构造时刻 · 800 ms 见第 20 章' : '构造到达时刻；800 ms chunk 见 Learning SGLang 第 20 章。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Constructed example above · real chunk durations vary' : 'Constructed example above; the real benchmark uses each chunk’s measured duration.', phone ? '上方是构造例 · 实测每块时长可不同' : '上方是构造例；真实 benchmark 使用每个 chunk 的实测时长。')}</text>
       {:else if step === 3}
         <text x={phone ? 18 : 36} y="30" class="title">{t(phone ? 'One trace record' : 'A trace puts a read in a log', phone ? '一条 trace 记录' : 'trace 把一次读取写进日志')}</text>
         <text x={phone ? 18 : 36} y="55" class="label">{t('trace = timestamped event records', 'trace = 带时间戳的事件记录')}</text>
