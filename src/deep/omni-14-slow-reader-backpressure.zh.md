@@ -238,38 +238,37 @@ $$
 
 读者已经知道这条流失败。下一步看不同连接怎样把这个失败送出去。
 
-## 第 7 步 · 不同连接报告同一种失败
+## 第 7 步 · 响应开始前后，失败输出不同
 
-> **一句话：** 带事件的连接发送错误事件，只有声音样本的连接只能提前关闭。
+> **一句话：** 首个声音前，HTTP 返回 JSON 503；开始后的失败按连接改用 error 事件或响应流提前结束。
 
 ### 图上是什么
 
-- 事件外壳是包住数据、带有名字的消息。左图的带事件连接能在声音之外发送 `error`，报告 `The request queue is full.`。
+- 顶行把首音前的 HTTP 路径限定为 SSE 和 raw audio。两者都在首个声音之前返回 JSON HTTP 503。
+- 事件外壳是包住数据、带有名字的消息。SSE 开始后，左图在声音之外发送 `error`，报告 `The request queue is full.`。语音 WebSocket 也使用 error 事件和自己的完成处理。
 - 错误之前可能已经交付部分声音。
-- 右图只有声音样本，没有装错误的事件外壳，所以连接提前关闭。
+- 右图的 raw 响应已经开始，只有声音样本。没有通用错误外壳，响应流只能提前结束。
 - 橙色只表示失败输出。两幅图都是同一个共享上限失败，不是两次实验。
 
-### 协议例子
+### 出口
 
-左图的协议例子是 SSE 和 WebSocket，右图的协议例子是 raw PCM。这些名字没有画在主舞台上。
-
-### 三种出口
-
-| 连接 | 读者看到的结束方式 |
+| 连接和时刻 | 读者看到的失败方式 |
 |---|---|
-| 语音 SSE | `error` 事件 |
-| 语音 WebSocket | `error` 事件 |
-| raw PCM | 流提前关闭 |
+| HTTP SSE，首个声音前 | JSON HTTP 503 |
+| raw HTTP audio，首个声音前 | JSON HTTP 503 |
+| 语音 SSE，响应开始后 | `error` 事件 |
+| 语音 WebSocket | `error` 事件和自己的完成处理 |
+| raw HTTP audio，响应开始后 | 响应流提前结束，没有通用错误外壳 |
 
-SSE 在已经发出声音时还会写入 `partial_audio=true` 和 `action=discard`，提示客户端丢掉不完整声音。实时 session 的输出预算和 close code 是另一套协议，不在本步范围内。
+SSE 在已经发出声音时还会写入 `partial_audio=true` 和 `action=discard`，提示客户端丢掉不完整声音。实时 session 的输出预算和 close code 是另一套协议，不在本步范围内。这个上限不在 admission 拒绝新请求。
 
 ### 边界与出处
 
-三种行为和新请求不被这个上限拒绝，见 `docs/cookbook/qwen3_tts/tuning.md:24-28`。SSE 错误帧及部分声音标记见 `sglang_omni/serve/speech_streaming.py:202-228`。这不是响应前的 HTTP 503。
+首音前的 JSON 503 路径见 `sglang_omni/serve/openai_api.py:2202-2260,1945-1967` 和 `sglang_omni/serve/speech_errors.py:126-138`。SSE 错误帧及部分声音标记见 `sglang_omni/serve/speech_streaming.py:202-228`。协议出口和 admission 边界也见 `docs/cookbook/qwen3_tts/tuning.md:24-28`。
 
 ### 接下来
 
-失败消息送出以后，读者取走错误或关闭连接会释放剩余的流队列和 ID。
+下一步分开队列清理和流 ID 释放。
 
 ## 第 8 步 · 两种关闭情况，两种剩余内容
 

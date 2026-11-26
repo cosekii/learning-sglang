@@ -238,38 +238,37 @@ The failure-completion path is in `sglang_omni/pipeline/coordinator.py:940-967`.
 
 The reader now has a failed stream. The next step shows how each connection type reports that failure.
 
-## Step 7 · Different connections report the same failure
+## Step 7 · Failure output before and after the response starts
 
-> **In one line:** Event connections send an error event; samples-only connections must close early.
+> **In one line:** HTTP returns JSON 503 before first audio; later failures use an error event or an early response-stream ending, depending on the connection.
 
 ### On the stage
 
-- An event envelope is a named message wrapped around data. The left event connection can send an `error` beside audio and report `The request queue is full.`
+- The top line scopes the pre-audio HTTP path to SSE and raw audio. Both return a JSON HTTP 503 before the first audio frame.
+- An event envelope is a named message wrapped around data. After SSE starts, the left connection sends an `error` beside audio and reports `The request queue is full.` Speech WebSocket also uses an error event and its own completion handling.
 - Partial audio may already have gone out before that error.
-- The right panel carries only audio samples. With no event envelope for the error, its connection closes early.
+- The right panel carries only raw audio samples after its response starts. With no general error envelope, the response stream ends early.
 - Orange marks failure output. Both panels show the same shared-cap failure, not two experiments.
 
-### Protocol examples
+### The exits
 
-The left panel's examples are SSE and WebSocket. The right panel's example is raw PCM. These protocol names do not appear on the main stage.
-
-### The three exits
-
-| Connection | How the reader sees the end |
+| Connection and timing | How the reader sees the failure |
 |---|---|
-| Speech SSE | `error` event |
-| Speech WebSocket | `error` event |
-| Raw PCM | Early stream close |
+| HTTP SSE, before first audio | JSON HTTP 503 |
+| Raw HTTP audio, before first audio | JSON HTTP 503 |
+| Speech SSE, after the response starts | `error` event |
+| Speech WebSocket | `error` event and its own completion handling |
+| Raw HTTP audio, after the response starts | Response stream ends early; no general error envelope |
 
-After emitting audio, SSE also writes `partial_audio=true` and `action=discard`, telling the client to discard the incomplete audio. Realtime-session output budgets and close codes use a separate protocol and sit outside this step.
+After emitting audio, SSE also writes `partial_audio=true` and `action=discard`, telling the client to discard the incomplete audio. Realtime-session output budgets and close codes use a separate protocol and sit outside this step. This cap does not refuse new requests at admission.
 
 ### Boundary and sources
 
-The three behaviors and the rule that this cap does not refuse new requests are in `docs/cookbook/qwen3_tts/tuning.md:24-28`. The SSE error frame and partial-audio markers are in `sglang_omni/serve/speech_streaming.py:202-228`. This is not a pre-response HTTP 503.
+The pre-audio JSON 503 paths are in `sglang_omni/serve/openai_api.py:2202-2260,1945-1967` and `sglang_omni/serve/speech_errors.py:126-138`. The SSE error frame and partial-audio markers are in `sglang_omni/serve/speech_streaming.py:202-228`. The protocol exits and admission boundary are also documented in `docs/cookbook/qwen3_tts/tuning.md:24-28`.
 
 ### Next
 
-After the failure goes out, taking the error or closing the reader releases the remaining stream queue and ID.
+The next step separates queue cleanup from stream-ID release.
 
 ## Step 8 · Two close cases, two different leftovers
 

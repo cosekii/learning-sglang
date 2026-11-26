@@ -62,8 +62,8 @@
     caption: 'A cap failure ends the whole stream. It aborts generation only if generation is still running.',
     captionZh: '超过上限会结束整条流。只有还在生成时，才中止生成。',
   }, {
-    caption: 'Event connections can report an error beside audio. Samples-only connections close early.',
-    captionZh: '带事件的连接能在声音之外报告错误。只有声音样本的连接只能提前关闭。',
+    caption: 'Before first audio, HTTP returns JSON 503. After SSE starts, an error event reports failure; raw response streams only end early.',
+    captionZh: '首个声音前，HTTP 返回 JSON 503。SSE 开始后改发 error 事件，raw 响应流只能提前结束。',
   }, {
     caption: 'Closing the reader releases its queue and aborts owned work. When two API processes share one URL, which takes the next request?',
     captionZh: '关闭读者会释放队列，并中止仍持有的工作。两个 API 进程共用一个公开网址时，谁接收下一个请求？',
@@ -291,18 +291,19 @@
         <text x={phone ? 15 : 20} y="26" class="rowlabel">{t('THE READER LEARNS THAT DELIVERY FAILED', '读者得知交付失败')}</text>
         <text x={phone ? 15 : 20} y="52" class="tag">{t('event envelope = a named message wrapped around data', '事件外壳 = 包住数据、带有名字的消息')}</text>
         <text x={phone ? 15 : 20} y="76" class="tag">{phone ? t('orange = failure output · same failure in both panels', '橙 = 失败输出 · 两图同一失败') : t('orange = failure output · both panels show the same cap failure', '橙 = 失败输出 · 两幅图都是同一个上限失败')}</text>
+        <text x={W / 2} y={phone ? 102 : 104} text-anchor="middle" class="tag strong">{t('BEFORE FIRST AUDIO · HTTP SSE + RAW: JSON 503', '首个声音前 · HTTP SSE + raw：JSON 503')}</text>
         {#each phone ? [
-          { x: 15, y: 116, h: 276, title: 'EVENT CONNECTIONS', titleZh: '带事件的连接', raw: false },
-          { x: 15, y: 428, h: 250, title: 'SAMPLES-ONLY CONNECTION', titleZh: '只有声音样本的连接', raw: true },
+          { x: 15, y: 116, h: 276, title: 'SSE + SPEECH WEBSOCKET', titleZh: 'SSE + 语音 WebSocket', raw: false },
+          { x: 15, y: 428, h: 250, title: 'RAW AUDIO · RESPONSE STARTED', titleZh: 'raw 响应已开始', raw: true },
         ] : [
-          { x: 40, y: 126, h: 350, title: 'EVENT CONNECTIONS', titleZh: '带事件的连接', raw: false },
-          { x: 380, y: 126, h: 350, title: 'SAMPLES-ONLY CONNECTION', titleZh: '只有声音样本的连接', raw: true },
+          { x: 40, y: 126, h: 350, title: 'SSE + SPEECH WEBSOCKET', titleZh: 'SSE + 语音 WebSocket', raw: false },
+          { x: 380, y: 126, h: 350, title: 'RAW AUDIO · RESPONSE STARTED', titleZh: 'raw 响应已开始', raw: true },
         ] as panel}
           <rect x={panel.x} y={panel.y} width={phone ? 270 : 300} height={panel.h} rx="11" fill="var(--bg)" stroke="var(--line)" />
           <text x={panel.x + 16} y={panel.y + 30} class="tag strong">{t(panel.title, panel.titleZh)}</text>
           {#if !panel.raw}
-            <text x={panel.x + 16} y={panel.y + 60} class="tag">{t('named events beside audio', '声音之外，还有带名字的事件')}</text>
-            <text x={panel.x + 16} y={panel.y + 88} class="tag">{t('one error event reports the failure', '一个 error 事件报告失败')}</text>
+            <text x={panel.x + 16} y={panel.y + 60} class="tag">{t('after SSE starts, beside audio', 'SSE 开始后，在声音之外报告')}</text>
+            <text x={panel.x + 16} y={panel.y + 88} class="tag">{t('Speech WebSocket: error event too', '语音 WebSocket 也发 error 事件')}</text>
             <rect x={panel.x + 16} y={panel.y + 116} width={phone ? 238 : 268} height="88" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
             <text x={panel.x + 28} y={panel.y + 147} class="tag strong">error</text>
             <text x={panel.x + 28} y={panel.y + 177} class="mono">The request queue is full.</text>
@@ -311,14 +312,14 @@
             <text x={panel.x + 16} y={panel.y + 60} class="tag">{t('audio samples only', '只有声音样本')}</text>
             <text x={panel.x + 16} y={panel.y + 88} class="tag">{t('no event envelope for an error', '没有装错误的事件外壳')}</text>
             <rect x={panel.x + 16} y={panel.y + 116} width={phone ? 238 : 268} height="88" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
-            <text x={panel.x + 28} y={panel.y + 147} class="tag strong">{t('CONNECTION CLOSED EARLY', '连接提前关闭')}</text>
-            <text x={panel.x + 28} y={panel.y + 177} class="tag">{t('no error event', '没有错误事件')}</text>
-            <text x={panel.x + 20} y={panel.y + 240} class="tag">{t('The reader sees the stream end.', '读者看到流提前结束。')}</text>
+            <text x={panel.x + 28} y={panel.y + 147} class="tag strong">{t('RESPONSE STREAM ENDS EARLY', '响应流提前结束')}</text>
+            <text x={panel.x + 28} y={panel.y + 177} class="tag">{t('no general error envelope', '没有通用错误外壳')}</text>
+            <text x={panel.x + 20} y={panel.y + 240} class="tag">{t('The reader sees the response stream end.', '读者看到响应流提前结束。')}</text>
           {/if}
         {/each}
         <text x={W / 2} y={phone ? 724 : 526} text-anchor="middle" class="tag">{t('This cap does not refuse new requests.', '这个上限不会因此拒绝新请求。')}</text>
         <text x={W / 2} y={phone ? 782 : 580} text-anchor="middle" class="rowlabel">{t('What remains until the reader closes?', '读者关闭以前，还留着什么？')}</text>
-        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Two connection kinds, two ways to report the same failure.', '两类连接用两种方式报告同一种失败。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Constructed failure; no live connection was measured.', '构造失败场景，未测量真实连接。')}</text>
       {:else if step === 7}
         <text x={phone ? 15 : 20} y="26" class="rowlabel">{t('TWO CLOSE CASES, TWO DIFFERENT LEFTOVERS', '两种关闭情况，剩余内容不同')}</text>
         <text x={phone ? 15 : 20} y="52" class="tag">{t('owned = the request work record remains · Ch. 3 Step 2', '仍持有 = 请求的工作记录还在 · 第 3 章第 2 步')}</text>
