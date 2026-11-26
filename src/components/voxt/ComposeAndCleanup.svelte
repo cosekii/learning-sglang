@@ -27,8 +27,8 @@
     caption: 'A failed piece keeps its recognized words. Other pieces can still be cleaned.',
     captionZh: '失败的分片保留识别原话。其他分片仍能使用清理结果。',
   }, {
-    caption: 'Translate retries a suspected echo once. Rewrite cannot fall back to its spoken instruction.',
-    captionZh: '翻译发现疑似回显会重试一次。改写不会把口述指令当结果。',
+    caption: 'Translate retries an echoed answer once. Rewrite never inserts its spoken instruction.',
+    captionZh: '翻译发现回答照抄原文时会重试一次。改写不会插入口述指令。',
   }, {
     caption: 'A cut-off Translate or Rewrite answer waits in the answer card. It never inserts unseen.',
     captionZh: '截断的翻译或改写回答留在答案卡。它不会在你没看到时插入。',
@@ -43,8 +43,8 @@
     en: 'A simplified Transcribe cleanup prompt has five functional parts. Four system instruction layers cover the role, cleanup rules, task and output contract. One user message supplies the recognized text inside an input wrapper. Four plus one makes five parts in one prompt.',
     zh: '一个简化的整理听写 prompt 有五个功能部分。system 的四层说明分别是角色、清理规则、任务和输出约定。一条 user 消息把识别文字放进 input 包裹。四加一组成一个 prompt 的五个部分。',
   }, {
-    en: 'Three tasks have three answer contracts. Built-in Transcribe changes an answer containing output tags into only the inner text. Translate preserves output tags that belong to the text. A first Rewrite from scratch reads title and content fields. The answers are constructed examples.',
-    zh: '三种任务有三种输出约定。内置整理听写把带 output 标签的回答处理成标签内的文字。翻译保留正文本身的 output 标签。首次从零改写读取 title 和 content 字段。回答是构造示例。',
+    en: 'Three tasks have three answer contracts. Built-in Transcribe changes an answer containing output tags into only the inner text. Translate preserves output tags that belong to the text. A first new Rewrite document has a title called Note and content saying Hi. The answers are constructed examples.',
+    zh: '三种任务有三种输出约定。内置整理听写把带 output 标签的回答处理成标签内的文字。翻译保留正文本身的 output 标签。首次写新文档的改写得到标题 Note 和正文 Hi。回答是构造示例。',
   }, {
     en: 'One constructed long dictation becomes three requests. Every request has the same system instructions and a different user piece. The three answers join in their original order as one dictation. Translate and Rewrite do not split this way.',
     zh: '一段构造的长听写变成三个请求。每个请求使用相同的 system 说明和不同的 user 分片。三份答案按原顺序合成一段听写。翻译和改写不按这种方式分片。',
@@ -52,8 +52,8 @@
     en: 'In the same three-piece dictation, pieces one and three have cleaned answers. Piece two fails and keeps its recognized words. The three outputs still join in order. The session ends Done with ProblemLLM and Degraded true because one piece was not cleaned.',
     zh: '同一段三片听写中，第一片和第三片得到清理结果。第二片失败并保留识别原话。三份输出仍按顺序合回。因为有一片没有清理，会话以 Done、ProblemLLM 和 Degraded 为 true 结束。',
   }, {
-    en: 'A constructed selected Translate answer repeats Good morning. Voxt makes one strict retry. If the final answer is still an echo and language mismatch gives positive evidence, the session fails without insertion. A constructed Rewrite request fails. Its speech, Make it shorter, is an instruction, so there are zero raw-speech fallbacks.',
-    zh: '构造的选区翻译回答重复 Good morning。Voxt 追加一次 strict 重试。如果最终回答仍是回显，并且有明确的语言不匹配证据，会话失败且不插入。构造的改写请求失败。Make it shorter 这段口述是指令，所以没有口述原文回退。',
+    en: 'A constructed selected Translate answer repeats Good morning. Voxt retries once with a do-not-echo instruction. If the final answer is still an echo and there is evidence of the wrong language, the session fails without insertion. A constructed Rewrite request fails. Its speech, Make it shorter, is an instruction, so Voxt never uses it as the result.',
+    zh: '构造的选区翻译回答重复 Good morning。Voxt 追加一次不要照抄原文的重试。如果最终回答仍是回显，并且有语言不正确的证据，会话失败且不插入。构造的改写请求失败。Make it shorter 这段口述是指令，所以不会被当作结果。',
   }, {
     en: 'A constructed Translate answer stops with finish reason length. Its incomplete text goes to one answer card for review instead of inserting unseen. The session finishes Done with ProblemTruncated and Degraded true. There are zero unseen inserts.',
     zh: '构造的翻译回答以 length 结束原因停止。不完整的文字进入一张答案卡供检查，不会在你没看到时插入。会话以 Done、ProblemTruncated 和 Degraded 为 true 结束。未查看就插入的次数为 0。',
@@ -78,7 +78,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived((phone ? [680, 620, 670, 660, 650, 650, 710, 610] : [480, 410, 460, 420, 430, 430, 460, 440])[step]);
+  const H = $derived((phone ? [680, 620, 700, 660, 650, 650, 710, 610] : [480, 410, 460, 420, 430, 430, 460, 440])[step]);
 </script>
 
 <figure class="viz">
@@ -147,8 +147,8 @@
           {/if}
         {/each}
         <text x={W / 2} y={phone ? 565 : 325} text-anchor="middle" class="cut">{t('REUSE THE INSTRUCTIONS · REPLACE THE INPUT', '复用说明 · 替换本次输入')}</text>
-        <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('User text cannot literally close its wrapper.', '用户文本不能原样闭合自己的包裹标签。')}</text>
-        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Matching closing tags are escaped.', '同名闭合标签会被转义。')}</text>
+        <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('History can be empty when there are no earlier turns.', '没有前几轮对话时，history 可以为空。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Each run supplies a new user input.', '每次运行都会提供新的 user 输入。')}</text>
       {:else if step === 2}
         <text x={W / 2} y="27" text-anchor="middle" class="title">{t('TRANSCRIBE + CLEANUP · ONE PROMPT', '整理听写 + 清理 · 一份 prompt')}</text>
         <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('prompt = the complete instructions and input', 'prompt = 完整的说明和输入')}</text>
@@ -156,9 +156,9 @@
         <text x={phone ? 150 : 230} y={phone ? 98 : 102} text-anchor="middle" class="label">SYSTEM · 4 {t('INSTRUCTION LAYERS', '层说明')}</text>
         {#each [
           { name: '1 · ROLE', nameZh: '1 · 角色', detail: 'who should do the work', detailZh: '谁来做这项工作' },
-          { name: '2 · CLEANUP', nameZh: '2 · 清理规则', detail: 'which fillers and repeats to remove', detailZh: '去掉哪些口头填充和重复' },
+          { name: '2 · CLEANUP', nameZh: '2 · 清理规则', detail: 'remove fillers such as “um”', detailZh: '去掉“嗯”这类口头填充' },
           { name: '3 · TASK', nameZh: '3 · 任务', detail: 'tidy this dictation', detailZh: '整理这段听写' },
-          { name: '4 · OUTPUT', nameZh: '4 · 输出约定', detail: 'put the answer in <output>', detailZh: '把答案放进 <output>' },
+          { name: '4 · OUTPUT', nameZh: '4 · 输出约定', detail: 'tags around the answer', detailZh: '答案前后的标签' },
         ] as layer, i}
           {@const x = phone ? 35 : 50}
           {@const y = phone ? 112 + i * 73 : 115 + i * 60}
@@ -168,25 +168,25 @@
           <text x={x + 14} y={y + (phone ? 47 : 39)} class="detail">{t(layer.detail, layer.detailZh)}</text>
         {/each}
         {#if phone}
-          <line x1="150" y1="426" x2="150" y2="450" stroke="var(--muted)" stroke-width="2" marker-end="url(#compose-arrow)" />
+          <line x1="150" y1="426" x2="150" y2="445" stroke="var(--muted)" stroke-width="2" marker-end="url(#compose-arrow)" />
         {:else}
           <line x1="435" y1="220" x2="475" y2="220" stroke="var(--muted)" stroke-width="2" marker-end="url(#compose-arrow)" />
         {/if}
-        <rect x={phone ? 35 : 485} y={phone ? 460 : 145} width={phone ? 230 : 200} height={phone ? 100 : 150} rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2" />
-        <text x={phone ? 150 : 585} y={phone ? 487 : 174} text-anchor="middle" class="label" fill="var(--accent)">USER · 1 {t('INPUT', '份输入')}</text>
-        <text x={phone ? 150 : 585} y={phone ? 516 : 213} text-anchor="middle" class="mono">&lt;input&gt;</text>
-        <text x={phone ? 150 : 585} y={phone ? 541 : 244} text-anchor="middle" class="value small">“Good morning.”</text>
-        {#if !phone}<text x="585" y="272" text-anchor="middle" class="mono">&lt;/input&gt;</text>{/if}
-        <text x={W / 2} y={phone ? 595 : 390} text-anchor="middle" class="cut">4 + 1 = {VOXT_COMPOSE_PROMPT_PART_COUNT} {t('PARTS · ONE PROMPT', '个部分 · 一份 prompt')}</text>
-        <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('Simplified map · form and example layers omitted.', '简化图 · 省略格式和示例层。')}</text>
-        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('The input value is constructed.', '输入值是构造的。')}</text>
+        <rect x={phone ? 35 : 485} y={phone ? 450 : 145} width={phone ? 230 : 200} height={phone ? 120 : 150} rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2" />
+        <text x={phone ? 150 : 585} y={phone ? 475 : 174} text-anchor="middle" class="label" fill="var(--accent)">USER · 1 {t('INPUT', '份输入')}</text>
+        <text x={phone ? 150 : 585} y={phone ? 500 : 213} text-anchor="middle" class="mono">&lt;input&gt;</text>
+        <text x={phone ? 150 : 585} y={phone ? 526 : 244} text-anchor="middle" class="value small">“Good morning.”</text>
+        <text x={phone ? 150 : 585} y={phone ? 552 : 272} text-anchor="middle" class="mono">&lt;/input&gt;</text>
+        <text x={W / 2} y={phone ? 610 : 390} text-anchor="middle" class="cut">4 + 1 = {VOXT_COMPOSE_PROMPT_PART_COUNT} {t('PARTS · ONE PROMPT', '个部分 · 一份 prompt')}</text>
+        <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('Tags mark where text starts and ends.', '标签标出文字从哪里开始、到哪里结束。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Simplified map · constructed input.', '简化图 · 构造的输入。')}</text>
       {:else if step === 3}
         <text x={W / 2} y="27" text-anchor="middle" class="title">{t('THREE TASKS · THREE ANSWER CONTRACTS', '三种任务 · 三种输出约定')}</text>
         <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('answer contract = the shape Voxt expects back', '输出约定 = Voxt 期望收到的回答形状')}</text>
         {#each [
-          { name: 'TRANSCRIBE', nameZh: '整理听写', scope: 'BUILT-IN CLEANUP', scopeZh: '内置清理', answer: '<output>Hi.</output>', kept: 'Hi.' },
-          { name: 'TRANSLATE', nameZh: '翻译', scope: 'TAGS IN THE TEXT', scopeZh: '正文里的标签', answer: '“<output>”', kept: '“<output>”' },
-          { name: 'REWRITE', nameZh: '改写', scope: 'FIRST FROM SCRATCH', scopeZh: '首次从零写作', answer: '{title, content}', kept: 'title + content' },
+          { name: 'TRANSCRIBE', nameZh: '整理听写', scope: 'BUILT-IN CLEANUP', scopeZh: '内置清理', answer: '<output>Hi.</output>', answer2: '', kept: 'Hi.' },
+          { name: 'TRANSLATE', nameZh: '翻译', scope: 'TAGS IN THE TEXT', scopeZh: '正文里的标签', answer: '“<output>”', answer2: '', kept: '“<output>”' },
+          { name: 'REWRITE', nameZh: '改写', scope: 'FIRST NEW DOCUMENT', scopeZh: '首次写新文档', answer: 'title: “Note”', answer2: 'content: “Hi.”', kept: '“Note” + “Hi.”' },
         ] as contract, i}
           {@const x = phone ? 25 : 25 + i * 230}
           {@const y = phone ? 70 + i * 145 : 75}
@@ -194,7 +194,12 @@
           <rect {x} {y} width={w} height={phone ? 125 : 230} rx="10" fill="var(--bg)" stroke="var(--line)" stroke-width="1.5" />
           <text x={x + w / 2} y={y + 22} text-anchor="middle" class="label">{t(contract.name, contract.nameZh)}</text>
           <text x={x + w / 2} y={y + 42} text-anchor="middle" class="detail">{t(contract.scope, contract.scopeZh)}</text>
-          {#if phone}
+          {#if phone && contract.answer2}
+            <text x={x + w / 2} y={y + 59} text-anchor="middle" class="detail">{t('MODEL ANSWER', '模型回答')}</text>
+            <text x={x + w / 2} y={y + 79} text-anchor="middle" class="mono">{contract.answer}</text>
+            <text x={x + w / 2} y={y + 98} text-anchor="middle" class="mono">{contract.answer2}</text>
+            <text x={x + w / 2} y={y + 119} text-anchor="middle" class="detail" fill="var(--accent)">{t('KEEP', '保留')} {contract.kept}</text>
+          {:else if phone}
             <text x={x + 14} y={y + 68} class="detail">{t('MODEL ANSWER', '模型回答')}</text>
             <text x={x + w - 14} y={y + 68} text-anchor="end" class="mono">{contract.answer}</text>
             <text x={x + 14} y={y + 103} class="detail" fill="var(--accent)">{t('VOXT KEEPS', 'VOXT 保留')}</text>
@@ -202,14 +207,15 @@
           {:else}
             <text x={x + w / 2} y={y + 69} text-anchor="middle" class="detail">{t('MODEL ANSWER', '模型回答')}</text>
             <text x={x + w / 2} y={y + 94} text-anchor="middle" class="mono">{contract.answer}</text>
-            <line x1={x + w / 2} y1={y + 105} x2={x + w / 2} y2={y + 121} stroke="var(--muted)" stroke-width="2" marker-end="url(#compose-arrow)" />
-            <text x={x + w / 2} y={y + 142} text-anchor="middle" class="detail" fill="var(--accent)">{t('VOXT KEEPS', 'VOXT 保留')}</text>
-            <text x={x + w / 2} y={y + 165} text-anchor="middle" class="value small" fill="var(--accent)">{contract.kept}</text>
+            {#if contract.answer2}<text x={x + w / 2} y={y + 113} text-anchor="middle" class="mono">{contract.answer2}</text>{/if}
+            <line x1={x + w / 2} y1={y + (contract.answer2 ? 124 : 105)} x2={x + w / 2} y2={y + (contract.answer2 ? 140 : 121)} stroke="var(--muted)" stroke-width="2" marker-end="url(#compose-arrow)" />
+            <text x={x + w / 2} y={y + (contract.answer2 ? 161 : 142)} text-anchor="middle" class="detail" fill="var(--accent)">{t('VOXT KEEPS', 'VOXT 保留')}</text>
+            <text x={x + w / 2} y={y + (contract.answer2 ? 184 : 165)} text-anchor="middle" class="value small" fill="var(--accent)">{contract.kept}</text>
           {/if}
         {/each}
         <text x={W / 2} y={phone ? 535 : 340} text-anchor="middle" class="cut">{VOXT_COMPOSE_TASK_COUNT} {t('TASKS', '种任务')} = {VOXT_COMPOSE_TASK_COUNT} {t('ANSWER CONTRACTS', '种输出约定')}</text>
         <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('Constructed answers · later Rewrite turns use plain text.', '构造的回答 · 后续改写轮次使用纯文本。')}</text>
-        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Invalid first-write JSON becomes cleaned plain text.', '首次写作的 JSON 无效时，按清理后的纯文本处理。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Only built-in Transcribe removes output tags.', '只有内置整理听写会去掉 output 标签。')}</text>
       {:else if step === 4}
         <text x={W / 2} y="27" text-anchor="middle" class="title">{t('LONG DICTATION · SPLIT · REJOIN IN ORDER', '长听写 · 分片 · 按顺序合回')}</text>
         <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('piece = one shorter request from the dictation', '分片 = 长听写拆出的一份较短请求')}</text>
@@ -265,7 +271,7 @@
           <text x={W / 2} y="365" text-anchor="middle" class="label">DONE · ProblemLLM · Degraded = true</text>
         {/if}
         <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('Constructed failure in piece 2.', '构造第二片失败的情形。')}</text>
-        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Late answers cannot replace the chosen result.', '迟到的答案不能替换已选定的结果。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">ProblemLLM = {t('model cleanup failed', '模型清理失败')}</text>
       {:else if step === 6}
         <text x={W / 2} y="27" text-anchor="middle" class="title">{t('TRANSLATE AND REWRITE · DIFFERENT EXITS', '翻译和改写 · 不同出口')}</text>
         <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('echo = the answer repeats the source', '回显 = 答案照抄原文')}</text>
@@ -282,9 +288,9 @@
           <text x={x + w / 2} y={y + 82} text-anchor="middle" class="detail">{t(job.role, job.roleZh)}</text>
           <line x1={x + w / 2} y1={y + 94} x2={x + w / 2} y2={y + 115} stroke="var(--muted)" stroke-width="2" marker-end="url(#compose-arrow)" />
           {#if i === 0}
-            <text x={x + w / 2} y={y + 141} text-anchor="middle" class="value small" fill="var(--accent)">{t('STRICT RETRY', 'STRICT 重试')} × {VOXT_TRANSLATE_STRICT_RETRY_COUNT}</text>
+            <text x={x + w / 2} y={y + 141} text-anchor="middle" class="value small" fill="var(--accent)">{t('RETRY: DO NOT ECHO', '重试：不要照抄原文')} × {VOXT_TRANSLATE_STRICT_RETRY_COUNT}</text>
             <text x={x + w / 2} y={y + 166} text-anchor="middle" class="detail">{t('STILL AN ECHO', '仍然是回显')}</text>
-            <text x={x + w / 2} y={y + 186} text-anchor="middle" class="detail">+ {t('LANGUAGE MISMATCH', '语言不匹配证据')}</text>
+            <text x={x + w / 2} y={y + 186} text-anchor="middle" class="detail">+ {t('EVIDENCE OF WRONG LANGUAGE', '语言不正确的证据')}</text>
           {:else}
             <text x={x + w / 2} y={y + 141} text-anchor="middle" class="value small" fill="var(--gen)">{t('REQUEST FAILED', '请求失败')}</text>
             <text x={x + w / 2} y={y + 166} text-anchor="middle" class="detail">{t('THE REQUEST DID NOT FINISH', '请求没有完成')}</text>
@@ -292,12 +298,12 @@
           {/if}
           <text x={x + w / 2} y={y + 222} text-anchor="middle" class="value small" fill="var(--gen)">FAILED · {t('NO INSERT', '不插入')}</text>
           {#if i === 1}
-            <text x={x + w / 2} y={y + (phone ? 246 : 270)} text-anchor="middle" class="detail" fill="var(--gen)">{VOXT_REWRITE_SPEECH_FALLBACK_COUNT} {t('RAW-SPEECH FALLBACKS', '个口述原文回退')}</text>
+            <text x={x + w / 2} y={y + (phone ? 246 : 270)} text-anchor="middle" class="detail" fill="var(--gen)">{VOXT_REWRITE_SPEECH_FALLBACK_COUNT} {t('INSTRUCTIONS USED AS RESULTS', '个指令被当作结果')}</text>
           {/if}
         {/each}
-        <text x={W / 2} y={phone ? 655 : 415} text-anchor="middle" class="cut">{VOXT_TRANSLATE_STRICT_RETRY_COUNT} {t('STRICT RETRY', '次 STRICT 重试')} · {VOXT_REWRITE_SPEECH_FALLBACK_COUNT} {t('REWRITE SPEECH FALLBACKS', '个改写口述回退')}</text>
+        <text x={W / 2} y={phone ? 655 : 415} text-anchor="middle" class="cut">{VOXT_TRANSLATE_STRICT_RETRY_COUNT} {t('RETRY', '次重试')} · {VOXT_REWRITE_SPEECH_FALLBACK_COUNT} {t('INSTRUCTIONS INSERTED', '个指令被插入')}</text>
         <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('Constructed failures · no real model was called.', '构造的失败路径 · 没有调用真实模型。')}</text>
-        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Spoken Translate has separate skip and timeout exits.', '语音翻译另有跳过和超时出口。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Examples: selected Translate and spoken Rewrite.', '示例分别是选区翻译和口述改写。')}</text>
       {:else}
         <text x={W / 2} y="27" text-anchor="middle" class="title">{t('LENGTH LIMIT · SHOW, DO NOT INSERT', '长度上限 · 先展示，不直接插入')}</text>
         <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('truncated = the model stopped at its length limit', '截断 = 模型在长度上限处停止')}</text>
