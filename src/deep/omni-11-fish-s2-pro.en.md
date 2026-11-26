@@ -45,7 +45,9 @@ The default threshold and frame dimensions are real configuration values. The mu
 
 The next step creates the same ten-row representation from a reference voice before generation starts.
 
-Sources: `models/fishaudio_s2_pro/config.py:23-67`; `models/fishaudio_s2_pro/streaming_vocoder.py:43-66`; `scheduling/audio_stream.py:86-148`; `models/fishaudio_s2_pro/sglang_model.py:418-510`; `models/fishaudio_s2_pro/fish_speech/models/dac/modded_dac.py:885-913,928-988`.
+Source shorthand: `fish/` = `sglang_omni/models/fishaudio_s2_pro/`; other paths start at `sglang_omni/`.
+
+Sources: `fish/config.py:23-67`; `fish/streaming_vocoder.py:43-66`; `scheduling/audio_stream.py:86-148`; `fish/sglang_model.py:418-510`; `fish/fish_speech/models/dac/modded_dac.py:885-913,928-988`.
 
 ## Step 2 · Reference audio becomes ten rows
 
@@ -96,7 +98,9 @@ The matrix shape is `[codebook rows, frames] = [10,22]`. The 16 kHz input is con
 
 Step 3 puts these codes beside the target text in the Slow AR prompt.
 
-Sources: `models/fishaudio_s2_pro/stages.py:249-376,425-490`; `scheduling/reference_encoder.py:344-413`; `models/fishaudio_s2_pro/fish_speech/models/dac/modded_dac.py:885-913,964-988`.
+Source shorthand: `fish/` = `sglang_omni/models/fishaudio_s2_pro/`; other paths start at `sglang_omni/`.
+
+Sources: `fish/stages.py:249-376,425-490`; `scheduling/reference_encoder.py:344-413`; `fish/fish_speech/models/dac/modded_dac.py:885-913,964-988`.
 
 ## Step 3 · Slow AR reads the voice prompt
 
@@ -135,7 +139,9 @@ The prompt places the reference transcript and semantic positions in the system 
 
 Slow AR's choice starts one frame. Step 4 opens the inner Fast AR loop that fills the other nine vocoder rows.
 
-Sources: `models/fishaudio_s2_pro/tokenizer.py:53-73,94-162`; `models/fishaudio_s2_pro/model_runner.py:288-356`; `models/fishaudio_s2_pro/fish_speech/models/text2semantic/audio_decoder.py:597-612`.
+Source shorthand: `fish/` = `sglang_omni/models/fishaudio_s2_pro/`; other paths start at `sglang_omni/`.
+
+Sources: `fish/tokenizer.py:53-73,94-162`; `fish/model_runner.py:288-356`; `fish/fish_speech/models/text2semantic/audio_decoder.py:597-612`.
 
 ## Step 4 · Fast AR fills the inner nine rows
 
@@ -158,8 +164,14 @@ raw = B + c_0,\qquad c_0 = raw - B
 $$
 
 $$
-N_{\text{Fast}} = 1 + 9 = 10,\quad
-N_{\text{engine}} = 1 + 1 + 9 = 11,\quad
+N_{\text{Fast}} = 1 + 9 = 10
+$$
+
+$$
+N_{\text{engine}} = 1 + 1 + 9 = 11
+$$
+
+$$
 N_{\text{DAC}} = 1 + 9 = 10
 $$
 
@@ -180,7 +192,9 @@ One Slow choice creates one derived code 0. Nine Fast choices create codes 1–9
 
 Step 5 follows these codes into the next Slow frame and compares what the two loops retain.
 
-Sources: `models/fishaudio_s2_pro/sglang_model.py:294-300,418-510`; `models/fishaudio_s2_pro/payload_types.py:35-50`; `models/fishaudio_s2_pro/streaming_vocoder.py:88-106`; `models/fishaudio_s2_pro/fish_speech/tokenizer.py:19-37`; `models/fishaudio_s2_pro/request_builders.py:133-137`.
+Source shorthand: `fish/` = `sglang_omni/models/fishaudio_s2_pro/`; other paths start at `sglang_omni/`.
+
+Sources: `fish/sglang_model.py:294-300,418-510`; `fish/payload_types.py:35-50`; `fish/streaming_vocoder.py:88-106`; `fish/fish_speech/tokenizer.py:19-37`; `fish/request_builders.py:133-137`.
 
 ## Step 5 · The two loops keep different state
 
@@ -213,7 +227,9 @@ The picture compares feedback with cache lifetime. It does not claim that Fish's
 
 Step 6 follows the same loop to its three exits: EOS, length exhaustion and abort.
 
-Sources: `models/fishaudio_s2_pro/model_runner.py:62-100,148-191`; `models/fishaudio_s2_pro/sglang_model.py:365-382,484-488`; `models/fishaudio_s2_pro/request_builders.py:65-78,160-168`; `models/fishaudio_s2_pro/fish_speech/models/text2semantic/audio_decoder.py:394-411,505-526,547-595`.
+Source shorthand: `fish/` = `sglang_omni/models/fishaudio_s2_pro/`; other paths start at `sglang_omni/`.
+
+Sources: `fish/model_runner.py:62-100,148-191`; `fish/sglang_model.py:365-382,484-488`; `fish/request_builders.py:65-78,160-168`; `fish/fish_speech/models/text2semantic/audio_decoder.py:394-411,505-526,547-595`.
 
 ## Step 6 · Three ways to stop
 
@@ -258,7 +274,9 @@ An immediate EOS produces zero accepted frames. Result adaptation raises “gene
 
 Step 7 follows accepted frames into the streaming vocoder's overlapping windows.
 
-Sources: `models/fishaudio_s2_pro/model_runner.py:48-76`; `models/fishaudio_s2_pro/request_builders.py:148-167,192-202,233-248`; `models/fishaudio_s2_pro/engine_builder.py:87-100`; `models/fishaudio_s2_pro/payload_types.py:35-50`; `tests/unit_test/fishaudio_s2_pro/test_tts.py:486-531,616-673`.
+Source shorthand: `fish/` = `sglang_omni/models/fishaudio_s2_pro/`; other paths start at `sglang_omni/`.
+
+Sources: `fish/model_runner.py:48-76`; `fish/request_builders.py:148-167,192-202,233-248`; `fish/engine_builder.py:87-100`; `fish/payload_types.py:35-50`; `tests/unit_test/fishaudio_s2_pro/test_tts.py:486-531,616-673`.
 
 ## Step 7 · Streaming windows overlap
 
@@ -298,7 +316,9 @@ The 40 extra input frames are repeated work, not extra output. The middle call e
 
 Step 8 compares these per-request streaming windows with the non-streaming batch path for completed requests.
 
-Sources: `scheduling/audio_stream.py:65-148,151-239,242-333`; `scheduling/audio_vocoder.py:116-182`; `models/fishaudio_s2_pro/request_builders.py:276-298`.
+Source shorthand: `fish/` = `sglang_omni/models/fishaudio_s2_pro/`; other paths start at `sglang_omni/`.
+
+Sources: `scheduling/audio_stream.py:65-148,151-239,242-333`; `scheduling/audio_vocoder.py:116-182`; `fish/request_builders.py:276-298`.
 
 ## Step 8 · Batch completed requests, then trim
 
@@ -346,4 +366,6 @@ The two frame counts are constructed. The batch limit and collection wait are sh
 
 This one-way request is complete. Chapter 12 asks what state a session must retain when input audio continues while output is playing.
 
-Sources: `scheduling/audio_vocoder.py:194-224`; `scheduling/streaming_simple_scheduler.py:311-390,434-480`; `models/fishaudio_s2_pro/stages.py:522-552`.
+Source shorthand: `fish/` = `sglang_omni/models/fishaudio_s2_pro/`; other paths start at `sglang_omni/`.
+
+Sources: `scheduling/audio_vocoder.py:194-224`; `scheduling/streaming_simple_scheduler.py:311-390,434-480`; `fish/stages.py:522-552`.

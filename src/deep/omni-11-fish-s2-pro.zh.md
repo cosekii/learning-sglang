@@ -45,7 +45,9 @@ $$
 
 下一步先把参考声音也变成同样的十行表示，再开始生成。
 
-出处：`models/fishaudio_s2_pro/config.py:23-67`；`models/fishaudio_s2_pro/streaming_vocoder.py:43-66`；`scheduling/audio_stream.py:86-148`；`models/fishaudio_s2_pro/sglang_model.py:418-510`；`models/fishaudio_s2_pro/fish_speech/models/dac/modded_dac.py:885-913,928-988`。
+路径缩写：`fish/` = `sglang_omni/models/fishaudio_s2_pro/`；其他路径从 `sglang_omni/` 开始。
+
+出处：`fish/config.py:23-67`；`fish/streaming_vocoder.py:43-66`；`scheduling/audio_stream.py:86-148`；`fish/sglang_model.py:418-510`；`fish/fish_speech/models/dac/modded_dac.py:885-913,928-988`。
 
 ## 第 2 步 · 参考声音变成十行
 
@@ -96,7 +98,9 @@ $$
 
 第 3 步把这些 codes 和要朗读的文字一起放进 Slow AR prompt。
 
-出处：`models/fishaudio_s2_pro/stages.py:249-376,425-490`；`scheduling/reference_encoder.py:344-413`；`models/fishaudio_s2_pro/fish_speech/models/dac/modded_dac.py:885-913,964-988`。
+路径缩写：`fish/` = `sglang_omni/models/fishaudio_s2_pro/`；其他路径从 `sglang_omni/` 开始。
+
+出处：`fish/stages.py:249-376,425-490`；`scheduling/reference_encoder.py:344-413`；`fish/fish_speech/models/dac/modded_dac.py:885-913,964-988`。
 
 ## 第 3 步 · Slow AR 读取声音 prompt
 
@@ -135,7 +139,9 @@ $$
 
 Slow AR 的选择开启一帧。第 4 步打开内层 Fast AR 循环，补齐 vocoder 的另外九行。
 
-出处：`models/fishaudio_s2_pro/tokenizer.py:53-73,94-162`；`models/fishaudio_s2_pro/model_runner.py:288-356`；`models/fishaudio_s2_pro/fish_speech/models/text2semantic/audio_decoder.py:597-612`。
+路径缩写：`fish/` = `sglang_omni/models/fishaudio_s2_pro/`；其他路径从 `sglang_omni/` 开始。
+
+出处：`fish/tokenizer.py:53-73,94-162`；`fish/model_runner.py:288-356`；`fish/fish_speech/models/text2semantic/audio_decoder.py:597-612`。
 
 ## 第 4 步 · Fast AR 补齐内层九行
 
@@ -158,8 +164,14 @@ raw = B + c_0,\qquad c_0 = raw - B
 $$
 
 $$
-N_{\text{Fast}} = 1 + 9 = 10,\quad
-N_{\text{engine}} = 1 + 1 + 9 = 11,\quad
+N_{\text{Fast}} = 1 + 9 = 10
+$$
+
+$$
+N_{\text{engine}} = 1 + 1 + 9 = 11
+$$
+
+$$
 N_{\text{DAC}} = 1 + 9 = 10
 $$
 
@@ -180,7 +192,9 @@ $$
 
 第 5 步跟着这些 codes 进入下一个 Slow 帧，比较两层循环分别记住什么。
 
-出处：`models/fishaudio_s2_pro/sglang_model.py:294-300,418-510`；`models/fishaudio_s2_pro/payload_types.py:35-50`；`models/fishaudio_s2_pro/streaming_vocoder.py:88-106`；`models/fishaudio_s2_pro/fish_speech/tokenizer.py:19-37`；`models/fishaudio_s2_pro/request_builders.py:133-137`。
+路径缩写：`fish/` = `sglang_omni/models/fishaudio_s2_pro/`；其他路径从 `sglang_omni/` 开始。
+
+出处：`fish/sglang_model.py:294-300,418-510`；`fish/payload_types.py:35-50`；`fish/streaming_vocoder.py:88-106`；`fish/fish_speech/tokenizer.py:19-37`；`fish/request_builders.py:133-137`。
 
 ## 第 5 步 · 两层循环记住不同的状态
 
@@ -213,7 +227,9 @@ Fast 第 0 次调用先重置内层 KV，再处理新帧的 0–9 位置，不�
 
 第 6 步跟随同一个循环走到 EOS、长度用尽和中止三个出口。
 
-出处：`models/fishaudio_s2_pro/model_runner.py:62-100,148-191`；`models/fishaudio_s2_pro/sglang_model.py:365-382,484-488`；`models/fishaudio_s2_pro/request_builders.py:65-78,160-168`；`models/fishaudio_s2_pro/fish_speech/models/text2semantic/audio_decoder.py:394-411,505-526,547-595`。
+路径缩写：`fish/` = `sglang_omni/models/fishaudio_s2_pro/`；其他路径从 `sglang_omni/` 开始。
+
+出处：`fish/model_runner.py:62-100,148-191`；`fish/sglang_model.py:365-382,484-488`；`fish/request_builders.py:65-78,160-168`；`fish/fish_speech/models/text2semantic/audio_decoder.py:394-411,505-526,547-595`。
 
 ## 第 6 步 · 三种停止方式
 
@@ -258,7 +274,9 @@ $$
 
 第 7 步跟随接受的帧进入流式 vocoder 的重叠窗口。
 
-出处：`models/fishaudio_s2_pro/model_runner.py:48-76`；`models/fishaudio_s2_pro/request_builders.py:148-167,192-202,233-248`；`models/fishaudio_s2_pro/engine_builder.py:87-100`；`models/fishaudio_s2_pro/payload_types.py:35-50`；`tests/unit_test/fishaudio_s2_pro/test_tts.py:486-531,616-673`。
+路径缩写：`fish/` = `sglang_omni/models/fishaudio_s2_pro/`；其他路径从 `sglang_omni/` 开始。
+
+出处：`fish/model_runner.py:48-76`；`fish/request_builders.py:148-167,192-202,233-248`；`fish/engine_builder.py:87-100`；`fish/payload_types.py:35-50`；`tests/unit_test/fishaudio_s2_pro/test_tts.py:486-531,616-673`。
 
 ## 第 7 步 · 流式窗口有重叠
 
@@ -298,7 +316,9 @@ $$
 
 第 8 步比较逐请求的流式窗口和已完成请求的非流式 batch 路径。
 
-出处：`scheduling/audio_stream.py:65-148,151-239,242-333`；`scheduling/audio_vocoder.py:116-182`；`models/fishaudio_s2_pro/request_builders.py:276-298`。
+路径缩写：`fish/` = `sglang_omni/models/fishaudio_s2_pro/`；其他路径从 `sglang_omni/` 开始。
+
+出处：`scheduling/audio_stream.py:65-148,151-239,242-333`；`scheduling/audio_vocoder.py:116-182`；`fish/request_builders.py:276-298`。
 
 ## 第 8 步 · 合并已完成请求，再裁切
 
@@ -346,4 +366,6 @@ $$
 
 这条单向请求已经完成。第 12 章回答：输入声音在输出播放时仍持续到达，session 必须保留什么状态。
 
-出处：`scheduling/audio_vocoder.py:194-224`；`scheduling/streaming_simple_scheduler.py:311-390,434-480`；`models/fishaudio_s2_pro/stages.py:522-552`。
+路径缩写：`fish/` = `sglang_omni/models/fishaudio_s2_pro/`；其他路径从 `sglang_omni/` 开始。
+
+出处：`scheduling/audio_vocoder.py:194-224`；`scheduling/streaming_simple_scheduler.py:311-390,434-480`；`fish/stages.py:522-552`。
