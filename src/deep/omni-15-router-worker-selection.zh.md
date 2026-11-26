@@ -76,7 +76,7 @@ router 使用“任意一整行匹配即可”的检查。它不会对多行取�
 
 ### 图上是什么
 
-- `health probe` 是向 worker 配置的健康网址发送 HTTP GET。任意 2xx 状态算成功，其他状态、传输错误或超时算失败。
+- `health probe` 是向 worker 配置的健康网址发送 HTTP GET。任意 2xx 状态算成功，也就是 HTTP 状态 200 到 299。其他状态、传输错误或 timeout 算失败。timeout 指超过探测期限仍没有回应。
 - 每个 worker 从不可选择的 `UNKNOWN` 开始。左图连续两次 200 后成为 `HEALTHY`，右图连续三次失败后成为 `UNHEALTHY`。
 - 只有 `HEALTHY` 能进入选择，`UNKNOWN` 和 `UNHEALTHY` 都被排除。
 - 两次成功和三次失败是随仓库发布的默认值，不是固定协议规则。部署者可以配置两个门槛。

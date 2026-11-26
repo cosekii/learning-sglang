@@ -76,7 +76,7 @@ Sources: `sglang_omni_router/src/worker_pool/profile.rs:754-904,1129-1131,1311-1
 
 ### On the stage
 
-- A `health probe` is an HTTP GET to the worker's configured health URL. Any 2xx status counts as success. Another status, a transport error or a timeout counts as failure.
+- A `health probe` is an HTTP GET to the worker's configured health URL. Any 2xx status, meaning every HTTP status from 200 through 299, counts as success. Another status, a transport error or a timeout counts as failure. A timeout means the worker has not replied by the probe deadline.
 - Every worker starts `UNKNOWN`, which is not selectable. The left panel reaches `HEALTHY` after two consecutive 200 responses. The right panel reaches `UNHEALTHY` after three consecutive failures.
 - Only `HEALTHY` enters selection. `UNKNOWN` and `UNHEALTHY` are both excluded.
 - Two successes and three failures are shipped defaults, not fixed protocol rules. Operators can configure both thresholds.

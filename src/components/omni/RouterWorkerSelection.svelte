@@ -68,7 +68,7 @@
     });
   })();
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [650, 750, 830, 800, 680, 730, 760, 880][step] : [520, 560, 600, 600, 570, 600, 560, 650][step]);
+  const H = $derived(phone ? [650, 750, 830, 840, 680, 730, 760, 880][step] : [520, 560, 600, 600, 570, 600, 560, 650][step]);
 </script>
 
 <figure class="viz">
@@ -182,10 +182,12 @@
       {:else if step === 3}
         <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'Health filters compatible workers' : 'Health filters the compatible workers', 'health 再过滤兼容的 worker')}</text>
         <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'probe = ask the worker health URL' : 'health probe = the router asks the worker’s health URL', phone ? 'probe = 询问 worker 健康网址' : 'health probe = router 请求 worker 的健康网址')}</text>
-        <text x={phone ? 18 : 30} y="79" class="label">{t('2xx = success · other status or timeout = failure', '2xx = 成功 · 其他状态或超时 = 失败')}</text>
+        <text x={phone ? 18 : 30} y="79" class="label">{phone ? t('2xx = status 200–299 = success', '2xx = HTTP 状态 200–299 = 成功') : t('2xx = status 200–299 = success · other status = failure', '2xx = HTTP 状态 200–299 = 成功 · 其他状态 = 失败')}</text>
+        <text x={phone ? 18 : 30} y="99" class="label">{phone ? t('other status or timeout = failure', '其他状态或 timeout = 失败') : t('timeout = no reply by the probe deadline = failure', 'timeout = 超过探测期限仍无回应 = 失败')}</text>
+        {#if phone}<text x="18" y="119" class="label">{t('timeout = no reply by the deadline', 'timeout = 超过探测期限仍无回应')}</text>{/if}
         {#each [false, true] as failing}
           {@const x = phone ? 18 : failing ? 375 : 30}
-          {@const y = phone ? failing ? 420 : 105 : 110}
+          {@const y = phone ? failing ? 465 : 145 : 130}
           {@const pw = phone ? 264 : 315}
           {@const results = failing ? ['503', 'timeout', '503'] : ['200', '200']}
           <rect x={x} y={y} width={pw} height="285" rx="12" fill={failing ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={failing ? 'var(--gen)' : 'var(--accent)'} />
@@ -199,8 +201,8 @@
           <rect x={x + 16} y={y + 225} width={pw - 32} height="40" rx="7" fill="var(--bg)" stroke={failing ? 'var(--gen)' : 'var(--accent)'} />
           <text x={x + pw / 2} y={y + 251} text-anchor="middle" class="small strong">{failing ? t(`${ROUTER_HEALTH_FAILURE_THRESHOLD} failures → UNHEALTHY`, `连续 ${ROUTER_HEALTH_FAILURE_THRESHOLD} 次失败 → UNHEALTHY`) : t(`${ROUTER_HEALTH_SUCCESS_THRESHOLD} successes → HEALTHY`, `连续 ${ROUTER_HEALTH_SUCCESS_THRESHOLD} 次成功 → HEALTHY`)}</text>
         {/each}
-        <text x={W / 2} y={phone ? 745 : 445} text-anchor="middle" class="small strong">{t(phone ? 'UNKNOWN and UNHEALTHY cannot be selected.' : 'UNKNOWN and UNHEALTHY stay outside selection.', 'UNKNOWN 和 UNHEALTHY 都不能进入选择。')}</text>
-        <text x={W / 2} y={phone ? 772 : 480} text-anchor="middle" class="small">{t('A single later result does not flip the state.', '之后单独一次结果不会立刻翻转状态。')}</text>
+        <text x={W / 2} y={phone ? 785 : 445} text-anchor="middle" class="small strong">{t(phone ? 'UNKNOWN and UNHEALTHY cannot be selected.' : 'UNKNOWN and UNHEALTHY stay outside selection.', 'UNKNOWN 和 UNHEALTHY 都不能进入选择。')}</text>
+        <text x={W / 2} y={phone ? 812 : 480} text-anchor="middle" class="small">{t('A single later result does not flip the state.', '之后单独一次结果不会立刻翻转状态。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Shipped defaults · both thresholds are configurable', '随仓库发布的默认值 · 两个门槛都可配置')}</text>
       {:else if step === 4}
         <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'Chosen worker goes to the back' : 'Round robin moves the chosen worker to the back', phone ? '选中的 worker 移到队尾' : 'round robin 把选中的 worker 移到队尾')}</text>
