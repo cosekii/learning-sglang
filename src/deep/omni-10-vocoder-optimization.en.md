@@ -162,7 +162,7 @@ $$K=(B,T,k)$$
 |---|---|---|
 | $B$ | Request rows in the call | `GraphKey.batch_size` |
 | $T$ | Frames in each row | `GraphKey.frames` |
-| $k$ | `window`, `first` or `next` path | `GraphKey.kind` |
+| $k$ | `window`, `first` or `next` path | `GraphKey.decode` |
 | $K$ | Exact identity required for replay | `code2wav_cuda_graph.py` |
 
 ### The numbers on the stage

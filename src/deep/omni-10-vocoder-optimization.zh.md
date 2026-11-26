@@ -162,7 +162,7 @@ $$K=(B,T,k)$$
 |---|---|---|
 | $B$ | 一次调用里的请求行数 | `GraphKey.batch_size` |
 | $T$ | 每行的帧数 | `GraphKey.frames` |
-| $k$ | `window`、`first` 或 `next` 路径 | `GraphKey.kind` |
+| $k$ | `window`、`first` 或 `next` 路径 | `GraphKey.decode` |
 | $K$ | replay 要求完全匹配的标识 | `code2wav_cuda_graph.py` |
 
 ### 代入图上的数
