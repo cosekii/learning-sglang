@@ -388,7 +388,7 @@ $$
 
 ### 「所需」具体怎么算
 
-`PrefillAdder` 不只数这一步要写的 page，还要给回答留地方。先把核心判断统一成 **token 位置**的账；不同后端另有保留量时，还要再扣掉那些余量：
+`PrefillAdder` 不只数这一步要写的 page，还要给回答留地方。先把核心判断统一成 **token 位置**的账；页对齐和后端额外保留的位置记作 $C_{\text{new}}$：
 
 $$
 E_{\text{new}}=U_{\text{new}}+\min(N_{\text{new}},4096)+C_{\text{new}}
@@ -414,7 +414,17 @@ $$
 | $\rho$ | 剩余输出预计会真正写出的比例 | 从 0.7 起，随未发生撤回的 decode 步衰减；约 600 步后为 $0.7\times0.14\approx0.1$，撤回时按已写 token 重新估计 |
 | 4,096 | 单次估算的输出上限 | `SGLANG_CLIP_MAX_NEW_TOKENS_ESTIMATION` |
 
-这些来源可在固定版本核对：[`PrefillAdder` 的可用量、运行预留和新来者检查](https://github.com/sgl-project/sglang/blob/v0.5.18/python/sglang/srt/managers/schedule_policy.py)、[`NewTokenRatioTracker`](https://github.com/sgl-project/sglang/blob/v0.5.18/python/sglang/srt/managers/scheduler_components/new_token_ratio_tracker.py)、[`ScheduleBatch.retract_decode`](https://github.com/sgl-project/sglang/blob/v0.5.18/python/sglang/srt/managers/schedule_batch.py)。不等式是普通 KV 池的核心账，不冒充 SWA、混合状态等后端的完整公式。
+这些来源可在固定版本核对：[`PrefillAdder` 的可用量、运行预留和新来者检查](https://github.com/sgl-project/sglang/blob/v0.5.18/python/sglang/srt/managers/schedule_policy.py)、[`NewTokenRatioTracker`](https://github.com/sgl-project/sglang/blob/v0.5.18/python/sglang/srt/managers/scheduler_components/new_token_ratio_tracker.py)、[`ScheduleBatch.retract_decode`](https://github.com/sgl-project/sglang/blob/v0.5.18/python/sglang/srt/managers/schedule_batch.py)。不等式是普通 KV 池的核心账，不冒充滑窗、混合状态等后端的完整公式。
+
+### 代入一组数
+
+图上没有给出新来者的 prompt 长度和 `max_new_tokens`，所以 req 7 已写的 8 个 page 不是完整接纳预算。另取一组教学数字：$p=1$，新来者 $U_{\text{new}}=100$、$N_{\text{new}}=20$、$C_{\text{new}}=1$；两个运行中 request 各剩 10 个输出 token，$\rho=0.7$：
+
+$$
+E_{\text{new}}=100+20+1=121,\qquad R_{\text{running}}=(10+10)\times0.7=14
+$$
+
+$A_{\text{available}}=200$ 时，$121+14=135\le200$，可以接纳；若只剩 $130$，则 $135>130$，新来者等待。实际代码在边界上使用严格小于，并为锁定前缀等情形另作检查；这里用「≤」表达预算够不够的核心账。
 
 **估计不等于实际分配。** 通过检查不代表把未来回答的 page 全部分出去；实际 prefill／decode 才按 token 写到哪里分配，$p>1$ 时再按页取整。估计偏乐观、后来真放不下时，才走下面的撤回。可复用前缀会减少 $U_{\text{new}}$，可驱逐前缀会增加 $A_{\text{available}}$；如何锁定和驱逐属于第 8 章。
 
