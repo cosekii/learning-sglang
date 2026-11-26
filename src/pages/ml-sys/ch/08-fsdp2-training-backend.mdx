@@ -1,0 +1,29 @@
+---
+layout: ../../../layouts/Chapter.astro
+book: ml-sys
+slug: 08-fsdp2-training-backend
+---
+import Fsdp2TrainingBackend from '../../../components/ml-sys/Fsdp2TrainingBackend.svelte';
+import { mlSysNeighbors } from '../../../ml-sys/chapters';
+import { deepFor } from '../../../deep';
+export const deep = await deepFor('ml-sys-08-fsdp2-training-backend');
+
+<Fsdp2TrainingBackend client:load {...mlSysNeighbors('08-fsdp2-training-backend')} deep={deep} />
+
+<details class="i18n-en">
+<summary>Where this chapter's claims come from</summary>
+
+This chapter follows `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md` and `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md`. Implementation claims use `THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7`. The memory example is constructed arithmetic, not a training measurement.
+
+Step 1 contrasts full replication with sharding at `fsdp/readme.md:16`. The constructed model has `4,000,000,000` values, with 2-byte weights and 2-byte gradients. Its optimizer convention comes from `readme-2-en.md:21-31`: FP32 master weights, momentum and variance, or `3 × 4 = 12` bytes per value. Thus one full copy uses `4B × (2 + 2 + 12) = 64 GB`, 80% of the shared 80 GB H100 capacity. Eight copies use 512 GB. These numbers describe only the three saved table kinds, not activations or temporary allocations.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的出处</summary>
+
+本章依据 `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md` 和 `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md`。实现结论固定到 `THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7`。显存示例是构造算式，不是训练实测。
+
+第 1 步依据 `fsdp/readme.md:16` 对照完整复制与分片。构造模型有 `4,000,000,000` 个数值，权重和梯度都按 2 字节计算。优化器约定来自 `readme-2-en.md:21-31`：FP32 master 权重、momentum 和 variance，即每个数值 `3 × 4 = 12` 字节。因此一份完整训练表占 `4B × (2 + 2 + 12) = 64 GB`，是共享 H100 80 GB 容量的 80%；8 份占 512 GB。这些数字只算三类保存的表，不含激活和临时分配。
+
+</details>
