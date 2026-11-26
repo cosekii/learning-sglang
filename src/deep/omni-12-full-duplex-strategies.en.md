@@ -86,3 +86,46 @@ The graph retains interrupted reply IDs so late tools cannot attach old work to 
 Qwen converts the delivered and client-played positions into a cut in its reply-token history.
 
 Sources: `sglang_omni/pipeline/session_graph.py:108-232,581-619`; `sglang_omni/pipeline/sessions.py:167-210`; `sglang_omni/pipeline/session_delivery.py:92-128`.
+
+## Step 4 · Qwen cuts reply rows
+
+> **In one line:** Qwen keeps 18 reply rows at the client's 1.2-second playback report.
+
+### On the stage
+
+- The generated reply has 34 rows: three text rows and 31 complete 80 ms sound rows.
+- D would permit 28 rows. H moves the cut back to 18 rows.
+- Blue boxes are the rows that remain in thinker history. Grey boxes are removed.
+- The cut counts token positions, not words and not exact acoustic word boundaries.
+
+### Formula
+
+$$
+C = P + \left\lfloor\frac{\min(D,H)}{F}\right\rfloor
+$$
+
+| Symbol | Meaning | Value | Source |
+|---|---|---:|---|
+| $C$ | Reply rows retained after the cut | 18 | This step |
+| $P$ | Text rows consumed by talker prefill | 3 | Qwen `PREFILL_TEXT_ROWS` |
+| $D$ | Delivered audio position | 2,000 ms | Step 1 |
+| $H$ | Client-reported playback position | 1,200 ms | Step 1 |
+| $F$ | Duration of one codec frame | 80 ms | Qwen `CODEC_FRAME_MS` |
+
+### The numbers on the stage
+
+$$
+C_D = 3 + \left\lfloor 2{,}000 \div 80 \right\rfloor = 28
+$$
+
+$$
+C_H = 3 + \left\lfloor 1{,}200 \div 80 \right\rfloor = 18
+$$
+
+The normal graph sends `reply.delivered` as `qwen.truncate`. A later client truncate can only move the cut further back. If D is zero, Qwen does not retain an unheard answer: it carries the original utterance into the next unit and asks it again.
+
+### Next
+
+The streaming cascade stores text messages rather than Qwen's codec-row history, so it needs a text-to-audio alignment rule.
+
+Sources: `sglang_omni/models/qwen3_omni/thinker_session.py:38-42,87-89,167-223`; `sglang_omni/models/qwen3_omni/session_input.py:184-205,253-260`; `tests/unit_test/qwen3_omni/test_session_input.py:87-138`.

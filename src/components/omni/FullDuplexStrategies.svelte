@@ -11,6 +11,11 @@
     DUPLEX_DELIVERED_UNPLAYED_MS,
     DUPLEX_DEFAULT_MAX_OUTPUT_LEAD_MS,
     DUPLEX_NATIVE_UNIT_MS,
+    DUPLEX_QWEN_CODEC_FRAME_MS,
+    DUPLEX_QWEN_PREFILL_TEXT_ROWS,
+    DUPLEX_QWEN_GENERATED_ROWS,
+    DUPLEX_QWEN_DELIVERED_ROWS,
+    DUPLEX_QWEN_HEARD_ROWS,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -24,6 +29,9 @@
   }, {
     caption: 'The fence drops queued old work and blocks late chunks. Delivered audio stays outside its reach.',
     captionZh: '删除边界清掉排队的旧工作，并挡住迟到 chunks。已交付声音不在这条边界内。',
+  }, {
+    caption: 'Qwen keeps the smaller of delivered and played positions. At 1.2 seconds, its history keeps 18 reply rows.',
+    captionZh: 'Qwen 取交付和播放位置的较小者。1.2 秒对应保留 18 行回答。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -40,7 +48,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [650, 790, 790][step] : [540, 590, 570][step]);
+  const H = $derived(phone ? [650, 790, 790, 760][step] : [540, 590, 570, 610][step]);
   const seconds = (ms: number) => (ms / 1000).toFixed(1);
 </script>
 
@@ -181,6 +189,44 @@
           <text x="150" y="718" text-anchor="middle" class="small strong">{t('Next: Qwen history rows', '下一步：Qwen 保留多少行？')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'D uses Step 1 · no global undo' : 'D reuses Step 1. The graph fences old work; it does not undo client playback.', phone ? 'D 来自第 1 步 · 不是全局撤销' : 'D 沿用第 1 步。图隔离旧工作，不会撤销客户端已经播放的声音。')}</text>
+      {:else if step === 3}
+        <text x={phone ? 18 : 30} y="30" class="title">{t('History repair · 1 of 3 · Qwen3-Omni', '对话记录修复 · 1/3 · Qwen3-Omni')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'one 80 ms codec frame = one sound row' : 'one 80 ms codec frame adds one reply-sound row; three text rows come first', phone ? '每个 80 ms codec 帧 = 一行声音' : '每个 80 ms codec 帧增加一行回答声音，前面先有三行文字')}</text>
+        <text x={phone ? 18 : 30} y="79" class="label">{t(phone ? 'blue = kept · grey = removed' : 'blue = rows kept in history · grey = rows removed', phone ? '蓝 = 保留 · 灰 = 删除' : '蓝 = 留在记录里的行 · 灰 = 删除的行')}</text>
+        <rect x={phone ? 18 : 170} y="105" width={phone ? 264 : 380} height="61" rx="10" fill="var(--bg)" stroke="var(--line)" />
+        <text x={W / 2} y="132" text-anchor="middle" class="small strong">min(D, H) = min({seconds(DUPLEX_DELIVERED_MS)}, {seconds(DUPLEX_HEARD_MS)}) = {seconds(Math.min(DUPLEX_DELIVERED_MS, DUPLEX_HEARD_MS))} s</text>
+        <text x={W / 2} y="155" text-anchor="middle" class="small">{t('a later client report can only move the cut back', '客户端后来的报告只能把切点往前挪')}</text>
+        {#if !phone}
+          <text x="30" y="202" class="small strong">{t(`GENERATED REPLY · ${DUPLEX_QWEN_GENERATED_ROWS} ROWS`, `生成的回答 · ${DUPLEX_QWEN_GENERATED_ROWS} 行`)}</text>
+          {#each Array(DUPLEX_QWEN_GENERATED_ROWS) as _, i}
+            <rect x={30 + i * 19} y="224" width="16" height="45" rx="3" fill={i < DUPLEX_QWEN_HEARD_ROWS ? 'var(--accent-soft)' : 'var(--bg)'} stroke={i < DUPLEX_QWEN_HEARD_ROWS ? 'var(--accent)' : 'var(--faint)'} />
+          {/each}
+          <line x1={30 + DUPLEX_QWEN_HEARD_ROWS * 19 - 3} y1="211" x2={30 + DUPLEX_QWEN_HEARD_ROWS * 19 - 3} y2="283" stroke="var(--eos)" stroke-width="3" />
+          <text x={30 + DUPLEX_QWEN_HEARD_ROWS * 19 - 3} y="303" text-anchor="middle" class="small strong">H cut · {DUPLEX_QWEN_HEARD_ROWS}</text>
+          <line x1={30 + DUPLEX_QWEN_DELIVERED_ROWS * 19 - 3} y1="211" x2={30 + DUPLEX_QWEN_DELIVERED_ROWS * 19 - 3} y2="283" stroke="var(--muted)" stroke-width="2" stroke-dasharray="4 3" />
+          <text x={30 + DUPLEX_QWEN_DELIVERED_ROWS * 19 - 3} y="303" text-anchor="middle" class="small">D · {DUPLEX_QWEN_DELIVERED_ROWS}</text>
+          <text x="30" y="337" class="small">{DUPLEX_QWEN_PREFILL_TEXT_ROWS} {t('text rows', '行文字')} + {DUPLEX_QWEN_GENERATED_ROWS - DUPLEX_QWEN_PREFILL_TEXT_ROWS} {t('complete sound rows', '行完整声音')}</text>
+          <text x="360" y="386" text-anchor="middle" class="result">D: {DUPLEX_QWEN_PREFILL_TEXT_ROWS} + floor({DUPLEX_DELIVERED_MS} ÷ {DUPLEX_QWEN_CODEC_FRAME_MS}) = {DUPLEX_QWEN_DELIVERED_ROWS}</text>
+          <text x="360" y="429" text-anchor="middle" class="result">H: {DUPLEX_QWEN_PREFILL_TEXT_ROWS} + floor({DUPLEX_HEARD_MS} ÷ {DUPLEX_QWEN_CODEC_FRAME_MS}) = {DUPLEX_QWEN_HEARD_ROWS}</text>
+          <rect x="170" y="457" width="380" height="52" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="360" y="489" text-anchor="middle" class="result">{t(`KEEP ${DUPLEX_QWEN_HEARD_ROWS} ROWS · NOT ${DUPLEX_QWEN_HEARD_ROWS} WORDS`, `保留 ${DUPLEX_QWEN_HEARD_ROWS} 行 · 不是 ${DUPLEX_QWEN_HEARD_ROWS} 个词`)}</text>
+          <text x="360" y="557" text-anchor="middle" class="small strong">{t('How does a cascade cut reply text instead?', 'cascade 又会怎样裁切回答文字？')}</text>
+        {:else}
+          <text x="18" y="202" class="small strong">{t(`GENERATED · ${DUPLEX_QWEN_GENERATED_ROWS} ROWS`, `生成回答 · ${DUPLEX_QWEN_GENERATED_ROWS} 行`)}</text>
+          {#each Array(DUPLEX_QWEN_GENERATED_ROWS) as _, i}
+            <rect x={18 + (i % 17) * 15} y={222 + Math.floor(i / 17) * 57} width="12" height="43" rx="3" fill={i < DUPLEX_QWEN_HEARD_ROWS ? 'var(--accent-soft)' : 'var(--bg)'} stroke={i < DUPLEX_QWEN_HEARD_ROWS ? 'var(--accent)' : 'var(--faint)'} />
+          {/each}
+          <text x="18" y="354" class="small">{DUPLEX_QWEN_PREFILL_TEXT_ROWS} text + {DUPLEX_QWEN_GENERATED_ROWS - DUPLEX_QWEN_PREFILL_TEXT_ROWS} sound · {t('blue 18 kept', '蓝 18 行保留')}</text>
+          <text x="150" y="402" text-anchor="middle" class="result">D: {DUPLEX_QWEN_PREFILL_TEXT_ROWS} + floor({DUPLEX_DELIVERED_MS} ÷ {DUPLEX_QWEN_CODEC_FRAME_MS})</text>
+          <text x="150" y="428" text-anchor="middle" class="result">= {DUPLEX_QWEN_DELIVERED_ROWS} {t('rows', '行')}</text>
+          <text x="150" y="474" text-anchor="middle" class="result">H: {DUPLEX_QWEN_PREFILL_TEXT_ROWS} + floor({DUPLEX_HEARD_MS} ÷ {DUPLEX_QWEN_CODEC_FRAME_MS})</text>
+          <text x="150" y="500" text-anchor="middle" class="result">= {DUPLEX_QWEN_HEARD_ROWS} {t('rows', '行')}</text>
+          <rect x="18" y="532" width="264" height="62" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="150" y="558" text-anchor="middle" class="result">{t(`KEEP ${DUPLEX_QWEN_HEARD_ROWS} ROWS`, `保留 ${DUPLEX_QWEN_HEARD_ROWS} 行`)}</text>
+          <text x="150" y="581" text-anchor="middle" class="small">{t('rows, not words', '是行数，不是词数')}</text>
+          <text x="150" y="652" text-anchor="middle" class="small strong">{t('Next: cascade text history', '下一步：cascade 的文字记录')}</text>
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Complete 80 ms rows only' : 'Only complete 80 ms codec rows count; this is a token-history cut, not word alignment.', phone ? '只数完整的 80 ms 行' : '只数完整的 80 ms codec 行；这是 token 记录切点，不是逐词对齐。')}</text>
       {/if}
     </svg>
   </div>

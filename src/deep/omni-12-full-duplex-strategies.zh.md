@@ -86,3 +86,46 @@ $$
 Qwen 把交付位置和客户端播放位置换算成回答 token 记录里的切点。
 
 出处：`sglang_omni/pipeline/session_graph.py:108-232,581-619`；`sglang_omni/pipeline/sessions.py:167-210`；`sglang_omni/pipeline/session_delivery.py:92-128`。
+
+## 第 4 步 · Qwen 裁切回答行
+
+> **一句话：** 客户端报告播放到 1.2 秒时，Qwen 保留 18 行回答。
+
+### 图上是什么
+
+- 生成的回答有 34 行：三行文字和 31 行完整的 80 ms 声音。
+- D 允许保留 28 行，H 把切点往前挪到 18 行。
+- 蓝格是留在 thinker 记录里的行，灰格会被删除。
+- 切点数的是 token 位置，不是词数，也不是逐词的声音边界。
+
+### 公式
+
+$$
+C = P + \left\lfloor\frac{\min(D,H)}{F}\right\rfloor
+$$
+
+| 符号 | 是什么 | 大小 | 从哪来 |
+|---|---|---:|---|
+| $C$ | 切点后保留的回答行数 | 18 | 本步 |
+| $P$ | talker prefill 读取的文字行数 | 3 | Qwen `PREFILL_TEXT_ROWS` |
+| $D$ | 已交付声音的位置 | 2,000 ms | 第 1 步 |
+| $H$ | 客户端报告的播放位置 | 1,200 ms | 第 1 步 |
+| $F$ | 一个 codec 帧的时长 | 80 ms | Qwen `CODEC_FRAME_MS` |
+
+### 代入图上的数
+
+$$
+C_D = 3 + \left\lfloor 2{,}000 \div 80 \right\rfloor = 28
+$$
+
+$$
+C_H = 3 + \left\lfloor 1{,}200 \div 80 \right\rfloor = 18
+$$
+
+正常 graph 会把 `reply.delivered` 转成 `qwen.truncate`。客户端之后发来的 truncate 只能把切点继续往前挪。如果 D 是零，Qwen 不保留没听过的回答，而把原来的说话内容带入下一单元重新提问。
+
+### 接下来
+
+streaming cascade 保存文字消息，不保存 Qwen 的 codec 行记录，因此需要一套文字与声音的对齐规则。
+
+出处：`sglang_omni/models/qwen3_omni/thinker_session.py:38-42,87-89,167-223`；`sglang_omni/models/qwen3_omni/session_input.py:184-205,253-260`；`tests/unit_test/qwen3_omni/test_session_input.py:87-138`。

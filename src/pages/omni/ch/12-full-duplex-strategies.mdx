@@ -19,6 +19,8 @@ Step 2 maps alternatives rather than stages in one pipeline. Turn-based and nati
 
 Step 3 follows the Session graph's turn-named interrupt. It drops matching chunks from the target inbox, unsent appends, the delivery pacer and unread client output, while preserving client input (`sglang_omni/pipeline/session_graph.py:108-173`). A preempting interrupt also names already submitted appends so their owners abort them (`session_graph.py:175-210`). Later output from an interrupted reply remains fenced (`session_graph.py:581-619`; `sglang_omni/pipeline/sessions.py:167-210`). `reply.delivered` reports the connection's delivered duration (`session_graph.py:212-232`; `session_delivery.py:112-128`), not the listener's acoustic position.
 
+Step 4 uses Qwen's `heard_tokens(audio_end_ms) = 3 + floor(audio_end_ms ÷ 80)`. One codec frame is 1,920 samples at 24 kHz, or 80 ms; the talker prefill consumes three text rows before one row per codec frame (`sglang_omni/models/qwen3_omni/thinker_session.py:38-42,87-89`). Thus D maps to 28 rows and H to 18. The thinker keeps the smaller cut in either arrival order (`thinker_session.py:167-223`; `session_input.py:253-260`). If no reply audio was delivered, Qwen instead carries the original utterance into the next unit and asks it again (`session_input.py:184-205`; `tests/unit_test/qwen3_omni/test_session_input.py:102-138`).
+
 Code references in this chapter pin to `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`. The chapter reads source and tests; it does not run a model or benchmark.
 
 </details>
@@ -31,6 +33,8 @@ Code references in this chapter pin to `sglang-omni origin/main@9725235249df8512
 第 2 步画的是替代方案，不是同一条流水线的三段。turn-based 和 native full-duplex 回指 Learning SGLang 第 21 章第 1–2 步。新的 streaming cascade 路线把声音依次交给 ASR、聊天补全 LLM 和逐句 TTS（`docs/developer_reference/full_duplex_guide.md:1582-1591,1622-1645`）。MiniCPM-o 每份输入是 1,000 ms，由模型选择听或说（`docs/developer_reference/full_duplex_guide.md:391-397`）。三者是不同系统，本章不把它们的测量差值当成只由架构造成的 benchmark 结果。
 
 第 3 步跟随 Session graph 中指定 turn 的 interrupt。它从目标 inbox、未送出 appends、delivery pacer 和未读客户端输出中删除匹配 chunks，同时保留客户端输入（`sglang_omni/pipeline/session_graph.py:108-173`）。带 preempt 的 interrupt 还会点名已提交 appends，让 owner 中止它们（`session_graph.py:175-210`）。被打断回答之后到达的输出仍会被边界挡住（`session_graph.py:581-619`；`sglang_omni/pipeline/sessions.py:167-210`）。`reply.delivered` 报告连接已交付的时长（`session_graph.py:212-232`；`session_delivery.py:112-128`），不是听者的真实播放位置。
+
+第 4 步使用 Qwen 的 `heard_tokens(audio_end_ms) = 3 + floor(audio_end_ms ÷ 80)`。一个 codec 帧在 24 kHz 下是 1,920 个采样点，即 80 ms；talker prefill 先读三行文字，之后每个 codec 帧读一行（`sglang_omni/models/qwen3_omni/thinker_session.py:38-42,87-89`）。所以 D 对应 28 行，H 对应 18 行。无论两个报告谁先到达，thinker 都保留较小切点（`thinker_session.py:167-223`；`session_input.py:253-260`）。如果没有交付任何回答声音，Qwen 会把原来的说话内容带进下一单元，重新提问（`session_input.py:184-205`；`tests/unit_test/qwen3_omni/test_session_input.py:102-138`）。
 
 本章代码出处固定到 `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`。本章只读源码和测试，没有运行模型或 benchmark。
 
