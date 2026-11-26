@@ -61,6 +61,28 @@
       { en: `${FSDP_DP_SIZE} × ${FSDP_SHARD_STATE_PER_GPU_GB} GB = ${FSDP_SHARD_CLUSTER_STATE_GB} GB total`, zh: `${FSDP_DP_SIZE} × ${FSDP_SHARD_STATE_PER_GPU_GB} GB = 合计 ${FSDP_SHARD_CLUSTER_STATE_GB} GB` },
       { en: 'Each GPU keeps one-eighth of its old copy', zh: '每张 GPU 只留原来的八分之一' },
     ],
+  }, {
+    caption: 'Forward temporarily rebuilds one layer for computation. The full layer is released afterward.',
+    captionZh: '前向计算时，先临时拼出一层。算完就释放这一层。',
+    title: 'Forward borrows a full layer, then releases it', titleZh: '前向先借来完整一层，用完释放',
+    subtitle: 'all-gather = rebuild one full layer from every rank\'s shard · unit = the layer gathered together',
+    subtitleZh: 'all-gather = 从各 rank 的分片拼出完整一层 · unit = 一起聚合的这一层',
+    foot: 'The temporary unit has U bytes; the source supplies no U value.',
+    footZh: '临时 unit 的大小记作 U；来源没有给出 U 的数值。',
+    mobileTitle: 'Borrow a layer, then release it', mobileTitleZh: '借来一层，用完释放',
+    mobileSubtitle: 'all-gather = rebuild a full layer', mobileSubtitleZh: 'all-gather = 拼出完整一层',
+    mobileFoot: 'U is temporary and unquantified.', mobileFootZh: 'U 是临时占用，数值未知。',
+    mobile: [
+      { title: 'OWNED SHARDS', titleZh: '拥有的分片', body: '8 GB stay on this rank', bodyZh: '这个 rank 长期保存 8 GB', tone: 'orange' },
+      { title: 'ALL-GATHER · ONE UNIT', titleZh: 'ALL-GATHER · 一个 unit', body: 'every rank contributes its shard', bodyZh: '每个 rank 都拿出自己的一片', tone: 'blue' },
+      { title: 'FULL LAYER · U BYTES', titleZh: '完整一层 · U 字节', body: 'compute with the full values', bodyZh: '用完整数值计算', tone: 'blue' },
+      { title: 'RELEASE', titleZh: '释放', body: 'return to 8 GB owned', bodyZh: '回到长期保存的 8 GB', tone: 'plain' },
+    ],
+    formulas: [
+      { en: 'During compute: 8 GB + U', zh: '计算时：8 GB + U' },
+      { en: 'After release: 8 GB owned', zh: '释放后：长期保存 8 GB' },
+      { en: 'U is not a measured value', zh: 'U 不是实测数值' },
+    ],
   }];
   let step = $state(0);
   $effect(() => {
@@ -77,7 +99,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [560, 560][step] : [500, 500][step]);
+  const H = $derived(phone ? [560, 560, 600][step] : [500, 500, 500][step]);
 </script>
 
 <figure class="viz">
@@ -148,6 +170,25 @@
         <text x="360" y="370" text-anchor="middle" class="small strong">{t('The two bars use one scale: 250 px = 64 GB.', '两条柱使用同一比例：250 px = 64 GB。')}</text>
         <text x="360" y="407" text-anchor="middle" class="result">{FSDP_FULL_STATE_PER_GPU_GB} GB ÷ {FSDP_DP_SIZE} = {FSDP_SHARD_STATE_PER_GPU_GB} GB {t('per rank', '每个 rank')}</text>
         <text x="360" y="450" text-anchor="middle" class="small">{t('Orange = full copies · blue = owned shards', '橙 = 完整副本 · 蓝 = 拥有的分片')}</text>
+      {:else if step === 2}
+        {#each [
+          { x: 25, title: 'OWNED SHARDS', titleZh: '拥有的分片', result: '8 GB', body: 'persistent', bodyZh: '长期保存', tone: 'orange' },
+          { x: 205, title: 'ALL-GATHER', titleZh: 'ALL-GATHER', result: 'one unit', body: 'from every rank', bodyZh: '来自每个 rank', tone: 'blue' },
+          { x: 385, title: 'FULL LAYER', titleZh: '完整一层', result: 'U bytes', body: 'compute', bodyZh: '计算', tone: 'blue' },
+          { x: 565, title: 'RELEASE', titleZh: '释放', result: 'U gone', body: 'owned 8 GB', bodyZh: '仍保存 8 GB', tone: 'plain' },
+        ] as node, i}
+          <rect x={node.x} y="105" width="130" height="151" rx="12" fill={fill(node.tone)} stroke={stroke(node.tone)} stroke-dasharray={node.tone === 'plain' ? '5 4' : '0'} />
+          <text x={node.x + 65} y="137" text-anchor="middle" class="small strong">{t(node.title, node.titleZh)}</text>
+          <text x={node.x + 65} y="180" text-anchor="middle" class="result">{node.result}</text>
+          <text x={node.x + 65} y="222" text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
+          {#if i < 3}
+            <line x1={node.x + 130} y1="181" x2={node.x + 170} y2="181" stroke={i === 0 ? 'var(--gen)' : 'var(--accent)'} stroke-width="2.5" marker-end={i === 0 ? 'url(#fsdp-arrow-orange)' : 'url(#fsdp-arrow-blue)'} />
+          {/if}
+        {/each}
+        <text x="360" y="304" text-anchor="middle" class="result">{t('DURING COMPUTE', '计算时')} · 8 GB + U</text>
+        <text x="360" y="342" text-anchor="middle" class="result">{t('AFTER RELEASE', '释放后')} · 8 GB</text>
+        <text x="360" y="383" text-anchor="middle" class="small">{t('Forward gathers parameters, not gradients.', '前向聚合的是参数，不是梯度。')}</text>
+        <text x="360" y="429" text-anchor="middle" class="small">{t('Orange = persistent state · blue = temporary full values', '橙 = 长期保存状态 · 蓝 = 临时完整数值')}</text>
       {/if}
       <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t(cur.mobileFoot, cur.mobileFootZh) : t(cur.foot, cur.footZh)}</text>
     </svg>

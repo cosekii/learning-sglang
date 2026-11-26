@@ -72,3 +72,36 @@ FSDP2 把每个参数表示为 DTensor：逻辑张量、分布信息和本地分
 分片能减少长期保存的显存，但计算一层时仍需要这一层的完整参数。下一步临时聚齐这一层。
 
 来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:16-23`；`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:43-47,62-82`；`THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7` 的 `slime/backends/fsdp_utils/actor.py:94-98,158-186`。
+
+## 第 3 步 · 前向计算先借来完整一层
+
+**一句话。** 前向计算先 all-gather 当前 unit 的参数分片，用完整一层计算，再释放临时副本。
+
+### 图上是什么
+
+- 橙色 8 GB 是第 2 步中一个 rank 长期保存的状态。
+- `All-gather` 表示每个 rank 都拿出自己的分片，共同重建一个 FSDP unit 的完整参数。unit 是一起聚合的层或参数组。
+- 蓝色完整一层的临时大小记作 $U$。计算使用完整层，随后 `RELEASE` 删除临时副本，长期保存的 8 GB 仍在。
+
+### 公式与符号
+
+$$M_{\text{forward}}\approx M_i+U,\qquad M_{\text{after}}=M_i$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $M_i$ | 这个 rank 长期保存的状态 | 第 2 步，8 GB |
+| $U$ | 当前计算 unit 的完整参数临时字节数 | unit 大小，来源未给数值 |
+| $M_{\text{forward}}$ | 计算这个 unit 时的占用 | 长期状态加临时 unit |
+| $M_{\text{after}}$ | 释放这个 unit 后的占用 | 回到长期状态 |
+
+### 代入图上的数
+
+已给出的数只有 $M_i=8$ GB。图中不给 $U$ 填值，因此无法算出数值化的前向峰值。这里只画 $8\ \text{GB}+U\rightarrow8\ \text{GB}$ 的边界，不声称实测总量。
+
+All-gather 重建的是参数。梯度要到反向计算才产生，所以不在这次聚合里。
+
+### 接下来
+
+反向计算也需要参数值，但它新产生的是梯度。下一步看梯度为什么用 reduce-scatter，并回到各 rank 的分片。
+
+来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:18`；`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:53-56,101-105`。

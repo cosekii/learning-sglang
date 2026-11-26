@@ -19,6 +19,8 @@ Step 1 contrasts full replication with sharding at `fsdp/readme.md:16`. The cons
 
 Step 2 uses the same source's FSDP alternative: each rank owns a shard of the parameters, gradients and optimizer state (`fsdp/readme.md:16-23`; `readme-2-en.md:43-47`). The equal eight-way split gives `64 ÷ 8 = 8 GB` per rank and 64 GB in aggregate. FSDP2's per-parameter DTensor representation is explained in the deep dive. The DP mesh determines the shard count: slime computes `dp_size = world_size // cp_size` and passes `dp_mesh` to `fully_shard` (`actor.py:158-186,94-98` at the pinned revision). Eight physical GPUs imply DP 8 only when CP is 1, as in this example.
 
+Step 3 follows `fsdp/readme.md:18`: forward all-gathers the parameters for the unit being computed, then releases the full copy. The unit is the layer or parameter group materialized together (`readme-2-en.md:101-105`). The figure writes its temporary size as `U` because the sources provide no value. The `8 GB + U` expression is a residency boundary, not a measured peak; activations are still excluded.
+
 </details>
 
 <details class="i18n-zh">
@@ -29,5 +31,7 @@ Step 2 uses the same source's FSDP alternative: each rank owns a shard of the pa
 第 1 步依据 `fsdp/readme.md:16` 对照完整复制与分片。构造模型有 `4,000,000,000` 个数值，权重和梯度都按 2 字节计算。优化器约定来自 `readme-2-en.md:21-31`：FP32 master 权重、momentum 和 variance，即每个数值 `3 × 4 = 12` 字节。因此一份完整训练表占 `4B × (2 + 2 + 12) = 64 GB`，是共享 H100 80 GB 容量的 80%；8 份占 512 GB。这些数字只算三类保存的表，不含激活和临时分配。
 
 第 2 步使用同一来源的 FSDP 方案：每个 rank 拥有参数、梯度和优化器状态的一片（`fsdp/readme.md:16-23`；`readme-2-en.md:43-47`）。平均分成 8 份得到每个 rank `64 ÷ 8 = 8 GB`，合计仍为 64 GB。FSDP2 的逐参数 DTensor 表示放在深入讲解。分片数由 DP mesh 决定：slime 计算 `dp_size = world_size // cp_size`，并把 `dp_mesh` 传给 `fully_shard`（固定版本的 `actor.py:158-186,94-98`）。本例取 CP 1，所以 8 张物理 GPU 才对应 DP 8。
+
+第 3 步依据 `fsdp/readme.md:18`：前向计算时 all-gather 当前 unit 的参数，算完释放完整副本。unit 是一起聚合的层或参数组（`readme-2-en.md:101-105`）。来源没有给出临时大小，所以图中记作 `U`。`8 GB + U` 只表示占用边界，不是实测峰值；激活仍不计入。
 
 </details>

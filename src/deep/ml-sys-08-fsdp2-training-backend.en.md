@@ -72,3 +72,36 @@ FSDP2 represents each parameter as a DTensor: the logical tensor plus its distri
 Keeping shards saves persistent memory, but a layer still needs its full parameter values for computation. The next step gathers one layer temporarily.
 
 Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:16-23`; `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:43-47,62-82`; `THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7`, `slime/backends/fsdp_utils/actor.py:94-98,158-186`.
+
+## Step 3 · Borrow a full layer for forward computation
+
+**One sentence.** Forward all-gathers the current unit's parameter shards, computes with the full layer and releases the temporary copy.
+
+### On the stage
+
+- The orange 8 GB box is the persistent state owned by one rank from Step 2.
+- `All-gather` means every rank contributes its shard so the group can reconstruct the full parameter values for one FSDP unit. A unit is the layer or parameter group gathered together.
+- The blue full layer has temporary size `U`. Computation uses that full layer, then `RELEASE` removes the temporary copy. The persistent 8 GB remains.
+
+### Formula and symbols
+
+$$M_{\text{forward}}\approx M_i+U,\qquad M_{\text{after}}=M_i$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $M_i$ | Persistent state owned by this rank | Step 2, 8 GB |
+| $U$ | Temporary bytes for the full unit being computed | Unit size; no source value |
+| $M_{\text{forward}}$ | Residency while this unit is computed | Owned state plus the temporary unit |
+| $M_{\text{after}}$ | Residency after the unit is released | Back to owned state |
+
+### The numbers on the stage
+
+The only supplied number is $M_i=8$ GB. The figure does not assign a value to $U$, so it cannot produce a numeric forward peak. It shows only the boundary $8\ \text{GB}+U\rightarrow8\ \text{GB}$, not a measured total.
+
+The all-gather reconstructs parameters. Gradients do not exist until backward computation, so they are not part of this gather.
+
+### Next
+
+Backward also needs parameter values, but its new output is a gradient. The next step shows why gradients use reduce-scatter and return to owned slices.
+
+Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:18`; `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:53-56,101-105`.
