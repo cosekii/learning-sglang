@@ -18,6 +18,9 @@
   }, {
     caption: 'An address on 127.0.0.1 keeps the request on this Mac. Another host receives it elsewhere.',
     captionZh: '地址用 127.0.0.1 时，请求留在本机。换成别的主机，请求就发到别处。',
+  }, {
+    caption: 'The address and model stay in saved settings. The full key stays in the Mac Keychain.',
+    captionZh: '地址和模型名留在设置里。完整钥匙留在 Mac 钥匙串。',
   }];
   const ariaLabels = [{
     en: 'A constructed request has three things to account for: the raw text Good morning, the model name demo-model, and a masked API key. All three go to one configured external service. The address chooses the service.',
@@ -25,6 +28,9 @@
   }, {
     en: 'The same request has two alternative destinations. The host 127.0.0.1 points to this Mac, so the text, model name and key stay here. The host api.example.com points to another computer, so all three leave this Mac. One selected address has one destination.',
     zh: '同一个请求有两个候选目的地。主机名 127.0.0.1 指向这台 Mac，文字、模型名和钥匙都留在这里。主机名 api.example.com 指向另一台电脑，三者都离开这台 Mac。一个选定的地址只有一个目的地。',
+  }, {
+    en: 'One constructed setup named demo is split into two storage places. Saved settings hold its address api.example.com and model name demo-model, but no API key. The Mac Keychain, its password store, holds item llm.demo with the complete key, masked here. The item name joins llm and demo. Any program running as this user can read the key without another prompt.',
+    zh: '一个名为 demo 的构造配置分在两个存放处。保存的设置里有地址 api.example.com 和模型名 demo-model，但没有 API key。Mac 钥匙串是密码存放处，其中的 llm.demo 项目保存完整钥匙，图上打码。项目名由 llm 和 demo 组成。以这个用户身份运行的任何程序都能读取钥匙，不会再弹窗询问。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -41,7 +47,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived((phone ? [570, 640] : [430, 440])[step]);
+  const H = $derived((phone ? [570, 640, 620] : [430, 440, 430])[step]);
 </script>
 
 <figure class="viz">
@@ -104,6 +110,33 @@
         <text x={W / 2} y={phone ? 560 : 380} text-anchor="middle" class="cut">{VOXT_LLM_ADDRESS_OPTION_COUNT} {t('ADDRESSES', '个候选地址')} · {VOXT_LLM_DESTINATION_COUNT} {t('SELECTED DESTINATION', '个选定的目的地')}</text>
         <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('Host portions shown · constructed services.', '只画主机名 · 构造的服务。')}</text>
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Both assumed reachable.', '假设两个都能连通。')}</text>
+      {:else if step === 2}
+        <text x={W / 2} y="27" text-anchor="middle" class="title">{t('ONE SETUP · TWO STORAGE PLACES', '一套配置 · 两个存放处')}</text>
+        <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('Keychain = the Mac’s password store', '钥匙串 = Mac 的密码存放处')}</text>
+        <rect x={phone ? 25 : 45} y={phone ? 75 : 85} width={phone ? 250 : 290} height={phone ? 190 : 220} rx="10" fill="var(--bg)" stroke="var(--fg)" stroke-width="1.5" />
+        <text x={phone ? 150 : 190} y={phone ? 101 : 112} text-anchor="middle" class="label">{t('SAVED SETUP', '保存的配置')}</text>
+        <text x={phone ? 150 : 190} y={phone ? 135 : 148} text-anchor="middle" class="value">demo</text>
+        <text x={phone ? 150 : 190} y={phone ? 157 : 171} text-anchor="middle" class="detail">{t('this setup’s name', '这套配置的名字')}</text>
+        <text x={phone ? 150 : 190} y={phone ? 188 : 207} text-anchor="middle" class="mono">api.example.com</text>
+        <text x={phone ? 150 : 190} y={phone ? 211 : 232} text-anchor="middle" class="mono">demo-model</text>
+        <text x={phone ? 150 : 190} y={phone ? 232 : 254} text-anchor="middle" class="detail">{t('address + model name', '地址 + 模型名')}</text>
+        <text x={phone ? 150 : 190} y={phone ? 253 : 289} text-anchor="middle" class="label">{t('NO API KEY HERE', '这里没有 API key')}</text>
+
+        <rect x={phone ? 25 : 385} y={phone ? 285 : 85} width={phone ? 250 : 290} height={phone ? 190 : 220} rx="10" fill="var(--gen-soft)" stroke="var(--gen)" stroke-width="1.5" />
+        <text x={phone ? 150 : 530} y={phone ? 311 : 112} text-anchor="middle" class="label" fill="var(--gen)">{t('KEYCHAIN ITEM', '钥匙串项目')}</text>
+        <text x={phone ? 150 : 530} y={phone ? 345 : 148} text-anchor="middle" class="value">llm.demo</text>
+        <text x={phone ? 150 : 530} y={phone ? 367 : 171} text-anchor="middle" class="detail">{t('item name · llm = language model', '项目名 · llm = 语言模型')}</text>
+        <text x={phone ? 150 : 530} y={phone ? 408 : 216} text-anchor="middle" class="value" fill="var(--gen)">sk-demo…1234</text>
+        <text x={phone ? 150 : 530} y={phone ? 433 : 241} text-anchor="middle" class="detail">{t('full key · masked on this stage', '完整钥匙 · 图上打码')}</text>
+
+        <text x={W / 2} y={phone ? 510 : 340} text-anchor="middle" class="cut">llm. + demo = llm.demo</text>
+        {#if phone}
+          <text x={W / 2} y="545" text-anchor="middle" class="detail">{t('Programs running as you', '以你身份运行的程序都能读它')}</text>
+          <text x={W / 2} y="565" text-anchor="middle" class="detail">{t('can read this key without another prompt.', '不会再弹窗询问。')}</text>
+        {:else}
+          <text x={W / 2} y="385" text-anchor="middle" class="detail">{t('Programs running as you can read this key without another prompt.', '以你身份运行的程序都能读它，不会再弹窗询问。')}</text>
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Constructed setup · no real key stored.', '构造的配置 · 没有保存真实钥匙。')}</text>
       {/if}
     </svg>
   </div>

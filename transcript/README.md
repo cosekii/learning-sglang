@@ -42,4 +42,4 @@ Read it to check wording and numbers across chapters without opening the compone
 | voxt | 02 | [Hotkeys and permissions](voxt/helper-permissions-hotkeys.md) | 3 |
 | voxt | 03 | [From microphone to audio frames](voxt/microphone-to-voice-frames.md) | 8 |
 | voxt | 04 | [Routes from sound to text](voxt/speech-recognition-routes.md) | 7 |
-| voxt | 05 | [The language-model connection](voxt/language-model-connection.md) | 2 |
+| voxt | 05 | [The language-model connection](voxt/language-model-connection.md) | 3 |

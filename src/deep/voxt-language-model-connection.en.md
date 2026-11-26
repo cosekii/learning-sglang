@@ -92,3 +92,50 @@ Public baseline: `sglang-omni@14046fc02c5268df8b7d4a9a3094b15e1150060e`; paths a
 - The resolved address used for the chat request: `Voxt/internal/llm/openai.go:177-211`.
 - The HTTP request sent to that URL: `Voxt/internal/llm/openai_http.go:22-38,63-71`.
 - Ollama's public local preset and optional key: `Voxt/internal/llm/presets.json:6`.
+
+## Step 3 · Settings and Keychain
+
+> **In one line:** Voxt saves the setup's address and model separately from its complete API key.
+
+### On the stage
+
+- `demo` is a constructed setup ID. Its saved settings contain the constructed address and model name, but no API key.
+- Keychain is the Mac's password store. Voxt uses a generic-password item in the login Keychain, under service `VoxtNew`.
+- The item's account name is `llm.demo`. Here `llm` identifies a language-model setup and `demo` is its ID. The real item holds the complete key; only the teaching display masks it.
+- The final lines state the access boundary: any process running as this user can read the key without another prompt. This item is not restricted to Voxt alone.
+
+### Item-name derivation
+
+For a language-model setup, Voxt joins the kind and ID with a dot:
+
+`Account(LLM, "demo") = "llm." + "demo" = "llm.demo"`
+
+Speech-recognition setups use `asr.<id>` instead. They are outside this chapter's request.
+
+### Where the settings live
+
+The settings are a versioned JSON document under `settings:app` in the store's `documents` table, not a separate `settings.json` file. A provider entry has `id`, optional `endpoint`, optional `model` and generation settings. Its API key is not a field in that entry.
+
+When the dialog saves a newly typed key, Voxt writes the Keychain item first and then updates the setup. `Set` sends the secret to `/usr/bin/security` on standard input, not in the process arguments.
+
+### Read and access boundaries
+
+Opening a language-model connection reads `llm.<id>` in the background and passes the complete key to the provider client. A missing item reads as an empty key. A later step follows that key into the request.
+
+The Keychain item has no application access list. The `/usr/bin/security` tool and other processes of the same user can read it without a prompt. Keychain storage therefore does not protect the key from another process already running as this user.
+
+### Next
+
+The saved setup supplies the address and model, and the Keychain supplies the key. Next, put the text and model into the request body.
+
+### Sources
+
+Public baseline: `sglang-omni@14046fc02c5268df8b7d4a9a3094b15e1150060e`; paths are relative to that repository.
+
+- Settings document and storage boundary: `Voxt/internal/settings/settings.go:1-5`; `Voxt/internal/settings/service.go:16`.
+- Provider fields and excluded key: `Voxt/internal/settings/providers.go:17-28,39-43`.
+- Keychain account naming: `Voxt/internal/providers/providers.go:35-37`.
+- Keychain service, access boundary and background-call requirement: `Voxt/internal/secrets/secrets.go:1-19,34-49`.
+- Key retrieval and saving through standard input: `Voxt/internal/secrets/secrets.go:85-117`.
+- Save order and setup update: `Voxt/remote_dialog_controller.go:229-274`.
+- Session-time key retrieval: `Voxt/remote_link.go:189-200`.
