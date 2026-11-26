@@ -106,8 +106,8 @@ $$T=1\Rightarrow W=1+1=2,\qquad T=2\Rightarrow W=1+2=3$$
 ### 图上是什么
 
 - 一个 parameter 就是一张权重表。四个橙色训练分片各有 256 行、1024 列，记作 `[256,1024]`。`full_tensor()` 把它们拼成一个 `[1024,1024]` 张量。
-- `MultiprocessingSerializer.serialize` 把位置便签打包成 handle tuple，里面有形状、大小和存储位置，没有权重数据本体。
-- 灰色箭头表示便签交接。`gather_object` 把便签收拢到 rank 0。每个 SGLang rank 用 `tensor.get(tp_rank)` 选自己的句柄并重建完整张量，`load_weights` 再留下该 rank 负责的部分。蓝色表示这些推理端工作。
+- `MultiprocessingSerializer.serialize` 把位置便签打包成 handle tuple，里面有形状、大小和存储位置，没有权重数据本体。接收方怎样获得那块 GPU 内存的访问权限，本步不展开。
+- 灰色箭头表示便签交接。`gather_object` 把便签收拢到推理 TP rank 0，不是第 3 步的训练 rank 0。每个 SGLang rank 用 `tensor.get(tp_rank)` 选自己的句柄并重建完整张量，`load_weights` 再留下该 rank 负责的部分。蓝色表示这些推理端工作。
 
 ### 公式与符号
 

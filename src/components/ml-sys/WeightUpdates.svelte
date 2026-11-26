@@ -84,10 +84,10 @@
     captionZh: 'Tensor 路线先拼出一个完整参数。它发送的是 GPU 内存定位句柄，不是参数字节。',
     title: 'Three channels · 3 of 3: send GPU handles', titleZh: '三条通道 · 第 3 条：发送 GPU 句柄',
     subtitle: 'parameter = one weight table · handle = its GPU location note', subtitleZh: 'parameter = 一张权重表 · handle = 它在 GPU 上的位置便签',
-    foot: 'handle tuple = bundled location notes, with no weight bytes.', footZh: 'handle tuple = 打包的位置便签，里面没有权重字节。',
+    foot: 'Handles carry no weight bytes; memory-access details are outside this step.', footZh: '句柄不含权重字节；接收方怎样访问那块 GPU 内存，本步不展开。',
     mobileTitle: '3 of 3 · GPU handles', mobileTitleZh: '第 3 条 · GPU 句柄',
     mobileSubtitle: 'handle = tensor location information', mobileSubtitleZh: 'handle = 张量的位置信息',
-    mobileFoot: 'Handles do not contain the weight bytes.', mobileFootZh: '句柄里没有权重字节。',
+    mobileFoot: 'Handles have no weight bytes; access details are omitted.', mobileFootZh: '句柄不含权重字节；访问细节本步不展开。',
     mobile: [
       { title: '4 TRAINING PIECES', titleZh: '4 块训练分片', body: '[256, 1024] each', bodyZh: '每块 [256, 1024]', tone: 'orange' },
       { title: 'FULL_TENSOR()', titleZh: 'FULL_TENSOR()', body: 'assemble [1024, 1024]', bodyZh: '拼成 [1024, 1024]', tone: 'orange' },
@@ -97,7 +97,7 @@
     formulas: [
       { en: `4 × 256 × 1024 = ${UPDATE_EXAMPLE_FULL_ELEMENTS.toLocaleString('en-US')}`, zh: `4 × 256 × 1024 = ${UPDATE_EXAMPLE_FULL_ELEMENTS.toLocaleString('en-US')} 个数` },
       { en: '= the pixels in a 1024×1024 photo', zh: '= 一张 1024×1024 照片的像素数' },
-      { en: 'rank 0 collects all location notes', zh: 'rank 0 收拢所有位置便签' },
+      { en: 'inference TP rank 0 collects notes', zh: '推理 TP rank 0 收拢位置便签' },
     ],
   }, {
     caption: 'Training weights moved off the GPU after training. Slime brings back one bucket, then clears it before the next.',
@@ -317,11 +317,11 @@
         <text x="535" y="158" text-anchor="middle" class="result">[{UPDATE_EXAMPLE_FULL_ROWS}, {UPDATE_EXAMPLE_FULL_COLS}]</text>
         <text x="360" y="193" text-anchor="middle" class="small">{t('Each training piece has 256 rows and 1024 columns.', '每块训练分片有 256 行、1024 列。')}</text>
         <text x="360" y="220" text-anchor="middle" class="result">{UPDATE_EXAMPLE_FSDP_TP} × {UPDATE_EXAMPLE_FSDP_ROWS} × {UPDATE_EXAMPLE_FULL_COLS} = {UPDATE_EXAMPLE_FULL_ELEMENTS.toLocaleString('en-US')} {t('= the pixels in a 1024×1024 photo', '= 一张 1024×1024 照片的像素数')}</text>
-        <text x="360" y="251" text-anchor="middle" class="code">serialize = bundle the location notes</text>
+        <text x="360" y="251" text-anchor="middle" class="code">{t('serialize = bundle the location notes', 'serialize = 打包位置便签')}</text>
         <rect x="40" y="274" width="270" height="116" rx="12" fill="var(--gen-soft)" stroke="var(--gen)" />
-        <text x="175" y="307" text-anchor="middle" class="section">LOCATION NOTE</text>
-        <text x="175" y="340" text-anchor="middle" class="small">shape · size</text>
-        <text x="175" y="366" text-anchor="middle" class="small">storage location</text>
+        <text x="175" y="307" text-anchor="middle" class="section">{t('LOCATION NOTE', '位置便签')}</text>
+        <text x="175" y="340" text-anchor="middle" class="small">{t('shape · size', '形状 · 大小')}</text>
+        <text x="175" y="366" text-anchor="middle" class="small">{t('storage location', '存储位置')}</text>
         <line x1="310" y1="332" x2="405" y2="332" stroke="var(--muted)" stroke-width="3" marker-end="url(#update-arrow-grey)" />
         <rect x="415" y="274" width="265" height="116" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" />
         <text x="547" y="307" text-anchor="middle" class="section">SGLANG</text>

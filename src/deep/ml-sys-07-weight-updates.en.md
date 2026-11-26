@@ -106,8 +106,8 @@ Sources: `Awesome-ML-SYS-Tutorial/sglang/latency-accelerate-for-weight-updates/r
 ### On the stage
 
 - A parameter is one weight table. Four orange training pieces each have 256 rows and 1024 columns, written `[256,1024]`. `full_tensor()` gathers them into one `[1024,1024]` tensor.
-- `MultiprocessingSerializer.serialize` bundles location notes into a handle tuple: shape, size and storage location, with no weight payload.
-- The grey arrow is the note handoff. `gather_object` collects the notes at rank 0. On each SGLang rank, `tensor.get(tp_rank)` selects that rank's handle and rebuilds the full tensor; `load_weights` then keeps the part owned by that rank. Blue marks this inference-side work.
+- `MultiprocessingSerializer.serialize` bundles location notes into a handle tuple: shape, size and storage location, with no weight payload. How the receiver gets access to that GPU memory is outside this step.
+- The grey arrow is the note handoff. `gather_object` collects the notes at inference TP rank 0, not training rank 0 from Step 3. On each SGLang rank, `tensor.get(tp_rank)` selects that rank's handle and rebuilds the full tensor; `load_weights` then keeps the part owned by that rank. Blue marks this inference-side work.
 
 ### Formula and symbols
 
