@@ -131,3 +131,50 @@ Public baseline: same as Step 1.
 - Cleanup example inside the system prompt: `Voxt/internal/compose/example.go:9-45`.
 - Full custom-prompt branch: `Voxt/internal/compose/compose_full.go:8-79`.
 - Representative layer lists: `Voxt/internal/compose/compose_test.go:146-185`.
+
+## Step 4 · Clean each answer by its contract
+
+> **In one line:** The three tasks have different answer contracts: built-in Transcribe extracts `<output>`, Translate preserves tags in the text, and a first Rewrite from scratch reads a title and content.
+
+### On the stage
+
+- Each card shows the model answer above and the content Voxt keeps below. Every answer value is constructed.
+- Built-in `Transcribe` turns `<output>Hi.</output>` into `Hi.` without delivering the wrapper.
+- `Translate` preserves `“<output>”` when those characters belong to the text, as they can in HTML.
+- A first `Rewrite` from scratch reads the title and content from `{title, content}`. Follow-ups use plain text. Invalid or absent first-write JSON falls back to cleaned plain text.
+- This picture shows built-in contracts. A custom `TaskPrompt` can define another output shape, so the built-in `<output>` rule does not apply.
+
+### Formula
+
+$$
+A=T
+$$
+
+| Symbol | Meaning | Where it comes from |
+|---|---|---|
+| $A$ | Number of answer contracts shown | One for each of 3 tasks |
+| $T$ | Number of tasks shown | The 3 routes from Step 1 |
+
+### The numbers on the stage
+
+| Quantity | Arithmetic | Result |
+|---|---|---:|
+| Tasks and answer contracts | $3\\rightarrow3$ | 3 tasks map to 3 contracts |
+
+This compares cleaning rules, not model quality. The prompt asks for a shape and the cleaner processes the actual answer. A prompt cannot guarantee that every model answer follows it.
+
+### Cleaning boundaries
+
+Under the built-in contract, `Transcribe` extracts `<output>` and removes echoed control markup. Without tags, it can also look for the cleaned text span. `Translate` and ordinary `Rewrite` remove echoed input wrappers, outer quotes and control markup, but they do not treat `<output>` in the user's content as their own contract tag.
+
+### Next
+
+A short input fits one request. A long dictation needs pieces, and their answers must return in the original speech order.
+
+### Sources
+
+Public baseline: same as Step 1.
+
+- Built-in `<output>` extraction and preservation of tags in content: `Voxt/internal/compose/answer.go:372-449`.
+- First-write JSON parsing and plain-text fallback: `Voxt/internal/compose/answer.go:463-483`; `Voxt/internal/session/write.go:341-415`.
+- Transcribe pieces call `CleanOutput`: `Voxt/internal/session/cleanup.go:399-431`.

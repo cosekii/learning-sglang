@@ -131,3 +131,50 @@ $$
 - 清理示例位于 system prompt 内部：`Voxt/internal/compose/example.go:9-45`。
 - 完整自定义 prompt 分支：`Voxt/internal/compose/compose_full.go:8-79`。
 - 代表性层列表：`Voxt/internal/compose/compose_test.go:146-185`。
+
+## 第 4 步 · 三种回答各按约定清理
+
+> **一句话：** 三种任务有不同的输出约定，内置整理听写取出 `<output>` 内容，翻译保留正文标签，首次从零改写读取标题和正文。
+
+### 图上是什么
+
+- 每张卡上方是模型回答，下方是 Voxt 清理后保留的内容。所有回答值都是构造示例。
+- 内置 `Transcribe` 把 `<output>Hi.</output>` 处理成 `Hi.`，标签本身不进入结果。
+- `Translate` 保留正文里的 `“<output>”`。翻译 HTML 等内容时，这些字符可能就是用户需要的正文。
+- 首次从零 `Rewrite` 从 `{title, content}` 读取标题和正文。后续追问使用纯文本；首次回答的 JSON 无效或缺失时，Voxt 改按清理后的纯文本处理。
+- 本图画内置约定。自定义 `TaskPrompt` 可以拥有别的输出形状，不能套用内置 `<output>` 规则。
+
+### 公式
+
+$$
+A=T
+$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $A$ | 本图列出的输出约定数 | 三种任务各一种，共 3 种 |
+| $T$ | 本图列出的任务数 | 第 1 步的 3 条任务路线 |
+
+### 代入图上的数
+
+| 要算的量 | 算式 | 结果 |
+|---|---|---:|
+| 任务与输出约定 | $3\\rightarrow3$ | 3 种任务对应 3 种约定 |
+
+这里比较的是清理规则，不是模型质量。提示词要求模型按约定回答，清理程序再处理实际回答；提示词本身不能保证模型永远遵守。
+
+### 清理边界
+
+`Transcribe` 在内置约定下提取 `<output>`，去掉模型泄漏的控制标记；没有标签时还会尝试找出清理文本的范围。`Translate` 和普通 `Rewrite` 清理回显的输入包裹、外围引号和控制标记，但不把正文中的 `<output>` 当成自己的合约标签。
+
+### 接下来
+
+短输入可以组成一个请求。长听写还需要分片，并让各片答案按原话顺序合回来。
+
+### 源码出处
+
+公开基线同第 1 步。
+
+- 内置 `<output>` 提取与正文标签保留：`Voxt/internal/compose/answer.go:372-449`。
+- 首次从零写作的 JSON 解析和纯文本回退：`Voxt/internal/compose/answer.go:463-483`；`Voxt/internal/session/write.go:341-415`。
+- 整理分片调用 `CleanOutput`：`Voxt/internal/session/cleanup.go:399-431`。

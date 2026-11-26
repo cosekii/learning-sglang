@@ -17,6 +17,9 @@
   }, {
     caption: 'Four instruction layers join one input. They form one Transcribe cleanup prompt.',
     captionZh: '四层说明加入一份输入，组成整理听写的 prompt。',
+  }, {
+    caption: 'Each task has its own answer contract. Built-in Transcribe extracts &lt;output&gt;.',
+    captionZh: '三种任务各有输出约定。内置整理听写会取出 &lt;output&gt; 内容。',
   }];
   const ariaLabels = [{
     en: 'After recognition, one result can take one of three task routes. Transcribe treats words such as Good morning as text to tidy. Translate treats them as text to translate. Rewrite treats words such as Make it shorter as an instruction. Selected or typed text can supply the content to rewrite.',
@@ -27,6 +30,9 @@
   }, {
     en: 'A simplified Transcribe cleanup prompt has five functional parts. Four system instruction layers cover the role, cleanup rules, task and output contract. One user message supplies the recognized text inside an input wrapper. Four plus one makes five parts in one prompt.',
     zh: '一个简化的整理听写 prompt 有五个功能部分。system 的四层说明分别是角色、清理规则、任务和输出约定。一条 user 消息把识别文字放进 input 包裹。四加一组成一个 prompt 的五个部分。',
+  }, {
+    en: 'Three tasks have three answer contracts. Built-in Transcribe changes an answer containing output tags into only the inner text. Translate preserves output tags that belong to the text. A first Rewrite from scratch reads title and content fields. The answers are constructed examples.',
+    zh: '三种任务有三种输出约定。内置整理听写把带 output 标签的回答处理成标签内的文字。翻译保留正文本身的 output 标签。首次从零改写读取 title 和 content 字段。回答是构造示例。',
   }];
   const tasks = [
     { name: 'TRANSCRIBE', nameZh: '整理听写', output: '“Good morning.”', note: 'words to tidy', noteZh: '要整理的文字' },
@@ -48,7 +54,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived((phone ? [680, 620, 670] : [480, 410, 460])[step]);
+  const H = $derived((phone ? [680, 620, 670, 660] : [480, 410, 460, 420])[step]);
 </script>
 
 <figure class="viz">
@@ -119,7 +125,7 @@
         <text x={W / 2} y={phone ? 565 : 325} text-anchor="middle" class="cut">{t('REUSE THE INSTRUCTIONS · REPLACE THE INPUT', '复用说明 · 替换本次输入')}</text>
         <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('User text cannot literally close its wrapper.', '用户文本不能原样闭合自己的包裹标签。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Matching closing tags are escaped.', '同名闭合标签会被转义。')}</text>
-      {:else}
+      {:else if step === 2}
         <text x={W / 2} y="27" text-anchor="middle" class="title">{t('TRANSCRIBE + CLEANUP · ONE PROMPT', '整理听写 + 清理 · 一份 prompt')}</text>
         <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('prompt = the complete instructions and input', 'prompt = 完整的说明和输入')}</text>
         <rect x={phone ? 20 : 30} y={phone ? 72 : 75} width={phone ? 260 : 400} height={phone ? 350 : 290} rx="11" fill="var(--bg)" stroke="var(--fg)" stroke-width="1.5" />
@@ -150,6 +156,36 @@
         <text x={W / 2} y={phone ? 595 : 390} text-anchor="middle" class="cut">4 + 1 = {VOXT_COMPOSE_PROMPT_PART_COUNT} {t('PARTS · ONE PROMPT', '个部分 · 一份 prompt')}</text>
         <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('Simplified map · form and example layers omitted.', '简化图 · 省略格式和示例层。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('The input value is constructed.', '输入值是构造的。')}</text>
+      {:else}
+        <text x={W / 2} y="27" text-anchor="middle" class="title">{t('THREE TASKS · THREE ANSWER CONTRACTS', '三种任务 · 三种输出约定')}</text>
+        <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('answer contract = the shape Voxt expects back', '输出约定 = Voxt 期望收到的回答形状')}</text>
+        {#each [
+          { name: 'TRANSCRIBE', nameZh: '整理听写', scope: 'BUILT-IN CLEANUP', scopeZh: '内置清理', answer: '<output>Hi.</output>', kept: 'Hi.' },
+          { name: 'TRANSLATE', nameZh: '翻译', scope: 'TAGS IN THE TEXT', scopeZh: '正文里的标签', answer: '“<output>”', kept: '“<output>”' },
+          { name: 'REWRITE', nameZh: '改写', scope: 'FIRST FROM SCRATCH', scopeZh: '首次从零写作', answer: '{title, content}', kept: 'title + content' },
+        ] as contract, i}
+          {@const x = phone ? 25 : 25 + i * 230}
+          {@const y = phone ? 70 + i * 145 : 75}
+          {@const w = phone ? 250 : 210}
+          <rect {x} {y} width={w} height={phone ? 125 : 230} rx="10" fill="var(--bg)" stroke="var(--line)" stroke-width="1.5" />
+          <text x={x + w / 2} y={y + 22} text-anchor="middle" class="label">{t(contract.name, contract.nameZh)}</text>
+          <text x={x + w / 2} y={y + 42} text-anchor="middle" class="detail">{t(contract.scope, contract.scopeZh)}</text>
+          {#if phone}
+            <text x={x + 14} y={y + 68} class="detail">{t('MODEL ANSWER', '模型回答')}</text>
+            <text x={x + w - 14} y={y + 68} text-anchor="end" class="mono">{contract.answer}</text>
+            <text x={x + 14} y={y + 103} class="detail" fill="var(--accent)">{t('VOXT KEEPS', 'VOXT 保留')}</text>
+            <text x={x + w - 14} y={y + 103} text-anchor="end" class="value small" fill="var(--accent)">{contract.kept}</text>
+          {:else}
+            <text x={x + w / 2} y={y + 69} text-anchor="middle" class="detail">{t('MODEL ANSWER', '模型回答')}</text>
+            <text x={x + w / 2} y={y + 94} text-anchor="middle" class="mono">{contract.answer}</text>
+            <line x1={x + w / 2} y1={y + 105} x2={x + w / 2} y2={y + 121} stroke="var(--muted)" stroke-width="2" marker-end="url(#compose-arrow)" />
+            <text x={x + w / 2} y={y + 142} text-anchor="middle" class="detail" fill="var(--accent)">{t('VOXT KEEPS', 'VOXT 保留')}</text>
+            <text x={x + w / 2} y={y + 165} text-anchor="middle" class="value small" fill="var(--accent)">{contract.kept}</text>
+          {/if}
+        {/each}
+        <text x={W / 2} y={phone ? 535 : 340} text-anchor="middle" class="cut">{VOXT_COMPOSE_TASK_COUNT} {t('TASKS', '种任务')} = {VOXT_COMPOSE_TASK_COUNT} {t('ANSWER CONTRACTS', '种输出约定')}</text>
+        <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('Constructed answers · later Rewrite turns use plain text.', '构造的回答 · 后续改写轮次使用纯文本。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Invalid first-write JSON becomes cleaned plain text.', '首次写作的 JSON 无效时，按清理后的纯文本处理。')}</text>
       {/if}
     </svg>
   </div>
