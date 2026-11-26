@@ -295,3 +295,41 @@ W4A16 的 W4 指 4 位权重，A16 在这里指 BF16 激活值。KV cache 是另
 最后看公开 checkpoint 的实际字节数与八张 H200 的总容量，区分“checkpoint 字节能放下”和“完整 rollout 已测得更快”。
 
 来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:105-119,147-171`；`sgl-project/sglang@dce8b0606c06d3a191a24c7b8cbe8e238ab316c9` 的 `fused_marlin_moe.py:77-92`、`dequant.h:161-183` 和 `marlin_template.h:87-108`。
+
+## 第 9 步 · 八张卡的总容量装得下 checkpoint 字节
+
+**一句话。** 公开 Kimi-K2-Thinking checkpoint 是 594.206 GB，超过一张 141 GB H200，但小于八张卡合计的 1,128 GB。
+
+### 图上是什么
+
+- 左栏把 594.206 GB checkpoint 与一张 141 GB H200 对照，checkpoint 是单卡容量的约 4.22 倍。
+- 右栏把同一份 checkpoint 与八张卡的 1,128 GB 总容量对照。
+- 四条柱都以 1,128 GB 为满宽。橙色始终是 checkpoint 字节，蓝色始终是卡容量。
+- 八卡平均每张 74.276 GB 只是除法，不是测得的每个 rank 分配。
+
+### 公式与符号
+
+$$C=nM,\qquad c=K/n,\qquad K<C$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $K$ | 公开 checkpoint 的张量总字节 | `model.safetensors.index.json` 的 `metadata.total_size` |
+| $n$ | 一个 rollout engine 的 GPU 数 | 固定 recipe 的 `--rollout-num-gpus-per-engine 8` |
+| $M$ | 文章使用的一张 H200 容量 | 141 GB |
+| $C$ | 八张卡的总容量 | $8\times141=1{,}128$ GB |
+| $c$ | checkpoint 字节除以八卡的平均值 | 本步计算，74.276 GB |
+
+### 代入图上的数
+
+$$K=594{,}205{,}920{,}512\ \text{B}=594.206\ \text{GB}$$
+$$C=8\times141=1{,}128\ \text{GB},\qquad c=594.206/8=74.276\ \text{GB}$$
+
+这里使用十进制 GB，$1\ \text{GB}=10^9$ 字节，不是 GiB。$K<C$ 只说明 checkpoint 字节小于八卡总容量。KV cache、激活值、CUDA 工作区、更新 buffer 和各 rank 不均匀分配都需要额外空间，所以它不是完整 rollout 的显存验收。
+
+文章把 1TB 级模型放进“单机”，不是一张 H200。固定 recipe 也明确给一个 rollout engine 八张 GPU。文章报告单机布局减少跨机通信并缩短 Kimi rollout，但没有提供本章可复算的原始时间表，因此本章不把部署收益写成测得的加速倍数。QAT 训练本身还有额外开销，完整 RL round 也要单独测量。
+
+### 接下来
+
+同一 checkpoint 换到另一个引擎，计算路径仍会改变。下一章问：同一个 token 序列在两个引擎里的 log probability 是否必然相同？
+
+来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:19-23,160-182`；Kimi-K2-Thinking `model.safetensors.index.json`（revision `a51ccc050d73dab088bf7b0e2dd9b30ae85a4e55`）的 `metadata.total_size`；`THUDM/slime@58525eb986c66a271aa31077e17b8afebe704b4f` 的 `run-kimi-k2-Thinking-int4.sh:119-139`。

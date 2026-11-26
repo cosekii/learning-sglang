@@ -31,6 +31,8 @@ Step 7 follows `update_weight_from_distributed.py:73-132` and `docker/patch/late
 
 Step 8 follows SGLang's `fused_marlin_moe.py:77-92`, `dequant.h:161-183`, and `marlin_template.h:87-108` at the pinned revision. Marlin dequantizes INT4 weights to BF16, multiplies BF16 weights and activations, and accumulates in FP32 with `mma.sync...f32.bf16.bf16.f32`. W4A16 does not set KV-cache precision or prove zero-cost dequantization. The article's performance comparisons at `readme.md:147-171` remain reported results, not local benchmarks.
 
+Step 9 reads `metadata.total_size = 594205920512` from Kimi-K2-Thinking's pinned `model.safetensors.index.json` and divides decimal bytes by `1e9`. The article's 141 GB H200 capacity gives `8 × 141 = 1,128 GB`; the checkpoint averages `594.206 ÷ 8 = 74.276 GB` per GPU. The recipe sets `--rollout-num-gpus-per-engine 8` at `run-kimi-k2-Thinking-int4.sh:119-139`. This proves only that checkpoint bytes fit in aggregate, not that the full rollout fits or runs faster. Runtime memory and the article's reported one-node speed gain require separate measurements.
+
 Further reading: [zero-to-sglang Part III Chapter 2: Quantization and Low-Precision Inference](https://zero-to-sglang.datawhale.cc/eng/part3/Chapter2_Quantization-and-Low-Precision-Inference.html).
 
 </details>
@@ -55,6 +57,8 @@ Further reading: [zero-to-sglang Part III Chapter 2: Quantization and Low-Precis
 第 7 步依据 `update_weight_from_distributed.py:73-132` 和 `docker/patch/latest/sglang.patch:732-823`。更新先暂停生成并恢复缓存的 buffer 形状，再传输新打包张量，为 Marlin 重排权重和 scale，最后继续生成。`restore_weights_before_loading` 只调用 `resize_` 并清除 converted 标记，不会撤销旧排列或找回旧权重数值。
 
 第 8 步依据固定 SGLang 版本的 `fused_marlin_moe.py:77-92`、`dequant.h:161-183` 和 `marlin_template.h:87-108`。Marlin 把 INT4 权重反量化为 BF16，与 BF16 激活值相乘，再通过 `mma.sync...f32.bf16.bf16.f32` 用 FP32 累加。W4A16 不决定 KV cache 精度，也不能证明反量化零开销。`readme.md:147-171` 的性能对照仍是文章报告，不是本章实测。
+
+第 9 步读取 Kimi-K2-Thinking 固定版本 `model.safetensors.index.json` 的 `metadata.total_size = 594205920512`，再按十进制 `1e9` 换算 GB。文章的 141 GB H200 容量给出 `8 × 141 = 1,128 GB`，checkpoint 平均每张 GPU 为 `594.206 ÷ 8 = 74.276 GB`。`run-kimi-k2-Thinking-int4.sh:119-139` 设置 `--rollout-num-gpus-per-engine 8`。这只能证明 checkpoint 字节小于八卡总容量，不能证明完整 rollout 能放下或更快。运行显存和文章报告的单机加速都需要另行测量。
 
 延伸阅读：[zero-to-sglang 第 3 部分第 2 章：量化与低精度推理](https://zero-to-sglang.datawhale.cc/ch/part3/%E7%AC%AC2%E7%AB%A0_%E9%87%8F%E5%8C%96%E4%B8%8E%E4%BD%8E%E7%B2%BE%E5%BA%A6%E6%8E%A8%E7%90%86.html)。
 

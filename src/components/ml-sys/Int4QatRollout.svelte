@@ -306,6 +306,43 @@
         { en: 'Fewer bytes do not mean INT4 arithmetic', zh: '字节更少，不等于 INT4 运算' },
       ],
     },
+  }, {
+    caption: 'One 141 GB card cannot hold this 594.206 GB checkpoint. Eight cards offer 1,128 GB total.',
+    captionZh: '594.206 GB checkpoint 超过单卡 141 GB。八卡共有 1,128 GB。',
+    title: 'Eight cards hold the checkpoint bytes in total', titleZh: '八张卡的总容量装得下 checkpoint 字节',
+    subtitle: 'H200 = a GPU card with 141 GB in this comparison', subtitleZh: '本例中，H200 = 有 141 GB 的 GPU 卡',
+    foot: 'Checkpoint arithmetic only; full rollout fit and speed require measurements.',
+    footZh: '这里只算 checkpoint 字节；完整 rollout 能否放下和加速都要实测。',
+    legend: 'Orange = checkpoint bytes · blue = card memory · shared scale', legendZh: '橙 = checkpoint 字节 · 蓝 = 卡容量 · 同一比例',
+    compare: [{ en: 'ONE H200', zh: '一张 H200' }, { en: 'EIGHT H200s', zh: '八张 H200' }],
+    nodes: [
+      { title: 'ONE · CHECKPOINT', titleZh: '单卡 · CHECKPOINT', result: `${N.KIMI_CHECKPOINT_GB.toFixed(3)} GB`, resultZh: `${N.KIMI_CHECKPOINT_GB.toFixed(3)} GB`, body: `${N.KIMI_CHECKPOINT_OVER_ONE_CARD.toFixed(2)} × one card`, bodyZh: `是单卡容量的 ${N.KIMI_CHECKPOINT_OVER_ONE_CARD.toFixed(2)} 倍`, tone: 'orange', bar: N.KIMI_CHECKPOINT_GB / N.INT4_H200_TOTAL_GB },
+      { title: 'ONE · MEMORY', titleZh: '单卡 · 容量', result: `${N.INT4_H200_MEMORY_GB} GB`, resultZh: `${N.INT4_H200_MEMORY_GB} GB`, body: 'checkpoint too large', bodyZh: '装不下 checkpoint', tone: 'blue', bar: N.INT4_H200_MEMORY_GB / N.INT4_H200_TOTAL_GB },
+      { title: 'EIGHT · CHECKPOINT', titleZh: '八卡 · CHECKPOINT', result: `${N.KIMI_CHECKPOINT_GB.toFixed(3)} GB`, resultZh: `${N.KIMI_CHECKPOINT_GB.toFixed(3)} GB`, body: `${N.KIMI_CHECKPOINT_PER_GPU_GB.toFixed(3)} GB per GPU average`, bodyZh: `平均每张 GPU ${N.KIMI_CHECKPOINT_PER_GPU_GB.toFixed(3)} GB`, tone: 'orange', bar: N.KIMI_CHECKPOINT_GB / N.INT4_H200_TOTAL_GB },
+      { title: 'EIGHT · MEMORY', titleZh: '八卡 · 容量', result: `${N.INT4_H200_TOTAL_GB.toLocaleString('en-US')} GB`, resultZh: `${N.INT4_H200_TOTAL_GB.toLocaleString('en-US')} GB`, body: 'checkpoint bytes fit', bodyZh: 'checkpoint 字节能放下', tone: 'blue', bar: 1 },
+    ],
+    formulas: [
+      { en: 'public checkpoint = 594,205,920,512 B = 594.206 GB', zh: '公开 checkpoint = 594,205,920,512 字节 = 594.206 GB' },
+      { en: '8 × 141 = 1,128 GB total', zh: '8 × 141 = 共 1,128 GB' },
+      { en: '594.206 ÷ 8 = 74.276 GB per GPU average', zh: '594.206 ÷ 8 = 平均每张 GPU 74.276 GB' },
+      { en: '594.206 < 1,128: checkpoint bytes fit in total', zh: '594.206 < 1,128：checkpoint 总字节能放下' },
+      { en: 'KV cache + activations + workspaces still need memory', zh: 'KV cache、激活值和工作区仍需显存' },
+      { en: 'Same checkpoint, another engine: must log probability match?', zh: '同一 checkpoint 换个引擎，log probability 必然相同吗？' },
+    ],
+    mobile: {
+      title: '8 GPUs hold checkpoint bytes', titleZh: '八卡装得下 checkpoint 字节',
+      subtitle: 'One H200 has 141 GB in this comparison', subtitleZh: '本例中，一张 H200 有 141 GB',
+      foot: 'Checkpoint arithmetic only; rollout needs measurement.', footZh: '只算 checkpoint；完整 rollout 要实测。',
+      legend: 'Orange = checkpoint · blue = card memory', legendZh: '橙 = checkpoint · 蓝 = 卡容量',
+      formulas: [
+        { en: 'Checkpoint: 594.206 GB', zh: 'Checkpoint：594.206 GB' },
+        { en: '8 × 141 = 1,128 GB total', zh: '8 × 141 = 共 1,128 GB' },
+        { en: '594.206 ÷ 8 = 74.276 GB per GPU', zh: '594.206 ÷ 8 = 每张 GPU 74.276 GB' },
+        { en: '594.206 < 1,128: checkpoint bytes fit', zh: '594.206 < 1,128：checkpoint 字节能放下' },
+        { en: 'KV + activations + workspaces still need memory', zh: 'KV、激活值和工作区仍需显存' },
+        { en: 'Another engine: must log probability match?', zh: '换个引擎，log probability 必然相同吗？' },
+      ],
+    },
   }];
   let step = $state(0);
   $effect(() => {

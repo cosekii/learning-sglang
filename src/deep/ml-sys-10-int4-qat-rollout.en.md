@@ -295,3 +295,41 @@ The article reports similar per-step Qwen performance for INT4 and FP8, with onl
 The final step compares the public checkpoint's bytes with eight H200s' aggregate capacity, separating “checkpoint bytes fit” from “the full rollout was measured faster.”
 
 Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:105-119,147-171`; `sgl-project/sglang@dce8b0606c06d3a191a24c7b8cbe8e238ab316c9`, `fused_marlin_moe.py:77-92`, `dequant.h:161-183` and `marlin_template.h:87-108`.
+
+## Step 9 · Hold the checkpoint bytes across eight cards
+
+**One sentence.** The public Kimi-K2-Thinking checkpoint takes 594.206 GB, more than one 141 GB H200 but less than eight cards' 1,128 GB aggregate capacity.
+
+### On the stage
+
+- The left panel compares the 594.206 GB checkpoint with one 141 GB H200. The checkpoint is about 4.22 times that card's capacity.
+- The right panel compares the same checkpoint with eight cards' 1,128 GB aggregate capacity.
+- All four bars use 1,128 GB as full width. Orange always means checkpoint bytes and blue always means card memory.
+- The 74.276 GB per-GPU average is division, not a measured per-rank allocation.
+
+### Formula and symbols
+
+$$C=nM,\qquad c=K/n,\qquad K<C$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $K$ | Total tensor bytes in the public checkpoint | `metadata.total_size` in `model.safetensors.index.json` |
+| $n$ | GPUs in one rollout engine | The pinned recipe's `--rollout-num-gpus-per-engine 8` |
+| $M$ | Capacity of one H200 used by the article | 141 GB |
+| $C$ | Aggregate capacity of eight cards | $8\times141=1{,}128$ GB |
+| $c$ | Checkpoint bytes divided across eight cards | Derived here, 74.276 GB |
+
+### The numbers on the stage
+
+$$K=594{,}205{,}920{,}512\ \text{B}=594.206\ \text{GB}$$
+$$C=8\times141=1{,}128\ \text{GB},\qquad c=594.206/8=74.276\ \text{GB}$$
+
+These are decimal GB, where $1\ \text{GB}=10^9$ bytes, rather than GiB. $K<C$ says only that checkpoint bytes are smaller than aggregate card capacity. KV cache, activations, CUDA workspaces, update buffers and uneven rank allocations need additional space, so this is not a complete rollout memory validation.
+
+The article says “one node,” not one H200 card. The pinned recipe also assigns eight GPUs to one rollout engine. It reports less inter-node communication and faster Kimi rollout on one node, but supplies no raw timing table for this chapter to reproduce. The chapter therefore invents no speedup. QAT adds training work too, so a complete RL round needs its own measurement.
+
+### Next
+
+Another engine can hold the same checkpoint yet compute through a different path. The next chapter asks whether two engines must return the same log probability for the same token sequence.
+
+Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:19-23,160-182`; Kimi-K2-Thinking `model.safetensors.index.json`, revision `a51ccc050d73dab088bf7b0e2dd9b30ae85a4e55`, `metadata.total_size`; `THUDM/slime@58525eb986c66a271aa31077e17b8afebe704b4f`, `run-kimi-k2-Thinking-int4.sh:119-139`.
