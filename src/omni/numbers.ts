@@ -372,3 +372,11 @@ export const VOC_GRAPH_MEAN_QPS_GAIN_PERCENT = (VOC_GRAPH_REPLAY_QPS / VOC_GRAPH
 
 // Fish S2 Pro drops the semantic row and sends ten codebook rows per frame to its vocoder.
 export const VOC_FISH_CODEBOOK_ROWS = 10;
+
+// Fish S2 Pro's shipped first streaming window and DAC frame dimensions.
+export const FISH_FIRST_WINDOW_FRAMES = 40;
+export const FISH_FIRST_WINDOW_CODE_CHOICES = FISH_FIRST_WINDOW_FRAMES * VOC_FISH_CODEBOOK_ROWS;
+export const FISH_CODEC_SAMPLE_RATE = 44100;
+export const FISH_SAMPLES_PER_FRAME = 2048;
+export const FISH_FIRST_WINDOW_SAMPLES = FISH_FIRST_WINDOW_FRAMES * FISH_SAMPLES_PER_FRAME;
+export const FISH_FIRST_WINDOW_AUDIO_MS = FISH_FIRST_WINDOW_SAMPLES / FISH_CODEC_SAMPLE_RATE * 1000;

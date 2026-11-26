@@ -1,0 +1,29 @@
+---
+layout: ../../../layouts/Chapter.astro
+book: omni
+slug: 11-fish-s2-pro
+---
+import FishS2Pro from '../../../components/omni/FishS2Pro.svelte';
+import { omniNeighbors } from '../../../omni/chapters';
+import { deepFor } from '../../../deep';
+export const deep = await deepFor('omni-11-fish-s2-pro');
+
+<FishS2Pro client:load {...omniNeighbors('11-fish-s2-pro')} deep={deep} />
+
+<details class="i18n-en">
+<summary>Where this chapter's claims come from</summary>
+
+Step 1 follows the shipped three-stage route in `sglang_omni/models/fishaudio_s2_pro/config.py:23-67` and `stages.py:522-552`. The default streaming vocoder starts after 40 frames (`scheduling/audio_stream.py:65-148`). Each generated frame carries one semantic code and nine remaining codes for the vocoder, so the constructed product is 40 × 10 = 400 codebook choices (`sglang_model.py:418-510`; `payload_types.py:35-50`). One codec frame represents 2,048 samples at 44,100 Hz (`fish_speech/configs/modded_dac_vq.yaml:3-29`; `fish_speech/models/dac/modded_dac.py:885-913,928-988`). The resulting 1.858 seconds describes represented audio, not elapsed latency.
+
+Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`. Fetching a newer ref failed with `Operation not permitted`. The chapter reads source; it does not run a model or benchmark.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的出处</summary>
+
+第 1 步依据默认的三个 stage 路线，见 `sglang_omni/models/fishaudio_s2_pro/config.py:23-67` 和 `stages.py:522-552`。流式 vocoder 默认收到 40 帧才开始（`scheduling/audio_stream.py:65-148`）。每个生成帧带一个语义 code 和其余九个 codes 给 vocoder，所以构造算式是 40 × 10 = 400 个 codebook 选择（`sglang_model.py:418-510`；`payload_types.py:35-50`）。一个 codec 帧在 44,100 Hz 下代表 2,048 个采样点（`fish_speech/configs/modded_dac_vq.yaml:3-29`；`fish_speech/models/dac/modded_dac.py:885-913,928-988`）。得到的 1.858 秒是声音时长，不是实际等待。
+
+本章代码出处固定到 `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`。获取更新 ref 时出现 `Operation not permitted`。本章只读源码，没有运行模型或 benchmark。
+
+</details>
