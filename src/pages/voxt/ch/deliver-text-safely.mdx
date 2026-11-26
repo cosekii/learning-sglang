@@ -1,0 +1,45 @@
+---
+layout: ../../../layouts/Chapter.astro
+book: voxt
+slug: deliver-text-safely
+---
+import DeliverTextSafely from '../../../components/voxt/DeliverTextSafely.svelte';
+import { voxtNeighbors } from '../../../voxt/chapters';
+import { deepFor } from '../../../deep';
+export const deep = await deepFor('voxt-deliver-text-safely');
+
+<DeliverTextSafely client:load {...voxtNeighbors('deliver-text-safely')} deep={deep} />
+
+<details class="i18n-en">
+<summary>Where this chapter's claims come from</summary>
+
+Step 1 reads the `deliver` package comment. The result goes to the app in front now and its focused element, whichever app it is. The start app, `Request.Target`, is the app in front when the shortcut was pressed. It still matters in three ways: its element gets the benefit of the doubt, a selection is replaced only there, and its auto key is pressed only there. If VoxtNew itself came to the front after the start, the start app is activated again first.
+
+Step 2 reads `Secure()` and the `check()` order. `Secure(f)` is true when the focused element's subrole is `AXSecureTextField`. In `check()` the secure test comes before the editable tests, so a password field stops the insert. The paste is not sent; the caller shows the answer card.
+
+Step 3 reads `Writable()` and the rest of `check()`. In the start app, an element counts as writable when it is editable, when Accessibility gave an error, or when its role is not one of the non-text roles (a button, list, table and similar). In another app, the element must report `Editable`; an unknown element there is not enough. A selection replace and VoxtNew's own window also require `Editable`.
+
+Step 4 reads `deliver.go` `DefaultVerifyMS` and `PasteCheck.compare`. `DefaultVerifyMS` is 1000 ms. The helper reads the focused element before ⌘V and after it. `compare` reports changed when the value length, value digest, selection or text marker differs; it reports unreadable when nothing could be compared. In `insert()`, `CheckUnchanged` means `ReasonUnconfirmed`, or `ReasonSecureInput` when another app had secure event input on; a web area container with no secure input is trusted as inserted.
+
+Step 5 reads `helper/Sources/VoxtNewHelper/TextIO.swift`. The paste snapshots the general pasteboard unless `KeepClipboard` is set, writes the text, posts ⌘V, and reads the field while `VerifyMS` allows. The old clipboard returns 150 ms after a confirmed insert, or after `RestoreDelayMS` (default 500) when the outcome is unknown. Before restoring it checks `changeCount`; if another program wrote meanwhile, it does not overwrite that write. When nothing was inserted, the session opens the answer card, which offers Insert and Copy and keeps the text on the clipboard.
+
+Source revision: `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`. The deep dive lists the exact files and lines.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的出处</summary>
+
+第 1 步读 `deliver` 包的注释。结果贴到此刻在前面的 app 和它有焦点的元素，不管是哪个 app。start app 是 `Request.Target`，也就是按快捷键那一刻在前面的 app。它仍有三处作用：它的元素读不出时按可信处理，只有它里面的选区会被替换，只有它里面的自动按键会被按下。如果按完之后 VoxtNew 自己跑到前面，会先把 start app 激活回来。
+
+第 2 步读 `Secure()` 和 `check()` 的顺序。焦点元素的 subrole 是 `AXSecureTextField` 时，`Secure(f)` 为真。`check()` 里密码框检查排在可编辑检查前面，所以密码框会终止投递，不发粘贴，由调用方打开答案卡。
+
+第 3 步读 `Writable()` 和 `check()` 余下部分。在 start app 里，元素可编辑、Accessibility 报错、或它的角色不在非文字角色表（按钮、列表、表格等）里，都算能写。在别的 app 里，元素必须报 `Editable`，读不出不算够。替换选区和 VoxtNew 自己的窗口也要求 `Editable`。
+
+第 4 步读 `deliver.go` 的 `DefaultVerifyMS` 和 `PasteCheck.compare`。`DefaultVerifyMS` 是 1000 ms。helper 在 ⌘V 之前和之后各读一次焦点。值的长度、值的摘要、选区或文本标记有一项不同，`compare` 就报 changed；什么都比不了就报 unreadable。在 `insert()` 里，`CheckUnchanged` 变成 `ReasonUnconfirmed`；如果别的 app 开着 secure event input，就变成 `ReasonSecureInput`；没有 secure input 的网页容器按已贴入处理。
+
+第 5 步读 `helper/Sources/VoxtNewHelper/TextIO.swift`。粘贴在没设 `KeepClipboard` 时先给系统剪贴板拍快照，写入文字，发 ⌘V，并在 `VerifyMS` 允许的时间内读焦点。确认贴入后 150 ms 放回旧剪贴板；结果不确定时按 `RestoreDelayMS`（默认 500）放回。放回前先看 `changeCount`；这中间别的程序写过，就不覆盖那次写入。没贴进去时，session 打开答案卡，提供 Insert 和 Copy，文字留在剪贴板。
+
+本章源码版本：`sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`。精确文件和行号见深入讲解。
+
+</details>

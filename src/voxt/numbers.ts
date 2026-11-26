@@ -125,3 +125,8 @@ export const VOXT_REWRITE_SPEECH_FALLBACK_COUNT = 0;
 // A length-limited answer goes to one review card, never straight into the app.
 export const VOXT_COMPOSE_TRUNCATED_ANSWER_COUNT = 1;
 export const VOXT_COMPOSE_UNSEEN_INSERT_COUNT = 0;
+
+// Public delivery defaults (Voxt/internal/deliver/deliver.go; helper TextIO.swift).
+export const VOXT_DELIVER_VERIFY_MS = 1000;
+export const VOXT_RESTORE_AFTER_INSERT_MS = 150;
+export const VOXT_RESTORE_DEFAULT_MS = 500;
