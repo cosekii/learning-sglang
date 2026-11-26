@@ -104,3 +104,39 @@ The slice keeps the three `O` tokens at indices 6, 7 and 8. The implementation c
 An observation can also carry an image. The next step separates that image's rollout input from its training input.
 
 Source: `THUDM/slime@f68dc4a25f362fc0335165a17ff976f5b6f675e1`, `examples/geo3k_vlm_multi_turn/rollout.py:54-107`.
+
+## Step 4 · Send an image down two record paths
+
+**One sentence.** One observation image joins the rollout image list and produces a separate processor tensor bundle for training.
+
+### On the stage
+
+- The initial input already has one image, and this observation adds one more.
+- The rollout path encodes both images into `image_data` for the next model call.
+- The training path buffers the initial and observation processor outputs as two dictionaries.
+- The `processor` prepares images and text as model inputs. A `tensor` is a grid of model numbers. The training dictionaries exclude `input_ids` and `attention_mask`; Step 3 already stores tokens on their own path.
+
+### Formula and symbols
+
+$$I=I_0+I_1,\qquad B=[T_0,T_1]$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $I_0$ | Initial image count | Constructed value: 1 |
+| $I_1$ | Image count in this observation | Constructed value: 1 |
+| $I$ | Images visible to the next rollout call | Sum in this step |
+| $T_0$ | Processor tensor dictionary for the initial input | This step |
+| $T_1$ | Processor tensor dictionary for the observation | This step |
+| $B$ | Training tensor buffer awaiting a merge | Appended once per turn |
+
+### The numbers on the stage
+
+$$I=1+1=2,\qquad B=[T_0,T_1]$$
+
+Rollout keeps both images for the next call. The training buffer keeps two tensor dictionaries. These serve two consumers, so neither representation replaces the other.
+
+### Next
+
+Training wants merged tensors. The next step groups values by dictionary key and concatenates each group once.
+
+Source: `THUDM/slime@f68dc4a25f362fc0335165a17ff976f5b6f675e1`, `examples/geo3k_vlm_multi_turn/rollout.py:90-112,250-280,341-359`.

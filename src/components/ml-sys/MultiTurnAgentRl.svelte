@@ -115,6 +115,39 @@
         { en: 'Next: add an image to O', zh: '下一步：O 里加入图片' },
       ],
     },
+  }, {
+    caption: 'One observation image takes two forms. Rollout gets encoded image data; training gets processor tensors.',
+    captionZh: '一张观察图片有两份表示。rollout 收图片数据，训练收 processor 张量。',
+    title: 'Send a VLM observation down two paths', titleZh: 'VLM 观察图片走两条路径',
+    subtitle: 'VLM = a model that reads images and text', subtitleZh: 'VLM = 同时读取图片和文字的模型',
+    foot: 'Constructed image counts; processor means the image-and-text input preparer.', footZh: '构造图片数量；processor 负责把图片和文字整理成模型输入。',
+    legend: 'Orange = observation · blue = model inputs · red = current', legendZh: '橙 = 观察 · 蓝 = 模型输入 · 红 = 当前',
+    compare: true,
+    nodes: [
+      { title: 'NEW OBSERVATION', titleZh: '新观察', result: '1 image', resultZh: '1 张图片', body: 'the initial image is already present', bodyZh: '初始图片已经在记录里', tone: 'orange' },
+      { title: 'FOR NEXT ROLLOUT CALL', titleZh: '给下一次 ROLLOUT 调用', result: `image_data = ${N.AGENT_TOTAL_IMAGES}`, resultZh: `image_data = ${N.AGENT_TOTAL_IMAGES} 张`, body: 'two encoded images', bodyZh: '两张编码后的图片', tone: 'blue' },
+      { title: 'FOR TRAINING', titleZh: '给训练', result: 'buffer = 2 dicts', resultZh: 'buffer = 2 份字典', body: 'two processor tensor dicts', bodyZh: '两份 processor 张量字典', tone: 'blue' },
+    ],
+    formulas: [
+      { en: `rollout images: ${N.AGENT_INITIAL_IMAGES} + ${N.AGENT_OBSERVATION_IMAGES} = ${N.AGENT_TOTAL_IMAGES}`, zh: `rollout 图片：${N.AGENT_INITIAL_IMAGES} + ${N.AGENT_OBSERVATION_IMAGES} = ${N.AGENT_TOTAL_IMAGES} 张` },
+      { en: 'training buffer: [initial tensors, observation tensors]', zh: '训练 buffer：[初始张量，观察张量]' },
+      { en: 'a tensor is a grid of numbers used by the model', zh: '张量是模型使用的一格一格数字' },
+      { en: 'the next call receives accumulated tokens + both images', zh: '下次调用收到累积 token 和两张图片' },
+      { en: 'Next: merge the two training tensor chunks', zh: '下一步：合并两份训练张量' },
+    ],
+    mobile: {
+      title: 'One image, two input paths', titleZh: '一张图片，两条输入路径',
+      subtitle: 'VLM = a model reading images and text', subtitleZh: 'VLM = 读取图片和文字的模型',
+      foot: 'Constructed counts; processor prepares model inputs.', footZh: '构造数量；processor 整理模型输入。',
+      legend: 'Orange = observation · blue = inputs · red = current', legendZh: '橙 = 观察 · 蓝 = 输入 · 红 = 当前',
+      formulas: [
+        { en: 'Rollout images: 1 + 1 = 2', zh: 'rollout 图片：1 + 1 = 2 张' },
+        { en: 'Training buffer: initial + observation', zh: '训练 buffer：初始 + 观察' },
+        { en: 'A tensor is a grid of model numbers', zh: '张量是一格一格的模型数字' },
+        { en: 'Next call: accumulated tokens + 2 images', zh: '下次调用：累积 token + 两张图片' },
+        { en: 'Next: merge the training chunks', zh: '下一步：合并训练张量' },
+      ],
+    },
   }];
   let step = $state(0);
   $effect(() => {
