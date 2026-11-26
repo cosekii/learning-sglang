@@ -256,3 +256,42 @@ $$B_{\mathrm{old}}\xrightarrow{\operatorname{resize}}B_{\mathrm{shape}}\xrightar
 新布局已经可供 Marlin 使用。下一步打开计算路径，看 INT4 存储怎样变成 BF16 矩阵乘法，并在哪里使用 FP32 累加。
 
 来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:80-103`；`THUDM/slime@58525eb986c66a271aa31077e17b8afebe704b4f` 的 `update_weight_from_distributed.py:73-132` 和 `docker/patch/latest/sglang.patch:732-823`。
+
+## 第 8 步 · W4A16 保存 INT4，计算用 BF16
+
+**一句话。** Marlin 把 INT4 权重反量化成 BF16，与 BF16 激活值做矩阵乘法，并用 FP32 保存乘积的累加和。
+
+### 图上是什么
+
+- 蓝色 INT4 卡是显存中的 4 位打包权重。
+- 反量化卡把编码乘回 scale，得到 BF16 权重。
+- BF16 乘法卡的另一个输入是 BF16 激活值。激活值是计算过程中产生的数，不来自打包权重 checkpoint。
+- FP32 卡保存乘积的累加和。累加就是把许多乘积不断加入同一个总数。
+- W4A16 只说明权重和激活值的精度，不说明 KV cache 的精度。
+
+### 公式与符号
+
+$$w_j=sq_j,\qquad y=\operatorname{FP32\ accumulate}\left(\sum_j w_j a_j\right)$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $q_j$ | 第 $j$ 个 INT4 权重编码 | 第 5 步 |
+| $s$ | 该组的 scale | 第 5 步导出的 BF16 scale |
+| $w_j$ | 反量化后的 BF16 权重 | $sq_j$ |
+| $a_j$ | 对应的 BF16 激活值 | 当前 rollout 计算 |
+| $y$ | 矩阵乘法的一项输出 | BF16 输入相乘并累加 |
+| $\operatorname{FP32\ accumulate}$ | 用 FP32 保存不断加入的乘积总和 | Marlin 的 MMA 指令 |
+
+### 代入图上的数
+
+固定 kernel 的指令是 `mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32`：两个输入是 BF16，输出和累加是 FP32。它不是在 INT4 数值上直接做矩阵乘法，也没有证明反量化零开销。
+
+W4A16 的 W4 指 4 位权重，A16 在这里指 BF16 激活值。KV cache 是另一份存储，这个标签没有把它量化成 INT4。权重读取字节减少与矩阵计算精度是两个独立问题。
+
+文章报告的 Qwen 结果中，INT4 与 FP8 的单步推理表现接近，INT4 只有小幅优势；Kimi 双节点实验也没有显示 INT4 单独消除通信瓶颈。文章把更大的 Kimi 收益与单机部署联系起来。这些都是文章报告，不是本章实测，也不能推出任意 RL round 都加速。
+
+### 接下来
+
+最后看公开 checkpoint 的实际字节数与八张 H200 的总容量，区分“checkpoint 字节能放下”和“完整 rollout 已测得更快”。
+
+来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:105-119,147-171`；`sgl-project/sglang@dce8b0606c06d3a191a24c7b8cbe8e238ab316c9` 的 `fused_marlin_moe.py:77-92`、`dequant.h:161-183` 和 `marlin_template.h:87-108`。

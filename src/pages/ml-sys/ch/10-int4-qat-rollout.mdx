@@ -29,6 +29,8 @@ Step 6 follows `quantizer_compressed_tensors.py:47-85`. Packing adds 8 to each s
 
 Step 7 follows `update_weight_from_distributed.py:73-132` and `docker/patch/latest/sglang.patch:732-823`. The update pauses generation, restores cached buffer shapes, transfers new packed tensors, repacks weights and permutes scales for Marlin, then continues. `restore_weights_before_loading` only calls `resize_` and clears the converted flag. It does not undo the old permutation or recover old weight values.
 
+Step 8 follows SGLang's `fused_marlin_moe.py:77-92`, `dequant.h:161-183`, and `marlin_template.h:87-108` at the pinned revision. Marlin dequantizes INT4 weights to BF16, multiplies BF16 weights and activations, and accumulates in FP32 with `mma.sync...f32.bf16.bf16.f32`. W4A16 does not set KV-cache precision or prove zero-cost dequantization. The article's performance comparisons at `readme.md:147-171` remain reported results, not local benchmarks.
+
 Further reading: [zero-to-sglang Part III Chapter 2: Quantization and Low-Precision Inference](https://zero-to-sglang.datawhale.cc/eng/part3/Chapter2_Quantization-and-Low-Precision-Inference.html).
 
 </details>
@@ -51,6 +53,8 @@ Further reading: [zero-to-sglang Part III Chapter 2: Quantization and Low-Precis
 第 6 步依据 `quantizer_compressed_tensors.py:47-85`。打包把每个有符号编码加 8，再把八个 4 位字段放进一个 INT32。完整的 32 权重组是构造算例：64 字节 BF16 变成 16 字节打包权重，加一个 2 字节 BF16 scale，总计 18 字节，即每个权重 4.5 位。71.875% 的节省与第 1 步原始负载的 75% 不同，两者都不代表整个引擎。
 
 第 7 步依据 `update_weight_from_distributed.py:73-132` 和 `docker/patch/latest/sglang.patch:732-823`。更新先暂停生成并恢复缓存的 buffer 形状，再传输新打包张量，为 Marlin 重排权重和 scale，最后继续生成。`restore_weights_before_loading` 只调用 `resize_` 并清除 converted 标记，不会撤销旧排列或找回旧权重数值。
+
+第 8 步依据固定 SGLang 版本的 `fused_marlin_moe.py:77-92`、`dequant.h:161-183` 和 `marlin_template.h:87-108`。Marlin 把 INT4 权重反量化为 BF16，与 BF16 激活值相乘，再通过 `mma.sync...f32.bf16.bf16.f32` 用 FP32 累加。W4A16 不决定 KV cache 精度，也不能证明反量化零开销。`readme.md:147-171` 的性能对照仍是文章报告，不是本章实测。
 
 延伸阅读：[zero-to-sglang 第 3 部分第 2 章：量化与低精度推理](https://zero-to-sglang.datawhale.cc/ch/part3/%E7%AC%AC2%E7%AB%A0_%E9%87%8F%E5%8C%96%E4%B8%8E%E4%BD%8E%E7%B2%BE%E5%BA%A6%E6%8E%A8%E7%90%86.html)。
 

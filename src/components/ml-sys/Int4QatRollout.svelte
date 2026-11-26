@@ -271,6 +271,41 @@
         { en: 'Next: how does Marlin compute?', zh: '下一步：Marlin 怎样计算？' },
       ],
     },
+  }, {
+    caption: 'W4A16 stores INT4 weights but multiplies in BF16. Results accumulate in FP32.',
+    captionZh: 'W4A16 保存 INT4 权重，却用 BF16 计算。乘积用 FP32 累加。',
+    title: 'W4A16 stores INT4 but computes in BF16', titleZh: 'W4A16 保存 INT4，计算用 BF16',
+    subtitle: 'W4A16 = 4-bit weights, 16-bit activations', subtitleZh: 'W4A16 = 4 位权重，16 位激活值',
+    foot: 'Exact Marlin path; dequantization cost is not measured here.',
+    footZh: '这里画 Marlin 的实际路径，不测量反量化开销。',
+    legend: 'Blue = INT4 storage · orange = BF16 values · grey = FP32 total', legendZh: '蓝 = INT4 存储 · 橙 = BF16 数值 · 灰 = FP32 总和',
+    flow: true,
+    nodes: [
+      { title: 'INT4 STORAGE', titleZh: 'INT4 存储', result: '4-bit weights', resultZh: '4 位权重', body: 'packed in memory', bodyZh: '打包保存在显存', tone: 'blue', compact: true },
+      { title: 'DEQUANTIZE', titleZh: '反量化', result: 'BF16 weights', resultZh: 'BF16 权重', body: 'code × scale', bodyZh: '编码 × scale', tone: 'orange', compact: true },
+      { title: 'BF16 MULTIPLY', titleZh: 'BF16 乘法', result: 'weights × activations', resultZh: '权重 × 激活值', body: 'both inputs are BF16', bodyZh: '两个输入都是 BF16', tone: 'orange', compact: true },
+      { title: 'FP32 TOTAL', titleZh: 'FP32 累加', result: 'sum of products', resultZh: '乘积的总和', body: 'running total', bodyZh: '不断累加的总数', tone: 'plain', compact: true },
+    ],
+    formulas: [
+      { en: 'W4A16 = 4-bit weights + 16-bit activations', zh: 'W4A16 = 4 位权重 + 16 位激活值' },
+      { en: 'INT4 storage → BF16 weights for multiplication', zh: 'INT4 存储 → 乘法前还原成 BF16 权重' },
+      { en: 'BF16 weights × BF16 activations → FP32 total', zh: 'BF16 权重 × BF16 激活值 → FP32 总和' },
+      { en: 'KV cache precision is separate, not made INT4 by this label', zh: 'KV cache 精度另算，这个标签不会把它变成 INT4' },
+      { en: 'fewer weight bytes do not mean INT4 matrix arithmetic', zh: '权重字节更少，不等于做 INT4 矩阵运算' },
+    ],
+    mobile: {
+      title: 'W4A16: INT4 storage, BF16 math', titleZh: 'W4A16：INT4 存储，BF16 计算',
+      subtitle: '4-bit weights · BF16 activations', subtitleZh: '4 位权重 · BF16 激活值',
+      foot: 'Marlin path; dequantization cost is not measured.', footZh: 'Marlin 路径；不测量反量化开销。',
+      legend: 'Blue = INT4 · orange = BF16 · grey = FP32', legendZh: '蓝 = INT4 · 橙 = BF16 · 灰 = FP32',
+      formulas: [
+        { en: '4-bit weights + BF16 activations', zh: '4 位权重 + BF16 激活值' },
+        { en: 'INT4 storage → BF16 weights', zh: 'INT4 存储 → BF16 权重' },
+        { en: 'BF16 weights × BF16 activations → FP32', zh: 'BF16 权重 × BF16 激活值 → FP32' },
+        { en: 'KV cache precision is separate', zh: 'KV cache 精度另算' },
+        { en: 'Fewer bytes do not mean INT4 arithmetic', zh: '字节更少，不等于 INT4 运算' },
+      ],
+    },
   }];
   let step = $state(0);
   $effect(() => {

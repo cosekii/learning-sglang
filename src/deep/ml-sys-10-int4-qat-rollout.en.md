@@ -256,3 +256,42 @@ This step adds no numerical example. The pinned order is `pause_generation`, `fl
 The new layout is ready for Marlin. The next step opens its compute path: INT4 storage becomes BF16 matrix multiplication with FP32 accumulation.
 
 Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:80-103`; `THUDM/slime@58525eb986c66a271aa31077e17b8afebe704b4f`, `update_weight_from_distributed.py:73-132` and `docker/patch/latest/sglang.patch:732-823`.
+
+## Step 8 · Store INT4 and compute in BF16 with W4A16
+
+**One sentence.** Marlin dequantizes INT4 weights to BF16, multiplies them by BF16 activations and accumulates the products in FP32.
+
+### On the stage
+
+- The blue INT4 card holds packed four-bit weights in memory.
+- The dequantize card multiplies codes by their scale to produce BF16 weights.
+- The BF16 multiplication card receives BF16 activations as its other input. Activations are values produced during computation, not values loaded from the packed-weight checkpoint.
+- The FP32 card holds the running sum of products. Accumulation adds each product into one total.
+- W4A16 describes weight and activation precision only. It does not set KV-cache precision.
+
+### Formula and symbols
+
+$$w_j=sq_j,\qquad y=\operatorname{FP32\ accumulate}\left(\sum_j w_j a_j\right)$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $q_j$ | INT4 weight code at position $j$ | Step 5 |
+| $s$ | Scale for this group | BF16 scale exported in Step 5 |
+| $w_j$ | Dequantized BF16 weight | $sq_j$ |
+| $a_j$ | Corresponding BF16 activation | Current rollout computation |
+| $y$ | One matrix-multiplication output | Products of BF16 inputs, accumulated |
+| $\operatorname{FP32\ accumulate}$ | Running sum of products held in FP32 | Marlin's MMA instruction |
+
+### The numbers on the stage
+
+The pinned kernel instruction is `mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32`: both inputs are BF16, while output and accumulation are FP32. It does not perform matrix arithmetic directly on INT4 values and does not prove zero-cost dequantization.
+
+In W4A16, W4 means four-bit weights and A16 means BF16 activations in this path. KV cache is separate storage, and this label does not quantize it to INT4. Weight-read bytes and matrix-compute precision answer different questions.
+
+The article reports similar per-step Qwen performance for INT4 and FP8, with only a slight INT4 advantage. Its Kimi two-node experiments also leave communication as a bottleneck. The article associates the larger Kimi gain with one-node deployment. These are article-reported results, not local measurements or proof that every RL round becomes faster.
+
+### Next
+
+The final step compares the public checkpoint's bytes with eight H200s' aggregate capacity, separating “checkpoint bytes fit” from “the full rollout was measured faster.”
+
+Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:105-119,147-171`; `sgl-project/sglang@dce8b0606c06d3a191a24c7b8cbe8e238ab316c9`, `fused_marlin_moe.py:77-92`, `dequant.h:161-183` and `marlin_template.h:87-108`.
