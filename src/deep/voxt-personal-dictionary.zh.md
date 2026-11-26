@@ -19,6 +19,22 @@
 
 `store.Term` 还有 `Enabled` 和两个时间戳。`Enabled` 决定词条是否生效，`UpdatedAt` 决定第 3 步提示的顺序（`Voxt/internal/dict/dict.go`）。`Check` 拒绝空词条、带换行的词条、以及超过 `MaxTermChars = 80` 个字符的词条（`dict.go:70`）；`Clean` 最多保留 `MaxAliases = 10` 个别名（`dict.go:50`）。
 
+### 公式
+
+`replace(word)`：整词匹配到别名时返回词条，否则原样保留。这一行只有一个别名：
+
+$$\text{replace}(\text{Preeya}) = \text{Priya}, \qquad \text{replace}(\text{Priya}) = \text{Priya}$$
+
+| 符号 | 是什么 | 这一行 |
+|---|---|---|
+| $T$ | 词条，你要的写法 | `Priya`（5 个字符） |
+| $A$ | 别名，识别会写成的样子 | `Preeya`（6 个字符） |
+| $\text{replace}$ | 整词、忽略大小写的别名替换；边界规则在第 4 步 | `call Preeya.` → `call Priya.` |
+| $\lvert T\rvert \le 80$ | 词条长度上限 | `dict.go:70` |
+| $\lvert \text{Aliases}\rvert \le 10$ | 别名个数上限 | `dict.go:50` |
+
+代入：$T$ 是 `Priya`，$A$ 是 `Preeya`。语音说的 `call Priya` 到模型这里是 `call Preeya.`，`replace` 把它换回 `call Priya.`。
+
 ### 为什么先讲代价
 
 识别不认识这个人名时，每次都会写错，你每次都得手改。词典让这件事只做一次：填一行，之后每次听写都用。第 2 步画出词条的三个去处，以及另一处设置里的全词典备注。

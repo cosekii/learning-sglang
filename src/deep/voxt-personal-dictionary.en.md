@@ -19,6 +19,22 @@
 
 `store.Term` also has `Enabled` and two timestamps. `Enabled` controls whether the row is active, while `UpdatedAt` controls hint order in Step 3 (`Voxt/internal/dict/dict.go`). `Check` refuses an empty term, a newline, or more than `MaxTermChars = 80` runes (`dict.go:70`); `Clean` keeps at most `MaxAliases = 10` aliases (`dict.go:50`).
 
+### Formula
+
+`replace(word)` returns the term when the whole word matches an alias, and keeps the word otherwise. This row has one alias:
+
+$$\text{replace}(\text{Preeya}) = \text{Priya}, \qquad \text{replace}(\text{Priya}) = \text{Priya}$$
+
+| Symbol | Meaning | This row |
+|---|---|---|
+| $T$ | term, the spelling you want | `Priya` (5 runes) |
+| $A$ | alias, what recognition writes | `Preeya` (6 runes) |
+| $\text{replace}$ | whole-word, case-insensitive alias swap; the boundary rules are Step 4 | `call Preeya.` → `call Priya.` |
+| $\lvert T\rvert \le 80$ | term length limit | `dict.go:70` |
+| $\lvert \text{Aliases}\rvert \le 10$ | alias count limit | `dict.go:50` |
+
+Substitution: $T$ is `Priya`, $A$ is `Preeya`. The spoken `call Priya` reaches the model as `call Preeya.`, and `replace` turns it back into `call Priya.`.
+
 ### Why the cost comes first
 
 When recognition does not know this person's name, it writes the name wrong and you fix it by hand each time. The dictionary does that work once: fill one row, and every later dictation uses it. Step 2 shows the row's three routes and separate dictionary-wide notes.

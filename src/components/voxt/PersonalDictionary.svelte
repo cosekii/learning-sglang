@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import StepControls from '../StepControls.svelte';
+  import LoopProgress from '../LoopProgress.svelte';
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
@@ -71,6 +72,48 @@
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
   const H = $derived((phone ? [640, 720, 640, 700, 760, 620, 620] : [470, 520, 430, 450, 500, 430, 560])[step]);
+
+  const PHASE_COUNTS = [3, 5, 3, 4, 3, 3, 4];
+  const PHASE_MS = 900;
+  const REST_MS = 1200;
+  const motionFrames = (isPhone: boolean, s: number): { x: number; y: number; w: number; h: number }[] => (isPhone ? [
+    [{ x: 28, y: 406, w: 244, h: 24 }, { x: 28, y: 436, w: 244, h: 24 }, { x: 28, y: 466, w: 244, h: 24 }],
+    [{ x: 20, y: 62, w: 260, h: 132 }, { x: 20, y: 222, w: 260, h: 86 }, { x: 20, y: 320, w: 260, h: 86 }, { x: 20, y: 418, w: 260, h: 86 }, { x: 20, y: 516, w: 260, h: 86 }],
+    [{ x: 20, y: 62, w: 260, h: 150 }, { x: 20, y: 244, w: 260, h: 96 }, { x: 20, y: 348, w: 260, h: 44 }],
+    [{ x: 20, y: 62, w: 260, h: 58 }, { x: 20, y: 146, w: 260, h: 58 }, { x: 20, y: 230, w: 260, h: 52 }, { x: 20, y: 454, w: 260, h: 70 }],
+    [{ x: 20, y: 62, w: 260, h: 230 }, { x: 20, y: 308, w: 260, h: 272 }, { x: 34, y: 426, w: 232, h: 132 }],
+    [{ x: 20, y: 62, w: 260, h: 120 }, { x: 20, y: 212, w: 260, h: 96 }, { x: 20, y: 330, w: 260, h: 70 }],
+    [{ x: 20, y: 80, w: 260, h: 66 }, { x: 20, y: 160, w: 260, h: 66 }, { x: 20, y: 240, w: 260, h: 66 }, { x: 20, y: 320, w: 260, h: 66 }],
+  ] : [
+    [{ x: 30, y: 305, w: 180, h: 60 }, { x: 220, y: 305, w: 180, h: 60 }, { x: 410, y: 305, w: 270, h: 60 }],
+    [{ x: 20, y: 78, w: 220, h: 300 }, { x: 300, y: 66, w: 400, h: 72 }, { x: 300, y: 156, w: 400, h: 72 }, { x: 300, y: 246, w: 400, h: 72 }, { x: 300, y: 336, w: 400, h: 72 }],
+    [{ x: 20, y: 72, w: 300, h: 190 }, { x: 384, y: 96, w: 316, h: 140 }, { x: 20, y: 286, w: 680, h: 72 }],
+    [{ x: 20, y: 76, w: 150, h: 66 }, { x: 204, y: 76, w: 176, h: 66 }, { x: 414, y: 76, w: 286, h: 66 }, { x: 410, y: 164, w: 290, h: 150 }],
+    [{ x: 20, y: 72, w: 340, h: 250 }, { x: 380, y: 72, w: 320, h: 250 }, { x: 394, y: 192, w: 292, h: 130 }],
+    [{ x: 20, y: 72, w: 240, h: 140 }, { x: 324, y: 72, w: 376, h: 140 }, { x: 20, y: 240, w: 680, h: 90 }],
+    [{ x: 20, y: 82, w: 510, h: 58 }, { x: 20, y: 154, w: 510, h: 58 }, { x: 20, y: 226, w: 510, h: 58 }, { x: 20, y: 298, w: 510, h: 58 }],
+  ])[s];
+
+  let phase = $state(0);
+  let lap = $state(0), lapMs = $state(0);
+  const nextLap = (ms: number) => untrack(() => { lapMs = ms; lap++; });
+  $effect(() => {
+    const s = step;
+    phase = 0;
+    const count = PHASE_COUNTS[s];
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const run = () => {
+      phase = 0;
+      for (let i = 1; i < count; i++) timers.push(setTimeout(() => (phase = i), i * PHASE_MS));
+      const ms = count * PHASE_MS + REST_MS;
+      timers.push(setTimeout(run, ms));
+      nextLap(ms);
+    };
+    run();
+    return () => timers.forEach(clearTimeout);
+  });
+  const motion = $derived(motionFrames(phone, step));
+  const focus = $derived(motion[Math.min(phase, motion.length - 1)]);
 </script>
 
 <figure class="viz">
@@ -307,7 +350,8 @@
           <text x="46" y="522" class="mono">{t('</glossary>', '</glossary>')}</text>
           <text x="46" y="548" class="tag">call {VOXT_DICT_TERM}.</text>
 
-          <text x="20" y="612" class="tag">{t('≤30: all terms · >30: term or alias found in text', '≤30：全部词条 · >30：文字里找到词条或别名')}</text>
+          <text x="20" y="612" class="tag">{t('≤30: all terms · >30: text names term or alias', '≤30：全部词条 · >30：文字点名词条或别名')}</text>
+          <text x="20" y="634" class="tag">{t('→ that term becomes a candidate', '→ 那个词条成为候选')}</text>
         {:else}
           <rect x="20" y="72" width="340" height="250" rx="10" fill="var(--bg)" stroke="var(--line)" />
           <text x="34" y="96" class="rowlabel">≤ {VOXT_DICT_GLOSSARY_ALL_UP_TO} · {t('GLOSSARY IN SYSTEM', '术语表在 SYSTEM')}</text>
@@ -332,7 +376,8 @@
           <text x="408" y="288" class="mono">{t('</glossary>', '</glossary>')}</text>
           <text x="408" y="312" class="tag">call {VOXT_DICT_TERM}.</text>
 
-          <text x="20" y="352" class="tag">{t('≤30: all terms · >30: term or alias found in text', '≤30：全部词条 · >30：文字里找到词条或别名')}</text>
+          <text x="20" y="352" class="tag">{t('≤30: all terms · >30: text names term or alias', '≤30：全部词条 · >30：文字点名词条或别名')}</text>
+          <text x="20" y="374" class="tag">{t('→ that term becomes a candidate', '→ 那个词条成为候选')}</text>
         {/if}
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('compose.Build · GlossaryAllUpTo 30', 'compose.Build · GlossaryAllUpTo 30') : t('Source: compose.Build · GlossaryAllUpTo 30', '出处：compose.Build · GlossaryAllUpTo 30')}</text>
 
@@ -422,8 +467,16 @@
         {/if}
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('recording → history: next chapter', '录音 → 历史：下一章') : t('The recording and its history are next. Source: session/cleanup.go spoken()', '接下来看录音和历史。出处：session/cleanup.go spoken()')}</text>
       {/if}
+      {#if focus}
+        <rect class="motion-focus" x={focus.x - 4} y={focus.y - 4} width={focus.w + 8} height={focus.h + 8} rx="10" fill="none" stroke="var(--eos)" stroke-width="3" />
+      {/if}
+      <LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={20} />
     </svg>
   </div>
   <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh}
     deep={deep?.en[step]} deepZh={deep?.zh[step]} onchange={(s) => (step = s)} {prev} {next} />
 </figure>
+
+<style>
+  .motion-focus { pointer-events: none; transition: x 240ms, y 240ms, width 240ms, height 240ms; }
+</style>
