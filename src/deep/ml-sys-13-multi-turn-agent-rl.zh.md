@@ -257,10 +257,10 @@ server 只看到输入 token 和采样参数。`ToolAgentLoop` 保有工具状�
 ### 图上是什么
 
 - 本例把 `actor_rollout_ref.rollout.response_length` 配置为 12，不是从当前 batch 的最长响应临时决定。
-- 样本 A 有 12 个真实响应 token，已经符合配置宽度。
-- 样本 B 只有 `A+O` 的 7 个真实响应 token，右侧补 5 个 padding 后也是 12 格。
-- B 的 `response_mask` 在 4 个动作 token 后为 0，3 个观察和 5 个 padding 都不参与学习。
-- B 的响应 `attention_mask` 只在 7 个真实响应上为 1，padding 为 0。本步不展开其他 batch 字段。
+- 第一张卡里，样本 A 这一行有 12 个蓝色真实响应方块，已经符合配置宽度。
+- 样本 B 这一行先有 4 个蓝色 `A` 方块和 3 个蓝色 `O` 方块，随后右侧补进 5 个橙色 padding 方块，凑成 12 格。
+- response mask 卡给 4 个动作标 1，给 3 个观察和 5 个 padding 标 0。观察和 padding 都不参与学习。
+- 响应 `attention_mask` 卡给 7 个真实响应标 1，给 padding 标 0。本步不展开其他 batch 字段。
 
 ### 公式与符号
 

@@ -264,8 +264,7 @@
     legend: 'Blue = real data · orange = padding · red = current', legendZh: '蓝 = 真实数据 · 橙 = padding · 红 = 当前',
     compare: true,
     nodes: [
-      { title: 'SAMPLE A', titleZh: '样本 A', result: '12 real + 0 pad', resultZh: '12 真实 + 0 padding', body: 'matches configured width', bodyZh: '符合配置宽度', tone: 'blue' },
-      { title: 'SAMPLE B', titleZh: '样本 B', result: `7 real + ${N.AGENT_SHORT_PADDING_TOKENS} pad`, resultZh: `7 真实 + ${N.AGENT_SHORT_PADDING_TOKENS} padding`, body: 'right-pad to configured 12', bodyZh: '右侧补齐到配置的 12 格', tone: 'orange' },
+      { title: 'TWO SAMPLES', titleZh: '两个样本', result: 'A: 12 · B: 7 + 5', resultZh: 'A：12 · B：7 + 5', body: 'right-pad B to configured 12', bodyZh: 'B 右侧补齐到配置的 12 格', tone: 'orange' },
       { title: 'RESPONSE MASK', titleZh: 'RESPONSE MASK', result: 'B: 1×4, 0×8', resultZh: 'B：1×4，0×8', body: 'skip O and padding', bodyZh: '跳过 O 和 padding', tone: 'blue' },
       { title: 'RESPONSE ATTENTION MASK', titleZh: '响应 ATTENTION MASK', result: 'B: 1×7, 0×5', resultZh: 'B：1×7，0×5', body: 'real responses only', bodyZh: '只保留真实响应', tone: 'blue' },
     ],
@@ -274,7 +273,7 @@
       { en: 'B response_mask: 1×4 → 0×3 → 0×5', zh: 'B response_mask：1×4 → 0×3 → 0×5' },
       { en: 'B attention_mask: 1×7 → 0×5', zh: 'B attention_mask：1×7 → 0×5' },
       { en: 'response_mask = raw mask × response attention mask', zh: 'response_mask = 原始 mask × 响应 attention mask' },
-      { en: 'Next: which model or tool wait is longest?', zh: '下一章：哪一段模型或工具等待最长？' },
+      { en: 'Next: which takes longest: making A, getting O, or training this batch?', zh: '下一章：生成 A、得到 O 和训练这个 batch，哪段等待最长？' },
     ],
     mobile: {
       title: 'Pad responses for training', titleZh: '把响应 padding 成训练 batch',
@@ -286,7 +285,7 @@
         { en: 'response_mask: 1×4 → 0×3 → 0×5', zh: 'response_mask：1×4 → 0×3 → 0×5' },
         { en: 'attention_mask: 1×7 → 0×5', zh: 'attention_mask：1×7 → 0×5' },
         { en: 'response_mask = raw mask × attention', zh: 'response_mask = 原始 mask × attention' },
-        { en: 'Next: which wait is longest?', zh: '下一章：哪段等待最长？' },
+        { en: 'Next: which wait is longest: A, O, or training?', zh: '下一章：A、O 和训练，哪段等待最长？' },
       ],
     },
   }];
@@ -324,7 +323,7 @@
       timers.length = 0;
       phase = 0;
       for (let i = 1; i < count; i++) timers.push(setTimeout(() => (phase = i), i * 1400));
-      const ms = count * 1400 + 1800;
+      const ms = count * 1400 + 4500;
       timers.push(setTimeout(run, ms));
       nextLap(ms);
     };
@@ -361,7 +360,7 @@
   {@const cw = Math.min(18, (w - gap * (items.length - 1)) / items.length)}
   {@const sx = x + (w - (cw * items.length + gap * (items.length - 1))) / 2}
   {#each items as item, j (j)}
-    <g data-cell={item.label} in:fly={{ y: -5, duration: 300, delay: j * 25 }} out:fade={{ duration: 120 }}>
+    <g data-cell={item.label} data-tone={item.tone} in:fly={{ y: -5, duration: 300, delay: j * 25 }} out:fade={{ duration: 120 }}>
       <rect x={sx + j * (cw + gap)} {y} width={cw} height="18" rx="3" fill={fill(item.tone)} stroke={stroke(item.tone)} stroke-dasharray={item.dashed ? '3 2' : '0'} />
       {#if cw >= 11 && item.label}<text x={sx + j * (cw + gap) + cw / 2} y={y + 13} text-anchor="middle" class="celltext">{item.label}</text>{/if}
     </g>
@@ -462,6 +461,18 @@
       {@render tokenStrip(x + 12, y + 67, w - 24, tokenCells('1', N.AGENT_FIRST_ACTION_TOKENS, 'blue'))}
     {:else if i === 3 && phase >= 3}
       {@render tokenStrip(x + 12, y + 67, w - 24, tokenCells('O', N.AGENT_OBSERVATION_TOKENS, 'orange'))}
+    {/if}
+  {:else if step === 7}
+    {#if i === 0}
+      <text x={x + 10} y={y + 72} class="tiny">A</text>
+      {@render tokenStrip(x + 26, y + 58, w - 36, tokenCells('', N.AGENT_RESPONSE_TOKENS, 'blue'))}
+      <text x={x + 10} y={y + 98} class="tiny">B</text>
+      {@const real = [...tokenCells('A', N.AGENT_FIRST_ACTION_TOKENS, 'blue'), ...tokenCells('O', N.AGENT_OBSERVATION_TOKENS, 'blue')]}
+      {@render tokenStrip(x + 26, y + 84, w - 36, phase >= 1 ? [...real, ...tokenCells('', N.AGENT_SHORT_PADDING_TOKENS, 'orange')] : real)}
+    {:else if i === 1 && phase >= 2}
+      {@render tokenStrip(x + 10, y + 67, w - 20, [...tokenCells('1', N.AGENT_FIRST_ACTION_TOKENS, 'blue'), ...tokenCells('0', N.AGENT_OBSERVATION_TOKENS, 'blue'), ...tokenCells('0', N.AGENT_SHORT_PADDING_TOKENS, 'orange')])}
+    {:else if i === 2 && phase >= 3}
+      {@render tokenStrip(x + 10, y + 67, w - 20, [...tokenCells('1', N.AGENT_SHORT_RESPONSE_TOKENS, 'blue'), ...tokenCells('0', N.AGENT_SHORT_PADDING_TOKENS, 'orange')])}
     {/if}
   {/if}
   </g>

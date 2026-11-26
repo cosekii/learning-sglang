@@ -257,10 +257,10 @@ Sources: `verl-project/verl@c5b189a1af496d0bc68320cd1d5bd7a1f1e3638a`, `verl/exp
 ### On the stage
 
 - This example configures `actor_rollout_ref.rollout.response_length` as twelve. It does not choose the width from the longest response in the current batch.
-- Sample A has twelve real response tokens and already matches the configured width.
-- Sample B has seven real response tokens in `A+O`. Five right-side padding cells bring it to twelve cells.
-- B's `response_mask` turns zero after four action tokens. The three observation tokens and five padding cells do not teach the model.
-- B's response `attention_mask` is one only on the seven real responses and zero on padding. Other batch fields stay outside this step.
+- In the first card, Sample A's row has twelve blue real-response cells and already matches the configured width.
+- Sample B's row starts with four blue `A` cells and three blue `O` cells. Five orange right-side padding cells then bring it to twelve cells.
+- The response-mask card assigns 1 to the four actions and 0 to the three observations and five padding cells. Observations and padding do not teach the model.
+- The response `attention_mask` card assigns 1 to all seven real responses and 0 to padding. Other batch fields stay outside this step.
 
 ### Formula and symbols
 
