@@ -1,43 +1,53 @@
-# k1 本轮报告
+# lane d 本轮报告
 
-日期：2026-11-26。范围只含 Learning SGLang Omni 第 14 章第 1、2、7、8 步的五组协调返工及评分卡；未动其他 lane 的书、第 1 本英文原文、Omni 11／13 已关闭项或 `.bot/memory/`。
+日期：2026-11-26。只动 Inside Voxt 第 8、11、10 章及其评分卡、transcript；未碰 Omni、ML Systems、第 1 本英文原文或 `.bot/memory/`。按 `direction.md` 的 d 线顺序 Voxt 08→11→10 修 `review.md` 未决项，未开新章。
 
 ## 已修复的 review 项
 
-- **第 1、2 步内部格式**：`24,000 samples/s × 4 B/sample` 和 3.1 小时算式都标明为 coordinator 队列里的 internal 24 kHz float32 payload，HTTP 输出另标为 mono 16-bit，不再把 96,000 B/s 或小时数直接套到 raw PCM 交付。
-- **第 1、2 步 socket 缓冲**：舞台、MDX 和双语深入讲解都说明它是已经交给操作系统或 HTTP runtime、不再属于 coordinator 账本的字节；这些字节也在等客户端，但不计入共享消息总量。
-- **第 1 步慢读动机**：caption 和正文说明客户端按播放速度读取，生成可快于实时；socket 填满后形成本步积压，并指回第 8 章第 3 步。
-- **第 7 步协议出口**：首音前 HTTP SSE 和 raw audio 返回 JSON 503；SSE 开始后改发 error 事件；raw 响应只能提前结束；语音 WebSocket 使用 error 事件，自己的完成路径不在本步展开。`CONNECTION CLOSED EARLY` 改为 `RESPONSE STREAM ENDS EARLY`／「响应流提前结束」，保留请求到达时不被上限拒绝的边界。
-- **第 8 步清理保证**：取走错误或关闭读者会释放队列和剩余积压，不重复扣减已经归零的声音。abort transport 失败时，请求工作记录可能继续占住流 ID；只有 abort 成功、ownership 已完成或后续恢复时才释放。
+### Voxt 08 `personal-dictionary`（`d57bf52`）
 
-舞台、caption／ARIA、MDX、双语深入讲解和 transcript 已同步。独立文本冷读者复查五组后续问题及一处 503 范围遗留，终审为 **all prior findings closed**；这不替代协调复审。
+- 第 4 步：舞台两条规则行改为 `Han / Hiragana / Katakana / Hangul: anywhere` 和中文对应；ARIA、MDX、双语深入讲解把「非中日韩／CJK」收窄为汉字、平假名、片假名、韩文四类，保留标点端不查该侧边界、整词和忽略大小写。
+- 第 5 步：ARIA 删掉已撤下的 60 行／2000 字节截断、最长前缀和缓存细节，只留消息位置与 `≤30`／`>30` 候选规则；双语深入讲解「图上是什么」不再把已删内容说成舞台底部。
+- 删掉组件顶部两个未用 import：`VOXT_DICT_GLOSSARY_MAX_TERMS`、`VOXT_DICT_GLOSSARY_MAX_BYTES`。
+- 评分卡改按最新独立复审 `50275a7` 记 **69/70、137/140、静态 R6 14/14、原 #4/#5 28/28、165/168、83/84**，列出本轮处理项。
 
-## 评分基线
+### Voxt 11 `models-and-app-updates`（`6467ab7`）
 
-评分卡撤回旧作者满分记录，按协调对 `6ded516…208cea2` 的复审保留 R1–R5 **75/80**、非视觉原项 **156/160**。协调未给逐步分布，R6 和原 #4/#5 未全评。本轮状态为 `assigned-rework-source-fixed / coordinator-review-pending / owner-visual-review-pending`，不自行提高分数或记 `complete-under-EVAL`。
+- 第 5 步统一更新回退：有匹配 DMG 就下载安装，没有匹配才打开发布页。英文 caption 15 词 `A feed updates a release build; without one, a matching DMG, else the release page.`；中文两句各 15／24 字。
+- 桌面和手机副标题、`NO FEED · RELEASE BUILD` 面板、MDX 出处和双语出处表都改成条件式，不再写成 DMG／发布页并列；开发版无更新路线保留。
+- 评分卡改按 `469dcc6` 记 **53/60、118/120、24/24、142/144、65/72**。
+
+### Voxt 10 `file-transcription`（`04ded69`）
+
+- 第 9 步英文 caption 缩到 15 词；第 11 步缩到 15 词并保留「模型文件怎样到达这台 Mac」的问题。
+- 第 3、7 步双语深入讲解「图上是什么」与现舞台同步：删掉已撤下的「回复早于最后 PCM 字节」和 `--lang` 脚注描述。
+- 第 9、11 步双语深入讲解补 `公式 + 符号表 + 代入图上的数`；第 11 步 MDX 和尾声只问模型文件，不再提应用更新。
+- 第 6 步单点出处从 `cutter.go:198` 改为 return 所在的 `cutter.go:199`。
+- 第 1 步补一小时文件解码后 115.2 MB 的代价，双语深入讲解补 `B = T × f_s × b`、符号表和 `3,600 × 16,000 × 2` 代入，关闭 #1／#12 缺口。
+- 第 3 步加入循环播放头动画（`requestAnimationFrame` + `LoopProgress`）：0–8 s 扫过波形，走到 2.90–3.35 s 安静段时加框高亮，作为 R6 机制动画；`prefers-reduced-motion` 时停在终点。
+- 评分卡按 `80515da` 记 **108/110、214/220、44/44、258/264**，R6 保留复审时的 **0/22** 并标明本轮动画待重评。
 
 ## 验证
 
-- `npx astro --config .astro/local.config.mjs build`：60 页，通过；`BOOK=omni node scripts/deep-check.mjs 14` 通过。
-- `BOOK=omni ONLY=14 npm run transcript -- http://localhost:4323/learning-sglang`：8 步，无布局问题，生成差异已提交。
-- `BOOK=omni ONLY=14 npm run readability`：8 步，0 机械问题。
-- `BOOK=omni ONLY=14 npm run mobile -- http://localhost:4323/learning-sglang`：英文 24 个视图在 360、390、430 px 均无布局破坏。
-- 中文第 1、2、7、8 步分别运行 `BOOK=omni ONLY=14 STEP=M LANG=zh npm run mobile -- http://localhost:4323/learning-sglang`：三种宽度均通过布局和字号硬门。
-- `BASE=http://localhost:4323/learning-sglang BOOK=omni ONLY=14 node scripts/zh-check.mjs`：8 步通过。
-- `node .astro/check-omni14.mjs`：8 个中英舞台／深入讲解视图通过；caption 与 ARIA 逐字一致，要求的格式、socket、协议和清理文字齐全，深入讲解无横向溢出、残留 `$$` 或 KaTeX 错误。
-- `git diff --check`：通过。
+- `npm run build`：60 页通过（rebase 到 `6fb3c27` 后再跑一次仍通过）。
+- Voxt 08／11／10 各自 `ONLY=N` 的 `transcript`、`readability`、`deep-check`、`zh-check` 全过；英中 `mobile` 360／390／430 px 无布局断裂。
+- Voxt 10 中文第 1、3、9、11 步另跑 `STEP=M LANG=zh` 字号硬门，三种宽度全过。
+- 截图目录 `/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-t9w2wsvq/opencode/voxt08/`（第 4／5 步英中桌面与手机各 7 张）。当前模型不能读图，未把机械门当视觉评分；动画相位和最终视觉验收仍待协调复审。
 
-截图：`.bot/out/omni14/shots/` 有 16 张中英桌面／390 px 手机舞台图，`.bot/out/omni14/deep/` 有 8 张双语深入讲解图。代表图为 `.bot/out/omni14/shots/s7-zh-desktop.png`。24 张 PNG 均已尝试读取；当前模型返回 `Cannot read image`，本轮没有新增视觉评分，也没有把机械检查当作 PNG 目视。
+## 分数与状态
 
-未跑全站回归、真实 SSE／WebSocket／raw-PCM 连接、模型或 GPU benchmark。组件本轮未新增动画，完整 R6 和最终视觉验收仍待。
+- Voxt 08：仍 **NO-GO**（最新独立复审 69/70、137/140）；本轮剩余项已改，待复审。
+- Voxt 11：仍 **NO-GO**（53/60、118/120、142/144）；第 5 步路由本轮已修，待复审。
+- Voxt 10：仍 **NO-GO**（108/110、214/220、258/264，R6 0/22）；文本项本轮已修，R6 加入第 3 步动画但未获视觉复审。
+- 未跑真实 Voxt、ASR、音频文件、模型下载或更新；事实按 pinned `sglang-omni@3a31bd72e034db37ce5115a03dd4827b449683be` 核对。
 
-## 提交与后续
+## 提交
 
-- `5e92976`：`[k1] Clarify Omni 14 internal audio backlog`，已推送。
-- `76b0599`：`[k1] Add Omni 14 pre-audio HTTP 503`，已推送。
-- `1b016aa`：`[k1] Separate Omni 14 stream cleanup guarantees`，已推送。
-- `b4c7160`：`[k1] Close Omni 14 cold-read gaps`，已推送。
-- 评分卡和本报告随最后一条 `[k1]` 提交推送。
-- 下一轮按 direction 修 Omni 15 的五项返工；协调复审通过前不开下一章。
+- `d57bf52` `[d] Narrow Voxt 08 alias scripts and step 5 ARIA`
+- `6467ab7` `[d] Make Voxt 11 update fallback conditional`
+- `04ded69` `[d] Close Voxt 10 captions, deep-dive gaps, and add step 3 animation`
+- 均已推送 `origin/tutorials`；评分卡与 transcript 随对应提交。
 
-本地章节地址为 `http://localhost:4323/learning-sglang/omni/ch/14-slow-reader-backpressure/?step=7`。本轮启动的 dev server 在收尾时关闭；需要再看时运行 `npx astro --config .astro/local.config.mjs dev --background`。
+## 下一轮
+
+- 等协调复审三章。若 Voxt 10 的第 3 步动画 R6 不过，按复审意见调整相位或换到更贴机制的一步；通过后再做 `12-meeting-capture-modes`。
