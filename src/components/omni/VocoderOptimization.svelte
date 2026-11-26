@@ -44,6 +44,9 @@
   }, {
     caption: 'PR #1101’s H200 c16 test compared eager and graph replay. Mean throughput rose about 10.4%.',
     captionZh: 'PR #1101 的 H200 c16 测试对照 eager 和 graph replay。平均吞吐提升约 10.4%。',
+  }, {
+    caption: 'The three mechanisms do different jobs. Each model family implements a different subset.',
+    captionZh: '三种机制分工不同。每个模型系列只采用其中一部分。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -61,11 +64,16 @@
   const cur = $derived(steps[step]);
   const fmt = (value: number) => value.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [790, 850, 850, 740, 800, 650][step] : [570, 630, 640, 570, 640, 570][step]);
+  const H = $derived(phone ? [790, 850, 850, 740, 800, 650, 730][step] : [570, 630, 640, 570, 640, 570, 560][step]);
   const roadmap = $derived([
     { title: 'ready windows', body: 'decode them together', titleZh: '准备好的窗口', bodyZh: '放在一起解码' },
     { title: 'earlier decoder work', body: 'keep it for next time', titleZh: '之前算过的内容', bodyZh: '留给下个窗口' },
     { title: 'recorded kernels', body: 'replay the same shape', titleZh: '录下的 kernels', bodyZh: '重放相同形状' },
+  ]);
+  const modelRows = $derived([
+    { name: 'Qwen3-Omni', batch: 'ready windows', kept: 'codec-state slots', graph: 'exact Code2Wav shapes', batchZh: '准备好的窗口', keptZh: 'codec-state slots', graphZh: '精确 Code2Wav 形状' },
+    { name: 'MiniCPM-o native', batch: 'one unit per session', kept: 'decoder caches', graph: 'internal chunk loop', batchZh: '每个 session 一个单元', keptZh: '解码器 caches', graphZh: '内部 chunk 循环' },
+    { name: 'Fish S2 Pro', batch: 'completed requests only', kept: 'old code frames only', graph: 'not connected here', batchZh: '只 batch 已完成请求', keptZh: '只保留旧 code frames', graphZh: '这里没有接入' },
   ]);
 </script>
 
@@ -289,6 +297,31 @@
         <text x={W / 2} y={phone ? 505 : 495} text-anchor="middle" class="small strong">{t('Mean QPS derived from the two displayed means.', '由展示的两个平均 QPS 推导。')}</text>
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t(phone ? 'PR #1101 · H200 BF16 · 128 requests per arm' : 'Historical PR #1101 · H200 BF16 · 128 measured requests per arm · two paired rounds.', phone ? 'PR #1101 · H200 BF16 · 每方案 128 请求' : '历史 PR #1101 · H200 BF16 · 每方案 128 个测量请求 · 两轮成对对照。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Talker cap 800 tokens · not a universal gain' : 'Talker capped at 800 tokens; matched audio work stayed within 0.076%. Not a universal speedup.', phone ? 'Talker 上限 800 token · 不是通用收益' : 'Talker 上限 800 token；匹配音频工作量相差不超过 0.076%。不是通用加速比。')}</text>
+      {:else if step === 6}
+        <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'Different vocoder paths' : 'Same goals, different implementations', phone ? '不同 vocoder 路径' : '目标相近，实现不同')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'The Qwen steps do not describe every vocoder' : 'The Qwen examples do not describe every model’s vocoder path', phone ? 'Qwen 步骤不适用于所有 vocoder' : 'Qwen 示例并不描述每个模型的 vocoder 路径')}</text>
+        {#each modelRows as model, i}
+          {@const x = phone ? 18 : 30 + i * 225}
+          {@const y = phone ? 102 + i * 158 : 102}
+          {@const pw = phone ? 264 : 210}
+          <rect x={x} y={y} width={pw} height={phone ? 140 : 230} rx="11" fill="var(--bg)" stroke="var(--line)" />
+          <text x={x + 15} y={y + 29} class="small strong">{model.name}</text>
+          {#if !phone}
+            <text x={x + 15} y={y + 68} class="small strong">BATCH</text>
+            <text x={x + 15} y={y + 94} class="small">{t(model.batch, model.batchZh)}</text>
+            <text x={x + 15} y={y + 132} class="small strong">{t('KEEP BETWEEN WINDOWS', '窗口之间保留')}</text>
+            <text x={x + 15} y={y + 158} class="small">{t(model.kept, model.keptZh)}</text>
+            <text x={x + 15} y={y + 194} class="small strong">GRAPH</text>
+            <text x={x + 15} y={y + 218} class="small">{t(model.graph, model.graphZh)}</text>
+          {:else}
+            <text x={x + 15} y={y + 57} class="small">BATCH · {t(model.batch, model.batchZh)}</text>
+            <text x={x + 15} y={y + 86} class="small">KEEP · {t(model.kept, model.keptZh)}</text>
+            <text x={x + 15} y={y + 115} class="small">GRAPH · {t(model.graph, model.graphZh)}</text>
+          {/if}
+        {/each}
+        <text x={W / 2} y={phone ? 594 : 380} text-anchor="middle" class="small strong">{t(phone ? 'Batch shares · state keeps · graph replays' : 'Batch shares work. Retained state avoids repeats. Graphs replay launches.', phone ? 'batch 共享 · state 保留 · graph 重放' : 'batch 共享工作。保留状态避免重复。graph 重放 launches。')}</text>
+        <text x={W / 2} y={phone ? 628 : 416} text-anchor="middle" class="small">{t(phone ? 'Fish streams decode one request at a time' : 'Fish streaming windows still decode one request at a time.', phone ? 'Fish 流式窗口仍逐请求解码' : 'Fish 流式窗口仍逐请求解码。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'MiniCPM-o native · Fish streaming path shown here' : 'MiniCPM-o native duplex and Fish S2 Pro’s streaming scheduler are distinct from their offline paths.', phone ? 'MiniCPM-o native · 此处是 Fish 流式路径' : 'MiniCPM-o native 全双工和 Fish S2 Pro 流式调度器都有别于各自的离线路径。')}</text>
       {/if}
     </svg>
   </div>

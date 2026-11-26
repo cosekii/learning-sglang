@@ -25,6 +25,8 @@ Step 5 follows `sglang_omni/models/qwen3_omni/components/code2wav_cuda_graph.py:
 
 Step 6 quotes [public PR #1101's historical H200 c16 sweep](https://github.com/sgl-project/sglang-omni/pull/1101#issuecomment-5040716545): eager control 0.575 requests/s, graph replay 0.635 requests/s. Their ratio gives the stage's 10.4% mean-QPS increase. The PR's separate 10.55% paired delta averages per-pair percent changes, so it is not recomputed from the two displayed means. The protocol used ancestor `b4159d2a`, BF16, fresh servers, temperature 0, seed 777, an 800-token Talker cap, 16 warmups and 128 measured requests per arm, and two alternating pairs. Matched audio work stayed within 0.076%. This is not a current-source or universal speedup claim.
 
+Step 7 compares three distinct paths. Qwen uses the mechanisms from Steps 2–6. MiniCPM-o native batches one unit per ready session, retains Flow/HiFT caches and graphs only its internal Flow chunk loop (`tts_runtime.py:47-76,92-121,240-260`; `token2wav/flow.py:408-448,737-800`). Fish batches completed non-streaming requests with padding and trimming, but streaming chunks stay per request (`streaming_vocoder.py:43-66`; `scheduling/audio_vocoder.py:80-114,116-224`). Fish retains old code frames and crossfade samples, not equivalent execution state (`scheduling/audio_stream.py:187-239,242-333`). Its production factory does not install the test-only vocoder graph (`fishaudio_s2_pro/stages.py:522-552`). Offline defaults are not applied to these native or streaming paths.
+
 Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`. The chapter reads source and public results; it does not run a model or benchmark.
 
 </details>
@@ -43,6 +45,8 @@ Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37
 第 5 步依据 `sglang_omni/models/qwen3_omni/components/code2wav_cuda_graph.py:85-117,264-282,673-723,804-888` 和 `code2wav_scheduler.py:112-143,1307-1345`。`GraphKey` 包含 batch 大小、帧数和 `window`/`first`/`next` 类型。单 key 目录是构造示例：A 完全匹配后 replay，B 改变行数，在此目录 miss。真实其他 key 可能有自己的 graph。缺少或不合格 key 走 eager；运行时 replay 失败会禁用 graphs 并抛错，不会悄悄重试 eager。capture 发布前检查输出完全相等。
 
 第 6 步引用[公开 PR #1101 的历史 H200 c16 对照](https://github.com/sgl-project/sglang-omni/pull/1101#issuecomment-5040716545)：eager 对照 0.575 requests/s，graph replay 0.635 requests/s。两者之比得到图上的 10.4% 平均 QPS 增幅。PR 另报的 10.55% paired delta 是逐对百分比变化的均值，不能由两个展示均值重算。协议使用 ancestor `b4159d2a`、BF16、新 server、temperature 0、seed 777、Talker 上限 800 token，每方预热 16 个并测量 128 个请求，做两轮交替对照。匹配音频工作量相差不超过 0.076%。这不是当前源码或通用加速声明。
+
+第 7 步对照三条不同路径。Qwen 使用第 2–6 步的机制。MiniCPM-o native 把每个就绪 session 的一个单元组成 batch，保留 Flow/HiFT caches，只把内部 Flow chunk 循环接入 graph（`tts_runtime.py:47-76,92-121,240-260`；`token2wav/flow.py:408-448,737-800`）。Fish 通过补位和裁切 batch 已完成的非流式请求，流式 chunks 仍逐请求运行（`streaming_vocoder.py:43-66`；`scheduling/audio_vocoder.py:80-114,116-224`）。Fish 保留旧 code frames 和 crossfade 样本，不是等价的执行状态（`scheduling/audio_stream.py:187-239,242-333`）。生产 factory 没有接入测试展示的 vocoder graph（`fishaudio_s2_pro/stages.py:522-552`）。离线默认值不套到这些 native 或流式路径。
 
 本章代码出处固定到 `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`。本章只读源码和公开结果，没有运行模型或 benchmark。
 

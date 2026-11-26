@@ -212,3 +212,39 @@ PR #1101 另报 paired delta 10.55%。它取两轮各自百分比变化的均值
 Qwen 示例已经覆盖三种机制。下一步对照 MiniCPM-o 和 Fish S2 Pro，避免把名字相近的优化误认为同一种实现。
 
 来源：[公开 PR #1101 及 H200 实验协议](https://github.com/sgl-project/sglang-omni/pull/1101#issuecomment-5040716545)。
+
+## 第 7 步 · 对照模型路径
+
+**一句话。** Qwen3-Omni、MiniCPM-o native 全双工和 Fish S2 Pro 有相近的优化目标，但在不同边界实现这些机制。
+
+### 图上是什么
+
+- Qwen3-Omni 合并匹配的就绪窗口，保留每流 codec-state slot，并按精确 Code2Wav key capture graph。第 2–6 步展示了这些机制和两项公开测量。
+- MiniCPM-o native 把每个就绪 session 的下一个计划单元组成 batch，保留每 session 的 Flow 和 HiFT caches，并把内部 Flow chunk 循环录成 graph。循环前的 Conformer 编码和循环后的 HiFT 不在这张 graph 里。
+- Fish S2 Pro 只 batch 已完成的非流式请求，把较短 rows 补到最长 codes 长度，再分别裁切输出。它的流式 chunks 仍通过 `build_stream_vocoder_chunk` 逐请求运行。
+- Fish 保留旧 code frames 作为上下文，并保留 512 个输出样本做 crossfade。这些保留的输入不等于 Qwen 或 MiniCPM-o 保存的执行状态。一个小测试展示了 vocoder graph，但生产 factory 没有接入它。
+- MiniCPM-o 离线调度器和 Fish 的完成请求 batching，不能证明 MiniCPM-o native session batching 或 Fish 流式窗口 batching。卡片明确写出各自路径。
+
+### 公式与符号
+
+$$V_m=(b_m,s_m,g_m)$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $m$ | 模型和调度器路径 | 三张卡片 |
+| $b_m$ | 能进入一个 batch 的工作 | 各路径调度器 |
+| $s_m$ | 窗口之间保留的状态 | 各路径 runtime |
+| $g_m$ | 生产路径接入的 graph 边界 | 各路径 factory 和 runner |
+| $V_m$ | 一条路径的三项实现选择 | 从卡片读取 |
+
+### 代入图上的数
+
+本步不新增耗时数字。三个元组读作 $V_{\mathrm{Qwen}}=(\text{就绪窗口},\text{codec slots},\text{精确 Code2Wav 形状})$，$V_{\mathrm{MiniCPM}}=(\text{session 单元},\text{解码器 caches},\text{内部 chunk 循环})$，$V_{\mathrm{Fish}}=(\text{只含已完成请求},\text{旧 code frames},\text{未接入 graph})$。
+
+Fish 非流式路径默认最多收集 8 个请求，等待 2 ms。这些默认值不适用于逐请求的流式 chunks，本章也不把它们变成吞吐声明。
+
+### 接下来
+
+Fish 的 vocoder 每个音频帧收到十行 codebook。最后一步跟着这份输入，引出下一章的问题：哪些生成循环写出这些行？
+
+来源：`sglang_omni/models/minicpm_o/components/tts_runtime.py:47-76,92-121,240-260`；`sglang_omni/models/minicpm_o/components/token2wav/flow.py:408-448,737-800`；`sglang_omni/models/fishaudio_s2_pro/streaming_vocoder.py:43-66`；`sglang_omni/scheduling/audio_vocoder.py:80-114,116-224`；`sglang_omni/scheduling/audio_stream.py:187-239,242-333`；`sglang_omni/models/fishaudio_s2_pro/stages.py:522-552`。

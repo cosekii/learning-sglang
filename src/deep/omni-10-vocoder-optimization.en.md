@@ -212,3 +212,39 @@ The same historical table reports p50 first-audio time falling 6.27% at c16. A s
 The Qwen examples now cover all three mechanisms. The next step compares them with MiniCPM-o and Fish S2 Pro so similarly named optimizations do not blur different implementations.
 
 Sources: [public PR #1101 and its H200 protocol](https://github.com/sgl-project/sglang-omni/pull/1101#issuecomment-5040716545).
+
+## Step 7 · Compare the model paths
+
+**One sentence.** Qwen3-Omni, MiniCPM-o native duplex and Fish S2 Pro share the three optimization goals but implement them at different boundaries.
+
+### On the stage
+
+- Qwen3-Omni batches matching ready windows, retains per-stream codec-state slots and captures exact Code2Wav graph keys. Steps 2–6 showed those mechanisms and two public measurements.
+- MiniCPM-o native batches one planned unit per ready session, keeps per-session Flow and HiFT caches, and graphs the internal Flow chunk loop. Conformer encoding before that loop and HiFT after it remain outside this graph.
+- Fish S2 Pro batches completed non-streaming requests, padding rows to the longest code sequence and trimming each output. Its streaming chunks still run one request at a time through `build_stream_vocoder_chunk`.
+- Fish retains old code frames for context and 512 output samples for crossfade. Those retained inputs are not equivalent to Qwen's or MiniCPM-o's saved execution state. Its production factory does not install the vocoder graph that a small test demonstrates.
+- MiniCPM-o's offline scheduler and Fish's completed-request batching are not evidence for MiniCPM-o native session batching or Fish streaming-window batching. The cards deliberately name the paths.
+
+### Formula and symbols
+
+$$V_m=(b_m,s_m,g_m)$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $m$ | Model and scheduler path | The three cards |
+| $b_m$ | Work that can share one batch | Each path's scheduler |
+| $s_m$ | State retained between windows | Each path's runtime |
+| $g_m$ | Graph boundary connected to production | Each path's factory and runner |
+| $V_m$ | The three implementation choices for one path | Read from the card |
+
+### The numbers on the stage
+
+This step adds no timing numbers. Read the three tuples as $V_{\mathrm{Qwen}}=(\text{ready windows},\text{codec slots},\text{exact Code2Wav shapes})$, $V_{\mathrm{MiniCPM}}=(\text{session units},\text{decoder caches},\text{internal chunk loop})$ and $V_{\mathrm{Fish}}=(\text{completed requests only},\text{old code frames},\text{no connected graph})$.
+
+Fish's non-streaming default batch cap is 8 with a 2 ms collection wait. Those defaults do not apply to its per-request streaming chunks, and the chapter does not turn them into a throughput claim.
+
+### Next
+
+Fish's vocoder receives ten codebook rows for each audio frame. The last step follows that input to the question the next chapter answers: which generation loops produce the rows?
+
+Sources: `sglang_omni/models/minicpm_o/components/tts_runtime.py:47-76,92-121,240-260`; `sglang_omni/models/minicpm_o/components/token2wav/flow.py:408-448,737-800`; `sglang_omni/models/fishaudio_s2_pro/streaming_vocoder.py:43-66`; `sglang_omni/scheduling/audio_vocoder.py:80-114,116-224`; `sglang_omni/scheduling/audio_stream.py:187-239,242-333`; `sglang_omni/models/fishaudio_s2_pro/stages.py:522-552`.
