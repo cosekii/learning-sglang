@@ -11,6 +11,8 @@
     ROUTER_HEALTH_FAILURE_THRESHOLD,
     ROUTER_ROUND_ROBIN_WORKERS,
     ROUTER_ROUND_ROBIN_SEQUENCE,
+    ROUTER_LEAST_INITIAL_LOADS,
+    ROUTER_LEAST_SELECTIONS,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -30,6 +32,9 @@
   }, {
     caption: 'Round robin rotates through compatible healthy workers. It does not compare their active request counts.',
     captionZh: 'round robin 在兼容且 healthy 的 worker 之间轮换。它不比较活跃请求数。',
+  }, {
+    caption: 'Least requests picks the smallest active count. Ties use the same rotating order.',
+    captionZh: 'least requests 选择活跃数最少的 worker。并列最少时，沿用同一个轮换顺序。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -45,8 +50,16 @@
     return () => query.removeEventListener('change', update);
   });
   const cur = $derived(steps[step]);
+  const leastSteps = (() => {
+    const loads = [...ROUTER_LEAST_INITIAL_LOADS];
+    return ROUTER_LEAST_SELECTIONS.map((selected) => {
+      const before = [...loads];
+      loads[selected] += 1;
+      return { before, selected, after: [...loads] };
+    });
+  })();
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [650, 750, 830, 800, 680][step] : [520, 560, 600, 600, 570][step]);
+  const H = $derived(phone ? [650, 750, 830, 800, 680, 730][step] : [520, 560, 600, 600, 570, 600][step]);
 </script>
 
 <figure class="viz">
@@ -205,6 +218,38 @@
         <text x={W / 2} y={phone ? 585 : 495} text-anchor="middle" class="result">A → B → C → A → B → C</text>
         <text x={W / 2} y={phone ? 620 : 530} text-anchor="middle" class="small">{t('Held requests do not change these turns.', '请求保持占用也不会改变轮换顺序。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'One shared order · ineligible workers are skipped' : 'One shared order across services and candidate sets; ineligible workers keep their places.', phone ? '共用一个顺序 · 跳过不合格 worker' : '不同服务和候选集合共用一个顺序；不合格 worker 留在原位置。')}</text>
+      {:else if step === 5}
+        <text x={phone ? 18 : 30} y="30" class="title">{t('Least requests compares active work', 'least requests 比较活跃工作数')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'active = selected and not finished' : 'active requests = selected work whose response has not finished', phone ? '活跃 = 已选择但还没结束' : 'active requests = 已选择但响应还没结束的工作')}</text>
+        <text x={phone ? 18 : 30} y="79" class="label">{t('Each selected worker gains 1 before the next row.', '每行选择后，被选 worker 的活跃数先加 1。')}</text>
+        {#if !phone}
+          <text x="70" y="125" class="small strong">REQUEST</text>
+          <text x="200" y="125" class="small strong">A</text>
+          <text x="300" y="125" class="small strong">B</text>
+          <text x="400" y="125" class="small strong">C</text>
+          <text x="515" y="125" class="small strong">{t('MINIMUM → CHOICE', '最少 → 选择')}</text>
+        {:else}
+          <text x="28" y="125" class="small strong">#</text>
+          <text x="67" y="125" class="small strong">A</text>
+          <text x="112" y="125" class="small strong">B</text>
+          <text x="157" y="125" class="small strong">C</text>
+          <text x="202" y="125" class="small strong">{t('CHOICE', '选择')}</text>
+        {/if}
+        {#each leastSteps as row, i}
+          {@const y = phone ? 145 + i * 105 : 145 + i * 86}
+          {@const minimum = Math.min(...row.before)}
+          {@const tied = row.before.map((load, worker) => load === minimum ? ROUTER_ROUND_ROBIN_WORKERS[worker] : null).filter(Boolean).join(',')}
+          <rect x={phone ? 18 : 50} y={y} width={phone ? 264 : 620} height={phone ? 88 : 68} rx="9" fill="var(--bg)" stroke="var(--line)" />
+          <text x={phone ? 28 : 70} y={y + 29} class="small">{i + 1}</text>
+          {#each row.before as load, worker}
+            <text x={phone ? 67 + worker * 45 : 200 + worker * 100} y={y + 29} class="result">{load}</text>
+          {/each}
+          <text x={phone ? 202 : 515} y={y + 29} class="result">{ROUTER_ROUND_ROBIN_WORKERS[row.selected]}</text>
+          <text x={phone ? 28 : 200} y={y + 56} class="small">min = {minimum} · {tied} {tied.includes(',') ? t('tie', '并列') : t('only', '独占最少')}</text>
+        {/each}
+        <text x={W / 2} y={phone ? 590 : 515} text-anchor="middle" class="result">B → C → B → C</text>
+        <text x={W / 2} y={phone ? 625 : 550} text-anchor="middle" class="small">{t('A never enters a minimum tie in these four rows.', '这四行里，A 从未进入最少并列组。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Router-held work · not GPU usage' : 'Constructed ordinary requests; active counts are router-held work, not GPU usage or worker queues.', phone ? 'router 持有的工作 · 不是 GPU 利用率' : '构造的普通请求；活跃数是 router 持有的工作，不是 GPU 利用率或 worker 队列。')}</text>
       {/if}
     </svg>
   </div>

@@ -125,3 +125,41 @@ round robin 是默认路由策略。经过第 3、4 步过滤后，它只在兼�
 轮换可能把请求交给活跃请求更多的 worker。下一种策略 least requests 会比较这些数量，只在并列最少的 worker 之间轮换。
 
 来源：`sglang_omni_router/src/worker_pool/selection.rs:14-23,49-60`；`sglang_omni_router/src/worker_pool/mod.rs:1263-1356`；`sglang_omni_router/src/config.rs:262-276`。
+
+## 第 6 步 · 选择活跃工作最少的 worker
+
+**一句话。** least requests 在活跃数最少的候选 worker 中选择，并列时沿用共享的最近使用顺序。
+
+### 图上是什么
+
+- `active requests` 是已选择但响应还没结束的工作。它们是 router 持有的 admission credits，不是 GPU 利用率或 worker 内部队列。
+- 表格读取每次选择前 A、B、C 的数量。每次选择后，被选 worker 先增加一个活跃请求，再进入下一行。
+- 起初 B、C 并列 0，所以 B 先选。随后 C 以 0 成为唯一最少。第三行 B、C 并列 1，又按顺序先选 B。
+- A 始终有两个活跃请求，这几行里从未进入最少集合。
+
+### 公式与符号
+
+$$m=\min(L_A,L_B,L_C),\qquad \mathcal C=\{w\mid L_w=m\}$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $L_w$ | worker $w$ 的活跃 admission credits | 图上当前行 |
+| $m$ | 候选 worker 的最小活跃数 | 每行计算 |
+| $\mathcal C$ | 并列最少的 worker 集合 | 每行计算 |
+
+### 代入图上的数
+
+| 请求 | 选择前 A、B、C 负载 | 最少集合 | 选择 | 选择后负载 |
+|---:|---|---|---|---|
+| 1 | 2、0、0 | B 和 C | B | 2、1、0 |
+| 2 | 2、1、0 | C | C | 2、1、1 |
+| 3 | 2、1、1 | B 和 C | B | 2、2、1 |
+| 4 | 2、2、1 | C | C | 2、2、2 |
+
+selector 的锁覆盖最近使用顺序、负载观察和预留，避免两个并发选择者使用同一组旧计数。speech batch 按条目数加权，不是一个 envelope 固定加一；图上使用普通的加一请求。
+
+### 接下来
+
+计数在 dispatch 前增加。下一步跟随租约，看它怎样一直持有到响应头之后，并只在终止事件发生时释放。
+
+来源：`sglang_omni_router/src/worker_pool/mod.rs:565-605,1358-1439`；`sglang_omni_router/src/worker_pool/selection.rs:7-12`；`sglang_omni_router/src/worker_pool/admission.rs:49-88`。

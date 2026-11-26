@@ -125,3 +125,41 @@ Round robin is the default routing policy. It rotates only among compatible heal
 Rotation can send work to a worker with more active requests. The next policy, least requests, compares those counts and rotates only through workers tied at the minimum.
 
 Sources: `sglang_omni_router/src/worker_pool/selection.rs:14-23,49-60`; `sglang_omni_router/src/worker_pool/mod.rs:1263-1356`; `sglang_omni_router/src/config.rs:262-276`.
+
+## Step 6 · Choose the least active work
+
+**One sentence.** Least requests selects among eligible workers with the smallest active count and rotates ties with the shared recency list.
+
+### On the stage
+
+- `Active requests` are selected responses that have not finished. These are the router's held admission credits, not GPU utilization or the worker's internal queue.
+- The table reads A, B and C before each choice. After each choice, that worker gains one active request before the next row.
+- B and C initially tie at zero, so B goes first. C is then the unique minimum at zero. They tie at one in row 3, so B goes before C again.
+- A has two active requests throughout and never enters the minimum set in these rows.
+
+### Formula and symbols
+
+$$m=\min(L_A,L_B,L_C),\qquad \mathcal C=\{w\mid L_w=m\}$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $L_w$ | Active admission credits on worker $w$ | The row on the stage |
+| $m$ | Smallest eligible active count | Calculated for each row |
+| $\mathcal C$ | Workers tied at that minimum | Calculated for each row |
+
+### The numbers on the stage
+
+| Request | Loads A, B, C before | Minimum set | Choice | Loads after |
+|---:|---|---|---|---|
+| 1 | 2, 0, 0 | B and C | B | 2, 1, 0 |
+| 2 | 2, 1, 0 | C | C | 2, 1, 1 |
+| 3 | 2, 1, 1 | B and C | B | 2, 2, 1 |
+| 4 | 2, 2, 1 | C | C | 2, 2, 2 |
+
+The selector lock covers recency, load observation and reservation, preventing two concurrent choosers from using the same stale counts. A speech batch uses item-weighted credits instead of one credit per envelope; the stage uses ordinary one-credit requests.
+
+### Next
+
+The count rises before dispatch. The next step follows the lease that keeps it held through response headers and releases it only at a terminal event.
+
+Sources: `sglang_omni_router/src/worker_pool/mod.rs:565-605,1358-1439`; `sglang_omni_router/src/worker_pool/selection.rs:7-12`; `sglang_omni_router/src/worker_pool/admission.rs:49-88`.

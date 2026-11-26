@@ -23,6 +23,8 @@ Step 4 follows `sglang_omni_router/src/worker_pool/health.rs:10-17,231-308` and 
 
 Step 5 follows `sglang_omni_router/src/worker_pool/selection.rs:14-23,49-60`. The selector scans one shared recency list, picks the first eligible worker and moves that worker to the back of the entire list. With A, B and C all eligible, six selections are A, B, C, A, B and C. Ineligible workers are skipped without leaving the list, and changing candidate subsets does not reset the order. Round robin does not read active-request counts, so held leases do not change the displayed sequence (`worker_pool/mod.rs:1263-1356`).
 
+Step 6 follows `sglang_omni_router/src/worker_pool/mod.rs:581-605`. Least requests finds the minimum active load among eligible workers, then uses the same recency selector for workers tied at that minimum. The constructed rows start at loads 2, 0, 0 and hold each new ordinary request, producing B, C, B and C with their ties and unique minima shown. Selection, load observation and the following increment share one lock, so concurrent choosers cannot reserve from the same stale counts (`selection.rs:7-12`; concurrency test at `worker_pool/mod.rs:1410-1439`). These are router-held admission credits, not GPU utilization or the worker's internal queue.
+
 Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`. Examples are constructed from source rules; the chapter does not run a router or benchmark.
 
 </details>
@@ -39,6 +41,8 @@ Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37
 第 4 步依据 `sglang_omni_router/src/worker_pool/health.rs:10-17,231-308` 和 `sglang_omni_router/src/config.rs:290-325` 的默认门槛。worker 从 unknown 开始，只有 healthy 可路由（`worker_pool/mod.rs:124-126`）。探测状态为任意 2xx 就算成功，其他状态、传输错误或超时算失败。默认连续 2 次成功转为 healthy，连续 3 次失败转为 unhealthy。成功会清空失败连击，失败会清空成功连击；已经达到某个状态后，单独一次相反结果不会立刻翻转它。
 
 第 5 步依据 `sglang_omni_router/src/worker_pool/selection.rs:14-23,49-60`。selector 扫描一个共享的最近使用顺序，取第一个候选 worker，再把它移到整个列表的末尾。A、B、C 都合格时，六次选择依次是 A、B、C、A、B、C。不合格 worker 被跳过但不移出列表，候选集合变化也不会重置顺序。round robin 不读取活跃请求数，所以租约保持占用也不会改变图上的顺序（`worker_pool/mod.rs:1263-1356`）。
+
+第 6 步依据 `sglang_omni_router/src/worker_pool/mod.rs:581-605`。least requests 先找候选 worker 的最小活跃数，再用同一个最近使用顺序选择并列最少的 worker。构造行从负载 2、0、0 开始，每个新普通请求都保持占用，因此依次选 B、C、B、C，图上同时标出并列和唯一最小值。选择、读取负载和随后加一共享一把锁，避免并发选择者根据同一组旧计数预留（`selection.rs:7-12`；并发测试在 `worker_pool/mod.rs:1410-1439`）。这些数字是 router 持有的 admission credits，不是 GPU 利用率或 worker 内部队列。
 
 本章代码出处固定到 `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`。示例按源码规则构造，本章没有运行 router 或 benchmark。
 
