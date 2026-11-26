@@ -21,7 +21,7 @@ Step 2 uses the same source's FSDP alternative: each rank owns a shard of the pa
 
 Step 3 follows `fsdp/readme.md:18`: forward all-gathers the parameters for the unit being computed, then releases the full copy. The unit is the layer or parameter group materialized together (`readme-2-en.md:101-105`). The figure writes its temporary size as `U` because the sources provide no value. The `8 GB + U` expression is a residency boundary, not a measured peak; activations are still excluded.
 
-Step 4 follows `fsdp/readme.md:19` and `readme-2-en.md:47-58`. Each rank trains on different records. Backward materializes parameters as needed, then reduce-scatters each layer's completed gradient so each rank retains its reduced shard for that layer. The label shows the whole-model gradient table: 8 GB ÷ 8 = 1 GB per rank. This is only the gradient table's shard, not the rank's 8 GB total training state or a layer's temporary size. The optimizer updates the owned weight shards after all layers finish. Slime calls ordinary `loss.backward()` and `optimizer.step()`; `fully_shard` handles the collectives (`actor.py:687-702,1000-1039` at the pinned revision).
+Step 4 follows `fsdp/readme.md:19` and `readme-2-en.md:47-58`. Each rank trains on different records. Backward materializes parameters as needed, then reduce-scatters each layer's completed gradient so each rank retains its reduced shard for that layer. The label shows the all-layers gradient total: 8 GB ÷ 8 = 1 GB per rank. This is only the gradient table's shard, not the rank's 8 GB total training state or a layer's temporary size. The optimizer updates the owned weight shards after all layers finish. Slime calls ordinary `loss.backward()` and `optimizer.step()`; `fully_shard` handles the collectives (`actor.py:687-702,1000-1039` at the pinned revision).
 
 Step 5 separates persistent shards from peak memory. Activations are intermediate training results and vary with batch size (`readme-2-en.md:31`). The source's formula with the largest fully materialized unit is explicitly for FSDP1 Stage 3 (`readme-2-en.md:93-107`), so the stage uses it only to identify memory categories. It does not present that formula as an exact FSDP2/slime measurement or assign values to `Umax`, activations or other temporary allocations.
 
@@ -40,7 +40,7 @@ Step 6 follows `fsdp/readme.md:134-140` and the executable updater at `update_we
 
 第 3 步依据 `fsdp/readme.md:18`：前向计算时 all-gather 当前 unit 的参数，算完释放完整副本。unit 是一起聚合的层或参数组（`readme-2-en.md:101-105`）。来源没有给出临时大小，所以图中记作 `U`。`8 GB + U` 只表示占用边界，不是实测峰值；激活仍不计入。
 
-第 4 步依据 `fsdp/readme.md:19` 和 `readme-2-en.md:47-58`。每个 rank 使用不同训练样本。反向计算按需拼出参数，再对每层算好的梯度执行 reduce-scatter，使每个 rank 留下本层的汇总分片。标签写的是全模型梯度表：8 GB ÷ 8 = 每个 rank 1 GB。这里只算梯度表的分片，不是每个 rank 的 8 GB 训练状态总量，也不是本层临时大小。所有层算完后，优化器才更新拥有的权重分片。slime 调用普通的 `loss.backward()` 和 `optimizer.step()`，集合通信交给 `fully_shard`（固定版本的 `actor.py:687-702,1000-1039`）。
+第 4 步依据 `fsdp/readme.md:19` 和 `readme-2-en.md:47-58`。每个 rank 使用不同训练样本。反向计算按需拼出参数，再对每层算好的梯度执行 reduce-scatter，使每个 rank 留下本层的汇总分片。标签写的是所有层的梯度合计：8 GB ÷ 8 = 每个 rank 1 GB。这里只算梯度表的分片，不是每个 rank 的 8 GB 训练状态总量，也不是本层临时大小。所有层算完后，优化器才更新拥有的权重分片。slime 调用普通的 `loss.backward()` 和 `optimizer.step()`，集合通信交给 `fully_shard`（固定版本的 `actor.py:687-702,1000-1039`）。
 
 第 5 步区分长期分片与峰值显存。激活是训练中间结果，随 batch 大小变化（`readme-2-en.md:31`）。来源包含最大完整 unit 的公式明确针对 FSDP1 Stage 3（`readme-2-en.md:93-107`），所以图中只借它辨认显存类别，不把该公式当成 FSDP2/slime 的精确测量，也不给 `Umax`、激活或其他临时分配填值。
 

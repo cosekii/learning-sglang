@@ -113,8 +113,8 @@ Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:18`; `Awesome-ML-SYS
 ### On the stage
 
 - Each rank used different training records. Summing matching gradients combines the contributions from those records.
-- The blue temporary gradient belongs to one layer, not to the whole model's 8 GB logical gradient table. FSDP reduce-scatters each layer's gradient when it is ready.
-- The orange box is the rank's reduced shard for this layer. The label shows the whole-model gradient table: 8 GB ÷ 8 = 1 GB per rank, not this layer's temporary size.
+- The blue temporary gradient belongs to one layer, not to the 8 GB of gradients across all layers. FSDP reduce-scatters each layer's gradient when it is ready.
+- The orange box is the rank's reduced shard for this layer. The label shows the all-layers gradient total: 8 GB ÷ 8 = 1 GB per rank, not this layer's temporary size.
 - The optimizer updates the owned weight shards after all layers finish, not once for each box in this flow.
 
 ### Formula and symbols
@@ -132,7 +132,7 @@ $$g_{\ell,i}=S_{\ell,i}\!\left(\sum_{r=1}^{R}g_\ell^{(r)}\right)$$
 
 ### The numbers on the stage
 
-The stage labels the whole-model gradient table: 8 GB ÷ 8 = 1 GB per rank across all layers. This is only the gradient table's shard; the rank's total training state is 8 GB from Step 2. Neither the temporary layer gradient nor the reduced layer shard has a supplied size. The optimizer runs after all layers finish, not once per layer.
+The stage labels the all-layers gradient total: 8 GB ÷ 8 = 1 GB per rank across all layers. This is only the gradient table's shard; the rank's total training state is 8 GB from Step 2. Neither the temporary layer gradient nor the reduced layer shard has a supplied size. The optimizer runs after all layers finish, not once per layer.
 
 Slime calls `loss.backward()` and `optimizer.step()` in the actor. The FSDP wrapper handles parameter gathers and per-layer gradient reduce-scatter; the actor does not write separate collective calls beside those methods.
 
