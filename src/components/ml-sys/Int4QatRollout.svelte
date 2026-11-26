@@ -61,6 +61,41 @@
         { en: 'How can training adapt?', zh: '训练怎样适应舍入？' },
       ],
     },
+  }, {
+    caption: 'One group shares a scale, its largest magnitude divided by 7. Rounding changes 0.35 to 0.40.',
+    captionZh: '一组权重共用一个 scale。0.35 舍入后还原为 0.40。',
+    title: 'One scale fits 32 weights onto integer levels', titleZh: '一个 scale 把 32 个权重放到整数等级上',
+    subtitle: 'scale = one shared divisor for a group', subtitleZh: 'scale = 一组权重共用的除数',
+    foot: 'Constructed nonzero group; three of its 32 values are shown.',
+    footZh: '构造的非零权重组；画出 32 个数中的三个。',
+    legend: 'Orange = BF16 · blue = integer codes · grey = scale', legendZh: '橙 = BF16 · 蓝 = 整数编码 · 灰 = scale',
+    flow: true,
+    nodes: [
+      { title: 'ORIGINAL BF16', titleZh: '原始 BF16', result: '[0.10, 0.35, 0.70]', resultZh: '[0.10, 0.35, 0.70]', body: 'three values shown', bodyZh: '画出三个数', tone: 'orange', compact: true },
+      { title: 'SHARED SCALE', titleZh: '共用 SCALE', result: '0.70 ÷ 7 = 0.10', resultZh: '0.70 ÷ 7 = 0.10', body: 'largest |value| ÷ 7', bodyZh: '最大绝对值 ÷ 7', tone: 'plain', compact: true },
+      { title: 'INT4 CODES', titleZh: 'INT4 编码', result: '[1, 4, 7]', resultZh: '[1, 4, 7]', body: 'rounded integers', bodyZh: '舍入后的整数', tone: 'blue', compact: true },
+      { title: 'RESTORED BF16', titleZh: '还原 BF16', result: '[0.10, 0.40, 0.70]', resultZh: '[0.10, 0.40, 0.70]', body: 'code × scale', bodyZh: '编码 × scale', tone: 'orange', compact: true },
+    ],
+    formulas: [
+      { en: 'scale = max(|0.10|, |0.35|, |0.70|) ÷ 7 = 0.10', zh: 'scale = max(|0.10|, |0.35|, |0.70|) ÷ 7 = 0.10' },
+      { en: '0.35 ÷ 0.10 = 3.5 → round to 4', zh: '0.35 ÷ 0.10 = 3.5 → 舍入为 4' },
+      { en: '4 × 0.10 = 0.40', zh: '4 × 0.10 = 0.40' },
+      { en: 'absolute error = |0.35 − 0.40| = 0.05', zh: '绝对误差 = |0.35 − 0.40| = 0.05' },
+      { en: '32 values share one scale · codes stay between −7 and 7', zh: '32 个数共用一个 scale · 编码限制在 −7 到 7' },
+    ],
+    mobile: {
+      title: 'One scale fits 32 weights', titleZh: '一个 scale 对齐 32 个权重',
+      subtitle: 'scale = shared divisor', subtitleZh: 'scale = 共用的除数',
+      foot: 'Constructed group; three of 32 values shown.', footZh: '构造算例；画出 32 个数中的三个。',
+      legend: 'Orange = BF16 · blue = codes · grey = scale', legendZh: '橙 = BF16 · 蓝 = 编码 · 灰 = scale',
+      formulas: [
+        { en: 'scale = 0.70 ÷ 7 = 0.10', zh: 'scale = 0.70 ÷ 7 = 0.10' },
+        { en: '0.35 ÷ 0.10 = 3.5 → 4', zh: '0.35 ÷ 0.10 = 3.5 → 4' },
+        { en: '4 × 0.10 = 0.40', zh: '4 × 0.10 = 0.40' },
+        { en: 'error = |0.35 − 0.40| = 0.05', zh: '误差 = |0.35 − 0.40| = 0.05' },
+        { en: '32 values share one scale · codes: −7…7', zh: '32 个数共用一个 scale · 编码：−7…7' },
+      ],
+    },
   }];
   let step = $state(0);
   $effect(() => {

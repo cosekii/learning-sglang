@@ -17,6 +17,8 @@ This chapter follows `Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md`. Implem
 
 Step 1 uses the article's raw INT4 storage discussion at `readme.md:101-114`. The 32-value group is constructed: `32 × 2 B = 64 B` in BF16 and `32 × 0.5 B = 16 B` as raw INT4, saving 75% before scales, exclusions and runtime memory. Fewer numeric levels introduce rounding; this step makes no latency or whole-checkpoint claim.
 
+Step 2 follows the fake-quantization mechanism at `readme.md:53-61` and the pinned `docker/patch/latest/megatron.patch:71-110`. The three displayed values are constructed from one 32-value group. The implementation computes an FP32 scale as `max_abs ÷ 7`, clamps it to at least `1e-5`, rounds and clamps codes to `[-7,7]`, then restores and casts to the input dtype. The example is nonzero, so it does not exercise the scale floor.
+
 Further reading: [zero-to-sglang Part III Chapter 2: Quantization and Low-Precision Inference](https://zero-to-sglang.datawhale.cc/eng/part3/Chapter2_Quantization-and-Low-Precision-Inference.html).
 
 </details>
@@ -27,6 +29,8 @@ Further reading: [zero-to-sglang Part III Chapter 2: Quantization and Low-Precis
 本章依据 `Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md`。实现引用固定到 `THUDM/slime@58525eb986c66a271aa31077e17b8afebe704b4f`、`NVIDIA/Megatron-LM@3714d81d418c9f1bca4594fc35f9e8289f652862` 和 `sgl-project/sglang@dce8b0606c06d3a191a24c7b8cbe8e238ab316c9`。构造算式与文章报告的结果分别标明。
 
 第 1 步依据 `readme.md:101-114` 的 INT4 原始存储讨论。32 个权重是构造算例：`32 × 2 字节 = 64 字节`，原始 INT4 为 `32 × 0.5 字节 = 16 字节`，未计 scale、排除项和运行显存时少 75%。更少的数值等级带来舍入；本步不声称延迟或完整 checkpoint 的收益。
+
+第 2 步依据 `readme.md:53-61` 的模拟量化机制，以及固定版本 `docker/patch/latest/megatron.patch:71-110`。三个展示值来自构造的 32 权重组。实现用 FP32 计算 `最大绝对值 ÷ 7` 的 scale，把下限设为 `1e-5`，编码舍入并截断到 `[-7,7]`，再还原并转成输入类型。本例非零，不触发 scale 下限。
 
 延伸阅读：[zero-to-sglang 第 3 部分第 2 章：量化与低精度推理](https://zero-to-sglang.datawhale.cc/ch/part3/%E7%AC%AC2%E7%AB%A0_%E9%87%8F%E5%8C%96%E4%B8%8E%E4%BD%8E%E7%B2%BE%E5%BA%A6%E6%8E%A8%E7%90%86.html)。
 

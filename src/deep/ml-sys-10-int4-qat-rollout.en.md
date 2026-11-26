@@ -31,3 +31,39 @@ Scales, unquantized tensors, KV cache, activations and runtime workspaces sit ou
 The next step gives one group a shared scale and follows one original value through rounding.
 
 Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:101-114`; constructed values in `src/ml-sys/numbers.ts`.
+
+## Step 2 · Share one scale across 32 weights
+
+**One sentence.** A group divides by one scale derived from its largest magnitude, rounds to integers in $[-7,7]$, then multiplies by that scale to restore approximate values.
+
+### On the stage
+
+- The original card shows three of the group's 32 BF16 weights: `[0.10, 0.35, 0.70]`.
+- The scale card divides the largest absolute value, 0.70, by 7 to get 0.10.
+- The integer-code card holds `[1, 4, 7]`. The middle calculation is $0.35/0.10=3.5$, which rounds to 4.
+- The restored card multiplies each code by 0.10 and gets `[0.10, 0.40, 0.70]`. The middle absolute error is 0.05.
+
+### Formula and symbols
+
+$$s=\max_i|x_i|/7,\qquad q_i=\operatorname{clip}(\operatorname{round}(x_i/s),-7,7),\qquad \hat{x}_i=sq_i$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $x_i$ | BF16 weight $i$ in the group | The three constructed values shown here |
+| $s$ | Shared scale, meaning the group's divisor | Largest absolute value divided by 7 |
+| $q_i$ | Rounded and clamped integer code | Calculated from $x_i/s$ |
+| $\hat{x}_i$ | Approximate value restored from the code | $sq_i$ |
+| $\operatorname{clip}$ | Limit values to the stated boundaries | Fake-quantization code at the pinned revision |
+
+### The numbers on the stage
+
+$$s=0.70/7=0.10,\qquad 0.35/0.10=3.5\rightarrow4$$
+$$\hat{x}_2=4\times0.10=0.40,\qquad |0.35-0.40|=0.05$$
+
+The pinned implementation finds the maximum and scale in FP32, clamps the scale to at least $10^{-5}$, and casts the restored values back to the input type. This nonzero example does not trigger the scale floor. The complete group has 32 values; the other 29 stay off the stage.
+
+### Next
+
+Training repeats this quantize–restore round trip in its forward pass while storage and computation remain BF16. The next step names that path fake quantization.
+
+Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:53-61`; `THUDM/slime@58525eb986c66a271aa31077e17b8afebe704b4f`, `docker/patch/latest/megatron.patch:71-110`.

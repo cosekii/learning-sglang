@@ -31,3 +31,39 @@ scale、未量化张量、KV cache、激活值和运行工作区都不在这 16 
 下一步看一组权重怎样共用一个 scale，以及一个原数经过舍入后变成什么。
 
 来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:101-114`；构造数值在 `src/ml-sys/numbers.ts`。
+
+## 第 2 步 · 一组权重共用一个 scale
+
+**一句话。** 一组权重先除以最大绝对值算出的 scale，舍入到 $[-7,7]$ 的整数，再乘回 scale 还原。
+
+### 图上是什么
+
+- 原数卡展示 32 个 BF16 权重中的三个：`[0.10, 0.35, 0.70]`。
+- scale 卡用最大绝对值 0.70 除以 7，得到 0.10。
+- 整数编码卡保存 `[1, 4, 7]`。中间值 $0.35/0.10=3.5$，舍入为 4。
+- 还原卡把编码乘回 0.10，得到 `[0.10, 0.40, 0.70]`。中间值产生 0.05 的绝对误差。
+
+### 公式与符号
+
+$$s=\max_i|x_i|/7,\qquad q_i=\operatorname{clip}(\operatorname{round}(x_i/s),-7,7),\qquad \hat{x}_i=sq_i$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $x_i$ | 组内第 $i$ 个 BF16 权重 | 本步构造的三个展示值 |
+| $s$ | 全组共用的 scale，也就是除数 | 最大绝对值除以 7 |
+| $q_i$ | 舍入并截断后的整数编码 | $x_i/s$ 的计算结果 |
+| $\hat{x}_i$ | 编码乘回 scale 后的还原值 | $sq_i$ |
+| $\operatorname{clip}$ | 把超出边界的数截到边界内 | 固定版本的伪量化代码 |
+
+### 代入图上的数
+
+$$s=0.70/7=0.10,\qquad 0.35/0.10=3.5\rightarrow4$$
+$$\hat{x}_2=4\times0.10=0.40,\qquad |0.35-0.40|=0.05$$
+
+固定版本的代码用 FP32 求最大绝对值和 scale，把 scale 下限设为 $10^{-5}$，最后把还原值转回输入类型。本例非零，所以没有触发 scale 下限。完整组有 32 个值，其余 29 个没有画出。
+
+### 接下来
+
+训练前向反复做这次“量化再还原”，但保存和计算仍是 BF16。下一步给这条训练路径一个名字：fake quantization。
+
+来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:53-61`；`THUDM/slime@58525eb986c66a271aa31077e17b8afebe704b4f` 的 `docker/patch/latest/megatron.patch:71-110`。
