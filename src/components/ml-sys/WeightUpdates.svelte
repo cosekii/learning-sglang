@@ -22,7 +22,7 @@
   const steps: Step[] = [{
     caption: `A 1B bf16 model has about ${UPDATE_DEBUG_WEIGHT_GB} GB of weights. One debug run took ${UPDATE_DEBUG_INITIAL_S} seconds to update them.`,
     captionZh: `1B bf16 模型约有 ${UPDATE_DEBUG_WEIGHT_GB} GB 权重。一次调试中，完整更新花了 ${UPDATE_DEBUG_INITIAL_S} 秒。`,
-    title: 'The inner copy looks fast, but the call is slow', titleZh: '里面复制很快，整个调用却很慢',
+    title: 'Model code is fast, but the whole call is slow', titleZh: '模型代码里很快，整个调用却很慢',
     subtitle: 'weight update = replace the rollout model\'s old number tables after training', subtitleZh: '权重更新 = 训练后换掉 rollout 模型里的旧数字表',
     foot: 'One author\'s distributed-update debug log; not a disk-versus-direct benchmark.', footZh: '一位作者的 distributed 更新调试记录，不是磁盘与直传的对比实验。',
     mobileTitle: 'The call is slow', mobileTitleZh: '整个调用很慢',
@@ -30,13 +30,13 @@
     mobileFoot: 'Debug log; not a transport comparison.', mobileFootZh: '调试记录，不是传输对照实验。',
     mobile: [
       { title: 'TRAINING · WEIGHTS v1', titleZh: '训练端 · 权重 v1', body: 'new number tables', bodyZh: '新的数字表', tone: 'orange' },
-      { title: 'UPDATE WEIGHTS', titleZh: '更新权重', body: 'copy v1 into rollout', bodyZh: '把 v1 装进 rollout', tone: 'orange' },
+      { title: 'WHOLE CALL · UPDATE WEIGHTS', titleZh: '整个调用 · 更新权重', body: 'model code = the inner part', bodyZh: '模型代码里 = 内部部分', tone: 'orange' },
       { title: 'ROLLOUT WAITS', titleZh: 'ROLLOUT 等待', body: 'use v1 only after the update', bodyZh: '更新完成后才用 v1', tone: 'blue' },
     ],
     formulas: [
       { en: `1B × ${UPDATE_DEBUG_BF16_BYTES} B = ${UPDATE_DEBUG_WEIGHT_GB} GB of weights`, zh: `10 亿个数 × 每个 ${UPDATE_DEBUG_BF16_BYTES} B = ${UPDATE_DEBUG_WEIGHT_GB} GB 权重` },
       { en: `whole-model update = ${UPDATE_DEBUG_INITIAL_S} s`, zh: `完整更新 = ${UPDATE_DEBUG_INITIAL_S} 秒` },
-      { en: `one tensor: inside ${UPDATE_DEBUG_INNER_S} s · whole call ${UPDATE_DEBUG_OUTER_S} s`, zh: `一个张量：内部 ${UPDATE_DEBUG_INNER_S} 秒 · 整个调用 ${UPDATE_DEBUG_OUTER_S} 秒` },
+      { en: `model code ${UPDATE_DEBUG_INNER_S} s · whole call ${UPDATE_DEBUG_OUTER_S} s`, zh: `模型代码里 ${UPDATE_DEBUG_INNER_S} 秒 · 整个调用 ${UPDATE_DEBUG_OUTER_S} 秒` },
       { en: 'outer ÷ inner ≈ 33×, rounded', zh: '外部 ÷ 内部 ≈ 33 倍，均为舍入值' },
     ],
   }, {
@@ -109,13 +109,13 @@
     mobile: [
       { title: 'TRAINING WEIGHTS WAIT', titleZh: '训练权重先等待', body: 'moved off the GPU after training', bodyZh: '训练后已移出 GPU', tone: 'plain' },
       { title: 'UPLOAD BUCKET 1', titleZh: '拿回第 1 桶', body: 'only this small group', bodyZh: '只拿这一小组', tone: 'orange' },
-      { title: 'ASSEMBLE + SEND HANDLES', titleZh: '拼好并发送句柄', body: 'update these parameters', bodyZh: '更新这组参数', tone: 'orange' },
+      { title: 'ASSEMBLE + SEND HANDLES', titleZh: '拼好并发送句柄', body: 'convert to the rollout layout', bodyZh: '转成 rollout 模型布局', tone: 'orange' },
       { title: 'RAY.GET → CLEAR → NEXT', titleZh: '等待 → 清空 → 下一桶', body: 'finish before reusing the space', bodyZh: '完成后才复用空间', tone: 'blue' },
     ],
     formulas: [
       { en: 'GPU holds SGLang + one bucket', zh: 'GPU 上是 SGLang + 一桶' },
       { en: 'not SGLang + the whole training model', zh: '不是 SGLang + 整套训练模型' },
-      { en: 'upload → assemble → send → wait → clear', zh: '拿回 → 拼好 → 发送 → 等待 → 清空' },
+      { en: 'assemble → rollout layout → clear', zh: '拼好 → 转成 rollout 布局 → 清空' },
     ],
   }, {
     caption: 'Generation must not read a half-updated model. The next rollout waits for every parameter and old-KV invalidation.',
@@ -232,10 +232,12 @@
         <text x="120" y="163" text-anchor="middle" class="result">weights v1</text>
         <text x="120" y="188" text-anchor="middle" class="small">{t('new number tables', '新的数字表')}</text>
         <line x1="205" y1="148" x2="260" y2="148" stroke="var(--gen)" stroke-width="3" marker-end="url(#update-arrow-orange)" />
+        <rect x="255" y="70" width="210" height="150" rx="14" fill="none" stroke="var(--muted)" stroke-dasharray="5 4" />
+        <text x="360" y="85" text-anchor="middle" class="small strong">{t('WHOLE CALL', '整个调用')}</text>
         <rect x="270" y="92" width="180" height="112" rx="12" fill="var(--gen-soft)" stroke="var(--gen)" />
         <text x="360" y="126" text-anchor="middle" class="section">UPDATE WEIGHTS</text>
         <text x="360" y="163" text-anchor="middle" class="result">?</text>
-        <text x="360" y="188" text-anchor="middle" class="small">{t('copy v1 into rollout', '把 v1 装进 rollout')}</text>
+        <text x="360" y="188" text-anchor="middle" class="small">{t('model code · copy v1', '模型代码里 · 装入 v1')}</text>
         <line x1="450" y1="148" x2="505" y2="148" stroke="var(--accent)" stroke-width="3" marker-end="url(#update-arrow-blue)" />
         <rect x="515" y="92" width="170" height="112" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" />
         <text x="600" y="126" text-anchor="middle" class="section">ROLLOUT</text>
@@ -248,7 +250,7 @@
         <rect x="375" y="235" width="310" height="135" rx="12" fill="var(--gen-soft)" stroke="var(--gen)" />
         <text x="530" y="265" text-anchor="middle" class="small strong">{t('DEBUG TIME', '调试耗时')}</text>
         <text x="530" y="302" text-anchor="middle" class="big">{UPDATE_DEBUG_INITIAL_S} s</text>
-        <text x="530" y="328" text-anchor="middle" class="small">{t(`one tensor: ${UPDATE_DEBUG_INNER_S} s inside, ${UPDATE_DEBUG_OUTER_S} s outside`, `一个张量：内部 ${UPDATE_DEBUG_INNER_S} 秒，外部 ${UPDATE_DEBUG_OUTER_S} 秒`)}</text>
+        <text x="530" y="328" text-anchor="middle" class="small">{t(`model code ${UPDATE_DEBUG_INNER_S} s · whole call ${UPDATE_DEBUG_OUTER_S} s`, `模型代码里 ${UPDATE_DEBUG_INNER_S} 秒 · 整个调用 ${UPDATE_DEBUG_OUTER_S} 秒`)}</text>
         <text x="530" y="354" text-anchor="middle" class="small">{t('outer ÷ inner ≈ 33×, rounded', '外部 ÷ 内部 ≈ 33 倍，均为舍入值')}</text>
       {:else if step === 1}
         {#each [
@@ -293,9 +295,9 @@
         <text x="610" y="247" text-anchor="middle" class="small">rank 2</text>
         <text x="530" y="286" text-anchor="middle" class="result">world size = 1 + 2 = {UPDATE_GROUP_SIZE_TP_TWO}</text>
         <text x="530" y="310" text-anchor="middle" class="small">{t('three members in this example', '本例组内三个成员')}</text>
-        <text x="360" y="355" text-anchor="middle" class="code">allocate → broadcast full tensor → keep own part → load_weights</text>
+        <text x="360" y="355" text-anchor="middle" class="code">allocate → broadcast full tensor → keep own part → load own part</text>
         <text x="360" y="390" text-anchor="middle" class="small">{t('Orange = sends values · blue = receives values', '橙 = 发出数值 · 蓝 = 接收数值')}</text>
-        <text x="360" y="422" text-anchor="middle" class="code">update_weights_from_distributed</text>
+        <text x="360" y="422" text-anchor="middle" class="small">{t('Distributed channel = broadcast full tensors through this group', 'Distributed 通道 = 通过这个组广播完整张量')}</text>
       {:else if step === 3}
         <text x="360" y="88" text-anchor="middle" class="small strong">{t('ONE PARAMETER · FOUR TRAINING PIECES', '一个参数 · 训练端的四块分片')}</text>
         {#each [0, 1, 2, 3] as i}
@@ -338,8 +340,8 @@
         <text x="532" y="239" text-anchor="middle" class="small strong">BUCKET 1 · {t('ON GPU', '在 GPU 上')}</text>
         <rect x="395" y="275" width="275" height="43" rx="9" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />
         <text x="532" y="302" text-anchor="middle" class="small">BUCKETS 2, 3 · {t('WAIT OFF GPU', '在 GPU 外等待')}</text>
-        <text x="360" y="378" text-anchor="middle" class="code">upload → assemble → convert → send handles → ray.get → clear</text>
-        <text x="360" y="413" text-anchor="middle" class="small strong">{t('ray.get finishes before the converted bucket is cleared.', 'ray.get 完成后，才清空这一桶的转换结果。')}</text>
+        <text x="360" y="378" text-anchor="middle" class="code">{t('upload → assemble → rollout layout → send handles → ray.get → clear', '拿回 → 拼好 → 转成 rollout 布局 → 发句柄 → 等待 → 清空')}</text>
+        <text x="360" y="413" text-anchor="middle" class="small strong">{t('ray.get finishes before the bucket in rollout layout is cleared.', 'ray.get 完成后，才清空这一桶已转成 rollout 布局的结果。')}</text>
         <text x="360" y="447" text-anchor="middle" class="small">{t('Blue = rollout state · orange = training weights being updated', '蓝 = rollout 状态 · 橙 = 正在更新的训练权重')}</text>
       {:else if step === 5}
         <rect x="35" y="90" width="190" height="121" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" />

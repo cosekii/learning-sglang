@@ -6,7 +6,7 @@
 
 - Training has produced `weights v1`, the new number tables. Rollout waits for the update before using them, continuing Chapter 6 Step 8.
 - The left card derives the weight size. The right card shows the full-model time from the debug log.
-- The smaller timing pair compares one tensor's inner weight-loading operation with the whole external call. It shows why timing only the inner operation misses part of the wait.
+- The dashed `WHOLE CALL` box surrounds the update. Its inner `model code` copies v1. The timing pair compares that model-code operation with the whole external call, showing what an inner-only timer misses.
 
 ### Formula and symbols
 
@@ -127,13 +127,13 @@ Sources: `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-1.md:51-60,132-204`; `v
 
 ## Step 5 · Bound temporary residency with a bucket
 
-**One sentence.** After training moves its weights off the GPU, slime restores, converts and transfers one bucket, waits for completion, clears it and reuses the space.
+**One sentence.** After training moves its weights off the GPU, slime restores one bucket, converts it to the rollout model's layout, transfers it, waits, clears it and reuses the space.
 
 ### On the stage
 
 - The two panels compare the same SGLang and KV allocation with either the whole training model or one bucket beside it. The shapes are schematic, not a byte-scale drawing.
 - `Bucket 1` is the only training-weight group restored in the right panel. Later buckets wait outside the GPU.
-- The bottom order ends with `ray.get` and `clear`. The sender waits for SGLang's update before releasing the converted bucket.
+- The bottom order converts the bucket to the rollout model's layout before sending handles, then ends with `ray.get` and `clear`. The sender waits for SGLang's update before releasing that converted bucket.
 
 ### Formula and symbols
 
