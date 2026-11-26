@@ -248,14 +248,14 @@
         <text x="360" y="450" text-anchor="middle" class="small">{t('Orange = full copies · blue = owned shards', '橙 = 完整副本 · 蓝 = 拥有的分片')}</text>
       {:else if step === 2}
         {#each [
-          { x: 25, title: 'OWNED SHARDS', titleZh: '拥有的分片', result: '8 GB', body: 'persistent', bodyZh: '长期保存', tone: 'orange' },
-          { x: 205, title: 'ALL-GATHER', titleZh: 'ALL-GATHER', result: 'one layer', body: 'from every rank', bodyZh: '来自每个 rank', tone: 'plain' },
-          { x: 385, title: 'FULL LAYER', titleZh: '完整一层', result: 'U', body: 'compute', bodyZh: '计算', tone: 'blue' },
-          { x: 565, title: 'RELEASE', titleZh: '释放', result: 'U gone', body: 'owned 8 GB', bodyZh: '仍保存 8 GB', tone: 'plain' },
+          { x: 25, title: 'OWNED SHARDS', titleZh: '拥有的分片', result: '8 GB', resultZh: '8 GB', body: 'persistent', bodyZh: '长期保存', tone: 'orange' },
+          { x: 205, title: 'ALL-GATHER', titleZh: 'ALL-GATHER', result: 'one layer', resultZh: '一层', body: 'from every rank', bodyZh: '来自每个 rank', tone: 'plain' },
+          { x: 385, title: 'FULL LAYER', titleZh: '完整一层', result: 'U', resultZh: 'U', body: 'compute', bodyZh: '计算', tone: 'blue' },
+          { x: 565, title: 'RELEASE', titleZh: '释放', result: 'U gone', resultZh: 'U 已释放', body: 'owned 8 GB', bodyZh: '仍保存 8 GB', tone: 'plain' },
         ] as node, i}
           <rect x={node.x} y="105" width="130" height="151" rx="12" fill={fill(node.tone)} stroke={stroke(node.tone)} stroke-dasharray={node.tone === 'plain' ? '5 4' : '0'} />
           <text x={node.x + 65} y="137" text-anchor="middle" class="small strong">{t(node.title, node.titleZh)}</text>
-          <text x={node.x + 65} y="180" text-anchor="middle" class="result">{node.result}</text>
+          <text x={node.x + 65} y="180" text-anchor="middle" class="result">{t(node.result, node.resultZh)}</text>
           <text x={node.x + 65} y="222" text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
           {#if i < 3}
             <line x1={node.x + 130} y1="181" x2={node.x + 170} y2="181" stroke="var(--line)" stroke-width="2.5" marker-end="url(#fsdp-arrow-plain)" />
