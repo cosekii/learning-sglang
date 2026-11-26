@@ -11,7 +11,7 @@
   type Step = {
     caption: string; captionZh: string; title: string; titleZh: string; subtitle: string; subtitleZh: string;
     foot: string; footZh: string; mobileTitle: string; mobileTitleZh: string; mobileSubtitle: string; mobileSubtitleZh: string;
-    mobileFoot: string; mobileFootZh: string; mobile: MobileItem[]; formulas: { en: string; zh: string }[];
+    mobileFoot: string; mobileFootZh: string; mobileLegend: string; mobileLegendZh: string; mobile: MobileItem[]; formulas: { en: string; zh: string }[];
   };
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -29,6 +29,7 @@
     mobileTitle: 'Eight full copies · 512 GB', mobileTitleZh: '8 份完整复制 · 512 GB',
     mobileSubtitle: 'full replication = every GPU keeps all tables', mobileSubtitleZh: '完整复制 = 每张卡保存所有表',
     mobileFoot: 'Constructed example, not a memory measurement.', mobileFootZh: '构造算例，不是显存实测。',
+    mobileLegend: 'Orange = saved tables · blue = full copies', mobileLegendZh: '橙 = 保存的表 · 蓝 = 完整副本',
     mobile: [
       { title: 'TRAINING STATE', titleZh: '训练状态', body: 'weights + gradients + optimizer state', bodyZh: '权重 + 梯度 + 优化器状态', tone: 'orange' },
       { title: 'ONE GPU · FULL COPY', titleZh: '一张 GPU · 完整复制', body: '8 + 8 + 48 = 64 GB', bodyZh: '8 + 8 + 48 = 64 GB', tone: 'orange' },
@@ -39,7 +40,6 @@
       { en: `${FSDP_FULL_STATE_PER_GPU_GB} GB × ${FSDP_DP_SIZE} = ${FSDP_FULL_CLUSTER_STATE_GB} GB`, zh: `${FSDP_FULL_STATE_PER_GPU_GB} GB × ${FSDP_DP_SIZE} = ${FSDP_FULL_CLUSTER_STATE_GB} GB` },
       { en: `${FSDP_FULL_STATE_PER_GPU_GB} GB ÷ 80 GB = ${(FSDP_FULL_CARD_SHARE * 100).toFixed(0)}% of one H100`, zh: `${FSDP_FULL_STATE_PER_GPU_GB} GB ÷ 80 GB = 一张 H100 的 ${(FSDP_FULL_CARD_SHARE * 100).toFixed(0)}%` },
       { en: '16 bytes = 2 + 2 + 3 × 4 per value', zh: '每个数 16 字节 = 2 + 2 + 3 × 4' },
-      { en: 'optimizer = update copy + 2 running averages', zh: '优化器 = 更新副本 + 2 个滑动平均值' },
     ],
   }, {
     caption: `FSDP2 gives each of the same 8 ranks one shard. One rank per GPU means ${FSDP_SHARD_STATE_PER_GPU_GB} GB each.`,
@@ -52,8 +52,9 @@
     mobileTitle: 'Each rank owns 8 GB', mobileTitleZh: '每个 rank 拥有 8 GB',
     mobileSubtitle: 'shard = one rank\'s part · one rank per GPU', mobileSubtitleZh: '分片 = 一个 rank 的一份 · 每卡一个 rank',
     mobileFoot: 'Equal shards are a teaching simplification.', mobileFootZh: '等分只是教学简化。',
+    mobileLegend: 'Orange = full copy · blue = owned shard', mobileLegendZh: '橙 = 完整副本 · 蓝 = 拥有分片',
     mobile: [
-      { title: 'FSDP2 · SAME 8 RANKS', titleZh: 'FSDP2 · 同样 8 个 rank', body: 'same 8 GPUs, one rank each', bodyZh: '同样 8 张 GPU，每卡一个 rank', tone: 'blue' },
+      { title: 'BEFORE · FULL COPY', titleZh: '之前 · 完整副本', body: '64 GB per GPU · 8 copies = 512 GB', bodyZh: '每卡 64 GB · 8 份 = 512 GB', tone: 'orange' },
       { title: 'EACH RANK OWNS', titleZh: '每个 rank 拥有', body: '1 + 1 + 6 = 8 GB', bodyZh: '1 + 1 + 6 = 8 GB', tone: 'blue' },
       { title: '8 RANKS TOGETHER', titleZh: '8 个 rank 合计', body: '8 × 8 = 64 GB, not 512 GB', bodyZh: '8 × 8 = 64 GB，不是 512 GB', tone: 'blue' },
     ],
@@ -73,9 +74,10 @@
     mobileTitle: 'Borrow a layer, then release it', mobileTitleZh: '借来一层，用完释放',
     mobileSubtitle: 'all-gather = rebuild a full layer', mobileSubtitleZh: 'all-gather = 拼出完整一层',
     mobileFoot: 'U is temporary memory; no value is supplied.', mobileFootZh: 'U 是临时显存，数值未知。',
+    mobileLegend: 'Orange = owned state · blue = temporary layer', mobileLegendZh: '橙 = 拥有状态 · 蓝 = 临时完整层',
     mobile: [
       { title: 'OWNED SHARDS', titleZh: '拥有的分片', body: '8 GB stay on this rank', bodyZh: '这个 rank 长期保存 8 GB', tone: 'orange' },
-      { title: 'ALL-GATHER · ONE LAYER', titleZh: 'ALL-GATHER · 完整一层', body: 'every rank contributes its shard', bodyZh: '每个 rank 都拿出自己的一片', tone: 'blue' },
+      { title: 'ALL-GATHER · ONE LAYER', titleZh: 'ALL-GATHER · 完整一层', body: 'every rank contributes its shard', bodyZh: '每个 rank 都拿出自己的一片', tone: 'plain' },
       { title: 'FULL LAYER · U', titleZh: '完整一层 · U', body: 'temporary memory, size unknown', bodyZh: '临时显存，大小未知', tone: 'blue' },
       { title: 'RELEASE', titleZh: '释放', body: 'return to 8 GB owned', bodyZh: '回到长期保存的 8 GB', tone: 'plain' },
     ],
@@ -85,26 +87,28 @@
       { en: 'U is not a measured value', zh: 'U 不是实测数值' },
     ],
   }, {
-    caption: 'Backward computes gradients, the directions for changing weights. Reduce-scatter sums matching values; each rank keeps one shard for its update.',
-    captionZh: 'Backward 算出梯度，也就是修改权重的方向。各 rank 汇总对应值，各留一个分片来更新权重。',
-    title: 'Backward keeps a summed gradient shard', titleZh: 'Backward 留下汇总后的梯度分片',
-    subtitle: 'reduce-scatter = sum matching gradients, then keep one shard',
-    subtitleZh: 'reduce-scatter = 汇总对应梯度，再各留一个分片',
-    foot: 'Backward also gathers parameters as needed; this step follows the gradient path.',
-    footZh: '反向计算也会按需聚合参数；本步只跟梯度这条线。',
+    caption: 'After forward, the model computes gradients: directions for changing weights. Reduce-scatter sums matching values; each rank keeps one shard.',
+    captionZh: 'Forward 之后，模型算出梯度，也就是修改权重的方向。各 rank 汇总对应值，各留一个分片。',
+    title: 'After forward, keep a summed gradient shard', titleZh: 'Forward 之后，留下汇总后的梯度分片',
+    subtitle: 'reduce-scatter = sum each layer\'s matching gradients, then keep one shard',
+    subtitleZh: 'reduce-scatter = 汇总每层对应的梯度，再各留一个分片',
+    foot: 'Each layer\'s gradient is reduced when ready; parameters are gathered as needed.',
+    footZh: '每层的梯度算好就汇总；参数仍按需聚合。',
     mobileTitle: 'Keep one summed gradient shard', mobileTitleZh: '留下一个汇总后的梯度分片',
     mobileSubtitle: 'reduce-scatter = sum, then split', mobileSubtitleZh: 'reduce-scatter = 汇总再分片',
-    mobileFoot: 'The optimizer updates only the owned weight shard.', mobileFootZh: '优化器只更新自己拥有的权重分片。',
+    mobileFoot: 'The optimizer updates after all layers finish.', mobileFootZh: '所有层算完后，优化器才更新权重。',
+    mobileLegend: 'Orange = owned shard · blue = layer gradient', mobileLegendZh: '橙 = 拥有分片 · 蓝 = 本层梯度',
     mobile: [
-      { title: 'FULL GRADIENT · TEMPORARY', titleZh: '完整梯度 · 临时', body: 'produced during backward', bodyZh: '反向计算时产生', tone: 'blue' },
+      { title: 'LAYER GRADIENT · TEMPORARY', titleZh: '本层梯度 · 临时', body: 'produced after forward', bodyZh: '前向之后算出', tone: 'blue' },
       { title: 'REDUCE-SCATTER', titleZh: 'REDUCE-SCATTER', body: 'sum matching values, then split', bodyZh: '汇总对应数值，再分片', tone: 'plain' },
-      { title: 'OWNED GRADIENT · 1 GB', titleZh: '拥有的梯度 · 1 GB', body: 'only this rank\'s shard', bodyZh: '只留这个 rank 的一片', tone: 'orange' },
-      { title: 'OPTIMIZER', titleZh: '优化器', body: 'update the owned weight shard', bodyZh: '更新自己拥有的权重分片', tone: 'plain' },
+      { title: 'OWNED GRADIENT · ONE SHARD', titleZh: '拥有的梯度 · 一个分片', body: 'this layer\'s reduced shard', bodyZh: '本层汇总后的分片', tone: 'orange' },
+      { title: 'OPTIMIZER · AFTER ALL LAYERS', titleZh: '优化器 · 所有层算完后', body: 'update the owned weight shard', bodyZh: '更新拥有的权重分片', tone: 'plain' },
     ],
     formulas: [
+      { en: 'why sum: different records per rank', zh: '为何汇总：各 rank 用不同样本' },
       { en: 'parameters: all-gather', zh: '参数：all-gather' },
-      { en: 'gradients: reduce-scatter', zh: '梯度：reduce-scatter' },
-      { en: 'full gradient table: 8 GB ÷ 8 = 1 GB per rank', zh: '完整梯度表：8 GB ÷ 8 = 每个 rank 1 GB' },
+      { en: 'gradients: reduce-scatter, layer by layer', zh: '梯度：逐层 reduce-scatter' },
+      { en: 'Step 2 total: 1 GB saved per rank', zh: '第 2 步合计：每个 rank 保存 1 GB' },
     ],
   }, {
     caption: `The owned shards total ${FSDP_SHARD_STATE_PER_GPU_GB} GB. Peak memory also includes the largest borrowed layer and training intermediates.`,
@@ -117,6 +121,7 @@
     mobileTitle: 'Owned 8 GB is not the peak', mobileTitleZh: '长期 8 GB，不是峰值',
     mobileSubtitle: 'peak = saved state + temporary work', mobileSubtitleZh: '峰值 = 保存状态 + 临时工作',
     mobileFoot: 'No exact FSDP2 peak is supplied.', mobileFootZh: '来源没有给出 FSDP2 的精确峰值。',
+    mobileLegend: 'Orange = owned · blue = layer · grey = intermediates', mobileLegendZh: '橙 = 拥有 · 蓝 = 完整层 · 灰 = 中间结果',
     mobile: [
       { title: 'OWNED STATE · 8 GB', titleZh: '长期状态 · 8 GB', body: 'weights + gradients + optimizer', bodyZh: '权重 + 梯度 + 优化器状态', tone: 'orange' },
       { title: 'LARGEST BORROWED LAYER', titleZh: '最大临时完整层', body: 'temporary full values, size unknown', bodyZh: '临时完整数值，大小未知', tone: 'blue' },
@@ -137,9 +142,10 @@
     mobileTitle: 'Full weights, one bucket at a time', mobileTitleZh: '完整权重，一次一桶',
     mobileSubtitle: 'Replicate() = gather one tensor\'s shards', mobileSubtitleZh: 'Replicate() = 拼起一个张量的各 rank 分片',
     mobileFoot: 'Next: which tables can use fewer bits?', mobileFootZh: '下一章：哪些表能用更少位？',
+    mobileLegend: 'Orange = training state · blue = full weights', mobileLegendZh: '橙 = 训练状态 · 蓝 = 完整权重',
     mobile: [
       { title: 'WEIGHT SHARDS ONLY', titleZh: '只取权重分片', body: 'gradients + optimizer stay in training', bodyZh: '梯度和优化器留在训练端', tone: 'orange' },
-      { title: 'REPLICATE()', titleZh: 'REPLICATE()', body: 'one full weight tensor', bodyZh: '拼出一个完整权重张量', tone: 'blue' },
+      { title: 'REPLICATE()', titleZh: 'REPLICATE()', body: 'one full weight tensor', bodyZh: '拼出一个完整权重张量', tone: 'plain' },
       { title: 'BUCKET', titleZh: '一桶', body: 'full tensors wait together', bodyZh: '完整张量一起等待发送', tone: 'blue' },
       { title: 'CH. 7 UPDATE → ROLLOUT', titleZh: '第 7 章更新 → ROLLOUT', body: 'use v1 after completion', bodyZh: '更新完成后使用 v1', tone: 'plain' },
     ],
@@ -189,13 +195,14 @@
           <rect x="25" y={y} width="250" height="70" rx="11" fill={fill(item.tone)} stroke={stroke(item.tone)} />
           <text x="150" y={y + 25} text-anchor="middle" class="small strong">{t(item.title, item.titleZh)}</text>
           <text x="150" y={y + 50} text-anchor="middle" class="small">{t(item.body, item.bodyZh)}</text>
-          {#if i < cur.mobile.length - 1}
-            <line x1="150" y1={y + 70} x2="150" y2={y + 86} stroke={step === 3 ? 'var(--line)' : stroke(item.tone)} stroke-width="2.5" marker-end={step === 3 ? 'url(#fsdp-arrow-plain)' : item.tone === 'orange' ? 'url(#fsdp-arrow-orange)' : 'url(#fsdp-arrow-blue)'} />
+          {#if i < cur.mobile.length - 1 && step !== 4}
+            <line x1="150" y1={y + 70} x2="150" y2={y + 86} stroke={step >= 2 ? 'var(--line)' : stroke(item.tone)} stroke-width="2.5" marker-end={step >= 2 ? 'url(#fsdp-arrow-plain)' : item.tone === 'orange' ? 'url(#fsdp-arrow-orange)' : 'url(#fsdp-arrow-blue)'} />
           {/if}
         {/each}
         {#each cur.formulas as line, i}
           <text x="150" y={80 + cur.mobile.length * 91 + 12 + i * 27} text-anchor="middle" class={i === 0 ? 'result' : 'small'}>{t(line.en, line.zh)}</text>
         {/each}
+        <text x="150" y={80 + cur.mobile.length * 91 + 12 + cur.formulas.length * 27} text-anchor="middle" class="small">{t(cur.mobileLegend, cur.mobileLegendZh)}</text>
       {:else if step === 0}
         <rect x="35" y="88" width="310" height="252" rx="13" fill="var(--gen-soft)" stroke="var(--gen)" />
         <text x="190" y="120" text-anchor="middle" class="section">{t('ONE GPU · FULL COPY', '一张 GPU · 完整复制')}</text>
@@ -203,13 +210,12 @@
         <text x="315" y="158" text-anchor="end" class="result">{FSDP_FULL_WEIGHT_GB} GB</text>
         <text x="65" y="194" class="small">{t('gradients · 2 bytes each', '梯度 · 每个 2 字节')}</text>
         <text x="315" y="194" text-anchor="end" class="result">{FSDP_FULL_GRADIENT_GB} GB</text>
-        <text x="65" y="222" class="small">{t('optimizer · 3 tables × 4 bytes', '优化器 · 3 张表 × 4 字节')}</text>
-        <text x="315" y="222" text-anchor="end" class="result">{FSDP_FULL_OPTIMIZER_GB} GB</text>
-        <text x="65" y="248" class="small">{t('update copy + 2 running averages', '更新副本 + 2 个滑动平均值')}</text>
-        <line x1="60" y1="264" x2="320" y2="264" stroke="var(--line)" />
-        <text x="65" y="292" class="small strong">{t('TOTAL ON THIS GPU', '这张 GPU 合计')}</text>
-        <text x="315" y="292" text-anchor="end" class="big">{FSDP_FULL_STATE_PER_GPU_GB} GB</text>
-        <text x="190" y="323" text-anchor="middle" class="small">{FSDP_FULL_STATE_PER_GPU_GB} GB ÷ 80 GB = {(FSDP_FULL_CARD_SHARE * 100).toFixed(0)}% {t('of H100', 'H100')}</text>
+        <text x="65" y="230" class="small">{t('optimizer · 3 tables × 4 bytes', '优化器 · 3 张表 × 4 字节')}</text>
+        <text x="315" y="230" text-anchor="end" class="result">{FSDP_FULL_OPTIMIZER_GB} GB</text>
+        <line x1="60" y1="250" x2="320" y2="250" stroke="var(--line)" />
+        <text x="65" y="284" class="small strong">{t('TOTAL ON THIS GPU', '这张 GPU 合计')}</text>
+        <text x="315" y="284" text-anchor="end" class="big">{FSDP_FULL_STATE_PER_GPU_GB} GB</text>
+        <text x="190" y="318" text-anchor="middle" class="small">{FSDP_FULL_STATE_PER_GPU_GB} GB ÷ 80 GB = {(FSDP_FULL_CARD_SHARE * 100).toFixed(0)}% {t('of H100', 'H100')}</text>
         <rect x="375" y="88" width="310" height="252" rx="13" fill="var(--accent-soft)" stroke="var(--accent)" />
         <text x="530" y="120" text-anchor="middle" class="section">{t('8 GPUS · SAME COPIES', '8 张 GPU · 相同副本')}</text>
         {#each Array.from({ length: FSDP_DP_SIZE }, (_, i) => i) as i}
@@ -242,7 +248,7 @@
       {:else if step === 2}
         {#each [
           { x: 25, title: 'OWNED SHARDS', titleZh: '拥有的分片', result: '8 GB', body: 'persistent', bodyZh: '长期保存', tone: 'orange' },
-          { x: 205, title: 'ALL-GATHER', titleZh: 'ALL-GATHER', result: 'one layer', body: 'from every rank', bodyZh: '来自每个 rank', tone: 'blue' },
+          { x: 205, title: 'ALL-GATHER', titleZh: 'ALL-GATHER', result: 'one layer', body: 'from every rank', bodyZh: '来自每个 rank', tone: 'plain' },
           { x: 385, title: 'FULL LAYER', titleZh: '完整一层', result: 'U', body: 'compute', bodyZh: '计算', tone: 'blue' },
           { x: 565, title: 'RELEASE', titleZh: '释放', result: 'U gone', body: 'owned 8 GB', bodyZh: '仍保存 8 GB', tone: 'plain' },
         ] as node, i}
@@ -251,7 +257,7 @@
           <text x={node.x + 65} y="180" text-anchor="middle" class="result">{node.result}</text>
           <text x={node.x + 65} y="222" text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
           {#if i < 3}
-            <line x1={node.x + 130} y1="181" x2={node.x + 170} y2="181" stroke={i === 0 ? 'var(--gen)' : 'var(--accent)'} stroke-width="2.5" marker-end={i === 0 ? 'url(#fsdp-arrow-orange)' : 'url(#fsdp-arrow-blue)'} />
+            <line x1={node.x + 130} y1="181" x2={node.x + 170} y2="181" stroke="var(--line)" stroke-width="2.5" marker-end="url(#fsdp-arrow-plain)" />
           {/if}
         {/each}
         <text x="360" y="304" text-anchor="middle" class="result">{t('DURING COMPUTE', '计算时')} · 8 GB + U</text>
@@ -260,9 +266,9 @@
         <text x="360" y="429" text-anchor="middle" class="small">{t('Orange = persistent state · blue = temporary full values', '橙 = 长期保存状态 · 蓝 = 临时完整数值')}</text>
       {:else if step === 3}
         {#each [
-          { x: 40, title: 'FULL GRADIENT', titleZh: '完整梯度', result: 'temporary', body: 'from backward', bodyZh: '反向计算产生', tone: 'blue' },
+          { x: 40, title: 'LAYER GRADIENT', titleZh: '本层梯度', result: 'temporary', body: 'after forward', bodyZh: '前向之后算出', tone: 'blue' },
           { x: 275, title: 'REDUCE-SCATTER', titleZh: 'REDUCE-SCATTER', result: 'sum + split', body: 'across all ranks', bodyZh: '跨所有 rank', tone: 'plain' },
-          { x: 510, title: 'OWNED GRADIENT', titleZh: '拥有的梯度', result: '1 GB', body: 'this rank\'s shard', bodyZh: '这个 rank 的一片', tone: 'orange' },
+          { x: 510, title: 'OWNED GRADIENT', titleZh: '拥有的梯度', result: 'one shard', body: 'this layer\'s shard', bodyZh: '本层的分片', tone: 'orange' },
         ] as node, i}
           <rect x={node.x} y="95" width="170" height="157" rx="12" fill={fill(node.tone)} stroke={stroke(node.tone)} />
           <text x={node.x + 85} y="129" text-anchor="middle" class="small strong">{t(node.title, node.titleZh)}</text>
@@ -273,12 +279,12 @@
         <line x1="595" y1="252" x2="595" y2="292" stroke="var(--line)" stroke-width="2.5" marker-end="url(#fsdp-arrow-plain)" />
         <rect x="485" y="302" width="220" height="79" rx="11" fill="var(--bg)" stroke="var(--line)" />
         <text x="595" y="332" text-anchor="middle" class="section">{t('OPTIMIZER', '优化器')}</text>
-        <text x="595" y="361" text-anchor="middle" class="small">{t('update the owned weight shard', '更新自己拥有的权重分片')}</text>
+        <text x="595" y="361" text-anchor="middle" class="small">{t('after all layers: update owned weights', '所有层算完后：更新拥有的权重')}</text>
         <rect x="35" y="292" width="365" height="99" rx="11" fill="var(--bg)" stroke="var(--line)" />
-        <text x="217" y="324" text-anchor="middle" class="small strong">{t('DO NOT ALL-GATHER THE GRADIENT', '不要 all-gather 梯度')}</text>
+        <text x="217" y="324" text-anchor="middle" class="small strong">{t('WHY SUM? EACH RANK USED DIFFERENT RECORDS', '为何汇总？各 rank 用了不同训练样本')}</text>
         <text x="217" y="359" text-anchor="middle" class="result">parameters: all-gather</text>
-        <text x="217" y="383" text-anchor="middle" class="result">8 GB ÷ 8 = 1 GB {t('per rank', '每个 rank')}</text>
-        <text x="360" y="435" text-anchor="middle" class="small">{t('Orange = owned state · blue = temporary full gradient', '橙 = 拥有的状态 · 蓝 = 临时完整梯度')}</text>
+        <text x="217" y="383" text-anchor="middle" class="result">{t('Step 2 total', '第 2 步合计')}: 1 GB {t('saved per rank', '每个 rank 保存')}</text>
+        <text x="360" y="435" text-anchor="middle" class="small">{t('Orange = owned shard · blue = temporary layer gradient', '橙 = 拥有分片 · 蓝 = 临时的本层梯度')}</text>
       {:else if step === 4}
         <rect x="70" y="88" width="300" height="79" rx="10" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />
         <text x="220" y="119" text-anchor="middle" class="result">{t('training intermediates', '训练中间结果')}</text>
@@ -297,7 +303,7 @@
       {:else if step === 5}
         {#each [
           { x: 25, title: 'WEIGHT SHARDS', titleZh: '权重分片', result: 'weights only', body: 'grad + opt stay', bodyZh: '梯度和优化器留下', tone: 'orange' },
-          { x: 205, title: 'REPLICATE()', titleZh: 'REPLICATE()', result: 'full tensor', body: 'one parameter', bodyZh: '一个参数', tone: 'blue' },
+          { x: 205, title: 'REPLICATE()', titleZh: 'REPLICATE()', result: 'full tensor', body: 'one parameter', bodyZh: '一个参数', tone: 'plain' },
           { x: 385, title: 'BUCKET', titleZh: '一桶', result: 'full tensors', body: 'wait + send', bodyZh: '等待并发送', tone: 'blue' },
           { x: 565, title: 'ROLLOUT', titleZh: 'ROLLOUT', result: 'v1', body: 'after Ch. 7 update', bodyZh: '第 7 章更新后', tone: 'plain' },
         ] as node, i}
@@ -306,7 +312,7 @@
           <text x={node.x + 65} y="170" text-anchor="middle" class="result">{node.result}</text>
           <text x={node.x + 65} y="212" text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
           {#if i < 3}
-            <line x1={node.x + 130} y1="171" x2={node.x + 170} y2="171" stroke={i === 0 ? 'var(--gen)' : 'var(--accent)'} stroke-width="2.5" marker-end={i === 0 ? 'url(#fsdp-arrow-orange)' : 'url(#fsdp-arrow-blue)'} />
+            <line x1={node.x + 130} y1="171" x2={node.x + 170} y2="171" stroke="var(--line)" stroke-width="2.5" marker-end="url(#fsdp-arrow-plain)" />
           {/if}
         {/each}
         <rect x="35" y="294" width="305" height="100" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" stroke-dasharray="5 4" />

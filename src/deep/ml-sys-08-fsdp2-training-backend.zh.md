@@ -37,22 +37,22 @@ $$C=8\times64\ \text{GB}=512\ \text{GB},\qquad f=64/80=0.8=80\%$$
 
 ## 第 2 步 · 每个 rank 只留一片
 
-**一句话。** FSDP2 把参数、梯度和优化器状态分给 DP 组，每个 rank 留下对应的分片，不再保存完整副本。
+**一句话。** FSDP2 把参数、梯度和优化器状态分给 data parallel（DP）组；组内各 rank 使用不同训练样本，每个 rank 留下对应的分片，不再保存完整副本。
 
 ### 图上是什么
 
-- 左图沿用第 1 步：每张 GPU 都有 64 GB 完整副本，8 张合计 512 GB。
+- 桌面左图沿用第 1 步：每张 GPU 都有 64 GB 完整副本，8 张合计 512 GB。
 - 右图用同样的柱子比例画一个 rank 的 8 GB 分片：权重 1 GB、梯度 1 GB、优化器相关表 6 GB。
-- 8 个 rank 拥有同一套逻辑表的不同部分，所以合计保存状态仍是 64 GB。等分只是教学简化，不保证真实张量都能整除。
+- 手机用卡片画出同样的前后数量，不画柱子。8 个 rank 拥有同一套逻辑表的不同部分，所以合计保存状态仍是 64 GB。等分只是教学简化，不保证真实张量都能整除。
 
 ### 公式与符号
 
-$$M_i=M/N,\qquad C_{\text{shard}}=N M_i$$
+$$M_i=M/R,\qquad C_{\text{shard}}=R M_i$$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
 | $M$ | 一份完整训练状态的字节数 | 第 1 步，64 GB |
-| $N$ | DP 分片组的大小 | 本例 8 个 rank |
+| $R$ | DP 分片组的 rank 数 | 本例 8 个 rank |
 | $i$ | 一个 rank 的编号 | rank 0 到 7 |
 | $M_i$ | rank $i$ 拥有并保存的表 | 本步计算，8 GB |
 | $C_{\text{shard}}$ | DP 组所有分片的合计 | 本步计算，64 GB |
@@ -61,7 +61,7 @@ $$M_i=M/N,\qquad C_{\text{shard}}=N M_i$$
 
 $$M_i=64\ \text{GB}/8=8\ \text{GB},\qquad C_{\text{shard}}=8\times8\ \text{GB}=64\ \text{GB}$$
 
-每个 rank 的拆分为：权重 $8/8=1$ GB、梯度 $8/8=1$ GB、优化器相关表 $48/8=6$ GB。250 px 与 31.25 px 的柱宽比是 8:1，对应 64:8 GB。
+每个 rank 的拆分为：权重 $8/8=1$ GB、梯度 $8/8=1$ GB、优化器相关表 $48/8=6$ GB。桌面上的 250 px 与 31.25 px 柱宽比是 8:1，对应 64:8 GB。
 
 ### FSDP2 与 DTensor
 
@@ -71,7 +71,7 @@ FSDP2 把每个参数表示为 DTensor：逻辑张量、分布信息和本地分
 
 分片能减少长期保存的显存，但计算一层时仍需要这一层的完整参数。下一步临时聚齐这一层。
 
-来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:16-23`；`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:43-47,62-82`；`THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7` 的 `slime/backends/fsdp_utils/actor.py:94-98,158-186`。
+来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:16-23,71-74`；`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:43-47,62-82`；`THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7` 的 `slime/backends/fsdp_utils/actor.py:94-98,158-186`。
 
 ## 第 3 步 · 前向计算先借来完整一层
 
@@ -108,37 +108,39 @@ $$M_{\text{forward}}\approx M_i+U,\qquad M_{\text{after}}=M_i$$
 
 ## 第 4 步 · 梯度归约后各留一片
 
-**一句话。** 反向计算对完整梯度执行 reduce-scatter，随后每个 rank 的优化器用自己拥有的梯度片更新对应的参数片。
+**一句话。** Backward 是 Forward 之后计算梯度的一趟；FSDP 对每层算好的梯度执行 reduce-scatter，让各 rank 合并不同训练样本得到的更新，再各留对应分片。
 
 ### 图上是什么
 
-- 蓝色完整梯度是反向计算的临时输出。参数会按需聚合，但梯度不使用同一个集合操作。
-- `Reduce-scatter` 汇总各 rank 对应的梯度值，再把归约后的一片交给对应 rank。本例每个 rank 拥有 1 GB 梯度。
-- 优化器使用这片梯度和自己保存的优化器状态表，更新这个 rank 的权重片，不保留完整梯度。
+- 每个 rank 使用不同的训练样本。汇总对应梯度，就是合并这些样本提供的更新方向。
+- 蓝色临时梯度属于当前一层，不是整个模型的 8 GB 逻辑梯度表。FSDP 在每层梯度算好时就执行 reduce-scatter。
+- 橙格是这个 rank 为本层留下的汇总分片。1 GB 标签来自第 2 步的全模型保存总量，不是本层临时梯度的大小。
+- 所有层算完后，优化器才更新拥有的权重分片，不是图中每流过一个框就更新一次。
 
 ### 公式与符号
 
-$$g_i=S_i\!\left(\sum_{r=1}^{N}g^{(r)}\right)$$
+$$g_{\ell,i}=S_{\ell,i}\!\left(\sum_{r=1}^{R}g_\ell^{(r)}\right)$$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
-| $N$ | DP 分片组大小 | 第 2 步，8 个 rank |
+| $R$ | DP 分片组的 rank 数 | 第 2 步，8 个 rank |
+| $\ell$ | 正在汇总的层编号 | 图上当前一层 |
 | $r$ | 提供梯度的 rank | DP 组的一个成员 |
-| $g^{(r)}$ | rank $r$ 提供的梯度值 | 反向计算 |
-| $S_i$ | 选出 rank $i$ 拥有的一片 | FSDP 分片位置 |
-| $g_i$ | rank $i$ 留下的归约梯度片 | reduce-scatter 的结果，本例 1 GB |
+| $g_\ell^{(r)}$ | rank $r$ 为第 $\ell$ 层算出的梯度 | Forward 之后的 backward |
+| $S_{\ell,i}$ | 选出第 $\ell$ 层梯度中 rank $i$ 拥有的一片 | FSDP 分片位置 |
+| $g_{\ell,i}$ | rank $i$ 为第 $\ell$ 层留下的汇总梯度片 | reduce-scatter 的结果；大小未给出 |
 
 ### 代入图上的数
 
-本例完整逻辑梯度表为 8 GB，等分后每个 rank 为 $8/8=1$ GB。图中没有给临时完整梯度一个实测峰值，也不声称真实张量都能整除。
+图上唯一的梯度大小是第 2 步的全模型保存总量：逻辑梯度表为 8 GB，等分后每个 rank 在所有层合计保存 $8/8=1$ GB。临时本层梯度和汇总后的本层分片都没有给定大小。优化器在所有层算完后运行，不是每层运行一次。
 
-slime 在 actor 中调用 `loss.backward()` 和 `optimizer.step()`。参数聚合和梯度 reduce-scatter 由 FSDP 包装层处理，actor 没有在这些方法旁另写集合通信调用。
+slime 在 actor 中调用 `loss.backward()` 和 `optimizer.step()`。参数聚合和逐层梯度 reduce-scatter 由 FSDP 包装层处理，actor 没有在这些方法旁另写集合通信调用。
 
 ### 接下来
 
 长期分片变小了，完整 unit 和其他临时结果仍要占空间。下一步区分长期保存状态与峰值显存。
 
-来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:19`；`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:47-58`；`THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7` 的 `slime/backends/fsdp_utils/actor.py:687-702,1000-1039`。
+来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:19,71-74`；`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:47-58`；`THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7` 的 `slime/backends/fsdp_utils/actor.py:687-702,1000-1039`。
 
 ## 第 5 步 · 长期状态只是峰值的一部分
 
@@ -187,17 +189,21 @@ $$M_{\text{peak}}\approx M_i+U_{\max}+A+T_{\text{other}}$$
 
 ### 公式与符号
 
-$$W_j=\mathcal{R}(P_j),\qquad B_k=\{W_j\mid j\in J_k\}$$
+$$W_j=\mathcal{R}(D_j),\qquad B_k=\{W_j\mid j\in J_k\}$$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
-| $P_j$ | 参数 $j$ 在整个 DP 组上分片保存的 DTensor | FSDP2 模型状态 |
-| $\mathcal{R}$ | 把 $P_j$ 的所有分片重新分布为 `Replicate()` | slime 更新器 |
+| $D_j$ | 参数 $j$ 在整个 DP 组上分片保存的 DTensor | FSDP2 模型状态 |
+| $\mathcal{R}$ | 把 $D_j$ 的所有分片重新分布为 `Replicate()` | slime 更新器 |
 | $W_j$ | 参数 $j$ 的完整逻辑权重张量 | 重新分布的结果 |
 | $J_k$ | 装入第 $k$ 桶的参数索引 | 按大小限制的更新循环 |
 | $B_k$ | 一桶完整权重张量 | 交给更新器的桶 |
 
 ### 代入图上的数
+
+保存的权重和梯度每个数占 $16/8=2$ 字节。优化器表每个数占 $32/8=4$ 字节，是 $4/2=2$ 倍。
+
+### 自带脚本的装桶阈值
 
 自带 Qwen3-4B FSDP 脚本把 `update_weight_buffer_size` 设为 $536{,}870{,}912$ 字节：
 

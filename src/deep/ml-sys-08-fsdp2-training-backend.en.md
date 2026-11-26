@@ -37,22 +37,22 @@ Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:16`; `Awesome-ML-SYS
 
 ## Step 2 · Own one slice instead of a full copy
 
-**One sentence.** FSDP2 divides the parameters, gradients and optimizer state across the DP group, leaving each rank with matching shards instead of a full replica.
+**One sentence.** FSDP2 divides the parameters, gradients and optimizer state across the data-parallel (DP) group, whose ranks train on different records, leaving each rank with matching shards instead of a full replica.
 
 ### On the stage
 
-- The left panel repeats Step 1's 64 GB full copy on every GPU, reaching 512 GB across eight copies.
+- On desktop, the left panel repeats Step 1's 64 GB full copy on every GPU, reaching 512 GB across eight copies.
 - The right panel uses the same bar scale for one rank's 8 GB shard: 1 GB of weights, 1 GB of gradients and 6 GB of optimizer-related tables.
-- Eight ranks own different slices of the same logical tables, so their combined saved state is 64 GB. The equal partition is a teaching simplification, not a promise that real tensors divide evenly.
+- Mobile shows the same before-and-after quantities as cards instead of bars. Eight ranks own different slices of the same logical tables, so their combined saved state is 64 GB. The equal partition is a teaching simplification, not a promise that real tensors divide evenly.
 
 ### Formula and symbols
 
-$$M_i=M/N,\qquad C_{\text{shard}}=N M_i$$
+$$M_i=M/R,\qquad C_{\text{shard}}=R M_i$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
 | $M$ | Bytes in one full training-state copy | Step 1, 64 GB |
-| $N$ | DP sharding-group size | Eight ranks in this example |
+| $R$ | Number of ranks in the DP sharding group | Eight ranks in this example |
 | $i$ | One rank's identifier | Rank 0 through 7 |
 | $M_i$ | Saved tables owned by rank $i$ | Derived here, 8 GB |
 | $C_{\text{shard}}$ | Owned shards across the DP group | Derived here, 64 GB |
@@ -61,7 +61,7 @@ $$M_i=M/N,\qquad C_{\text{shard}}=N M_i$$
 
 $$M_i=64\ \text{GB}/8=8\ \text{GB},\qquad C_{\text{shard}}=8\times8\ \text{GB}=64\ \text{GB}$$
 
-The per-rank breakdown is $8/8=1$ GB of weights, $8/8=1$ GB of gradients and $48/8=6$ GB of optimizer-related tables. The 250-pixel and 31.25-pixel bars have an 8:1 width ratio, matching 64:8 GB.
+The per-rank breakdown is $8/8=1$ GB of weights, $8/8=1$ GB of gradients and $48/8=6$ GB of optimizer-related tables. On desktop, the 250-pixel and 31.25-pixel bars have an 8:1 width ratio, matching 64:8 GB.
 
 ### FSDP2 and DTensor
 
@@ -71,7 +71,7 @@ FSDP2 represents each parameter as a DTensor: the logical tensor plus its distri
 
 Keeping shards saves persistent memory, but a layer still needs its full parameter values for computation. The next step gathers one layer temporarily.
 
-Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:16-23`; `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:43-47,62-82`; `THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7`, `slime/backends/fsdp_utils/actor.py:94-98,158-186`.
+Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:16-23,71-74`; `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:43-47,62-82`; `THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7`, `slime/backends/fsdp_utils/actor.py:94-98,158-186`.
 
 ## Step 3 · Borrow a full layer for forward computation
 
@@ -108,37 +108,39 @@ Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:18`; `Awesome-ML-SYS
 
 ## Step 4 · Reduce gradients back to owned slices
 
-**One sentence.** Backward reduce-scatters the completed gradients, then each rank's optimizer updates the parameter shard whose gradient it owns.
+**One sentence.** Backward is the gradient-computing pass after forward; FSDP reduce-scatters each layer's completed gradient so ranks combine updates from different records and keep matching shards.
 
 ### On the stage
 
-- The blue full gradient is temporary output from backward computation. Parameters were gathered as needed, but gradients do not use that same collective.
-- `Reduce-scatter` sums matching gradient values across ranks and gives each rank its reduced slice. The owned gradient in this example is 1 GB.
-- The optimizer uses that gradient slice and its saved optimizer-state tables to update the rank's weight shard. The full gradient is not retained.
+- Each rank used different training records. Summing matching gradients combines the contributions from those records.
+- The blue temporary gradient belongs to one layer, not to the whole model's 8 GB logical gradient table. FSDP reduce-scatters each layer's gradient when it is ready.
+- The orange box is the rank's reduced shard for this layer. The 1 GB label comes from Step 2's whole-model saved total, not from this layer's temporary size.
+- The optimizer updates the owned weight shards after all layers finish, not once for each box in this flow.
 
 ### Formula and symbols
 
-$$g_i=S_i\!\left(\sum_{r=1}^{N}g^{(r)}\right)$$
+$$g_{\ell,i}=S_{\ell,i}\!\left(\sum_{r=1}^{R}g_\ell^{(r)}\right)$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
-| $N$ | DP sharding-group size | Step 2, eight ranks |
+| $R$ | Number of ranks in the DP sharding group | Step 2, eight ranks |
+| $\ell$ | Index of the layer being reduced | The current layer on the stage |
 | $r$ | Rank contributing a gradient | One member of the DP group |
-| $g^{(r)}$ | Gradient values contributed by rank $r$ | Backward computation |
-| $S_i$ | Select the slice owned by rank $i$ | FSDP placement |
-| $g_i$ | Reduced gradient shard retained by rank $i$ | Reduce-scatter result, 1 GB in this example |
+| $g_\ell^{(r)}$ | Rank $r$'s gradient for layer $\ell$ | Backward computation after forward |
+| $S_{\ell,i}$ | Select rank $i$'s shard of layer $\ell$'s gradient | FSDP placement |
+| $g_{\ell,i}$ | Reduced gradient shard for layer $\ell$ retained by rank $i$ | Reduce-scatter result; size not supplied |
 
 ### The numbers on the stage
 
-The example's full gradient table is 8 GB across the logical model, so equal sharding gives $8/8=1$ GB per rank. The figure does not claim that the full temporary gradient has a measured peak size or that every real tensor splits evenly.
+The only gradient size on the stage is Step 2's whole-model saved total: the logical gradient table is 8 GB, so equal sharding gives $8/8=1$ GB per rank across all layers. Neither the temporary layer gradient nor the reduced layer shard has a supplied size. The optimizer runs after all layers finish, not once per layer.
 
-Slime calls `loss.backward()` and `optimizer.step()` in the actor. The FSDP wrapper handles parameter gathers and gradient reduce-scatter; the actor does not write separate collective calls beside those methods.
+Slime calls `loss.backward()` and `optimizer.step()` in the actor. The FSDP wrapper handles parameter gathers and per-layer gradient reduce-scatter; the actor does not write separate collective calls beside those methods.
 
 ### Next
 
 Persistent shards are smaller, but full units and other temporary results still need space. The next step separates owned state from peak memory.
 
-Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:19`; `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:47-58`; `THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7`, `slime/backends/fsdp_utils/actor.py:687-702,1000-1039`.
+Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:19,71-74`; `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:47-58`; `THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7`, `slime/backends/fsdp_utils/actor.py:687-702,1000-1039`.
 
 ## Step 5 · Owned state is only one part of peak memory
 
@@ -187,17 +189,21 @@ Sources: `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:31,93-107`; `Aw
 
 ### Formula and symbols
 
-$$W_j=\mathcal{R}(P_j),\qquad B_k=\{W_j\mid j\in J_k\}$$
+$$W_j=\mathcal{R}(D_j),\qquad B_k=\{W_j\mid j\in J_k\}$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
-| $P_j$ | Sharded DTensor for parameter $j$ across the DP group | FSDP2 model state |
-| $\mathcal{R}$ | Redistribute all of $P_j$'s shards to `Replicate()` | Slime updater |
+| $D_j$ | Sharded DTensor for parameter $j$ across the DP group | FSDP2 model state |
+| $\mathcal{R}$ | Redistribute all of $D_j$'s shards to `Replicate()` | Slime updater |
 | $W_j$ | Full logical weight tensor for parameter $j$ | Result of redistribution |
 | $J_k$ | Parameter indices grouped into bucket $k$ | Size-bounded updater loop |
 | $B_k$ | One bucket of full weight tensors | Bucket handed to the updater |
 
 ### The numbers on the stage
+
+The saved weight and gradient values use $16/8=2$ bytes each. Each optimizer-table value uses $32/8=4$ bytes, which is $4/2=2$ times as many bytes.
+
+### Bucket threshold from the shipped script
 
 The shipped Qwen3-4B FSDP script sets `update_weight_buffer_size` to $536{,}870{,}912$ bytes:
 
