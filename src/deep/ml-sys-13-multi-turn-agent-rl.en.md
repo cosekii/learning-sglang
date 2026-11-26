@@ -212,3 +212,41 @@ This is the constructed budget exit. The maximum-turn exit instead finishes afte
 Stop rules belong to interaction management, not one token-generation call. The next step shows how AgentLoop separates those jobs.
 
 Source: `THUDM/slime@f68dc4a25f362fc0335165a17ff976f5b6f675e1`, `examples/geo3k_vlm_multi_turn/rollout.py:283-290,320-366`.
+
+## Step 7 · AgentLoop owns interaction; the server generates
+
+**One sentence.** `ToolAgentLoop` decides when to call the model and tools, while `server_manager.generate` only accepts tokens and returns action tokens.
+
+### On the stage
+
+- The blue `ToolAgentLoop` sends accumulated `prompt_ids` and one shared `request_id` to the server manager.
+- The orange server manager returns `response_ids` without parsing or selecting tools.
+- Control returns to `ToolAgentLoop`. It parses action `A`, appends it with mask 1 and calls the tool.
+- The tool or environment returns observation `O`. `ToolAgentLoop` appends it with mask 0 before the next model call.
+- The same `request_id` reuses the earlier server choice. This is a sticky session.
+
+### Formula and symbols
+
+$$A=G(r,P),\qquad O=E(A),\qquad P'=P+A+O$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $r$ | Shared `request_id` for this interaction | `ToolAgentLoop.run` in this step |
+| $P$ | Accumulated `prompt_ids` | Step 1 |
+| $G$ | Server manager's token-generation call | This step |
+| $A$ | Action tokens returned by the model | Step 1: four tokens |
+| $E$ | Environment path that parses the action and executes the tool | This step |
+| $O$ | Tool-observation tokens | Step 1: three tokens |
+| $P'$ | Accumulated input for the next model call | Sum in this step |
+
+### The numbers on the stage
+
+$$P'=P+A+O,\qquad |A|=4,\quad |O|=3$$
+
+The server receives input tokens and sampling parameters. `ToolAgentLoop` owns tool state, stop rules and the mask, and the second model call uses the same `request_id`.
+
+### Next
+
+Different tasks need different turn counts and response lengths. The next step aligns those responses in a training batch.
+
+Sources: `verl-project/verl@c5b189a1af496d0bc68320cd1d5bd7a1f1e3638a`, `verl/experimental/agent_loop/tool_agent_loop.py:59-133` and `agent_loop.py:43-105`.

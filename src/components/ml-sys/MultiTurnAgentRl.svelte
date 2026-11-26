@@ -215,6 +215,40 @@
         { en: 'Next: who owns the AgentLoop?', zh: '下一步：谁管理 AgentLoop？' },
       ],
     },
+  }, {
+    caption: 'ToolAgentLoop owns the model–tool loop. The server only turns input tokens into action tokens.',
+    captionZh: 'ToolAgentLoop 管理模型与工具的循环。server 只把输入 token 变成动作 token。',
+    title: 'Separate interaction logic from token generation', titleZh: '把交互管理与 token 生成分开',
+    subtitle: 'ToolAgentLoop = owner of model calls, tool calls and stop rules', subtitleZh: 'ToolAgentLoop = 管理模型调用、工具调用和停止规则',
+    foot: 'Pinned verl flow; arrows show ownership, not network timing.', footZh: '固定版本 verl 流程；箭头表示职责，不表示网络耗时。',
+    legend: 'Blue = AgentLoop · orange = server or environment · red = current', legendZh: '蓝 = AgentLoop · 橙 = server 或环境 · 红 = 当前',
+    flow: true,
+    nodes: [
+      { title: 'TOOLAGENTLOOP', titleZh: 'TOOLAGENTLOOP', result: 'tokens → server', resultZh: 'token → server', body: 'shared request_id', bodyZh: '共用 request_id', tone: 'blue' },
+      { title: 'SERVER MANAGER', titleZh: 'SERVER MANAGER', result: 'tokens → action A', resultZh: 'token → 动作 A', body: 'no tool decisions here', bodyZh: '这里不决定工具调用', tone: 'orange' },
+      { title: 'TOOLAGENTLOOP', titleZh: 'TOOLAGENTLOOP', result: 'parse A → tool call', resultZh: '解析 A → 调用工具', body: 'A gets mask 1', bodyZh: 'A 的 mask 为 1', tone: 'blue' },
+      { title: 'TOOL / ENV', titleZh: '工具 / 环境', result: 'reply O → AgentLoop', resultZh: '回复 O → AgentLoop', body: 'O gets mask 0', bodyZh: 'O 的 mask 为 0', tone: 'orange' },
+    ],
+    formulas: [
+      { en: 'same request_id → same server choice', zh: '相同 request_id → 相同 server 选择' },
+      { en: 'server.generate(prompt_ids) → response_ids', zh: 'server.generate(prompt_ids) → response_ids' },
+      { en: 'AgentLoop parses the action and calls the tool', zh: 'AgentLoop 解析动作并调用工具' },
+      { en: 'tool reply returns to AgentLoop; the next call repeats', zh: '工具回复交给 AgentLoop，再进入下次模型调用' },
+      { en: 'Next: pack different-length responses for training', zh: '下一步：把不同长度的响应装进训练 batch' },
+    ],
+    mobile: {
+      title: 'Separate loop logic from generation', titleZh: '分开循环管理与 token 生成',
+      subtitle: 'ToolAgentLoop owns model and tool calls', subtitleZh: 'ToolAgentLoop 管理模型和工具调用',
+      foot: 'Pinned verl flow; arrows show ownership.', footZh: '固定版本 verl 流程；箭头表示职责。',
+      legend: 'Blue = AgentLoop · orange = server/env · red = current', legendZh: '蓝 = AgentLoop · 橙 = server/环境 · 红 = 当前',
+      formulas: [
+        { en: 'Same request_id → same server', zh: '相同 request_id → 相同 server' },
+        { en: 'generate(prompt_ids) → response_ids', zh: 'generate(prompt_ids) → response_ids' },
+        { en: 'AgentLoop parses A and calls the tool', zh: 'AgentLoop 解析 A 并调用工具' },
+        { en: 'O returns; the next model call repeats', zh: 'O 返回后进入下次模型调用' },
+        { en: 'Next: pack responses for training', zh: '下一步：把响应装进训练 batch' },
+      ],
+    },
   }];
   let step = $state(0);
   $effect(() => {

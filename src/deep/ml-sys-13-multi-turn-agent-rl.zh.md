@@ -212,3 +212,41 @@ $$b_{\text{next}}=12-(4+3+5)=0\Rightarrow\text{TRUNCATED}$$
 停止规则属于交互管理，不属于单次 token 生成。下一步看 AgentLoop 怎样把这两件事拆开。
 
 来源：`THUDM/slime@f68dc4a25f362fc0335165a17ff976f5b6f675e1` 的 `examples/geo3k_vlm_multi_turn/rollout.py:283-290,320-366`。
+
+## 第 7 步 · AgentLoop 管交互，server 管生成
+
+**一句话。** `ToolAgentLoop` 决定何时调用模型和工具，`server_manager.generate` 只接收 token 并返回动作 token。
+
+### 图上是什么
+
+- 蓝色 `ToolAgentLoop` 把累积 `prompt_ids` 和同一个 `request_id` 交给 server manager。
+- 橙色 server manager 返回 `response_ids`，不解析或选择工具。
+- 控制权回到 `ToolAgentLoop`：它解析动作 `A`，把动作追加到上下文并标 mask 1，然后调用工具。
+- 工具或环境返回观察 `O`，由 `ToolAgentLoop` 追加并标 mask 0，再开始下一次模型调用。
+- 相同 `request_id` 会复用之前的 server 选择，这叫 sticky session。
+
+### 公式与符号
+
+$$A=G(r,P),\qquad O=E(A),\qquad P'=P+A+O$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $r$ | 本次交互共用的 `request_id` | 本步 `ToolAgentLoop.run` |
+| $P$ | 当前累积的 `prompt_ids` | 第 1 步 |
+| $G$ | server manager 的 token 生成调用 | 本步 |
+| $A$ | 模型返回的动作 token | 第 1 步，4 个 |
+| $E$ | 解析动作并执行工具的环境路径 | 本步 |
+| $O$ | 工具观察 token | 第 1 步，3 个 |
+| $P'$ | 下一次模型调用的累积输入 | 本步相加 |
+
+### 代入图上的数
+
+$$P'=P+A+O,\qquad |A|=4,\quad |O|=3$$
+
+server 只看到输入 token 和采样参数。`ToolAgentLoop` 保有工具状态、停止规则和 mask，第二次模型调用仍使用同一个 `request_id`。
+
+### 接下来
+
+不同任务的交互轮数不同，响应长度也不同。下一步把这些响应对齐成训练 batch。
+
+来源：`verl-project/verl@c5b189a1af496d0bc68320cd1d5bd7a1f1e3638a` 的 `verl/experimental/agent_loop/tool_agent_loop.py:59-133` 和 `agent_loop.py:43-105`。
