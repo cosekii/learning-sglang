@@ -6,7 +6,7 @@
 
 - Training has produced `weights v1`, the new number tables. Rollout waits for the update before using them, continuing Chapter 6 Step 8.
 - The left card derives the weight size. The right card shows the full-model time from the debug log.
-- The smaller timing pair compares one parameter's `ModelRunner` operation with the whole external call. It shows why timing only the inner operation misses part of the wait.
+- The smaller timing pair compares one tensor's inner weight-loading operation with the whole external call. It shows why timing only the inner operation misses part of the wait.
 
 ### Formula and symbols
 
@@ -14,15 +14,15 @@ $$B=P\times b$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
-| $P$ | Number of parameters | Nominal 1B model: $10^9$ |
-| $b$ | Bytes per parameter | bf16: 2 bytes |
+| $P$ | Number of stored weight values | Nominal 1B model: $10^9$ |
+| $b$ | Bytes per weight value | bf16: 2 bytes |
 | $B$ | Total weight bytes | Derived here |
 
 ### The numbers on the stage
 
 $$B=1{,}000{,}000{,}000\times2=2{,}000{,}000{,}000\ \text{bytes}=2\ \text{GB}$$
 
-The 7.047-second measurement covers the full distributed update in the author's setup. The 0.001- and 0.033-second values come from one `q_proj` example. They do not predict another model or machine.
+The 7.047-second measurement covers the full distributed update in the author's setup. The 0.001- and 0.033-second values come from one weight-tensor example. Their rounded ratio is $0.033/0.001\approx33\times$. They do not predict another model or machine.
 
 ### Next
 
@@ -30,45 +30,45 @@ The controller knows that rollout must receive `v1`, but not which route carries
 
 Sources: `Awesome-ML-SYS-Tutorial/sglang/latency-accelerate-for-weight-updates/readme.md:556-558,980-1007`; Chapter 6 Step 8.
 
-## Step 2 · Read one checkpoint through the disk channel
+## Step 2 · Map the three update channels
 
-**One sentence.** Training can save `v1` as a checkpoint, and each rollout engine can load that same saved copy through `update_weights_from_disk`.
+**One sentence.** A checkpoint file, a process group and a GPU location note are three alternative routes for delivering the same `v1` weights.
 
 ### On the stage
 
-- The three cards form a map of alternative update channels: disk, distributed values and tensor handles. Only one channel carries a given update.
-- Blue selects the disk route. Training writes one checkpoint, rollout engines read it, and the model loader replaces their old weights.
-- A checkpoint is persistent saved output as well as an update handoff. A newly added rollout engine can read it without joining the direct routes' communication setup.
+- The disk card defines a `checkpoint` as saved weights: write the file, then read it. `update_weights_from_disk` uses this route.
+- The distributed card defines a `process group` as cooperating members: one sender hands values to many receivers.
+- The tensor card defines a `handle` as a GPU location note: send the note, then find the tensor. Step 4 opens this mechanism.
+- All three cards are blue because all are alternative weight handoffs. One update chooses one route.
 
 ### Formula and symbols
 
-$$v_{\text{train}}=v_{\text{checkpoint}}=v_{\text{rollout},r}$$
+$$c\in\{\text{disk},\text{distributed},\text{tensor}\}$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
-| $v_{\text{train}}$ | Weight version written after training | Chapter 6 Step 8: `v1` |
-| $v_{\text{checkpoint}}$ | Version stored in the checkpoint | The disk handoff |
-| $v_{\text{rollout},r}$ | Version loaded by rollout engine $r$ | Same checkpoint |
+| $c$ | Update channel selected for one handoff | One of the three cards |
+| $v1$ | Weight version carried by that channel | Chapter 6 Step 8 |
 
 ### The numbers on the stage
 
-This step adds no weight size, engine count or timing. The source says storage and loading determine the wait but supplies no disk measurement, so the figure leaves that duration blank.
+The map has three alternatives from the interface comparison. It adds no engine count, byte total or timing. In particular, the source supplies no disk timing.
 
 ### Next
 
-The disk route crosses storage. The next route instead lets training and inference processes broadcast parameter values through a shared process group.
+The next step opens the distributed card: training rank 0 broadcasts full weight tensors inside the process group.
 
 Sources: `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-1.md:400-409`; `python/sglang/srt/model_executor/model_runner.py:641-694` at `sgl-project/sglang@392e441ad17c78b68638f2d959fcf592d19b4834`.
 
 ## Step 3 · Broadcast values inside a process group
 
-**One sentence.** The distributed channel puts one training rank and the inference TP ranks into a process group, then broadcasts each parameter from training rank 0.
+**One sentence.** The distributed channel puts one training rank and the inference TP ranks into a process group, then broadcasts each full weight tensor from training rank 0.
 
 ### On the stage
 
 - A process group is the named set of ranks that participate in this transfer. A rank is one member's number, not necessarily a separate top-level process.
-- Orange marks the training sender. Blue marks inference receivers. TP 1 has one inference receiver; TP 2 has two.
-- The bottom sequence runs for every parameter: allocate the destination, broadcast from rank 0, then load the received values.
+- `Broadcast` sends the same weight-tensor values to every member. Orange marks the training sender, and blue marks inference receivers. TP 1 has one inference receiver; TP 2 has two.
+- The bottom sequence runs for every weight tensor: allocate the destination, broadcast the full tensor from rank 0, keep the part owned by this inference rank, then load it.
 
 ### Formula and symbols
 
@@ -88,9 +88,9 @@ The figure labels group membership only. It does not claim that two or three top
 
 ### Next
 
-This channel transfers parameter values through the group. The tensor channel instead passes handles that let inference locate an already assembled GPU tensor.
+This channel transfers weight-tensor values through the group. The tensor channel instead passes handles that let inference locate an already assembled GPU tensor.
 
-Sources: `Awesome-ML-SYS-Tutorial/sglang/latency-accelerate-for-weight-updates/readme.md:232-262,399-412,931-950`; `model_runner.py:696-772` at `sgl-project/sglang@392e441ad17c78b68638f2d959fcf592d19b4834`.
+Sources: `Awesome-ML-SYS-Tutorial/sglang/latency-accelerate-for-weight-updates/readme.md:232-262,399-412,931-950`; `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-1.md:407`; `model_runner.py:696-772` at `sgl-project/sglang@392e441ad17c78b68638f2d959fcf592d19b4834`.
 
 ## Step 4 · Send a handle to the assembled tensor
 
@@ -98,9 +98,9 @@ Sources: `Awesome-ML-SYS-Tutorial/sglang/latency-accelerate-for-weight-updates/r
 
 ### On the stage
 
-- Four orange training pieces each have shape `[256,1024]`. `full_tensor()` gathers them into one `[1024,1024]` tensor.
-- Serialization returns a handle tuple containing information such as shape, stride and a storage handle. It does not return the weight payload.
-- The blue arrow represents the handle handoff. `gather_object` collects the handles at rank 0; each SGLang rank then calls `tensor.get(tp_rank)` and `load_weights`.
+- A parameter is one weight table. Four orange training pieces each have 256 rows and 1024 columns, written `[256,1024]`. `full_tensor()` gathers them into one `[1024,1024]` tensor.
+- `MultiprocessingSerializer.serialize` bundles location notes into a handle tuple: shape, size and storage location, with no weight payload.
+- The grey arrow is the note handoff. `gather_object` collects the notes at rank 0. On each SGLang rank, `tensor.get(tp_rank)` selects that rank's handle and rebuilds the full tensor; `load_weights` then keeps the part owned by that rank. Blue marks this inference-side work.
 
 ### Formula and symbols
 
@@ -109,7 +109,7 @@ $$E=r\times c,\qquad E=T\times r_s\times c$$
 | Symbol | Meaning | Source |
 |---|---|---|
 | $r,c$ | Full-tensor row and column counts | Both 1024 |
-| $T$ | Training shard count | FSDP TP 4 |
+| $T$ | Training shard count | Four training shards in this example |
 | $r_s$ | Rows in one training shard | $1024\div4=256$ |
 | $E$ | Elements in the assembled tensor | Derived here |
 
@@ -117,7 +117,7 @@ $$E=r\times c,\qquad E=T\times r_s\times c$$
 
 $$E=4\times256\times1024=1024\times1024=1{,}048{,}576$$
 
-The source's SGLang TP 2 layout has `[512,1024]` per inference rank. This example specifies no dtype, so the figure counts elements rather than inventing bytes.
+That is about 1.05 million numbers. The source's SGLang TP 2 layout has `[512,1024]` per inference rank after the loader selects local parts. This example specifies no dtype, so the figure counts elements rather than inventing bytes.
 
 ### Next
 
@@ -127,7 +127,7 @@ Sources: `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-1.md:51-60,132-204`; `v
 
 ## Step 5 · Bound temporary residency with a bucket
 
-**One sentence.** Slime restores, converts and transfers one bucket of training parameters, waits for completion, clears that bucket and reuses the space for the next one.
+**One sentence.** After training moves its weights off the GPU, slime restores, converts and transfers one bucket, waits for completion, clears it and reuses the space.
 
 ### On the stage
 
@@ -148,7 +148,7 @@ $$R_{\text{all}}=S+M,\qquad R_{\text{bucket}}=S+b,\qquad b<M$$
 
 ### The numbers on the stage
 
-No numeric $S$, $M$ or $b$ is available in the source. The valid conclusion is the smaller temporary group, not a claimed percentage or byte saving.
+No numeric $S$, $M$ or $b$ is available in the source. The valid conclusion is that fewer parameters are restored at once, not a claimed percentage or byte saving. The panel shapes carry no scale.
 
 ### Next
 
@@ -158,13 +158,13 @@ Source: `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-1.md:254-272,280-296,329
 
 ## Step 6 · Close the version boundary before rollout
 
-**One sentence.** Rollout resumes only after active readers drain, every parameter updates, old KV state becomes invalid and the update call completes.
+**One sentence.** Rollout resumes only after active requests finish, every parameter updates, old KV state becomes invalid and the update call completes.
 
 ### On the stage
 
 - Complete `v0` and `v1` models are blue. The red-outlined mixture is not a valid generation state.
-- The four boxes enforce an order: drain readers, update every parameter, await completion, then start rollout 1.
-- Cache produced under `v0` belongs to the old weights. Slime resets prefix caches before buckets; verl requests a flush with the last parameter.
+- The four boxes enforce an order: wait for active requests to finish, update every parameter, await completion, then start rollout 1.
+- Cache produced under `v0` belongs to the old weights. Slime resets prefix caches before buckets; verl, another RL framework, requests a flush with the last parameter.
 
 ### Formula and symbols
 
@@ -195,7 +195,7 @@ Sources: `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-1.md:268-287`; `verl/wo
 
 - The two full-update bars use one scale. Removing the sleeps leaves a 2.202-second bar beside the original 7.047-second bar.
 - The lower strip decomposes one rounded 33 ms outer call into 1 ms inside `ModelRunner`, three 10 ms sleeps and 2 ms of other rounded time.
-- Timing only the inner operation misses the fixed sleeps. The debug note also synchronizes CUDA around the measured GPU region so its CPU timer waits for queued work.
+- `ModelRunner` is the model-owning code on each inference rank, and a `sleep` is a programmed pause. Timing only the inner operation misses those pauses. The debug note also synchronizes CUDA around the measured GPU region so its CPU timer waits for queued work.
 
 ### Formula and symbols
 
@@ -218,37 +218,38 @@ The values are rounded successive measurements from one author's setup. They do 
 
 ### Next
 
-Removing a fixed wait does not shrink the training state. The final step leaves the remaining memory question: how can training keep only slices when the full state does not fit?
+Removing a fixed wait does not shrink training's saved tables. The final step asks how each GPU can keep only a slice when those tables do not fit.
 
 Source: `Awesome-ML-SYS-Tutorial/sglang/latency-accelerate-for-weight-updates/readme.md:584-605,980-1007,1023-1030,1061-1065`.
 
-## Step 8 · Leave the full training state as the next problem
+## Step 8 · Leave training's saved tables as the next problem
 
-**One sentence.** Weight transfer delivers model parameters, but training also keeps gradients and optimizer state, so the next chapter must divide the full training state when one GPU cannot hold it.
+**One sentence.** Weight transfer delivers model parameters, but training also saves gradients and optimizer state, so the next chapter must divide those tables when one GPU cannot hold them.
 
 ### On the stage
 
-- `Weights v1` are the model numbers transferred in this chapter. `Gradients` describe how those numbers should change, and optimizer state holds the bookkeeping used for later changes.
-- Together, these make the full training state in the orange box. A faster update channel does not reduce that state's size.
-- The three blue-outlined GPU cards contain question marks. The figure deliberately does not answer how their shares are chosen.
+- `Weights v1` are the model numbers transferred in this chapter. `Gradients` describe how those numbers should change.
+- The optimizer is the training component that updates weights. Its state is the extra set of tables it saves for later updates.
+- These three kinds of saved tables fill the orange box. Activations and temporary allocations also use memory, but this step deliberately excludes them; it covers only the tables FSDP2 divides.
+- The three blue-outlined GPU cards contain question marks. The figure does not answer how their shares are chosen.
 
 ### Formula and symbols
 
-$$\mathcal{T}=\{W,G,O\}$$
+$$\mathcal{T}_{\text{saved}}=\{W,G,O\}$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
 | $W$ | Model weights | `v1` from this chapter |
 | $G$ | Gradients, the directions for changing weights | Training process |
-| $O$ | Optimizer state for later updates | Training process |
-| $\mathcal{T}$ | Full training state | The set of all three |
+| $O$ | Optimizer state, the weight updater's saved tables | Training process |
+| $\mathcal{T}_{\text{saved}}$ | These three saved table kinds, excluding activations | The set of all three |
 
 ### The numbers on the stage
 
-Step 4's assembled weight tensor has $1024\times1024=1{,}048{,}576$ elements. This step assigns no gradient or optimizer size because the source example does not specify them.
+This step introduces no new size. The source does not supply matching dtypes and sizes for these three table kinds, so a total would be invented.
 
 ### Next
 
-Chapter 8 answers the visible question with FSDP2: parameters, gradients and optimizer state can be sharded during training, then weights can be gathered for rollout. This chapter stops before that mechanism.
+Chapter 8 answers the visible question with FSDP2, a way to divide parameters, gradients and optimizer state across GPUs during training, then gather weights for rollout. This chapter stops before that mechanism.
 
 Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:16`; `docs/plan-ml-sys.md:27-28`.
