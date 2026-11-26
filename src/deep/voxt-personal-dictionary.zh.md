@@ -165,11 +165,11 @@ $$B(G) = \sum_{g \in G}\operatorname{bytes}(g) + \max(|G| - 1, 0)$$
 | $n$ | 去重后的启用词条数 | `distinctTerms`，`compose.go:585-599` |
 | $C$ | 按词典顺序排好的候选行 | 本步的选择规则 |
 | $G$ | 实际发送的连续前缀 | `compose.go:576-580` |
-| $|G|$ | 发送的完整行数 | 本步 |
+| $\lvert G\rvert$ | 发送的完整行数 | 本步 |
 | $g \in G$ | $G$ 中的一条完整术语表行 | `- Term (heard as: alias)` |
 | $\sum_{g \in G}$ | 把 $G$ 中每一行的字节数加起来 | 本步 |
 | $\operatorname{bytes}(g)$ | 这一行的 UTF-8 字节数 | Go 的 `len(string)` |
-| $\max(|G|-1, 0)$ | 行与行之间的换行数；没有行时为 0 | `strings.Join(lines, "\n")` |
+| $\max(\lvert G\rvert-1, 0)$ | 行与行之间的换行数；没有行时为 0 | `strings.Join(lines, "\n")` |
 | $B(G)$ | 行内容和换行分隔的字节数，不含 `<glossary>` 标签 | `compose.go:576-582` |
 | 30 / 60 / 2000 | 整份候选阈值 / 行数上限 / 字节上限 | `compose.go:244-250` |
 

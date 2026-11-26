@@ -165,11 +165,11 @@ $$B(G) = \sum_{g \in G}\operatorname{bytes}(g) + \max(|G| - 1, 0)$$
 | $n$ | number of enabled terms after de-duplication | `distinctTerms`, `compose.go:585-599` |
 | $C$ | candidate lines in dictionary order | this step's selection rule |
 | $G$ | the consecutive prefix actually sent | `compose.go:576-580` |
-| $|G|$ | number of complete lines sent | this step |
+| $\lvert G\rvert$ | number of complete lines sent | this step |
 | $g \in G$ | one complete glossary line in $G$ | `- Term (heard as: alias)` |
 | $\sum_{g \in G}$ | add the byte count of every line in $G$ | this step |
 | $\operatorname{bytes}(g)$ | the line's UTF-8 byte count | Go's `len(string)` |
-| $\max(|G|-1, 0)$ | newline separators between lines, or 0 for no lines | `strings.Join(lines, "\n")` |
+| $\max(\lvert G\rvert-1, 0)$ | newline separators between lines, or 0 for no lines | `strings.Join(lines, "\n")` |
 | $B(G)$ | line bytes plus newline separators, excluding `<glossary>` tags | `compose.go:576-582` |
 | 30 / 60 / 2000 | all-candidates threshold / line cap / byte cap | `compose.go:244-250` |
 
