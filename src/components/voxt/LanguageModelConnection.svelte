@@ -24,6 +24,9 @@
   }, {
     caption: 'The body names the model. Its messages contain the text.',
     captionZh: '正文指定模型名。messages 里装着文字。',
+  }, {
+    caption: 'The key follows Bearer in the Authorization header. It stays out of the body.',
+    captionZh: '钥匙跟在 Bearer 后面，放进 Authorization 请求头。正文里没有钥匙。',
   }];
   const ariaLabels = [{
     en: 'A constructed request has three things to account for: the raw text Good morning, the model name demo-model, and a masked API key. All three go to one configured external service. The address chooses the service.',
@@ -37,6 +40,9 @@
   }, {
     en: 'The model name and raw text move into one request body, the main content of a request. The model field contains demo-model. The messages field contains Good morning among other omitted message content. The API key is not in this body. The body is constructed and abbreviated, and other request settings are omitted.',
     zh: '模型名和原话进入同一个请求正文，也就是请求的主要内容。model 字段是 demo-model。messages 字段里有 Good morning，其他消息内容省略。API key 不在这个正文里。正文是构造的简略形式，其他请求设置也省略了。',
+  }, {
+    en: 'The complete key leaves the constructed Keychain item llm.demo for one request. In the Authorization header, the word Bearer and one space come before the key. The key is masked on this stage, but the real request uses the complete key. The request body still holds the model and messages without the key.',
+    zh: '完整钥匙从构造的钥匙串项目 llm.demo 进入一次请求。在 Authorization 请求头里，单词 Bearer 和一个空格位于钥匙前面。图上的钥匙打码，真实请求使用完整钥匙。请求正文仍装着模型名和消息，没有钥匙。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -53,7 +59,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived((phone ? [570, 640, 620, 590] : [430, 440, 430, 440])[step]);
+  const H = $derived((phone ? [570, 640, 620, 590, 640] : [430, 440, 430, 440, 450])[step]);
 </script>
 
 <figure class="viz">
@@ -173,6 +179,39 @@
         <text x={W / 2} y={phone ? 500 : 385} text-anchor="middle" class="label" fill="var(--gen)">{t('API KEY · NOT IN THIS BODY', 'API key · 不在这个正文里')}</text>
         <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('Constructed, abbreviated body.', '构造的简略正文。')}</text>
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Other request settings omitted.', '其他请求设置省略。')}</text>
+      {:else if step === 4}
+        <text x={W / 2} y="27" text-anchor="middle" class="title">{t('KEYCHAIN KEY → AUTHORIZATION HEADER', '钥匙串钥匙 → Authorization 请求头')}</text>
+        <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('header = request information beside the body', '请求头 = 正文旁边的请求信息')}</text>
+
+        <rect x={phone ? 25 : 35} y={phone ? 75 : 130} width={phone ? 250 : 220} height={phone ? 140 : 170} rx="10" fill="var(--gen-soft)" stroke="var(--gen)" stroke-width="1.5" />
+        <text x={phone ? 150 : 145} y={phone ? 101 : 156} text-anchor="middle" class="label" fill="var(--gen)">{t('KEYCHAIN ITEM', '钥匙串项目')}</text>
+        <text x={phone ? 150 : 145} y={phone ? 132 : 195} text-anchor="middle" class="value">llm.demo</text>
+        <text x={phone ? 150 : 145} y={phone ? 166 : 235} text-anchor="middle" class="value" fill="var(--gen)">sk-demo…1234</text>
+        <text x={phone ? 150 : 145} y={phone ? 193 : 267} text-anchor="middle" class="detail">{t('full key · masked here', '完整钥匙 · 图上打码')}</text>
+
+        {#if phone}
+          <line x1="150" y1="220" x2="150" y2="246" stroke="var(--muted)" stroke-width="2" marker-end="url(#llm-arrow)" />
+        {:else}
+          <line x1="260" y1="215" x2="320" y2="215" stroke="var(--muted)" stroke-width="2" marker-end="url(#llm-arrow)" />
+        {/if}
+        <rect x={phone ? 25 : 330} y={phone ? 255 : 85} width={phone ? 250 : 355} height={phone ? 275 : 280} rx="10" fill="var(--bg)" stroke="var(--fg)" stroke-width="2" />
+        <text x={phone ? 150 : 507.5} y={phone ? 281 : 112} text-anchor="middle" class="label">{t('ONE REQUEST', '一次请求')}</text>
+        <rect x={phone ? 40 : 350} y={phone ? 300 : 135} width={phone ? 220 : 315} height="105" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" stroke-width="1.5" />
+        <text x={phone ? 55 : 370} y={phone ? 326 : 162} class="mono">Authorization</text>
+        <text x={phone ? 150 : 507.5} y={phone ? 361 : 198} text-anchor="middle" class="value" fill="var(--gen)">Bearer sk-demo…1234</text>
+        {#if phone}
+          <text x="150" y="381" text-anchor="middle" class="detail">{t('Bearer = a key label', 'Bearer = 钥匙标签')}</text>
+          <text x="150" y="398" text-anchor="middle" class="detail">{t('one space + full key', '一个空格 + 完整钥匙')}</text>
+        {:else}
+          <text x="507.5" y="224" text-anchor="middle" class="detail">{t('Bearer = a key label · one space · full key', 'Bearer = 钥匙标签 · 一个空格 · 完整钥匙')}</text>
+        {/if}
+        <rect x={phone ? 40 : 350} y={phone ? 425 : 260} width={phone ? 220 : 315} height="75" rx="8" fill="var(--bg)" stroke="var(--line)" stroke-width="1.5" />
+        <text x={phone ? 150 : 507.5} y={phone ? 451 : 287} text-anchor="middle" class="label">{t('REQUEST BODY', '请求正文')}</text>
+        <text x={phone ? 150 : 507.5} y={phone ? 478 : 315} text-anchor="middle" class="detail">{t('model + messages · no key', '模型名 + 消息 · 没有钥匙')}</text>
+
+        <text x={W / 2} y={phone ? 565 : 400} text-anchor="middle" class="label" fill="var(--gen)">{t('KEY IN HEADER · NOT IN BODY', '钥匙在请求头 · 不在正文')}</text>
+        <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('Constructed request · key masked here.', '构造的请求 · 钥匙在图上打码。')}</text>
+        <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('The real request uses the complete key.', '真实请求使用完整钥匙。')}</text>
       {/if}
     </svg>
   </div>

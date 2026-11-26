@@ -176,3 +176,43 @@ Public baseline: `sglang-omni@14046fc02c5268df8b7d4a9a3094b15e1150060e`; paths a
 - Chat Completions path selection: `Voxt/internal/llm/responses.go:33-39`.
 - JSON serialization, POST and content type: `Voxt/internal/llm/openai_http.go:22-50`.
 - The key's separate header: `Voxt/internal/llm/openai_http.go:51-65`.
+
+## Step 5 · The key enters the header
+
+> **In one line:** Voxt puts the complete key after `Bearer` in the `Authorization` header, outside the request body.
+
+### On the stage
+
+- The left card repeats Step 3's constructed Keychain item, `llm.demo`. Voxt reads the complete key from this item when it opens the language-model connection.
+- `Authorization` is the header's name. `Bearer` identifies the authentication scheme. One space separates `Bearer` from the key.
+- The teaching display masks the key. The real header value contains the complete key, not the ellipsis or a shortened key.
+- The same request also has the body from Step 4. Its model and messages remain separate from this header. Both parts go to the one selected address from Step 2.
+
+### Header construction and empty keys
+
+Voxt constructs the value as `"Bearer " + token` and sets it with `req.Header.Set`. The saved key does not include the word `Bearer` or the separating space.
+
+An empty key produces no `Authorization` header. A preset that requires a key rejects the request before transport. A preset with an optional key can send the request without this header. Signed-in token routes have extra rules outside this chapter.
+
+### Transport and error boundaries
+
+Keychain storage does not keep the key on this Mac after Voxt sends a request to an external service. The selected service receives the header, and the request's text travels in the body.
+
+Voxt's public setup guide permits HTTP for API-key services but warns that HTTP sends the API key and text without encryption. Use HTTPS for an external service. Header placement and error redaction do not make HTTP confidential.
+
+A server can quote a key in its error response. `Chat` calls `scrub`, which replaces known secrets in structured error parameters with `[key]`. This limits what the session history retains when Voxt records that error.
+
+### Next: Chapter 6
+
+The connection now has its destination, body and authorization. This chapter leaves the inside of `messages` assembled but unexplained. Chapter 6, **The text workshop**, explains the roles, instructions, cleanup inputs and output conventions inside that list.
+
+### Sources
+
+Public baseline: `sglang-omni@14046fc02c5268df8b7d4a9a3094b15e1150060e`; paths are relative to that repository.
+
+- Session-time key retrieval: `Voxt/remote_link.go:189-200`.
+- Required and optional keys before transport: `Voxt/internal/llm/openai.go:177-190`.
+- `Bearer` prefix, empty-key behavior and header placement: `Voxt/internal/llm/openai_http.go:22-25,51-66`.
+- HTTP plaintext warning: `docs/get_started/voxt-tutorials/en/byok.md:17-19`; Chinese: `docs/get_started/voxt-tutorials/byok.md:17-19`.
+- Error scrubbing: `Voxt/internal/llm/openai.go:154-174`; rejection, malformed-body and stream cases: `Voxt/internal/llm/openai_test.go:241-269`.
+- Message assembly for Chapter 6: `Voxt/internal/session/headstart.go:349-352`.

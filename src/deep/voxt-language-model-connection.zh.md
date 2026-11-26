@@ -176,3 +176,43 @@ Voxt 还会区分互联网目的地、私有网络和本机名称目的地，这
 - Chat Completions 路径选择：`Voxt/internal/llm/responses.go:33-39`。
 - JSON 序列化、POST 和内容类型：`Voxt/internal/llm/openai_http.go:22-50`。
 - 钥匙单独进入请求头：`Voxt/internal/llm/openai_http.go:51-65`。
+
+## 第 5 步 · 钥匙进入请求头
+
+> **一句话：** Voxt 把完整钥匙放在 `Authorization` 请求头的 `Bearer` 后面，不放进请求正文。
+
+### 图上是什么
+
+- 左卡重复第 3 步构造的钥匙串项目 `llm.demo`。打开语言模型连接时，Voxt 从这个项目读出完整钥匙。
+- `Authorization` 是请求头的名字。`Bearer` 指明认证方案。一个空格分开 `Bearer` 和钥匙。
+- 教学图给钥匙打码。真实的请求头值包含完整钥匙，没有省略号，也不是缩短的钥匙。
+- 同一次请求还有第 4 步的正文。模型名和消息留在正文里，与这个请求头分开。两部分都发往第 2 步选定的同一个地址。
+
+### 请求头怎么写，空钥匙怎么办
+
+Voxt 用 `"Bearer " + token` 拼出请求头值，再调用 `req.Header.Set`。保存的钥匙本身不含 `Bearer` 和分隔空格。
+
+钥匙为空时不写 `Authorization` 请求头。要求钥匙的预设会在传输前拒绝请求。允许空钥匙的预设可以不带这个请求头发送。登录令牌路线另有规则，不在本章展开。
+
+### 传输和错误边界
+
+Voxt 向外部服务发出请求后，钥匙串保存并不能把这次发出的钥匙留在 Mac 上。选定的服务收到请求头，请求文字则随正文发出。
+
+Voxt 的公开配置指南允许 API key 服务使用 HTTP，同时警告 HTTP 会明文传输 API key 和文字。外部服务应使用 HTTPS。把钥匙放进请求头以及给错误打码，都不能让 HTTP 加密。
+
+服务可能在错误响应里复述钥匙。`Chat` 调用 `scrub`，把结构化错误参数里的已知秘密替换成 `[key]`。这样，Voxt 把错误记进 session 历史时，可以减少留下的秘密。
+
+### 接下来：第 6 章
+
+连接已经有了目的地、正文和授权信息。本章停在已经组装好的 `messages` 列表，没有展开列表内部。第 6 章《文字加工厂》讲这个列表里的角色、指令、清理输入和输出约定。
+
+### 源码出处
+
+公开基线：`sglang-omni@14046fc02c5268df8b7d4a9a3094b15e1150060e`，路径均相对该仓库。
+
+- session 打开连接时读取钥匙：`Voxt/remote_link.go:189-200`。
+- 传输前检查必需钥匙和可选钥匙：`Voxt/internal/llm/openai.go:177-190`。
+- `Bearer` 前缀、空钥匙行为和请求头位置：`Voxt/internal/llm/openai_http.go:22-25,51-66`。
+- HTTP 明文警告：`docs/get_started/voxt-tutorials/byok.md:17-19`；英文：`docs/get_started/voxt-tutorials/en/byok.md:17-19`。
+- 错误打码：`Voxt/internal/llm/openai.go:154-174`；拒绝、错误正文和流式情形：`Voxt/internal/llm/openai_test.go:241-269`。
+- 留给第 6 章的消息组装：`Voxt/internal/session/headstart.go:349-352`。
