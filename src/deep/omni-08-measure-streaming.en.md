@@ -114,3 +114,38 @@ If chunk 2 arrives before 2.2 seconds, `max` clamps the negative result to zero 
 Arrival times locate the gap without explaining which hand-off caused it. The next step enables communication tracing and places timestamped events on that hand-off.
 
 Sources: `benchmarks/eval/benchmark_omni_streaming_ttft.py:179-205`; Learning SGLang Ch. 20 Step 1.
+
+## Step 4 · Enable communication tracing
+
+**One sentence.** The environment switch makes the runtime write JSON records with timestamps and local durations for sends, reads and other events.
+
+### On the stage
+
+- `SGLANG_OMNI_COMM_TRACE=1` enables the records. With no value, 0, false or another disabled value, `emit` returns without logging.
+- `Comm_send_enqueue` marks a send entering its queue. The constructed example carries request A, chunk 7, both stage names and the transport.
+- `Comm_stream_read` marks one read. A cross-process read carries `object_id`, transport, bytes and `elapsed_ms`; the inline path can also carry request, stage and chunk fields.
+- The orange area separates two clocks. `Ts_ns` is the `time.time_ns()` timestamp at emission, while `elapsed_ms` measures a local interval around an operation.
+- `Elapsed_ms: <operation>` and `<read>` describe the fields without inventing zero durations.
+
+### Formula and symbols
+
+$$d=\frac{c_{\mathrm{end}}-c_{\mathrm{start}}}{1{,}000{,}000}$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $c_{\mathrm{start}}$ | `Perf_counter_ns()` before the operation | `now_ns()` |
+| $c_{\mathrm{end}}$ | `Perf_counter_ns()` after the operation | `elapsed_ms()` |
+| $d$ | Duration of this operation in milliseconds | Calculated and converted here |
+| $1{,}000{,}000$ | Nanoseconds in one millisecond | Unit conversion |
+
+### The numbers on the stage
+
+This step invents no duration. A local interval of 20,000 nanoseconds would give $d=20{,}000\div1{,}000{,}000=0.020$ milliseconds. This arithmetic example is not a new measurement or a value on the stage.
+
+The `comm_send_enqueue` record is emitted before `await ready`. Its `elapsed_ms` covers work near the enqueue call, not the whole wait for the send to finish. `Comm_stream_read` is emitted after reading and measures that read. Neither field is end-to-end request latency.
+
+### Next
+
+The log separates local operations. The next step reads CUDA IPC host waiting and GPU-event waiting without calling the entire host interval GPU copying.
+
+Sources: `sglang_omni/profiler/comm_trace.py:14-34`; `sglang_omni/comm/engine.py:327-393`; `sglang_omni/pipeline/stage/runtime.py:665-682`.

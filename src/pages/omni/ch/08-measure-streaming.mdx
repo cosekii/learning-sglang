@@ -19,6 +19,8 @@ Step 2 follows `benchmarks/eval/benchmark_omni_streaming_ttft.py:148-205`. The c
 
 Step 3 constructs two arrivals at 1.4 and 2.5 seconds around the 800 ms playback chunk from Learning SGLang Ch. 20 Step 1. Chunk 1 therefore plays until 2.2 seconds, leaving a 0.3-second gap. The current TTFT script counts audio chunks but does not store their individual arrival times or calculate stalls. This step shows the additional per-chunk timing arithmetic; it does not claim a shipped stall metric or a measured 0.3-second result.
 
+Step 4 follows `sglang_omni/profiler/comm_trace.py:14-34`, `sglang_omni/comm/engine.py:327-393` and `sglang_omni/pipeline/stage/runtime.py:665-682`. `SGLANG_OMNI_COMM_TRACE=1` enables JSON log records. `ts_ns` comes from `time.time_ns`; an `elapsed_ms` field comes from a local `perf_counter_ns` interval around the named operation, such as enqueueing or reading, not the whole request. Request A, chunk 7 and object `obj-17` are constructed identifiers, not captured logs.
+
 Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`. Each public measurement keeps its original setup. The benchmark is read from source, not executed.
 
 </details>
@@ -31,6 +33,8 @@ Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37
 第 2 步依据 `benchmarks/eval/benchmark_omni_streaming_ttft.py:148-205`。客户端在流式 POST 前调用 `time.perf_counter()` 开始计时。只有 delta 含有非空 `audio.data` 时才记录 TTFT，纯文字 delta 不会让 TTFT 停表。流结束后才记录总时间；若一直没有 audio delta，测试会报错。图上的 0.0、1.4、3.2 秒是构造教学时刻，不是 benchmark 输出。
 
 第 3 步围绕 Learning SGLang 第 20 章第 1 步的 800 ms 播放 chunk，构造 1.4、2.5 秒两次到达。chunk 1 因此在 2.2 秒播完，留下 0.3 秒空档。当前 TTFT 脚本只统计 audio chunk 数，不保存逐块到达时刻，也不计算卡顿。本步展示需要补充的逐块计时算式，不声称已有卡顿指标，也不把 0.3 秒当成实测结果。
+
+第 4 步依据 `sglang_omni/profiler/comm_trace.py:14-34`、`sglang_omni/comm/engine.py:327-393` 和 `sglang_omni/pipeline/stage/runtime.py:665-682`。`SGLANG_OMNI_COMM_TRACE=1` 打开 JSON 日志。`ts_ns` 来自 `time.time_ns`；`elapsed_ms` 用 `perf_counter_ns` 计算局部区间，例如 enqueue 或 read 的耗时，不是整个请求。请求 A、chunk 7 和对象 `obj-17` 都是构造标识符，不是抓取的日志。
 
 本章代码出处固定到 `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`。公开测量保留各自原来的实验条件。本章只读 benchmark 源码，没有运行它。
 

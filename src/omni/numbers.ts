@@ -289,3 +289,8 @@ export const STREAM_CHUNK2_ARRIVAL_S = 2.5;
 export const STREAM_STALL_S = Math.max(0, STREAM_CHUNK2_ARRIVAL_S - STREAM_CHUNK1_END_S);
 export const STREAM_CHUNK2_END_S = STREAM_CHUNK2_ARRIVAL_S + STREAM_CHUNK_DURATION_S;
 export const STREAM_STALL_CHUNK_PERCENT = STREAM_STALL_S / STREAM_CHUNK_DURATION_S * 100;
+
+// Constructed identifiers used to read a communication trace, not captured log output.
+export const STREAM_TRACE_REQUEST_ID = 'A';
+export const STREAM_TRACE_CHUNK_ID = 7;
+export const STREAM_TRACE_OBJECT_ID = 'obj-17';

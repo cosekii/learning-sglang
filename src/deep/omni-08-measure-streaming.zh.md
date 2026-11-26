@@ -114,3 +114,38 @@ $$\frac{g}{d}=\frac{0.3}{0.8}=37.5\%$$
 到达时间能指出空档，却还不能解释等待发生在哪一段交接。下一步打开通信 trace，把一次交接拆成带时间戳的事件。
 
 来源：`benchmarks/eval/benchmark_omni_streaming_ttft.py:179-205`；Learning SGLang 第 20 章第 1 步。
+
+## 第 4 步 · 打开通信 trace
+
+**一句话。** 环境开关打开后，运行时把发送、读取等事件写成带时间戳和局部耗时的 JSON 日志。
+
+### 图上是什么
+
+- `SGLANG_OMNI_COMM_TRACE=1` 打开日志；未设置、设为 0 或 false 等值时，`emit` 直接返回。
+- `comm_send_enqueue` 记录发送进入队列。示例字段包含请求 A、chunk 7、两端 stage 和 transport；这些标识符是构造的。
+- `comm_stream_read` 记录一次读取。跨进程读取使用 `object_id`、transport、bytes 和 `elapsed_ms`；inline 路径还可带 request、stage 与 chunk 字段。
+- 橙色区域区分两种时间：`ts_ns` 是写日志时的 `time.time_ns()` 时间戳，`elapsed_ms` 是一个局部调用前后的差值。
+- `elapsed_ms: <operation>` 与 `<read>` 是字段含义占位，不是把未知耗时写成 0。
+
+### 公式与符号
+
+$$d=\frac{c_{\mathrm{end}}-c_{\mathrm{start}}}{1{,}000{,}000}$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $c_{\mathrm{start}}$ | 操作前的 `perf_counter_ns()` | `now_ns()` |
+| $c_{\mathrm{end}}$ | 操作后的 `perf_counter_ns()` | `elapsed_ms()` |
+| $d$ | 这段操作的毫秒数 | 本步相减并换算 |
+| $1{,}000{,}000$ | 1 毫秒包含的纳秒数 | 单位换算 |
+
+### 代入图上的数
+
+本步不虚构耗时数值。若某次局部区间是 20,000 纳秒，则 $d=20{,}000\div1{,}000{,}000=0.020$ 毫秒；这只是公式读法示例，不是图上新加的测量结果。
+
+`comm_send_enqueue` 的日志在 `await ready` 之前发出，所以它的 `elapsed_ms` 只覆盖 enqueue 附近的工作，不包含等待发送完成的全部时间。`comm_stream_read` 则在读取结束后记录该次读取耗时。两类字段不能混当成端到端等待。
+
+### 接下来
+
+日志已经能分开局部操作。下一步读取 CUDA IPC 的 host 等待与 GPU event 等待，避免把整段 host 时间都叫成 GPU 拷贝。
+
+来源：`sglang_omni/profiler/comm_trace.py:14-34`；`sglang_omni/comm/engine.py:327-393`；`sglang_omni/pipeline/stage/runtime.py:665-682`。

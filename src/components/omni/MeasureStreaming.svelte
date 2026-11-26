@@ -11,6 +11,7 @@
     STREAM_TEACHING_TTFT_S, STREAM_TEACHING_TOTAL_S,
     STREAM_CHUNK_DURATION_S, STREAM_CHUNK1_ARRIVAL_S, STREAM_CHUNK1_END_S,
     STREAM_CHUNK2_ARRIVAL_S, STREAM_CHUNK2_END_S, STREAM_STALL_S, STREAM_STALL_CHUNK_PERCENT,
+    STREAM_TRACE_REQUEST_ID, STREAM_TRACE_CHUNK_ID, STREAM_TRACE_OBJECT_ID,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -24,6 +25,9 @@
   }, {
     caption: `Chunk 2 arrives ${STREAM_STALL_S.toFixed(1)} seconds after chunk 1 ends. The player stays silent for ${STREAM_STALL_S.toFixed(1)} seconds.`,
     captionZh: `chunk 2 晚于 chunk 1 结束 ${STREAM_STALL_S.toFixed(1)} 秒。播放器因此静音 ${STREAM_STALL_S.toFixed(1)} 秒。`,
+  }, {
+    caption: 'Communication tracing records each event with a timestamp. Duration fields show how long that operation waited.',
+    captionZh: '通信 trace 给每个事件记下时间戳。耗时字段记录这次操作等了多久。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -40,7 +44,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [590, 650, 600][step] : [430, 460, 480][step]);
+  const H = $derived(phone ? [590, 650, 600, 650][step] : [430, 460, 480, 480][step]);
   const barMax = $derived(phone ? 185 : 400);
   const barScale = $derived(barMax / STREAM_P90_SHARED_S);
   const timeX = (seconds: number) => 60 + (seconds / STREAM_TEACHING_DONE_S) * 600;
@@ -156,6 +160,46 @@
           <text x="150" y="521" text-anchor="middle" class="small">{t('to find this gap in a real run.', '就能在实测中找出空档。')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Constructed times · 800 ms from Ch. 20' : 'Constructed arrival times; the 800 ms chunk follows Learning SGLang Ch. 20.', phone ? '构造时刻 · 800 ms 见第 20 章' : '构造到达时刻；800 ms chunk 见 Learning SGLang 第 20 章。')}</text>
+      {:else if step === 3}
+        <text x={phone ? 18 : 36} y="30" class="title">{t(phone ? 'Put the hand-off in a log' : 'A trace puts every hand-off in a log', phone ? '把交接写进日志' : 'trace 把每次交接写进日志')}</text>
+        <text x={phone ? 18 : 36} y="55" class="label">{t('trace = timestamped records of runtime events', 'trace = 带时间戳的运行事件记录')}</text>
+        <text x={phone ? 18 : 36} y="79" class="code">SGLANG_OMNI_COMM_TRACE=1</text>
+        {#if !phone}
+          <rect x="25" y="108" width="310" height="205" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="45" y="139" class="code strong">comm_send_enqueue</text>
+          <text x="45" y="174" class="small">request_id: {STREAM_TRACE_REQUEST_ID} · chunk_id: {STREAM_TRACE_CHUNK_ID}</text>
+          <text x="45" y="202" class="small">talker_ar → code2wav</text>
+          <text x="45" y="230" class="small">transport: torch_cuda_ipc</text>
+          <text x="45" y="270" class="code">elapsed_ms: {'<operation>'}</text>
+          <rect x="385" y="108" width="310" height="205" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="405" y="139" class="code strong">comm_stream_read</text>
+          <text x="405" y="174" class="small">object_id: {STREAM_TRACE_OBJECT_ID}</text>
+          <text x="405" y="202" class="small">transport: torch_cuda_ipc</text>
+          <text x="405" y="230" class="small">bytes: {'<buffer size>'}</text>
+          <text x="405" y="270" class="code">elapsed_ms: {'<read>'}</text>
+          <rect x="25" y="342" width="670" height="91" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="45" y="371" class="code">ts_ns = time.time_ns()  ·  {t('event time', '事件时刻')}</text>
+          <text x="45" y="405" class="code">elapsed_ms = (perf_counter_ns() − start) ÷ 1,000,000</text>
+        {:else}
+          <rect x="20" y="103" width="260" height="172" rx="11" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="34" y="133" class="code strong">comm_send_enqueue</text>
+          <text x="34" y="166" class="small">request: {STREAM_TRACE_REQUEST_ID} · chunk: {STREAM_TRACE_CHUNK_ID}</text>
+          <text x="34" y="194" class="small">talker_ar → code2wav</text>
+          <text x="34" y="222" class="small">torch_cuda_ipc</text>
+          <text x="34" y="253" class="code">elapsed_ms: {'<operation>'}</text>
+          <rect x="20" y="295" width="260" height="147" rx="11" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="34" y="325" class="code strong">comm_stream_read</text>
+          <text x="34" y="358" class="small">object: {STREAM_TRACE_OBJECT_ID}</text>
+          <text x="34" y="386" class="small">bytes: {'<buffer size>'}</text>
+          <text x="34" y="417" class="code">elapsed_ms: {'<read>'}</text>
+          <rect x="20" y="465" width="260" height="143" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="34" y="494" class="code">ts_ns = time.time_ns()</text>
+          <text x="34" y="522" class="small">{t('event timestamp', '事件时间戳')}</text>
+          <text x="34" y="554" class="code">elapsed_ms =</text>
+          <text x="34" y="580" class="code">(perf_counter_ns() − start)</text>
+          <text x="34" y="601" class="code">÷ 1,000,000</text>
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Constructed fields · trace off by default' : 'Constructed identifiers; tracing is off unless the environment switch enables it.', phone ? '构造字段 · trace 默认关闭' : '构造标识符；环境开关未打开时，trace 默认关闭。')}</text>
       {/if}
     </svg>
   </div>
@@ -168,10 +212,12 @@
   .label { font-size: 13px; fill: var(--fg); }
   .small { font-size: 13px; fill: var(--fg); }
   .result { font-family: var(--mono); font-size: 15px; font-weight: 650; fill: var(--fg); }
+  .code { font-family: var(--mono); font-size: 13px; fill: var(--fg); }
   .strong { font-weight: 650; }
   @media (max-width: 900px) {
     .title { font-size: 16px; }
     .label, .small { font-size: 12px; }
     .result { font-size: 12px; }
+    .code { font-size: 12px; }
   }
 </style>
