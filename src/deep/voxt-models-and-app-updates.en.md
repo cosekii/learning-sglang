@@ -233,18 +233,43 @@ Step 6 puts the three mechanisms into one table.
 
 ## Step 6 · Three things, three endings
 
-> **In one line:** A download ends when the hashes pass, an unload ends when the process exits, and an in-app update ends after the app restarts; none of the three does another's job.
+> **In one line:** A download ends when the content checks pass, an unload ends when the process exits, and an in-app update ends after the app restarts; none of the three does another's job.
 
 ### On the stage
 
 | Thing | Action | Done when |
 |---|---|---|
-| model files | download | every hash passes, files sit in the library |
+| model files | download | every content check passes, files sit in the library |
 | speech server | unload | the process exits, memory is freed |
 | app bundle | in-app update | the bundle is replaced, the app restarts |
 
 - Three boundary lines: updating the app downloads no model; stopping the server deletes no file; deleting a model updates no app.
-- The closing question uses the visible app and models: what does a meeting record?
+- The closing panel shows a meeting with two candidate sound sources, the microphone and other apps, and asks which sounds Voxt records.
+
+### Formula
+
+$$ \text{download done} \iff \text{checks pass} \land \text{files in library} $$
+$$ \text{unload done} \iff \text{server process exited} $$
+$$ \text{in-app update done} \iff \text{bundle replaced} \land \text{app restarted} $$
+
+| Symbol | What it is | Where it comes from |
+|---|---|---|
+| download done | the completion condition for usable model files | Step 3 |
+| checks pass | every file matches its content fingerprint | Steps 2 and 3 |
+| files in library | the files are in the model library on disk | Steps 1 and 2 |
+| unload done | the completion condition for freeing the server's memory | Step 4 |
+| server process exited | the program running the model has stopped | Step 4 |
+| in-app update done | the new version can take over | Step 5 |
+| bundle replaced | the new app bundle has replaced the old one on disk | Step 5 |
+| app restarted | the new process has replaced the old process | Step 5 |
+
+### The numbers on the stage
+
+| Action | Completion condition used on the stage |
+|---|---|
+| download | the content checks pass, and the files are in the library |
+| unload | the server process exits, which frees its memory |
+| in-app update | `Voxt 2.1` has replaced `Voxt 2.0`, and the app has restarted |
 
 ### Why the boundaries matter
 

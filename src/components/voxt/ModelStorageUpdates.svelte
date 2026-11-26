@@ -37,8 +37,8 @@
     caption: "Voxt's update list leads to an in-app replacement and a restart. Without it, Voxt offers an installer.",
     captionZh: '有更新清单时，应用内换好后重启。没有更新清单时，Voxt 提供安装包。',
   }, {
-    caption: 'Three endings: files checked, process gone, feed-updated app restarted.',
-    captionZh: '三种收尾：文件验完、进程退出、应用内更新后重启。',
+    caption: 'Downloads, unloads, and in-app updates finish in three different ways.',
+    captionZh: '下载、卸载和应用内更新，各有不同的完成条件。',
   }];
   const ariaLabels = [{
     en: 'The 2.47 gigabyte model arrives separately and is about nine times the 280 megabyte app. The total is 2,467,856,503 bytes; divided by 280,000,000 app bytes, the ratio is about 8.8. Three things have different lifetimes: model files on disk, one speech-server process in memory, and the app bundle on disk. Automatic mode stops an idle speech server after ten minutes, but its files stay. An app update replaces only the app bundle.',
@@ -56,8 +56,8 @@
     en: "Voxt's update list is its signed list of new app versions. With that list, the updater replaces the app bundle while the old version runs, then a card asks for a restart. Until the restart, the helper on disk is the new version, so the app's helper manager refuses to start it. Without the update list, Voxt offers an external installer instead. Neither route touches the model folder.",
     zh: 'Voxt 的更新清单是它签名的新版本清单。有这个清单时，更新器在旧版本运行时替换应用包，然后卡片请用户重启。重启之前，磁盘上的 helper 已经是新版本，应用的 helper 管理器就不启动它。没有更新清单时，Voxt 提供外部安装包。两条路都不动模型文件夹。',
   }, {
-    en: 'Three things finish in three ways. A download is done when every integrity check passes and the files sit in the library. An unload is done when the server process exits and frees memory. An in-app update is done after the app bundle is replaced and the app restarts. Updating the app downloads no model, stopping the server deletes no file, and deleting a model updates no app.',
-    zh: '三件事有三种收尾。下载在校验全部通过、文件进入模型库时完成。卸载在服务器进程退出、内存释放时完成。应用内更新在应用包被替换、应用重启后完成。更新应用不下载模型，停服务器不删文件，删模型不更新应用。',
+    en: 'Three things finish in three ways. A download is done when every content check passes and the files sit in the library. An unload is done when the server process exits and frees memory. An in-app update is done after the app bundle is replaced and the app restarts. Updating the app downloads no model, stopping the server deletes no file, and deleting a model updates no app. The next panel asks which sounds Voxt records in a meeting: the microphone, other apps, or both.',
+    zh: '三件事有三种收尾。下载在校验全部通过、文件进入模型库时完成。卸载在服务器进程退出、内存释放时完成。应用内更新在应用包被替换、应用重启后完成。更新应用不下载模型，停服务器不删文件，删模型不更新应用。下一幅图问会议会录下哪些声音：麦克风、其他应用，还是两者都录。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -74,7 +74,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived((phone ? [660, 610, 700, 820, 680, 860] : [470, 450, 460, 480, 430, 530])[step]);
+  const H = $derived((phone ? [660, 610, 700, 820, 680, 640] : [470, 450, 460, 480, 430, 560])[step]);
 
   const gb = VOXT_MODEL_TOTAL_GB.toFixed(2);
   const weightsGb = (VOXT_MODEL_WEIGHTS_BYTES / 1_000_000_000).toFixed(2);
@@ -431,7 +431,7 @@
 
           <text x="40" y="128" class="label blue">{t('model files', '模型文件')}</text>
           <text x="270" y="128" class="detail">{t('download', '下载')}</text>
-          <text x="450" y="128" class="detail">{t('every hash passes;', '哈希全部通过；')}</text>
+          <text x="450" y="128" class="detail">{t('every content check passes;', '内容校验全部通过；')}</text>
           <text x="450" y="148" class="detail">{t('files sit in the library', '文件进入模型库')}</text>
           <line x1="20" y1="168" x2="700" y2="168" stroke="var(--line)" />
 
@@ -453,14 +453,16 @@
           <text x="38" y="372" class="detail">{t('stopping the server deletes no file', '停服务器不删文件')}</text>
           <text x="28" y="398" class="pt">·</text>
           <text x="38" y="398" class="detail">{t('deleting a model updates no app', '删模型不更新应用')}</text>
-          <text x={W / 2} y={H - 48} text-anchor="middle" class="cut">{t('THE APP AND MODELS ARE READY.', '应用和模型就绪了。')}</text>
-          <text x={W / 2} y={H - 28} text-anchor="middle" class="cut">{t('WHAT DOES A MEETING RECORD?', '会议要录下什么？')}</text>
+          <text x={W / 2} y="426" text-anchor="middle" class="label">{t('NEXT · ONE MEETING', '下一步 · 一场会议')}</text>
+          <rect x="160" y="440" width="400" height="44" rx="8" fill="var(--bg)" stroke="var(--line)" />
+          <text x={W / 2} y="467" text-anchor="middle" class="detail">{t('microphone ?  ·  app sounds ?', '麦克风？ · 其他应用的声音？')}</text>
+          <text x={W / 2} y="516" text-anchor="middle" class="cut">{t('WHICH SOUNDS DOES VOXT RECORD?', '会议会录下哪些声音？')}</text>
           <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Sources: models, omni/runtime.go, updates.go.', '出处：models、omni/runtime.go、updates.go。')}</text>
         {:else}
           <rect x="15" y="64" width="270" height="92" rx="10" fill="var(--bg)" stroke="var(--line)" />
           <text x="30" y="88" class="label blue">{t('model files', '模型文件')}</text>
           <text x="30" y="112" class="detail">{t('download', '下载')}</text>
-          <text x="30" y="136" class="detail">{t('done: hashes pass,', '完成：哈希通过，')}</text>
+          <text x="30" y="136" class="detail">{t('done: checks pass,', '完成：校验通过，')}</text>
           <text x="30" y="152" class="detail">{t('files in the library', '文件进了模型库')}</text>
 
           <rect x="15" y="166" width="270" height="92" rx="10" fill="var(--bg)" stroke="var(--line)" />
@@ -482,8 +484,10 @@
           <text x="20" y="446" class="pt">·</text>
           <text x="30" y="446" class="detail">{t('a delete updates no app', '删模型不更新应用')}</text>
 
-          <text x={W / 2} y={H - 60} text-anchor="middle" class="cut">{t('THE APP + MODELS ARE READY.', '应用和模型就绪了。')}</text>
-          <text x={W / 2} y={H - 34} text-anchor="middle" class="cut">{t('WHAT DOES A MEETING RECORD?', '会议要录下什么？')}</text>
+          <text x={W / 2} y="490" text-anchor="middle" class="label">{t('NEXT · ONE MEETING', '下一步 · 一场会议')}</text>
+          <rect x="15" y="506" width="270" height="44" rx="8" fill="var(--bg)" stroke="var(--line)" />
+          <text x={W / 2} y="533" text-anchor="middle" class="detail">{t('microphone ? · app sounds ?', '麦克风？ · 其他应用的声音？')}</text>
+          <text x={W / 2} y="584" text-anchor="middle" class="cut">{t('WHICH SOUNDS DOES VOXT RECORD?', '会议会录下哪些声音？')}</text>
           <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Sources: models, runtime.go, updates.go.', '出处：models、runtime.go、updates.go。')}</text>
         {/if}
       {/if}
