@@ -96,7 +96,7 @@ $$\text{Writable} = f.\text{Editable} \lor f.\text{Error} \ne "" \lor f.\text{Ro
 ### 图上是什么
 
 - 前、后两张卡装的是 helper 从焦点读到的东西：框里的文字和光标。
-- 蓝色结果是比较：变了是证据，一样是没确认，读不出按贴入。
+- 比较有四个出口：不同 → 贴进去；一样且是普通框 → 没确认；一样且是网页区域或可编辑网页部分 → 贴进去；读不出 → 按贴入。
 - 等待时间是 `DefaultVerifyMS`，1000 ms。
 
 ### 比较
@@ -105,7 +105,7 @@ $$\text{Writable} = f.\text{Editable} \lor f.\text{Error} \ne "" \lor f.\text{Ro
 
 $$\text{compare} = \begin{cases}\text{changed} & \text{任何能比的部分不同}\\[2pt] \text{same} & \text{能比的部分都相同}\\[2pt] \text{unreadable} & \text{没有能比的部分}\end{cases}$$
 
-内部比较的是值的长度、值的摘要、选区范围、文本标记（网页编辑器的光标）。读到变化是贴入的证据，别的编辑也可能造成它；读得出却一样就留下 `ReasonUnconfirmed`。焦点是网页区域或可编辑的网页部分时，一样的结果会改成 unknown，并按已贴入处理，因为这些编辑器常接受粘贴却不更新 Accessibility 读到的东西。
+内部比较的是值的长度、值的摘要、选区范围、文本标记（网页编辑器的光标）。读到变化是贴入的证据，别的编辑也可能造成它；读得出来、又是**普通**框、且读到一样，就留下 `ReasonUnconfirmed`。焦点是 `AXWebArea` 或可编辑的网页部分时不一样：`TextIO.swift` 把这个 unchanged 结果改成 unknown，`insert()` 把 unknown 当作已贴入。`deliver_test.go` 就有这一例：读得出但没变的网页区域按已贴入处理。
 
 | 符号 | 含义 | 出处 |
 |---|---|---|
@@ -149,7 +149,7 @@ $$t_{\text{restore}} = \begin{cases}150\text{ ms} & \text{确认贴入}\\[2pt] 5
 
 ### 为什么放回
 
-剪贴板是每个 app 共用的。把转写文字一直留在上面，就悄悄替掉了用户之前复制的东西。放回是把用户的剪贴板还给他；没贴进去时反而把文字留在剪贴板，卡片的 Copy 才用得上。
+剪贴板是每个 app 共用的。把转写文字一直留在上面，就悄悄替掉了用户之前复制的东西。放回是把用户的剪贴板还给他。只有发出粘贴但没确认时，才把文字留在剪贴板，卡片的 Copy 才用得上；密码框和不可编辑的检查在写剪贴板之前就返回，不动剪贴板。`KeepClipboard` 是另一个开关，故意把文字留下。
 
 ### 边界
 

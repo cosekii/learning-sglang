@@ -96,7 +96,7 @@ A selection is replaced only in the start app and only in an element Accessibili
 ### On the stage
 
 - Before and after cards hold what the helper reads of the field: its text and its cursor.
-- The blue result is the comparison: changed is evidence it landed, same means unconfirmed, unreadable is trusted.
+- The comparison has four exits: different → inserted; same ordinary field → unconfirmed; same web area or editable web region → inserted; cannot read → inserted.
 - The wait is `DefaultVerifyMS`, 1000 ms.
 
 ### The comparison
@@ -105,7 +105,7 @@ A selection is replaced only in the start app and only in an element Accessibili
 
 $$\text{compare} = \begin{cases}\text{changed} & \text{any comparable part differs}\\[2pt] \text{same} & \text{parts compared and equal}\\[2pt] \text{unreadable} & \text{nothing comparable}\end{cases}$$
 
-Internally the reading compares the value's length, a digest of the value, the selection range, and the text marker (a caret for web editors). A changed reading is evidence the paste landed; another edit could also change it. A same readable reading leaves `ReasonUnconfirmed`. When the field is a web area or an editable web region, an unchanged result is changed to unknown and trusted as inserted, because those editors often accept a paste without updating what Accessibility reads.
+Internally the reading compares the value's length, a digest of the value, the selection range, and the text marker (a caret for web editors). A changed reading is evidence the paste landed; another edit could also change it. A same readable **ordinary** field leaves `ReasonUnconfirmed`. A same readable `AXWebArea` or editable web region is different: `TextIO.swift` changes that unchanged result to unknown, and `insert()` treats unknown as inserted. `deliver_test.go` has a case for exactly this: an unchanged readable web area is inserted.
 
 | Symbol | Meaning | Source |
 |---|---|---|
@@ -149,7 +149,7 @@ Before restoring, the helper compares the pasteboard's change count. If another 
 
 ### Why restore
 
-The clipboard is shared by every app. Leaving the transcribed text there quietly replaces whatever the user copied earlier. Restoring returns the user's clipboard, while a failed paste keeps the text on the clipboard so the card's Copy still works.
+The clipboard is shared by every app. Leaving the transcribed text there quietly replaces whatever the user copied earlier. Restoring returns the user's clipboard. Only an unconfirmed posted paste keeps the text on the clipboard, so the card's Copy still works; a password or not-editable check returns before the clipboard is written and leaves it alone. `KeepClipboard` is the separate switch that leaves the text there on purpose.
 
 ### Boundaries
 
