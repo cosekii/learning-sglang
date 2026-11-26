@@ -156,9 +156,9 @@ $$\text{替换}(\text{Preeya}) = \text{Priya}\quad\text{当词典和词条都启
 ### 图上是什么
 
 - 左面板是不超过 30 个不同词条：system 里有通用规则、`- Priya (heard as: Preeya)` 和 `- MOSS-Transcribe`，user 里是 `call Priya.`。第 3 步的两个词条都在。
-- 右面板是超过 30 个不同词条：system 只有通用规则。另一个「组装」区显示输入和它的候选，user 消息只放最终术语表和输入。
-- 例 A 点名词条：组装区列出候选 `Priya`，随后 user 消息先放 `<glossary>`，再写 `call Priya.`。
-- 例 B 把输入换成 `call Sam.`，它没点名词条。没有候选，user 就只有 `call Sam.`，也没有 `<glossary>` 块。
+- 右面板是超过 30 个不同词条：system 只有通用规则。每个例子各有一个标好的「组装」框（输入和候选）和一个单独的「user · 消息」框（渲染出的术语表非空时放术语表，再放请求输入）。
+- 例 A 点名词条：它的组装框列出候选 `Priya`，随后它的 user 消息框先放 `<glossary>`，再写 `call Priya.`。
+- 例 B 的输入是 `call Sam.`，它没点名词条。组装框没有候选，user 消息框就只有 `call Sam.`，也没有 `<glossary>` 块。
 - 有术语表的例子用 `call Priya.`，因为第 4 步已把 `Preeya` 换成 `Priya`，语言模型收到的是替换后的文字（`session/run.go:301-312`）。
 - 底部那行只讲候选规则：不超过 30 个词条时全部放进去，超过 30 个只留文字点到词条或它的别名的那些。60 行和 2000 字节的上限在下面的公式里。
 

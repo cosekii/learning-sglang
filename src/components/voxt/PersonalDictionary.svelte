@@ -47,8 +47,8 @@
     en: 'After recognition, enabled aliases are replaced by their term in the text, before any language-model cleanup. A Latin alias like Preeya matches whole words, ignoring case: a letter or digit outside Han, Hiragana, Katakana and Hangul on either side blocks the match. A side of the alias that ends in punctuation skips that side’s boundary check. Aliases written in Han, Hiragana, Katakana or Hangul match anywhere; when several aliases could match at the same spot, the longest wins. A term already written correctly is left alone, so this works with the language model off or failing.',
     zh: '识别之后、语言模型清理之前，启用的别名会在文字里换回词条。像 Preeya 这样的拉丁别名按整词匹配、不分大小写：旁边紧挨着汉字、平假名、片假名、韩文以外的字母或数字就不匹配。若别名某一端是标点，那一端不查边界。用汉字、平假名、片假名或韩文写的别名可以在任意位置匹配；同一位置有多个别名能匹配时，最长的胜出。已经写对的词条保持原样，所以语言模型关掉或失败时这一步照样有效。',
   }, {
-    en: 'With 30 or fewer distinct enabled terms, all terms become candidates and the rendered glossary sits in the system message. With more than 30, a term becomes a candidate when the replaced text mentions it or any of its aliases; system keeps generic rules. A separate compose area shows the input and its candidates. The rendered glossary opens the user message only when at least one candidate line fits the budget; example A names a term and gets a glossary, while example B names none and the user message stays plain. The request input is call Priya after alias replacement.',
-    zh: '不超过 30 个不同的启用词条时，全部成为候选，渲染出的术语表放在 system 消息里。超过 30 个时，替换后的文字提到某个词条本身或它的任一别名，那个词条才成为候选；system 只留通用规则。另一个「组装」区显示输入和它的候选。渲染出的术语表非空时才放在 user 开头；例 A 点名词条，所以有术语表，例 B 没点到，user 就只有普通消息。这次请求的输入是别名替换后的 call Priya。',
+    en: 'With 30 or fewer distinct enabled terms, all terms become candidates and the rendered glossary sits in the system message. With more than 30, a term becomes a candidate when the replaced text mentions it or any of its aliases; system keeps generic rules. Each example has a labelled compose box with the input and its candidates, and a separate labelled user message box. Example A names a term, so its user message opens with a non-empty glossary, then the input; example B names none, so its user message is only the input. The request input is call Priya after alias replacement.',
+    zh: '不超过 30 个不同的启用词条时，全部成为候选，渲染出的术语表放在 system 消息里。超过 30 个时，替换后的文字提到某个词条本身或它的任一别名，那个词条才成为候选；system 只留通用规则。每个例子各有一个「组装」框，放输入和候选，另有一个单独的「user · 消息」框。例 A 点名词条，user 消息先放非空术语表，再放输入；例 B 没点到，user 消息只有输入。这次请求的输入是别名替换后的 call Priya。',
   }, {
     en: 'Dictionary-wide settings.Dictionary.Notes is free text, separate from a row’s private store.Term.Note. When enabled, it joins the language model system layers and never goes to the speech model or transcript replacement. Final messages are system, then history, then user; this request input sits only in user. Notes-off keeps the dictionary notes out of the prompt even while the dictionary is on.',
     zh: '整部词典的 settings.Dictionary.Notes 是自由文字，和行内私有的 store.Term.Note 不同。开启时，它作为单独一层进入语言模型的 system，从不去语音模型或文字稿替换。最终消息顺序是 system、history、user，这次请求的输入只在 user 里。即使词典开着，关掉备注也能让全词典备注不进提示。',
@@ -71,7 +71,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived((phone ? [640, 720, 640, 700, 820, 620, 620] : [470, 520, 430, 450, 600, 430, 560])[step]);
+  const H = $derived((phone ? [640, 720, 640, 700, 900, 620, 620] : [470, 520, 430, 450, 660, 430, 560])[step]);
 
   const PHASE_COUNTS = [3, 5, 3, 5, 3, 3, 4];
   const PHASE_MS = 800;
@@ -81,7 +81,7 @@
     [{ x: 20, y: 62, w: 260, h: 132 }, { x: 20, y: 222, w: 260, h: 86 }, { x: 20, y: 320, w: 260, h: 86 }, { x: 20, y: 418, w: 260, h: 86 }, { x: 20, y: 516, w: 260, h: 86 }],
     [{ x: 20, y: 62, w: 260, h: 150 }, { x: 20, y: 244, w: 260, h: 96 }, { x: 20, y: 244, w: 260, h: 96 }],
     [{ x: 20, y: 62, w: 260, h: 58 }, { x: 20, y: 146, w: 260, h: 58 }, { x: 20, y: 230, w: 260, h: 52 }, { x: 20, y: 306, w: 260, h: 134 }, { x: 20, y: 454, w: 260, h: 70 }],
-    [{ x: 34, y: 348, w: 232, h: 26 }, { x: 34, y: 374, w: 232, h: 26 }, { x: 34, y: 400, w: 232, h: 88 }],
+    [{ x: 34, y: 358, w: 232, h: 66 }, { x: 34, y: 404, w: 232, h: 22 }, { x: 34, y: 432, w: 232, h: 108 }],
     [{ x: 20, y: 62, w: 260, h: 120 }, { x: 20, y: 212, w: 260, h: 96 }, { x: 20, y: 330, w: 260, h: 70 }],
     [{ x: 20, y: 80, w: 260, h: 66 }, { x: 20, y: 160, w: 260, h: 66 }, { x: 20, y: 240, w: 260, h: 66 }, { x: 20, y: 320, w: 260, h: 66 }],
   ] : [
@@ -89,7 +89,7 @@
     [{ x: 20, y: 78, w: 220, h: 300 }, { x: 300, y: 66, w: 400, h: 72 }, { x: 300, y: 156, w: 400, h: 72 }, { x: 300, y: 246, w: 400, h: 72 }, { x: 300, y: 336, w: 400, h: 72 }],
     [{ x: 20, y: 72, w: 300, h: 190 }, { x: 384, y: 96, w: 316, h: 140 }, { x: 384, y: 96, w: 316, h: 140 }],
     [{ x: 20, y: 76, w: 150, h: 66 }, { x: 204, y: 76, w: 176, h: 66 }, { x: 414, y: 76, w: 286, h: 66 }, { x: 20, y: 164, w: 370, h: 176 }, { x: 410, y: 164, w: 290, h: 150 }],
-    [{ x: 354, y: 160, w: 332, h: 26 }, { x: 354, y: 186, w: 332, h: 26 }, { x: 354, y: 212, w: 332, h: 90 }],
+    [{ x: 334, y: 170, w: 352, h: 64 }, { x: 334, y: 214, w: 352, h: 22 }, { x: 334, y: 242, w: 352, h: 110 }],
     [{ x: 20, y: 72, w: 240, h: 140 }, { x: 324, y: 72, w: 376, h: 140 }, { x: 20, y: 240, w: 680, h: 90 }],
     [{ x: 20, y: 82, w: 510, h: 58 }, { x: 20, y: 154, w: 510, h: 58 }, { x: 20, y: 226, w: 510, h: 58 }, { x: 20, y: 298, w: 510, h: 58 }],
   ])[s];
@@ -358,33 +358,44 @@
           <text x="46" y="204" class="detail">user</text>
           <text x="46" y="226" class="tag">call {VOXT_DICT_TERM}.</text>
 
-          <rect x="20" y="262" width="260" height="430" rx="8" fill="var(--bg)" stroke="var(--line)" />
+          <rect x="20" y="262" width="260" height="498" rx="8" fill="var(--bg)" stroke="var(--line)" />
           <text x="34" y="286" class="rowlabel">&gt; {VOXT_DICT_GLOSSARY_ALL_UP_TO} · {t('GLOSSARY IN USER', '术语表在 USER')}</text>
-          <rect x="34" y="298" width="232" height="40" rx="6" fill="var(--bg)" stroke="var(--line)" />
-          <text x="46" y="316" class="detail">system</text>
-          <text x="46" y="334" class="detail">{t('generic rules only', '只有通用规则')}</text>
+          <rect x="34" y="296" width="232" height="36" rx="6" fill="var(--bg)" stroke="var(--line)" />
+          <text x="46" y="312" class="detail">system</text>
+          <text x="46" y="328" class="detail">{t('generic rules only', '只有通用规则')}</text>
 
-          <rect x="34" y="344" width="232" height="180" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="46" y="364" class="tag strong">{t('A · input: call Priya.', 'A · 输入：call Priya.')}</text>
-          <text x="46" y="386" class="tag">{t('candidates: ', '候选：')}<tspan class="mono">{phase >= 1 ? VOXT_DICT_TERM : '—'}</tspan></text>
+          <text x="34" y="350" class="tag strong">{t('A · input: call Priya.', 'A · 输入：call Priya.')}</text>
+          <rect x="34" y="358" width="232" height="66" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="46" y="376" class="detail">{t('compose', '组装')}</text>
+          <text x="46" y="396" class="tag">{t('input: ', '输入：')}<tspan class="mono">call {VOXT_DICT_TERM}.</tspan></text>
+          <text x="46" y="418" class="tag">{t('candidates: ', '候选：')}<tspan class="mono">{phase >= 1 ? VOXT_DICT_TERM : '—'}</tspan></text>
+
+          <rect x="34" y="432" width="232" height="108" rx="6" fill="var(--bg)" stroke="var(--line)" />
+          <text x="46" y="450" class="detail">{t('user · message', 'user · 消息')}</text>
           {#if phase >= 2}
-            <text x="46" y="412" class="mono">&lt;glossary&gt;</text>
-            <text x="46" y="432" class="detail">- {VOXT_DICT_TERM} ({t('heard as', '可能被听成')}: {VOXT_DICT_ALIAS})</text>
-            <text x="46" y="452" class="mono">&lt;/glossary&gt;</text>
-            <text x="46" y="478" class="tag">call {VOXT_DICT_TERM}.</text>
+            <text x="46" y="470" class="mono">&lt;glossary&gt;</text>
+            <text x="46" y="490" class="detail">- {VOXT_DICT_TERM} ({t('heard as', '可能被听成')}: {VOXT_DICT_ALIAS})</text>
+            <text x="46" y="510" class="mono">&lt;/glossary&gt;</text>
+            <text x="46" y="534" class="tag">call {VOXT_DICT_TERM}.</text>
           {:else}
-            <text x="46" y="412" class="tag">call {VOXT_DICT_TERM}.</text>
-            <text x="46" y="434" class="detail">{t('no glossary line yet', '还没有术语表行')}</text>
+            <text x="46" y="488" class="tag">call {VOXT_DICT_TERM}.</text>
+            <text x="46" y="510" class="detail">{t('no glossary line yet', '还没有术语表行')}</text>
           {/if}
 
-          <rect x="34" y="534" width="232" height="110" rx="6" fill="var(--bg)" stroke="var(--line)" />
-          <text x="46" y="554" class="tag strong">{t('B · input: call Sam.', 'B · 输入：call Sam.')}</text>
-          <text x="46" y="576" class="tag">{t('candidates: none', '候选：无')}</text>
-          <text x="46" y="600" class="tag">call Sam.</text>
-          <text x="46" y="622" class="detail">{t('no glossary: no term named', '没有术语表：没点到词条')}</text>
+          <text x="34" y="554" class="tag strong">{t('B · input: call Sam.', 'B · 输入：call Sam.')}</text>
+          <rect x="34" y="562" width="232" height="66" rx="6" fill="var(--bg)" stroke="var(--line)" />
+          <text x="46" y="580" class="detail">{t('compose', '组装')}</text>
+          <text x="46" y="600" class="tag">{t('input: ', '输入：')}<tspan class="mono">call Sam.</tspan></text>
+          <text x="46" y="622" class="tag">{t('candidates: none', '候选：无')}</text>
 
-          <text x="20" y="724" class="tag">{t('≤30: all terms · >30: only terms the text names', '≤30：全部词条 · >30：只留文字点到的词条')}</text>
-          <text x="20" y="746" class="tag">{t('only lines that fit the budget stay', '只留放得下的行')}</text>
+          <rect x="34" y="636" width="232" height="64" rx="6" fill="var(--bg)" stroke="var(--line)" />
+          <text x="46" y="654" class="detail">{t('user · message', 'user · 消息')}</text>
+          <text x="46" y="674" class="tag">call Sam.</text>
+          <text x="46" y="694" class="detail">{t('no glossary: no term named', '没有术语表：没点到词条')}</text>
+
+          <text x="20" y="800" class="tag">{t('≤30: all terms · >30: term or alias named', '≤30：全部词条 · >30：点名词条或别名')}</text>
+          <text x="20" y="822" class="tag">{t('→ that term becomes a candidate', '→ 那个词条成为候选')}</text>
+          <text x="20" y="844" class="tag">{t('only lines that fit the budget stay', '只留放得下的行')}</text>
         {:else}
           <rect x="20" y="72" width="300" height="250" rx="10" fill="var(--bg)" stroke="var(--line)" />
           <text x="34" y="96" class="rowlabel">≤ {VOXT_DICT_GLOSSARY_ALL_UP_TO} · {t('GLOSSARY IN SYSTEM', '术语表在 SYSTEM')}</text>
@@ -397,33 +408,43 @@
           <text x="48" y="246" class="detail">user</text>
           <text x="48" y="274" class="tag">call {VOXT_DICT_TERM}.</text>
 
-          <rect x="340" y="72" width="360" height="400" rx="10" fill="var(--bg)" stroke="var(--line)" />
-          <text x="354" y="96" class="rowlabel">&gt; {VOXT_DICT_GLOSSARY_ALL_UP_TO} · {t('GLOSSARY IN USER', '术语表在 USER')}</text>
-          <rect x="354" y="108" width="332" height="40" rx="7" fill="var(--bg)" stroke="var(--line)" />
-          <text x="368" y="126" class="detail">system</text>
-          <text x="368" y="144" class="detail">{t('generic rules only', '只有通用规则')}</text>
+          <rect x="320" y="72" width="380" height="500" rx="10" fill="var(--bg)" stroke="var(--line)" />
+          <text x="334" y="96" class="rowlabel">&gt; {VOXT_DICT_GLOSSARY_ALL_UP_TO} · {t('GLOSSARY IN USER', '术语表在 USER')}</text>
+          <rect x="334" y="108" width="352" height="40" rx="7" fill="var(--bg)" stroke="var(--line)" />
+          <text x="348" y="126" class="detail">system</text>
+          <text x="348" y="144" class="detail">{t('generic rules only', '只有通用规则')}</text>
 
-          <rect x="354" y="156" width="332" height="160" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="368" y="176" class="tag strong">{t('A · input: call Priya.', 'A · 输入：call Priya.')}</text>
-          <text x="368" y="198" class="tag">{t('candidates: ', '候选：')}<tspan class="mono">{phase >= 1 ? VOXT_DICT_TERM : '—'}</tspan></text>
+          <text x="334" y="162" class="tag strong">{t('A · input: call Priya.', 'A · 输入：call Priya.')}</text>
+          <rect x="334" y="170" width="352" height="64" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="348" y="188" class="detail">{t('compose', '组装')}</text>
+          <text x="348" y="208" class="tag">{t('input: ', '输入：')}<tspan class="mono">call {VOXT_DICT_TERM}.</tspan></text>
+          <text x="348" y="228" class="tag">{t('candidates: ', '候选：')}<tspan class="mono">{phase >= 1 ? VOXT_DICT_TERM : '—'}</tspan></text>
+
+          <rect x="334" y="242" width="352" height="110" rx="7" fill="var(--bg)" stroke="var(--line)" />
+          <text x="348" y="260" class="detail">{t('user · message', 'user · 消息')}</text>
           {#if phase >= 2}
-            <text x="368" y="220" class="mono">&lt;glossary&gt;</text>
-            <text x="368" y="240" class="detail">- {VOXT_DICT_TERM} ({t('heard as', '可能被听成')}: {VOXT_DICT_ALIAS})</text>
-            <text x="368" y="260" class="mono">&lt;/glossary&gt;</text>
-            <text x="368" y="286" class="tag">call {VOXT_DICT_TERM}.</text>
+            <text x="348" y="282" class="mono">&lt;glossary&gt;</text>
+            <text x="348" y="302" class="detail">- {VOXT_DICT_TERM} ({t('heard as', '可能被听成')}: {VOXT_DICT_ALIAS})</text>
+            <text x="348" y="322" class="mono">&lt;/glossary&gt;</text>
+            <text x="348" y="348" class="tag">call {VOXT_DICT_TERM}.</text>
           {:else}
-            <text x="368" y="230" class="tag">call {VOXT_DICT_TERM}.</text>
-            <text x="368" y="252" class="detail">{t('no glossary line yet', '还没有术语表行')}</text>
+            <text x="348" y="288" class="tag">call {VOXT_DICT_TERM}.</text>
+            <text x="348" y="310" class="detail">{t('no glossary line yet', '还没有术语表行')}</text>
           {/if}
 
-          <rect x="354" y="326" width="332" height="110" rx="7" fill="var(--bg)" stroke="var(--line)" />
-          <text x="368" y="346" class="tag strong">{t('B · input: call Sam.', 'B · 输入：call Sam.')}</text>
-          <text x="368" y="368" class="tag">{t('candidates: none', '候选：无')}</text>
-          <text x="368" y="392" class="tag">call Sam.</text>
-          <text x="368" y="414" class="detail">{t('no glossary: no term named', '没有术语表：没点到词条')}</text>
+          <text x="334" y="370" class="tag strong">{t('B · input: call Sam.', 'B · 输入：call Sam.')}</text>
+          <rect x="334" y="378" width="352" height="64" rx="7" fill="var(--bg)" stroke="var(--line)" />
+          <text x="348" y="396" class="detail">{t('compose', '组装')}</text>
+          <text x="348" y="416" class="tag">{t('input: ', '输入：')}<tspan class="mono">call Sam.</tspan></text>
+          <text x="348" y="436" class="tag">{t('candidates: none', '候选：无')}</text>
 
-          <text x="20" y="504" class="tag">{t('≤30: all terms · >30: only terms the text names', '≤30：全部词条 · >30：只留文字点到的词条')}</text>
-          <text x="20" y="526" class="tag">{t('only lines that fit the budget stay', '只留放得下的行')}</text>
+          <rect x="334" y="450" width="352" height="80" rx="7" fill="var(--bg)" stroke="var(--line)" />
+          <text x="348" y="468" class="detail">{t('user · message', 'user · 消息')}</text>
+          <text x="348" y="490" class="tag">call Sam.</text>
+          <text x="348" y="512" class="detail">{t('no glossary: no term named', '没有术语表：没点到词条')}</text>
+
+          <text x="20" y="600" class="tag">{t('≤30: all terms · >30: the text names a term or its alias', '≤30：全部词条 · >30：点名词条或它的别名')}</text>
+          <text x="20" y="622" class="tag">{t('→ that term becomes a candidate; only lines that fit stay', '→ 那个词条成为候选；只留放得下的行')}</text>
         {/if}
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('compose.Build · GlossaryAllUpTo 30', 'compose.Build · GlossaryAllUpTo 30') : t('Source: compose.Build · GlossaryAllUpTo 30', '出处：compose.Build · GlossaryAllUpTo 30')}</text>
 
