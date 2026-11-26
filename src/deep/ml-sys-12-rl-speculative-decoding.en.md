@@ -87,7 +87,7 @@ $$u_t=\operatorname{concat}(h_t,e_{t+1})$$
 
 $$u_a=\operatorname{concat}(h(a),e(b))$$
 
-At position `a`, the next token is `b` and the token after that is `c`. The training task therefore maps $u_a$ to `c`. The dash marks no real token beyond the sequence. The implementation pads with zero instead of creating a token named “—”.
+At position `a`, the next token is `b` and the token after that is `c`. The training task therefore maps $u_a$ to `c`. One MTP-layer call predicts one next token per position. EAGLE, the draft method that reuses this layer, calls it repeatedly to propose several tokens. The dash marks no real token beyond the sequence. The implementation pads with zero instead of creating a token named “—”.
 
 The diagram shows the original MiMo checkpoint order, `concat(h_t,e_{t+1})`. The pinned Megatron forward executes `concat(e_{t+1},h_t)` instead; `MimoBridge` swaps the `eh_proj` input halves during checkpoint conversion. Both forms train the same pair $(h_t,e_{t+1})$ to predict $x_{t+2}$. Join never means arithmetic addition.
 

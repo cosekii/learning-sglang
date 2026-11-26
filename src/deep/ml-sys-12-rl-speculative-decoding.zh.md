@@ -87,7 +87,7 @@ $$u_t=\operatorname{concat}(h_t,e_{t+1})$$
 
 $$u_a=\operatorname{concat}(h(a),e(b))$$
 
-在位置 `a`，下一个 token 是 `b`，再下一个就是 `c`，所以训练任务是从 $u_a$ 预测 `c`。横线只表示序列外没有真实 token，固定实现用 0 补齐，不会多出一个叫“—”的 token。
+在位置 `a`，下一个 token 是 `b`，再下一个就是 `c`，所以训练任务是从 $u_a$ 预测 `c`。一层 MTP 每次调用在每个位置预测一个后续 token；EAGLE 是反复调用这层来提出多个 token 的 draft 方法。横线只表示序列外没有真实 token，固定实现用 0 补齐，不会多出一个叫“—”的 token。
 
 本图画的是原始 MiMo checkpoint 的顺序：`concat(h_t,e_{t+1})`，即 hidden state 在前、embedding 在后。固定 Megatron 前向实际执行 `concat(e_{t+1},h_t)`；`MimoBridge` 在 checkpoint 转换时交换 `eh_proj` 的输入半块。两种写法都把同一对 $(h_t,e_{t+1})$ 送给 draft 学习 $x_{t+2}$，不能把“join”理解成算术相加。
 
