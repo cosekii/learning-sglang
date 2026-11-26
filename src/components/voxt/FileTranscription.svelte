@@ -89,8 +89,8 @@
     en: 'The same two cues become SRT numbered cues with start and end times, or TXT with one line per cue. The command opens the output file only after recognition succeeds. Recognition failure does not create or overwrite it. A later disk-write failure can truncate an old file or leave a partial new file.',
     zh: '同样的两句可以写成带起止时间的 SRT 编号字幕，也可以写成每句一行的 TXT。命令等识别成功后才打开输出文件。识别失败不会创建或覆盖输出。之后的写盘失败可能截断旧文件或留下部分新文件。',
   }, {
-    en: 'The file route writes no history row and keeps no recording. It writes one log line with the audio length and the cue count, not the text. The audio goes to the model chosen for Transcribe: on this Mac or a configured remote service. The next chapter asks how model files and app updates reach this Mac.',
-    zh: '文件路线不写历史记录，也不留录音。它只写一行日志，记音频长度和句子数，不记文字。声音送给 Transcribe 选定的模型：本机或配置的远端服务。下一章问模型文件和应用更新怎样到达这台 Mac。',
+    en: 'Dictation writes history only when history is enabled, which is the default. The file route writes no history row and keeps no recording. It writes one log line with the audio length and the cue count, not the text. The audio goes to the model chosen for Transcribe: on this Mac or a configured remote service. The next chapter asks how model files and app updates reach this Mac.',
+    zh: '听写只在历史开启时写历史，默认开启。文件路线不写历史记录，也不留录音。它只写一行日志，记音频长度和句子数，不记文字。声音送给 Transcribe 选定的模型：本机或配置的远端服务。下一章问模型文件和应用更新怎样到达这台 Mac。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -579,7 +579,7 @@
         {/if}
       {:else if step === 8}
         <text x={W / 2} y="27" text-anchor="middle" class="title">{t('NO HISTORY OR RECORDING', '不写历史，不留录音')}</text>
-        <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('dictation writes history; this route does not', '听写写历史；这条路线不写')}</text>
+        <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('dictation may write history; this route does not', '听写可能写历史；这条路线不写')}</text>
         {#if !phone}
           <rect x="25" y="72" width="330" height="160" rx="10" fill="var(--bg)" stroke="var(--line)" />
           <text x="190" y="96" text-anchor="middle" class="label">{t('NOT WRITTEN', '不留下')}</text>

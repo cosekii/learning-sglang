@@ -352,14 +352,14 @@ TXT 只有两行：`Good morning.` 和 `See you at noon.`。
 
 ### 图上是什么
 
-- 左边「不留下」列出三样：历史记录、录音、日志里的文字。
+- 标题下先对照：听写可能写历史，文件路线不写。左边「不留下」列出三样：历史记录、录音、日志里的文字。
 - 右边「留下」是一行日志：长度和句子数，没有文字。
 - 下面是声音的两个去向：本机语音模型，或为 Transcribe 设置的远端语音服务。
 - 最后一行问：模型文件和应用更新怎样到达这台 Mac？
 
 ### 代码怎么保证
 
-`fileRecognizer` 直接调用 `asr.Recognize`（`transcribe_socket.go:84-87`），没有调用 `session` 的 `keep()`，所以不会写 `store.Entry`，也不会写 WAV。完成回调只拼一条 `core.LogEntry`：
+听写只在 `Privacy.KeepHistory` 开启时写历史，默认开启；关闭时不写（`Voxt/internal/session/run.go:572-576`、`Voxt/internal/settings/settings.go:373-380`）。文件路线的 `fileRecognizer` 直接调用 `asr.Recognize`（`transcribe_socket.go:84-87`），没有调用 `session` 的 `keep()`，所以不会写 `store.Entry`，也不会写 WAV。完成回调只拼一条 `core.LogEntry`：
 
 ```go
 Message: fmt.Sprintf("transcribed a file for the command line: %s of audio, %d segments", ...)

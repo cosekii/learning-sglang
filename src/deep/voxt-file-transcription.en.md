@@ -352,14 +352,14 @@ The output is done. Step 9 looks at what this route leaves on the Mac.
 
 ### On the stage
 
-- The left panel "NOT WRITTEN" lists three things: a history row, a recording, and the text in the log.
+- The subtitle contrasts dictation, which may write history, with this route, which does not. The left panel "NOT WRITTEN" lists three things: a history row, a recording, and the text in the log.
 - The right panel "WRITTEN" is one log line: length and cue count, no text.
 - The two boxes below are where the audio goes: the on-device speech model, or the remote speech service set for Transcribe.
 - The last line asks: how do model files and app updates reach this Mac?
 
 ### How the code keeps it clean
 
-`fileRecognizer` calls `asr.Recognize` directly (`transcribe_socket.go:84-87`); it never calls the session's `keep()`, so it writes no `store.Entry` and no WAV. The completion hook builds one `core.LogEntry`:
+Dictation writes history only when `Privacy.KeepHistory` is enabled, which is the default; it writes none when the setting is off (`Voxt/internal/session/run.go:572-576`, `Voxt/internal/settings/settings.go:373-380`). The file route's `fileRecognizer` calls `asr.Recognize` directly (`transcribe_socket.go:84-87`); it never calls the session's `keep()`, so it writes no `store.Entry` and no WAV. The completion hook builds one `core.LogEntry`:
 
 ```go
 Message: fmt.Sprintf("transcribed a file for the command line: %s of audio, %d segments", ...)
