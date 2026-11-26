@@ -248,3 +248,38 @@ Fish's non-streaming default batch cap is 8 with a 2 ms collection wait. Those d
 Fish's vocoder receives ten codebook rows for each audio frame. The last step follows that input to the question the next chapter answers: which generation loops produce the rows?
 
 Sources: `sglang_omni/models/minicpm_o/components/tts_runtime.py:47-76,92-121,240-260`; `sglang_omni/models/minicpm_o/components/token2wav/flow.py:408-448,737-800`; `sglang_omni/models/fishaudio_s2_pro/streaming_vocoder.py:43-66`; `sglang_omni/scheduling/audio_vocoder.py:80-114,116-224`; `sglang_omni/scheduling/audio_stream.py:187-239,242-333`; `sglang_omni/models/fishaudio_s2_pro/stages.py:522-552`.
+
+## Step 8 · Follow ten codebook entries into Fish's vocoder
+
+**One sentence.** Fish S2 Pro's vocoder consumes ten codebook entries for each audio frame, and the next chapter traces the two AR loops that choose them.
+
+### On the stage
+
+- A `codebook` is a table of sound-building choices. For one audio frame, each of Fish's ten codebooks contributes one selected entry to the vocoder input.
+- The ten blue rows are those codebook inputs. The orange question marks stand for choices made before the vocoder; this chapter has not yet shown which generation work makes them.
+- The bracket combines the ten rows into one frame's input. The vocoder turns that input into one audio frame. It does not produce ten separate audio frames.
+- This is a constructed one-frame view. It does not assign a playback duration or claim that every codebook contains the same number of possible entries.
+
+### Formula and symbols
+
+$$E=k\times1$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $k$ | Codebooks consumed per audio frame | Fish S2 Pro `num_codebooks`, 10 |
+| $1$ | One selected entry per codebook for this frame | Code tensor layout |
+| $E$ | Codebook entries sent to the vocoder for this frame | Calculated here, 10 |
+
+### The numbers on the stage
+
+$$E=10\times1=10\ \text{entries}$$
+
+Fish's model produces an additional semantic row before these ten rows. `S2ProVocoderScheduler` drops that row and sends the ten codebook rows to the DAC vocoder.
+
+One outer Slow-AR step samples a semantic token and exposes its codebook-relative semantic id. The fast decoder starts from the Slow-AR hidden state, resets its caches, then fills nine residual codebooks through ten KV-cached calls. The next chapter explains why those two loops are needed and what each cache retains.
+
+### Next
+
+Chapter 11, `11-fish-s2-pro`, opens the Dual-AR generation path behind the ten question marks and follows the resulting codes into the streaming vocoder.
+
+Sources: `sglang_omni/models/fishaudio_s2_pro/streaming_vocoder.py:102-106`; `sglang_omni/models/fishaudio_s2_pro/sglang_model.py:418-425,484-510`; `sglang_omni/models/fishaudio_s2_pro/fish_speech/models/text2semantic/audio_decoder.py:505-526`; `sglang_omni/models/fishaudio_s2_pro/payload_types.py:35-50`.

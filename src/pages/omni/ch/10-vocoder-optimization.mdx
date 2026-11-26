@@ -27,6 +27,8 @@ Step 6 quotes [public PR #1101's historical H200 c16 sweep](https://github.com/s
 
 Step 7 compares three distinct paths. Qwen uses the mechanisms from Steps 2–6. MiniCPM-o native batches one unit per ready session, retains Flow/HiFT caches and graphs only its internal Flow chunk loop (`tts_runtime.py:47-76,92-121,240-260`; `token2wav/flow.py:408-448,737-800`). Fish batches completed non-streaming requests with padding and trimming, but streaming chunks stay per request (`streaming_vocoder.py:43-66`; `scheduling/audio_vocoder.py:80-114,116-224`). Fish retains old code frames and crossfade samples, not equivalent execution state (`scheduling/audio_stream.py:187-239,242-333`). Its production factory does not install the test-only vocoder graph (`fishaudio_s2_pro/stages.py:522-552`). Offline defaults are not applied to these native or streaming paths.
 
+Step 8 follows Fish S2 Pro's `num_codebooks=10` hand-off. `sglang_omni/models/fishaudio_s2_pro/streaming_vocoder.py:102-106` drops the semantic row and sends the remaining ten codebook rows per audio frame to the vocoder. `sglang_model.py:418-425,484-510` and `fish_speech/models/text2semantic/audio_decoder.py:505-526` show the next chapter's answer: one outer Slow-AR step supplies the semantic state, then the fast decoder fills residual codebooks through ten KV-cached calls. The stage asks which loops make the ten choices without assigning a duration or claiming to have explained Dual-AR here.
+
 Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`. The chapter reads source and public results; it does not run a model or benchmark.
 
 </details>
@@ -47,6 +49,8 @@ Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37
 第 6 步引用[公开 PR #1101 的历史 H200 c16 对照](https://github.com/sgl-project/sglang-omni/pull/1101#issuecomment-5040716545)：eager 对照 0.575 requests/s，graph replay 0.635 requests/s。两者之比得到图上的 10.4% 平均 QPS 增幅。PR 另报的 10.55% paired delta 是逐对百分比变化的均值，不能由两个展示均值重算。协议使用 ancestor `b4159d2a`、BF16、新 server、temperature 0、seed 777、Talker 上限 800 token，每方预热 16 个并测量 128 个请求，做两轮交替对照。匹配音频工作量相差不超过 0.076%。这不是当前源码或通用加速声明。
 
 第 7 步对照三条不同路径。Qwen 使用第 2–6 步的机制。MiniCPM-o native 把每个就绪 session 的一个单元组成 batch，保留 Flow/HiFT caches，只把内部 Flow chunk 循环接入 graph（`tts_runtime.py:47-76,92-121,240-260`；`token2wav/flow.py:408-448,737-800`）。Fish 通过补位和裁切 batch 已完成的非流式请求，流式 chunks 仍逐请求运行（`streaming_vocoder.py:43-66`；`scheduling/audio_vocoder.py:80-114,116-224`）。Fish 保留旧 code frames 和 crossfade 样本，不是等价的执行状态（`scheduling/audio_stream.py:187-239,242-333`）。生产 factory 没有接入测试展示的 vocoder graph（`fishaudio_s2_pro/stages.py:522-552`）。离线默认值不套到这些 native 或流式路径。
+
+第 8 步跟随 Fish S2 Pro 的 `num_codebooks=10` 交接。`sglang_omni/models/fishaudio_s2_pro/streaming_vocoder.py:102-106` 去掉 semantic 行，把每个音频帧剩下的十行 codebook 送入 vocoder。`sglang_model.py:418-425,484-510` 和 `fish_speech/models/text2semantic/audio_decoder.py:505-526` 给出下一章的答案：外层 Slow-AR 的一步提供 semantic 状态，fast decoder 再通过十次使用 KV cache 的调用填充 residual codebook。图上只问哪些循环做出十个选择，不填写时长，也不声称本章已经解释 Dual-AR。
 
 本章代码出处固定到 `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`。本章只读源码和公开结果，没有运行模型或 benchmark。
 

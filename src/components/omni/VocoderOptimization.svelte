@@ -22,6 +22,7 @@
     VOC_GRAPH_CONTROL_QPS,
     VOC_GRAPH_REPLAY_QPS,
     VOC_GRAPH_MEAN_QPS_GAIN_PERCENT,
+    VOC_FISH_CODEBOOK_ROWS,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -47,6 +48,9 @@
   }, {
     caption: 'The three mechanisms do different jobs. Each model family implements a different subset.',
     captionZh: '三种机制分工不同。每个模型系列只采用其中一部分。',
+  }, {
+    caption: 'Fish’s vocoder needs ten codebook entries per audio frame. Which generation loops choose them?',
+    captionZh: 'Fish 的 vocoder 每帧需要十个 codebook 条目。哪些生成循环选出它们？',
   }];
   let step = $state(0);
   $effect(() => {
@@ -64,7 +68,7 @@
   const cur = $derived(steps[step]);
   const fmt = (value: number) => value.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [790, 850, 850, 740, 800, 650, 730][step] : [570, 630, 640, 570, 640, 570, 560][step]);
+  const H = $derived(phone ? [790, 850, 850, 740, 800, 650, 730, 740][step] : [570, 630, 640, 570, 640, 570, 560, 600][step]);
   const roadmap = $derived([
     { title: 'ready windows', body: 'decode them together', titleZh: '准备好的窗口', bodyZh: '放在一起解码' },
     { title: 'earlier decoder work', body: 'keep it for next time', titleZh: '之前算过的内容', bodyZh: '留给下个窗口' },
@@ -322,6 +326,44 @@
         <text x={W / 2} y={phone ? 594 : 380} text-anchor="middle" class="small strong">{t(phone ? 'Batch shares · state keeps · graph replays' : 'Batch shares work. Retained state avoids repeats. Graphs replay launches.', phone ? 'batch 共享 · state 保留 · graph 重放' : 'batch 共享工作。保留状态避免重复。graph 重放 launches。')}</text>
         <text x={W / 2} y={phone ? 628 : 416} text-anchor="middle" class="small">{t(phone ? 'Fish streams decode one request at a time' : 'Fish streaming windows still decode one request at a time.', phone ? 'Fish 流式窗口仍逐请求解码' : 'Fish 流式窗口仍逐请求解码。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'MiniCPM-o native · Fish streaming path shown here' : 'MiniCPM-o native duplex and Fish S2 Pro’s streaming scheduler are distinct from their offline paths.', phone ? 'MiniCPM-o native · 此处是 Fish 流式路径' : 'MiniCPM-o native 全双工和 Fish S2 Pro 流式调度器都有别于各自的离线路径。')}</text>
+      {:else if step === 7}
+        <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'Ten entries for one audio frame' : 'One Fish audio frame needs ten codebook entries', phone ? '一个音频帧需要十个条目' : '一个 Fish 音频帧需要十个 codebook 条目')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'codebook = sound-choice table' : 'codebook = a table of sound-building choices', phone ? 'codebook = 声音选项表' : 'codebook = 构造声音的选项表')}</text>
+        <text x={phone ? 18 : 30} y="79" class="label">{t(phone ? 'blue table rows · orange ? = earlier choices' : 'blue = codebook rows · orange ? = choices made before the vocoder', phone ? '蓝表行 · 橙 ? = 之前选出的条目' : '蓝 = codebook 行 · 橙 ? = vocoder 之前选出的条目')}</text>
+        {#if !phone}
+          {#each Array.from({ length: VOC_FISH_CODEBOOK_ROWS }, (_, i) => i + 1) as row, i}
+            {@const y = 105 + i * 33}
+            <rect x="30" y={y} width="250" height="27" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="43" y={y + 19} class="small">codebook {row}</text>
+            <text x="259" y={y + 19} text-anchor="end" class="small" style="fill:var(--gen)">entry ?</text>
+          {/each}
+          <line x1="295" y1="119" x2="295" y2="414" stroke="var(--accent)" stroke-width="2" />
+          <line x1="295" y1="266" x2="402" y2="266" stroke="var(--accent)" stroke-width="2" marker-end="url(#voc-arrow)" />
+          <rect x="415" y="220" width="115" height="91" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="472" y="270" text-anchor="middle" class="small strong">vocoder</text>
+          <line x1="531" y1="266" x2="572" y2="266" stroke="var(--accent)" stroke-width="2" marker-end="url(#voc-arrow)" />
+          <rect x="585" y="220" width="105" height="91" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="637" y="258" text-anchor="middle" class="small strong">1 audio</text>
+          <text x="637" y="282" text-anchor="middle" class="small strong">frame</text>
+          <text x="360" y="466" text-anchor="middle" class="result">{VOC_FISH_CODEBOOK_ROWS} codebooks × 1 {t('entry', '个条目')} = {VOC_FISH_CODEBOOK_ROWS} {t('inputs for this frame', '个本帧输入')}</text>
+          <text x="360" y="521" text-anchor="middle" class="result" style="fill:var(--gen)">{t('Which generation loops choose these ten entries?', '哪些生成循环选出这十个条目？')}</text>
+        {:else}
+          {#each Array.from({ length: VOC_FISH_CODEBOOK_ROWS }, (_, i) => i + 1) as row, i}
+            {@const y = 99 + i * 30}
+            <rect x="18" y={y} width="264" height="24" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="30" y={y + 17} class="small">codebook {row}</text>
+            <text x="264" y={y + 17} text-anchor="end" class="small" style="fill:var(--gen)">entry ?</text>
+          {/each}
+          <line x1="150" y1="402" x2="150" y2="427" stroke="var(--accent)" stroke-width="2" marker-end="url(#voc-arrow)" />
+          <rect x="18" y="438" width="264" height="48" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="150" y="468" text-anchor="middle" class="small strong">vocoder</text>
+          <line x1="150" y1="487" x2="150" y2="512" stroke="var(--accent)" stroke-width="2" marker-end="url(#voc-arrow)" />
+          <rect x="18" y="523" width="264" height="48" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="150" y="553" text-anchor="middle" class="small strong">1 {t('audio frame', '音频帧')}</text>
+          <text x="150" y="610" text-anchor="middle" class="result">{VOC_FISH_CODEBOOK_ROWS} × 1 = {VOC_FISH_CODEBOOK_ROWS} {t('entries', '个条目')}</text>
+          <text x="150" y="658" text-anchor="middle" class="result" style="fill:var(--gen)">{t('Which loops choose them?', '哪些循环选出它们？')}</text>
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Fish S2 Pro · codebook rows 1–10 enter vocoder' : 'Fish S2 Pro sends codebook rows 1–10 for this frame to its vocoder.', phone ? 'Fish S2 Pro · codebook 第 1–10 行进入 vocoder' : 'Fish S2 Pro 把这个帧的 codebook 第 1–10 行送入 vocoder。')}</text>
       {/if}
     </svg>
   </div>

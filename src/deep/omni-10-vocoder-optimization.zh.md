@@ -248,3 +248,38 @@ Fish 非流式路径默认最多收集 8 个请求，等待 2 ms。这些默认�
 Fish 的 vocoder 每个音频帧收到十行 codebook。最后一步跟着这份输入，引出下一章的问题：哪些生成循环写出这些行？
 
 来源：`sglang_omni/models/minicpm_o/components/tts_runtime.py:47-76,92-121,240-260`；`sglang_omni/models/minicpm_o/components/token2wav/flow.py:408-448,737-800`；`sglang_omni/models/fishaudio_s2_pro/streaming_vocoder.py:43-66`；`sglang_omni/scheduling/audio_vocoder.py:80-114,116-224`；`sglang_omni/scheduling/audio_stream.py:187-239,242-333`；`sglang_omni/models/fishaudio_s2_pro/stages.py:522-552`。
+
+## 第 8 步 · 跟着十个 codebook 条目进入 Fish vocoder
+
+**一句话。** Fish S2 Pro 的 vocoder 每个音频帧读取十个 codebook 条目，下一章追溯选出它们的两个 AR 循环。
+
+### 图上是什么
+
+- `codebook` 是构造声音的选项表。对于一个音频帧，Fish 的十个 codebook 各贡献一个选中的条目，组成 vocoder 输入。
+- 十个蓝色行就是这些 codebook 输入。橙色问号表示 vocoder 之前做出的选择，本章还没有展示哪些生成工作做出选择。
+- 左侧括线把十行合成一个帧的输入。vocoder 把它变成一个音频帧，不是十个独立音频帧。
+- 这是构造的单帧视图，不填写播放时长，也不声称每个 codebook 有同样多的候选条目。
+
+### 公式与符号
+
+$$E=k\times1$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $k$ | 每个音频帧使用的 codebook 数 | Fish S2 Pro `num_codebooks`，10 |
+| $1$ | 这个帧从每个 codebook 选一个条目 | code tensor 布局 |
+| $E$ | 这个帧送入 vocoder 的条目数 | 本步计算，10 |
+
+### 代入图上的数
+
+$$E=10\times1=10\ \text{个条目}$$
+
+Fish 模型还在这十行之前生成一个 semantic 行。`S2ProVocoderScheduler` 去掉那一行，把十个 codebook 行送入 DAC vocoder。
+
+外层 Slow-AR 的一步采样 semantic token，并给出相对于 codebook 的 semantic id。fast decoder 从 Slow-AR hidden state 开始，重置自己的 caches，再通过十次使用 KV cache 的调用填充九个 residual codebook。下一章解释为什么需要这两个循环，以及每份 cache 保留什么。
+
+### 接下来
+
+第 11 章 `11-fish-s2-pro` 打开十个问号背后的 Dual-AR 生成路径，再跟着生成的 codes 进入流式 vocoder。
+
+来源：`sglang_omni/models/fishaudio_s2_pro/streaming_vocoder.py:102-106`；`sglang_omni/models/fishaudio_s2_pro/sglang_model.py:418-425,484-510`；`sglang_omni/models/fishaudio_s2_pro/fish_speech/models/text2semantic/audio_decoder.py:505-526`；`sglang_omni/models/fishaudio_s2_pro/payload_types.py:35-50`。
