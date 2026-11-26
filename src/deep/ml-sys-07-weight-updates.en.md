@@ -134,13 +134,13 @@ Sources: `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-1.md:51-60,132-204`; `v
 
 ## Step 5 · Bound temporary residency with a bucket
 
-**One sentence.** After training moves its weights off the GPU, slime restores one bucket, converts it to the rollout model's layout, transfers it, waits, clears it and reuses the space.
+**One sentence.** After training moves its weights off the GPU, slime restores one bucket, arranges it for SGLang's loader, transfers it, waits, clears it and reuses the space.
 
 ### On the stage
 
 - The two panels compare the same SGLang and KV allocation with either the whole training model or one bucket beside it. The shapes are schematic, not a byte-scale drawing.
 - `Bucket 1` is the only training-weight group restored in the right panel. Later buckets wait outside the GPU.
-- The bottom order converts the bucket to the rollout model's layout before sending handles, then ends with `ray.get`, the call that waits for the result, and `clear`. The sender waits for SGLang's update before releasing that converted bucket.
+- The bottom order arranges the bucket for SGLang's loader before sending handles, then ends with `ray.get`, the call that waits for SGLang to finish loading, and `clear`. The sender releases the converted bucket copy only after that wait.
 
 ### Formula and symbols
 
@@ -148,10 +148,11 @@ $$R_{\text{all}}=S+M,\qquad R_{\text{bucket}}=S+b,\qquad b<M$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
-| $S$ | SGLang weights, KV and related resident state | Existing rollout allocation |
-| $M$ | Whole training model restored together | Left panel |
-| $b$ | One restored parameter bucket | Right panel |
-| $R$ | Temporary combined residency | Sum in each panel |
+| $S$ | Memory footprint of SGLang weights, KV and related resident state | Existing rollout allocation |
+| $M$ | Memory footprint of the whole training model restored together | Left panel |
+| $b$ | Memory footprint of one restored parameter bucket | Right panel |
+| $R_{\text{all}}$ | Temporary combined residency without buckets | $S+M$ in the left panel |
+| $R_{\text{bucket}}$ | Temporary combined residency with one bucket | $S+b$ in the right panel |
 
 ### The numbers on the stage
 

@@ -111,13 +111,13 @@
     mobile: [
       { title: 'TRAINING WEIGHTS WAIT', titleZh: '训练权重先等待', body: 'moved off the GPU after training', bodyZh: '训练后已移出 GPU', tone: 'plain' },
       { title: 'UPLOAD BUCKET 1', titleZh: '拿回第 1 桶', body: 'only this small group', bodyZh: '只拿这一小组', tone: 'orange' },
-      { title: 'ASSEMBLE + SEND HANDLES', titleZh: '拼好并发送句柄', body: 'convert to the rollout layout', bodyZh: '转成 rollout 模型布局', tone: 'orange' },
-      { title: 'WAIT RESULT → CLEAR → NEXT', titleZh: '等结果 → 清空 → 下一桶', body: 'ray.get = wait for the result', bodyZh: 'ray.get = 等待结果', tone: 'blue' },
+      { title: 'ASSEMBLE + SEND HANDLES', titleZh: '拼好并发送句柄', body: 'arrange weights for SGLang', bodyZh: '排成 SGLang 要的样子', tone: 'orange' },
+      { title: 'WAIT RESULT → CLEAR → NEXT', titleZh: '等结果 → 清空 → 下一桶', body: 'ray.get = wait for SGLang', bodyZh: 'ray.get = 等 SGLang 装入', tone: 'blue' },
     ],
     formulas: [
       { en: 'GPU holds SGLang + one bucket', zh: 'GPU 上是 SGLang + 一桶' },
       { en: 'not SGLang + the whole training model', zh: '不是 SGLang + 整套训练模型' },
-      { en: 'rollout layout → wait result → clear', zh: 'rollout 布局 → 等结果 → 清空' },
+      { en: 'arrange → wait for SGLang → clear', zh: '排好权重 → 等 SGLang 装入 → 清空' },
     ],
   }, {
     caption: 'Generation must not read a half-updated model. The next rollout waits for every parameter and old-KV invalidation.',
@@ -345,9 +345,9 @@
         <rect x="395" y="207" width="275" height="52" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
         <text x="532" y="239" text-anchor="middle" class="small strong">BUCKET 1 · {t('ON GPU', '在 GPU 上')}</text>
         <rect x="395" y="275" width="275" height="43" rx="9" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />
-        <text x="532" y="302" text-anchor="middle" class="small">BUCKETS 2, 3 · {t('WAIT OFF GPU', '在 GPU 外等待')}</text>
-        <text x="360" y="378" text-anchor="middle" class="code">{t('upload → assemble → rollout layout → send handles → wait for result → clear', '拿回 → 拼好 → 转成 rollout 布局 → 发句柄 → 等结果 → 清空')}</text>
-        <text x="360" y="413" text-anchor="middle" class="small strong">{t('The result arrives before the bucket in rollout layout is cleared.', '收到更新结果后，才清空这一桶已转成 rollout 布局的结果。')}</text>
+        <text x="532" y="302" text-anchor="middle" class="small">{t('LATER BUCKETS', '后面的桶')} · {t('WAIT OFF GPU', '在 GPU 外等待')}</text>
+        <text x="360" y="378" text-anchor="middle" class="code">{t('upload → assemble → arrange for SGLang → send handles → wait for SGLang → clear', '拿回 → 拼好 → 排成 SGLang 要的样子 → 发句柄 → 等 SGLang 装入 → 清空')}</text>
+        <text x="360" y="413" text-anchor="middle" class="small strong">{t('SGLang finishes loading before the converted bucket copy is cleared.', 'SGLang 装入完成后，才清空这一桶转换后的副本。')}</text>
         <text x="360" y="447" text-anchor="middle" class="small">{t('Blue = rollout state · orange = training weights being updated', '蓝 = rollout 状态 · 橙 = 正在更新的训练权重')}</text>
       {:else if step === 5}
         <rect x="35" y="90" width="190" height="121" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" />
