@@ -214,16 +214,20 @@
           {@const y = phone ? failing ? 465 : 145 : 130}
           {@const pw = phone ? 264 : 315}
           {@const results = failing ? ['503', 'timeout', '503'] : ['200', '200']}
-          <rect x={x} y={y} width={pw} height="285" rx="12" fill={failing ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={failing ? 'var(--gen)' : 'var(--accent)'} />
+          {@const reached = failing ? phase >= 5 : phase >= 2}
+          <rect x={x} y={y} width={pw} height="285" rx="12" fill={reached ? failing ? 'var(--gen-soft)' : 'var(--accent-soft)' : 'var(--bg)'} stroke={reached ? failing ? 'var(--gen)' : 'var(--accent)' : 'var(--line)'} style="transition: fill 350ms, stroke 350ms" />
           <text x={x + 16} y={y + 30} class="small strong">{failing ? t('BECOMES UNHEALTHY', '转为 UNHEALTHY') : t('BECOMES HEALTHY', '转为 HEALTHY')}</text>
           <text x={x + 16} y={y + 58} class="small">{t('start: UNKNOWN · not selectable', '起点：UNKNOWN · 不可选择')}</text>
           {#each results as result, i}
-            <circle cx={x + 40} cy={y + 96 + i * 48} r="14" fill={failing ? 'var(--gen)' : 'var(--accent)'} />
-            <text x={x + 66} y={y + 101 + i * 48} class="code">{result}</text>
-            <text x={x + pw - 16} y={y + 101 + i * 48} text-anchor="end" class="small">{i + 1} {failing ? t(i === 0 ? 'failure' : 'failures', '次失败') : t(i === 0 ? 'success' : 'successes', '次成功')}</text>
+            {@const at = failing ? i + 3 : i + 1}
+            <g opacity={phase >= at ? 1 : 0.12} style="transition: opacity 350ms">
+              <circle cx={x + 40} cy={y + 96 + i * 48} r="14" fill={failing ? 'var(--gen)' : 'var(--accent)'} />
+              <text x={x + 66} y={y + 101 + i * 48} class="code">{result}</text>
+              <text x={x + pw - 16} y={y + 101 + i * 48} text-anchor="end" class="small">{i + 1} {failing ? t(i === 0 ? 'failure' : 'failures', '次失败') : t(i === 0 ? 'success' : 'successes', '次成功')}</text>
+            </g>
           {/each}
-          <rect x={x + 16} y={y + 225} width={pw - 32} height="40" rx="7" fill="var(--bg)" stroke={failing ? 'var(--gen)' : 'var(--accent)'} />
-          <text x={x + pw / 2} y={y + 251} text-anchor="middle" class="small strong">{failing ? t(`${ROUTER_HEALTH_FAILURE_THRESHOLD} failures → UNHEALTHY`, `连续 ${ROUTER_HEALTH_FAILURE_THRESHOLD} 次失败 → UNHEALTHY`) : t(`${ROUTER_HEALTH_SUCCESS_THRESHOLD} successes → HEALTHY`, `连续 ${ROUTER_HEALTH_SUCCESS_THRESHOLD} 次成功 → HEALTHY`)}</text>
+          <rect x={x + 16} y={y + 225} width={pw - 32} height="40" rx="7" fill="var(--bg)" stroke={failing ? 'var(--gen)' : 'var(--accent)'} opacity={reached ? 1 : 0.12} style="transition: opacity 350ms" />
+          <text x={x + pw / 2} y={y + 251} text-anchor="middle" class="small strong" opacity={reached ? 1 : 0.12} style="transition: opacity 350ms">{failing ? t(`${ROUTER_HEALTH_FAILURE_THRESHOLD} failures → UNHEALTHY`, `连续 ${ROUTER_HEALTH_FAILURE_THRESHOLD} 次失败 → UNHEALTHY`) : t(`${ROUTER_HEALTH_SUCCESS_THRESHOLD} successes → HEALTHY`, `连续 ${ROUTER_HEALTH_SUCCESS_THRESHOLD} 次成功 → HEALTHY`)}</text>
         {/each}
         <text x={W / 2} y={phone ? 785 : 445} text-anchor="middle" class="small strong">{t(phone ? 'UNKNOWN and UNHEALTHY cannot be selected.' : 'UNKNOWN and UNHEALTHY stay outside selection.', 'UNKNOWN 和 UNHEALTHY 都不能进入选择。')}</text>
         <text x={W / 2} y={phone ? 812 : 480} text-anchor="middle" class="small">{t('A single later result does not flip the state.', '之后单独一次结果不会立刻翻转状态。')}</text>
@@ -369,7 +373,7 @@
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Next chapter: worker failure and graceful exit.', '下一章：worker 故障与退出。')}</text>
       {/if}
-      {#if step <= 2}<LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={4} label={t('loops', '循环')} />{/if}
+      {#if step <= 3}<LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={4} label={t('loops', '循环')} />{/if}
     </svg>
   </div>
   <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh}
