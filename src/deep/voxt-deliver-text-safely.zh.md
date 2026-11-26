@@ -1,31 +1,32 @@
-## 第 1 步 · start app 和 front app 可以不是同一个 app
+## 第 1 步 · 目的地是焦点的所属进程
 
-> **一句话：** 文字去文字准备好时在前面的 app 的焦点，按快捷键的那个 app 只是一个记下来的例外。
+> **一句话：** 文字去拥有焦点元素的那个进程；它可以是 start app、别的 app，或一个不在最前面的浮窗。
 
 ### 图上是什么
 
 - 左边的框是 **start app**，按快捷键那一刻在前面的 app，也就是 `Request.Target`。
-- 右边的框是 **front app now**，文字准备好那一刻在前面的 app。它有焦点的元素才是打字会去的地方。
-- 箭头表示 Voxt 在录音和思考时，你切了 app。
-- 底部一行说 start app 会被记住，但它不是目的地。它剩下的作用在后面几步出现。
+- 右边的框是 **focus owner**，拥有焦点元素的进程。这个所属进程就是目的地。
+- `focus` 是打字会落下的框。一个浮窗可以在别的 app 在前时仍然拿着焦点。
+- 底部两行说所属进程可以是 start app、别的 app，或一个浮窗；start app 不一定是目的地。
 
 ### 规则
 
-`deliver` 读此刻在前面的 app 和它的焦点元素。这个元素能收文字时，结果就贴到那里，不管是哪个 app。start app 默认不是目的地。
+`textio.focus` 返回焦点元素自己的进程 PID，不是最前面 app 的 PID。`deliver` 往那个进程贴。`PasteCheck.targetReached` 接受「在前面的 app」或「拥有焦点的 app」，所以非激活浮窗也能收到文字。
 
 | 符号 | 含义 | 出处 |
 |---|---|---|
 | start app | 按快捷键时的前台 app；`Request.Target` | `Voxt/internal/deliver/deliver.go:97-98` |
-| front app now | 贴之前读到的焦点所属 app | `deliver.go:292-305` |
-| start app 的三处作用 | 读不出按可信、替换选区、自动按键 | `deliver.go:10-18` |
+| focus owner | 焦点元素自己进程的 PID | `Voxt/helper/Sources/VoxtNewHelper/TextIO.swift:63-82` |
+| frontmost app | 不一定是焦点所属进程 | `TextIO.swift:63-65, 78-79` |
+| `targetReached` | 目标在前面，或目标拥有焦点 | `Voxt/helper/Sources/VoxtNewHelperKit/PasteCheck.swift:84-88` |
 
 ### 为什么要分开
 
-如果文字总回 start app，说到一半切了 app，文字就丢在你不再看的地方。读 front app 就跟着你走。start app 只保留在它身份会改变安全规则的地方。
+如果目的地只看最前面的 app，一个拿着焦点的浮窗就什么都收不到。读元素自己的进程，文字就跟焦点走，不跟窗口顺序走。
 
 ### 边界
 
-这一步还没说怎么检查 app，只先分清两个 app 的区别；检查在第 2、3 步加上。
+start app 仍管三件事：读不出按可信、替换选区、自动按键。检查在第 2、3 步加上。
 
 ## 第 2 步 · 密码框让整件事停下
 

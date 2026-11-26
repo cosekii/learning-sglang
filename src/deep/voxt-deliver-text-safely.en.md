@@ -1,31 +1,32 @@
-## Step 1 · start app and front app can be different apps
+## Step 1 · The destination is the focus's owner
 
-> **In one line:** The text goes to the focused element of the app in front when it is ready, while the app you started in is only a remembered exception.
+> **In one line:** The text goes to the process that owns the focused element; that can be the start app, another app, or a floating window that is not in front.
 
 ### On the stage
 
 - Left box: the **start app**, the app in front when you pressed the shortcut. It is `Request.Target`.
-- Right box: the **front app now**, the app in front when the text is ready. Its focused element is where typing would go.
-- The arrow is you switching apps while Voxt records and thinks.
-- The bottom line says the start app is remembered but is not the destination. Its remaining controls appear in the next steps.
+- Right box: the **focus owner**, the process that owns the focused element. That owner is the destination.
+- `focus` is the field where typing goes. A floating window can keep the focus while another app is in front.
+- The bottom lines say the owner can be the start app, another app, or a floating window, and that the start app is not automatically the destination.
 
 ### The rule
 
-`deliver` reads the app in front now and its focused element. When that element takes text, the result is pasted there, whichever app it is. The start app is not the destination by default.
+`textio.focus` returns the focused element's own process PID, not the frontmost app's. `deliver` pastes into that process. `PasteCheck.targetReached` accepts a target that is either the app in front or the owner of the focused element, which is how a non-activating panel receives text.
 
 | Symbol | Meaning | Source |
 |---|---|---|
 | start app | app in front at the shortcut; `Request.Target` | `Voxt/internal/deliver/deliver.go:97-98` |
-| front app now | app of the focused element read before pasting | `deliver.go:292-305` |
-| three start-app roles | benefit of the doubt, selection replace, auto key | `deliver.go:10-18` |
+| focus owner | PID of the focused element's own process | `Voxt/helper/Sources/VoxtNewHelper/TextIO.swift:63-82` |
+| frontmost app | not always the focus owner | `TextIO.swift:63-65, 78-79` |
+| `targetReached` | target in front, or target owns the focus | `Voxt/helper/Sources/VoxtNewHelperKit/PasteCheck.swift:84-88` |
 
 ### Why it matters
 
-If the text always went back to the start app, switching apps mid-dictation would drop the text somewhere you are no longer looking. Reading the front app follows you. The start app is kept only where its identity changes the safety rules.
+If the destination were only the frontmost app, a floating panel with the focus would receive nothing. Reading the element's own process lets the text follow the focus, not the window order.
 
 ### Boundaries
 
-This step does not yet say how the app is checked. It only fixes the difference between the two apps; Steps 2 and 3 add the checks.
+The start app still controls three things: the benefit of the doubt, a selection replace, and the auto key. Steps 2 and 3 add the checks.
 
 ## Step 2 · A password field stops everything
 

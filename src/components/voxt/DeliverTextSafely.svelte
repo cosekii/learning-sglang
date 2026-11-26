@@ -11,8 +11,8 @@
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
   const steps = [{
-    caption: 'You press the shortcut in one app, then may switch. The text goes to the current focus, not necessarily back to the start app.',
-    captionZh: '你在一个 app 按快捷键，之后可能切走。文字去此刻的焦点，不一定回按快捷键的那个 app。',
+    caption: 'You press the shortcut in one app, then may switch. The text goes to the focus\'s owner, not necessarily back to the start app.',
+    captionZh: '你在一个 app 按快捷键，之后可能切走。文字去焦点的所属进程，不一定回按快捷键的那个 app。',
   }, {
     caption: 'First check: is the focused field a password field? If it is, nothing is typed.',
     captionZh: '先检查焦点是不是密码框。是的话，一个字都不贴。',
@@ -27,8 +27,8 @@
     captionZh: '贴之前记住剪贴板，贴完把原来的放回去。里面可能有读者还要用的东西。',
   }];
   const ariaLabels = [{
-    en: 'Two windows: the start app where the shortcut was pressed, and the front app now; they can be the same app. The prepared text travels to the front app, because the focused element there is where typing would go.',
-    zh: '两个窗口：按快捷键时的 start app，和此刻在前面的 front app；两者可以是同一个 app。准备好的文字去 front app，因为那里有焦点的元素才是打字会去的地方。',
+    en: 'Two windows: the start app where the shortcut was pressed, and the process that owns the focused element. That owner is the destination; it can be the start app, another app, or a floating window that is not in front.',
+    zh: '两个窗口：按快捷键时的 start app，和有焦点元素的那个进程。这个所属进程就是目的地；它可以是 start app、别的 app，或一个不在最前面的浮窗。',
   }, {
     en: 'The front app has a focused password field, shown as dots with the subrole AXSecureTextField. A password field stops the delivery, so nothing is pasted and the answer card is shown instead.',
     zh: 'front app 里有一个获得焦点的密码框，画成圆点，subrole 是 AXSecureTextField。密码框会挡住投递，什么也不贴，改为显示答案卡。',
@@ -72,15 +72,15 @@
         </marker>
       </defs>
       {#if step === 0}
-        <text x="20" y="22" class="tag strong">{t('start app can differ from front app', 'start app 和 front app 可以不同')}</text>
+        <text x="20" y="22" class="tag strong">{t('the destination is the focus\'s owner', '目的地是焦点的所属进程')}</text>
         <text x="20" y="46" class="tag">{t('start app: the app in front when you pressed the shortcut.', 'start app：按快捷键那一刻在前面的 app。')}</text>
-        <text x="20" y="68" class="tag">{t('front app now: the app in front when the text is ready.', 'front app now：文字准备好那一刻在前面的 app。')}</text>
+        <text x="20" y="68" class="tag">{t('focus: the field where typing goes.', '焦点：打字会落下的框。')}</text>
         <rect x="20" y="96" width={phone ? 260 : 260} height="140" rx="12" fill="var(--bg)" stroke="var(--line)" />
         <text x="34" y="122" class="rowlabel">start app</text>
         <rect x="34" y="136" width={phone ? 232 : 232} height="52" rx="7" fill="var(--faint)" />
         <text x="42" y="166" class="tag">{t('you press the shortcut here', '你在这里按快捷键')}</text>
         <rect x={phone ? 20 : 400} y={phone ? 300 : 96} width={phone ? 260 : 280} height="140" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2" />
-        <text x={phone ? 34 : 414} y={phone ? 326 : 122} class="rowlabel">front app</text>
+        <text x={phone ? 34 : 414} y={phone ? 326 : 122} class="rowlabel">{t('focus owner', '焦点所属进程')}</text>
         <rect x={phone ? 34 : 414} y={phone ? 340 : 136} width={phone ? 232 : 252} height="52" rx="7" fill="white" stroke="var(--accent)" />
         <text x={phone ? 42 : 422} y={phone ? 370 : 166} class="tag strong">{t('text lands in this focused field', '文字贴进这个有焦点的框')}</text>
         {#if phone}
@@ -90,9 +90,9 @@
           <path d="M296 166 H392" stroke="var(--muted)" stroke-width="2" marker-end="url(#deliver-arrow)" />
           <text x="300" y="158" class="tag">{t('you switch', '你切了 app')}</text>
         {/if}
-        <text x="20" y={phone ? 458 : 272} class="tag strong">{t('focus: the field where typing goes', '焦点：打字会落下的框')}</text>
+        <text x="20" y={phone ? 458 : 272} class="tag strong">{t('The owner can be the start app, another app, or a floating window.', '所属进程可以是 start app、别的 app，或一个浮窗。')}</text>
         <text x="20" y={phone ? 480 : 300} class="tag strong">{phone ? t('Remembered, but not automatically the destination.', '会被记住，但不一定是目的地。') : t('The start app is remembered, but it is not automatically the destination.', 'start app 会被记住，但它不一定是目的地。')}</text>
-        <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Source: Voxt/internal/deliver/deliver.go, package comment', '出处：Voxt/internal/deliver/deliver.go 包注释')}</text>
+        <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('TextIO focus() · PasteCheck.targetReached', 'TextIO focus() · PasteCheck.targetReached') : t('Source: TextIO.swift focus() · PasteCheck.targetReached', '出处：TextIO.swift focus() · PasteCheck.targetReached')}</text>
       {:else if step === 1}
         <text x="20" y="22" class="tag strong">{t('gate 1 · password field', '第一道门 · 密码框')}</text>
         <text x="20" y="46" class="tag">{t('Read the focused field before typing anything.', '动键盘之前，先读焦点是什么。')}</text>

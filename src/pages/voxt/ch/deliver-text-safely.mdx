@@ -13,7 +13,7 @@ export const deep = await deepFor('voxt-deliver-text-safely');
 <details class="i18n-en">
 <summary>Where this chapter's claims come from</summary>
 
-Step 1 reads the `deliver` package comment. The result goes to the app in front now and its focused element, whichever app it is. The start app, `Request.Target`, is the app in front when the shortcut was pressed. It still matters in three ways: its element gets the benefit of the doubt, a selection is replaced only there, and its auto key is pressed only there. If VoxtNew itself came to the front after the start, the start app is activated again first.
+Step 1 reads `textio.focus` and `PasteCheck.targetReached`. `focus()` returns the focused element's own process PID, not always the app in front; its comment says the element's process is not always the frontmost app. `deliver` pastes into that process. `targetReached` accepts a target that is either the app in front or the owner of the focused element, which covers a non-activating panel. The start app, `Request.Target`, is the app in front when the shortcut was pressed. It still matters in three ways: its element gets the benefit of the doubt, a selection is replaced only there, and its auto key is pressed only there.
 
 Step 2 reads `Secure()` and the `check()` order. `Secure(f)` is true when the focused element's subrole is `AXSecureTextField`. In `check()` the secure test comes before the editable tests, so a password field stops the insert. The paste is not sent; the caller shows the answer card.
 
@@ -30,7 +30,7 @@ Source revision: `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683
 <details class="i18n-zh">
 <summary>本章说法的出处</summary>
 
-第 1 步读 `deliver` 包的注释。结果贴到此刻在前面的 app 和它有焦点的元素，不管是哪个 app。start app 是 `Request.Target`，也就是按快捷键那一刻在前面的 app。它仍有三处作用：它的元素读不出时按可信处理，只有它里面的选区会被替换，只有它里面的自动按键会被按下。如果按完之后 VoxtNew 自己跑到前面，会先把 start app 激活回来。
+第 1 步读 `textio.focus` 和 `PasteCheck.targetReached`。`focus()` 返回焦点元素自己进程的 PID，不一定是前面的 app；它的注释就写着元素所属进程不一定是前台 app。`deliver` 往那个进程贴。`targetReached` 接受「在前面的 app」或「拥有焦点的 app」，所以非激活浮窗也能收到。start app 是 `Request.Target`，也就是按快捷键那一刻在前面的 app。它仍有三处作用：它的元素读不出时按可信处理，只有它里面的选区会被替换，只有它里面的自动按键会被按下。
 
 第 2 步读 `Secure()` 和 `check()` 的顺序。焦点元素的 subrole 是 `AXSecureTextField` 时，`Secure(f)` 为真。`check()` 里密码框检查排在可编辑检查前面，所以密码框会终止投递，不发粘贴，由调用方打开答案卡。
 
