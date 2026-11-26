@@ -41,7 +41,7 @@ Read it to check wording and numbers across chapters without opening the compone
 | ml-sys | 04 | [The tensor road between GPUs](ml-sys/04-gpu-communication.md) | 7 |
 | ml-sys | 05 | [A distributed serving experiment](ml-sys/05-distributed-serving.md) | 7 |
 | ml-sys | 06 | [One RL round in slime](ml-sys/06-slime-rollout-loop.md) | 8 |
-| ml-sys | 07 | [The weight-update path](ml-sys/07-weight-updates.md) | 7 |
+| ml-sys | 07 | [The weight-update path](ml-sys/07-weight-updates.md) | 8 |
 | voxt | 01 | [The journey of one sentence](voxt/one-dictation.md) | 4 |
 | voxt | 02 | [Hotkeys and permissions](voxt/helper-permissions-hotkeys.md) | 3 |
 | voxt | 03 | [From microphone to audio frames](voxt/microphone-to-voice-frames.md) | 8 |
