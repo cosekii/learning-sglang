@@ -297,3 +297,47 @@ $$
 第 8 步比较逐请求的流式窗口和已完成请求的非流式 batch 路径。
 
 出处：`scheduling/audio_stream.py:65-148,151-239,242-333`；`scheduling/audio_vocoder.py:116-182`；`models/fishaudio_s2_pro/request_builders.py:276-298`。
+
+## 第 8 步 · 合并已完成请求，再裁切
+
+> **一句话：** 非流式 vocoder 把已完成请求补成一次调用，再恢复每份输出的长度。
+
+### 图上是什么
+
+- 请求 A 和 B 已完成第 3–5 步的同一组 Dual-AR 循环。
+- A 有 90 帧，B 有 40 帧。engine 结果有十一行，vocoder 去掉 Slow 原始行后读取十行。
+- 蓝条是真实 code 帧，灰条是给 B 补的 50 帧。
+- 一次 `[2,10,90]` vocoder 调用返回两份输出，裁切去掉 B 的补位。
+- 默认最多收集八个已完成请求，等待 2 ms。流式窗口仍逐请求运行。
+
+### 公式与代入图上的数
+
+$$
+T_{\text{batch}} = \max(T_A,T_B) = \max(90,40) = 90
+$$
+
+$$
+T_{\text{pad},B}=90-40=50\ \text{帧}
+$$
+
+$$
+A:\ 90 \times 2{,}048 = 184{,}320\ \text{个采样点}
+$$
+
+$$
+B:\ 40 \times 2{,}048 = 81{,}920\ \text{个采样点}
+$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $T_A,T_B$ | A 和 B 完成后的帧数 | 构造教学请求 |
+| $T_{\text{batch}}$ | 共享的补位时间长度 | 本 batch 最长请求 |
+| $T_{\text{pad},B}$ | 调用后从 B 裁掉的补位 | $T_{\text{batch}}-T_B$ |
+
+两个帧数是构造值，batch 上限和收集等待是默认值。这些算式描述形状，不是耗时。
+
+### 接下来
+
+这条单向请求已经完成。第 12 章回答：输入声音在输出播放时仍持续到达，session 必须保留什么状态。
+
+出处：`scheduling/audio_vocoder.py:194-224`；`scheduling/streaming_simple_scheduler.py:311-390,434-480`；`models/fishaudio_s2_pro/stages.py:522-552`。

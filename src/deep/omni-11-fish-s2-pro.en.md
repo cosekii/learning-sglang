@@ -297,3 +297,47 @@ The 40 extra input frames are repeated work, not extra output. The 512-sample ta
 Step 8 compares these per-request streaming windows with the non-streaming batch path for completed requests.
 
 Sources: `scheduling/audio_stream.py:65-148,151-239,242-333`; `scheduling/audio_vocoder.py:116-182`; `models/fishaudio_s2_pro/request_builders.py:276-298`.
+
+## Step 8 · Batch completed requests, then trim
+
+> **In one line:** The non-streaming vocoder pads completed requests into one call and restores each output length afterward.
+
+### On the stage
+
+- Requests A and B have already finished the same Dual-AR loops from Steps 3–5.
+- A has 90 frames and B has 40. The engine result includes eleven rows; the vocoder reads ten after dropping the raw Slow token.
+- Blue bars are real code frames. Grey bars are 50 padding frames added to B.
+- One `[2,10,90]` vocoder call returns two outputs. Trimming removes B's padding.
+- The factory collects at most eight completed requests and waits 2 ms. Streaming windows remain per request.
+
+### Formula and the numbers on the stage
+
+$$
+T_{\text{batch}} = \max(T_A,T_B) = \max(90,40) = 90
+$$
+
+$$
+T_{\text{pad},B}=90-40=50\ \text{frames}
+$$
+
+$$
+A:\ 90 \times 2{,}048 = 184{,}320\ \text{samples}
+$$
+
+$$
+B:\ 40 \times 2{,}048 = 81{,}920\ \text{samples}
+$$
+
+| Symbol | What it is | Where it comes from |
+|---|---|---|
+| $T_A,T_B$ | Completed frame counts for A and B | Constructed teaching requests |
+| $T_{\text{batch}}$ | Shared padded time length | Longest request in this batch |
+| $T_{\text{pad},B}$ | Padding removed from B after the call | $T_{\text{batch}}-T_B$ |
+
+The two frame counts are constructed. The batch limit and collection wait are shipped defaults. This arithmetic describes shapes, not latency.
+
+### Next
+
+This one-way request is complete. Chapter 12 asks what state a session must retain when input audio continues while output is playing.
+
+Sources: `scheduling/audio_vocoder.py:194-224`; `scheduling/streaming_simple_scheduler.py:311-390,434-480`; `models/fishaudio_s2_pro/stages.py:522-552`.
