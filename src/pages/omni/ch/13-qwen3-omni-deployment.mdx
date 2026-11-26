@@ -15,6 +15,8 @@ export const deep = await deepFor('omni-13-qwen3-omni-deployment');
 
 Step 1 counts the shipped startup shapes. Text-only mode defines six stages in one `pipeline` process on one GPU and still accepts multimodal input (`sglang_omni/models/qwen3_omni/config.py:136-147,257-265,412-422`; `docs/cookbook/qwen3_omni.md:46-57`). Default speech defines seven stages, each in its own process: image encoder, audio encoder, thinker and code2wav use GPU 0, talker uses GPU 1, and preprocessing and decode are CPU stages (`config.py:268-318,425-452`). These counts exclude the HTTP server and coordinator.
 
+Step 2 separates server mode from requested output. Both modes accept multimodal input (`docs/cookbook/qwen3_omni.md:206-208`). Text-only joins active input branches at `mm_aggregate`; the speech thinker merges them itself (`sglang_omni/models/qwen3_omni/config.py:136-189,212-254`). A speech request with `modalities: ["text"]` terminates at decode and excludes talker; adding `"audio"` also terminates at code2wav (`sglang_omni/models/qwen3_omni/request_builders.py:200-261`; `tests/unit_test/qwen3_omni/test_pipeline.py:898-930,1935-1947`). The public default is text output, and a text-only server returns no audio when audio is requested (`docs/basic_usage/omni.md:154-170,199-200,386-395`).
+
 Code references in this chapter pin to `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`. The chapter reads source, shipped configs and public measurements; it does not run a model or benchmark.
 
 </details>
@@ -23,6 +25,8 @@ Code references in this chapter pin to `sglang-omni origin/main@9725235249df8512
 <summary>本章说法的出处</summary>
 
 第 1 步数随仓库发布的启动形态。纯文字模式把六个 stage 放在一个 `pipeline` 进程和一张 GPU 上，仍接受多模态输入（`sglang_omni/models/qwen3_omni/config.py:136-147,257-265,412-422`；`docs/cookbook/qwen3_omni.md:46-57`）。默认语音有七个 stage，各住一个进程：image encoder、audio encoder、thinker 和 code2wav 使用 GPU 0，talker 使用 GPU 1，preprocessing 和 decode 是 CPU stage（`config.py:268-318,425-452`）。这些数量不含 HTTP server 和 coordinator。
+
+第 2 步区分服务器模式和请求输出。两种模式都接受多模态输入（`docs/cookbook/qwen3_omni.md:206-208`）。纯文字在 `mm_aggregate` 汇合实际输入分支；语音部署由 thinker 自己汇合（`sglang_omni/models/qwen3_omni/config.py:136-189,212-254`）。语音请求使用 `modalities: ["text"]` 时以 decode 为终点并排除 talker；加入 `"audio"` 后也以 code2wav 为终点（`sglang_omni/models/qwen3_omni/request_builders.py:200-261`；`tests/unit_test/qwen3_omni/test_pipeline.py:898-930,1935-1947`）。公开请求默认只输出文字；向纯文字服务器请求声音也不会返回声音（`docs/basic_usage/omni.md:154-170,199-200,386-395`）。
 
 本章代码出处固定到 `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`。本章只读源码、随仓库配置和公开测量，没有运行模型或 benchmark。
 
