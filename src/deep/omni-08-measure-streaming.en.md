@@ -74,3 +74,43 @@ The code checks HTTP errors and streaming `error` events. If a server returns 20
 Sound can still stop after the first chunk. The next step places chunk arrivals on the playback timeline and calculates the silent gap.
 
 Sources: `benchmarks/eval/benchmark_omni_streaming_ttft.py:73-82,148-205,259-275`.
+
+## Step 3 · Calculate silence from chunk arrivals
+
+**One sentence.** The player consumes 800 ms chunks in order; a missing next chunk leaves silence for the amount by which its arrival passes the playback deadline.
+
+### On the stage
+
+- The two blue dots above mark chunk arrivals: chunk 1 at 1.4 seconds and chunk 2 at 2.5 seconds.
+- The blue blocks below are playing sound. Chunk 1 plays from 1.4 seconds to $1.4+0.8=2.2$ seconds.
+- The orange block runs from 2.2 to 2.5 seconds. The player has no next chunk, so it stays silent for 0.3 seconds.
+- Chunk 2 starts at 2.5 seconds and ends at 3.3 seconds. Every block uses one time scale.
+- These are constructed times. The gap covers 37.5% of one 800 ms chunk; it is not a public measurement.
+
+### Formula and symbols
+
+$$e_1=a_1+d,\qquad g=\max(0,a_2-e_1)$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $a_1$ | Chunk 1 arrival | Constructed here, 1.4 seconds |
+| $d$ | Playback duration of one chunk | Learning SGLang Ch. 20, 0.8 seconds |
+| $e_1$ | Time when chunk 1 ends and chunk 2 is needed | Calculated here, 2.2 seconds |
+| $a_2$ | Actual chunk 2 arrival | Constructed here, 2.5 seconds |
+| $g$ | Silent gap with no chunk to play | Calculated in this step |
+
+### The numbers on the stage
+
+$$e_1=1.4+0.8=2.2\ \text{s}$$
+
+$$g=\max(0,2.5-2.2)=0.3\ \text{s}$$
+
+$$\frac{g}{d}=\frac{0.3}{0.8}=37.5\%$$
+
+If chunk 2 arrives before 2.2 seconds, `max` clamps the negative result to zero instead of reporting negative silence. The current benchmark increments `audio_chunks` on every audio delta but does not store each $a_i$. Measuring a real $g$ requires per-chunk arrival records and the same playback rule. The shipped script does not print this metric.
+
+### Next
+
+Arrival times locate the gap without explaining which hand-off caused it. The next step enables communication tracing and places timestamped events on that hand-off.
+
+Sources: `benchmarks/eval/benchmark_omni_streaming_ttft.py:179-205`; Learning SGLang Ch. 20 Step 1.

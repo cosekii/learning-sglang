@@ -17,6 +17,8 @@ Step 1 repeats the PR #1235 measurements already shown in Learning SGLang Ch. 19
 
 Step 2 follows `benchmarks/eval/benchmark_omni_streaming_ttft.py:148-205`. The client starts `time.perf_counter()` before streaming the POST. It assigns TTFT only when a delta contains nonempty `audio.data`; text-only deltas do not stop that timer. It measures total time after the stream finishes and requires at least one audio delta. The displayed 0.0, 1.4 and 3.2 seconds are constructed teaching times, not benchmark output.
 
+Step 3 constructs two arrivals at 1.4 and 2.5 seconds around the 800 ms playback chunk from Learning SGLang Ch. 20 Step 1. Chunk 1 therefore plays until 2.2 seconds, leaving a 0.3-second gap. The current TTFT script counts audio chunks but does not store their individual arrival times or calculate stalls. This step shows the additional per-chunk timing arithmetic; it does not claim a shipped stall metric or a measured 0.3-second result.
+
 Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`. Each public measurement keeps its original setup. The benchmark is read from source, not executed.
 
 </details>
@@ -27,6 +29,8 @@ Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37
 第 1 步沿用 PR #1235 的数字，它们已经在 Learning SGLang 第 19 章第 5 步出现。H200 上同时 8 个请求时，talker 与 thinker 的一半同卡，首音 p90 两次为 2.697、2.663 s；talker 独占 GPU 时为 1.463、1.415 s。均值分别是 2.68 和 1.44 s，只有 talker 的位置不同。这些是公开结果，不是本机实测，也不保证其他负载得到同样结果。
 
 第 2 步依据 `benchmarks/eval/benchmark_omni_streaming_ttft.py:148-205`。客户端在流式 POST 前调用 `time.perf_counter()` 开始计时。只有 delta 含有非空 `audio.data` 时才记录 TTFT，纯文字 delta 不会让 TTFT 停表。流结束后才记录总时间；若一直没有 audio delta，测试会报错。图上的 0.0、1.4、3.2 秒是构造教学时刻，不是 benchmark 输出。
+
+第 3 步围绕 Learning SGLang 第 20 章第 1 步的 800 ms 播放 chunk，构造 1.4、2.5 秒两次到达。chunk 1 因此在 2.2 秒播完，留下 0.3 秒空档。当前 TTFT 脚本只统计 audio chunk 数，不保存逐块到达时刻，也不计算卡顿。本步展示需要补充的逐块计时算式，不声称已有卡顿指标，也不把 0.3 秒当成实测结果。
 
 本章代码出处固定到 `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`。公开测量保留各自原来的实验条件。本章只读 benchmark 源码，没有运行它。
 

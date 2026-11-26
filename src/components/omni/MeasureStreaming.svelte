@@ -9,6 +9,8 @@
     STREAM_P90_SOONER_PERCENT,
     STREAM_TEACHING_SUBMIT_S, STREAM_TEACHING_FIRST_AUDIO_S, STREAM_TEACHING_DONE_S,
     STREAM_TEACHING_TTFT_S, STREAM_TEACHING_TOTAL_S,
+    STREAM_CHUNK_DURATION_S, STREAM_CHUNK1_ARRIVAL_S, STREAM_CHUNK1_END_S,
+    STREAM_CHUNK2_ARRIVAL_S, STREAM_CHUNK2_END_S, STREAM_STALL_S, STREAM_STALL_CHUNK_PERCENT,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -19,6 +21,9 @@
   }, {
     caption: 'TTFT stops at the first audio delta. The total timer continues to [DONE].',
     captionZh: 'TTFT 在首个 audio delta 停止。总计时继续到 [DONE]。',
+  }, {
+    caption: `Chunk 2 arrives ${STREAM_STALL_S.toFixed(1)} seconds after chunk 1 ends. The player stays silent for ${STREAM_STALL_S.toFixed(1)} seconds.`,
+    captionZh: `chunk 2 晚于 chunk 1 结束 ${STREAM_STALL_S.toFixed(1)} 秒。播放器因此静音 ${STREAM_STALL_S.toFixed(1)} 秒。`,
   }];
   let step = $state(0);
   $effect(() => {
@@ -35,11 +40,12 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [590, 650][step] : [430, 460][step]);
+  const H = $derived(phone ? [590, 650, 600][step] : [430, 460, 480][step]);
   const barMax = $derived(phone ? 185 : 400);
+  const barScale = $derived(barMax / STREAM_P90_SHARED_S);
   const timeX = (seconds: number) => 60 + (seconds / STREAM_TEACHING_DONE_S) * 600;
   const timeY = (seconds: number) => 112 + (seconds / STREAM_TEACHING_DONE_S) * 300;
-  const barScale = $derived(barMax / STREAM_P90_SHARED_S);
+  const playX = (seconds: number) => (phone ? 20 : 40) + (seconds - 1) * (phone ? 100 : 240);
 </script>
 
 <figure class="viz">
@@ -124,6 +130,32 @@
           <text x="150" y="597" text-anchor="middle" class="small">{t('continue to [DONE]', '继续到 [DONE]')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Constructed times · time.perf_counter()' : 'Constructed request times; the code uses time.perf_counter().', '构造时刻 · time.perf_counter()')}</text>
+      {:else if step === 2}
+        <text x={phone ? 18 : 36} y="30" class="title">{t(phone ? 'A late chunk leaves silence' : 'A late chunk opens a silent gap', phone ? 'chunk 来晚就会静音' : '下一个 chunk 来晚，播放器就静音')}</text>
+        <text x={phone ? 18 : 36} y="55" class="label">{t('stall = playback waits for a missing chunk', '卡顿 = 播放器等还没到的 chunk')}</text>
+        <text x={phone ? 18 : 36} y="79" class="label">{t('blue = playing · orange = silence', '蓝 = 播放 · 橙 = 静音')}</text>
+        <text x={phone ? 20 : 40} y="100" class="small strong">{t('CHUNK ARRIVALS', 'CHUNK 到达')}</text>
+        {#each [STREAM_CHUNK1_ARRIVAL_S, STREAM_CHUNK2_ARRIVAL_S] as arrival, i}
+          <circle cx={playX(arrival)} cy="145" r="8" fill="var(--accent)" />
+          <text x={playX(arrival)} y="128" text-anchor="middle" class="result">{arrival.toFixed(1)} s</text>
+          <text x={playX(arrival)} y="190" text-anchor="middle" class="small">chunk {i + 1}</text>
+          <line x1={playX(arrival)} y1="204" x2={playX(arrival)} y2="235" stroke="var(--accent)" stroke-width="2" stroke-dasharray="4 3" />
+        {/each}
+        <text x={phone ? 20 : 40} y="226" class="small strong">{t('PLAYER', '播放器')}</text>
+        <rect x={playX(STREAM_CHUNK1_ARRIVAL_S)} y="244" width={STREAM_CHUNK_DURATION_S * (phone ? 100 : 240)} height="60" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <rect x={playX(STREAM_CHUNK1_END_S)} y="244" width={STREAM_STALL_S * (phone ? 100 : 240)} height="60" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <rect x={playX(STREAM_CHUNK2_ARRIVAL_S)} y="244" width={STREAM_CHUNK_DURATION_S * (phone ? 100 : 240)} height="60" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x={(playX(STREAM_CHUNK1_ARRIVAL_S) + playX(STREAM_CHUNK1_END_S)) / 2} y="280" text-anchor="middle" class="small strong">chunk 1</text>
+        <text x={(playX(STREAM_CHUNK2_ARRIVAL_S) + playX(STREAM_CHUNK2_END_S)) / 2} y="280" text-anchor="middle" class="small strong">chunk 2</text>
+        <text x={(playX(STREAM_CHUNK1_END_S) + playX(STREAM_CHUNK2_ARRIVAL_S)) / 2} y="331" text-anchor="middle" class="result">{STREAM_STALL_S.toFixed(1)} s {t('silent', '静音')}</text>
+        <text x={W / 2} y="370" text-anchor="middle" class="result">chunk 1 {t('ends', '结束')} = {STREAM_CHUNK1_ARRIVAL_S.toFixed(1)} + {STREAM_CHUNK_DURATION_S.toFixed(1)} = {STREAM_CHUNK1_END_S.toFixed(1)} s</text>
+        <text x={W / 2} y="407" text-anchor="middle" class="result">stall = max(0, {STREAM_CHUNK2_ARRIVAL_S.toFixed(1)} − {STREAM_CHUNK1_END_S.toFixed(1)}) = {STREAM_STALL_S.toFixed(1)} s</text>
+        <text x={W / 2} y={phone ? 449 : 450} text-anchor="middle" class="small strong">{STREAM_STALL_S.toFixed(1)} ÷ {STREAM_CHUNK_DURATION_S.toFixed(1)} = {STREAM_STALL_CHUNK_PERCENT.toFixed(1)}% {t('of one chunk', '一个 chunk')}</text>
+        {#if phone}
+          <text x="150" y="493" text-anchor="middle" class="small">{t('Keep every audio arrival time', '记录每个声音块的到达时刻')}</text>
+          <text x="150" y="521" text-anchor="middle" class="small">{t('to find this gap in a real run.', '就能在实测中找出空档。')}</text>
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Constructed times · 800 ms from Ch. 20' : 'Constructed arrival times; the 800 ms chunk follows Learning SGLang Ch. 20.', phone ? '构造时刻 · 800 ms 见第 20 章' : '构造到达时刻；800 ms chunk 见 Learning SGLang 第 20 章。')}</text>
       {/if}
     </svg>
   </div>
