@@ -56,7 +56,7 @@
   const steps: Step[] = [
     { scene: 'room', caption: `The scheduler checks for room for KV cache before admitting a new request. ${HBM_GB} GB on the card, ${W_GB} GB of weights, and everything else is room for KV cache. Running requests fill it a token per step.`, captionZh: `scheduler 接纳新 request 前查空间：${HBM_GB} GB 减去权重 ${W_GB} GB，其余归 KV cache。运行中的 request 每步多占一个 token。`, foot: POOL_FOOT, footZh: POOL_FOOT_ZH },
     { scene: 'caps', caption: `How many fit? Same card, three context lengths. At 2k tokens each, ${capAt(2048)} requests. At 4k, ${capAt(4096)}. At 8k, ${capAt(8192)}. Compute could take ${BALANCE} per step; at these lengths memory never lets it get there.`, captionZh: `上下文越长，每个 request 的 cache 越大。2k 装 ${capAt(2048)} 个，4k 装 ${capAt(4096)} 个，8k 只装 ${capAt(8192)} 个。`, foot: POOL_FOOT, footZh: POOL_FOOT_ZH },
-    { scene: 'reserve', caption: `The naive way: reserve each request's maximum length up front, in one contiguous block. Most never use it, and finished requests leave holes no newcomer fits into. Most of the card, wasted.`, captionZh: `朴素做法：预先给每个 request 按最大长度预留一整块连续内存。大多用不满，结束的 request 留下新来者放不进的洞。卡上大部分被浪费。` },
+    { scene: 'reserve', caption: `The naive way: reserve each request's maximum length up front, in one contiguous block. Most never use it, and finished requests leave holes no newcomer fits into. Most of the card, wasted.`, captionZh: `每个 request 先独占一整块，没写的部分也空着。request 结束后，散落的空块又装不下新来者。` },
     { scene: 'alloc', base: pages0, alloc: allocA, owner: 5, name: 'req 6', caption: `<b>Paging</b>: cut the room into fixed-size pages. A newcomer's cache isn't one block; it's however many pages it needs, taken from anywhere that's free, with the page numbers written in its table. No holes, no pages held in advance.`, captionZh: `<b>Paging</b>：把空间切成固定大小的 page。req 6 任取 5 个空闲 page，位置不限。` },
     { scene: 'free', caption: `When a request finishes, its pages go straight back to the pool. No compaction, nobody else moves. The pool just has more free pages, wherever they happen to be.`, captionZh: `request 结束时，它的 page 直接回到池里。不做整理，谁也不移动。池里只是多了些空闲 page，位置随意。`, foot: `with prefix caching off · SGLang keeps a finished request's pages in its prefix cache until it needs them (chapter ${CH_PREFIX})`, footZh: `关闭 prefix caching · SGLang 把已结束 request 的 page 留在 prefix cache 里，直到需要它们（第 ${CH_PREFIX} 章）` },
     { scene: 'alloc', base: pages2, alloc: allocB, owner: 6, name: 'req 7', caption: `The next newcomer takes what it needs from those, or any other free pages. Its table lists them, and the attention kernel follows the table. vLLM pages ${VLLM_PAGE_TOKENS} tokens at a time; SGLang, ${SGLANG_PAGE_TOKENS}.`, captionZh: `页表是按顺序记页号的清单。req 7 记下 8 个页号，attention 照表读。` },
@@ -84,7 +84,7 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg class:step-one={step === 0 && $lang === 'zh'} class:step-two={step === 1 && $lang === 'zh'} class:step-four={step === 3 && $lang === 'zh'} class:step-six={step === 5} viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="KV memory, step {step + 1}">
+    <svg class:step-one={step === 0 && $lang === 'zh'} class:step-two={step === 1 && $lang === 'zh'} class:step-three={step === 2 && $lang === 'zh'} class:step-four={step === 3 && $lang === 'zh'} class:step-six={step === 5} viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="KV memory, step {step + 1}">
       <defs>
         <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
           <rect width="6" height="6" fill="#e0f2fe" />
@@ -166,34 +166,40 @@
         {@const C = { x: 40, y: 220, w: 640, h: 40 }}
         {@const cpx = C.w / churn.reduce((a, c) => a + c.gb, 0)}
         <g transition:fade={{ duration: 250 }}>
-          <text x={R.x} y={R.y - 14} class="rowlabel">{t(`reserve the maximum for everyone · ${MAXCTX / 1024}k tokens = ${(seqGB(MAXCTX)).toFixed(0)} GB per request`, `给每个 request 预留最大长度 · ${MAXCTX / 1024}k token = ${(seqGB(MAXCTX)).toFixed(0)} GB`)}</text>
+          <text x={R.x} y={R.y - 14} class="rowlabel desktop-only">{t(`reserve the maximum for everyone · ${MAXCTX / 1024}k tokens = ${(seqGB(MAXCTX)).toFixed(0)} GB per request`, `每个 request 预留 ${MAXCTX / 1024}k × ${KB_TOK} KiB = 1 GiB ≈ ${(seqGB(MAXCTX)).toFixed(0)} GB`)}</text>
+          <text x={R.x} y={R.y - 14} class="rowlabel phone-only">每个 request 先留 1 GB</text>
           {#each reserved as used, i}
             {@const x = R.x + i * perReq}
-            <g in:fly={{ x: -6, delay: i * 120, duration: 250 }}>
+            <g in:fly={{ x: $lang === 'zh' ? 0 : -6, delay: $lang === 'zh' ? 0 : i * 120, duration: $lang === 'zh' ? 0 : 250 }}>
               <rect x={x + 1} y={R.y} width={perReq - 2} height={R.h} rx="5" fill="url(#hatch)" stroke="#0891b2" stroke-opacity="0.5" />
               <rect x={x + 1} y={R.y} width={(perReq - 2) * used} height={R.h} rx="5" fill="#0891b2" opacity="0.85" />
-              <text x={x + 4} y={R.y + R.h + 14} class="tag">req {i + 1} · {t(`using ${(used * MAXCTX / 1024).toFixed(1)}k of ${MAXCTX / 1024}k`, `已用 ${(used * MAXCTX / 1024).toFixed(1)}k / ${MAXCTX / 1024}k`)}</text>
+              <text x={x + 4} y={R.y + R.h + 14} class="tag desktop-only">req {i + 1} · {t(`using ${(used * MAXCTX / 1024).toFixed(1)}k of ${MAXCTX / 1024}k`, `已用 ${(used * MAXCTX / 1024).toFixed(1)}k / ${MAXCTX / 1024}k`)}</text>
+
             </g>
           {/each}
           <g in:fade={{ delay: 800 }}>
-            <rect x={R.x} y={R.y + R.h + 26} width="12" height="12" rx="2" fill="url(#hatch)" stroke="#0891b2" stroke-opacity="0.5" /><text x={R.x + 18} y={R.y + R.h + 36} class="tag">{t('reserved, never written: ', '预留却从未写入：')}<tspan class="strong">{Math.round(wasted * 100)}%</tspan> {t('of the cache budget', '的 cache 预算')}</text>
+            <rect class="desktop-only" x={R.x} y={R.y + R.h + 26} width="12" height="12" rx="2" fill="url(#hatch)" stroke="#0891b2" stroke-opacity="0.5" /><text x={R.x + 18} y={R.y + R.h + 36} class="tag desktop-only">{t('reserved, never written: ', '预留却从未写入：')}<tspan class="strong">{Math.round(wasted * 100)}%</tspan> {t('of the cache budget', '（1 − 平均已用 36%，约三分之二）')}</text>
+            <text x={R.x} y={R.y + R.h + 36} class="tag phone-only">斜线：64% 没写，约三分之二</text>
           </g>
-          <text x={C.x} y={C.y - 14} class="rowlabel" in:fade={{ delay: 1300 }}>{t('a while later · requests finished at different times', '一段时间后 · request 在不同时间结束')}</text>
+          <text x={C.x} y={C.y - 14} class="rowlabel desktop-only" in:fade={{ delay: 1300 }}>{t('a while later · requests finished at different times', '一段时间后 · request 在不同时间结束')}</text>
+          <text x={C.x} y={C.y - 14} class="rowlabel phone-only">后来：有人结束，留下空块</text>
           {#each churn as seg, i}
             {@const x = C.x + churn.slice(0, i).reduce((a, c) => a + c.gb, 0) * cpx}
-            <g in:fade={{ delay: 1300 + i * 80 }}>
+            <g in:fade={{ delay: $lang === 'zh' ? 0 : 1300 + i * 80, duration: $lang === 'zh' ? 0 : 400 }}>
               {#if seg.kind === 'live'}
                 <rect x={x + 1} y={C.y} width={seg.gb * cpx - 2} height={C.h} rx="5" fill="#0891b2" opacity="0.85" />
               {:else}
                 <rect x={x + 1} y={C.y} width={seg.gb * cpx - 2} height={C.h} rx="5" fill="white" stroke="var(--line)" stroke-dasharray="4 3" />
-                <text x={x + (seg.gb * cpx) / 2} y={C.y + 24} text-anchor="middle" class="tag">{seg.gb} GB</text>
+                <text x={x + (seg.gb * cpx) / 2} y={C.y + 24} text-anchor="middle" class="tag hole-label">{seg.gb} GB</text>
               {/if}
             </g>
           {/each}
           <g in:fade={{ delay: 2300 }}>
             <rect x={C.x} y={C.y + C.h + 16} width={1.0 * cpx} height="22" rx="5" fill="none" stroke="var(--eos)" stroke-width="1.5" stroke-dasharray="5 3" />
             <text x={C.x + (1.0 * cpx) / 2} y={C.y + C.h + 31} text-anchor="middle" class="tag" fill="var(--eos)">1 GB</text>
-            <text x={C.x + 1.0 * cpx + 12} y={C.y + C.h + 31} class="legend">{t('← a newcomer needs 1 GB in one piece ·', '← 新 request 需要一整块 1 GB ·')} <tspan class="strong">{t(`${churnFree.toFixed(1)} GB free`, `空闲 ${churnFree.toFixed(1)} GB`)}</tspan>{t(', no hole big enough. Fragmentation.', '，没有足够大的洞。这就是碎片。')}</text>
+            <text x={C.x + 1.0 * cpx + 12} y={C.y + C.h + 31} class="legend desktop-only">{t('← a newcomer needs 1 GB in one piece ·', '← 新来者要连续 1 GB；')} <tspan class="strong">{t(`${churnFree.toFixed(1)} GB free`, `空闲 ${churnFree.toFixed(1)} GB`)}</tspan>{t(', no hole big enough. Fragmentation.', '，最大洞 0.6 GB → 放不下（外部碎片）')}</text>
+            <text x={C.x + 1.0 * cpx + 12} y={C.y + C.h + 31} class="legend phone-only">共空 {churnFree.toFixed(1)} GB</text>
+            <text x={C.x} y={C.y + C.h + 63} class="legend phone-only">最大空块 0.6 GB &lt; 所需 1 GB</text>
           </g>
         </g>
       {/if}
@@ -398,10 +404,11 @@
   .legend.muted, .legend .muted { fill: var(--muted); font-weight: 400; }
   .phone-only { display: none; }
   @media (max-width: 900px) {
-    .step-one .desktop-only, .step-one .context-label, .step-two .desktop-only, .step-four .desktop-only, .step-four .past-key, .step-six .desktop-only, .step-six .past-key { display: none; }
-    .step-one .phone-only, .step-two .phone-only, .step-four .phone-only, .step-six .phone-only { display: inline; }
+    .step-one .desktop-only, .step-one .context-label, .step-two .desktop-only, .step-three .desktop-only, .step-three .hole-label, .step-four .desktop-only, .step-four .past-key, .step-six .desktop-only, .step-six .past-key { display: none; }
+    .step-one .phone-only, .step-two .phone-only, .step-three .phone-only, .step-four .phone-only, .step-six .phone-only { display: inline; }
     .step-one .rowlabel, .step-one .legend, .step-one .tag, .step-one .pt, .step-one .steplabel, .step-one .footnote,
     .step-two .rowlabel, .step-two .legend, .step-two .steplabel, .step-two .footnote,
+    .step-three .rowlabel, .step-three .legend, .step-three .tag,
     .step-four .rowlabel, .step-four .legend, .step-four .tag, .step-four .pt,
     .step-six .rowlabel, .step-six .legend, .step-six .tag, .step-six .pt { font-size: 23px; }
   }
