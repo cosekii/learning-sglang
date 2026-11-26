@@ -15,6 +15,8 @@ export const deep = await deepFor('omni-11-fish-s2-pro');
 
 Step 1 follows the shipped three-stage route in `sglang_omni/models/fishaudio_s2_pro/config.py:23-67` and `stages.py:522-552`. The default streaming vocoder starts after 40 frames (`scheduling/audio_stream.py:65-148`). Each generated frame carries one semantic code and nine remaining codes for the vocoder, so the constructed product is 40 × 10 = 400 codebook choices (`sglang_model.py:418-510`; `payload_types.py:35-50`). One codec frame represents 2,048 samples at 44,100 Hz (`fish_speech/configs/modded_dac_vq.yaml:3-29`; `fish_speech/models/dac/modded_dac.py:885-913,928-988`). The resulting 1.858 seconds describes represented audio, not elapsed latency.
 
+Step 2 follows `sglang_omni/models/fishaudio_s2_pro/stages.py:249-376,425-490`: reference audio becomes mono, resamples to 44,100 Hz and enters the reference DAC. The constructed one-second clip starts at 16 kHz. The DAC's 2,048-sample codec frame gives `ceil(44,100 ÷ 2,048) = 22` frames and 956 padding samples. The output has ten rows. `scheduling/reference_encoder.py:344-413` caches matching reference codes on CPU and returns copies; this cache is not AR KV. Already supplied `vq_codes` bypass encoding, and a request without references omits this voice prompt.
+
 Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`. Fetching a newer ref failed with `Operation not permitted`. The chapter reads source; it does not run a model or benchmark.
 
 </details>
@@ -23,6 +25,8 @@ Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37
 <summary>本章说法的出处</summary>
 
 第 1 步依据默认的三个 stage 路线，见 `sglang_omni/models/fishaudio_s2_pro/config.py:23-67` 和 `stages.py:522-552`。流式 vocoder 默认收到 40 帧才开始（`scheduling/audio_stream.py:65-148`）。每个生成帧带一个语义 code 和其余九个 codes 给 vocoder，所以构造算式是 40 × 10 = 400 个 codebook 选择（`sglang_model.py:418-510`；`payload_types.py:35-50`）。一个 codec 帧在 44,100 Hz 下代表 2,048 个采样点（`fish_speech/configs/modded_dac_vq.yaml:3-29`；`fish_speech/models/dac/modded_dac.py:885-913,928-988`）。得到的 1.858 秒是声音时长，不是实际等待。
+
+第 2 步依据 `sglang_omni/models/fishaudio_s2_pro/stages.py:249-376,425-490`：参考声音先变单声道，重采样到 44,100 Hz，再进入参考 DAC。构造算例从 16 kHz 的 1 秒声音开始。DAC 每帧 2,048 个采样点，所以 `ceil(44,100 ÷ 2,048) = 22` 帧，需要补 956 个采样点，输出共十行。`scheduling/reference_encoder.py:344-413` 在 CPU 缓存相同参考声音的 codes 并返回副本；这不是 AR KV。已有 `vq_codes` 可以跳过编码，没有参考声音的请求会省略这段声音提示。
 
 本章代码出处固定到 `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`。获取更新 ref 时出现 `Operation not permitted`。本章只读源码，没有运行模型或 benchmark。
 
