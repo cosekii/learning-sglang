@@ -182,7 +182,7 @@
       {:else if step === 3}
         <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'Health filters compatible workers' : 'Health filters the compatible workers', 'health 再过滤兼容的 worker')}</text>
         <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'probe = ask the worker health URL' : 'health probe = the router asks the worker’s health URL', phone ? 'probe = 询问 worker 健康网址' : 'health probe = router 请求 worker 的健康网址')}</text>
-        <text x={phone ? 18 : 30} y="79" class="label">{phone ? t('2xx = status 200–299 = success', '2xx = HTTP 状态 200–299 = 成功') : t('2xx = status 200–299 = success · other status = failure', '2xx = HTTP 状态 200–299 = 成功 · 其他状态 = 失败')}</text>
+        <text x={phone ? 18 : 30} y="79" class="label">{phone ? t('2xx = HTTP status 200–299 = success', '2xx = HTTP 状态 200–299 = 成功') : t('2xx = HTTP status 200–299 = success · other status = failure', '2xx = HTTP 状态 200–299 = 成功 · 其他状态 = 失败')}</text>
         <text x={phone ? 18 : 30} y="99" class="label">{phone ? t('other status or timeout = failure', '其他状态或 timeout = 失败') : t('timeout = no reply by the probe deadline = failure', 'timeout = 超过探测期限仍无回应 = 失败')}</text>
         {#if phone}<text x="18" y="119" class="label">{t('timeout = no reply by the deadline', 'timeout = 超过探测期限仍无回应')}</text>{/if}
         {#each [false, true] as failing}
