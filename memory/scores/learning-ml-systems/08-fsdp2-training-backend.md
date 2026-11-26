@@ -24,5 +24,6 @@
 ## 硬门槛与边界
 
 - `build`（57 页）、本章 `transcript`、全章 `readability`（6 步、0 机械问题）、中英三种宽度全章 `mobile`、第 3–5 步逐步中文 `mobile` 字号与布局视图、`deep-check 08`、本章 `zh-check` 和 `git diff --check` 全部通过。
+- 英文手机图例返修由 `78e20ad` 完成。协调人随后运行 `BOOK=ml-sys ONLY=8 node scripts/mobile.mjs http://localhost:4321/learning-sglang`，得到 `no layout breaks at 360, 390, 430 px`。这条结果供协调人核销英文手机图例项，不代表真人视觉验收已完成。
 - 未跑全站回归、真实 FSDP2 训练、权重更新或 GPU benchmark。显存数字是构造算式，不是训练实测；`U` 和精确峰值没有来源数值。
 - 固定事实来源：`THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7` 的 `actor.py:522-535,687-702`。
