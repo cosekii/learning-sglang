@@ -4,7 +4,7 @@
 
 ### On the stage
 
-- The grey box on the left is **your voice**, saying "send it to Preeya".
+- The grey box on the left is **your voice**, saying "call Priya".
 - The **speech model** in the middle turns sound into words; the orange box is its recognized text, `call Preeya.`
 - Below it, you meant `call Priya.`, and the stage says you fix the name by hand every time.
 - The blue box at the bottom is one dictionary row: term `Priya`, alias `Preeya`, note "on the design team".

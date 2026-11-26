@@ -34,8 +34,8 @@
     captionZh: '提示和别名替换不需要模型；术语表和备注需要。Voxt 把录音留多久？',
   }];
   const ariaLabels = [{
-    en: 'One spoken sentence goes through the speech model and comes out as call Preeya, the wrong name. You meant call Priya. A dictionary row fixes this once: a term with its aliases, and an optional note.',
-    zh: '一句话经过语音模型，出来是 call Preeya，名字错了。你要的是 call Priya。词典里一行就能一次修好：一个词条、它的别名，和可选的备注。',
+    en: 'Your voice says call Priya, but the speech model writes call Preeya, the wrong name. A dictionary row fixes this once: a term with its aliases, and an optional private note.',
+    zh: '你的声音说 call Priya，语音模型却写成 call Preeya，名字错了。词典里一行就能一次修好：一个词条、它的别名，和可选的私有备注。',
   }, {
     en: 'One dictionary row has three parts. The term is the spelling you want. Aliases are what recognition tends to write instead. The note is free text you write once. The four destinations are the speech model (a hint list from the term), the transcript (alias replacement), the language model glossary (term and aliases), and the language model prompt (the note).',
     zh: '一行词典有三部分。词条是你想要的写法。别名是识别常写成的样子。备注是你写一次的自由文字。四个去处是：语音模型（来自词条的提示表）、文字稿（替换别名）、语言模型术语表（词条和别名）、语言模型提示（备注）。',
@@ -94,7 +94,7 @@
         {#if phone}
           <rect x="20" y="62" width="260" height="58" rx="8" fill="var(--faint)" />
           <text x="34" y="86" class="rowlabel">{t('your voice', '你的声音')}</text>
-          <text x="34" y="108" class="tag">“send it to Preeya”</text>
+          <text x="34" y="108" class="tag">“call Priya”</text>
           <path d="M150 120 V140" stroke="var(--muted)" stroke-width="2" marker-end="url(#dict-arrow)" />
           <rect x="20" y="146" width="260" height="58" rx="8" fill="var(--bg)" stroke="var(--line)" />
           <text x="34" y="170" class="rowlabel">{t('speech model', '语音模型')}</text>
@@ -108,7 +108,7 @@
         {:else}
           <rect x="20" y="66" width="150" height="82" rx="8" fill="var(--faint)" />
           <text x="34" y="92" class="rowlabel">{t('your voice', '你的声音')}</text>
-          <text x="34" y="120" class="tag">“send it to Preeya”</text>
+          <text x="34" y="120" class="tag">“call Priya”</text>
           <path d="M170 107 H192" stroke="var(--muted)" stroke-width="2" marker-end="url(#dict-arrow)" />
           <rect x="204" y="66" width="150" height="82" rx="8" fill="var(--bg)" stroke="var(--line)" />
           <text x="218" y="92" class="rowlabel">{t('speech model', '语音模型')}</text>
