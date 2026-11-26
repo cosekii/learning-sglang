@@ -342,3 +342,8 @@ export const OPT_AUDIO_REAL_TOKENS = 300;
 export const OPT_AUDIO_BUCKET_TOKENS = OPT_AUDIO_TOKEN_BUCKETS.find((bucket) => bucket >= OPT_AUDIO_REAL_TOKENS)!;
 export const OPT_AUDIO_PADDING_TOKENS = OPT_AUDIO_BUCKET_TOKENS - OPT_AUDIO_REAL_TOKENS;
 export const OPT_AUDIO_GRAPH_COUNT = OPT_AUDIO_TOKEN_BUCKETS.length;
+
+// Learning SGLang Ch. 20: ten Qwen codec frames make one 800 ms sound chunk.
+export const OPT_VOCODER_FRAMES_PER_CHUNK = 10;
+export const OPT_VOCODER_CHUNK_MS = 800;
+export const OPT_VOCODER_FRAME_MS = OPT_VOCODER_CHUNK_MS / OPT_VOCODER_FRAMES_PER_CHUNK;

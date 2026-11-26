@@ -205,3 +205,40 @@ The bucket must also have enough segment slots for the real segments and the win
 The four mechanisms now have distinct jobs and limits. The last step places them on one map and follows the frames into the vocoder.
 
 Sources: `sglang_omni/models/qwen3_omni/components/audio_layer_graph.py:22-23,223-275`; `tests/unit_test/qwen3_omni/test_audio_layer_graph.py:105-154`.
+
+## Step 7 · Follow the frames into the vocoder
+
+**One sentence.** The four mechanisms address different waits; after AR produces frames, the vocoder must turn every ten frames into the next 800 ms sound chunk before playback runs out.
+
+### On the stage
+
+- `Cache` removes a repeated finished encode when the full key matches. Different reference audio has a different input key and misses.
+- `Single-flight` removes duplicate execution while one encode is still running. Its followers still wait for the leader.
+- `Async decode` can overlap launch N with resolve N−1. It changes ordering, not the amount of model work.
+- `CUDA graph` replays a recorded layer stack for a fixed bucket and falls back to eager execution when no graph fits.
+- A `vocoder` turns codec frames into sound. Learning SGLang Ch. 20 Steps 1–3 established that ten Qwen frames make one 800 ms chunk. The player needs the next chunk before the current chunk ends.
+- Blue marks frames and sound. Orange marks the playback deadline. The final question asks how the vocoder meets that deadline; this chapter does not claim it already does.
+
+### Formula and symbols
+
+$$C=f\times d$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $f$ | Codec frames in one sound chunk | Learning SGLang Ch. 20, 10 |
+| $d$ | Sound duration represented by one frame | Derived here, 80 ms |
+| $C$ | Duration of the chunk the vocoder must produce | Learning SGLang Ch. 20, 800 ms |
+
+### The numbers on the stage
+
+$$d=800\ \text{ms}\div10=80\ \text{ms per frame}$$
+
+$$C=10\times80\ \text{ms}=800\ \text{ms}$$
+
+These are playback durations, not vocoder compute times. If a vocoder call arrives after the preceding 800 ms chunk ends, the player has a silent gap as measured in Chapter 8 Step 3.
+
+### Next
+
+The next chapter examines cross-request batching, retained codec state and vocoder CUDA graphs against this playback line. It will measure each change instead of combining their effects into an unsupported speedup.
+
+Sources: Steps 1–6 in this chapter; Learning SGLang Ch. 20 Steps 1–3; `docs/plan-omni.md` chapter 10.

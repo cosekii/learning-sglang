@@ -19,6 +19,9 @@
     OPT_AUDIO_BUCKET_TOKENS,
     OPT_AUDIO_PADDING_TOKENS,
     OPT_AUDIO_GRAPH_COUNT,
+    OPT_VOCODER_FRAMES_PER_CHUNK,
+    OPT_VOCODER_CHUNK_MS,
+    OPT_VOCODER_FRAME_MS,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -41,6 +44,9 @@
   }, {
     caption: `A ${OPT_AUDIO_REAL_TOKENS}-token input uses the ${OPT_AUDIO_BUCKET_TOKENS}-token graph. It pads ${OPT_AUDIO_PADDING_TOKENS} zeros, replays, then keeps the first ${OPT_AUDIO_REAL_TOKENS} outputs.`,
     captionZh: `${OPT_AUDIO_REAL_TOKENS} 个 token 选用 ${OPT_AUDIO_BUCKET_TOKENS} 格 graph。补 ${OPT_AUDIO_PADDING_TOKENS} 个零后重放，只留前 ${OPT_AUDIO_REAL_TOKENS} 份输出。`,
+  }, {
+    caption: 'The AR loop now hands frames to the vocoder. How can that stage keep sound ahead of playback?',
+    captionZh: 'AR 已把 frames 交给 vocoder。它怎样让声音赶在播放前到达？',
   }];
   let step = $state(0);
   $effect(() => {
@@ -57,7 +63,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [790, 800, 810, 760, 810, 800][step] : [540, 590, 590, 570, 560, 600][step]);
+  const H = $derived(phone ? [790, 800, 810, 760, 810, 800, 900][step] : [540, 590, 590, 570, 560, 600, 620][step]);
   const requests = [
     { id: 'A', prompt: 'Hello', promptZh: '你好' },
     { id: 'B', prompt: 'Thank you', promptZh: '谢谢' },
@@ -68,6 +74,12 @@
     { title: 'running encode', body: 'share it', titleZh: '正在做的编码', bodyZh: '同时共享' },
     { title: 'GPU + CPU', body: 'work at once', titleZh: 'GPU + CPU', bodyZh: '同时工作' },
     { title: 'recorded kernels', body: 'replay them', titleZh: '录下的 kernels', bodyZh: '重放它们' },
+  ]);
+  const summary = $derived([
+    { name: 'cache', wait: 'finished encode repeats', limit: 'exact key must match', nameZh: 'cache', waitZh: '重复已完成编码', limitZh: '完整 key 必须匹配' },
+    { name: 'single-flight', wait: 'same encode is running', limit: 'followers still wait', nameZh: 'single-flight', waitZh: '相同编码正在运行', limitZh: 'follower 仍等待' },
+    { name: 'async decode', wait: 'GPU and CPU take turns', limit: 'overlap, not less work', nameZh: '异步 decode', waitZh: 'GPU、CPU 轮流工作', limitZh: '重叠，不少做工作' },
+    { name: 'CUDA graph', wait: 'kernels dispatch one by one', limit: 'fixed bucket + eager fallback', nameZh: 'CUDA graph', waitZh: '逐个 dispatch kernels', limitZh: '固定 bucket + eager 回退' },
   ]);
 </script>
 
@@ -387,6 +399,59 @@
           <text x="150" y="704" text-anchor="middle" class="small">{t('Only the first 300 outputs remain.', '只保留前 300 份输出。')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Constructed shapes · no timing result' : 'Constructed tensor shapes; padding has separate attention windows. No timing result.', phone ? '构造形状 · 无耗时结果' : '构造 tensor 形状；padding 有独立 attention window，无耗时结果。')}</text>
+      {:else if step === 6}
+        <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'Four mechanisms and waits' : 'Four mechanisms, four different waits', phone ? '四种机制与等待' : '四种机制，四种不同等待')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'Match each mechanism to its wait' : 'Match each mechanism to the wait measured in Chapter 8', phone ? '把机制对应到它的等待' : '把每种机制对应到第 8 章量出的等待')}</text>
+        {#if !phone}
+          <text x="30" y="88" class="small strong">{t('MECHANISM', '机制')}</text>
+          <text x="190" y="88" class="small strong">{t('WAIT IT ADDRESSES', '处理的等待')}</text>
+          <text x="440" y="88" class="small strong">{t('BOUNDARY', '边界')}</text>
+          {#each summary as item, i}
+            {@const y = 102 + i * 59}
+            <rect x="25" y={y} width="670" height="49" rx="7" fill="var(--bg)" stroke="var(--line)" />
+            <text x="35" y={y + 30} class="small strong">{i + 1} · {t(item.name, item.nameZh)}</text>
+            <text x="190" y={y + 30} class="small">{t(item.wait, item.waitZh)}</text>
+            <text x="440" y={y + 30} class="small">{t(item.limit, item.limitZh)}</text>
+          {/each}
+          <text x="30" y="374" class="small strong">{t('NEXT HAND-OFF', '下一次交接')}</text>
+          <text x="30" y="400" class="label">{t('vocoder = codec frames → sound · blue = frames and sound', 'vocoder = codec frames → 声音 · 蓝 = frames 和声音')}</text>
+          <rect x="25" y="422" width="80" height="57" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="65" y="457" text-anchor="middle" class="small strong">AR</text>
+          <line x1="106" y1="451" x2="132" y2="451" stroke="var(--accent)" stroke-width="2" marker-end="url(#opt-arrow)" />
+          <rect x="140" y="422" width="160" height="57" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="220" y="457" text-anchor="middle" class="small strong">{OPT_VOCODER_FRAMES_PER_CHUNK} codec frames</text>
+          <line x1="301" y1="451" x2="337" y2="451" stroke="var(--accent)" stroke-width="2" marker-end="url(#opt-arrow)" />
+          <rect x="345" y="422" width="130" height="57" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="410" y="457" text-anchor="middle" class="small strong">vocoder</text>
+          <line x1="476" y1="451" x2="512" y2="451" stroke="var(--accent)" stroke-width="2" marker-end="url(#opt-arrow)" />
+          <rect x="520" y="422" width="170" height="57" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="605" y="457" text-anchor="middle" class="small strong">{OPT_VOCODER_CHUNK_MS} ms {t('sound', '声音')}</text>
+          <text x="360" y="514" text-anchor="middle" class="result">{OPT_VOCODER_FRAMES_PER_CHUNK} × {OPT_VOCODER_FRAME_MS} ms = {OPT_VOCODER_CHUNK_MS} ms</text>
+          <text x="360" y="546" text-anchor="middle" class="small strong" style="fill:var(--gen)">{t('orange deadline = next chunk before the current one ends', '橙色期限 = 当前 chunk 播完前拿到下一段')}</text>
+          <text x="360" y="583" text-anchor="middle" class="result">{t('How can the vocoder keep sound ahead of playback?', 'vocoder 怎样让声音赶在播放前到达？')}</text>
+        {:else}
+          {#each summary as item, i}
+            {@const y = 82 + i * 92}
+            <rect x="18" y={y} width="264" height="79" rx="8" fill="var(--bg)" stroke="var(--line)" />
+            <text x="32" y={y + 23} class="small strong">{i + 1} · {t(item.name, item.nameZh)}</text>
+            <text x="32" y={y + 47} class="small">{t(item.wait, item.waitZh)}</text>
+            <text x="32" y={y + 68} class="small">{t(item.limit, item.limitZh)}</text>
+          {/each}
+          <text x="18" y="476" class="small strong">{t('NEXT HAND-OFF', '下一次交接')}</text>
+          <text x="18" y="501" class="label">{t('vocoder = frames → sound', 'vocoder = frames → 声音')}</text>
+          <rect x="18" y="519" width="264" height="55" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="150" y="553" text-anchor="middle" class="small strong">AR → {OPT_VOCODER_FRAMES_PER_CHUNK} codec frames</text>
+          <line x1="150" y1="575" x2="150" y2="594" stroke="var(--accent)" stroke-width="2" marker-end="url(#opt-arrow)" />
+          <rect x="18" y="601" width="264" height="55" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="150" y="635" text-anchor="middle" class="small strong">vocoder</text>
+          <line x1="150" y1="657" x2="150" y2="676" stroke="var(--accent)" stroke-width="2" marker-end="url(#opt-arrow)" />
+          <rect x="18" y="683" width="264" height="55" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="150" y="717" text-anchor="middle" class="small strong">{OPT_VOCODER_CHUNK_MS} ms {t('sound', '声音')}</text>
+          <text x="150" y="767" text-anchor="middle" class="result">{OPT_VOCODER_FRAMES_PER_CHUNK} × {OPT_VOCODER_FRAME_MS} = {OPT_VOCODER_CHUNK_MS} ms</text>
+          <text x="150" y="800" text-anchor="middle" class="small strong" style="fill:var(--gen)">{t('deadline: before the current chunk ends', '期限：当前 chunk 播完前')}</text>
+          <text x="150" y="837" text-anchor="middle" class="small strong">{t('How can vocoder stay ahead?', 'vocoder 怎样赶在播放前？')}</text>
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? '10 frames = 800 ms · Ch. 20 Steps 1–3' : 'Playback durations from Learning SGLang Ch. 20 Steps 1–3, not vocoder compute times.', phone ? '10 frames = 800 ms · 第 20 章' : '播放时长来自 Learning SGLang 第 20 章第 1–3 步，不是 vocoder 计算耗时。')}</text>
       {/if}
     </svg>
   </div>

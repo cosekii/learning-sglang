@@ -205,3 +205,40 @@ bucket 还必须有足够的 segment slots，容纳真实分段和按 window 上
 四种机制的分工和边界已经讲完。最后一步把它们放回一张地图，再跟着 frames 进入 vocoder。
 
 来源：`sglang_omni/models/qwen3_omni/components/audio_layer_graph.py:22-23,223-275`；`tests/unit_test/qwen3_omni/test_audio_layer_graph.py:105-154`。
+
+## 第 7 步 · 跟着 frames 进入 vocoder
+
+**一句话。** 四种机制处理不同等待；AR 产出 frames 后，vocoder 必须把每十帧变成下一段 800 ms 声音，赶在播放器没有声音前完成。
+
+### 图上是什么
+
+- `cache` 在完整 key 匹配时去掉重复的已完成编码。参考音频不同，输入 key 就不同，不会命中。
+- `single-flight` 在一次编码仍在运行时去掉重复执行，follower 仍要等 leader。
+- `异步 decode` 可以让 launch N 和 resolve N−1 重叠，改变的是顺序，不是模型工作量。
+- `CUDA graph` 对固定 bucket 重放已录层序列，没有合适 graph 就回退 eager。
+- `vocoder` 把 codec frames 变成声音。Learning SGLang 第 20 章第 1–3 步已经给出：十个 Qwen frames 组成一段 800 ms chunk。播放器要在当前 chunk 播完前拿到下一段。
+- 蓝色表示 frames 和声音，橙色表示播放期限。最后的问题问 vocoder 怎样赶上期限，本章不声称它已经赶上。
+
+### 公式与符号
+
+$$C=f\times d$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $f$ | 一段声音 chunk 的 codec frame 数 | Learning SGLang 第 20 章，10 |
+| $d$ | 一帧代表的声音时长 | 本步推导，80 ms |
+| $C$ | vocoder 必须产出的 chunk 时长 | Learning SGLang 第 20 章，800 ms |
+
+### 代入图上的数
+
+$$d=800\ \text{ms}\div10=80\ \text{ms / frame}$$
+
+$$C=10\times80\ \text{ms}=800\ \text{ms}$$
+
+这些是播放时长，不是 vocoder 计算耗时。如果 vocoder 的结果在前一段 800 ms 播完后才到，播放器就会出现第 8 章第 3 步量出的静音空档。
+
+### 接下来
+
+下一章把跨请求 batching、保留的 codec 状态和 vocoder CUDA graph 放到这条播放线上，分别测量，不把效果合成没有依据的加速比。
+
+来源：本章第 1–6 步；Learning SGLang 第 20 章第 1–3 步；`docs/plan-omni.md` 第 10 章。
