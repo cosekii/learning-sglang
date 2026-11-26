@@ -1,0 +1,33 @@
+---
+layout: ../../../layouts/Chapter.astro
+book: ml-sys
+slug: 12-rl-speculative-decoding
+---
+import RlSpeculativeDecoding from '../../../components/ml-sys/RlSpeculativeDecoding.svelte';
+import { mlSysNeighbors } from '../../../ml-sys/chapters';
+import { deepFor } from '../../../deep';
+export const deep = await deepFor('ml-sys-12-rl-speculative-decoding');
+
+<RlSpeculativeDecoding client:load {...mlSysNeighbors('12-rl-speculative-decoding')} deep={deep} />
+
+<details class="i18n-en">
+<summary>Where this chapter's claims come from</summary>
+
+This chapter follows `Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md`. Implementation references use `THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a` and `NVIDIA/Megatron-LM@23e00ed0963c35382dfe8a5a94fb3cda4d21e133`, reproducibility pins chosen for this chapter. Reported experiments and constructed examples are labelled separately.
+
+Step 1 uses the public three-arm experiment at `readme.md:66-94`: MiMo-7B-RL on H200 with DAPO-Math-17k and maximum response length 24k. Frozen speculative decoding reaches 1,464 tokens/s and online draft training reaches 1,667, a 13.9% increase. This is rollout throughput, not an end-to-end RL speedup. The draft–verify mechanism is recalled from Ch. 15 Step 3 rather than retaught.
+
+Further reading: [zero-to-sglang Part II Chapter 10: Speculative Decoding](https://zero-to-sglang.datawhale.cc/eng/part2/Chapter10_Speculative-Decoding.html) and its [code walkthrough](https://zero-to-sglang.datawhale.cc/eng/part2/Chapter10_Speculative-Decoding_code.html).
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的出处</summary>
+
+本章依据 `Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md`。实现引用固定到 `THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a` 和 `NVIDIA/Megatron-LM@23e00ed0963c35382dfe8a5a94fb3cda4d21e133`，这是本章选择的可复现版本。公开实验与构造算例分别标明。
+
+第 1 步依据 `readme.md:66-94` 的三组公开实验：MiMo-7B-RL、H200、DAPO-Math-17k，最长回答 24k。冻结 draft 的 rollout 吞吐为 1464 token/s，在线训练 draft 为 1667，提升 13.9%。这里只比较 rollout 吞吐，不声称端到端 RL 加速。draft–verify 机制只回指第 1 本第 15 章第 3 步，不重复讲。
+
+延伸阅读：[zero-to-sglang 第 2 部分第 10 章：投机解码](https://zero-to-sglang.datawhale.cc/ch/part2/%E7%AC%AC10%E7%AB%A0_%E6%8A%95%E6%9C%BA%E8%A7%A3%E7%A0%81.html)及其[代码走读](https://zero-to-sglang.datawhale.cc/ch/part2/%E7%AC%AC10%E7%AB%A0_%E6%8A%95%E6%9C%BA%E8%A7%A3%E7%A0%81_%E4%BB%A3%E7%A0%81.html)。
+
+</details>
