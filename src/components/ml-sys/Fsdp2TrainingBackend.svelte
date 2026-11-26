@@ -267,13 +267,13 @@
         <text x="360" y="429" text-anchor="middle" class="small">{t('Orange = persistent state · blue = temporary full values', '橙 = 长期保存状态 · 蓝 = 临时完整数值')}</text>
       {:else if step === 3}
         {#each [
-          { x: 40, title: 'LAYER GRADIENT', titleZh: '本层梯度', result: 'temporary', body: 'after forward', bodyZh: '前向之后算出', tone: 'blue' },
-          { x: 275, title: 'REDUCE-SCATTER', titleZh: 'REDUCE-SCATTER', result: 'sum + split', body: 'across all ranks', bodyZh: '跨所有 rank', tone: 'plain' },
-          { x: 510, title: 'OWNED GRADIENT', titleZh: '拥有的梯度', result: 'one shard', body: 'this layer\'s shard', bodyZh: '本层的分片', tone: 'orange' },
+          { x: 40, title: 'LAYER GRADIENT', titleZh: '本层梯度', result: 'temporary', resultZh: '临时', body: 'after forward', bodyZh: '前向之后算出', tone: 'blue' },
+          { x: 275, title: 'REDUCE-SCATTER', titleZh: 'REDUCE-SCATTER', result: 'sum + split', resultZh: '汇总 + 分片', body: 'across all ranks', bodyZh: '跨所有 rank', tone: 'plain' },
+          { x: 510, title: 'OWNED GRADIENT', titleZh: '拥有的梯度', result: 'one shard', resultZh: '一个分片', body: 'this layer\'s shard', bodyZh: '本层的分片', tone: 'orange' },
         ] as node, i}
           <rect x={node.x} y="95" width="170" height="157" rx="12" fill={fill(node.tone)} stroke={stroke(node.tone)} />
           <text x={node.x + 85} y="129" text-anchor="middle" class="small strong">{t(node.title, node.titleZh)}</text>
-          <text x={node.x + 85} y="174" text-anchor="middle" class="result">{node.result}</text>
+          <text x={node.x + 85} y="174" text-anchor="middle" class="result">{t(node.result, node.resultZh)}</text>
           <text x={node.x + 85} y="217" text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
           {#if i < 2}<line x1={node.x + 170} y1="174" x2={node.x + 225} y2="174" stroke="var(--line)" stroke-width="2.5" marker-end="url(#fsdp-arrow-plain)" />{/if}
         {/each}
@@ -283,7 +283,7 @@
         <text x="595" y="361" text-anchor="middle" class="small">{t('after all layers: update owned weights', '所有层算完后：更新拥有的权重')}</text>
         <rect x="35" y="292" width="365" height="99" rx="11" fill="var(--bg)" stroke="var(--line)" />
         <text x="217" y="324" text-anchor="middle" class="small strong">{t('WHY SUM? EACH RANK USED DIFFERENT RECORDS', '为何汇总？各 rank 用了不同训练样本')}</text>
-        <text x="217" y="359" text-anchor="middle" class="result">parameters: all-gather</text>
+        <text x="217" y="359" text-anchor="middle" class="result">{t('parameters: all-gather', '参数：all-gather')}</text>
         <text x="217" y="383" text-anchor="middle" class="small">{t('whole-model gradient table: 8 GB ÷ 8 = 1 GB per rank', '全模型梯度表：8 GB ÷ 8 = 每个 rank 1 GB')}</text>
         <text x="360" y="435" text-anchor="middle" class="small">{t('Orange = owned shard · blue = temporary layer gradient', '橙 = 拥有分片 · 蓝 = 临时的本层梯度')}</text>
       {:else if step === 4}
