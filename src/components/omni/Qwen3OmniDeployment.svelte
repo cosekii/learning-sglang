@@ -110,7 +110,7 @@
   const speechGpu1 = QWEN_SPEECH_DEFAULT_STAGE_PROCESSES.filter((stage) => stage.gpu === 1);
 
   // One walking outline shows each scene in reading order.
-  const PHASE_COUNTS = [3, 3, 0, 0, 0, 0, 0, 0];
+  const PHASE_COUNTS = [3, 3, 4, 0, 0, 0, 0, 0];
   const PHASE_MS = 1500;
   const REST_MS = 1800;
   type Frame = { x: number; y: number; w: number; h: number };
@@ -132,6 +132,17 @@
       { x: 20, y: 122, w: 680, h: 125 },
       { x: 20, y: 262, w: 680, h: 125 },
       { x: 20, y: 402, w: 680, h: 145 },
+    ];
+    if (s === 2) return isPhone ? [
+      { x: 15, y: 102, w: 270, h: 175 },
+      { x: 15, y: 287, w: 270, h: 175 },
+      { x: 15, y: 488, w: 270, h: 215 },
+      { x: 15, y: 725, w: 270, h: 100 },
+    ] : [
+      { x: 20, y: 105, w: 320, h: 165 },
+      { x: 380, y: 105, w: 320, h: 165 },
+      { x: 20, y: 280, w: 680, h: 198 },
+      { x: 20, y: 495, w: 680, h: 70 },
     ];
     return [];
   };
@@ -260,7 +271,7 @@
           <rect x={phone ? 70 : 100} y={y} width={bar.value / 3 * (phone ? 165 : 430)} height="34" rx="5" fill="var(--muted)" />
           <text x={phone ? 282 : 690} y={y + 23} text-anchor="end" class="formula">{bar.value.toFixed(2)} s</text>
         {/each}
-        <text x={W / 2} y={phone ? 690 : 463} text-anchor="middle" class="formula">{STREAM_P90_SHARED_S.toFixed(2)} → {STREAM_P90_ALONE_S.toFixed(2)} s · {STREAM_P90_SOONER_PERCENT.toFixed(0)}% {t('less wait', '等待减少')}</text>
+        <text x={W / 2} y={phone ? 690 : 463} text-anchor="middle" class="formula">{STREAM_P90_SHARED_S.toFixed(2)} → {STREAM_P90_ALONE_S.toFixed(2)} s · {t(`${STREAM_P90_SOONER_PERCENT.toFixed(0)}% less first-audio wait`, `首音等待减少 ${STREAM_P90_SOONER_PERCENT.toFixed(0)}%`)}</text>
         <rect x={phone ? 15 : 20} y={phone ? 725 : 495} width={phone ? 270 : 680} height={phone ? 100 : 70} rx="10" fill="var(--bg)" stroke="var(--eos)" />
         <text x={W / 2} y={phone ? 757 : 524} text-anchor="middle" class="tag strong" fill="var(--eos)">{t('ONE REQUEST AT A TIME · TOTAL TIME', '每次一个请求 · 总耗时')}</text>
         <text x={W / 2} y={phone ? 791 : 552} text-anchor="middle" class="formula" fill="var(--eos)">+{QWEN_SINGLE_STREAM_ISOLATION_E2E_INCREASE_PERCENT[0]}–{QWEN_SINGLE_STREAM_ISOLATION_E2E_INCREASE_PERCENT[1]}% {t('with talker isolation', 'talker 独占后增加')}</text>
