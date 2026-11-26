@@ -139,3 +139,40 @@ Voxt 还会区分互联网目的地、私有网络和本机名称目的地，这
 - 读取钥匙，以及通过标准输入保存：`Voxt/internal/secrets/secrets.go:85-117`。
 - 保存顺序和配置更新：`Voxt/remote_dialog_controller.go:229-274`。
 - session 打开连接时读取钥匙：`Voxt/remote_link.go:189-200`。
+
+## 第 4 步 · 文字和模型名进入正文
+
+> **一句话：** 请求正文指定模型，并在消息列表里装入文字。
+
+### 图上是什么
+
+- 深色的模型名卡和蓝色文字卡重复第 1 步的值。箭头指向接收它们的字段。
+- 正文是请求的主要内容。`model` 是 `demo-model`；`messages` 的简略消息列表里有 “Good morning.”。
+- 橙色一行说明 API key 不在这个正文里。下一步画出它单独的位置。
+- 方括号和省略号表示构造的简略正文，不是完整 JSON。生成参数和其他请求设置都省略了。
+
+### 请求怎样组成
+
+`partRequest` 提供已经组装好的 `llm.Request.Messages` 列表。本章不组装这个列表；第 6 章讲其中的角色、指令和清理输入。
+
+在普通的 OpenAI 兼容 Chat Completions 路线上，`chat` 使用请求里的模型名；为空时用配置的默认模型。`body` 复制每条消息的 `role` 和 `content`，再把 `model` 和 `messages` 写进一个 map。其他请求设置可以向这个 map 添加字段。
+
+`send` 把这个 map 序列化成 JSON，使用 HTTP `POST`，并设置 `Content-Type: application/json`。目的地是解析后的基础地址加 `/chat/completions`。API key 不在这个 map 里。
+
+### 范围
+
+图中只讲 Chat Completions。Voxt 的 Responses API 会转换出不同正文，登录路线另有规则。这些替代路线和所有生成字段都不在本步展开。
+
+### 接下来
+
+文字和模型名已经进入正文字段。下一步附上钥匙串里的钥匙，但不把它放进消息内容。
+
+### 源码出处
+
+公开基线：`sglang-omni@14046fc02c5268df8b7d4a9a3094b15e1150060e`，路径均相对该仓库。
+
+- 交给后端的已组装消息：`Voxt/internal/session/headstart.go:349-352`。
+- 消息角色和内容、模型名回退和正文字段：`Voxt/internal/llm/openai.go:73-85,103-104,177-211`。
+- Chat Completions 路径选择：`Voxt/internal/llm/responses.go:33-39`。
+- JSON 序列化、POST 和内容类型：`Voxt/internal/llm/openai_http.go:22-50`。
+- 钥匙单独进入请求头：`Voxt/internal/llm/openai_http.go:51-65`。

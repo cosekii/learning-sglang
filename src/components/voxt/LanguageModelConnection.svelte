@@ -21,6 +21,9 @@
   }, {
     caption: 'The address and model stay in saved settings. The full key stays in the Mac Keychain.',
     captionZh: '地址和模型名留在设置里。完整钥匙留在 Mac 钥匙串。',
+  }, {
+    caption: 'The body names the model. Its messages contain the text.',
+    captionZh: '正文指定模型名。messages 里装着文字。',
   }];
   const ariaLabels = [{
     en: 'A constructed request has three things to account for: the raw text Good morning, the model name demo-model, and a masked API key. All three go to one configured external service. The address chooses the service.',
@@ -31,6 +34,9 @@
   }, {
     en: 'One constructed setup named demo is split into two storage places. Saved settings hold its address api.example.com and model name demo-model, but no API key. The Mac Keychain, its password store, holds item llm.demo with the complete key, masked here. The item name joins llm and demo. Any program running as this user can read the key without another prompt.',
     zh: '一个名为 demo 的构造配置分在两个存放处。保存的设置里有地址 api.example.com 和模型名 demo-model，但没有 API key。Mac 钥匙串是密码存放处，其中的 llm.demo 项目保存完整钥匙，图上打码。项目名由 llm 和 demo 组成。以这个用户身份运行的任何程序都能读取钥匙，不会再弹窗询问。',
+  }, {
+    en: 'The model name and raw text move into one request body, the main content of a request. The model field contains demo-model. The messages field contains Good morning among other omitted message content. The API key is not in this body. The body is constructed and abbreviated, and other request settings are omitted.',
+    zh: '模型名和原话进入同一个请求正文，也就是请求的主要内容。model 字段是 demo-model。messages 字段里有 Good morning，其他消息内容省略。API key 不在这个正文里。正文是构造的简略形式，其他请求设置也省略了。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -47,7 +53,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived((phone ? [570, 640, 620] : [430, 440, 430])[step]);
+  const H = $derived((phone ? [570, 640, 620, 590] : [430, 440, 430, 440])[step]);
 </script>
 
 <figure class="viz">
@@ -137,6 +143,36 @@
           <text x={W / 2} y="385" text-anchor="middle" class="detail">{t('Programs running as you can read this key without another prompt.', '以你身份运行的程序都能读它，不会再弹窗询问。')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Constructed setup · no real key stored.', '构造的配置 · 没有保存真实钥匙。')}</text>
+      {:else if step === 3}
+        <text x={W / 2} y="27" text-anchor="middle" class="title">{t('TEXT + MODEL → REQUEST BODY', '文字 + 模型名 → 请求正文')}</text>
+        <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('body = the request’s main content', '正文 = 请求的主要内容')}</text>
+
+        <rect x={phone ? 20 : 35} y={phone ? 80 : 105} width={phone ? 125 : 210} height={phone ? 100 : 90} rx="9" fill="var(--bg)" stroke="var(--fg)" stroke-width="1.5" />
+        <text x={phone ? 82.5 : 140} y={phone ? 106 : 131} text-anchor="middle" class="label">{t('MODEL NAME', '模型名')}</text>
+        <text x={phone ? 82.5 : 140} y={phone ? 147 : 165} text-anchor="middle" class="value">demo-model</text>
+        <rect x={phone ? 155 : 35} y={phone ? 80 : 225} width={phone ? 125 : 210} height={phone ? 100 : 90} rx="9" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5" />
+        <text x={phone ? 217.5 : 140} y={phone ? 106 : 251} text-anchor="middle" class="label" fill="var(--accent)">{t('TEXT', '文字')}</text>
+        <text x={phone ? 217.5 : 140} y={phone ? 147 : 285} text-anchor="middle" class="value">“Good morning.”</text>
+
+        {#if phone}
+          <line x1="82.5" y1="183" x2="105" y2="216" stroke="var(--muted)" stroke-width="2" marker-end="url(#llm-arrow)" />
+          <line x1="217.5" y1="183" x2="195" y2="216" stroke="var(--muted)" stroke-width="2" marker-end="url(#llm-arrow)" />
+        {:else}
+          <line x1="250" y1="151" x2="320" y2="171" stroke="var(--muted)" stroke-width="2" marker-end="url(#llm-arrow)" />
+          <line x1="250" y1="270" x2="320" y2="270" stroke="var(--muted)" stroke-width="2" marker-end="url(#llm-arrow)" />
+        {/if}
+        <rect x={phone ? 25 : 330} y={phone ? 225 : 85} width={phone ? 250 : 350} height={phone ? 230 : 260} rx="10" fill="var(--bg)" stroke="var(--fg)" stroke-width="2" />
+        <text x={phone ? 150 : 505} y={phone ? 251 : 112} text-anchor="middle" class="label">{t('REQUEST BODY', '请求正文')}</text>
+        <text x={phone ? 48 : 355} y={phone ? 282 : 153} class="mono">model</text>
+        <text x={phone ? 48 : 355} y={phone ? 308 : 181} class="value">“demo-model”</text>
+        <text x={phone ? 48 : 355} y={phone ? 329 : 204} class="detail">{t('which model to use', '指定用哪个模型')}</text>
+        <text x={phone ? 48 : 355} y={phone ? 361 : 241} class="mono">messages</text>
+        <text x={phone ? 48 : 355} y={phone ? 389 : 270} class="value">[ … “Good morning.” … ]</text>
+        <text x={phone ? 48 : 355} y={phone ? 412 : 293} class="detail">{t('the text to work on', '要加工的文字')}</text>
+
+        <text x={W / 2} y={phone ? 500 : 385} text-anchor="middle" class="label" fill="var(--gen)">{t('API KEY · NOT IN THIS BODY', 'API key · 不在这个正文里')}</text>
+        <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('Constructed, abbreviated body.', '构造的简略正文。')}</text>
+        <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Other request settings omitted.', '其他请求设置省略。')}</text>
       {/if}
     </svg>
   </div>

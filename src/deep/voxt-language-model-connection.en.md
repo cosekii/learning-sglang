@@ -139,3 +139,40 @@ Public baseline: `sglang-omni@14046fc02c5268df8b7d4a9a3094b15e1150060e`; paths a
 - Key retrieval and saving through standard input: `Voxt/internal/secrets/secrets.go:85-117`.
 - Save order and setup update: `Voxt/remote_dialog_controller.go:229-274`.
 - Session-time key retrieval: `Voxt/remote_link.go:189-200`.
+
+## Step 4 · Text and model in the body
+
+> **In one line:** The request body names the model and carries the text inside its message list.
+
+### On the stage
+
+- The neutral model card and blue text card repeat Step 1's values. Their arrows point to the fields that receive them.
+- The body is the request's main content. `model` contains `demo-model`; `messages` contains “Good morning.” within an abbreviated message list.
+- The orange line excludes the API key from this body. The next step shows its separate location.
+- The brackets and ellipses mark a constructed, abbreviated body, not complete JSON. Generation and other request settings are omitted.
+
+### Request construction
+
+`partRequest` supplies an already assembled `llm.Request.Messages` list. This chapter does not assemble that list; chapter 6 covers the roles, instructions and cleanup inputs inside it.
+
+For the ordinary OpenAI-compatible Chat Completions route, `chat` uses the request's model or falls back to the setup's default. `body` copies each message's `role` and `content`, and writes `model` and `messages` into a map. Other request settings can add fields to the same map.
+
+`send` serializes that map as JSON, uses HTTP `POST`, and sets `Content-Type: application/json`. The destination is the resolved base address plus `/chat/completions`. The API key is not part of this map.
+
+### Scope
+
+The picture follows Chat Completions only. Voxt's Responses API converts the body differently, and its signed-in route has additional rules. Those alternatives and all generation fields are outside this step.
+
+### Next
+
+The text and model now have their body fields. Next, attach the Keychain key without putting it in the message content.
+
+### Sources
+
+Public baseline: `sglang-omni@14046fc02c5268df8b7d4a9a3094b15e1150060e`; paths are relative to that repository.
+
+- Assembled messages supplied to the backend: `Voxt/internal/session/headstart.go:349-352`.
+- Message roles and content, model fallback and body fields: `Voxt/internal/llm/openai.go:73-85,103-104,177-211`.
+- Chat Completions path selection: `Voxt/internal/llm/responses.go:33-39`.
+- JSON serialization, POST and content type: `Voxt/internal/llm/openai_http.go:22-50`.
+- The key's separate header: `Voxt/internal/llm/openai_http.go:51-65`.
