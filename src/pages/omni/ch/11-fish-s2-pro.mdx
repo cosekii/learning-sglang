@@ -17,6 +17,8 @@ Step 1 follows the shipped three-stage route in `sglang_omni/models/fishaudio_s2
 
 Step 2 follows `sglang_omni/models/fishaudio_s2_pro/stages.py:249-376,425-490`: reference audio becomes mono, resamples to 44,100 Hz and enters the reference DAC. The constructed one-second clip starts at 16 kHz. The DAC's 2,048-sample codec frame gives `ceil(44,100 ÷ 2,048) = 22` frames and 956 padding samples. The output has ten rows. `scheduling/reference_encoder.py:344-413` caches matching reference codes on CPU and returns copies; this cache is not AR KV. Already supplied `vq_codes` bypass encoding, and a request without references omits this voice prompt.
 
+Step 3 follows `sglang_omni/models/fishaudio_s2_pro/tokenizer.py:53-73,94-162` and `model_runner.py:288-356`. Slow AR is the outer, time-axis loop. Target text uses ordinary tokens. Each reference frame contributes a semantic token made from code 0, while all ten code rows modify the model input at that position. The exact embedding average is `(text embedding + ten codec embeddings) ÷ sqrt(11)`, from `fish_speech/models/text2semantic/audio_decoder.py:597-612`. Multiple references concatenate along time; a request without references omits the system voice block.
+
 Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`. Fetching a newer ref failed with `Operation not permitted`. The chapter reads source; it does not run a model or benchmark.
 
 </details>
@@ -27,6 +29,8 @@ Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37
 第 1 步依据默认的三个 stage 路线，见 `sglang_omni/models/fishaudio_s2_pro/config.py:23-67` 和 `stages.py:522-552`。流式 vocoder 默认收到 40 帧才开始（`scheduling/audio_stream.py:65-148`）。每个生成帧带一个语义 code 和其余九个 codes 给 vocoder，所以构造算式是 40 × 10 = 400 个 codebook 选择（`sglang_model.py:418-510`；`payload_types.py:35-50`）。一个 codec 帧在 44,100 Hz 下代表 2,048 个采样点（`fish_speech/configs/modded_dac_vq.yaml:3-29`；`fish_speech/models/dac/modded_dac.py:885-913,928-988`）。得到的 1.858 秒是声音时长，不是实际等待。
 
 第 2 步依据 `sglang_omni/models/fishaudio_s2_pro/stages.py:249-376,425-490`：参考声音先变单声道，重采样到 44,100 Hz，再进入参考 DAC。构造算例从 16 kHz 的 1 秒声音开始。DAC 每帧 2,048 个采样点，所以 `ceil(44,100 ÷ 2,048) = 22` 帧，需要补 956 个采样点，输出共十行。`scheduling/reference_encoder.py:344-413` 在 CPU 缓存相同参考声音的 codes 并返回副本；这不是 AR KV。已有 `vq_codes` 可以跳过编码，没有参考声音的请求会省略这段声音提示。
+
+第 3 步依据 `sglang_omni/models/fishaudio_s2_pro/tokenizer.py:53-73,94-162` 和 `model_runner.py:288-356`。Slow AR 是沿时间轴走的外层循环。目标文字使用普通 tokens。每个参考帧由 code 0 形成一个语义 token，同时十行 codes 都会改变这个位置的模型输入。精确的 embedding 平均是 `(文字 embedding + 十个 codec embeddings) ÷ sqrt(11)`，见 `fish_speech/models/text2semantic/audio_decoder.py:597-612`。多个参考声音沿时间拼接；没有参考声音时会省略 system 声音块。
 
 本章代码出处固定到 `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`。获取更新 ref 时出现 `Operation not permitted`。本章只读源码，没有运行模型或 benchmark。
 

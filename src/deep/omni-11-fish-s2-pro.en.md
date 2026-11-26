@@ -95,3 +95,42 @@ The matrix shape is `[codebook rows, frames] = [10,22]`. The 16 kHz input is con
 Step 3 puts these codes beside the target text in the Slow AR prompt.
 
 Sources: `models/fishaudio_s2_pro/stages.py:249-376,425-490`; `scheduling/reference_encoder.py:344-413`; `models/fishaudio_s2_pro/fish_speech/models/dac/modded_dac.py:885-913,964-988`.
+
+## Step 3 · Slow AR reads the voice prompt
+
+> **In one line:** Slow AR reads ordinary text and the reference codes, then starts the outer loop by choosing code 0.
+
+### On the stage
+
+- Slow AR is the outer loop: it moves through audio frames one at a time.
+- Target text becomes ordinary tokens. The 22 reference frames occupy 22 marked positions.
+- At each reference position, code 0 supplies the semantic token. All ten code rows supply the voice detail.
+- The orange output is Slow AR's new `code 0` choice for the first generated frame.
+
+### Formula
+
+An embedding is the list of numbers the model reads for one token or code. At a marked reference position, the Slow input is
+
+$$
+x_j = \frac{e_{\text{text}}(c_{0,j}) + \sum_{r=0}^{9} e_r(c_{r,j})}{\sqrt{11}}
+$$
+
+| Symbol | What it is | Where it comes from |
+|---|---|---|
+| $x_j$ | Slow AR input at reference frame $j$ | This step |
+| $c_{r,j}$ | Codebook row $r$ at reference frame $j$ | Step 2's `[10,22]` matrix |
+| $e_{\text{text}}(c_{0,j})$ | Text-token embedding for the semantic token made from code 0 | `tokenizer.py` |
+| $e_r(c_{r,j})$ | Codec embedding for row $r$ | `audio_decoder.py` |
+| $\sqrt{11}$ | Scale for one text embedding plus ten codec embeddings | `audio_decoder.py:597-612` |
+
+### The numbers on the stage
+
+The reference has $j=1\ldots22$ positions. Each position combines $1+10=11$ embeddings. Ordinary target-text positions do not use this codec sum.
+
+The prompt places the reference transcript and semantic positions in the system block, the target text in the user block and `<|voice|>` in the assistant block. This step simplifies that structure into its two visible inputs.
+
+### Next
+
+Slow AR's choice starts one frame. Step 4 opens the inner Fast AR loop that fills the other nine vocoder rows.
+
+Sources: `models/fishaudio_s2_pro/tokenizer.py:53-73,94-162`; `models/fishaudio_s2_pro/model_runner.py:288-356`; `models/fishaudio_s2_pro/fish_speech/models/text2semantic/audio_decoder.py:597-612`.

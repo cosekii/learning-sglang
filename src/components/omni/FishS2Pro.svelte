@@ -25,6 +25,9 @@
   }, {
     caption: 'Reference audio becomes ten codebook rows before generation. One second makes 22 frames.',
     captionZh: '参考声音先变成十行 codebook。1 秒会得到 22 帧。',
+  }, {
+    caption: 'Slow AR reads text and the reference codes. It chooses code 0 for one frame.',
+    captionZh: 'Slow AR 读取文字和参考 codes。它为一帧选出 code 0。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -41,7 +44,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [710, 800][step] : [540, 630][step]);
+  const H = $derived(phone ? [710, 800, 790][step] : [540, 630, 600][step]);
   const fmt = (value: number) => value.toLocaleString('en-US', { maximumFractionDigits: 0 });
 </script>
 
@@ -51,6 +54,9 @@
       <defs>
         <marker id="fish-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
           <path d="M0,0 L8,4 L0,8 z" fill="var(--accent)" />
+        </marker>
+        <marker id="fish-arrow-gen" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 z" fill="var(--gen)" />
         </marker>
       </defs>
       {#if step === 0}
@@ -166,6 +172,62 @@
           <text x="32" y="701" class="result">= {FISH_REFERENCE_PADDING_SAMPLES} {t('padding samples', '个补位采样点')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Constructed 16 kHz clip · real DAC frame size' : 'Constructed 16 kHz input; resampling and 2,048-sample frames follow the shipped DAC.', phone ? '构造 16 kHz 声音 · 真实 DAC 帧尺寸' : '16 kHz 输入是构造算例；重采样和 2,048 采样点帧来自默认 DAC。')}</text>
+      {:else if step === 2}
+        <text x={phone ? 18 : 30} y="30" class="title">{t('Slow AR reads the voice prompt', 'Slow AR 读取声音 prompt')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'Slow AR = outer loop · orange = new choice' : 'Slow AR = outer loop · blue = reference codes · orange = new choice', phone ? 'Slow AR = 外层循环 · 橙 = 新选择' : 'Slow AR = 外层循环 · 蓝 = 参考 codes · 橙 = 新选择')}</text>
+        {#if !phone}
+          <rect x="30" y="91" width="300" height="424" rx="12" fill="var(--bg)" stroke="var(--line)" />
+          <text x="48" y="119" class="small strong">{t('THE PROMPT', 'PROMPT')}</text>
+          <rect x="48" y="140" width="264" height="76" rx="9" fill="white" stroke="var(--line)" />
+          <text x="64" y="169" class="small strong">{t('target text', '目标文字')}</text>
+          <text x="64" y="196" class="small">“Read this sentence.” → {t('ordinary tokens', '普通 tokens')}</text>
+          <rect x="48" y="238" width="264" height="227" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="64" y="265" class="small strong">{t('reference voice · [10,22]', '参考声音 · [10,22]')}</text>
+          {#each Array(VOC_FISH_CODEBOOK_ROWS) as _, row}
+            {#each Array(FISH_REFERENCE_FRAMES) as _, col}
+              <rect x={65 + col * 9} y={280 + row * 10} width="7" height="7" rx="2" fill="var(--accent)" />
+            {/each}
+          {/each}
+          <text x="64" y="400" class="small">22 {t('marked positions', '个标记位置')}</text>
+          <text x="64" y="428" class="small">1 code 0 token + 10 {t('rows', '行 codes')}</text>
+          <text x="64" y="451" class="small">{t('at every reference position', '在每个参考位置')}</text>
+          <line x1="334" y1="278" x2="370" y2="278" stroke="var(--gen)" stroke-width="2" marker-end="url(#fish-arrow-gen)" />
+          <rect x="382" y="221" width="133" height="114" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="448" y="264" text-anchor="middle" class="result" style="fill:var(--gen)">Slow AR</text>
+          <text x="448" y="296" text-anchor="middle" class="small">{t('outer loop', '外层循环')}</text>
+          <line x1="519" y1="278" x2="550" y2="278" stroke="var(--gen)" stroke-width="2" marker-end="url(#fish-arrow-gen)" />
+          <rect x="562" y="221" width="128" height="114" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="626" y="256" text-anchor="middle" class="small strong">{t('frame 1', '第 1 帧')}</text>
+          <text x="626" y="295" text-anchor="middle" class="result" style="fill:var(--gen)">code 0</text>
+          <text x="448" y="382" text-anchor="middle" class="small">{t('one time position', '一个时间位置')}</text>
+          <text x="448" y="410" text-anchor="middle" class="small">{t('one new choice', '一个新选择')}</text>
+          <text x="448" y="472" text-anchor="middle" class="result">1 {t('frame', '帧')} → 1 code 0</text>
+        {:else}
+          <rect x="18" y="84" width="264" height="362" rx="11" fill="var(--bg)" stroke="var(--line)" />
+          <text x="32" y="110" class="small strong">{t('THE PROMPT', 'PROMPT')}</text>
+          <rect x="32" y="127" width="236" height="73" rx="8" fill="white" stroke="var(--line)" />
+          <text x="45" y="154" class="small strong">{t('target text', '目标文字')}</text>
+          <text x="45" y="180" class="small">“Read this sentence.”</text>
+          <rect x="32" y="218" width="236" height="202" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="45" y="244" class="small strong">{t('reference · [10,22]', '参考声音 · [10,22]')}</text>
+          {#each Array(VOC_FISH_CODEBOOK_ROWS) as _, row}
+            {#each Array(FISH_REFERENCE_FRAMES) as _, col}
+              <rect x={49 + col * 8} y={258 + row * 9} width="6" height="6" rx="2" fill="var(--accent)" />
+            {/each}
+          {/each}
+          <text x="45" y="368" class="small">22 {t('positions', '个位置')} · 1 + 10</text>
+          <text x="45" y="397" class="small">code 0 token + 10 {t('rows', '行 codes')}</text>
+          <line x1="150" y1="449" x2="150" y2="477" stroke="var(--gen)" stroke-width="2" marker-end="url(#fish-arrow-gen)" />
+          <rect x="18" y="488" width="264" height="82" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="150" y="522" text-anchor="middle" class="result" style="fill:var(--gen)">Slow AR</text>
+          <text x="150" y="550" text-anchor="middle" class="small">{t('outer loop', '外层循环')}</text>
+          <line x1="150" y1="574" x2="150" y2="601" stroke="var(--gen)" stroke-width="2" marker-end="url(#fish-arrow-gen)" />
+          <rect x="18" y="612" width="264" height="86" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="150" y="644" text-anchor="middle" class="small strong">{t('frame 1', '第 1 帧')}</text>
+          <text x="150" y="677" text-anchor="middle" class="result" style="fill:var(--gen)">code 0</text>
+          <text x="150" y="735" text-anchor="middle" class="result">1 {t('frame', '帧')} → 1 code 0</text>
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'All ten rows join each reference position' : 'Only code 0 becomes a token ID; all ten rows change the model input at that position.', phone ? '每个参考位置都会读入全部十行' : '只有 code 0 变成 token ID；十行 codes 都会改变该位置的模型输入。')}</text>
       {/if}
     </svg>
   </div>

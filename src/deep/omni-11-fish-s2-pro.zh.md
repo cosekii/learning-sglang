@@ -95,3 +95,42 @@ $$
 第 3 步把这些 codes 和要朗读的文字一起放进 Slow AR prompt。
 
 出处：`models/fishaudio_s2_pro/stages.py:249-376,425-490`；`scheduling/reference_encoder.py:344-413`；`models/fishaudio_s2_pro/fish_speech/models/dac/modded_dac.py:885-913,964-988`。
+
+## 第 3 步 · Slow AR 读取声音 prompt
+
+> **一句话：** Slow AR 读取普通文字和参考 codes，在外层循环里先选出 code 0。
+
+### 图上是什么
+
+- Slow AR 是外层循环，每次沿声音时间轴走一帧。
+- 目标文字变成普通 tokens。22 个参考帧占 22 个标记位置。
+- 每个参考位置由 code 0 提供语义 token，十行 codes 一起提供声音细节。
+- 橙色输出是 Slow AR 为首个生成帧选出的 `code 0`。
+
+### 公式
+
+embedding 是模型读取一个 token 或 code 时使用的一串数。在标记的参考位置，Slow 输入是
+
+$$
+x_j = \frac{e_{\text{text}}(c_{0,j}) + \sum_{r=0}^{9} e_r(c_{r,j})}{\sqrt{11}}
+$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $x_j$ | 参考帧 $j$ 的 Slow AR 输入 | 本步 |
+| $c_{r,j}$ | 参考帧 $j$ 的第 $r$ 行 code | 第 2 步的 `[10,22]` 矩阵 |
+| $e_{\text{text}}(c_{0,j})$ | code 0 形成的语义 token 的文字 embedding | `tokenizer.py` |
+| $e_r(c_{r,j})$ | 第 $r$ 行 code 的 codec embedding | `audio_decoder.py` |
+| $\sqrt{11}$ | 一份文字 embedding 加十份 codec embeddings 的缩放 | `audio_decoder.py:597-612` |
+
+### 代入图上的数
+
+参考声音有 $j=1\ldots22$ 个位置。每个位置合并 $1+10=11$ 份 embeddings。普通目标文字位置不做这份 codec 求和。
+
+完整 prompt 把参考文字和语义位置放进 system 块，目标文字放进 user 块，`<|voice|>` 放进 assistant 块。本步图把它简化成两个看得见的输入。
+
+### 接下来
+
+Slow AR 的选择开启一帧。第 4 步打开内层 Fast AR 循环，补齐 vocoder 的另外九行。
+
+出处：`models/fishaudio_s2_pro/tokenizer.py:53-73,94-162`；`models/fishaudio_s2_pro/model_runner.py:288-356`；`models/fishaudio_s2_pro/fish_speech/models/text2semantic/audio_decoder.py:597-612`。
