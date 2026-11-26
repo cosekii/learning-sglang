@@ -69,10 +69,10 @@
     { from: 'TensorRT-LLM', page: '16–128', gpu: 'Blackwell', def: 'B200' },
     { from: 'AMD 的 aiter', page: '任意', gpu: 'AMD', def: 'MI300' },
     { from: 'FlashInfer', page: '任意', gpu: '任意 NVIDIA', def: '其他 NVIDIA，如 A100' },
-    { from: 'Triton，一份源码', page: '1', gpu: '任意，含 AMD', def: '都不合适时' },
-    { from: 'PyTorch 自带', page: '1', gpu: '任意', def: '仅手动指定' },
+    { from: 'Triton，一份源码', page: '1 或更大', gpu: '任意，含 AMD', def: '都不合适时' },
+    { from: 'PyTorch 自带', page: '1', gpu: '任意', def: 'MPS；其他平台手动' },
   ];
-  const mlaOnly = [{ n: 'flashmla', page: '64' }, { n: 'cutlass_mla', page: '128' }, { n: 'trtllm_mla', page: '32 · 64 · Blackwell' }];
+  const mlaOnly = [{ n: 'flashmla', page: '64' }, { n: 'cutlass_mla', nZh: 'cutedsl_mla', page: '128', pageZh: '32 · 64' }, { n: 'trtllm_mla', page: '32 · 64 · Blackwell' }];
 
   type Scene = 'bytes' | 'traffic' | 'bill' | 'flash' | 'map' | 'heads' | 'shapes' | 'split' | 'pages' | 'hardware' | 'interface' | 'backends' | 'closing';
   const ORDER: Scene[] = ['bytes', 'traffic', 'bill', 'flash', 'map', 'heads', 'shapes', 'split', 'pages', 'hardware', 'interface', 'backends', 'closing'];
@@ -98,14 +98,14 @@
     traffic: `写成三个 kernel：<b>S</b> = Q·Kᵀ 让每个 token 对每个 token 打分，<b>P</b> = softmax(S) 把每行变成权重，out = P·V。P 的每个元素都要用到它所在 S 行的全部，所以 S 必须完整算完，P 才能开始。`,
     bill: `${N_PROMPT.toLocaleString()} token、bf16 时，每 head 的 Q、K、V 各 ${qkvMB.toFixed(1)} MB，S、P 各 ${sMB.toFixed(0)} MB。三个 kernel 每 head 搬 ${headMB.toFixed(0)} MB，${HEADS} head × ${LAYERS} 层、每 prompt 共 ${promptGB.toFixed(0)} GB：按 ${BW} TB/s 需 ${fmtMs(promptGB / BW)}，只为两个没人保留的中间结果。`,
     flash: `融合这三个 kernel。K 和 V 按 chunk 读入，每行只保留滚动最大值、累计和与输出，每个 chunk 的分数随即丢弃。S 和 P 从不进 HBM：每 head ${headMB.toFixed(0)} MB 变成 ${(4 * qkvMB).toFixed(0)} MB。FlashAttention，2022。`,
-    map: `循环不变；有四件事改变它的写法。两件在每个 backend 内部处理：prefill 与 decode 之分，以及 page。另两件决定用哪个 backend：模型的 head 布局和 GPU。`,
+    map: `循环不变，query 数和 page 改变执行路径。head 布局和 GPU 决定用哪个 backend。`,
     heads: `每个模型定下几个 query head 共用一个 K/V head：1、${GROUP} 或 ${MLA_HEADS}。MHA 和 GQA 的 k、v 都宽 ${HD}，共用一个 kernel；MLA 的 k ${MLA_K}、v ${MLA_V} 用自己的。`,
-    shapes: `prefill 每个 prompt token 一个 query：${TILE_Q} query × ${GROUP} head 的 tile 把每个 K/V 字节用 ${TILE_Q * GROUP} 次，计算比读取久；decode 仅 1 个 query，用 ${GROUP} 次，读取定时间。故每个 backend 带两个 kernel。`,
+    shapes: `prefill 的 tile 有 ${TILE_Q} query × ${GROUP} head：每字节用 ${TILE_Q * GROUP} 次，计算更久。decode 只有 1 query × ${GROUP} head：每字节用 ${GROUP} 次，读取更久。`,
     split: `batch 1 的 decode 层每 K/V head 一个 block：${KV_HEADS} 个 block 跑在 ${SMS} 个 SM 的 ${KV_HEADS} 个上。每 head 的 key 切 ${SPLITS} 个 chunk，${KV_HEADS * SPLITS} 个 block 同时读，快 ${SPLITS} 倍；merge 再合并各自的部分结果。`,
-    pages: `不用 page 时，request 的 K、V 是连续的行，kernel 自己算每行地址。用 page（Ch. 7 Step 4）时，行可落在 pool 任意位置，kernel 得先读 page 编号表：这是另一个 kernel。`,
+    pages: `不用 page 时，K、V 按行连着放，kernel 直接算地址。用 page 时，行散在 pool 里，先查 page 表再读。`,
     hardware: `每代 GPU 新增单元，kernel 要用就得重写。同一 H100 上，${nb('FlashAttention-2')}（为 A100 写）达到峰值的 35%，${nb('FlashAttention-3')}（为 H100 写）达到 75%。所以每代都有自己的 kernel。`,
-    interface: `许多 kernel，一个模型。模型只调一个接口，每个 backend 填同样的槽：plan（第 ${at('pages')} 步）、prefill 和 decode kernel（第 ${at('shapes')}–${at('split')} 步）、graph 缓冲区。由哪个 backend 来填，见第 ${at('backends')} 步。`,
-    backends: `每个 backend 覆盖一部分 head 布局、page 大小和 GPU。SGLang 按 GPU 和模型挑选：Hopper 用 fa3，Blackwell 用 trtllm_mha，AMD 用 aiter，其他 NVIDIA 用 flashinfer，都不合适时用 triton。`,
+    interface: `模型只调用 AttentionBackend 这一个接口。接口统一 plan、prefill、decode 和 graph 缓冲区。`,
+    backends: `每个 backend 支持的 head、page 和 GPU 不同。本书的 H100 非 MLA 模型默认用 fa3。`,
     closing: `单独 decode 时，每个 token 都要读一遍 16 GB 权重，因为每趟的输入是上一趟写出的 token。一趟本可以像 prefill 那样算 5 个位置。另外 4 个从哪里来？`,
   };
   const steps: { scene: Scene; caption: string; captionZh: string }[] = ORDER.map((scene) => ({ scene, caption: captions[scene], captionZh: captionsZh[scene] }));
@@ -125,6 +125,9 @@
     return () => query.removeEventListener('change', update);
   });
   const phoneHeads = $derived(phone && cur.scene === 'heads' && $lang === 'zh');
+  const phoneRepair = $derived(phone && $lang === 'zh' && ['map', 'shapes', 'pages', 'interface', 'backends'].includes(cur.scene));
+  const phoneZh = $derived(phoneHeads || phoneRepair);
+  const phoneHeight = $derived(cur.scene === 'map' ? 520 : cur.scene === 'shapes' ? 600 : cur.scene === 'pages' ? 640 : cur.scene === 'interface' ? 650 : cur.scene === 'backends' ? 720 : 720);
   const W = 720, H = 400;
 
   // within-step phases, both looping: the online-softmax chunk walk, and the split-KV race
@@ -156,7 +159,7 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox={phoneHeads ? '0 0 360 720' : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Attention backends, step {step + 1}" class:phone-heads={phoneHeads}>
+    <svg viewBox={phoneZh ? `0 0 360 ${phoneHeight}` : `0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Attention backends, step {step + 1}" class:phone-heads={phoneHeads} class:phone-zh={phoneZh}>
       <defs>
         <marker id="ab-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
           <path d="M 0 0 L 10 5 L 0 10 z" fill="#b8b4aa" />
@@ -378,14 +381,34 @@
       {/if}
 
       <!-- 5: the map · one loop, four things that change how it is written, in two kinds -->
-      {#if cur.scene === 'map'}
+      {#if phoneRepair && cur.scene === 'map'}
+        {@const rows = [
+          { n: '① head 布局', d: 'MHA/GQA 可共用；MLA 独立', s: '决定 backend · 第 6 步' },
+          { n: '② query 有多少', d: 'prefill / decode → 两条执行路径', s: '改变路径 · 第 7–8 步' },
+          { n: '③ K、V 放在哪', d: '连续行算地址；page 先查表', s: '改变路径 · 第 9 步' },
+          { n: '④ 哪款 GPU', d: '新硬件 → 为它重写 kernel', s: '决定 backend · 第 10 步' },
+        ]}
+        <text x="180" y="26" text-anchor="middle" class="ph-title">四件事，两种影响</text>
+        <rect x="8" y="44" width="344" height="38" rx="8" fill={GREEN} opacity="0.9" />
+        <text x="180" y="68" text-anchor="middle" fill="white">同一个 attention 循环不变</text>
+        {#each rows as r, i}
+          {@const y = 102 + i * 96}
+          <g in:fade={{ delay: 150 + i * 180, duration: 200 }}>
+            <rect x="8" y={y} width="344" height="78" rx="8" fill="#f4f2ec" />
+            <text x="18" y={y + 24} class="ph-subtitle">{r.n}</text>
+            <text x="18" y={y + 46}>{r.d}</text>
+            <text x="18" y={y + 66} class="ph-foot">{r.s}</text>
+          </g>
+        {/each}
+        <text x="180" y="504" text-anchor="middle" class="ph-strong">本书：GQA · prefill + decode · page · H100</text>
+      {:else if cur.scene === 'map'}
         {@const PX = 244}
         {@const CA = 458}
         {@const CB = 586}
         {@const rows = [
-          { t: t("the model's head layout", '模型的 head 布局'), s: [t('how many query heads (blue)', '几个 query head（蓝）'), t('share one cached K/V head (orange)', '共享一个缓存的 K/V head（橙）')], so: [t('a kernel family per', '每种布局一族'), t('layout · MLA its own', 'kernel · MLA 独立')], col: CB, step: t(`step ${at('heads')}`, `第 ${at('heads')} 步`) },
-          { t: t('how many queries', 'query 有多少'), s: [t('prefill: one per prompt token', 'prefill：每个 prompt token 一个'), t('decode: one per request', 'decode：每个 request 一个')], so: [t('two kernels in each:', '每个里两个 kernel：'), t('prefill and decode', 'prefill 和 decode')], col: CA, step: t(`steps ${at('shapes')}–${at('split')}`, `第 ${at('shapes')}–${at('split')} 步`) },
-          { t: t('where K and V sit', 'K 和 V 放在哪'), s: [t('one tensor per request,', '每个 request 一个 tensor，'), t('or pages anywhere in the pool', '或 page 散落 pool 各处')], so: [t('each reads K and V', '都通过 page 表'), t('through a page table', '读 K 和 V')], col: CA, step: t(`step ${at('pages')}`, `第 ${at('pages')} 步`) },
+          { t: t("the model's head layout", '模型的 head 布局'), s: [t('how many query heads (blue)', '几个 query head（蓝）'), t('share one cached K/V head (orange)', '共享一个缓存的 K/V head（橙）')], so: [t('a kernel family per', 'MHA/GQA 可共用'), t('layout · MLA its own', 'MLA 用自己的 kernel')], col: CB, step: t(`step ${at('heads')}`, `第 ${at('heads')} 步`) },
+          { t: t('how many queries', 'query 有多少'), s: [t('prefill: one per prompt token', 'prefill：每个 prompt token 一个'), t('decode: one per request', 'decode：每个 request 一个')], so: [t('two kernels in each:', '按阶段分开：'), t('prefill and decode', 'prefill 和 decode')], col: CA, step: t(`steps ${at('shapes')}–${at('split')}`, `第 ${at('shapes')}–${at('split')} 步`) },
+          { t: t('where K and V sit', 'K 和 V 放在哪'), s: [t('one tensor per request,', '每个 request 一个 tensor，'), t('or pages anywhere in the pool', '或 page 散落 pool 各处')], so: [t('each reads K and V', '连续行算地址'), t('through a page table', 'page 先查表')], col: CA, step: t(`step ${at('pages')}`, `第 ${at('pages')} 步`) },
           { t: t('which GPU', '哪款 GPU'), s: [t('each generation adds hardware', '每代新增硬件，'), t('the loop has to be written for', '循环得为它重写')], so: [t('a rewrite per GPU', '每代 GPU'), t('generation', '重写一次')], col: CB, step: t(`step ${at('hardware')}`, `第 ${at('hardware')} 步`) },
         ]}
         <g transition:fade={{ duration: 250 }}>
@@ -395,7 +418,7 @@
           <!-- the two kinds, as two columns -->
           <rect x={CA - 8} y="84" width="122" height="298" rx="8" fill="#f4f2ec" />
           <rect x={CB - 8} y="84" width="112" height="298" rx="8" fill="#f4f2ec" />
-          <text x={CA + 2} y="98" class="tag strong">{t('inside every backend', '每个 backend 内部')}</text>
+          <text x={CA + 2} y="98" class="tag strong">{t('inside every backend', '改变执行路径')}</text>
           <text x={CB + 2} y="98" class="tag strong">{t('picks the backend', '决定用哪个 backend')}</text>
           {#each rows as r, i}
             {@const y = 126 + i * 70}
@@ -542,7 +565,44 @@
       {/if}
 
       <!-- 7: how many queries · prefill tiles versus decode rows, and what the reuse does to the time -->
-      {#if cur.scene === 'shapes'}
+      {#if phoneRepair && cur.scene === 'shapes'}
+        {@const chunkB = TILE_K * HD * 2 * BYTES}
+        {@const readNs = chunkB / (BW * 1e3)}
+        {@const mathNs = (u: number) => (u * chunkB) / (TFLOPS * 1e3)}
+        <text x="180" y="26" text-anchor="middle" class="ph-title">query 多少，决定谁更久</text>
+        <text x="180" y="50" text-anchor="middle">红：读 32 KB · 绿：做计算</text>
+        <rect x="8" y="70" width="344" height="220" rx="8" fill="#f4f2ec" />
+        <text x="18" y="96" class="ph-subtitle">prefill · 很多 query</text>
+        {#each Array(4) as _, r}{#each Array(4) as _, c}
+          <rect x={20 + c * 13} y={116 + r * 13} width="11" height="11" fill={c > r ? 'white' : RED} opacity="0.85" />
+        {/each}{/each}
+        <text x="100" y="128">{TILE_Q} query × {GROUP} head</text>
+        <text x="100" y="152" class="ph-strong">每字节用 {TILE_Q * GROUP} 次</text>
+        <text x="20" y="188">读 {readNs.toFixed(1)} ns</text>
+        <rect x="20" y="196" width="115" height="12" rx="2" fill={RED} opacity="0.85" />
+        <text x="20" y="228">算 {mathNs(TILE_Q * GROUP).toFixed(0)} ns</text>
+        <rect x="20" y="236" width="200" height="12" rx="2" fill={GREEN} opacity="0.9" />
+        <text x="20" y="274" class="ph-strong">计算比读取久</text>
+
+        <rect x="8" y="310" width="344" height="180" rx="8" fill="#f4f2ec" />
+        <text x="18" y="336" class="ph-subtitle">decode · 一个 query</text>
+        {#each Array(4) as _, c}<rect x={20 + c * 13} y="354" width="11" height="11" fill={RED} opacity="0.85" />{/each}
+        <text x="100" y="364">1 query × {GROUP} head</text>
+        <text x="100" y="388" class="ph-strong">每字节用 {GROUP} 次</text>
+        <text x="20" y="414">读 {readNs.toFixed(1)} ns</text>
+        <rect x="20" y="422" width="200" height="12" rx="2" fill={RED} opacity="0.85" />
+        <text x="20" y="454">算 {mathNs(GROUP).toFixed(2)} ns</text>
+        <rect x="20" y="462" width="3" height="12" rx="1" fill={GREEN} opacity="0.9" />
+        <text x="100" y="474" class="ph-strong">读取比计算久</text>
+
+        <rect x="8" y="514" width="164" height="48" rx="7" fill="var(--fg)" opacity="0.75" />
+        <text x="90" y="535" text-anchor="middle" fill="white" class="mono">forward_extend</text>
+        <text x="90" y="553" text-anchor="middle" fill="white">prefill</text>
+        <rect x="188" y="514" width="164" height="48" rx="7" fill="var(--fg)" opacity="0.75" />
+        <text x="270" y="535" text-anchor="middle" fill="white" class="mono">forward_decode</text>
+        <text x="270" y="553" text-anchor="middle" fill="white">decode</text>
+        <text x="180" y="590" text-anchor="middle" class="ph-strong">所以按阶段分开执行</text>
+      {:else if cur.scene === 'shapes'}
         {@const CELL = 10}
         {@const N = 8}
         {@const T = 4}
@@ -612,7 +672,7 @@
             {/each}
             <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(`a use is one multiply-add on a 2-byte number: 1 flop per byte · the bars are equal at ${TFLOPS} ÷ ${BW} ≈ ${BAL} uses, Ch. 4 Step 8's balance point`, `一次使用是对一个 2 字节数做一次乘加：每字节 1 flop · ${TFLOPS} ÷ ${BW} ≈ ${BAL} 次时两 bar 等长，即 Ch. 4 Step 8 的平衡点`)}</text>
           </g>
-          <text x="16" y="362" class="legend" in:fade={{ delay: 1800 }}>{t('so every backend has two kernels: ', '所以每个 backend 有两个 kernel：')}<tspan class="mono">forward_extend</tspan>{t(' for prefill (it extends a cached prefix, Ch. 8 Step 2) and ', ' 用于 prefill（扩展已缓存的前缀，Ch. 8 Step 2），')}<tspan class="mono">forward_decode</tspan></text>
+          <text x="16" y="362" class="legend" in:fade={{ delay: 1800 }}>{t('so every backend has two kernels: ', '所以 backend 有两条执行路径：')}<tspan class="mono">forward_extend</tspan>{t(' for prefill (it extends a cached prefix, Ch. 8 Step 2) and ', ' 用于 prefill（扩展已缓存的前缀，Ch. 8 Step 2），')}<tspan class="mono">forward_decode</tspan></text>
         </g>
       {/if}
 
@@ -678,7 +738,42 @@
       {/if}
 
       <!-- 9: where K and V sit · without pages the kernel computes each row's address; with pages it looks the page up first -->
-      {#if cur.scene === 'pages'}
+      {#if phoneRepair && cur.scene === 'pages'}
+        {@const packed = [...reqA.pages.map((_, ti) => ({ r: reqA, t: ti })), ...reqB.pages.map((_, ti) => ({ r: reqB, t: ti }))]}
+        <text x="180" y="26" text-anchor="middle" class="ph-title">K、V 放哪，决定怎么找</text>
+        <text x="180" y="50" text-anchor="middle">蓝：request A · 绿：request B</text>
+        <rect x="8" y="70" width="344" height="150" rx="8" fill="#f4f2ec" />
+        <text x="18" y="96" class="ph-subtitle">不用 page · 连续行</text>
+        {#each packed as c, i}
+          <rect x={16 + i * 41} y="116" width="37" height="28" rx="4" fill={c.r.c} opacity="0.8" />
+          <text x={34.5 + i * 41} y="134" text-anchor="middle" class="on-dark">{c.r.n}{c.t}</text>
+        {/each}
+        <text x="18" y="172">B 的 token t = 第 {indptr[1]} + t 行</text>
+        <text x="18" y="202" class="ph-strong">kernel 直接算地址</text>
+
+        <rect x="8" y="240" width="344" height="306" rx="8" fill="#f4f2ec" />
+        <text x="18" y="266" class="ph-subtitle">用 page · 行散在共享 pool 里</text>
+        {#each Array(POOL) as _, p}
+          {@const owner = reqA.pages.includes(p) ? reqA : reqB.pages.includes(p) ? reqB : null}
+          <rect x={16 + p * 32.5} y="286" width="28" height="26" rx="3" fill={owner ? owner.c : 'white'} opacity={owner ? 0.8 : 1} stroke="var(--line)" />
+          <text x={30 + p * 32.5} y="304" text-anchor="middle" class={owner ? 'on-dark' : ''}>{p}</text>
+        {/each}
+        <text x="18" y="334" class="ph-foot">pool 格子：page 编号 · 本例一页一行</text>
+        <text x="18" y="366" class="mono ph-strong">kv_indices</text>
+        {#each indices as v, i}
+          {@const isB = i >= indptr[1]}
+          <rect x={16 + i * 41} y="378" width="37" height="26" rx="3" fill={isB ? reqB.c : reqA.c} opacity="0.8" />
+          <text x={34.5 + i * 41} y="396" text-anchor="middle" class="on-dark mono">{v}</text>
+        {/each}
+        <text x="18" y="430" class="mono ph-strong">kv_indptr</text>
+        <text x="126" y="430" class="mono">0 · 5 · 8</text>
+        <text x="220" y="430">A、B 的边界</text>
+        <text x="18" y="464">B 的 token t：kv_indices[{indptr[1]} + t]</text>
+        <text x="18" y="490">先读出 page 编号，再去 pool 读行</text>
+        <text x="18" y="526" class="ph-strong">page 先查表，再读行</text>
+        <text x="180" y="580" text-anchor="middle">每个 batch 重建这两个数组</text>
+        <text x="180" y="606" text-anchor="middle" class="mono">init_forward_metadata</text>
+      {:else if cur.scene === 'pages'}
         {@const X = 150}
         {@const CW = 36}
         {@const RX = 452}
@@ -738,9 +833,9 @@
             <text x={X} y="316" class="tag strong">{t(`B's token t: read its page from kv_indices[${indptr[1]} + t] first, then the row`, `B 的 token t：先从 kv_indices[${indptr[1]} + t] 读它的 page，再读行`)}</text>
           </g>
           <g in:fade={{ delay: 1500 }}>
-            <text x="18" y="342" class="pt">·</text><text x="28" y="342" class="legend">{t('a kernel written for one tensor would read the wrong rows from a pool; reading through a table is another kernel', '为单个 tensor 写的 kernel 会从 pool 里读错行；通过表来读是另一个 kernel')}</text>
+            <text x="18" y="342" class="pt">·</text><text x="28" y="342" class="legend">{t('a kernel written for one tensor would read the wrong rows from a pool; reading through a table is another kernel', '为单个 tensor 写的 kernel 会从 pool 里读错行；通过表来读要换一套寻址方式')}</text>
             <text x="18" y="360" class="pt">·</text><text x="28" y="360" class="legend">{t(`kernels written for bigger pages (16 to 128 rows) look up once per page, not per token (step ${at('backends')})`, `为大 page（16 到 128 行）写的 kernel 每 page 查一次，不是每 token（第 ${at('backends')} 步）`)}</text>
-            <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('the CPU rebuilds both arrays every batch, in ', 'CPU 每个 batch 都在 ')}<tspan class="mono">init_forward_metadata</tspan>{t(`: Ch. 12 Step 4's sequence boundaries`, ' 里重建这两个数组：即 Ch. 12 Step 4 的序列边界')}</text>
+            <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('the CPU rebuilds both arrays every batch, in ', '每个 batch 都在 ')}<tspan class="mono">init_forward_metadata</tspan>{t(`: Ch. 12 Step 4's sequence boundaries`, ' 里重建这两个数组：即 Ch. 12 Step 4 的序列边界')}</text>
           </g>
         </g>
       {/if}
@@ -792,13 +887,44 @@
       {/if}
 
       <!-- 11: many kernels, one model · the map's inside column becomes one interface every backend fills -->
-      {#if cur.scene === 'interface'}
+      {#if phoneRepair && cur.scene === 'interface'}
+        <text x="180" y="26" text-anchor="middle" class="ph-title">一个接口，许多 backend</text>
+        <rect x="8" y="48" width="344" height="88" rx="8" fill="#f4f2ec" />
+        <text x="18" y="74" class="ph-subtitle">模型 · {LAYERS} 层</text>
+        <text x="18" y="100" class="mono">RadixAttention.forward</text>
+        <text x="18" y="124">每层都调用它，不点名 kernel</text>
+        <path d="M 180 140 V 158" fill="none" stroke="var(--fg)" stroke-width="1.5" marker-end="url(#ab-arrow)" />
+
+        <rect x="8" y="166" width="344" height="316" rx="9" fill="#fbfaf7" stroke={RED} />
+        <text x="180" y="192" text-anchor="middle" class="ph-subtitle">AttentionBackend</text>
+        <rect x="18" y="208" width="324" height="56" rx="6" fill="white" stroke="var(--accent)" />
+        <text x="28" y="231" class="mono ph-strong">init_forward_metadata(batch)</text>
+        <text x="28" y="253">每 batch 准备 page 表和序列边界</text>
+        <rect x="18" y="278" width="324" height="42" rx="6" fill="white" stroke="var(--fg)" />
+        <text x="28" y="304" class="mono ph-strong">forward(q, k, v, layer, batch)</text>
+        <rect x="18" y="334" width="156" height="56" rx="6" fill="var(--fg)" opacity="0.75" />
+        <text x="96" y="357" text-anchor="middle" class="mono on-dark">forward_extend</text>
+        <text x="96" y="379" text-anchor="middle" class="on-dark">prefill</text>
+        <rect x="186" y="334" width="156" height="56" rx="6" fill="var(--fg)" opacity="0.75" />
+        <text x="264" y="357" text-anchor="middle" class="mono on-dark">forward_decode</text>
+        <text x="264" y="379" text-anchor="middle" class="on-dark">decode</text>
+        <rect x="18" y="406" width="324" height="58" rx="6" fill="white" stroke="var(--gen)" />
+        <text x="28" y="430" class="mono ph-strong">init_cuda_graph_state</text>
+        <text x="28" y="452">准备 graph 重放用的固定缓冲区</text>
+
+        <text x="18" y="514" class="ph-subtitle">换 backend，只换接口下面的实现</text>
+        {#each ['fa3', 'flashinfer', 'trtllm_mha', 'aiter', 'triton'] as n, i}
+          <rect x={18 + (i % 3) * 110} y={532 + Math.floor(i / 3) * 36} width="102" height="28" rx="5" fill="white" stroke="var(--line)" />
+          <text x={69 + (i % 3) * 110} y={551 + Math.floor(i / 3) * 36} text-anchor="middle" class="mono">{n}</text>
+        {/each}
+        <text x="180" y="640" text-anchor="middle" class="ph-strong">模型的代码不变</text>
+      {:else if cur.scene === 'interface'}
         {@const BXL = 228}
         {@const BXR = 508}
         {@const CX = 544}
         <g transition:fade={{ duration: 250 }}>
           <text x="16" y="42" class="rowlabel">{t('many kernels, one model · sglang/srt/layers/attention/ · one base class, one subclass per backend', '许多 kernel，一个模型 · sglang/srt/layers/attention/ · 一个基类，每个 backend 一个子类')}</text>
-          <text x="16" y="62" class="tag">{t('the model is written once: it calls one interface, and every backend fills the same slots with its own kernels', '模型只写一次：它调一个接口，每个 backend 用自己的 kernel 填同样的槽')}</text>
+          <text x="16" y="62" class="tag">{t('the model is written once: it calls one interface, and every backend fills the same slots with its own kernels', '模型只写一次：它调一个接口，每个 backend 实现同一组调用入口')}</text>
 
           <!-- the model: 32 layers, each calling the interface -->
           <g in:fade={{ delay: 100, duration: 250 }}>
@@ -815,7 +941,7 @@
           <!-- the interface: the map's inside column, as methods -->
           <g in:fade={{ delay: 500, duration: 250 }}>
             <text x={BXL} y="90" class="boxtitle">AttentionBackend</text>
-            <text x={BXR} y="90" text-anchor="end" class="tag">{t('every backend has these', '每个 backend 都有')}</text>
+            <text x={BXR} y="90" text-anchor="end" class="tag">{t('every backend has these', '统一的调用入口')}</text>
             <rect x={BXL} y="98" width={BXR - BXL} height="204" rx="10" fill="#fbfaf7" stroke={RED} />
             <!-- the plan -->
             <rect x={BXL + 10} y="106" width={BXR - BXL - 20} height="36" rx="6" fill="white" stroke="var(--accent)" />
@@ -860,13 +986,44 @@
           <g in:fade={{ delay: 1500 }}>
             <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(`numbered circles: rows of the map (step ${at('map')}) · 2: how many queries · 3: where K and V sit`, `编号圆圈：map 的行（第 ${at('map')} 步）· 2：query 有多少 · 3：K 和 V 放在哪`)}</text>
             <text x="18" y="348" class="pt">·</text><text x="28" y="348" class="legend">{t('swapping ', '换 ')}<tspan class="mono">--attention-backend</tspan>{t(` changes which class fills the slots; the model's code does not change`, ' 改变哪个类来填槽；模型的代码不变')}</text>
-            <text x="18" y="366" class="pt">·</text><text x="28" y="366" class="legend">{t(`both kernels also write the new token's k and v into the pool: only the backend knows where the pages are`, '两个 kernel 还把新 token 的 k 和 v 写进 pool：只有 backend 知道 page 在哪')}</text>
+            <text x="18" y="366" class="pt">·</text><text x="28" y="366" class="legend">{t(`both kernels also write the new token's k and v into the pool: only the backend knows where the pages are`, '两条路径还把新 token 的 k 和 v 写进 pool：只有 backend 知道 page 在哪')}</text>
           </g>
         </g>
       {/if}
 
       <!-- 12: the backends, one row each, columns from the map -->
-      {#if cur.scene === 'backends'}
+      {#if phoneRepair && cur.scene === 'backends'}
+        <text x="180" y="26" text-anchor="middle" class="ph-title">--attention-backend</text>
+        <text x="180" y="50" text-anchor="middle">head、page、GPU 决定能选谁</text>
+        <rect x="8" y="64" width="344" height="50" rx="8" fill="var(--accent-soft)" />
+        <text x="18" y="85" class="ph-strong">本书：H100 · GQA · page 1</text>
+        <text x="18" y="105">默认 fa3</text>
+        <text x="16" y="136" class="ph-strong">backend</text>
+        <text x="112" y="136" class="ph-strong">head</text>
+        <text x="215" y="136" class="ph-strong">page</text>
+        <text x="265" y="136" class="ph-strong">GPU</text>
+        {#each general as b, i}
+          {@const y = 150 + i * 52}
+          {@const bz = generalZh[i]}
+          <rect x="8" y={y} width="344" height="46" rx="6" fill={b.n === 'fa3' ? 'var(--accent-soft)' : '#f4f2ec'} />
+          <text x="16" y={y + 19} class="mono ph-strong">{b.n}</text>
+          <text x="112" y={y + 19}>{b.heads.replaceAll(' · ', '·')}</text>
+          <text x="215" y={y + 19}>{bz.page}</text>
+          <text x="265" y={y + 19}>{bz.gpu}</text>
+          <text x="16" y={y + 38} class="ph-foot">{bz.from}</text>
+          <text x="180" y={y + 38} class="ph-foot">默认：{bz.def}</text>
+        {/each}
+        <text x="18" y="486" class="ph-subtitle">仅 MLA</text>
+        {#each mlaOnly as b, i}
+          <rect x={8 + i * 116} y="500" width="104" height="90" rx="7" fill="#f4f2ec" />
+          <text x={60 + i * 116} y="526" text-anchor="middle" class="mono ph-strong">{b.nZh ?? b.n}</text>
+          <text x={60 + i * 116} y="552" text-anchor="middle">page {b.n === 'trtllm_mla' ? '32 · 64' : (b.pageZh ?? b.page)}</text>
+          {#if i > 0}<text x={60 + i * 116} y="576" text-anchor="middle" class="ph-foot">Blackwell</text>{/if}
+        {/each}
+        <text x="180" y="622" text-anchor="middle" class="ph-strong">cutedsl_mla 仅做 decode</text>
+        <text x="180" y="646" text-anchor="middle">prefill 默认用 trtllm_mla</text>
+        <text x="180" y="682" text-anchor="middle">Triton page 可为 1 或更大</text>
+      {:else if cur.scene === 'backends'}
         {@const cols = [{ t: 'backend', x: 30 }, { t: t('kernels from', 'kernel 来自'), x: 124 }, { t: t('heads', 'head 布局'), x: 244, m: 1 }, { t: t('page size', 'page 大小'), x: 366, m: 3 }, { t: 'GPU', x: 460, m: 4 }, { t: t('default for', '默认用于'), x: 562 }]}
         <g transition:fade={{ duration: 250 }}>
           <text x="16" y="42" class="rowlabel">{t(`--attention-backend · one row per backend · numbered columns are rows of the map, step ${at('map')}`, `--attention-backend · 每个 backend 一行 · 编号列是 map 的行，第 ${at('map')} 步`)}</text>
@@ -896,14 +1053,14 @@
             <line x1="30" y1="244" x2="690" y2="244" stroke="var(--line)" />
             <text x="30" y="264" class="boxtitle">{t('MLA only', '仅 MLA')}</text>
             {#each mlaOnly as b, i}
-              <text x={124 + i * 190} y="264" class="mono strong">{b.n}</text>
-              <text x={124 + i * 190} y="278" class="tag">page {b.page}</text>
+              <text x={124 + i * 190} y="264" class="mono strong">{t(b.n, b.nZh ?? b.n)}</text>
+              <text x={124 + i * 190} y="278" class="tag">page {t(b.page, b.pageZh ?? b.page)}</text>
             {/each}
           </g>
           <g in:fade={{ delay: 1500 }}>
             <text x="18" y="312" class="pt">·</text><text x="28" y="312" class="legend">{t(`highlighted, this book's setup: Llama-3-8B (GQA) on an H100, page size 1. fa3 covers all three, and is the default`, '高亮的是本书配置：H100 上的 Llama-3-8B（GQA），page 大小 1。fa3 三者都覆盖，且是默认')}</text>
-            <text x="18" y="330" class="pt">·</text><text x="28" y="330" class="legend">{t('every backend has both a prefill and a decode kernel, which is why map row 2 has no column', '每个 backend 都有 prefill 和 decode 两个 kernel，所以 map 第 2 行没有对应列')}</text>
-            <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('source: docs.sglang.io and ', '来源：docs.sglang.io 和 ')}<tspan class="mono">get_default_attn_backend</tspan> · <tspan class="mono">attention_registry.py</tspan>{t(' maps about two dozen names', ' 映射约二十几个名字')}</text>
+            <text x="18" y="330" class="pt">·</text><text x="28" y="330" class="legend">{t('every backend has both a prefill and a decode kernel, which is why map row 2 has no column', 'prefill 与 decode 是两条路径；cutedsl_mla 仅做 decode，prefill 默认用 trtllm_mla')}</text>
+            <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('source: docs.sglang.io and ', '来源：docs.sglang.io 和 ')}<tspan class="mono">get_default_attn_backend</tspan> · <tspan class="mono">{t('attention_registry.py', 'arg_groups/choices.py')}</tspan>{t(' maps about two dozen names', ' 列出可选名字')}</text>
           </g>
         </g>
       {/if}
@@ -976,8 +1133,10 @@
   .focus { font-size: 13px; font-weight: 650; fill: var(--fg); }
   .math { font-size: 11px; color: var(--fg); line-height: 1; }
   .math :global(.katex) { font-size: 1.15em; }
-  .phone-heads text { font-family: var(--sans); font-size: 12px; fill: var(--fg); }
-  .phone-heads .ph-title { font-size: 16px; font-weight: 650; }
-  .phone-heads .ph-subtitle, .phone-heads .ph-strong { font-weight: 650; }
-  .phone-heads .ph-foot { fill: var(--faint); }
+  .phone-zh text { font-family: var(--sans); font-size: 12px; fill: var(--fg); }
+  .phone-zh .mono { font-family: var(--mono); }
+  .phone-zh .ph-title { font-size: 16px; font-weight: 650; }
+  .phone-zh .ph-subtitle, .phone-zh .ph-strong { font-weight: 650; }
+  .phone-zh .ph-foot { fill: var(--faint); }
+  .phone-zh .on-dark, .phone-zh text[fill="white"] { fill: white; }
 </style>

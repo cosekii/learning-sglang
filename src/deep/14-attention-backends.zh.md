@@ -224,28 +224,28 @@ Q、K、V 各读一次，out 写一次：4 × 0.512 ≈ 2 MB；S 和 P 是 0 MB�
 
 ## 第 5 步 · 四件事改变循环的写法
 
-> **一句话：** 循环本身不变；有四件事迫使它换一种写法。两件在每个 backend 内部处理（query 有多少、K/V 放在哪），另两件决定用哪个 backend（head 布局、GPU）。
+> **一句话：** 循环本身不变；有四件事迫使它换一种写法。两件改变执行路径（query 有多少、K/V 放在哪），另两件决定用哪个 backend（head 布局、GPU）。
 
 ### 图上是什么
 
 - 顶部绿条：第 4 步的循环，一行 query 对 K 和 V，每次一个 chunk。
 - 四个编号行，每行左边是名字和两行说明，中间是小图，右边是它落在哪一列、在第几步讲。
-- 右边两个灰底列：「每个 backend 内部」和「决定用哪个 backend」。
+- 右边两个灰底列：「改变执行路径」和「决定用哪个 backend」。
 
 ### 四件事
 
 | 行 | 是什么 | 小图 | 落在哪列 | 讲解 |
 |---|---|---|---|---|
 | 1 | 模型的 head 布局：几个 query head（蓝）共享一个缓存的 K/V head（橙） | MHA 一对一、GQA 几个共享一个、MLA 全部共享一个宽向量 | 决定 backend | 第 6 步 |
-| 2 | query 有多少：prefill 每个 prompt token 一个，decode 每个 request 一个 | prefill 是三角（每个 token 只看到自己为止，第 2 章第 7 步），decode 是一行 | 每个 backend 内部 | 第 7–8 步 |
-| 3 | K 和 V 放在哪：每个 request 一个 tensor，或 page 散落在 pool 里（第 7 章第 4 步） | 一条连续的 vs pool 里零散几格 | 每个 backend 内部 | 第 9 步 |
+| 2 | query 有多少：prefill 每个 prompt token 一个，decode 每个 request 一个 | prefill 是三角（每个 token 只看到自己为止，第 2 章第 7 步），decode 是一行 | 改变执行路径 | 第 7–8 步 |
+| 3 | K 和 V 放在哪：每个 request 一个 tensor，或 page 散落在 pool 里（第 7 章第 4 步） | 一条连续的 vs pool 里零散几格 | 改变执行路径 | 第 9 步 |
 | 4 | 哪款 GPU：每代新增硬件 | A100 / FA2、H100 / FA3、B200 / TRT-LLM、MI300 / aiter | 决定 backend | 第 10 步 |
 
 ### 这四件事是什么关系
 
 它们不是四选一，每个 request 同时碰到全部四件。本书的配置是：GQA（行 1），既有 prefill 又有 decode（行 2），用 page（行 3），H100（行 4）。
 
-- 行 2、3 在**每个 backend 内部**：每个 backend 都带一个 prefill kernel 和一个 decode kernel，都能通过 page 表读 K/V。
+- 行 2、3 **改变执行路径**：prefill 和 decode 分开处理；连续行直接算地址，page 先查表。第 12 步另有只负责 decode 的 backend。
 - 行 1、4 **决定用哪个 backend**：一个 backend 只为某些 head 布局、某些 GPU 而写。
 
 先讲 head，因为第 7 步要用第 6 步的「每字节使用次数」。
@@ -316,7 +316,7 @@ DeepSeek-V3 每个 token 只缓存一个向量：512 个数的压缩内容，加
 
 ## 第 7 步 · 4 之 2：prefill 和 decode
 
-> **一句话：** prefill 一个 tile 有 128 个 query，加上 GQA 的 4，每个 K/V 字节用 512 次，计算比读取久；decode 只有 1 个 query，用 4 次，读取定时间。所以每个 backend 都有两个 kernel。
+> **一句话：** prefill 一个 tile 有 128 个 query，加上 GQA 的 4，每个 K/V 字节用 512 次，计算比读取久；decode 只有 1 个 query，用 4 次，读取定时间。所以 backend 要分开处理这两种形状。
 
 ### 图上是什么
 
@@ -356,14 +356,14 @@ $$
 
 两条一样长的点是 $u = F / BW = 989 \div 3.35 \approx 295$，就是第 4 章第 8 步约 300 token 的平衡点。4 远低于它，512 高于它。
 
-### 为什么要两个 kernel
+### 为什么要两条执行路径
 
-为一边设计的 kernel 在另一边浪费：decode kernel 要尽量多开 SM 拉带宽（第 8 步），prefill kernel 要把 tile 做大让计算单元吃满。所以每个 backend 都有：
+为一边设计的 kernel 在另一边浪费：decode kernel 要尽量多开 SM 拉带宽（第 8 步），prefill kernel 要把 tile 做大让计算单元吃满。所以接口把两个阶段分开：
 
 - `forward_extend`：prefill。叫 extend 是因为 prefill 可能接在已缓存的前缀后面（第 8 章第 2 步）。
 - `forward_decode`：decode。
 
-基类 `AttentionBackend.forward` 按 batch 的 forward mode 分到这两个之一（第 11 步）。
+基类 [`AttentionBackend.forward`](https://github.com/sgl-project/sglang/blob/1d019ce1c85e11ff2f425344e66f446b106f6074/python/sglang/srt/layers/attention/base_attn_backend.py#L261-L330) 按 batch 的 forward mode 分到这两个之一（第 11 步）。两条路径是两个调用入口，不保证每个 backend 都有两个专属 kernel；第 12 步的 `cutedsl_mla` 就只负责 decode。
 
 ### 接下来
 
@@ -440,14 +440,14 @@ $$
 
 ## 第 9 步 · 4 之 3：page
 
-> **一句话：** 不用 page 时，request 的 K、V 是连续的行，kernel 自己算地址；用 page 时，行散落在 pool 里，kernel 先查 page 编号表再读行，这是另一个 kernel。
+> **一句话：** 不用 page 时，request 的 K、V 是连续的行，kernel 自己算地址；用 page 时，行散落在 pool 里，kernel 先查 page 编号表再读行，寻址方式也要跟着变。
 
 ### 图上是什么
 
 - 上半「不用 page」：一个 tensor 里 A0–A4（蓝）、B0–B2（绿）紧挨着。B 的 token $t$ 在第 5 + $t$ 行。
 - 下半「用 page」：10 个 page 的 KV pool。A 占 3、9、1、7、2，B 占 4、8、6，0 和 5 空着。
 - 两个数组：`kv_indices`（8 格，A 的淡蓝、B 的深绿）和 `kv_indptr`（3 格）。绿箭头从 `kv_indices` 里 B 的三格指向 pool 的 page；灰线从 `kv_indptr` 的格子指向 `kv_indices` 的切分边界。
-- 两条带点说明；脚注：CPU 每个 batch 在 `init_forward_metadata` 里重建这两个数组。
+- 两条带点说明；脚注：每个 batch 在 `init_forward_metadata` 里重建这两个数组。
 
 ### 公式
 
@@ -477,14 +477,14 @@ $$
 
 不用 page 时，B 的 token 2 就是第 5 + 2 = 7 行，一次加法；用 page 时它在 page 6，要先读一次表。
 
-### 为什么是另一个 kernel
+### 为什么读取路径要变
 
 - 每读一行之前多读一次表。一个按 5 + $t$ 算地址的 kernel 会从 pool 里读错行。
 - 不用 page 时，一个 64 key 的 chunk 是相邻 64 行，一次连续读。为 16–128 行的大 page 写的 kernel 每 page 查一次表，page 内的行是连续的（第 12 步的 page 大小列）。
 
 ### 每步重建
 
-哪些 request 在 batch 里、各有多长，每步都在变，所以 CPU 每个 batch 都重建这两个数组。`kv_indptr` 存的就是第 12 章第 4 步的序列边界。
+哪些 request 在 batch 里、各有多长，每步都在变，所以每个 batch 都重建这两个数组。`kv_indptr` 存的就是第 12 章第 4 步的序列边界。固定版本的 Triton 实现在 [`_fill_kv_indptr_and_indices`](https://github.com/sgl-project/sglang/blob/1d019ce1c85e11ff2f425344e66f446b106f6074/python/sglang/srt/layers/attention/triton_backend.py#L504-L522) 里用序列长度累计出 `kv_indptr`，再填 `kv_indices`。
 
 数组名因 backend 而异：flashinfer 和 triton 用 `kv_indptr` / `kv_indices`；本书默认的 fa3 用 `cu_seqlens_k`（每个 request 的起点）和 `page_table`（每个 request 一行 page 编号），信息相同。
 
@@ -541,7 +541,7 @@ $$
 
 ## 第 11 步 · 一个接口，许多 backend
 
-> **一句话：** 模型只调用 `AttentionBackend` 这一个接口；每个 backend 是它的子类，用自己的 kernel 填同样的槽：plan、prefill 和 decode kernel、CUDA graph 缓冲区。
+> **一句话：** 模型只调用 `AttentionBackend` 这一个接口；各 backend 通过同样的入口接入：plan、prefill 和 decode 两条路径、CUDA graph 缓冲区。
 
 ### 图上是什么
 
@@ -561,7 +561,7 @@ $$
 | `forward` | 每层一次 | 按 forward mode 分到 `forward_decode` 或 `forward_extend` | map 行 2，第 7–8 步 |
 | `init_cuda_graph_state` | 启动时一次 | 按最大 batch 一次性分配 plan 数组 | 第 11 章第 13 步 |
 
-源码里 `init_cuda_graph_state` 的参数是 `(max_bs, max_num_tokens)`，图上只画了 `max_bs`。
+固定版本的基类源码把 [`init_forward_metadata`](https://github.com/sgl-project/sglang/blob/1d019ce1c85e11ff2f425344e66f446b106f6074/python/sglang/srt/layers/attention/base_attn_backend.py#L88-L94) 拆成 graph 内外的准备，把 [`init_cuda_graph_state(max_bs, max_num_tokens)`](https://github.com/sgl-project/sglang/blob/1d019ce1c85e11ff2f425344e66f446b106f6074/python/sglang/srt/layers/attention/base_attn_backend.py#L202-L204) 留给各 backend 分配缓冲区；图上只画了 `max_bs`。
 
 ### 为什么需要 graph 缓冲区
 
@@ -569,7 +569,7 @@ $$
 
 ### 另外两件事
 
-- 两个 kernel 还负责把新 token 的 k、v 写进 pool（`forward` 的 `save_kv_cache` 参数），因为只有 backend 知道 page 在哪。
+- 两条路径还负责把新 token 的 k、v 写进 pool（`forward` 的 `save_kv_cache` 参数），因为只有 backend 知道 page 在哪。
 - map 的行 1（head）和行 4（GPU）没有槽：它们决定用哪个子类。`--attention-backend` 换的就是这个子类，模型代码不变。
 
 ### 接下来
@@ -578,20 +578,20 @@ $$
 
 ## 第 12 步 · backend 一览
 
-> **一句话：** 每个 backend 覆盖一部分 head 布局、page 大小和 GPU；不指定时 SGLang 按 GPU 和模型挑：Hopper 用 fa3，Blackwell 用 trtllm_mha，AMD 用 aiter，其他 NVIDIA 用 flashinfer，都不合适时用 triton。
+> **一句话：** 每个 backend 覆盖一部分 head 布局、page 大小和 GPU；不指定时，本书这类非 MLA 模型的默认选择是：Hopper 用 fa3，Blackwell 用 trtllm_mha，AMD 用 aiter，其他 NVIDIA 用 flashinfer，都不合适时用 triton。
 
 ### 图上是什么
 
 - 表头：backend、kernel 来自、①head 布局、③page 大小、④GPU、默认用于。编号是 map 的行（第 5 步）。
 - 六行：fa3（高亮）、trtllm_mha、aiter、flashinfer、triton、torch_native。
-- 下方「仅 MLA」：flashmla page 64、cutlass_mla page 128、trtllm_mla page 32 · 64 · Blackwell。
+- 下方「仅 MLA」：flashmla page 64、cutedsl_mla page 32 · 64、trtllm_mla page 32 · 64 · Blackwell。
 - 两条带点说明；脚注写来源。
 
 ### 怎么读这张表
 
-- ① 对应第 6 步，③ 对应第 9 步，④ 对应第 10 步。map 行 2 没有列，因为每个 backend 都有 prefill 和 decode 两个 kernel（第 7 步）。
-- page 大小「1」表示一个 page 一行，kernel 每个 token 查一次表；「16–128」表示为这么多行一页而写。
-- 「默认用于」是没给 `--attention-backend` 时 `get_default_attn_backend` 的选择。
+- ① 对应第 6 步，③ 对应第 9 步，④ 对应第 10 步。prefill 与 decode 是两条执行路径（第 7 步），不等于每端一个专属 kernel；`cutedsl_mla` 只负责 decode，prefill 默认交给 `trtllm_mla`。
+- page 大小「1」表示一个 page 一行，kernel 每个 token 查一次表；「16–128」表示为这么多行一页而写。Triton 也能按大于 1 的 page 大小特化。
+- 「默认用于」是没给 `--attention-backend` 时 `get_default_attn_backend` 对非 MLA 模型的选择。
 
 ### 本书的配置，逐列核对
 
@@ -605,10 +605,10 @@ $$
 
 ### 对照源码
 
-- `get_default_attn_backend`：非 MLA 模型在 Hopper 上选 fa3（前提是没开 topk > 1 的 speculative decoding），Blackwell（SM100）上选 trtllm_mha，AMD 上选 aiter，其他有 FlashInfer 的 NVIDIA 选 flashinfer，否则 triton。torch_native 在 Apple 的 MPS 上是默认，其他平台要手动指定。
-- page 大小的限制在 SGLang 的参数检查里：trtllm_mha 只接受 16、32、64、128；trtllm_mla 只接受 32、64；flashmla 只接受 64。
-- `attention_registry.py` 注册了约二十几个名字，表里只列了主要的。
-- 当前 SGLang 主分支的 backend 列表里已经没有 `cutlass_mla`（最接近的是 `cutedsl_mla`，page 32 或 64）；triton 的代码现在也能按大于 1 的 page 大小特化。图上这两处可能落后于源码。
+- 固定版本的 [`get_default_attn_backend`](https://github.com/sgl-project/sglang/blob/1d019ce1c85e11ff2f425344e66f446b106f6074/python/sglang/srt/arg_groups/model_override_base.py#L268-L341)：非 MLA 模型在 Hopper 上选 fa3（前提是没开 topk > 1 的 speculative decoding），Blackwell（SM100）上选 trtllm_mha，AMD 上选 aiter，其他有 FlashInfer 的 NVIDIA 选 flashinfer，否则 triton。torch_native 在 Apple 的 MPS 上是默认，其他平台要手动指定。
+- [page 大小检查](https://github.com/sgl-project/sglang/blob/1d019ce1c85e11ff2f425344e66f446b106f6074/python/sglang/srt/arg_groups/overrides.py#L1067-L1133)：trtllm_mha 只接受 16、32、64、128；trtllm_mla 和 cutedsl_mla 只接受 32、64；flashmla 只接受 64。
+- [backend 注册表](https://github.com/sgl-project/sglang/blob/1d019ce1c85e11ff2f425344e66f446b106f6074/python/sglang/srt/arg_groups/choices.py#L68-L97)里有 `cutedsl_mla`，没有 `cutlass_mla`。Triton 把 [page 大小交给 kernel wrapper 特化](https://github.com/sgl-project/sglang/blob/1d019ce1c85e11ff2f425344e66f446b106f6074/python/sglang/srt/layers/attention/triton_backend.py#L214-L216)，支持大于 1 的 page。
+- [`cutedsl_mla` 目前只支持 decode](https://github.com/sgl-project/sglang/blob/1d019ce1c85e11ff2f425344e66f446b106f6074/python/sglang/srt/arg_groups/overrides.py#L1178-L1205)，且只支持 Blackwell SM100；未另指定 prefill backend 时默认配 `trtllm_mla`。这是「两条路径不等于每端一个专属 kernel」的实例。
 
 ### 接下来
 
