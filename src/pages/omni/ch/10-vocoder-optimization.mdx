@@ -15,6 +15,8 @@ export const deep = await deepFor('omni-10-vocoder-optimization');
 
 Step 1 follows Qwen3-Omni's default streaming Code2Wav windows in `sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:79-109,999-1011`. A later stateless window reads 25 earlier frames and 10 new frames, then emits only the 10 new frames. Learning SGLang Ch. 20 Steps 1–3 established that those 10 frames represent 800 ms of playback. The three map entries are cross-request batching, retained codec state and exact-shape CUDA graphs; later steps explain each one. The frame counts describe input work, not elapsed time.
 
+Step 2 follows `sglang_omni/scheduling/streaming_vocoder.py:819-842` and `sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:999-1079`. The constructed comparison changes three independent `[B=1,T=10]` first-window calls into one `[B=3,T=10]` call. Real groups also require matching first/later kind and slot/stateless mode. They contain at most eight replay rows and do not pad unlike lengths into one replay. `tests/unit_test/qwen3_omni/test_code2wav_batching.py:111-191` checks shared rows and the first/later boundary. The 3→1 count is not a timing result.
+
 Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`. The chapter reads source and public results; it does not run a model or benchmark.
 
 </details>
@@ -23,6 +25,8 @@ Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37
 <summary>本章说法的出处</summary>
 
 第 1 步依据 Qwen3-Omni 默认的流式 Code2Wav 窗口，见 `sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:79-109,999-1011`。后续无状态窗口读取 25 帧旧内容和 10 帧新内容，只输出那 10 帧新内容。Learning SGLang 第 20 章第 1–3 步已经说明，这 10 帧代表 800 ms 播放。地图三项是跨请求 batching、保留 codec 状态和精确形状 CUDA graph，后续步骤分别解释。帧数描述输入工作量，不是耗时。
+
+第 2 步依据 `sglang_omni/scheduling/streaming_vocoder.py:819-842` 和 `sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:999-1079`。构造对照把三次独立 `[B=1,T=10]` 首个窗口调用变成一次 `[B=3,T=10]` 调用。真实分组还要求首个/后续类型和 slot/无状态模式匹配，每次最多重放八行，不把不同长度补进同一次 replay。`tests/unit_test/qwen3_omni/test_code2wav_batching.py:111-191` 检查共享行和首个/后续边界。3→1 是调用数，不是耗时结果。
 
 本章代码出处固定到 `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`。本章只读源码和公开结果，没有运行模型或 benchmark。
 

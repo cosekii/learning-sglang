@@ -31,3 +31,37 @@ The output contains 10 new frames, representing $10\times80=800$ ms of playback.
 The first map entry changes how independent requests share a model call. The next step combines three ready first windows without merging their outputs.
 
 Sources: `sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:79-109,999-1011`; Learning SGLang Ch. 20 Steps 1–3.
+
+## Step 2 · Batch matching windows
+
+**One sentence.** Three requests with matching first windows enter one three-row model call, and each row still produces its own request's sound.
+
+### On the stage
+
+- `B` counts requests decoded together. `T` counts frames in each request's window. The left panel has three `[B=1,T=10]` calls; the right has one `[B=3,T=10]` call.
+- These are first windows, so every request has 10 new frames and no earlier context. A, B and C are independent requests, not three pieces of one request.
+- `Matching` means more than equal `T`. The scheduler also requires the same first/later kind and the same slot-backed or stateless mode. A first window does not share a group with a later window.
+- Blue boxes are model calls and their sound outputs. The shared box has three rows, one per request. Batching does not mix the rows into one output or repeat one request's sound for the others.
+- The comparison counts three model calls before and one after. It does not assign milliseconds or claim that every group has three requests.
+
+### Formula and symbols
+
+$$C_{\mathrm{separate}}=n,\qquad C_{\mathrm{batch}}=1$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $n$ | Ready matching requests | Constructed example, 3 |
+| $C_{\mathrm{separate}}$ | Model calls without cross-request batching | Left panel, 3 |
+| $C_{\mathrm{batch}}$ | Model calls for the shared three-row group | Right panel, 1 |
+
+### The numbers on the stage
+
+$$C_{\mathrm{separate}}=3,\qquad C_{\mathrm{batch}}=1$$
+
+The group still returns three sound chunks. The scheduler can replay at most eight rows and chooses a published graph batch size that the group fills. It does not pad different frame lengths into one replay.
+
+### Next
+
+Batching shares a call across requests. The next mechanism reduces repeated frames inside one request by keeping its decoder work between windows.
+
+Sources: `sglang_omni/scheduling/streaming_vocoder.py:819-842`; `sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:999-1079`; `tests/unit_test/qwen3_omni/test_code2wav_batching.py:111-191`.

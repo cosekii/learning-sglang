@@ -9,6 +9,9 @@
     VOC_LEFT_CONTEXT_FRAMES,
     VOC_NEW_FRAMES,
     VOC_STATELESS_INPUT_FRAMES,
+    VOC_BATCH_REQUEST_COUNT,
+    VOC_BATCH_CALLS_BEFORE,
+    VOC_BATCH_CALLS_AFTER,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -16,6 +19,9 @@
   const steps = [{
     caption: 'A later window decodes 25 old frames plus 10 new ones. It emits only the 10 new frames.',
     captionZh: '后续窗口要算 25 帧旧内容和 10 帧新内容。它只输出那 10 帧新内容。',
+  }, {
+    caption: 'Three matching windows share one model call. Each request still gets its own sound chunk.',
+    captionZh: '三个匹配窗口共用一次模型调用。每个请求仍拿到自己的声音 chunk。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -32,7 +38,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? 790 : 570);
+  const H = $derived(phone ? [790, 850][step] : [570, 630][step]);
   const roadmap = $derived([
     { title: 'ready windows', body: 'decode them together', titleZh: '准备好的窗口', bodyZh: '放在一起解码' },
     { title: 'earlier decoder work', body: 'keep it for next time', titleZh: '之前算过的内容', bodyZh: '留给下个窗口' },
@@ -100,6 +106,45 @@
           {/each}
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Qwen3-Omni · 10 new frames = 800 ms playback' : 'Qwen3-Omni default window; 800 ms is playback time, not compute time.', phone ? 'Qwen3-Omni · 10 帧新内容 = 800 ms 播放' : 'Qwen3-Omni 默认窗口；800 ms 是播放时长，不是计算耗时。')}</text>
+      {:else if step === 1}
+        <text x={phone ? 18 : 30} y="30" class="title">{t('Batch matching windows · 1 of 3', '合并匹配窗口 · 1 / 3')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'matching = same length, kind and state mode' : 'matching windows = same frame count, window kind and state mode', phone ? '匹配 = 长度、类型、状态模式相同' : '匹配窗口 = 帧数、窗口类型和状态模式相同')}</text>
+        <text x={phone ? 18 : 30} y="79" class="label">{t('B = requests per call · T = frames per request', 'B = 每次调用的请求数 · T = 每请求的帧数')}</text>
+        {#each [false, true] as shared}
+          {@const x = phone ? 18 : shared ? 375 : 30}
+          {@const y = phone ? shared ? 465 : 102 : 102}
+          {@const pw = phone ? 264 : 315}
+          {@const ph = phone ? 340 : 405}
+          <rect x={x} y={y} width={pw} height={ph} rx="12" fill="var(--bg)" stroke={shared ? 'var(--accent)' : 'var(--line)'} />
+          <text x={x + 15} y={y + 27} class="small strong">{shared ? t('ONE SHARED CALL', '一次共享调用') : t('THREE SEPARATE CALLS', '三次独立调用')}</text>
+          <text x={x + 15} y={y + 51} class="small">{VOC_BATCH_REQUEST_COUNT} {t('first windows · 10 new frames each', '个首个窗口 · 各 10 帧新内容')}</text>
+          {#if shared}
+            <rect x={x + 91} y={y + 75} width={pw - 108} height="194" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x={x + 107} y={y + 98} class="code">[B=3, T=10]</text>
+          {/if}
+          {#each ['A', 'B', 'C'] as id, i}
+            {@const ry = y + 77 + i * 65}
+            <text x={x + 15} y={ry + 23} class="small strong">{id}</text>
+            <line x1={x + 37} y1={ry + 19} x2={x + 78} y2={ry + 19} stroke="var(--accent)" stroke-width="2" marker-end="url(#voc-arrow)" />
+            {#if !shared}
+              <rect x={x + 91} y={ry} width={pw - 108} height="42" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
+              <text x={x + 102} y={ry + 18} class="code">[B=1, T=10]</text>
+              <text x={x + 102} y={ry + 35} class="small">→ {id} {t('sound', '声音')}</text>
+            {:else}
+              <text x={x + 107} y={ry + 42} class="small">→ {id} {t('sound', '声音')}</text>
+            {/if}
+          {/each}
+          <text x={x + 15} y={y + 302} class="result">{t('model calls', '模型调用')} = {shared ? VOC_BATCH_CALLS_AFTER : VOC_BATCH_CALLS_BEFORE}</text>
+          <text x={x + 15} y={y + 331} class="small strong">{t('sound chunks', '声音 chunks')} = {VOC_BATCH_REQUEST_COUNT}</text>
+          {#if !phone}
+            <text x={x + 15} y={y + 370} class="small">{shared ? t('three rows inside one call', '一次调用里的三行') : t('one row inside each call', '每次调用里的一行')}</text>
+          {/if}
+        {/each}
+        {#if !phone}
+          <text x="360" y="548" text-anchor="middle" class="result">{VOC_BATCH_CALLS_BEFORE} {t('calls', '次调用')} → {VOC_BATCH_CALLS_AFTER} {t('call', '次调用')} · {VOC_BATCH_REQUEST_COUNT} {t('separate outputs', '份独立输出')}</text>
+          <text x="360" y="582" text-anchor="middle" class="small">{t('Batching changes the call boundary, not who owns each output.', 'batching 改变调用边界，不改变每份输出的归属。')}</text>
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Constructed shapes · matching also checks kind + state' : 'Constructed shapes; grouping also checks first/later kind and slot/stateless mode.', phone ? '构造形状 · 还检查窗口类型和状态模式' : '构造形状；分组还检查首个/后续类型和 slot/无状态模式。')}</text>
       {/if}
     </svg>
   </div>
