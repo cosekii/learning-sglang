@@ -13,13 +13,13 @@ export const deep = await deepFor('voxt-file-transcription');
 <details class="i18n-en">
 <summary>Where this chapter's claims come from</summary>
 
-Step 1 reads the two routes. `runTranscribeCLI` hands the command to `transcribeCLI` with a socket under the app's data folder (`Voxt/transcribe_cli.go:35-39`). The app's `fileRecognizer` uses the speech model set for Transcribe (`Voxt/transcribe_socket.go:58-88`) and calls `asr.Recognize` directly, so no dictation session writes history or delivers text. `Voxt/docs/transcribe.md` describes the command as a separate route.
+Step 1 reads the two routes. `runTranscribeCLI` hands the command to `transcribeCLI` with a socket under the app's data folder (`Voxt/transcribe_cli.go:35-39`). The app's `fileRecognizer` uses the speech model set for Transcribe (`Voxt/transcribe_socket.go:58-88`) and calls `asr.Recognize` directly, so no dictation session runs, no cleanup runs, and no history row is written. `Voxt/docs/transcribe.md` describes the command as a separate route.
 
 Step 2 reads decoding. `decodeAudio` checks the file, makes a temporary folder, runs macOS `afconvert -f WAVE -d LEI16@16000 -c 1`, reads the WAV, and returns PCM (`transcribe_cli.go:111-139`). `asr.SampleRate` is 16000 (`Voxt/internal/asr/asr.go:32`). The stage's 8-second example is constructed: $8 \times 16{,}000 \times 2 = 256{,}000$ PCM bytes, plus the 44-byte WAV header.
 
 Step 3 reads the handoff. The socket is `transcribe.sock` in the app's data folder (`Voxt/internal/fileasr/socket.go:16-17`); `historyapi.Listen` binds it and sets mode `0600` (`Voxt/internal/historyapi/server.go:101-114`). The request is one JSON line with `op`, `bytes` and an optional `lang`, followed by the PCM (`socket.go:35-39`). `Lang` carries `json:"lang,omitempty"` (`socket.go:38`), and `Transcribe` marshals the struct directly (`socket.go:146`), so without `--lang` the key is omitted; after Unmarshal it is `""`. The server answers one reply line per segment and then a `done` line with the count (`socket.go:41-46`). The command writes the PCM while it reads replies, and `fileasr.Run` cuts and recognizes as the stream arrives (`socket.go:168-176`, `fileasr.go:39-74`). The request-line cap is 4 KiB (`socket.go:25-29`).
 
-Step 4 reads the end of a cue. `Cutter` works in 10 ms frames at 16 kHz (`Voxt/internal/meeting/cutter.go:9-19`). It ends a cue after 450 ms of quiet (`cutter.go:70-74`).
+Step 4 reads the end of a cue. `Cutter` works in 10 ms slices at 16 kHz (`Voxt/internal/meeting/cutter.go:9-19`). It ends a cue after 450 ms of quiet (`cutter.go:70-74`).
 
 Step 5 reads the start and the minimum. `startUtterance` starts a cue 300 ms before its speech (`cutter.go:95-105`), and `finalize` drops a cue with less than 350 ms of voiced sound (`cutter.go:119-127`).
 
@@ -38,13 +38,13 @@ Source revision: `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683
 <details class="i18n-zh">
 <summary>本章说法的出处</summary>
 
-第 1 步读两条路线。`runTranscribeCLI` 把命令交给 `transcribeCLI`，socket 放在应用的数据文件夹里（`Voxt/transcribe_cli.go:35-39`）。应用的 `fileRecognizer` 用 Transcribe 选定的语音模型（`Voxt/transcribe_socket.go:58-88`），直接调用 `asr.Recognize`，所以没有听写 session 去写历史或交付文字。`Voxt/docs/transcribe.md` 也把这条命令写成单独的路线。
+第 1 步读两条路线。`runTranscribeCLI` 把命令交给 `transcribeCLI`，socket 放在应用的数据文件夹里（`Voxt/transcribe_cli.go:35-39`）。应用的 `fileRecognizer` 用 Transcribe 选定的语音模型（`Voxt/transcribe_socket.go:58-88`），直接调用 `asr.Recognize`，所以没有听写 session、没有整理，也不写历史。`Voxt/docs/transcribe.md` 也把这条命令写成单独的路线。
 
 第 2 步读解码。`decodeAudio` 检查文件，建一个临时文件夹，运行 macOS 的 `afconvert -f WAVE -d LEI16@16000 -c 1`，再读 WAV、返回 PCM（`transcribe_cli.go:111-139`）。`asr.SampleRate` 是 16000（`Voxt/internal/asr/asr.go:32`）。图上的 8 秒是构造的例子：$8 \times 16{,}000 \times 2 = 256{,}000$ 字节 PCM，再加 44 字节 WAV 文件头。
 
 第 3 步读交接。socket 是应用数据文件夹里的 `transcribe.sock`（`Voxt/internal/fileasr/socket.go:16-17`）；`historyapi.Listen` 绑定它并把权限设成 `0600`（`Voxt/internal/historyapi/server.go:101-114`）。请求是一行 JSON，带 `op`、`bytes` 和可选的 `lang`，后面跟 PCM（`socket.go:35-39`）。`Lang` 带 `json:"lang,omitempty"`（`socket.go:38`），`Transcribe` 又直接 `json.Marshal` 这个结构（`socket.go:146`），所以没给 `--lang` 时这个键不在线上；Unmarshal 之后才是 `""`。服务端每句回一行 segment，最后回一行 `done` 和句数（`socket.go:41-46`）。命令一边写 PCM 一边读回复，`fileasr.Run` 边收边切句、识别（`socket.go:168-176`、`fileasr.go:39-74`）。请求行上限是 4 KiB（`socket.go:25-29`）。
 
-第 4 步读一句的结束。`Cutter` 在 16 kHz 上按 10 ms 一帧工作（`Voxt/internal/meeting/cutter.go:9-19`）。安静满 450 ms 就结束一句（`cutter.go:70-74`）。
+第 4 步读一句的结束。`Cutter` 在 16 kHz 上按 10 ms 一小片工作（`Voxt/internal/meeting/cutter.go:9-19`）。安静满 450 ms 就结束一句（`cutter.go:70-74`）。
 
 第 5 步读起点和最短长度。`startUtterance` 让一句从讲话前 300 ms 开始（`cutter.go:95-105`），`finalize` 丢掉讲话不足 350 ms 的句子（`cutter.go:119-127`）。
 

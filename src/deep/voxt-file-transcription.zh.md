@@ -123,26 +123,26 @@ socket 名是 `transcribe.sock`，放在应用的数据文件夹里（`socket.go
 
 ## 第 4 步 · 停顿结束一句
 
-> **一句话：** 切句器每 10 ms 看一帧，安静满 450 ms 就结束一句。
+> **一句话：** 切句器每 10 ms 看一小片，安静满 450 ms 就结束一句。
 
 ### 图上是什么
 
 - 上面两条蓝色横线是第 1 句和第 2 句的时间范围：0.00–3.35 s、3.40–7.85 s。
 - 中间的波形蓝色是讲话，灰色是安静。
-- 中间的小橙框标出第 1 句末尾的 450 ms 安静。
-- 下面两行说：每帧 10 ms；句尾的安静也一起留下。
+- 中间的小橙框标出第 1 句末尾的 450 ms 安静，从 2.90 到 3.35 s。
+- 下面两行说：切句器每 10 ms 看一小片；句尾的安静也一起留下。
 
-### 结束条件和帧
+### 结束条件和切句小片
 
-`Cutter` 的常量在 `Voxt/internal/meeting/cutter.go:9-19`：`cutterFrame = 10 ms`，`cutterSilenceCut = 450 ms`。结束条件是 `c.silence >= cutterSilenceCut`（`cutter.go:70-74`）。
+`Cutter` 的常量在 `Voxt/internal/meeting/cutter.go:9-19`：`cutterFrame = 10 ms`，`cutterSilenceCut = 450 ms`。结束条件是 `c.silence >= cutterSilenceCut`（`cutter.go:70-74`）。这里的 10 ms 是切句器自己的小片；第 3 章说的音频帧是 100 ms，两者不是同一个单位。
 
 $$ \text{cue end} = \text{last speech} + 450\ \text{ms} $$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
-| last speech | 最后一个超过能量门槛的帧 | `cutterSpeechRMS = 800`，`cutter.go:18` |
+| last speech | 最后一个超过能量门槛的小片 | `cutterSpeechRMS = 800`，`cutter.go:18` |
 | 450 ms | 结束一句的安静长度 | `cutterSilenceCut`，`cutter.go:12` |
-| 10 ms | 每帧的长度 | `cutterFrame`，`cutter.go:11` |
+| 10 ms | 一个切句小片 | `cutterFrame`，`cutter.go:11` |
 
 ### 代入图上的数
 
@@ -155,7 +155,7 @@ $$ \text{cue end} = \text{last speech} + 450\ \text{ms} $$
 
 ### 为什么末尾的安静也留下
 
-`finalize` 的 `End` 是触发结束的那一帧，缓冲里已经包含这 450 ms 安静（`cutter.go:119-127`）。本章不删它；模型通常会把尾部静音忽略掉。图上的 SRT 时间就是按这个 `End` 写的。
+`finalize` 的 `End` 是触发结束的那一小片，缓冲里已经包含这 450 ms 安静（`cutter.go:119-127`）。本章不删它；模型通常会把尾部静音忽略掉。图上的 SRT 时间就是按这个 `End` 写的。
 
 ### 接下来
 
@@ -181,7 +181,7 @@ $$ \text{cue start} = \max(0,\ \text{speech onset} - 300\ \text{ms}),\qquad \tex
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
-| speech onset | 第一个讲话帧 | `cutterSpeechRMS = 800` |
+| speech onset | 第一个讲话小片 | `cutterSpeechRMS = 800` |
 | 300 ms | 句首提前量 | `cutterPreRoll`，`cutter.go:15` |
 | voiced | 一句里讲话帧的总长 | `voicedDur`，`cutter.go:28` |
 | 350 ms | 一句至少要有多少讲话 | `cutterMinUtterance`，`cutter.go:13` |
@@ -349,7 +349,7 @@ TXT 只有两行：`Good morning.` 和 `See you at noon.`。
 Message: fmt.Sprintf("transcribed a file for the command line: %s of audio, %d segments", ...)
 ```
 
-（`transcribe_socket.go:90-98`）。这段消息里没有识别出的文字。
+（`transcribe_socket.go:90-98`）。这段消息里没有识别出的文字。这是应用自己的诊断日志，不是第 9 章的访问日志；一个 segment 就是一句。
 
 $$ \text{log} = \{\text{audio length},\ \text{segment count},\ \text{error?}\} $$
 

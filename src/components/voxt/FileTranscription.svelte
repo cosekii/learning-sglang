@@ -52,8 +52,8 @@
     caption: 'A new cue starts 300 ms before its speech.',
     captionZh: '新的一句在讲话前 300 ms 开始。',
   }, {
-    caption: 'At 7 s, a cue is cut in its quietest part.',
-    captionZh: '到 7 秒，一句在最安静处切开。',
+    caption: 'At 7 s, Voxt cuts at the quietest point in the last second.',
+    captionZh: '到 7 秒，Voxt 在最后 1 秒最安静处切开。',
   }, {
     caption: 'Voxt recognizes each cue with the Transcribe model.',
     captionZh: 'Voxt 用 Transcribe 的模型逐句识别。',
@@ -65,17 +65,17 @@
     captionZh: '文件路线不写历史，也不留录音。',
   }];
   const ariaLabels = [{
-    en: 'Two routes. A dictation goes from the microphone through a dictation session to the cursor and history. A file goes from disk through Voxt transcribe to SRT or TXT. A one-hour meeting is 3600 seconds, 115.2 megabytes of PCM, about 29 phone photos.',
-    zh: '两条路线。听写从麦克风经过听写 session 到光标和历史。文件从磁盘经过 Voxt transcribe 到 SRT 或 TXT。一小时的会议是 3600 秒、115.2 MB 的 PCM，约等于 29 张手机照片。',
+    en: 'Two routes. A dictation goes from the microphone through a dictation session, its cleanup and a history row to the cursor. A file goes from disk through Voxt transcribe to SRT or TXT; it reuses the model set for Transcribe but opens no session and runs no cleanup. A one-hour meeting is 3600 seconds, 115.2 megabytes of PCM, about 29 phone photos.',
+    zh: '两条路线。听写从麦克风经过听写 session、整理和历史记录，到光标处的文字。文件从磁盘经过 Voxt transcribe 到 SRT 或 TXT；它复用 Transcribe 选定的模型，但不打开 session，也不做整理。一小时的会议是 3600 秒、115.2 MB 的 PCM，约等于 29 张手机照片。',
   }, {
     en: 'A constructed eight-second file is decoded by macOS afconvert to 16 kHz mono PCM, held as a temporary WAV. Eight seconds times 32000 bytes a second is 256000 PCM bytes, plus a 44-byte header.',
     zh: '构造的八秒文件由 macOS 的 afconvert 转成 16 kHz 单声道 PCM，放进一个临时 WAV。八秒乘每秒 32000 字节是 256000 字节 PCM，再加 44 字节文件头。',
   }, {
-    en: 'The command sends one JSON request line and 256000 PCM bytes to the running Voxt through a local socket named transcribe.sock. The command writes the PCM while it reads replies, and the app cuts and recognizes the stream as it arrives, so a segment reply can come back before the last PCM byte.',
+    en: 'The command sends one JSON request line and 256000 PCM bytes to the running Voxt through a local socket named transcribe.sock. The command writes the PCM while it reads replies, and the app cuts and recognizes the stream as it arrives, so one reply for each finished piece of speech can come back before the last PCM byte.',
     zh: '命令把一行 JSON 请求和 256000 字节 PCM，通过名为 transcribe.sock 的本机 socket 送给运行中的 Voxt。命令一边写 PCM 一边读回复，应用边收边切句、识别，所以最后一块 PCM 还没传完，就可能已经有句子回来。',
   }, {
-    en: 'The cutter looks at 10 ms frames. 450 ms of quiet ends a cue. The cue keeps that quiet at its end.',
-    zh: '切句器每 10 ms 看一帧。安静满 450 ms 结束一句。这句末尾的安静也一起留下。',
+    en: 'The cutter looks at 10 ms slices, a different, smaller unit than the 100 ms audio frames of chapter 3. 450 ms of quiet ends a cue. The cue keeps that quiet at its end.',
+    zh: '切句器每 10 ms 看一小片，比第 3 章 100 ms 的音频帧更小。安静满 450 ms 结束一句。这句末尾的安静也一起留下。',
   }, {
     en: 'A new cue starts 300 ms before its first speech frame, so the first consonant is not lost. Cue two starts at 3.40 seconds while its speech starts at 3.70.',
     zh: '新的一句在第一个讲话帧前 300 ms 开始，这样第一个辅音不会被切掉。第 2 句从 3.40 秒开始，而讲话从 3.70 秒开始。',
@@ -155,7 +155,7 @@
           <text x="185" y="94" text-anchor="middle" class="label">{t('DICTATION · TO THE CURSOR', '听写 · 到光标')}</text>
           <rect x="45" y="110" width="280" height="50" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="185" y="131" text-anchor="middle" class="detail">{t('microphone + helper (Ch. 2–3)', '麦克风 + helper（第 2–3 章）')}</text>
-          <text x="185" y="149" text-anchor="middle" class="detail">{t('16 kHz mono frames', '16 kHz 单声道帧')}</text>
+          <text x="185" y="149" text-anchor="middle" class="detail">{t('16 kHz audio frames', '16 kHz 音频帧')}</text>
           <line x1="185" y1="160" x2="185" y2="185" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
           <rect x="45" y="193" width="280" height="60" rx="9" fill="var(--bg)" stroke="var(--line)" />
           <text x="185" y="215" text-anchor="middle" class="label">{t('one dictation session', '一次听写 session')}</text>
@@ -173,18 +173,18 @@
           <line x1="535" y1="160" x2="535" y2="185" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
           <rect x="395" y="193" width="280" height="60" rx="9" fill="var(--bg)" stroke="var(--line)" />
           <text x="535" y="215" text-anchor="middle" class="label">{t('Voxt transcribe', 'Voxt transcribe')}</text>
-          <text x="535" y="237" text-anchor="middle" class="detail">{t('no dictation session', '不打开听写 session')}</text>
+          <text x="535" y="237" text-anchor="middle" class="detail">{t('reuses Transcribe\'s model, no session', '复用 Transcribe 的模型，不开 session')}</text>
           <line x1="535" y1="253" x2="535" y2="278" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
           <rect x="395" y="286" width="280" height="52" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="535" y="309" text-anchor="middle" class="label amber">{t('meeting.srt / talk.txt', 'meeting.srt / talk.txt')}</text>
-          <text x="535" y="328" text-anchor="middle" class="detail">{t('subtitle file / plain text', '字幕文件 / 纯文本')}</text>
+          <text x="535" y="328" text-anchor="middle" class="detail">{t('SRT = subtitle · TXT = plain text', 'SRT = 字幕 · TXT = 纯文本')}</text>
 
           <text x="28" y="370" class="pt">·</text>
           <text x="38" y="370" class="detail">{t(`a one-hour meeting is ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} s of sound, already in a file`, `一小时的会议是 ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} 秒的声音，本来就在文件里`)}</text>
           <text x="28" y="392" class="pt">·</text>
           <text x="38" y="392" class="detail">{t('both use Voxt and a speech model', '两条都用 Voxt 和语音模型')}</text>
           <text x="28" y="414" class="pt">·</text>
-          <text x="38" y="414" class="detail">{t('the file route skips the dictation session and its history row', '文件路线不经过听写 session，也没有历史记录')}</text>
+          <text x="38" y="414" class="detail">{t('the file route skips the session, cleanup and history row', '文件路线不经过 session、整理和历史记录')}</text>
           <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Orange marks the route this chapter follows.', '橙色是本章要走的路线。')}</text>
         {:else}
           <rect x="15" y="68" width="270" height="250" rx="12" fill="var(--bg)" stroke="var(--accent)" />
@@ -207,11 +207,11 @@
           <line x1="150" y1="412" x2="150" y2="432" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
           <rect x="30" y="440" width="240" height="52" rx="8" fill="var(--bg)" stroke="var(--line)" />
           <text x="150" y="462" text-anchor="middle" class="label">{t('Voxt transcribe', 'Voxt transcribe')}</text>
-          <text x="150" y="481" text-anchor="middle" class="detail">{t('no dictation session', '不打开听写 session')}</text>
+          <text x="150" y="481" text-anchor="middle" class="detail">{t('Transcribe\'s model, no session', 'Transcribe 的模型，不开 session')}</text>
           <line x1="150" y1="492" x2="150" y2="512" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
           <rect x="30" y="520" width="240" height="48" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="150" y="542" text-anchor="middle" class="label amber">{t('meeting.srt / talk.txt', 'meeting.srt / talk.txt')}</text>
-          <text x="150" y="559" text-anchor="middle" class="detail">{t('subtitle file / plain text', '字幕文件 / 纯文本')}</text>
+          <text x="150" y="559" text-anchor="middle" class="detail">{t('SRT = subtitle · TXT = plain text', 'SRT = 字幕 · TXT = 纯文本')}</text>
 
           <text x="20" y="606" class="pt">·</text>
           <text x="30" y="606" class="detail">{t(`a one-hour meeting is ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} s`, `一小时的会议是 ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} 秒`)}</text>
@@ -219,13 +219,13 @@
           <text x="20" y="650" class="pt">·</text>
           <text x="30" y="650" class="detail">{t('both use Voxt and a speech model', '两条都用 Voxt 和语音模型')}</text>
           <text x="20" y="672" class="pt">·</text>
-          <text x="30" y="672" class="detail">{t('the file route skips the dictation session', '文件路线不经过听写 session')}</text>
-          <text x="30" y="694" class="detail">{t('and writes no history row', '也不写历史记录')}</text>
+          <text x="30" y="672" class="detail">{t('the file route skips the session,', '文件路线不经过 session、')}</text>
+          <text x="30" y="694" class="detail">{t('cleanup and history row', '整理和历史记录')}</text>
           <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Orange marks the route this chapter follows.', '橙色是本章要走的路线。')}</text>
         {/if}
       {:else if step === 1}
         <text x={W / 2} y="27" text-anchor="middle" class="title">{t('DECODE THE FILE TO PCM', '把文件转成 PCM')}</text>
-        <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('PCM = raw samples the speech model can read', 'PCM = 语音模型能直接读的声音样本')}</text>
+        <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('PCM = raw sound the model reads; mono = one channel', 'PCM = 模型能读的原始声音；单声道 = 一条声道')}</text>
         {#if !phone}
           <rect x="20" y="80" width="150" height="78" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="95" y="108" text-anchor="middle" class="label amber">talk.m4a</text>
@@ -247,7 +247,7 @@
           <text x="360" y="282" text-anchor="middle" class="detail">{t('about 256 KB, smaller than one phone photo', '约 256 KB，比一张手机照片小')}</text>
           <text x="360" y="308" text-anchor="middle" class="formula">{t(`one hour: ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} × ${VOXT_CAPTURE_SAMPLE_RATE.toLocaleString('en-US')} × ${VOXT_PCM_BYTES_PER_SAMPLE} B`, `一小时：${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} × ${VOXT_CAPTURE_SAMPLE_RATE.toLocaleString('en-US')} × ${VOXT_PCM_BYTES_PER_SAMPLE} B`)}</text>
           <text x="360" y="330" text-anchor="middle" class="formula">{t(`= ${VOXT_TRANSCRIBE_MEETING_BYTES.toLocaleString('en-US')} B = ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} MB (≈${photoCount} photos at ${VOXT_TRANSCRIBE_PHOTO_MB} MB each)`, `= ${VOXT_TRANSCRIBE_MEETING_BYTES.toLocaleString('en-US')} B = ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} MB（每张 ${VOXT_TRANSCRIBE_PHOTO_MB} MB，≈${photoCount} 张）`)}</text>
-          <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('The temporary WAV is deleted after the command reads the PCM.', '命令读完 PCM 后就删掉这个临时 WAV。')}</text>
+          <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Constructed 8-second example; the temporary WAV is deleted after reading the PCM.', '构造的 8 秒例子；命令读完 PCM 后就删掉临时 WAV。')}</text>
         {:else}
           <rect x="40" y="70" width="220" height="62" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="150" y="95" text-anchor="middle" class="label amber">talk.m4a · 8 s</text>
@@ -272,7 +272,7 @@
           <text x="150" y="552" text-anchor="middle" class="formula">{t(`one hour: ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} × ${VOXT_CAPTURE_SAMPLE_RATE.toLocaleString('en-US')} × ${VOXT_PCM_BYTES_PER_SAMPLE} B`, `一小时：${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} × ${VOXT_CAPTURE_SAMPLE_RATE.toLocaleString('en-US')} × ${VOXT_PCM_BYTES_PER_SAMPLE} B`)}</text>
           <text x="150" y="574" text-anchor="middle" class="formula">{t(`= ${VOXT_TRANSCRIBE_MEETING_BYTES.toLocaleString('en-US')} B = ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} MB`, `= ${VOXT_TRANSCRIBE_MEETING_BYTES.toLocaleString('en-US')} B = ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} MB`)}</text>
           <text x="150" y="596" text-anchor="middle" class="detail">{t(`≈${photoCount} photos at ${VOXT_TRANSCRIBE_PHOTO_MB} MB each`, `每张 ${VOXT_TRANSCRIBE_PHOTO_MB} MB，≈${photoCount} 张`)}</text>
-          <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Temporary WAV: deleted after reading.', '读完 PCM 后删掉临时 WAV。')}</text>
+          <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Constructed 8 s example; WAV deleted after reading.', '构造的 8 秒例子；读完删掉临时 WAV。')}</text>
         {/if}
       {:else if step === 2}
         <text x={W / 2} y="27" text-anchor="middle" class="title">{t('SEND THE PCM TO THE RUNNING APP', '把 PCM 送给运行中的应用')}</text>
@@ -295,8 +295,8 @@
           <text x="36" y="194" class="label">{t('PCM →', 'PCM →')}</text>
           <rect x="110" y="180" width="550" height="20" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" />
           <line x1="660" y1="190" x2="676" y2="190" stroke="var(--accent)" stroke-width="2" marker-end="url(#ft-arrow-accent)" />
-          <text x="400" y="220" text-anchor="middle" class="detail">{t(`${pcm} bytes, still uploading`, `${pcm} 字节，还在上传`)}</text>
-          <text x="36" y="252" class="label">{t('← replies', '← 回复')}</text>
+          <text x="400" y="220" text-anchor="middle" class="detail">{t(`${pcm} bytes, still being sent`, `${pcm} 字节，还在发送`)}</text>
+          <text x="36" y="252" class="label">{t('← one reply per piece of speech', '← 每段讲话一行回复')}</text>
           <line x1="660" y1="258" x2="110" y2="258" stroke="var(--accent)" stroke-width="2" marker-end="url(#ft-arrow-accent)" />
           {#each replyLines as line, i}
             <text x="120" y={286 + i * 22} class="mono">{line}</text>
@@ -323,8 +323,8 @@
           <text x="26" y="374" class="label">PCM →</text>
           <rect x="30" y="384" width="240" height="18" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" />
           <line x1="270" y1="393" x2="282" y2="393" stroke="var(--accent)" stroke-width="2" marker-end="url(#ft-arrow-accent)" />
-          <text x="150" y="414" text-anchor="middle" class="detail">{t(`${pcm} bytes, still uploading`, `${pcm} 字节，还在上传`)}</text>
-          <text x="26" y="444" class="label">← {t('replies', '回复')}</text>
+          <text x="150" y="414" text-anchor="middle" class="detail">{t(`${pcm} bytes, still being sent`, `${pcm} 字节，还在发送`)}</text>
+          <text x="26" y="444" class="label">← {t('one reply per piece', '每段讲话一行回复')}</text>
           <line x1="270" y1="450" x2="30" y2="450" stroke="var(--accent)" stroke-width="2" marker-end="url(#ft-arrow-accent)" />
           <text x="36" y="474" class="mono small">{replyLines[0]}</text>
           <text x="36" y="496" class="mono small">{replyLines[1]}</text>
@@ -354,10 +354,10 @@
               stroke={speech ? 'var(--accent)' : 'var(--line)'} stroke-width="3" stroke-linecap="round" />
           {/each}
           <rect x="272" y="182" width="36" height="12" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="290" y="214" text-anchor="middle" class="detail amber">{VOXT_CUTTER_SILENCE_MS} ms</text>
-          <text x="290" y="232" text-anchor="middle" class="detail">{t('quiet ends cue 1', '安静结束第 1 句')}</text>
+          <text x="290" y="214" text-anchor="middle" class="detail amber">{sec(VOXT_TRANSCRIBE_SPEECH_ENDS_MS[0])}–{sec(VOXT_TRANSCRIBE_CUE_ENDS_MS[0])} s</text>
+          <text x="290" y="232" text-anchor="middle" class="detail">{t(`${VOXT_CUTTER_SILENCE_MS} ms quiet ends cue 1`, `${VOXT_CUTTER_SILENCE_MS} ms 安静结束第 1 句`)}</text>
           <text x="40" y="270" class="pt">·</text>
-          <text x="50" y="270" class="detail">{t(`every frame is ${VOXT_CUTTER_FRAME_MS} ms of sound`, `每一帧是 ${VOXT_CUTTER_FRAME_MS} ms 的声音`)}</text>
+          <text x="50" y="270" class="detail">{t(`the cutter looks at ${VOXT_CUTTER_FRAME_MS} ms slices`, `切句器每 ${VOXT_CUTTER_FRAME_MS} ms 看一小片`)}</text>
           <text x="40" y="294" class="pt">·</text>
           <text x="50" y="294" class="detail">{t('the cue keeps that quiet at its end', '句尾的安静也一起留下')}</text>
           <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Constructed 8-second example; quiet parts depend on the sound.', '构造的 8 秒例子；安静段由实际声音决定。')}</text>
@@ -381,9 +381,9 @@
           <text x="65" y="178" text-anchor="middle" class="detail">0.00–{sec(VOXT_TRANSCRIBE_CUE_ENDS_MS[0])} s</text>
           <text x="222" y="178" text-anchor="middle" class="detail">{sec(VOXT_TRANSCRIBE_CUE_STARTS_MS[1])}–{sec(VOXT_TRANSCRIBE_CUE_ENDS_MS[1])} s</text>
           <text x="30" y="216" class="pt">·</text>
-          <text x="40" y="216" class="detail">{t('450 ms quiet ends a cue', '安静满 450 ms 结束一句')}</text>
+          <text x="40" y="216" class="detail">{t('2.90–3.35 s: 450 ms quiet ends a cue', '2.90–3.35 秒：450 ms 安静结束一句')}</text>
           <text x="30" y="242" class="pt">·</text>
-          <text x="40" y="242" class="detail">{t('10 ms per frame', '每帧 10 ms')}</text>
+          <text x="40" y="242" class="detail">{t('10 ms slices', '每片 10 ms')}</text>
           <text x="30" y="268" class="pt">·</text>
           <text x="40" y="268" class="detail">{t('the quiet stays with the cue', '安静跟着句子留下')}</text>
           <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Constructed 8-second example.', '构造的 8 秒例子。')}</text>
@@ -442,7 +442,7 @@
           <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Constructed 8-second example.', '构造的 8 秒例子。')}</text>
         {/if}
       {:else if step === 5}
-        <text x={W / 2} y="27" text-anchor="middle" class="title">{t('NO PAUSE? CUT AT 7 SECONDS', '没有停顿？到 7 秒就切')}</text>
+        <text x={W / 2} y="27" text-anchor="middle" class="title">{t('NO PAUSE? CUT AT THE QUIETEST POINT', '没有停顿？在最安静处切')}</text>
         <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t(`the quietest ${VOXT_CUTTER_QUIET_WINDOW_MS} ms in the last second`, `在最后 1 秒找最安静的 ${VOXT_CUTTER_QUIET_WINDOW_MS} ms`)}</text>
         {#if !phone}
           <text x="240" y="84" text-anchor="middle" class="label">{t('CUE 1', '第 1 段')} 0–{sec(VOXT_TRANSCRIBE_CUT_MS)} s</text>
@@ -543,6 +543,7 @@
           <text x="40" y="244" class="mono">{VOXT_TRANSCRIBE_CUE_TEXT[1]}</text>
           <text x="195" y="288" text-anchor="middle" class="detail">{t('numbered cue + start + end + text', '编号 + 开始 + 结束 + 文字')}</text>
           <text x="195" y="310" text-anchor="middle" class="detail">{t('players show it as subtitles', '播放器把它当字幕显示')}</text>
+          <text x="195" y="332" text-anchor="middle" class="detail">{t('times: HH:MM:SS,mmm (hours:minutes:seconds,ms)', '时间：时:分:秒,毫秒')}</text>
 
           <rect x="385" y="72" width="310" height="332" rx="10" fill="var(--bg)" stroke="var(--gen)" />
           <text x="540" y="96" text-anchor="middle" class="label amber">{t('TXT · ONE LINE A CUE', 'TXT · 每句一行')}</text>
@@ -564,6 +565,7 @@
           <text x="26" y="252" class="mono small">{arrow} {srt(VOXT_TRANSCRIBE_CUE_ENDS_MS[1])}</text>
           <text x="26" y="272" class="mono small">{VOXT_TRANSCRIBE_CUE_TEXT[1]}</text>
           <text x="150" y="306" text-anchor="middle" class="detail">{t('number + times + text', '编号 + 时间 + 文字')}</text>
+          <text x="150" y="324" text-anchor="middle" class="detail">{t('times: HH:MM:SS,mmm (h:m:s,ms)', '时间：时:分:秒,毫秒')}</text>
 
           <rect x="15" y="352" width="270" height="170" rx="10" fill="var(--bg)" stroke="var(--gen)" />
           <text x="150" y="376" text-anchor="middle" class="label amber">{t('TXT · ONE LINE A CUE', 'TXT · 每句一行')}</text>
@@ -582,13 +584,13 @@
           <rect x="25" y="72" width="330" height="160" rx="10" fill="var(--bg)" stroke="var(--line)" />
           <text x="190" y="96" text-anchor="middle" class="label">{t('NOT WRITTEN', '不留下')}</text>
           <text x="45" y="128" class="detail">{t('✗ a history row', '✗ 历史记录')}</text>
-          <text x="45" y="156" class="detail">{t('✗ a recording of the audio', '✗ 录音')}</text>
+          <text x="45" y="156" class="detail">{t('✗ a recording saved by Voxt', '✗ Voxt 保存的录音')}</text>
           <text x="45" y="184" class="detail">{t('✗ the text in the log', '✗ 日志里的文字')}</text>
           <text x="45" y="212" class="detail">{t('(no cursor, no session)', '（没有光标，没有 session）')}</text>
 
           <rect x="365" y="72" width="330" height="160" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="530" y="96" text-anchor="middle" class="label amber">{t('WRITTEN', '留下')}</text>
-          <text x="385" y="128" class="detail">{t('one log line:', '一行日志：')}</text>
+          <text x="385" y="128" class="detail">{t('one line in the app\'s log:', '应用日志里的一行：')}</text>
           <text x="385" y="152" class="mono small">transcribed a file for the</text>
           <text x="385" y="170" class="mono small">command line: {VOXT_TRANSCRIBE_DEMO_SECONDS}s of audio,</text>
           <text x="385" y="188" class="mono small">{VOXT_TRANSCRIBE_CUE_COUNT} segments</text>
@@ -610,13 +612,13 @@
           <rect x="15" y="68" width="270" height="190" rx="10" fill="var(--bg)" stroke="var(--line)" />
           <text x="150" y="92" text-anchor="middle" class="label">{t('NOT WRITTEN', '不留下')}</text>
           <text x="30" y="124" class="detail">{t('✗ a history row', '✗ 历史记录')}</text>
-          <text x="30" y="152" class="detail">{t('✗ a recording', '✗ 录音')}</text>
+          <text x="30" y="152" class="detail">{t('✗ a recording saved by Voxt', '✗ Voxt 保存的录音')}</text>
           <text x="30" y="180" class="detail">{t('✗ the text in the log', '✗ 日志里的文字')}</text>
           <text x="30" y="208" class="detail">{t('no cursor, no session', '没有光标，没有 session')}</text>
 
           <rect x="15" y="276" width="270" height="190" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="150" y="300" text-anchor="middle" class="label amber">{t('WRITTEN', '留下')}</text>
-          <text x="30" y="330" class="detail">{t('one log line:', '一行日志：')}</text>
+          <text x="30" y="330" class="detail">{t('one line in the app\'s log:', '应用日志里的一行：')}</text>
           <text x="30" y="354" class="mono small">transcribed a file for the</text>
           <text x="30" y="374" class="mono small">command line: {VOXT_TRANSCRIBE_DEMO_SECONDS}s of</text>
           <text x="30" y="394" class="mono small">audio, {VOXT_TRANSCRIBE_CUE_COUNT} segments</text>

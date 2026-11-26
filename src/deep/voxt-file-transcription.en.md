@@ -123,26 +123,26 @@ The app cuts cues while the PCM arrives. Step 4 covers how a pause ends a cue.
 
 ## Step 4 · A pause ends a cue
 
-> **In one line:** The cutter looks at 10 ms frames, and 450 ms of quiet ends a cue.
+> **In one line:** The cutter looks at 10 ms slices, and 450 ms of quiet ends a cue.
 
 ### On the stage
 
 - The two blue rules on top are the time ranges of cue 1 and cue 2: 0.00–3.35 s and 3.40–7.85 s.
 - The waveform is blue for speech and grey for quiet.
-- The small orange box marks the 450 ms of quiet at the end of cue 1.
-- The two lines below say: each frame is 10 ms; the quiet at the end stays with the cue.
+- The small orange box marks the 450 ms of quiet at the end of cue 1, from 2.90 to 3.35 s.
+- The two lines below say: the cutter looks at 10 ms slices; the quiet at the end stays with the cue.
 
-### The end condition and the frame
+### The end condition and the slice
 
-The constants are in `Voxt/internal/meeting/cutter.go:9-19`: `cutterFrame = 10 ms`, `cutterSilenceCut = 450 ms`. The end condition is `c.silence >= cutterSilenceCut` (`cutter.go:70-74`).
+The constants are in `Voxt/internal/meeting/cutter.go:9-19`: `cutterFrame = 10 ms`, `cutterSilenceCut = 450 ms`. The end condition is `c.silence >= cutterSilenceCut` (`cutter.go:70-74`). The cutter's 10 ms slice is its own unit; the audio frame from chapter 3 is 100 ms.
 
 $$ \text{cue end} = \text{last speech} + 450\ \text{ms} $$
 
 | Symbol | What it is | Where it comes from |
 |---|---|---|
-| last speech | the last frame over the energy gate | `cutterSpeechRMS = 800`, `cutter.go:18` |
+| last speech | the last slice over the energy gate | `cutterSpeechRMS = 800`, `cutter.go:18` |
 | 450 ms | quiet that ends a cue | `cutterSilenceCut`, `cutter.go:12` |
-| 10 ms | one frame | `cutterFrame`, `cutter.go:11` |
+| 10 ms | one cutter slice | `cutterFrame`, `cutter.go:11` |
 
 ### Plugging in the stage's numbers
 
@@ -155,7 +155,7 @@ $$ \text{cue end} = \text{last speech} + 450\ \text{ms} $$
 
 ### Why the quiet at the end stays
 
-The `End` from `finalize` is the frame that triggered the end, and the buffer already holds those 450 ms (`cutter.go:119-127`). This chapter does not remove them; the model usually ignores trailing silence. The SRT times on the stage use that `End`.
+The `End` from `finalize` is the slice that triggered the end, and the buffer already holds those 450 ms (`cutter.go:119-127`). This chapter does not remove them; the model usually ignores trailing silence. The SRT times on the stage use that `End`.
 
 ### Next
 
@@ -181,7 +181,7 @@ $$ \text{cue start} = \max(0,\ \text{speech onset} - 300\ \text{ms}),\qquad \tex
 
 | Symbol | What it is | Where it comes from |
 |---|---|---|
-| speech onset | the first voiced frame | `cutterSpeechRMS = 800` |
+| speech onset | the first voiced slice | `cutterSpeechRMS = 800` |
 | 300 ms | lead-in at the start | `cutterPreRoll`, `cutter.go:15` |
 | voiced | total voiced time in the cue | `voicedDur`, `cutter.go:28` |
 | 350 ms | the least speech a cue needs | `cutterMinUtterance`, `cutter.go:13` |
@@ -349,7 +349,7 @@ The output is done. Step 9 looks at what this route leaves on the Mac.
 Message: fmt.Sprintf("transcribed a file for the command line: %s of audio, %d segments", ...)
 ```
 
-(`transcribe_socket.go:90-98`). That message contains no recognized text.
+(`transcribe_socket.go:90-98`). That message contains no recognized text. This is the app's own diagnostic log, not chapter 9's access log; each segment is one cue.
 
 $$ \text{log} = \{\text{audio length},\ \text{segment count},\ \text{error?}\} $$
 
