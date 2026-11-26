@@ -144,17 +144,17 @@ $$\mathcal L_{\mathrm{MTP}}=-\log p_{\mathrm{draft}}(x_{t+2}\mid u_t)$$
 
 gradient 是训练时调整权重的信号，指明权重改变的方向和幅度。
 
-$$g^{\mathrm{CE}}_{\theta_{\mathrm{shared}}}=0,\qquad g^{\mathrm{CE}}_{\theta_{\mathrm{MTP}}}\ \text{正常计算}$$
+$$g^{\mathrm{CE}}_{\theta_{\mathrm{detached}}}=0,\qquad g^{\mathrm{CE}}_{\theta_{\mathrm{MTP}}}\ \text{正常计算}$$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
-| $\theta_{\mathrm{shared}}$ | target 主干、embedding 和 LM head 的共享参数 | 第 2、3、5 步 |
+| $\theta_{\mathrm{detached}}$ | 这条辅助 CE 分支上被 detach 的 target 主干参数 | 第 2、5 步的 target 主干 |
 | $\theta_{\mathrm{MTP}}$ | draft 自带 MTP 层的参数 | 第 1 步 |
 | $g^{\mathrm{CE}}_{\theta}$ | 辅助 CE 对参数 $\theta$ 的梯度 | 本步反向路径 |
 
 ### 代入图上的数
 
-本步不构造梯度数值。左式表示辅助 CE 对共享参数的梯度被这条分支切为 0；右式表示 MTP 参数的梯度路径保留，并不保证每个位置都得到非零值。主 RL 损失的梯度是另一条路径，不在左式里。
+本步不构造梯度数值。左式表示辅助 CE 对被 detach 的 target 主干参数的梯度被这条分支切为 0；右式表示 MTP 参数的梯度路径保留，并不保证每个位置都得到非零值。主 RL 损失的梯度是另一条路径，不在左式里。
 
 图上没有展开共享表。实现还处理 embedding 与共享打分表：打分表就是 LM head，把 hidden state 变成 token 分数。代码先对 embedding 输出和 target hidden state 做 detach，再用 `functional_call` 调用共享 LM head，并传入 detach 后的参数。MTP 自己的 hidden 输出没有 detach，所以 CE 仍能回到 MTP 层；主 RL 损失仍训练这些共享表。
 

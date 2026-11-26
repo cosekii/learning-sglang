@@ -144,17 +144,17 @@ Sources: `Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7`, `rl
 
 A gradient tells each weight which direction and how far to change during learning. The stage calls it weight-change instructions.
 
-$$g^{\mathrm{CE}}_{\theta_{\mathrm{shared}}}=0,\qquad g^{\mathrm{CE}}_{\theta_{\mathrm{MTP}}}\ \text{is computed normally}$$
+$$g^{\mathrm{CE}}_{\theta_{\mathrm{detached}}}=0,\qquad g^{\mathrm{CE}}_{\theta_{\mathrm{MTP}}}\ \text{is computed normally}$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
-| $\theta_{\mathrm{shared}}$ | Shared parameters in the target trunk, embedding and LM head | Steps 2, 3 and 5 |
+| $\theta_{\mathrm{detached}}$ | Target-trunk parameters detached on this auxiliary CE branch | Target trunk in Steps 2 and 5 |
 | $\theta_{\mathrm{MTP}}$ | Parameters of the draft's built-in MTP layer | Step 1 |
 | $g^{\mathrm{CE}}_{\theta}$ | Auxiliary CE gradient with respect to parameters $\theta$ | Backward path in this step |
 
 ### The numbers on the stage
 
-This step constructs no gradient values. The left equation sets the shared-parameter gradient from auxiliary CE to zero on this branch. The right side leaves the MTP path open; it does not guarantee a nonzero value at every position. Main-loss gradients use a separate path and are outside the left equation.
+This step constructs no gradient values. The left equation sets the auxiliary CE gradient for the detached target-trunk parameters to zero on this branch. The right side leaves the MTP path open; it does not guarantee a nonzero value at every position. Main-loss gradients use a separate path and are outside the left equation.
 
 The stage leaves shared tables out. The implementation also handles the embedding and shared score table: the score table is the LM head, which turns hidden states into token scores. It detaches the embedding output and target hidden state, then calls the shared LM head with `functional_call` and detached parameters. It does not detach the MTP hidden output, so CE can still reach the MTP layer. The main RL loss still trains these shared tables.
 
