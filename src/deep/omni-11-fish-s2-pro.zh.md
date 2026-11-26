@@ -205,7 +205,8 @@ $$
 - 蓝色反馈箭头把上一帧的全部十个 DAC codes 送回下一次 Slow 输入。
 - 橙色 Slow KV 横跨 prompt 和每个 accepted 帧。KV 是第 1 本第 3 章讲过的注意力 key、value 工作。
 - 灰色 Fast KV 在帧边界结束，下一帧重新开始内层循环。
-- 完整 prompt 相同且 KV 仍在 cache 里时，可以复用 SGLang KV。指纹覆盖全部十行参考 codes，不只看 code 0；匹配不保证命中。
+- 相同缓存前缀仍在 cache 里时，可以复用 SGLang KV；匹配不保证命中。
+- `extra_key` 对全部十行参考 codes 做指纹，避免不同参考声音仅因 code 0 相同就共享 radix KV（`request_builders.py:65-78,160-168`）。参考声音和前缀相同，即使目标后缀不同，也能复用共同前缀；`model_runner.py:324-344` 实际处理 `req.prefix_len`。
 
 ### 公式与代入图上的数
 
@@ -232,7 +233,7 @@ Fast 第 0 次调用先重置内层 KV，再处理新帧的 0–9 位置，不�
 | 保存内容 | 保存多久 | 谁保存 |
 |---|---|---|
 | 参考 codes | 跨匹配请求，以 CPU 副本返回 | `ReferenceEncodeService` |
-| Slow 注意力 KV | prompt 和之前的帧；完整 prompt 相同且仍在 cache 时可共享 | SGLang |
+| Slow 注意力 KV | prompt 和之前的帧；相同缓存前缀仍在 cache 时可共享 | SGLang |
 | Fast 注意力 KV | 只到本帧内部位置结束 | Fast AR |
 
 这张图比较反馈和 cache 寿命，没有声称 Fish 流式 vocoder 保留 Qwen 式 codec 执行状态。

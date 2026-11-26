@@ -205,7 +205,8 @@ Sources: `fish/sglang_model.py:294-300,418-510`; `fish/payload_types.py:35-50`; 
 - The blue feedback arrow returns all ten previous DAC codes to the next Slow input.
 - Orange Slow KV spans the prompt and every accepted frame. KV means attention's saved key and value work from Learning SGLang Ch. 3.
 - Grey Fast KV ends at the frame boundary. A fresh inner loop starts for the next frame.
-- The same full prompt can reuse SGLang KV if that KV is still cached. Its fingerprint covers all ten reference rows, not just code 0; a match does not guarantee a hit.
+- The same cached prefix can reuse SGLang KV while that prefix remains cached. A match does not guarantee a hit.
+- `extra_key` fingerprints all ten reference code rows, so different reference voices cannot share radix KV merely because code 0 matches (`request_builders.py:65-78,160-168`). Requests with the same references and prefix can reuse their common prefix even when their target suffixes differ; `model_runner.py:324-344` applies `req.prefix_len`.
 
 ### Formula and the numbers on the stage
 
@@ -232,7 +233,7 @@ Fast call 0 resets its inner KV before positions 0–9 of the new frame. It does
 | Saved thing | Lifetime | Owner |
 |---|---|---|
 | Reference codes | Matching requests, as CPU copies | `ReferenceEncodeService` |
-| Slow attention KV | Prompt and earlier frames; the same full prompt may share while cached | SGLang |
+| Slow attention KV | Prompt and earlier frames; the same cached prefix may share while cached | SGLang |
 | Fast attention KV | Positions inside one frame only | Fast AR |
 
 The picture compares feedback with cache lifetime. It does not claim that Fish's streaming vocoder retains Qwen-style codec execution state.

@@ -422,8 +422,8 @@
           <rect x="48" y="331" width="279" height="59" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="187" y="367" text-anchor="middle" class="small strong">{t('KV kept across both frames', 'KV 横跨两帧保留')}</text>
           <text x="48" y="425" class="small strong">{t('keeps prompt + earlier frames', '保留 prompt + 之前的帧')}</text>
-          <text x="48" y="455" class="small">{t('same full prompt → can share KV', '完整 prompt 相同 → 可以共享 KV')}</text>
-          <text x="48" y="489" class="small">{t('all 10 reference rows must match', '全部十行参考 codes 都要匹配')}</text>
+          <text x="48" y="455" class="small">{t('same cached prefix → can share KV', '相同缓存前缀 → 可以共享 KV')}</text>
+          <text x="48" y="489" class="small">{t(phone ? 'extra_key: all 10 reference rows' : 'extra_key fingerprints all 10 reference rows', phone ? 'extra_key：十行参考 codes 的指纹' : 'extra_key 对全部十行参考 codes 做指纹')}</text>
           <text x="48" y="517" class="small">{t('cached KV may be gone', 'KV cache 可能已清除')}</text>
           <rect x="375" y="198" width="315" height="329" rx="12" fill="var(--bg)" stroke="var(--line)" />
           <text x="393" y="227" class="result">Fast AR · {t('inner KV', '内层 KV')}</text>
@@ -454,8 +454,8 @@
           <rect x="32" y="287" width="236" height="48" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="150" y="317" text-anchor="middle" class="small strong">{t('KV kept across frames', 'KV 跨帧保留')}</text>
           <text x="32" y="369" class="small strong">{t('prompt + earlier frames', 'prompt + 之前的帧')}</text>
-          <text x="32" y="400" class="small">{t('same full prompt → can share KV', '完整 prompt 相同 → 可以共享 KV')}</text>
-          <text x="32" y="425" class="small">{t('all 10 reference rows must match', '全部十行参考 codes 都要匹配')}</text>
+          <text x="32" y="400" class="small">{t('same cached prefix → can share KV', '相同缓存前缀 → 可以共享 KV')}</text>
+          <text x="32" y="425" class="small">{t(phone ? 'extra_key: all 10 reference rows' : 'extra_key fingerprints all 10 reference rows', phone ? 'extra_key：十行参考 codes 的指纹' : 'extra_key 对全部十行参考 codes 做指纹')}</text>
           <text x="32" y="450" class="small">{t('cached KV may be gone', 'KV cache 可能已清除')}</text>
           <rect x="18" y="487" width="264" height="246" rx="11" fill="var(--bg)" stroke="var(--line)" />
           <text x="32" y="516" class="result">Fast AR · {t('inner KV', '内层 KV')}</text>
