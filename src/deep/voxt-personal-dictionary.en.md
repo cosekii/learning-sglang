@@ -158,29 +158,32 @@ $$C = \begin{cases}\text{all distinct terms} & n \le 30 \\\text{terms mentioned 
 
 $$G = \text{the longest prefix of } C \text{ with } |G| \le 60 \text{ and } B(G) \le 2000$$
 
-$$B(G) = \sum_{g \in G}(\operatorname{bytes}(g) + 1)$$
+$$B(G) = \sum_{g \in G}\operatorname{bytes}(g) + \max(|G| - 1, 0)$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
 | $n$ | number of enabled terms after de-duplication | `distinctTerms`, `compose.go:585-599` |
 | $C$ | candidate lines in dictionary order | this step's selection rule |
 | $G$ | the consecutive prefix actually sent | `compose.go:576-580` |
-| $g$ | one complete glossary line | `- Term (heard as: alias)` |
+| $|G|$ | number of complete lines sent | this step |
+| $g \in G$ | one complete glossary line in $G$ | `- Term (heard as: alias)` |
+| $\sum_{g \in G}$ | add the byte count of every line in $G$ | this step |
 | $\operatorname{bytes}(g)$ | the line's UTF-8 byte count | Go's `len(string)` |
-| $B(G)$ | line bytes plus newline separators, excluding `<glossary>` tags | `compose.go:576-580` |
+| $\max(|G|-1, 0)$ | newline separators between lines, or 0 for no lines | `strings.Join(lines, "\n")` |
+| $B(G)$ | line bytes plus newline separators, excluding `<glossary>` tags | `compose.go:576-582` |
 | 30 / 60 / 2000 | all-candidates threshold / line cap / byte cap | `compose.go:244-250` |
 
-The loop breaks at the first line that does not fit. It does not skip that line to seek a shorter later one, and it never truncates a line.
+The loop breaks at the first line that does not fit. It does not skip that line to seek a shorter later one, and it never truncates a line. Newlines appear only between lines, so $N$ lines have $N-1$ separators.
 
 ### Plugging in the stage's numbers
 
 This constructed example has three candidate lines of 900 bytes each:
 
-| Candidate | Bytes after adding it | Result |
+| Candidate | Output bytes if added | Result |
 |---|---|---|
-| line 1 | $900 + 1 = 901$ | kept |
-| line 2 | $901 + 900 + 1 = 1802$ | kept |
-| line 3 | $1802 + 900 + 1 = 2703$ | over 2000, stop |
+| line 1 | $900$ | kept |
+| line 2 | $900 + 1 + 900 = 1801$ | kept |
+| line 3 | $1801 + 1 + 900 = 2702$ | over 2000, stop |
 
 So $G$ contains only the first two complete lines. If line 61 crosses the line cap instead, output stops after line 60.
 
@@ -215,17 +218,20 @@ A row's `store.Term.Note` is private; the source says “not sent anywhere” (`
 
 ### Formula
 
-$$\text{system} = [\text{task layers},\ \text{dictionary notes},\ \text{scene},\ \text{small-dictionary glossary (if any)}]$$
+$$\text{system} = [\text{task layers},\ \text{dictionary notes},\ \text{scene},\ \text{small-dictionary glossary (if any)},\ \text{output rules},\ \text{cleanup example (if any)}]$$
 
 $$\text{messages} = [\text{system},\ \ldots\text{history},\ \text{user}]$$
 
-$$\text{user} = [\text{large-dictionary } \langle glossary\rangle\text{ (if any)}] \oplus [\langle input\rangle\text{call Priya.}\langle/input\rangle]$$
+$$\text{user} = [\text{large-dictionary } \langle glossary\rangle\text{ (if any)}] \oplus [\langle input\rangle\text{call Priya.}\langle /input\rangle]$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
 | dictionary notes | `settings.Dictionary.Notes` shared by the dictionary | `session/text.go:120-126` |
 | scene | the other context layer for this task | placement in `compose/dictionary.go:11-17` |
 | small-dictionary glossary | Step 5's system content with at most 30 terms | Step 5 |
+| output rules | the layer that tells the model how to write its answer | `compose.go:379-392` |
+| cleanup example | Transcribe's example in system; other tasks can omit it | `compose.go:387-392` |
+| $\oplus$ | join two parts in order | this step |
 | messages | the complete sequence sent to the language model | `compose.go:253-258` |
 | history | messages between system and user; empty in this Transcribe example | `compose.go:253-258`, `387-392` |
 | user | the final user message | `compose.go:253-258` |
@@ -234,7 +240,7 @@ $$\text{user} = [\text{large-dictionary } \langle glossary\rangle\text{ (if any)
 
 ### Why dictionary notes differ from the glossary
 
-The glossary is structured term-to-alias data selected by rules; dictionary notes are free text, and the model reads whatever you write. Notes can carry what the glossary cannot, such as "this team says Priya as Preeya, do not change their wording". They are shown only to the language model, so they change neither recognition nor transcript replacement.
+The glossary is structured term-to-alias data selected by rules; dictionary notes are free text, and the model reads whatever you write. Notes can carry what the glossary cannot, such as "Priya may be recognized as Preeya; do not change this team's wording". They are shown only to the language model, so they change neither recognition nor transcript replacement.
 
 ### Boundary
 

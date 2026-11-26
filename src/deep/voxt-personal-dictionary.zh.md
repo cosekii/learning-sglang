@@ -158,29 +158,32 @@ $$C = \begin{cases}\text{全部不同词条} & n \le 30 \\\text{文字提到的�
 
 $$G = \text{满足 } |G| \le 60 \text{ 且 } B(G) \le 2000 \text{ 的 } C \text{ 的最长前缀}$$
 
-$$B(G) = \sum_{g \in G}(\operatorname{bytes}(g) + 1)$$
+$$B(G) = \sum_{g \in G}\operatorname{bytes}(g) + \max(|G| - 1, 0)$$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
 | $n$ | 去重后的启用词条数 | `distinctTerms`，`compose.go:585-599` |
 | $C$ | 按词典顺序排好的候选行 | 本步的选择规则 |
 | $G$ | 实际发送的连续前缀 | `compose.go:576-580` |
-| $g$ | 一条完整术语表行 | `- Term (heard as: alias)` |
+| $|G|$ | 发送的完整行数 | 本步 |
+| $g \in G$ | $G$ 中的一条完整术语表行 | `- Term (heard as: alias)` |
+| $\sum_{g \in G}$ | 把 $G$ 中每一行的字节数加起来 | 本步 |
 | $\operatorname{bytes}(g)$ | 这一行的 UTF-8 字节数 | Go 的 `len(string)` |
-| $B(G)$ | 行内容和换行分隔的字节数，不含 `<glossary>` 标签 | `compose.go:576-580` |
+| $\max(|G|-1, 0)$ | 行与行之间的换行数；没有行时为 0 | `strings.Join(lines, "\n")` |
+| $B(G)$ | 行内容和换行分隔的字节数，不含 `<glossary>` 标签 | `compose.go:576-582` |
 | 30 / 60 / 2000 | 整份候选阈值 / 行数上限 / 字节上限 | `compose.go:244-250` |
 
-循环遇到首个放不下的行就 `break`。它不跳过该行去找更短的行，也不把任何一行截成两半。
+循环遇到首个放不下的行就 `break`。它不跳过该行去找更短的行，也不把任何一行截成两半。只有相邻两行之间才有换行，所以 $N$ 行有 $N-1$ 个换行。
 
 ### 代入图上的数
 
 构造一个三条候选的例子，每行都是 900 字节：
 
-| 候选行 | 加入后的字节数 | 结果 |
+| 候选行 | 若加入后的输出字节数 | 结果 |
 |---|---|---|
-| 第 1 行 | $900 + 1 = 901$ | 留下 |
-| 第 2 行 | $901 + 900 + 1 = 1802$ | 留下 |
-| 第 3 行 | $1802 + 900 + 1 = 2703$ | 超过 2000，停止 |
+| 第 1 行 | $900$ | 留下 |
+| 第 2 行 | $900 + 1 + 900 = 1801$ | 留下 |
+| 第 3 行 | $1801 + 1 + 900 = 2702$ | 超过 2000，停止 |
 
 所以 $G$ 只有前两条完整行。若第 61 行才超出行数上限，也同样在第 60 行后停止。
 
@@ -202,7 +205,7 @@ $$B(G) = \sum_{g \in G}(\operatorname{bytes}(g) + 1)$$
 
 ### 图上是什么
 
-- 左边蓝色框是**全词典备注**，来源写成 `settings.Dictionary.Notes`，例如「Priya 在设计团队；团队念成 Preeya」。
+- 左边蓝色框是**全词典备注**，来源写成 `settings.Dictionary.Notes`，例如「Priya 在设计团队；可能被听成 Preeya」。
 - 箭头指向右边 system 提示的备注一层。这里明确写着：这次请求的输入不在 system。
 - 下方橙色框列出**从不发到**的两个地方：语音模型、文字稿替换。
 - 底部先给消息顺序 `system → history → user`，再说关掉备注能挡住全词典备注。
@@ -215,17 +218,20 @@ $$B(G) = \sum_{g \in G}(\operatorname{bytes}(g) + 1)$$
 
 ### 公式
 
-$$\text{system} = [\text{任务层},\ \text{全词典备注},\ \text{scene},\ \text{小词典术语表（如有）}]$$
+$$\text{system} = [\text{任务层},\ \text{全词典备注},\ \text{scene},\ \text{小词典术语表（如有）},\ \text{输出约定},\ \text{清理示例（如有）}]$$
 
 $$\text{messages} = [\text{system},\ \ldots\text{history},\ \text{user}]$$
 
-$$\text{user} = [\text{大词典的 } \langle glossary\rangle\text{（如有）}] \oplus [\langle input\rangle\text{call Priya.}\langle/input\rangle]$$
+$$\text{user} = [\text{大词典的 } \langle glossary\rangle\text{（如有）}] \oplus [\langle input\rangle\text{call Priya.}\langle /input\rangle]$$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
 | 全词典备注 | 整部词典共用的 `settings.Dictionary.Notes` | `session/text.go:120-126` |
 | scene | 当前任务的其他上下文层 | `compose/dictionary.go:11-17` 的位置关系 |
 | 小词典术语表 | 第 5 步中不超过 30 个词条时放在 system 的内容 | 第 5 步 |
+| 输出约定 | 告诉模型怎样写回答的规则层 | `compose.go:379-392` |
+| 清理示例 | Transcribe 在 system 里的示例；其他任务可以没有 | `compose.go:387-392` |
+| $\oplus$ | 把两部分按顺序接起来 | 本步 |
 | messages | 发给语言模型的完整消息序列 | `compose.go:253-258` |
 | history | system 和 user 之间的历史消息；本 Transcribe 示例为空 | `compose.go:253-258`、`387-392` |
 | user | 最后一条用户消息 | `compose.go:253-258` |
@@ -234,7 +240,7 @@ $$\text{user} = [\text{大词典的 } \langle glossary\rangle\text{（如有）}
 
 ### 为什么全词典备注和术语表不同
 
-术语表是结构化的「词条 → 别名」，由程序按规则挑；全词典备注是自由文字，你说什么模型读什么。它能放术语表放不下的说明，比如「这个团队把 Priya 念成 Preeya，别改他们的说法」。它只给语言模型看，所以不会改变识别，也不会在文字稿里做替换。
+术语表是结构化的「词条 → 别名」，由程序按规则挑；全词典备注是自由文字，你说什么模型读什么。它能放术语表放不下的说明，比如「Priya 可能被识别成 Preeya，别改这个团队的说法」。它只给语言模型看，所以不会改变识别，也不会在文字稿里做替换。
 
 ### 边界
 
@@ -250,7 +256,7 @@ $$\text{user} = [\text{大词典的 } \langle glossary\rangle\text{（如有）}
 
 ### 图上是什么
 
-- 四行分别列出语音提示、别名替换、术语表、全词典备注，每行有一个来往处说明。
+- 四行分别列出语音提示、别名替换、术语表、全词典备注，每行有一个去处说明。
 - 右边橙色列是「模型关掉」时的状态：前两行 ✓，后两行 ✗。
 - 下面两行说前两者在语言模型之外运行，模型失败也还在；词典总开关一关，四个都不走。
 - 底部虚线框把话题交给下一章：录音和历史留多久。
