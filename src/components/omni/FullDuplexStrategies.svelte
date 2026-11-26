@@ -24,6 +24,9 @@
     DUPLEX_NATIVE_LAST_DELIVERED_UNIT,
     DUPLEX_NATIVE_LAST_HEARD_UNIT,
     DUPLEX_NATIVE_PARTIAL_HEARD_MS,
+    DUPLEX_PROFILER_READY_TO_ADMITTED_MS,
+    DUPLEX_PROFILER_ADMITTED_TO_OUTPUT_MS,
+    DUPLEX_PROFILER_READY_TO_OUTPUT_MS,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -46,6 +49,9 @@
   }, {
     caption: 'MiniCPM-o truncates at complete one-second units. At 1.2 seconds, only unit 0 enters repaired history.',
     captionZh: 'MiniCPM-o 只按完整的一秒单元裁切。1.2 秒时只保留 unit 0。',
+  }, {
+    caption: 'The profiler adds 150 ms admission and 50 ms to first output. That 200 ms does not measure playback or interruption stop.',
+    captionZh: 'profiler 把 150 ms 接纳等待与 50 ms 首输出等待相加。这 200 ms 不测量播放或停答。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -62,7 +68,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [650, 790, 790, 760, 830, 830][step] : [540, 590, 570, 610, 640, 640][step]);
+  const H = $derived(phone ? [650, 790, 790, 760, 830, 830, 760][step] : [540, 590, 570, 610, 640, 640, 590][step]);
   const seconds = (ms: number) => (ms / 1000).toFixed(1);
 </script>
 
@@ -322,6 +328,50 @@
           <text x="150" y="723" text-anchor="middle" class="small strong">{t('Next: server timing boundaries', '下一步：服务器计时边界')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Unit indices start at 0' : 'Unit indices start at 0. Later user audio returns as forced-listen units; not drawn here.', phone ? 'unit 编号从 0 开始' : 'unit 编号从 0 开始。后续用户声音会作为强制 listening 单元补回，本图不展开。')}</text>
+      {:else if step === 6}
+        <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'Server Unit timing' : 'Server timing · one request-backed Unit', phone ? '服务器 Unit 计时' : '服务器计时 · 一个请求支持的 Unit')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'Unit = one append through the stages' : 'Unit = one append doing work through the Session stages', phone ? 'Unit = 一个 append 经过各个 stage' : 'Unit = 一个 append 经过各个 Session stage 的工作')}</text>
+        <text x={phone ? 18 : 30} y="79" class="label">{t(phone ? 'blue = admission · orange = to output' : 'blue = ready to admitted · orange = admitted to first output', phone ? '蓝 = 接纳 · 橙 = 到首输出' : '蓝 = 就绪到接纳 · 橙 = 接纳到首个输出')}</text>
+        {#if !phone}
+          <text x="90" y="126" class="small strong">ready</text>
+          <text x="90" y="150" class="small">{t('all required input present', '需要的输入都到齐')}</text>
+          <text x="450" y="126" text-anchor="middle" class="small strong">admitted</text>
+          <text x="450" y="150" text-anchor="middle" class="small">{t('coordinator accepts', 'coordinator 接纳')}</text>
+          <text x="630" y="126" text-anchor="end" class="small strong">first output</text>
+          <text x="630" y="150" text-anchor="end" class="small">{t('output buffer', '输出缓冲')}</text>
+          <rect x="90" y="184" width={DUPLEX_PROFILER_READY_TO_ADMITTED_MS * 2.4} height="58" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <rect x={90 + DUPLEX_PROFILER_READY_TO_ADMITTED_MS * 2.4} y="184" width={DUPLEX_PROFILER_ADMITTED_TO_OUTPUT_MS * 2.4} height="58" rx="7" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x={90 + DUPLEX_PROFILER_READY_TO_ADMITTED_MS * 1.2} y="219" text-anchor="middle" class="result">{DUPLEX_PROFILER_READY_TO_ADMITTED_MS} ms</text>
+          <text x={90 + DUPLEX_PROFILER_READY_TO_ADMITTED_MS * 2.4 + DUPLEX_PROFILER_ADMITTED_TO_OUTPUT_MS * 1.2} y="219" text-anchor="middle" class="result">{DUPLEX_PROFILER_ADMITTED_TO_OUTPUT_MS} ms</text>
+          <text x="360" y="298" text-anchor="middle" class="result">ready_to_first_output = {DUPLEX_PROFILER_READY_TO_ADMITTED_MS} + {DUPLEX_PROFILER_ADMITTED_TO_OUTPUT_MS} = {DUPLEX_PROFILER_READY_TO_OUTPUT_MS} ms</text>
+          <rect x="60" y="338" width="285" height="83" rx="10" fill="var(--bg)" stroke="var(--eos)" />
+          <text x="202" y="371" text-anchor="middle" class="small strong">{t('NOT client first audio', '不等于客户端首音')}</text>
+          <text x="202" y="399" text-anchor="middle" class="small">{t('the first output may be text', '首个输出可能是文字')}</text>
+          <rect x="375" y="338" width="285" height="83" rx="10" fill="var(--bg)" stroke="var(--eos)" />
+          <text x="517" y="371" text-anchor="middle" class="small strong">{t('NOT old-audio stop', '不等于旧声音停止')}</text>
+          <text x="517" y="399" text-anchor="middle" class="small">{t('no playback endpoint here', '这里没有播放端点')}</text>
+          <text x="360" y="489" text-anchor="middle" class="small strong">{t('This clock explains server queueing and work, not what the listener heard.', '这个时钟解释服务器排队和工作，不说明听者听到了什么。')}</text>
+          <text x="360" y="544" text-anchor="middle" class="result">{t('Which two waits can the listener measure?', '听者能测量哪两段等待？')}</text>
+        {:else}
+          {#each [
+            { y: 115, name: 'ready', sub: 'required input present', nameZh: '就绪', subZh: '需要的输入到齐' },
+            { y: 211, name: 'admitted', sub: 'coordinator accepts', nameZh: '接纳', subZh: 'coordinator 接纳' },
+            { y: 307, name: 'first output', sub: 'content enters output buffer', nameZh: '首个输出', subZh: '内容进入输出缓冲' },
+          ] as event, i}
+            <circle cx="38" cy={event.y + 18} r="7" fill={i < 1 ? 'var(--accent)' : i < 2 ? 'var(--gen)' : 'var(--fg)'} />
+            <text x="58" y={event.y + 14} class="small strong">{t(event.name, event.nameZh)}</text>
+            <text x="58" y={event.y + 38} class="small">{t(event.sub, event.subZh)}</text>
+          {/each}
+          <rect x="18" y="386" width="264" height="55" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="150" y="420" text-anchor="middle" class="result">ready → admitted = {DUPLEX_PROFILER_READY_TO_ADMITTED_MS} ms</text>
+          <rect x="18" y="453" width="264" height="55" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="150" y="487" text-anchor="middle" class="result">admitted → output = {DUPLEX_PROFILER_ADMITTED_TO_OUTPUT_MS} ms</text>
+          <text x="150" y="550" text-anchor="middle" class="result">total = {DUPLEX_PROFILER_READY_TO_ADMITTED_MS} + {DUPLEX_PROFILER_ADMITTED_TO_OUTPUT_MS} = {DUPLEX_PROFILER_READY_TO_OUTPUT_MS} ms</text>
+          <text x="150" y="598" text-anchor="middle" class="small strong">{t('NOT first audio · NOT audio stop', '不等于首音 · 不等于停答')}</text>
+          <text x="150" y="626" text-anchor="middle" class="small">{t('First output may be text.', '首个输出可能是文字。')}</text>
+          <text x="150" y="690" text-anchor="middle" class="small strong">{t('Next: listener-side waits', '下一步：听者测量的等待')}</text>
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Profiler golden-test values' : 'Golden-test values. Each interval is calculated per Unit before aggregation.', phone ? 'profiler 黄金测试数值' : '黄金测试数值。每段间隔先在每个 Unit 内计算，再做汇总。')}</text>
       {/if}
     </svg>
   </div>

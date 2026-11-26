@@ -25,6 +25,8 @@ Step 5 follows the cascade's default `method: sentence` (`sglang_omni/models/str
 
 Step 6 follows MiniCPM-o's client `response.cancel` and `conversation.item.truncate`. Cancel initially keeps through the last adapter-delivered unit. A client truncate then keeps only delivered units whose audio fully ended by H, and later truncates can only move backward (`sglang_omni/models/minicpm_o/session_adapters.py:469-516,553-640`). Thus D=2.0 seconds keeps units 0 and 1, while H=1.2 seconds keeps only unit 0. The 200 ms heard inside unit 1 has no whole-unit history representation. The thinker drops later spoken units, restores earlier generated history and refills later user input as forced-listen units (`session_adapters.py:118-179,219-236`). This is separate from the model-led decision to stop speaking.
 
+Step 7 uses the duplex profiler's golden example: ready→admitted is 150 ms and admitted→first output is 50 ms, so ready→first output is 200 ms (`tests/unit_test/profiler/test_duplex_metrics.py:318-344`). The implementation computes each interval per request-backed Unit before aggregation (`sglang_omni/profiler/duplex_metrics.py:150-157,282-337`). Ready means all required input is present; admitted means the coordinator accepts the append. First output is the first model-content chunk entering the coordinator output buffer, potentially text, not client first audio (`docs/developer_reference/profiler.md:144-196`). The profiler has no playback-stop endpoint.
+
 Code references in this chapter pin to `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`. The chapter reads source and tests; it does not run a model or benchmark.
 
 </details>
@@ -43,6 +45,8 @@ Code references in this chapter pin to `sglang-omni origin/main@9725235249df8512
 第 5 步跟随 cascade 默认的 `method: sentence`（`sglang_omni/models/streaming_cascade/alignment.py:98-138`）。dialog 取客户端 H 与交付 D 的较小值，再保留到最后一个声音结束时刻不超过切点的进度边界（`sglang_omni/models/streaming_cascade/dialog.py:66-78,857-903`）。在构造的 `(1.0 秒, 2.0 秒, 2.5 秒)` 进度列表里，D 保留两句，H 保留一句。三段句子文字是教学算例，不是模型输出。保留文字若在不完整句子前停下，会标成不确定。如果没有文字留下，空 assistant 条目会被删除，相邻 user 消息合并（`dialog.py:906-917`）。forced 或 ASR 对齐可以保留更细且经过核对的前缀，超时或不匹配有明确回退（`alignment.py:219-229,370-424`）。
 
 第 6 步跟随 MiniCPM-o 的客户端 `response.cancel` 和 `conversation.item.truncate`。cancel 先保留到 adapter 最后交付的单元。客户端 truncate 再只保留声音在 H 前已经全部结束的已交付单元，后续 truncate 只能继续往前挪（`sglang_omni/models/minicpm_o/session_adapters.py:469-516,553-640`）。所以 D=2.0 秒保留 unit 0 和 unit 1，H=1.2 秒只保留 unit 0。unit 1 中被听过的 200 ms 无法进入整单元历史。thinker 删除之后的 spoken units，恢复之前的生成记录，并把后续用户输入作为强制 listening 单元补回（`session_adapters.py:118-179,219-236`）。这不同于模型自己决定停止说话。
+
+第 7 步使用 duplex profiler 的黄金测试算例：就绪到接纳是 150 ms，接纳到首个输出是 50 ms，所以就绪到首个输出是 200 ms（`tests/unit_test/profiler/test_duplex_metrics.py:318-344`）。实现先在每个请求支持的 Unit 内计算各段间隔，再做汇总（`sglang_omni/profiler/duplex_metrics.py:150-157,282-337`）。就绪表示需要的输入到齐，接纳表示 coordinator 接受 append。首个输出是进入 coordinator 输出缓冲的第一段模型内容，可能是文字，不是客户端首音（`docs/developer_reference/profiler.md:144-196`）。profiler 没有播放停止端点。
 
 本章代码出处固定到 `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`。本章只读源码和测试，没有运行模型或 benchmark。
 

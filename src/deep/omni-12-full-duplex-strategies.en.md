@@ -209,3 +209,44 @@ The output converter remembers each delivered unit's reply-audio end. `played_th
 The next step separates the server's Unit profiler clock from client playback and interruption measurements.
 
 Sources: `sglang_omni/models/minicpm_o/session_adapters.py:118-179,219-236,469-516,553-640`; `tests/unit_test/minicpm_o/test_realtime_session_params.py:253-317`.
+
+## Step 7 · The profiler's server clock
+
+> **In one line:** The profiler reports 200 ms to first output, which says nothing about client playback or audible stop.
+
+### On the stage
+
+- A Unit is one request-backed append through the Session stages.
+- Ready means every required input is present. Admitted means the coordinator accepted the append.
+- The blue interval is 150 ms from ready to admitted. The orange interval is 50 ms from admitted to first output.
+- First output enters the coordinator output buffer. It may be text, so it is not necessarily audio.
+
+### Formula
+
+$$
+T = A + B
+$$
+
+| Symbol | Meaning | Value | Source |
+|---|---|---:|---|
+| $T$ | Ready-to-first-output duration | 200 ms | This step |
+| $A$ | Ready-to-admitted duration | 150 ms | Profiler golden test |
+| $B$ | Admitted-to-first-output duration | 50 ms | Profiler golden test |
+
+### The numbers on the stage
+
+$$
+150 + 50 = 200\ \text{ms}
+$$
+
+The implementation obtains every duration from `(end_timestamp_ns − start_timestamp_ns) ÷ 1,000,000`. It computes A and B within one Unit before aggregating across Units. Missing endpoints produce null, not a zero-duration measurement.
+
+### Measurement boundary
+
+This clock explains server admission and output production. It has no endpoint for the client's first audible chunk or the last old-audio sample. Stage service time also includes observed execution boundaries; it is not pure GPU-compute time.
+
+### Next
+
+The listener-side evaluation measures the old reply's stop and the new reply's response from the recorded speech.
+
+Sources: `sglang_omni/profiler/duplex_metrics.py:150-157,282-337`; `docs/developer_reference/profiler.md:144-196`; `tests/unit_test/profiler/test_duplex_metrics.py:318-344`.

@@ -209,3 +209,44 @@ output converter 记录每个已交付单元的回答声音结束位置。`playe
 下一步区分服务器的 Unit profiler 时钟、客户端播放和打断测量。
 
 出处：`sglang_omni/models/minicpm_o/session_adapters.py:118-179,219-236,469-516,553-640`；`tests/unit_test/minicpm_o/test_realtime_session_params.py:253-317`。
+
+## 第 7 步 · profiler 的服务器时钟
+
+> **一句话：** profiler 报告到首个输出共 200 ms，它不说明客户端播放或旧声音停止的情况。
+
+### 图上是什么
+
+- 一个 Unit 是一个请求支持的 append 经过各个 Session stage 的工作。
+- 就绪表示需要的输入到齐，接纳表示 coordinator 接受这个 append。
+- 蓝色间隔是就绪到接纳的 150 ms，橙色间隔是接纳到首个输出的 50 ms。
+- 首个输出进入 coordinator 输出缓冲。它可能是文字，所以不一定是声音。
+
+### 公式
+
+$$
+T = A + B
+$$
+
+| 符号 | 是什么 | 大小 | 从哪来 |
+|---|---|---:|---|
+| $T$ | 就绪到首个输出的时长 | 200 ms | 本步 |
+| $A$ | 就绪到接纳的时长 | 150 ms | profiler 黄金测试 |
+| $B$ | 接纳到首个输出的时长 | 50 ms | profiler 黄金测试 |
+
+### 代入图上的数
+
+$$
+150 + 50 = 200\ \text{ms}
+$$
+
+实现用 `(end_timestamp_ns − start_timestamp_ns) ÷ 1,000,000` 得到每段时长。它先在同一个 Unit 内计算 A 和 B，再跨 Unit 汇总。缺少端点会得到 null，不会当成零时长。
+
+### 测量边界
+
+这个时钟解释服务器接纳和输出生成。它没有客户端第一段可听声音的端点，也没有旧声音最后一个采样点的端点。stage service time 也包含观察到的执行边界，不是纯 GPU 计算时间。
+
+### 接下来
+
+听者侧评测根据录下的语音，测量旧回答何时停止和新回答何时开始。
+
+出处：`sglang_omni/profiler/duplex_metrics.py:150-157,282-337`；`docs/developer_reference/profiler.md:144-196`；`tests/unit_test/profiler/test_duplex_metrics.py:318-344`。
