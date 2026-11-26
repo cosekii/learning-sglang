@@ -28,8 +28,8 @@
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
   const steps = [{
-    caption: 'A later window decodes 25 old frames plus 10 new ones. It emits only the 10 new frames.',
-    captionZh: '后续窗口要算 25 帧旧内容和 10 帧新内容。它只输出那 10 帧新内容。',
+    caption: 'A stateless later window decodes 25 old frames plus 10 new ones. It emits only the 10 new frames.',
+    captionZh: '无状态后续窗口要算 25 帧旧内容和 10 帧新内容。它只输出那 10 帧新内容。',
   }, {
     caption: 'Three matching windows share one model call. Each request still gets its own sound chunk.',
     captionZh: '三个匹配窗口共用一次模型调用。每个请求仍拿到自己的声音 chunk。',
@@ -46,8 +46,8 @@
     caption: 'PR #1101’s H200 c16 test compared eager and graph replay. Mean throughput rose about 10.4%.',
     captionZh: 'PR #1101 的 H200 c16 测试对照 eager 和 graph replay。平均吞吐提升约 10.4%。',
   }, {
-    caption: 'The three mechanisms do different jobs. Each model family implements a different subset.',
-    captionZh: '三种机制分工不同。每个模型系列只采用其中一部分。',
+    caption: 'The three mechanisms do different jobs. Each model implements them at different boundaries.',
+    captionZh: '三种机制分工不同。每个模型的实现边界不同。',
   }, {
     caption: 'Fish’s vocoder needs ten codebook entries per audio frame. Which generation loops choose them?',
     captionZh: 'Fish 的 vocoder 每帧需要十个 codebook 条目。哪些生成循环选出它们？',
@@ -76,7 +76,7 @@
   ]);
   const modelRows = $derived([
     { name: 'Qwen3-Omni', batch: 'ready windows', kept: 'codec-state slots', graph: 'exact Code2Wav shapes', batchZh: '准备好的窗口', keptZh: 'codec-state slots', graphZh: '精确 Code2Wav 形状' },
-    { name: 'MiniCPM-o native', batch: 'one unit per session', kept: 'decoder caches', graph: 'internal chunk loop', batchZh: '每个 session 一个单元', keptZh: '解码器 caches', graphZh: '内部 chunk 循环' },
+    { name: 'MiniCPM-o · full duplex', batch: 'next chunk per session', kept: 'saved decoder work', graph: 'one chunk-making loop', batchZh: '每个 session 的下个 chunk', keptZh: '已存的解码工作', graphZh: '一个生成 chunk 的循环' },
     { name: 'Fish S2 Pro', batch: 'completed requests only', kept: 'old code frames only', graph: 'not connected here', batchZh: '只 batch 已完成请求', keptZh: '只保留旧 code frames', graphZh: '这里没有接入' },
   ]);
 </script>
@@ -90,7 +90,7 @@
         </marker>
       </defs>
       {#if step === 0}
-        <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'One later window' : 'One later window repeats earlier work', phone ? '一个后续窗口' : '后续窗口重复计算旧内容')}</text>
+        <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'One stateless window' : 'One stateless later window repeats earlier work', phone ? '一个无状态窗口' : '无状态后续窗口重复计算旧内容')}</text>
         <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'vocoder = frames → sound · blue = new' : 'vocoder = codec frames → sound · blue = new frames', phone ? 'vocoder = frames → 声音 · 蓝 = 新帧' : 'vocoder = codec frames → 声音 · 蓝 = 新帧')}</text>
         {#if !phone}
           <rect x="30" y="88" width="660" height="224" rx="12" fill="var(--bg)" stroke="var(--line)" />
@@ -140,10 +140,10 @@
             <text x="59" y={y + 51} class="small">{t(item.body, item.bodyZh)}</text>
           {/each}
         {/if}
-        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Qwen3-Omni · 10 new frames = 800 ms playback' : 'Qwen3-Omni default window; 800 ms is playback time, not compute time.', phone ? 'Qwen3-Omni · 10 帧新内容 = 800 ms 播放' : 'Qwen3-Omni 默认窗口；800 ms 是播放时长，不是计算耗时。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Qwen3-Omni · 10 new frames = 800 ms playback' : 'Qwen3-Omni stateless window; 800 ms is playback time, not compute time.', phone ? 'Qwen3-Omni · 10 帧新内容 = 800 ms 播放' : 'Qwen3-Omni 无状态窗口；800 ms 是播放时长，不是计算耗时。')}</text>
       {:else if step === 1}
         <text x={phone ? 18 : 30} y="30" class="title">{t('Batch matching windows · 1 of 3', '合并匹配窗口 · 1 / 3')}</text>
-        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'matching = same length, kind and state mode' : 'matching windows = same frame count, window kind and state mode', phone ? '匹配 = 长度、类型、状态模式相同' : '匹配窗口 = 帧数、窗口类型和状态模式相同')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'this match = same length and window kind' : 'this example matches frame count and window kind', phone ? '本例匹配 = 长度和窗口类型相同' : '本例匹配窗口的帧数和窗口类型')}</text>
         <text x={phone ? 18 : 30} y="79" class="label">{t('B = requests per call · T = frames per request', 'B = 每次调用的请求数 · T = 每请求的帧数')}</text>
         {#each [false, true] as shared}
           {@const x = phone ? 18 : shared ? 375 : 30}
@@ -179,7 +179,7 @@
           <text x="360" y="548" text-anchor="middle" class="result">{VOC_BATCH_CALLS_BEFORE} {t('calls', '次调用')} → {VOC_BATCH_CALLS_AFTER} {t('call', '次调用')} · {VOC_BATCH_REQUEST_COUNT} {t('separate outputs', '份独立输出')}</text>
           <text x="360" y="582" text-anchor="middle" class="small">{t('Batching changes the call boundary, not who owns each output.', 'batching 改变调用边界，不改变每份输出的归属。')}</text>
         {/if}
-        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Constructed shapes · matching also checks kind + state' : 'Constructed shapes; grouping also checks first/later kind and slot/stateless mode.', phone ? '构造形状 · 还检查窗口类型和状态模式' : '构造形状；分组还检查首个/后续类型和 slot/无状态模式。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Constructed shapes · real groups check more fields' : 'Constructed shapes; real groups also check whether each request uses saved decoder work.', phone ? '构造形状 · 真实分组还检查其他字段' : '构造形状；真实分组还检查每个请求是否使用已存解码工作。')}</text>
       {:else if step === 2}
         <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'Keep decoder work · 2 of 3 · 1/2' : 'Keep decoder work between windows · 2 of 3 · 1/2', phone ? '保留解码工作 · 2 / 3 · 1/2' : '在窗口之间保留解码工作 · 2 / 3 · 1/2')}</text>
         <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'slot = one request’s saved decoder work' : 'codec-state slot = one request’s saved decoder work', phone ? 'slot = 一个请求已存的解码工作' : 'codec-state slot = 一个请求已存的解码工作')}</text>
@@ -215,7 +215,7 @@
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Frame counts, not latency · first window writes state' : 'Input-frame counts, not latency. The first window writes the slot; no free slot keeps the stateless path.', phone ? '帧数不是耗时 · 首个窗口写入状态' : '输入帧数不是耗时。首个窗口写入 slot；没有空 slot 就走无状态路径。')}</text>
       {:else if step === 3}
         <text x={phone ? 18 : 30} y="30" class="title">{t('Measure the slot · 2 of 3 · 2/2', '测量 slot · 2 / 3 · 2/2')}</text>
-        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? '8 rows · middle of 20 timings' : '8 rows per call · 20 timings; the middle value is shown', phone ? '8 行 · 20 次计时取中间值' : '每次调用 8 行 · 20 次计时，取中间值')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? '8 rows · median = mean of sorted #10 and #11' : '8 rows · 20 timings · median averages sorted values 10 and 11', phone ? '8 行 · 20 次排序计时 · 第 10、11 个取均值' : '每次调用 8 行 · 20 次计时 · 排序后第 10、11 个取均值')}</text>
         <text x={phone ? 18 : 30} y="79" class="label">{t(phone ? 'blue stateless · orange slot · one scale' : 'blue = stateless · orange = slot-backed · one shared scale', phone ? '蓝无状态 · 橙 slot · 同比例' : '蓝 = 无状态 · 橙 = 使用 slot · 同一比例')}</text>
         {#each [true, false] as first}
           {@const main = first ? VOC_STATE_FIRST_MAIN_US : VOC_STATE_LATER_MAIN_US}
@@ -325,7 +325,7 @@
         {/each}
         <text x={W / 2} y={phone ? 594 : 380} text-anchor="middle" class="small strong">{t(phone ? 'Batch shares · state keeps · graph replays' : 'Batch shares work. Retained state avoids repeats. Graphs replay launches.', phone ? 'batch 共享 · state 保留 · graph 重放' : 'batch 共享工作。保留状态避免重复。graph 重放 launches。')}</text>
         <text x={W / 2} y={phone ? 628 : 416} text-anchor="middle" class="small">{t(phone ? 'Fish streams decode one request at a time' : 'Fish streaming windows still decode one request at a time.', phone ? 'Fish 流式窗口仍逐请求解码' : 'Fish 流式窗口仍逐请求解码。')}</text>
-        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'MiniCPM-o native · Fish streaming path shown here' : 'MiniCPM-o native duplex and Fish S2 Pro’s streaming scheduler are distinct from their offline paths.', phone ? 'MiniCPM-o native · 此处是 Fish 流式路径' : 'MiniCPM-o native 全双工和 Fish S2 Pro 流式调度器都有别于各自的离线路径。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'MiniCPM-o native · Fish streaming path shown here' : 'MiniCPM-o’s full-duplex path and Fish S2 Pro’s streaming scheduler are distinct from their offline paths.', phone ? 'MiniCPM-o native · 此处是 Fish 流式路径' : 'MiniCPM-o 全双工和 Fish S2 Pro 流式调度器都有别于各自的离线路径。')}</text>
       {:else if step === 7}
         <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'Ten entries for one audio frame' : 'One Fish audio frame needs ten codebook entries', phone ? '一个音频帧需要十个条目' : '一个 Fish 音频帧需要十个 codebook 条目')}</text>
         <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'codebook = sound-choice table' : 'codebook = a table of sound-building choices', phone ? 'codebook = 声音选项表' : 'codebook = 构造声音的选项表')}</text>

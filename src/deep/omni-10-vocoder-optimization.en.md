@@ -30,7 +30,9 @@ The output contains 10 new frames, representing $10\times80=800$ ms of playback.
 
 The first map entry changes how independent requests share a model call. The next step combines three ready first windows without merging their outputs.
 
-Sources: `sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:79-109,999-1011`; Learning SGLang Ch. 20 Steps 1–3.
+Source shorthand: Qwen paths are relative to `sglang_omni/models/qwen3_omni/`; other paths are relative to `sglang_omni/`.
+
+Sources: `components/code2wav_scheduler.py:79-109,999-1011`; Learning SGLang Ch. 20 Steps 1–3.
 
 ## Step 2 · Batch matching windows
 
@@ -40,7 +42,7 @@ Sources: `sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:79-109,
 
 - `B` counts requests decoded together. `T` counts frames in each request's window. The left panel has three `[B=1,T=10]` calls; the right has one `[B=3,T=10]` call.
 - These are first windows, so every request has 10 new frames and no earlier context. A, B and C are independent requests, not three pieces of one request.
-- `Matching` means more than equal `T`. The scheduler also requires the same first/later kind and the same slot-backed or stateless mode. A first window does not share a group with a later window.
+- This example matches frame count and first/later kind. Real groups also check whether each request uses saved decoder work. The next step explains that saved work. A first window does not share a group with a later window.
 - Blue boxes are model calls and their sound outputs. The shared box has three rows, one per request. Batching does not mix the rows into one output or repeat one request's sound for the others.
 - The comparison counts three model calls before and one after. It does not assign milliseconds or claim that every group has three requests.
 
@@ -64,7 +66,7 @@ The group still returns three sound chunks. The scheduler can replay at most eig
 
 Batching shares a call across requests. The next mechanism reduces repeated frames inside one request by keeping its decoder work between windows.
 
-Sources: `sglang_omni/scheduling/streaming_vocoder.py:819-842`; `sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:999-1079`; `tests/unit_test/qwen3_omni/test_code2wav_batching.py:111-191`.
+Sources: `scheduling/streaming_vocoder.py:819-842`; `components/code2wav_scheduler.py:999-1079`; `tests/unit_test/qwen3_omni/test_code2wav_batching.py:111-191`.
 
 ## Step 3 · Keep decoder work between windows
 
@@ -72,7 +74,7 @@ Sources: `sglang_omni/scheduling/streaming_vocoder.py:819-842`; `sglang_omni/mod
 
 ### On the stage
 
-- A `codec-state slot` is storage for one request's saved decoder work. It holds transformer K/V rings, causal-convolution histories, transposed-convolution overlap samples and the stream's frame position.
+- A `codec-state slot` is storage for one request's saved decoder work. It holds earlier attention K/V, meaning the keys and values from Learning SGLang Ch. 2, plus small convolution buffers that join one window to the next. Their ring and overlap layouts are deliberately not covered.
 - The left panel repeats Step 1: 25 old frames and 10 new frames enter the vocoder. The right panel reads earlier work from the slot and gives the vocoder only the 10 new frames.
 - Both panels emit the same number of new frames. Orange is saved work, grey is old input decoded again, and blue is new input and output.
 - The first window creates the state and writes it into the slot. Only later windows can reuse it. A stream claims its slot when its first codes arrive and releases it on completion or abort.
@@ -99,15 +101,15 @@ The slot avoids 25 input frames in this later window. This is a frame-count comp
 
 The next step puts public first-window and later-window timings on one scale, including the first window's extra state-writing cost.
 
-Sources: `sglang_omni/models/qwen3_omni/components/codec_state_pool.py:13-24,63-115`; `sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:296-327,999-1011,1230-1246,1283-1300`; `sglang_omni/models/qwen3_omni/components/code2wav.py:380-402,419-462`.
+Sources: `components/codec_state_pool.py:13-24,63-115`; `components/code2wav_scheduler.py:296-327,999-1011,1230-1246,1283-1300`; `components/code2wav.py:380-402,419-462`.
 
 ## Step 4 · Measure the first and later windows
 
-**One sentence.** In PR #2909's eight-row H200 test, retained state made the later window 60.5% faster and the first window 9.2% slower.
+**One sentence.** In PR #2909's eight-row H200 test, retained state cut later-window time by 60.5% and raised first-window time by 9.2%.
 
 ### On the stage
 
-- Every timing uses Qwen3-Omni colocated BF16 on one H200, eight rows and one CUDA graph replay. The displayed value is the median, the middle result, of 20 timings.
+- Every timing uses Qwen3-Omni colocated BF16 on one H200, eight rows and one CUDA graph replay. For 20 sorted timings, the median is the average of the 10th and 11th values.
 - Both sides use graph replay, so this comparison isolates stateless windows against slot-backed windows. It does not measure graphs against eager execution.
 - The first window has 10 input frames on both paths. The slot-backed path also writes K/V, convolution histories and overlaps, so its time rises from 3,656.3 to 3,992.0 µs.
 - The later window falls from 35 input frames to 10. Its time falls from 10,777.5 to 4,255.3 µs. All four bars use the same microsecond scale.
@@ -132,13 +134,13 @@ $$\Delta_{\mathrm{first}}=\left(\frac{3992.0}{3656.3}-1\right)100\approx9.2\%$$
 
 $$R_{\mathrm{later}}=\left(1-\frac{4255.3}{10777.5}\right)100\approx60.5\%$$
 
-PR #2909 also reports end-to-end c64 QPS rising 2.8%, not 60.5%. The window win pays back the first-window cost over later windows; it does not multiply into the same end-to-end gain.
+PR #2909 also reports end-to-end throughput with 64 concurrent requests rising 2.8%, not 60.5%. The window win pays back the first-window cost over later windows; it does not multiply into the same end-to-end gain.
 
 ### Next
 
 Retained state changes how many frames a window reads. The next mechanism records a window's kernel launches and replays them only for an exact graph key.
 
-Sources: [public PR #2909, mechanism and results](https://github.com/sgl-project/sglang-omni/pull/2909); `sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:999-1011`.
+Sources: [public PR #2909, mechanism and results](https://github.com/sgl-project/sglang-omni/pull/2909); `components/code2wav_scheduler.py:999-1011`.
 
 ## Step 5 · Replay only an exact graph key
 
@@ -175,7 +177,7 @@ A missing or ineligible key uses eager execution. A runtime replay failure is di
 
 Exact keys make replay possible, but do not measure its value. The next step uses one historical H200 comparison to measure end-to-end throughput with and without Code2Wav graphs.
 
-Sources: `sglang_omni/models/qwen3_omni/components/code2wav_cuda_graph.py:85-117,264-282,673-723,804-888`; `sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:112-143,1307-1345`.
+Sources: `components/code2wav_cuda_graph.py:85-117,264-282,673-723,804-888`; `components/code2wav_scheduler.py:112-143,1307-1345`.
 
 ## Step 6 · Measure graph replay at c16
 
@@ -215,15 +217,15 @@ Sources: [public PR #1101 and its H200 protocol](https://github.com/sgl-project/
 
 ## Step 7 · Compare the model paths
 
-**One sentence.** Qwen3-Omni, MiniCPM-o native duplex and Fish S2 Pro share the three optimization goals but implement them at different boundaries.
+**One sentence.** Qwen3-Omni, MiniCPM-o's full-duplex path and Fish S2 Pro share the three optimization goals but implement them at different boundaries.
 
 ### On the stage
 
 - Qwen3-Omni batches matching ready windows, retains per-stream codec-state slots and captures exact Code2Wav graph keys. Steps 2–6 showed those mechanisms and two public measurements.
-- MiniCPM-o native batches one planned unit per ready session, keeps per-session Flow and HiFT caches, and graphs the internal Flow chunk loop. Conformer encoding before that loop and HiFT after it remain outside this graph.
+- MiniCPM-o's full-duplex path batches the next chunk from each ready session, keeps saved decoder work in per-session caches, and graphs one repeated chunk-making loop. The code names the cached components Flow and HiFT; their internal layouts and the rest of the synthesis path are deliberately not covered.
 - Fish S2 Pro batches completed non-streaming requests, padding rows to the longest code sequence and trimming each output. Its streaming chunks still run one request at a time through `build_stream_vocoder_chunk`.
-- Fish retains old code frames for context and 512 output samples for crossfade. Those retained inputs are not equivalent to Qwen's or MiniCPM-o's saved execution state. Its production factory does not install the vocoder graph that a small test demonstrates.
-- MiniCPM-o's offline scheduler and Fish's completed-request batching are not evidence for MiniCPM-o native session batching or Fish streaming-window batching. The cards deliberately name the paths.
+- Fish retains old code frames for context and a short tail of old sound to blend the join between windows. That blending is called `crossfade`. These retained inputs are not equivalent to Qwen's or MiniCPM-o's saved execution state. Its production factory does not install the vocoder graph that a small test demonstrates.
+- MiniCPM-o's offline scheduler and Fish's completed-request batching are not evidence for MiniCPM-o full-duplex session batching or Fish streaming-window batching. The cards deliberately name the paths.
 
 ### Formula and symbols
 
@@ -239,7 +241,13 @@ $$V_m=(b_m,s_m,g_m)$$
 
 ### The numbers on the stage
 
-This step adds no timing numbers. Read the three tuples as $V_{\mathrm{Qwen}}=(\text{ready windows},\text{codec slots},\text{exact Code2Wav shapes})$, $V_{\mathrm{MiniCPM}}=(\text{session units},\text{decoder caches},\text{internal chunk loop})$ and $V_{\mathrm{Fish}}=(\text{completed requests only},\text{old code frames},\text{no connected graph})$.
+This step adds no benchmark timings. The cards give these three tuples:
+
+$$V_{\mathrm{Qwen}}=(\text{ready windows},\text{codec slots},\text{exact Code2Wav shapes})$$
+
+$$V_{\mathrm{MiniCPM}}=(\text{session chunks},\text{saved work},\text{chunk loop})$$
+
+$$V_{\mathrm{Fish}}=(\text{completed requests only},\text{old code frames},\text{no connected graph})$$
 
 Fish's non-streaming default batch cap is 8 with a 2 ms collection wait. Those defaults do not apply to its per-request streaming chunks, and the chapter does not turn them into a throughput claim.
 
@@ -247,7 +255,7 @@ Fish's non-streaming default batch cap is 8 with a 2 ms collection wait. Those d
 
 Fish's vocoder receives ten codebook rows for each audio frame. The last step follows that input to the question the next chapter answers: which generation loops produce the rows?
 
-Sources: `sglang_omni/models/minicpm_o/components/tts_runtime.py:47-76,92-121,240-260`; `sglang_omni/models/minicpm_o/components/token2wav/flow.py:408-448,737-800`; `sglang_omni/models/fishaudio_s2_pro/streaming_vocoder.py:43-66`; `sglang_omni/scheduling/audio_vocoder.py:80-114,116-224`; `sglang_omni/scheduling/audio_stream.py:187-239,242-333`; `sglang_omni/models/fishaudio_s2_pro/stages.py:522-552`.
+Sources: `models/minicpm_o/components/tts_runtime.py:47-76,92-121,240-260`; `models/minicpm_o/components/token2wav/flow.py:408-448,737-800`; `models/fishaudio_s2_pro/streaming_vocoder.py:43-66`; `scheduling/audio_vocoder.py:80-114,116-224`; `scheduling/audio_stream.py:187-239,242-333`; `models/fishaudio_s2_pro/stages.py:522-552`.
 
 ## Step 8 · Follow ten codebook entries into Fish's vocoder
 
@@ -274,12 +282,10 @@ $$E=k\times1$$
 
 $$E=10\times1=10\ \text{entries}$$
 
-Fish's model produces an additional semantic row before these ten rows. `S2ProVocoderScheduler` drops that row and sends the ten codebook rows to the DAC vocoder.
-
-One outer Slow-AR step samples a semantic token and exposes its codebook-relative semantic id. The fast decoder starts from the Slow-AR hidden state, resets its caches, then fills nine residual codebooks through ten KV-cached calls. The next chapter explains why those two loops are needed and what each cache retains.
+`S2ProVocoderScheduler` sends codebook rows 1–10 to the vocoder. The generation loops and the additional row before them belong to Chapter 11. Their call counts and cache layout are deliberately not covered here, so this step stops at the ten visible vocoder inputs.
 
 ### Next
 
 Chapter 11, `11-fish-s2-pro`, opens the Dual-AR generation path behind the ten question marks and follows the resulting codes into the streaming vocoder.
 
-Sources: `sglang_omni/models/fishaudio_s2_pro/streaming_vocoder.py:102-106`; `sglang_omni/models/fishaudio_s2_pro/sglang_model.py:418-425,484-510`; `sglang_omni/models/fishaudio_s2_pro/fish_speech/models/text2semantic/audio_decoder.py:505-526`; `sglang_omni/models/fishaudio_s2_pro/payload_types.py:35-50`.
+Sources: `models/fishaudio_s2_pro/streaming_vocoder.py:102-106`; `models/fishaudio_s2_pro/payload_types.py:35-50`.

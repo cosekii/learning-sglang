@@ -16,7 +16,7 @@ $$I=c+n$$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
-| $c$ | 再次读取的旧帧数 | Qwen3-Omni 默认左文，25 |
+| $c$ | 再次读取的旧帧数 | Qwen3-Omni 默认读取的之前 25 帧 |
 | $n$ | 本次解码并输出的新帧数 | 默认 stream chunk，10 |
 | $I$ | 后续无状态窗口读取的总帧数 | 本步计算 |
 
@@ -30,7 +30,9 @@ $$I=25+10=35\ \text{帧}$$
 
 地图第一项改变多个独立请求怎样共用模型调用。下一步把三个准备好的首个窗口合并计算，同时保持各自输出独立。
 
-来源：`sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:79-109,999-1011`；Learning SGLang 第 20 章第 1–3 步。
+路径缩写：Qwen 路径相对于 `sglang_omni/models/qwen3_omni/`，其他路径相对于 `sglang_omni/`。
+
+来源：`components/code2wav_scheduler.py:79-109,999-1011`；Learning SGLang 第 20 章第 1–3 步。
 
 ## 第 2 步 · 合并匹配窗口
 
@@ -40,7 +42,7 @@ $$I=25+10=35\ \text{帧}$$
 
 - `B` 是一起解码的请求数，`T` 是每个请求窗口里的帧数。左图有三次 `[B=1,T=10]` 调用，右图有一次 `[B=3,T=10]` 调用。
 - 这些都是首个窗口，每个请求有 10 帧新内容，没有旧上下文。A、B、C 是独立请求，不是一个请求拆成的三份。
-- `匹配` 不只要求 `T` 相同。调度器还要求首个/后续类型相同，以及 slot 或无状态模式相同。首个窗口不会和后续窗口同组。
+- 本例匹配帧数和首个/后续类型。真实分组还检查每个请求是否使用已存解码工作，下一步解释这份工作。首个窗口不会和后续窗口同组。
 - 蓝框是模型调用及其声音输出。共享框里三行各属一个请求。batching 不会把三行混成一份输出，也不会把某个请求的声音复制给其他请求。
 - 对照从三次模型调用变成一次，不填写毫秒，也不声称每组都有三个请求。
 
@@ -58,13 +60,13 @@ $$C_{\mathrm{separate}}=n,\qquad C_{\mathrm{batch}}=1$$
 
 $$C_{\mathrm{separate}}=3,\qquad C_{\mathrm{batch}}=1$$
 
-这个组仍返回三段声音。调度器一次最多重放八行，并选择能被当前组填满的已发布 graph batch 大小。不同帧长不会靠补位塞进同一次 replay。
+这个组仍返回三段声音。调度器一次最多重放八行，并选择 batch 大小正好等于当前组行数的已发布 graph。不同帧长不会靠补位塞进同一次 replay。
 
 ### 接下来
 
 batching 让多个请求共享一次调用。下一种机制保留单个请求在窗口之间的解码工作，减少窗口内重复读取的帧。
 
-来源：`sglang_omni/scheduling/streaming_vocoder.py:819-842`；`sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:999-1079`；`tests/unit_test/qwen3_omni/test_code2wav_batching.py:111-191`。
+来源：`scheduling/streaming_vocoder.py:819-842`；`components/code2wav_scheduler.py:999-1079`；`tests/unit_test/qwen3_omni/test_code2wav_batching.py:111-191`。
 
 ## 第 3 步 · 在窗口之间保留解码工作
 
@@ -72,11 +74,11 @@ batching 让多个请求共享一次调用。下一种机制保留单个请求�
 
 ### 图上是什么
 
-- `codec-state slot` 是保存一个请求解码工作的存储位置。里面有 transformer K/V 环、因果卷积历史、转置卷积的重叠样本和流的帧位置。
+- `codec-state slot` 是保存一个请求解码工作的存储位置。里面有之前注意力的 K/V，也就是 Learning SGLang 第 2 章的 keys 和 values，还有连接相邻窗口的小块卷积缓冲。环和重叠布局故意不展开。
 - 左图重复第 1 步：25 帧旧内容和 10 帧新内容进入 vocoder。右图从 slot 读取旧工作，只给 vocoder 输入 10 帧新内容。
 - 两图输出的新帧数相同。橙色是已存工作，灰色是再次解码的旧输入，蓝色是新输入和输出。
 - 首个窗口创建状态并写入 slot，后续窗口才能复用。首份 codes 到达时流领取 slot，完成或取消时释放。
-- slot 数量有限。没有空 slot 时，这个请求整个生命周期都走原来的左文无状态路径。首个完整窗口之前就结束的流也不用 slot 状态。
+- slot 数量有限。没有空 slot 时，这个请求始终走读取之前帧的无状态路径。首个完整窗口之前就结束的流也不用 slot 状态。
 
 ### 公式与符号
 
@@ -99,15 +101,15 @@ slot 让这个后续窗口少读 25 帧输入。这是帧数对照，不是 3.5 
 
 下一步把公开的首窗口和后续窗口耗时放到同一比例，包含首窗口写入状态的额外成本。
 
-来源：`sglang_omni/models/qwen3_omni/components/codec_state_pool.py:13-24,63-115`；`sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:296-327,999-1011,1230-1246,1283-1300`；`sglang_omni/models/qwen3_omni/components/code2wav.py:380-402,419-462`。
+来源：`components/codec_state_pool.py:13-24,63-115`；`components/code2wav_scheduler.py:296-327,999-1011,1230-1246,1283-1300`；`components/code2wav.py:380-402,419-462`。
 
 ## 第 4 步 · 测量首个窗口和后续窗口
 
-**一句话。** PR #2909 的 8 行 H200 测试里，保留状态让后续窗口快 60.5%，首个窗口慢 9.2%。
+**一句话。** PR #2909 的 8 行 H200 测试里，保留状态让后续窗口耗时减少 60.5%，首个窗口耗时增加 9.2%。
 
 ### 图上是什么
 
-- 每次计时使用 Qwen3-Omni 同卡 BF16、一张 H200、8 行和一次 CUDA graph replay。图中取 20 次计时的中位数，也就是排在中间的值。
+- 每次计时使用 Qwen3-Omni 同卡 BF16、一张 H200、8 行和一次 CUDA graph replay。20 次计时按耗时排序后，中位数是第 10 个和第 11 个值的平均数。
 - 两边都使用 graph replay，所以这里只比较无状态窗口和 slot 窗口，不比较 graph 与 eager。
 - 首个窗口在两条路径上都输入 10 帧。slot 路径还要写 K/V、卷积历史和重叠样本，因此耗时从 3,656.3 升到 3,992.0 µs。
 - 后续窗口的输入从 35 帧降到 10 帧，耗时从 10,777.5 降到 4,255.3 µs。四根横条使用同一个微秒比例。
@@ -132,13 +134,13 @@ $$\Delta_{\mathrm{first}}=\left(\frac{3992.0}{3656.3}-1\right)100\approx9.2\%$$
 
 $$R_{\mathrm{later}}=\left(1-\frac{4255.3}{10777.5}\right)100\approx60.5\%$$
 
-PR #2909 还报告端到端 c64 QPS 提升 2.8%，不是 60.5%。后续窗口省下的时间要覆盖首窗口的额外成本，不能把窗口降幅当成端到端增幅。
+PR #2909 还报告 64 个并发请求时，端到端每秒完成请求数提升 2.8%，不是 60.5%。后续窗口省下的时间要覆盖首窗口的额外成本，不能把窗口降幅当成端到端增幅。
 
 ### 接下来
 
 保留状态改变窗口读取多少帧。下一种机制录下窗口的 kernel launches，只有 graph key 完全匹配时才重放。
 
-来源：[公开 PR #2909 的机制与结果](https://github.com/sgl-project/sglang-omni/pull/2909)；`sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:999-1011`。
+来源：[公开 PR #2909 的机制与结果](https://github.com/sgl-project/sglang-omni/pull/2909)；`components/code2wav_scheduler.py:999-1011`。
 
 ## 第 5 步 · 只重放完全匹配的 graph key
 
@@ -150,7 +152,7 @@ PR #2909 还报告端到端 c64 QPS 提升 2.8%，不是 60.5%。后续窗口省
 - `B` 是请求行数，`T` 是帧数，`kind` 是窗口路径。`window` 是无状态，`first` 是 slot 首个窗口，`next` 是 slot 后续窗口。
 - 示例目录只有一个 key `(3,10,first)`。调用 A 完全匹配，所以 replay。调用 B 把 `B` 改成 2，此目录没有匹配 key，所以 eager 运行。
 - 单 key 目录是为说明匹配而构造的。真实 runner 有许多 key。不同的 incoming key 可能有自己的 graph；只有没有已发布 graph 匹配时才走 eager。
-- 橙色表示已 capture graph 和 replay，蓝色表示 eager。graph 改变 kernel 提交方式，不改变模型数学。
+- 橙色表示已 capture graph 和 replay，蓝色表示 eager。graph 改变 kernel 提交方式，不改变模型的数学计算。
 
 ### 公式与符号
 
@@ -161,7 +163,7 @@ $$K=(B,T,k)$$
 | $B$ | 一次调用里的请求行数 | `GraphKey.batch_size` |
 | $T$ | 每行的帧数 | `GraphKey.frames` |
 | $k$ | `window`、`first` 或 `next` 路径 | `GraphKey.kind` |
-| $K$ | replay 要求的精确身份 | `code2wav_cuda_graph.py` |
+| $K$ | replay 要求完全匹配的标识 | `code2wav_cuda_graph.py` |
 
 ### 代入图上的数
 
@@ -175,11 +177,11 @@ $K_A$ 等于目录里的 key，$K_B$ 的第一个字段不同。replay 把 codes
 
 精确 key 让 replay 可行，却没有说明收益。下一步用一次历史 H200 对照，测量开关 Code2Wav graph 的端到端吞吐量。
 
-来源：`sglang_omni/models/qwen3_omni/components/code2wav_cuda_graph.py:85-117,264-282,673-723,804-888`；`sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:112-143,1307-1345`。
+来源：`components/code2wav_cuda_graph.py:85-117,264-282,673-723,804-888`；`components/code2wav_scheduler.py:112-143,1307-1345`。
 
 ## 第 6 步 · 测量 c16 的 graph replay
 
-**一句话。** PR #1101 的历史 H200 c16 对照中，eager 的平均吞吐是 0.575 requests/s，graph replay 是 0.635 requests/s，两个均值之比提升 10.4%。
+**一句话。** PR #1101 的历史 H200 c16 对照中，eager 的平均吞吐是 0.575 requests/s，graph replay 是 0.635 requests/s，由两个均值算出的提升约为 10.4%。
 
 ### 图上是什么
 
@@ -197,7 +199,7 @@ $$G_{\mathrm{mean}}=\left(\frac{q_{\mathrm{graph}}}{q_{\mathrm{eager}}}-1\right)
 |---|---|---|
 | $q_{\mathrm{eager}}$ | 不用 Code2Wav graph 的平均吞吐 | PR #1101，0.575 requests/s |
 | $q_{\mathrm{graph}}$ | 使用 Code2Wav graph 的平均吞吐 | PR #1101，0.635 requests/s |
-| $G_{\mathrm{mean}}$ | 展示的两个平均 QPS 之比 | 本步计算 |
+| $G_{\mathrm{mean}}$ | 由两个平均 QPS 算出的提升 | 本步计算 |
 
 ### 代入图上的数
 
@@ -215,15 +217,15 @@ Qwen 示例已经覆盖三种机制。下一步对照 MiniCPM-o 和 Fish S2 Pro�
 
 ## 第 7 步 · 对照模型路径
 
-**一句话。** Qwen3-Omni、MiniCPM-o native 全双工和 Fish S2 Pro 有相近的优化目标，但在不同边界实现这些机制。
+**一句话。** Qwen3-Omni、MiniCPM-o 全双工和 Fish S2 Pro 有相近的优化目标，但在不同边界实现这些机制。
 
 ### 图上是什么
 
 - Qwen3-Omni 合并匹配的就绪窗口，保留每流 codec-state slot，并按精确 Code2Wav key capture graph。第 2–6 步展示了这些机制和两项公开测量。
-- MiniCPM-o native 把每个就绪 session 的下一个计划单元组成 batch，保留每 session 的 Flow 和 HiFT caches，并把内部 Flow chunk 循环录成 graph。循环前的 Conformer 编码和循环后的 HiFT 不在这张 graph 里。
+- MiniCPM-o 全双工路径把每个就绪 session 的下一个 chunk 组成 batch，在每 session 的 cache 里保留解码工作，并把一个反复生成 chunk 的循环录成 graph。代码把缓存组件叫作 Flow 和 HiFT；它们的内部布局和合成链路的其他部分故意不展开。
 - Fish S2 Pro 只 batch 已完成的非流式请求，把较短 rows 补到最长 codes 长度，再分别裁切输出。它的流式 chunks 仍通过 `build_stream_vocoder_chunk` 逐请求运行。
-- Fish 保留旧 code frames 作为上下文，并保留 512 个输出样本做 crossfade。这些保留的输入不等于 Qwen 或 MiniCPM-o 保存的执行状态。一个小测试展示了 vocoder graph，但生产 factory 没有接入它。
-- MiniCPM-o 离线调度器和 Fish 的完成请求 batching，不能证明 MiniCPM-o native session batching 或 Fish 流式窗口 batching。卡片明确写出各自路径。
+- Fish 保留旧 code frames 作为上下文，还保留一小段旧声音来混合相邻窗口的接缝。这种混合叫作 `crossfade`。这些保留的输入不等于 Qwen 或 MiniCPM-o 保存的执行状态。一个小测试展示了 vocoder graph，但生产 factory 没有接入它。
+- MiniCPM-o 离线调度器和 Fish 的完成请求 batching，不能证明 MiniCPM-o 全双工路径的 session batching 或 Fish 流式窗口 batching。卡片明确写出各自路径。
 
 ### 公式与符号
 
@@ -239,7 +241,13 @@ $$V_m=(b_m,s_m,g_m)$$
 
 ### 代入图上的数
 
-本步不新增耗时数字。三个元组读作 $V_{\mathrm{Qwen}}=(\text{就绪窗口},\text{codec slots},\text{精确 Code2Wav 形状})$，$V_{\mathrm{MiniCPM}}=(\text{session 单元},\text{解码器 caches},\text{内部 chunk 循环})$，$V_{\mathrm{Fish}}=(\text{只含已完成请求},\text{旧 code frames},\text{未接入 graph})$。
+本步不新增 benchmark 耗时。三张卡片给出这些元组：
+
+$$V_{\mathrm{Qwen}}=(\text{就绪窗口},\text{codec slots},\text{精确 Code2Wav 形状})$$
+
+$$V_{\mathrm{MiniCPM}}=(\text{session chunks},\text{已存工作},\text{chunk 循环})$$
+
+$$V_{\mathrm{Fish}}=(\text{只含已完成请求},\text{旧 code frames},\text{未接入 graph})$$
 
 Fish 非流式路径默认最多收集 8 个请求，等待 2 ms。这些默认值不适用于逐请求的流式 chunks，本章也不把它们变成吞吐声明。
 
@@ -247,7 +255,7 @@ Fish 非流式路径默认最多收集 8 个请求，等待 2 ms。这些默认�
 
 Fish 的 vocoder 每个音频帧收到十行 codebook。最后一步跟着这份输入，引出下一章的问题：哪些生成循环写出这些行？
 
-来源：`sglang_omni/models/minicpm_o/components/tts_runtime.py:47-76,92-121,240-260`；`sglang_omni/models/minicpm_o/components/token2wav/flow.py:408-448,737-800`；`sglang_omni/models/fishaudio_s2_pro/streaming_vocoder.py:43-66`；`sglang_omni/scheduling/audio_vocoder.py:80-114,116-224`；`sglang_omni/scheduling/audio_stream.py:187-239,242-333`；`sglang_omni/models/fishaudio_s2_pro/stages.py:522-552`。
+来源：`models/minicpm_o/components/tts_runtime.py:47-76,92-121,240-260`；`models/minicpm_o/components/token2wav/flow.py:408-448,737-800`；`models/fishaudio_s2_pro/streaming_vocoder.py:43-66`；`scheduling/audio_vocoder.py:80-114,116-224`；`scheduling/audio_stream.py:187-239,242-333`；`models/fishaudio_s2_pro/stages.py:522-552`。
 
 ## 第 8 步 · 跟着十个 codebook 条目进入 Fish vocoder
 
@@ -256,7 +264,7 @@ Fish 的 vocoder 每个音频帧收到十行 codebook。最后一步跟着这份
 ### 图上是什么
 
 - `codebook` 是构造声音的选项表。对于一个音频帧，Fish 的十个 codebook 各贡献一个选中的条目，组成 vocoder 输入。
-- 十个蓝色行就是这些 codebook 输入。橙色问号表示 vocoder 之前做出的选择，本章还没有展示哪些生成工作做出选择。
+- 十行蓝色条目就是这些 codebook 输入。橙色问号表示 vocoder 之前做出的选择，本章还没有展示哪些生成工作做出选择。
 - 左侧括线把十行合成一个帧的输入。vocoder 把它变成一个音频帧，不是十个独立音频帧。
 - 这是构造的单帧视图，不填写播放时长，也不声称每个 codebook 有同样多的候选条目。
 
@@ -274,12 +282,10 @@ $$E=k\times1$$
 
 $$E=10\times1=10\ \text{个条目}$$
 
-Fish 模型还在这十行之前生成一个 semantic 行。`S2ProVocoderScheduler` 去掉那一行，把十个 codebook 行送入 DAC vocoder。
-
-外层 Slow-AR 的一步采样 semantic token，并给出相对于 codebook 的 semantic id。fast decoder 从 Slow-AR hidden state 开始，重置自己的 caches，再通过十次使用 KV cache 的调用填充九个 residual codebook。下一章解释为什么需要这两个循环，以及每份 cache 保留什么。
+`S2ProVocoderScheduler` 把 codebook 第 1–10 行送入 vocoder。生成循环和它们之前的另一行留给第 11 章。调用次数和 cache 布局故意不在这里展开，所以本步停在十个看得见的 vocoder 输入。
 
 ### 接下来
 
 第 11 章 `11-fish-s2-pro` 打开十个问号背后的 Dual-AR 生成路径，再跟着生成的 codes 进入流式 vocoder。
 
-来源：`sglang_omni/models/fishaudio_s2_pro/streaming_vocoder.py:102-106`；`sglang_omni/models/fishaudio_s2_pro/sglang_model.py:418-425,484-510`；`sglang_omni/models/fishaudio_s2_pro/fish_speech/models/text2semantic/audio_decoder.py:505-526`；`sglang_omni/models/fishaudio_s2_pro/payload_types.py:35-50`。
+来源：`models/fishaudio_s2_pro/streaming_vocoder.py:102-106`；`models/fishaudio_s2_pro/payload_types.py:35-50`。
