@@ -96,3 +96,36 @@ $$u_a=\operatorname{concat}(h(a),e(b))$$
 下一步把移位后的 token 再左移一次，得到每个位置的训练标签，并计算 cross entropy。
 
 来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:31-46`；`THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a` 的 `docker/patch/latest/megatron.patch:152-190` 和 `slime_plugins/mbridge/mimo.py:106-120`。
+
+## 第 4 步 · 第二次左移生成训练标签
+
+**一句话。** 把已经左移的 token 再移一次，得到 draft 应预测的标签，再用 cross entropy 给不符合标签的分数扣分。
+
+### 图上是什么
+
+- 第一卡是第 3 步的 `[b,c,d,e,—]`，第二卡再左移成 `[c,d,e,—,—]`，后一列就是训练标签。
+- draft 为每个位置给候选 token 打分。CE 卡比较这些分数与同一位置的标签，正确 token 得分越高，CE 越小。
+- 横线位置没有真实标签，不参与这里的评分。公开配置把辅助 CE 乘 0.2 后加入训练反向过程。
+
+### 公式与符号
+
+$$\mathcal L_{\mathrm{MTP}}=-\log p_{\mathrm{draft}}(x_{t+2}\mid u_t)$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $u_t$ | $h_t$ 与 $e_{t+1}$ 拼成的 draft 输入 | 第 3 步 |
+| $x_{t+2}$ | 位置 $t$ 后两个 token，即训练标签 | 本步第二次左移 |
+| $p_{\mathrm{draft}}$ | draft 给正确标签分配的概率 | draft 分数经 softmax |
+| $\mathcal L_{\mathrm{MTP}}$ | 这一位置的 cross entropy | 本步计算 |
+
+### 代入图上的数
+
+位置 `a` 的输入是 $u_a=\operatorname{concat}(h(a),e(b))$，标签是 `c`，所以这一项是 $-\log p_{\mathrm{draft}}(c\mid u_a)$。如果正确 token 的概率上升，负对数就下降。图上没有编造概率或 CE 数值。
+
+固定 recipe 设置 `--mtp-loss-scaling-factor 0.2`，所以进入反向过程的辅助项为 $0.2\mathcal L_{\mathrm{MTP}}$。实现把它接到主模型输出的反向节点，不需要另写一次 `mtp_loss.backward()`。
+
+### 接下来
+
+下一步看 `detach` 怎样让这份辅助 CE 更新 draft，同时不把它的梯度送进 target 主干和共享表。
+
+来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:46-60`；`THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a` 的 `docs/zh/advanced/speculative-decoding.md:24-38`、`docker/patch/latest/megatron.patch:581-603`。

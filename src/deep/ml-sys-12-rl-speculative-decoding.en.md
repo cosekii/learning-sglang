@@ -96,3 +96,36 @@ The diagram follows the public MiMo experiment's order: hidden state first, embe
 The next step shifts the tokens again to make the training labels and computes cross entropy.
 
 Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:31-46`; `THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a`, `docker/patch/latest/megatron.patch:152-190` and `slime_plugins/mbridge/mimo.py:106-120`.
+
+## Step 4 · The second shift makes labels
+
+**One sentence.** Shift the already shifted tokens again to make the draft's labels, then use cross entropy to penalize scores that disagree with those labels.
+
+### On the stage
+
+- The first card repeats Step 3's `[b,c,d,e,—]`. The second shifts it into `[c,d,e,—,—]`, the training labels.
+- The draft scores candidate tokens at every position. The CE card compares those scores with the matching label; higher scores for correct tokens reduce CE.
+- Dashes have no real label to score. The public recipe scales this auxiliary CE by 0.2 before it joins the training backward pass.
+
+### Formula and symbols
+
+$$\mathcal L_{\mathrm{MTP}}=-\log p_{\mathrm{draft}}(x_{t+2}\mid u_t)$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $u_t$ | Draft input joining $h_t$ and $e_{t+1}$ | Step 3 |
+| $x_{t+2}$ | Token two positions after $t$, the training label | Second shift in this step |
+| $p_{\mathrm{draft}}$ | Probability the draft assigns to the correct label | Draft scores after softmax |
+| $\mathcal L_{\mathrm{MTP}}$ | Cross entropy at this position | Computed here |
+
+### The numbers on the stage
+
+At position `a`, the input is $u_a=\operatorname{concat}(h(a),e(b))$ and the label is `c`. This term is $-\log p_{\mathrm{draft}}(c\mid u_a)$. Raising the correct token's probability lowers its negative logarithm. The stage invents no probability or CE value.
+
+The pinned recipe sets `--mtp-loss-scaling-factor 0.2`, so the auxiliary term entering backward is $0.2\mathcal L_{\mathrm{MTP}}$. The implementation attaches it to the main output's backward node rather than calling `mtp_loss.backward()` separately.
+
+### Next
+
+The next step shows how detach lets this auxiliary CE train the draft without sending its gradients into the target trunk and shared tables.
+
+Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/spec/readme.md:46-60`; `THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a`, `docs/zh/advanced/speculative-decoding.md:24-38` and `docker/patch/latest/megatron.patch:581-603`.

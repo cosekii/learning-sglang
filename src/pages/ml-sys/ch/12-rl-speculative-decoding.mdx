@@ -21,6 +21,8 @@ Step 2 follows `readme.md:25-30` and the pinned `docker/patch/latest/megatron.pa
 
 Step 3 follows `readme.md:31-46` and `megatron.patch:152-190`. One left shift aligns token `b` with position `a`; the embedding table turns that token ID into model numbers. The MiMo example joins `h(a)` with `e(b)` to train the prediction of `c`, two positions after `a`. This is the desired task, not a claim that an untrained draft already predicts `c`. The stage's dash marks no real token beyond the sequence; the implementation pads with zero.
 
+Step 4 follows `readme.md:46-60` and `megatron.patch:581-603`. Rolling the shifted tokens again produces labels `[c,d,e,0,0]` in the implementation; the stage uses dashes for those absent positions. Cross entropy compares the draft's token scores with the labels. The documented recipe uses `--mtp-loss-scaling-factor 0.2`; this is an auxiliary loss, not a second RL objective for the target.
+
 Further reading: [zero-to-sglang Part II Chapter 10: Speculative Decoding](https://zero-to-sglang.datawhale.cc/eng/part2/Chapter10_Speculative-Decoding.html) and its [code walkthrough](https://zero-to-sglang.datawhale.cc/eng/part2/Chapter10_Speculative-Decoding_code.html).
 
 </details>
@@ -35,6 +37,8 @@ Further reading: [zero-to-sglang Part II Chapter 10: Speculative Decoding](https
 第 2 步依据 `readme.md:25-30` 和固定版本 `docker/patch/latest/megatron.patch:152-179`。五个 token 是构造示例。hidden state 是 target 在一个 token 位置算出的表示；训练路径复用 target 前向已经算出的 hidden state，不额外做一次 rollout。
 
 第 3 步依据 `readme.md:31-46` 和 `megatron.patch:152-190`。序列左移一次后，token `b` 与位置 `a` 对齐；embedding 表把 token 编号变成模型用的数。MiMo 示例合并 `h(a)` 与 `e(b)`，学习预测 `a` 后两个位置的 `c`。这是训练目标，不表示未训练的 draft 已经能猜出 `c`。图上的横线表示序列结尾后没有真实 token；实现用 0 补齐。
+
+第 4 步依据 `readme.md:46-60` 和 `megatron.patch:581-603`。实现把移位后的 token 再左移一次，得到标签 `[c,d,e,0,0]`；图上用横线表示这些不存在的位置。cross entropy 比较 draft 的 token 分数与标签。公开配置使用 `--mtp-loss-scaling-factor 0.2`；这是辅助损失，不是 target 的第二个 RL 目标。
 
 延伸阅读：[zero-to-sglang 第 2 部分第 10 章：投机解码](https://zero-to-sglang.datawhale.cc/ch/part2/%E7%AC%AC10%E7%AB%A0_%E6%8A%95%E6%9C%BA%E8%A7%A3%E7%A0%81.html)及其[代码走读](https://zero-to-sglang.datawhale.cc/ch/part2/%E7%AC%AC10%E7%AB%A0_%E6%8A%95%E6%9C%BA%E8%A7%A3%E7%A0%81_%E4%BB%A3%E7%A0%81.html)。
 

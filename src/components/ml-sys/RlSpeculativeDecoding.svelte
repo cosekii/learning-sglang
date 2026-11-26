@@ -115,6 +115,40 @@
         { en: 'c is two positions after a', zh: 'c 在 a 后两个位置' },
       ],
     },
+  }, {
+    caption: 'A second left shift makes labels [c,d,e,—,—]. CE penalizes low scores for those labels.',
+    captionZh: '再左移一次就得到训练标签。CE 惩罚正确 token 得分太低。',
+    title: 'The second shift makes training labels', titleZh: '第二次左移生成训练标签',
+    subtitle: 'cross entropy (CE) = a penalty for scoring the right token too low', subtitleZh: 'cross entropy（CE）= 正确 token 得分太低就扣分',
+    foot: 'Dashes have no label to score; lower CE means a better match to the labels.',
+    footZh: '横线位置没有标签可评分；CE 越低，预测越符合标签。',
+    legend: 'Orange = shifted tokens and labels · blue = draft scores and CE', legendZh: '橙 = 移位 token 与标签 · 蓝 = draft 分数与 CE',
+    nodes: [
+      { title: 'SHIFT ONCE', titleZh: '左移一次', result: '[b, c, d, e, —]', resultZh: '[b, c, d, e, —]', body: 'Step 3’s tokens', bodyZh: '第 3 步的序列', tone: 'orange', compact: true },
+      { title: 'SHIFT TWICE', titleZh: '左移两次', result: '[c, d, e, —, —]', resultZh: '[c, d, e, —, —]', body: 'training labels', bodyZh: '训练标签', tone: 'orange', compact: true },
+      { title: 'DRAFT SCORES', titleZh: 'DRAFT 分数', result: 'one row per position', resultZh: '每个位置一行', body: 'possible next tokens', bodyZh: '候选 token 的分数', tone: 'blue', compact: true },
+      { title: 'CE LOSS', titleZh: 'CE 损失', result: 'smaller is better', resultZh: '越小越好', body: 'compare scores + labels', bodyZh: '比较分数与标签', tone: 'blue', compact: true },
+    ],
+    formulas: [
+      { en: 'position a: label c · two positions ahead', zh: '位置 a：标签是后两个位置的 c' },
+      { en: 'labels + draft scores → CE loss', zh: '标签 + draft 分数 → CE 损失' },
+      { en: 'higher scores for correct tokens make CE smaller', zh: '正确 token 得分越高，CE 越小' },
+      { en: 'the shipped recipe scales this CE by 0.2', zh: '公开配置把这份 CE 乘以 0.2' },
+      { en: 'Next: how can CE teach only the draft?', zh: '下一步：CE 怎样只训练 draft？' },
+    ],
+    mobile: {
+      title: 'The second shift makes labels', titleZh: '第二次左移生成标签',
+      subtitle: 'CE = penalty for a low correct-token score', subtitleZh: 'CE = 正确 token 得分低就扣分',
+      foot: 'Dashes have no labels; lower CE is better.', footZh: '横线没有标签；CE 越小越好。',
+      legend: 'Orange = labels · blue = scores and CE', legendZh: '橙 = 标签 · 蓝 = 分数与 CE',
+      formulas: [
+        { en: 'At a: label c, two ahead', zh: '位置 a：标签是后两个位置的 c' },
+        { en: 'labels + scores → CE', zh: '标签 + 分数 → CE' },
+        { en: 'Higher correct scores lower CE', zh: '正确得分越高，CE 越小' },
+        { en: 'This recipe scales CE by 0.2', zh: '公开配置把 CE 乘以 0.2' },
+        { en: 'Next: teach only the draft', zh: '下一步：只训练 draft' },
+      ],
+    },
   }];
   let step = $state(0);
   $effect(() => {
