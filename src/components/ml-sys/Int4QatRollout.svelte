@@ -219,8 +219,9 @@
       { title: 'GROUP + SCALE', titleZh: '权重组 + SCALE', result: `${N.INT4_GROUP_STORED_BYTES} B`, resultZh: `${N.INT4_GROUP_STORED_BYTES} 字节`, body: '16 B packed + 2 B scale', bodyZh: '16 字节打包 + 2 字节 scale', tone: 'plain', bar: N.INT4_GROUP_STORED_BYTES / N.INT4_GROUP_BF16_BYTES, compact: true },
     ],
     formulas: [
-      { en: 'q = signed code · q + 8 makes fields from 0 to 15', zh: 'q = 有符号编码 · q + 8 得到 0 到 15 的字段' },
-      { en: 'this packing format stores nonnegative fields only', zh: '这种打包格式只保存非负字段' },
+      { en: 'q = signed code; it can be negative', zh: 'q = 有符号编码，可正可负' },
+      { en: 'q + 8 gives fields 0…15', zh: 'q + 8 得到字段 0…15' },
+      { en: 'each field = one 4-bit slot · value ≥ 0', zh: '每个字段 = 一个 4 位槽 · 字段值 ≥ 0' },
       { en: '8 codes × 4 bits = 32 bits = 4 B', zh: '8 个编码 × 4 位 = 32 位 = 4 字节' },
       { en: 'BF16: 32 × 2 B = 64 B', zh: 'BF16：32 × 2 字节 = 64 字节' },
       { en: 'INT4: 32 × 4 ÷ 8 = 16 B · scale = 2 B', zh: 'INT4：32 × 4 ÷ 8 = 16 字节 · scale = 2 字节' },
@@ -234,8 +235,9 @@
       foot: 'One constructed group and BF16 scale only.', footZh: '只算构造的一组权重和 BF16 scale。',
       legend: 'Orange = BF16 · blue = payload · grey = total', legendZh: '橙 = BF16 · 蓝 = 负载 · 灰 = 总量',
       formulas: [
-        { en: 'q = signed code · q + 8 gives fields 0…15', zh: 'q = 有符号编码 · q + 8 得到字段 0…15' },
-        { en: 'This format stores nonnegative fields only', zh: '这种格式只保存非负字段' },
+        { en: 'q = signed code; it can be negative', zh: 'q = 有符号编码，可正可负' },
+        { en: 'q + 8 gives fields 0…15', zh: 'q + 8 得到字段 0…15' },
+        { en: 'each field = one 4-bit slot · value ≥ 0', zh: '每个字段 = 一个 4 位槽 · 字段值 ≥ 0' },
         { en: '8 × 4 bits = 32 bits = 4 B', zh: '8 × 4 位 = 32 位 = 4 字节' },
         { en: 'BF16: 32 × 2 B = 64 B', zh: 'BF16：32 × 2 字节 = 64 字节' },
         { en: 'INT4: 16 B · scale: 2 B', zh: 'INT4：16 字节 · scale：2 字节' },
