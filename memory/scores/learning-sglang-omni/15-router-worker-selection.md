@@ -47,18 +47,18 @@
 
 ## 验证记录
 
-- `npx astro --config .astro/local.config.mjs build`：60 页，通过。
+- `npx astro --config .astro/local.config.mjs build`：60 页，通过。这是 shared `node_modules` 符号链接导致默认 build 出现 EPERM 后使用的 local-only workaround；输出在 `.bot/out/omni15-review/build-local.log`。
 - `WAIT=1500 BOOK=omni ONLY=15 npm run transcript -- http://localhost:4322/learning-sglang`：8 步，无布局问题；生成文件与已提交 transcript 一致。
 - `BOOK=omni ONLY=15 npm run readability`：8 步，0 机械问题。
-- `BOOK=omni ONLY=15 npm run mobile -- http://localhost:4322/learning-sglang`：英文全章在 360、390、430 px 通过。
-- 中文第 1–8 步分别运行 `BOOK=omni ONLY=15 STEP=N LANG=zh npm run mobile -- http://localhost:4322/learning-sglang`：三种宽度的布局和字号硬门均通过。
+- `BOOK=omni ONLY=15 node .astro/mobile-free-port.mjs http://localhost:4330/learning-sglang`：local-only runner 将 CDP 端口改为空闲的 9547，英文全章在 360、390、430 px 通过；输出在 `.bot/out/omni15-review/mobile-en.log`。
+- 中文第 1–8 步的既有逐步检查通过。第 8 步另以同一 free-port runner 加 `STEP=8 LANG=zh` 复跑，三种宽度的布局和字号硬门均通过；输出在 `.bot/out/omni15-review/mobile-zh-s8.log`。
 - `WAIT=1500 BASE=http://localhost:4322/learning-sglang BOOK=omni ONLY=15 node scripts/zh-check.mjs .bot/out/omni15-review/zh-check`：8 步通过。
 - `BOOK=omni node scripts/deep-check.mjs 15`：通过。
 - 独立只读源码冷读：五组已关闭内容项未回退；八步源码机制分均为 2/2；检出英文手机第 8 步的一行固定中文，已由 `24338ba` 修复。
-- `node .astro/check-omni15.mjs`：英文桌面 40 个相位、英文手机第 8 步 5 个相位、中文手机 40 个相位均得到预期数量的不同 SVG 内容状态；英文场景无汉字，英文手机收尾问题完整。结果在 `.bot/out/omni15-review/phase-check.json`。
+- `node .astro/check-omni15.mjs` 已在 `24338ba` 后重跑：英文桌面 40 个相位、英文手机第 8 步 5 个相位、中文手机 40 个相位均得到预期数量的不同 SVG markup；英文场景无汉字，英文手机收尾问题完整。结果在 `.bot/out/omni15-review/phase-check.json` 和 `phase-check.log`。DOM 签名只证明 markup 随相位变化，不证明可读性。
 - `git diff --check`：通过。
 
-相位截图在 `.bot/out/omni15-review/`：英文桌面 40 张、中文手机 16 张、英文手机第 8 步 1 张，共 **57 张**；另有 16 张接触表。当前模型不能读取 PNG，不把文件存在、DOM 断言或机械门当作已读实图。协调读图和主人最终视觉验收仍待。
+相位截图在 `.bot/out/omni15-review/`：英文桌面 40 张、中文手机 15 张、英文手机第 8 步 1 张，共 **56 张**；另有 16 张接触表，2 张 `zh-check` 图单独计。英文手机图已于 **15:00:20** 重拍，晚于 `24338ba` 的 **14:37:38**。当前模型不能读取 PNG，不把文件存在、DOM 断言或机械门当作已读实图。协调读图和主人最终视觉验收仍待。
 
 未跑全站回归、真实 router、模型、GPU benchmark、故障注入或 reduced-motion 动态切换。代码出处仍固定到 `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`。
 

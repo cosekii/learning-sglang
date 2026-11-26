@@ -11,7 +11,7 @@
 - 协调人在固定 `0f4cba0` 快照通过 60 页 `build`、8 步 `readability`、`deep-check 14`、pinned-identical `transcript`、英中全章三种宽度 `mobile`、中文第 1／6 步字号门和 `zh-check`，并读取第 6 步的 8 张新相位图。本轮只同步记录，未重跑教程门、全站回归、真实连接、模型或 GPU benchmark。本轮类型：**修旧**；下一单元回 Omni 15。
 
 - 14:38 复核 Learning SGLang Omni 第 15 章八步机制动画：协调内容与静态基线为 R1–R5 **80/80**、原十个非视觉项 **160/160**、静态 R6 **16/16**、原 #4/#5 **32/32**、原十二项 **192/192**。独立源码冷读和 85 个 DOM 相位样本支持机制 R6 **16/16（待协调读图）**；另修复英文手机第 8 步第二行问题误用中文。当前不记 `complete-under-EVAL`，不开第 16 章。
-- `build`（60 页）、本章 `transcript`、8 步 `readability`、英文全章及中文逐步 `mobile`、`deep-check 15`、`zh-check`、八步 DOM 相位检查和 `git diff --check` 通过。57 张相位图和 16 张接触表在 `.bot/out/omni15-review/`；当前模型不能读图，协调读图和主人最终视觉验收仍待。未跑全站回归、真实 router、模型、GPU benchmark、故障注入或 reduced-motion 动态切换。本轮类型：**修旧**。
+- local-only 配置的 `build`（60 页）、本章 `transcript`、8 步 `readability`、`deep-check 15`、`zh-check`、八步 DOM 相位检查和 `git diff --check` 通过；英文全章及中文第 8 步 `mobile` 已在空闲 CDP 端口 9547 复跑通过。56 张相位图和 16 张接触表在 `.bot/out/omni15-review/`，另有 2 张 `zh-check` 图；英文手机第 8 步图已在 `24338ba` 后重拍。当前模型不能读图，协调读图和主人最终视觉验收仍待。未跑全站回归、真实 router、模型、GPU benchmark、故障注入或 reduced-motion 动态切换。本轮类型：**修旧**。
 
 - 13:10 修旧 Learning SGLang Omni 第 14 章全部 8 步动画：交付积压、共享计数、读取空闲钟、最久没读淘汰、重复淘汰、整流失败、协议错误出口和关闭清理均改为循环机制演示。协调基线为 R1–R5 **80/80**、原十二项 **192/192**、机制 R6 **0/16**；本轮源码与 DOM 相位检查支持 R6 **16/16**，协调复审和主人视觉验收仍待。
 - 八个动画步骤、相位修正和生成 transcript 均逐步提交并推送；`build`（60 页）、本章 `transcript`、`readability`、英文全章及中文逐步 `mobile`、`deep-check 14`、`zh-check`、八步 DOM 循环重启检查和 `git diff --check` 通过。40 张阶段图在 `.bot/out/omni14-motion/`；当前模型不能读图，不记新增视觉分。本轮只跑本章检查，未跑全站回归、真实连接、模型或 GPU benchmark。本轮类型：**修旧**；下一单元修 Omni 15 既有返工，不开新章。
@@ -179,7 +179,7 @@
 | 12 | 12-full-duplex-strategies | 自评完成：8/8 步易读 12/12、0 内容洞和机械显示洞；人工视觉验收待主人 | 24.00 |
 | 13 | 13-qwen3-omni-deployment | 协调内容／已读静态视图 GO：R1–R5 80/80、原十个非视觉项 160/160、原 #4/#5 32/32、原十二项 192/192；完整动画 R6 未重评，主人视觉验收待 | 24.00 |
 | 14 | 14-slow-reader-backpressure | 协调内容与动画 GO：R1–R5 80/80、原十个非视觉项 160/160、机制 R6 16/16（八步均 2/2）、原 #4/#5 32/32、原十二项 192/192；complete-under-EVAL，主人验收另计 | 24.00 |
-| 15 | 15-router-worker-selection | 协调内容／已读静态视图 GO：R1–R5 80/80、原十个非视觉项 160/160、静态 R6 16/16、原 #4/#5 32/32、原十二项 192/192；机制 R6 16/16（源码+DOM，待协调读图），不记 complete-under-EVAL；主人视觉验收待 | 24.00 |
+| 15 | 15-router-worker-selection | 协调内容／已读静态视图 GO：R1–R5 80/80、原十个非视觉项 160/160、静态 R6 16/16、原 #4/#5 32/32、原十二项 192/192；协调机制 0/16（6fb3c27…31c5e08）；作者源码+DOM 16/16 待协调读图，不记 complete-under-EVAL；主人视觉验收待 | 24.00 |
 
 ## Learning ML Systems
 
