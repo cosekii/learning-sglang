@@ -56,7 +56,7 @@
     captionZh: '纯文字部署启动 1 张卡、1 个进程。默认语音部署启动 2 张卡、7 个进程。',
   }, {
     caption: 'A speech server skips the talker for text-only requests. Adding audio to output modalities sends the request through talker and code2wav.',
-    captionZh: '语音服务器做纯文字请求时，会跳过 talker。要声音才继续走 talker 和 code2wav。',
+    captionZh: '语音服务器处理纯文字请求时，会跳过 talker。要声音才继续走 talker 和 code2wav。',
   }, {
     caption: 'Eight concurrent requests: mean p90 first audio fell from 2.68 to 1.44 seconds. Single-stream total time rose 14–17% instead.',
     captionZh: '8 路并发时，p90 首音几乎减半。单请求总耗时却增加 14–17%。',
@@ -71,7 +71,7 @@
     captionZh: '默认 code2wav 配 32 个状态位。replica2 每个 code2wav 配 64 个，不等于吞吐翻倍。',
   }, {
     caption: 'Readiness uses small inputs and at most eight tokens per generating stage. Measure real traffic with fixed settings and separate clocks.',
-    captionZh: '就绪检查用小输入，每个生成 stage 最多 8 token。再用真实流量测量，服务器和听者分别计时。',
+    captionZh: '就绪检查用小输入，每个生成 stage 最多 8 token。再用真实流量测量，基准客户端和听者分别计时。',
   }, {
     caption: 'One decision sheet records the route, placement, precision, capacity and evidence. Keep the choice after your measurements confirm it.',
     captionZh: '一张决策表记录路线、摆卡、精度、容量和证据。用自己的测量确认更合适后，再保留它。',
@@ -213,6 +213,7 @@
     if (!count) return;
     const timers: ReturnType<typeof setTimeout>[] = [];
     const run = () => {
+      timers.length = 0;
       phase = 0;
       for (let i = 1; i < count; i++) timers.push(setTimeout(() => (phase = i), i * PHASE_MS));
       const ms = count * PHASE_MS + REST_MS;
@@ -278,7 +279,7 @@
       {:else if step === 1}
         <text x={phone ? 15 : 20} y="24" class="rowlabel">{t('THE REQUEST CHOOSES ITS OUTPUT ROUTE', '请求选择自己的输出路线')}</text>
         <text x={phone ? 15 : 20} y="49" class="tag">modalities = {t('the output kinds you ask for', '你要求的输出种类')}</text>
-        <text x={phone ? 15 : 20} y="72" class="tag">{t('blue = active route · grey text = skipped speech stages', '蓝 = 实际路线 · 灰字 = 跳过的语音 stage')}</text>
+        <text x={phone ? 15 : 20} y="72" class="tag">{phone ? t('blue = route · grey = not loaded or skipped', '蓝 = 路线 · 灰字 = 未加载或跳过') : t('blue = active route · grey text = speech stages not loaded or skipped', '蓝 = 实际路线 · 灰字 = 未加载或跳过的语音 stage')}</text>
         <text x={phone ? 15 : 20} y="95" class="tag">{phone ? t('text-only: mm_aggregate joins · speech: thinker joins', '纯文字由 mm_aggregate 汇合 · 语音由 thinker 汇合') : t('text-only: mm_aggregate joins inputs · speech: the thinker joins them', '纯文字由 mm_aggregate 汇合输入 · 语音由 thinker 汇合输入')}</text>
         {#each phone ? [
           { y: 120, h: 190, title: 'TEXT-ONLY SERVER · ["text"]', titleZh: '纯文字服务器 · ["text"]', lines: ['preprocessing + active encoders', '→ mm_aggregate → thinker → decode → text', 'talker_ar and code2wav are not loaded'], linesZh: ['preprocessing + 实际用到的 encoders', '→ mm_aggregate → thinker → decode → 文字', '不加载 talker_ar 和 code2wav'], speech: false },
@@ -299,8 +300,8 @@
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Both accept text, image, audio and video input.', '两种服务器都能输入文字、图像、声音和视频。') : t('Both server modes accept text, image, audio and video input.', '两种服务器都能输入文字、图像、声音和视频。')}</text>
       {:else if step === 2}
         <text x={phone ? 15 : 20} y="24" class="rowlabel">{t('ONE MOVE, TWO DIFFERENT RESULTS', '同一次移卡，两种不同结果')}</text>
-        <text x={phone ? 15 : 20} y="49" class="tag">{t('talker isolation = move talker off the thinker/code2wav GPU', 'talker 独占 = 把 talker 移出 thinker/code2wav 所在 GPU')}</text>
-        <text x={phone ? 15 : 20} y="72" class="tag">{phone ? t('blue=talker · white=others · dark=p90 · red=increase', '蓝=talker · 白框=其他 · 深=p90 · 红=增加') : t('blue = talker · white boxes = other stages · dark = p90 wait · red = increase', '蓝 = talker · 白框 = 其他 stage · 深 = p90 等待 · 红 = 增加')}</text>
+        <text x={phone ? 15 : 20} y="49" class="tag">{phone ? t('talker isolation = talker uses its own GPU', 'talker 独占 = talker 自己用一张 GPU') : t('talker isolation = move talker off the thinker GPU it shares', 'talker 独占 = 把 talker 移出它共用的 thinker GPU')}</text>
+        <text x={phone ? 15 : 20} y="72" class="tag">{phone ? t('blue=talker · white=others · dark=p90 · orange=increase', '蓝=talker · 白框=其他 · 深=p90 · 橙=增加') : t('blue = talker · white boxes = other stages · dark = p90 wait · orange = increase', '蓝 = talker · 白框 = 其他 stage · 深 = p90 等待 · 橙 = 增加')}</text>
         {#each phone ? [
           { x: 15, y: 102, w: 270, isolated: false },
           { x: 15, y: 287, w: 270, isolated: true },
@@ -309,13 +310,13 @@
           { x: 380, y: 105, w: 320, isolated: true },
         ] as panel}
           <rect x={panel.x} y={panel.y} width={panel.w} height={phone ? 175 : 165} rx="11" fill="var(--bg)" stroke="var(--line)" />
-          <text x={panel.x + 14} y={panel.y + 25} class="tag strong">{panel.isolated ? t('TALKER ALONE', 'TALKER 独占') : t('TALKER SHARES GPU 0', 'TALKER 共用 GPU 0')}</text>
+          <text x={panel.x + 14} y={panel.y + 25} class="tag strong">{panel.isolated ? t('TALKER ALONE', 'TALKER 独占') : t('TALKER SHARES GPU 4', 'TALKER 共用 GPU 4')}</text>
           <rect x={panel.x + 14} y={panel.y + 42} width={panel.w - 28} height="32" rx="6" fill="var(--bg)" stroke="var(--faint)" />
-          <text x={panel.x + 24} y={panel.y + 63} class="tag">GPU 0 · thinker TP process + code2wav</text>
+          <text x={panel.x + 24} y={panel.y + 63} class="tag">GPU 4 · thinker TP process</text>
           <rect x={panel.x + 14} y={panel.y + 81} width={panel.w - 28} height="32" rx="6" fill="var(--bg)" stroke="var(--faint)" />
-          <text x={panel.x + 24} y={panel.y + 102} class="tag">GPU 1 · thinker TP process</text>
+          <text x={panel.x + 24} y={panel.y + 102} class="tag">GPU 5 · thinker TP process + code2wav</text>
           <rect x={panel.x + 14} y={panel.y + 120} width={panel.w - 28} height="32" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x={panel.x + 24} y={panel.y + 141} class="tag strong">{panel.isolated ? 'GPU 2 · talker_ar' : 'GPU 0 · talker_ar'}</text>
+          <text x={panel.x + 24} y={panel.y + 141} class="tag strong">{panel.isolated ? 'GPU 2 · talker_ar' : 'GPU 4 · talker_ar'}</text>
         {/each}
         <text x={phone ? 15 : 20} y={phone ? 493 : 285} class="rowlabel">{QWEN_PLACEMENT_CONCURRENCY} {t('CONCURRENT REQUESTS · P90 FIRST AUDIO', '路并发 · P90 首音')}</text>
         <text x={phone ? 15 : 20} y={phone ? 517 : 309} class="tag">{phone ? t('p90 = 90% at/below · mean of two', 'p90 = 90% 请求不超过 · 两次均值') : t('same scale · p90 = 90% at or below · mean of two measured values', '同一比例 · p90 = 90% 请求不超过 · 两次实测均值')}</text>
@@ -328,10 +329,10 @@
           <rect x={phone ? 70 : 100} y={y} width={bar.value / 3 * (phone ? 165 : 430)} height="34" rx="5" fill="var(--muted)" />
           <text x={phone ? 282 : 690} y={y + 23} text-anchor="end" class="formula">{bar.value.toFixed(2)} s</text>
         {/each}
-        <text x={W / 2} y={phone ? 690 : 463} text-anchor="middle" class="formula">{STREAM_P90_SHARED_S.toFixed(2)} → {STREAM_P90_ALONE_S.toFixed(2)} s · {t(`${STREAM_P90_SOONER_PERCENT.toFixed(0)}% less first-audio wait`, `首音等待减少 ${STREAM_P90_SOONER_PERCENT.toFixed(0)}%`)}</text>
-        <rect x={phone ? 15 : 20} y={phone ? 725 : 495} width={phone ? 270 : 680} height={phone ? 100 : 70} rx="10" fill="var(--bg)" stroke="var(--eos)" />
-        <text x={W / 2} y={phone ? 757 : 524} text-anchor="middle" class="tag strong" fill="var(--eos)">{t('ONE REQUEST AT A TIME · TOTAL TIME', '每次一个请求 · 总耗时')}</text>
-        <text x={W / 2} y={phone ? 791 : 552} text-anchor="middle" class="formula" fill="var(--eos)">+{QWEN_SINGLE_STREAM_ISOLATION_E2E_INCREASE_PERCENT[0]}–{QWEN_SINGLE_STREAM_ISOLATION_E2E_INCREASE_PERCENT[1]}% {t('with talker isolation', 'talker 独占后增加')}</text>
+        <text x={W / 2} y={phone ? 690 : 463} text-anchor="middle" class="formula">{STREAM_P90_SHARED_S.toFixed(2)} → {STREAM_P90_ALONE_S.toFixed(2)} s · {phone ? t(`${STREAM_P90_SOONER_PERCENT.toFixed(0)}% less wait`, `首音等待减少 ${STREAM_P90_SOONER_PERCENT.toFixed(0)}%`) : t(`${STREAM_P90_SOONER_PERCENT.toFixed(0)}% less first-audio wait`, `首音等待减少 ${STREAM_P90_SOONER_PERCENT.toFixed(0)}%`)}</text>
+        <rect x={phone ? 15 : 20} y={phone ? 725 : 495} width={phone ? 270 : 680} height={phone ? 100 : 70} rx="10" fill="var(--bg)" stroke="var(--gen)" />
+        <text x={W / 2} y={phone ? 757 : 524} text-anchor="middle" class="tag strong" fill="var(--gen)">{t('ONE REQUEST AT A TIME · TOTAL TIME', '每次一个请求 · 总耗时')}</text>
+        <text x={W / 2} y={phone ? 791 : 552} text-anchor="middle" class="formula" fill="var(--gen)">+{QWEN_SINGLE_STREAM_ISOLATION_E2E_INCREASE_PERCENT[0]}–{QWEN_SINGLE_STREAM_ISOLATION_E2E_INCREASE_PERCENT[1]}% {t('with talker isolation', 'talker 独占后增加')}</text>
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{phone ? t('PR #1235 · H200 · thinker TP2 · code2wav fixed', 'PR #1235 · H200 · thinker TP2 · code2wav 位置不变') : t('PR #1235 · H200 · thinker TP2 · code2wav stayed on the same thinker GPU.', 'PR #1235 · H200 · thinker TP2 · code2wav 留在同一个 thinker GPU 上。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Public TP2 evidence · final TP1 plan needs A/B', '公开 TP2 证据 · 最终 TP1 方案仍需 A/B') : t('Public TP2 evidence; the final TP1 starting plan needs its own A/B comparison.', '公开 TP2 证据；最后的 TP1 起步方案仍需自己的 A/B 比较。')}</text>
       {:else if step === 3}
@@ -459,8 +460,8 @@
             <text x={panel.x + panel.w / 2} y={panel.y + 188} text-anchor="middle" class="tag strong">{phone ? t(`example: ${QWEN_BENCH_CONCURRENCIES.length} levels × ${QWEN_BENCH_REPEATS} = ${QWEN_BENCH_RUNS_PER_ARM} runs / arm`, `文档算例：${QWEN_BENCH_CONCURRENCIES.length} 档 × ${QWEN_BENCH_REPEATS} 次 = ${QWEN_BENCH_RUNS_PER_ARM} 次 / 组`) : t(`documented: ${QWEN_BENCH_CONCURRENCIES.length} levels × ${QWEN_BENCH_REPEATS} repeats = ${QWEN_BENCH_RUNS_PER_ARM} runs / arm`, `文档算例：${QWEN_BENCH_CONCURRENCIES.length} 档 × 每档 ${QWEN_BENCH_REPEATS} 次 = ${QWEN_BENCH_RUNS_PER_ARM} 次 / 组`)}</text>
             <text x={panel.x + panel.w / 2} y={panel.y + 233} text-anchor="middle" class="tag">{phone ? t(`c = ${QWEN_BENCH_CONCURRENCIES.join(', ')} · ${QWEN_BENCH_REPEATS} repeats each`, `c = ${QWEN_BENCH_CONCURRENCIES.join('、')} · 每档 ${QWEN_BENCH_REPEATS} 次`) : t(`levels: c = ${QWEN_BENCH_CONCURRENCIES.join(', ')} · ${QWEN_BENCH_REPEATS} repeats at each level`, `并发档：c = ${QWEN_BENCH_CONCURRENCIES.join('、')} · 每档重复 ${QWEN_BENCH_REPEATS} 次`)}</text>
             <rect x={panel.x + 15} y={panel.y + 254} width={panel.w - 30} height="60" rx="8" fill="var(--bg)" stroke="var(--line)" />
-            <text x={panel.x + 26} y={panel.y + 279} class="tag strong">{t('SERVER RECORD', '服务器记录')}</text>
-            <text x={panel.x + 26} y={panel.y + 302} class="tag">{phone ? t('p90/p99 first audio · total · throughput · fails', '首音 p90/p99 · 总耗时 · 吞吐 · 失败') : t('first audio p90/p99 · total · throughput · failures', '首音 p90/p99 · 总耗时 · 吞吐 · 失败')}</text>
+            <text x={panel.x + 26} y={panel.y + 279} class="tag strong">{t('BENCHMARK CLIENT RECORD', '基准客户端记录')}</text>
+            <text x={panel.x + 26} y={panel.y + 302} class="tag">{t('first audio · total · throughput · failures', '首音 · 总耗时 · 吞吐 · 失败')}</text>
             <rect x={panel.x + 15} y={panel.y + 326} width={panel.w - 30} height="60" rx="8" fill="var(--bg)" stroke="var(--line)" />
             <text x={panel.x + 26} y={panel.y + 351} class="tag strong">{t('LISTENER RECORD', '听者记录')}</text>
             <text x={panel.x + 26} y={panel.y + 374} class="tag">{t('stalls · stop wait · response wait', '卡顿 · 停答等待 · 回应等待')}</text>
@@ -478,15 +479,15 @@
           { label: 'PRECISION', labelZh: '精度', a: 'BF16 checkpoint first', aZh: '先用 BF16 checkpoint', b: 'FP8 or INT4 needs memory + quality evidence', bZh: '换 FP8 或 INT4 要有显存和质量证据', evidence: false },
           { label: 'PLACEMENT', labelZh: '摆卡', a: 'GPU 0: encoders + thinker + code2wav', aZh: 'GPU 0：encoders + thinker + code2wav', b: 'GPU 1: talker · 2 GPUs · 7 processes', bZh: 'GPU 1：talker · 2 张卡 · 7 个进程', evidence: false },
           { label: 'CAPACITY', labelZh: '容量', a: `8 ≤ ${QWEN_TALKER_MAX_RUNNING_REQUESTS} talker running cap`, aZh: `8 ≤ talker 运行上限 ${QWEN_TALKER_MAX_RUNNING_REQUESTS}`, b: `32 − 8 = ${QWEN_EXAMPLE_UNALLOCATED_TALKER_SLOTS} requests of talker-cap headroom · no replica yet`, bZh: `32 − 8 = ${QWEN_EXAMPLE_UNALLOCATED_TALKER_SLOTS} 个请求的 talker 上限余量 · 先不加副本`, evidence: false },
-          { label: 'EVIDENCE', labelZh: '证据', a: 'A=shared talker · B=talker alone · c=8 · first audio median/p90', aZh: 'A=talker 共用 · B=talker 独占 · c=8 · 首音中位数/p90', b: 'total · failures · memory · stalls · stop/response waits · Ch. 8 Step 8 quality · raw repeats', bZh: '总耗时 · 失败 · 显存 · 卡顿 · 停答/回应等待 · 第 8 章第 8 步质量检查 · 原始重复', evidence: true },
+          { label: 'EVIDENCE', labelZh: '证据', a: 'A=BF16 · B=FP8 · same isolated-talker TP1 layout · c=8 · first audio median/custom p90', aZh: 'A=BF16 · B=FP8 · 同一 talker 独占 TP1 摆卡 · c=8 · 首音中位数/自定义 p90', b: 'total · failures · memory · stalls · stop/response waits · Ch. 8 Step 8 quality · per-run raw results', bZh: '总耗时 · 失败 · 显存 · 卡顿 · 停答/回应等待 · 第 8 章第 8 步质量检查 · 每次运行的原始结果', evidence: true },
         ] as row, i}
           {@const y = phone ? 105 + i * 100 : 105 + i * 75}
           <rect x={phone ? 15 : 20} {y} width={phone ? 270 : 680} height={phone ? (row.evidence ? 106 : 88) : 65} rx="8" fill={row.evidence ? 'var(--gen-soft)' : 'var(--accent-soft)'} fill-opacity="0.25" stroke={row.evidence ? 'var(--gen)' : 'var(--accent)'} />
           <text x={phone ? 29 : 34} y={y + 24} class="tag strong" fill={row.evidence ? 'var(--gen)' : 'var(--accent)'}>{t(row.label, row.labelZh)}</text>
-          <text x={phone ? 29 : 170} y={y + (phone ? 49 : 25)} class="tag strong">{phone && row.evidence ? t('A=shared · B=alone · c=8 · raw repeats', 'A=共用 · B=独占 · c=8 · 原始重复') : t(row.a, row.aZh)}</text>
-          <text x={phone ? 29 : 170} y={y + (phone ? 73 : 49)} class="tag">{phone && row.evidence ? t('first audio median/p90 · total · failures', '首音中位数/p90 · 总耗时 · 失败') : t(row.b, row.bZh)}</text>
+          <text x={phone ? 29 : 170} y={y + (phone ? 49 : 25)} class="tag strong">{phone && row.evidence ? t('A=BF16 · B=FP8 · same TP1 layout · c=8', 'A=BF16 · B=FP8 · 同一 TP1 摆卡 · c=8') : t(row.a, row.aZh)}</text>
+          <text x={phone ? 29 : 170} y={y + (phone ? 73 : 49)} class="tag">{phone && row.label === 'CAPACITY' ? t(`32 − 8 = ${QWEN_EXAMPLE_UNALLOCATED_TALKER_SLOTS} requests of headroom`, `32 − 8 = ${QWEN_EXAMPLE_UNALLOCATED_TALKER_SLOTS} 个请求余量`) : phone && row.evidence ? t('median/custom p90 · total · per-run results', '首音中位数/自定义 p90 · 总耗时 · 逐次原始结果') : t(row.b, row.bZh)}</text>
           {#if phone && row.evidence}
-            <text x="29" y={y + 97} class="tag">{t('memory · stalls · Ch. 8 Step 8 quality', '显存 · 卡顿 · 第 8 章第 8 步质量检查')}</text>
+            <text x="29" y={y + 97} class="tag">{t('memory · stalls · failures · Ch. 8 Step 8 quality', '显存 · 卡顿 · 失败 · 第 8 章第 8 步质量检查')}</text>
           {/if}
         {/each}
         <text x={W / 2} y={phone ? 738 : 593} text-anchor="middle" class="rowlabel">{t('THE WHOLE-BOOK CHECK', '全书检查')}</text>

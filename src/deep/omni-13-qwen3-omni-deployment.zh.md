@@ -63,11 +63,11 @@
 
 ### 图上是什么
 
-- 公开 H200 实验把 thinker 分在 GPU 0 和 GPU 1，code2wav 始终留在 thinker 的 GPU 0 上。
-- 共用图里 talker 也在 GPU 0；独占图把它移到 GPU 2。这里保留实验的 TP2 拓扑。
+- 公开 H200 实验把 thinker 分在 GPU 4 和 GPU 5，code2wav 始终与 GPU 5 上的 thinker 进程同卡。
+- 共用图里 talker 也在 GPU 4；独占图把它移到 GPU 2。这里保留实验的 TP2 拓扑。
 - 首音指首个返回的声音 chunk，不证明扬声器已经播放。p90 表示 90% 的实测首音等待不超过这条线。
 - 两根深色柱使用同一比例，两次 p90 的均值从 2.680 秒降至 1.439 秒。
-- 红卡是另一种负载。每次只有一个请求时，独占后总耗时增加 14–17%。
+- 橙卡是另一种负载。每次只有一个请求时，独占后总耗时增加 14–17%。
 
 ### 公式
 
@@ -79,7 +79,7 @@ $$
 |---|---|---:|---|
 | $T_1,T_2$ | 两次实测的 p90 首音 | 秒 | PR #1235 摆卡实验 |
 | $\overline{T}$ | 两次 p90 的算术平均值 | 秒 | 本步 |
-| $\overline{T}_{shared}$ | talker 与 thinker/code2wav 同卡时的均值 | 2.680 秒 | 本步 |
+| $\overline{T}_{shared}$ | talker 与 GPU 4 上的 thinker 同卡时的均值 | 2.680 秒 | 本步 |
 | $\overline{T}_{alone}$ | talker 独占一卡时的均值 | 1.439 秒 | 本步 |
 | $\rho$ | 首音等待降幅 | 百分比 | 本步 |
 
@@ -109,7 +109,7 @@ $$
 
 ## 第 4 步 · thinker 的 78% 变成 73% AR
 
-> **一句话：** 这份 配置 没有显式 thinker AR 比例，因此先留出整卡的 5 个百分点给 encoder 余量，再把 73% 给 AR。
+> **一句话：** 这份配置没有显式 thinker AR 比例，因此先留出整卡的 5 个百分点给 encoder 余量，再把 73% 给 AR。
 
 ### 图上是什么
 
@@ -155,8 +155,8 @@ $$
 
 - 精度是保存一个权重所用的 bit 数。权重是模型保存的一个数，一个 bit 是一个 0 或 1。
 - 三根蓝柱用同一比例画单卡 H100/H20 章节里约 60、40、30 GB 的估计。来源没有定义它量的是权重本身、加载的 stages、运行峰值还是整个服务器，因此不能当成实测单卡预算。
-- BF16 把 thinker 和 talker AR 加载为 BF16。FP8 checkpoint 把这两个 AR stage 加载为 FP8。INT4 checkpoint 把 thinker 权重按每 128 个一组存成 4 bit，talker AR 和 code2wav 仍是 BF16。
-- 教程文档在 INT4 行明确写出 code2wav 使用 BF16；实现也在省略 code2wav `dtype` 时默认使用 BF16，所以三张卡都标出这个默认值。
+- BF16 把 thinker 和 talker AR 加载为 BF16。FP8 checkpoint 把这两个 AR stage 加载为 FP8。INT4 checkpoint 对 thinker 的 transformer 层做 4 bit 量化，每 128 个权重分成一组；talker AR 和 code2wav 仍用 BF16。
+- 教程文档在 INT4 行明确写出 code2wav 使用 BF16；实现也在省略 code2wav `dtype` 时默认使用 BF16，所以三栏都标出这个默认值。
 
 ### 公式
 
@@ -223,7 +223,7 @@ $$
 B=12.3\%+1.4\%=13.7\%
 $$
 
-进程总数是 `5 个不变 + 2 个 talker_ar + 2 个 code2wav = 9`。不变的五个是 preprocessing、image encoder、audio encoder、thinker 和 decode。64 个状态位是每个 code2wav 进程的工厂配置，用来覆盖 talker 副本可运行的流。每个 codec 副本各有一个 64 位状态池；这个算式不是全部署共享一个池，也不证明有 128 路可持续流。状态池满了不会拒绝请求，而会退回看左侧上下文的无状态解码（`components/code2wav_scheduler.py:296-314`）。状态位不证明 64 路可持续运行或吞吐翻倍。
+进程总数是 `5 个不变 + 2 个 talker_ar + 2 个 code2wav = 9`。不变的五个是 preprocessing、image encoder、audio encoder、thinker 和 decode。64 个状态位是每个 code2wav 进程的工厂配置，用来覆盖 talker 副本可运行的流。每个 codec 副本各有一个包含 64 个状态位的独立状态池；这个算式不是全部署共享一个池，也不证明有 128 路可持续流。状态池满了不会拒绝请求，而会退回看左侧上下文的无状态解码（`components/code2wav_scheduler.py:296-314`）。状态位不证明 64 路可持续运行或吞吐翻倍。
 
 ### 边界与出处
 
@@ -235,14 +235,14 @@ $$
 
 ## 第 7 步 · 就绪不是 benchmark
 
-> **一句话：** readiness 证明一个小请求能跑完；部署比较需要受控流量，以及分开的服务器和听者时钟。
+> **一句话：** readiness 证明一个小请求能跑完；部署比较需要受控流量，以及分开的基准客户端和听者时钟。
 
 ### 图上是什么
 
 - readiness 发送一张小图、一秒声音和一条短指令，每个生成 token 的 stage 最多生成 8 个新 token。
 - arm 是 A/B 比较中的一种部署选择。测量计划固定输入、采样、硬件和预热，只改这一种选择。
 - 示例 sweep 在并发 1 和 16 各重复 5 次，每组共十次测量。第 8 步改用目标并发 8。
-- 服务器记录包括首音、总耗时、吞吐和失败。听者记录包括卡顿，以及第 12 章第 8 步的停答 `L−S` 和回应 `N−R`。
+- 基准客户端测量首音和整个请求的墙钟时间、吞吐和失败。听者记录另行保存播放卡顿，以及第 12 章第 8 步的停答 `L−S` 和回应 `N−R`。
 
 ### 公式
 
@@ -262,11 +262,11 @@ $$
 J=2\times5=10\ \text{次测量 / 组}
 $$
 
-十次只属于 `c = 1,16` 的两档示例。第 8 步只测 `c = 8`，重复五次就是每组五次运行。预热另算。按照第 8 章第 8 步，同一次运行里的请求不变成独立实验重复。p99 表示 99% 的测量请求不超过这条线。只有底层测量队列包含至少 100 个请求时才报告 p99；十次运行本身既不能保证也不排除这个样本数。
+十次只属于 `c = 1,16` 的两档示例。第 8 步只测 `c = 8`，重复五次就是每组五次运行。预热另算。按照第 8 章第 8 步，同一次运行里的多个请求不能算作独立的实验重复。p99 表示 99% 的测量请求不超过这条线。只有测量样本包含至少 100 个请求的结果时才报告 p99；十次运行本身既不能保证也不排除这个样本数。随仓库脚本汇总首音中位数、p95 和 p99，不输出 p90。若使用自定义 p90，就在每组、每个并发档内，对成功流式请求中非空的 `per_request.audio_ttfp_s` 调用 `numpy.percentile(..., 90)`。
 
 ### 做法与出处
 
-先用 `sgl-omni config resolve --config <config.yaml> --show config` 解析配置（`docs/basic_usage/process_topology.md:52-53`）。readiness 的定义见 `docs/cookbook/qwen3_omni.md:202-204` 和 `sglang_omni/models/qwen3_omni/config.py:328-366`；有限的预热覆盖见 `docs/basic_usage/omni.md:345-349`。SeedTTS sweep 和百分位指导见 `benchmarks/README.md:249-288`。实现按请求数而不是运行次数检查 p99 样本量（`benchmarks/eval/benchmark_omni_seedtts.py:504-505,552-561`；`benchmarks/benchmarker/conditions.py:19-20,95-100`）。除时间外也检查输出质量：完成情况、词错误，以及适用时的声音匹配。
+先用 `sgl-omni config resolve --config <config.yaml> --show config` 解析配置（`docs/basic_usage/process_topology.md:52-53`）。readiness 的定义见 `docs/cookbook/qwen3_omni.md:202-204` 和 `sglang_omni/models/qwen3_omni/config.py:328-366`；有限的预热覆盖见 `docs/basic_usage/omni.md:345-349`。SeedTTS sweep 和百分位指导见 `benchmarks/README.md:249-288`。基准客户端记录请求墙钟时间（`benchmarks/metrics/performance.py:27-31`；`benchmarks/eval/benchmark_omni_seedtts.py:371,398,408`）。实现按请求数而不是运行次数检查 p99 样本量（`benchmarks/eval/benchmark_omni_seedtts.py:504-505,552-561`；`benchmarks/benchmarker/conditions.py:19-20,95-100`）。脚本汇总字段和原始首音值见 `benchmarks/metrics/performance.py:219-223,480`。`--generate-only` 保存声音和生成速度记录，包括成功与失败数量，但不转写声音，也不计算 WER 或说话人相似度（`benchmarks/README.md:215-220,659`）。保留这些完成情况记录，再按负载另行检查转写、WER，以及适用时基于参考音频的音色匹配。
 
 ### 接下来
 
@@ -280,9 +280,9 @@ $$
 
 - 目标是 8 路并发语音请求，希望首音更早。
 - 起步路线从默认语音图请求文字和声音。先用 BF16 是因为它是默认值，不是本章测出它最好。
-- GPU 0 放输入 encoders、thinker 和 code2wav，GPU 1 放 talker。这个 TP1 起步假设来自第 3 步不同的 H200/TP2 实验，仍需本地 A/B 比较。
+- GPU 0 放输入 encoders、thinker 和 code2wav，GPU 1 放 talker。这个 TP1 起步假设来自第 3 步不同的 H200/TP2 实验，仍需固定这套摆卡做本地精度 A/B。
 - talker 上限减去算例的 8 个请求，还留有 24 个请求的余量。测量到排队以前不增加第二对副本。
-- 证据行在目标并发 `c = 8` 比较 A「talker 共用」和 B「talker 独占」，分开服务器与听者指标，并保留原始重复。第 8 章第 8 步给出输出质量检查：完成情况、词错误，以及适用时的声音匹配。结果数为奇数时，中位数是正中的首音值；为偶数时，是中间两个值的平均数。第 3 步已解释 p90。
+- 两组证据保持相同的两卡 TP1 硬件、请求路线、code2wav 位置和 talker 独占摆卡。A 组使用默认 BF16 checkpoint，B 组使用原生 FP8 checkpoint，只改 checkpoint 精度。在 `c = 8` 比较首音中位数和自定义 p90、总耗时、失败、显存和听者指标，并保留每次运行的原始结果。第 8 章第 8 步给出输出质量检查：完成情况、词错误，以及适用时的声音匹配；这些检查在 generate-only sweep 之外另做。结果数为奇数时，中位数是正中的首音值；为偶数时，是中间两个值的平均数。第 3 步解释了 p90，第 7 步给出了自定义算法。
 - 底部地图收束全书：第 1–3 章是配置、路线和绑定；第 4–6 章是等待规则、数据和队列；第 7–8 章是显存和测量；第 9–12 章是优化和模型策略。
 
 ### 公式
@@ -307,7 +307,7 @@ $$
 
 ### 决策边界
 
-这是由 H200/TP2 证据构造的 TP1 起步假设，不是 benchmark 胜者。先解析配置并运行 readiness，再按第 7 步的控制条件，以目标并发 8 每次只改一个选择进行比较。首音、总耗时和听者结果分别保留；更换精度后还要复查输出质量。只有记录指出要解决的问题才改选择，这个问题也可能是显存或质量，而不只是等待。
+这是由 H200/TP2 证据构造的 TP1 起步假设，不是实测得出的最优方案。先解析配置并运行 readiness，再固定起步摆卡和第 7 步的其他控制条件，以目标并发 8 比较 BF16 与原生 FP8。首音、总耗时和听者结果分别保留；输出质量检查在 generate-only sweep 之外另做。只有记录指出要解决的问题才改选择，这个问题也可能是显存或质量，而不只是等待。
 
 ### 接下来
 
