@@ -1,0 +1,29 @@
+---
+layout: ../../../layouts/Chapter.astro
+book: ml-sys
+slug: 13-multi-turn-agent-rl
+---
+import MultiTurnAgentRl from '../../../components/ml-sys/MultiTurnAgentRl.svelte';
+import { mlSysNeighbors } from '../../../ml-sys/chapters';
+import { deepFor } from '../../../deep';
+export const deep = await deepFor('ml-sys-13-multi-turn-agent-rl');
+
+<MultiTurnAgentRl client:load {...mlSysNeighbors('13-multi-turn-agent-rl')} deep={deep} />
+
+<details class="i18n-en">
+<summary>Where this chapter's claims come from</summary>
+
+This chapter follows `Awesome-ML-SYS-Tutorial/rlhf/slime/vlm-multi-turn/readme.md` and `Awesome-ML-SYS-Tutorial/rlhf/verl/multi-turn/code-walk-through/readme-6.md`. Implementation claims use `THUDM/slime@f68dc4a25f362fc0335165a17ff976f5b6f675e1` for the VLM candidate, `THUDM/slime@cd4a8efc6f8e33364a474cfa70875779ed0a673f` for Search-R1, and `verl-project/verl@c5b189a1af496d0bc68320cd1d5bd7a1f1e3638a` for AgentLoop. The server-based rollout article supplies historical design rationale only, not unqualified current behavior. This chapter has no direct zero-to-sglang mapping. All token and span counts are constructed teaching values, not benchmark results.
+
+Step 1 follows Search-R1's `examples/search-r1/generate_with_search.py:145-158,180-200,209-232` and the VLM candidate's `examples/geo3k_vlm_multi_turn/rollout.py:309-350`. Both append actions and observations to one ordered response before storing the `Sample`. The second call receives the accumulated tokens. Splitting the pictured records would remove the first action's four tokens and the observation's three tokens from that call's response context. `P`, `A`, `O` and `B` label constructed spans, not real tokenizer output.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的出处</summary>
+
+本章依据 `Awesome-ML-SYS-Tutorial/rlhf/slime/vlm-multi-turn/readme.md` 和 `Awesome-ML-SYS-Tutorial/rlhf/verl/multi-turn/code-walk-through/readme-6.md`。实现结论分别固定到 VLM 候选 `THUDM/slime@f68dc4a25f362fc0335165a17ff976f5b6f675e1`、Search-R1 `THUDM/slime@cd4a8efc6f8e33364a474cfa70875779ed0a673f` 和 AgentLoop `verl-project/verl@c5b189a1af496d0bc68320cd1d5bd7a1f1e3638a`。server-based rollout 文章只用于历史设计动机，不用来证明当前行为。本章没有直接的 zero-to-sglang 对照章。所有 token 和片段数量都是构造的教学值，不是 benchmark 结果。
+
+第 1 步依据 Search-R1 的 `examples/search-r1/generate_with_search.py:145-158,180-200,209-232` 和 VLM 候选的 `examples/geo3k_vlm_multi_turn/rollout.py:309-350`。两者都把动作与观察按顺序追加到同一 response，再存入 `Sample`；第二次调用会收到累积 token。若按左图拆开记录，第二次调用就少了第一个动作的 4 个 token 和观察的 3 个 token。`P`、`A`、`O`、`B` 是构造片段的记号，不是真实 tokenizer 输出。
+
+</details>
