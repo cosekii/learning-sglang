@@ -18,7 +18,6 @@
     DELIVERY_PAYLOAD_AUDIO_BYTES,
     DELIVERY_PAYLOAD_TEXT_CHARS,
     DELIVERY_OTHER_AUDIO_BYTES,
-    DELIVERY_PAYLOAD_TOTAL_BYTES,
     DELIVERY_TEST_CAP_BYTES,
     DELIVERY_IDLE_CASE_STREAMS,
     DELIVERY_IDLE_TRIGGER_BYTES,
@@ -184,20 +183,22 @@
         ] : [
           { x: 40, y: 266, w: 300, name: 'STREAM A', audio: DELIVERY_PAYLOAD_AUDIO_BYTES, text: true },
           { x: 380, y: 266, w: 300, name: 'STREAM B', audio: DELIVERY_OTHER_AUDIO_BYTES, text: false },
-        ] as card}
+        ] as card, cardIndex}
           <rect x={card.x} y={card.y} width={card.w} height="174" rx="11" fill="var(--bg)" stroke="var(--line)" />
           <text x={card.x + 16} y={card.y + 28} class="tag strong">{card.name}</text>
-          <rect x={card.x + 16} y={card.y + 45} width={card.w - 32} height="42" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x={card.x + 28} y={card.y + 72} class="mono">audio_waveform: {card.audio} B</text>
+          <rect x={card.x + 16} y={card.y + 45} width={card.w - 32} height="42" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" opacity={phase > cardIndex ? 1 : 0.2} style="transition: opacity 400ms" />
+          <text x={card.x + 28} y={card.y + 72} class="mono" opacity={phase > cardIndex ? 1 : 0.35} style="transition: opacity 400ms">audio_waveform: {card.audio} B</text>
           {#if card.text}
             <text x={card.x + 20} y={card.y + 115} class="tag" fill="var(--muted)">text: {DELIVERY_PAYLOAD_TEXT_CHARS} {t('characters', '个字符')}</text>
           {/if}
-          <text x={card.x + 20} y={card.y + 151} class="result">{t('COUNT', '计入')} = {card.audio} B</text>
+          <text x={card.x + 20} y={card.y + 151} class="result" opacity={phase > cardIndex ? 1 : 0} style="transition: opacity 300ms">{t('COUNT', '计入')} = {card.audio} B</text>
         {/each}
         {@const totalY = phone ? 686 : 474}
-        <rect x={phone ? 15 : 170} y={totalY} width={phone ? 270 : 380} height="72" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
-        <text x={W / 2} y={totalY + 29} text-anchor="middle" class="tag strong">{t('SHARED MESSAGE-BYTE TOTAL', '共享消息字节总量')}</text>
-        <text x={W / 2} y={totalY + 56} text-anchor="middle" class="result">{DELIVERY_PAYLOAD_AUDIO_BYTES} + {DELIVERY_OTHER_AUDIO_BYTES} = {DELIVERY_PAYLOAD_TOTAL_BYTES} B</text>
+        {@const countedA = phase >= 1 ? DELIVERY_PAYLOAD_AUDIO_BYTES : 0}
+        {@const countedB = phase >= 2 ? DELIVERY_OTHER_AUDIO_BYTES : 0}
+        <rect x={phone ? 15 : 170} y={totalY} width={phone ? 270 : 380} height="72" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width={phase >= 3 ? 3 : 1} opacity={phase >= 1 ? 1 : 0.25} style="transition: opacity 300ms, stroke-width 300ms" />
+        <text x={W / 2} y={totalY + 29} text-anchor="middle" class="tag strong" opacity={phase >= 1 ? 1 : 0.25}>{t('SHARED MESSAGE-BYTE TOTAL', '共享消息字节总量')}</text>
+        <text x={W / 2} y={totalY + 56} text-anchor="middle" class="result" opacity={phase >= 1 ? 1 : 0}>{countedA} + {countedB} = {countedA + countedB} B</text>
         <text x={W / 2} y={totalY + 96} text-anchor="middle" class="tag">{t('Text is not counted.', '文字不计入。')}</text>
         <text x={W / 2} y={totalY + 120} text-anchor="middle" class="tag">{t(phone ? 'Socket buffer = bytes given to OS / HTTP runtime, excluded.' : 'Socket buffer = bytes already given to the OS or HTTP runtime, outside this ledger.', 'socket 缓冲是交给操作系统或 HTTP runtime 的字节，不计入。')}</text>
         <text x={W / 2} y={totalY + (phone ? 160 : 151)} text-anchor="middle" class="rowlabel">{t('Over the cap, which stream fails?', '超过上限后，哪一路流失败？')}</text>
