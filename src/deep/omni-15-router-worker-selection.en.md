@@ -200,6 +200,7 @@ Sources: `sglang_omni_router/src/worker_pool/admission.rs:49-88`; `sglang_omni_r
 
 ### On the stage
 
+- This is a new example with constructed loads, not a continuation of Step 6's final 2, 2, 2 or Step 7's fresh single request.
 - A has the wrong profile, so it is not a candidate. B and C are compatible and healthy with active counts 2 and 1. Least requests selects C and increments C to 2 before dispatch.
 - C then sends `200 OK` and `data: one` before a constructed reset, meaning the connection breaks. B remains healthy, but no path continues this response on B.
 - C's selection-time health does not guarantee the whole response. A transport or body error can request an immediate health probe; later eligibility still waits for the configured thresholds.
@@ -217,6 +218,6 @@ The upstream HTTP client disables retries, and the relay performs one send to th
 
 ### Next
 
-The next chapter separates pre-commit errors from post-commit truncation, follows lease cleanup and health probes, and explains graceful worker drain.
+The next chapter separates pre-commit errors from post-commit truncation, follows lease cleanup and health probes, and explains how a worker finishes existing work and exits.
 
 Sources: `sglang_omni_router/src/worker_pool/resolver.rs:108-125`; `sglang_omni_router/src/http_relay/mod.rs:151-209`; `sglang_omni_router/src/http_relay/response_body.rs:38-72`; `sglang_omni_router/tests/chat_http.rs:1419-1432`.

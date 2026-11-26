@@ -292,7 +292,9 @@
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('dispatch = send to the worker · EOF = response end', 'dispatch = 发送请求给 worker · EOF = 响应结束')}</text>
       {:else if step === 7}
         <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'Selection is not a guarantee' : 'A selected worker can still fail', phone ? '选中不代表不会故障' : '选中的 worker 仍可能故障')}</text>
-        <text x={phone ? 18 : 30} y="55" class="label">{t('blue = eligible workers · orange = failed response', '蓝 = 候选 worker · 橙 = 失败的响应')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t('New example · constructed loads', '新例子 · 构造的负载')}</text>
+        <text x={phone ? 18 : 30} y="79" class="label">{t('blue = eligible workers · orange = failed response', '蓝 = 候选 worker · 橙 = 失败的响应')}</text>
+        <g transform="translate(0 20)">
         {#if !phone}
           <rect x="30" y="90" width="315" height="365" rx="12" fill="var(--bg)" stroke="var(--line)" />
           <text x="48" y="120" class="small strong">{t('SELECTING THIS REQUEST · LEAST REQUESTS', '选择本请求 · LEAST REQUESTS')}</text>
@@ -335,12 +337,13 @@
           <text x="32" y="619" class="small strong">{t('no retry on healthy B', '不会转到 healthy B 重试')}</text>
           <text x="32" y="653" class="small">{t('probe thresholds decide later health', '后续 health 仍看探测门槛')}</text>
         {/if}
+        </g>
         <text x={W / 2} y={phone ? 735 : 495} text-anchor="middle" class="small strong">{t('This response stops; B does not continue it.', '这个响应停止，B 不会接着发送。')}</text>
         <text x={W / 2} y={phone ? 778 : 545} text-anchor="middle" class="result" style="fill:var(--gen)">{t(phone ? 'What does the client receive?' : 'What does the client receive, and when do later requests avoid C?', phone ? '客户端会收到什么？' : '客户端会收到什么？后续请求何时不再选择 C？')}</text>
         {#if phone}
           <text x="150" y="815" text-anchor="middle" class="result" style="fill:var(--gen)">后续请求何时不再选择 C？</text>
         {/if}
-        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Next chapter: worker failure and drain.', '下一章：worker 故障与退出。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Next chapter: worker failure and graceful exit.', '下一章：worker 故障与退出。')}</text>
       {/if}
     </svg>
   </div>
