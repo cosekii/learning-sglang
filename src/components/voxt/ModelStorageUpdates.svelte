@@ -16,7 +16,6 @@
     VOXT_APP_MB,
     VOXT_DOWNLOAD_RESERVE_GB,
     VOXT_SERVER_IDLE_MINUTES,
-    VOXT_UPDATE_CHECK_HOURS,
     VOXT_MODEL_COMMIT,
   } from '../../voxt/numbers';
 
@@ -35,8 +34,8 @@
     caption: 'Using a model starts its server. Ten idle minutes stop the server; its files stay.',
     captionZh: '使用模型会启动服务器。空闲 10 分钟会停服务器，文件留着。',
   }, {
-    caption: 'An app update has two routes; neither touches the model folder.',
-    captionZh: '应用更新有两条路，都不动模型文件夹。',
+    caption: "Voxt's update list leads to an in-app replacement and a restart. Without it, Voxt offers an installer.",
+    captionZh: '有更新清单时，应用内换好后重启。没有更新清单时，Voxt 提供安装包。',
   }, {
     caption: 'Three endings: files checked, process gone, feed-updated app restarted.',
     captionZh: '三种收尾：文件验完、进程退出、应用内更新后重启。',
@@ -54,8 +53,8 @@
     en: 'The model files stay on disk. Using a model starts the speech server, a separate program that loads the model into memory. The Silero voice detector has its own small server. Automatic mode stops the speech server after ten idle minutes; Settings offers 5, 15, 30 or 60 minutes, or keep until quit. The next use starts it again. Delete requests unloading and then file removal without waiting; a busy server exits after its uses end.',
     zh: '模型文件留在磁盘上。用模型会启动语音服务器，它是把模型读进内存的另一个程序。Silero 语音检测器有自己的小服务器。自动模式让空闲十分钟的语音服务器退出；设置里可以选 5、15、30 或 60 分钟，也可以一直留到退出应用。下次用会再启动。删除先请求卸载，再请求删文件，不等待进程退出；忙碌的服务器等这次用完再退出。',
   }, {
-    en: "Release builds with Voxt's signed update feed check daily by default, and installation is manual by default. The updater replaces the app bundle while the old version runs. Until a restart the helper on disk is the new version, so the supervisor refuses to start it and a card asks to restart. Release builds without a feed offer an external installer instead. The model folder is not touched.",
-    zh: '带 Voxt 签名更新源的发布构建默认每天检查，默认由用户安装。更新器在旧版本运行时替换应用包。重启之前，磁盘上的 helper 已经是新版本，管理器就不启动它，卡片请用户重启。没有更新源的发布构建改为提供外部安装包。模型文件夹不动。',
+    en: "Voxt's update list is its signed list of new app versions. With that list, the updater replaces the app bundle while the old version runs, then a card asks for a restart. Until the restart, the helper on disk is the new version, so the app's helper manager refuses to start it. Without the update list, Voxt offers an external installer instead. Neither route touches the model folder.",
+    zh: 'Voxt 的更新清单是它签名的新版本清单。有这个清单时，更新器在旧版本运行时替换应用包，然后卡片请用户重启。重启之前，磁盘上的 helper 已经是新版本，应用的 helper 管理器就不启动它。没有更新清单时，Voxt 提供外部安装包。两条路都不动模型文件夹。',
   }, {
     en: 'Three things finish in three ways. A download is done when every integrity check passes and the files sit in the library. An unload is done when the server process exits and frees memory. An in-app update is done after the app bundle is replaced and the app restarts. Updating the app downloads no model, stopping the server deletes no file, and deleting a model updates no app.',
     zh: '三件事有三种收尾。下载在校验全部通过、文件进入模型库时完成。卸载在服务器进程退出、内存释放时完成。应用内更新在应用包被替换、应用重启后完成。更新应用不下载模型，停服务器不删文件，删模型不更新应用。',
@@ -75,7 +74,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived((phone ? [660, 610, 700, 820, 840, 860] : [470, 450, 460, 480, 480, 530])[step]);
+  const H = $derived((phone ? [660, 610, 700, 820, 680, 860] : [470, 450, 460, 480, 430, 530])[step]);
 
   const gb = VOXT_MODEL_TOTAL_GB.toFixed(2);
   const weightsGb = (VOXT_MODEL_WEIGHTS_BYTES / 1_000_000_000).toFixed(2);
@@ -358,7 +357,7 @@
         {/if}
       {:else if step === 4}
         <text x={W / 2} y={phone ? 25 : 27} text-anchor="middle" class="title">{t('ONE APP UPDATE · TWO ROUTES', '一次应用更新 · 两条路')}</text>
-        <text x={W / 2} y={phone ? 47 : 50} text-anchor="middle" class="subtitle">{t('release builds · feed: in-app · no feed: installer', '发布构建 · 有更新源：应用内 · 无更新源：安装包')}</text>
+        <text x={W / 2} y={phone ? 47 : 50} text-anchor="middle" class="subtitle">{t("Voxt's update list → in-app · no list → installer", '有 Voxt 更新清单：应用内 · 没有：安装包')}</text>
         {#if !phone}
           <rect x="20" y="72" width="330" height="170" rx="12" fill="var(--bg)" stroke="var(--line)" />
           <text x="185" y="96" text-anchor="middle" class="label">{t('THE APP · EXAMPLE UPDATE', '应用 · 更新示例')}</text>
@@ -370,7 +369,6 @@
           <text x="256" y="134" text-anchor="middle" class="detail">{t('Voxt 2.1', 'Voxt 2.1')}</text>
           <text x="256" y="151" text-anchor="middle" class="detail">{t('on disk', '在磁盘上')}</text>
           <text x="185" y="192" text-anchor="middle" class="detail">{t('the updater replaces the bundle', '更新器替换整个应用包')}</text>
-          <text x="185" y="216" text-anchor="middle" class="detail">{t('delta = changed parts only, when available', '增量 = 有变化的部分，有就用')}</text>
 
           <rect x="370" y="72" width="330" height="170" rx="12" fill="var(--bg)" stroke="var(--accent)" />
           <text x="535" y="96" text-anchor="middle" class="label blue">{t('THE MODEL FOLDER', '模型文件夹')}</text>
@@ -392,8 +390,6 @@
           <text x="573" y="310" text-anchor="middle" class="detail">{t("app's helper manager refuses it", '应用的 helper 管理器不启动它')}</text>
           <text x="573" y="328" text-anchor="middle" class="detail">{t('mismatch with the app', '和应用的版本对不上')}</text>
           <text x={W / 2} y="378" text-anchor="middle" class="cut">{t('A CARD ASKS: RESTART VOXT TO FINISH', '卡片提示：重启 Voxt 才算装完')}</text>
-          <text x={W / 2} y="410" text-anchor="middle" class="detail">{t(`Defaults: ${VOXT_UPDATE_CHECK_HOURS} h checks · manual install · Beta = pre-release`, `默认：每 ${VOXT_UPDATE_CHECK_HOURS} 小时检查 · 手动安装 · Beta = 预发布版`)}</text>
-          <text x={W / 2} y="434" text-anchor="middle" class="detail">{t('Beta switch in Settings · no feed → installer download', 'Beta 在设置里开关 · 无更新源 → 下载安装包')}</text>
           <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Sources: Voxt/updates.go, updates_github.go, docs/release.md.', '出处：Voxt/updates.go、updates_github.go、docs/release.md。')}</text>
         {:else}
           <rect x="15" y="64" width="270" height="150" rx="10" fill="var(--bg)" stroke="var(--line)" />
@@ -406,7 +402,6 @@
           <text x="216" y="120" text-anchor="middle" class="detail">{t('Voxt 2.1', 'Voxt 2.1')}</text>
           <text x="216" y="137" text-anchor="middle" class="detail">{t('on disk', '在磁盘上')}</text>
           <text x="150" y="172" text-anchor="middle" class="detail">{t('the updater replaces the app', '更新器替换整个应用')}</text>
-          <text x="150" y="194" text-anchor="middle" class="detail">{t('delta = changed parts only, when available', '增量 = 有变化的部分，有就用')}</text>
 
           <rect x="15" y="234" width="270" height="130" rx="10" fill="var(--bg)" stroke="var(--accent)" />
           <text x="150" y="258" text-anchor="middle" class="label blue">{t('THE MODEL FOLDER', '模型文件夹')}</text>
@@ -423,9 +418,6 @@
           <rect x="15" y="528" width="270" height="46" rx="8" fill="var(--eos-soft)" stroke="var(--eos)" />
           <text x="150" y="556" text-anchor="middle" class="detail">{t("app's helper manager refuses it", '应用的 helper 管理器不启动它')}</text>
           <text x="150" y="604" text-anchor="middle" class="cut">{t('RESTART VOXT TO FINISH', '重启 Voxt 才算装完')}</text>
-          <text x="150" y="632" text-anchor="middle" class="detail">{t(`Defaults: ${VOXT_UPDATE_CHECK_HOURS} h checks · manual · Beta`, `默认：${VOXT_UPDATE_CHECK_HOURS} 小时检查 · 手动 · Beta`)}</text>
-          <text x="150" y="660" text-anchor="middle" class="detail">{t('Beta = pre-release · Settings switch', 'Beta = 预发布版 · 设置开关')}</text>
-          <text x="150" y="688" text-anchor="middle" class="detail">{t('No feed → installer download', '无更新源 → 下载安装包')}</text>
           <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Sources: updates.go, updates_github.go.', '出处：updates.go、updates_github.go。')}</text>
         {/if}
       {:else if step === 5}

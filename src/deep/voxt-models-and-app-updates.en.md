@@ -184,10 +184,27 @@ Step 5 turns to the third thing: the app bundle and its updater.
 
 ### On the stage
 
-- Left panel: a constructed example update, `Voxt 2.0` running now and `Voxt 2.1` on disk. With the update feed, the updater replaces the bundle. A delta carries only the changed app parts when one is available.
+- Left panel: a constructed example update, `Voxt 2.0` running now and `Voxt 2.1` on disk. With the update list, the updater replaces the bundle.
 - Right panel: **the model folder**, `SGLang Omni/models`, 2.47 GB, and an app update does not touch it.
 - Bottom flow, **until restart**: the old version keeps running → the helper on disk is already the new one → the app's helper manager refuses it because its version does not match the running app.
-- Release builds check every 24 hours by default and install manually by default. Beta means a pre-release version and has a Settings switch. Without an update feed, Voxt offers an installer download instead of replacing itself.
+- The two routes at the top: with Voxt's update list, replace in the app and restart; without the list, offer an installer.
+
+### Formula
+
+$$ \text{in-app update done} \iff \text{bundle replaced} \land \text{app restarted} $$
+
+| Symbol | What it is | Where it comes from |
+|---|---|---|
+| in-app update done | the new version can take over | this step's completion condition |
+| bundle replaced | `Voxt 2.1` has replaced `Voxt 2.0` on disk | the constructed example on the stage |
+| app restarted | the new process has replaced the running old process | `updates.go:245-253` |
+
+### The numbers on the stage
+
+| Bundle replaced | App restarted | Result |
+|---|---|---|
+| Yes, `Voxt 2.1` is on disk | No, `Voxt 2.0` is still running | Not done; a card asks for a restart |
+| Yes | Yes | The in-app update is done |
 
 ### The update's parts
 
