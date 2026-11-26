@@ -118,8 +118,8 @@
         {#if !phone}
           {#each [
             { x: 20, title: 'GENERATOR', lines: ['10 s made', 'generation finished'], linesZh: ['生成 10 秒', '生成已经结束'] },
-            { x: 270, title: 'API PROCESS', lines: ['server process handing audio', '6 s still queued'], linesZh: ['服务器里交付声音的进程', '还排着 6 秒'] },
-            { x: 520, title: 'READER', lines: ['client taking audio', '4 s of audio taken'], linesZh: ['取声音的客户端', '取走 4 秒声音'] },
+            { x: 270, title: 'API PROCESS', lines: ['server process handing audio', phase >= 1 ? '6 s still queued' : '10 s still queued'], linesZh: ['服务器里交付声音的进程', phase >= 1 ? '还排着 6 秒' : '还排着 10 秒'] },
+            { x: 520, title: 'READER', lines: ['client taking audio', phase >= 1 ? '4 s of audio taken' : '0 s of audio taken'], linesZh: ['取声音的客户端', phase >= 1 ? '取走 4 秒声音' : '还没取走声音'] },
           ] as box, i}
             <rect x={box.x} y="110" width="180" height="112" rx="11" fill="var(--bg)" stroke="var(--line)" />
             <text x={box.x + 16} y="139" class="tag strong">{t(box.title, i === 0 ? '生成器' : i === 1 ? 'API 进程' : '读者')}</text>
@@ -131,8 +131,8 @@
         {:else}
           {#each [
             { y: 104, title: 'GENERATOR', lines: ['10 s made · generation finished'], linesZh: ['生成 10 秒 · 已经结束'] },
-            { y: 210, title: 'API PROCESS', lines: ['server hands audio · 6 s queued'], linesZh: ['服务器交付声音 · 还排着 6 秒'] },
-            { y: 316, title: 'READER', lines: ['client taking audio · 4 s taken'], linesZh: ['客户端取声音 · 取走 4 秒'] },
+            { y: 210, title: 'API PROCESS', lines: [phase >= 1 ? 'server hands audio · 6 s queued' : 'server hands audio · 10 s queued'], linesZh: [phase >= 1 ? '服务器交付声音 · 还排着 6 秒' : '服务器交付声音 · 还排着 10 秒'] },
+            { y: 316, title: 'READER', lines: [phase >= 1 ? 'client taking audio · 4 s taken' : 'client taking audio · 0 s taken'], linesZh: [phase >= 1 ? '客户端取声音 · 取走 4 秒' : '客户端取声音 · 还没取走'] },
           ] as box, i}
             <rect x="15" y={box.y} width="270" height="82" rx="11" fill="var(--bg)" stroke="var(--line)" />
             <text x="30" y={box.y + 27} class="tag strong">{t(box.title, i === 0 ? '生成器' : i === 1 ? 'API 进程' : '读者')}</text>
@@ -148,11 +148,11 @@
         <text x={barX} y={barY - 18} class="tag strong">{t('THE SAME 10 SECONDS OF AUDIO', '同一段 10 秒声音')}</text>
         <rect x={barX} y={barY} width={readW} height="58" rx="7" fill="var(--bg)" stroke="var(--faint)" style="transition: width 700ms" />
         <rect x={barX + readW} y={barY} width={queueW} height="58" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" style="transition: x 700ms, width 700ms" />
-        <g style:opacity={phase >= 1 ? 1 : 0} style="transition: opacity 250ms">
+        <g style:opacity={phase >= 2 ? 1 : 0} style="transition: opacity 250ms">
           <text x={barX + DELIVERY_READ_SECONDS * unitW / 2} y={barY + 35} text-anchor="middle" class="tag">{DELIVERY_READ_SECONDS} s {t('read', '已读')}</text>
           <text x={barX + DELIVERY_READ_SECONDS * unitW + DELIVERY_QUEUED_SECONDS * unitW / 2} y={barY + 35} text-anchor="middle" class="tag strong">{DELIVERY_QUEUED_SECONDS} s {t('waiting', '等待')}</text>
         </g>
-        <g style:opacity={phase >= 2 ? 1 : 0} style="transition: opacity 300ms">
+        <g style:opacity={phase >= 3 ? 1 : 0} style="transition: opacity 300ms">
           <text x={W / 2} y={barY + 100} text-anchor="middle" class="formula">{DELIVERY_GENERATED_SECONDS} − {DELIVERY_READ_SECONDS} = {DELIVERY_QUEUED_SECONDS} s {t('still queued', '仍在排队')}</text>
           {#if phone}
             <text x={W / 2} y={barY + 124} text-anchor="middle" class="tag">{t('coordinator queue: internal 24 kHz float32', 'coordinator 队列：internal 24 kHz float32')}</text>
