@@ -21,6 +21,8 @@ Step 3 defines reader idleness from coordinator queue reads, not playback. `queu
 
 Step 4 reproduces the unit test's 12 B example. `req-idle` holds 4 B with the older reader timestamp; `req-behind` holds 8 B with a fresher reader. Another 4 B for `req-behind` makes 16 B. The coordinator fails `req-idle`, subtracts its 4 B and leaves 12 B. Selection uses the oldest `reader_idle_since_s` among streams with positive backlog, not the largest backlog, and the cap triggers only while the total is strictly greater (`sglang_omni/pipeline/coordinator.py:1102-1131`; `tests/unit_test/pipeline/test_coordinator.py:1516-1539`). The tiny byte counts and adjusted timestamps are test values.
 
+Step 5 reproduces the second 12 B unit test. The streams hold 2, 4 and 4 B; the fresh stream adds 6 B, making 16 B. Failing the oldest 2 B stream leaves 14 B, still over the cap. Failing the next-oldest 4 B stream leaves 10 B and increments `failed_stream_count` to two (`sglang_omni/pipeline/coordinator.py:1102-1131`; `tests/unit_test/pipeline/test_coordinator.py:1544-1569`). One eviction is not guaranteed to restore the budget.
+
 Code references in this chapter pin to `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`. The chapter reads source and unit tests; it does not run a model or measure a server.
 
 </details>
@@ -35,6 +37,8 @@ Code references in this chapter pin to `sglang-omni origin/main@9725235249df8512
 第 3 步用 coordinator 的队列读取定义空闲，不用播放位置。`queue.get()` 从两本账减去交付负载，并把 `reader_idle_since_s` 设为当前 monotonic 时刻。之后新生成的 chunk 增加积压，却不改这个时间；空积压第一次变为非空时，生产者会启动空闲钟（`sglang_omni/pipeline/coordinator.py:103-109,497-520,1088-1096`；`tests/unit_test/pipeline/test_coordinator.py:1599-1620`）。图上的两秒时刻是构造值。
 
 第 4 步复现单元测试的 12 B 算例。`req-idle` 有 4 B，读取时间戳更老；`req-behind` 有 8 B，读取更新。`req-behind` 再增加 4 B，总量变成 16 B。coordinator 让 `req-idle` 失败，减去它的 4 B，留下 12 B。实现从积压大于 0 的流里选择最老的 `reader_idle_since_s`，不是选择最大积压；只有总量严格大于上限才触发（`sglang_omni/pipeline/coordinator.py:1102-1131`；`tests/unit_test/pipeline/test_coordinator.py:1516-1539`）。这些微小字节数和调整后时间戳都是测试值。
+
+第 5 步复现第二个 12 B 单元测试。三路流分别有 2、4、4 B，最新读取的流再增加 6 B，总量变成 16 B。最老的 2 B 流失败后还剩 14 B，仍然超限；再让次老的 4 B 流失败，剩下 10 B，`failed_stream_count` 增加到 2（`sglang_omni/pipeline/coordinator.py:1102-1131`；`tests/unit_test/pipeline/test_coordinator.py:1544-1569`）。一次淘汰不保证能恢复预算。
 
 本章代码出处固定到 `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`。本章只读源码和单元测试，没有运行模型或测量服务器。
 

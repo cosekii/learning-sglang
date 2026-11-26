@@ -55,6 +55,9 @@
   }, {
     caption: 'The longest-idle stream fails first, even when another stream holds more bytes.',
     captionZh: '最久没读取的流先失败，哪怕另一流积压更多。',
+  }, {
+    caption: 'The coordinator fails another oldest-idle stream until the total fits. This example fails two.',
+    captionZh: 'coordinator 继续让最久没读的流失败，直到总量合格。这里失败两路。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -207,6 +210,40 @@
         <text x={W / 2} y="596" text-anchor="middle" class="formula">{DELIVERY_IDLE_OVER_BYTES} − {DELIVERY_IDLE_CASE_STREAMS[0].bytes} = {DELIVERY_IDLE_AFTER_BYTES} B ≤ {DELIVERY_TEST_CAP_BYTES} B</text>
         <text x={W / 2} y={phone ? 770 : 626} text-anchor="middle" class="rowlabel">{t('What if one failure is not enough?', '如果失败一路还不够呢？')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Unit-test values; idle timestamps were adjusted.', '单元测试算例；空闲时间戳经过调整。')}</text>
+      {:else if step === 4}
+        <text x={phone ? 15 : 20} y="26" class="rowlabel">{t('REPEAT UNTIL THE TOTAL FITS', '重复失败，直到总量合格')}</text>
+        <text x={phone ? 15 : 20} y="52" class="tag">{phone ? t('oldest idle clock · nonempty streams only', '非空流里选最老空闲钟') : t('same rule each time: oldest idle clock among nonempty streams', '每次规则相同：从非空流里选最老的空闲钟')}</text>
+        <text x={phone ? 15 : 20} y="76" class="tag">{t('blue = kept · orange = failed this round · cap = 12 B', '蓝 = 保留 · 橙 = 本轮失败 · 上限 = 12 B')}</text>
+        {#each phone ? [
+          { x: 15, y: 112, h: 190, title: 'START · fresh adds 6 B', titleZh: '开始 · fresh 新增 6 B', total: DELIVERY_REPEAT_OVER_BYTES, failed: -1 },
+          { x: 15, y: 342, h: 190, title: '1 · fail req-oldest', titleZh: '第 1 次 · req-oldest 失败', total: DELIVERY_REPEAT_AFTER_FIRST_BYTES, failed: 0 },
+          { x: 15, y: 572, h: 190, title: '2 · fail req-older', titleZh: '第 2 次 · req-older 失败', total: DELIVERY_REPEAT_AFTER_SECOND_BYTES, failed: 1 },
+        ] : [
+          { x: 20, y: 122, h: 360, title: 'START · fresh adds 6 B', titleZh: '开始 · fresh 新增 6 B', total: DELIVERY_REPEAT_OVER_BYTES, failed: -1 },
+          { x: 255, y: 122, h: 360, title: '1 · fail req-oldest', titleZh: '第 1 次 · req-oldest 失败', total: DELIVERY_REPEAT_AFTER_FIRST_BYTES, failed: 0 },
+          { x: 490, y: 122, h: 360, title: '2 · fail req-older', titleZh: '第 2 次 · req-older 失败', total: DELIVERY_REPEAT_AFTER_SECOND_BYTES, failed: 1 },
+        ] as panel}
+          <rect x={panel.x} y={panel.y} width={phone ? 270 : 210} height={panel.h} rx="11" fill="var(--bg)" stroke="var(--line)" />
+          <text x={panel.x + 14} y={panel.y + 29} class="tag strong">{t(panel.title, panel.titleZh)}</text>
+          {#each DELIVERY_REPEAT_CASE_STREAMS as stream, i}
+            {@const failed = panel.failed === i}
+            {@const removed = panel.failed > i}
+            {@const y = panel.y + 52 + i * (phone ? 31 : 62)}
+            <rect x={panel.x + 12} {y} width={phone ? 246 : 186} height={phone ? 26 : 50} rx="6" fill={failed || removed ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={failed || removed ? 'var(--gen)' : 'var(--accent)'} />
+            <text x={panel.x + 21} y={y + (phone ? 18 : 22)} class="mono">{stream.id}</text>
+            <text x={panel.x + (phone ? 238 : 174)} y={y + (phone ? 18 : 22)} text-anchor="end" class="tag strong">{failed || removed ? 0 : i === 2 && panel.failed === -1 ? stream.bytes + DELIVERY_REPEAT_TRIGGER_BYTES : stream.bytes} B</text>
+            {#if !phone}
+              <text x={panel.x + 21} y={y + 42} class="tag">{failed ? 'FAIL NOW' : removed ? 'FAILED' : `idle ${stream.idleSeconds} s`}</text>
+            {/if}
+          {/each}
+          <text x={panel.x + 14} y={panel.y + (phone ? 166 : 264)} class="result">total = {panel.total} B {panel.total > DELIVERY_TEST_CAP_BYTES ? '>' : '≤'} {DELIVERY_TEST_CAP_BYTES} B</text>
+          {#if !phone}
+            <text x={panel.x + 14} y={panel.y + 310} class="tag strong">{panel.failed === -1 ? t('over: choose oldest', '超了：选最老') : panel.total > DELIVERY_TEST_CAP_BYTES ? t('still over: repeat', '还超：再选一次') : t('fits: stop', '合格：停止')}</text>
+          {/if}
+        {/each}
+        <text x={W / 2} y={phone ? 806 : 536} text-anchor="middle" class="result">failed_stream_count = {DELIVERY_REPEAT_FAILED_COUNT}</text>
+        <text x={W / 2} y={phone ? 850 : 584} text-anchor="middle" class="rowlabel">{t('What does a failed stream stop doing?', '失败的流会停止哪些工作？')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Unit-test values. Fresh holds 4 + 6 = 10 B in every panel.', '单元测试算例。三幅图里 fresh 都是 4 + 6 = 10 B。')}</text>
       {/if}
     </svg>
   </div>

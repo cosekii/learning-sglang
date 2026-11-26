@@ -161,3 +161,44 @@ The selection and accounting loop is in `sglang_omni/pipeline/coordinator.py:110
 ### Next
 
 If removing the oldest stream still leaves too many bytes, the coordinator repeats the same choice on the remaining streams.
+
+## Step 5 · Fail another stream until the total fits
+
+> **In one line:** The coordinator repeats the oldest-idle rule until the shared total no longer exceeds the cap.
+
+### On the stage
+
+- All three panels keep the same order: `req-oldest`, `req-older`, `req-fresh`.
+- Initially the first two hold 2 B and 4 B. `req-fresh` grows from 4 B by 6 B to 10 B, making 16 B in total.
+- The first eviction removes `req-oldest` and its 2 B. The remaining 14 B still exceeds 12 B.
+- The second removes `req-older` and its 4 B. Only the fresh stream's 10 B remains, so the loop stops with two failures.
+
+### Formula
+
+$$
+T_0=16,\qquad T_1=T_0-Q_{oldest},\qquad T_2=T_1-Q_{older}
+$$
+
+| Symbol | Meaning | Size | Source |
+|---|---|---:|---|
+| $T_0$ | Total after the new message | 16 B | Unit test |
+| $Q_{oldest}$ | Oldest stream's backlog | 2 B | `req-oldest` |
+| $T_1$ | Total after the first eviction | 14 B | This step |
+| $Q_{older}$ | Next-oldest stream's backlog | 4 B | `req-older` |
+| $T_2$ | Total after the second eviction | 10 B | This step |
+
+### The numbers on the stage
+
+$$
+16-2=14\ \text{B}>12\ \text{B},\qquad14-4=10\ \text{B}\leq12\ \text{B}
+$$
+
+Each iteration finds the oldest idle clock among the remaining nonempty streams. The loop neither assumes one eviction is enough nor sorts streams by size.
+
+### Boundary and sources
+
+The `while` loop and failure count are in `sglang_omni/pipeline/coordinator.py:1102-1131`. The values and two-abort order reproduce `tests/unit_test/pipeline/test_coordinator.py:1544-1569`.
+
+### Next
+
+The next step separates what failure stops in the generator from what it stops in delivery.
