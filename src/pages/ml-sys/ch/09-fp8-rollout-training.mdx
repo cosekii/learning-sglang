@@ -25,6 +25,8 @@ Step 4 follows `examples/low_precision/run-qwen3-4b-fp8.sh:117-143` and `example
 
 Step 5 follows `examples/low_precision/README.md:42-64`. Megatron dequantizes FP8 weights to BF16 for the update, and slime quantizes them to FP8 for SGLang rollout. Checkpoints also use BF16 `torch_dist`. The P-byte and 2P-byte payloads are constructed arithmetic with scales and exclusions left out; no transfer latency is claimed.
 
+Step 6 uses `InfiR2 arXiv:2509.22536v4`, §5.4 Table 6. The Qwen2.5-1.5B non-RL row gives 2,030 versus 1,590 ms and 68.1 versus 58.3 GB, producing 21.7% and 14.4% savings. Its UE8M0 recipe and unspecified efficiency-test GPU make this a public example of uneven gains, not a slime FP32-scale RL benchmark.
+
 </details>
 
 <details class="i18n-zh">
@@ -41,5 +43,7 @@ Step 5 follows `examples/low_precision/README.md:42-64`. Megatron dequantizes FP
 第 4 步依据 `examples/low_precision/run-qwen3-4b-fp8.sh:117-143` 和 `examples/low_precision/README.md:21-23,51-54`。支持的 `Linear` 和 `GroupLinear` 矩阵乘法在前向和反向使用 FP8，attention softmax 和梯度累加等区域保持高精度。引用来源没有把优化器状态量化为 FP8，所以第 8 章构造的 48 GB 优化器状态不能减半。
 
 第 5 步依据 `examples/low_precision/README.md:42-64`。Megatron 为更新把 FP8 权重反量化为 BF16，slime 再为 SGLang rollout 量化成 FP8。checkpoint 也使用 BF16 `torch_dist`。P 字节与 2P 字节是构造算式，不含 scale 和排除项，不据此声称传输加速。
+
+第 6 步使用 `InfiR2 arXiv:2509.22536v4` §5.4 表 6。Qwen2.5-1.5B 非 RL 一行给出 2,030 对 1,590 ms、68.1 对 58.3 GB，得到 21.7% 和 14.4% 的收益。其 UE8M0 方案和未注明的效率测试 GPU 表明，这只是收益不一致的公开例子，不是 slime FP32-scale RL 基准。
 
 </details>

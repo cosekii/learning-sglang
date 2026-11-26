@@ -177,3 +177,40 @@ The checkpoint path also dequantizes to BF16 `torch_dist`. FP8 evaluation requir
 Byte arithmetic gives an upper bound, not the measured result. The next step compares one public training run whose time and memory savings were smaller than half.
 
 Sources: `THUDM/slime@15fbd2ef82c765fe22f78e288db2bb79ebf582bd`, `examples/low_precision/README.md:42-64`; `Awesome-ML-SYS-Tutorial/rlhf/slime/fp8/readme.md:182`.
+
+## Step 6 · Measure the gains instead of halving everything
+
+**One sentence.** One public non-RL training row reports 21.7% less forward-plus-backward time and 14.4% less peak memory, while forward alone becomes slower.
+
+### On the stage
+
+- The time panel adds forward and backward on each side. BF16 takes $463+1{,}567=2{,}030$ ms; FP8 takes $529+1{,}061=1{,}590$ ms. Both time bars use the 2,030 ms BF16 bar as full width.
+- The memory panel compares 68.1 GB with 58.3 GB. Both memory bars use the 68.1 GB BF16 bar as full width.
+- The bottom line separates the total: forward rises from 463 to 529 ms, while backward falls from 1,567 to 1,061 ms. The net saving is smaller than the backward saving alone.
+
+### Formula and symbols
+
+$$\Delta T=T_{16}-T_8,\qquad r_T=\Delta T/T_{16},\qquad r_M=(M_{16}-M_8)/M_{16}$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $T_{16},T_8$ | Forward-plus-backward time | InfiR2 Table 6, 2,030 and 1,590 ms |
+| $\Delta T$ | Time saved | Derived here, 440 ms |
+| $r_T$ | Fraction of total time saved | Derived here, 21.7% |
+| $M_{16},M_8$ | Peak training memory | InfiR2 Table 6, 68.1 and 58.3 GB |
+| $r_M$ | Fraction of peak memory saved | Derived here, 14.4% |
+
+### The numbers on the stage
+
+$$2{,}030-1{,}590=440\ \text{ms},\qquad 440/2{,}030=21.7\%$$
+$$68.1-58.3=9.8\ \text{GB},\qquad 9.8/68.1=14.4\%$$
+
+Throughput rises from 340 to 376 TFLOP/s, a $376/340-1=10.6\%$ increase. This is Qwen2.5-1.5B with 8k context, TP 1, CP 1, and micro-batch 2 in InfiR2's non-RL experiment. The paper's efficiency section does not identify the GPU. Its recipe uses UE8M0 scales, so this row is not a measurement of slime's FP32-scale RL configuration.
+
+Extra transposed FP8 outputs and higher-precision saved tensors prevent memory from halving. Quantization work can also make forward slower even while backward matrix multiplications accelerate.
+
+### Next
+
+Measurements show that benefits vary. The next step isolates numerical error with real and fake quantization instead of attributing every difference to the FP8 kernel.
+
+Sources: `InfiR2 arXiv:2509.22536v4`, §5.1.1 and §5.4 Table 6; `Awesome-ML-SYS-Tutorial/rlhf/slime/fp8/readme.md:140-182`; `NVIDIA/TransformerEngine@8ef8285c40542c8c3724f9b3eadbb006793958f0`, `transformer_engine/common/transpose/quantize_transpose_square_blockwise.cu:462-485,513-524`.

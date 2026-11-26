@@ -177,3 +177,40 @@ checkpoint 路径也会反量化为 BF16 `torch_dist`。FP8 评估需要经过 H
 字节算式只给理论上限，不等于实测结果。下一步对照一次公开训练，它的时间和显存收益都没有达到减半。
 
 来源：`THUDM/slime@15fbd2ef82c765fe22f78e288db2bb79ebf582bd` 的 `examples/low_precision/README.md:42-64`；`Awesome-ML-SYS-Tutorial/rlhf/slime/fp8/readme.md:182`。
+
+## 第 6 步 · 看实测收益，不把一切都减半
+
+**一句话。** 一行公开非 RL 训练结果中，前向加反向时间减少 21.7%，峰值显存减少 14.4%，但前向单独看反而更慢。
+
+### 图上是什么
+
+- 时间栏分别把前向和反向相加。BF16 为 $463+1{,}567=2{,}030$ ms，FP8 为 $529+1{,}061=1{,}590$ ms。两条时间柱都把 BF16 的 2,030 ms 作为满宽。
+- 显存栏对照 68.1 GB 和 58.3 GB。两条显存柱都把 BF16 的 68.1 GB 作为满宽。
+- 底部拆开总时间：前向从 463 升到 529 ms，反向从 1,567 降到 1,061 ms。净收益小于反向单项收益。
+
+### 公式与符号
+
+$$\Delta T=T_{16}-T_8,\qquad r_T=\Delta T/T_{16},\qquad r_M=(M_{16}-M_8)/M_{16}$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $T_{16},T_8$ | 前向加反向的时间 | InfiR2 表 6，2,030 和 1,590 ms |
+| $\Delta T$ | 省下的时间 | 本步计算，440 ms |
+| $r_T$ | 总时间减少比例 | 本步计算，21.7% |
+| $M_{16},M_8$ | 峰值训练显存 | InfiR2 表 6，68.1 和 58.3 GB |
+| $r_M$ | 峰值显存减少比例 | 本步计算，14.4% |
+
+### 代入图上的数
+
+$$2{,}030-1{,}590=440\ \text{ms},\qquad 440/2{,}030=21.7\%$$
+$$68.1-58.3=9.8\ \text{GB},\qquad 9.8/68.1=14.4\%$$
+
+吞吐量从 340 升到 376 TFLOP/s，增幅为 $376/340-1=10.6\%$。这是 InfiR2 非 RL 实验中的 Qwen2.5-1.5B，8k 上下文，TP 1、CP 1、micro-batch 2。论文的效率小节没有注明 GPU。其方案使用 UE8M0 scale，所以该行不是 slime FP32-scale RL 配置的实测。
+
+额外的转置 FP8 输出和高精度保存张量使显存不能简单减半。量化工作也可能让前向变慢，即使反向矩阵乘法加速。
+
+### 接下来
+
+实测收益并不一致。下一步用真实和模拟量化分离数值误差，不把所有差异都归到 FP8 kernel。
+
+来源：`InfiR2 arXiv:2509.22536v4` §5.1.1、§5.4 表 6；`Awesome-ML-SYS-Tutorial/rlhf/slime/fp8/readme.md:140-182`；`NVIDIA/TransformerEngine@8ef8285c40542c8c3724f9b3eadbb006793958f0` 的 `transformer_engine/common/transpose/quantize_transpose_square_blockwise.cu:462-485,513-524`。

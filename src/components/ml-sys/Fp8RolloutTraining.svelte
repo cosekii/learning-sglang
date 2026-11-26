@@ -121,6 +121,30 @@
       { en: 'the same P values in BF16 = 2P bytes', zh: '同样的 P 个数值，BF16 = 2P 字节' },
       { en: 'scales + excluded tensors are extra · transfer time unknown', zh: 'scale 和未转换张量另算 · 传输时间未知' },
     ],
+  }, {
+    caption: `One public non-RL run saved ${N.FP8_PUBLIC_TIME_SAVED_MS} ms and ${N.FP8_PUBLIC_MEMORY_SAVED_GB.toFixed(1)} GB. Those gains are ${pct(N.FP8_PUBLIC_TIME_SAVED_SHARE)} and ${pct(N.FP8_PUBLIC_MEMORY_SAVED_SHARE)}, not half.`,
+    captionZh: `一次公开非 RL 训练省下 ${N.FP8_PUBLIC_TIME_SAVED_MS} ms 和 ${N.FP8_PUBLIC_MEMORY_SAVED_GB.toFixed(1)} GB。收益是 ${pct(N.FP8_PUBLIC_TIME_SAVED_SHARE)} 和 ${pct(N.FP8_PUBLIC_MEMORY_SAVED_SHARE)}，不是减半。`,
+    title: 'Compare · 4 of 4: measured gains are uneven', titleZh: '对照 · 4/4：实测收益并不一致',
+    subtitle: 'public non-RL training measurement · same model and settings on both sides',
+    subtitleZh: '公开非 RL 训练实测 · 两边使用同一模型和设置',
+    foot: 'InfiR2 public non-RL row; exact configuration is in the deep dive.',
+    footZh: 'InfiR2 公开非 RL 一行；精确配置见深入讲解。',
+    legend: 'Orange = BF16 · blue = FP8 · time and memory each use one shared scale', legendZh: '橙 = BF16 · 蓝 = FP8 · 时间和显存各自使用同一比例',
+    measure: true, desktopH: 590,
+    nodes: [
+      { title: 'TIME · BF16', titleZh: '时间 · BF16', result: `${N.FP8_PUBLIC_TOTAL_BF16_MS.toLocaleString('en-US')} ms`, resultZh: `${N.FP8_PUBLIC_TOTAL_BF16_MS.toLocaleString('en-US')} ms`, body: `${N.FP8_PUBLIC_FORWARD_BF16_MS} + ${N.FP8_PUBLIC_BACKWARD_BF16_MS.toLocaleString('en-US')} ms`, bodyZh: `${N.FP8_PUBLIC_FORWARD_BF16_MS} + ${N.FP8_PUBLIC_BACKWARD_BF16_MS.toLocaleString('en-US')} ms`, tone: 'orange', bar: 1 },
+      { title: 'TIME · FP8', titleZh: '时间 · FP8', result: `${N.FP8_PUBLIC_TOTAL_FP8_MS.toLocaleString('en-US')} ms`, resultZh: `${N.FP8_PUBLIC_TOTAL_FP8_MS.toLocaleString('en-US')} ms`, body: `${N.FP8_PUBLIC_FORWARD_FP8_MS} + ${N.FP8_PUBLIC_BACKWARD_FP8_MS.toLocaleString('en-US')} ms`, bodyZh: `${N.FP8_PUBLIC_FORWARD_FP8_MS} + ${N.FP8_PUBLIC_BACKWARD_FP8_MS.toLocaleString('en-US')} ms`, tone: 'blue', bar: N.FP8_PUBLIC_TOTAL_FP8_MS / N.FP8_PUBLIC_TOTAL_BF16_MS },
+      { title: 'MEMORY · BF16', titleZh: '显存 · BF16', result: `${N.FP8_PUBLIC_MEMORY_BF16_GB} GB`, resultZh: `${N.FP8_PUBLIC_MEMORY_BF16_GB} GB`, body: 'peak', bodyZh: '峰值', tone: 'orange', bar: 1 },
+      { title: 'MEMORY · FP8', titleZh: '显存 · FP8', result: `${N.FP8_PUBLIC_MEMORY_FP8_GB} GB`, resultZh: `${N.FP8_PUBLIC_MEMORY_FP8_GB} GB`, body: 'peak', bodyZh: '峰值', tone: 'blue', bar: N.FP8_PUBLIC_MEMORY_FP8_GB / N.FP8_PUBLIC_MEMORY_BF16_GB },
+    ],
+    formulas: [
+      { en: `${N.FP8_PUBLIC_TOTAL_BF16_MS.toLocaleString('en-US')} − ${N.FP8_PUBLIC_TOTAL_FP8_MS.toLocaleString('en-US')} = ${N.FP8_PUBLIC_TIME_SAVED_MS} ms`, zh: `${N.FP8_PUBLIC_TOTAL_BF16_MS.toLocaleString('en-US')} − ${N.FP8_PUBLIC_TOTAL_FP8_MS.toLocaleString('en-US')} = ${N.FP8_PUBLIC_TIME_SAVED_MS} ms` },
+      { en: `${N.FP8_PUBLIC_TIME_SAVED_MS} ÷ ${N.FP8_PUBLIC_TOTAL_BF16_MS.toLocaleString('en-US')} = ${pct(N.FP8_PUBLIC_TIME_SAVED_SHARE)}`, zh: `${N.FP8_PUBLIC_TIME_SAVED_MS} ÷ ${N.FP8_PUBLIC_TOTAL_BF16_MS.toLocaleString('en-US')} = ${pct(N.FP8_PUBLIC_TIME_SAVED_SHARE)}` },
+      { en: `${N.FP8_PUBLIC_MEMORY_BF16_GB} − ${N.FP8_PUBLIC_MEMORY_FP8_GB} = ${N.FP8_PUBLIC_MEMORY_SAVED_GB.toFixed(1)} GB`, zh: `${N.FP8_PUBLIC_MEMORY_BF16_GB} − ${N.FP8_PUBLIC_MEMORY_FP8_GB} = ${N.FP8_PUBLIC_MEMORY_SAVED_GB.toFixed(1)} GB` },
+      { en: `${N.FP8_PUBLIC_MEMORY_SAVED_GB.toFixed(1)} ÷ ${N.FP8_PUBLIC_MEMORY_BF16_GB} = ${pct(N.FP8_PUBLIC_MEMORY_SAVED_SHARE)}`, zh: `${N.FP8_PUBLIC_MEMORY_SAVED_GB.toFixed(1)} ÷ ${N.FP8_PUBLIC_MEMORY_BF16_GB} = ${pct(N.FP8_PUBLIC_MEMORY_SAVED_SHARE)}` },
+      { en: `forward: ${N.FP8_PUBLIC_FORWARD_BF16_MS} → ${N.FP8_PUBLIC_FORWARD_FP8_MS} ms`, zh: `前向：${N.FP8_PUBLIC_FORWARD_BF16_MS} → ${N.FP8_PUBLIC_FORWARD_FP8_MS} ms` },
+      { en: `backward: ${N.FP8_PUBLIC_BACKWARD_BF16_MS.toLocaleString('en-US')} → ${N.FP8_PUBLIC_BACKWARD_FP8_MS.toLocaleString('en-US')} ms`, zh: `反向：${N.FP8_PUBLIC_BACKWARD_BF16_MS.toLocaleString('en-US')} → ${N.FP8_PUBLIC_BACKWARD_FP8_MS.toLocaleString('en-US')} ms` },
+    ],
   }];
   let step = $state(0);
   $effect(() => {
@@ -189,7 +213,7 @@
           {/each}
         {/each}
         {#each cur.formulas as line, i}
-          <text x="360" y={366 + i * 31} text-anchor="middle" class={i === 0 ? 'result' : 'small'}>{t(line.en, line.zh)}</text>
+          <text x="360" y={350 + i * 29} text-anchor="middle" class={i === 0 ? 'result' : 'small'}>{t(line.en, line.zh)}</text>
         {/each}
         <text x="360" y={H - 55} text-anchor="middle" class="small">{t(cur.legend, cur.legendZh)}</text>
       {:else}
