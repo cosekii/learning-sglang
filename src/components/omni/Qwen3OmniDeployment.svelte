@@ -68,7 +68,7 @@
     captionZh: '精度是保存每个权重所用的 bit 数。INT4 约省一半，它的 talker 和 code2wav 仍用 BF16。',
   }, {
     caption: 'Both panels keep 2 encoders + thinker on GPU 0; default adds code2wav there. Each code2wav process gets 32 slots by default, 64 with Replica2, not double throughput.',
-    captionZh: '两图的 GPU 0 都有 2 encoders + thinker；默认还有 code2wav，每进程 32 个状态位。replica2 每个 code2wav 进程 64 个，不代表吞吐翻倍。',
+    captionZh: '两图的 GPU 0 都有 2 encoders + thinker；默认还有 code2wav。code2wav 每进程默认 32 个状态位，replica2 每进程 64，吞吐未必翻倍。',
   }, {
     caption: 'Readiness uses small inputs and at most eight tokens per generating stage. Measure real traffic with fixed settings and separate clocks.',
     captionZh: '就绪检查用小输入，每个生成 stage 最多 8 token。再用真实流量测量，基准客户端和听者分别计时。',
