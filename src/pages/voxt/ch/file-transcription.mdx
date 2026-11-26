@@ -1,0 +1,57 @@
+---
+layout: ../../../layouts/Chapter.astro
+book: voxt
+slug: file-transcription
+---
+import FileTranscription from '../../../components/voxt/FileTranscription.svelte';
+import { voxtNeighbors } from '../../../voxt/chapters';
+import { deepFor } from '../../../deep';
+export const deep = await deepFor('voxt-file-transcription');
+
+<FileTranscription client:load {...voxtNeighbors('file-transcription')} deep={deep} />
+
+<details class="i18n-en">
+<summary>Where this chapter's claims come from</summary>
+
+Step 1 reads the two routes. `runTranscribeCLI` hands the command to `transcribeCLI` with a socket under the app's data folder (`Voxt/transcribe_cli.go:35-39`). The app's `fileRecognizer` uses the speech model set for Transcribe (`Voxt/transcribe_socket.go:58-88`) and calls `asr.Recognize` directly, so no dictation session writes history or delivers text. `Voxt/docs/transcribe.md` describes the command as a separate route.
+
+Step 2 reads decoding. `decodeAudio` checks the file, makes a temporary folder, runs macOS `afconvert -f WAVE -d LEI16@16000 -c 1`, reads the WAV, and returns PCM (`transcribe_cli.go:111-139`). `asr.SampleRate` is 16000 (`Voxt/internal/asr/asr.go:32`). The stage's 8-second example is constructed: $8 \times 16{,}000 \times 2 = 256{,}000$ PCM bytes, plus the 44-byte WAV header.
+
+Step 3 reads the handoff. The socket is `transcribe.sock` in the app's data folder (`Voxt/internal/fileasr/socket.go:16-17`); `historyapi.Listen` binds it and sets mode `0600` (`Voxt/internal/historyapi/server.go:101-114`). The request is one JSON line with `op`, `bytes` and an optional `lang`, followed by the PCM (`socket.go:35-39`). The server answers one reply line per segment and then a `done` line with the count (`socket.go:41-46`). The request-line cap is 4 KiB (`socket.go:25-29`).
+
+Step 4 reads the cut. `Cutter` works in 10 ms frames at 16 kHz (`Voxt/internal/meeting/cutter.go:9-19`). It ends a cue after 450 ms of quiet (`cutter.go:70-74`), starts the next cue 300 ms before its speech (`cutter.go:95-105`), and drops a cue with less than 350 ms of voiced sound (`cutter.go:119-127`).
+
+Step 5 reads the length cap. When a cue reaches 7 s without a 450 ms pause, `cutAtQuietest` searches the last second and cuts inside the quietest 100 ms window (`cutter.go:75-78`, `cutter.go:130-147`). The rest of the buffer continues as the next cue.
+
+Step 6 reads recognition. `fileasr.Run` cuts the stream and calls the recognizer once per cue, in order, dropping a cue whose trimmed text is empty (`Voxt/internal/fileasr/fileasr.go:39-74`). `fileRecognizer` uses the model chosen for Transcribe and uses the command's `--lang`, or dictation's language hint when it is empty (`transcribe_socket.go:58-88`). Empty `--lang` reaches the app as `lang:""` (`socket.go:35-39`).
+
+Step 7 reads the output. `Write` emits SRT as a number, `HH:MM:SS,mmm --> HH:MM:SS,mmm` and the text, or text as one line per cue (`fileasr.go:76-104`). The command writes the whole buffer only after the last cue, so a failed run leaves no partial file; without `-o`, or with `-o -`, it writes to stdout (`transcribe_cli.go:91-101`).
+
+Step 8 reads what is kept. The app's completion hook writes only `transcribed a file for the command line: <length> of audio, <count> segments`, never the text (`transcribe_socket.go:90-98`). `fileRecognizer` chooses Transcribe's model (`transcribe_socket.go:64-80`), and `docs/transcribe.md` says the audio goes to that on-device model or the remote service set for Transcribe, with no history entry and no recording. The chapter's last line asks how model files and app updates reach the Mac, which is the next chapter.
+
+Source revision: `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`. The deep dive lists exact files and lines.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的出处</summary>
+
+第 1 步读两条路线。`runTranscribeCLI` 把命令交给 `transcribeCLI`，socket 放在应用的数据文件夹里（`Voxt/transcribe_cli.go:35-39`）。应用的 `fileRecognizer` 用 Transcribe 选定的语音模型（`Voxt/transcribe_socket.go:58-88`），直接调用 `asr.Recognize`，所以没有听写 session 去写历史或交付文字。`Voxt/docs/transcribe.md` 也把这条命令写成单独的路线。
+
+第 2 步读解码。`decodeAudio` 检查文件，建一个临时文件夹，运行 macOS 的 `afconvert -f WAVE -d LEI16@16000 -c 1`，再读 WAV、返回 PCM（`transcribe_cli.go:111-139`）。`asr.SampleRate` 是 16000（`Voxt/internal/asr/asr.go:32`）。图上的 8 秒是构造的例子：$8 \times 16{,}000 \times 2 = 256{,}000$ 字节 PCM，再加 44 字节 WAV 文件头。
+
+第 3 步读交接。socket 是应用数据文件夹里的 `transcribe.sock`（`Voxt/internal/fileasr/socket.go:16-17`）；`historyapi.Listen` 绑定它并把权限设成 `0600`（`Voxt/internal/historyapi/server.go:101-114`）。请求是一行 JSON，带 `op`、`bytes` 和可选的 `lang`，后面跟 PCM（`socket.go:35-39`）。服务端每句回一行 segment，最后回一行 `done` 和句数（`socket.go:41-46`）。请求行上限是 4 KiB（`socket.go:25-29`）。
+
+第 4 步读切句。`Cutter` 在 16 kHz 上按 10 ms 一帧工作（`Voxt/internal/meeting/cutter.go:9-19`）。安静满 450 ms 就结束一句（`cutter.go:70-74`），下一句从讲话前 300 ms 开始（`cutter.go:95-105`），讲话不足 350 ms 的句子丢掉（`cutter.go:119-127`）。
+
+第 5 步读长度上限。一句到 7 秒还没有 450 ms 停顿时，`cutAtQuietest` 在最后 1 秒里找最安静的 100 ms 窗口切开（`cutter.go:75-78`、`cutter.go:130-147`）。剩下的缓冲继续当作下一句。
+
+第 6 步读识别。`fileasr.Run` 切开数据流，按顺序对每句调用一次识别器，文字去掉空白后为空就丢掉（`Voxt/internal/fileasr/fileasr.go:39-74`）。`fileRecognizer` 用 Transcribe 选定的模型，`--lang` 给了就用它，没给就用听写的语言提示（`transcribe_socket.go:58-88`）。空的 `--lang` 到应用时是 `lang:""`（`socket.go:35-39`）。
+
+第 7 步读输出。`Write` 把 SRT 写成编号、`HH:MM:SS,mmm --> HH:MM:SS,mmm` 和文字，TXT 则每句一行（`fileasr.go:76-104`）。命令在最后一句之后才写整个缓冲，所以失败时不留半个文件；不给 `-o` 或写 `-o -` 时输出到 stdout（`transcribe_cli.go:91-101`）。
+
+第 8 步读留下了什么。应用的完成回调只写 `transcribed a file for the command line: <长度> of audio, <句数> segments`，不写文字（`transcribe_socket.go:90-98`）。`fileRecognizer` 选 Transcribe 的模型（`transcribe_socket.go:64-80`）；`docs/transcribe.md` 说声音送给本机模型或为 Transcribe 设置的远端服务，不写历史、不留录音。章末问模型文件和应用更新怎样到达这台 Mac，这是下一章。
+
+本章源码版本：`sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`。精确文件和行号见深入讲解。
+
+</details>

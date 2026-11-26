@@ -170,3 +170,35 @@ export const VOXT_HISTORY_KEPT_DAYS = 89;
 export const VOXT_HISTORY_COUNT_EXAMPLE = 100;
 export const VOXT_HISTORY_COUNT_ROWS = 102;
 export const VOXT_HISTORY_COUNT_DELETED = VOXT_HISTORY_COUNT_ROWS - VOXT_HISTORY_COUNT_EXAMPLE;
+
+// Constructed file example: eight seconds of speech, two cues.
+export const VOXT_TRANSCRIBE_DEMO_SECONDS = 8;
+export const VOXT_TRANSCRIBE_PCM_BYTES = VOXT_TRANSCRIBE_DEMO_SECONDS * VOXT_PCM_BYTES_PER_SECOND;
+export const VOXT_TRANSCRIBE_WAV_BYTES = VOXT_TRANSCRIBE_PCM_BYTES + VOXT_WAV_HEADER_BYTES;
+
+// Public Cutter defaults (Voxt/internal/meeting/cutter.go).
+export const VOXT_CUTTER_FRAME_MS = 10;
+export const VOXT_CUTTER_SILENCE_MS = 450;
+export const VOXT_CUTTER_MIN_VOICED_MS = 350;
+export const VOXT_CUTTER_MAX_SEGMENT_S = 7;
+export const VOXT_CUTTER_PREROLL_MS = 300;
+export const VOXT_CUTTER_QUIET_SEARCH_MS = 1000;
+export const VOXT_CUTTER_QUIET_WINDOW_MS = 100;
+export const VOXT_CUTTER_SPEECH_RMS = 800;
+
+// Constructed 8-second file: speech ends at 2.9 s; 450 ms of silence ends cue 1.
+// Cue 2 starts 300 ms before its speech; its 450 ms silence ends cue 2 at 7.85 s.
+export const VOXT_TRANSCRIBE_CUE_COUNT = 2;
+export const VOXT_TRANSCRIBE_CUE_STARTS_MS = [0, 3400];
+export const VOXT_TRANSCRIBE_CUE_ENDS_MS = [3350, 7850];
+export const VOXT_TRANSCRIBE_SPEECH_STARTS_MS = [0, 3700];
+export const VOXT_TRANSCRIBE_SPEECH_ENDS_MS = [2900, 7400];
+export const VOXT_TRANSCRIBE_CUE_TEXT = ['Good morning.', 'See you at noon.'];
+
+// Constructed nine-second stretch with no 450 ms pause: the 7-second cap cuts it.
+export const VOXT_TRANSCRIBE_LONG_SECONDS = 9;
+export const VOXT_TRANSCRIBE_CUT_MS = 6500;
+export const VOXT_TRANSCRIBE_REMAIN_MS = VOXT_TRANSCRIBE_LONG_SECONDS * 1000 - VOXT_TRANSCRIBE_CUT_MS;
+
+// Public request-line cap (Voxt/internal/fileasr/socket.go).
+export const VOXT_TRANSCRIBE_MAX_REQUEST_BYTES = 4096;
