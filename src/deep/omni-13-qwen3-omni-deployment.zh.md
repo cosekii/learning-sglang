@@ -223,7 +223,7 @@ $$
 B=12.3\%+1.4\%=13.7\%
 $$
 
-64 个状态位是每个 code2wav 进程的工厂配置，用来覆盖 talker 副本可运行的流。每个 codec 副本各有一个 64 位状态池；这个算式不是全部署共享一个池，也不证明有 128 路可持续流。状态池满了不会拒绝请求，而会退回看左侧上下文的无状态解码（`components/code2wav_scheduler.py:296-314`）。状态位不证明 64 路可持续运行或吞吐翻倍。
+进程总数是 `5 个不变 + 2 个 talker_ar + 2 个 code2wav = 9`。不变的五个是 preprocessing、image encoder、audio encoder、thinker 和 decode。64 个状态位是每个 code2wav 进程的工厂配置，用来覆盖 talker 副本可运行的流。每个 codec 副本各有一个 64 位状态池；这个算式不是全部署共享一个池，也不证明有 128 路可持续流。状态池满了不会拒绝请求，而会退回看左侧上下文的无状态解码（`components/code2wav_scheduler.py:296-314`）。状态位不证明 64 路可持续运行或吞吐翻倍。
 
 ### 边界与出处
 
