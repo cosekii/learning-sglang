@@ -380,19 +380,25 @@
           <rect x={panel.x} y={panel.y} width={phone ? 270 : 300} height={panel.h} rx="11" fill="var(--bg)" stroke="var(--line)" />
           <text x={panel.x + 16} y={panel.y + 30} class="tag strong">{t(panel.title, panel.titleZh)}</text>
           {#if !panel.failed}
-            <rect x={panel.x + 16} y={panel.y + 54} width={phone ? 238 : 268} height="58" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
-            <text x={panel.x + 28} y={panel.y + 90} class="result">{DELIVERY_CLOSE_CASE_BYTES} B {t('unread before close', '关闭前未读')}</text>
+            <g opacity={phase >= 1 ? 0.12 : 1} style="transition: opacity 500ms">
+              <rect x={panel.x + 16} y={panel.y + 54} width={phone ? 238 : 268} height="58" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+              <text x={panel.x + 28} y={panel.y + 90} class="result">{DELIVERY_CLOSE_CASE_BYTES} B {t('unread before close', '关闭前未读')}</text>
+            </g>
             <text x={panel.x + 20} y={panel.y + 146} class="tag">{t('close: abort if the work record remains', '关闭：工作记录还在就中止')}</text>
-            <text x={panel.x + 20} y={panel.y + 178} class="result">{DELIVERY_CLOSE_CASE_BYTES} B → 0 B</text>
-            <text x={panel.x + 20} y={panel.y + 214} class="tag">{t('queue + backlog removed', '队列 + 积压都删除')}</text>
-            <text x={panel.x + 20} y={panel.y + 246} class="tag strong">{t('abort message fails → work record + ID can remain', 'abort 消息没送到 → 工作记录和流 ID 可能保留')}</text>
+            <g opacity={phase >= 1 ? 1 : 0.08} style="transition: opacity 400ms">
+              <text x={panel.x + 20} y={panel.y + 178} class="result">{DELIVERY_CLOSE_CASE_BYTES} B → 0 B</text>
+              <text x={panel.x + 20} y={panel.y + 214} class="tag">{t('queue + backlog removed', '队列 + 积压都删除')}</text>
+            </g>
+            <text x={panel.x + 20} y={panel.y + 246} class="tag strong" opacity={phase >= 2 ? 1 : 0.08} style="transition: opacity 400ms">{t('abort message fails → work record + ID can remain', 'abort 消息没送到 → 工作记录和流 ID 可能保留')}</text>
           {:else}
-            <rect x={panel.x + 16} y={panel.y + 54} width={phone ? 238 : 268} height="58" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
-            <text x={panel.x + 28} y={panel.y + 90} class="result">0 B audio · {t('error waiting', '错误等待读取')}</text>
+            <g opacity={phase >= 3 ? 0.12 : 1} style="transition: opacity 500ms">
+              <rect x={panel.x + 16} y={panel.y + 54} width={phone ? 238 : 268} height="58" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+              <text x={panel.x + 28} y={panel.y + 90} class="result">0 B audio · {t('error waiting', '错误等待读取')}</text>
+            </g>
             <text x={panel.x + 20} y={panel.y + 146} class="tag">{t('stream ID = the stream’s name · still taken', '流 ID = 流的名字 · 仍被占用')}</text>
             <text x={panel.x + 20} y={panel.y + 178} class="tag">{t('take the error OR close the reader', '取走错误，或关闭读者')}</text>
-            <text x={panel.x + 20} y={panel.y + 214} class="tag strong">{t('queue + backlog released · 0 B', '队列 + 积压都释放 · 0 B')}</text>
-            <text x={panel.x + 20} y={panel.y + 246} class="tag strong">{t('abort message fails → work record + ID can remain', 'abort 消息没送到 → 工作记录和流 ID 可能保留')}</text>
+            <text x={panel.x + 20} y={panel.y + 214} class="tag strong" opacity={phase >= 3 ? 1 : 0.08} style="transition: opacity 400ms">{t('queue + backlog released · 0 B', '队列 + 积压都释放 · 0 B')}</text>
+            <text x={panel.x + 20} y={panel.y + 246} class="tag strong" opacity={phase >= 4 ? 1 : 0.08} style="transition: opacity 400ms">{t('abort message fails → work record + ID can remain', 'abort 消息没送到 → 工作记录和流 ID 可能保留')}</text>
           {/if}
         {/each}
         <text x={W / 2} y={phone ? 752 : 486} text-anchor="middle" class="tag strong">{t('NEXT · TWO API PROCESSES SHARE ONE PUBLIC URL', '下一步 · 两个 API 进程共用一个公开网址')}</text>
