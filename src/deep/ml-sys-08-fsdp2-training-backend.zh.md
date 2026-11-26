@@ -139,3 +139,37 @@ slime 在 actor 中调用 `loss.backward()` 和 `optimizer.step()`。参数聚�
 长期分片变小了，完整 unit 和其他临时结果仍要占空间。下一步区分长期保存状态与峰值显存。
 
 来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:19`；`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:47-58`；`THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7` 的 `slime/backends/fsdp_utils/actor.py:687-702,1000-1039`。
+
+## 第 5 步 · 长期状态只是峰值的一部分
+
+**一句话。** 8 GB 长期状态一直存在，最大聚合 unit、激活和其他临时结果还会增加显存，但来源没有给出总量。
+
+### 图上是什么
+
+- 橙色底格是第 2 步长期保存的 8 GB，不会在 unit 之间消失。
+- 蓝色 `Umax` 是一次需要存在的最大完整 unit。第 3 步把当前 unit 记作 $U$；`Umax` 是峰值时要考虑的最大临时 unit。
+- 灰格包含激活和其他临时结果。激活是训练需要的中间值，随 batch 大小变化。来源没有给出总量，所以图中不填精确总显存。
+
+### 公式与符号
+
+$$M_{\text{peak}}\approx M_i+U_{\max}+A+T_{\text{other}}$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $M_i$ | 长期拥有的训练状态 | 第 2 步，8 GB |
+| $U_{\max}$ | 临时拼出的最大完整 unit | unit 大小，未给数值 |
+| $A$ | 激活占用的显存 | 训练中间结果，随 batch 变化 |
+| $T_{\text{other}}$ | 其他临时分配 | 本章不量化 |
+| $M_{\text{peak}}$ | 最忙时需要的显存 | 只表示边界，不是实测总量 |
+
+### 代入图上的数
+
+唯一给出的数是 $M_i=8$ GB。其他项未知，所以图中只写 $M_{\text{peak}}>8$ GB，不编造总量。这个近似分解只是阅读辅助，不保证所有分配都能简单相加且没有重叠。
+
+链接来源在 FSDP1 Stage 3 小节给出最大完整 FSDP unit 的公式。本章只借用类别区分，明确不把该公式当成 FSDP2/slime 的精确峰值测量。
+
+### 接下来
+
+训练结束后，rollout 需要完整的新参数值，不需要梯度和优化器状态。下一步把完整权重张量装进桶，交给已有更新路径。
+
+来源：`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:31,93-107`；`Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:18-19`。

@@ -139,3 +139,37 @@ Slime calls `loss.backward()` and `optimizer.step()` in the actor. The FSDP wrap
 Persistent shards are smaller, but full units and other temporary results still need space. The next step separates owned state from peak memory.
 
 Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:19`; `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:47-58`; `THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7`, `slime/backends/fsdp_utils/actor.py:687-702,1000-1039`.
+
+## Step 5 · Owned state is only one part of peak memory
+
+**One sentence.** The 8 GB owned state persists, while the largest gathered unit, activations and other temporary results add memory whose total is not supplied.
+
+### On the stage
+
+- The orange bottom band is the persistent 8 GB from Step 2. It does not disappear between units.
+- The blue `Umax` band is the largest full unit that needs to exist at once. Step 3 called the current unit `U`; `Umax` is the largest such temporary unit relevant to peak memory.
+- The grey band contains activations and other temporary results. Activations are intermediate values needed for training and change with batch size. No exact total is drawn because the source does not provide one.
+
+### Formula and symbols
+
+$$M_{\text{peak}}\approx M_i+U_{\max}+A+T_{\text{other}}$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $M_i$ | Persistent owned training state | Step 2, 8 GB |
+| $U_{\max}$ | Largest full unit temporarily materialized | Unit sizes; no numeric value supplied |
+| $A$ | Activation memory | Intermediate training results; batch-dependent |
+| $T_{\text{other}}$ | Other temporary allocations | Not quantified in this chapter |
+| $M_{\text{peak}}$ | Memory needed at the busiest point | Boundary only, not a measured total |
+
+### The numbers on the stage
+
+The only numeric term is $M_i=8$ GB. Since the other terms are unknown, the figure concludes $M_{\text{peak}}>8$ GB rather than inventing a total. The approximate decomposition is a reading aid, not a guarantee that every allocation can simply be added without overlap.
+
+The linked source gives a formula with the largest fully materialized FSDP unit in its FSDP1 Stage 3 section. This chapter borrows the category distinction and explicitly does not present that formula as an exact FSDP2/slime peak measurement.
+
+### Next
+
+After training, rollout needs complete new parameter values, not gradients or optimizer state. The next step gathers full weight tensors into buckets for the existing update path.
+
+Sources: `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:31,93-107`; `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:18-19`.

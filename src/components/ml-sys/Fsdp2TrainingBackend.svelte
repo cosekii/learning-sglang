@@ -105,6 +105,26 @@
       { en: 'gradients: reduce-scatter', zh: '梯度：reduce-scatter' },
       { en: 'owned gradient = 1 GB', zh: '拥有的梯度 = 1 GB' },
     ],
+  }, {
+    caption: `The owned slices total ${FSDP_SHARD_STATE_PER_GPU_GB} GB. Peak memory also includes the largest temporary unit and activations.`,
+    captionZh: `长期分片合计 ${FSDP_SHARD_STATE_PER_GPU_GB} GB。峰值还包括最大临时 unit 和激活。`,
+    title: 'Owned 8 GB is not the peak', titleZh: '长期保存 8 GB，不等于峰值',
+    subtitle: 'peak = saved state plus temporary memory needed at the busiest moment',
+    subtitleZh: '峰值 = 保存状态 + 最忙时需要的临时显存',
+    foot: 'The source\'s exact peak formula is for FSDP1 Stage 3; no exact FSDP2 peak is claimed.',
+    footZh: '来源的精确峰值公式针对 FSDP1 Stage 3；本步不声称 FSDP2 的精确峰值。',
+    mobileTitle: 'Owned 8 GB is not the peak', mobileTitleZh: '长期 8 GB，不是峰值',
+    mobileSubtitle: 'peak = saved state + temporary work', mobileSubtitleZh: '峰值 = 保存状态 + 临时工作',
+    mobileFoot: 'No exact FSDP2 peak is claimed.', mobileFootZh: '不声称 FSDP2 的精确峰值。',
+    mobile: [
+      { title: 'OWNED STATE · 8 GB', titleZh: '长期状态 · 8 GB', body: 'weights + gradients + optimizer', bodyZh: '权重 + 梯度 + 优化器状态', tone: 'orange' },
+      { title: 'LARGEST UNIT · Umax', titleZh: '最大 unit · Umax', body: 'the biggest temporary full layer', bodyZh: '最大的一份临时完整层', tone: 'blue' },
+      { title: 'ACTIVATIONS + OTHER · ?', titleZh: '激活 + 其他 · ?', body: 'intermediate results, no source total', bodyZh: '中间结果，来源未给总量', tone: 'plain' },
+    ],
+    formulas: [
+      { en: 'Peak is greater than 8 GB', zh: '峰值大于 8 GB' },
+      { en: 'No exact total is claimed', zh: '不填精确总量' },
+    ],
   }];
   let step = $state(0);
   $effect(() => {
@@ -121,7 +141,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [560, 560, 600, 600][step] : [500, 500, 500, 500][step]);
+  const H = $derived(phone ? [560, 560, 600, 600, 560][step] : [500, 500, 500, 500, 500][step]);
 </script>
 
 <figure class="viz">
@@ -232,6 +252,24 @@
         <text x="217" y="359" text-anchor="middle" class="result">parameters: all-gather</text>
         <text x="217" y="383" text-anchor="middle" class="result">gradients: reduce-scatter</text>
         <text x="360" y="435" text-anchor="middle" class="small">{t('Orange = reduction and owned state · blue = temporary full gradient', '橙 = 归约与拥有状态 · 蓝 = 临时完整梯度')}</text>
+      {:else if step === 4}
+        <rect x="70" y="88" width="300" height="79" rx="10" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />
+        <text x="220" y="119" text-anchor="middle" class="result">A + other ?</text>
+        <text x="220" y="148" text-anchor="middle" class="small">{t('activations and other temporary results', '激活和其他临时结果')}</text>
+        <rect x="70" y="177" width="300" height="79" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="220" y="208" text-anchor="middle" class="result">Umax</text>
+        <text x="220" y="237" text-anchor="middle" class="small">{t('largest full unit gathered at once', '一次聚合的最大完整 unit')}</text>
+        <rect x="70" y="266" width="300" height="89" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x="220" y="302" text-anchor="middle" class="big">8 GB</text>
+        <text x="220" y="334" text-anchor="middle" class="small">{t('owned weights + gradients + optimizer state', '拥有的权重 + 梯度 + 优化器状态')}</text>
+        <text x="420" y="125" class="result">A</text>
+        <text x="455" y="125" class="small">{t('activations = training intermediates', '激活 = 训练中间结果')}</text>
+        <text x="420" y="199" class="result">Umax</text>
+        <text x="480" y="199" class="small">{t('temporary, size unknown', '临时占用，大小未知')}</text>
+        <text x="420" y="286" class="result">?</text>
+        <text x="455" y="286" class="small">{t('no exact total in the source', '来源没有精确总量')}</text>
+        <text x="360" y="401" text-anchor="middle" class="result">{t('PEAK', '峰值')} &gt; 8 GB · {t('exact total unknown', '精确总量未知')}</text>
+        <text x="360" y="448" text-anchor="middle" class="small">{t('Orange = persistent owned state · blue = temporary unit · grey = other temporary memory', '橙 = 长期拥有状态 · 蓝 = 临时 unit · 灰 = 其他临时显存')}</text>
       {/if}
       <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t(cur.mobileFoot, cur.mobileFootZh) : t(cur.foot, cur.footZh)}</text>
     </svg>
