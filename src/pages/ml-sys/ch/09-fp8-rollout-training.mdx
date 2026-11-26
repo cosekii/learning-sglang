@@ -29,6 +29,10 @@ Step 6 uses `InfiR2 arXiv:2509.22536v4`, §5.4 Table 6. The Qwen2.5-1.5B non-RL 
 
 Step 7 follows `readme.md:204-261`. Real FP8 versus fake FP8 isolates the FP8 kernel, while BF16 baseline versus fake FP8 isolates quantization round-trip loss. The experiment uses Qwen3-4B on one H800 during RL Steps 0 and 1. The article's Diff has no stated norm or unit, so the chapter does not label it as a percentage, log probability, or KL value.
 
+Step 8 follows `readme.md:275-369`. Published Qwen3 RL experiments report narrower `train_rollout_logprob_abs_diff` ranges and lower TIS-clipfrac under unified FP8. Only curves are published for the MoE comparisons, so no exact reduction is invented. The curves do not prove zero difference or bitwise equality. The closing `2 B → 0.5 B = 75% fewer bytes` ratio is raw INT4 payload arithmetic before scales; `int4/readme.md:37-43,59-61` supplies the next chapter's QAT and STE boundary.
+
+Further reading: [zero-to-sglang Part III Chapter 2: Quantization and Low-Precision Inference](https://zero-to-sglang.datawhale.cc/eng/part3/Chapter2_Quantization-and-Low-Precision-Inference.html).
+
 </details>
 
 <details class="i18n-zh">
@@ -49,5 +53,9 @@ Step 7 follows `readme.md:204-261`. Real FP8 versus fake FP8 isolates the FP8 ke
 第 6 步使用 `InfiR2 arXiv:2509.22536v4` §5.4 表 6。Qwen2.5-1.5B 非 RL 一行给出 2,030 对 1,590 ms、68.1 对 58.3 GB，得到 21.7% 和 14.4% 的收益。其 UE8M0 方案和未注明的效率测试 GPU 表明，这只是收益不一致的公开例子，不是 slime FP32-scale RL 基准。
 
 第 7 步依据 `readme.md:204-261`。真实 FP8 对模拟 FP8 隔离 FP8 kernel，BF16 基准对模拟 FP8 隔离量化往返损失。实验使用 Qwen3-4B、一张 H800，统计 RL 第 0、1 步。文章的 Diff 未给范数或单位，本章不把它称为百分比、log probability 或 KL。
+
+第 8 步依据 `readme.md:275-369`。公开 Qwen3 RL 实验报告统一 FP8 后更窄的 `train_rollout_logprob_abs_diff` 范围和更低的 TIS-clipfrac。MoE 对照只公开曲线，因此不编造精确减少量。曲线没有证明差异为零或逐位相等。结尾 `2 字节 → 0.5 字节 = 少 75%` 是 INT4 原始负载算式，另算 scale；`int4/readme.md:37-43,59-61` 给出下一章的 QAT 和 STE 边界。
+
+延伸阅读：[zero-to-sglang 第 3 部分第 2 章：量化与低精度推理](https://zero-to-sglang.datawhale.cc/ch/part3/%E7%AC%AC2%E7%AB%A0_%E9%87%8F%E5%8C%96%E4%B8%8E%E4%BD%8E%E7%B2%BE%E5%BA%A6%E6%8E%A8%E7%90%86.html)。
 
 </details>

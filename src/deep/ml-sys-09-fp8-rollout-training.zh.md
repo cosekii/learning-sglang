@@ -249,3 +249,38 @@ $$D_{rf}=Y_r-Y_f,\qquad D_{bf}=Y_b-Y_f$$
 量化往返解释了 BF16 训练和 FP8 rollout 为什么可能分叉。下一步对齐两边的方案，看公开实验中的 log probability 差距怎样变化。
 
 来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/fp8/readme.md:204-261`，实验定义见 `225-243`，实现对照表见 `208-219`。
+
+## 第 8 步 · 对齐方案，缩小两边差距
+
+**一句话。** 训练和 rollout 使用同一种 FP8 方案后，公开实验的训推 log probability 差距收窄，但曲线没有证明差异为零或逐位相等。
+
+### 图上是什么
+
+- 混合卡使用 BF16 训练和 FP8 rollout，两次评估跨过不同的量化路径。
+- 统一卡在训练和 rollout 中使用同一种 FP8 方案。公开 Qwen3 RL 曲线显示 `train_rollout_logprob_abs_diff` 范围收窄，TIS 裁剪减少。
+- 结尾转向 INT4：每个权重 4 位，即 0.5 字节，相对 BF16 的 2 字节理论减少 75%，另算 scale。问题是训练怎样适应更强的舍入。
+
+### 公式与符号
+
+单个 token 的教学距离可以写成：
+
+$$d_t=|\ell^{\text{train}}_t-\ell^{\text{rollout}}_t|$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $t$ | 回答中的 token 位置 | 第 6 章的 rollout 记录 |
+| $\ell^{\text{train}}_t$ | 训练端在当前上下文中为该 token 重算的 log probability | 训练重算 |
+| $\ell^{\text{rollout}}_t$ | 生成时记录的 rollout 端 log probability | 第 6 章第 3 步 |
+| $d_t$ | 两个数值的绝对距离 | 构造示意，不是文章的聚合公式 |
+
+### 代入图上的数
+
+构造一对 $\ell^{\text{train}}_t=-1.96$ 和 $\ell^{\text{rollout}}_t=-2.00$，得到 $d_t=0.04$。文章没有说明 `train_rollout_logprob_abs_diff` 的 token 权重、mask 或平均方式，所以这个例子不定义该日志指标。
+
+Qwen3-4B 实验中，仅前向模拟量化、前向加反向模拟量化、统一 FP8 的第 1 步 KL loss 接近，且都高于混合基准；它们的 TIS-clipfrac 更低。仅前向与前向加反向结果相近，作者据此认为前向量化影响更大。TIS-clipfrac 是截断重要性采样中被裁剪的更新比例，在这些实验中越低表示裁剪越少。
+
+Qwen3-30B-A3B 的两台 H20 服务器实验和 Qwen3-235B-A22B 的 16 台 H20 服务器实验，也在统一 FP8 后显示更窄的 log probability 差异范围。公开材料只有曲线，所以本章不写精确减少量，也不声称 reward、准确率或收敛速度提高。
+
+INT4 的原始比例是 $0.5/2=25\%$，即比 BF16 少 75% 字节。下一章保留 BF16 master 权重，在训练时插入模拟量化，用 straight-through estimator（STE）让梯度穿过舍入，再导出真正的 INT4 做 W4A16 rollout。STE 是一种训练近似，把舍入处没有的导数替换为直通导数。
+
+来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/fp8/readme.md:275-369`；`Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:37-43,59-61`。

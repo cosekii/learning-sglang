@@ -249,3 +249,38 @@ A separate kernel check compared two FP8 implementations against BF16. For $(M,K
 The round trip explains why BF16 training and FP8 rollout can diverge. The next step aligns those schemes and examines the published change in the log-probability gap.
 
 Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fp8/readme.md:204-261`, especially the experiment definitions at `225-243` and implementation table at `208-219`.
+
+## Step 8 · Align the schemes and narrow the gap
+
+**One sentence.** Using the same FP8 scheme for training and rollout narrows the published train–rollout log-probability difference, but the curves do not prove zero difference or bitwise equality.
+
+### On the stage
+
+- The mixed card uses BF16 training and FP8 rollout, so the two evaluations cross different quantization paths.
+- The unified card uses FP8 training and FP8 rollout with the same scheme. Published Qwen3 RL curves show a narrower `train_rollout_logprob_abs_diff` range and less TIS clipping.
+- The closing card moves to INT4: four bits per weight give 0.5 byte instead of BF16's 2 bytes, a theoretical 75% payload reduction before scales. The question asks how training can learn around that stronger rounding.
+
+### Formula and symbols
+
+For one token, a teaching-only distance can be written:
+
+$$d_t=|\ell^{\text{train}}_t-\ell^{\text{rollout}}_t|$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $t$ | Token position in an answer | Chapter 6's rollout record |
+| $\ell^{\text{train}}_t$ | Training-side log probability for that token in context | Training recomputation |
+| $\ell^{\text{rollout}}_t$ | Rollout-side log probability recorded during generation | Chapter 6 Step 3 |
+| $d_t$ | Absolute distance between those two values | Constructed illustration, not the article's aggregation formula |
+
+### The numbers on the stage
+
+A constructed pair $\ell^{\text{train}}_t=-1.96$ and $\ell^{\text{rollout}}_t=-2.00$ gives $d_t=0.04$. The article does not specify token weighting, masking, or averaging for `train_rollout_logprob_abs_diff`, so this example does not define that logged metric.
+
+On Qwen3-4B, forward-only fake quantization, forward-and-backward fake quantization, and unified FP8 have similar Step-1 KL loss, all above the mixed baseline. Their TIS-clipfrac values are lower. The similar forward-only and forward-and-backward results lead the authors to identify forward quantization as the larger contributor. TIS-clipfrac is the fraction of updates clipped by truncated importance sampling; lower values indicate fewer clipped updates in these experiments.
+
+Qwen3-30B-A3B on two H20 servers and Qwen3-235B-A22B on 16 H20 servers also show narrower log-probability-difference ranges under unified FP8. Only curves are published, so this chapter gives no exact reduction and no claim of higher reward, accuracy, or convergence speed.
+
+INT4's raw ratio is $0.5/2=25\%$ of BF16 bytes, or 75% less. The next chapter keeps BF16 master weights, inserts fake quantization during training, uses a straight-through estimator (STE) to pass gradients through rounding, and exports real INT4 for W4A16 rollout. STE is a training approximation that replaces the missing rounding derivative with a pass-through derivative.
+
+Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fp8/readme.md:275-369`; `Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:37-43,59-61`.

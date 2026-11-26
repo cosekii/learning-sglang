@@ -163,6 +163,27 @@
       { en: 'BASELINE ↔ FAKE → quantization round-trip loss', zh: '基准 ↔ 模拟 → 量化往返的舍入损失' },
       { en: 'reported: rounding loss dominates · kernel difference is small', zh: '文章结果：舍入损失为主 · kernel 差异较小' },
     ],
+  }, {
+    caption: 'Matching FP8 schemes narrows the log-probability gap in published RL curves. The gap is not proven zero.',
+    captionZh: '统一 FP8 后，公开 RL 曲线的 log probability 差缩小。它没有变成已证明的零。',
+    title: 'Unified FP8 narrows the gap', titleZh: '统一 FP8 缩小差距',
+    subtitle: 'unified FP8 = training and rollout use the same FP8 scheme',
+    subtitleZh: '统一 FP8 = 训练和 rollout 使用同一种 FP8 方案',
+    foot: 'Published Qwen3 RL curves show narrower ranges, not exact reductions.',
+    footZh: '公开 Qwen3 RL 曲线显示范围收窄，没有给出精确减少量。',
+    legend: 'Orange = mixed schemes · blue = unified FP8', legendZh: '橙 = 混合方案 · 蓝 = 统一 FP8',
+    desktopH: 540,
+    nodes: [
+      { title: 'MIXED SCHEMES', titleZh: '混合方案', result: 'BF16 train → FP8 rollout', resultZh: 'BF16 训练 → FP8 rollout', body: 'different quantization paths', bodyZh: '两边量化路径不同', tone: 'orange', compact: true },
+      { title: 'UNIFIED FP8', titleZh: '统一 FP8', result: 'FP8 train → FP8 rollout', resultZh: 'FP8 训练 → FP8 rollout', body: 'same scheme on both sides', bodyZh: '两边使用同一方案', tone: 'blue', compact: true },
+    ],
+    formulas: [
+      { en: 'published RL result: the log-probability gap becomes narrower', zh: '公开 RL 结果：log probability 差距缩小' },
+      { en: 'the curves do not prove zero difference or bitwise equality', zh: '曲线没有证明差异为零或逐位相等' },
+      { en: `Next · INT4 = 4 bits per weight · 2 B → ${N.INT4_WEIGHT_BYTES} B`, zh: `下一章 · INT4 = 每个权重 4 位 · 2 字节 → ${N.INT4_WEIGHT_BYTES} 字节` },
+      { en: `${N.INT4_WEIGHT_BYTES} ÷ 2 = 25% of bytes · save ${(N.INT4_PAYLOAD_SAVING_SHARE * 100).toFixed(0)}%`, zh: `${N.INT4_WEIGHT_BYTES} ÷ 2 = 原字节的 25% · 省下 ${(N.INT4_PAYLOAD_SAVING_SHARE * 100).toFixed(0)}%` },
+      { en: 'How does training learn around INT4 rounding?', zh: '训练怎样适应 INT4 舍入？' },
+    ],
   }];
   let step = $state(0);
   $effect(() => {
