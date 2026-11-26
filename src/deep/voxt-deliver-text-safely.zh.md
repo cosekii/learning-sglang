@@ -7,7 +7,7 @@
 - 左边的框是 **start app**，按快捷键那一刻在前面的 app，也就是 `Request.Target`。
 - 右边的框是 **front app now**，文字准备好那一刻在前面的 app。它有焦点的元素才是打字会去的地方。
 - 箭头表示 Voxt 在录音和思考时，你切了 app。
-- 底部一行说明 start app 还管哪些事。那些规则在后面几步出现。
+- 底部一行说 start app 会被记住，但它不是目的地。它剩下的作用在后面几步出现。
 
 ### 规则
 
@@ -33,7 +33,7 @@
 
 ### 图上是什么
 
-- front app 里有焦点的框带一个锁的标记，subrole 是 `AXSecureTextField`。
+- front app 里有焦点的框画成密码圆点，旁边标着 subrole `AXSecureTextField`。
 - 橙色结果是 STOP：一个字也不贴。
 - 改为打开卡片，文字仍然拿得到。
 
@@ -64,7 +64,7 @@ $$\text{secure} \Rightarrow \text{ReasonSecure} \Rightarrow \text{不粘贴}$$
 ### 图上是什么
 
 - 三条规则：和 start app 一样、另一个 app、替换选区（或 Voxt 自己的窗口）。
-- 按钮、列表、表格、正在阅读的网页从不收文字。
+- 按钮或列表从不收文字。start app 里网页区域仍算能写；别的 app 里正在阅读的网页不算。
 - 规则不满足时，什么都不贴，答案去卡片。
 
 ### 规则
@@ -77,6 +77,7 @@ $$\text{Writable} = f.\text{Editable} \lor f.\text{Error} \ne "" \lor f.\text{Ro
 |---|---|---|
 | `f.Editable` | Accessibility 说这个元素能编辑文字 | `deliver.go:196` |
 | `f.Error` | Accessibility 没给出答案 | `deliver.go:196` |
+| `f.Role` | 元素的角色；`AXWebArea` 不在 `nonText` 里 | `deliver.go:199-202` |
 | `nonText` | 从不收文字的角色 | `deliver.go:184-189` |
 | `Writable` | start app 的规则 | `deliver.go:195-203` |
 
@@ -86,16 +87,16 @@ $$\text{Writable} = f.\text{Editable} \lor f.\text{Error} \ne "" \lor f.\text{Ro
 
 ### 边界
 
-选区只在 start app 里替换，而且只在 Accessibility 说可编辑的元素里；在网页里选了字，却用一个到不了的粘贴去「替换」，字会丢。VoxtNew 自己的窗口也要求 `Editable`，因为 session 可能就从那里开始。
+选区只在 start app 里替换，而且只在 Accessibility 说可编辑的元素里；在网页里选了字，却用一个到不了的粘贴去「替换」，字会丢。VoxtNew 自己的窗口也要求 `Editable`，因为 session 可能就从那里开始。start app 里网页区域的角色是 `AXWebArea`，不在 `nonText` 里，所以 `Writable` 返回真；「正在阅读的网页不算」这条只适用于别的 app。
 
 ## 第 4 步 · 贴完再读一次焦点
 
-> **一句话：** helper 在 ⌘V 之前和之后各读一次焦点，只有变了才算贴进去。
+> **一句话：** helper 在 ⌘V 之前和之后各读一次焦点。读到变化是贴进去的证据；读得出却一样，只算没确认。
 
 ### 图上是什么
 
-- 前、后两张卡都装四个可读部分：值的长度、值的摘要、选区、文本标记。
-- 蓝色结果是比较：变了算贴入，一样的算没确认。
+- 前、后两张卡装的是 helper 从焦点读到的东西：框里的文字和光标。
+- 蓝色结果是比较：变了是证据，一样是没确认，读不出按贴入。
 - 等待时间是 `DefaultVerifyMS`，1000 ms。
 
 ### 比较
@@ -104,7 +105,7 @@ $$\text{Writable} = f.\text{Editable} \lor f.\text{Error} \ne "" \lor f.\text{Ro
 
 $$\text{compare} = \begin{cases}\text{changed} & \text{任何能比的部分不同}\\[2pt] \text{same} & \text{能比的部分都相同}\\[2pt] \text{unreadable} & \text{没有能比的部分}\end{cases}$$
 
-四个部分是值的长度、值的摘要、选区范围、文本标记（网页编辑器的光标）。读到变化就确认贴入；读到一样就留下 `ReasonUnconfirmed`。
+内部比较的是值的长度、值的摘要、选区范围、文本标记（网页编辑器的光标）。读到变化是贴入的证据，别的编辑也可能造成它；读得出却一样就留下 `ReasonUnconfirmed`。焦点是网页区域或可编辑的网页部分时，一样的结果会改成 unknown，并按已贴入处理，因为这些编辑器常接受粘贴却不更新 Accessibility 读到的东西。
 
 | 符号 | 含义 | 出处 |
 |---|---|---|
@@ -141,6 +142,7 @@ $$t_{\text{restore}} = \begin{cases}150\text{ ms} & \text{确认贴入}\\[2pt] 5
 
 | 符号 | 含义 | 出处 |
 |---|---|---|
+| $t_{\text{restore}}$ | 旧剪贴板什么时候回来 | 下面两种情况的结果 |
 | 150 ms | 文字显示后放回 | `Voxt/helper/Sources/VoxtNewHelper/TextIO.swift:367` |
 | 500 ms | 不确定时默认的 `RestoreDelayMS` | `TextIO.swift:367` |
 | `changeCount` | 中间有没有别人写过 | `TextIO.swift:365-372` |

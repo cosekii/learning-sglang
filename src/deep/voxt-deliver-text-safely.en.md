@@ -7,7 +7,7 @@
 - Left box: the **start app**, the app in front when you pressed the shortcut. It is `Request.Target`.
 - Right box: the **front app now**, the app in front when the text is ready. Its focused element is where typing would go.
 - The arrow is you switching apps while Voxt records and thinks.
-- The bottom line names what the start app still controls. Those rules appear in the next steps.
+- The bottom line says the start app is remembered but is not the destination. Its remaining controls appear in the next steps.
 
 ### The rule
 
@@ -33,7 +33,7 @@ This step does not yet say how the app is checked. It only fixes the difference 
 
 ### On the stage
 
-- The front app's focused field is drawn with a lock-like marker and the subrole `AXSecureTextField`.
+- The front app's focused field is drawn as password dots, with the subrole `AXSecureTextField` beside them.
 - The orange result is STOP: nothing is typed.
 - The card opens instead, so the text is still reachable.
 
@@ -64,7 +64,7 @@ A secure field is not the only secure case. The helper also notices when another
 ### On the stage
 
 - Three rules: same as the start app, another app, and a selection replace (or Voxt's own window).
-- A button, a list, a table or a web page being read never takes text.
+- A button or a list never takes text. In the start app a web area still counts as writable; in another app a page being read is not enough.
 - When the rule fails, nothing is typed and the answer goes to the card.
 
 ### The rules
@@ -77,6 +77,7 @@ $$\text{Writable} = f.\text{Editable} \lor f.\text{Error} \ne "" \lor f.\text{Ro
 |---|---|---|
 | `f.Editable` | Accessibility says the element edits text | `deliver.go:196` |
 | `f.Error` | Accessibility gave no answer | `deliver.go:196` |
+| `f.Role` | the element's role; `AXWebArea` is not in `nonText` | `deliver.go:199-202` |
 | `nonText` | roles that never take text | `deliver.go:184-189` |
 | `Writable` | start-app rule | `deliver.go:195-203` |
 
@@ -86,16 +87,16 @@ You pressed the shortcut in the start app, so an element there it cannot read st
 
 ### Boundaries
 
-A selection is replaced only in the start app and only in an element Accessibility calls editable; replacing text selected in a web page with a paste that goes nowhere would lose it. VoxtNew's own window also requires `Editable`, because the session may have started there.
+A selection is replaced only in the start app and only in an element Accessibility calls editable; replacing text selected in a web page with a paste that goes nowhere would lose it. VoxtNew's own window also requires `Editable`, because the session may have started there. In the start app, a web area's role is `AXWebArea`, which is absent from `nonText`, so `Writable` returns true; the rule that a page being read is not enough applies only to another app.
 
 ## Step 4 · Paste, then read the field again
 
-> **In one line:** The helper reads the focused element before and after ⌘V, and only a change counts as inserted.
+> **In one line:** The helper reads the focused element before and after ⌘V. A change is evidence the text landed; a same readable reading leaves it unconfirmed.
 
 ### On the stage
 
-- Before and after cards hold the four readable parts: value length, value digest, selection and text marker.
-- The blue result is the comparison: changed means inserted, same means unconfirmed.
+- Before and after cards hold what the helper reads of the field: its text and its cursor.
+- The blue result is the comparison: changed is evidence it landed, same means unconfirmed, unreadable is trusted.
 - The wait is `DefaultVerifyMS`, 1000 ms.
 
 ### The comparison
@@ -104,7 +105,7 @@ A selection is replaced only in the start app and only in an element Accessibili
 
 $$\text{compare} = \begin{cases}\text{changed} & \text{any comparable part differs}\\[2pt] \text{same} & \text{parts compared and equal}\\[2pt] \text{unreadable} & \text{nothing comparable}\end{cases}$$
 
-The four parts are the value's length, a digest of the value, the selection range, and the text marker (a caret for web editors). A changed reading confirms the paste; a same reading leaves `ReasonUnconfirmed`.
+Internally the reading compares the value's length, a digest of the value, the selection range, and the text marker (a caret for web editors). A changed reading is evidence the paste landed; another edit could also change it. A same readable reading leaves `ReasonUnconfirmed`. When the field is a web area or an editable web region, an unchanged result is changed to unknown and trusted as inserted, because those editors often accept a paste without updating what Accessibility reads.
 
 | Symbol | Meaning | Source |
 |---|---|---|
@@ -141,6 +142,7 @@ Before restoring, the helper compares the pasteboard's change count. If another 
 
 | Symbol | Meaning | Source |
 |---|---|---|
+| $t_{\text{restore}}$ | when the old clipboard comes back | result of the two cases below |
 | 150 ms | restore after the text showed | `Voxt/helper/Sources/VoxtNewHelper/TextIO.swift:367` |
 | 500 ms | default `RestoreDelayMS` for unknown | `TextIO.swift:367` |
 | `changeCount` | did someone else write meanwhile | `TextIO.swift:365-372` |
