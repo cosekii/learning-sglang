@@ -5,21 +5,28 @@
 ### 图上是什么
 
 - 左栏是**听写**：麦克风和 helper 送来的声音，经过一次听写 session，最后变成光标处的文字，并可能写一条历史记录。
-- 右栏是**文件**：磁盘上的 `meeting.m4a`，经过 `Voxt transcribe`，最后得到 `meeting.srt` 或 `talk.txt`。
-- 底部两行说共同点和区别：共同点是 Voxt 和语音模型，区别是文件路线没有听写 session。
+- 右栏是**文件**：磁盘上的 `meeting.m4a`，标着「1 小时会议：3,600 秒」，经过 `Voxt transcribe`，最后得到 `meeting.srt` 或 `talk.txt`。
+- 底部三行：一小时的会议是 115.2 MB，约 30 张手机照片；两条都用 Voxt 和语音模型；文件路线没有听写 session 和历史记录。
 
-### 两条路线各做什么
+### 为什么是另一条路线
 
-| 路线 | 输入 | 中间的会话 | 输出 |
-|---|---|---|---|
-| 听写 | 麦克风的 16 kHz 单声道帧（第 3 章） | 一次听写 session | 光标处的文字，可能进历史 |
-| 文件 | 磁盘上的音频或视频 | 无 | SRT 或 TXT 文件 |
+一小时的会议是 3,600 秒。按第 2 步的 16 kHz、16 位单声道，PCM 是：
+
+$$ 3{,}600 \times 16{,}000 \times 2 = 115{,}200{,}000\ \text{B} = 115.2\ \text{MB} $$
+
+一张手机照片按 4 MB 算，约等于 $115.2 / 4 \approx 29$ 张。这个长度不适合放进一次按键的听写，输出也不是光标处的文字，所以文件有自己的路线。
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| 3,600 s | 一小时的会议 | 构造的例子 |
+| 16,000 | 每秒采样数 | `asr.SampleRate`，第 2 步 |
+| 2 B | 每个样本的字节数 | 16 位 PCM |
+| 115.2 MB | 这段 PCM 的大小 | 本步算式 |
+| 4 MB | 一张手机照片的估算 | 构造的比较 |
+
+### 代码里的两条路
 
 `runTranscribeCLI` 只把命令参数、标准输出、标准错误、socket 路径和一个解码函数交给 `transcribeCLI`（`Voxt/transcribe_cli.go:35-39`）。命令本身不做听写，也不碰历史。应用一侧的 `fileRecognizer` 直接调用 `asr.Recognize`（`Voxt/transcribe_socket.go:84-87`），没有经过 `session` 的整理、交付和历史写入。
-
-### 为什么单独画这条路线
-
-第 9 章的结尾问「除了现场说话，已有音频文件怎样变成字幕或文本？」。文件路线回答了这个问题，但它的输出不是光标处的文字，所以不能套用听写那一步的图。后面的步骤沿着橙色走。
 
 ### 接下来
 
@@ -73,14 +80,13 @@ PCM 已经能送进模型了，但模型在运行中的 Voxt 里。第 3 步讲�
 
 ## 第 3 步 · 本机 socket 交接
 
-> **一句话：** 命令把一行 JSON 请求和 PCM 通过本机的 `transcribe.sock` 送给运行中的 Voxt，应用每句回一行。
+> **一句话：** 命令把一行 JSON 请求和 PCM 通过本机的 `transcribe.sock` 送给运行中的 Voxt；命令一边写 PCM 一边读回复，所以回复可能在最后一块 PCM 传完前就回来。
 
 ### 图上是什么
 
-- 左边橙色框是命令，写着 `Voxt transcribe` 和文件名。
-- 中间蓝色圆角框是 `transcribe.sock`，标着 `0600 · 只在本机`。
-- 右边是运行中的 Voxt，说明它会选 Transcribe 的模型。
-- 下面一行是请求 JSON，再下面是 256,000 字节 PCM；再下面是三行回复。
+- 上面是命令、`transcribe.sock` 和运行中的 Voxt。socket 上写「只有你的账户」。
+- 中间上半是一段还在向右送的 PCM，写着 256,000 字节；下半是从右边回来的回复。
+- 下面写着：最后一块 PCM 还没传完，回复就可能到了。
 
 ### 请求和回复
 
@@ -100,57 +106,50 @@ PCM 已经能送进模型了，但模型在运行中的 Voxt 里。第 3 步讲�
 {"done":true,"count":2}
 ```
 
-`Segment` 的时间单位是纳秒，因为 Go 的 `time.Duration` 在 JSON 里就是整数纳秒（`Voxt/internal/fileasr/fileasr.go:26-31`）。图上为了读得清，只画了请求和示意回复；精确字段见上面。
+`Segment` 的时间单位是纳秒，因为 Go 的 `time.Duration` 在 JSON 里就是整数纳秒（`Voxt/internal/fileasr/fileasr.go:26-31`）。
+
+### 为什么不是「传完再开始」
+
+`Transcribe` 在 `socket.go:168-176` 里用一个 goroutine 先写请求行和整段 PCM，主 goroutine 同时读回复。服务端在 `socket.go:131-146` 读到请求行后，`transcribe` 用 `io.LimitReader` 把 PCM 交给 `fileasr.Run`；`Run` 每次读 64,000 字节（2 秒，`fileasr.go:36-37`），边切句边识别。因此一句的回复可以在后面的 PCM 还在上传时回来。图上的两条方向不同的箭头表示的就是这个并行。
+
+$$ \text{reply}_i \text{ can arrive while } \text{uploaded bytes} < \text{Request.Bytes} $$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $\text{reply}_i$ | 第 $i$ 句的回复 | `socket.go:41-46` |
+| `Request.Bytes` | 整段 PCM 的字节数 | `socket.go:35-39`，本步 256,000 |
+| 64,000 | 每次读的字节数 | `fileasr.go:36-37` |
 
 ### socket 在哪里，谁能打开
 
 socket 名是 `transcribe.sock`，放在应用的数据文件夹里（`socket.go:16-17`）。`historyapi.Listen` 绑定它之后 `chmod` 成 `0600`（`Voxt/internal/historyapi/server.go:101-114`）。它没有网络端口，只有你的账户能打开。命令不需要读你的任何文件夹，只读你给的那个文件。
 
-### 代入图上的数
-
-| 量 | 值 | 从哪来 |
-|---|---|---|
-| PCM 字节 | 256,000 | 第 2 步 |
-| socket 权限 | `0600` | `historyapi/server.go:111` |
-| 请求行上限 | 4,096 B | `socket.go:25-29` |
-| 回复行数 | 2 句 + 1 条 `done` | 本步例子 |
-
 ### 接下来
 
-应用拿到整段 PCM 后，先要决定在哪里断开成句。第 4 步讲停顿。
+应用一边收 PCM 一边切句。第 4 步讲停顿怎样结束一句。
 
 ## 第 4 步 · 停顿结束一句
 
-> **一句话：** 切句器每 10 ms 看一帧，安静满 450 ms 就结束一句；下一句从讲话前 300 ms 开始，讲话太短的句子丢掉。
+> **一句话：** 切句器每 10 ms 看一帧，安静满 450 ms 就结束一句。
 
 ### 图上是什么
 
 - 上面两条蓝色横线是第 1 句和第 2 句的时间范围：0.00–3.35 s、3.40–7.85 s。
 - 中间的波形蓝色是讲话，灰色是安静。
-- 中间的小橙框标出第 1 句末尾的 450 ms 安静；小蓝框标出第 2 句提前开始的 300 ms。
-- 下面三行是三条规则。
+- 中间的小橙框标出第 1 句末尾的 450 ms 安静。
+- 下面两行说：每帧 10 ms；句尾的安静也一起留下。
 
-### 三条规则
+### 结束条件和帧
 
-`Cutter` 的常量在 `Voxt/internal/meeting/cutter.go:9-19`：
+`Cutter` 的常量在 `Voxt/internal/meeting/cutter.go:9-19`：`cutterFrame = 10 ms`，`cutterSilenceCut = 450 ms`。结束条件是 `c.silence >= cutterSilenceCut`（`cutter.go:70-74`）。
 
-| 常量 | 值 | 作用 |
-|---|---|---|
-| `cutterFrame` | 10 ms | 每次检查一帧 |
-| `cutterSilenceCut` | 450 ms | 安静这么久就结束一句 |
-| `cutterPreRoll` | 300 ms | 新一句往前多留 300 ms |
-| `cutterMinUtterance` | 350 ms | 讲话不足这么久就丢掉 |
-
-结束条件是 `c.silence >= cutterSilenceCut`（`cutter.go:70-74`）。新一句在 `startUtterance` 里把起点减 300 ms（`cutter.go:95-105`），这样句首的辅音不会被切掉。短句在 `finalize` 里被拒绝（`cutter.go:119-127`）；调用方仍然会清空缓冲，所以短句不会留下来。
-
-$$ \text{cue end} = \text{last speech} + 450\ \text{ms},\qquad \text{cue start} = \text{speech onset} - 300\ \text{ms} $$
+$$ \text{cue end} = \text{last speech} + 450\ \text{ms} $$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
-| last speech | 最后一个讲话帧 | 本步的 10 ms 帧 |
-| 450 ms | 结束一句的安静长度 | `cutterSilenceCut` |
-| speech onset | 第一个超过能量门槛的帧 | `cutterSpeechRMS = 800` |
-| 300 ms | 句首预卷 | `cutterPreRoll` |
+| last speech | 最后一个超过能量门槛的帧 | `cutterSpeechRMS = 800`，`cutter.go:18` |
+| 450 ms | 结束一句的安静长度 | `cutterSilenceCut`，`cutter.go:12` |
+| 10 ms | 每帧的长度 | `cutterFrame`，`cutter.go:11` |
 
 ### 代入图上的数
 
@@ -158,8 +157,6 @@ $$ \text{cue end} = \text{last speech} + 450\ \text{ms},\qquad \text{cue start} 
 |---|---|---|
 | 第 1 句讲话结束 | 2.90 s | 构造 |
 | 第 1 句结束 | 3.35 s | $2.90 + 0.45$ |
-| 第 2 句讲话开始 | 3.70 s | 构造 |
-| 第 2 句开始 | 3.40 s | $3.70 - 0.30$ |
 | 第 2 句讲话结束 | 7.40 s | 构造 |
 | 第 2 句结束 | 7.85 s | $7.40 + 0.45$ |
 
@@ -169,18 +166,55 @@ $$ \text{cue end} = \text{last speech} + 450\ \text{ms},\qquad \text{cue start} 
 
 ### 接下来
 
-如果一句话一直说下去，450 ms 的规则永远不触发。第 5 步讲 7 秒上限。
+句子的起点还有一个规则。第 5 步讲 300 ms 的提前量。
 
-## 第 5 步 · 7 秒上限
+## 第 5 步 · 提前 300 ms 开始
+
+> **一句话：** 新的一句从讲话前 300 ms 开始，这样第一个辅音不会被切掉；讲话不足 350 ms 的句子会丢掉。
+
+### 图上是什么
+
+- 波形和上一步一样：第 1 句 0.00–3.35 s，第 2 句 3.40–7.85 s。
+- 第 2 句开头的小蓝框标出 300 ms 的提前量。
+- 下面两行：讲话从 3.70 秒开始，句子从 3.40 秒开始；这样保住第一个辅音。
+
+### 起点和最短长度
+
+`startUtterance` 把起点往前减 `cutterPreRoll = 300 ms`，但不小于 0（`cutter.go:95-105`）。它保留的是进入讲话前 `cutterPreRoll` 长的一段环形缓冲（`appendRing`，`cutter.go:111-117`）。
+
+短句在 `finalize` 里被拒绝：`voicedDur < cutterMinUtterance`（350 ms）时返回 `false`（`cutter.go:119-127`）。调用方仍然清空缓冲，所以短句不会留下来。
+
+$$ \text{cue start} = \max(0,\ \text{speech onset} - 300\ \text{ms}),\qquad \text{keep cue} \iff \text{voiced} \ge 350\ \text{ms} $$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| speech onset | 第一个讲话帧 | `cutterSpeechRMS = 800` |
+| 300 ms | 句首提前量 | `cutterPreRoll`，`cutter.go:15` |
+| voiced | 一句里讲话帧的总长 | `voicedDur`，`cutter.go:28` |
+| 350 ms | 一句至少要有多少讲话 | `cutterMinUtterance`，`cutter.go:13` |
+
+### 代入图上的数
+
+| 量 | 值 | 算式 |
+|---|---|---|
+| 第 2 句讲话开始 | 3.70 s | 构造 |
+| 第 2 句开始 | 3.40 s | $3.70 - 0.30$ |
+| 一句只有 200 ms 讲话 | 丢掉 | $200 < 350$ |
+
+### 接下来
+
+如果一句话一直说下去，450 ms 的规则永远不触发。第 6 步讲 7 秒上限。
+
+## 第 6 步 · 7 秒上限
 
 > **一句话：** 一句到 7 秒还没有长停顿时，切句器在最后 1 秒里找最安静的 100 ms 切开，剩下的继续当下一句。
 
 ### 图上是什么
 
 - 上面两条蓝线是第 1 段 0–6.5 s 和第 2 段 6.5–9 s。
-- 波形整段都是蓝色，表示没有 450 ms 的停顿。
-- 橙色框和虚线标出 6.0–7.0 s 的搜索范围，切点在 6.5 s。
-- 下面三行说：到 7 秒没有停顿、在最安静的 100 ms 里切、剩下的成为下一句。
+- 波形整段都是蓝色，只有 6.45–6.55 s 这一小段是灰色：这是构造出来的最安静窗口。
+- 橙色框标出 6.0–7.0 s 的搜索范围，虚线落在 6.5 s 的切点。
+- 下面三行：到 7 秒没有停顿、在最安静的 100 ms 里切、剩下的 2.5 秒成为下一句。
 
 ### 触发和切点
 
@@ -190,9 +224,9 @@ $$ \text{search} = [\,7 - 1,\ 7\,]\ \text{s},\qquad \text{cut} = \arg\min_{w \su
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
-| 7 s | 一句的长度上限 | `cutterMaxSegment` |
-| search | 最后 1 秒 | `cutterQuietSearch` |
-| $w$ | 100 ms 的窗口 | `cutterQuietWindow` |
+| 7 s | 一句的长度上限 | `cutterMaxSegment`，`cutter.go:14` |
+| search | 最后 1 秒 | `cutterQuietSearch`，`cutter.go:16` |
+| $w$ | 100 ms 的窗口 | `cutterQuietWindow`，`cutter.go:17` |
 | RMS | 窗口内的声音能量 | `frameRMS`，`cutter.go:165` |
 
 ### 代入图上的数
@@ -200,24 +234,25 @@ $$ \text{search} = [\,7 - 1,\ 7\,]\ \text{s},\qquad \text{cut} = \arg\min_{w \su
 | 量 | 值 | 从哪来 |
 |---|---|---|
 | 连续讲话 | 9 s | 构造 |
-| 第 1 段 | 0–6.5 s | 构造的切点 |
-| 第 2 段 | 6.5–9 s | $9 - 6.5$ |
 | 搜索范围 | 6.0–7.0 s | $7 - 1$ 到 $7$ |
+| 最安静窗口 | 6.45–6.55 s | 构造，围绕 6.5 s |
+| 第 1 段 | 0–6.5 s | 切点 |
+| 第 2 段 | 6.5–9 s | $9 - 6.5 = 2.5$ |
 
-切点不是固定的 6.5 s。本步的 6.5 是构造例子；真实切点由最后 1 秒里哪个 100 ms 窗口最安静决定。`cutAtQuietest` 把切点之后的缓冲留在 `c.buf`，并把 `utterStart` 设成切点，所以剩下的声音继续组成下一句（`cutter.go:135-146`）。
+切点不是固定的 6.5 s。图上的 6.5 是构造例子，安静窗就放在这里，所以「最安静的 100 ms」和切点对得上。真实切点由最后 1 秒里哪个 100 ms 窗口最安静决定。`cutAtQuietest` 把切点之后的缓冲留在 `c.buf`，并把 `utterStart` 设成切点（`cutter.go:135-146`）。
 
 ### 接下来
 
-句子切好了，应用把它们逐句送进模型。第 6 步讲识别。
+句子切好了，应用把它们逐句送进模型。第 7 步讲识别。
 
-## 第 6 步 · 逐句识别
+## 第 7 步 · 逐句识别
 
 > **一句话：** Voxt 用 Transcribe 选定的语音模型逐句识别，按顺序返回每句的文字，空文字的句子丢掉。
 
 ### 图上是什么
 
 - 上面蓝色宽框是 Transcribe 的语音模型，下面写着它是在设置的 Speech models 里选的。
-- 两行分别是第 1 句和第 2 句：左边橙色是时间范围，箭头指向右边蓝色框里的文字。
+- 两行分别是第 1 句和第 2 句：左边橙色是时间范围，箭头指向右边中性色框里的文字。
 - 下面说：返回空文字的句子会被丢掉；`--lang` 没给时用听写的语言提示。
 
 ### 识别器从哪里来
@@ -236,7 +271,7 @@ $$ \text{segments} \le \text{cues},\qquad \text{segment} \text{ is emitted only 
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
-| cues | 切句器交出的句子 | 第 4–5 步 |
+| cues | 切句器交出的句子 | 第 4–6 步 |
 | `text` | 模型对这一句的返回 | `asr.Recognize` |
 | `trim` | 去掉首尾空白 | `fileasr.go:50` |
 | segments | 回给命令的句子 | `fileasr.go:53-55` |
@@ -249,13 +284,13 @@ $$ \text{segments} \le \text{cues},\qquad \text{segment} \text{ is emitted only 
 | 2 | 3.40–7.85 s | `See you at noon.` | 是 |
 | 空句 | — | `""` | 否 |
 
-`fileasr.Run` 对每个 `Utterance` 调一次 `rec`，`strings.TrimSpace` 后为空就 `continue`（`fileasr.go:44-56`）。它按切句顺序处理，所以回复的顺序就是录音顺序。
+`fileasr.Run` 对每个 `Utterance` 调一次 `rec`，`strings.TrimSpace` 后为空就 `continue`（`fileasr.go:44-56`）。它按切句顺序处理，所以回复的顺序就是录音顺序；由于传输是并行的，第 1 句的回复可以在第 2 句的 PCM 还在上传时回来（第 3 步）。
 
 ### 接下来
 
-每句的文字和时间都齐了，命令要把它们写成文件。第 7 步讲 SRT 和 TXT。
+每句的文字和时间都齐了，命令要把它们写成文件。第 8 步讲 SRT 和 TXT。
 
-## 第 7 步 · 写成 SRT 或 TXT
+## 第 8 步 · 写成 SRT 或 TXT
 
 > **一句话：** 同样的句子可以写成带编号和起止时间的 SRT，也可以写成每句一行的 TXT；命令在最后一句之后才写文件。
 
@@ -263,7 +298,7 @@ $$ \text{segments} \le \text{cues},\qquad \text{segment} \text{ is emitted only 
 
 - 左边蓝框是 SRT：每句有编号、`HH:MM:SS,mmm` 格式的开始和结束时间、以及文字。
 - 右边橙框是 TXT：只有每句的文字，每句一行。
-- 下面说：最后一句之后才写文件；不给 `-o` 或写 `-o -` 时输出到 stdout，进度走 stderr。
+- 下面说：最后一句之后才写文件；不给 `-o` 时，文字打印在终端，进度另打印。
 
 ### 两种格式
 
@@ -296,13 +331,13 @@ TXT 只有两行：`Good morning.` 和 `See you at noon.`。
 
 ### 为什么失败时没有半个文件
 
-命令先把结果写进内存里的 `bytes.Buffer`，全部成功后才 `os.WriteFile`（`Voxt/transcribe_cli.go:91-101`）。如果识别在中途失败，`err != nil`，函数提前返回，缓冲区不会落盘。`-o -` 或没有 `-o` 时，它把缓冲区写到 stdout，也不创建文件。
+命令先把结果写进内存里的 `bytes.Buffer`，全部成功后才 `os.WriteFile`（`Voxt/transcribe_cli.go:91-101`）。如果识别在中途失败，`err != nil`，函数提前返回，缓冲区不会落盘。`-o -` 或没有 `-o` 时，它把缓冲区写到标准输出，也不创建文件。
 
 ### 接下来
 
-输出已经写好了。第 8 步看这条路线在 Mac 上留下什么。
+输出已经写好了。第 9 步看这条路线在 Mac 上留下什么。
 
-## 第 8 步 · 不写历史，不留录音
+## 第 9 步 · 不写历史，不留录音
 
 > **一句话：** 文件路线不写历史记录、不留录音，只写一行不含文字的日志；声音送给 Transcribe 选定的本机模型或远端服务。
 
@@ -327,7 +362,7 @@ $$ \text{log} = \{\text{audio length},\ \text{segment count},\ \text{error?}\} $
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
-| audio length | PCM 字节换算出的时长 | `socket.go:53-55` 的 `req.Bytes/2/16000` |
+| audio length | PCM 字节换算出的时长 | `req.Bytes/2/16000`，`socket.go:53-55` |
 | segment count | 回给命令的句子数 | `fileasr.go:53-55` |
 | error | 失败时的错误 | `transcribe_socket.go:95-97` |
 
