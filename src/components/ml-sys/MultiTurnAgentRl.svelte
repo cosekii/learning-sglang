@@ -194,12 +194,12 @@
     title: 'Three exits in the slime interaction loop', titleZh: 'slime 交互循环的三个出口',
     subtitle: 'alternative exits, not a check order or one run’s path', subtitleZh: '备选出口，不表示检查顺序或一次运行的路径',
     foot: 'Constructed alternatives; finish=length also truncates, and abort means cancelled.', footZh: '构造备选情形；finish=length 也会截断，abort 表示被取消。',
-    legend: 'Orange = limit · blue = finished · red = current', legendZh: '橙 = 达到限制 · 蓝 = 已完成 · 红 = 当前',
+    legend: 'Orange = TRUNCATED · blue = COMPLETED · red = example', legendZh: '橙 = TRUNCATED · 蓝 = COMPLETED · 红 = 示例',
     compare: true,
     nodes: [
-      { title: 'MAX TURNS', titleZh: '最大轮数', result: `turn ${N.AGENT_EXAMPLE_MAX_TURNS} of ${N.AGENT_EXAMPLE_MAX_TURNS}`, resultZh: `第 ${N.AGENT_EXAMPLE_MAX_TURNS} / ${N.AGENT_EXAMPLE_MAX_TURNS} 轮`, body: 'after this turn → COMPLETED', bodyZh: '本轮结束后 → COMPLETED', tone: 'blue' },
-      { title: 'TOKEN BUDGET', titleZh: 'TOKEN 预算', result: `${N.AGENT_EXAMPLE_TOKEN_BUDGET} − ${N.AGENT_RESPONSE_TOKENS} = 0`, resultZh: `${N.AGENT_EXAMPLE_TOKEN_BUDGET} − ${N.AGENT_RESPONSE_TOKENS} = 0`, body: 'no room → TRUNCATED', bodyZh: '没有余量 → TRUNCATED', tone: 'orange' },
-      { title: 'ENV DONE', titleZh: '环境完成', result: 'done = True', resultZh: 'done = True', body: 'O not appended → COMPLETED', bodyZh: '不追加 O → COMPLETED', tone: 'blue' },
+      { title: 'MAX TURNS', titleZh: '最大轮数', result: `turn ${N.AGENT_EXAMPLE_MAX_TURNS} of ${N.AGENT_EXAMPLE_MAX_TURNS}`, resultZh: `第 ${N.AGENT_EXAMPLE_MAX_TURNS} / ${N.AGENT_EXAMPLE_MAX_TURNS} 轮`, body: 'finish after this turn', bodyZh: '本轮结束后停止', tone: 'blue' },
+      { title: 'TOKEN BUDGET', titleZh: 'TOKEN 预算', result: `${N.AGENT_EXAMPLE_TOKEN_BUDGET} − ${N.AGENT_RESPONSE_TOKENS} = 0`, resultZh: `${N.AGENT_EXAMPLE_TOKEN_BUDGET} − ${N.AGENT_RESPONSE_TOKENS} = 0`, body: 'no response room left', bodyZh: '没有响应余量', tone: 'orange' },
+      { title: 'ENV DONE', titleZh: '环境完成', result: 'done = True', resultZh: 'done = True', body: 'do not append O', bodyZh: '不追加 O', tone: 'blue' },
     ],
     formulas: [
       { en: 'max_turns reached → COMPLETED', zh: '达到 max_turns → COMPLETED' },
@@ -212,7 +212,7 @@
       title: 'Three exits from the loop', titleZh: '交互循环的三个出口',
       subtitle: 'Alternative exits, not a check order', subtitleZh: '备选出口，不表示检查顺序',
       foot: 'Constructed alternatives; abort means cancelled.', footZh: '构造备选情形；abort 表示被取消。',
-      legend: 'Orange = limit · blue = finished · red = current', legendZh: '橙 = 达到限制 · 蓝 = 已完成 · 红 = 当前',
+      legend: 'Orange = cut off · blue = done · red = example', legendZh: '橙 = 截断 · 蓝 = 完成 · 红 = 示例',
       formulas: [
         { en: 'max_turns reached → COMPLETED', zh: '达到 max_turns → COMPLETED' },
         { en: 'Token budget ≤ 0 → TRUNCATED', zh: 'token 预算 ≤ 0 → TRUNCATED' },
@@ -373,6 +373,13 @@
   </g>
 {/snippet}
 
+{#snippet statusPill(x: number, y: number, w: number, label: string, tone: Tone)}
+  <g data-status={label} in:fly={{ y: -6, duration: 350 }} out:fade={{ duration: 120 }}>
+    <rect {x} {y} width={w} height="26" rx="7" fill={fill(tone)} stroke={stroke(tone)} stroke-width="2" />
+    <text x={x + w / 2} y={y + 18} text-anchor="middle" class="small strong">{label}</text>
+  </g>
+{/snippet}
+
 {#snippet imageIcon(x: number, y: number, label: string)}
   <g data-image={label} in:fly={{ y: -6, duration: 350 }} out:fade={{ duration: 120 }}>
     <rect {x} {y} width="44" height="28" rx="5" fill="var(--gen-soft)" stroke="var(--gen)" />
@@ -434,6 +441,14 @@
     {:else if i === 3 && phase >= 3}
       {@render tensorRows(x + 25, y + 58, w - 50, N.AGENT_MERGED_TENSOR_ROWS, 'blue')}
     {/if}
+  {:else if step === 5}
+    {#if i === 0}
+      {@render statusPill(x + 22, y + 63, w - 44, 'COMPLETED', 'blue')}
+    {:else if i === 1 && phase >= 1}
+      {@render statusPill(x + 22, y + 63, w - 44, 'TRUNCATED', 'orange')}
+    {:else if i === 2 && phase >= 2}
+      {@render statusPill(x + 22, y + 63, w - 44, 'COMPLETED', 'blue')}
+    {/if}
   {/if}
   </g>
 {/snippet}
@@ -442,7 +457,7 @@
   <div class="canvas">
     <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={aria}>
       <defs><marker id="agent-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--line)" /></marker></defs>
-      {#if !reduceMotion}<LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={4} label={t('loops · red = current', '循环 · 红 = 当前')} />{/if}
+      {#if !reduceMotion}<LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={4} label={step === 5 ? t('loops · red = example', '循环 · 红 = 示例') : t('loops · red = current', '循环 · 红 = 当前')} />{/if}
       <text x={phone ? 18 : 36} y="30" class="title">{phone ? t(cur.mobile?.title ?? cur.title, cur.mobile?.titleZh ?? cur.titleZh) : t(cur.title, cur.titleZh)}</text>
       <text x={phone ? 18 : 36} y="55" class="label">{phone ? t(cur.mobile?.subtitle ?? cur.subtitle, cur.mobile?.subtitleZh ?? cur.subtitleZh) : t(cur.subtitle, cur.subtitleZh)}</text>
       {#if !phone && step === 3}

@@ -182,10 +182,10 @@ Source: `THUDM/slime@f68dc4a25f362fc0335165a17ff976f5b6f675e1`, `examples/geo3k_
 
 ### On the stage
 
-- The three cards are alternative exits, not three states that one run passes through in sequence.
-- Reaching `max_turns` stops after this turn with `COMPLETED`.
-- A remaining token budget at or below zero stops with `TRUNCATED`, meaning a length limit cut the trajectory off.
-- An environment result of `done=True` stops with `COMPLETED` before appending that observation.
+- The three cards are separate constructed runs, not three states that one run passes through in sequence. The red outline says which example is playing; it is not a cursor in one trajectory.
+- The maximum-turn example gains a blue `COMPLETED` pill after turn 2.
+- The budget example subtracts all twelve tokens and gains an orange `TRUNCATED` pill, meaning a length limit cut that trajectory off.
+- The environment example returns `done=True` and gains a blue `COMPLETED` pill without appending that observation.
 - An inference result of `finish=length` also truncates. `abort` means cancelled. The cards do not expand those two exits.
 
 ### Formula and symbols
