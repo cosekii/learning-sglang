@@ -144,3 +144,29 @@ export const VOXT_DICT_MAX_ALIASES = 10;
 export const VOXT_DICT_GLOSSARY_ALL_UP_TO = 30;
 export const VOXT_DICT_GLOSSARY_MAX_TERMS = 60;
 export const VOXT_DICT_GLOSSARY_MAX_CHARS = 2000;
+
+// Public history retention defaults (Voxt/internal/settings/history.go; Voxt/internal/session/session.go).
+export const VOXT_HISTORY_KEEP_DAYS = 90;
+export const VOXT_HISTORY_KEEP_DAYS_CHOICES = [365, 180, 90, 30, 7];
+export const VOXT_HISTORY_KEEP_COUNT_DEFAULT = 0;
+export const VOXT_HISTORY_KEEP_COUNT_CHOICES = [0, 50, 100, 300, 500, 1000];
+export const VOXT_HISTORY_KIND_COUNT = 3;
+export const VOXT_RETRY_KEEP_DAYS = 7;
+export const VOXT_HISTORY_SWEEP_HOURS = 1;
+export const VOXT_RETRY_KEEP_HOURS = VOXT_RETRY_KEEP_DAYS * 24;
+export const VOXT_HISTORY_SHORTER_DAYS = VOXT_HISTORY_KEEP_DAYS - VOXT_RETRY_KEEP_DAYS;
+
+// Constructed teaching example: ten dictations a day for the default 90-day window.
+export const VOXT_HISTORY_DEMO_PER_DAY = 10;
+export const VOXT_HISTORY_DEMO_ROWS = VOXT_HISTORY_DEMO_PER_DAY * VOXT_HISTORY_KEEP_DAYS;
+
+// Constructed teaching dates around the default cutoff.
+export const VOXT_HISTORY_TODAY = '2026-11-26';
+export const VOXT_HISTORY_CUTOFF = '2026-08-28';
+export const VOXT_HISTORY_OLD_DATE = '2026-08-27';
+export const VOXT_HISTORY_KEPT_DATE = '2026-08-29';
+export const VOXT_HISTORY_OLD_DAYS = 91;
+export const VOXT_HISTORY_KEPT_DAYS = 89;
+export const VOXT_HISTORY_COUNT_EXAMPLE = 100;
+export const VOXT_HISTORY_COUNT_ROWS = 102;
+export const VOXT_HISTORY_COUNT_DELETED = VOXT_HISTORY_COUNT_ROWS - VOXT_HISTORY_COUNT_EXAMPLE;

@@ -1,0 +1,358 @@
+## Step 1 · One dictation leaves one row
+
+> **In one line:** A finished dictation writes one history row with its kind, app and final text, and it may also keep a recording of the voice.
+
+### On the stage
+
+- The wide blue box is one **history row**: `kind = transcribe`, `app = Mail`, `text = "send it to Priya."`.
+- The orange field `audio.wav` is the recording; it is there only when the settings keep recordings, or when recognition failed or the user cancelled.
+- The lower line is a constructed example: ten dictations a day for 90 days make 900 rows.
+- The dashed box says the chapter has not added a clock yet; both the row and the recording stay.
+
+### What is inside a row
+
+`store.Entry` is one finished session (`Voxt/internal/store/store.go:69`). The fields this chapter needs:
+
+| Field | Meaning | Source |
+|---|---|---|
+| `Kind` | `transcribe`, `translate` or `rewrite` | `store.go:70` |
+| `CreatedAt` | when the shortcut fired | `store.go:71` |
+| `Status` | `done`, `failed` or `cancelled` | `store.go:72` |
+| `RawText`, `Result` | what recognition heard, what was delivered | `store.go:85-89` |
+| `Audio` | the recording's file name in the history's audio folder; `""` for none | `store.go:134` |
+| `AudioUntil` | for a recording kept only for a retry, the time it goes | `store.go:138` |
+
+`session/run.go`'s `keep()` writes the row only when history is on (`inHistory`, `run.go:572`). It writes the WAV when `KeepAudio` is on, or when the recognition failed or the session was cancelled (`keepsRecording`, `run.go:583`).
+
+$$ \text{row} = \{\text{kind},\ \text{app},\ \text{text},\ \text{audio}?\} $$
+
+### Plugging in the stage's numbers
+
+| Symbol | Value on the stage | Where it comes from |
+|---|---|---|
+| dictations a day | 10 | constructed example |
+| keep days | 90 | this chapter's default clock, Step 2 |
+| rows | $10 \times 90 = 900$ | the stage's own arithmetic |
+
+### Why start here
+
+The row is the thing that has to expire, and its recording is a second thing with its own lifetime. Without a clock, both stay on this Mac for as long as the data folder exists. Step 2 puts the two lifetimes on one picture.
+
+### Next
+
+The row and the recording expire on separate clocks. Step 2 draws both.
+
+## Step 2 · Two clocks
+
+> **In one line:** The history row lasts 90 days by default, and a recording kept for a retry lasts 7 days; the second clock exists only for a failed or cancelled dictation when recordings are off.
+
+### On the stage
+
+- The upper blue bar is the **history row**: written at the left, deleted at day 90.
+- The lower orange bar is the **retry recording**. It is drawn on the same 90-day ruler, so its 7 days look short: $90 - 7 = 83$ days shorter.
+- The condition box says when a retry recording exists: recognition failed or the user cancelled, and keep recordings is off.
+
+### The two defaults
+
+`settings.History.Days()` returns 90 for the default document, where `KeepDays` is 0 or a value outside the choices (`Voxt/internal/settings/history.go:39`). `DefaultKeepDays = 90` (`history.go:28`); the other choices are 365, 180, 90, 30 and 7 days (`history.go:34`).
+
+A recording kept only for a retry gets `AudioUntil = now + Config.AudioRetention`, and `AudioRetention` defaults to `7 * 24h` (`Voxt/internal/session/session.go:355`; applied in `manager.go:133`).
+
+$$ T_{\text{row}} = 90\ \text{days},\qquad T_{\text{retry}} = 7\ \text{days} = 7 \times 24 = 168\ \text{hours} $$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $T_{\text{row}}$ | how long a row is kept by age | `settings/history.go:28` |
+| $T_{\text{retry}}$ | how long a retry-only recording is kept | `session/session.go:355` |
+| start of the row clock | `Entry.CreatedAt` | `store.go:71` |
+| start of the recording clock | the moment the failed row is written | `run.go:553` |
+
+### Plugging in the stage's numbers
+
+| Bar | Length on the same ruler | Why |
+|---|---|---|
+| history row | the full 600 px bar | 90 days |
+| retry recording | $600 \times 7 / 90 \approx 47$ px | 7 days |
+| difference | $90 - 7 = 83$ days | the two bars' lengths |
+
+### Why the clocks differ
+
+The row is the searchable text; it is useful for three months. A retry recording is a rescue copy for a bad recognition; seven days is enough to notice the failure and press Retry. The two clocks do not start together either: the row starts when the shortcut fires, the retry copy starts when the failed row is written.
+
+### Next
+
+Clock 1 has two rules. Step 3 takes the age rule.
+
+## Step 3 · Clock 1: age
+
+> **In one line:** The automatic clean-up deletes every row older than today minus the keep days, together with its recording.
+
+### On the stage
+
+- The equation reads `today 2026-11-26 − 90 days = cutoff 2026-08-28`.
+- The red card is a row from 2026-08-27, 91 days old: it is older than the cutoff, so it goes.
+- The blue card is a row from 2026-08-29, 89 days old: it is newer, so it stays.
+- The lower line says when the clean-up runs: at start, after each new row, and when the setting changes.
+
+### The cutoff and the delete
+
+`History.Cutoff(now)` returns `now.AddDate(0, 0, -h.Days())`, or the zero time when `CleanupOff` is set (`Voxt/internal/settings/history.go:61`). `pruneWhere` turns that into `created_at < cutoff` (`Voxt/internal/store/sqlitestore/history_retention.go:123`), and `Prune` runs one `DELETE … RETURNING audio` and then removes the files (`history_retention.go:135`).
+
+$$ \text{cutoff} = \text{now} - 90\ \text{days},\qquad \text{delete row} \iff \text{created\_at} < \text{cutoff} $$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| `now` | the moment the clean-up runs | `history_settings_ops.go:69` |
+| 90 days | `History.Days()` | `settings/history.go:39` |
+| `created_at` | the row's write time | `store.go:71` |
+| `Prune` | deletes the rows and their audio | `history_retention.go:135` |
+
+### Plugging in the stage's numbers
+
+| Row | Age | Compared with the cutoff | Result |
+|---|---|---|---|
+| 2026-08-27 | 91 days | older | deleted, with its recording |
+| 2026-08-28 | 90 days | at the cutoff | deleted once the clock passes its hour |
+| 2026-08-29 | 89 days | newer | stays |
+
+The stage uses 91 and 89 so neither card sits exactly on the boundary. The cutoff moves one day later each day, so a row that survives today is deleted on the day its age passes 90.
+
+### When it runs
+
+`history_settings_ops.go` says the clean-up runs at the start, after each change of the history (a new entry), and when its setting changes (`history_settings_ops.go:7-10`). `pruneHistory` runs one job at a time and once more if asked while it runs (`history_settings_ops.go:69`).
+
+### Boundary
+
+Turning automatic clean-up off (`history.cleanupOff`) makes `Cutoff` return the zero time, so this rule stops. The count rule in Step 4 stops too, because `PerKind` returns 0 when the clean-up is off (`settings/history.go:70`).
+
+### Next
+
+The clean-up can also delete rows that are young but past a count. Step 4 draws that rule.
+
+## Step 4 · Clock 1: count per kind
+
+> **In one line:** The same clean-up keeps at most N rows of each kind, counting transcribe, translate and rewrite separately; zero means no limit.
+
+### On the stage
+
+- The three columns are the three kinds: `transcribe`, `translate`, `rewrite`.
+- The first column shows the constructed example: 102 rows in, keep the newest 100, delete the oldest 2 (red).
+- The two lower lines say each kind counts on its own; N can be 50, 100, 300, 500 or 1000, and 0 means no limit.
+- The last line says the age and count rules run together.
+
+### How the count is applied
+
+`History.PerKind()` returns `Count()` unless the clean-up is off (`Voxt/internal/settings/history.go:70`). `Count()` returns 0 for a value outside the choices, which means no limit (`history.go:50`). `pruneWhere` adds a window function:
+
+$$ \text{delete row} \iff \text{row} \in \{\, \text{rows with } \mathrm{rank}_{\text{kind}} > N \,\} $$
+
+`ROW_NUMBER() OVER (PARTITION BY kind ORDER BY created_at DESC, id DESC)` numbers each kind's rows newest first; every row with `n > N` is deleted (`history_retention.go:129`).
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| `kind` | transcribe, translate or rewrite | `store.go:70` |
+| $N$ | rows to keep per kind | `settings/history.go:50` |
+| `n > N` | rows past the newest N of their kind | `history_retention.go:129` |
+| 0 | no limit, the default | `settings/history.go:19` |
+
+### Plugging in the stage's numbers
+
+| Quantity | Value | Where it comes from |
+|---|---|---|
+| rows of one kind | 102 | constructed example |
+| N | 100 | one of the settings choices |
+| deleted | $102 - 100 = 2$ | the oldest two of that kind |
+
+### Both rules, one delete
+
+`pruneWhere` joins the two conditions with `OR` when both are set (`history_retention.go:119-132`). A row goes if it is too old **or** past its kind's count. The clean-up does not need both to fail.
+
+### Boundary
+
+Count is per kind, not across all history. 100 transcribe rows and 100 translate rows can coexist. The default is 0, so a fresh install deletes nothing by count.
+
+### Next
+
+Clock 1 is done. Step 5 takes the shorter clock and the recording it holds.
+
+## Step 5 · Clock 2: the retry recording
+
+> **In one line:** A recording kept for a retry lasts 7 days, is checked every hour, and a successful retry deletes it at once.
+
+### On the stage
+
+- The orange card is a failed transcribe row written on 2026-11-26, with `audio.wav`.
+- The upper bar is the history row: 90 days. The lower bar is the retry recording: 7 days, with a line at day 7.
+- The lower text says the copy is kept even when keep recordings is off, because Retry can still use it.
+- The bottom lines say the sweep runs every hour (`7 × 24 = 168`), a successful retry deletes the copy at once, and with recordings on the recording follows the row for 90 days.
+
+### When the copy exists
+
+`keepsRecording` returns true when `KeepAudio` is on, or the recognition failed, or the session was cancelled (`Voxt/internal/session/run.go:583`). When the recording is kept only for a retry, `keep()` sets `AudioUntil = now + cfg.AudioRetention` (`run.go:552`). `KeepAudio` defaults to off, so a failed or cancelled dictation leaves the WAV for 7 days and the row has no permanent audio.
+
+$$ \text{AudioUntil} = t_{\text{fail}} + 7\ \text{days} $$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $t_{\text{fail}}$ | when the failed row is written | `run.go:553` |
+| `AudioRetention` | 7 days by default | `session/session.go:355` |
+| `AudioUntil` | the time the retry copy goes | `store.go:138` |
+
+### The sweep and the guarded delete
+
+`expireRecordings` starts at app launch and calls `History.ExpireAudio` every hour (`Voxt/history_retry.go:89`, `history_retry.go:91`). The query selects rows with `audio != '' AND audio_until > 0 AND audio_until <= now`; each delete is guarded by `WHERE seq = ? AND audio = ? AND audio_until > 0`, so a row retried meanwhile is not cleared (`Voxt/internal/store/sqlitestore/history.go`, `ExpireAudio`). The files are removed after the rows are updated.
+
+### Plugging in the stage's numbers
+
+| Quantity | Value | Where it comes from |
+|---|---|---|
+| retry days | 7 | `DefaultAudioRetention` |
+| sweep interval | 1 hour | `recordingSweep` |
+| sweeps in 7 days | $7 \times 24 = 168$ | the stage's arithmetic |
+
+### A success deletes it early, recordings on ties it to the row
+
+A successful retry clears `AudioUntil`; when `KeepAudio` is off it also removes the file and sets `Audio = ""` (`Voxt/internal/session/retry.go:82-88`). With `KeepAudio` on, `AudioUntil` was never set, so the recording lives with the row for the row's 90 days.
+
+### Boundary
+
+The retry clock only starts for a failed or cancelled recognition with recordings off. A successful dictation whose recording is off keeps no audio at all.
+
+### Next
+
+Why keep a recording the user did not ask to keep? Step 6 shows the command that spends it.
+
+## Step 6 · Retry uses the recording
+
+> **In one line:** Retry recognizes the whole kept recording again, runs the language-model step with the current settings, and updates the same row without inserting anything.
+
+### On the stage
+
+- The orange box is the row with `audio.wav`.
+- The arrows go through **read the file**, **recognize the whole recording**, and **run the current settings**.
+- The blue box at the end says the same row is updated: old text becomes new text.
+- The lower lines say nothing is inserted, only rows with a kept recording can retry, and a missing file gives "the recording is gone".
+
+### What Retry reads and writes
+
+`Manager.Retry` reads the entry's WAV (`Voxt/internal/session/retry.go:50`) and rejects a missing recording or a file that is not 16 kHz mono (`retry.go:52`, `retry.go:60`). It recognizes the whole file (`retry.go:157`, `retry.go:175`), then runs the feature's language-model step with the settings as they are now: cleanup for Transcribe, the entry's target for Translate, the entry's selection for Rewrite (`retry.go:38-44`). It writes the same entry back with `History.Put` (`retry.go:93`).
+
+$$ \text{row}' = \mathrm{retry}(\text{audio.wav},\ \text{settings now}),\qquad \text{row}'.id = \text{row}.id $$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| `audio.wav` | the kept recording named in `Entry.Audio` | `store.go:134` |
+| settings now | the current cleanup and model choices | `retry.go:38` |
+| same row | the entry's ID is unchanged | `retry.go:93` |
+| no insert | Retry never calls the delivery path | `retry.go:38` |
+
+### Plugging in the stage's numbers
+
+| Item | Value on the stage | Why |
+|---|---|---|
+| file format | 16 kHz mono WAV | `retry.go:60` |
+| text before | failed, no result | the failed row from Step 5 |
+| text after | the new recognition's result | `retry.go:81` |
+| inserted text | none | `retry.go:38` |
+
+### Why it runs beside a session
+
+The Retry comment says it runs beside any live session and never takes the Manager's session, and that it blocks on its own goroutine (`retry.go:41-44`). So a retry does not stop a new dictation, and the new dictation does not overwrite the retried row.
+
+### Boundary
+
+Retry uses the current settings, not the settings from the day of the failure. A row whose recording is gone cannot be retried; the app says "the recording is gone" (`retry.go:52`). A row with no kept recording never had a retry path.
+
+### Next
+
+The row and the recording have their clocks. Step 7 shows what leaves the Mac when a program exports the history.
+
+## Step 7 · Export: what leaves the row
+
+> **In one line:** Export writes only finished rows, oldest first, with the text and recognition result; recordings, addresses, errors, rule names, model names and timings never leave.
+
+### On the stage
+
+- The left blue card lists the exported fields: `id`, `created_at`, `kind`, `app`, `text`, `heard`, `instruction`, `target_lang`, `selection *`, `typed *`.
+- The star means the field appears only when **include selected text** is on.
+- The right card lists what never goes out: the recording, the web address, the error message, the rule name, the model name and the timings.
+- The bottom lines give the range flags and the two formats.
+
+### The exported row
+
+`historyapi.Row` is the complete list of exported fields (`Voxt/internal/historyapi/row.go:24`). The package comment says a new `store.Entry` field does not come along by itself. `Walk` sets `Finished` and `Oldest`, so failed and cancelled rows stay out and rows come oldest first (`row.go:57`). `FromEntry` fills the row and adds `selection` only when the setting is on; `typed` needs the setting and a Rewrite with a spoken instruction (`row.go:47-55`).
+
+$$ \text{export} = \{\text{id},\ \text{created\_at},\ \text{kind},\ \text{app}?,\ \text{text},\ \text{heard},\ \text{instruction}?,\ \text{target\_lang}?,\ \text{selection}?,\ \text{typed}?\} $$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| `text` | the delivered result | `row.go:35` |
+| `heard` | the recognition text before cleanup | `row.go:36` |
+| `instruction` | Rewrite's spoken instruction | `row.go:37` |
+| `selection` | selected text, only with the setting | `row.go:44` |
+| `typed` | Rewrite's typed text, under the same setting | `row.go:51` |
+
+### Plugging in the stage's numbers
+
+| Field | Present on the stage? | Condition |
+|---|---|---|
+| `selection` | starred | include selected text on |
+| `typed` | starred | include selected text on, and a Rewrite instruction exists |
+| recording, URL, error, rule, model, timings | never | `history-access.md` |
+
+### Formats and ranges
+
+`--day YYYY-MM-DD` takes the local calendar day, 23 or 25 hours long when the clocks change; `--since T` and an optional `--until T` take RFC 3339 times or dates. A range includes its start and excludes its end (`Voxt/docs/history-access.md`). `--format jsonl` writes one JSON object a line; `--format md` writes a `## YYYY-MM-DD` section a day (`historyapi/render.go`). Export text from the History page uses the same row and the same selected-text setting.
+
+### Boundary
+
+The export command needs the access switch from Step 8, but the History page's **Export text…** does not: you are the one running it. A file exported by hand is yours; the automatic clean-up and Clear the history do not touch it.
+
+### Next
+
+Export can be turned on and off. Step 8 shows the switch and what it does not protect.
+
+## Step 8 · The access switch is not a wall
+
+> **In one line:** The switch opens one logged command for other programs; a program running as the same user can still read the database file directly, whether the switch is on or off.
+
+### On the stage
+
+- The left blue box is the documented way: switch off, the command gets no answer (exit 3); switch on, each read logs time, count and program name, a new name raises a notice, and the log holds no text.
+- The right grey box is the direct path: `voxtnew.db`, the one file that holds the history, read by a program running as the user, not logged, and the switch does not change it.
+- The bottom line says other accounts cannot reach the socket (mode 0600 inside `~/Library`) and there is no network port.
+- The dashed box hands the next-chapter question to the stage.
+
+### What the switch does
+
+`privacy.historyAccess` is off by default and asks once before it turns on. With it off the socket does not exist, so `Voxt history` fails with exit 3 (`Voxt/docs/history-access.md`; `history_access_controller.go`, `syncHistoryAccess`). With it on, `historyapi.Server` calls the audit hook after each request and logs `At`, `Op`, `Count`, `Program` and `As`; it keeps no history text (`historyapi/server.go:70-78`). `Listen` creates the socket with mode `0600` (`server.go:94`), inside `~/Library`, and no port is opened.
+
+$$ \text{answer} = \begin{cases} \text{logged read}, & \text{switch on} \\ \text{exit 3}, & \text{switch off} \end{cases} $$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| `historyAccess` | the switch, default off | `settings.md` Privacy table |
+| exit 3 | no answer: app not running or switch off | `history_cli.go:27` |
+| audit row | time, op, count, program, no text | `historyapi/server.go:70` |
+| mode 0600 | only this account can open the socket | `server.go:94` |
+
+### Plugging in the stage's numbers
+
+| Path | Switch off | Switch on | Logged? |
+|---|---|---|---|
+| `Voxt history` command | exit 3 | works | yes, when on |
+| `voxtnew.db` by the same user | readable | readable | no |
+| another macOS account | cannot reach the socket | cannot reach the socket | n/a |
+| a web page or another device | no port | no port | n/a |
+
+### Why it is not a boundary
+
+Voxt is not sandboxed and keeps its data in `~/Library/Application Support/VoxtNew`. Any non-sandboxed program running under the same account can open `voxtnew.db` directly, and that read is not logged (`Voxt/docs/history-access.md`). The switch makes the documented way opt-in and visible; it does not protect the history from software already running as you. Program names in the log are best effort and can be forged.
+
+### Parallel cleanup
+
+Clear the history removes every row and its recording, then compacts the database (`history.go`, `DeleteAll`). The compaction is there so the deleted text does not stay in free pages; a failed compaction is logged, not returned. That is a different action from the two clocks and runs only when the user asks.
+
+### Next
+
+The row and its recording are gone after their clocks. The next chapter asks how an audio file you already have becomes SRT or TXT. Chapter 10's file transcription reuses the recognition route and writes a file instead of text at a cursor.
