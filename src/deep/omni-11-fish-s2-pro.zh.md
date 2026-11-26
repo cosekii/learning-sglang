@@ -1,6 +1,6 @@
-## 第 1 步 · 首个窗口需要 40 帧
+## 第 1 步 · 首个非最后窗口需要 40 帧
 
-> **一句话：** Fish 默认要先生成 40 帧，流式 vocoder 才打开首个窗口。
+> **一句话：** 默认首个非最后窗口在 40 帧打开；更短的请求最后直接解码。
 
 ### 图上是什么
 
@@ -19,7 +19,7 @@ $$
 | 符号 | 是什么 | 大小 | 从哪来 |
 |---|---|---:|---|
 | $N_{\text{choices}}$ | 首个窗口需要的 codebook 条目数 | 400 | 本步 |
-| $F_{\text{first}}$ | 首个流式窗口需要的帧数 | 40 | `audio_stream.py` 默认值 |
+| $F_{\text{first}}$ | 首个非最后流式窗口需要的帧数 | 40 | Fish `streaming_vocoder.py` 默认值 |
 | $C$ | 每帧送给 vocoder 的 codebook 行数 | 10 | 第 10 章第 8 步 |
 | $D$ | 这些帧代表的声音时长 | 1.858 秒 | 本步公式 |
 | $S$ | 一个 codec 帧代表的采样点数 | 2,048 | DAC 的 hop 和量化倍率 |
@@ -45,7 +45,7 @@ $$
 
 下一步先把参考声音也变成同样的十行表示，再开始生成。
 
-出处：`models/fishaudio_s2_pro/config.py:23-67`；`scheduling/audio_stream.py:65-148`；`models/fishaudio_s2_pro/sglang_model.py:418-510`；`models/fishaudio_s2_pro/fish_speech/models/dac/modded_dac.py:885-913,928-988`。
+出处：`models/fishaudio_s2_pro/config.py:23-67`；`models/fishaudio_s2_pro/streaming_vocoder.py:43-66`；`scheduling/audio_stream.py:86-148`；`models/fishaudio_s2_pro/sglang_model.py:418-510`；`models/fishaudio_s2_pro/fish_speech/models/dac/modded_dac.py:885-913,928-988`。
 
 ## 第 2 步 · 参考声音变成十行
 
@@ -65,6 +65,8 @@ $$
 F_{\text{ref}} = \left\lceil \frac{R \times T}{S} \right\rceil,\qquad
 P = F_{\text{ref}}S - RT
 $$
+
+向上取整符号表示：最后一个 codec 帧即使不满，也会补成一个完整帧。
 
 | 符号 | 是什么 | 大小 | 从哪来 |
 |---|---|---:|---|
@@ -164,7 +166,7 @@ $$
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
 | $raw$ | Slow AR 的语义词表 token | `sglang_model.py` 的 Slow 输出 |
-| $B$ | 附加语义词表起点，这个 checkpoint 是 151,678 | `fish_speech/tokenizer.py` |
+| $B$ | 附加语义词表起点，这个 checkpoint 是 151,678 | `request_builders.py:133-137` |
 | $c_0$ | 从 $raw$ 得到的语义 DAC code | 本步公式 |
 | $N_{\text{Fast}}$ | 本帧 Fast 调用数，包含第 0 次 | Fast 循环 |
 | $N_{\text{engine}}$ | 保存行数：一个原始 token 加十个 DAC codes | `payload_types.py` |
@@ -178,7 +180,7 @@ $$
 
 第 5 步跟着这些 codes 进入下一个 Slow 帧，比较两层循环分别记住什么。
 
-出处：`models/fishaudio_s2_pro/sglang_model.py:294-300,418-510`；`models/fishaudio_s2_pro/payload_types.py:35-50`；`models/fishaudio_s2_pro/streaming_vocoder.py:88-106`；`models/fishaudio_s2_pro/fish_speech/tokenizer.py:19-37`。
+出处：`models/fishaudio_s2_pro/sglang_model.py:294-300,418-510`；`models/fishaudio_s2_pro/payload_types.py:35-50`；`models/fishaudio_s2_pro/streaming_vocoder.py:88-106`；`models/fishaudio_s2_pro/fish_speech/tokenizer.py:19-37`；`models/fishaudio_s2_pro/request_builders.py:133-137`。
 
 ## 第 5 步 · 两层循环记住不同的状态
 
@@ -234,7 +236,7 @@ $$
 | 符号 | 是什么 | 算例大小 | 从哪来 |
 |---|---|---:|---|
 | $M$ | 有效生成预算 | 1,024 tokens | 本步公式 |
-| $M_{\text{request}}$ | 请求上限 | 默认 1,024 | `engine_builder.py` |
+| $M_{\text{request}}$ | 请求上限 | 默认 1,024 | `payload_types.py:39` |
 | $P$ | prompt token 数 | 构造值 1,000 | 本步算例 |
 | $4096-1-P$ | 预留一个 token 后的上下文空间 | 3,095 | engine 预算规则 |
 
@@ -248,7 +250,7 @@ $$
 M = \min(1024,2048,3095) = 1024\ \text{tokens}
 $$
 
-1,000-token prompt 是构造值，三项限制和请求默认上限来自源码。
+1,000-token prompt 是构造值，三项限制和请求默认上限来自源码。每个接受的生成 token 是一次 Slow 输出，最多产生一个音频帧。按每帧 2,048 ÷ 44,100 秒计算，1,024 个接受帧代表约 47.55 秒声音。这是声音时长上界，不是延迟测量。
 
 立即遇到 EOS 会得到零个接受帧。结果适配会报「generated no audio codec tokens」，不返回空声音。中止不能收回已经交付的 chunks。
 
@@ -256,7 +258,7 @@ $$
 
 第 7 步跟随接受的帧进入流式 vocoder 的重叠窗口。
 
-出处：`models/fishaudio_s2_pro/model_runner.py:48-76`；`models/fishaudio_s2_pro/request_builders.py:148-167,192-202,233-248`；`models/fishaudio_s2_pro/engine_builder.py:87-100`；`tests/unit_test/fishaudio_s2_pro/test_tts.py:486-531,616-673`。
+出处：`models/fishaudio_s2_pro/model_runner.py:48-76`；`models/fishaudio_s2_pro/request_builders.py:148-167,192-202,233-248`；`models/fishaudio_s2_pro/engine_builder.py:87-100`；`models/fishaudio_s2_pro/payload_types.py:35-50`；`tests/unit_test/fishaudio_s2_pro/test_tts.py:486-531,616-673`。
 
 ## 第 7 步 · 流式窗口有重叠
 
@@ -267,7 +269,7 @@ $$
 - 构造请求一共生成 90 帧。
 - 首个窗口读 40 帧新内容，下一次读 20 帧旧内容加 45 帧新内容，最后读 20 帧旧内容加 5 帧新内容。
 - 蓝段是新帧，橙段是再次解码的旧帧。
-- 灰色 512 采样点尾巴是留下来做交叉混合的旧声音，最后会释放。
+- 每个未结束窗口留下新的灰色 512 采样点尾巴。下一窗口交叉混合旧尾巴并留下自己的，最后一次释放最后的尾巴。
 - $F$ 是一个 codec 帧代表的 2,048 个声音采样点。
 
 ### 公式与代入图上的数
@@ -290,7 +292,7 @@ $$
 (40F-512)+45F+(5F+512)=90F
 $$
 
-多出的 40 帧输入是重复工作，不是额外输出。两个 512 在总量中抵消，因为尾巴只是延后交付，没有丢弃。
+多出的 40 帧输入是重复工作，不是额外输出。中间调用输出 $45F+512-512=45F$：它用掉首个尾巴，同时留下新的尾巴，最后一次再释放第二个尾巴。每段 512 采样点尾巴代表 512 ÷ 44,100 ≈ 11.6 ms 声音。旧帧会再次解码，不会再次播放。
 
 ### 接下来
 
@@ -308,7 +310,7 @@ $$
 - A 有 90 帧，B 有 40 帧。engine 结果有十一行，vocoder 去掉 Slow 原始行后读取十行。
 - 蓝条是真实 code 帧，灰条是给 B 补的 50 帧。
 - 一次 `[2,10,90]` vocoder 调用返回两份输出，裁切去掉 B 的补位。
-- 默认最多收集八个已完成请求，等待 2 ms。流式窗口仍逐请求运行。
+- 默认最多收集八个已完成请求，额外请求最多等待 2 ms。流式窗口仍逐请求运行。
 
 ### 公式与代入图上的数
 
@@ -326,6 +328,10 @@ $$
 
 $$
 B:\ 40 \times 2{,}048 = 81{,}920\ \text{个采样点}
+$$
+
+$$
+184{,}320 \div 44{,}100 \approx 4.18\ \text{秒},\qquad 81{,}920 \div 44{,}100 \approx 1.86\ \text{秒}
 $$
 
 | 符号 | 是什么 | 从哪来 |

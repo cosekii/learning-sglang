@@ -1,6 +1,6 @@
-## Step 1 · Forty frames before the first window
+## Step 1 · Forty frames before the first non-final window
 
-> **In one line:** Fish must generate 40 frames before the default streaming vocoder opens its first window.
+> **In one line:** The default first non-final window opens at 40 frames; a shorter request decodes in the final flush.
 
 ### On the stage
 
@@ -19,7 +19,7 @@ $$
 | Symbol | What it is | Value | Where it comes from |
 |---|---|---:|---|
 | $N_{\text{choices}}$ | Codebook entries needed by the first window | 400 | This step |
-| $F_{\text{first}}$ | Frames required by the first streaming window | 40 | Shipped `audio_stream.py` default |
+| $F_{\text{first}}$ | Frames required by the first non-final streaming window | 40 | Fish `streaming_vocoder.py` default |
 | $C$ | Vocoder codebook rows per frame | 10 | Ch. 10 Step 8 |
 | $D$ | Sound duration represented by those frames | 1.858 s | This formula |
 | $S$ | Samples represented by one codec frame | 2,048 | DAC hop and quantizer factors |
@@ -45,7 +45,7 @@ The default threshold and frame dimensions are real configuration values. The mu
 
 The next step creates the same ten-row representation from a reference voice before generation starts.
 
-Sources: `models/fishaudio_s2_pro/config.py:23-67`; `scheduling/audio_stream.py:65-148`; `models/fishaudio_s2_pro/sglang_model.py:418-510`; `models/fishaudio_s2_pro/fish_speech/models/dac/modded_dac.py:885-913,928-988`.
+Sources: `models/fishaudio_s2_pro/config.py:23-67`; `models/fishaudio_s2_pro/streaming_vocoder.py:43-66`; `scheduling/audio_stream.py:86-148`; `models/fishaudio_s2_pro/sglang_model.py:418-510`; `models/fishaudio_s2_pro/fish_speech/models/dac/modded_dac.py:885-913,928-988`.
 
 ## Step 2 · Reference audio becomes ten rows
 
@@ -65,6 +65,8 @@ $$
 F_{\text{ref}} = \left\lceil \frac{R \times T}{S} \right\rceil,\qquad
 P = F_{\text{ref}}S - RT
 $$
+
+The ceiling brackets mean “round up”: a partial final codec frame still becomes one padded frame.
 
 | Symbol | What it is | Value | Where it comes from |
 |---|---|---:|---|
@@ -164,7 +166,7 @@ $$
 | Symbol | What it is | Where it comes from |
 |---|---|---|
 | $raw$ | Slow AR's semantic-vocabulary token | Slow output in `sglang_model.py` |
-| $B$ | Added semantic-vocabulary base, 151,678 in this checkpoint | `fish_speech/tokenizer.py` |
+| $B$ | Added semantic-vocabulary base, 151,678 in this checkpoint | `request_builders.py:133-137` |
 | $c_0$ | Semantic DAC code derived from $raw$ | This formula |
 | $N_{\text{Fast}}$ | Fast calls for this frame, including call 0 | Fast loop |
 | $N_{\text{engine}}$ | Stored rows: one raw token plus ten DAC codes | `payload_types.py` |
@@ -178,7 +180,7 @@ One Slow choice creates one derived code 0. Nine Fast choices create codes 1–9
 
 Step 5 follows these codes into the next Slow frame and compares what the two loops retain.
 
-Sources: `models/fishaudio_s2_pro/sglang_model.py:294-300,418-510`; `models/fishaudio_s2_pro/payload_types.py:35-50`; `models/fishaudio_s2_pro/streaming_vocoder.py:88-106`; `models/fishaudio_s2_pro/fish_speech/tokenizer.py:19-37`.
+Sources: `models/fishaudio_s2_pro/sglang_model.py:294-300,418-510`; `models/fishaudio_s2_pro/payload_types.py:35-50`; `models/fishaudio_s2_pro/streaming_vocoder.py:88-106`; `models/fishaudio_s2_pro/fish_speech/tokenizer.py:19-37`; `models/fishaudio_s2_pro/request_builders.py:133-137`.
 
 ## Step 5 · The two loops keep different state
 
@@ -234,7 +236,7 @@ $$
 | Symbol | What it is | Value in the example | Where it comes from |
 |---|---|---:|---|
 | $M$ | Effective generation budget | 1,024 tokens | This formula |
-| $M_{\text{request}}$ | Request's maximum | 1,024, the default | `engine_builder.py` |
+| $M_{\text{request}}$ | Request's maximum | 1,024, the default | `payload_types.py:39` |
 | $P$ | Prompt token count | 1,000, constructed | This teaching example |
 | $4096-1-P$ | Context room after reserving one token | 3,095 | Engine budget rule |
 
@@ -248,7 +250,7 @@ $$
 M = \min(1024,2048,3095) = 1024\ \text{tokens}
 $$
 
-The 1,000-token prompt is constructed. The three limits and the default request cap come from source.
+The 1,000-token prompt is constructed. The three limits and the default request cap come from source. Each accepted generation token is one Slow output and yields at most one audio frame. At 2,048 ÷ 44,100 seconds per frame, 1,024 accepted frames represent about 47.55 seconds of sound. This is a content-duration bound, not a latency measurement.
 
 An immediate EOS produces zero accepted frames. Result adaptation raises “generated no audio codec tokens” rather than returning empty audio. Abort does not recall chunks already delivered.
 
@@ -256,7 +258,7 @@ An immediate EOS produces zero accepted frames. Result adaptation raises “gene
 
 Step 7 follows accepted frames into the streaming vocoder's overlapping windows.
 
-Sources: `models/fishaudio_s2_pro/model_runner.py:48-76`; `models/fishaudio_s2_pro/request_builders.py:148-167,192-202,233-248`; `models/fishaudio_s2_pro/engine_builder.py:87-100`; `tests/unit_test/fishaudio_s2_pro/test_tts.py:486-531,616-673`.
+Sources: `models/fishaudio_s2_pro/model_runner.py:48-76`; `models/fishaudio_s2_pro/request_builders.py:148-167,192-202,233-248`; `models/fishaudio_s2_pro/engine_builder.py:87-100`; `models/fishaudio_s2_pro/payload_types.py:35-50`; `tests/unit_test/fishaudio_s2_pro/test_tts.py:486-531,616-673`.
 
 ## Step 7 · Streaming windows overlap
 
@@ -267,7 +269,7 @@ Sources: `models/fishaudio_s2_pro/model_runner.py:48-76`; `models/fishaudio_s2_p
 - This constructed request generates 90 frames in total.
 - The first window reads 40 new frames. The next reads 20 old plus 45 new. The final flush reads 20 old plus five new.
 - Blue segments are new frames. Orange segments are old frames decoded again.
-- The grey 512-sample tail is earlier sound held for a crossfade, then released at the final flush.
+- Each non-final window holds a fresh grey 512-sample tail. The next window crossfades the previous tail and holds its own; the final flush releases the last tail.
 - $F$ means the 2,048 audio samples represented by one codec frame.
 
 ### Formula and the numbers on the stage
@@ -290,7 +292,7 @@ $$
 (40F-512)+45F+(5F+512)=90F
 $$
 
-The 40 extra input frames are repeated work, not extra output. The 512-sample tails cancel in the total because the tail is delayed rather than discarded.
+The 40 extra input frames are repeated work, not extra output. The middle call emits $45F+512-512=45F$: it uses the first tail and holds a fresh one. The final flush releases that second tail. Each 512-sample tail represents 512 ÷ 44,100 ≈ 11.6 ms of sound. Old frames are decoded again but not played again.
 
 ### Next
 
@@ -308,7 +310,7 @@ Sources: `scheduling/audio_stream.py:65-148,151-239,242-333`; `scheduling/audio_
 - A has 90 frames and B has 40. The engine result includes eleven rows; the vocoder reads ten after dropping the raw Slow token.
 - Blue bars are real code frames. Grey bars are 50 padding frames added to B.
 - One `[2,10,90]` vocoder call returns two outputs. Trimming removes B's padding.
-- The factory collects at most eight completed requests and waits 2 ms. Streaming windows remain per request.
+- The factory collects at most eight completed requests and waits up to 2 ms for additional requests. Streaming windows remain per request.
 
 ### Formula and the numbers on the stage
 
@@ -326,6 +328,10 @@ $$
 
 $$
 B:\ 40 \times 2{,}048 = 81{,}920\ \text{samples}
+$$
+
+$$
+184{,}320 \div 44{,}100 \approx 4.18\ \text{s},\qquad 81{,}920 \div 44{,}100 \approx 1.86\ \text{s}
 $$
 
 | Symbol | What it is | Where it comes from |
