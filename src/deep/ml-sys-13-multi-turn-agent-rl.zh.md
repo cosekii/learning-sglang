@@ -5,9 +5,9 @@
 ### 图上是什么
 
 - `P` 是 2 个 prompt token。`A` 是模型第一个动作的 4 个 token，`B` 是后续动作的 5 个 token。
-- `O` 是工具返回的 3 个观察 token。动作是模型发给工具的指令，观察是工具的回复。
-- 左侧虚线卡把片段拆成独立记录，第二次模型调用因此读不到 `A` 和 `O`。
-- 右侧蓝卡只保留一个 `Sample`。第二次调用读取 `P + A + O`，再写入新动作 `B`。
+- `O` 是工具观察编码后的 3 个 token。动作是模型发给工具的指令；`O` 包含完整观察增量，若有生成标记也计在这 3 个里面。
+- 左侧虚线卡故意只给第二次调用 2 个 `P`，展示缺少 `A` 和 `O` 的对照；它不表示拆开存储必然丢失上下文。
+- 右侧蓝卡按本实现把完整交互保存在一个 `Sample`。第二次调用读取 `P + A + O`，再写入新动作 `B`。
 
 ### 公式与符号
 
@@ -21,7 +21,7 @@ $$C_2=P+A_1+O_1,\qquad R=A_1+O_1+A_2,\qquad D=A_1+O_1$$
 | $A_2$ | 后续模型动作的片段长度 | 本步构造值，5 |
 | $C_2$ | 第二次模型调用收到的 token 数 | 本步相加 |
 | $R$ | 最终 `Sample` 的响应 token 数 | 本步相加 |
-| $D$ | 拆开记录会丢失的早期响应 token 数 | 本步相加 |
+| $D$ | 第二次调用只收到 `P` 时缺少的早期响应 token 数 | 本步相加 |
 
 ### 代入图上的数
 
@@ -72,14 +72,15 @@ mask 与响应位置一一对齐：`[1,1,1,1, 0,0,0, 1,1,1,1,1]`。观察位置�
 
 ## 第 3 步 · 只追加观察 delta
 
-**一句话。** 用空观察模板的长度裁掉完整编码的前缀，只把 3 个新观察 token 加进 `Sample.tokens`。
+**一句话。** 用空观察模板的长度裁掉完整编码的前缀，只把 3 个观察 delta token 加进 `Sample.tokens`。
 
 ### 图上是什么
 
+- `chat template` 把带角色的消息变成模型使用的 token，会添加角色和生成标记。
 - 第一张卡编码固定的 dummy messages，得到 6 个前缀 token。dummy messages 是不含本轮观察的模板消息。
 - 第二张卡编码同样的消息和本轮观察，本构造例共有 9 个 token。
-- 第三张卡从下标 6 开始切片，只保留 `O O O`。
-- 这样不会每轮都重复追加 system 或工具说明前缀。
+- 第三张卡从下标 6 开始切片，只保留 `Δ Δ Δ`。
+- `Δ` 是完整的观察增量，包含观察内容，也可能包含 chat template 的生成标记，不能等同于不含模板标记的工具正文。
 
 ### 公式与符号
 
@@ -91,13 +92,13 @@ $$\Delta=F[\ell:],\qquad \ell=|E(D)|$$
 | $E(D)$ | dummy messages 的 token 序列 | 本步构造为 6 个 |
 | $\ell$ | 要裁掉的前缀 token 数 | $E(D)$ 的长度 |
 | $F$ | dummy messages 加本轮观察的完整 token 序列 | 本步构造为 9 个 |
-| $\Delta$ | 实际追加的观察 token | 从 $F$ 的第 $\ell$ 个下标开始切片 |
+| $\Delta$ | 实际追加的完整观察 delta | 从 $F$ 的第 $\ell$ 个下标开始切片 |
 
 ### 代入图上的数
 
 $$\ell=6,\qquad \Delta=F[6:],\qquad 9-6=3$$
 
-切片保留下标 6、7、8 的三个 `O`。真实实现当场计算 $\ell$，不把 6 写成固定值；这里的 6 和 9 只是便于检查切片的位置例。
+切片保留下标 6、7、8 的三个 `Δ`。本例把这三个 `Δ` 记为 `O`；若有生成标记，它也占这三个位置之一，不在 `O` 之外额外增加。真实实现当场计算 $\ell$ 并切片，不把 6 写成固定值，也不额外检查 dummy 编码是否真的是完整编码的前缀。本图按它们的共同前缀构造例子。
 
 ### 接下来
 
@@ -111,7 +112,7 @@ $$\ell=6,\qquad \Delta=F[6:],\qquad 9-6=3$$
 
 ### 图上是什么
 
-- 初始输入已有 1 张图片，本轮观察再带来 1 张。
+- 本步扩展前面的例子：现在让初始 VLM 输入带 1 张图片，本轮观察再带来 1 张。
 - rollout 路径把两张图片都编码进 `image_data`，下一次模型调用可以读取。
 - 训练路径把初始与观察的 processor 输出分别放进 buffer，每份是一个字典。
 - `processor` 把图片和文字整理成模型输入；`tensor` 是模型使用的一格一格数字。训练字典不保留 `input_ids` 和 `attention_mask`，token 已沿第 3 步的路径保存。
@@ -196,7 +197,7 @@ $$b_{\text{next}}=b-n,\qquad b_{\text{next}}\le 0\Rightarrow \text{TRUNCATED}$$
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
 | $b$ | 当前剩余 token 预算 | 本步构造值，12 |
-| $n$ | 刚追加的动作或观察 token 数 | 第 1 步，合计 12 |
+| $n$ | 从预算初始化后累计消耗的动作和观察 token 数 | 第 1 步，合计 12 |
 | $b_{\text{next}}$ | 追加后的剩余预算 | 本步相减 |
 | `max_turns` | 允许的最大交互轮数 | 本步构造值，2 |
 | `done` | 环境决定是否结束的布尔值 | 本步环境接口 |
@@ -209,21 +210,21 @@ $$b_{\text{next}}=12-(4+3+5)=0\Rightarrow\text{TRUNCATED}$$
 
 ### 接下来
 
-停止规则属于交互管理，不属于单次 token 生成。下一步看 AgentLoop 怎样把这两件事拆开。
+停止规则属于交互管理，不属于单次 token 生成。下一步改用 verl 的 `ToolAgentLoop`；它有自己的长度、轮数、无工具调用和工具错误停止规则，不沿用本步 slime 的状态名。
 
 来源：`THUDM/slime@f68dc4a25f362fc0335165a17ff976f5b6f675e1` 的 `examples/geo3k_vlm_multi_turn/rollout.py:283-290,320-366`。
 
 ## 第 7 步 · AgentLoop 管交互，server 管生成
 
-**一句话。** `ToolAgentLoop` 决定何时调用模型和工具，`server_manager.generate` 只接收 token 并返回动作 token。
+**一句话。** 本步改用 verl：`ToolAgentLoop` 决定何时调用模型和工具，`server_manager.generate` 只接收 token 并返回动作 token。
 
 ### 图上是什么
 
 - 蓝色 `ToolAgentLoop` 把累积 `prompt_ids` 和同一个 `request_id` 交给 server manager。
 - 橙色 server manager 返回 `response_ids`，不解析或选择工具。
-- 控制权回到 `ToolAgentLoop`：它解析动作 `A`，把动作追加到上下文并标 mask 1，然后调用工具。
-- 工具或环境返回观察 `O`，由 `ToolAgentLoop` 追加并标 mask 0，再开始下一次模型调用。
-- 相同 `request_id` 会复用之前的 server 选择，这叫 sticky session。
+- 控制权回到 `ToolAgentLoop`：当动作 `A` 含有效工具调用时，它把动作追加到上下文并标 mask 1，然后调用工具。
+- 工具或环境把观察 `O` 返回给 `ToolAgentLoop`，此时还没标 mask。`ToolAgentLoop` 追加观察并标 mask 0，再开始下一次模型调用。
+- 只要 `request_id` 仍在 LRU 缓存中，相同 ID 就复用之前的 server 选择，以便复用前缀缓存；被淘汰后会重新选择。
 
 ### 公式与符号
 
@@ -243,10 +244,45 @@ $$A=G(r,P),\qquad O=E(A),\qquad P'=P+A+O$$
 
 $$P'=P+A+O,\qquad |A|=4,\quad |O|=3$$
 
-server 只看到输入 token 和采样参数。`ToolAgentLoop` 保有工具状态、停止规则和 mask，第二次模型调用仍使用同一个 `request_id`。
+server 只看到输入 token 和采样参数。`ToolAgentLoop` 保有工具状态、停止规则和 mask。图中只走有效工具调用路径；没有工具调用或工具返回错误时，verl 会停止。第二次模型调用仍使用同一个 `request_id`。
 
 ### 接下来
 
 不同任务的交互轮数不同，响应长度也不同。下一步把这些响应对齐成训练 batch。
 
 来源：`verl-project/verl@c5b189a1af496d0bc68320cd1d5bd7a1f1e3638a` 的 `verl/experimental/agent_loop/tool_agent_loop.py:59-133` 和 `agent_loop.py:43-105`。
+
+## 第 8 步 · 右侧 padding 对齐训练 batch
+
+**一句话。** 配置的 `response_length` 是 12，样本 B 的 7 个响应 token 右侧补 5 格，两种 mask 都排除 padding。
+
+### 图上是什么
+
+- 本例把 `actor_rollout_ref.rollout.response_length` 配置为 12，不是从当前 batch 的最长响应临时决定。
+- 样本 A 有 12 个真实响应 token，已经符合配置宽度。
+- 样本 B 只有 `A+O` 的 7 个真实响应 token，右侧补 5 个 padding 后也是 12 格。
+- B 的 `response_mask` 在 4 个动作 token 后为 0，3 个观察和 5 个 padding 都不参与学习。
+- B 的响应 `attention_mask` 只在 7 个真实响应上为 1，padding 为 0。本步不展开其他 batch 字段。
+
+### 公式与符号
+
+$$M=M_{\text{raw}}\odot Z$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $M_{\text{raw}}$ | 右侧 padding 后的原始 response mask | 第 2 步的动作 1、观察 0 |
+| $Z$ | 12 格响应 attention mask；真实响应为 1，padding 为 0 | 本步 |
+| $M$ | 最终 response mask | 逐元素相乘 |
+| $\odot$ | 对应位置逐元素相乘 | 本步定义 |
+
+### 代入图上的数
+
+B 的原始 response mask 为 `[1,1,1,1,0,0,0,0,0,0,0,0]`，响应 attention mask 为 `[1,1,1,1,1,1,1,0,0,0,0,0]`。逐元素相乘后，观察与 padding 的 response mask 都是 0。
+
+样本 B 的宽度来自配置：$7+5=12$。如果换一条更长的响应，也不能超出这个配置；pinned 实现先按 `response_length` 截断，再 padding。padding 只让张量形状对齐，不增加交互内容。
+
+### 接下来
+
+一个 batch 现在能装下不同长度的轨迹。下一章把模型生成、工具执行和训练放上同一条时间线，找出最长等待。
+
+来源：`verl-project/verl@c5b189a1af496d0bc68320cd1d5bd7a1f1e3638a` 的 `verl/experimental/agent_loop/agent_loop.py:321-385` 和 `tool_agent_loop.py:124-131`。

@@ -5,9 +5,9 @@
 ### On the stage
 
 - `P` holds two prompt tokens. `A` holds four tokens in the model's first action, and `B` holds five in its later action.
-- `O` holds three observation tokens returned by the tool. An action is the model's instruction to a tool; an observation is the tool's reply.
-- The dashed left card splits these spans into separate records. Its second model call cannot read `A` or `O`.
-- The blue right card keeps one `Sample`. Its second call reads `P + A + O`, while `B` is the new action written by that call.
+- `O` holds three tokens in the encoded tool observation. An action is the model's instruction to a tool. `O` is the complete observation delta, including any generation marker within those three tokens.
+- The dashed left card deliberately gives the second call only two `P` tokens. It contrasts missing context, not a claim that separate storage must discard `A` or `O`.
+- The blue right card follows this implementation's ordered `Sample`. Its second call reads `P + A + O`, while `B` is the new action written by that call.
 
 ### Formula and symbols
 
@@ -21,7 +21,7 @@ $$C_2=P+A_1+O_1,\qquad R=A_1+O_1+A_2,\qquad D=A_1+O_1$$
 | $A_2$ | Later model-action span length | Constructed value: 5 |
 | $C_2$ | Tokens supplied to the second model call | Sum in this step |
 | $R$ | Response tokens in the final `Sample` | Sum in this step |
-| $D$ | Earlier response tokens lost by splitting the records | Sum in this step |
+| $D$ | Earlier response tokens missing when the second call receives only `P` | Sum in this step |
 
 ### The numbers on the stage
 
@@ -72,14 +72,15 @@ Sources: `THUDM/slime@cd4a8efc6f8e33364a474cfa70875779ed0a673f`, `examples/searc
 
 ## Step 3 · Append only the observation delta
 
-**One sentence.** Trim the full encoding by the dummy template's length, then append only the three new observation tokens to `Sample.tokens`.
+**One sentence.** Trim the full encoding by the dummy template's length, then append only the three observation-delta tokens to `Sample.tokens`.
 
 ### On the stage
 
+- A `chat template` turns role-labelled messages into model tokens, adding role and generation markers.
 - The first card encodes fixed dummy messages and yields six prefix tokens. Dummy messages are template messages without this turn's observation.
 - The second card encodes those messages plus the new observation. This constructed example has nine tokens.
-- The third card slices from index 6 and keeps only `O O O`.
-- The system or tool preamble does not join the context again on every turn.
+- The third card slices from index 6 and keeps only `Δ Δ Δ`.
+- `Δ` is the complete observation delta. It can include the generation marker as well as observation content, so it is not necessarily only the tool's text without template markers.
 
 ### Formula and symbols
 
@@ -91,13 +92,13 @@ $$\Delta=F[\ell:],\qquad \ell=|E(D)|$$
 | $E(D)$ | Token sequence for the dummy messages | Constructed here as six tokens |
 | $\ell$ | Prefix tokens to remove | Length of $E(D)$ |
 | $F$ | Full token sequence for dummy messages plus the observation | Constructed here as nine tokens |
-| $\Delta$ | Observation tokens that actually join the sample | Slice $F$ from index $\ell$ |
+| $\Delta$ | Complete observation delta that joins the sample | Slice $F$ from index $\ell$ |
 
 ### The numbers on the stage
 
 $$\ell=6,\qquad \Delta=F[6:],\qquad 9-6=3$$
 
-The slice keeps the three `O` tokens at indices 6, 7 and 8. The implementation computes $\ell$ each time instead of fixing it at six. Six and nine only make this positional example easy to check.
+The slice keeps the three `Δ` tokens at indices 6, 7 and 8. This example calls those three tokens `O`; any generation marker occupies one of those positions rather than adding another token. The implementation computes $\ell$ and slices without fixing it at six or checking that the dummy encoding is a prefix of the full encoding. This picture constructs them with that shared prefix.
 
 ### Next
 
@@ -111,7 +112,7 @@ Source: `THUDM/slime@f68dc4a25f362fc0335165a17ff976f5b6f675e1`, `examples/geo3k_
 
 ### On the stage
 
-- The initial input already has one image, and this observation adds one more.
+- This step extends the earlier example: the initial VLM input now has one image, and this observation adds one more.
 - The rollout path encodes both images into `image_data` for the next model call.
 - The training path buffers the initial and observation processor outputs as two dictionaries.
 - The `processor` prepares images and text as model inputs. A `tensor` is a grid of model numbers. The training dictionaries exclude `input_ids` and `attention_mask`; Step 3 already stores tokens on their own path.
@@ -196,7 +197,7 @@ $$b_{\text{next}}=b-n,\qquad b_{\text{next}}\le 0\Rightarrow \text{TRUNCATED}$$
 | Symbol | Meaning | Source |
 |---|---|---|
 | $b$ | Remaining token budget | Constructed value: 12 |
-| $n$ | Action or observation tokens just appended | Step 1: 12 total |
+| $n$ | Action and observation tokens consumed since the budget was initialized | Step 1: 12 total |
 | $b_{\text{next}}$ | Budget left after the append | Subtraction in this step |
 | `max_turns` | Maximum allowed interaction turns | Constructed value: 2 |
 | `done` | Boolean through which the environment requests an exit | Environment interface in this step |
@@ -205,25 +206,25 @@ $$b_{\text{next}}=b-n,\qquad b_{\text{next}}\le 0\Rightarrow \text{TRUNCATED}$$
 
 $$b_{\text{next}}=12-(4+3+5)=0\Rightarrow\text{TRUNCATED}$$
 
-This is the constructed budget exit. The maximum-turn exit instead finishes after turn 2 with `COMPLETED`. If the environment returns `done=True` first, the loop also stops before the observation with `COMPLETED`. One run cannot take all three alternatives.
+This is the constructed budget exit. The maximum-turn exit instead finishes after turn 2 with `COMPLETED`. If the environment returns `done=True` first, the loop also stops with `COMPLETED` and does not append that observation. One run cannot take all three alternatives.
 
 ### Next
 
-Stop rules belong to interaction management, not one token-generation call. The next step shows how AgentLoop separates those jobs.
+Stop rules belong to interaction management, not one token-generation call. The next step switches to verl's `ToolAgentLoop`, which has its own length, turn-limit, no-tool-call and tool-error stops rather than this slime example's statuses.
 
 Source: `THUDM/slime@f68dc4a25f362fc0335165a17ff976f5b6f675e1`, `examples/geo3k_vlm_multi_turn/rollout.py:283-290,320-366`.
 
 ## Step 7 · AgentLoop owns interaction; the server generates
 
-**One sentence.** `ToolAgentLoop` decides when to call the model and tools, while `server_manager.generate` only accepts tokens and returns action tokens.
+**One sentence.** This step switches to verl: `ToolAgentLoop` decides when to call the model and tools, while `server_manager.generate` only accepts tokens and returns action tokens.
 
 ### On the stage
 
 - The blue `ToolAgentLoop` sends accumulated `prompt_ids` and one shared `request_id` to the server manager.
 - The orange server manager returns `response_ids` without parsing or selecting tools.
-- Control returns to `ToolAgentLoop`. It parses action `A`, appends it with mask 1 and calls the tool.
-- The tool or environment returns observation `O`. `ToolAgentLoop` appends it with mask 0 before the next model call.
-- The same `request_id` reuses the earlier server choice. This is a sticky session.
+- Control returns to `ToolAgentLoop`. When action `A` contains a valid tool call, it appends the action with mask 1 and calls the tool.
+- The tool or environment returns observation `O` to `ToolAgentLoop` without assigning its mask. `ToolAgentLoop` appends it with mask 0 before the next model call.
+- While `request_id` remains in the LRU cache, the same ID reuses the earlier server choice to enable prefix-cache reuse. An evicted ID is assigned again.
 
 ### Formula and symbols
 
@@ -243,10 +244,45 @@ $$A=G(r,P),\qquad O=E(A),\qquad P'=P+A+O$$
 
 $$P'=P+A+O,\qquad |A|=4,\quad |O|=3$$
 
-The server receives input tokens and sampling parameters. `ToolAgentLoop` owns tool state, stop rules and the mask, and the second model call uses the same `request_id`.
+The server receives input tokens and sampling parameters. `ToolAgentLoop` owns tool state, stop rules and the mask. The picture follows only the valid-tool-call path; verl stops when no tool call exists or a tool returns an error. The second model call uses the same `request_id`.
 
 ### Next
 
 Different tasks need different turn counts and response lengths. The next step aligns those responses in a training batch.
 
 Sources: `verl-project/verl@c5b189a1af496d0bc68320cd1d5bd7a1f1e3638a`, `verl/experimental/agent_loop/tool_agent_loop.py:59-133` and `agent_loop.py:43-105`.
+
+## Step 8 · Right-pad responses into a training batch
+
+**One sentence.** The configured `response_length` is twelve, so Sample B gains five empty cells after seven response tokens, and both masks exclude padding.
+
+### On the stage
+
+- This example configures `actor_rollout_ref.rollout.response_length` as twelve. It does not choose the width from the longest response in the current batch.
+- Sample A has twelve real response tokens and already matches the configured width.
+- Sample B has seven real response tokens in `A+O`. Five right-side padding cells bring it to twelve cells.
+- B's `response_mask` turns zero after four action tokens. The three observation tokens and five padding cells do not teach the model.
+- B's response `attention_mask` is one only on the seven real responses and zero on padding. Other batch fields stay outside this step.
+
+### Formula and symbols
+
+$$M=M_{\text{raw}}\odot Z$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $M_{\text{raw}}$ | Right-padded raw response mask | Step 2: 1 for actions, 0 for observations |
+| $Z$ | Twelve-cell response attention mask: 1 for real responses, 0 for padding | This step |
+| $M$ | Final response mask | Elementwise product |
+| $\odot$ | Multiplication at each matching position | Defined in this step |
+
+### The numbers on the stage
+
+B's raw response mask is `[1,1,1,1,0,0,0,0,0,0,0,0]`, and its response attention mask is `[1,1,1,1,1,1,1,0,0,0,0,0]`. Their elementwise product leaves response mask 0 on observations and padding.
+
+Sample B's width comes from the configuration: $7+5=12$. A longer response cannot exceed that configuration; the pinned implementation truncates to `response_length` before padding. Padding aligns tensor shapes without adding interaction content.
+
+### Next
+
+One batch can now hold different-length trajectories. The next chapter places model generation, tool execution and training on one timeline to find the longest wait.
+
+Sources: `verl-project/verl@c5b189a1af496d0bc68320cd1d5bd7a1f1e3638a`, `verl/experimental/agent_loop/agent_loop.py:321-385` and `tool_agent_loop.py:124-131`.

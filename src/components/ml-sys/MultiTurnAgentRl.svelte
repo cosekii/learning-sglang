@@ -18,32 +18,32 @@
   const fill = (tone: Tone) => tone === 'blue' ? 'var(--accent-soft)' : tone === 'orange' ? 'var(--gen-soft)' : 'var(--bg)';
   const stroke = (tone: Tone) => tone === 'blue' ? 'var(--accent)' : tone === 'orange' ? 'var(--gen)' : 'var(--line)';
   const steps: Step[] = [{
-    caption: 'The second call needs nine context tokens. Separate records supply only the two prompt tokens.',
-    captionZh: '第二次调用需要 9 个上下文 token。拆开后只剩 2 个 prompt token。',
-    title: 'Keep one Sample for the whole interaction', titleZh: '一个 Sample 保存完整交互',
-    subtitle: 'Sample = one task’s ordered token record', subtitleZh: 'Sample = 一个任务按顺序保存的 token 记录',
+    caption: 'The second call needs nine context tokens. Giving it only the prompt drops seven response tokens.',
+    captionZh: '第二次调用需要 9 个上下文 token。只给 prompt 会少 7 个响应 token。',
+    title: 'Keep the whole interaction in order', titleZh: '按顺序保存完整交互',
+    subtitle: 'Sample = this implementation’s ordered token record', subtitleZh: 'Sample = 这个实现按顺序保存的 token 记录',
     foot: 'Constructed token counts; P, A, O and B are spans, not tokenizer output.', footZh: '构造的 token 数；P、A、O、B 是片段，不是 tokenizer 输出。',
     legend: 'Orange = missing context · blue = preserved record · red = current', legendZh: '橙 = 丢失的上下文 · 蓝 = 保留的记录 · 红 = 当前',
     compare: true,
     nodes: [
-      { title: 'SEPARATE RECORDS', titleZh: '拆开的记录', result: 'second call: P P = 2', resultZh: '第二次调用：P P = 2', body: 'missing A(4) + O(3) = 7', bodyZh: '缺少 A(4) + O(3) = 7', tone: 'orange', dashed: true },
-      { title: 'ONE SAMPLE', titleZh: '一个 SAMPLE', result: 'second call: P+A+O = 9', resultZh: '第二次调用：P+A+O = 9', body: 'then B(5) · response = 12', bodyZh: '再写 B(5) · 响应 = 12', tone: 'blue' },
+      { title: 'CALL GIVEN ONLY P', titleZh: '只给第二次调用 P', result: 'input: P P = 2', resultZh: '输入：P P = 2', body: 'missing A(4) + O(3) = 7', bodyZh: '缺少 A(4) + O(3) = 7', tone: 'orange', dashed: true },
+      { title: 'ONE ORDERED SAMPLE', titleZh: '一个有序 SAMPLE', result: 'second call: P+A+O = 9', resultZh: '第二次调用：P+A+O = 9', body: 'then B(5) · response = 12', bodyZh: '再写 B(5) · 响应 = 12', tone: 'blue' },
     ],
     formulas: [
       { en: 'P = prompt (2) · A = model’s tool instruction (4)', zh: 'P = prompt（2）· A = 模型发给工具的指令（4）' },
-      { en: 'O = tool reply (3) · B = later model action (5)', zh: 'O = 工具回复（3）· B = 后续模型动作（5）' },
+      { en: 'O = encoded observation delta (3) · B = later action (5)', zh: 'O = 编码后的观察增量（3）· B = 后续动作（5）' },
       { en: 'missing response context: 4 + 3 = 7 tokens', zh: '丢失的响应上下文：4 + 3 = 7 token' },
       { en: 'one Sample response: 4 + 3 + 5 = 12 tokens', zh: '一个 Sample 的响应：4 + 3 + 5 = 12 token' },
       { en: 'Next: which response tokens should teach the model?', zh: '下一步：哪些响应 token 用来训练模型？' },
     ],
     mobile: {
-      title: 'Keep one whole Sample', titleZh: '一个 Sample 保存完整交互',
-      subtitle: 'Sample = one task’s ordered token record', subtitleZh: 'Sample = 一个任务按顺序保存的 token 记录',
+      title: 'Keep the interaction in order', titleZh: '按顺序保存完整交互',
+      subtitle: 'Sample = this implementation’s ordered record', subtitleZh: 'Sample = 这个实现的有序记录',
       foot: 'Constructed spans, not real tokenizer output.', footZh: '构造片段，不是真实 tokenizer 输出。',
       legend: 'Orange = missing · blue = kept · red = current', legendZh: '橙 = 丢失 · 蓝 = 保留 · 红 = 当前',
       formulas: [
         { en: 'P = prompt (2) · A = first action (4)', zh: 'P = prompt（2）· A = 第一次动作（4）' },
-        { en: 'O = tool reply (3) · B = next action (5)', zh: 'O = 工具回复（3）· B = 后续动作（5）' },
+        { en: 'O = observation delta (3) · B = next action (5)', zh: 'O = 观察增量（3）· B = 后续动作（5）' },
         { en: 'Missing response context: 4 + 3 = 7', zh: '丢失的响应上下文：4 + 3 = 7' },
         { en: 'One Sample response: 4 + 3 + 5 = 12', zh: '一个 Sample 的响应：4 + 3 + 5 = 12' },
         { en: 'Next: which tokens teach the model?', zh: '下一步：哪些 token 训练模型？' },
@@ -83,35 +83,35 @@
       ],
     },
   }, {
-    caption: 'The chat template adds six preamble tokens again. Keep only three new observation tokens.',
-    captionZh: 'chat template 又加了 6 个前缀 token。只保留 3 个新观察 token。',
+    caption: 'The chat template adds six preamble tokens again. Keep only the three-token observation delta.',
+    captionZh: 'chat template 又加了 6 个前缀 token。只保留 3 个观察 delta token。',
     title: 'Append only the observation delta', titleZh: '只追加观察带来的新 token',
-    subtitle: 'delta = new tokens left after removing the repeated prefix', subtitleZh: 'delta = 去掉重复前缀后剩下的新 token',
+    subtitle: 'chat template = roles to model tokens · delta = tokens after the prefix', subtitleZh: 'chat template = 把角色消息变成模型 token · delta = 前缀后的 token',
     foot: 'Constructed counts; the real trim length comes from the tokenizer.', footZh: '构造数量；真实裁剪长度由 tokenizer 算出。',
     legend: 'Orange = repeated prefix · blue = appended observation · red = current', legendZh: '橙 = 重复前缀 · 蓝 = 追加的观察 · 红 = 当前',
     flow: true,
     nodes: [
       { title: 'DUMMY TEMPLATE', titleZh: '空观察模板', result: `prefix = ${N.AGENT_DUMMY_PREFIX_TOKENS}`, resultZh: `前缀 = ${N.AGENT_DUMMY_PREFIX_TOKENS}`, body: 'encode fixed dummy messages', bodyZh: '编码固定的空观察消息', tone: 'orange' },
       { title: 'FULL TEMPLATE', titleZh: '完整模板', result: `${N.AGENT_DUMMY_PREFIX_TOKENS} + ${N.AGENT_OBSERVATION_TOKENS} = ${N.AGENT_FORMATTED_OBSERVATION_TOKENS}`, resultZh: `${N.AGENT_DUMMY_PREFIX_TOKENS} + ${N.AGENT_OBSERVATION_TOKENS} = ${N.AGENT_FORMATTED_OBSERVATION_TOKENS}`, body: 'same prefix + new observation', bodyZh: '相同前缀 + 新观察', tone: 'orange' },
-      { title: 'APPEND DELTA', titleZh: '追加 DELTA', result: `${N.AGENT_FORMATTED_OBSERVATION_TOKENS} − ${N.AGENT_DUMMY_PREFIX_TOKENS} = ${N.AGENT_OBSERVATION_TOKENS}`, resultZh: `${N.AGENT_FORMATTED_OBSERVATION_TOKENS} − ${N.AGENT_DUMMY_PREFIX_TOKENS} = ${N.AGENT_OBSERVATION_TOKENS}`, body: 'only O joins Sample.tokens', bodyZh: '只有 O 加入 Sample.tokens', tone: 'blue' },
+      { title: 'APPEND DELTA', titleZh: '追加 DELTA', result: `${N.AGENT_FORMATTED_OBSERVATION_TOKENS} − ${N.AGENT_DUMMY_PREFIX_TOKENS} = ${N.AGENT_OBSERVATION_TOKENS}`, resultZh: `${N.AGENT_FORMATTED_OBSERVATION_TOKENS} − ${N.AGENT_DUMMY_PREFIX_TOKENS} = ${N.AGENT_OBSERVATION_TOKENS}`, body: 'only Δ joins Sample.tokens', bodyZh: '只有 Δ 加入 Sample.tokens', tone: 'blue' },
     ],
     formulas: [
       { en: 'trim = tokens(dummy) = 6', zh: '裁剪长度 = dummy 的 token 数 = 6' },
       { en: 'formatted = tokens(dummy + observation) = 9', zh: '完整编码 = dummy + 观察的 token 数 = 9' },
-      { en: 'prompt_ids = formatted[6:] → O O O', zh: 'prompt_ids = formatted[6:] → O O O' },
-      { en: 'the 6-token prefix is not appended again', zh: '6 个前缀 token 不会再次追加' },
+      { en: 'prompt_ids = formatted[6:] → Δ Δ Δ', zh: 'prompt_ids = formatted[6:] → Δ Δ Δ' },
+      { en: 'Δ includes any generation marker; this example calls the 3-token Δ O', zh: 'Δ 包含可能的生成标记；本例把 3 个 Δ 记为 O' },
       { en: 'Next: what if O also carries an image?', zh: '下一步：如果 O 还有图片呢？' },
     ],
     mobile: {
       title: 'Keep only the new observation', titleZh: '只保留新的观察 token',
-      subtitle: 'delta = tokens after the shared prefix', subtitleZh: 'delta = 去掉共同前缀后的 token',
+      subtitle: 'chat template = roles → tokens · delta = rest', subtitleZh: 'chat template = 角色转 token · delta = 剩余',
       foot: 'Constructed counts; real trimming uses the tokenizer.', footZh: '构造数量；真实裁剪由 tokenizer 计算。',
       legend: 'Orange = prefix · blue = observation · red = current', legendZh: '橙 = 前缀 · 蓝 = 观察 · 红 = 当前',
       formulas: [
         { en: 'trim = tokens(dummy) = 6', zh: '裁剪长度 = dummy 的 token 数 = 6' },
         { en: 'formatted = dummy + observation = 9', zh: '完整编码 = dummy + 观察 = 9' },
-        { en: 'formatted[6:] → O O O', zh: 'formatted[6:] → O O O' },
-        { en: 'Do not append the prefix again', zh: '不要再次追加前缀' },
+        { en: 'formatted[6:] → Δ Δ Δ', zh: 'formatted[6:] → Δ Δ Δ' },
+        { en: 'Here Δ = O: 3 tokens including any marker', zh: '本例 Δ = O：3 个 token 包含可能的标记' },
         { en: 'Next: add an image to O', zh: '下一步：O 里加入图片' },
       ],
     },
@@ -124,7 +124,7 @@
     legend: 'Orange = observation · blue = model inputs · red = current', legendZh: '橙 = 观察 · 蓝 = 模型输入 · 红 = 当前',
     compare: true,
     nodes: [
-      { title: 'NEW OBSERVATION', titleZh: '新观察', result: '1 image', resultZh: '1 张图片', body: 'the initial image is already present', bodyZh: '初始图片已经在记录里', tone: 'orange' },
+      { title: 'NEW OBSERVATION', titleZh: '新观察', result: '1 image', resultZh: '1 张图片', body: 'initial image is new here', bodyZh: '本例新增初始图片', tone: 'orange' },
       { title: 'FOR NEXT ROLLOUT CALL', titleZh: '给下一次 ROLLOUT 调用', result: `image_data = ${N.AGENT_TOTAL_IMAGES}`, resultZh: `image_data = ${N.AGENT_TOTAL_IMAGES} 张`, body: 'two encoded images', bodyZh: '两张编码后的图片', tone: 'blue' },
       { title: 'FOR TRAINING', titleZh: '给训练', result: 'buffer = 2 dicts', resultZh: 'buffer = 2 份字典', body: 'two processor tensor dicts', bodyZh: '两份 processor 张量字典', tone: 'blue' },
     ],
@@ -160,13 +160,13 @@
       { title: 'INITIAL CHUNK', titleZh: '初始片段', result: 'k: 2 rows', resultZh: 'k：2 行', body: 'T0 from the initial input', bodyZh: '初始输入的 T0', tone: 'orange' },
       { title: 'OBSERVATION CHUNK', titleZh: '观察片段', result: 'k: 1 row', resultZh: 'k：1 行', body: 'T1 from the observation', bodyZh: '观察输入的 T1', tone: 'orange' },
       { title: 'CONCAT DIM 0', titleZh: '沿第 0 维拼接', result: '2 + 1 = 3 rows', resultZh: '2 + 1 = 3 行', body: 'one concat for key k', bodyZh: 'key k 只拼一次', tone: 'blue' },
-      { title: 'TRAINING INPUT', titleZh: '训练输入', result: 'k: 3 rows', resultZh: 'k：3 行', body: 'non-tensors are ignored', bodyZh: '非张量字段被忽略', tone: 'blue' },
+      { title: 'TRAINING INPUT', titleZh: '训练输入', result: 'k: 3 rows', resultZh: 'k：3 行', body: 'all-or-none per key', bodyZh: '每个 key 要么全拼，要么不拼', tone: 'blue' },
     ],
     formulas: [
       { en: 'collect by key: k → [T0, T1]', zh: '按 key 收集：k → [T0, T1]' },
       { en: 'torch.cat([T0, T1], dim=0)', zh: 'torch.cat([T0, T1], dim=0)' },
       { en: '2 rows + 1 row = 3 rows', zh: '2 行 + 1 行 = 3 行' },
-      { en: 'one concat per key · non-tensor fields are ignored', zh: '每个 key 只拼一次 · 非张量字段被忽略' },
+      { en: 'merge a key only when every value is a tensor', zh: '只有 key 下的值全是张量才合并' },
       { en: 'Next: when does the interaction stop?', zh: '下一步：交互什么时候停止？' },
     ],
     mobile: {
@@ -178,41 +178,41 @@
         { en: 'Collect by key: k → [T0, T1]', zh: '按 key 收集：k → [T0, T1]' },
         { en: 'torch.cat([T0, T1], dim=0)', zh: 'torch.cat([T0, T1], dim=0)' },
         { en: '2 rows + 1 row = 3 rows', zh: '2 行 + 1 行 = 3 行' },
-        { en: 'One concat per key; ignore non-tensors', zh: '每个 key 拼一次；忽略非张量' },
+        { en: 'Merge only all-tensor keys', zh: '只合并全为张量的 key' },
         { en: 'Next: when does interaction stop?', zh: '下一步：交互何时停止？' },
       ],
     },
   }, {
     caption: 'Three conditions can end the loop. Token exhaustion truncates; the other two complete.',
     captionZh: '三个条件都能结束循环。token 耗尽会截断，另外两种会完成。',
-    title: 'Three exits from the interaction loop', titleZh: '交互循环的三个出口',
-    subtitle: 'alternatives: the loop takes the first exit it reaches', subtitleZh: '三种备选条件：循环走到哪个出口就停在哪里',
+    title: 'Three exits in the slime interaction loop', titleZh: 'slime 交互循环的三个出口',
+    subtitle: 'alternative exits, not a check order or one run’s path', subtitleZh: '备选出口，不表示检查顺序或一次运行的路径',
     foot: 'Constructed alternatives; finish=length also truncates, and abort means cancelled.', footZh: '构造备选情形；finish=length 也会截断，abort 表示被取消。',
     legend: 'Orange = limit · blue = finished · red = current', legendZh: '橙 = 达到限制 · 蓝 = 已完成 · 红 = 当前',
     compare: true,
     nodes: [
       { title: 'MAX TURNS', titleZh: '最大轮数', result: `turn ${N.AGENT_EXAMPLE_MAX_TURNS} of ${N.AGENT_EXAMPLE_MAX_TURNS}`, resultZh: `第 ${N.AGENT_EXAMPLE_MAX_TURNS} / ${N.AGENT_EXAMPLE_MAX_TURNS} 轮`, body: 'after this turn → COMPLETED', bodyZh: '本轮结束后 → COMPLETED', tone: 'blue' },
       { title: 'TOKEN BUDGET', titleZh: 'TOKEN 预算', result: `${N.AGENT_EXAMPLE_TOKEN_BUDGET} − ${N.AGENT_RESPONSE_TOKENS} = 0`, resultZh: `${N.AGENT_EXAMPLE_TOKEN_BUDGET} − ${N.AGENT_RESPONSE_TOKENS} = 0`, body: 'no room → TRUNCATED', bodyZh: '没有余量 → TRUNCATED', tone: 'orange' },
-      { title: 'ENV DONE', titleZh: '环境完成', result: 'done = True', resultZh: 'done = True', body: 'before observation → COMPLETED', bodyZh: '追加观察前 → COMPLETED', tone: 'blue' },
+      { title: 'ENV DONE', titleZh: '环境完成', result: 'done = True', resultZh: 'done = True', body: 'O not appended → COMPLETED', bodyZh: '不追加 O → COMPLETED', tone: 'blue' },
     ],
     formulas: [
       { en: 'max_turns reached → COMPLETED', zh: '达到 max_turns → COMPLETED' },
       { en: 'remaining token budget ≤ 0 → TRUNCATED', zh: '剩余 token 预算 ≤ 0 → TRUNCATED' },
-      { en: 'env done = True → COMPLETED before observation', zh: 'env done = True → 追加观察前 COMPLETED' },
+      { en: 'env done = True → COMPLETED; O is not appended', zh: 'env done = True → COMPLETED；不追加 O' },
       { en: 'TRUNCATED = cut off by a limit · COMPLETED = finished', zh: 'TRUNCATED = 被限制截断 · COMPLETED = 已完成' },
-      { en: 'Next: which object owns this loop in AgentLoop?', zh: '下一步：AgentLoop 中谁管理这个循环？' },
+      { en: 'Next: switch to verl’s ToolAgentLoop and its own stop rules', zh: '下一步：改用 verl ToolAgentLoop 及其停止规则' },
     ],
     mobile: {
       title: 'Three exits from the loop', titleZh: '交互循环的三个出口',
-      subtitle: 'Alternatives: take the first exit reached', subtitleZh: '备选条件：走到哪个出口就停在哪里',
+      subtitle: 'Alternative exits, not a check order', subtitleZh: '备选出口，不表示检查顺序',
       foot: 'Constructed alternatives; abort means cancelled.', footZh: '构造备选情形；abort 表示被取消。',
       legend: 'Orange = limit · blue = finished · red = current', legendZh: '橙 = 达到限制 · 蓝 = 已完成 · 红 = 当前',
       formulas: [
         { en: 'max_turns reached → COMPLETED', zh: '达到 max_turns → COMPLETED' },
         { en: 'Token budget ≤ 0 → TRUNCATED', zh: 'token 预算 ≤ 0 → TRUNCATED' },
-        { en: 'done=True → COMPLETED before observation', zh: 'done=True → 追加观察前 COMPLETED' },
+        { en: 'done=True → COMPLETED; O not appended', zh: 'done=True → COMPLETED；不追加 O' },
         { en: 'TRUNCATED = limited · COMPLETED = finished', zh: 'TRUNCATED = 被截断 · COMPLETED = 已完成' },
-        { en: 'Next: who owns the AgentLoop?', zh: '下一步：谁管理 AgentLoop？' },
+        { en: 'Next: switch to verl’s own stop rules', zh: '下一步：改用 verl 的停止规则' },
       ],
     },
   }, {
@@ -220,33 +220,67 @@
     captionZh: 'ToolAgentLoop 管理模型与工具的循环。server 只把输入 token 变成动作 token。',
     title: 'Separate interaction logic from token generation', titleZh: '把交互管理与 token 生成分开',
     subtitle: 'ToolAgentLoop = owner of model calls, tool calls and stop rules', subtitleZh: 'ToolAgentLoop = 管理模型调用、工具调用和停止规则',
-    foot: 'Pinned verl flow; arrows show ownership, not network timing.', footZh: '固定版本 verl 流程；箭头表示职责，不表示网络耗时。',
+    foot: 'Switching to verl: stops use length, turn limits, no tool call, or tool error.', footZh: '改用 verl：长度、轮数上限、无工具调用或工具错误会停止。',
     legend: 'Blue = AgentLoop · orange = server or environment · red = current', legendZh: '蓝 = AgentLoop · 橙 = server 或环境 · 红 = 当前',
     flow: true,
     nodes: [
       { title: 'TOOLAGENTLOOP', titleZh: 'TOOLAGENTLOOP', result: 'tokens → server', resultZh: 'token → server', body: 'shared request_id', bodyZh: '共用 request_id', tone: 'blue' },
       { title: 'SERVER MANAGER', titleZh: 'SERVER MANAGER', result: 'tokens → action A', resultZh: 'token → 动作 A', body: 'no tool decisions here', bodyZh: '这里不决定工具调用', tone: 'orange' },
-      { title: 'TOOLAGENTLOOP', titleZh: 'TOOLAGENTLOOP', result: 'parse A → tool call', resultZh: '解析 A → 调用工具', body: 'A gets mask 1', bodyZh: 'A 的 mask 为 1', tone: 'blue' },
-      { title: 'TOOL / ENV', titleZh: '工具 / 环境', result: 'reply O → AgentLoop', resultZh: '回复 O → AgentLoop', body: 'O gets mask 0', bodyZh: 'O 的 mask 为 0', tone: 'orange' },
+      { title: 'TOOLAGENTLOOP', titleZh: 'TOOLAGENTLOOP', result: 'A has a tool call', resultZh: 'A 含有工具调用', body: 'A gets mask 1', bodyZh: 'A 的 mask 为 1', tone: 'blue' },
+      { title: 'TOOL / ENV', titleZh: '工具 / 环境', result: 'reply O → AgentLoop', resultZh: '回复 O → AgentLoop', body: 'O returns unmasked', bodyZh: 'O 返回时还没标 mask', tone: 'orange' },
     ],
     formulas: [
-      { en: 'same request_id → same server choice', zh: '相同 request_id → 相同 server 选择' },
+      { en: 'same cached request_id → same server choice', zh: '缓存中的相同 request_id → 相同 server 选择' },
       { en: 'server.generate(prompt_ids) → response_ids', zh: 'server.generate(prompt_ids) → response_ids' },
       { en: 'AgentLoop parses the action and calls the tool', zh: 'AgentLoop 解析动作并调用工具' },
-      { en: 'tool reply returns to AgentLoop; the next call repeats', zh: '工具回复交给 AgentLoop，再进入下次模型调用' },
+      { en: 'valid tool path: AgentLoop appends O with mask 0, then repeats', zh: '有效工具路径：AgentLoop 追加 O 和 mask 0，再循环' },
       { en: 'Next: pack different-length responses for training', zh: '下一步：把不同长度的响应装进训练 batch' },
     ],
     mobile: {
       title: 'Separate loop logic from generation', titleZh: '分开循环管理与 token 生成',
       subtitle: 'ToolAgentLoop owns model and tool calls', subtitleZh: 'ToolAgentLoop 管理模型和工具调用',
-      foot: 'Pinned verl flow; arrows show ownership.', footZh: '固定版本 verl 流程；箭头表示职责。',
+      foot: 'Switching to verl; its stop rules differ from slime.', footZh: '改用 verl；它的停止规则与 slime 不同。',
       legend: 'Blue = AgentLoop · orange = server/env · red = current', legendZh: '蓝 = AgentLoop · 橙 = server/环境 · 红 = 当前',
       formulas: [
-        { en: 'Same request_id → same server', zh: '相同 request_id → 相同 server' },
+        { en: 'Cached request_id → same server', zh: '缓存中的 request_id → 相同 server' },
         { en: 'generate(prompt_ids) → response_ids', zh: 'generate(prompt_ids) → response_ids' },
         { en: 'AgentLoop parses A and calls the tool', zh: 'AgentLoop 解析 A 并调用工具' },
-        { en: 'O returns; the next model call repeats', zh: 'O 返回后进入下次模型调用' },
+        { en: 'Valid path: AgentLoop adds O + mask 0', zh: '有效路径：AgentLoop 加 O 和 mask 0' },
         { en: 'Next: pack responses for training', zh: '下一步：把响应装进训练 batch' },
+      ],
+    },
+  }, {
+    caption: 'Right padding aligns seven-token and twelve-token responses. Padding gets zero response and attention masks.',
+    captionZh: '右侧 padding 对齐 7 和 12 个响应。padding 的两种 mask 都是 0。',
+    title: 'Pad responses into one training batch', titleZh: '把响应 padding 成训练 batch',
+    subtitle: `configured response_length = ${N.AGENT_CONFIGURED_RESPONSE_LENGTH} · padding aligns empty cells`, subtitleZh: `配置的 response_length = ${N.AGENT_CONFIGURED_RESPONSE_LENGTH} · padding 用来对齐空格`,
+    foot: 'Constructed config, not the longest response in this batch. Padding is not real.', footZh: '构造的配置长度，不是本 batch 的最长响应。padding 不是真 token。',
+    legend: 'Blue = real data · orange = padding · red = current', legendZh: '蓝 = 真实数据 · 橙 = padding · 红 = 当前',
+    compare: true,
+    nodes: [
+      { title: 'SAMPLE A', titleZh: '样本 A', result: '12 real + 0 pad', resultZh: '12 真实 + 0 padding', body: 'matches configured width', bodyZh: '符合配置宽度', tone: 'blue' },
+      { title: 'SAMPLE B', titleZh: '样本 B', result: `7 real + ${N.AGENT_SHORT_PADDING_TOKENS} pad`, resultZh: `7 真实 + ${N.AGENT_SHORT_PADDING_TOKENS} padding`, body: 'right-pad to configured 12', bodyZh: '右侧补齐到配置的 12 格', tone: 'orange' },
+      { title: 'RESPONSE MASK', titleZh: 'RESPONSE MASK', result: 'B: 1×4, 0×8', resultZh: 'B：1×4，0×8', body: 'skip O and padding', bodyZh: '跳过 O 和 padding', tone: 'blue' },
+      { title: 'ATTENTION MASK', titleZh: 'ATTENTION MASK', result: 'B: 1×7, 0×5', resultZh: 'B：1×7，0×5', body: 'real responses only', bodyZh: '只保留真实响应', tone: 'blue' },
+    ],
+    formulas: [
+      { en: `B response: ${N.AGENT_SHORT_RESPONSE_TOKENS} real + ${N.AGENT_SHORT_PADDING_TOKENS} pad = ${N.AGENT_RESPONSE_TOKENS} cells`, zh: `B 响应：${N.AGENT_SHORT_RESPONSE_TOKENS} 真实 + ${N.AGENT_SHORT_PADDING_TOKENS} padding = ${N.AGENT_RESPONSE_TOKENS} 格` },
+      { en: 'B response_mask: 1×4 → 0×3 → 0×5', zh: 'B response_mask：1×4 → 0×3 → 0×5' },
+      { en: 'B attention_mask: 1×7 → 0×5', zh: 'B attention_mask：1×7 → 0×5' },
+      { en: 'response_mask = raw mask × response attention mask', zh: 'response_mask = 原始 mask × 响应 attention mask' },
+      { en: 'Next: which model or tool wait is longest?', zh: '下一章：哪一段模型或工具等待最长？' },
+    ],
+    mobile: {
+      title: 'Pad responses for training', titleZh: '把响应 padding 成训练 batch',
+      subtitle: 'configured response_length = 12', subtitleZh: '配置的 response_length = 12',
+      foot: 'Constructed config, not the batch maximum.', footZh: '构造的配置长度，不是 batch 最大值。',
+      legend: 'Blue = real · orange = padding · red = current', legendZh: '蓝 = 真实 · 橙 = padding · 红 = 当前',
+      formulas: [
+        { en: 'B response: 7 real + 5 pad = 12', zh: 'B 响应：7 真实 + 5 padding = 12 格' },
+        { en: 'response_mask: 1×4 → 0×3 → 0×5', zh: 'response_mask：1×4 → 0×3 → 0×5' },
+        { en: 'attention_mask: 1×7 → 0×5', zh: 'attention_mask：1×7 → 0×5' },
+        { en: 'response_mask = raw mask × attention', zh: 'response_mask = 原始 mask × attention' },
+        { en: 'Next: which wait is longest?', zh: '下一章：哪段等待最长？' },
       ],
     },
   }];
@@ -256,12 +290,20 @@
     if (q >= 1 && q <= steps.length) step = q - 1;
   });
   let phone = $state(false);
+  let reduceMotion = $state(false);
   onMount(() => {
     const query = window.matchMedia('(max-width: 600px)');
+    const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
     const update = () => (phone = query.matches);
+    const updateMotion = () => (reduceMotion = motion.matches);
     update();
+    updateMotion();
     query.addEventListener('change', update);
-    return () => query.removeEventListener('change', update);
+    motion.addEventListener('change', updateMotion);
+    return () => {
+      query.removeEventListener('change', update);
+      motion.removeEventListener('change', updateMotion);
+    };
   });
   let phase = $state(0);
   let lap = $state(0), lapMs = $state(0);
@@ -270,6 +312,7 @@
     const s = step;
     phase = 0;
     const count = steps[s].nodes.length + 1;
+    if (reduceMotion) { phase = count - 1; return; }
     const timers: ReturnType<typeof setTimeout>[] = [];
     const run = () => {
       timers.length = 0;
@@ -292,13 +335,20 @@
   const nodeW = (count: number) => count === 2 ? 260 : count === 3 ? 200 : 155;
   const nodeX = (i: number, count: number) => count === 2 ? 65 + i * 330 : count === 3 ? 35 + i * 225 : 25 + i * 175;
   const shown = (i: number) => cur.compare || i <= phase;
+  const aria = $derived([
+    $lang === 'zh' ? cur.captionZh : cur.caption,
+    phone ? t(cur.mobile?.subtitle ?? cur.subtitle, cur.mobile?.subtitleZh ?? cur.subtitleZh) : t(cur.subtitle, cur.subtitleZh),
+    ...cur.nodes.map((node) => `${t(node.title, node.titleZh)}: ${t(node.result, node.resultZh)}. ${t(node.body, node.bodyZh)}`),
+    ...formulas.map((line) => t(line.en, line.zh)),
+    phone ? t(cur.mobile?.foot ?? cur.foot, cur.mobile?.footZh ?? cur.footZh) : t(cur.foot, cur.footZh),
+  ].join(' '));
 </script>
 
 <figure class="viz">
   <div class="canvas">
-    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={$lang === 'zh' ? cur.captionZh : cur.caption}>
+    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={aria}>
       <defs><marker id="agent-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--line)" /></marker></defs>
-      <LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={4} label={t('loops · red = current', '循环 · 红 = 当前')} />
+      {#if !reduceMotion}<LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={4} label={t('loops · red = current', '循环 · 红 = 当前')} />{/if}
       <text x={phone ? 18 : 36} y="30" class="title">{phone ? t(cur.mobile?.title ?? cur.title, cur.mobile?.titleZh ?? cur.titleZh) : t(cur.title, cur.titleZh)}</text>
       <text x={phone ? 18 : 36} y="55" class="label">{phone ? t(cur.mobile?.subtitle ?? cur.subtitle, cur.mobile?.subtitleZh ?? cur.subtitleZh) : t(cur.subtitle, cur.subtitleZh)}</text>
       {#if phone}
@@ -342,4 +392,5 @@
   .result { font-family: var(--mono); font-size: 14px; font-weight: 650; fill: var(--fg); }
   .reveal { transition: opacity 450ms; }
   @media (max-width: 600px) { .title { font-size: 16px; } .label, .small { font-size: 12px; } .result { font-size: 12px; } }
+  @media (prefers-reduced-motion: reduce) { .reveal { transition: none; } }
 </style>
