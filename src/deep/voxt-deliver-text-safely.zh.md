@@ -1,4 +1,4 @@
-## 第 1 步 · start app 和 front app 是两个 app
+## 第 1 步 · start app 和 front app 可以不是同一个 app
 
 > **一句话：** 文字去文字准备好时在前面的 app 的焦点，按快捷键的那个 app 只是一个记下来的例外。
 

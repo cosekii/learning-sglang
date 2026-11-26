@@ -1,4 +1,4 @@
-## Step 1 · start app and front app are two different apps
+## Step 1 · start app and front app can be different apps
 
 > **In one line:** The text goes to the focused element of the app in front when it is ready, while the app you started in is only a remembered exception.
 
