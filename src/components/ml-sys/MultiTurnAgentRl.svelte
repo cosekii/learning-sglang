@@ -26,7 +26,7 @@
     legend: 'Orange = missing context · blue = preserved record · red = current', legendZh: '橙 = 丢失的上下文 · 蓝 = 保留的记录 · 红 = 当前',
     compare: true,
     nodes: [
-      { title: 'CALL GIVEN ONLY P', titleZh: '只给第二次调用 P', result: 'input: P P = 2', resultZh: '输入：P P = 2', body: 'missing A(4) + O(3) = 7', bodyZh: '缺少 A(4) + O(3) = 7', tone: 'orange', dashed: true },
+      { title: 'CALL GIVEN ONLY P', titleZh: '只给第二次调用 P', result: 'input: P = 2', resultZh: '输入：P = 2', body: 'missing A(4) + O(3) = 7', bodyZh: '缺少 A(4) + O(3) = 7', tone: 'orange', dashed: true },
       { title: 'ONE ORDERED SAMPLE', titleZh: '一个有序 SAMPLE', result: 'second call: P+A+O = 9', resultZh: '第二次调用：P+A+O = 9', body: 'then B(5) · response = 12', bodyZh: '再写 B(5) · 响应 = 12', tone: 'blue' },
     ],
     formulas: [
@@ -240,7 +240,7 @@
       title: 'Separate loop logic from generation', titleZh: '分开循环管理与 token 生成',
       subtitle: 'ToolAgentLoop owns model and tool calls', subtitleZh: 'ToolAgentLoop 管理模型和工具调用',
       foot: 'Switching to verl; its stop rules differ from slime.', footZh: '改用 verl；它的停止规则与 slime 不同。',
-      legend: 'Blue = AgentLoop · orange = server/env · red = current', legendZh: '蓝 = AgentLoop · 橙 = server/环境 · 红 = 当前',
+      legend: 'Blue = AgentLoop · orange = server/env · red = now', legendZh: '蓝 = AgentLoop · 橙 = server/环境 · 红 = 当前',
       formulas: [
         { en: 'Cached request_id → same server', zh: '缓存中的 request_id → 相同 server' },
         { en: 'generate(prompt_ids) → response_ids', zh: 'generate(prompt_ids) → response_ids' },
@@ -261,7 +261,7 @@
       { title: 'SAMPLE A', titleZh: '样本 A', result: '12 real + 0 pad', resultZh: '12 真实 + 0 padding', body: 'matches configured width', bodyZh: '符合配置宽度', tone: 'blue' },
       { title: 'SAMPLE B', titleZh: '样本 B', result: `7 real + ${N.AGENT_SHORT_PADDING_TOKENS} pad`, resultZh: `7 真实 + ${N.AGENT_SHORT_PADDING_TOKENS} padding`, body: 'right-pad to configured 12', bodyZh: '右侧补齐到配置的 12 格', tone: 'orange' },
       { title: 'RESPONSE MASK', titleZh: 'RESPONSE MASK', result: 'B: 1×4, 0×8', resultZh: 'B：1×4，0×8', body: 'skip O and padding', bodyZh: '跳过 O 和 padding', tone: 'blue' },
-      { title: 'ATTENTION MASK', titleZh: 'ATTENTION MASK', result: 'B: 1×7, 0×5', resultZh: 'B：1×7，0×5', body: 'real responses only', bodyZh: '只保留真实响应', tone: 'blue' },
+      { title: 'RESPONSE ATTENTION MASK', titleZh: '响应 ATTENTION MASK', result: 'B: 1×7, 0×5', resultZh: 'B：1×7，0×5', body: 'real responses only', bodyZh: '只保留真实响应', tone: 'blue' },
     ],
     formulas: [
       { en: `B response: ${N.AGENT_SHORT_RESPONSE_TOKENS} real + ${N.AGENT_SHORT_PADDING_TOKENS} pad = ${N.AGENT_RESPONSE_TOKENS} cells`, zh: `B 响应：${N.AGENT_SHORT_RESPONSE_TOKENS} 真实 + ${N.AGENT_SHORT_PADDING_TOKENS} padding = ${N.AGENT_RESPONSE_TOKENS} 格` },
@@ -356,7 +356,7 @@
           {@const y = start + i * 96}
           <g opacity={shown(i) ? 1 : 0.3} class="reveal">
             <rect x="25" y={y} width="250" height="80" rx="11" fill={fill(node.tone)} stroke={phase === i ? 'var(--eos)' : stroke(node.tone)} stroke-width={phase === i ? 3 : 1} stroke-dasharray={node.dashed ? '5 4' : '0'} />
-            <text x="150" y={y + 20} text-anchor="middle" class="small strong">{t(node.title, node.titleZh)}</text>
+            <text x="150" y={y + 20} text-anchor="middle" class={node.title === 'RESPONSE ATTENTION MASK' ? 'tiny strong' : 'small strong'}>{t(node.title, node.titleZh)}</text>
             <text x="150" y={y + 43} text-anchor="middle" class="result">{t(node.result, node.resultZh)}</text>
             <text x="150" y={y + 64} text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
             {#if cur.flow && i < cur.nodes.length - 1}<line x1="150" y1={y + 80} x2="150" y2={y + 92} stroke="var(--line)" stroke-width="2.5" marker-end="url(#agent-arrow)" />{/if}
@@ -370,7 +370,7 @@
           {@const x = nodeX(i, cur.nodes.length)}
           <g opacity={shown(i) ? 1 : 0.3} class="reveal">
             <rect x={x} y="105" width={w} height="160" rx="12" fill={fill(node.tone)} stroke={phase === i ? 'var(--eos)' : stroke(node.tone)} stroke-width={phase === i ? 3 : 1} stroke-dasharray={node.dashed ? '5 4' : '0'} />
-            <text x={x + w / 2} y="137" text-anchor="middle" class="small strong">{t(node.title, node.titleZh)}</text>
+            <text x={x + w / 2} y="137" text-anchor="middle" class={node.title === 'RESPONSE ATTENTION MASK' ? 'tiny strong' : 'small strong'}>{t(node.title, node.titleZh)}</text>
             <text x={x + w / 2} y="180" text-anchor="middle" class="result">{t(node.result, node.resultZh)}</text>
             <text x={x + w / 2} y="222" text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
             {#if cur.flow && i < cur.nodes.length - 1}<line x1={x + w} y1="185" x2={nodeX(i + 1, cur.nodes.length)} y2="185" stroke="var(--line)" stroke-width="2.5" marker-end="url(#agent-arrow)" />{/if}
@@ -388,9 +388,10 @@
 <style>
   .title { font-size: 18px; font-weight: 650; fill: var(--fg); }
   .label, .small { font-size: 13px; fill: var(--fg); }
+  .tiny { font-size: 11px; fill: var(--fg); }
   .strong { font-weight: 650; }
   .result { font-family: var(--mono); font-size: 14px; font-weight: 650; fill: var(--fg); }
   .reveal { transition: opacity 450ms; }
-  @media (max-width: 600px) { .title { font-size: 16px; } .label, .small { font-size: 12px; } .result { font-size: 12px; } }
+  @media (max-width: 600px) { .title { font-size: 16px; } .label, .small { font-size: 12px; } .tiny { font-size: 10px; } .result { font-size: 12px; } }
   @media (prefers-reduced-motion: reduce) { .reveal { transition: none; } }
 </style>

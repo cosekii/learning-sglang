@@ -4,8 +4,8 @@
 
 ## 本轮记录
 
-- 13:32 完成 Learning ML Systems 第 13 章《多轮智能体 RL》8 步：有序 Sample、loss mask、观察 delta、VLM 图片双路径、按 key 合并、slime 停止出口、verl AgentLoop 分工和配置长度 padding。先同步第 10／12 章协调逐步评分表。第 13 章作者自评 **R1–R5 80/80、非视觉原项 160/160、机制 R6 16/16、0 未决内容洞**；原 #4／#5／#6 与主人最终视觉验收仍待，不记原十二项总分或整章完成。
-- 八个步骤与冷读整改逐步提交并推送；`build`（60 页）、本章 `transcript`、全章 `readability`、中英三种宽度 `mobile`、`deep-check 13`、`zh-check`、8 步真实相位与 ARIA DOM 审计、16 个深入讲解 DOM 审计和 `git diff --check` 通过。独立冷读三轮后无必须修项。最终图在 `.bot/out/ml13/`，深入讲解图在 `.bot/out/ml13-deep/`；当前模型不能读 PNG。只跑本章检查，未跑全站回归、真实训练、rollout、VLM 或 benchmark。本轮类型：**新书**；下一章是 `14-profile-rl-systems`。
+- 13:48 按协调复查返工 Learning ML Systems 第 13 章：第 1 步 `P P = 2` 改为 `P = 2`，第 7 步英文手机图例缩短为 `red = now`，第 8 步标签改为 `RESPONSE ATTENTION MASK`。协调指出的旧 **0 洞**和「中英 mobile 全过」记录已撤回；修复后作者重评 **R1–R5 80/80、非视觉原项 160/160、机制 R6 16/16、当前未决内容洞 0**。当前不记原十二项总分或整章完成，协调复审、原 #4／#5／#6 与主人最终视觉验收仍待。
+- 八个步骤与本轮返工均已提交并推送；`build`（60 页）、本章 `transcript`、全章 `readability`、`deep-check 13`、`zh-check`、`git diff --check` 通过。英文和中文分别使用 `BOOK=ml-sys ONLY=13 [LANG=zh] npm run mobile -- http://127.0.0.1:4384/learning-sglang`，360／390／430 px 全部通过；两次均在标签调整后重跑。独立冷读确认第 1 步洞已关闭。图在 `.bot/out/ml13/`，深入讲解图在 `.bot/out/ml13-deep/`；当前模型不能读 PNG。只跑本章检查，未跑全站回归、真实训练、rollout、VLM 或 benchmark。下一单元仍需等待本章协调复审。
 
 - 13:42 修旧 Learning SGLang Omni 第 14 章复审项：确认 `58c960c` 已让第 1 步开场显示 10 秒等待、0 秒读取，随后再进入 4＋6 秒拆分；确认 `03f9b8d` 的 transcript 重生成无差异。第 6 步失败后的橙色框由 `12 B queued audio` 改为 `12 B → 0 B`，双语深入讲解同步。协调最新为 R1–R5 **80/80**、原十二项 **192/192**、机制 R6 **14/16**；本轮源码、DOM 和独立文本冷读支持 **16/16（待复审）**，不记完整 EVAL 通过。
 - `build`（60 页）、本章 `transcript`、8 步 `readability`、英文全章及中文第 1／6 步 `mobile`、`deep-check 14`、`zh-check`、第 1／6 步 DOM 相位断言和 `git diff --check` 通过。截图和相位证据在 `.bot/out/omni14-review/`；当前模型与独立冷读者不能读 PNG，不记新增视觉分。本轮只跑本章检查，未跑全站回归、真实连接、模型或 GPU benchmark。本轮类型：**修旧**；下一单元等本章协调复审后回 Omni 15，不开新章。
@@ -199,7 +199,7 @@
 | 10 | 10-int4-qat-rollout | 协调内容返工通过：90/90、180/180、静态 R6 18/18、原 #4/#5 36/36、原十二项 216/216、0 未决内容洞；当前动画硬门与最终视觉验收待 | 24.00 |
 | 11 | 11-train-inference-mismatch | 待补源 | — |
 | 12 | 12-rl-speculative-decoding | 协调内容返工通过：80/80、160/160、静态 R6 16/16、原 #4/#5 32/32、原十二项 192/192、0 未决内容洞；当前动画硬门与最终视觉验收待 | 24.00 |
-| 13 | 13-multi-turn-agent-rl | 文本与动画完成：R1–R5 80/80、非视觉原项 160/160、机制 R6 16/16、0 未决内容洞；原 #4/#5/#6 与最终视觉验收待 | — |
+| 13 | 13-multi-turn-agent-rl | 返工后待协调与主人验收：R1–R5 80/80、非视觉原项 160/160、机制 R6 16/16、当前未决内容洞 0；原 #4/#5/#6 待目视，不记整章完成 | — |
 | 14 | 14-profile-rl-systems | 规划 | — |
 | 15 | 15-memory-snapshot-debugging | 规划 | — |
 | 16 | 16-engineering-practice | 规划 | — |
