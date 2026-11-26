@@ -216,15 +216,17 @@
           { x: 40, y: 190, h: 300, title: `READER TAKES ${DELIVERY_CLOCK_CHUNK_BYTES} B`, titleZh: '读者取走 4 B', queue: DELIVERY_CLOCK_AFTER_READ_BYTES, last: DELIVERY_CLOCK_NOW_SECONDS, idle: 0, read: true },
           { x: 380, y: 190, h: 300, title: `GENERATOR ADDS ${DELIVERY_CLOCK_CHUNK_BYTES} B`, titleZh: '生成器新增 4 B', queue: DELIVERY_CLOCK_AFTER_PRODUCE_BYTES, last: DELIVERY_CLOCK_LAST_READ_SECONDS, idle: DELIVERY_CLOCK_IDLE_SECONDS, read: false },
         ] as panel}
-          <rect x={panel.x} y={panel.y} width={phone ? 270 : 300} height={panel.h} rx="11" fill="var(--bg)" stroke="var(--line)" />
+          {@const changed = panel.read ? phase >= 1 : phase >= 3}
+          {@const current = (panel.read && phase === 1) || (!panel.read && phase === 3)}
+          <rect x={panel.x} y={panel.y} width={phone ? 270 : 300} height={panel.h} rx="11" fill="var(--bg)" stroke={current ? 'var(--fg)' : 'var(--line)'} stroke-width={current ? 2 : 1} style="transition: stroke-width 250ms" />
           <text x={panel.x + 16} y={panel.y + 30} class="tag strong">{t(panel.title, panel.titleZh)}</text>
-          <rect x={panel.x + 16} y={panel.y + 52} width={phone ? 238 : 268} height="58" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x={panel.x + 30} y={panel.y + 88} class="result">{DELIVERY_CLOCK_BEFORE_BYTES} B → {panel.queue} B</text>
+          <rect x={panel.x + 16} y={panel.y + 52} width={phone ? 238 : 268} height="58" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" opacity={changed ? 1 : 0.45} style="transition: opacity 400ms" />
+          <text x={panel.x + 30} y={panel.y + 88} class="result">{DELIVERY_CLOCK_BEFORE_BYTES} B → {changed ? panel.queue : DELIVERY_CLOCK_BEFORE_BYTES} B</text>
           <text x={panel.x + 20} y={panel.y + 145} class="tag">now = {DELIVERY_CLOCK_NOW_SECONDS} s</text>
-          <text x={panel.x + 20} y={panel.y + 174} class="tag">last read = {panel.last} s</text>
-          <text x={panel.x + 20} y={panel.y + 212} class="result">idle = {panel.idle} s</text>
+          <text x={panel.x + 20} y={panel.y + 174} class="tag">last read = {changed ? panel.last : DELIVERY_CLOCK_LAST_READ_SECONDS} s</text>
+          <text x={panel.x + 20} y={panel.y + 212} class="result">idle = {changed ? panel.idle : DELIVERY_CLOCK_IDLE_SECONDS} s</text>
           {#if !phone}
-            <text x={panel.x + 20} y={panel.y + 254} class="tag strong">{panel.read ? t('READ resets the clock', '读取让时钟归零') : t('PRODUCING does not reset it', '生成新消息不让时钟归零')}</text>
+            <text x={panel.x + 20} y={panel.y + 254} class="tag strong" opacity={changed ? 1 : 0.2} style="transition: opacity 300ms">{panel.read ? t('READ resets the clock', '读取让时钟归零') : t('PRODUCING does not reset it', '生成新消息不让时钟归零')}</text>
           {/if}
         {/each}
         <text x={W / 2} y={phone ? 716 : 550} text-anchor="middle" class="rowlabel">{t('Which stream has the longest idle time?', '哪一路流最久没读取？')}</text>
