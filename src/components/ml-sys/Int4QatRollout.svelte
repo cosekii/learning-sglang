@@ -1,0 +1,178 @@
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import StepControls from '../StepControls.svelte';
+  import type { NavLink } from '../../chapters';
+  import { lang } from '../../i18n';
+  import type { Deep } from '../../deep';
+  import * as N from '../../ml-sys/numbers';
+
+  type Tone = 'plain' | 'blue' | 'orange';
+  type Node = {
+    title: string; titleZh: string; result: string; resultZh: string; body: string; bodyZh: string;
+    tone: Tone; bar?: number; compact?: boolean; dashed?: boolean;
+  };
+  type MobileText = {
+    title: string; titleZh: string; subtitle: string; subtitleZh: string;
+    foot: string; footZh: string; legend: string; legendZh: string;
+    formulas?: { en: string; zh: string }[];
+  };
+  type Step = {
+    caption: string; captionZh: string; title: string; titleZh: string; subtitle: string; subtitleZh: string;
+    foot: string; footZh: string; legend: string; legendZh: string;
+    nodes: Node[]; formulas: { en: string; zh: string }[]; flow?: boolean;
+    compare?: { en: string; zh: string }[]; desktopH?: number; mobile?: MobileText;
+  };
+
+  let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
+  const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
+  const fill = (tone: Tone) => tone === 'blue' ? 'var(--accent-soft)' : tone === 'orange' ? 'var(--gen-soft)' : 'var(--bg)';
+  const stroke = (tone: Tone) => tone === 'blue' ? 'var(--accent)' : tone === 'orange' ? 'var(--gen)' : 'var(--line)';
+  const steps: Step[] = [{
+    caption: 'INT4 cuts 32 weights from 64 bytes to 16 raw bytes. Rounding is the cost.',
+    captionZh: '32 个权重从 64 字节减到 16 字节。代价是舍入。',
+    title: 'INT4 quarters raw weight bytes', titleZh: 'INT4 把原始权重字节减到四分之一',
+    subtitle: 'INT4 = 4 bits per weight · BF16 = 16 bits', subtitleZh: 'INT4 = 每个权重 4 位 · BF16 = 每个权重 16 位',
+    foot: 'Constructed group; raw payload excludes scales, other tensors and runtime memory.',
+    footZh: '构造的一组权重；原始负载不含 scale、其他张量和运行显存。',
+    legend: 'Orange = BF16 · blue = packed INT4 · bars use one scale', legendZh: '橙 = BF16 · 蓝 = 打包后的 INT4 · 柱使用同一比例',
+    flow: true,
+    nodes: [
+      { title: 'BF16 WEIGHTS', titleZh: 'BF16 权重', result: `${N.INT4_GROUP_BF16_BYTES} B`, resultZh: `${N.INT4_GROUP_BF16_BYTES} 字节`, body: `${N.INT4_GROUP_SIZE} values × 2 B`, bodyZh: `${N.INT4_GROUP_SIZE} 个数 × 2 字节`, tone: 'orange', bar: 1 },
+      { title: 'RAW INT4', titleZh: '原始 INT4', result: `${N.INT4_GROUP_PACKED_BYTES} B`, resultZh: `${N.INT4_GROUP_PACKED_BYTES} 字节`, body: `${N.INT4_GROUP_SIZE} values × 0.5 B`, bodyZh: `${N.INT4_GROUP_SIZE} 个数 × 0.5 字节`, tone: 'blue', bar: N.INT4_GROUP_PACKED_BYTES / N.INT4_GROUP_BF16_BYTES },
+    ],
+    formulas: [
+      { en: `${N.INT4_GROUP_SIZE} × 2 B = ${N.INT4_GROUP_BF16_BYTES} B · ${N.INT4_GROUP_SIZE} × 0.5 B = ${N.INT4_GROUP_PACKED_BYTES} B`, zh: `${N.INT4_GROUP_SIZE} × 2 字节 = ${N.INT4_GROUP_BF16_BYTES} 字节 · ${N.INT4_GROUP_SIZE} × 0.5 字节 = ${N.INT4_GROUP_PACKED_BYTES} 字节` },
+      { en: `${N.INT4_GROUP_BF16_BYTES} − ${N.INT4_GROUP_PACKED_BYTES} = ${N.INT4_GROUP_SAVED_BYTES} B saved`, zh: `${N.INT4_GROUP_BF16_BYTES} − ${N.INT4_GROUP_PACKED_BYTES} = 省下 ${N.INT4_GROUP_SAVED_BYTES} 字节` },
+      { en: `${N.INT4_GROUP_SAVED_BYTES} ÷ ${N.INT4_GROUP_BF16_BYTES} = 75% less raw payload`, zh: `${N.INT4_GROUP_SAVED_BYTES} ÷ ${N.INT4_GROUP_BF16_BYTES} = 原始负载少 75%` },
+      { en: 'Fewer bits mean fewer numeric levels', zh: '位数更少，能表示的数值等级也更少' },
+      { en: 'How can training adapt to rounding?', zh: '训练怎样适应舍入？' },
+    ],
+    mobile: {
+      title: 'INT4 quarters raw weight bytes', titleZh: 'INT4 把原始权重字节减到四分之一',
+      subtitle: 'INT4 = 4 bits · BF16 = 16 bits', subtitleZh: 'INT4 = 4 位 · BF16 = 16 位',
+      foot: 'Constructed raw payload; other storage is excluded.', footZh: '构造的原始负载；其他存储不计入。',
+      legend: 'Orange = BF16 · blue = INT4 · shared scale', legendZh: '橙 = BF16 · 蓝 = INT4 · 同一比例',
+      formulas: [
+        { en: '32 × 2 B = 64 B', zh: '32 × 2 字节 = 64 字节' },
+        { en: '32 × 0.5 B = 16 B', zh: '32 × 0.5 字节 = 16 字节' },
+        { en: '64 − 16 = 48 B saved', zh: '64 − 16 = 省下 48 字节' },
+        { en: '48 ÷ 64 = 75% less raw payload', zh: '48 ÷ 64 = 原始负载少 75%' },
+        { en: 'Fewer bits mean fewer levels', zh: '位数更少，数值等级更少' },
+        { en: 'How can training adapt?', zh: '训练怎样适应舍入？' },
+      ],
+    },
+  }];
+  let step = $state(0);
+  $effect(() => {
+    const q = Number(new URLSearchParams(window.location.search).get('step'));
+    if (q >= 1 && q <= steps.length) step = q - 1;
+  });
+  let phone = $state(false);
+  onMount(() => {
+    const query = window.matchMedia('(max-width: 600px)');
+    const update = () => (phone = query.matches);
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  });
+  const cur = $derived(steps[step]);
+  const W = $derived(phone ? 300 : 720);
+  const start = $derived(80);
+  const formulas = $derived(phone && cur.mobile?.formulas ? cur.mobile.formulas : cur.formulas);
+  const formulaStart = $derived(cur.compare ? 350 : 320);
+  const legendY = $derived(phone ? start + cur.nodes.length * 96 + 15 + formulas.length * 27 : formulaStart + (cur.formulas.length - 1) * 29 + 45);
+  const H = $derived(phone ? legendY + 55 : Math.max(cur.desktopH ?? 500, legendY + 55));
+  const nodeW = (count: number) => count === 2 ? 260 : count === 3 ? 200 : 155;
+  const nodeX = (i: number, count: number) => count === 2 ? 65 + i * 330 : count === 3 ? 35 + i * 225 : 25 + i * 175;
+</script>
+
+<figure class="viz">
+  <div class="canvas">
+    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={$lang === 'zh' ? cur.captionZh : cur.caption}>
+      <defs>
+        <marker id="int4-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 z" fill="var(--line)" />
+        </marker>
+      </defs>
+      <text x={phone ? 18 : 36} y="30" class="title">{phone ? t(cur.mobile?.title ?? cur.title, cur.mobile?.titleZh ?? cur.titleZh) : t(cur.title, cur.titleZh)}</text>
+      <text x={phone ? 18 : 36} y="55" class="label">{phone ? t(cur.mobile?.subtitle ?? cur.subtitle, cur.mobile?.subtitleZh ?? cur.subtitleZh) : t(cur.subtitle, cur.subtitleZh)}</text>
+      {#if phone}
+        {#each cur.nodes as node, i}
+          {@const y = start + i * 96}
+          <rect x="25" y={y} width="250" height="80" rx="11" fill={fill(node.tone)} stroke={stroke(node.tone)} stroke-dasharray={node.dashed ? '5 4' : '0'} />
+          <text x="150" y={y + 20} text-anchor="middle" class="small strong">{t(node.title, node.titleZh)}</text>
+          <text x="150" y={y + 43} text-anchor="middle" class={node.compact ? 'small' : 'result'}>{t(node.result, node.resultZh)}</text>
+          <text x="150" y={y + 64} text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
+          {#if node.bar !== undefined}
+            <rect x="35" y={y + 72} width="230" height="5" rx="2" fill="var(--bg)" />
+            <rect x="35" y={y + 72} width={230 * node.bar} height="5" rx="2" fill={stroke(node.tone)} />
+          {/if}
+          {#if cur.flow && i < cur.nodes.length - 1}
+            <line x1="150" y1={y + 80} x2="150" y2={y + 92} stroke="var(--line)" stroke-width="2.5" marker-end="url(#int4-arrow)" />
+          {/if}
+        {/each}
+        {#each formulas as line, i}
+          <text x="150" y={start + cur.nodes.length * 96 + 15 + i * 27} text-anchor="middle" class={i === 0 ? 'result' : 'small'}>{t(line.en, line.zh)}</text>
+        {/each}
+        <text x="150" y={legendY} text-anchor="middle" class="small">{t(cur.mobile?.legend ?? cur.legend, cur.mobile?.legendZh ?? cur.legendZh)}</text>
+      {:else if cur.compare}
+        {#each [0, 1] as group}
+          {@const x = group === 0 ? 35 : 375}
+          <rect x={x} y="90" width="310" height="240" rx="13" fill="var(--bg)" stroke="var(--line)" />
+          <text x={x + 155} y="122" text-anchor="middle" class="section">{t(cur.compare[group].en, cur.compare[group].zh)}</text>
+          {#each [0, 1] as offset}
+            {@const node = cur.nodes[group * 2 + offset]}
+            {@const y = 151 + offset * 82}
+            <text x={x + 20} y={y} class="small strong">{t(node.title, node.titleZh)}</text>
+            <rect x={x + 20} y={y + 12} width="270" height="27" rx="5" fill="var(--bg)" stroke="var(--line)" />
+            <rect x={x + 20} y={y + 12} width={270 * (node.bar ?? 1)} height="27" rx="5" fill={fill(node.tone)} stroke={stroke(node.tone)} />
+            <text x={x + 155} y={y + 32} text-anchor="middle" class="result">{t(node.result, node.resultZh)}</text>
+            <text x={x + 155} y={y + 57} text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
+          {/each}
+        {/each}
+        {#each cur.formulas as line, i}
+          <text x="360" y={formulaStart + i * 29} text-anchor="middle" class={i === 0 ? 'result' : 'small'}>{t(line.en, line.zh)}</text>
+        {/each}
+        <text x="360" y={H - 55} text-anchor="middle" class="small">{t(cur.legend, cur.legendZh)}</text>
+      {:else}
+        {#each cur.nodes as node, i}
+          {@const w = nodeW(cur.nodes.length)}
+          {@const x = nodeX(i, cur.nodes.length)}
+          <rect x={x} y="105" width={w} height="160" rx="12" fill={fill(node.tone)} stroke={stroke(node.tone)} stroke-dasharray={node.dashed ? '5 4' : '0'} />
+          <text x={x + w / 2} y="137" text-anchor="middle" class="small strong">{t(node.title, node.titleZh)}</text>
+          <text x={x + w / 2} y="180" text-anchor="middle" class={node.compact ? 'small' : 'result'}>{t(node.result, node.resultZh)}</text>
+          <text x={x + w / 2} y={node.bar === undefined ? 222 : 211} text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
+          {#if node.bar !== undefined}
+            <rect x={x + 10} y="237" width={w - 20} height="10" rx="3" fill="var(--bg)" />
+            <rect x={x + 10} y="237" width={(w - 20) * node.bar} height="10" rx="3" fill={stroke(node.tone)} />
+          {/if}
+          {#if cur.flow && i < cur.nodes.length - 1}
+            <line x1={x + w} y1="185" x2={nodeX(i + 1, cur.nodes.length)} y2="185" stroke="var(--line)" stroke-width="2.5" marker-end="url(#int4-arrow)" />
+          {/if}
+        {/each}
+        {#each cur.formulas as line, i}
+          <text x="360" y={formulaStart + i * 29} text-anchor="middle" class={i === 0 ? 'result' : 'small'}>{t(line.en, line.zh)}</text>
+        {/each}
+        <text x="360" y={H - 55} text-anchor="middle" class="small">{t(cur.legend, cur.legendZh)}</text>
+      {/if}
+      <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t(cur.mobile?.foot ?? cur.foot, cur.mobile?.footZh ?? cur.footZh) : t(cur.foot, cur.footZh)}</text>
+    </svg>
+  </div>
+  <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh}
+    deep={deep?.en[step]} deepZh={deep?.zh[step]} onchange={(s) => (step = s)} {prev} {next} />
+</figure>
+
+<style>
+  .title { font-size: 18px; font-weight: 650; fill: var(--fg); }
+  .label { font-size: 13px; fill: var(--fg); }
+  .small { font-size: 13px; fill: var(--fg); }
+  .section { font-family: var(--mono); font-size: 15px; font-weight: 700; fill: var(--fg); }
+  .strong { font-weight: 650; }
+  .result { font-family: var(--mono); font-size: 15px; font-weight: 650; fill: var(--fg); }
+  @media (max-width: 600px) {
+    .title { font-size: 16px; }
+    .label, .small { font-size: 12px; }
+    .section { font-size: 13px; }
+    .result { font-size: 12px; }
+  }
+</style>

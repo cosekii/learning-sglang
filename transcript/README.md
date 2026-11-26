@@ -49,6 +49,7 @@ Read it to check wording and numbers across chapters without opening the compone
 | ml-sys | 07 | [The weight-update path](ml-sys/07-weight-updates.md) | 8 |
 | ml-sys | 08 | [The FSDP2 training backend](ml-sys/08-fsdp2-training-backend.md) | 6 |
 | ml-sys | 09 | [FP8 rollout and training](ml-sys/09-fp8-rollout-training.md) | 8 |
+| ml-sys | 10 | [INT4 QAT and rollout](ml-sys/10-int4-qat-rollout.md) | 1 |
 | voxt | 01 | [The journey of one sentence](voxt/one-dictation.md) | 4 |
 | voxt | 02 | [Hotkeys and permissions](voxt/helper-permissions-hotkeys.md) | 3 |
 | voxt | 03 | [From microphone to audio frames](voxt/microphone-to-voice-frames.md) | 8 |
