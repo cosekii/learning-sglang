@@ -37,7 +37,7 @@ Sources: `Awesome-ML-SYS-Tutorial/sglang/sglang-omni/moss-tts-local-v15-blog-zh.
 
 ### On the stage
 
-- `Cache` means a saved output found by a key. `Exact key` means every identity field must match: model, model revision, encoder and its configuration, artifact kind, input content and options.
+- `Cache` means a saved output found by a key. `K` names that exact key: model, model version, encoder settings, result type, audio content and encode choices must all match. Encode choices are options that can change the resulting codes.
 - The prompt text is absent from this reference-encoder key. A, B and C can have different prompts because the cached object describes only the shared reference voice and the encoder that converted it.
 - A is a `miss`: no stored value exists, so the encoder runs once and stores the codes. B and C are `hits`: they load the stored codes without another GPU encode.
 - Blue marks GPU encoder work. Orange marks the saved-code path. Loading still has host and transfer costs; the bars compare GPU encode time only, not whole-request latency.
@@ -76,7 +76,7 @@ Sources: `sglang_omni/scheduling/reference_encoder.py:24-35,84-119,344-413`; `sg
 ### On the stage
 
 - `Single-flight` means that callers with the same key share one unfinished encode. The `leader` runs it. Each `follower` waits for the leader's stored result and then loads its own copy.
-- All three requests arrive while the cache is empty. There is no finished result to hit, so the final counters are `misses=1`, `merged=2`, `hits=0`.
+- All three requests arrive while the cache is empty. There is no finished result to hit, so the final counters are `misses=1`, `merged=2`, `hits=0`. `Merged` counts the two followers that joined the leader.
 - The left panel is a counterfactual with three independent calls and batching off. The right panel uses single-flight. Both use the same 250 ms scale.
 - Blue bars are GPU encode work. Orange bars are followers waiting, not extra GPU work. The GPU-work totals sum the blue bars; they do not claim a wall-clock latency for a concurrent batch.
 - MOSS's own batch encoder can also deduplicate identical identifiers within one batch. This step isolates the generic service's single-flight rule by turning that separate batch path off.
@@ -111,9 +111,10 @@ Sources: `sglang_omni/scheduling/reference_encoder.py:361-413`; `tests/unit_test
 
 ### On the stage
 
-- `Launch` builds and starts a GPU decode step, publishes its resolve payload and records a completion event without waiting for the GPU.
-- `Resolve` checks that event, collects each request's result, finishes sampling and emits output. If the event is not ready, resolve synchronizes instead of overlapping.
+- `N` means the next decode step and `N−1` means the step before it. `Launch` queues that GPU work, publishes its resolve payload and records a completion event without waiting. It does not claim that two GPU steps execute simultaneously.
+- `Resolve` checks that event, collects each request's new token or frame, finishes sampling and emits that output downstream. If the event is not ready, resolve synchronizes instead of overlapping.
 - `SYNC` runs launch and resolve for one step before starting the next. `ASYNC` starts step N before resolving step N−1. The same blue GPU and orange CPU blocks appear in both panels.
+- Step N still consumes step N−1's output in GPU stream order. Async decode moves the CPU's result handling later; it does not reverse that model dependency. The event tells the CPU when the earlier result is safe to resolve.
 - The shaded overlap is a possible ordering, not a measured duration. The diagram does not show a D2H copy: MOSS-TTS-Local resolves from a device-side snapshot, while Higgs can use a pinned host staging buffer.
 - Async decode changes the schedule, not the model math. MOSS-TTS-Local currently defaults it off, and its public measurements report performance within session noise rather than a guaranteed speedup.
 
@@ -179,6 +180,7 @@ Sources: Learning SGLang Ch. 11 Step 1; `sglang_omni/models/qwen3_omni/component
 - Blue positions are the 300 real tokens. Grey positions are the 212 zero-filled padding positions. Orange marks the selected 512-token graph.
 - The replay copies real hidden states into the captured buffer, zeros the remainder and updates the segment boundaries. Padding forms its own attention windows, so real tokens do not attend to it.
 - The returned slice is `output[:300]`. Padding computes extra positions, but those positions do not become outputs for this request.
+- A `segment` is one contiguous attention window. A `segment slot` is one captured space for such a window. The graph needs enough slots for the real windows and the padding windows.
 - Inputs above 4096 tokens, invalid segments, insufficient segment slots, a device or process mismatch, and unavailable capture all decline replay. The caller then uses the eager layer stack.
 
 ### Formula and symbols
@@ -213,9 +215,10 @@ Sources: `sglang_omni/models/qwen3_omni/components/audio_layer_graph.py:22-23,22
 ### On the stage
 
 - `Cache` removes a repeated finished encode when the full key matches. Different reference audio has a different input key and misses.
-- `Single-flight` removes duplicate execution while one encode is still running. Its followers still wait for the leader.
+- `Single-flight` removes duplicate execution while one encode is still running. B and C still wait for A before loading their copies.
 - `Async decode` can overlap launch N with resolve N−1. It changes ordering, not the amount of model work.
 - `CUDA graph` replays a recorded layer stack for a fixed bucket and falls back to eager execution when no graph fits.
+- These mechanisms are not promised as one combined model configuration. Steps 1–4 use MOSS-TTS and the generic reference service; Steps 5–6 use Qwen3-Omni's audio encoder.
 - A `vocoder` turns codec frames into sound. Learning SGLang Ch. 20 Steps 1–3 established that ten Qwen frames make one 800 ms chunk. The player needs the next chunk before the current chunk ends.
 - Blue marks frames and sound. Orange marks the playback deadline. The final question asks how the vocoder meets that deadline; this chapter does not claim it already does.
 

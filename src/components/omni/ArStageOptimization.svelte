@@ -8,11 +8,8 @@
     OPT_REFERENCE_ENCODE_MS,
     OPT_REFERENCE_REQUEST_COUNT,
     OPT_REFERENCE_TOTAL_MS,
-    OPT_CACHE_HIT_COUNT,
     OPT_CACHED_TOTAL_MS,
     OPT_CACHE_SAVED_MS,
-    OPT_SINGLE_FLIGHT_FOLLOWER_COUNT,
-    OPT_SINGLE_FLIGHT_COLD_HIT_COUNT,
     OPT_SINGLE_FLIGHT_GPU_TOTAL_MS,
     OPT_AUDIO_TOKEN_BUCKETS,
     OPT_AUDIO_REAL_TOKENS,
@@ -33,11 +30,11 @@
     caption: 'The cache stores the first result under an exact key. The next two matching requests load it instead of encoding again.',
     captionZh: 'cache 按完整 key 保存首次结果。后两个相同请求直接读取，不再编码。',
   }, {
-    caption: 'Three matching requests arrive before any result is cached. Single-flight lets two followers share the leader\'s running encode.',
-    captionZh: '三个相同请求同时到达，cache 还是空的。single-flight 让两个 follower 等 leader 的一次编码。',
+    caption: 'Three matching requests arrive before any result is cached. Single-flight makes B and C wait for A\'s encode instead of running two more.',
+    captionZh: '三个相同请求同时到达，cache 还是空的。single-flight 让 B、C 等 A 编码，不再各算一次。',
   }, {
-    caption: 'Async decode launches step N before resolving step N−1. GPU work and CPU bookkeeping can overlap.',
-    captionZh: '异步 decode 先启动第 N 步，再处理第 N−1 步。GPU 计算和 CPU 收尾可以重叠。',
+    caption: 'Async decode lets the GPU start step N before the CPU finishes step N−1. Their work can overlap.',
+    captionZh: '异步 decode 让 GPU 先开始第 N 步，CPU 后收尾第 N−1 步。两边的工作可以重叠。',
   }, {
     caption: 'The audio encoder can capture its layer stack once. Matching calls replay those kernels as one graph.',
     captionZh: 'audio encoder 可以把整层序列录一次。匹配的调用把同一组 kernels 作为一张 graph 重放。',
@@ -63,7 +60,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [790, 800, 810, 760, 810, 800, 900][step] : [540, 590, 590, 570, 560, 600, 620][step]);
+  const H = $derived(phone ? [790, 800, 850, 800, 810, 800, 900][step] : [540, 590, 590, 620, 560, 600, 620][step]);
   const requests = [
     { id: 'A', prompt: 'Hello', promptZh: '你好' },
     { id: 'B', prompt: 'Thank you', promptZh: '谢谢' },
@@ -77,7 +74,7 @@
   ]);
   const summary = $derived([
     { name: 'cache', wait: 'finished encode repeats', limit: 'exact key must match', nameZh: 'cache', waitZh: '重复已完成编码', limitZh: '完整 key 必须匹配' },
-    { name: 'single-flight', wait: 'same encode is running', limit: 'followers still wait', nameZh: 'single-flight', waitZh: '相同编码正在运行', limitZh: 'follower 仍等待' },
+    { name: 'single-flight', wait: 'same encode is running', limit: 'B and C still wait', nameZh: 'single-flight', waitZh: '相同编码正在运行', limitZh: 'B、C 仍等待' },
     { name: 'async decode', wait: 'GPU and CPU take turns', limit: 'overlap, not less work', nameZh: '异步 decode', waitZh: 'GPU、CPU 轮流工作', limitZh: '重叠，不少做工作' },
     { name: 'CUDA graph', wait: 'kernels dispatch one by one', limit: 'fixed bucket + eager fallback', nameZh: 'CUDA graph', waitZh: '逐个 dispatch kernels', limitZh: '固定 bucket + eager 回退' },
   ]);
@@ -93,7 +90,7 @@
       </defs>
       {#if step === 0}
         <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'One voice, three encodes' : 'Three prompts repeat one reference encode', phone ? '一段声音，三次编码' : '三个 prompt 重复编码同一段声音')}</text>
-        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'reference encoder = voice → codes' : 'reference encoder = example voice → model-readable codes', phone ? 'reference encoder = 声音 → codes' : 'reference encoder = 示例声音 → 模型可读的 codes')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'reference encoder = voice → model numbers' : 'reference encoder = example voice → model-ready numbers (codes)', phone ? 'reference encoder = 声音 → 模型数字' : 'reference encoder = 示例声音 → 模型可读的数（codes）')}</text>
         {#if !phone}
           {#each requests as request, i}
             {@const x = 30 + i * 230}
@@ -141,12 +138,13 @@
         <text x={phone ? 18 : 30} y="30" class="title">{t('Reuse a finished result · 1 of 4', '复用已完成的结果 · 1 / 4')}</text>
         <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'cache = saved output found by a key' : 'cache = saved output · exact key = every identity field matches', phone ? 'cache = 按 key 找已存结果' : 'cache = 已存结果 · 完整 key = 每个身份字段都匹配')}</text>
         {#if !phone}
-          <rect x="30" y="78" width="660" height="94" rx="11" fill="var(--bg)" stroke="var(--line)" />
-          <text x="45" y="102" class="small strong">{t('EXACT KEY · ALL PARTS MUST MATCH', '完整 key · 所有部分都必须匹配')}</text>
-          <text x="45" y="127" class="code">model + revision + encoder config + artifact + audio + options</text>
-          <text x="45" y="153" class="small">{t('prompt text is not in this reference-encoder key', 'prompt 文本不在参考 encoder 的 key 里')}</text>
+          <rect x="30" y="78" width="660" height="112" rx="11" fill="var(--bg)" stroke="var(--line)" />
+          <text x="45" y="102" class="small strong">{t('K = CACHE IDENTITY · ALL PARTS MUST MATCH', 'K = cache 身份 · 所有部分都必须匹配')}</text>
+          <text x="45" y="127" class="code">model + version + encoder settings + result type</text>
+          <text x="45" y="150" class="code">audio content + encode choices</text>
+          <text x="45" y="174" class="small">{t('choices can change codes · prompt text is not in K', 'choices 会改变 codes · prompt 文本不在 K 里')}</text>
           {#each requests as request, i}
-            {@const y = 191 + i * 66}
+            {@const y = 205 + i * 61}
             <text x="30" y={y + 25} class="small strong">{request.id}</text>
             <rect x="62" y={y} width="48" height="35" rx="7" fill="var(--bg)" stroke="var(--line)" />
             <text x="86" y={y + 23} text-anchor="middle" class="code">K</text>
@@ -164,15 +162,16 @@
           <rect x="165" y="462" width="162.5" height="29" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="340" y="483" class="result">≈{OPT_CACHED_TOTAL_MS} ms</text>
           <text x="505" y="483" class="result">−≈{OPT_CACHE_SAVED_MS} ms</text>
-          <text x="360" y="532" text-anchor="middle" class="small">{t('one miss + two hits; bars count GPU encode only', '一次 miss + 两次 hit；横条只算 GPU encode')}</text>
+          <text x="360" y="532" text-anchor="middle" class="small">{t('one miss + two hits · copies protect cached codes from edits', '一次 miss + 两次 hit · 副本保护已存 codes 不被修改')}</text>
         {:else}
-          <rect x="18" y="78" width="264" height="112" rx="11" fill="var(--bg)" stroke="var(--line)" />
-          <text x="32" y="102" class="small strong">{t('EXACT KEY · MATCH ALL', '完整 key · 全部匹配')}</text>
-          <text x="32" y="126" class="code">model + revision + config</text>
-          <text x="32" y="148" class="code">artifact + audio + options</text>
-          <text x="32" y="174" class="small">{t('prompt text is not in this key', 'prompt 文本不在这个 key 里')}</text>
+          <rect x="18" y="78" width="264" height="134" rx="11" fill="var(--bg)" stroke="var(--line)" />
+          <text x="32" y="102" class="small strong">{t('K = CACHE IDENTITY · MATCH ALL', 'K = cache 身份 · 全部匹配')}</text>
+          <text x="32" y="126" class="code">model + version + settings</text>
+          <text x="32" y="148" class="code">result type + audio + choices</text>
+          <text x="32" y="171" class="small">{t('choices can change codes', 'choices 会改变 codes')}</text>
+          <text x="32" y="195" class="small">{t('prompt text is not in K', 'prompt 文本不在 K 里')}</text>
           {#each requests as request, i}
-            {@const y = 211 + i * 91}
+            {@const y = 230 + i * 91}
             <rect x="18" y={y} width="264" height="76" rx="9" fill="var(--bg)" stroke="var(--line)" />
             <text x="32" y={y + 24} class="small strong">{request.id} · K · {i === 0 ? 'miss' : 'hit'}</text>
             <rect x="32" y={y + 36} width="115" height="29" rx="6" fill={i === 0 ? 'var(--accent-soft)' : 'var(--gen-soft)'} stroke={i === 0 ? 'var(--accent)' : 'var(--gen)'} />
@@ -187,13 +186,13 @@
           <rect x="18" y="648" width="80" height="29" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="110" y="669" class="result">≈{OPT_CACHED_TOTAL_MS} ms · −≈{OPT_CACHE_SAVED_MS}</text>
           <text x="150" y="724" text-anchor="middle" class="small">{t('1 miss + 2 hits', '1 次 miss + 2 次 hit')}</text>
-          <text x="150" y="749" text-anchor="middle" class="small">{t('GPU encode only', '只算 GPU encode')}</text>
+          <text x="150" y="749" text-anchor="middle" class="small">{t('copies protect cached codes', '副本保护已存 codes')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'GPU work only; not request latency.' : 'Approximate GPU-work comparison, not whole-request latency.', phone ? '只算 GPU 工作，不是请求延迟。' : '大致 GPU 工作对照，不是整个请求的延迟。')}</text>
       {:else if step === 2}
         <text x={phone ? 18 : 30} y="30" class="title">{t('Share a running encode · 2 of 4', '共享正在做的编码 · 2 / 4')}</text>
         <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'single-flight = share one unfinished encode' : 'single-flight = callers with one key share one unfinished encode', phone ? 'single-flight = 共享一次未完成编码' : 'single-flight = 相同 key 的调用共享一次未完成编码')}</text>
-        <text x={phone ? 18 : 30} y="79" class="label">{t('blue = GPU encode · orange = follower wait', '蓝 = GPU encode · 橙 = follower 等待')}</text>
+        <text x={phone ? 18 : 30} y="79" class="label">{t('blue = GPU encode · orange = waiting for A', '蓝 = GPU encode · 橙 = 等待 A')}</text>
         {#if !phone}
           {#each [false, true] as shared}
             {@const x = shared ? 375 : 30}
@@ -202,14 +201,15 @@
             <text x={x + 15} y="151" class="small">{t('A, B, C arrive at 0 · cache empty', 'A、B、C 同时到达 · cache 为空')}</text>
             {#each requests as request, i}
               {@const y = 176 + i * 76}
-              <text x={x + 15} y={y + 22} class="small strong">{request.id} · {shared ? (i === 0 ? 'leader' : 'follower') : t('caller', '调用')}</text>
+              <text x={x + 15} y={y + 22} class="small strong">{request.id} · {shared ? (i === 0 ? t('does the work', '负责编码') : t('waits for A', '等待 A')) : t('caller', '调用')}</text>
               <rect x={x + 15} y={y + 34} width="200" height="28" rx="6" fill={shared && i > 0 ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={shared && i > 0 ? 'var(--gen)' : 'var(--accent)'} />
-              <text x={x + 115} y={y + 54} text-anchor="middle" class="small">{shared && i > 0 ? t('wait 250 ms', '等待 250 ms') : t('encode 250 ms', '编码 250 ms')}</text>
+              <text x={x + 115} y={y + 54} text-anchor="middle" class="small">{shared && i > 0 ? t('wait 250 → copy', '等 250 → 副本') : t('encode 250 ms', '编码 250 ms')}</text>
             {/each}
             <text x={x + 15} y="426" class="result">GPU {t('work', '工作')} = {shared ? `≈${OPT_SINGLE_FLIGHT_GPU_TOTAL_MS}` : `≈${OPT_REFERENCE_TOTAL_MS}`} ms</text>
           {/each}
-          <text x="360" y="493" text-anchor="middle" class="result">misses = 1 · merged = {OPT_SINGLE_FLIGHT_FOLLOWER_COUNT} · hits = {OPT_SINGLE_FLIGHT_COLD_HIT_COUNT}</text>
-          <text x="360" y="528" text-anchor="middle" class="small">{t('The two followers wait; only duplicate GPU work disappears.', '两个 follower 仍等待；消失的是重复 GPU 工作。')}</text>
+          <text x="360" y="493" text-anchor="middle" class="result">A {t('encodes once', '编码一次')} · B + C {t('share that result', '共享这个结果')}</text>
+          <text x="360" y="526" text-anchor="middle" class="small">{t('A stores the codes; B and C then load copies.', 'A 存好 codes；B、C 随后读取副本。')}</text>
+          <text x="360" y="554" text-anchor="middle" class="small">{t('Later matching requests can hit this cache entry.', '后来的相同请求可以命中这个 cache 条目。')}</text>
         {:else}
           {#each [false, true] as shared, panel}
             {@const y = shared ? 409 : 98}
@@ -218,56 +218,59 @@
             <text x="32" y={y + 47} class="small">{t('all at 0 · cache empty', '同时到达 · cache 为空')}</text>
             {#each requests as request, i}
               {@const rowY = y + 62 + i * 56}
-              <text x="32" y={rowY + 15} class="small strong">{request.id} · {shared ? (i === 0 ? 'leader' : 'follower') : t('caller', '调用')}</text>
+              <text x="32" y={rowY + 15} class="small strong">{request.id} · {shared ? (i === 0 ? t('does the work', '负责编码') : t('waits for A', '等待 A')) : t('caller', '调用')}</text>
               <rect x="32" y={rowY + 23} width="160" height="23" rx="5" fill={shared && i > 0 ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={shared && i > 0 ? 'var(--gen)' : 'var(--accent)'} />
-              <text x="202" y={rowY + 40} class="small">{shared && i > 0 ? t('wait', '等待') : '250 ms'}</text>
+              <text x="202" y={rowY + 40} class="small">{shared && i > 0 ? t('wait→copy', '等→副本') : '250 ms'}</text>
             {/each}
             <text x="32" y={y + 259} class="result">GPU = {shared ? `≈${OPT_SINGLE_FLIGHT_GPU_TOTAL_MS}` : `≈${OPT_REFERENCE_TOTAL_MS}`} ms</text>
           {/each}
-          <text x="150" y="730" text-anchor="middle" class="result">misses 1 · merged {OPT_SINGLE_FLIGHT_FOLLOWER_COUNT} · hits {OPT_SINGLE_FLIGHT_COLD_HIT_COUNT}</text>
-          <text x="150" y="761" text-anchor="middle" class="small">{t('Followers wait; duplicate work goes.', 'follower 等待；重复工作消失。')}</text>
+          <text x="150" y="730" text-anchor="middle" class="result">A {t('encodes once', '编码一次')} · B + C {t('share it', '共享结果')}</text>
+          <text x="150" y="761" text-anchor="middle" class="small">{t('A stores; B and C load copies.', 'A 存好；B、C 读取副本。')}</text>
+          <text x="150" y="792" text-anchor="middle" class="small">{t('Later requests can hit this entry.', '后来请求可命中此条目。')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Constructed example · batching off' : 'Constructed cold-cache comparison; batching is off.', phone ? '构造示例 · 关闭 batching' : '构造冷 cache 对照；关闭 batching。')}</text>
       {:else if step === 3}
         <text x={phone ? 18 : 30} y="30" class="title">{t('Overlap GPU and CPU · 3 of 4', '让 GPU 和 CPU 同时工作 · 3 / 4')}</text>
-        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'L = launch GPU · R = resolve on CPU' : 'launch = start the GPU step · resolve = collect and emit on CPU', phone ? 'L = 启动 GPU · R = CPU 收尾' : 'launch = 启动 GPU 这一步 · resolve = CPU 收集并发出结果')}</text>
-        <text x={phone ? 18 : 30} y="79" class="label">{t('blue = GPU work · orange = CPU bookkeeping', '蓝 = GPU 工作 · 橙 = CPU 收尾')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t('N = next decode step · N−1 = the step before it', 'N = 下一个 decode step · N−1 = 它前面的一步')}</text>
+        <text x={phone ? 18 : 30} y="79" class="label">{t(phone ? 'blue = GPU · orange = token/frame → out' : 'blue = GPU computes · orange = CPU sends token/frame → downstream', phone ? '蓝 = GPU · 橙 = token/frame → 输出' : '蓝 = GPU 计算 · 橙 = CPU 把 token/frame 发往下游')}</text>
         {#if !phone}
           <rect x="30" y="103" width="660" height="158" rx="12" fill="var(--bg)" stroke="var(--line)" />
           <text x="45" y="130" class="small strong">SYNC · {t('finish one step before starting the next', '完成一步，再开始下一步')}</text>
           {#each [
-            { x: 60, w: 130, name: 'launch N−1', color: 'accent' },
-            { x: 190, w: 110, name: 'resolve N−1', color: 'gen' },
-            { x: 300, w: 130, name: 'launch N', color: 'accent' },
-            { x: 430, w: 110, name: 'resolve N', color: 'gen' },
+            { x: 60, w: 130, name: 'GPU N−1', color: 'accent' },
+            { x: 190, w: 110, name: 'CPU N−1', color: 'gen' },
+            { x: 300, w: 130, name: 'GPU N', color: 'accent' },
+            { x: 430, w: 110, name: 'CPU N', color: 'gen' },
           ] as block}
             <rect x={block.x} y="158" width={block.w} height="57" rx="7" fill={`var(--${block.color}-soft)`} stroke={`var(--${block.color})`} />
             <text x={block.x + block.w / 2} y="192" text-anchor="middle" class="small strong">{block.name}</text>
           {/each}
           <text x="360" y="241" text-anchor="middle" class="small">{t('GPU and CPU take turns', 'GPU 和 CPU 轮流工作')}</text>
           <rect x="30" y="286" width="660" height="222" rx="12" fill="var(--bg)" stroke="var(--accent)" />
-          <text x="45" y="313" class="small strong">ASYNC · {t('launch N before resolve N−1', '先 launch N，再 resolve N−1')}</text>
+          <text x="45" y="313" class="small strong">ASYNC · {t('GPU N starts before CPU N−1 finishes', 'GPU N 先开始，CPU N−1 后完成')}</text>
           <text x="45" y="359" class="small strong">GPU</text>
           <rect x="110" y="332" width="130" height="50" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="175" y="362" text-anchor="middle" class="small strong">launch N−1</text>
+          <text x="175" y="362" text-anchor="middle" class="small strong">GPU N−1</text>
           <rect x="240" y="332" width="130" height="50" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="305" y="362" text-anchor="middle" class="small strong">launch N</text>
+          <text x="305" y="362" text-anchor="middle" class="small strong">GPU N</text>
           <text x="45" y="424" class="small strong">CPU</text>
           <rect x="240" y="397" width="110" height="50" rx="7" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="295" y="427" text-anchor="middle" class="small strong">resolve N−1</text>
+          <text x="295" y="427" text-anchor="middle" class="small strong">CPU N−1</text>
           <rect x="350" y="397" width="110" height="50" rx="7" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="405" y="427" text-anchor="middle" class="small strong">resolve N</text>
+          <text x="405" y="427" text-anchor="middle" class="small strong">CPU N</text>
           <line x1="240" y1="324" x2="240" y2="456" stroke="var(--line)" stroke-dasharray="4 3" />
           <line x1="370" y1="324" x2="370" y2="390" stroke="var(--line)" stroke-dasharray="4 3" />
-          <text x="360" y="482" text-anchor="middle" class="small strong">{t('launch N and resolve N−1 can run at the same time', 'launch N 和 resolve N−1 可以同时运行')}</text>
+          <text x="360" y="482" text-anchor="middle" class="small strong">{t('GPU N and CPU N−1 can run at the same time', 'GPU N 和 CPU N−1 可以同时运行')}</text>
+          <text x="360" y="537" text-anchor="middle" class="small">{t('GPU order preserves N−1 → N; only CPU output handling lags.', 'GPU 仍按 N−1 → N 的顺序；只有 CPU 输出处理晚一步。')}</text>
+          <text x="360" y="566" text-anchor="middle" class="small">{t('The ready mark tells the CPU when N−1 is safe to send.', '就绪标记告诉 CPU 何时可以发出 N−1。')}</text>
         {:else}
           <rect x="18" y="101" width="264" height="166" rx="11" fill="var(--bg)" stroke="var(--line)" />
           <text x="32" y="127" class="small strong">SYNC · {t('one step at a time', '一次完成一步')}</text>
           {#each [
-            { name: 'L', n: 'N−1', color: 'accent' },
-            { name: 'R', n: 'N−1', color: 'gen' },
-            { name: 'L', n: 'N', color: 'accent' },
-            { name: 'R', n: 'N', color: 'gen' },
+            { name: 'GPU', n: 'N−1', color: 'accent' },
+            { name: 'CPU', n: 'N−1', color: 'gen' },
+            { name: 'GPU', n: 'N', color: 'accent' },
+            { name: 'CPU', n: 'N', color: 'gen' },
           ] as block, i}
             {@const x = 18 + i * 60}
             <rect x={x} y="153" width="60" height="64" rx="6" fill={`var(--${block.color}-soft)`} stroke={`var(--${block.color})`} />
@@ -279,25 +282,28 @@
           <text x="32" y="317" class="small strong">ASYNC · {t('one step ahead', '向前重叠一步')}</text>
           <text x="32" y="360" class="small strong">GPU</text>
           <rect x="78" y="337" width="60" height="62" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="108" y="364" text-anchor="middle" class="small strong">L</text>
+          <text x="108" y="364" text-anchor="middle" class="small strong">GPU</text>
           <text x="108" y="386" text-anchor="middle" class="small">N−1</text>
           <rect x="138" y="337" width="60" height="62" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="168" y="364" text-anchor="middle" class="small strong">L</text>
+          <text x="168" y="364" text-anchor="middle" class="small strong">GPU</text>
           <text x="168" y="386" text-anchor="middle" class="small">N</text>
           <text x="32" y="464" class="small strong">CPU</text>
           <rect x="138" y="441" width="60" height="62" rx="6" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="168" y="468" text-anchor="middle" class="small strong">R</text>
+          <text x="168" y="468" text-anchor="middle" class="small strong">CPU</text>
           <text x="168" y="490" text-anchor="middle" class="small">N−1</text>
           <rect x="198" y="441" width="60" height="62" rx="6" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="228" y="468" text-anchor="middle" class="small strong">R</text>
+          <text x="228" y="468" text-anchor="middle" class="small strong">CPU</text>
           <text x="228" y="490" text-anchor="middle" class="small">N</text>
-          <text x="150" y="548" text-anchor="middle" class="small strong">{t('L(N) starts before R(N−1)', 'L(N) 先于 R(N−1)')}</text>
+          <text x="150" y="548" text-anchor="middle" class="small strong">{t('GPU N starts before CPU N−1 ends', 'GPU N 先于 CPU N−1 完成')}</text>
           <text x="150" y="580" text-anchor="middle" class="small">{t('GPU and CPU can overlap', 'GPU 和 CPU 可以重叠')}</text>
           <text x="150" y="608" text-anchor="middle" class="small">{t('same work, new order', '工作相同，顺序不同')}</text>
+          <text x="150" y="660" text-anchor="middle" class="small">{t('GPU keeps N−1 → N in order.', 'GPU 仍按 N−1 → N 排序。')}</text>
+          <text x="150" y="689" text-anchor="middle" class="small">{t('Only CPU output handling lags.', '只有 CPU 输出处理晚一步。')}</text>
+          <text x="150" y="718" text-anchor="middle" class="small">{t('The ready mark makes N−1 safe to send.', '就绪标记让 N−1 可以发出。')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Ordering only · MOSS default off' : 'Constructed ordering; no speedup claimed. MOSS-TTS-Local defaults async decode off.', phone ? '只看顺序 · MOSS 默认关闭' : '构造顺序，不声称加速。MOSS-TTS-Local 默认关闭异步 decode。')}</text>
       {:else if step === 4}
-        <text x={phone ? 18 : 30} y="30" class="title">{t('Replay recorded kernels · 4 of 4', '重放录下的 kernels · 4 / 4')}</text>
+        <text x={phone ? 18 : 30} y="30" class="title">{t('Qwen3-Omni audio graph · 4 of 4', 'Qwen3-Omni audio graph · 4 / 4')}</text>
         <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'CUDA graph = record once, then replay' : 'Ch. 11 Step 1: a CUDA graph records launches, then replays them', phone ? 'CUDA graph = 录一次，再重放' : 'Ch. 11 Step 1：CUDA graph 录下 launches，再重放')}</text>
         <text x={phone ? 18 : 30} y="79" class="label">{t(phone ? 'blue kernels · orange graph · grey CPU' : 'blue = GPU kernels · orange = graph · grey = CPU dispatch', phone ? '蓝 kernels · 橙 graph · 灰 CPU' : '蓝 = GPU kernels · 橙 = graph · 灰 = CPU dispatch')}</text>
         {#if !phone}
@@ -348,11 +354,11 @@
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Opt-in · eager fallback remains' : 'Opt-in audio-layer graphs; eager fallback remains. No timing win claimed.', phone ? '可选开启 · 保留 eager 回退' : '可选 audio 层 graph；保留 eager 回退，不声称耗时收益。')}</text>
       {:else if step === 5}
-        <text x={phone ? 18 : 30} y="30" class="title">{t('Choose a captured size · 4 of 4', '选择已录制的大小 · 4 / 4')}</text>
-        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'bucket = one captured input size' : 'token bucket = one captured input size; choose the smallest that fits', phone ? 'bucket = 一种已 capture 的输入大小' : 'token bucket = 一种已 capture 的输入大小；选择能装下的最小值')}</text>
+        <text x={phone ? 18 : 30} y="30" class="title">{t('Qwen3-Omni audio buckets · 4 of 4', 'Qwen3-Omni audio buckets · 4 / 4')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'bucket = captured size · Ch. 11 Steps 10–11' : 'token bucket = captured input size · Ch. 11 Steps 10–11 showed pad and crop', phone ? 'bucket = 已 capture 的大小 · Ch. 11 Steps 10–11' : 'token bucket = 已 capture 的输入大小 · Ch. 11 Steps 10–11 已讲补位和裁切')}</text>
         <text x={phone ? 18 : 30} y="79" class="label">{t(phone ? 'blue real · grey zeros · orange graph' : 'blue = real tokens · grey = zero padding · orange = chosen graph', phone ? '蓝真实 · 灰补零 · 橙 graph' : '蓝 = 真实 token · 灰 = 补零 · 橙 = 选中的 graph')}</text>
         {#if !phone}
-          <text x="30" y="105" class="small strong">{OPT_AUDIO_GRAPH_COUNT} {t('CAPTURED SIZES', '种已录制大小')}</text>
+          <text x="30" y="105" class="small strong">{OPT_AUDIO_GRAPH_COUNT} {t('DEFAULT SIZES · DEFAULT_TOKEN_BUCKETS', '种默认大小 · DEFAULT_TOKEN_BUCKETS')}</text>
           {#each OPT_AUDIO_TOKEN_BUCKETS as bucket, i}
             {@const x = 30 + i * 105}
             <rect x={x} y="120" width="100" height="58" rx="8" fill={bucket === OPT_AUDIO_BUCKET_TOKENS ? 'var(--gen-soft)' : 'var(--bg)'} stroke={bucket === OPT_AUDIO_BUCKET_TOKENS ? 'var(--gen)' : 'var(--line)'} />
@@ -372,9 +378,10 @@
           <rect x={120 + 480 * OPT_AUDIO_REAL_TOKENS / OPT_AUDIO_BUCKET_TOKENS} y="455" width={480 * OPT_AUDIO_PADDING_TOKENS / OPT_AUDIO_BUCKET_TOKENS} height="49" fill="white" stroke="var(--faint)" stroke-dasharray="5 4" />
           <text x={120 + 240 * OPT_AUDIO_REAL_TOKENS / OPT_AUDIO_BUCKET_TOKENS} y="486" text-anchor="middle" class="small strong">output[:{OPT_AUDIO_REAL_TOKENS}]</text>
           <text x={120 + 480 * (OPT_AUDIO_REAL_TOKENS + OPT_AUDIO_PADDING_TOKENS / 2) / OPT_AUDIO_BUCKET_TOKENS} y="486" text-anchor="middle" class="small">{t('cropped', '裁掉')}</text>
-          <text x="360" y="542" text-anchor="middle" class="small">{t('No matching graph or above 4096 tokens → run the original layers eagerly.', '无匹配 graph 或超过 4096 token → 按原层序列 eager 运行。')}</text>
+          <text x="360" y="534" text-anchor="middle" class="small">{t('Real and padded positions are processed apart, so real outputs cannot read padding.', '真实和补零位置分开处理，真实输出读不到 padding。')}</text>
+          <text x="360" y="563" text-anchor="middle" class="small">{t('No matching graph or above 4096 tokens → run the original layers eagerly.', '无匹配 graph 或超过 4096 token → 按原层序列 eager 运行。')}</text>
         {:else}
-          <text x="18" y="103" class="small strong">{OPT_AUDIO_GRAPH_COUNT} {t('CAPTURED SIZES', '种录制大小')}</text>
+          <text x="18" y="103" class="small strong">{OPT_AUDIO_GRAPH_COUNT} {t('DEFAULT SIZES · DEFAULT_TOKEN_BUCKETS', '种默认大小 · DEFAULT_TOKEN_BUCKETS')}</text>
           {#each OPT_AUDIO_TOKEN_BUCKETS as bucket, i}
             {@const x = 18 + (i % 3) * 90}
             {@const y = 116 + Math.floor(i / 3) * 66}
@@ -393,15 +400,16 @@
           <rect x={30 + 240 * OPT_AUDIO_REAL_TOKENS / OPT_AUDIO_BUCKET_TOKENS} y="492" width={240 * OPT_AUDIO_PADDING_TOKENS / OPT_AUDIO_BUCKET_TOKENS} height="49" fill="white" stroke="var(--faint)" stroke-dasharray="5 4" />
           <text x={30 + 120 * OPT_AUDIO_REAL_TOKENS / OPT_AUDIO_BUCKET_TOKENS} y="522" text-anchor="middle" class="small strong">[:{OPT_AUDIO_REAL_TOKENS}]</text>
           <text x={30 + 240 * (OPT_AUDIO_REAL_TOKENS + OPT_AUDIO_PADDING_TOKENS / 2) / OPT_AUDIO_BUCKET_TOKENS} y="522" text-anchor="middle" class="small">{t('cropped', '裁掉')}</text>
-          <text x="150" y="584" text-anchor="middle" class="small">{t('Padding has separate attention windows.', 'padding 有独立 attention window。')}</text>
-          <text x="150" y="628" text-anchor="middle" class="small">{t('No match or >4096 tokens', '无匹配或超过 4096 token')}</text>
-          <text x="150" y="657" text-anchor="middle" class="small strong">→ {t('run the original layers eagerly', '按原层序列 eager 运行')}</text>
-          <text x="150" y="704" text-anchor="middle" class="small">{t('Only the first 300 outputs remain.', '只保留前 300 份输出。')}</text>
+          <text x="150" y="584" text-anchor="middle" class="small">{t('Real and padded positions are processed apart;', '真实和补零位置分开处理，')}</text>
+          <text x="150" y="611" text-anchor="middle" class="small">{t('so real outputs cannot read padding.', '真实输出读不到 padding。')}</text>
+          <text x="150" y="652" text-anchor="middle" class="small">{t('No match or >4096 tokens', '无匹配或超过 4096 token')}</text>
+          <text x="150" y="681" text-anchor="middle" class="small strong">→ {t('run the original layers eagerly', '按原层序列 eager 运行')}</text>
+          <text x="150" y="727" text-anchor="middle" class="small">{t('Only the first 300 outputs remain.', '只保留前 300 份输出。')}</text>
         {/if}
-        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Constructed shapes · no timing result' : 'Constructed tensor shapes; padding has separate attention windows. No timing result.', phone ? '构造形状 · 无耗时结果' : '构造 tensor 形状；padding 有独立 attention window，无耗时结果。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Constructed shapes · no timing result' : 'Constructed tensor shapes; real outputs cannot read padding. No timing result.', phone ? '构造形状 · 无耗时结果' : '构造 tensor 形状；真实输出读不到 padding，无耗时结果。')}</text>
       {:else if step === 6}
         <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'Four mechanisms and waits' : 'Four mechanisms, four different waits', phone ? '四种机制与等待' : '四种机制，四种不同等待')}</text>
-        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'Match each mechanism to its wait' : 'Match each mechanism to the wait measured in Chapter 8', phone ? '把机制对应到它的等待' : '把每种机制对应到第 8 章量出的等待')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'MOSS 1–4 · Qwen audio 5–6' : 'Different examples: MOSS-TTS 1–4 · Qwen3-Omni audio 5–6', phone ? 'MOSS 1–4 · Qwen audio 5–6' : '不同示例：MOSS-TTS 第 1–4 步 · Qwen3-Omni audio 第 5–6 步')}</text>
         {#if !phone}
           <text x="30" y="88" class="small strong">{t('MECHANISM', '机制')}</text>
           <text x="190" y="88" class="small strong">{t('WAIT IT ADDRESSES', '处理的等待')}</text>

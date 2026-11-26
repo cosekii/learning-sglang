@@ -37,7 +37,7 @@ $$T_{\mathrm{uncached}}=3\times250\ \text{ms}=750\ \text{ms}$$
 
 ### 图上是什么
 
-- `cache` 指能按 key 找到的已存结果。`完整 key` 要求每个身份字段都匹配：模型、模型版本、encoder 及其配置、结果类型、输入内容和选项。
+- `cache` 指能按 key 找到的已存结果。`K` 就是这个完整 key：模型、模型版本、encoder 设置、结果类型、音频内容和 encode choices 都必须匹配。encode choices 是会改变输出 codes 的选项。
 - prompt 文本不在参考 encoder 的 key 里。A、B、C 可以有不同 prompt，因为缓存对象只描述共用的参考音频和转换它的 encoder。
 - A 是 `miss`：还没有已存结果，所以 encoder 跑一次并保存 codes。B、C 是 `hit`：直接读取 codes，不再做 GPU encode。
 - 蓝色表示 GPU encoder 工作，橙色表示已存 codes 的路径。读取仍有 host 和传输成本；横条只比较 GPU encode 时间，不是整个请求的延迟。
@@ -76,7 +76,7 @@ $$S=750-250=500\ \text{ms}$$
 ### 图上是什么
 
 - `single-flight` 指相同 key 的调用共享一次尚未完成的编码。`leader` 负责执行，每个 `follower` 等 leader 存好结果，再读取自己的副本。
-- 三个请求到达时 cache 都为空，没有可命中的已完成结果。最终计数是 `misses=1`、`merged=2`、`hits=0`。
+- 三个请求到达时 cache 都为空，没有可命中的已完成结果。最终计数是 `misses=1`、`merged=2`、`hits=0`。`merged` 数的是加入 leader 的两个 follower。
 - 左图是关闭 batching 后三次独立调用的反事实对照，右图使用 single-flight。两边使用同一个 250 ms 比例。
 - 蓝条是 GPU encode 工作，橙条是 follower 等待，不是额外 GPU 工作。GPU 工作总量只累加蓝条，不代表并发 batch 的实际墙钟延迟。
 - MOSS 自己的 batch encoder 也能在一个 batch 内合并相同标识。本步关闭这条独立路径，只隔离通用 service 的 single-flight 规则。
@@ -111,9 +111,10 @@ encoder 不再重复同一份工作。AR loop 有另一种等待：CPU 收尾这
 
 ### 图上是什么
 
-- `launch` 构造并启动一个 GPU decode step，发布 resolve 需要的数据并记录完成 event，不等待 GPU。
-- `resolve` 检查 event，收集每个请求的结果，完成采样并发出输出。event 尚未就绪时，resolve 会同步等待，不再重叠。
+- `N` 是下一个 decode step，`N−1` 是它前面的一步。`launch` 让 GPU 工作进入队列，发布 resolve 需要的数据并记录完成 event，不等待 GPU。它不表示两个 GPU step 同时执行。
+- `resolve` 检查 event，收集每个请求的新 token 或 frame，完成采样并向下游发出输出。event 尚未就绪时，resolve 会同步等待，不再重叠。
 - `SYNC` 把一步的 launch、resolve 都做完才启动下一步。`ASYNC` 先启动第 N 步，再收尾第 N−1 步。两幅图使用相同的蓝色 GPU 块和橙色 CPU 块。
+- 第 N 步仍按 GPU stream 顺序使用第 N−1 步的输出。异步 decode 只把 CPU 的结果处理推迟，不颠倒模型依赖。event 告诉 CPU 何时可以安全 resolve 较早的结果。
 - 重叠区域只表示一种可行顺序，不是实测时长。图中没有画 D2H 拷贝：MOSS-TTS-Local 从 device 侧快照 resolve，Higgs 则可以使用 pinned host staging buffer。
 - 异步 decode 改的是调度顺序，不改模型数学。MOSS-TTS-Local 当前默认关闭它；公开测量只报告跨会话噪声内的表现，不保证加速。
 
@@ -179,6 +180,7 @@ graph 的输入大小在 capture 时固定。下一步看 300 个真实 token �
 - 蓝色位置是 300 个真实 token，灰色位置是 212 个补零位置，橙色是选中的 512-token graph。
 - replay 把真实 hidden states 拷进已 capture 的 buffer，剩余位置补零，再更新分段边界。padding 有自己的 attention window，真实 token 不会注意到它。
 - 返回切片是 `output[:300]`。padding 也参与计算，但不会成为这次请求的输出。
+- `segment` 是一段连续的 attention window，`segment slot` 是 graph 为这种 window 预留的一个位置。真实 window 和 padding window 都必须有足够的 slots。
 - 超过 4096 token、segment 无效、segment slots 不足、device 或进程不匹配、capture 不可用，都会拒绝 replay。调用方随后使用 eager 层序列。
 
 ### 公式与符号
@@ -213,9 +215,10 @@ bucket 还必须有足够的 segment slots，容纳真实分段和按 window 上
 ### 图上是什么
 
 - `cache` 在完整 key 匹配时去掉重复的已完成编码。参考音频不同，输入 key 就不同，不会命中。
-- `single-flight` 在一次编码仍在运行时去掉重复执行，follower 仍要等 leader。
+- `single-flight` 在一次编码仍在运行时去掉重复执行，B、C 仍要等 A 完成再读取副本。
 - `异步 decode` 可以让 launch N 和 resolve N−1 重叠，改变的是顺序，不是模型工作量。
 - `CUDA graph` 对固定 bucket 重放已录层序列，没有合适 graph 就回退 eager。
+- 这些机制不保证同时出现在一个模型配置里。第 1–4 步使用 MOSS-TTS 和通用 reference service，第 5–6 步使用 Qwen3-Omni 的 audio encoder。
 - `vocoder` 把 codec frames 变成声音。Learning SGLang 第 20 章第 1–3 步已经给出：十个 Qwen frames 组成一段 800 ms chunk。播放器要在当前 chunk 播完前拿到下一段。
 - 蓝色表示 frames 和声音，橙色表示播放期限。最后的问题问 vocoder 怎样赶上期限，本章不声称它已经赶上。
 
