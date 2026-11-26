@@ -4,7 +4,7 @@
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
-  import { VOXT_COMPOSE_CLEANED_PIECE_COUNT, VOXT_COMPOSE_FAILED_PIECE_COUNT, VOXT_COMPOSE_ORDERED_RESULT_COUNT, VOXT_COMPOSE_PIECE_COUNT, VOXT_COMPOSE_PROMPT_PART_COUNT, VOXT_COMPOSE_TASK_COUNT, VOXT_REWRITE_SPEECH_FALLBACK_COUNT, VOXT_TRANSLATE_STRICT_RETRY_COUNT } from '../../voxt/numbers';
+  import { VOXT_COMPOSE_CLEANED_PIECE_COUNT, VOXT_COMPOSE_FAILED_PIECE_COUNT, VOXT_COMPOSE_ORDERED_RESULT_COUNT, VOXT_COMPOSE_PIECE_COUNT, VOXT_COMPOSE_PROMPT_PART_COUNT, VOXT_COMPOSE_TASK_COUNT, VOXT_COMPOSE_TRUNCATED_ANSWER_COUNT, VOXT_COMPOSE_UNSEEN_INSERT_COUNT, VOXT_REWRITE_SPEECH_FALLBACK_COUNT, VOXT_TRANSLATE_STRICT_RETRY_COUNT } from '../../voxt/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
@@ -29,6 +29,9 @@
   }, {
     caption: 'Translate retries a suspected echo once. Rewrite cannot fall back to its spoken instruction.',
     captionZh: '翻译发现疑似回显会重试一次。改写不会把口述指令当结果。',
+  }, {
+    caption: 'A cut-off Translate or Rewrite answer waits in the answer card. It never inserts unseen.',
+    captionZh: '截断的翻译或改写回答留在答案卡。它不会在你没看到时插入。',
   }];
   const ariaLabels = [{
     en: 'After recognition, one result can take one of three task routes. Transcribe treats words such as Good morning as text to tidy. Translate treats them as text to translate. Rewrite treats words such as Make it shorter as an instruction. Selected or typed text can supply the content to rewrite.',
@@ -51,6 +54,9 @@
   }, {
     en: 'A constructed selected Translate answer repeats Good morning. Voxt makes one strict retry. If the final answer is still an echo and language mismatch gives positive evidence, the session fails without insertion. A constructed Rewrite request fails. Its speech, Make it shorter, is an instruction, so there are zero raw-speech fallbacks.',
     zh: '构造的选区翻译回答重复 Good morning。Voxt 追加一次 strict 重试。如果最终回答仍是回显，并且有明确的语言不匹配证据，会话失败且不插入。构造的改写请求失败。Make it shorter 这段口述是指令，所以没有口述原文回退。',
+  }, {
+    en: 'A constructed Translate answer stops with finish reason length. Its incomplete text goes to one answer card for review instead of inserting unseen. The session finishes Done with ProblemTruncated and Degraded true. There are zero unseen inserts.',
+    zh: '构造的翻译回答以 length 结束原因停止。不完整的文字进入一张答案卡供检查，不会在你没看到时插入。会话以 Done、ProblemTruncated 和 Degraded 为 true 结束。未查看就插入的次数为 0。',
   }];
   const tasks = [
     { name: 'TRANSCRIBE', nameZh: '整理听写', output: '“Good morning.”', note: 'words to tidy', noteZh: '要整理的文字' },
@@ -72,7 +78,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived((phone ? [680, 620, 670, 660, 650, 650, 710] : [480, 410, 460, 420, 430, 430, 460])[step]);
+  const H = $derived((phone ? [680, 620, 670, 660, 650, 650, 710, 610] : [480, 410, 460, 420, 430, 430, 460, 440])[step]);
 </script>
 
 <figure class="viz">
@@ -260,7 +266,7 @@
         {/if}
         <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('Constructed failure in piece 2.', '构造第二片失败的情形。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Late answers cannot replace the chosen result.', '迟到的答案不能替换已选定的结果。')}</text>
-      {:else}
+      {:else if step === 6}
         <text x={W / 2} y="27" text-anchor="middle" class="title">{t('TRANSLATE AND REWRITE · DIFFERENT EXITS', '翻译和改写 · 不同出口')}</text>
         <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('echo = the answer repeats the source', '回显 = 答案照抄原文')}</text>
         {#each [
@@ -292,6 +298,25 @@
         <text x={W / 2} y={phone ? 655 : 415} text-anchor="middle" class="cut">{VOXT_TRANSLATE_STRICT_RETRY_COUNT} {t('STRICT RETRY', '次 STRICT 重试')} · {VOXT_REWRITE_SPEECH_FALLBACK_COUNT} {t('REWRITE SPEECH FALLBACKS', '个改写口述回退')}</text>
         <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('Constructed failures · no real model was called.', '构造的失败路径 · 没有调用真实模型。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Spoken Translate has separate skip and timeout exits.', '语音翻译另有跳过和超时出口。')}</text>
+      {:else}
+        <text x={W / 2} y="27" text-anchor="middle" class="title">{t('LENGTH LIMIT · SHOW, DO NOT INSERT', '长度上限 · 先展示，不直接插入')}</text>
+        <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('truncated = the model stopped at its length limit', '截断 = 模型在长度上限处停止')}</text>
+        <rect x={phone ? 25 : 35} y={phone ? 70 : 105} width={phone ? 250 : 245} height={phone ? 145 : 175} rx="10" fill="var(--gen-soft)" stroke="var(--gen)" stroke-width="1.5" />
+        <text x={phone ? 150 : 157} y={phone ? 96 : 132} text-anchor="middle" class="label">{t('MODEL ANSWER', '模型回答')}</text>
+        <text x={phone ? 150 : 157} y={phone ? 133 : 174} text-anchor="middle" class="value">“大家早上…”</text>
+        <text x={phone ? 150 : 157} y={phone ? 164 : 211} text-anchor="middle" class="detail">{t('INCOMPLETE TEXT', '不完整的文字')}</text>
+        <text x={phone ? 150 : 157} y={phone ? 190 : 249} text-anchor="middle" class="mono">finish_reason = “length”</text>
+        <line x1={phone ? 150 : 285} y1={phone ? 220 : 192} x2={phone ? 150 : 330} y2={phone ? 250 : 192} stroke="var(--muted)" stroke-width="2" marker-end="url(#compose-arrow)" />
+        <rect x={phone ? 25 : 345} y={phone ? 260 : 75} width={phone ? 250 : 335} height={phone ? 240 : 240} rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2" />
+        <text x={phone ? 150 : 512} y={phone ? 289 : 105} text-anchor="middle" class="label" fill="var(--accent)">{VOXT_COMPOSE_TRUNCATED_ANSWER_COUNT} {t('ANSWER CARD', '张答案卡')}</text>
+        <text x={phone ? 150 : 512} y={phone ? 314 : 130} text-anchor="middle" class="detail">{t('REVIEW BEFORE INSERTING', '检查后再插入')}</text>
+        <text x={phone ? 150 : 512} y={phone ? 357 : 177} text-anchor="middle" class="value">“大家早上…”</text>
+        <text x={phone ? 150 : 512} y={phone ? 393 : 219} text-anchor="middle" class="label">DONE · ProblemTruncated</text>
+        <text x={phone ? 150 : 512} y={phone ? 418 : 244} text-anchor="middle" class="label">Degraded = true</text>
+        <text x={phone ? 150 : 512} y={phone ? 465 : 291} text-anchor="middle" class="value small" fill="var(--gen)">{VOXT_COMPOSE_UNSEEN_INSERT_COUNT} {t('UNSEEN INSERTS', '次未查看就插入')}</text>
+        <text x={W / 2} y={phone ? 535 : 355} text-anchor="middle" class="cut">{VOXT_COMPOSE_TRUNCATED_ANSWER_COUNT} {t('PARTIAL ANSWER', '份不完整回答')} → {VOXT_COMPOSE_TRUNCATED_ANSWER_COUNT} {t('ANSWER CARD', '张答案卡')}</text>
+        <text x={W / 2} y={H - 28} text-anchor="middle" class="footnote">{t('Constructed response · no real model call.', '构造的翻译回答 · 没有调用真实模型。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('This is degraded Done, not Failed.', '这是降级的 Done，不是 Failed。')}</text>
       {/if}
     </svg>
   </div>

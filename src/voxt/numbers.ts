@@ -121,3 +121,7 @@ export const VOXT_COMPOSE_CLEANED_PIECE_COUNT = VOXT_COMPOSE_PIECE_COUNT - VOXT_
 // Public write path: one strict echo retry; Rewrite speech is an instruction, not fallback text.
 export const VOXT_TRANSLATE_STRICT_RETRY_COUNT = 1;
 export const VOXT_REWRITE_SPEECH_FALLBACK_COUNT = 0;
+
+// A length-limited answer goes to one review card, never straight into the app.
+export const VOXT_COMPOSE_TRUNCATED_ANSWER_COUNT = 1;
+export const VOXT_COMPOSE_UNSEEN_INSERT_COUNT = 0;

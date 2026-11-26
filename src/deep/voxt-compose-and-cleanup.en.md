@@ -335,3 +335,52 @@ Public baseline: same as Step 1.
 - Strict echo retry, retention of the first answer and the final failure condition: `Voxt/internal/session/write.go:219-265`.
 - Echo and language-mismatch heuristics: `Voxt/internal/compose/translate.go:40-79,136-187`.
 - Spoken Translate skip, timeout and other write failures: `Voxt/internal/session/write.go:156-164,184-187,239-286,418-430`.
+
+## Step 8 · A truncated answer goes only to the answer card
+
+> **In one line:** When Translate or Rewrite reaches the model's length limit, the available text goes to the answer card for review instead of inserting or replacing unseen.
+
+### On the stage
+
+- The left card holds the constructed Translate answer “大家早上…”. `finish_reason = “length”` means the model stopped at its length limit. The ellipsis marks possible incompleteness; it is not three literal dots in the answer.
+- The right card is one answer card. It keeps the received text so the user can review it before choosing how to use it.
+- The session is `Done` with `ProblemTruncated` and `Degraded = true`. It is not Step 7's request-failure state, `Failed`.
+- There are zero unseen inserts. An incomplete answer can neither go straight into the app nor replace the original selection.
+
+### Formula
+
+$$
+C=1,\qquad U=0
+$$
+
+| Symbol | Meaning | Where it comes from |
+|---|---|---|
+| $C$ | Answer cards receiving this incomplete answer | The truncation branch in `write` forces `ReasonCard`: 1 |
+| $U$ | Unseen inserts or replacements of this truncated answer | The truncation branch blocks direct delivery: 0 |
+
+### The numbers on the stage
+
+| Quantity | Arithmetic | Result |
+|---|---|---:|
+| Destination of the incomplete answer | $C$ | 1 answer card |
+| Unseen inserts | $U$ | 0 |
+
+These are not word counts or a token limit. This chapter invents no model length setting. `length` is the finish reason returned by the model, and the code uses it to choose the safe exit.
+
+### Why this is neither failure nor direct delivery
+
+The request returned partial content successfully, so the final state is degraded `Done`, not `Failed`. But the model did not report normal completion, and a sentence can stop halfway. Direct insertion would put incomplete text into the active app; replacing a selection could also remove the complete source.
+
+This rule lives in `write` and covers `Translate` and `Rewrite`. A disabled card preference or a directly replaceable selection cannot bypass the forced answer card after truncation. Step 7's failed request and this step's truncated response are different exits.
+
+### Next
+
+The answer card blocks unseen delivery. Chapter 7 follows focus, password fields, paste confirmation and clipboard restoration to show when text can land safely.
+
+### Sources
+
+Public baseline: same as Step 1.
+
+- Meaning of `length` and the truncation check: `Voxt/internal/llm/llm.go:130-136`; `Voxt/internal/session/write.go:341-345,397-415`.
+- Forced answer card and `Done + ProblemTruncated + Degraded`: `Voxt/internal/session/write.go:276-286`; `Voxt/internal/session/session.go:119-122`.
+- Public tests confirm no insertion or replacement and answer-card delivery: `Voxt/internal/session/write_test.go:123-134`.
