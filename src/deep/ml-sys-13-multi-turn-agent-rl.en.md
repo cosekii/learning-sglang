@@ -34,3 +34,38 @@ The nine second-call inputs include the two prompt tokens. The seven missing tok
 The record now preserves order. The next step marks which response tokens the model wrote and should learn from.
 
 Sources: `THUDM/slime@cd4a8efc6f8e33364a474cfa70875779ed0a673f`, `examples/search-r1/generate_with_search.py:145-158,180-200,209-232`; `THUDM/slime@f68dc4a25f362fc0335165a17ff976f5b6f675e1`, `examples/geo3k_vlm_multi_turn/rollout.py:309-350`.
+
+## Step 2 · Mark response tokens with a loss mask
+
+**One sentence.** Model actions receive mask 1 and tool observations receive mask 0, so nine of twelve response tokens teach the model.
+
+### On the stage
+
+- The response keeps Step 1's `A → O → B` order.
+- The blue action spans `A` and `B` have mask 1, giving $4+5=9$ tokens.
+- The orange observation span `O` has mask 0 on all three tokens.
+- Mask 0 does not delete `O`. The next model call still reads it, but training does not compute a learning loss for those positions.
+
+### Formula and symbols
+
+$$N_{\text{learn}}=\sum_i m_i,\qquad N_{\text{response}}=N_{\text{learn}}+N_{\text{skip}}$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $i$ | One position in the response sequence | Step 1's `A → O → B` |
+| $m_i$ | Loss mask at position $i$: 1 for actions, 0 for observations | This step |
+| $N_{\text{learn}}$ | Response tokens with mask 1 | Sum in this step |
+| $N_{\text{skip}}$ | Observation tokens with mask 0 | Sum in this step |
+| $N_{\text{response}}$ | Tokens in the complete response | Step 1: 12 |
+
+### The numbers on the stage
+
+$$N_{\text{learn}}=4+5=9,\qquad N_{\text{skip}}=3,\qquad N_{\text{response}}=9+3=12$$
+
+The mask aligns with every response position: `[1,1,1,1, 0,0,0, 1,1,1,1,1]`. Observation log probabilities can be zero because mask 0 excludes them from the learning loss.
+
+### Next
+
+The text observation joins the existing tokens. The next step removes the prefix that a chat template would otherwise repeat.
+
+Sources: `THUDM/slime@cd4a8efc6f8e33364a474cfa70875779ed0a673f`, `examples/search-r1/generate_with_search.py:180-200,209-232`; `THUDM/slime@f68dc4a25f362fc0335165a17ff976f5b6f675e1`, `examples/geo3k_vlm_multi_turn/rollout.py:309-350`.

@@ -49,6 +49,39 @@
         { en: 'Next: which tokens teach the model?', zh: '下一步：哪些 token 训练模型？' },
       ],
     },
+  }, {
+    caption: 'Mask 1 learns from model actions; mask 0 skips tool replies. Nine of twelve response tokens teach the model.',
+    captionZh: 'mask 1 学习模型动作，mask 0 跳过工具回复。12 个响应 token 中有 9 个参与训练。',
+    title: 'Give each response token a loss mask', titleZh: '给每个响应 token 一个 loss mask',
+    subtitle: 'loss mask: 1 = learn from this token · 0 = skip it', subtitleZh: 'loss mask：1 = 学习这个 token · 0 = 跳过',
+    foot: 'The mask selects training tokens; it does not remove context.', footZh: 'mask 只选择训练 token，不会删掉上下文。',
+    legend: 'Blue = learn · orange = skip · red = current', legendZh: '蓝 = 学习 · 橙 = 跳过 · 红 = 当前',
+    compare: true,
+    nodes: [
+      { title: 'MODEL ACTIONS', titleZh: '模型动作', result: `A(4) + B(5) = ${N.AGENT_MODEL_ACTION_TOKENS}`, resultZh: `A(4) + B(5) = ${N.AGENT_MODEL_ACTION_TOKENS}`, body: 'mask 1 for every action token', bodyZh: '每个动作 token 的 mask 都是 1', tone: 'blue' },
+      { title: 'TOOL REPLY', titleZh: '工具回复', result: 'O = 3', resultZh: 'O = 3', body: 'mask 0 for every observation token', bodyZh: '每个观察 token 的 mask 都是 0', tone: 'orange' },
+      { title: 'FOR TRAINING', titleZh: '用于训练', result: `${N.AGENT_MODEL_ACTION_TOKENS} of ${N.AGENT_RESPONSE_TOKENS}`, resultZh: `${N.AGENT_RESPONSE_TOKENS} 个中的 ${N.AGENT_MODEL_ACTION_TOKENS} 个`, body: 'O remains context, not a lesson', bodyZh: 'O 留作上下文，不参与学习', tone: 'blue' },
+    ],
+    formulas: [
+      { en: 'response order: A(4) → O(3) → B(5)', zh: '响应顺序：A(4) → O(3) → B(5)' },
+      { en: 'mask order: 1×4 → 0×3 → 1×5', zh: 'mask 顺序：1×4 → 0×3 → 1×5' },
+      { en: `learn: 4 + 5 = ${N.AGENT_MODEL_ACTION_TOKENS} · skip: 3`, zh: `学习：4 + 5 = ${N.AGENT_MODEL_ACTION_TOKENS} · 跳过：3` },
+      { en: 'O enters the next call; only its training loss is skipped', zh: 'O 仍进入下次调用，只是不计算它的训练损失' },
+      { en: 'Next: encode O without repeating the prompt preamble', zh: '下一步：编码 O 时不重复 prompt 前缀' },
+    ],
+    mobile: {
+      title: 'Mark tokens to learn', titleZh: '标出要学习的 token',
+      subtitle: 'loss mask: 1 = learn · 0 = skip', subtitleZh: 'loss mask：1 = 学习 · 0 = 跳过',
+      foot: 'The mask does not remove context.', footZh: 'mask 不会删掉上下文。',
+      legend: 'Blue = learn · orange = skip · red = current', legendZh: '蓝 = 学习 · 橙 = 跳过 · 红 = 当前',
+      formulas: [
+        { en: 'Response: A(4) → O(3) → B(5)', zh: '响应：A(4) → O(3) → B(5)' },
+        { en: 'Mask: 1×4 → 0×3 → 1×5', zh: 'mask：1×4 → 0×3 → 1×5' },
+        { en: 'Learn: 4 + 5 = 9 · skip: 3', zh: '学习：4 + 5 = 9 · 跳过：3' },
+        { en: 'O stays as context, not a lesson', zh: 'O 留作上下文，不参与学习' },
+        { en: 'Next: encode only the new observation', zh: '下一步：只编码新的观察' },
+      ],
+    },
   }];
   let step = $state(0);
   $effect(() => {
