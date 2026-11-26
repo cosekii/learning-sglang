@@ -112,25 +112,25 @@ Source: `THUDM/slime@f68dc4a25f362fc0335165a17ff976f5b6f675e1`, `examples/geo3k_
 
 - This step extends the earlier example: the initial VLM input now has one image, and this observation adds one more `O` image icon.
 - The rollout fork copies the initial and observation images onto the rollout path. The next model call receives both encoded images in `image_data`.
-- The second fork copies the observation onto the training path. Buffer `Q` holds two processor bundles, `T0` for the initial input and `T1` for the observation.
+- The second fork copies the observation onto the training path. Buffer `Q` holds two processor dictionaries, `D0` for the initial input and `D1` for the observation.
 - The `processor` prepares images and text as model inputs. Each bundle is a dictionary: a field name points to a `tensor`, which is a grid of model numbers.
 
 ### Formula and symbols
 
-$$I=I_0+I_1,\qquad Q=[T_0,T_1]$$
+$I=I_0+I_1,\qquad Q=[D_0,D_1]$
 
 | Symbol | Meaning | Source |
 |---|---|---|
 | $I_0$ | Initial image count | Constructed value: 1 |
 | $I_1$ | Image count in this observation | Constructed value: 1 |
 | $I$ | Images visible to the next rollout call | Sum in this step |
-| $T_0$ | Processor tensor dictionary for the initial input | This step |
-| $T_1$ | Processor tensor dictionary for the observation | This step |
+| $D_0$ | Processor tensor dictionary for the initial input | This step |
+| $D_1$ | Processor tensor dictionary for the observation | This step |
 | $Q$ | Training tensor buffer awaiting a merge | Appended once per turn |
 
 ### The numbers on the stage
 
-$$I=1+1=2,\qquad Q=[T_0,T_1]$$
+$$I=1+1=2,\qquad Q=[D_0,D_1]$$
 
 Rollout keeps both images for the next call. The training buffer keeps two tensor dictionaries. These serve two consumers, so neither representation replaces the other.
 
@@ -146,7 +146,7 @@ Source: `THUDM/slime@f68dc4a25f362fc0335165a17ff976f5b6f675e1`, `examples/geo3k_
 
 ### On the stage
 
-- The initial chunk `T0` and observation chunk `T1` share key `k`, the field name that points to the same kind of tensor in both bundles.
+- The initial tensor `T0` and observation tensor `T1` share key `k`, the field name that points to the same kind of tensor in dictionaries `D0` and `D1`.
 - Two orange row bars appear under `T0`, and one appears under `T1`. Each bar is one row along dimension 0.
 - The concat card gathers those bars into one three-row stack, placing the observation row after the initial rows. The final training card shows the merged stack in blue.
 - Non-tensor fields do not join. A key also gets no merged value when not all its values are tensors.
@@ -158,8 +158,8 @@ $$X_k=\operatorname{cat}([T_{0,k},T_{1,k}],\ dim=0),\qquad r_k=r_{0,k}+r_{1,k}$$
 | Symbol | Meaning | Source |
 |---|---|---|
 | $k$ | Constructed field name shared by both dictionaries | Step 4's bundles |
-| $T_{0,k}$ | Tensor under key $k$ in the initial dictionary | Step 4's $T_0$ |
-| $T_{1,k}$ | Tensor under key $k$ in the observation dictionary | Step 4's $T_1$ |
+| $T_{0,k}$ | Tensor under key $k$ in the initial dictionary | Step 4's $D_0$ |
+| $T_{1,k}$ | Tensor under key $k$ in the observation dictionary | Step 4's $D_1$ |
 | $X_k$ | Merged tensor | One `torch.cat` in this step |
 | $r_{0,k},r_{1,k}$ | Row counts along dimension 0 | Constructed values: 2 and 1 |
 | $r_k$ | Merged row count along dimension 0 | Sum in this step |

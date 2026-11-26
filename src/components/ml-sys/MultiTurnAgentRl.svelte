@@ -426,7 +426,7 @@
       {@render imageIcon(x + w / 2 - 53, y + 58, 'initial')}
       {@render imageIcon(x + w / 2 + 9, y + 58, 'O')}
     {:else if i === 2 && phase >= 2}
-      {#each ['T0', 'T1'] as label, j}
+      {#each ['D0', 'D1'] as label, j}
         <g data-bundle={label} in:fly={{ y: -6, duration: 350, delay: j * 100 }} out:fade={{ duration: 120 }}>
           <rect x={x + w / 2 - 55 + j * 62} y={y + 62} width="48" height="28" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x={x + w / 2 - 31 + j * 62} y={y + 81} text-anchor="middle" class="celltext">{label}</text>
