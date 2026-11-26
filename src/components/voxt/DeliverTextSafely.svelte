@@ -14,8 +14,8 @@
     caption: 'You press the shortcut in one app, then may switch. The text goes to the focus\'s owner, not necessarily back to the start app.',
     captionZh: '你在一个 app 按快捷键，之后可能切走。文字去焦点的所属进程，不一定回按快捷键的那个 app。',
   }, {
-    caption: 'First check: is the focused field a password field? If it is, nothing is typed.',
-    captionZh: '先检查焦点是不是密码框。是的话，一个字都不贴。',
+    caption: 'First check: is the focused field a password field? If so, nothing is typed; the card opens only if that feature\'s card is on.',
+    captionZh: '先检查焦点是不是密码框。是的话什么都不贴；功能开了卡片才显示。',
   }, {
     caption: 'Next check: can that focused element take text? If not, the answer goes to the card.',
     captionZh: '再检查焦点能不能收文字。不能就退回答案卡。',
@@ -30,8 +30,8 @@
     en: 'Two windows: the start app where the shortcut was pressed, and the process that owns the focused element. That owner is the destination; it can be the start app, another app, or a floating window that is not in front.',
     zh: '两个窗口：按快捷键时的 start app，和有焦点元素的那个进程。这个所属进程就是目的地；它可以是 start app、别的 app，或一个不在最前面的浮窗。',
   }, {
-    en: 'The front app has a focused password field, shown as dots with the subrole AXSecureTextField. A password field stops the delivery, so nothing is pasted and the answer card is shown instead.',
-    zh: 'front app 里有一个获得焦点的密码框，画成圆点，subrole 是 AXSecureTextField。密码框会挡住投递，什么也不贴，改为显示答案卡。',
+    en: 'The focus owner has a focused password field, shown as dots with the subrole AXSecureTextField. A password field stops the delivery, so nothing is pasted. The exit depends on that feature\'s card setting: card on opens the answer card; card off copies the result and shows a one-line notice.',
+    zh: '焦点所属的进程里有一个获得焦点的密码框，画成圆点，subrole 是 AXSecureTextField。密码框会挡住投递，什么也不贴。出口看该功能的卡片设置：开卡片就打开答案卡；关卡片就复制结果并显示一行提示。',
   }, {
     en: 'Three ways to decide whether the focused element takes text. In the start app, an element it cannot read, even a web area, counts as writable. In another app, the element must report editable; a page being read is not enough. A selection replace or Voxt own window needs an editable element. A button or a list never takes text, so the answer goes to the card.',
     zh: '三种判断焦点能不能收文字。在 start app 里，读不出的元素，包括网页区域，都按能写处理。在别的 app 里，元素必须报可编辑；正在阅读的网页不算。要替换选中的文字，或在 Voxt 自己的窗口里，元素必须可编辑。按钮或列表从不收文字，答案就去卡片。',
@@ -57,7 +57,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived((phone ? [560, 560, 640, 670, 700] : [440, 440, 500, 480, 520])[step]);
+  const H = $derived((phone ? [560, 640, 640, 670, 700] : [440, 500, 500, 480, 520])[step]);
 </script>
 
 <figure class="viz">
@@ -97,15 +97,23 @@
         <text x="20" y="22" class="tag strong">{t('gate 1 · password field', '第一道门 · 密码框')}</text>
         <text x="20" y="46" class="tag">{t('Read the focused field before typing anything.', '动键盘之前，先读焦点是什么。')}</text>
         <rect x="20" y="96" width={W - 40} height="150" rx="12" fill="var(--bg)" stroke="var(--line)" />
-        <text x="34" y="122" class="rowlabel">front app · {t('focused field', '有焦点的框')}</text>
+        <text x="34" y="122" class="rowlabel">{t('focus owner', '焦点所属进程')} · {t('focused field', '有焦点的框')}</text>
         <rect x="34" y="136" width={phone ? 232 : 300} height="52" rx="7" fill="white" stroke="var(--gen)" stroke-width="2" />
         <text x="44" y="167" class="mono strong">••••••••</text>
         <text x={phone ? 34 : 360} y={phone ? 166 : 167} class="tag strong" fill="var(--gen)">AXSecureTextField</text>
         <text x="34" y="216" class="tag">{phone ? t('Password field: keys may be blocked.', '密码框：按键可能被挡住。') : t('A password field: the system may hold posted keys back.', '密码框：系统可能挡住投递的按键。')}</text>
-        <rect x="20" y={phone ? 290 : 280} width={W - 40} height={phone ? 150 : 88} rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
-        <text x="34" y={phone ? 318 : 308} class="tag strong">{t('STOP · nothing is typed', '停下 · 一个字也不贴')}</text>
-        <text x="34" y={phone ? 346 : 332} class="tag">{t('The card opens instead.', '改为打开答案卡。')}</text>
-        <text x={W / 2} y={phone ? 500 : 408} text-anchor="middle" class="tag strong">{t('Reason: secure', '原因：secure')}</text>
+        <rect x="20" y="262" width={W - 40} height="60" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x="34" y="286" class="tag strong">{t('STOP · nothing is typed', '停下 · 一个字也不贴')}</text>
+        <text x="34" y="310" class="tag">{t('Reason: secure', '原因：secure')}</text>
+        <text x="20" y="342" class="tag strong">{t('If nothing is typed:', '没贴入时：')}</text>
+        <rect x="20" y="352" width={phone ? 260 : 330} height={phone ? 78 : 86} rx="10" fill="var(--bg)" stroke="var(--line)" />
+        <text x="34" y="374" class="rowlabel">{t('card on', '开卡片')}</text>
+        <text x="34" y={phone ? 400 : 398} class="tag strong">{t('answer card', '答案卡')}</text>
+        <text x="34" y={phone ? 422 : 420} class="tag">{t('Insert or Copy', 'Insert 或 Copy')}</text>
+        <rect x={phone ? 20 : 370} y={phone ? 444 : 352} width={phone ? 260 : 330} height={phone ? 110 : 86} rx="10" fill="var(--bg)" stroke="var(--line)" />
+        <text x={phone ? 34 : 384} y={phone ? 466 : 374} class="rowlabel">{t('card off', '关卡片')}</text>
+        <text x={phone ? 34 : 384} y={phone ? 490 : 398} class="tag strong">{t('copied result', '复制结果')}</text>
+        <text x={phone ? 34 : 384} y={phone ? 512 : 420} class="tag">{t('notice: Not inserted. Copied: press ⌘V to paste.', '提示：未贴入，已复制，按 ⌘V 粘贴。')}</text>
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('deliver.go · secure field check', 'deliver.go · 密码框检查') : t('Source: deliver.go · Secure(); f.Subrole == AXSecureTextField', '出处：deliver.go · Secure()；f.Subrole == AXSecureTextField')}</text>
       {:else if step === 2}
         <text x="20" y="22" class="tag strong">{t('gate 2 · can the focus take text?', '第二道门 · 焦点能收文字吗？')}</text>

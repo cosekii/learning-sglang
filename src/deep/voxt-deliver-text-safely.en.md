@@ -34,9 +34,9 @@ The start app still controls three things: the benefit of the doubt, a selection
 
 ### On the stage
 
-- The front app's focused field is drawn as password dots, with the subrole `AXSecureTextField` beside them.
+- The focus owner's focused field is drawn as password dots, with the subrole `AXSecureTextField` beside them.
 - The orange result is STOP: nothing is typed.
-- The card opens instead, so the text is still reachable.
+- Nothing is typed. With that feature's card on, the answer card opens; with it off, the app copies the result and shows a one-line notice.
 
 ### The check
 
@@ -55,6 +55,8 @@ $$\text{secure} \Rightarrow \text{ReasonSecure} \Rightarrow \text{no paste}$$
 A password field is built to keep typed content away from other programs. Posting ⌘V into it can either do nothing or expose text the user did not want typed there. Stopping is the safe answer.
 
 ### Boundaries
+
+The card is not a universal exit. The session opens it only when that feature's `ShowCard` is on; `session/deliver_test.go` `TestCardSwitch` checks both settings. With the card off, `session_link.go:375-379` copies the result and shows "Not inserted. Copied: press ⌘V to paste." A `CopyResult` setting can also copy a carded result (`session_link.go:321-323`), and the card's Copy writes the answer text itself (`session_overlay_actions.go:20-25`). So application code can change the clipboard after a secure or not-editable exit, even though the helper stops before its own clipboard write.
 
 A secure field is not the only secure case. The helper also notices when another app holds **secure event input** on, which can keep posted keys from arriving; that case is reported after a paste, in Step 4.
 

@@ -34,9 +34,9 @@ start app 仍管三件事：读不出按可信、替换选区、自动按键。�
 
 ### 图上是什么
 
-- front app 里有焦点的框画成密码圆点，旁边标着 subrole `AXSecureTextField`。
+- 焦点所属进程里有焦点的框画成密码圆点，旁边标着 subrole `AXSecureTextField`。
 - 橙色结果是 STOP：一个字也不贴。
-- 改为打开卡片，文字仍然拿得到。
+- 什么都不贴。该功能的卡片开着就打开答案卡；关着就由 app 复制结果，并显示一行提示。
 
 ### 检查
 
@@ -55,6 +55,8 @@ $$\text{secure} \Rightarrow \text{ReasonSecure} \Rightarrow \text{不粘贴}$$
 密码框天生要把键入的内容挡在别的程序之外。往里面发 ⌘V，要么没反应，要么把用户不想写在那里的文字暴露出去。停下是安全的答法。
 
 ### 边界
+
+卡片不是唯一出口。只有该功能的 `ShowCard` 开着，session 才打开答案卡；`session/deliver_test.go` 的 `TestCardSwitch` 两种设置都测。卡片关着时，`session_link.go:375-379` 复制结果并显示「Not inserted. Copied: press ⌘V to paste.」。`CopyResult` 设置也可能把带卡片的结果复制一份（`session_link.go:321-323`），卡片的 Copy 自己写的是答案文字（`session_overlay_actions.go:20-25`）。所以密码框或不可编辑的出口虽然让 helper 在写剪贴板前停下，app 之后的代码仍可能改剪贴板。
 
 密码框不是唯一的安全情况。别的 app 打开 **secure event input** 时，投递的按键也可能到不了；那一种要贴完才知道，在第 4 步说明。
 
