@@ -67,12 +67,12 @@ $$\text{secure} \Rightarrow \text{ReasonSecure} \Rightarrow \text{不粘贴}$$
 ### 图上是什么
 
 - 三条规则：和 start app 一样、另一个 app、替换选区（或 Voxt 自己的窗口）。
-- 按钮或列表从不收文字。start app 里网页区域仍算能写；别的 app 里正在阅读的网页不算。
-- 规则不满足时，什么都不贴，答案去卡片。
+- 普通投递时，按钮或列表不能写。start app 里网页区域仍算能写；别的 app 里正在阅读的网页不算。
+- 规则不满足时，什么都不贴，出口是第 2 步的：开卡片就开卡片，关卡片就复制并提示。
 
 ### 规则
 
-`Writable(f)` 判断 start app 的元素能不能收文字：可编辑的、Accessibility 读不出的、或角色不在非文字表里的都算。别的 app 必须报 `Editable`。
+`Writable(f)` 判断 start app 的元素能不能收文字：可编辑的、Accessibility 读不出的、或角色不在非文字表里的都算。`Editable` 先判断，所以 Accessibility 说可编辑的按钮也能通过。别的 app 必须报 `Editable`。
 
 $$\text{Writable} = f.\text{Editable} \lor f.\text{Error} \ne "" \lor f.\text{Role} \notin \text{nonText}$$
 
@@ -89,6 +89,8 @@ $$\text{Writable} = f.\text{Editable} \lor f.\text{Error} \ne "" \lor f.\text{Ro
 你在 start app 里按了快捷键，所以那里读不出的元素也按能写处理。另一个 app 里你没按任何东西，元素必须自己说能编辑文字，否则一个只读网页也可能收到粘贴。
 
 ### 边界
+
+卡片的 Insert 是用户自己选的：`AnyEditable` 跳过 start app 的 `Writable` 检查，所以选中的按钮也能收到粘贴（`deliver.go:319-326`；`deliver_test.go:68` 就测了一个 `AXButton` 在用户选择后被贴入）。它不跳过密码框检查，别的 app 里元素仍必须报 `Editable`（`deliver_test.go:62`）。
 
 选区只在 start app 里替换，而且只在 Accessibility 说可编辑的元素里；在网页里选了字，却用一个到不了的粘贴去「替换」，字会丢。VoxtNew 自己的窗口也要求 `Editable`，因为 session 可能就从那里开始。start app 里网页区域的角色是 `AXWebArea`，不在 `nonText` 里，所以 `Writable` 返回真；「正在阅读的网页不算」这条只适用于别的 app。
 

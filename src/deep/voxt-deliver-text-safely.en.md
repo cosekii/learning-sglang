@@ -67,12 +67,12 @@ A secure field is not the only secure case. The helper also notices when another
 ### On the stage
 
 - Three rules: same as the start app, another app, and a selection replace (or Voxt's own window).
-- A button or a list never takes text. In the start app a web area still counts as writable; in another app a page being read is not enough.
-- When the rule fails, nothing is typed and the answer goes to the card.
+- For ordinary delivery, a button or a list is not writable. In the start app a web area still counts as writable; in another app a page being read is not enough.
+- When the rule fails, nothing is typed and the exit is Step 2's: card when on, copy and notice when off.
 
 ### The rules
 
-`Writable(f)` says whether the start app's element takes text: an editable one, an element Accessibility could not read, or any role not in the non-text table. For another app, the element must report `Editable`.
+`Writable(f)` says whether the start app's element takes text: an editable one, an element Accessibility could not read, or any role not in the non-text table. `Editable` is tested first, so an element Accessibility marks editable passes even if its role is a button. For another app, the element must report `Editable`.
 
 $$\text{Writable} = f.\text{Editable} \lor f.\text{Error} \ne "" \lor f.\text{Role} \notin \text{nonText}$$
 
@@ -89,6 +89,8 @@ $$\text{Writable} = f.\text{Editable} \lor f.\text{Error} \ne "" \lor f.\text{Ro
 You pressed the shortcut in the start app, so an element there it cannot read still gets the benefit of the doubt. In another app you did not press anything; the element must say it edits text, or a read-only page could receive a paste.
 
 ### Boundaries
+
+The answer card's Insert is a user choice: `AnyEditable` skips the start-app `Writable` check, so a chosen button can receive the paste (`deliver.go:319-326`; `deliver_test.go:68` tests an `AXButton` that is inserted after that choice). It does not skip the password check, and in another app the element must still report `Editable` (`deliver_test.go:62`).
 
 A selection is replaced only in the start app and only in an element Accessibility calls editable; replacing text selected in a web page with a paste that goes nowhere would lose it. VoxtNew's own window also requires `Editable`, because the session may have started there. In the start app, a web area's role is `AXWebArea`, which is absent from `nonText`, so `Writable` returns true; the rule that a page being read is not enough applies only to another app.
 

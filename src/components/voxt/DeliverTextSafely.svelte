@@ -17,8 +17,8 @@
     caption: 'First check: is the focused field a password field? If so, nothing is typed; the card opens only if that feature\'s card is on.',
     captionZh: '先检查焦点是不是密码框。是的话什么都不贴；功能开了卡片才显示。',
   }, {
-    caption: 'Next check: can that focused element take text? If not, the answer goes to the card.',
-    captionZh: '再检查焦点能不能收文字。不能就退回答案卡。',
+    caption: 'Next check: can that focused element take text? If not, the same exit applies.',
+    captionZh: '再检查焦点能不能收文字。不能就走同一个出口。',
   }, {
     caption: 'After pasting, read the field again. An ordinary field that reads the same leaves the paste unconfirmed.',
     captionZh: '贴完再读一次焦点。普通框读起来一样，就只是没确认。',
@@ -33,8 +33,8 @@
     en: 'The focus owner has a focused password field, shown as dots with the subrole AXSecureTextField. A password field stops the delivery, so nothing is pasted. The exit depends on that feature\'s card setting: card on opens the answer card; card off copies the result and shows a one-line notice.',
     zh: '焦点所属的进程里有一个获得焦点的密码框，画成圆点，subrole 是 AXSecureTextField。密码框会挡住投递，什么也不贴。出口看该功能的卡片设置：开卡片就打开答案卡；关卡片就复制结果并显示一行提示。',
   }, {
-    en: 'Three ways to decide whether the focused element takes text. In the start app, an element it cannot read, even a web area, counts as writable. In another app, the element must report editable; a page being read is not enough. A selection replace or Voxt own window needs an editable element. A button or a list never takes text, so the answer goes to the card.',
-    zh: '三种判断焦点能不能收文字。在 start app 里，读不出的元素，包括网页区域，都按能写处理。在别的 app 里，元素必须报可编辑；正在阅读的网页不算。要替换选中的文字，或在 Voxt 自己的窗口里，元素必须可编辑。按钮或列表从不收文字，答案就去卡片。',
+    en: 'Three ways to decide whether the focused element takes text. In the start app, an element it cannot read, even a web area, counts as writable. In another app, the element must report editable; a page being read is not enough. A selection replace or Voxt own window needs an editable element. For ordinary delivery, a button or a list is not writable. The card\'s Insert is a user choice: AnyEditable skips that start-app check, so a chosen button can receive it; a password still stops.',
+    zh: '三种判断焦点能不能收文字。在 start app 里，读不出的元素，包括网页区域，都按能写处理。在别的 app 里，元素必须报可编辑；正在阅读的网页不算。要替换选中的文字，或在 Voxt 自己的窗口里，元素必须可编辑。普通投递时，按钮或列表不能写。卡片的 Insert 是用户自己选的：AnyEditable 跳过 start app 的这一道检查，所以选中的按钮也能收到文字；密码框仍然停下。',
   }, {
     en: 'After Command-V, the helper reads the focused field again: its text and its cursor. A different reading is evidence the text landed. An ordinary readable field that reads the same leaves the paste unconfirmed: the text stays on the clipboard and the card opens. A web area or editable web region that reads the same is instead treated as unknown and inserted, because those editors often accept a paste without updating what Accessibility reads. A field that cannot be read is trusted as inserted.',
     zh: 'Command-V 之后，helper 再读一次焦点：它的文字和光标。读到不同，是把文字贴进去的证据。普通、读得出来的框读到一样，只算没确认：文字留在剪贴板，卡片打开。网页区域或可编辑的网页部分读到一样，则改成 unknown 并按已贴入处理，因为这些编辑器常接受粘贴却不更新 Accessibility 读到的东西。读不出的元素也按已贴入处理。',
@@ -131,8 +131,9 @@
             <text x="620" y={rule.y + 37} text-anchor="end" class="mono">{rule.tag}</text>
           {/if}
         {/each}
-        <text x="20" y={phone ? 400 : 360} class="tag">{t('A button or a list never takes text.', '按钮或列表从不收文字。')}</text>
-        <text x={W / 2} y={phone ? 480 : 404} text-anchor="middle" class="tag strong">{phone ? t('No → the card opens', '不能 → 打开答案卡') : t('If it cannot take text, the answer goes to the card.', '不能收文字时，答案去卡片。')}</text>
+        <text x="20" y={phone ? 360 : 352} class="tag">{t('Ordinary delivery: a button or a list is not writable.', '普通投递：按钮或列表不能写。')}</text>
+        <text x="20" y={phone ? 384 : 376} class="tag">{phone ? t('Card Insert skips that check; a password still stops.', '卡片 Insert 跳过这道检查；密码框仍停下。') : t('Card Insert (user chose) skips that start-app check; a password still stops.', '卡片 Insert（用户自己选）跳过 start app 的这道检查；密码框仍停下。')}</text>
+        <text x={W / 2} y={phone ? 420 : 408} text-anchor="middle" class="tag strong">{t('Not writable → the same exit as Step 2.', '不能写 → 和第 2 步同一个出口。')}</text>
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Source: deliver.go · Writable(), check()', '出处：deliver.go · Writable()、check()')}</text>
       {:else if step === 3}
         <text x="20" y="22" class="tag strong">{t('after ⌘V · re-read the field', '贴完 ⌘V · 再读一次焦点')}</text>
