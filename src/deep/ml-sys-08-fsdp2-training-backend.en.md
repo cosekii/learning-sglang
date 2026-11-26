@@ -105,3 +105,37 @@ The all-gather reconstructs parameters. Gradients do not exist until backward co
 Backward also needs parameter values, but its new output is a gradient. The next step shows why gradients use reduce-scatter and return to owned slices.
 
 Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:18`; `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:53-56,101-105`.
+
+## Step 4 · Reduce gradients back to owned slices
+
+**One sentence.** Backward reduce-scatters the completed gradients, then each rank's optimizer updates the parameter shard whose gradient it owns.
+
+### On the stage
+
+- The blue full gradient is temporary output from backward computation. Parameters were gathered as needed, but gradients do not use that same collective.
+- `Reduce-scatter` sums matching gradient values across ranks and gives each rank its reduced slice. The owned gradient in this example is 1 GB.
+- The optimizer uses that gradient slice and its saved optimizer-state tables to update the rank's weight shard. The full gradient is not retained.
+
+### Formula and symbols
+
+$$g_i=S_i\!\left(\sum_{r=1}^{N}g^{(r)}\right)$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $N$ | DP sharding-group size | Step 2, eight ranks |
+| $r$ | Rank contributing a gradient | One member of the DP group |
+| $g^{(r)}$ | Gradient values contributed by rank $r$ | Backward computation |
+| $S_i$ | Select the slice owned by rank $i$ | FSDP placement |
+| $g_i$ | Reduced gradient shard retained by rank $i$ | Reduce-scatter result, 1 GB in this example |
+
+### The numbers on the stage
+
+The example's full gradient table is 8 GB across the logical model, so equal sharding gives $8/8=1$ GB per rank. The figure does not claim that the full temporary gradient has a measured peak size or that every real tensor splits evenly.
+
+Slime calls `loss.backward()` and `optimizer.step()` in the actor. The FSDP wrapper handles parameter gathers and gradient reduce-scatter; the actor does not write separate collective calls beside those methods.
+
+### Next
+
+Persistent shards are smaller, but full units and other temporary results still need space. The next step separates owned state from peak memory.
+
+Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:19`; `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:47-58`; `THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7`, `slime/backends/fsdp_utils/actor.py:687-702,1000-1039`.

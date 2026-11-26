@@ -21,6 +21,8 @@ Step 2 uses the same source's FSDP alternative: each rank owns a shard of the pa
 
 Step 3 follows `fsdp/readme.md:18`: forward all-gathers the parameters for the unit being computed, then releases the full copy. The unit is the layer or parameter group materialized together (`readme-2-en.md:101-105`). The figure writes its temporary size as `U` because the sources provide no value. The `8 GB + U` expression is a residency boundary, not a measured peak; activations are still excluded.
 
+Step 4 follows `fsdp/readme.md:19` and `readme-2-en.md:47-58`. Backward also materializes parameters as needed, then reduce-scatters completed gradients so each rank retains its reduced gradient shard rather than a full gradient. The optimizer updates the matching parameter shard. Slime calls ordinary `loss.backward()` and `optimizer.step()`; `fully_shard` handles the collectives (`actor.py:687-702,1000-1039` at the pinned revision). The stage does not assign a new size to the full temporary gradient.
+
 </details>
 
 <details class="i18n-zh">
@@ -33,5 +35,7 @@ Step 3 follows `fsdp/readme.md:18`: forward all-gathers the parameters for the u
 第 2 步使用同一来源的 FSDP 方案：每个 rank 拥有参数、梯度和优化器状态的一片（`fsdp/readme.md:16-23`；`readme-2-en.md:43-47`）。平均分成 8 份得到每个 rank `64 ÷ 8 = 8 GB`，合计仍为 64 GB。FSDP2 的逐参数 DTensor 表示放在深入讲解。分片数由 DP mesh 决定：slime 计算 `dp_size = world_size // cp_size`，并把 `dp_mesh` 传给 `fully_shard`（固定版本的 `actor.py:158-186,94-98`）。本例取 CP 1，所以 8 张物理 GPU 才对应 DP 8。
 
 第 3 步依据 `fsdp/readme.md:18`：前向计算时 all-gather 当前 unit 的参数，算完释放完整副本。unit 是一起聚合的层或参数组（`readme-2-en.md:101-105`）。来源没有给出临时大小，所以图中记作 `U`。`8 GB + U` 只表示占用边界，不是实测峰值；激活仍不计入。
+
+第 4 步依据 `fsdp/readme.md:19` 和 `readme-2-en.md:47-58`。反向计算也按需拼出参数，再对算好的梯度执行 reduce-scatter，使每个 rank 留下归约后的梯度片，而不是完整梯度。优化器更新对应的参数片。slime 调用普通的 `loss.backward()` 和 `optimizer.step()`，集合通信交给 `fully_shard`（固定版本的 `actor.py:687-702,1000-1039`）。图中不为临时的完整梯度另填大小。
 
 </details>

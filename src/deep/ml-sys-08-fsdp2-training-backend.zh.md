@@ -105,3 +105,37 @@ All-gather 重建的是参数。梯度要到反向计算才产生，所以不在
 反向计算也需要参数值，但它新产生的是梯度。下一步看梯度为什么用 reduce-scatter，并回到各 rank 的分片。
 
 来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:18`；`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:53-56,101-105`。
+
+## 第 4 步 · 梯度归约后各留一片
+
+**一句话。** 反向计算对完整梯度执行 reduce-scatter，随后每个 rank 的优化器用自己拥有的梯度片更新对应的参数片。
+
+### 图上是什么
+
+- 蓝色完整梯度是反向计算的临时输出。参数会按需聚合，但梯度不使用同一个集合操作。
+- `Reduce-scatter` 汇总各 rank 对应的梯度值，再把归约后的一片交给对应 rank。本例每个 rank 拥有 1 GB 梯度。
+- 优化器使用这片梯度和自己保存的优化器状态表，更新这个 rank 的权重片，不保留完整梯度。
+
+### 公式与符号
+
+$$g_i=S_i\!\left(\sum_{r=1}^{N}g^{(r)}\right)$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $N$ | DP 分片组大小 | 第 2 步，8 个 rank |
+| $r$ | 提供梯度的 rank | DP 组的一个成员 |
+| $g^{(r)}$ | rank $r$ 提供的梯度值 | 反向计算 |
+| $S_i$ | 选出 rank $i$ 拥有的一片 | FSDP 分片位置 |
+| $g_i$ | rank $i$ 留下的归约梯度片 | reduce-scatter 的结果，本例 1 GB |
+
+### 代入图上的数
+
+本例完整逻辑梯度表为 8 GB，等分后每个 rank 为 $8/8=1$ GB。图中没有给临时完整梯度一个实测峰值，也不声称真实张量都能整除。
+
+slime 在 actor 中调用 `loss.backward()` 和 `optimizer.step()`。参数聚合和梯度 reduce-scatter 由 FSDP 包装层处理，actor 没有在这些方法旁另写集合通信调用。
+
+### 接下来
+
+长期分片变小了，完整 unit 和其他临时结果仍要占空间。下一步区分长期保存状态与峰值显存。
+
+来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:19`；`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:47-58`；`THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7` 的 `slime/backends/fsdp_utils/actor.py:687-702,1000-1039`。
