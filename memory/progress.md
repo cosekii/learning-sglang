@@ -7,6 +7,9 @@
 - 13:32 完成 Learning ML Systems 第 13 章《多轮智能体 RL》8 步：有序 Sample、loss mask、观察 delta、VLM 图片双路径、按 key 合并、slime 停止出口、verl AgentLoop 分工和配置长度 padding。先同步第 10／12 章协调逐步评分表。第 13 章作者自评 **R1–R5 80/80、非视觉原项 160/160、机制 R6 16/16、0 未决内容洞**；原 #4／#5／#6 与主人最终视觉验收仍待，不记原十二项总分或整章完成。
 - 八个步骤与冷读整改逐步提交并推送；`build`（60 页）、本章 `transcript`、全章 `readability`、中英三种宽度 `mobile`、`deep-check 13`、`zh-check`、8 步真实相位与 ARIA DOM 审计、16 个深入讲解 DOM 审计和 `git diff --check` 通过。独立冷读三轮后无必须修项。最终图在 `.bot/out/ml13/`，深入讲解图在 `.bot/out/ml13-deep/`；当前模型不能读 PNG。只跑本章检查，未跑全站回归、真实训练、rollout、VLM 或 benchmark。本轮类型：**新书**；下一章是 `14-profile-rl-systems`。
 
+- 13:42 修旧 Learning SGLang Omni 第 14 章复审项：确认 `58c960c` 已让第 1 步开场显示 10 秒等待、0 秒读取，随后再进入 4＋6 秒拆分；确认 `03f9b8d` 的 transcript 重生成无差异。第 6 步失败后的橙色框由 `12 B queued audio` 改为 `12 B → 0 B`，双语深入讲解同步。协调最新为 R1–R5 **80/80**、原十二项 **192/192**、机制 R6 **14/16**；本轮源码、DOM 和独立文本冷读支持 **16/16（待复审）**，不记完整 EVAL 通过。
+- `build`（60 页）、本章 `transcript`、8 步 `readability`、英文全章及中文第 1／6 步 `mobile`、`deep-check 14`、`zh-check`、第 1／6 步 DOM 相位断言和 `git diff --check` 通过。截图和相位证据在 `.bot/out/omni14-review/`；当前模型与独立冷读者不能读 PNG，不记新增视觉分。本轮只跑本章检查，未跑全站回归、真实连接、模型或 GPU benchmark。本轮类型：**修旧**；下一单元等本章协调复审后回 Omni 15，不开新章。
+
 - 13:17 修旧 Learning SGLang Omni 第 15 章五组返工：第 4 步解释 2xx 和 timeout，第 6 步补同状态策略对照，第 7 步用活跃数 +1 凭证解释 RequestLease，第 8 步标明新构造例并移除未解释的 `drain`。协调基线为 R1–R5 **76/80**、原非视觉项 **138/144**；独立冷读支持本轮 **80/80、144/144**，协调复审仍待。组件没有机制动画，R6 **0/16**，不开第 16 章。
 - 第 4、6、7、8 步及第 4 步补漏均逐步提交并推送；`build`（60 页）、本章 `transcript`、`readability`、英文全章及中文整改步 `mobile`、`deep-check 15`、`zh-check` 和 `git diff --check` 通过。32 张舞台与深入讲解图在 `.bot/out/omni15/`；当前模型不能读图，不记新增视觉分。本轮只跑本章检查，未跑全站回归、真实 router、模型、GPU benchmark 或故障注入。本轮类型：**修旧**；等待两章协调复审，不开新章。
 
@@ -175,7 +178,7 @@
 | 11 | 11-fish-s2-pro | 作者返工：R1–R5 80/80；R6 16/16、原 #4/#5 32/32 为协调人已评；原总分与协调复审待 | — |
 | 12 | 12-full-duplex-strategies | 自评完成：8/8 步易读 12/12、0 内容洞和机械显示洞；人工视觉验收待主人 | 24.00 |
 | 13 | 13-qwen3-omni-deployment | 作者复读：R1–R5 80/80；R6、原 #4/#5 未评分，易读总分和原分待评；协调复审待 | — |
-| 14 | 14-slow-reader-backpressure | 协调内容：R1–R5 80/80、原十二项 192/192、机制 R6 基线 0/16；本轮动画源/DOM 16/16 待协调复审与主人视觉验收 | 24.00 |
+| 14 | 14-slow-reader-backpressure | 协调内容：R1–R5 80/80、原十二项 192/192、机制 R6 14/16；本轮修第 1／6 步，源码/DOM 16/16 待协调复审与主人视觉验收 | 24.00 |
 | 15 | 15-router-worker-selection | 协调基线：R1–R5 76/80、原非视觉项 138/144；本轮冷读 80/80、144/144 待协调复审；机制 R6 0/16，动画与主人视觉验收待 | — |
 
 ## Learning ML Systems
