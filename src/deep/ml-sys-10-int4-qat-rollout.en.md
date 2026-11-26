@@ -287,6 +287,10 @@ $$q_j=u_j-8,\qquad w_j=sq_j,\qquad y_{\mathrm{inner}}=\operatorname{FP32\ accumu
 
 ### The numbers on the stage
 
+Using Step 6's field $u=12$ and Step 5's scale $s=0.10$:
+
+$$q=12-8=4,\qquad w=4\times0.10=0.40$$
+
 The pinned kernel instruction is `mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32`: both inputs are BF16, while this MMA's accumulator is FP32. It does not perform matrix arithmetic directly on INT4 values or prove zero-cost dequantization. `marlin_template.h:178-187,1290-1311` shows multiplication by the group scale.
 
 This MoE path has another cross-slice reduction level. The atomic path performs `atomicAdd` on `scalar_t2` at `marlin_template.h:1635-1648`, which means BF16 pairs in this configuration. Output intermediates also use `hidden_states.dtype`. The chapter therefore limits FP32 to the MMA accumulator rather than every reduction or the final BF16 output.

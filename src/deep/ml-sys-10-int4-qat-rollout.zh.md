@@ -287,6 +287,10 @@ $$q_j=u_j-8,\qquad w_j=sq_j,\qquad y_{\mathrm{inner}}=\operatorname{FP32\ accumu
 
 ### 代入图上的数
 
+代入第 6 步的字段 $u=12$ 和第 5 步的 scale $s=0.10$：
+
+$$q=12-8=4,\qquad w=4\times0.10=0.40$$
+
 固定 kernel 的指令是 `mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32`：两个输入是 BF16，这条 MMA 的累加器是 FP32。它不是在 INT4 数值上直接做矩阵乘法，也没有证明反量化零开销。`marlin_template.h:178-187,1290-1311` 还展示了组 scale 乘法。
 
 这条 MoE 路径另有跨 slice 归约。支持原子加的路径在 `marlin_template.h:1635-1648` 对 `scalar_t2` 做 `atomicAdd`，本配置就是 BF16 对；输出中间张量也使用 `hidden_states.dtype`。因此本章只说 MMA 内部累加器是 FP32，不把每次归约或最终 BF16 输出都称为 FP32。
