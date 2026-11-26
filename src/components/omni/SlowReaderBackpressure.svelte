@@ -32,6 +32,13 @@
     DELIVERY_REPEAT_AFTER_SECOND_BYTES,
     DELIVERY_REPEAT_FAILED_COUNT,
     DELIVERY_CLOSE_CASE_BYTES,
+    DELIVERY_CLOCK_BEFORE_BYTES,
+    DELIVERY_CLOCK_CHUNK_BYTES,
+    DELIVERY_CLOCK_AFTER_READ_BYTES,
+    DELIVERY_CLOCK_AFTER_PRODUCE_BYTES,
+    DELIVERY_CLOCK_LAST_READ_SECONDS,
+    DELIVERY_CLOCK_NOW_SECONDS,
+    DELIVERY_CLOCK_IDLE_SECONDS,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -42,6 +49,9 @@
   }, {
     caption: 'One API process shares one byte cap across its streams. It counts audio bytes, not text characters.',
     captionZh: '一个 API 进程里的多路流共用一个字节上限。只数声音字节，不数字符。',
+  }, {
+    caption: 'A queue read resets the idle clock. A new generated chunk does not.',
+    captionZh: '读者取走一条消息，空闲钟就归零。新生成的 chunk 不会归零。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -140,6 +150,32 @@
         <text x={W / 2} y={totalY + 101} text-anchor="middle" class="tag">{t('Text and socket buffers stay outside this audio-byte ledger.', '文字和 socket 缓冲不记入这份声音字节账。')}</text>
         <text x={W / 2} y={totalY + (phone ? 160 : 151)} text-anchor="middle" class="rowlabel">{t('Over the cap, which stream fails?', '超过上限后，哪一路流失败？')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Constructed payloads. Another API process has its own cap.', '构造的消息内容。另一个 API 进程有自己的上限。')}</text>
+      {:else if step === 2}
+        <text x={phone ? 15 : 20} y="26" class="rowlabel">{t('READING RESETS THE IDLE CLOCK', '读取会把空闲钟归零')}</text>
+        <text x={phone ? 15 : 20} y="52" class="tag">{t('reader idle time = now − the last queue read', '读取空闲时间 = 现在 − 上次从队列读取的时刻')}</text>
+        <text x={phone ? 15 : 20} y="76" class="tag">{t('blue = queued audio · both panels start with 8 B', '蓝 = 排队声音 · 两图都从 8 B 开始')}</text>
+        <rect x={phone ? 15 : 170} y="100" width={phone ? 270 : 380} height="54" rx="9" fill="var(--bg)" stroke="var(--line)" />
+        <text x={W / 2} y="134" text-anchor="middle" class="formula">idle = now − last read = {DELIVERY_CLOCK_NOW_SECONDS} − {DELIVERY_CLOCK_LAST_READ_SECONDS} = {DELIVERY_CLOCK_IDLE_SECONDS} s</text>
+        {#each phone ? [
+          { x: 15, y: 190, h: 220, title: 'READER TAKES 4 B', titleZh: '读者取走 4 B', queue: DELIVERY_CLOCK_AFTER_READ_BYTES, last: DELIVERY_CLOCK_NOW_SECONDS, idle: 0, read: true },
+          { x: 15, y: 446, h: 220, title: 'GENERATOR ADDS 4 B', titleZh: '生成器新增 4 B', queue: DELIVERY_CLOCK_AFTER_PRODUCE_BYTES, last: DELIVERY_CLOCK_LAST_READ_SECONDS, idle: DELIVERY_CLOCK_IDLE_SECONDS, read: false },
+        ] : [
+          { x: 40, y: 190, h: 300, title: 'READER TAKES 4 B', titleZh: '读者取走 4 B', queue: DELIVERY_CLOCK_AFTER_READ_BYTES, last: DELIVERY_CLOCK_NOW_SECONDS, idle: 0, read: true },
+          { x: 380, y: 190, h: 300, title: 'GENERATOR ADDS 4 B', titleZh: '生成器新增 4 B', queue: DELIVERY_CLOCK_AFTER_PRODUCE_BYTES, last: DELIVERY_CLOCK_LAST_READ_SECONDS, idle: DELIVERY_CLOCK_IDLE_SECONDS, read: false },
+        ] as panel}
+          <rect x={panel.x} y={panel.y} width={phone ? 270 : 300} height={panel.h} rx="11" fill="var(--bg)" stroke="var(--line)" />
+          <text x={panel.x + 16} y={panel.y + 30} class="tag strong">{t(panel.title, panel.titleZh)}</text>
+          <rect x={panel.x + 16} y={panel.y + 52} width={phone ? 238 : 268} height="58" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x={panel.x + 30} y={panel.y + 88} class="result">{DELIVERY_CLOCK_BEFORE_BYTES} B → {panel.queue} B</text>
+          <text x={panel.x + 20} y={panel.y + 145} class="tag">now = {DELIVERY_CLOCK_NOW_SECONDS} s</text>
+          <text x={panel.x + 20} y={panel.y + 174} class="tag">last read = {panel.last} s</text>
+          <text x={panel.x + 20} y={panel.y + 212} class="result">idle = {panel.idle} s</text>
+          {#if !phone}
+            <text x={panel.x + 20} y={panel.y + 254} class="tag strong">{panel.read ? t('READ resets the clock', '读取让时钟归零') : t('PRODUCING does not reset it', '生成新消息不让时钟归零')}</text>
+          {/if}
+        {/each}
+        <text x={W / 2} y={phone ? 716 : 550} text-anchor="middle" class="rowlabel">{t('Which stream has the oldest idle clock?', '哪一路流的空闲钟最老？')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Constructed times. This clock does not observe playback.', '构造时刻。这个时钟不观察播放位置。')}</text>
       {/if}
     </svg>
   </div>

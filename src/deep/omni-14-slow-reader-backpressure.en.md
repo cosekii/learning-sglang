@@ -80,3 +80,44 @@ The default and config type are in `sglang_omni/config/schema.py:641-648,793-796
 ### Next
 
 When the total crosses the cap, the coordinator needs a fair way to choose a stream. The next step defines its reader-idle clock.
+
+## Step 3 · Only reading resets the idle clock
+
+> **In one line:** The idle clock tracks how long the reader has not taken queue messages; producing another chunk does not reset it.
+
+### On the stage
+
+- Both panels start with 8 B queued, a last read at time 0 and a current time of 2 seconds.
+- On the left, the reader takes 4 B. The queue falls to 4 B, the last-read time becomes 2 and idle time becomes 0.
+- On the right, the generator adds 4 B. The queue rises to 12 B, the last-read time stays 0 and idle time stays 2 seconds.
+- This clock observes queue reads only. It does not observe the playback position.
+
+### Formula
+
+$$
+I=N-L
+$$
+
+| Symbol | Meaning | Size | Source |
+|---|---|---:|---|
+| $I$ | Reader-idle duration | 0 or 2 s | This step |
+| $N$ | Current monotonic time | 2 s | Constructed time |
+| $L$ | Last queue-read time | 0 or 2 s | Constructed time |
+
+A monotonic clock moves forward and measures intervals. It is not calendar time.
+
+### The numbers on the stage
+
+- Before reading: $I=2-0=2\ \text{s}$.
+- After reading: $I=2-2=0\ \text{s}$.
+- After producing only: $I=2-0=2\ \text{s}$, with no clock reset.
+
+When an empty backlog receives its first message, the producer sets the clock's starting point. A new backlog therefore has an idle timestamp even without an earlier read.
+
+### Boundary and sources
+
+Read-side accounting and clock resets are in `sglang_omni/pipeline/coordinator.py:497-520`. Producer behavior and the empty-backlog start are in the same file at `1088-1096`. The unit test is `tests/unit_test/pipeline/test_coordinator.py:1599-1620`.
+
+### Next
+
+The next step gives two streams different idle times and backlog sizes to show which one the coordinator chooses.
