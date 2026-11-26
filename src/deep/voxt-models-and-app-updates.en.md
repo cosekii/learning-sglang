@@ -6,7 +6,7 @@
 
 - Left blue panel: **model files**, 2.47 GB, nine files in the model library, on disk under Application Support, downloaded after install.
 - Middle amber panel: **speech server**, one ASR process, loads a model into memory, stays after use, and exits after ten idle minutes in Automatic mode. Step 4 shows the Silero VAD server beside it.
-- Right blue panel: **Voxt.app**, 280 MB for the documented 0.1.0-beta.1 bundle, the program the user opens, installed separately from models.
+- Right blue panel: **app bundle**, 280 MB for the documented 0.1.0-beta.1 build, the program the user opens, installed separately from models.
 - The top arithmetic is 2,467,856,503 ÷ 280,000,000 ≈ 8.8, shown as about 9×. The bottom arithmetic adds the largest file and the other eight.
 - The legend says blue = a file on disk, amber = a running program.
 - Three lines below: the model arrives later, Automatic stops an idle server and its files stay, an app update replaces the bundle and not the model folder.
@@ -54,7 +54,7 @@ Step 2 looks at what exactly is stored: one pinned commit and a file list with h
 
 ### Formula
 
-$$ \text{snapshot} = \frac{\$HUB}{\texttt{models--}\langle owner\rangle\texttt{--}\langle name\rangle} \Big/ \texttt{snapshots} \big/ \langle commit\rangle $$
+$$ \text{snapshot} = \operatorname{join}(\$HUB,\ \texttt{models--}\langle owner\rangle\texttt{--}\langle name\rangle,\ \texttt{snapshots},\ \langle commit\rangle) $$
 
 $$ \text{LFS file: }\ \mathrm{SHA256}(\text{file}) = \text{listed hash}, \qquad \text{other file: git blob ID matches} $$
 
@@ -100,7 +100,7 @@ Step 3 follows one download: what it carries, when it can stop, and what it chec
 
 ### Formula
 
-$$ \text{job bytes} = \sum_{m \in \text{job}} \sum_{f \in m} \text{size}(f), \qquad \text{VAD share} = \frac{\text{VAD bytes}}{\text{job bytes}} $$
+$$ \text{job bytes} = \sum_{m \in \text{job}} \sum_{f \in m} \text{size}(f), \qquad \text{VAD share} = \frac{\text{VAD bytes}}{\text{job bytes}} \times 100\% $$
 
 | Symbol | What it is | Size | Where it comes from |
 |---|---|---|---|
@@ -110,7 +110,7 @@ $$ \text{job bytes} = \sum_{m \in \text{job}} \sum_{f \in m} \text{size}(f), \qq
 | $\text{size}(f)$ | that file's byte count | bytes | the catalogue's `File.Size` |
 | VAD bytes | Silero VAD's two files | 1,238,323 B | `catalog.go:352-354` |
 | job bytes | everything the job fetches | 2,469,094,826 B | this step |
-| VAD share | VAD bytes divided by job bytes | 0.05% | this step's arithmetic |
+| VAD share | VAD bytes divided by job bytes, times 100 | 0.050% | this step's arithmetic |
 
 ### The numbers on the stage
 
@@ -119,7 +119,7 @@ $$ \text{job bytes} = \sum_{m \in \text{job}} \sum_{f \in m} \text{size}(f), \qq
 | model | nine files | 2,467,856,503 B |
 | VAD | $463 + 1{,}237{,}860$ | 1,238,323 B |
 | job | $2{,}467{,}856{,}503 + 1{,}238{,}323$ | 2,469,094,826 B = 2.47 GB |
-| VAD share | $1{,}238{,}323 \div 2{,}469{,}094{,}826$ | 0.050% |
+| VAD share | $1{,}238{,}323 \div 2{,}469{,}094{,}826 \times 100$ | 0.050% |
 
 ### What cancel keeps
 
@@ -142,11 +142,12 @@ Step 4 turns from the files to the process that reads them.
 - Left blue panel: **on disk**, the snapshot folder `Qwen3-ASR-1.7B-8bit`, 2.47 GB, stays after the server exits.
 - Right amber panel: **in memory**, `qwen3_asr_server`, loads one ASR model from the folder, and Silero VAD has its own small server. Automatic mode uses ten idle minutes; the next use restarts a stopped server.
 - Lower panel: **delete model files** requests unload and then file removal. It does not wait for process exit. A busy server stops after its uses end.
+- The idle timer only sends a stop request (`server.go:241-251`); the unload completes when the process exits (`process.go:188-205`).
 - Footnote: Settings offers 5, 15, 30 or 60 minutes, or keep until quit.
 
 ### Formula
 
-$$ t_{\text{exit}} = t_{\text{last use}} + T_{\text{idle}} \quad (T_{\text{idle}} \ge 0), \qquad T_{\text{idle}} < 0 \Rightarrow \text{no idle exit} $$
+$$ t_{\text{stop request}} = t_{\text{last use}} + T_{\text{idle}} \quad (T_{\text{idle}} \ge 0), \qquad T_{\text{idle}} < 0 \Rightarrow \text{no idle stop} $$
 
 $$ \text{unable to accept recognition after } 180\ \text{s} \Rightarrow \text{start fails and the process stops} $$
 
@@ -154,7 +155,7 @@ $$ \text{unable to accept recognition after } 180\ \text{s} \Rightarrow \text{st
 |---|---|---|---|
 | $t_{\text{last use}}$ | when the last use of the server ends | — | `server.go:60-64`, `215-229` |
 | $T_{\text{idle}}$ | the configured unused interval; a negative value disables idle unloading | 10 min in Automatic | `settings/models.go:105-135`, `server.go:231-251` |
-| $t_{\text{exit}}$ | when an unused server stops | $t_{\text{last use}} + T_{\text{idle}}$ | `DefaultIdleTimeout`, `runtime.go:31` |
+| $t_{\text{stop request}}$ | when an unused server is asked to stop | $t_{\text{last use}} + T_{\text{idle}}$ | `DefaultIdleTimeout`, `runtime.go:31` |
 | 180 s | the readiness timeout, not a promised loading time | seconds | `DefaultStartTimeout`, `runtime.go:30`, `44-46` |
 
 ### The numbers on the stage
@@ -185,7 +186,7 @@ Step 5 turns to the third thing: the app bundle and its updater.
 ### On the stage
 
 - Left panel: the in-app route with an update list. The constructed example has `Voxt 2.0` running and `Voxt 2.1` on disk, and the updater replaces the bundle.
-- Right panel: the installer route without an update list. The `Voxt installer` is downloaded to disk and installed by the user; the app does not replace itself.
+- Right panel: a release build without a feed uses the installer route. The `Voxt installer` is downloaded to disk and installed by the user; the app does not replace itself. A development build has no update route.
 - Middle strip: **the model folder**, `SGLang Omni/models`, 2.47 GB, untouched by both update routes.
 - Bottom flow, **until restart**: the old version keeps running → the helper on disk is already the new one → the app's helper manager refuses it because its version does not match the running app.
 
@@ -281,4 +282,4 @@ This chapter covers the default local ASR snapshot, its Silero dependency and th
 
 ### Next
 
-The model, server and app now have separate lifetimes. Chapter 12 asks what Voxt records for a meeting.
+The model, server and app now have separate lifetimes. With the app ready, chapter 12 asks what a meeting records.
