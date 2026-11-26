@@ -110,14 +110,14 @@ Source: `THUDM/slime@f68dc4a25f362fc0335165a17ff976f5b6f675e1`, `examples/geo3k_
 
 ### On the stage
 
-- This step extends the earlier example: the initial VLM input now has one image, and this observation adds one more.
-- The rollout path encodes both images into `image_data` for the next model call.
-- The training path buffers the initial and observation processor outputs as two dictionaries.
-- The `processor` prepares images and text as model inputs. A `tensor` is a grid of model numbers. The training dictionaries exclude `input_ids` and `attention_mask`; Step 3 already stores tokens on their own path.
+- This step extends the earlier example: the initial VLM input now has one image, and this observation adds one more `O` image icon.
+- The rollout fork copies the initial and observation images onto the rollout path. The next model call receives both encoded images in `image_data`.
+- The second fork copies the observation onto the training path. Buffer `Q` holds two processor bundles, `T0` for the initial input and `T1` for the observation.
+- The `processor` prepares images and text as model inputs. Each bundle is a dictionary: a field name points to a `tensor`, which is a grid of model numbers.
 
 ### Formula and symbols
 
-$$I=I_0+I_1,\qquad B=[T_0,T_1]$$
+$$I=I_0+I_1,\qquad Q=[T_0,T_1]$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
@@ -126,11 +126,11 @@ $$I=I_0+I_1,\qquad B=[T_0,T_1]$$
 | $I$ | Images visible to the next rollout call | Sum in this step |
 | $T_0$ | Processor tensor dictionary for the initial input | This step |
 | $T_1$ | Processor tensor dictionary for the observation | This step |
-| $B$ | Training tensor buffer awaiting a merge | Appended once per turn |
+| $Q$ | Training tensor buffer awaiting a merge | Appended once per turn |
 
 ### The numbers on the stage
 
-$$I=1+1=2,\qquad B=[T_0,T_1]$$
+$$I=1+1=2,\qquad Q=[T_0,T_1]$$
 
 Rollout keeps both images for the next call. The training buffer keeps two tensor dictionaries. These serve two consumers, so neither representation replaces the other.
 

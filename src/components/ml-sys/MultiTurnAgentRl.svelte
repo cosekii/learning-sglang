@@ -132,12 +132,12 @@
     nodes: [
       { title: 'NEW OBSERVATION', titleZh: '新观察', result: '1 image', resultZh: '1 张图片', body: 'initial image is new here', bodyZh: '本例新增初始图片', tone: 'orange' },
       { title: 'FOR NEXT ROLLOUT CALL', titleZh: '给下一次 ROLLOUT 调用', result: `image_data = ${N.AGENT_TOTAL_IMAGES}`, resultZh: `image_data = ${N.AGENT_TOTAL_IMAGES} 张`, body: 'two encoded images', bodyZh: '两张编码后的图片', tone: 'blue' },
-      { title: 'FOR TRAINING', titleZh: '给训练', result: 'buffer = 2 dicts', resultZh: 'buffer = 2 份字典', body: 'two processor tensor dicts', bodyZh: '两份 processor 张量字典', tone: 'blue' },
+      { title: 'FOR TRAINING', titleZh: '给训练', result: 'Q = 2 bundles', resultZh: 'Q = 2 份输入包', body: 'named processor tensor grids', bodyZh: '按字段命名的 processor 张量', tone: 'blue' },
     ],
     formulas: [
       { en: `rollout images: ${N.AGENT_INITIAL_IMAGES} + ${N.AGENT_OBSERVATION_IMAGES} = ${N.AGENT_TOTAL_IMAGES}`, zh: `rollout 图片：${N.AGENT_INITIAL_IMAGES} + ${N.AGENT_OBSERVATION_IMAGES} = ${N.AGENT_TOTAL_IMAGES} 张` },
-      { en: 'training buffer: [initial tensors, observation tensors]', zh: '训练 buffer：[初始张量，观察张量]' },
-      { en: 'a tensor is a grid of numbers used by the model', zh: '张量是模型使用的一格一格数字' },
+      { en: 'training buffer Q = [initial bundle, observation bundle]', zh: '训练 buffer Q = [初始输入包，观察输入包]' },
+      { en: 'bundle = dictionary: field name → tensor (number grid)', zh: '输入包 = 字典：字段名 → tensor（数字网格）' },
       { en: 'the next call receives accumulated tokens + both images', zh: '下次调用收到累积 token 和两张图片' },
       { en: 'Next: merge the two training tensor chunks', zh: '下一步：合并两份训练张量' },
     ],
@@ -148,8 +148,8 @@
       legend: 'Orange = observation · blue = inputs · red = current', legendZh: '橙 = 观察 · 蓝 = 输入 · 红 = 当前',
       formulas: [
         { en: 'Rollout images: 1 + 1 = 2', zh: 'rollout 图片：1 + 1 = 2 张' },
-        { en: 'Training buffer: initial + observation', zh: '训练 buffer：初始 + 观察' },
-        { en: 'A tensor is a grid of model numbers', zh: '张量是一格一格的模型数字' },
+        { en: 'Training Q: initial + observation bundles', zh: '训练 Q：初始 + 观察输入包' },
+        { en: 'bundle: field name → tensor grid', zh: '输入包：字段名 → 张量网格' },
         { en: 'Next call: accumulated tokens + 2 images', zh: '下次调用：累积 token + 两张图片' },
         { en: 'Next: merge the training chunks', zh: '下一步：合并训练张量' },
       ],
@@ -365,6 +365,15 @@
   {/each}
 {/snippet}
 
+{#snippet imageIcon(x: number, y: number, label: string)}
+  <g data-image={label} in:fly={{ y: -6, duration: 350 }} out:fade={{ duration: 120 }}>
+    <rect {x} {y} width="44" height="28" rx="5" fill="var(--gen-soft)" stroke="var(--gen)" />
+    <circle cx={x + 12} cy={y + 9} r="3" fill="var(--gen)" />
+    <path d={`M${x + 5} ${y + 23} L${x + 17} ${y + 13} L${x + 25} ${y + 19} L${x + 32} ${y + 14} L${x + 39} ${y + 23}`} fill="none" stroke="var(--gen)" stroke-width="2" />
+    <text x={x + 22} y={y + 42} text-anchor="middle" class="tiny">{label}</text>
+  </g>
+{/snippet}
+
 {#snippet mechanism(i: number, x: number, y: number, w: number)}
   <g data-mechanism={step + 1} data-node={i}>
   {#if step === 0}
@@ -393,6 +402,20 @@
     {:else if phase >= 2}
       {@render tokenStrip(x + 12, y + 67, w - 24, tokenCells('Δ', N.AGENT_OBSERVATION_TOKENS, 'blue'))}
     {/if}
+  {:else if step === 3}
+    {#if i === 0}
+      {@render imageIcon(x + w / 2 - 22, y + 58, 'O')}
+    {:else if i === 1 && phase >= 1}
+      {@render imageIcon(x + w / 2 - 53, y + 58, 'initial')}
+      {@render imageIcon(x + w / 2 + 9, y + 58, 'O')}
+    {:else if i === 2 && phase >= 2}
+      {#each ['T0', 'T1'] as label, j}
+        <g data-bundle={label} in:fly={{ y: -6, duration: 350, delay: j * 100 }} out:fade={{ duration: 120 }}>
+          <rect x={x + w / 2 - 55 + j * 62} y={y + 62} width="48" height="28" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x={x + w / 2 - 31 + j * 62} y={y + 81} text-anchor="middle" class="celltext">{label}</text>
+        </g>
+      {/each}
+    {/if}
   {/if}
   </g>
 {/snippet}
@@ -404,7 +427,15 @@
       {#if !reduceMotion}<LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={4} label={t('loops · red = current', '循环 · 红 = 当前')} />{/if}
       <text x={phone ? 18 : 36} y="30" class="title">{phone ? t(cur.mobile?.title ?? cur.title, cur.mobile?.titleZh ?? cur.titleZh) : t(cur.title, cur.titleZh)}</text>
       <text x={phone ? 18 : 36} y="55" class="label">{phone ? t(cur.mobile?.subtitle ?? cur.subtitle, cur.mobile?.subtitleZh ?? cur.subtitleZh) : t(cur.subtitle, cur.subtitleZh)}</text>
+      {#if !phone && step === 3}
+        {#if phase >= 1}<path data-fork="rollout" d="M135 105 V84 H360 V105" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#agent-arrow)" transition:fade />{/if}
+        {#if phase >= 2}<path data-fork="training" d="M135 105 V84 H585 V105" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#agent-arrow)" transition:fade />{/if}
+      {/if}
       {#if phone}
+        {#if step === 3}
+          {#if phase >= 1}<path data-fork="rollout" d="M150 200 V212" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#agent-arrow)" transition:fade />{/if}
+          {#if phase >= 2}<path data-fork="training" d="M275 140 H288 V352 H275" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#agent-arrow)" transition:fade />{/if}
+        {/if}
         {#each cur.nodes as node, i}
           {@const y = start + i * phoneStride}
           <g data-card={i} opacity={shown(i) ? 1 : 0.3} class="reveal">
