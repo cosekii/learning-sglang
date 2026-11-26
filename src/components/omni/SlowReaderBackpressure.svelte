@@ -275,8 +275,9 @@
           { x: 20, y: 122, h: 360, title: 'START · fresh adds 6 B', titleZh: '开始 · fresh 新增 6 B', total: DELIVERY_REPEAT_OVER_BYTES, failed: -1 },
           { x: 255, y: 122, h: 360, title: '1 · fail req-oldest', titleZh: '第 1 次 · req-oldest 失败', total: DELIVERY_REPEAT_AFTER_FIRST_BYTES, failed: 0 },
           { x: 490, y: 122, h: 360, title: '2 · fail req-older', titleZh: '第 2 次 · req-older 失败', total: DELIVERY_REPEAT_AFTER_SECOND_BYTES, failed: 1 },
-        ] as panel}
-          <rect x={panel.x} y={panel.y} width={phone ? 270 : 210} height={panel.h} rx="11" fill="var(--bg)" stroke="var(--line)" />
+        ] as panel, panelIndex}
+          <g opacity={panelIndex === 0 || phase >= panelIndex ? 1 : 0.1} style="transition: opacity 500ms">
+          <rect x={panel.x} y={panel.y} width={phone ? 270 : 210} height={panel.h} rx="11" fill="var(--bg)" stroke={phase === panelIndex ? 'var(--fg)' : 'var(--line)'} stroke-width={phase === panelIndex ? 2 : 1} />
           <text x={panel.x + 14} y={panel.y + 29} class="tag strong">{t(panel.title, panel.titleZh)}</text>
           {#each DELIVERY_REPEAT_CASE_STREAMS as stream, i}
             {@const failed = panel.failed === i}
@@ -293,8 +294,9 @@
           {#if !phone}
             <text x={panel.x + 14} y={panel.y + 310} class="tag strong">{panel.failed === -1 ? t('over: choose longest-idle', '超了：选最久没读的') : panel.total > DELIVERY_TEST_CAP_BYTES ? t('still over: repeat', '还超：再选一次') : t('fits: stop', '合格：停止')}</text>
           {/if}
+          </g>
         {/each}
-        <text x={W / 2} y={phone ? 806 : 536} text-anchor="middle" class="result">{t('failed streams', '失败流')} = {DELIVERY_REPEAT_FAILED_COUNT}</text>
+        <text x={W / 2} y={phone ? 806 : 536} text-anchor="middle" class="result" opacity={phase >= 3 ? 1 : 0} style="transition: opacity 300ms">{t('failed streams', '失败流')} = {DELIVERY_REPEAT_FAILED_COUNT}</text>
         <text x={W / 2} y={phone ? 850 : 584} text-anchor="middle" class="rowlabel">{t('What does a failed stream stop doing?', '失败的流会停止哪些工作？')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Unit-test values. Fresh holds 4 + 6 = 10 B in every panel.', '单元测试算例。三幅图里 fresh 都是 4 + 6 = 10 B。')}</text>
       {:else if step === 5}
