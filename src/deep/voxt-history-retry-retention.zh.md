@@ -44,12 +44,12 @@ $$ \text{row} = \{\text{kind},\ \text{app},\ \text{text},\ \text{audio}?\} $$
 
 ## 第 2 步 · 两个钟
 
-> **一句话：** 历史记录默认留 90 天，钟从按下快捷键开始；为重试保留的录音留 7 天，钟从失败记录写下开始。
+> **一句话：** 历史记录默认留 90 天，钟从按下快捷键开始；为重试保留的录音留 7 天，钟从重试录音保存开始。
 
 ### 图上是什么
 
 - 上面蓝色条是**历史记录**。起点标着**按下快捷键**，终点是第 90 天。
-- 下面橙色条是**重试录音**。起点标着**失败记录写下**，它画在同一条 90 天的尺上，所以 7 天显得很短：$90 - 7 = 83$ 天。
+- 下面橙色条是**重试录音**。起点标着**重试录音保存**，它画在同一条 90 天的尺上，所以 7 天显得很短：$90 - 7 = 83$ 天。
 - 条件框写着重试录音什么时候存在：识别失败或用户取消，并且保存录音关着。
 
 ### 两个默认值和各自的起点
@@ -58,7 +58,7 @@ $$ \text{row} = \{\text{kind},\ \text{app},\ \text{text},\ \text{audio}?\} $$
 
 只为重试保留的录音会拿到 `AudioUntil = now + Config.AudioRetention`，`AudioRetention` 默认是 `7 * 24h`（`Voxt/internal/session/session.go:355`；在 `manager.go:133` 应用默认值）。
 
-两个钟不是从同一个事件开始。`keep()` 保存 `CreatedAt: s.StartedAt`（`Voxt/internal/session/run.go:512`），`StartedAt` 就是快捷键时间（`session.go:169`）。重试副本在失败会话结束时写下，`AudioUntil` 也在那时设置（`run.go:552-553`）。图把两条从同一条左边缘画起，方便比长度；标签写明两个起点事件不同。
+两个钟不是从同一个事件开始。`keep()` 保存 `CreatedAt: s.StartedAt`（`Voxt/internal/session/run.go:512`），`StartedAt` 就是快捷键时间（`session.go:169`）。`keep()` 写出 WAV 并设置 `AudioUntil`（`run.go:550-554`）；`History.Put` 之后才写记录（`run.go:561-564`）。所以录音钟从重试副本保存时开始，不是从记录写下时开始。图把两条从同一条左边缘画起，方便比长度；标签写明两个起点事件不同。
 
 $$ T_{\text{row}} = 90\ \text{days},\qquad T_{\text{retry}} = 7\ \text{days} = 7 \times 24 = 168\ \text{hours} $$
 
@@ -67,7 +67,7 @@ $$ T_{\text{row}} = 90\ \text{days},\qquad T_{\text{retry}} = 7\ \text{days} = 7
 | $T_{\text{row}}$ | 记录按年龄留多久 | `settings/history.go:28` |
 | $T_{\text{retry}}$ | 只为重试留的录音留多久 | `session/session.go:355` |
 | 记录钟起点 | `Entry.CreatedAt`，抄自 `s.StartedAt`（快捷键） | `run.go:512`、`session.go:169` |
-| 录音钟起点 | 失败记录写下的时刻 | `run.go:552-553` |
+| 录音钟起点 | 重试录音保存的时刻，早于记录写下 | `run.go:550-554`、`run.go:561-564` |
 
 ### 代入图上的数
 
@@ -114,10 +114,10 @@ $$ \text{cutoff} = \text{now} - 90\ \text{days},\qquad \text{delete row} \iff \t
 | 记录 | 年龄 | 和分界线比 | 结果 |
 |---|---|---|---|
 | 2026-08-27 | 91 天 | 更早 | 删掉，录音一起 |
-| 2026-08-28 | 90 天 | 正在分界线上 | 钟走过它的时刻就删 |
+| 2026-08-28 | 90 天 | 正在分界线上 | 下一次清理时删 |
 | 2026-08-29 | 89 天 | 更晚 | 留下 |
 
-图用 91 和 89，是为了两张卡都不正好压在边界上。分界线每天往后挪一天，所以今天活下来的记录，会在年龄超过 90 天的那天被删。
+图用 91 和 89，是为了两张卡都不正好压在边界上。分界线是门槛，不是定时器：过了线的记录要等下一次清理才删，而清理只在启动时、每条新记录后或设置改动时跑（`history_settings_ops.go:8-10`）。
 
 ### 什么时候跑
 
@@ -198,13 +198,13 @@ $$ \text{AudioUntil} = t_{\text{fail}} + 7\ \text{days} $$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
-| $t_{\text{fail}}$ | 失败记录写下的时间 | `run.go:553` |
+| $t_{\text{fail}}$ | 重试录音保存的时间 | `run.go:553` |
 | `AudioRetention` | 默认 7 天 | `session/session.go:355` |
 | `AudioUntil` | 重试副本到期的时间 | `store.go:138` |
 
 ### 扫描和带守卫的删除
 
-`expireRecordings` 在应用启动时开始，先立刻调一次 `History.ExpireAudio`，之后每次睡 1 小时再调，而且只在应用运行时调（`Voxt/history_retry.go:89`、`history_retry.go:91-107`）。查询选 `audio != '' AND audio_until > 0 AND audio_until <= now` 的行；每条删除都带 `WHERE seq = ? AND audio = ? AND audio_until > 0`，所以期间被重试过的行不会被清掉（`Voxt/internal/store/sqlitestore/history.go` 的 `ExpireAudio`）。行更新完再删文件。
+`expireRecordings` 在应用启动时开始，先立刻调一次 `History.ExpireAudio`，之后每次睡 1 小时再调，而且只在应用运行时调（`Voxt/history_retry.go:89`、`history_retry.go:91-107`）。到期不等于删除：`AudioUntil` 过后的第一次清扫才删。查询选 `audio != '' AND audio_until > 0 AND audio_until <= now` 的行；每条删除都带 `WHERE seq = ? AND audio = ? AND audio_until > 0`，所以期间被重试过的行不会被清掉（`Voxt/internal/store/sqlitestore/history.go` 的 `ExpireAudio`）。行更新完再删文件。
 
 ### 代入图上的数
 
@@ -241,7 +241,7 @@ $$ \text{AudioUntil} = t_{\text{fail}} + 7\ \text{days} $$
 
 `Manager.Retry` 读记录的 WAV（`Voxt/internal/session/retry.go:54`），缺录音或不是 16 kHz 单声道就拒绝（`retry.go:52`、`retry.go:60`）。它把整份文件重新识别（`retry.go:157`、`retry.go:175`），再用现在的设置跑该功能对应的语言模型步骤：听写走清理，翻译用记录里的目标语言，改写用记录里的选中文字（`retry.go:38-39`）。最后用 `History.Put` 把同一条记录写回（`retry.go:93`）。
 
-不是每次听写重试都会走到语言模型。识别完后，如果整段文字是一个快捷短语，它带着识别文字直接返回（`retry.go:196-200`）；听写清理关着或没有语言模型时也直接返回（`retry.go:201-204`）。翻译和改写则需要语言模型。
+不是每次听写重试都会走到语言模型。识别完后，如果整段文字是一个快捷短语，它把 `e.Result` 设为该短语配置的替换或展开文字再返回（`retry.go:196-200`）；听写清理关着或没有语言模型时，`e.Result` 设为展开后的快捷短语再返回（`retry.go:201-204`）。其余情况后面的清理、翻译或改写步骤会覆盖 `e.Result`（`retry.go:210-225`）。翻译和改写则需要模型。
 
 $$ \text{row}' = \mathrm{retry}(\text{audio.wav},\ \text{settings now}),\qquad \text{row}'.id = \text{row}.id $$
 
@@ -258,7 +258,7 @@ $$ \text{row}' = \mathrm{retry}(\text{audio.wav},\ \text{settings now}),\qquad \
 |---|---|---|
 | 文件格式 | 16 kHz 单声道 WAV | `retry.go:60` |
 | 之前的文字 | 失败，没有结果 | 第 5 步的失败记录 |
-| 之后的文字 | 新识别的结果 | `retry.go:195` |
+| 之后的文字 | 识别结果，之后可能被短语替换、清理或改写／翻译输出覆盖 | `retry.go:195-204`、`retry.go:210-225` |
 | 插入的文字 | 没有 | `retry.go:38-39` |
 
 ### 为什么它不抢会话
@@ -275,18 +275,18 @@ $$ \text{row}' = \mathrm{retry}(\text{audio.wav},\ \text{settings now}),\qquad \
 
 ## 第 7 步 · 导出：记录里什么出去
 
-> **一句话：** 导出只写完成的记录，从旧到新，带交付的文字和识别原文；录音、网址、错误、内部名字和计时从不离开。
+> **一句话：** 导出只写完成的记录，从旧到新；JSONL 带全部导出字段，Markdown 只带时间、应用和交付文字；录音、网址、错误、内部名字和计时从不离开。
 
 ### 图上是什么
 
-- 左边蓝色卡把出去的东西分组：交付的文字、识别听到的原文、应用／时间／功能、口述指令和目标语言，以及只在设置打开时才出去的选中或输入文字。
-- 右边灰卡把留下的东西分组：录音、网址、错误和内部名字、计时。
-- 下面几行说只导完成的记录，从旧到新；失败和取消的记录不出去；挑一天或一段时间。
-- 精确字段名、两种格式和命令参数在深入讲解里，不在舞台上。
+- 表的每一行是一个导出字段，两列是两种格式。
+- JSONL 留表里所有字段；Markdown 只留 `created_at`、`app` 和 `text`。
+- `selection` 和 `typed` 后面的 `*` 表示只在「包含选中文字」打开时才出现。
+- 下面列出两种格式都不带的东西：录音、网址、错误和内部名字、计时。只导完成的记录；失败和取消的不出去。
 
 ### 导出的那一行
 
-`historyapi.Row` 是导出字段的完整清单；结构体从 `Voxt/internal/historyapi/row.go:22` 开始。包注释说，`store.Entry` 新加的字段不会自动跟出去。`Walk` 设置 `Finished` 和 `Oldest`，所以失败和取消的记录不出去，记录从旧到新（`row.go:56-57`）。`FromEntry` 填这一行，只在设置开着时加 `selection`；`typed` 还要设置开着、并且是带口述指令的改写（`row.go:44-49`）。
+`historyapi.Row` 是导出字段的完整清单；结构体从 `Voxt/internal/historyapi/row.go:22` 开始。JSONL 把整行编码（`render.go:38-42`）。包注释说，`store.Entry` 新加的字段不会自动跟出去。Markdown 只写每天一个 `## YYYY-MM-DD` 节和每行一条 `- HH:MM · App: text`（`render.go:47-65`），所以 `id`、`kind`、`heard`、`instruction`、`target_lang`、`selection`、`typed` 不在 Markdown 文件里。`Walk` 设置 `Finished` 和 `Oldest`，所以失败和取消的记录不出去，记录从旧到新（`row.go:56-57`）。`FromEntry` 填这一行，只在设置开着时加 `selection`；`typed` 还要设置开着、并且是带口述指令的改写（`row.go:44-49`）。
 
 $$ \text{export} = \{\text{id},\ \text{created\_at},\ \text{kind},\ \text{app}?,\ \text{text},\ \text{heard},\ \text{instruction}?,\ \text{target\_lang}?,\ \text{selection}?,\ \text{typed}?\} $$
 
@@ -307,13 +307,15 @@ $$ \text{export} = \{\text{id},\ \text{created\_at},\ \text{kind},\ \text{app}?,
 
 | 字段 | 图上有没有 | 条件 |
 |---|---|---|
-| `selection` | 带星号 | 包含选中文字开着 |
-| `typed` | 带星号 | 包含选中文字开着，且有改写指令 |
+| `selection` | 带星号；只在 JSONL | 包含选中文字开着 |
+| `typed` | 带星号；只在 JSONL | 包含选中文字开着，且有改写指令 |
+| `created_at`、`app`、`text` | 两种都有 | 总是 |
+| `id`、`kind`、`heard`、`instruction`、`target_lang` | 只在 JSONL | 总是 |
 | 录音、网址、错误、规则、模型、计时 | 从不 | `history-access.md` |
 
 ### 格式和范围
 
-`--day YYYY-MM-DD` 取本地日历日，时钟切换时那一天是 23 或 25 小时；`--since T` 和可选的 `--until T` 收 RFC 3339 时间或日期。范围含起点、不含终点（`Voxt/docs/history-access.md`）。`--kind` 取 `transcribe`、`translate` 或 `rewrite`。`--format jsonl` 一行一个 JSON 对象；`--format md` 一天一节 `## YYYY-MM-DD`（`historyapi/render.go`）。历史页的「导出文字…」用同一份字段和同一个「包含选中文字」设置。
+`--day YYYY-MM-DD` 取本地日历日，时钟切换时那一天是 23 或 25 小时；`--since T` 和可选的 `--until T` 收 RFC 3339 时间或日期。范围含起点、不含终点（`Voxt/docs/history-access.md`）。`--kind` 取 `transcribe`、`translate` 或 `rewrite`。`--format jsonl` 一行一个 JSON 对象，带上面全部字段（`render.go:38-42`）；`--format md` 一天一节 `## YYYY-MM-DD`，只带时间、应用和文字（`render.go:47-65`）。历史页的「导出文字…」用同一份字段和同一个「包含选中文字」设置。
 
 ### 边界
 
@@ -336,7 +338,7 @@ $$ \text{export} = \{\text{id},\ \text{created\_at},\ \text{kind},\ \text{app}?,
 
 ### 开关做什么
 
-`privacy.historyAccess` 默认关着，打开前会问一次。关着时 socket 不存在，`Voxt history` 以退出码 3 失败（`Voxt/docs/history-access.md`；`history_access_controller.go` 的 `syncHistoryAccess`）。开着时，`historyapi.Server` 在每个请求后调审计回调，记下 `At`、`Op`、`Count`、`Program` 和 `As`；记录类型是 `Read`（`historyapi/server.go:63-70`），调用在 `server.go:167-169`。它不记任何历史文字。`Listen` 以 `0600` 权限建 socket（`server.go:101`，chmod 在 `server.go:111`），位置在 `~/Library` 里，不开任何端口。
+`privacy.historyAccess` 默认关着，打开前会问一次。关着时 socket 不存在，`Voxt history` 以退出码 3 失败（`Voxt/docs/history-access.md`；`history_access_controller.go` 的 `syncHistoryAccess`）。开着时，合法的 export／status 请求会走到审计回调，记下 `At`、`Op`、`Count`、`Program` 和 `As`；格式错误或不支持的请求在 `server.go:151-159` 就返回，不记账。记录类型是 `Read`（`historyapi/server.go:63-70`），调用在 `server.go:167-169`。它不记任何历史文字。`Listen` 以 `0600` 权限建 socket（`server.go:101`，chmod 在 `server.go:111`），位置在 `~/Library` 里，不开任何端口。
 
 $$ \text{answer} = \begin{cases} \text{logged read}, & \text{switch on} \\ \text{exit 3}, & \text{switch off} \end{cases} $$
 

@@ -44,12 +44,12 @@ The row and the recording expire on separate clocks. Step 2 draws both.
 
 ## Step 2 · Two clocks
 
-> **In one line:** The history row lasts 90 days by default and its clock starts at the shortcut; a recording kept for a retry lasts 7 days and its clock starts when the failed row is written.
+> **In one line:** The history row lasts 90 days by default and its clock starts at the shortcut; a recording kept for a retry lasts 7 days and its clock starts when the retry recording is saved.
 
 ### On the stage
 
 - The upper blue bar is the **history row**. Its start is labelled **shortcut**; its end is day 90.
-- The lower orange bar is the **retry recording**. Its start is labelled **failed row written**, and it is drawn on the same 90-day ruler, so its 7 days look short: $90 - 7 = 83$ days shorter.
+- The lower orange bar is the **retry recording**. Its start is labelled **retry recording saved**, and it is drawn on the same 90-day ruler, so its 7 days look short: $90 - 7 = 83$ days shorter.
 - The condition box says when a retry recording exists: recognition failed or the user cancelled, and keep recordings is off.
 
 ### The two defaults and their start events
@@ -58,7 +58,7 @@ The row and the recording expire on separate clocks. Step 2 draws both.
 
 A recording kept only for a retry gets `AudioUntil = now + Config.AudioRetention`, and `AudioRetention` defaults to `7 * 24h` (`Voxt/internal/session/session.go:355`; applied in `manager.go:133`).
 
-The two clocks do not start at the same event. `keep()` stores `CreatedAt: s.StartedAt` (`Voxt/internal/session/run.go:512`), and `StartedAt` is the shortcut (`session.go:169`). The retry copy is written when the failed session ends, and `AudioUntil` is set then (`run.go:552-553`). The chart draws both bars from the same left edge so their lengths compare; the labels name the different start events.
+The two clocks do not start at the same event. `keep()` stores `CreatedAt: s.StartedAt` (`Voxt/internal/session/run.go:512`), and `StartedAt` is the shortcut (`session.go:169`). `keep()` writes the WAV and sets `AudioUntil` (`run.go:550-554`); `History.Put` writes the row afterwards (`run.go:561-564`). So the recording clock starts when the retry copy is saved, not when the row is written. The chart draws both bars from the same left edge so their lengths compare; the labels name the different start events.
 
 $$ T_{\text{row}} = 90\ \text{days},\qquad T_{\text{retry}} = 7\ \text{days} = 7 \times 24 = 168\ \text{hours} $$
 
@@ -67,7 +67,7 @@ $$ T_{\text{row}} = 90\ \text{days},\qquad T_{\text{retry}} = 7\ \text{days} = 7
 | $T_{\text{row}}$ | how long a row is kept by age | `settings/history.go:28` |
 | $T_{\text{retry}}$ | how long a retry-only recording is kept | `session/session.go:355` |
 | start of the row clock | `Entry.CreatedAt`, copied from `s.StartedAt` (the shortcut) | `run.go:512`, `session.go:169` |
-| start of the recording clock | when the failed row is written | `run.go:552-553` |
+| start of the recording clock | when the retry recording is saved, before the row is written | `run.go:550-554`, `run.go:561-564` |
 
 ### Plugging in the stage's numbers
 
@@ -114,10 +114,10 @@ $$ \text{cutoff} = \text{now} - 90\ \text{days},\qquad \text{delete row} \iff \t
 | Row | Age | Compared with the cutoff | Result |
 |---|---|---|---|
 | 2026-08-27 | 91 days | older | deleted, with its recording |
-| 2026-08-28 | 90 days | at the cutoff | deleted once the clock passes its hour |
+| 2026-08-28 | 90 days | at the cutoff | deleted at the next cleanup run |
 | 2026-08-29 | 89 days | newer | stays |
 
-The stage uses 91 and 89 so neither card sits exactly on the boundary. The cutoff moves one day later each day, so a row that survives today is deleted on the day its age passes 90.
+The stage uses 91 and 89 so neither card sits exactly on the boundary. The cutoff is a threshold, not a timer: a row past it is deleted at the next cleanup run, which happens at start, after each new row, or when the setting changes (`history_settings_ops.go:8-10`).
 
 ### When it runs
 
@@ -198,13 +198,13 @@ $$ \text{AudioUntil} = t_{\text{fail}} + 7\ \text{days} $$
 
 | Symbol | Meaning | Source |
 |---|---|---|
-| $t_{\text{fail}}$ | when the failed row is written | `run.go:553` |
+| $t_{\text{fail}}$ | when the retry recording is saved | `run.go:553` |
 | `AudioRetention` | 7 days by default | `session/session.go:355` |
 | `AudioUntil` | the time the retry copy goes | `store.go:138` |
 
 ### The sweep and the guarded delete
 
-`expireRecordings` starts at app launch and calls `History.ExpireAudio` once immediately, then sleeps one hour before each later call, only while the app runs (`Voxt/history_retry.go:89`, `history_retry.go:91-107`). The query selects rows with `audio != '' AND audio_until > 0 AND audio_until <= now`; each delete is guarded by `WHERE seq = ? AND audio = ? AND audio_until > 0`, so a row retried meanwhile is not cleared (`Voxt/internal/store/sqlitestore/history.go`, `ExpireAudio`). The files are removed after the rows are updated.
+`expireRecordings` starts at app launch and calls `History.ExpireAudio` once immediately, then sleeps one hour before each later call, only while the app runs (`Voxt/history_retry.go:89`, `history_retry.go:91-107`). Expiry is not deletion: the recording goes at the first sweep after `AudioUntil`. The query selects rows with `audio != '' AND audio_until > 0 AND audio_until <= now`; each delete is guarded by `WHERE seq = ? AND audio = ? AND audio_until > 0`, so a row retried meanwhile is not cleared (`Voxt/internal/store/sqlitestore/history.go`, `ExpireAudio`). The files are removed after the rows are updated.
 
 ### Plugging in the stage's numbers
 
@@ -241,7 +241,7 @@ Step 6 shows what the retry copy is for.
 
 `Manager.Retry` reads the entry's WAV (`Voxt/internal/session/retry.go:54`) and rejects a missing recording or a file that is not 16 kHz mono (`retry.go:52`, `retry.go:60`). It recognizes the whole file (`retry.go:157`, `retry.go:175`), then runs the feature's language-model step with the settings as they are now: cleanup for Transcribe, the entry's target for Translate, the entry's selection for Rewrite (`retry.go:38-39`). It writes the same entry back with `History.Put` (`retry.go:93`).
 
-Not every Transcribe retry reaches a language model. After recognition it returns with the recognized text when the whole text is one snippet (`retry.go:196-200`), when Transcribe cleanup is off or no LLM is available (`retry.go:201-204`). Translate and Rewrite do need one.
+Not every Transcribe retry reaches a language model. After recognition, a whole-text snippet sets `e.Result` to the snippet's configured replacement or expanded text and returns (`retry.go:196-200`). With Transcribe cleanup off or no LLM, it sets `e.Result` to the expanded snippets and returns (`retry.go:201-204`). Otherwise the later cleanup, Translate or Rewrite step can overwrite `e.Result` (`retry.go:210-225`). Translate and Rewrite do need a model.
 
 $$ \text{row}' = \mathrm{retry}(\text{audio.wav},\ \text{settings now}),\qquad \text{row}'.id = \text{row}.id $$
 
@@ -258,7 +258,7 @@ $$ \text{row}' = \mathrm{retry}(\text{audio.wav},\ \text{settings now}),\qquad \
 |---|---|---|
 | file format | 16 kHz mono WAV | `retry.go:60` |
 | text before | failed, no result | the failed row from Step 5 |
-| text after | the new recognition's result | `retry.go:195` |
+| text after | the recognition result, then a snippet replacement, cleanup, or rewrite/translate output | `retry.go:195-204`, `retry.go:210-225` |
 | inserted text | none | `retry.go:38-39` |
 
 ### Why it runs beside a session
@@ -275,18 +275,18 @@ The row and the recording have their clocks. Step 7 shows what leaves the Mac wh
 
 ## Step 7 · Export: what leaves the row
 
-> **In one line:** Export writes only finished rows, oldest first, with the delivered words and the recognition result; recordings, addresses, errors, internal names and timings never leave.
+> **In one line:** Export writes only finished rows, oldest first; JSONL carries every exported field, Markdown only time, app and the delivered text; recordings, addresses, errors, internal names and timings never leave.
 
 ### On the stage
 
-- The left blue card groups what goes out: the delivered words, what recognition heard, the app/time/feature, the instruction and target language, and the selected or typed text (only with the setting).
-- The right grey card groups what stays: the recording, the web address, errors and internal names, and timings.
-- The lower lines say finished rows only, oldest first; failed and cancelled rows stay out; a day or a time range picks the rows.
-- The exact field names, the two formats and the command flags are in this deep dive, not on the stage.
+- The table's rows are the exported fields; the two columns are the two formats.
+- JSONL keeps every row of the table; Markdown keeps only `created_at`, `app` and `text`.
+- The `*` on `selection` and `typed` means those two appear only when include selected text is on.
+- The lower lines list what neither format writes: the recording, the web address, errors and internal names, and timings. Finished rows only; failed and cancelled rows stay out.
 
 ### The exported row
 
-`historyapi.Row` is the complete list of exported fields; the struct starts at `Voxt/internal/historyapi/row.go:22`. The package comment says a new `store.Entry` field does not come along by itself. `Walk` sets `Finished` and `Oldest`, so failed and cancelled rows stay out and rows come oldest first (`row.go:56-57`). `FromEntry` fills the row and adds `selection` only when the setting is on; `typed` needs the setting and a Rewrite with a spoken instruction (`row.go:44-49`).
+`historyapi.Row` is the complete list of exported fields; the struct starts at `Voxt/internal/historyapi/row.go:22`. The JSONL renderer encodes the whole row (`render.go:38-42`). The package comment says a new `store.Entry` field does not come along by itself. The Markdown renderer writes only a `## YYYY-MM-DD` section per day and a `- HH:MM · App: text` line per row (`render.go:47-65`), so `id`, `kind`, `heard`, `instruction`, `target_lang`, `selection` and `typed` are not in a Markdown file. `Walk` sets `Finished` and `Oldest`, so failed and cancelled rows stay out and rows come oldest first (`row.go:56-57`). `FromEntry` fills the row and adds `selection` only when the setting is on; `typed` needs the setting and a Rewrite with a spoken instruction (`row.go:44-49`).
 
 $$ \text{export} = \{\text{id},\ \text{created\_at},\ \text{kind},\ \text{app}?,\ \text{text},\ \text{heard},\ \text{instruction}?,\ \text{target\_lang}?,\ \text{selection}?,\ \text{typed}?\} $$
 
@@ -307,13 +307,15 @@ $$ \text{export} = \{\text{id},\ \text{created\_at},\ \text{kind},\ \text{app}?,
 
 | Field | Present on the stage? | Condition |
 |---|---|---|
-| `selection` | starred | include selected text on |
-| `typed` | starred | include selected text on, and a Rewrite instruction exists |
+| `selection` | starred; JSONL only | include selected text on |
+| `typed` | starred; JSONL only | include selected text on, and a Rewrite instruction exists |
+| `created_at`, `app`, `text` | both formats | always |
+| `id`, `kind`, `heard`, `instruction`, `target_lang` | JSONL only | always |
 | recording, URL, error, rule, model, timings | never | `history-access.md` |
 
 ### Formats and ranges
 
-`--day YYYY-MM-DD` takes the local calendar day, 23 or 25 hours long when the clocks change; `--since T` and an optional `--until T` take RFC 3339 times or dates. A range includes its start and excludes its end (`Voxt/docs/history-access.md`). `--kind` takes `transcribe`, `translate` or `rewrite`. `--format jsonl` writes one JSON object a line; `--format md` writes a `## YYYY-MM-DD` section a day (`historyapi/render.go`). Export text from the History page uses the same row and the same selected-text setting.
+`--day YYYY-MM-DD` takes the local calendar day, 23 or 25 hours long when the clocks change; `--since T` and an optional `--until T` take RFC 3339 times or dates. A range includes its start and excludes its end (`Voxt/docs/history-access.md`). `--kind` takes `transcribe`, `translate` or `rewrite`. `--format jsonl` writes one JSON object a line with every field above (`render.go:38-42`); `--format md` writes a `## YYYY-MM-DD` section a day with only time, app and text (`render.go:47-65`). Export text from the History page uses the same row and the same selected-text setting.
 
 ### Boundary
 
@@ -336,7 +338,7 @@ Export can be turned on and off. Step 8 shows the switch and what it does not pr
 
 ### What the switch does
 
-`privacy.historyAccess` is off by default and asks once before it turns on. With it off the socket does not exist, so `Voxt history` fails with exit 3 (`Voxt/docs/history-access.md`; `history_access_controller.go:78`, `syncHistoryAccess`). With it on, `historyapi.Server` calls the audit hook after each request and logs `At`, `Op`, `Count`, `Program` and `As`; the record type is `Read` (`historyapi/server.go:63-70`), and the call is at `server.go:167-169`. It keeps no history text. `Listen` creates the socket with mode `0600` (`server.go:101`, the chmod at `server.go:111`), inside `~/Library`, and no port is opened.
+`privacy.historyAccess` is off by default and asks once before it turns on. With it off the socket does not exist, so `Voxt history` fails with exit 3 (`Voxt/docs/history-access.md`; `history_access_controller.go:78`, `syncHistoryAccess`). With it on, a valid export or status request reaches the audit hook and logs `At`, `Op`, `Count`, `Program` and `As`; malformed or unsupported requests return before it (`server.go:151-159`), so they are not logged. The record type is `Read` (`historyapi/server.go:63-70`), and the call is at `server.go:167-169`. It keeps no history text. `Listen` creates the socket with mode `0600` (`server.go:101`, the chmod at `server.go:111`), inside `~/Library`, and no port is opened.
 
 $$ \text{answer} = \begin{cases} \text{logged read}, & \text{switch on} \\ \text{exit 3}, & \text{switch off} \end{cases} $$
 
