@@ -134,14 +134,14 @@ Replacement only fixes aliases. If recognition writes a wrong form that is neith
 
 ## Step 5 · Which message holds the glossary
 
-> **In one line:** A small dictionary puts the glossary in system; a large one puts only selected terms at the start of user, before this request's input.
+> **In one line:** A small dictionary puts the glossary in system; a large one puts matched terms at the start of user, before this request's input, only when the rendered glossary is not empty.
 
 ### On the stage
 
 - Left panel, at most 30 distinct terms: system holds general rules, `- Priya (heard as: Preeya)` and `- MOSS-Transcribe`, while user holds `call Priya.`. Both terms from Step 3 are here.
-- Right panel, more than 30 distinct terms: system holds only generic rules; user opens with `<glossary>`, then contains `call Priya.`. Only terms the text mentions appear, so `MOSS-Transcribe` is there only if this text mentions it.
+- Right panel, more than 30 distinct terms: system holds only generic rules; user opens with `<glossary>`, then contains `call Priya.`. A term appears when the text mentions it or any of its aliases, so `MOSS-Transcribe` is there only if this text names it or one of its aliases.
 - Both user panels use `call Priya.` because Step 4 has already replaced `Preeya` with `Priya`; the language model receives the replaced text (`session/run.go:301-312`).
-- The bottom line states the selection rule: at most 30 terms puts all of them in; more than 30 keeps only the terms the text mentions. The 60-line and 2000-byte caps belong to the formula below.
+- The bottom line states the selection rule: at most 30 terms puts all of them in; more than 30 keeps only the terms the text mentions by name or alias. The 60-line and 2000-byte caps belong to the formula below.
 
 ### Candidates and message placement
 
@@ -150,13 +150,13 @@ Replacement only fixes aliases. If recognition writes a wrong form that is neith
 | Distinct terms | Candidates | System | User |
 |---|---|---|---|
 | $n \le 30$ | all distinct terms in dictionary order | generic rules + the rendered glossary | the replaced input |
-| $n > 30$ | only terms or aliases mentioned in the replaced text | generic rules only | `<glossary>` first when matches exist, then the replaced input |
+| $n > 30$ | only terms the text names, or whose alias it names | generic rules only | `<glossary>` first when it is non-empty, then the replaced input |
 
-With no matches from a large dictionary, user has no `<glossary>` block, while system's generic instruction remains (`compose.go:411-416`).
+If no term matches from a large dictionary, or no matched term's line fits the caps, the rendered glossary is empty, so user has no `<glossary>` block while system's generic instruction remains (`compose.go:411-416`, `576-582`).
 
 ### Formula
 
-$$C = \begin{cases}\text{all distinct terms} & n \le 30 \\\text{terms mentioned by the text} & n > 30\end{cases}$$
+$$C = \begin{cases}\text{all distinct terms} & n \le 30 \\\text{terms whose term or alias the text contains} & n > 30\end{cases}$$
 
 $$G = \text{the longest prefix of } C \text{ with } |G| \le 60 \text{ and } B(G) \le 2000$$
 
@@ -165,7 +165,7 @@ $$B(G) = \sum_{g \in G}\operatorname{bytes}(g) + \max(|G| - 1, 0)$$
 | Symbol | Meaning | Source |
 |---|---|---|
 | $n$ | number of enabled terms after de-duplication | `distinctTerms`, `compose.go:585-599` |
-| $C$ | candidate lines in dictionary order | this step's selection rule |
+| $C$ | candidate terms in dictionary order; a term enters when the text contains its term or any alias | this step's selection rule |
 | $G$ | the consecutive prefix actually sent | `compose.go:576-580` |
 | $\lvert G\rvert$ | number of complete lines sent | this step |
 | $g \in G$ | one complete glossary line in $G$ | `- Term (heard as: alias)` |

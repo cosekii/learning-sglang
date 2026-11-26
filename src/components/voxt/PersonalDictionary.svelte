@@ -24,8 +24,8 @@
     caption: 'Aliases become the term before cleanup. This works without the language model.',
     captionZh: '别名在清理之前就换成词条。没有语言模型也照样换。',
   }, {
-    caption: "Small dictionaries put the glossary in system. Large ones put selected terms at the user's start.",
-    captionZh: '小词典把术语表放进 system。大词典把选中的词条放在 user 开头。',
+    caption: "Small dictionaries put the glossary in system. Large ones put matched terms at user's start, only when a line fits.",
+    captionZh: '小词典把术语表放进 system。大词典只在有条目放得下时，把匹配到的词条放在 user 开头。',
   }, {
     caption: 'Dictionary-wide notes are free text for the language model. They never reach the recognizer.',
     captionZh: '全词典备注是写给语言模型的自由文字，不会到识别器。',
@@ -46,8 +46,8 @@
     en: 'After recognition, enabled aliases are replaced by their term in the text, before any language-model cleanup. A Latin alias like Preeya matches whole words, ignoring case: a letter or digit outside Han, Hiragana, Katakana and Hangul on either side blocks the match. A side of the alias that ends in punctuation skips that side’s boundary check. Aliases written in Han, Hiragana, Katakana or Hangul match anywhere; when several aliases could match at the same spot, the longest wins. A term already written correctly is left alone, so this works with the language model off or failing.',
     zh: '识别之后、语言模型清理之前，启用的别名会在文字里换回词条。像 Preeya 这样的拉丁别名按整词匹配、不分大小写：旁边紧挨着汉字、平假名、片假名、韩文以外的字母或数字就不匹配。若别名某一端是标点，那一端不查边界。用汉字、平假名、片假名或韩文写的别名可以在任意位置匹配；同一位置有多个别名能匹配时，最长的胜出。已经写对的词条保持原样，所以语言模型关掉或失败时这一步照样有效。',
   }, {
-    en: 'With 30 or fewer distinct enabled terms, all terms become candidates and the glossary sits in the system message. With more than 30, only terms or aliases mentioned by the replaced text become candidates; system keeps generic rules, and the selected glossary opens the user message when matches exist. The request input is call Priya after alias replacement.',
-    zh: '不超过 30 个不同的启用词条时，全部成为候选，术语表放在 system 消息里。超过 30 个时，只把替换后的文字提到的词条或别名作为候选；system 只留通用规则，有匹配时选中的 <glossary> 放在 user 开头。这次请求的输入是别名替换后的 call Priya。',
+    en: 'With 30 or fewer distinct enabled terms, all terms become candidates and the rendered glossary sits in the system message. With more than 30, a term becomes a candidate when the replaced text mentions it or any of its aliases; system keeps generic rules, and the rendered glossary opens the user message only when at least one candidate line is kept. The request input is call Priya after alias replacement.',
+    zh: '不超过 30 个不同的启用词条时，全部成为候选，渲染出的术语表放在 system 消息里。超过 30 个时，替换后的文字提到某个词条本身或它的任一别名，那个词条才成为候选；system 只留通用规则，渲染出的术语表非空时才放在 user 开头。这次请求的输入是别名替换后的 call Priya。',
   }, {
     en: 'Dictionary-wide settings.Dictionary.Notes is free text, separate from a row’s private store.Term.Note. When enabled, it joins the language model system layers and never goes to the speech model or transcript replacement. Final messages are system, then history, then user; this request input sits only in user. Notes-off keeps the dictionary notes out of the prompt even while the dictionary is on.',
     zh: '整部词典的 settings.Dictionary.Notes 是自由文字，和行内私有的 store.Term.Note 不同。开启时，它作为单独一层进入语言模型的 system，从不去语音模型或文字稿替换。最终消息顺序是 system、history、user，这次请求的输入只在 user 里。即使词典开着，关掉备注也能让全词典备注不进提示。',
@@ -303,11 +303,11 @@
           <rect x="34" y="426" width="232" height="132" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="46" y="448" class="detail">user</text>
           <text x="46" y="474" class="mono">{t('<glossary>', '<glossary>')}</text>
-          <text x="46" y="498" class="detail">{t('mentioned terms only', '只放文字提到的词条')}</text>
+          <text x="46" y="498" class="detail">{t('matched terms', '匹配到的词条')}</text>
           <text x="46" y="522" class="mono">{t('</glossary>', '</glossary>')}</text>
           <text x="46" y="548" class="tag">call {VOXT_DICT_TERM}.</text>
 
-          <text x="20" y="612" class="tag">{t('≤30 all terms · >30 only mentioned', '≤30 全部词条 · >30 只留提到的')}</text>
+          <text x="20" y="612" class="tag">{t('≤30: all terms · >30: term or alias found in text', '≤30：全部词条 · >30：文字里找到词条或别名')}</text>
         {:else}
           <rect x="20" y="72" width="340" height="250" rx="10" fill="var(--bg)" stroke="var(--line)" />
           <text x="34" y="96" class="rowlabel">≤ {VOXT_DICT_GLOSSARY_ALL_UP_TO} · {t('GLOSSARY IN SYSTEM', '术语表在 SYSTEM')}</text>
@@ -328,11 +328,11 @@
           <rect x="394" y="192" width="292" height="130" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="408" y="214" class="detail">user</text>
           <text x="408" y="240" class="mono">{t('<glossary>', '<glossary>')}</text>
-          <text x="408" y="264" class="detail">{t('mentioned terms only', '只放文字提到的词条')}</text>
+          <text x="408" y="264" class="detail">{t('matched terms', '匹配到的词条')}</text>
           <text x="408" y="288" class="mono">{t('</glossary>', '</glossary>')}</text>
           <text x="408" y="312" class="tag">call {VOXT_DICT_TERM}.</text>
 
-          <text x="20" y="352" class="tag">{t('≤30 all terms · >30 only terms the text mentions', '≤30 全部词条 · >30 只留文字提到的')}</text>
+          <text x="20" y="352" class="tag">{t('≤30: all terms · >30: term or alias found in text', '≤30：全部词条 · >30：文字里找到词条或别名')}</text>
         {/if}
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('compose.Build · GlossaryAllUpTo 30', 'compose.Build · GlossaryAllUpTo 30') : t('Source: compose.Build · GlossaryAllUpTo 30', '出处：compose.Build · GlossaryAllUpTo 30')}</text>
 
