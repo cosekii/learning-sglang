@@ -314,16 +314,18 @@
           {@const x = phone ? 20 : 30 + i * 170}
           {@const y = phone ? 110 + i * 130 : 125}
           {@const pw = phone ? 260 : 150}
-          <rect x={x} y={y} width={pw} height="105" rx="10" fill={event.terminal ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={event.terminal ? 'var(--gen)' : 'var(--accent)'} />
-          <text x={x + 14} y={y + 28} class="small strong">{t(event.title, event.titleZh)}</text>
-          <text x={x + 14} y={y + 55} class="small">{t(event.body, event.bodyZh)}</text>
-          <text x={x + 14} y={y + 86} class="result">active = {event.value}</text>
+          <g opacity={phase === i + 1 ? 1 : phase > i + 1 ? 0.5 : 0.12} style="transition: opacity 350ms">
+            <rect x={x} y={y} width={pw} height="105" rx="10" fill={event.terminal ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={event.terminal ? 'var(--gen)' : 'var(--accent)'} stroke-width={phase === i + 1 ? 3 : 1} />
+            <text x={x + 14} y={y + 28} class="small strong">{t(event.title, event.titleZh)}</text>
+            <text x={x + 14} y={y + 55} class="small">{t(event.body, event.bodyZh)}</text>
+            <text x={x + 14} y={y + 86} class="result">active = {event.value}</text>
+          </g>
           {#if i < 3}
-            <line x1={phone ? x + pw / 2 : x + pw} y1={phone ? y + 106 : y + 52} x2={phone ? x + pw / 2 : x + pw + 20} y2={phone ? y + 127 : y + 52} stroke="var(--accent)" stroke-width="2" marker-end="url(#router-arrow)" />
+            <line x1={phone ? x + pw / 2 : x + pw} y1={phone ? y + 106 : y + 52} x2={phone ? x + pw / 2 : x + pw + 20} y2={phone ? y + 127 : y + 52} stroke="var(--accent)" stroke-width="2" marker-end="url(#router-arrow)" opacity={phase >= i + 2 ? 1 : 0.12} style="transition: opacity 350ms" />
           {/if}
         {/each}
-        <text x={W / 2} y={phone ? 650 : 310} text-anchor="middle" class="small strong">{t('Response headers do not release the count.', '收到响应头不会释放计数。')}</text>
-        <text x={W / 2} y={phone ? 680 : 345} text-anchor="middle" class="small strong">{t('Each exit releases the lease once.', '每条退出路径都只收回一次凭证。')}</text>
+        <text x={W / 2} y={phone ? 650 : 310} text-anchor="middle" class="small strong" opacity={phase >= 3 ? 1 : 0.12} style="transition: opacity 350ms">{t('Response headers do not release the count.', '收到响应头不会释放计数。')}</text>
+        <text x={W / 2} y={phone ? 680 : 345} text-anchor="middle" class="small strong" opacity={phase >= 4 ? 1 : 0.12} style="transition: opacity 350ms">{t('Each exit releases the lease once.', '每条退出路径都只收回一次凭证。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('dispatch = send to the worker · EOF = response end', 'dispatch = 发送请求给 worker · EOF = 响应结束')}</text>
       {:else if step === 7}
         <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'Selection is not a guarantee' : 'A selected worker can still fail', phone ? '选中不代表不会故障' : '选中的 worker 仍可能故障')}</text>
@@ -380,7 +382,7 @@
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Next chapter: worker failure and graceful exit.', '下一章：worker 故障与退出。')}</text>
       {/if}
-      {#if step <= 5}<LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={4} label={t('loops', '循环')} />{/if}
+      {#if step <= 6}<LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={4} label={t('loops', '循环')} />{/if}
     </svg>
   </div>
   <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh}
