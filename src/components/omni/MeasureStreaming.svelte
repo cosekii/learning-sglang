@@ -43,6 +43,9 @@
   }, {
     caption: `One ${STREAM_EXAMPLE_MAX_S.toFixed(1)}-second run lifts the mean to ${STREAM_EXAMPLE_MEAN_S.toFixed(2)}. Report min, max and stdev beside it.`,
     captionZh: `一次 ${STREAM_EXAMPLE_MAX_S.toFixed(1)} 秒把均值抬到 ${STREAM_EXAMPLE_MEAN_S.toFixed(2)}。还要报告 min、max 和 stdev。`,
+  }, {
+    caption: 'Compare the same wait under the same conditions, and check output quality. Next, which AR or encoder work can disappear?',
+    captionZh: '相同条件下比较同段等待，并检查输出质量。下一步，AR 或 encoder 能省掉什么？',
   }];
   let step = $state(0);
   $effect(() => {
@@ -59,7 +62,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [590, 650, 600, 650, 610, 680, 650][step] : [430, 460, 480, 480, 460, 500, 480][step]);
+  const H = $derived(phone ? [590, 650, 600, 650, 610, 680, 650, 720][step] : [430, 460, 480, 480, 460, 500, 480, 500][step]);
   const barMax = $derived(phone ? 185 : 400);
   const barScale = $derived(barMax / STREAM_P90_SHARED_S);
   const timeX = (seconds: number) => 60 + (seconds / STREAM_TEACHING_DONE_S) * 600;
@@ -187,12 +190,12 @@
           <text x="45" y="139" class="code strong">comm_send_enqueue</text>
           <text x="45" y="174" class="small">request_id: {STREAM_TRACE_REQUEST_ID} · chunk_id: {STREAM_TRACE_CHUNK_ID}</text>
           <text x="45" y="202" class="small">talker_ar → code2wav</text>
-          <text x="45" y="230" class="small">transport: torch_cuda_ipc</text>
+          <text x="45" y="230" class="small">transport: cuda_ipc</text>
           <text x="45" y="270" class="code">elapsed_ms: {'<operation>'}</text>
           <rect x="385" y="108" width="310" height="205" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="405" y="139" class="code strong">comm_stream_read</text>
           <text x="405" y="174" class="small">object_id: {STREAM_TRACE_OBJECT_ID}</text>
-          <text x="405" y="202" class="small">transport: torch_cuda_ipc</text>
+          <text x="405" y="202" class="small">transport: cuda_ipc</text>
           <text x="405" y="230" class="small">bytes: {'<buffer size>'}</text>
           <text x="405" y="270" class="code">elapsed_ms: {'<read>'}</text>
           <rect x="25" y="342" width="670" height="91" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" />
@@ -203,7 +206,7 @@
           <text x="34" y="133" class="code strong">comm_send_enqueue</text>
           <text x="34" y="166" class="small">request: {STREAM_TRACE_REQUEST_ID} · chunk: {STREAM_TRACE_CHUNK_ID}</text>
           <text x="34" y="194" class="small">talker_ar → code2wav</text>
-          <text x="34" y="222" class="small">torch_cuda_ipc</text>
+          <text x="34" y="222" class="small">cuda_ipc</text>
           <text x="34" y="253" class="code">elapsed_ms: {'<operation>'}</text>
           <rect x="20" y="295" width="260" height="147" rx="11" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="34" y="325" class="code strong">comm_stream_read</text>
@@ -329,6 +332,45 @@
           <text x="150" y="581" text-anchor="middle" class="small strong">{t('Keep every run; read the spread too.', '保留每次结果，也读离散程度。')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Constructed five runs, not benchmark output.', '构造的五次运行，不是 benchmark 输出。')}</text>
+      {:else if step === 7}
+        <text x={phone ? 18 : 36} y="30" class="title">{t(phone ? 'Keep the comparison honest' : 'Compare the same wait, then locate it', phone ? '把比较条件对齐' : '比较同一段等待，再定位它')}</text>
+        <text x={phone ? 18 : 36} y="55" class="label">{t('blue = evidence to keep · orange = work to inspect next', '蓝 = 要保留的证据 · 橙 = 下一步检查的工作')}</text>
+        {#each [
+          { title: 'SAME INPUT', body: 'prompts · seed', foot: 'lengths', titleZh: '相同输入', bodyZh: 'prompt · seed', footZh: '长度' },
+          { title: 'SAME CONDITIONS', body: 'hardware · config', foot: 'warmup', titleZh: '相同条件', bodyZh: '硬件 · 配置', footZh: '预热' },
+          { title: 'PER-RUN WAITS', body: 'TTFT · stalls', foot: 'host / GPU', titleZh: '逐次等待', bodyZh: '首音 · 空档', footZh: 'host / GPU' },
+          { title: 'VALID RESULTS', body: 'completion · quality', foot: 'mean + spread', titleZh: '有效结果', bodyZh: '完成 · 质量', footZh: '均值 + 离散程度' },
+        ] as card, i}
+          {@const x = phone ? 20 + (i % 2) * 135 : 20 + i * 170}
+          {@const y = phone ? 92 + Math.floor(i / 2) * 122 : 92}
+          <rect x={x} y={y} width={phone ? 125 : 150} height="105" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x={x + (phone ? 62.5 : 75)} y={y + 28} text-anchor="middle" class="small strong">{t(card.title, card.titleZh)}</text>
+          <text x={x + (phone ? 62.5 : 75)} y={y + 59} text-anchor="middle" class="small">{t(card.body, card.bodyZh)}</text>
+          <text x={x + (phone ? 62.5 : 75)} y={y + 83} text-anchor="middle" class="small">{t(card.foot, card.footZh)}</text>
+        {/each}
+        <text x={W / 2} y={phone ? 355 : 238} text-anchor="middle" class="result">{t('same wait · same conditions · valid output', '同段等待 · 相同条件 · 输出有效')}</text>
+        {#if !phone}
+          <rect x="40" y="282" width="290" height="116" rx="12" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="185" y="316" text-anchor="middle" class="small strong">AR</text>
+          <text x="185" y="348" text-anchor="middle" class="small">{t('writes tokens one by one', '逐个写 token')}</text>
+          <text x="185" y="376" text-anchor="middle" class="small">{t('which work can it skip?', '能省掉哪些工作？')}</text>
+          <rect x="390" y="282" width="290" height="116" rx="12" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="535" y="316" text-anchor="middle" class="small strong">ENCODER</text>
+          <text x="535" y="348" text-anchor="middle" class="small">{t('turns reference input into features', '把参考输入变成特征')}</text>
+          <text x="535" y="376" text-anchor="middle" class="small">{t('which work can it skip?', '能省掉哪些工作？')}</text>
+          <text x="360" y="449" text-anchor="middle" class="small strong">{t('Next chapter: remove work only after the trace locates it.', '下一章：先用 trace 定位，再减少工作。')}</text>
+        {:else}
+          <rect x="20" y="395" width="260" height="105" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="150" y="426" text-anchor="middle" class="small strong">AR</text>
+          <text x="150" y="455" text-anchor="middle" class="small">{t('writes tokens one by one', '逐个写 token')}</text>
+          <text x="150" y="481" text-anchor="middle" class="small">{t('what can it skip?', '能省掉什么？')}</text>
+          <rect x="20" y="520" width="260" height="105" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="150" y="551" text-anchor="middle" class="small strong">ENCODER</text>
+          <text x="150" y="580" text-anchor="middle" class="small">{t('reference input → features', '参考输入 → 特征')}</text>
+          <text x="150" y="606" text-anchor="middle" class="small">{t('what can it skip?', '能省掉什么？')}</text>
+          <text x="150" y="666" text-anchor="middle" class="small strong">{t('Next: locate the wait, then remove work.', '下一步：先定位，再减少工作。')}</text>
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Next chapter: AR and encoder optimization.', '下一章：AR 与编码器优化。')}</text>
       {/if}
     </svg>
   </div>

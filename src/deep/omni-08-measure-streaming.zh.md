@@ -8,7 +8,7 @@
 - `p90` 在这里指十个请求里九个的首音在此时间内到达。两条蓝条使用同一时间比例，不能直接当作两次运行的逐条请求记录。
 - 同卡的两轮结果是 2.697、2.663 秒，均值 2.68 秒，图上保留一位小数写成 2.7 秒。
 - 独占 GPU 的两轮结果是 1.463、1.415 秒，均值 1.439 秒，深入讲解按 1.44 秒计算，图上写成 1.4 秒。
-- `+1.3 s` 是两个一位小数显示值之差。用未取整均值计算，差额约 1.24 秒；「约 46% 更早」使用两位小数均值。
+- `+1.2 s` 来自两个未取整均值之差，约 1.241 秒，保留一位小数得到 1.2 秒；「约 46% 更早」使用两位小数均值。
 
 ### 公式与符号
 
@@ -258,3 +258,35 @@ $$\sigma=\sqrt{\frac{1.26}{5}}=\sqrt{0.252}\approx0.502\ \text{s}$$
 最后一页把公平比较需要保留的证据放在一起，并回到第 1 步的问题：缩短的究竟是哪段等待。
 
 来源：`benchmarks/eval/benchmark_omni_streaming_ttft.py:245-296,354-365`；`Awesome-ML-SYS-Tutorial/sglang/sglang-omni/batch.md:221-227`。
+
+## 第 8 步 · 保留完整比较证据
+
+**一句话。** 只有在输入、条件和输出检查都可核对时，同一段等待的缩短才能支持优化结论；下一步再减少 AR 或 encoder 的工作。
+
+### 图上是什么
+
+- `SAME INPUT` 保留 prompt、seed 和输入、输出长度，防止两边实际做了不同工作。
+- `SAME CONDITIONS` 保留硬件、配置和预热方式，防止环境变化混进开关的效果。
+- `PER-RUN WAITS` 对齐每次 TTFT、chunk 空档和 host／GPU 字段，指出缩短发生在哪段等待。
+- `VALID RESULTS` 检查请求完成与输出质量，同时保留均值和离散程度。性能数字不能替代质量检查。
+- `AR` 是逐个生成 token 的循环；`encoder` 把参考输入变成模型特征。它们是下一章分别检查的两处工作，不是本图新排的一条先后流水线。
+
+### 公式与符号
+
+$$\Delta\bar T=\bar T_A-\bar T_B$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $\bar T_A$ | baseline 的平均 TTFT | 第 6、7 步的 A 组记录 |
+| $\bar T_B$ | partial-start 的平均 TTFT | 第 6、7 步的 B 组记录 |
+| $\Delta\bar T$ | B 相对 A 缩短的平均首音等待 | 实测后计算 |
+
+### 代入图上的数
+
+本步不虚构 A/B 输出，所以不填 $\Delta\bar T$。得到真实结果后，先确认第 6 步的条件相同、第 7 步的逐次记录完整，再计算它，并与两组 min、max、stdev 一起阅读。一次运行里的许多请求共享排队和环境，不能当成同样多次独立实验。
+
+### 接下来
+
+下一章检查 AR 与 encoder：cache 能否避免重复工作，异步 decode 能否减少等待，CUDA Graph 能否减少启动开销。本章没有预先宣称这些机制有效。
+
+来源：`benchmarks/eval/benchmark_omni_streaming_ttft.py:354-365`；`docs/developer_reference/omni_offline_bench.md:310-379,435-443`；`Awesome-ML-SYS-Tutorial/sglang/sglang-omni/batch.md:221-235`；`docs/plan-omni.md` 第 9 章。

@@ -8,7 +8,7 @@
 - `P90` means that 9 in 10 requests received their first sound within this time. The blue bars share one scale; they do not show individual requests inside either run.
 - The two shared-placement results are 2.697 and 2.663 seconds. Their mean is 2.68 seconds, displayed as 2.7 seconds.
 - The two own-GPU results are 1.463 and 1.415 seconds. Their mean is 1.439 seconds, rounded to 1.44 seconds in the arithmetic and 1.4 seconds on the bar.
-- `+1.3 s` subtracts the displayed one-decimal values. The unrounded means differ by about 1.24 seconds, and the roughly 46% improvement uses two-decimal means.
+- `+1.2 s` subtracts the unrounded means, giving about 1.241 seconds before rounding to one decimal. The roughly 46% improvement uses two-decimal means.
 
 ### Formula and symbols
 
@@ -258,3 +258,35 @@ Mean, min, max and stdev do not replace individual `per_run` records. These five
 The last step assembles the evidence a fair comparison needs and returns to Step 1's question: which wait actually became shorter?
 
 Sources: `benchmarks/eval/benchmark_omni_streaming_ttft.py:245-296,354-365`; `Awesome-ML-SYS-Tutorial/sglang/sglang-omni/batch.md:221-227`.
+
+## Step 8 · Keep the whole comparison record
+
+**One sentence.** A shorter wait supports an optimization only when inputs, conditions and output checks remain visible; the next step reduces work inside AR or the encoder.
+
+### On the stage
+
+- `SAME INPUT` preserves prompts, seed and input/output lengths so the two sides perform the same work.
+- `SAME CONDITIONS` preserves hardware, configuration and warmup so an environment change cannot hide inside the switch's effect.
+- `PER-RUN WAITS` aligns TTFT, chunk gaps and host/GPU fields for every run, locating the wait that changed.
+- `VALID RESULTS` checks request completion and output quality while keeping the mean and spread. Performance numbers do not replace quality checks.
+- `AR` is the loop that generates tokens one by one. The `encoder` turns reference input into model features. They are two places to inspect in the next chapter, not a new sequential pipeline in this picture.
+
+### Formula and symbols
+
+$$\Delta\bar T=\bar T_A-\bar T_B$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $\bar T_A$ | Baseline mean TTFT | A records from Steps 6 and 7 |
+| $\bar T_B$ | Partial-start mean TTFT | B records from Steps 6 and 7 |
+| $\Delta\bar T$ | Mean first-audio wait saved by B | Calculated after measurement |
+
+### The numbers on the stage
+
+This step invents no A/B output and leaves $\Delta\bar T$ unassigned. After a real run, verify Step 6's matching conditions and Step 7's complete per-run records before calculating it. Read it beside both groups' min, max and stdev. Requests within one run share queues and the environment, so they do not provide the same number of independent experiment repeats.
+
+### Next
+
+Chapter 9 inspects AR and the encoder: whether a cache avoids repeated work, asynchronous decode removes waiting, and CUDA graphs reduce launch work. This chapter does not claim those mechanisms already help.
+
+Sources: `benchmarks/eval/benchmark_omni_streaming_ttft.py:354-365`; `docs/developer_reference/omni_offline_bench.md:310-379,435-443`; `Awesome-ML-SYS-Tutorial/sglang/sglang-omni/batch.md:221-235`; `docs/plan-omni.md`, Chapter 9.
