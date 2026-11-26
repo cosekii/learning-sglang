@@ -1,0 +1,29 @@
+---
+layout: ../../../layouts/Chapter.astro
+book: omni
+slug: 10-vocoder-optimization
+---
+import VocoderOptimization from '../../../components/omni/VocoderOptimization.svelte';
+import { omniNeighbors } from '../../../omni/chapters';
+import { deepFor } from '../../../deep';
+export const deep = await deepFor('omni-10-vocoder-optimization');
+
+<VocoderOptimization client:load {...omniNeighbors('10-vocoder-optimization')} deep={deep} />
+
+<details class="i18n-en">
+<summary>Where this chapter's claims come from</summary>
+
+Step 1 follows Qwen3-Omni's default streaming Code2Wav windows in `sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:79-109,999-1011`. A later stateless window reads 25 earlier frames and 10 new frames, then emits only the 10 new frames. Learning SGLang Ch. 20 Steps 1–3 established that those 10 frames represent 800 ms of playback. The three map entries are cross-request batching, retained codec state and exact-shape CUDA graphs; later steps explain each one. The frame counts describe input work, not elapsed time.
+
+Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`. The chapter reads source and public results; it does not run a model or benchmark.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的出处</summary>
+
+第 1 步依据 Qwen3-Omni 默认的流式 Code2Wav 窗口，见 `sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:79-109,999-1011`。后续无状态窗口读取 25 帧旧内容和 10 帧新内容，只输出那 10 帧新内容。Learning SGLang 第 20 章第 1–3 步已经说明，这 10 帧代表 800 ms 播放。地图三项是跨请求 batching、保留 codec 状态和精确形状 CUDA graph，后续步骤分别解释。帧数描述输入工作量，不是耗时。
+
+本章代码出处固定到 `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`。本章只读源码和公开结果，没有运行模型或 benchmark。
+
+</details>

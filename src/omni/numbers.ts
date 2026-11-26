@@ -347,3 +347,28 @@ export const OPT_AUDIO_GRAPH_COUNT = OPT_AUDIO_TOKEN_BUCKETS.length;
 export const OPT_VOCODER_FRAMES_PER_CHUNK = 10;
 export const OPT_VOCODER_CHUNK_MS = 800;
 export const OPT_VOCODER_FRAME_MS = OPT_VOCODER_CHUNK_MS / OPT_VOCODER_FRAMES_PER_CHUNK;
+
+// Qwen3-Omni streaming Code2Wav: left-context replay, ready-window batching and retained state.
+export const VOC_LEFT_CONTEXT_FRAMES = 25;
+export const VOC_NEW_FRAMES = OPT_VOCODER_FRAMES_PER_CHUNK;
+export const VOC_STATELESS_INPUT_FRAMES = VOC_LEFT_CONTEXT_FRAMES + VOC_NEW_FRAMES;
+export const VOC_BATCH_REQUEST_COUNT = 3;
+export const VOC_BATCH_CALLS_BEFORE = VOC_BATCH_REQUEST_COUNT;
+export const VOC_BATCH_CALLS_AFTER = 1;
+
+// PR #2909: Qwen3-Omni colocated BF16 on H200, one graph replay, median of 20 timings.
+export const VOC_STATE_FIRST_MAIN_US = 3656.3;
+export const VOC_STATE_FIRST_SLOT_US = 3992.0;
+export const VOC_STATE_LATER_MAIN_US = 10777.5;
+export const VOC_STATE_LATER_SLOT_US = 4255.3;
+export const VOC_STATE_FIRST_CHANGE_PERCENT = (VOC_STATE_FIRST_SLOT_US / VOC_STATE_FIRST_MAIN_US - 1) * 100;
+export const VOC_STATE_LATER_REDUCTION_PERCENT = (1 - VOC_STATE_LATER_SLOT_US / VOC_STATE_LATER_MAIN_US) * 100;
+
+// PR #1101's historical H200 c16 sweep; the percent below derives from the two displayed mean QPS values.
+export const VOC_GRAPH_CONCURRENCY = 16;
+export const VOC_GRAPH_CONTROL_QPS = 0.575;
+export const VOC_GRAPH_REPLAY_QPS = 0.635;
+export const VOC_GRAPH_MEAN_QPS_GAIN_PERCENT = (VOC_GRAPH_REPLAY_QPS / VOC_GRAPH_CONTROL_QPS - 1) * 100;
+
+// Fish S2 Pro drops the semantic row and sends ten codebook rows per frame to its vocoder.
+export const VOC_FISH_CODEBOOK_ROWS = 10;
