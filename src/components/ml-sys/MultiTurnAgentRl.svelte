@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, untrack } from 'svelte';
+  import { fade, fly } from 'svelte/transition';
   import StepControls from '../StepControls.svelte';
   import LoopProgress from '../LoopProgress.svelte';
   import type { NavLink } from '../../chapters';
@@ -8,6 +9,7 @@
   import * as N from '../../ml-sys/numbers';
 
   type Tone = 'plain' | 'blue' | 'orange';
+  type Cell = { label: string; tone: Tone; dashed?: boolean };
   type Line = { en: string; zh: string };
   type Node = { title: string; titleZh: string; result: string; resultZh: string; body: string; bodyZh: string; tone: Tone; dashed?: boolean };
   type MobileText = { title: string; titleZh: string; subtitle: string; subtitleZh: string; foot: string; footZh: string; legend: string; legendZh: string; formulas?: Line[] };
@@ -17,6 +19,8 @@
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
   const fill = (tone: Tone) => tone === 'blue' ? 'var(--accent-soft)' : tone === 'orange' ? 'var(--gen-soft)' : 'var(--bg)';
   const stroke = (tone: Tone) => tone === 'blue' ? 'var(--accent)' : tone === 'orange' ? 'var(--gen)' : 'var(--line)';
+  const tokenCells = (label: string, count: number, tone: Tone = 'plain', dashed = false): Cell[] =>
+    Array.from({ length: count }, () => ({ label, tone, dashed }));
   const steps: Step[] = [{
     caption: 'The second call needs nine context tokens. Giving it only the prompt drops seven response tokens.',
     captionZh: '第二次调用需要 9 个上下文 token。只给 prompt 会少 7 个响应 token。',
@@ -328,13 +332,16 @@
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
   const start = 80;
+  const phoneStride = 136;
   const formulas = $derived(phone && cur.mobile?.formulas ? cur.mobile.formulas : cur.formulas);
   const formulaStart = 315;
-  const legendY = $derived(phone ? start + cur.nodes.length * 96 + 15 + formulas.length * 27 : formulaStart + (cur.formulas.length - 1) * 29 + 45);
+  const phoneFormulaStart = $derived(start + cur.nodes.length * phoneStride + 10);
+  const legendY = $derived(phone ? phoneFormulaStart + (formulas.length - 1) * 27 + 30 : formulaStart + (cur.formulas.length - 1) * 29 + 45);
   const H = $derived(phone ? legendY + 55 : Math.max(500, legendY + 55));
   const nodeW = (count: number) => count === 2 ? 260 : count === 3 ? 200 : 155;
   const nodeX = (i: number, count: number) => count === 2 ? 65 + i * 330 : count === 3 ? 35 + i * 225 : 25 + i * 175;
   const shown = (i: number) => cur.compare || i <= phase;
+  const resultFor = (i: number) => t(cur.nodes[i].result, cur.nodes[i].resultZh);
   const aria = $derived([
     $lang === 'zh' ? cur.captionZh : cur.caption,
     phone ? t(cur.mobile?.subtitle ?? cur.subtitle, cur.mobile?.subtitleZh ?? cur.subtitleZh) : t(cur.subtitle, cur.subtitleZh),
@@ -343,6 +350,32 @@
     phone ? t(cur.mobile?.foot ?? cur.foot, cur.mobile?.footZh ?? cur.footZh) : t(cur.foot, cur.footZh),
   ].join(' '));
 </script>
+
+{#snippet tokenStrip(x: number, y: number, w: number, items: Cell[])}
+  {@const gap = 2}
+  {@const cw = Math.min(18, (w - gap * (items.length - 1)) / items.length)}
+  {@const sx = x + (w - (cw * items.length + gap * (items.length - 1))) / 2}
+  {#each items as item, j (j)}
+    <g data-cell={item.label} in:fly={{ y: -5, duration: 300, delay: j * 25 }} out:fade={{ duration: 120 }}>
+      <rect x={sx + j * (cw + gap)} {y} width={cw} height="18" rx="3" fill={fill(item.tone)} stroke={stroke(item.tone)} stroke-dasharray={item.dashed ? '3 2' : '0'} />
+      {#if cw >= 11 && item.label}<text x={sx + j * (cw + gap) + cw / 2} y={y + 13} text-anchor="middle" class="celltext">{item.label}</text>{/if}
+    </g>
+  {/each}
+{/snippet}
+
+{#snippet mechanism(i: number, x: number, y: number, w: number)}
+  <g data-mechanism={step + 1} data-node={i}>
+  {#if step === 0}
+    {#if i === 0}
+      {@render tokenStrip(x + 10, y + 67, w - 20, [...tokenCells('P', N.AGENT_PROMPT_TOKENS), ...tokenCells('?', N.AGENT_CONTEXT_BEFORE_SECOND_TOKENS, 'orange', true)])}
+    {:else}
+      {@const all = [...tokenCells('P', N.AGENT_PROMPT_TOKENS), ...tokenCells('A', N.AGENT_FIRST_ACTION_TOKENS), ...tokenCells('O', N.AGENT_OBSERVATION_TOKENS), ...tokenCells('B', N.AGENT_SECOND_ACTION_TOKENS)]}
+      {@const visible = phase === 0 ? N.AGENT_PROMPT_TOKENS : phase === 1 ? N.AGENT_SECOND_CALL_INPUT_TOKENS : all.length}
+      {@render tokenStrip(x + 10, y + 67, w - 20, all.slice(0, visible))}
+    {/if}
+  {/if}
+  </g>
+{/snippet}
 
 <figure class="viz">
   <div class="canvas">
@@ -353,26 +386,28 @@
       <text x={phone ? 18 : 36} y="55" class="label">{phone ? t(cur.mobile?.subtitle ?? cur.subtitle, cur.mobile?.subtitleZh ?? cur.subtitleZh) : t(cur.subtitle, cur.subtitleZh)}</text>
       {#if phone}
         {#each cur.nodes as node, i}
-          {@const y = start + i * 96}
-          <g opacity={shown(i) ? 1 : 0.3} class="reveal">
-            <rect x="25" y={y} width="250" height="80" rx="11" fill={fill(node.tone)} stroke={phase === i ? 'var(--eos)' : stroke(node.tone)} stroke-width={phase === i ? 3 : 1} stroke-dasharray={node.dashed ? '5 4' : '0'} />
+          {@const y = start + i * phoneStride}
+          <g data-card={i} opacity={shown(i) ? 1 : 0.3} class="reveal">
+            <rect x="25" y={y} width="250" height="120" rx="11" fill={fill(node.tone)} stroke={phase === i ? 'var(--eos)' : stroke(node.tone)} stroke-width={phase === i ? 3 : 1} stroke-dasharray={node.dashed ? '5 4' : '0'} />
             <text x="150" y={y + 20} text-anchor="middle" class={node.title === 'RESPONSE ATTENTION MASK' ? 'tiny strong' : 'small strong'}>{t(node.title, node.titleZh)}</text>
-            <text x="150" y={y + 43} text-anchor="middle" class="result">{t(node.result, node.resultZh)}</text>
-            <text x="150" y={y + 64} text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
-            {#if cur.flow && i < cur.nodes.length - 1}<line x1="150" y1={y + 80} x2="150" y2={y + 92} stroke="var(--line)" stroke-width="2.5" marker-end="url(#agent-arrow)" />{/if}
+            <text x="150" y={y + 43} text-anchor="middle" class="result">{resultFor(i)}</text>
+            {@render mechanism(i, 25, y, 250)}
+            <text x="150" y={y + 110} text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
+            {#if cur.flow && i < cur.nodes.length - 1}<line x1="150" y1={y + 120} x2="150" y2={y + 132} stroke="var(--line)" stroke-width="2.5" marker-end="url(#agent-arrow)" />{/if}
           </g>
         {/each}
-        {#each formulas as line, i}<text x="150" y={start + cur.nodes.length * 96 + 15 + i * 27} text-anchor="middle" class={i === 0 ? 'result' : 'small'}>{t(line.en, line.zh)}</text>{/each}
+        {#each formulas as line, i}<text x="150" y={phoneFormulaStart + i * 27} text-anchor="middle" class={i === 0 ? 'result' : 'small'}>{t(line.en, line.zh)}</text>{/each}
         <text x="150" y={legendY} text-anchor="middle" class="small">{t(cur.mobile?.legend ?? cur.legend, cur.mobile?.legendZh ?? cur.legendZh)}</text>
       {:else}
         {#each cur.nodes as node, i}
           {@const w = nodeW(cur.nodes.length)}
           {@const x = nodeX(i, cur.nodes.length)}
-          <g opacity={shown(i) ? 1 : 0.3} class="reveal">
+          <g data-card={i} opacity={shown(i) ? 1 : 0.3} class="reveal">
             <rect x={x} y="105" width={w} height="160" rx="12" fill={fill(node.tone)} stroke={phase === i ? 'var(--eos)' : stroke(node.tone)} stroke-width={phase === i ? 3 : 1} stroke-dasharray={node.dashed ? '5 4' : '0'} />
-            <text x={x + w / 2} y="137" text-anchor="middle" class={node.title === 'RESPONSE ATTENTION MASK' ? 'tiny strong' : 'small strong'}>{t(node.title, node.titleZh)}</text>
-            <text x={x + w / 2} y="180" text-anchor="middle" class="result">{t(node.result, node.resultZh)}</text>
-            <text x={x + w / 2} y="222" text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
+            <text x={x + w / 2} y="129" text-anchor="middle" class={node.title === 'RESPONSE ATTENTION MASK' ? 'tiny strong' : 'small strong'}>{t(node.title, node.titleZh)}</text>
+            <text x={x + w / 2} y="155" text-anchor="middle" class="result">{resultFor(i)}</text>
+            {@render mechanism(i, x, 105, w)}
+            <text x={x + w / 2} y="250" text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
             {#if cur.flow && i < cur.nodes.length - 1}<line x1={x + w} y1="185" x2={nodeX(i + 1, cur.nodes.length)} y2="185" stroke="var(--line)" stroke-width="2.5" marker-end="url(#agent-arrow)" />{/if}
           </g>
         {/each}
@@ -389,6 +424,7 @@
   .title { font-size: 18px; font-weight: 650; fill: var(--fg); }
   .label, .small { font-size: 13px; fill: var(--fg); }
   .tiny { font-size: 11px; fill: var(--fg); }
+  .celltext { font-family: var(--mono); font-size: 10px; font-weight: 650; fill: var(--fg); pointer-events: none; }
   .strong { font-weight: 650; }
   .result { font-family: var(--mono); font-size: 14px; font-weight: 650; fill: var(--fg); }
   .reveal { transition: opacity 450ms; }

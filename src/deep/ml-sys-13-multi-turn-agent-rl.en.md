@@ -6,26 +6,24 @@
 
 - `P` holds two prompt tokens. `A` holds four tokens in the model's first action, and `B` holds five in its later action.
 - `O` holds three tokens in the encoded tool observation. An action is the model's instruction to a tool. `O` is the complete observation delta, including any generation marker within those three tokens.
-- The dashed left card deliberately gives the second call only two `P` tokens. It contrasts missing context, not a claim that separate storage must discard `A` or `O`.
-- The blue right card follows this implementation's ordered `Sample`. Its second call reads `P + A + O`, while `B` is the new action written by that call.
+- The dashed left card deliberately gives the second call only two `P` squares. Its seven dashed orange squares mark the missing `A + O` context. This contrasts missing context, not a claim that separate storage must discard `A` or `O`.
+- The blue right card follows this implementation's ordered `Sample`. `A` and `O` squares join `P` before the second call; five `B` squares then append the new action.
 
 ### Formula and symbols
 
-$$C_2=P+A_1+O_1,\qquad R=A_1+O_1+A_2,\qquad D=A_1+O_1$$
+$$C_2=p+a+o,\qquad N_{\text{response}}=a+o+b,\qquad N_{\text{missing}}=a+o$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
-| $P$ | Prompt token count | Constructed value: 2 |
-| $A_1$ | First model-action span length | Constructed value: 4 |
-| $O_1$ | Tool-observation span length | Constructed value: 3 |
-| $A_2$ | Later model-action span length | Constructed value: 5 |
+| $P,A,O,B$ | Prompt, first-action, observation and later-action token spans | Constructed spans on the stage |
+| $p,a,o,b$ | Token counts for those four spans | Constructed values: 2, 4, 3 and 5 |
 | $C_2$ | Tokens supplied to the second model call | Sum in this step |
-| $R$ | Response tokens in the final `Sample` | Sum in this step |
-| $D$ | Earlier response tokens missing when the second call receives only `P` | Sum in this step |
+| $N_{\text{response}}$ | Response tokens in the final `Sample` | Sum in this step |
+| $N_{\text{missing}}$ | Earlier response tokens missing when the second call receives only `P` | Sum in this step |
 
 ### The numbers on the stage
 
-$$C_2=2+4+3=9,\qquad R=4+3+5=12,\qquad D=4+3=7$$
+$$C_2=2+4+3=9,\qquad N_{\text{response}}=4+3+5=12,\qquad N_{\text{missing}}=4+3=7$$
 
 The nine second-call inputs include the two prompt tokens. The seven missing tokens count response context only, so they exclude the prompt. The twelve response tokens also exclude the prompt; `Sample.tokens` contains $2+12=14$ tokens in this constructed example.
 
