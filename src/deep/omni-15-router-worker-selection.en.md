@@ -101,3 +101,27 @@ Application responses do not directly set these states. A transport or protocol 
 The remaining workers are compatible and healthy. The next step uses round robin to rotate through them without comparing active-request counts.
 
 Sources: `sglang_omni_router/src/worker_pool/health.rs:10-17,211-308`; `sglang_omni_router/src/worker_pool/mod.rs:124-126`; `sglang_omni_router/src/config.rs:290-325`; `sglang_omni_router/src/http_relay/mod.rs:188-226`.
+
+## Step 5 · Rotate with round robin
+
+**One sentence.** Round robin selects the first eligible worker in one shared recency list and moves that worker to the back.
+
+### On the stage
+
+- A, B and C are compatible and healthy. The first three rows show the recency list before and after each selection: $[A,B,C]\rightarrow[B,C,A]\rightarrow[C,A,B]\rightarrow[A,B,C]$.
+- The selected worker moves behind every other worker, including workers that are not eligible for the current request. The others keep their relative order.
+- Six requests select A, B, C, A, B and C. Every lease stays held in this constructed example, proving that round robin does not inspect active-request counts.
+
+### The sequence on the stage
+
+$$\text{selections}=(A,B,C,A,B,C)$$
+
+There is one recency list for the whole worker pool, not an independent cursor for each model, service or candidate subset. A sparse candidate set uses the same list. If a scan finds no eligible worker, it returns no selection and does not rotate the list.
+
+Round robin is the default routing policy. It rotates only among compatible healthy workers after the filters from Steps 3 and 4.
+
+### Next
+
+Rotation can send work to a worker with more active requests. The next policy, least requests, compares those counts and rotates only through workers tied at the minimum.
+
+Sources: `sglang_omni_router/src/worker_pool/selection.rs:14-23,49-60`; `sglang_omni_router/src/worker_pool/mod.rs:1263-1356`; `sglang_omni_router/src/config.rs:262-276`.

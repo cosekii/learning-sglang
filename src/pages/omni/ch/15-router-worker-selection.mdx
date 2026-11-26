@@ -21,6 +21,8 @@ Step 3 follows the correlated-profile rule in `sglang_omni_router/src/worker_poo
 
 Step 4 follows `sglang_omni_router/src/worker_pool/health.rs:10-17,231-308` and the default thresholds in `sglang_omni_router/src/config.rs:290-325`. Workers start unknown; only healthy workers are routable (`worker_pool/mod.rs:124-126`). Any 2xx probe status succeeds, while another status, transport error or timeout fails. Two consecutive successes mark healthy and three consecutive failures mark unhealthy by default. A success resets the failure streak, a failure resets the success streak, and one later result does not immediately reverse a reached state.
 
+Step 5 follows `sglang_omni_router/src/worker_pool/selection.rs:14-23,49-60`. The selector scans one shared recency list, picks the first eligible worker and moves that worker to the back of the entire list. With A, B and C all eligible, six selections are A, B, C, A, B and C. Ineligible workers are skipped without leaving the list, and changing candidate subsets does not reset the order. Round robin does not read active-request counts, so held leases do not change the displayed sequence (`worker_pool/mod.rs:1263-1356`).
+
 Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`. Examples are constructed from source rules; the chapter does not run a router or benchmark.
 
 </details>
@@ -35,6 +37,8 @@ Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37
 第 3 步依据 `sglang_omni_router/src/worker_pool/profile.rs:754-904` 的相关联 profile 规则。同一个独立行必须满足完整要求；集合能力可以多出一些，但不能从不同行拼事实。构造的 A 两行来自 `profile.rs:1311-1334` 的跨行回归测试：不能把一行的 model M 与另一行的模态和流式模式拼起来。B 有一行完整匹配。
 
 第 4 步依据 `sglang_omni_router/src/worker_pool/health.rs:10-17,231-308` 和 `sglang_omni_router/src/config.rs:290-325` 的默认门槛。worker 从 unknown 开始，只有 healthy 可路由（`worker_pool/mod.rs:124-126`）。探测状态为任意 2xx 就算成功，其他状态、传输错误或超时算失败。默认连续 2 次成功转为 healthy，连续 3 次失败转为 unhealthy。成功会清空失败连击，失败会清空成功连击；已经达到某个状态后，单独一次相反结果不会立刻翻转它。
+
+第 5 步依据 `sglang_omni_router/src/worker_pool/selection.rs:14-23,49-60`。selector 扫描一个共享的最近使用顺序，取第一个候选 worker，再把它移到整个列表的末尾。A、B、C 都合格时，六次选择依次是 A、B、C、A、B、C。不合格 worker 被跳过但不移出列表，候选集合变化也不会重置顺序。round robin 不读取活跃请求数，所以租约保持占用也不会改变图上的顺序（`worker_pool/mod.rs:1263-1356`）。
 
 本章代码出处固定到 `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`。示例按源码规则构造，本章没有运行 router 或 benchmark。
 

@@ -101,3 +101,27 @@ router 使用“任意一整行匹配即可”的检查。它不会对多行取�
 剩下的 worker 既兼容又 healthy。下一步用 round robin 在它们之间轮换，不比较活跃请求数。
 
 来源：`sglang_omni_router/src/worker_pool/health.rs:10-17,211-308`；`sglang_omni_router/src/worker_pool/mod.rs:124-126`；`sglang_omni_router/src/config.rs:290-325`；`sglang_omni_router/src/http_relay/mod.rs:188-226`。
+
+## 第 5 步 · 用 round robin 轮换
+
+**一句话。** round robin 在一个共享最近使用顺序里取第一个候选 worker，再把它移到队尾。
+
+### 图上是什么
+
+- A、B、C 都兼容且 healthy。前三行展示每次选择前后的顺序：$[A,B,C]\rightarrow[B,C,A]\rightarrow[C,A,B]\rightarrow[A,B,C]$。
+- 选中的 worker 移到所有其他 worker 后面，包括当前请求不能选的 worker。其他 worker 保持相对顺序。
+- 六个请求依次选 A、B、C、A、B、C。构造例里每个租约都保持占用，说明 round robin 不检查活跃请求数。
+
+### 图上的顺序
+
+$$\text{selections}=(A,B,C,A,B,C)$$
+
+整个 worker pool 共用一个最近使用列表，不为每个模型、服务或候选子集各设一个游标。稀疏候选集合也使用同一列表。如果扫描后没有候选 worker，就返回无选择，不轮换列表。
+
+round robin 是默认路由策略。经过第 3、4 步过滤后，它只在兼容且 healthy 的 worker 之间轮换。
+
+### 接下来
+
+轮换可能把请求交给活跃请求更多的 worker。下一种策略 least requests 会比较这些数量，只在并列最少的 worker 之间轮换。
+
+来源：`sglang_omni_router/src/worker_pool/selection.rs:14-23,49-60`；`sglang_omni_router/src/worker_pool/mod.rs:1263-1356`；`sglang_omni_router/src/config.rs:262-276`。

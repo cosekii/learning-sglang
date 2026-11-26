@@ -9,6 +9,8 @@
     ROUTER_COMPATIBLE_WORKER_COUNT,
     ROUTER_HEALTH_SUCCESS_THRESHOLD,
     ROUTER_HEALTH_FAILURE_THRESHOLD,
+    ROUTER_ROUND_ROBIN_WORKERS,
+    ROUTER_ROUND_ROBIN_SEQUENCE,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -25,6 +27,9 @@
   }, {
     caption: 'Only healthy workers can be selected. Two probe successes mark healthy; three failures mark unhealthy.',
     captionZh: '只有 healthy worker 能被选中。默认连续 2 次探测成功转为 healthy，连续 3 次失败转为 unhealthy。',
+  }, {
+    caption: 'Round robin rotates through compatible healthy workers. It does not compare their active request counts.',
+    captionZh: 'round robin 在兼容且 healthy 的 worker 之间轮换。它不比较活跃请求数。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -41,7 +46,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [650, 750, 830, 800][step] : [520, 560, 600, 600][step]);
+  const H = $derived(phone ? [650, 750, 830, 800, 680][step] : [520, 560, 600, 600, 570][step]);
 </script>
 
 <figure class="viz">
@@ -175,6 +180,31 @@
         <text x={W / 2} y={phone ? 745 : 445} text-anchor="middle" class="small strong">{t('UNKNOWN and UNHEALTHY stay outside selection.', 'UNKNOWN 和 UNHEALTHY 都不能进入选择。')}</text>
         <text x={W / 2} y={phone ? 772 : 480} text-anchor="middle" class="small">{t('A single later result does not flip the state.', '之后单独一次结果不会立刻翻转状态。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Shipped defaults · both thresholds are configurable', '随仓库发布的默认值 · 两个门槛都可配置')}</text>
+      {:else if step === 4}
+        <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'Chosen worker goes to the back' : 'Round robin moves the chosen worker to the back', phone ? '选中的 worker 移到队尾' : 'round robin 把选中的 worker 移到队尾')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'all A, B, C are compatible and healthy' : 'A, B and C are all compatible and healthy', phone ? 'A、B、C 都兼容且 healthy' : 'A、B、C 都兼容且 healthy')}</text>
+        <text x={phone ? 18 : 30} y="79" class="label">{t('Take the first eligible worker; leave the others in order.', '取队首的候选 worker，其他 worker 保持先后顺序。')}</text>
+        {#each [
+          { before: '[A, B, C]', after: '[B, C, A]', pick: 'A' },
+          { before: '[B, C, A]', after: '[C, A, B]', pick: 'B' },
+          { before: '[C, A, B]', after: '[A, B, C]', pick: 'C' },
+        ] as row, i}
+          {@const y = phone ? 118 + i * 66 : 120 + i * 66}
+          <text x={phone ? 18 : 50} y={y + 25} class="code">{row.before}</text>
+          <text x={phone ? 135 : 290} y={y + 25} class="result">→ {row.pick}</text>
+          <text x={phone ? 190 : 430} y={y + 25} class="code">{row.after}</text>
+        {/each}
+        <text x={phone ? 18 : 50} y={phone ? 330 : 340} class="small strong">{t('SIX REQUESTS · EVERY LEASE STAYS HELD', '六个请求 · 每个租约都保持占用')}</text>
+        {#each ROUTER_ROUND_ROBIN_SEQUENCE as workerIndex, i}
+          {@const x = phone ? 20 + (i % 3) * 90 : 50 + i * 105}
+          {@const y = phone ? 355 + Math.floor(i / 3) * 105 : 375}
+          <rect x={x} y={y} width={phone ? 80 : 90} height="78" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x={x + (phone ? 40 : 45)} y={y + 28} text-anchor="middle" class="small">{t('request', '请求')} {i + 1}</text>
+          <text x={x + (phone ? 40 : 45)} y={y + 59} text-anchor="middle" class="result">{ROUTER_ROUND_ROBIN_WORKERS[workerIndex]}</text>
+        {/each}
+        <text x={W / 2} y={phone ? 585 : 495} text-anchor="middle" class="result">A → B → C → A → B → C</text>
+        <text x={W / 2} y={phone ? 620 : 530} text-anchor="middle" class="small">{t('Held requests do not change these turns.', '请求保持占用也不会改变轮换顺序。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'One shared order · ineligible workers are skipped' : 'One shared order across services and candidate sets; ineligible workers keep their places.', phone ? '共用一个顺序 · 跳过不合格 worker' : '不同服务和候选集合共用一个顺序；不合格 worker 留在原位置。')}</text>
       {/if}
     </svg>
   </div>
