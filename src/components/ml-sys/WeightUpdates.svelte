@@ -4,7 +4,7 @@
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
-  import { UPDATE_DEBUG_BF16_BYTES, UPDATE_DEBUG_WEIGHT_GB, UPDATE_DEBUG_INITIAL_S, UPDATE_DEBUG_INNER_S, UPDATE_DEBUG_OUTER_S, UPDATE_GROUP_SIZE_TP_ONE, UPDATE_GROUP_SIZE_TP_TWO, UPDATE_EXAMPLE_FULL_ROWS, UPDATE_EXAMPLE_FULL_COLS, UPDATE_EXAMPLE_FSDP_TP, UPDATE_EXAMPLE_FSDP_ROWS, UPDATE_EXAMPLE_FULL_ELEMENTS, UPDATE_DEBUG_SLEEP_COUNT, UPDATE_DEBUG_SLEEP_MS, UPDATE_DEBUG_SLEEP_TOTAL_MS, UPDATE_DEBUG_OUTER_MS, UPDATE_DEBUG_INNER_MS, UPDATE_DEBUG_OTHER_MS, UPDATE_DEBUG_NO_SLEEP_S, UPDATE_DEBUG_SAVED_S, UPDATE_DEBUG_SPEEDUP } from '../../ml-sys/numbers';
+  import { UPDATE_DEBUG_BF16_BYTES, UPDATE_DEBUG_WEIGHT_GB, UPDATE_DEBUG_INITIAL_S, UPDATE_DEBUG_INNER_S, UPDATE_DEBUG_OUTER_S, UPDATE_GROUP_SIZE_TP_ONE, UPDATE_GROUP_SIZE_TP_TWO, UPDATE_EXAMPLE_FULL_ROWS, UPDATE_EXAMPLE_FULL_COLS, UPDATE_EXAMPLE_FSDP_TP, UPDATE_EXAMPLE_FSDP_ROWS, UPDATE_EXAMPLE_FULL_ELEMENTS, UPDATE_DEBUG_SLEEP_COUNT, UPDATE_DEBUG_SLEEP_MS, UPDATE_DEBUG_SLEEP_TOTAL_MS, UPDATE_DEBUG_OUTER_MS, UPDATE_DEBUG_INNER_MS, UPDATE_DEBUG_OTHER_MS, UPDATE_DEBUG_NO_SLEEP_S, UPDATE_DEBUG_SAVED_S, UPDATE_DEBUG_SPEEDUP, UPDATE_DEBUG_YARDSTICK_MS, UPDATE_DEBUG_FULL_YARDSTICK_RATIO } from '../../ml-sys/numbers';
 
   type Tone = 'plain' | 'blue' | 'orange';
   type MobileItem = { title: string; titleZh: string; body: string; bodyZh: string; tone: Tone };
@@ -22,7 +22,7 @@
   const steps: Step[] = [{
     caption: `A 1B bf16 model has about ${UPDATE_DEBUG_WEIGHT_GB} GB of weights. One debug run took ${UPDATE_DEBUG_INITIAL_S} seconds to update them.`,
     captionZh: `1B bf16 模型约有 ${UPDATE_DEBUG_WEIGHT_GB} GB 权重。一次调试中，完整更新花了 ${UPDATE_DEBUG_INITIAL_S} 秒。`,
-    title: 'Model code is fast, but the whole call is slow', titleZh: '模型代码里很快，整个调用却很慢',
+    title: 'Model code is fast, but the whole call is slow', titleZh: '模型代码本身很快，整个调用却很慢',
     subtitle: 'weight update = replace the rollout model\'s old number tables after training', subtitleZh: '权重更新 = 训练后换掉 rollout 模型里的旧数字表',
     foot: 'One author\'s distributed-update debug log; not a disk-versus-direct benchmark.', footZh: '一位作者的 distributed 更新调试记录，不是磁盘与直传的对比实验。',
     mobileTitle: 'The call is slow', mobileTitleZh: '整个调用很慢',
@@ -30,14 +30,16 @@
     mobileFoot: 'Debug log; not a transport comparison.', mobileFootZh: '调试记录，不是传输对照实验。',
     mobile: [
       { title: 'TRAINING · WEIGHTS v1', titleZh: '训练端 · 权重 v1', body: 'new number tables', bodyZh: '新的数字表', tone: 'orange' },
-      { title: 'WHOLE CALL · UPDATE WEIGHTS', titleZh: '整个调用 · 更新权重', body: 'model code = the inner part', bodyZh: '模型代码里 = 内部部分', tone: 'orange' },
+      { title: 'WHOLE CALL · UPDATE WEIGHTS', titleZh: '整个调用 · 更新权重', body: 'model code = the inner part', bodyZh: '模型代码本身 = 内部部分', tone: 'orange' },
       { title: 'ROLLOUT WAITS', titleZh: 'ROLLOUT 等待', body: 'use v1 only after the update', bodyZh: '更新完成后才用 v1', tone: 'blue' },
     ],
     formulas: [
       { en: `1B × ${UPDATE_DEBUG_BF16_BYTES} B = ${UPDATE_DEBUG_WEIGHT_GB} GB of weights`, zh: `10 亿个数 × 每个 ${UPDATE_DEBUG_BF16_BYTES} B = ${UPDATE_DEBUG_WEIGHT_GB} GB 权重` },
-      { en: `whole-model update = ${UPDATE_DEBUG_INITIAL_S} s`, zh: `完整更新 = ${UPDATE_DEBUG_INITIAL_S} 秒` },
-      { en: `model code ${UPDATE_DEBUG_INNER_S} s · whole call ${UPDATE_DEBUG_OUTER_S} s`, zh: `模型代码里 ${UPDATE_DEBUG_INNER_S} 秒 · 整个调用 ${UPDATE_DEBUG_OUTER_S} 秒` },
-      { en: 'outer ÷ inner ≈ 33×, rounded', zh: '外部 ÷ 内部 ≈ 33 倍，均为舍入值' },
+      { en: `2 GB ÷ 3.35 TB/s ≈ ${UPDATE_DEBUG_YARDSTICK_MS.toFixed(1)} ms (HBM)`, zh: `2 GB ÷ 3.35 TB/s ≈ ${UPDATE_DEBUG_YARDSTICK_MS.toFixed(1)} ms（HBM 对照）` },
+      { en: `full 1B: ${UPDATE_DEBUG_INITIAL_S} s ≈ ${UPDATE_DEBUG_FULL_YARDSTICK_RATIO.toLocaleString('en-US')} × ${UPDATE_DEBUG_YARDSTICK_MS.toFixed(1)} ms`, zh: `完整 1B：${UPDATE_DEBUG_INITIAL_S} 秒 ≈ ${UPDATE_DEBUG_FULL_YARDSTICK_RATIO.toLocaleString('en-US')} × ${UPDATE_DEBUG_YARDSTICK_MS.toFixed(1)} ms` },
+      { en: `one tensor: model code ${UPDATE_DEBUG_INNER_S} s`, zh: `一个张量：模型代码本身 ${UPDATE_DEBUG_INNER_S} 秒` },
+      { en: `whole call ${UPDATE_DEBUG_OUTER_S} s`, zh: `整个调用 ${UPDATE_DEBUG_OUTER_S} 秒` },
+      { en: '0.033 ÷ 0.001 ≈ 33×, rounded', zh: '0.033 ÷ 0.001 ≈ 33 倍，均为舍入值' },
     ],
   }, {
     caption: 'Three update channels carry v1 into rollout. Choose a checkpoint file, a process group, or a GPU location note.',
@@ -93,8 +95,8 @@
       { title: 'SGLANG REBUILDS + LOADS', titleZh: 'SGLANG 重建并装入', body: 'full tensor → keep own part', bodyZh: '完整张量 → 留下自己部分', tone: 'blue' },
     ],
     formulas: [
-      { en: `4 × 256 × 1024 = ${UPDATE_EXAMPLE_FULL_ELEMENTS.toLocaleString('en-US')} ≈ 1.05M`, zh: `4 × 256 × 1024 = ${UPDATE_EXAMPLE_FULL_ELEMENTS.toLocaleString('en-US')} 个数 ≈ 105 万` },
-      { en: 'serialize the note, not the payload', zh: '序列化位置便签，不序列化数据本体' },
+      { en: `4 × 256 × 1024 = ${UPDATE_EXAMPLE_FULL_ELEMENTS.toLocaleString('en-US')}`, zh: `4 × 256 × 1024 = ${UPDATE_EXAMPLE_FULL_ELEMENTS.toLocaleString('en-US')} 个数` },
+      { en: '= one 1024×1024 photo', zh: '= 一张 1024×1024 照片的像素数' },
       { en: 'rank 0 collects all location notes', zh: 'rank 0 收拢所有位置便签' },
     ],
   }, {
@@ -110,12 +112,12 @@
       { title: 'TRAINING WEIGHTS WAIT', titleZh: '训练权重先等待', body: 'moved off the GPU after training', bodyZh: '训练后已移出 GPU', tone: 'plain' },
       { title: 'UPLOAD BUCKET 1', titleZh: '拿回第 1 桶', body: 'only this small group', bodyZh: '只拿这一小组', tone: 'orange' },
       { title: 'ASSEMBLE + SEND HANDLES', titleZh: '拼好并发送句柄', body: 'convert to the rollout layout', bodyZh: '转成 rollout 模型布局', tone: 'orange' },
-      { title: 'RAY.GET → CLEAR → NEXT', titleZh: '等待 → 清空 → 下一桶', body: 'finish before reusing the space', bodyZh: '完成后才复用空间', tone: 'blue' },
+      { title: 'WAIT RESULT → CLEAR → NEXT', titleZh: '等结果 → 清空 → 下一桶', body: 'ray.get = wait for the result', bodyZh: 'ray.get = 等待结果', tone: 'blue' },
     ],
     formulas: [
       { en: 'GPU holds SGLang + one bucket', zh: 'GPU 上是 SGLang + 一桶' },
       { en: 'not SGLang + the whole training model', zh: '不是 SGLang + 整套训练模型' },
-      { en: 'assemble → rollout layout → clear', zh: '拼好 → 转成 rollout 布局 → 清空' },
+      { en: 'rollout layout → wait result → clear', zh: 'rollout 布局 → 等结果 → 清空' },
     ],
   }, {
     caption: 'Generation must not read a half-updated model. The next rollout waits for every parameter and old-KV invalidation.',
@@ -194,7 +196,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [480, 500, 510, 620, 620, 640, 520, 640][step] : [410, 460, 460, 500, 490, 490, 520, 500][step]);
+  const H = $derived(phone ? [560, 500, 510, 620, 620, 640, 520, 640][step] : [440, 460, 460, 500, 490, 490, 520, 500][step]);
 </script>
 
 <figure class="viz">
@@ -237,21 +239,24 @@
         <rect x="270" y="92" width="180" height="112" rx="12" fill="var(--gen-soft)" stroke="var(--gen)" />
         <text x="360" y="126" text-anchor="middle" class="section">UPDATE WEIGHTS</text>
         <text x="360" y="163" text-anchor="middle" class="result">?</text>
-        <text x="360" y="188" text-anchor="middle" class="small">{t('model code · copy v1', '模型代码里 · 装入 v1')}</text>
+        <text x="360" y="188" text-anchor="middle" class="small">{t('model code · copy v1', '模型代码本身负责装入 v1')}</text>
         <line x1="450" y1="148" x2="505" y2="148" stroke="var(--accent)" stroke-width="3" marker-end="url(#update-arrow-blue)" />
         <rect x="515" y="92" width="170" height="112" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" />
         <text x="600" y="126" text-anchor="middle" class="section">ROLLOUT</text>
         <text x="600" y="163" text-anchor="middle" class="result">{t('waits', '等待')}</text>
         <text x="600" y="188" text-anchor="middle" class="small">{t('then uses v1', '完成后才用 v1')}</text>
-        <rect x="35" y="235" width="310" height="111" rx="12" fill="var(--bg)" stroke="var(--line)" />
-        <text x="190" y="265" text-anchor="middle" class="small strong">{t('WEIGHT SIZE', '权重有多大')}</text>
-        <text x="190" y="298" text-anchor="middle" class="result">1B × {UPDATE_DEBUG_BF16_BYTES} B = {UPDATE_DEBUG_WEIGHT_GB} GB</text>
-        <text x="190" y="326" text-anchor="middle" class="small">{t('bf16 = 2 B per number · 1B = 1 billion', 'bf16 = 每个数 2 字节 · 1B = 10 亿')}</text>
-        <rect x="375" y="235" width="310" height="135" rx="12" fill="var(--gen-soft)" stroke="var(--gen)" />
-        <text x="530" y="265" text-anchor="middle" class="small strong">{t('DEBUG TIME', '调试耗时')}</text>
-        <text x="530" y="302" text-anchor="middle" class="big">{UPDATE_DEBUG_INITIAL_S} s</text>
-        <text x="530" y="328" text-anchor="middle" class="small">{t(`model code ${UPDATE_DEBUG_INNER_S} s · whole call ${UPDATE_DEBUG_OUTER_S} s`, `模型代码里 ${UPDATE_DEBUG_INNER_S} 秒 · 整个调用 ${UPDATE_DEBUG_OUTER_S} 秒`)}</text>
-        <text x="530" y="354" text-anchor="middle" class="small">{t('outer ÷ inner ≈ 33×, rounded', '外部 ÷ 内部 ≈ 33 倍，均为舍入值')}</text>
+        <rect x="35" y="235" width="310" height="150" rx="12" fill="var(--bg)" stroke="var(--line)" />
+        <text x="190" y="263" text-anchor="middle" class="small strong">{t('WEIGHT SIZE · FULL 1B', '权重规模 · 完整 1B')}</text>
+        <text x="190" y="295" text-anchor="middle" class="result">1B × {UPDATE_DEBUG_BF16_BYTES} B = {UPDATE_DEBUG_WEIGHT_GB} GB</text>
+        <text x="190" y="322" text-anchor="middle" class="small">{t('bf16 = 2 B per number · 1B = 1 billion', 'bf16 = 每个数 2 字节 · 1B = 10 亿')}</text>
+        <text x="190" y="350" text-anchor="middle" class="result">2 GB ÷ 3.35 TB/s ≈ {UPDATE_DEBUG_YARDSTICK_MS.toFixed(1)} ms</text>
+        <text x="190" y="375" text-anchor="middle" class="small">{t('HBM yardstick, not an update prediction', 'HBM 带宽对照，不是更新耗时预测')}</text>
+        <rect x="375" y="235" width="310" height="150" rx="12" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x="530" y="263" text-anchor="middle" class="small strong">{t('FULL 1B UPDATE', '完整 1B 更新')}</text>
+        <text x="530" y="298" text-anchor="middle" class="result">{UPDATE_DEBUG_INITIAL_S} s ≈ {UPDATE_DEBUG_FULL_YARDSTICK_RATIO.toLocaleString('en-US')} × {UPDATE_DEBUG_YARDSTICK_MS.toFixed(1)} ms</text>
+        <text x="530" y="326" text-anchor="middle" class="small strong">{t('ONE TENSOR EXAMPLE', '一个张量示例')}</text>
+        <text x="530" y="350" text-anchor="middle" class="small">{t(`model code ${UPDATE_DEBUG_INNER_S} s · whole call ${UPDATE_DEBUG_OUTER_S} s`, `模型代码本身 ${UPDATE_DEBUG_INNER_S} 秒 · 整个调用 ${UPDATE_DEBUG_OUTER_S} 秒`)}</text>
+        <text x="530" y="374" text-anchor="middle" class="small">{t('0.033 ÷ 0.001 ≈ 33×, rounded', '0.033 ÷ 0.001 ≈ 33 倍，均为舍入值')}</text>
       {:else if step === 1}
         {#each [
           { x: 30, title: '1 · DISK', titleZh: '1 · 磁盘', name: 'checkpoint', detail: 'saved weights', detailZh: '存好的整套权重', flow: 'write file', flowZh: '写入文件', end: 'read file', endZh: '读取文件' },
@@ -310,7 +315,7 @@
         <text x="535" y="130" text-anchor="middle" class="section">FULL_TENSOR()</text>
         <text x="535" y="158" text-anchor="middle" class="result">[{UPDATE_EXAMPLE_FULL_ROWS}, {UPDATE_EXAMPLE_FULL_COLS}]</text>
         <text x="360" y="193" text-anchor="middle" class="small">{t('Each training piece has 256 rows and 1024 columns.', '每块训练分片有 256 行、1024 列。')}</text>
-        <text x="360" y="220" text-anchor="middle" class="result">{UPDATE_EXAMPLE_FSDP_TP} × {UPDATE_EXAMPLE_FSDP_ROWS} × {UPDATE_EXAMPLE_FULL_COLS} = {UPDATE_EXAMPLE_FULL_ELEMENTS.toLocaleString('en-US')} {t('numbers ≈ 1.05M', '个数 ≈ 105 万')}</text>
+        <text x="360" y="220" text-anchor="middle" class="result">{UPDATE_EXAMPLE_FSDP_TP} × {UPDATE_EXAMPLE_FSDP_ROWS} × {UPDATE_EXAMPLE_FULL_COLS} = {UPDATE_EXAMPLE_FULL_ELEMENTS.toLocaleString('en-US')} {t('= one 1024×1024 photo', '= 一张 1024×1024 照片的像素数')}</text>
         <text x="360" y="251" text-anchor="middle" class="code">serialize = bundle the location notes</text>
         <rect x="40" y="274" width="270" height="116" rx="12" fill="var(--gen-soft)" stroke="var(--gen)" />
         <text x="175" y="307" text-anchor="middle" class="section">LOCATION NOTE</text>
@@ -340,8 +345,8 @@
         <text x="532" y="239" text-anchor="middle" class="small strong">BUCKET 1 · {t('ON GPU', '在 GPU 上')}</text>
         <rect x="395" y="275" width="275" height="43" rx="9" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />
         <text x="532" y="302" text-anchor="middle" class="small">BUCKETS 2, 3 · {t('WAIT OFF GPU', '在 GPU 外等待')}</text>
-        <text x="360" y="378" text-anchor="middle" class="code">{t('upload → assemble → rollout layout → send handles → ray.get → clear', '拿回 → 拼好 → 转成 rollout 布局 → 发句柄 → 等待 → 清空')}</text>
-        <text x="360" y="413" text-anchor="middle" class="small strong">{t('ray.get finishes before the bucket in rollout layout is cleared.', 'ray.get 完成后，才清空这一桶已转成 rollout 布局的结果。')}</text>
+        <text x="360" y="378" text-anchor="middle" class="code">{t('upload → assemble → rollout layout → send handles → wait for result → clear', '拿回 → 拼好 → 转成 rollout 布局 → 发句柄 → 等结果 → 清空')}</text>
+        <text x="360" y="413" text-anchor="middle" class="small strong">{t('The result arrives before the bucket in rollout layout is cleared.', '收到更新结果后，才清空这一桶已转成 rollout 布局的结果。')}</text>
         <text x="360" y="447" text-anchor="middle" class="small">{t('Blue = rollout state · orange = training weights being updated', '蓝 = rollout 状态 · 橙 = 正在更新的训练权重')}</text>
       {:else if step === 5}
         <rect x="35" y="90" width="190" height="121" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" />

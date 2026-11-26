@@ -1,3 +1,5 @@
+import { BW } from '../numbers';
+
 // Constructed example in zero-to-sglang Part I Chapter 5 §3.1, not a local benchmark.
 export const DEMO_REQUEST_SENT_MS = 0;
 export const DEMO_FIRST_TOKEN_MS = 250;
@@ -156,3 +158,6 @@ export const UPDATE_DEBUG_OTHER_MS = UPDATE_DEBUG_OUTER_MS - UPDATE_DEBUG_SLEEP_
 export const UPDATE_DEBUG_NO_SLEEP_S = 2.202;
 export const UPDATE_DEBUG_SAVED_S = Number((UPDATE_DEBUG_INITIAL_S - UPDATE_DEBUG_NO_SLEEP_S).toFixed(3));
 export const UPDATE_DEBUG_SPEEDUP = UPDATE_DEBUG_INITIAL_S / UPDATE_DEBUG_NO_SLEEP_S;
+// Decimal GB ÷ TB/s gives milliseconds; this HBM yardstick is not a transport prediction.
+export const UPDATE_DEBUG_YARDSTICK_MS = UPDATE_DEBUG_WEIGHT_GB / BW;
+export const UPDATE_DEBUG_FULL_YARDSTICK_RATIO = Math.round((UPDATE_DEBUG_INITIAL_S * 1000 / UPDATE_DEBUG_YARDSTICK_MS) / 100) * 100;

@@ -5,24 +5,31 @@
 ### On the stage
 
 - Training has produced `weights v1`, the new number tables. Rollout waits for the update before using them, continuing Chapter 6 Step 8.
-- The left card derives the weight size. The right card shows the full-model time from the debug log.
-- The dashed `WHOLE CALL` box surrounds the update. Its inner `model code` copies v1. The timing pair compares that model-code operation with the whole external call, showing what an inner-only timer misses.
+- The left card derives the weight size and an HBM-bandwidth yardstick. The right card separates the full 1B update from a different one-tensor example.
+- The dashed `WHOLE CALL` box surrounds the update. Its inner `model code` copies v1. In the one-tensor example, the timing pair compares that model-code operation with the whole external call.
 
 ### Formula and symbols
 
-$$B=P\times b$$
+$$B=P\times b,\qquad T_{\text{yard}}=B/BW,\qquad R=T_{\text{full}}/T_{\text{yard}}$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
 | $P$ | Number of stored weight values | Nominal 1B model: $10^9$ |
 | $b$ | Bytes per weight value | bf16: 2 bytes |
 | $B$ | Total weight bytes | Derived here |
+| $BW$ | HBM bandwidth used only as a yardstick | Shared `src/numbers.ts`: 3.35 TB/s |
+| $T_{\text{yard}}$ | Time to move 2 GB at that bandwidth | Derived here, not a transport prediction |
+| $T_{\text{full}}$ | Full 1B update time in the debug log | 7.047 s |
+| $R$ | Full-update time divided by the yardstick | Derived here |
 
 ### The numbers on the stage
 
 $$B=1{,}000{,}000{,}000\times2=2{,}000{,}000{,}000\ \text{bytes}=2\ \text{GB}$$
 
-The 7.047-second measurement covers the full distributed update in the author's setup. The 0.001- and 0.033-second values come from one weight-tensor example. Their rounded ratio is $0.033/0.001\approx33\times$. They do not predict another model or machine.
+$$T_{\text{yard}}=2\ \text{GB}/(3.35\ \text{TB/s})\approx0.000597\ \text{s}\approx0.6\ \text{ms}$$
+$$R=7.047\ \text{s}/0.000597\ \text{s}\approx11{,}800$$
+
+The 7.047-second measurement covers the full distributed 1B update. The 0.001- and 0.033-second values belong to a separate one-tensor example; only that pair has the rounded ratio $0.033/0.001\approx33\times$. The HBM figure is a comparison, not a prediction for this transport.
 
 ### Next
 
@@ -117,7 +124,7 @@ $$E=r\times c,\qquad E=T\times r_s\times c$$
 
 $$E=4\times256\times1024=1024\times1024=1{,}048{,}576$$
 
-That is about 1.05 million numbers. The source's SGLang TP 2 layout has `[512,1024]` per inference rank after the loader selects local parts. This example specifies no dtype, so the figure counts elements rather than inventing bytes.
+That is about 1.05 million numbers. A 1024×1024 photo has the same pixel count, so the comparison is one weight number per pixel. The source's SGLang TP 2 layout has `[512,1024]` per inference rank after the loader selects local parts. This example specifies no dtype, so the figure counts elements rather than inventing bytes.
 
 ### Next
 
@@ -133,7 +140,7 @@ Sources: `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-1.md:51-60,132-204`; `v
 
 - The two panels compare the same SGLang and KV allocation with either the whole training model or one bucket beside it. The shapes are schematic, not a byte-scale drawing.
 - `Bucket 1` is the only training-weight group restored in the right panel. Later buckets wait outside the GPU.
-- The bottom order converts the bucket to the rollout model's layout before sending handles, then ends with `ray.get` and `clear`. The sender waits for SGLang's update before releasing that converted bucket.
+- The bottom order converts the bucket to the rollout model's layout before sending handles, then ends with `ray.get`, the call that waits for the result, and `clear`. The sender waits for SGLang's update before releasing that converted bucket.
 
 ### Formula and symbols
 
