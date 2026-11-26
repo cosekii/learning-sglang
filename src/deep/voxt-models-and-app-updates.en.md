@@ -6,7 +6,8 @@
 
 - Left blue panel: **model files**, 2.47 GB, nine files in the model library, on disk under Application Support, downloaded after install.
 - Middle amber panel: **speech server**, one ASR process, loads a model into memory, stays after use, and exits after ten idle minutes in Automatic mode. Step 4 shows the Silero VAD server beside it.
-- Right blue panel: **Voxt.app**, 280 MB for the documented 0.1.0-beta.1 bundle, with the helper and the omni runtime, installed separately from models.
+- Right blue panel: **Voxt.app**, 280 MB for the documented 0.1.0-beta.1 bundle, the program the user opens, installed separately from models.
+- The top arithmetic is 2,467,856,503 ÷ 280,000,000 ≈ 8.8, shown as about 9×. The bottom arithmetic adds the largest file and the other eight.
 - The legend says blue = a file on disk, amber = a running program.
 - Three lines below: the model arrives later, Automatic stops an idle server and its files stay, an app update replaces the bundle and not the model folder.
 
@@ -26,12 +27,13 @@ $$ \text{model bytes} = \sum_{f \in \text{files}} \text{size}(f), \qquad \text{r
 
 | Quantity | Arithmetic | Result |
 |---|---|---|
-| model bytes | the nine sizes added | 2,467,856,503 B = 2.47 GB |
+| other eight files | $1{,}161 + 7{,}188 + 142 + 1{,}671{,}853 + 78{,}968 + 330 + 12{,}487 + 2{,}776{,}833$ | 4,548,962 B |
+| model bytes | $2{,}463{,}307{,}541 + 4{,}548{,}962$ | 2,467,856,503 B = 2.47 GB |
 | ratio | $2{,}467{,}856{,}503 \div 280{,}000{,}000$ | 8.8, shown as 9× |
 
 ### Why they are separate
 
-The app ships the code that runs a model: the Go app, the Swift helper and the omni runtime binaries (`docs/release.md`). It does not ship the model weights. When the user chooses a speech model, Voxt downloads it into the model library, which defaults to `~/Library/Application Support/SGLang Omni/models` (`hub.go:106-119`). Other ActNow apps can share that library. The 280 MB measurement belongs to the documented 0.1.0-beta.1 build, not to every release.
+The app ships the code that runs a model: the Go app, the Swift helper and the omni runtime binaries (`docs/release.md`). The omni runtime runs a downloaded model as a separate local server, and Voxt talks to that server (`internal/omni/doc.go:1-5`, `31-35`). The app does not ship the model weights. When the user chooses a speech model, Voxt downloads it into the model library, which defaults to `~/Library/Application Support/SGLang Omni/models` (`hub.go:106-119`). Other ActNow apps can share that library. The 280 MB measurement belongs to the documented 0.1.0-beta.1 build, not to every release.
 
 That gives three different lifetimes. The files stay until someone deletes them. A server process outlives each use by its configured idle interval. An in-app update replaces the app bundle. Mixing them up leads to wrong expectations, such as "updating the app will download the new model" or "deleting a model uninstalls the app".
 

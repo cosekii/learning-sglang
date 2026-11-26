@@ -24,8 +24,8 @@
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
   const steps = [{
-    caption: 'Three things: model files, model processes, the app bundle.',
-    captionZh: '三样东西：模型文件、模型进程、应用本身。',
+    caption: 'The model arrives separately and is about nine times the app.',
+    captionZh: '模型单独下载，大小约是应用的 9 倍。',
   }, {
     caption: "One pinned snapshot names the model's exact files and their fingerprints.",
     captionZh: '一个固定快照写清模型的文件和指纹。',
@@ -43,8 +43,8 @@
     captionZh: '三种收尾：文件验完、进程退出、应用内更新后重启。',
   }];
   const ariaLabels = [{
-    en: 'Three things, not one. Model files are 2.47 gigabytes on disk in the model library. The speech server is a running program that loads a model into memory; the Silero voice detector can run beside it. The 0.1.0-beta.1 app bundle is 280 megabytes on disk. Blue marks a file on disk; amber marks a running program. The model arrives after install. Automatic mode stops an idle speech server after ten minutes. An in-app update replaces only the app bundle.',
-    zh: '三样东西，不是一样。模型文件是磁盘上模型库里的 2.47 GB。语音服务器是把模型读进内存的运行程序，Silero 语音检测器可以在旁边运行。0.1.0-beta.1 应用包是磁盘上的 280 MB。蓝色是磁盘上的文件，橙色是运行的程序。模型装好应用后再下载。自动模式让空闲十分钟的语音服务器退出。应用内更新只换应用包。',
+    en: 'The 2.47 gigabyte model arrives separately and is about nine times the 280 megabyte app. The total is 2,467,856,503 bytes; divided by 280,000,000 app bytes, the ratio is about 8.8. Three things have different lifetimes: model files on disk, one speech-server process in memory, and the app bundle on disk. Automatic mode stops an idle speech server after ten minutes, but its files stay. An app update replaces only the app bundle.',
+    zh: '2.47 GB 模型单独下载，约是 280 MB 应用的 9 倍。模型共 2,467,856,503 字节，除以应用的字节数 280,000,000，约为 8.8 倍。三样东西有不同寿命：磁盘上的模型文件、内存里的一个语音服务器进程、磁盘上的应用包。自动模式让空闲十分钟的语音服务器退出，但文件留着。应用更新只换应用包。',
   }, {
     en: 'A model is pinned to one online repository and one commit, with nine files. The largest file is 2.46 gigabytes. The commit fixes the tested version. LFS files use SHA-256 fingerprints; other files use git blob IDs. The snapshot folder on disk uses the full forty-character commit.',
     zh: '模型固定在一个网上仓库和一个提交上，共有九个文件。最大的文件是 2.46 GB。提交固定了测试过的版本。LFS 文件用 SHA-256 指纹校验，其他文件用 git blob ID。磁盘上的快照文件夹使用完整的 40 位提交。',
@@ -85,7 +85,11 @@
   const vadShare = (VOXT_MODEL_VAD_BYTES / VOXT_MODEL_JOB_BYTES * 100).toFixed(2);
   const commitShort = VOXT_MODEL_COMMIT.slice(0, 7);
   const ratio = Math.round(VOXT_MODEL_APP_RATIO);
+  const ratioExact = VOXT_MODEL_APP_RATIO.toFixed(1);
   const totalBytes = VOXT_MODEL_TOTAL_BYTES.toLocaleString('en-US');
+  const weightsBytes = VOXT_MODEL_WEIGHTS_BYTES.toLocaleString('en-US');
+  const otherBytes = (VOXT_MODEL_TOTAL_BYTES - VOXT_MODEL_WEIGHTS_BYTES).toLocaleString('en-US');
+  const appBytes = (VOXT_APP_MB * 1_000_000).toLocaleString('en-US');
   const vadBytes = VOXT_MODEL_VAD_BYTES.toLocaleString('en-US');
   const jobBytes = VOXT_MODEL_JOB_BYTES.toLocaleString('en-US');
 </script>
@@ -100,8 +104,8 @@
       </defs>
 
       {#if step === 0}
-        <text x={W / 2} y={phone ? 25 : 27} text-anchor="middle" class="title">{t('THREE THINGS, NOT ONE', '三样东西，不是一样')}</text>
-        <text x={W / 2} y={phone ? 47 : 50} text-anchor="middle" class="subtitle">{t('files on disk · a program in memory · the app bundle', '磁盘上的文件 · 内存里的进程 · 应用本身')}</text>
+        <text x={W / 2} y={phone ? 25 : 27} text-anchor="middle" class="title">{t(`THE MODEL IS ABOUT ${ratio}× THE APP`, `模型约是应用的 ${ratio} 倍`)}</text>
+        <text x={W / 2} y={phone ? 47 : 50} text-anchor="middle" class="subtitle">{totalBytes} ÷ {appBytes} ≈ {ratioExact}×</text>
         {#if !phone}
           <rect x="20" y="72" width="212" height="225" rx="12" fill="var(--bg)" stroke="var(--accent)" />
           <text x="126" y="98" text-anchor="middle" class="label blue">{t('MODEL FILES', '模型文件')}</text>
@@ -121,7 +125,7 @@
           <text x="594" y="98" text-anchor="middle" class="label blue">{t('VOXT.APP', '应用本身')}</text>
           <text x="594" y="145" text-anchor="middle" class="result">{VOXT_APP_MB} MB</text>
           <text x="594" y="178" text-anchor="middle" class="detail">{t('0.1.0-beta.1 bundle', '0.1.0-beta.1 程序包')}</text>
-          <text x="594" y="200" text-anchor="middle" class="detail">{t('helper + omni runtime', 'helper + omni 运行时')}</text>
+          <text x="594" y="200" text-anchor="middle" class="detail">{t('the program you open', '你打开的程序')}</text>
           <text x="594" y="222" text-anchor="middle" class="detail">{t('installed separately', '单独安装')}</text>
 
           <rect x="150" y="316" width="12" height="12" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
@@ -135,7 +139,8 @@
           <text x="38" y="386" class="detail">{t('Automatic stops an idle server; its files stay', '自动模式会停空闲服务器，文件留着')}</text>
           <text x="28" y="412" class="pt">·</text>
           <text x="38" y="412" class="detail">{t('an app update replaces the bundle, not the model folder', '应用更新换的是应用，不是模型文件夹')}</text>
-          <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t(`Model ≈ ${ratio}× the 0.1.0-beta.1 app. Sources: docs/release.md, internal/models/hub.go.`, `模型约是 0.1.0-beta.1 应用的 ${ratio} 倍。出处：docs/release.md、internal/models/hub.go。`)}</text>
+          <text x={W / 2} y="438" text-anchor="middle" class="formula">{weightsBytes} B + {otherBytes} B = {totalBytes} B</text>
+          <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Sources: catalog.go:205-213, docs/release.md.', '出处：catalog.go:205-213、docs/release.md。')}</text>
         {:else}
           <rect x="15" y="64" width="270" height="112" rx="10" fill="var(--bg)" stroke="var(--accent)" />
           <text x="150" y="86" text-anchor="middle" class="label blue">{t('MODEL FILES', '模型文件')}</text>
@@ -169,7 +174,9 @@
           <text x="20" y="550" class="pt">·</text>
           <text x="30" y="550" class="detail">{t('an app update replaces the app,', '应用更新换的是应用，')}</text>
           <text x="30" y="570" class="detail">{t('not the model folder', '不是模型文件夹')}</text>
-          <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t(`Model ≈ ${ratio}× the beta.1 app. Source: docs/release.md.`, `模型约是 beta.1 应用的 ${ratio} 倍。出处：docs/release.md。`)}</text>
+          <text x={W / 2} y="608" text-anchor="middle" class="formula">{weightsBytes} B + {otherBytes} B</text>
+          <text x={W / 2} y="630" text-anchor="middle" class="formula">= {totalBytes} B</text>
+          <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Sources: catalog.go:205-213, docs/release.md.', '出处：catalog.go:205-213、docs/release.md。')}</text>
         {/if}
       {:else if step === 1}
         <text x={W / 2} y={phone ? 25 : 27} text-anchor="middle" class="title">{t('MODEL FILES · ONE PINNED SNAPSHOT', '模型文件 · 一个固定快照')}</text>
