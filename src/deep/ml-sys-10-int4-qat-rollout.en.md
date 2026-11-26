@@ -142,3 +142,39 @@ The recipe's `--bf16` configuration sets model parameters to BF16. It also enabl
 After a training round, the update path must produce the integer codes and scales that rollout actually stores. The next step follows real quantization.
 
 Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:37-39`; `THUDM/slime@58525eb986c66a271aa31077e17b8afebe704b4f`, `docker/patch/latest/megatron.patch:112-122` and the recipe; `NVIDIA/Megatron-LM@3714d81d418c9f1bca4594fc35f9e8289f652862`, `megatron/training/arguments.py:751-765,3475-3484`.
+
+## Step 5 · Make rollout codes with real quantization
+
+**One sentence.** Every RL weight update converts selected BF16 weights into integer codes and scales that rollout actually stores.
+
+### On the stage
+
+- The BF16 update reuses 0.35, and the group scale remains $0.70/7=0.10$.
+- The signed-code card produces 4. The code's literal clamp is $[-8,7]$, unlike fake QAT's $[-7,7]$ in Step 2.
+- The scale travels with the codes and is cast to the source weight's BF16 type in this recipe.
+- The public config converts selected expert weights rather than every tensor. Each update repeats the conversion; this is not only an offline export.
+
+### Formula and symbols
+
+$$s=\max(\max_i|x_i|/7,10^{-5}),\qquad q_i=\operatorname{clip}(\operatorname{round}(x_i/s),-8,7)$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $x_i$ | One eligible BF16 value in the update | Weight table converted from training |
+| $s$ | Scale for this group | `int4_block_quantize` |
+| $q_i$ | Signed integer code stored for rollout | Rounded and clamped to $[-8,7]$ |
+| $\operatorname{clip}$ | Limit codes to the stated interval | Export code at the pinned revision |
+
+### The numbers on the stage
+
+$$0.35/0.10=3.5\rightarrow q=4$$
+
+The scale divides the largest magnitude by 7, but the real export's literal clamp has a −8 lower bound while fake QAT uses −7. The chapter preserves that code difference instead of claiming bitwise identity. Export casts scales back to the source weight dtype, BF16 here; fake QAT computes with an FP32 scale. The two sides do not guarantee identical scale bits either.
+
+The public Kimi-K2-Thinking config excludes `lm_head`, self-attention, shared experts and dense MLP projections. MoE means mixture-of-experts: the model selects a subset of experts for each token. This step quantizes only the selected expert weights from that config. Parameters without a `.weight` suffix and weights with unsupported dimensions also stay outside this conversion.
+
+### Next
+
+The integer codes still need compact storage. The next step packs eight four-bit codes into one 32-bit word and accounts for a whole group's bytes.
+
+Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:94-103`; `THUDM/slime@58525eb986c66a271aa31077e17b8afebe704b4f`, `quantizer_compressed_tensors.py:88-159,162-191` and `update_weight_from_distributed.py:93-154`; Kimi-K2-Thinking `config.json:79-110`.

@@ -142,3 +142,39 @@ $$\frac{\partial \hat w}{\partial w}\approx1,\qquad g_w=g_{\hat w}$$
 训练完成一轮后，更新通道要生成 rollout 真正保存的整数编码和 scale。下一步看 real quantization。
 
 来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:37-39`；`THUDM/slime@58525eb986c66a271aa31077e17b8afebe704b4f` 的 `docker/patch/latest/megatron.patch:112-122` 和 recipe；`NVIDIA/Megatron-LM@3714d81d418c9f1bca4594fc35f9e8289f652862` 的 `megatron/training/arguments.py:751-765,3475-3484`。
+
+## 第 5 步 · 真实量化生成 rollout 编码
+
+**一句话。** 每次 RL 权重更新都把选定 BF16 权重转成整数编码和对应 scale，这次编码要真正交给 rollout 保存。
+
+### 图上是什么
+
+- BF16 更新卡沿用 0.35，组 scale 仍是 $0.70/7=0.10$。
+- 有符号编码卡得到 4，代码的字面截断范围是 $[-8,7]$。第 2 步 fake QAT 的代码范围是 $[-7,7]$。
+- scale 卡与编码一起导出，并在本配置中转成源权重的 BF16 类型。
+- 公开配置只处理选定的专家权重，其他张量保留原形式。每轮更新都会再次转换，不是只做一次离线导出。
+
+### 公式与符号
+
+$$s=\max(\max_i|x_i|/7,10^{-5}),\qquad q_i=\operatorname{clip}(\operatorname{round}(x_i/s),-8,7)$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $x_i$ | 更新中一个 eligible BF16 权重值 | 训练端转出的权重表 |
+| $s$ | 这一组的 scale | `int4_block_quantize` |
+| $q_i$ | rollout 保存的有符号整数编码 | 舍入后截断到 $[-8,7]$ |
+| $\operatorname{clip}$ | 把编码限制在给定区间 | 固定版本的导出代码 |
+
+### 代入图上的数
+
+$$0.35/0.10=3.5\rightarrow q=4$$
+
+虽然 scale 用最大绝对值除以 7，真实导出代码的字面 clamp 下界是 −8，而 fake QAT 是 −7。本章保留这个代码差异，不把两条路写成逐位相同。导出时 scale 转回源权重类型，本例是 BF16；fake QAT 计算时使用 FP32 scale，因此两边也不保证 scale 的每个位相同。
+
+公开 Kimi-K2-Thinking 配置的排除项包括 `lm_head`、self-attention、shared experts 和 dense MLP projections。MoE 是 mixture-of-experts，模型按 token 选择一部分专家计算；本步只量化配置选中的专家权重。维度不足的权重和不以 `.weight` 结尾的参数也不会进入这条转换。
+
+### 接下来
+
+整数编码还需压紧存储。下一步把八个 4 位编码放进一个 32 位字，并算清一组的总字节。
+
+来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:94-103`；`THUDM/slime@58525eb986c66a271aa31077e17b8afebe704b4f` 的 `quantizer_compressed_tensors.py:88-159,162-191` 和 `update_weight_from_distributed.py:93-154`；Kimi-K2-Thinking `config.json:79-110`。

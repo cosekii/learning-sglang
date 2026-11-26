@@ -164,6 +164,41 @@
         { en: 'STE is not rounding’s true derivative', zh: 'STE 不是舍入的真实导数' },
       ],
     },
+  }, {
+    caption: 'Real quantization stores integer codes and BF16 scales. Only selected weights take this path.',
+    captionZh: '真实量化保存整数编码和 BF16 scale。只有选定的权重走这条路。',
+    title: 'Real quantization makes rollout codes', titleZh: '真实量化生成 rollout 的整数编码',
+    subtitle: 'real = integer codes stored for rollout', subtitleZh: '真实 = 为 rollout 保存整数编码',
+    foot: 'The public config quantizes selected expert weights, not every tensor.',
+    footZh: '公开配置只量化选定的专家权重，不是所有张量。',
+    legend: 'Orange = BF16 values · blue = integer codes · grey = scale calculation', legendZh: '橙 = BF16 数值 · 蓝 = 整数编码 · 灰 = scale 计算',
+    flow: true,
+    nodes: [
+      { title: 'BF16 UPDATE', titleZh: 'BF16 更新', result: '0.35', resultZh: '0.35', body: 'eligible weight', bodyZh: '选定的权重', tone: 'orange', compact: true },
+      { title: 'GROUP SCALE', titleZh: '组 SCALE', result: '0.70 ÷ 7 = 0.10', resultZh: '0.70 ÷ 7 = 0.10', body: 'same group rule', bodyZh: '同一分组规则', tone: 'plain', compact: true },
+      { title: 'SIGNED CODES', titleZh: '有符号编码', result: '4 ∈ [−8, 7]', resultZh: '4 ∈ [−8, 7]', body: 'integer storage codes', bodyZh: '整数存储编码', tone: 'blue', compact: true },
+      { title: 'BF16 SCALE', titleZh: 'BF16 SCALE', result: '0.10', resultZh: '0.10', body: 'travels with codes', bodyZh: '和编码一起保存', tone: 'orange', compact: true },
+    ],
+    formulas: [
+      { en: 'real code = round(0.35 ÷ 0.10) = 4', zh: '真实编码 = round(0.35 ÷ 0.10) = 4' },
+      { en: `export clamp: [${N.INT4_REAL_QMIN}, 7] · fake clamp: [−7, 7]`, zh: `导出截断：[${N.INT4_REAL_QMIN}, 7] · 模拟截断：[−7, 7]` },
+      { en: 'the exported scale is cast to BF16 in this recipe', zh: '这个配置把导出的 scale 转成 BF16' },
+      { en: 'other tensors keep their original form', zh: '其他张量保留原来的形式' },
+      { en: 'every RL update converts weights again', zh: '每轮 RL 更新都重新转换权重' },
+    ],
+    mobile: {
+      title: 'Real INT4 makes rollout codes', titleZh: '真实量化生成 rollout 编码',
+      subtitle: 'real = codes stored for rollout', subtitleZh: '真实 = 为 rollout 保存编码',
+      foot: 'Selected expert weights only, not every tensor.', footZh: '只量化选定的专家权重，不是所有张量。',
+      legend: 'Orange = BF16 · blue = codes · grey = scale', legendZh: '橙 = BF16 · 蓝 = 编码 · 灰 = scale',
+      formulas: [
+        { en: 'Real code = round(0.35 ÷ 0.10) = 4', zh: '真实编码 = round(0.35 ÷ 0.10) = 4' },
+        { en: 'Export: [−8, 7] · fake: [−7, 7]', zh: '导出：[−8, 7] · 模拟：[−7, 7]' },
+        { en: 'Exported scale becomes BF16 here', zh: '这里的导出 scale 转成 BF16' },
+        { en: 'Other tensors keep their original form', zh: '其他张量保留原形式' },
+        { en: 'Every RL update converts again', zh: '每轮 RL 更新都重新转换' },
+      ],
+    },
   }];
   let step = $state(0);
   $effect(() => {
