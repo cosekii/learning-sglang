@@ -308,13 +308,12 @@ Each cue now has its text and times. The command turns them into a file. Step 8 
 
 ## Step 8 · Write SRT or TXT
 
-> **In one line:** The same cues can be numbered SRT with start and end times, or TXT with one line per cue; the command writes the file only after the last cue.
+> **In one line:** The same cues can be numbered SRT with start and end times, or TXT with one line per cue.
 
 ### On the stage
 
 - The blue box on the left is SRT: each cue has a number, an `HH:MM:SS,mmm` start and end, and its text.
 - The orange box on the right is TXT: only the text, one line per cue.
-- The notes below say the output opens only after recognition succeeds; recognition failure creates or overwrites no output; a later disk-write failure can leave a partial file.
 
 ### The two formats
 
@@ -345,24 +344,36 @@ $$ \text{srtTime}(d) = \text{HH}:\text{MM}:\text{SS},\text{mmm} $$
 
 TXT has two lines: `Good morning.` and `See you at noon.`.
 
+### Next
+
+The cues now have a format. Step 9 covers when the output file is opened.
+
+## Step 9 · Open the output only after success
+
+> **In one line:** The command recognizes every cue first; if any cue fails it opens no output, and after success it writes once.
+
+### On the stage
+
+- The red panel on the left is recognition failure: no output file opens, an old file stays as it was, and no new file appears.
+- The blue panel on the right is success: only then does the output open, and SRT or TXT is written once.
+- The dashed note says a disk-write failure can still truncate an old file or leave part of a new one.
+
 ### Why recognition failure creates or overwrites no output
 
 The command builds the whole result in an in-memory `bytes.Buffer`. If recognition fails midway, `err != nil` and the function returns before opening the output, so it creates no new file and overwrites no old file (`Voxt/transcribe_cli.go:73-87`). Only after recognition succeeds does the command call `os.WriteFile` (`transcribe_cli.go:91-100`). That write is not atomic: a disk-write failure can truncate an old file or leave a partial new file, so the chapter does not promise that every failure leaves no partial file. With `-o -` or no `-o`, it writes the buffer to standard output and creates no file.
 
 ### Next
 
-The output is done. Step 9 looks at what this route leaves on the Mac.
+The output is done. Step 10 looks at what this route leaves on the Mac.
 
-## Step 9 · No history, no recording
+## Step 10 · No history, no recording
 
-> **In one line:** The file route writes no history entry and keeps no recording; it writes one log line without text, and the audio goes to the on-device or remote model chosen for Transcribe.
+> **In one line:** The file route writes no history entry and keeps no recording; it writes one log line without text.
 
 ### On the stage
 
 - The subtitle contrasts dictation, which may write history, with this route, which does not. The left panel "NOT WRITTEN" lists three things: a history row, a recording, and the text in the log.
 - The right panel "WRITTEN" is one log line: length and cue count, no text.
-- The two boxes below are where the audio goes: the on-device speech model, or the remote speech service set for Transcribe.
-- The last line asks: how do model files and app updates reach this Mac?
 
 ### How the code keeps it clean
 
@@ -392,16 +403,27 @@ $$ \text{log} = \{\text{audio length},\ \text{segment count},\ \text{error?}\} $
 | log line | length rounded to the second, then the count | `transcribed a file for the command line: 8s of audio, 2 segments` |
 | error | none on this run | absent |
 
-### Where the audio goes
+### Next
+
+Step 11 shows where the audio goes.
+
+## Step 11 · Where the audio goes
+
+> **In one line:** Each cue's audio goes to the model chosen for Transcribe, on this Mac or a remote service.
+
+### On the stage
+
+- The decoded audio splits into two boxes: the on-device speech model on this Mac, and the remote speech service set for Transcribe.
+- The last line asks how these model files reach this Mac.
+
+### The model
 
 `fileRecognizer` reads the Transcribe feature model (`transcribe_socket.go:64-67`) and gets that model's provider with `a.local.ASR(ctx, p.id)` (`transcribe_socket.go:80`). The model can be installed on this Mac or configured as a remote service. The Privacy section of `docs/transcribe.md` says the audio goes where Transcribe's audio goes, the on-device model or the remote service, and Voxt keeps nothing of it.
 
 | Question | Answer | Source |
 |---|---|---|
-| Does it write history? | No | `transcribe_socket.go:84-87` recognizes directly, no `keep()` |
-| Does it keep a recording? | No | same; `docs/transcribe.md` |
-| Does the log hold text? | No | `transcribe_socket.go:90-98` |
 | Where does the audio go? | the model chosen for Transcribe | `transcribe_socket.go:64-80` |
+| On-device or remote? | whichever Transcribe is set to use | `docs/transcribe.md` |
 
 ### The next question
 

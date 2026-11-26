@@ -28,7 +28,6 @@
     VOXT_TRANSCRIBE_CUT_MS,
     VOXT_TRANSCRIBE_INPUT_QUIET_MS,
     VOXT_TRANSCRIBE_REMAIN_MS,
-    VOXT_TRANSCRIBE_MAX_REQUEST_BYTES,
     VOXT_WAV_HEADER_BYTES,
     VOXT_PCM_BYTES_PER_SECOND,
     VOXT_PCM_BYTES_PER_SAMPLE,
@@ -59,11 +58,17 @@
     caption: 'Voxt recognizes each cue with the Transcribe model.',
     captionZh: 'Voxt 用 Transcribe 的模型逐句识别。',
   }, {
-    caption: 'SRT keeps the cue times; TXT keeps one line per cue. Recognition failure does not create or overwrite the output.',
-    captionZh: 'SRT 保留每句的时间；TXT 每句一行。识别失败不会创建或覆盖输出。',
+    caption: 'SRT keeps the cue times; TXT keeps one line per cue.',
+    captionZh: 'SRT 保留每句的时间；TXT 每句一行。',
+  }, {
+    caption: 'Recognition failure leaves the output file alone. A later disk-write failure can still leave part of a file.',
+    captionZh: '识别失败不动输出文件。之后的写盘失败仍可能留下部分文件。',
   }, {
     caption: 'The file route writes no history and keeps no recording.',
     captionZh: '文件路线不写历史，也不留录音。',
+  }, {
+    caption: 'The audio goes to the Transcribe model, on this Mac or remote. How do model files reach this Mac?',
+    captionZh: '声音送给 Transcribe 选的模型：本机或远端。模型文件又怎样到达这台 Mac？',
   }];
   const ariaLabels = [{
     en: 'Two routes. A dictation goes from the microphone through a dictation session and cleanup to the cursor, with a history row when history is enabled. A file goes from disk through Voxt transcribe to SRT or TXT; it reuses the model set for Transcribe but opens no session and runs no cleanup. A one-hour meeting is 3600 seconds of sound; Step 2 turns that into bytes.',
@@ -81,17 +86,23 @@
     en: 'A new cue starts 300 ms before its first speech frame, so the first consonant is not lost. Cue two starts at 3.40 seconds while its speech starts at 3.70.',
     zh: '新的一句在第一个讲话帧前 300 ms 开始，这样第一个辅音不会被切掉。第 2 句从 3.40 秒开始，而讲话从 3.70 秒开始。',
   }, {
-    en: 'A constructed nine-second stretch never pauses for 450 ms. At seven seconds the cutter searches the last second for the quietest 100 ms and reports the cut at 6.51 seconds. The rest becomes the next cue.',
-    zh: '构造的九秒连续讲话没有 450 ms 的停顿。到七秒时，切句器在最后 1 秒里找最安静的 100 ms，报告切点在 6.51 秒。剩下的成为下一句。',
+    en: 'A constructed nine-second stretch never pauses for 450 ms. At seven seconds the cutter searches the last second for the quietest 100 ms and reports the cut at 6.51 seconds. The rest is 2.49 seconds and becomes the next cue.',
+    zh: '构造的九秒连续讲话没有 450 ms 的停顿。到七秒时，切句器在最后 1 秒里找最安静的 100 ms，报告切点在 6.51 秒。剩下 2.49 秒，成为下一句。',
   }, {
     en: 'Voxt sends each cue to the speech model chosen for Transcribe. Cue one returns Good morning and cue two returns See you at noon. A cue whose text is empty is left out.',
     zh: 'Voxt 把每一句送给 Transcribe 选定的语音模型。第一句返回 Good morning，第二句返回 See you at noon。文字为空的句子会被丢掉。',
   }, {
-    en: 'The same two cues become SRT numbered cues with start and end times, or TXT with one line per cue. The command opens the output file only after recognition succeeds. Recognition failure does not create or overwrite it. A later disk-write failure can truncate an old file or leave a partial new file.',
-    zh: '同样的两句可以写成带起止时间的 SRT 编号字幕，也可以写成每句一行的 TXT。命令等识别成功后才打开输出文件。识别失败不会创建或覆盖输出。之后的写盘失败可能截断旧文件或留下部分新文件。',
+    en: 'The same two cues become files. SRT writes a number, the start and end times, and the text for each cue. TXT writes the text only, one line per cue.',
+    zh: '同样的两句可以写成文件。SRT 写编号、起止时间和每句文字；TXT 只写文字，每句一行。',
   }, {
-    en: 'Dictation writes history only when history is enabled, which is the default. The file route writes no history row and keeps no recording. It writes one log line with the audio length and the cue count, not the text. The audio goes to the model chosen for Transcribe: on this Mac or a configured remote service. The next chapter asks how model files and app updates reach this Mac.',
-    zh: '听写只在历史开启时写历史，默认开启。文件路线不写历史记录，也不留录音。它只写一行日志，记音频长度和句子数，不记文字。声音送给 Transcribe 选定的模型：本机或配置的远端服务。下一章问模型文件和应用更新怎样到达这台 Mac。',
+    en: 'Recognition finishes before the output file is opened. If any cue fails, the command creates or overwrites no file, so an old file stays as it was. After success it writes once; a disk-write failure can still truncate an old file or leave a partial new one.',
+    zh: '识别全部完成后才打开输出文件。任何一句失败时，命令不创建也不覆盖文件，旧文件保持原样。成功后写一次盘；写盘失败仍可能截断旧文件或留下部分新文件。',
+  }, {
+    en: 'Dictation writes history only when history is enabled, which is the default. The file route writes no history row and keeps no recording. It writes one log line with the audio length and the cue count, not the text.',
+    zh: '听写只在历史开启时写历史，默认开启。文件路线不写历史记录，也不留录音。它只写一行日志，记音频长度和句子数，不记文字。',
+  }, {
+    en: 'The audio goes to the model chosen for Transcribe: on this Mac or a configured remote service. The next chapter asks how model files and app updates reach this Mac.',
+    zh: '声音送给 Transcribe 选定的模型：本机或配置的远端服务。下一章问模型文件和应用更新怎样到达这台 Mac。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -108,7 +119,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived((phone ? [810, 760, 820, 760, 760, 740, 760, 650, 840] : [470, 430, 450, 460, 450, 440, 430, 470, 520])[step]);
+  const H = $derived((phone ? [810, 760, 820, 760, 760, 740, 760, 650, 720, 620, 720] : [470, 430, 450, 460, 450, 440, 430, 470, 440, 470, 460])[step]);
 
   const srt = (ms: number) => {
     const h = Math.floor(ms / 3_600_000);
@@ -301,8 +312,6 @@
             <text x="120" y={286 + i * 22} class="mono">{line}</text>
           {/each}
           <text x="36" y="350" class="detail">{t('op = action · segment = one cue · done + count = finished, how many', 'op = 要做什么 · segment = 一句 · done + count = 完成和句数')}</text>
-          <text x="360" y="372" text-anchor="middle" class="cut">{t('a reply can arrive before the last PCM byte', '最后一块 PCM 还没传完，回复就可能到了')}</text>
-          <text x={W / 2} y={H - 32} text-anchor="middle" class="detail">{t(`one request line ≤ ${VOXT_TRANSCRIBE_MAX_REQUEST_BYTES} bytes (about 4,000 letters)`, `请求行最多 ${VOXT_TRANSCRIBE_MAX_REQUEST_BYTES} 字节（约 4000 个字母）`)}</text>
           <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('No network port; only your account can open it; Voxt reads none of your folders.', '没有网络端口；只有你的账户能打开；Voxt 不读你的文件夹。')}</text>
         {:else}
           <rect x="30" y="70" width="240" height="62" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
@@ -331,9 +340,6 @@
           <text x="36" y="518" class="mono small">{replyLines[2]}</text>
           <text x="36" y="536" class="detail">{t('op = action · segment = one cue', 'op = 要做什么 · segment = 一句')}</text>
           <text x="36" y="556" class="detail">{t('done + count = finished, how many', 'done + count = 完成和句数')}</text>
-          <text x="150" y="582" text-anchor="middle" class="cut">{t('a reply can arrive before', '最后一块 PCM')}</text>
-          <text x="150" y="604" text-anchor="middle" class="cut">{t('the last PCM byte', '还没传完，回复就可能到了')}</text>
-          <text x={W / 2} y={H - 46} text-anchor="middle" class="detail">{t(`request line ≤ ${VOXT_TRANSCRIBE_MAX_REQUEST_BYTES} B (≈4,000 letters)`, `请求行 ≤ ${VOXT_TRANSCRIBE_MAX_REQUEST_BYTES} 字节（约 4000 字母）`)}</text>
           <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('No network port; only your account can open it.', '没有网络端口；只有你的账户能打开。')}</text>
         {/if}
       {:else if step === 3}
@@ -494,7 +500,7 @@
           <text x="30" y="288" class="pt">·</text>
           <text x="40" y="288" class="detail">{t('cut in the quietest 100 ms', '在最安静的 100 ms 里切')}</text>
           <text x="30" y="314" class="pt">·</text>
-          <text x="40" y="314" class="detail">{t('the rest becomes the next cue', '剩下的成为下一句')}</text>
+          <text x="40" y="314" class="detail">{t(`the rest is ${sec(VOXT_TRANSCRIBE_REMAIN_MS)} s, the next cue`, `剩下 ${sec(VOXT_TRANSCRIBE_REMAIN_MS)} 秒，成为下一句`)}</text>
           <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Constructed 9-second example.', '构造的 9 秒例子。')}</text>
         {/if}
       {:else if step === 6}
@@ -514,7 +520,6 @@
             <text x="496" y={y + 38} text-anchor="middle" class="result">“{VOXT_TRANSCRIBE_CUE_TEXT[i]}”</text>
           {/each}
           <text x={W / 2} y={H - 32} text-anchor="middle" class="detail">{t('an empty answer is left out', '返回空文字的句子会被丢掉')}</text>
-          <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Without --lang, dictation\'s hint says which language to expect.', '不给 --lang 时，听写提示告诉模型预期哪种语言。')}</text>
         {:else}
           <rect x="25" y="68" width="250" height="58" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="150" y="93" text-anchor="middle" class="label">{t('Transcribe\'s speech model', 'Transcribe 的语音模型')}</text>
@@ -529,7 +534,6 @@
             <text x="150" y={y + 114} text-anchor="middle" class="result small">“{VOXT_TRANSCRIBE_CUE_TEXT[i]}”</text>
           {/each}
           <text x={W / 2} y={H - 32} text-anchor="middle" class="detail">{t('an empty answer is left out', '返回空文字的句子会被丢掉')}</text>
-          <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('No --lang: the hint says which language.', '不给 --lang 时，提示说明预期语言。')}</text>
         {/if}
       {:else if step === 7}
         <text x={W / 2} y="27" text-anchor="middle" class="title">{t('WRITE SRT OR TXT', '写成 SRT 或 TXT')}</text>
@@ -553,9 +557,7 @@
           <text x="400" y="162" class="mono">{VOXT_TRANSCRIBE_CUE_TEXT[1]}</text>
           <text x="540" y="220" text-anchor="middle" class="detail">{t('no numbers, no times', '没有编号，没有时间')}</text>
           <text x="540" y="242" text-anchor="middle" class="detail">{t('easy to read or feed to a script', '方便阅读或交给脚本')}</text>
-          <text x={W / 2} y="420" text-anchor="middle" class="cut">{t('OUTPUT OPENS ONLY AFTER RECOGNITION SUCCEEDS', '识别成功后才打开输出文件')}</text>
-          <text x={W / 2} y={H - 34} text-anchor="middle" class="footnote">{t('Recognition failure: no create or overwrite.', '识别失败：不创建或覆盖输出。')}</text>
-          <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('A later disk-write failure can truncate an old file or leave a partial new one.', '之后的写盘失败可能截断旧文件或留下部分新文件。')}</text>
+          <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Source: fileasr.go Write.', '出处：fileasr.go 的 Write。')}</text>
         {:else}
           <rect x="15" y="68" width="270" height="270" rx="10" fill="var(--bg)" stroke="var(--accent)" />
           <text x="150" y="92" text-anchor="middle" class="label">{t('SRT · CUES WITH TIMES', 'SRT · 带时间的字幕')}</text>
@@ -577,11 +579,48 @@
           <text x="150" y="478" text-anchor="middle" class="detail">{t('no numbers, no times', '没有编号，没有时间')}</text>
           <text x="150" y="500" text-anchor="middle" class="detail">{t('easy to read or feed to a script', '方便阅读或交给脚本')}</text>
 
-          <text x={W / 2} y="552" text-anchor="middle" class="cut">{t('OUTPUT OPENS AFTER RECOGNITION', '识别成功后才打开输出')}</text>
-          <text x={W / 2} y={H - 34} text-anchor="middle" class="footnote">{t('Recognition failure: no create or overwrite.', '识别失败：不创建或覆盖输出。')}</text>
-          <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Disk failure may leave a partial file.', '写盘失败可能留下部分文件。')}</text>
+          <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Source: fileasr.go Write.', '出处：fileasr.go 的 Write。')}</text>
         {/if}
       {:else if step === 8}
+        <text x={W / 2} y="27" text-anchor="middle" class="title">{t('FAILED RECOGNITION WRITES NOTHING', '识别失败就不写文件')}</text>
+        <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('the output opens only after every cue succeeds', '每一句都成功后才打开输出')}</text>
+        {#if !phone}
+          <rect x="25" y="76" width="315" height="140" rx="10" fill="var(--eos-soft)" stroke="var(--eos)" />
+          <text x="182" y="102" text-anchor="middle" class="label">{t('RECOGNITION FAILS', '识别失败')}</text>
+          <text x="45" y="134" class="detail">{t('✗ no output file is opened', '✗ 不打开输出文件')}</text>
+          <text x="45" y="162" class="detail">{t('✗ an old file stays as it was', '✗ 旧文件保持原样')}</text>
+          <text x="45" y="190" class="detail">{t('✗ no new file appears', '✗ 不会出现新文件')}</text>
+
+          <rect x="380" y="76" width="315" height="140" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="537" y="102" text-anchor="middle" class="label">{t('RECOGNITION SUCCEEDS', '识别成功')}</text>
+          <text x="400" y="134" class="detail">{t('the output opens', '这时才打开输出')}</text>
+          <text x="400" y="162" class="detail">{t('SRT or TXT is written once', '一次写成 SRT 或 TXT')}</text>
+
+          <rect x="25" y="248" width="670" height="92" rx="10" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />
+          <text x="45" y="278" class="label">{t('BUT A DISK-WRITE FAILURE CAN STILL HURT', '但写盘失败仍可能出问题')}</text>
+          <text x="45" y="306" class="detail">{t('an old file can be truncated, or part of a new file left behind', '旧文件可能被截断，也可能留下部分新文件')}</text>
+          <text x="45" y="328" class="detail">{t('recognition success does not make the write atomic', '识别成功不代表写盘是原子的')}</text>
+          <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Source: transcribe_cli.go:73-100.', '出处：transcribe_cli.go:73-100。')}</text>
+        {:else}
+          <rect x="15" y="68" width="270" height="142" rx="10" fill="var(--eos-soft)" stroke="var(--eos)" />
+          <text x="150" y="94" text-anchor="middle" class="label">{t('RECOGNITION FAILS', '识别失败')}</text>
+          <text x="30" y="126" class="detail">{t('✗ no output file is opened', '✗ 不打开输出文件')}</text>
+          <text x="30" y="152" class="detail">{t('✗ an old file stays as it was', '✗ 旧文件保持原样')}</text>
+          <text x="30" y="178" class="detail">{t('✗ no new file appears', '✗ 不会出现新文件')}</text>
+
+          <rect x="15" y="228" width="270" height="112" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="150" y="254" text-anchor="middle" class="label">{t('RECOGNITION SUCCEEDS', '识别成功')}</text>
+          <text x="30" y="286" class="detail">{t('the output opens', '这时才打开输出')}</text>
+          <text x="30" y="312" class="detail">{t('SRT or TXT is written once', '一次写成 SRT 或 TXT')}</text>
+
+          <rect x="15" y="356" width="270" height="120" rx="10" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />
+          <text x="30" y="384" class="label">{t('BUT A DISK-WRITE FAILURE CAN STILL HURT', '但写盘失败仍可能出问题')}</text>
+          <text x="30" y="412" class="detail">{t('an old file can be truncated,', '旧文件可能被截断，')}</text>
+          <text x="30" y="436" class="detail">{t('or part of a new file left behind', '也可能留下部分新文件')}</text>
+          <text x="30" y="460" class="detail">{t('the write is not atomic', '写盘不是原子的')}</text>
+          <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Source: transcribe_cli.go:73-100.', '出处：transcribe_cli.go:73-100。')}</text>
+        {/if}
+      {:else if step === 9}
         <text x={W / 2} y="27" text-anchor="middle" class="title">{t('NO HISTORY OR RECORDING', '不写历史，不留录音')}</text>
         <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('dictation may write history; this route does not', '听写可能写历史；这条路线不写')}</text>
         {#if !phone}
@@ -599,19 +638,7 @@
           <text x="385" y="170" class="mono small">command line: {VOXT_TRANSCRIBE_DEMO_SECONDS}s of audio,</text>
           <text x="385" y="188" class="mono small">{VOXT_TRANSCRIBE_CUE_COUNT} segments</text>
           <text x="530" y="216" text-anchor="middle" class="detail">{t('length and cue count, never the text', '只有长度和句子数，没有文字')}</text>
-
-          <text x="40" y="268" class="label">{t('WHERE THE AUDIO GOES', '声音去哪里')}</text>
-          <line x1="120" y1="284" x2="120" y2="308" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
-          <rect x="45" y="316" width="270" height="62" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="180" y="340" text-anchor="middle" class="detail">{t('the on-device speech model', '本机语音模型')}</text>
-          <text x="180" y="360" text-anchor="middle" class="detail">{t('on this Mac', '就在这台 Mac')}</text>
-          <rect x="405" y="316" width="270" height="62" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="540" y="340" text-anchor="middle" class="detail">{t('or the remote speech service', '或远端语音服务')}</text>
-          <text x="540" y="360" text-anchor="middle" class="detail">{t('set for Transcribe', '按 Transcribe 的设置')}</text>
-          <line x1="120" y1="300" x2="540" y2="300" stroke="var(--muted)" stroke-width="2" />
-          <line x1="540" y1="300" x2="540" y2="308" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
-          <text x={W / 2} y={H - 46} text-anchor="middle" class="cut">{t('SO HOW DO MODEL FILES AND UPDATES REACH THIS MAC?', '那么模型文件和应用更新怎样到达这台 Mac？')}</text>
-          <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Source: Voxt/transcribe_socket.go and docs/transcribe.md.', '出处：Voxt/transcribe_socket.go 和 docs/transcribe.md。')}</text>
+          <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Source: Voxt/transcribe_socket.go.', '出处：Voxt/transcribe_socket.go。')}</text>
         {:else}
           <rect x="15" y="68" width="270" height="190" rx="10" fill="var(--bg)" stroke="var(--line)" />
           <text x="150" y="92" text-anchor="middle" class="label">{t('NOT WRITTEN', '不留下')}</text>
@@ -628,15 +655,46 @@
           <text x="30" y="394" class="mono small">audio, {VOXT_TRANSCRIBE_CUE_COUNT} segments</text>
           <text x="150" y="424" text-anchor="middle" class="detail">{t('length and cue count only', '只有长度和句子数')}</text>
           <text x="150" y="446" text-anchor="middle" class="detail">{t('never the text', '没有文字')}</text>
-
-          <text x="150" y="498" text-anchor="middle" class="label">{t('WHERE THE AUDIO GOES', '声音去哪里')}</text>
-          <rect x="25" y="516" width="250" height="58" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="150" y="539" text-anchor="middle" class="detail">{t('the on-device model (this Mac)', '本机模型（这台 Mac）')}</text>
-          <text x="150" y="560" text-anchor="middle" class="detail">{t('or the remote service', '或远端服务')}</text>
-          <text x="150" y="598" text-anchor="middle" class="detail">{t('both set for Transcribe', '都按 Transcribe 的设置')}</text>
-          <text x={W / 2} y={H - 66} text-anchor="middle" class="cut">{t('SO HOW DO MODEL FILES', '那么模型文件')}</text>
-          <text x={W / 2} y={H - 44} text-anchor="middle" class="cut">{t('AND UPDATES REACH THIS MAC?', '和应用更新怎样到达这台 Mac？')}</text>
           <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Source: transcribe_socket.go, docs/transcribe.md.', '出处：transcribe_socket.go、docs/transcribe.md。')}</text>
+        {/if}
+      {:else if step === 10}
+        <text x={W / 2} y="27" text-anchor="middle" class="title">{t('WHERE THE AUDIO GOES', '声音去哪里')}</text>
+        <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{phone ? t('set for Transcribe: this Mac or a remote', '按 Transcribe：本机或远端') : t('the model set for Transcribe: this Mac or a remote service', '按 Transcribe 的设置：本机或远端服务')}</text>
+        {#if !phone}
+          <rect x="255" y="76" width="210" height="54" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="360" y="100" text-anchor="middle" class="label">{t('THE DECODED AUDIO', '解码后的声音')}</text>
+          <text x="360" y="120" text-anchor="middle" class="detail">{t('sent as each cue is cut', '每切出一句就送一次')}</text>
+          <line x1="360" y1="130" x2="360" y2="150" stroke="var(--muted)" stroke-width="2" />
+          <line x1="190" y1="150" x2="530" y2="150" stroke="var(--muted)" stroke-width="2" />
+          <line x1="190" y1="150" x2="190" y2="168" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
+          <line x1="530" y1="150" x2="530" y2="168" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
+
+          <rect x="55" y="170" width="270" height="74" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="190" y="198" text-anchor="middle" class="detail">{t('the on-device speech model', '本机语音模型')}</text>
+          <text x="190" y="222" text-anchor="middle" class="detail">{t('runs on this Mac', '就在这台 Mac 上跑')}</text>
+          <rect x="395" y="170" width="270" height="74" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="530" y="198" text-anchor="middle" class="detail">{t('the remote speech service', '远端语音服务')}</text>
+          <text x="530" y="222" text-anchor="middle" class="detail">{t('set for Transcribe', '按 Transcribe 的设置')}</text>
+
+          <text x={W / 2} y="282" text-anchor="middle" class="detail">{t('both are the model chosen for Transcribe', '两者都是 Transcribe 选定的模型')}</text>
+          <text x={W / 2} y={H - 46} text-anchor="middle" class="cut">{t('SO HOW DO THESE MODEL FILES REACH THIS MAC?', '那么这些模型文件怎样到达这台 Mac？')}</text>
+          <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Source: transcribe_socket.go:64-80, docs/transcribe.md.', '出处：transcribe_socket.go:64-80、docs/transcribe.md。')}</text>
+        {:else}
+          <rect x="15" y="68" width="270" height="56" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="150" y="92" text-anchor="middle" class="label">{t('THE DECODED AUDIO', '解码后的声音')}</text>
+          <text x="150" y="112" text-anchor="middle" class="detail">{t('sent as each cue is cut', '每切出一句就送一次')}</text>
+          <line x1="150" y1="124" x2="150" y2="146" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
+          <rect x="15" y="154" width="270" height="84" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="150" y="182" text-anchor="middle" class="detail">{t('the on-device speech model', '本机语音模型')}</text>
+          <text x="150" y="206" text-anchor="middle" class="detail">{t('runs on this Mac', '就在这台 Mac 上跑')}</text>
+          <text x="150" y="266" text-anchor="middle" class="detail">{t('or', '或者')}</text>
+          <rect x="15" y="286" width="270" height="84" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="150" y="314" text-anchor="middle" class="detail">{t('the remote speech service', '远端语音服务')}</text>
+          <text x="150" y="338" text-anchor="middle" class="detail">{t('set for Transcribe', '按 Transcribe 的设置')}</text>
+          <text x="150" y="400" text-anchor="middle" class="detail">{t('both chosen for Transcribe', '都是 Transcribe 选定的')}</text>
+          <text x={W / 2} y={H - 66} text-anchor="middle" class="cut">{t('SO HOW DO THESE MODEL FILES', '那么这些模型文件')}</text>
+          <text x={W / 2} y={H - 44} text-anchor="middle" class="cut">{t('REACH THIS MAC?', '怎样到达这台 Mac？')}</text>
+          <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Source: transcribe_socket.go:64-80.', '出处：transcribe_socket.go:64-80。')}</text>
         {/if}
       {/if}
     </svg>
