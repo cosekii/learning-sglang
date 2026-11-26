@@ -6,6 +6,8 @@
 
 - 09:00 续完 Inside Voxt 第 11 章《模型仓库与应用更新站》6 步：三样东西的地图、固定快照与完整提交、四部分下载任务、可配置的服务器寿命、签名 feed 与 GitHub 两条更新路线、三种收尾。独立源码与文本复审最终 **6/6 步 R1–R5 为 10/10、原分文本项 20/20、0 未决内容洞和阻塞事实问题**；R6/#4/#5 因本轮模型不能读图而待目视，本章为 **文本完成、待目视**，不记 12/12 或 24/24。
 - 本章 `build`（58 页）、`transcript`、`readability`（0 机械问题）、中英三种宽度 `mobile`、中文逐步字号、`deep-check 11`、`zh-check`、12 个深入讲解 DOM 审计和 `git diff --check` 通过。最终 36 张图在 `.bot/out/ch11-final/{en-desktop,zh-desktop,en-phone,zh-phone,deep-en,deep-zh}/`，PNG 目测仍待主人。本轮只跑本章检查，未跑全站回归、真实 Voxt 应用、真实下载、真实更新或模型进程。本轮类型：**新书**；下一单元先修 Inside Voxt 第 8 章复审项，不开新章。
+- 本轮按协调复审修 Learning ML Systems 第 8 章两项内容问题：区分 `zero_grad` 后初始 forward 的 7 GB 常驻量与完整 8 GB 训练状态账，并补 `loss = loss * dp_size / global_batch_size` 的预缩放解释。独立冷读复读为 PASS，**6/6 步易读 12/12、原分 24.00/24、0 未决内容洞和机械显示洞**。第 9 章补齐 8 步正式评分卡与台账，并修正第 2 步手机橙色图例，独立复审为 **8/8 步易读 12/12、原分 24.00/24、0 未决内容洞和机械显示洞**。两章真人 PNG 视觉验收均待主人。
+- 两章 `build`、本章 `transcript`、全章 `readability`、中英三种宽度 `mobile`、整改步中文字号、`deep-check`、`zh-check` 和 `git diff --check` 通过。第 8 章整改图在 `/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-uz21ci8z/opencode/ls-k2-mlsys08-review/`，第 9 章第 2 步手机图在 `/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-uz21ci8z/opencode/ls-k2-mlsys09-ledger/`。本轮类型：**修旧**；下一新章是 `13-multi-turn-agent-rl`，第 11 章继续因缺源跳过。
 
 - 08:31 完成 Learning SGLang Omni 第 14 章《客户端读得太慢》8 步：生成后的交付积压、共享消息字节上限、读取空闲钟、最久没读先失败、重复淘汰、整流失败与条件中止、两类连接的错误出口，以及提前关闭和上限失败后的不同清理。续写 `serving` 部分第 14–17 章规划，补第 13 章交接，并把第 15 章标为规划。独立冷读与源码复审整改完成，**8/8 步易读 12/12、原分 24.00/24、0 内容洞和机械显示洞**；主人 PNG 目测仍待。
 - 八个步骤与复审整改逐步提交并推送至 `5a0f16a`，评分记录随本轮最后提交；`build`（57 页）、本章 `transcript`、全章 `readability`、英文三种宽度 `mobile`、中文 8 个逐步字号与布局视图、`deep-check 14`、`zh-check`、16 个深入讲解 DOM 审计和 `git diff --check` 通过。最终 24 张舞台图与 16 张深入讲解图在 `/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-kzphxvmq/opencode/ls-k1-omni14-final/`。本轮只跑本章检查，未跑全站回归、真实模型、GPU benchmark 或音频质量评测。本轮类型：**新书**；下一章是 `15-router-worker-selection`。
@@ -169,7 +171,7 @@
 
 ## Learning ML Systems
 
-规划完成：`docs/plan-ml-sys.md` 共 3 部分、16 章；第 1 章已制作 7 步并完成，第 2 章已制作 2 步并完成，第 3 章已制作 6 步并完成，第 4 章已制作 7 步并完成，第 5 章已制作 7 步并完成，第 6 章已制作 8 步并完成，第 7 章已制作 8 步并完成静态场景复核，第 10 章已制作 9 步并完成，第 12 章已制作 8 步并完成。第 8、9 章的评分记录仍是既有台账欠项，本轮不追记分数。第 11 章须先补齐训推不一致的原始来源，缺源时先跳过。
+规划完成：`docs/plan-ml-sys.md` 共 3 部分、16 章；第 1 章已制作 7 步并完成，第 2 章已制作 2 步并完成，第 3 章已制作 6 步并完成，第 4 章已制作 7 步并完成，第 5 章已制作 7 步并完成，第 6 章已制作 8 步并完成，第 7 章已制作 8 步并完成静态场景复核，第 8 章已制作 6 步并完成协调复审整改，第 9 章已制作 8 步并补齐评分台账，第 10 章已制作 9 步并完成，第 12 章已制作 8 步并完成。第 11 章须先补齐训推不一致的原始来源，缺源时先跳过。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
@@ -180,8 +182,8 @@
 | 05 | 05-distributed-serving | 完成：7/7 步易读满分 | 24.00 |
 | 06 | 06-slime-rollout-loop | 完成：8/8 步易读满分 | 24.00 |
 | 07 | 07-weight-updates | 完成：8/8 步静态场景易读 12/12、原分 24/24；R6／#4／#5 按组件与 transcript 复核 | 24.00 |
-| 08 | 08-fsdp2-training-backend | 规划 | — |
-| 09 | 09-fp8-rollout-training | 规划 | — |
+| 08 | 08-fsdp2-training-backend | 内容完成：6/6 步易读 12/12、原分 24/24；协调复审两项问题已修，真人视觉验收待主人 | 24.00 |
+| 09 | 09-fp8-rollout-training | 内容完成：8/8 步易读 12/12、原分 24/24；评分台账已补，真人视觉验收待主人 | 24.00 |
 | 10 | 10-int4-qat-rollout | 完成：9/9 步易读 12/12、原分 24/24；独立冷读与源码复审通过 | 24.00 |
 | 11 | 11-train-inference-mismatch | 待补源 | — |
 | 12 | 12-rl-speculative-decoding | 完成：8/8 步易读 12/12、原分 24/24；独立冷读与源码复审通过 | 24.00 |

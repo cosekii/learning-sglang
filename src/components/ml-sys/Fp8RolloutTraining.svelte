@@ -83,7 +83,7 @@
       title: 'One scale fits a group into FP8', titleZh: '一个 scale 把一组数装进 FP8',
       subtitle: 'scale = shared divisor', subtitleZh: 'scale = 共用的除数',
       foot: '176 is the nearest FP8 value to 179.2.', footZh: '176 是最接近 179.2 的 FP8 值。',
-      legend: 'Orange = inputs · blue = FP8 · dashed = scale', legendZh: '橙 = 输入 · 蓝 = FP8 · 虚线 = scale',
+      legend: 'Orange = high precision · blue = FP8 · dashed = scale', legendZh: '橙 = 高精度 · 蓝 = FP8 · 虚线 = scale',
       formulas: [
         { en: 'scale = max(|1|, |3.2|, |8|) ÷ 448 = 1/56', zh: 'scale = max(|1|, |3.2|, |8|) ÷ 448 = 1/56' },
         { en: `3.2 ÷ (1/56) = ${N.FP8_EXAMPLE_SCALED_MIDDLE.toFixed(1)} → FP8 176`, zh: `3.2 ÷ (1/56) = ${N.FP8_EXAMPLE_SCALED_MIDDLE.toFixed(1)} → FP8 176` },
