@@ -154,7 +154,7 @@ Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:37-39`; `THUDM/slime
 - The BF16 update reuses 0.35, and the group scale remains $0.70/7=0.10$.
 - The signed-code card produces 4. The code's literal clamp is $[-8,7]$, unlike fake QAT's $[-7,7]$ in Step 2.
 - The scale travels with the codes and is cast to the source weight's BF16 type in this recipe.
-- The converter handles non-ignored `.weight` tables with supported shapes. Ignored and unsupported tensors keep their original form. Each update repeats the conversion; this is not only an offline export.
+- The converter handles non-ignored `.weight` tensors with at least two dimensions and a supported last dimension K. For higher-rank tensors, `view(-1, param.shape[-1])` folds every earlier dimension into rows. Ignored and unsupported tensors stay unquantized. Each update repeats the conversion; this is not only an offline export.
 
 ### Formula and symbols
 
@@ -165,6 +165,7 @@ $$s=\max(\max_i|x_i|/7,10^{-5}),\qquad q_i=\operatorname{clip}(\operatorname{rou
 | $x_i$ | One eligible BF16 value in the update | Weight table converted from training |
 | $s$ | Scale for this group | `int4_block_quantize` |
 | $q_i$ | Signed integer code stored for rollout | Rounded and clamped to $[-8,7]$ |
+| $K$ | Last dimension, used as the number of input columns after flattening | `param.shape[-1]` |
 | $\operatorname{clip}$ | Limit codes to the stated interval | Export code at the pinned revision |
 
 ### The numbers on the stage
