@@ -4,6 +4,7 @@
 
 ## 本轮记录
 
+- 02:15 Inside Voxt 第 9 章《历史和重试的保质期》8 步内容完成：一条记录的组成；90 天与 7 天两个默认钟；按年龄分界、按每种功能的条数、两者 OR 一起删；失败/取消录音的 7 天钟与每小时清扫；重试读录音、整段重识别、原地更新、不插入；导出字段与从不导出的内容；访问开关只记账、不是安全边界。文本与机械门槛全过（build、本章 transcript、readability、deep-check、zh-check、中英三种宽度 mobile、中文逐步字号、8×2 深入讲解渲染断言），0 内容洞；R6/#4/#5 与截图目测待有图片输入的复审者，本章保持待目视。
 - 按复审指出的静态场景标准，直接核对第 7 章组件与 transcript：每步只有一个静态场景，R6 均为 2/2；逐图核对图自身信息、直接标签和颜色图例，原 #4／#5 均为 4/4。第 7 章现为 **8/8 步易读 12/12、原分 24/24、0 已知洞**，`ready: true` 有完整评分依据，不再做文字轮次。回归旧报告改记为：测试 `d36df3a`，早于当前 HEAD，可按 SOUL 跳过；mobile 两段只有 unsettled-await 警告，没有结果，整次回归是 **inconclusive**，不是通过。
 - 复审指出 `8dd368c` 的 `ready: false` 使 transcript／mobile／deep-check 报 `no ready chapters matched`，已恢复 `ready: true` 让现有门槛能选中本章，不代表完成。本章仍为 **text-complete / visual-blocked-on-owner**，R6、原 #4／#5 和总分不记。`build`、本章 `transcript`、中英布局 `mobile`、`readability`、`deep-check 07`、`zh-check` 已在 4323 端口重跑通过；下一新轮做 `08-fsdp2-training-backend`。回归 `latest.md` 虽写「有失败」，但 `run.log:65-79` 对应两条 mobile unsettled-await 警告和 `(exit 0)`，没有列出的布局失败行；此证据已写入报告。
 - 复审确认 Learning ML Systems 第 7 章文本和机械门槛真实通过，但 8/8 步只有 R1–R5，未达到 12/12。停止文字重写；另行尝试 `explore` 视觉复审仍返回 `NO_IMAGE_INPUT`，本章定为 **text-complete / visual-blocked-on-owner**，`ready` 改为 `false`，R6、原 #4／#5 和总分继续不记。按「两轮还上不去就换单元」规则，下一单元明确为 `08-fsdp2-training-backend`。核查本 lane 的 ML Systems 提交只涉及第 7 章，没有其他 k2 章节的视觉总分需要追溯；其他 lane 的历史视觉分不据此改动。
@@ -158,7 +159,7 @@
 
 ## Inside Voxt
 
-规划完成：`docs/plan-voxt.md` 共 3 部分、16 章；第 1 章已制作 4 步并完成，第 2 章已制作 3 步并完成，第 3 章已制作 8 步并完成，第 4 章已制作 7 步并完成，第 5 章已制作 5 步并完成，第 6 章已制作 8 步并完成，第 7 章已制作 5 步，待目视，第 8 章已制作 7 步、内容完成，待目视。事实来源只使用 `sglang-omni` 的 `origin/main` 公开代码和文档。
+规划完成：`docs/plan-voxt.md` 共 3 部分、16 章；第 1 章已制作 4 步并完成，第 2 章已制作 3 步并完成，第 3 章已制作 8 步并完成，第 4 章已制作 7 步并完成，第 5 章已制作 5 步并完成，第 6 章已制作 8 步并完成，第 7 章已制作 5 步，待目视，第 8 章已制作 7 步、内容完成，待目视，第 9 章已制作 8 步、内容完成，待目视。事实来源只使用 `sglang-omni` 的 `origin/main` 公开代码和文档。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
@@ -170,7 +171,7 @@
 | 06 | compose-and-cleanup | 完成：8/8 步易读满分 | 23.88 |
 | 07 | deliver-text-safely | 待目视：5 个源码级内容洞已修；R6/#4/#5 未评 | — |
 | 08 | personal-dictionary | 内容完成：7/7 步文本 R1–R5、0 内容洞；R6/#4/#5 待目视 | — |
-| 09 | history-retry-retention | 规划 | — |
+| 09 | history-retry-retention | 内容完成：8/8 步文本 R1–R5、0 内容洞；R6/#4/#5 待目视 | — |
 | 10 | file-transcription | 规划 | — |
 | 11 | models-and-app-updates | 规划 | — |
 | 12 | meeting-capture-modes | 规划 | — |
