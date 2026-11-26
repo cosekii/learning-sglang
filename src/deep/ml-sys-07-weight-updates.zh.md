@@ -212,6 +212,7 @@ $$T_{\text{outer}}\approx T_{\text{inner}}+n\,t_s+T_{\text{other}},\qquad S=T_0-
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
+| $T_{\text{outer}}$ | 整个外部调用耗时 | 舍入为 33 ms |
 | $T_{\text{inner}}$ | `ModelRunner` 操作耗时 | 舍入为 1 ms |
 | $n,t_s$ | sleep 次数与每次时长 | $3\times10$ ms |
 | $T_{\text{other}}$ | 剩余的外部耗时 | 舍入为 2 ms |

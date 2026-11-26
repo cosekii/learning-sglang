@@ -212,6 +212,7 @@ $$T_{\text{outer}}\approx T_{\text{inner}}+n\,t_s+T_{\text{other}},\qquad S=T_0-
 
 | Symbol | Meaning | Source |
 |---|---|---|
+| $T_{\text{outer}}$ | Whole external call time | Rounded 33 ms |
 | $T_{\text{inner}}$ | `ModelRunner` operation time | Rounded 1 ms |
 | $n,t_s$ | Sleep count and duration | $3\times10$ ms |
 | $T_{\text{other}}$ | Remaining rounded outer time | 2 ms |
