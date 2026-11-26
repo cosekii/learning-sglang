@@ -114,7 +114,7 @@ $$\mathcal L_{\mathrm{MTP}}=-\log p_{\mathrm{draft}}(x_{t+2}\mid u_t)$$
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
 | $u_t$ | $h_t$ 与 $e_{t+1}$ 拼成的 draft 输入 | 第 3 步 |
-| $x_{t+2}$ | 位置 $t$ 后两个 token，即训练标签 | 本步第二次左移 |
+| $x_{t+2}$ | 位置 $t$ 后面第二个位置的 token，即训练标签 | 本步第二次左移 |
 | $p_{\mathrm{draft}}$ | draft 给正确标签分配的概率 | draft 分数经 softmax |
 | $\mathcal L_{\mathrm{MTP}}$ | 这一位置的 cross entropy | 本步计算 |
 

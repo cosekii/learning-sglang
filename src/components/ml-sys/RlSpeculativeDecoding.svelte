@@ -102,7 +102,7 @@
       { en: 'e(b) = embedding of token b', zh: 'e(b) = token b 的 embedding' },
       { en: 'join(h(a), e(b)) → predict c', zh: 'join(h(a), e(b)) → 预测 c' },
       { en: 'b is given; c is the next token to guess', zh: 'b 已交给 draft；c 才是要猜的下一个 token' },
-      { en: 'c is two positions after a', zh: 'c 在 a 后面两个位置' },
+      { en: 'c is two positions after a', zh: 'c 在 a 后面第二个位置' },
     ],
     mobile: {
       title: 'Pair notes with the next token', titleZh: '笔记与下一个 token 配对',
@@ -114,7 +114,7 @@
         { en: 'e(b) = embedding of b', zh: 'e(b) = b 的 embedding' },
         { en: 'join(h(a), e(b)) → predict c', zh: 'join(h(a), e(b)) → 预测 c' },
         { en: 'b is given; c is the next to guess', zh: 'b 已给出；c 才是要猜的下一个' },
-        { en: 'c is two positions after a', zh: 'c 在 a 后两个位置' },
+        { en: 'c is two positions after a', zh: 'c 在 a 后面第二个位置' },
       ],
     },
   }, {
@@ -128,11 +128,11 @@
     nodes: [
       { title: 'SHIFT ONCE', titleZh: '左移一次', result: '[b, c, d, e, —]', resultZh: '[b, c, d, e, —]', body: 'Step 3’s tokens', bodyZh: '第 3 步的序列', tone: 'orange', compact: true },
       { title: 'SHIFT TWICE', titleZh: '左移两次', result: '[c, d, e, —, —]', resultZh: '[c, d, e, —, —]', body: 'training labels', bodyZh: '训练标签', tone: 'orange', compact: true },
-      { title: 'DRAFT SCORES', titleZh: 'DRAFT 分数', result: 'one row per position', resultZh: '每个位置一行', body: 'two-ahead candidates', bodyZh: '后两个位置的候选 token', tone: 'blue', compact: true },
+      { title: 'DRAFT SCORES', titleZh: 'DRAFT 分数', result: 'one row per position', resultZh: '每个位置一行', body: 'two-ahead candidates', bodyZh: '后面第二个位置的候选 token', tone: 'blue', compact: true },
       { title: 'CE LOSS', titleZh: 'CE 损失', result: 'smaller is better', resultZh: '越小越好', body: 'compare scores + labels', bodyZh: '比较分数与标签', tone: 'blue', compact: true },
     ],
     formulas: [
-      { en: 'position a: label c · two positions ahead', zh: '位置 a：标签是后两个位置的 c' },
+      { en: 'position a: label c · two positions ahead', zh: '位置 a：标签是后面第二个位置的 c' },
       { en: 'labels + draft scores → CE loss', zh: '标签 + draft 分数 → CE 损失' },
       { en: 'higher scores for correct tokens make CE smaller', zh: '正确 token 得分越高，CE 越小' },
       { en: 'CE compares each prediction with its own label', zh: 'CE 比较每个预测与对应标签' },
@@ -144,7 +144,7 @@
       foot: 'Dashes have no labels; lower CE is better.', footZh: '横线没有标签；CE 越小越好。',
       legend: 'Orange = labels · blue = scores and CE', legendZh: '橙 = 标签 · 蓝 = 分数与 CE',
       formulas: [
-        { en: 'At a: label c, two ahead', zh: '位置 a：标签是后两个位置的 c' },
+        { en: 'At a: label c, two ahead', zh: '位置 a：标签是后面第二个位置的 c' },
         { en: 'labels + scores → CE', zh: '标签 + 分数 → CE' },
         { en: 'Higher correct scores lower CE', zh: '正确得分越高，CE 越小' },
         { en: 'CE compares predictions with labels', zh: 'CE 比较预测与标签' },
