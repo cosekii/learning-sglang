@@ -28,7 +28,7 @@ router 需要请求事实才能过滤 profile。下一步看它什么时候能�
 ### 图上是什么
 
 - `classify` 是从请求体读取路由事实：模型、内容形式、输入和输出模态、响应格式、流式模式。它不是完整应用校验。
-- direct 面板要求整组 worker 有同一个具体默认模型和等价 generation profiles。router 已知每个候选 worker 接收同一契约，所以先选择，再流式发送请求体。
+- direct 面板要求整组 worker 有同一个具体默认模型和等价 generation profiles。`generation profile` 是一种受支持的请求能力组合。router 已知每个候选 worker 接收相同请求，所以先选择，再流式发送请求体。
 - classified 面板的 worker 契约不同。router 把请求体读一次，完成分类并选择 worker，然后转发原始字节。
 - 两条路都在路由事实确定后选择。classified 路径分类时不占上游连接。
 
@@ -110,13 +110,13 @@ router 使用“任意一整行匹配即可”的检查。它不会对多行取�
 
 - A、B、C 都兼容且 healthy。前三行展示每次选择前后的顺序：$[A,B,C]\rightarrow[B,C,A]\rightarrow[C,A,B]\rightarrow[A,B,C]$。
 - 选中的 worker 移到所有其他 worker 后面，包括当前请求不能选的 worker。其他 worker 保持相对顺序。
-- 六个请求依次选 A、B、C、A、B、C。构造例里每个租约都保持占用，说明 round robin 不检查活跃请求数。
+- 六个请求依次选 A、B、C、A、B、C。构造例里六个请求都未结束，说明未结束的请求不会改变 round-robin 轮换顺序。
 
 ### 图上的顺序
 
 $$\text{selections}=(A,B,C,A,B,C)$$
 
-整个 worker pool 共用一个最近使用列表，不为每个模型、服务或候选子集各设一个游标。稀疏候选集合也使用同一列表。如果扫描后没有候选 worker，就返回无选择，不轮换列表。
+整个 worker pool 共用一个最近使用列表，不为每种请求类型各设一个游标。候选 worker 很少时也使用同一列表，跳过的 worker 保持相对顺序。如果扫描后没有候选 worker，就返回无选择，不轮换列表。
 
 round robin 是默认路由策略。经过第 3、4 步过滤后，它只在兼容且 healthy 的 worker 之间轮换。
 
@@ -133,7 +133,7 @@ round robin 是默认路由策略。经过第 3、4 步过滤后，它只在兼�
 ### 图上是什么
 
 - `active requests` 是已选择但响应还没结束的工作。它们是 router 持有的 admission credits，不是 GPU 利用率或 worker 内部队列。
-- 表格读取每次选择前 A、B、C 的数量。每次选择后，被选 worker 先增加一个活跃请求，再进入下一行。
+- 这是一个新例子，初始顺序为 $[A,B,C]$，不是第 5 步的延续。表格读取每次选择前 A、B、C 的数量。每次选择后，被选 worker 先增加一个活跃请求，再进入下一行。
 - 起初 B、C 并列 0，所以 B 先选。随后 C 以 0 成为唯一最少。第三行 B、C 并列 1，又按顺序先选 B。
 - A 始终有两个活跃请求，这几行里从未进入最少集合。
 
@@ -170,7 +170,7 @@ selector 的锁覆盖最近使用顺序、负载观察和预留，避免两个�
 
 ### 图上是什么
 
-- 选择后、router dispatch 前，worker B 的活跃数从 0 变成 1。
+- 这是一个新的单请求例子。选择后、router dispatch 前，被选 worker 的活跃数从 0 变成 1。
 - 上传和响应头到达时，计数都保持 1。响应头开始下游响应，不代表上游工作结束，也不会释放租约。
 - 终止卡包括响应 EOF、上游错误、下游取消或其他提前丢弃。每条路径都只丢弃一次租约，计数回到 0。
 - 一个普通请求持有 1 credit。speech batch 按条目加权，三个条目会增加 3，之后减去 3。
@@ -201,7 +201,7 @@ selector 的锁覆盖最近使用顺序、负载观察和预留，避免两个�
 ### 图上是什么
 
 - A 的 profile 不匹配，不是候选。B、C 兼容且 healthy，活跃数分别是 2 和 1。least requests 选择 C，并在 dispatch 前把 C 增加到 2。
-- 随后 C 发送 `200 OK` 和 `data: one`，再发生构造的 reset。B 仍是 healthy，但没有路径让这个响应转到 B 继续。
+- 随后 C 发送 `200 OK` 和 `data: one`，再发生构造的 reset，也就是连接断开。B 仍是 healthy，但没有路径让这个响应转到 B 继续。
 - C 被选中时的 health 不能保证整个响应完成。传输或 body 错误可以请求立即 health probe，后续能否入选仍要等配置门槛。
 - 图上的问题指向两个边界：这个客户端收到什么，以及后续选择何时能排除 C。
 

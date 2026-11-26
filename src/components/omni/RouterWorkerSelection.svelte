@@ -24,13 +24,13 @@
     caption: 'Two workers share one URL, but only B accepts this image. The router must check compatibility before taking turns.',
     captionZh: '两个 worker 共用一个网址，但只有 B 接收这张图片。router 轮流选择前，必须先检查是否兼容。',
   }, {
-    caption: 'Same worker contracts can skip body classification. Otherwise the router reads routing facts before choosing a worker.',
-    captionZh: 'worker 契约相同时，可以跳过请求体分类。契约不同时，router 先读路由事实，再选择 worker。',
+    caption: 'When workers accept the same requests, the router can skip body classification. Otherwise it reads routing facts before choosing.',
+    captionZh: 'worker 接收的请求相同时，router 可以跳过请求体分类。请求不同时，先读路由事实再选择。',
   }, {
     caption: 'One profile row must satisfy the whole request. A cannot combine M from row 1 with image support from row 2.',
     captionZh: '同一个 profile 行必须满足整个请求。A 不能把第 1 行的 M 和第 2 行的图片能力拼起来。',
   }, {
-    caption: 'Only healthy workers can be selected. Two probe successes mark healthy; three failures mark unhealthy.',
+    caption: 'Only healthy workers can be selected. Defaults: two consecutive successes mark healthy; three consecutive failures mark unhealthy.',
     captionZh: '只有 healthy worker 能被选中。默认连续 2 次探测成功转为 healthy，连续 3 次失败转为 unhealthy。',
   }, {
     caption: 'Round robin rotates through compatible healthy workers. It does not compare their active request counts.',
@@ -125,7 +125,7 @@
           {@const pw = phone ? 264 : 315}
           <rect x={x} y={y} width={pw} height="250" rx="12" fill={classified ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={classified ? 'var(--gen)' : 'var(--accent)'} />
           <text x={x + 16} y={y + 30} class="small strong">{classified ? 'CLASSIFIED' : 'DIRECT'}</text>
-          <text x={x + 16} y={y + 59} class="small">{classified ? t('worker contracts differ', 'worker 契约不同') : t('same default model + profiles', '相同默认模型 + 相同 profiles')}</text>
+          <text x={x + 16} y={y + 59} class="small">{classified ? t('workers accept different requests', 'worker 接收不同请求') : t('same model + same request abilities', '相同模型 + 相同请求能力')}</text>
           <rect x={x + 16} y={y + 82} width={pw - 32} height="57" rx="8" fill="var(--bg)" stroke="var(--line)" />
           <text x={x + pw / 2} y={y + 116} text-anchor="middle" class="small">{classified ? t('read body once → routing facts', '请求体读一次 → 路由事实') : t('known shared contract', '已知的共同契约')}</text>
           <line x1={x + pw / 2} y1={y + 140} x2={x + pw / 2} y2={y + 164} stroke={classified ? 'var(--gen)' : 'var(--accent)'} stroke-width="2" marker-end={classified ? 'url(#router-arrow-gen)' : 'url(#router-arrow)'} />
@@ -134,7 +134,7 @@
         {/each}
         <text x={W / 2} y={phone ? 665 : 405} text-anchor="middle" class="small strong">{t('Direct: select, then stream the body.', 'direct：先选择，再流式发送请求体。')}</text>
         <text x={W / 2} y={phone ? 692 : 440} text-anchor="middle" class="small strong">{t(phone ? 'Classified: select → forward original bytes.' : 'Classified: forward the original bytes after selection.', 'classified：选择后转发原始字节。')}</text>
-        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Direct needs identical worker contracts' : 'Direct requires the whole cohort to have one default model and equivalent profiles.', phone ? 'direct 要求 worker 契约一致' : 'direct 要求整组 worker 使用同一默认模型和等价 profiles。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Direct needs matching request abilities' : 'Direct requires one default model and equivalent request abilities across the worker group.', phone ? 'direct 要求请求能力一致' : 'direct 要求整组 worker 有同一默认模型和等价请求能力。')}</text>
       {:else if step === 2}
         <text x={phone ? 18 : 30} y="30" class="title">{t('Match one whole profile row', '用一整行 profile 匹配请求')}</text>
         <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'profile row = one complete capability set' : 'profile row = one supported combination of capabilities', 'profile 行 = worker 支持的一种完整能力组合')}</text>
@@ -194,7 +194,7 @@
           {#each results as result, i}
             <circle cx={x + 40} cy={y + 96 + i * 48} r="14" fill={failing ? 'var(--gen)' : 'var(--accent)'} />
             <text x={x + 66} y={y + 101 + i * 48} class="code">{result}</text>
-            <text x={x + pw - 16} y={y + 101 + i * 48} text-anchor="end" class="small">{i + 1} {failing ? t('failure', '次失败') : t('success', '次成功')}</text>
+            <text x={x + pw - 16} y={y + 101 + i * 48} text-anchor="end" class="small">{i + 1} {failing ? t(i === 0 ? 'failure' : 'failures', '次失败') : t(i === 0 ? 'success' : 'successes', '次成功')}</text>
           {/each}
           <rect x={x + 16} y={y + 225} width={pw - 32} height="40" rx="7" fill="var(--bg)" stroke={failing ? 'var(--gen)' : 'var(--accent)'} />
           <text x={x + pw / 2} y={y + 251} text-anchor="middle" class="small strong">{failing ? t(`${ROUTER_HEALTH_FAILURE_THRESHOLD} failures → UNHEALTHY`, `连续 ${ROUTER_HEALTH_FAILURE_THRESHOLD} 次失败 → UNHEALTHY`) : t(`${ROUTER_HEALTH_SUCCESS_THRESHOLD} successes → HEALTHY`, `连续 ${ROUTER_HEALTH_SUCCESS_THRESHOLD} 次成功 → HEALTHY`)}</text>
@@ -216,7 +216,7 @@
           <text x={phone ? 135 : 290} y={y + 25} class="result">→ {row.pick}</text>
           <text x={phone ? 190 : 430} y={y + 25} class="code">{row.after}</text>
         {/each}
-        <text x={phone ? 18 : 50} y={phone ? 330 : 340} class="small strong">{t('SIX REQUESTS · EVERY LEASE STAYS HELD', '六个请求 · 每个租约都保持占用')}</text>
+        <text x={phone ? 18 : 50} y={phone ? 330 : 340} class="small strong">{t('SIX REQUESTS · NONE HAS FINISHED', '六个请求 · 没有一个已结束')}</text>
         {#each ROUTER_ROUND_ROBIN_SEQUENCE as workerIndex, i}
           {@const x = phone ? 20 + (i % 3) * 90 : 50 + i * 105}
           {@const y = phone ? 355 + Math.floor(i / 3) * 105 : 375}
@@ -225,12 +225,12 @@
           <text x={x + (phone ? 40 : 45)} y={y + 59} text-anchor="middle" class="result">{ROUTER_ROUND_ROBIN_WORKERS[workerIndex]}</text>
         {/each}
         <text x={W / 2} y={phone ? 585 : 495} text-anchor="middle" class="result">A → B → C → A → B → C</text>
-        <text x={W / 2} y={phone ? 620 : 530} text-anchor="middle" class="small">{t('Held requests do not change these turns.', '请求保持占用也不会改变轮换顺序。')}</text>
-        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'One shared order · ineligible workers are skipped' : 'One shared order across services and candidate sets; ineligible workers keep their places.', phone ? '共用一个顺序 · 跳过不合格 worker' : '不同服务和候选集合共用一个顺序；不合格 worker 留在原位置。')}</text>
+        <text x={W / 2} y={phone ? 620 : 530} text-anchor="middle" class="small">{t('Unfinished requests do not change these turns.', '未结束的请求也不会改变轮换顺序。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'One order · skipped workers keep relative order' : 'One shared order across request types; skipped workers keep their relative order.', phone ? '一个顺序 · 跳过的 worker 保持相对顺序' : '不同请求类型共用一个顺序；跳过的 worker 保持相对顺序。')}</text>
       {:else if step === 5}
         <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'Least requests · active counts' : 'Least requests compares active work', 'least requests 比较活跃工作数')}</text>
         <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'active = selected and not finished' : 'active requests = selected work whose response has not finished', phone ? '活跃 = 已选择但还没结束' : 'active requests = 已选择但响应还没结束的工作')}</text>
-        <text x={phone ? 18 : 30} y="79" class="label">{t('Each selected worker gains 1 before the next row.', '每行选择后，被选 worker 的活跃数先加 1。')}</text>
+        <text x={phone ? 18 : 30} y="79" class="label">{t(phone ? 'New example · selected worker +1.' : 'New example · selected worker +1 before next row.', '新例子 · 每行选择后，被选 worker 加 1。')}</text>
         {#if !phone}
           <text x="70" y="125" class="small strong">REQUEST</text>
           <text x="200" y="125" class="small strong">A</text>
@@ -254,13 +254,13 @@
             <text x={phone ? 67 + worker * 45 : 200 + worker * 100} y={y + 29} class="result">{load}</text>
           {/each}
           <text x={phone ? 202 : 515} y={y + 29} class="result">{ROUTER_ROUND_ROBIN_WORKERS[row.selected]}</text>
-          <text x={phone ? 28 : 200} y={y + 56} class="small">min = {minimum} · {tied} {tied.includes(',') ? t('tie', '并列') : t('only', '独占最少')}</text>
+          <text x={phone ? 28 : 200} y={y + 56} class="small">min = {minimum} · {tied} {tied.includes(',') ? t('tie', '并列') : t('only', '唯一最少')}</text>
         {/each}
         <text x={W / 2} y={phone ? 590 : 515} text-anchor="middle" class="result">B → C → B → C</text>
         <text x={W / 2} y={phone ? 625 : 550} text-anchor="middle" class="small">{t('A never enters a minimum tie in these four rows.', '这四行里，A 从未进入最少并列组。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Router-held work · not GPU usage' : 'Constructed ordinary requests; active counts are router-held work, not GPU usage or worker queues.', phone ? 'router 持有的工作 · 不是 GPU 利用率' : '构造的普通请求；活跃数是 router 持有的工作，不是 GPU 利用率或 worker 队列。')}</text>
       {:else if step === 6}
-        <text x={phone ? 18 : 30} y="30" class="title">{t('The lease holds the active count', '租约持有这份活跃计数')}</text>
+        <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'Fresh request · active count' : 'Fresh request · the lease holds the active count', phone ? '新请求 · 活跃计数' : '新请求 · 租约持有活跃计数')}</text>
         <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'lease = held until the request ends' : 'RequestLease = the reservation held until the request reaches a terminal event', phone ? 'lease = 持有到请求结束' : 'RequestLease = 一直持有到请求到达终止事件的预留')}</text>
         <text x={phone ? 18 : 30} y="79" class="label">{t('blue = active 1 held · orange = terminal release', '蓝 = 活跃数 1 保持占用 · 橙 = 终止时释放')}</text>
         {#each [
@@ -288,7 +288,7 @@
         <text x={phone ? 18 : 30} y="55" class="label">{t('blue = eligible workers · orange = failed response', '蓝 = 候选 worker · 橙 = 失败的响应')}</text>
         {#if !phone}
           <rect x="30" y="90" width="315" height="365" rx="12" fill="var(--bg)" stroke="var(--line)" />
-          <text x="48" y="120" class="small strong">{t('BEFORE THIS REQUEST · LEAST REQUESTS', '本请求到来前 · LEAST REQUESTS')}</text>
+          <text x="48" y="120" class="small strong">{t('SELECTING THIS REQUEST · LEAST REQUESTS', '选择本请求 · LEAST REQUESTS')}</text>
           <rect x="48" y="145" width="279" height="65" rx="8" fill="var(--bg)" stroke="var(--faint)" />
           <text x="62" y="172" class="small">worker A · {t('wrong profile', 'profile 不匹配')}</text>
           <text x="62" y="196" class="small">{t('not a candidate', '不是候选')}</text>
@@ -306,12 +306,12 @@
           <rect x="393" y="217" width="279" height="56" rx="8" fill="var(--bg)" stroke="var(--line)" />
           <text x="407" y="252" class="code">data: one</text>
           <rect x="393" y="289" width="279" height="65" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="407" y="329" class="code">RESET</text>
+          <text x="407" y="329" class="code">RESET · {t('connection breaks', '连接断开')}</text>
           <text x="393" y="390" class="small strong">{t('no retry on healthy B', '不会转到 healthy B 重试')}</text>
           <text x="393" y="423" class="small">{t('health changes need probe thresholds', 'health 变化仍需达到探测门槛')}</text>
         {:else}
           <rect x="18" y="85" width="264" height="350" rx="12" fill="var(--bg)" stroke="var(--line)" />
-          <text x="32" y="115" class="small strong">{t('BEFORE · LEAST REQUESTS', '之前 · LEAST REQUESTS')}</text>
+          <text x="32" y="115" class="small strong">{t('SELECTING · LEAST REQUESTS', '选择中 · LEAST REQUESTS')}</text>
           <text x="32" y="153" class="small">A · {t('wrong profile', 'profile 不匹配')}</text>
           <rect x="32" y="175" width="236" height="65" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="46" y="202" class="small">B · HEALTHY</text>
@@ -324,7 +324,7 @@
           <rect x="18" y="460" width="264" height="230" rx="12" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="32" y="490" class="small strong">{t('AFTER SELECTION · C', '选择之后 · C')}</text>
           <text x="32" y="530" class="code">200 OK → data: one</text>
-          <text x="32" y="573" class="code">RESET</text>
+          <text x="32" y="573" class="code">RESET · {t('connection breaks', '连接断开')}</text>
           <text x="32" y="619" class="small strong">{t('no retry on healthy B', '不会转到 healthy B 重试')}</text>
           <text x="32" y="653" class="small">{t('probe thresholds decide later health', '后续 health 仍看探测门槛')}</text>
         {/if}

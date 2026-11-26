@@ -28,7 +28,7 @@ Sources: `sglang_omni_router/tests/chat_http.rs:1075-1098`; `sglang_omni_router/
 ### On the stage
 
 - `Classify` means reading the body for routing facts: model, content forms, input and output modalities, response format and stream mode. It does not mean full application validation.
-- The direct panel requires one concrete default model and equivalent generation profiles across the cohort. The router already knows that every eligible worker accepts the same contract, so it selects and then streams the body.
+- The direct panel requires one concrete default model and equivalent generation profiles across the worker group. A `generation profile` is a supported combination of request abilities. The router already knows that every eligible worker accepts the same requests, so it selects and then streams the body.
 - The classified panel has different worker contracts. The router reads the body once, finishes classification, selects a worker, then forwards the original bytes.
 - Both paths choose only after their routing facts are settled. The classified path does not hold an upstream connection while it classifies.
 
@@ -110,13 +110,13 @@ Sources: `sglang_omni_router/src/worker_pool/health.rs:10-17,211-308`; `sglang_o
 
 - A, B and C are compatible and healthy. The first three rows show the recency list before and after each selection: $[A,B,C]\rightarrow[B,C,A]\rightarrow[C,A,B]\rightarrow[A,B,C]$.
 - The selected worker moves behind every other worker, including workers that are not eligible for the current request. The others keep their relative order.
-- Six requests select A, B, C, A, B and C. Every lease stays held in this constructed example, proving that round robin does not inspect active-request counts.
+- Six requests select A, B, C, A, B and C. None of the six has finished in this constructed example, proving that unfinished requests do not change round-robin turns.
 
 ### The sequence on the stage
 
 $$\text{selections}=(A,B,C,A,B,C)$$
 
-There is one recency list for the whole worker pool, not an independent cursor for each model, service or candidate subset. A sparse candidate set uses the same list. If a scan finds no eligible worker, it returns no selection and does not rotate the list.
+There is one recency list for the whole worker pool, not an independent cursor for each request type. A sparse set of eligible workers uses the same list, and skipped workers keep their relative order. If a scan finds no eligible worker, it returns no selection and does not rotate the list.
 
 Round robin is the default routing policy. It rotates only among compatible healthy workers after the filters from Steps 3 and 4.
 
@@ -133,7 +133,7 @@ Sources: `sglang_omni_router/src/worker_pool/selection.rs:14-23,49-60`; `sglang_
 ### On the stage
 
 - `Active requests` are selected responses that have not finished. These are the router's held admission credits, not GPU utilization or the worker's internal queue.
-- The table reads A, B and C before each choice. After each choice, that worker gains one active request before the next row.
+- This is a fresh example with initial recency $[A,B,C]$, not a continuation of Step 5. The table reads A, B and C before each choice. After each choice, that worker gains one active request before the next row.
 - B and C initially tie at zero, so B goes first. C is then the unique minimum at zero. They tie at one in row 3, so B goes before C again.
 - A has two active requests throughout and never enters the minimum set in these rows.
 
@@ -170,7 +170,7 @@ Sources: `sglang_omni_router/src/worker_pool/mod.rs:565-605,1358-1439`; `sglang_
 
 ### On the stage
 
-- Selection changes worker B's active count from 0 to 1 before the router dispatches the request.
+- This is a fresh single-request example. Selection changes the chosen worker's active count from 0 to 1 before the router dispatches the request.
 - Upload and response headers leave the count at 1. Headers begin the downstream response; they do not end the upstream work or release the lease.
 - The terminal card covers response EOF, an upstream error and downstream cancellation or another dropped response. Each path drops the lease once and returns the count to 0.
 - One ordinary request holds one credit. A speech batch holds item-weighted credits, so three items add and later subtract 3.
@@ -201,7 +201,7 @@ Sources: `sglang_omni_router/src/worker_pool/admission.rs:49-88`; `sglang_omni_r
 ### On the stage
 
 - A has the wrong profile, so it is not a candidate. B and C are compatible and healthy with active counts 2 and 1. Least requests selects C and increments C to 2 before dispatch.
-- C then sends `200 OK` and `data: one` before a constructed reset. B remains healthy, but no path continues this response on B.
+- C then sends `200 OK` and `data: one` before a constructed reset, meaning the connection breaks. B remains healthy, but no path continues this response on B.
 - C's selection-time health does not guarantee the whole response. A transport or body error can request an immediate health probe; later eligibility still waits for the configured thresholds.
 - The question points at two separate boundaries: what this client receives, and when later selections can exclude C.
 
