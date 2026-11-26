@@ -64,8 +64,8 @@
     caption: 'This config has no explicit AR fraction. Its thinker declares 78%, subtracts 5 percentage points, and keeps 73% for AR.',
     captionZh: '这份配置没有显式 AR 比例。78% 减 5 个百分点，AR 得 73%。',
   }, {
-    caption: 'Precision is the number of bits used to store each weight. INT4 roughly halves the BF16 estimate; talker and code2wav stay BF16.',
-    captionZh: '精度是保存每个权重所用的 bit 数。INT4 约省一半，talker 和 code2wav 仍用 BF16。',
+    caption: 'Precision is the number of bits used to store each weight. INT4 roughly halves the BF16 estimate; its talker and code2wav stay BF16.',
+    captionZh: '精度是保存每个权重所用的 bit 数。INT4 约省一半，它的 talker 和 code2wav 仍用 BF16。',
   }, {
     caption: 'Default code2wav configures 32 slots. In Replica2, each code2wav process configures 64 slots, not double throughput.',
     captionZh: '默认 code2wav 配 32 个状态位。replica2 每个 code2wav 配 64 个，不等于吞吐翻倍。',
@@ -110,7 +110,7 @@
   const speechGpu1 = QWEN_SPEECH_DEFAULT_STAGE_PROCESSES.filter((stage) => stage.gpu === 1);
 
   // One walking outline shows each scene in reading order.
-  const PHASE_COUNTS = [3, 3, 4, 4, 0, 0, 0, 0];
+  const PHASE_COUNTS = [3, 3, 4, 4, 3, 0, 0, 0];
   const PHASE_MS = 1500;
   const REST_MS = 1800;
   type Frame = { x: number; y: number; w: number; h: number };
@@ -154,6 +154,15 @@
       { x: 543.6, y: 125, w: 34, h: 65 },
       { x: 47.2, y: 125, w: 496.4, h: 65 },
       { x: 20, y: 95, w: 680, h: 100 },
+    ];
+    if (s === 4) return isPhone ? [
+      { x: 15, y: 120, w: 270, h: 180 },
+      { x: 15, y: 325, w: 270, h: 180 },
+      { x: 15, y: 530, w: 270, h: 180 },
+    ] : [
+      { x: 20, y: 130, w: 210, h: 320 },
+      { x: 255, y: 130, w: 210, h: 320 },
+      { x: 490, y: 130, w: 210, h: 320 },
     ];
     return [];
   };
