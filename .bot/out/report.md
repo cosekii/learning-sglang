@@ -1,6 +1,6 @@
 # lane k1 本轮报告
 
-日期：2026-11-26。本轮处理 Learning SGLang Omni 第 11、13、14、15 章；`24338ba` 修改了 `RouterWorkerSelection.svelte` 的英文手机收尾文案，其余教程改动为评分记录。未碰其他书、第 1 本受保护英文原文或 `.bot/memory/`。
+日期：2026-11-26。本轮在既有 Omni 11、13、14 记录上，只返工 Learning SGLang Omni 第 15 章第 1、6 步机制、一个手机 dispatch 目标和相关记录。未碰其他书、其他 lane 的章节、第 1 本受保护英文原文或 `.bot/memory/`。
 
 ## 已处理的 review 项
 
@@ -22,31 +22,31 @@
 
 ### Omni 15 `router-worker-selection`
 
-- 保留协调人在 `6fb3c27…31c5e08` 关闭的五组内容返工：`2xx`／timeout、RequestLease、例子承接、`drain` 和第 6 步策略对照均未回退。
-- 复核既有 `728833f…2849014` 八步动画。独立源码冷读给八步机制 R6 各 **2/2**；DOM 验证英文桌面 40 个相位、中文手机 40 个相位和英文手机第 8 步 5 个相位，共 **85 个**内容状态样本。
-- 新发现并修复英文手机第 8 步第二行收尾问题固定显示中文的问题；现在为 `When do later requests avoid C?`，中文保持原文。修复提交：`24338ba`。
-- 协调内容与静态基线保持 R1–R5 **80/80**、原十个非视觉项 **160/160**、静态 R6 **16/16**、原 #4/#5 **32/32**、原十二项 **192/192**。协调机制基线为 **0/16**（`6fb3c27…31c5e08`）；作者源码和 DOM 证据为 **16/16（待协调读图）**，不记协调机制分或 `complete-under-EVAL`。
+- 保留协调已关闭的五组内容返工和英文手机第 8 步 handoff；本轮没有重做这些项。
+- 第 1 步由两个未检查候选开始，先排除不收图片的 A，再确认 B，最后 dispatch 到 B。独立 reviewer 检出手机旧箭头仍进入 A，现已改成从请求右侧绕到 B 并复评通过。
+- 第 6 步由 active 数和 recency 实时推导四次选择。每个请求先显示最小集合和顺序扫描，再显示被选 worker 的 active `before→after` 与队尾更新，得到 B、C、B、C。
+- 协调内容与静态基线保持 R1–R5 **80/80**、原十个非视觉项 **160/160**、静态 R6 **16/16**、原 #4/#5 **32/32**、原十二项 **192/192**。协调机制分恢复为 **14/16**（1、2、2、2、2、1、2、2），不再误写历史 0 分；本轮作者与独立只读 reviewer 的源码＋live DOM 复评为 **16/16**，两列分开记录，不记协调满分或 `complete-under-EVAL`。
 
 ## 验证
 
-- `npx astro --config .astro/local.config.mjs build`：60 页通过。这是 shared `node_modules` 符号链接导致默认 build 出现 EPERM 后使用的 local-only workaround；配置位于忽略的 `.astro/`，输出保存在 `.bot/out/omni15-review/build-local.log`。
-- `WAIT=1500 BOOK=omni ONLY=15 npm run transcript`：8 步，无布局问题，生成文件无差异。`BOOK=omni ONLY=15 npm run readability`：0 机械问题；`BOOK=omni node scripts/deep-check.mjs 15`：通过。
-- 英文全章复跑：`BOOK=omni ONLY=15 node .astro/mobile-free-port.mjs http://localhost:4330/learning-sglang`。中文第 8 步字号门复跑：同一 runner 加 `STEP=8 LANG=zh`。local-only runner 只把 `scripts/mobile.mjs` 的 CDP 端口改为空闲的 **9547**；两项均在 360／390／430 px 通过，输出分别在 `mobile-en.log` 和 `mobile-zh-s8.log`。
-- 本章 `zh-check`、`git diff --check`：通过；两张 `zh-check` PNG 单独计，不计入相位图。
-- `node .astro/check-omni15.mjs` 已在 `24338ba` 后重跑：85 个相位均得到预期数量的不同 SVG markup，英文手机收尾问题完整。结果在 `phase-check.json` 和 `phase-check.log`。DOM 签名只证明 markup 随相位变化，不证明可读性，也不代替协调人读图。
-- 相位证据：英文桌面 40 张、中文手机 15 张、英文手机第 8 步 1 张，共 **56 张**，另有 16 张接触表，位于 `.bot/out/omni15-review/`。英文手机图已于 **15:00:20** 重拍，晚于 `24338ba` 的 **14:37:38**；两张 `zh-check` 图另计。当前模型不能读取 PNG，协调读图和主人最终验收仍待。
+- `npx astro --config .astro/local.config.mjs build`：60 页通过。忽略的本地配置隔离 Vite cache 并允许 shared `node_modules` 符号链接。
+- 本章默认 `transcript`：8 步，无布局问题，生成文件已提交；8 步 `readability` 0 机械问题；`deep-check 15` 通过。一次本地 transcript 出现 unsettled await 且未写出结果，换新 CDP 端口后完整重跑通过。
+- 英中全章 `mobile` 在 360／390／430 px 通过；中文第 1、6 步字号门通过。`WAIT=11000` 的本章 `zh-check` 和 `git diff --check` 通过。忽略的 `.astro/run-with-cdp-port.mjs` 只替换检查脚本的 CDP 端口，避免连接其他 lane 的浏览器。
+- 第 1 步 4 相、第 6 步 10 相均核对 live SVG 状态、文本与几何。英文桌面和中文 390 px 手机共 **28 张**相位 PNG 在 `.bot/out/omni15-k1-step1/`、`.bot/out/omni15-k1-step6/`；未发现文字出界、重叠或低于 10 CSS px。
+- 独立只读 reviewer 对第 6 步给出源码＋DOM GO；第 1 步先因手机 dispatch 指向 A 而 NO-GO，修复后复评 GO。第 1、6 步英中深入讲解 DOM 均无横向溢出或 KaTeX 错误，4 张图在 `.bot/out/omni15-k1-deep/`。
+- 当前模型和 reviewer 都不能读取 PNG。上述证据不冒充 PNG 冷读、协调视觉 verdict 或主人最终验收。
 
 ## 提交
 
-- `e0c915f [k1] Sync Omni 14 coordinator scores`：已推 `origin/tutorials`。
-- `24338ba [k1] Fix Omni 15 English phone handoff`：rebase 后已推 `origin/tutorials`。
-- `fa4112c [k1] Record Omni 15 animation checks`：已推第 15 章评分卡、progress 和报告。
-- 本次修正 Omni 15 证据、progress 基线和本报告，随 `[k1]` 记录提交推送。
+- `ed092b5 [k1] Animate Omni 15 compatibility filtering`：第 1 步输入驱动的兼容性过滤。
+- `e128beb [k1] Animate Omni 15 least-requests selection`：第 6 步 recency、并列与 active 更新。
+- `8c8ccfa [k1] Fix Omni 15 phone dispatch target`：手机 dispatch 绕到 B。
+- 三条教程提交均已推 `origin/tutorials`；被拒后均 `git pull --rebase origin tutorials` 再推，没有 force-push。评分卡、progress 和本报告随最后一条 `[k1]` 记录提交推送。
 
 ## 剩余
 
-- 本轮待办只剩协调人读取 Omni 15 八步相位图并确认机制 R6，以及主人最终验收。Omni 15 不记 `complete-under-EVAL`，不开第 16 章。
-- 本轮后续补记只改记录和本地证据，未再改教程源码；未跑全站回归、真实 router、模型、GPU benchmark、故障注入或 reduced-motion 动态切换。
+- 等协调人读取第 1、6 步新相位 PNG 并更新正式机制 verdict，主人最终视觉验收另计。复审前不开第 16 章。
+- 未跑全站回归、真实 router、模型、GPU benchmark、故障注入或 reduced-motion 动态切换。
 
 ---
 

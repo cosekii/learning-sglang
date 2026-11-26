@@ -6,7 +6,7 @@
 
 - A `worker` is one Omni server the router can call. The `router` owns the shared URL and chooses a worker for each request.
 - The request names model M and carries one image. Worker A accepts only text, so it cannot take this request. Worker B accepts image input and can take it.
-- Both workers begin as candidates. The image check removes A first, leaving one candidate; it then confirms B before the blue dispatch path appears. The dashed path to A is not a dispatch.
+- Both workers begin as candidates. The image check removes A and leaves one candidate. It then confirms B before the blue dispatch path appears. The dashed path to A is not a dispatch.
 - The counts are two configured workers, one image request and one remaining compatible worker. They are constructed, not a benchmark.
 
 ### What compatibility means here
@@ -133,7 +133,7 @@ Sources: `sglang_omni_router/src/worker_pool/selection.rs:14-23,49-60`; `sglang_
 ### On the stage
 
 - `Active requests` are selected responses that have not finished. These are the router's held admission credits, not GPU utilization or the worker's internal queue.
-- This is a fresh example with initial recency (the turn order) $[A,B,C]$, not a continuation of Step 5. Each request holds two states: first the row reads A, B and C, finds the minimum and scans recency; then it writes the selected worker's before $\rightarrow$ after count and moves that worker to the back. The next row uses those updated values.
+- This is a fresh example with initial recency (the turn order) $[A,B,C]$, not a continuation of Step 5. Each request holds two states. The row first reads A, B and C, finds the minimum and scans recency. It then writes the selected worker's before $\rightarrow$ after count and moves that worker to the back. The next row uses those updated values.
 - B and C initially tie at zero, so recency selects B. C is then the unique minimum at zero. They tie at one in row 3, so B goes before C again.
 - A has two active requests throughout and never enters the minimum set in these rows. With the same initial recency $[A,B,C]$ and loads $[2,0,0]$, round robin selects A, while least requests selects B.
 

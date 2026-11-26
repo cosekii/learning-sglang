@@ -4,6 +4,9 @@
 
 ## 本轮记录
 
+- 15:45 修旧 Learning SGLang Omni 第 15 章第 1、6 步机制：第 1 步依次展示两个未检查候选、排除 A、接受 B、dispatch 到 B，并修复独立 reviewer 检出的手机 dispatch 指向 A；第 6 步由当前 active 与 recency 推导每次选择，逐相展示最小集合、顺序扫描、active `before→after` 和队尾更新。协调基线保持 R1–R5 **80/80**、原十个非视觉项 **160/160**、原十二项 **192/192**、机制 **14/16**（1、2、2、2、2、1、2、2）；本轮作者与独立只读 reviewer 的源码＋live DOM 复评为 **16/16**，不冒充协调 verdict。
+- `build`（60 页）、本章默认 `transcript`、8 步 `readability`、英中全章 `mobile`、中文第 1／6 步字号门、`deep-check 15`、`zh-check` 和 `git diff --check` 通过。英文桌面与中文手机共 28 张相位图在 `.bot/out/omni15-k1-step1/`、`.bot/out/omni15-k1-step6/`，逐相 DOM 几何检查通过；当前模型和 reviewer 均不能读 PNG，视觉冷读仍待，不记 `complete-under-EVAL`，不开第 16 章。本轮类型：**修旧**。
+
 - 15:20 返工 Inside Voxt 第 8 章第 1、2、3、5、7 步机制和第 1、5 步舞台事实。第 1 步保留原识别框 `call Preeya.`，另加「替换后」框显示 `call Priya.`；第 5 步把候选移出 user 放进组装区，并排画出例 A（`call Priya.` 有术语表）和例 B（`call Sam.` 无术语表），user 只保留最终术语表与普通消息；第 2 步去处结果改为累积，文字稿写 `replace:` 不再写 `sent:`；第 3 步第二条提示时聚焦回到语音模型框；第 7 步 `solved = phase >= i`，每相只点亮当前行；第 4 步手机补回 `language-model cleanup` 标签。补上缺失的 `.detail { font-size: 11px }`，修掉第 5 步 `system` 与通用规则重叠。协调基线仍为 R1–R5 **70/70**、原十个非视觉项 **138/140**、静态 R6 **14/14**、原 #4/#5 **28/28**、原十二项 **166/168**、机制 R6 **9/14**（1、1、1、2、1、2、1）；本轮修复待复审，不改总分。
 - `build`（60 页）、本章 `transcript`、`readability`（0 机械问题）、`deep-check 08`、本章 `zh-check`、英中全章 360/390/430 px `mobile`、中文第 1／2／3／4／5／7 步字号门通过；截图在 `.bot/out/voxt08-shot/`，当前模型不能读 PNG，目视待协调人或主人。本轮只跑本章检查，未跑全站回归、真实 Voxt、模型或语音服务。本轮类型：**修旧**；下一单元按 d 的顺序做 Voxt 11。
 
@@ -182,7 +185,7 @@
 | 12 | 12-full-duplex-strategies | 自评完成：8/8 步易读 12/12、0 内容洞和机械显示洞；人工视觉验收待主人 | 24.00 |
 | 13 | 13-qwen3-omni-deployment | 协调内容／已读静态视图 GO：R1–R5 80/80、原十个非视觉项 160/160、原 #4/#5 32/32、原十二项 192/192；完整动画 R6 未重评，主人视觉验收待 | 24.00 |
 | 14 | 14-slow-reader-backpressure | 协调内容与动画 GO：R1–R5 80/80、原十个非视觉项 160/160、机制 R6 16/16（八步均 2/2）、原 #4/#5 32/32、原十二项 192/192；complete-under-EVAL，主人验收另计 | 24.00 |
-| 15 | 15-router-worker-selection | 协调内容／已读静态视图 GO：R1–R5 80/80、原十个非视觉项 160/160、静态 R6 16/16、原 #4/#5 32/32、原十二项 192/192；协调机制 0/16（6fb3c27…31c5e08）；作者源码+DOM 16/16 待协调读图，不记 complete-under-EVAL；主人视觉验收待 | 24.00 |
+| 15 | 15-router-worker-selection | 协调内容／已读静态视图 GO：R1–R5 80/80、原十个非视觉项 160/160、静态 R6 16/16、原 #4/#5 32/32、原十二项 192/192；协调机制 14/16（1、2、2、2、2、1、2、2）；本轮第 1／6 步返工后的作者与独立只读 reviewer 源码＋live DOM 复评 16/16，待协调 PNG 冷读，不记 complete-under-EVAL；主人视觉验收待 | 24.00 |
 
 ## Learning ML Systems
 

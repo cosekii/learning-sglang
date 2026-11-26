@@ -6,7 +6,7 @@
 
 - `worker` 是 router 可以调用的一个 Omni server。`router` 持有共用网址，为每个请求选择 worker。
 - 请求指定 model M，带一张图片。worker A 只接收文字，不能接收这个请求；worker B 接收图片输入，可以接收。
-- 两个 worker 起初都是候选。图片检查先排除 A，留下一个候选；确认 B 能接收图片后，才出现蓝色的 dispatch 路径。指向 A 的虚线不是实际 dispatch。
+- 两个 worker 起初都是候选。图片检查先排除 A，留下一个候选。确认 B 能接收图片后，才出现蓝色的 dispatch 路径。指向 A 的虚线不是实际 dispatch。
 - 数字是两个已配置 worker、一个图片请求、最后留下的一个兼容 worker。它们是构造值，不是 benchmark。
 
 ### 这里的兼容是什么意思
@@ -133,7 +133,7 @@ round robin 是默认路由策略。经过第 3、4 步过滤后，它只在兼�
 ### 图上是什么
 
 - `active requests` 是已选择但响应还没结束的工作。它们是 router 持有的 admission credits，不是 GPU 利用率或 worker 内部队列。
-- 这是一个新例子，初始 recency（轮换顺序）为 $[A,B,C]$，不是第 5 步的延续。每个请求停留两个状态：先读取 A、B、C 的数量，找出最小值并按顺序扫描；再写出被选 worker 的选择前 $\rightarrow$ 后数量，并把它移到队尾。下一行使用更新后的值。
+- 这是一个新例子，初始 recency（轮换顺序）为 $[A,B,C]$，不是第 5 步的延续。每个请求停留两个状态。先读取 A、B、C 的数量，找出最小值并按顺序扫描。再写出被选 worker 的选择前 $\rightarrow$ 后数量，并把它移到队尾。下一行使用更新后的值。
 - 起初 B、C 并列 0，所以按顺序选 B。随后 C 以 0 成为唯一最少。第三行 B、C 并列 1，又按顺序先选 B。
 - A 始终有两个活跃请求，这几行里从未进入最少集合。在同样的初始顺序 $[A,B,C]$ 和负载 $[2,0,0]$ 下，round robin 会选 A，least requests 会选 B。
 
