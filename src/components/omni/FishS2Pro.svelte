@@ -92,11 +92,18 @@
   ];
 
   // Sequence steps: one walking highlight, and one moving tail badge on the vocoder step.
-  const PHASE_COUNTS = [0, 0, 3, 11, 0, 0, 3, 0];
-  const PHASE_MS = [0, 0, 1100, 650, 0, 0, 1800, 0];
+  const PHASE_COUNTS = [0, 4, 3, 11, 0, 0, 3, 4];
+  const PHASE_MS = [0, 1100, 1100, 650, 0, 0, 1800, 1100];
   const REST_MS = 1800;
   type Frame = { x: number; y: number; w: number; h: number };
   const motionFrames = (isPhone: boolean, s: number): Frame[] => {
+    if (s === 1) return isPhone ? [
+      { x: 18, y: 82, w: 264, h: 62 }, { x: 18, y: 166, w: 264, h: 62 },
+      { x: 18, y: 250, w: 264, h: 62 }, { x: 18, y: 425, w: 264, h: 302 },
+    ] : [
+      { x: 30, y: 91, w: 135, h: 86 }, { x: 195, y: 91, w: 135, h: 86 },
+      { x: 360, y: 91, w: 135, h: 86 }, { x: 30, y: 214, w: 660, h: 342 },
+    ];
     if (s === 2) return isPhone ? [
       { x: 18, y: 84, w: 264, h: 362 }, { x: 18, y: 488, w: 264, h: 82 }, { x: 18, y: 612, w: 264, h: 86 },
     ] : [
@@ -110,6 +117,13 @@
       { x: 70, y: 287, w: 270, h: 61 },
       ...Array.from({ length: FISH_FAST_REMAINING_ROWS }, (_, i) => ({ x: 70 + i * 29, y: 400, w: 24, h: 47 })),
       { x: 428, y: 462, w: 244, h: 93 },
+    ];
+    if (s === 7) return isPhone ? [
+      { x: 18, y: 82, w: 264, h: 128 }, { x: 18, y: 249, w: 264, h: 212 },
+      { x: 18, y: 500, w: 264, h: 58 }, { x: 18, y: 585, w: 264, h: 147 },
+    ] : [
+      { x: 30, y: 90, w: 160, h: 365 }, { x: 228, y: 90, w: 224, h: 365 },
+      { x: 244, y: 373, w: 192, h: 55 }, { x: 488, y: 90, w: 202, h: 365 },
     ];
     return [];
   };
