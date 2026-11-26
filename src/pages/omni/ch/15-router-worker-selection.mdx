@@ -1,0 +1,29 @@
+---
+layout: ../../../layouts/Chapter.astro
+book: omni
+slug: 15-router-worker-selection
+---
+import RouterWorkerSelection from '../../../components/omni/RouterWorkerSelection.svelte';
+import { omniNeighbors } from '../../../omni/chapters';
+import { deepFor } from '../../../deep';
+export const deep = await deepFor('omni-15-router-worker-selection');
+
+<RouterWorkerSelection client:load {...omniNeighbors('15-router-worker-selection')} deep={deep} />
+
+<details class="i18n-en">
+<summary>Where this chapter's claims come from</summary>
+
+Step 1 constructs two worker profiles from the typed-image routing case in `sglang_omni_router/tests/chat_http.rs:1075-1098`. Worker A accepts text; worker B accepts typed image input. One image request has one compatible worker, so turn order cannot replace compatibility filtering. The ordinary selection path filters profiles before health and policy selection (`sglang_omni_router/src/worker_pool/mod.rs:338-373,544-578`). The example does not measure latency or claim that two workers always need request-body classification.
+
+Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`. Examples are constructed from source rules; the chapter does not run a router or benchmark.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的出处</summary>
+
+第 1 步根据 `sglang_omni_router/tests/chat_http.rs:1075-1098` 的 typed-image 路由用例构造两个 worker 能力。worker A 接收文字，worker B 接收 typed image 输入。一个图片请求只有一个兼容 worker，所以轮流顺序不能代替兼容性过滤。普通选择路径先过滤 profile，再检查 health 和选择策略（`sglang_omni_router/src/worker_pool/mod.rs:338-373,544-578`）。本例不测量延迟，也不声称两个 worker 一定需要请求体分类。
+
+本章代码出处固定到 `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`。示例按源码规则构造，本章没有运行 router 或 benchmark。
+
+</details>

@@ -329,6 +329,19 @@ export const STREAM_CHUNK2_END_S = STREAM_CHUNK2_ARRIVAL_S + STREAM_CHUNK_DURATI
 export const STREAM_STALL_CHUNK_PERCENT = STREAM_STALL_S / STREAM_CHUNK_DURATION_S * 100;
 export const STREAM_CONTINUITY_THRESHOLDS_MS = [50, 100, 200] as const;
 
+// Constructed router examples; health thresholds are the shipped defaults.
+export const ROUTER_WORKER_COUNT = 2;
+export const ROUTER_COMPATIBLE_WORKER_COUNT = 1;
+export const ROUTER_HEALTH_SUCCESS_THRESHOLD = 2;
+export const ROUTER_HEALTH_FAILURE_THRESHOLD = 3;
+export const ROUTER_ROUND_ROBIN_WORKERS = ['A', 'B', 'C'] as const;
+export const ROUTER_ROUND_ROBIN_SEQUENCE = [0, 1, 2, 0, 1, 2] as const;
+export const ROUTER_LEAST_INITIAL_LOADS = [2, 0, 0] as const;
+export const ROUTER_LEAST_SELECTIONS = [1, 2, 1, 2] as const;
+export const ROUTER_LEASE_ACTIVE_BEFORE = 0;
+export const ROUTER_LEASE_ACTIVE_DURING = ROUTER_LEASE_ACTIVE_BEFORE + 1;
+export const ROUTER_FINAL_LOADS = [2, 1] as const;
+
 // A constructed identifier used to read a communication trace, not captured log output.
 export const STREAM_TRACE_OBJECT_ID = 'obj-17';
 
