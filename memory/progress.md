@@ -4,6 +4,7 @@
 
 ## 本轮记录
 
+- 按复审指出的静态场景标准，直接核对第 7 章组件与 transcript：每步只有一个静态场景，R6 均为 2/2；逐图核对图自身信息、直接标签和颜色图例，原 #4／#5 均为 4/4。第 7 章现为 **8/8 步易读 12/12、原分 24/24、0 已知洞**，`ready: true` 有完整评分依据，不再做文字轮次。回归旧报告改记为：测试 `d36df3a`，早于当前 HEAD，可按 SOUL 跳过；mobile 两段只有 unsettled-await 警告，没有结果，整次回归是 **inconclusive**，不是通过。
 - 复审指出 `8dd368c` 的 `ready: false` 使 transcript／mobile／deep-check 报 `no ready chapters matched`，已恢复 `ready: true` 让现有门槛能选中本章，不代表完成。本章仍为 **text-complete / visual-blocked-on-owner**，R6、原 #4／#5 和总分不记。`build`、本章 `transcript`、中英布局 `mobile`、`readability`、`deep-check 07`、`zh-check` 已在 4323 端口重跑通过；下一新轮做 `08-fsdp2-training-backend`。回归 `latest.md` 虽写「有失败」，但 `run.log:65-79` 对应两条 mobile unsettled-await 警告和 `(exit 0)`，没有列出的布局失败行；此证据已写入报告。
 - 复审确认 Learning ML Systems 第 7 章文本和机械门槛真实通过，但 8/8 步只有 R1–R5，未达到 12/12。停止文字重写；另行尝试 `explore` 视觉复审仍返回 `NO_IMAGE_INPUT`，本章定为 **text-complete / visual-blocked-on-owner**，`ready` 改为 `false`，R6、原 #4／#5 和总分继续不记。按「两轮还上不去就换单元」规则，下一单元明确为 `08-fsdp2-training-backend`。核查本 lane 的 ML Systems 提交只涉及第 7 章，没有其他 k2 章节的视觉总分需要追溯；其他 lane 的历史视觉分不据此改动。
 - 01:45 Inside Voxt 第 8 章《你的小词典》7 步内容完成：同一词条分画语音提示、别名替换、术语表、备注四个去处与各自开关；别名替换先于清理、模型不在仍有效；术语表 ≤30 整份 / >30 只发提到的最多 60 行 2000 字符；备注作为单独一层进 system 提示。文本与机械门槛全过（build、本章 transcript、readability、deep-check、zh-check、中英三种宽度 mobile、中文逐步字号），0 内容洞；R6/#4/#5 与截图目测待有图片输入的复审者，本章保持待目视。
@@ -144,7 +145,7 @@
 | 04 | 04-gpu-communication | 完成：7/7 步易读满分 | 24.00 |
 | 05 | 05-distributed-serving | 完成：7/7 步易读满分 | 24.00 |
 | 06 | 06-slime-rollout-loop | 完成：8/8 步易读满分 | 24.00 |
-| 07 | 07-weight-updates | text-complete / visual-blocked-on-owner：8 步 R1–R5 为 10/10；R6、原 #4／#5 与视觉终检待主人；`ready: true` 仅供现有门槛选章，不代表完成，不再做文字轮次 | —（视觉后评） |
+| 07 | 07-weight-updates | 完成：8/8 步静态场景易读 12/12、原分 24/24；R6／#4／#5 按组件与 transcript 复核 | 24.00 |
 | 08 | 08-fsdp2-training-backend | 规划 | — |
 | 09 | 09-fp8-rollout-training | 规划 | — |
 | 10 | 10-int4-qat-rollout | 规划 | — |
