@@ -39,8 +39,8 @@
     caption: 'Least requests picks the smallest active count. Ties use the same rotating order.',
     captionZh: 'least requests 选择活跃数最少的 worker。并列最少时，沿用同一个轮换顺序。',
   }, {
-    caption: 'Selection increments the worker’s active count before dispatch. Response end, error, or cancellation releases it.',
-    captionZh: '选择后、dispatch 前，worker 活跃数先加一。响应结束、出错或取消时才释放。',
+    caption: 'Selection adds one to the worker’s active count before sending the request. Response end, error, or cancellation releases it.',
+    captionZh: '选择后、发送请求前，worker 活跃数先加一。响应结束、出错或取消时才收回。',
   }, {
     caption: 'C can fail after selection; the router does not retry that response on B. What does the client receive, and when can later requests avoid C?',
     captionZh: 'C 被选中后仍可能故障，router 不会把这个响应转到 B 重试。客户端会收到什么，后续请求何时不再选择 C？',
@@ -267,14 +267,14 @@
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Router-held work · not GPU usage' : 'Constructed ordinary requests; active counts are router-held work, not GPU usage or worker queues.', phone ? 'router 持有的工作 · 不是 GPU 利用率' : '构造的普通请求；活跃数是 router 持有的工作，不是 GPU 利用率或 worker 队列。')}</text>
       {:else if step === 6}
-        <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'Fresh request · active count' : 'Fresh request · the lease holds the active count', phone ? '新请求 · 活跃计数' : '新请求 · 租约持有活跃计数')}</text>
-        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'lease = held until the request ends' : 'RequestLease = the reservation held until the request reaches a terminal event', phone ? 'lease = 持有到请求结束' : 'RequestLease = 一直持有到请求到达终止事件的预留')}</text>
-        <text x={phone ? 18 : 30} y="79" class="label">{t('blue = active 1 held · orange = terminal release', '蓝 = 活跃数 1 保持占用 · 橙 = 终止时释放')}</text>
+        <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'Fresh request · active +1' : 'Fresh request · RequestLease holds active +1', phone ? '新请求 · 活跃数 +1' : '新请求 · RequestLease 持有活跃数 +1')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{phone ? t('RequestLease = a token holding active +1', 'RequestLease = 持有活跃数 +1 的凭证') : t('RequestLease = a token holding active +1 until response end, error, or cancellation', 'RequestLease = 持有活跃数 +1 的凭证，响应结束、出错或取消时收回')}</text>
+        <text x={phone ? 18 : 30} y="79" class="label">{t('blue = active +1 held · orange = lease release', '蓝 = 活跃数 +1 保持占用 · 橙 = 凭证收回')}</text>
         {#each [
           { title: 'SELECT', body: 'before dispatch', value: `${ROUTER_LEASE_ACTIVE_BEFORE} → ${ROUTER_LEASE_ACTIVE_DURING}`, titleZh: '选择', bodyZh: 'dispatch 前', terminal: false },
           { title: 'UPLOAD', body: 'request sent', value: `${ROUTER_LEASE_ACTIVE_DURING}`, titleZh: '上传', bodyZh: '发送请求', terminal: false },
           { title: 'HEADERS', body: 'response begins', value: `${ROUTER_LEASE_ACTIVE_DURING}`, titleZh: '响应头', bodyZh: '响应开始', terminal: false },
-          { title: 'TERMINAL', body: 'EOF · error · cancel', value: `${ROUTER_LEASE_ACTIVE_DURING} → ${ROUTER_LEASE_ACTIVE_BEFORE}`, titleZh: '终止', bodyZh: 'EOF · 出错 · 取消', terminal: true },
+          { title: 'RELEASE', body: 'EOF · error · cancel', value: `${ROUTER_LEASE_ACTIVE_DURING} → ${ROUTER_LEASE_ACTIVE_BEFORE}`, titleZh: '收回', bodyZh: 'EOF · 出错 · 取消', terminal: true },
         ] as event, i}
           {@const x = phone ? 20 : 30 + i * 170}
           {@const y = phone ? 110 + i * 130 : 125}
@@ -288,8 +288,8 @@
           {/if}
         {/each}
         <text x={W / 2} y={phone ? 650 : 310} text-anchor="middle" class="small strong">{t('Response headers do not release the count.', '收到响应头不会释放计数。')}</text>
-        <text x={W / 2} y={phone ? 680 : 345} text-anchor="middle" class="small strong">{t('Each terminal path releases it once.', '每条终止路径都只释放一次。')}</text>
-        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'One ordinary request = 1 credit' : 'One ordinary request holds one credit; a speech batch holds one credit per item.', phone ? '一个普通请求 = 1 credit' : '一个普通请求持有 1 credit；speech batch 每条目持有 1 credit。')}</text>
+        <text x={W / 2} y={phone ? 680 : 345} text-anchor="middle" class="small strong">{t('Each exit releases the lease once.', '每条退出路径都只收回一次凭证。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('dispatch = send to the worker · EOF = response end', 'dispatch = 发送请求给 worker · EOF = 响应结束')}</text>
       {:else if step === 7}
         <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'Selection is not a guarantee' : 'A selected worker can still fail', phone ? '选中不代表不会故障' : '选中的 worker 仍可能故障')}</text>
         <text x={phone ? 18 : 30} y="55" class="label">{t('blue = eligible workers · orange = failed response', '蓝 = 候选 worker · 橙 = 失败的响应')}</text>

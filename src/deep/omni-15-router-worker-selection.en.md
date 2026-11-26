@@ -164,15 +164,15 @@ The count rises before dispatch. The next step follows the lease that keeps it h
 
 Sources: `sglang_omni_router/src/worker_pool/mod.rs:565-605,1358-1439`; `sglang_omni_router/src/worker_pool/selection.rs:7-12`; `sglang_omni_router/src/worker_pool/admission.rs:49-88`.
 
-## Step 7 · Hold the lease until a terminal event
+## Step 7 · Hold active +1 until the response ends
 
-**One sentence.** A `RequestLease` increments the chosen worker before dispatch and releases its count only when the request terminates.
+**One sentence.** A `RequestLease` is a token that holds the chosen worker's active +1; response end, error, or cancellation releases it.
 
 ### On the stage
 
-- This is a fresh single-request example. Selection changes the chosen worker's active count from 0 to 1 before the router dispatches the request.
+- This is a fresh single-request example. Selection changes the chosen worker's active count from 0 to 1 before dispatch, which means sending the request to that worker.
 - Upload and response headers leave the count at 1. Headers begin the downstream response; they do not end the upstream work or release the lease.
-- The terminal card covers response EOF, an upstream error and downstream cancellation or another dropped response. Each path drops the lease once and returns the count to 0.
+- The release card covers response EOF, meaning the end of the response, an upstream error and downstream cancellation or another dropped response. Each path drops the lease once and returns the count to 0.
 - One ordinary request holds one credit. A speech batch holds item-weighted credits, so three items add and later subtract 3.
 
 ### The numbers on the stage
