@@ -7,6 +7,8 @@
 - 07:37 完成 Learning ML Systems 第 10 章《INT4 QAT 与 rollout》9 步：原始 INT4 负载、32 权重组 scale、fake quantization、STE、真实导出、4 位打包、Marlin 更新顺序、W4A16 计算和八卡容量。独立冷读与源码复审整改完成，**9/9 步易读 12/12、原分 24.00/24、0 未决内容洞和机械显示洞**；主人 PNG 目测仍待。
 - 九个步骤与复审整改逐步提交并推送至 `4821fa9`，评分记录随本轮最后提交；`build`（55 页）、本章 `transcript`、全章 `readability`、中英三种宽度 `mobile`、18 个逐步字号与布局视图、`deep-check 10`、`zh-check`、18 个深入讲解 DOM 审计和 `git diff --check` 通过。最终 54 张图在 `/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-uqyyaaql/opencode/ls-k2-mlsys10/final/`。本轮只跑本章检查，未跑全站回归、真实训练、权重更新、GPU benchmark 或质量评测。本轮类型：**新书**；下一章是 `11-train-inference-mismatch`，仍须先补源，缺源时按规划跳过。
 
+- 07:45 修旧 Learning SGLang Omni 第 13 章全部 8 步：逐步加入单枚红框循环导读，清理计时器句柄；按独立冷读和源码复审核正 PR #1235 的 GPU 4／5 拓扑、INT4 量化范围、replica2 独立状态位、基准客户端时钟、自定义 p90、generate-only 质量边界，以及第 8 步受支持的同摆卡 BF16／FP8 A/B。**8/8 步易读 12/12、原分 24.00/24、0 内容洞和机械显示洞**；主人目测仍待。
+- 八个步骤与复审整改逐步提交并推送至 `4497483`；`build`（55 页）、本章 `transcript`、全章 `readability`、中英三种宽度 `mobile`、中文逐步字号、`deep-check 13`、`zh-check`、16 个深入讲解 DOM 审计、16 个逐相位 DOM 审计和 `git diff --check` 通过。32 张舞台图、16 张深入讲解图与 16 张末相位图在 `/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-rt_0o35p/opencode/ls-k1-omni13-r6/`。本轮只跑本章检查，未跑全站回归、真实模型、GPU benchmark 或音频质量评测。本轮类型：**修旧**；下一普通轮做新书，Omni 先续写下一部分规划再写下一章。
 - 06:55 按复审修 Inside Voxt 第 10 章：第 5 步把「不足 350 ms 就丢」收窄到停顿结束的 `finalize` 路径，文件结尾 `Flush` 不查这个门槛；第 6 步先写 `w* = argmin RMS(w)`，再写 `cut = mid(w*)`；第 3、4、5、9 步深度讲解补齐 `uploaded bytes`、`cue end`、`cue start`、`keep_pause`、`log` 的符号和代入数；第 1 步把 `compressed M4A` 改成有解释的「压缩声音（M4A）」；第 2 步把 `afconvert`、`LEI16@16000`、`WAV` 移出舞台，只留「Mac 声音工具 / 16 kHz · mono · 16-bit」；第 1 步 #1 因没有数字代价记 1。**9/9 步文本易读 10/10（R1–R5）、原分文本 19/20（#1=1）、0 未决文本洞**；R6/#4/#5 无图不评，本章仍未完成。
 - 改动提交并推送；`build`（54 页）、本章 `transcript`、`readability`（0 机械问题）、`deep-check 10`、本章 `zh-check`、中英三种宽度 `mobile`、中文逐步字号（1–9）和 `git diff --check` 通过。截图 27 张在 `/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-iwsgbvyh/opencode/ls-volt-ch10-final/{en-desktop,zh-desktop,zh-phone}/`；`Read` 打开 PNG 返回 `Cannot read image`，目视仍待。本轮只跑本章检查，未跑全站回归、真实 Voxt 应用或真实识别。本轮类型：**修旧**；下一普通轮做 Voxt 第 11 章 `models-and-app-updates`。
 - 06:20 完成 Learning SGLang Omni 第 13 章《Qwen3-Omni 部署调优》8 步文本：两种启动形态、输出路线、H200/TP2 talker 摆卡、单卡 78→73 预算、BF16/FP8/INT4、replica2 每进程容量、readiness 与测量、全书部署决策表。独立冷读与源码复审整改完成，**8/8 步 R1–R5 为 10/10、原分 24.00/24、0 内容洞和机械显示洞**；R6 未评分，不记易读总分或 complete-under-EVAL，主人目测仍待。
@@ -136,7 +138,7 @@
 
 ## Learning SGLang Omni
 
-规划完成：`docs/plan-omni.md` 共 3 部分、13 章；第 1 章已制作 4 步并完成，第 2、3 章各已制作 3 步并完成，第 4 章已制作 4 步并完成，第 5 章已制作 5 步并完成，第 6 章已制作 8 步并完成，第 7 章已制作 6 步并完成，第 8 章已制作 8 步且内容验收完成，第 9 章已制作 7 步且内容验收完成，第 10 章已制作 8 步且文本验收完成，第 11、12 章各已制作 8 步且自评验收完成；第 13 章已制作 8 步、文本完成，R6 未评分，图像人工视觉验收待主人。
+规划完成：`docs/plan-omni.md` 共 3 部分、13 章；第 1 章已制作 4 步并完成，第 2、3 章各已制作 3 步并完成，第 4 章已制作 4 步并完成，第 5 章已制作 5 步并完成，第 6 章已制作 8 步并完成，第 7 章已制作 6 步并完成，第 8 章已制作 8 步且内容验收完成，第 9 章已制作 7 步且内容验收完成，第 10 章已制作 8 步且文本验收完成，第 11、12、13 章各已制作 8 步且自评验收完成。各章图像人工视觉验收仍待主人。下一普通轮先续写下一部分规划，再写下一章。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
@@ -152,7 +154,7 @@
 | 10 | 10-vocoder-optimization | 文本完成：8/8 步 R1–R5 为 10/10、0 内容洞和机械显示洞；R6/#4/#5 与总分待目视 | — |
 | 11 | 11-fish-s2-pro | 自评完成：8/8 步易读 12/12、0 内容洞和机械显示洞；人工视觉验收待主人 | 24.00 |
 | 12 | 12-full-duplex-strategies | 自评完成：8/8 步易读 12/12、0 内容洞和机械显示洞；人工视觉验收待主人 | 24.00 |
-| 13 | 13-qwen3-omni-deployment | 文本完成：8/8 步 R1–R5 为 10/10、0 内容洞和机械显示洞；R6 未评分，人工视觉验收待主人 | 24.00 |
+| 13 | 13-qwen3-omni-deployment | 自评完成：8/8 步易读 12/12、0 内容洞和机械显示洞；人工视觉验收待主人 | 24.00 |
 
 ## Learning ML Systems
 
