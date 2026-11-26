@@ -346,17 +346,21 @@
           {#if !panel.raw}
             <text x={panel.x + 16} y={panel.y + 60} class="tag">{t('after SSE starts, beside audio', 'SSE 开始后，在声音之外报告')}</text>
             <text x={panel.x + 16} y={panel.y + 88} class="tag">{t('Speech WebSocket: error event too', '语音 WebSocket 也发 error 事件')}</text>
-            <rect x={panel.x + 16} y={panel.y + 116} width={phone ? 238 : 268} height="88" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
-            <text x={panel.x + 28} y={panel.y + 147} class="tag strong">error</text>
-            <text x={panel.x + 28} y={panel.y + 177} class="mono">The request queue is full.</text>
-            <text x={panel.x + 20} y={panel.y + 240} class="tag">{t('The error can follow partial audio.', '错误之前可能已经交付部分声音。')}</text>
+            <g opacity={phase >= 1 ? 1 : 0.08} style="transition: opacity 450ms">
+              <rect x={panel.x + 16} y={panel.y + 116} width={phone ? 238 : 268} height="88" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+              <text x={panel.x + 28} y={panel.y + 147} class="tag strong">error</text>
+              <text x={panel.x + 28} y={panel.y + 177} class="mono">The request queue is full.</text>
+              <text x={panel.x + 20} y={panel.y + 240} class="tag">{t('The error can follow partial audio.', '错误之前可能已经交付部分声音。')}</text>
+            </g>
           {:else}
             <text x={panel.x + 16} y={panel.y + 60} class="tag">{t('audio samples only', '只有声音样本')}</text>
             <text x={panel.x + 16} y={panel.y + 88} class="tag">{t('no event envelope for an error', '没有装错误的事件外壳')}</text>
-            <rect x={panel.x + 16} y={panel.y + 116} width={phone ? 238 : 268} height="88" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
-            <text x={panel.x + 28} y={panel.y + 147} class="tag strong">{t('RESPONSE STREAM ENDS EARLY', '响应流提前结束')}</text>
-            <text x={panel.x + 28} y={panel.y + 177} class="tag">{t('no general error envelope', '没有通用错误外壳')}</text>
-            <text x={panel.x + 20} y={panel.y + 240} class="tag">{t('The reader sees the response stream end.', '读者看到响应流提前结束。')}</text>
+            <g opacity={phase >= 2 ? 1 : 0.08} style="transition: opacity 450ms">
+              <rect x={panel.x + 16} y={panel.y + 116} width={phone ? 238 : 268} height="88" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+              <text x={panel.x + 28} y={panel.y + 147} class="tag strong">{t('RESPONSE STREAM ENDS EARLY', '响应流提前结束')}</text>
+              <text x={panel.x + 28} y={panel.y + 177} class="tag">{t('no general error envelope', '没有通用错误外壳')}</text>
+              <text x={panel.x + 20} y={panel.y + 240} class="tag">{t('The reader sees the response stream end.', '读者看到响应流提前结束。')}</text>
+            </g>
           {/if}
         {/each}
         <text x={W / 2} y={phone ? 724 : 526} text-anchor="middle" class="tag">{t('This cap does not reject a request when it arrives.', '这个上限不在请求到达时拒绝它。')}</text>
