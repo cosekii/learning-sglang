@@ -283,20 +283,22 @@
           {@const y = phone ? 145 + i * 105 : 145 + i * 86}
           {@const minimum = Math.min(...row.before)}
           {@const tied = row.before.map((load, worker) => load === minimum ? ROUTER_ROUND_ROBIN_WORKERS[worker] : null).filter(Boolean).join(',')}
-          <rect x={phone ? 18 : 50} y={y} width={phone ? 264 : 620} height={phone ? 88 : 68} rx="9" fill="var(--bg)" stroke="var(--line)" />
-          <text x={phone ? 28 : 70} y={y + 29} class="small">{i + 1}</text>
-          {#each row.before as load, worker}
-            <text x={phone ? 67 + worker * 45 : 200 + worker * 100} y={y + 29} class="result">{load}</text>
-          {/each}
-          <text x={phone ? 202 : 515} y={y + 29} class="result">{ROUTER_ROUND_ROBIN_WORKERS[row.selected]}</text>
-          <text x={phone ? 28 : 200} y={y + 56} class="small">min = {minimum} · {tied} {tied.includes(',') ? t('tie', '并列') : t('only', '唯一最少')}</text>
+          <g opacity={phase === i + 1 ? 1 : phase > i + 1 ? 0.45 : 0.12} style="transition: opacity 350ms">
+            <rect x={phone ? 18 : 50} y={y} width={phone ? 264 : 620} height={phone ? 88 : 68} rx="9" fill="var(--bg)" stroke={phase === i + 1 ? 'var(--fg)' : 'var(--line)'} stroke-width={phase === i + 1 ? 3 : 1} />
+            <text x={phone ? 28 : 70} y={y + 29} class="small">{i + 1}</text>
+            {#each row.before as load, worker}
+              <text x={phone ? 67 + worker * 45 : 200 + worker * 100} y={y + 29} class="result">{load}</text>
+            {/each}
+            <text x={phone ? 202 : 515} y={y + 29} class="result">{ROUTER_ROUND_ROBIN_WORKERS[row.selected]}</text>
+            <text x={phone ? 28 : 200} y={y + 56} class="small">min = {minimum} · {tied} {tied.includes(',') ? t('tie', '并列') : t('only', '唯一最少')}</text>
+          </g>
         {/each}
-        <text x={W / 2} y={phone ? 590 : 515} text-anchor="middle" class="result">B → C → B → C</text>
+        <text x={W / 2} y={phone ? 590 : 515} text-anchor="middle" class="result" opacity={phase >= 5 ? 1 : 0.12} style="transition: opacity 350ms">B → C → B → C</text>
         {#if phone}
-          <text x={W / 2} y="620" text-anchor="middle" class="small">{t('Same [A,B,C], loads [2,0,0]', '同为 [A,B,C]，负载 [2,0,0]')}</text>
-          <text x={W / 2} y="650" text-anchor="middle" class="small strong">{t('round robin → A · least requests → B', 'round robin → A · least requests → B')}</text>
+          <text x={W / 2} y="620" text-anchor="middle" class="small" opacity={phase >= 5 ? 1 : 0.12} style="transition: opacity 350ms">{t('Same [A,B,C], loads [2,0,0]', '同为 [A,B,C]，负载 [2,0,0]')}</text>
+          <text x={W / 2} y="650" text-anchor="middle" class="small strong" opacity={phase >= 5 ? 1 : 0.12} style="transition: opacity 350ms">{t('round robin → A · least requests → B', 'round robin → A · least requests → B')}</text>
         {:else}
-          <text x={W / 2} y="550" text-anchor="middle" class="small strong">{t('Same [A,B,C], loads [2,0,0]: round robin → A · least requests → B', '同为 [A,B,C]，负载 [2,0,0]：round robin → A · least requests → B')}</text>
+          <text x={W / 2} y="550" text-anchor="middle" class="small strong" opacity={phase >= 5 ? 1 : 0.12} style="transition: opacity 350ms">{t('Same [A,B,C], loads [2,0,0]: round robin → A · least requests → B', '同为 [A,B,C]，负载 [2,0,0]：round robin → A · least requests → B')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Router-held work · not GPU usage' : 'Constructed ordinary requests; active counts are router-held work, not GPU usage or worker queues.', phone ? 'router 持有的工作 · 不是 GPU 利用率' : '构造的普通请求；活跃数是 router 持有的工作，不是 GPU 利用率或 worker 队列。')}</text>
       {:else if step === 6}
@@ -378,7 +380,7 @@
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Next chapter: worker failure and graceful exit.', '下一章：worker 故障与退出。')}</text>
       {/if}
-      {#if step <= 4}<LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={4} label={t('loops', '循环')} />{/if}
+      {#if step <= 5}<LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={4} label={t('loops', '循环')} />{/if}
     </svg>
   </div>
   <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh}
