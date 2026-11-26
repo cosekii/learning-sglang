@@ -30,3 +30,41 @@ The 250 ms input is already approximate, so the 750 ms total is approximate too.
 The first map entry keeps a finished encoder result. The next step shows the exact identity that lets later requests reuse it safely.
 
 Sources: `Awesome-ML-SYS-Tutorial/sglang/sglang-omni/moss-tts-local-v15-blog-zh.md:54-58`; `sglang_omni/models/moss_tts/reference_encoder.py:110-143`.
+
+## Step 2 · Reuse a finished result through an exact key
+
+**One sentence.** The first encode stores its codes under the full input and encoder identity, so the next two matching requests load copies instead of running the encoder again.
+
+### On the stage
+
+- `Cache` means a saved output found by a key. `Exact key` means every identity field must match: model, model revision, encoder and its configuration, artifact kind, input content and options.
+- The prompt text is absent from this reference-encoder key. A, B and C can have different prompts because the cached object describes only the shared reference voice and the encoder that converted it.
+- A is a `miss`: no stored value exists, so the encoder runs once and stores the codes. B and C are `hits`: they load the stored codes without another GPU encode.
+- Blue marks GPU encoder work. Orange marks the saved-code path. Loading still has host and transfer costs; the bars compare GPU encode time only, not whole-request latency.
+- Each load returns a copy. A caller changing its output cannot mutate the cached tensor seen by another caller.
+
+### Formula and symbols
+
+$$T_{\mathrm{cached}}=m\times t_{\mathrm{encode}},\qquad S=T_{\mathrm{uncached}}-T_{\mathrm{cached}}$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $m$ | Cache misses that must run the encoder | This example, 1 |
+| $t_{\mathrm{encode}}$ | Approximate time per reference encode | Step 1, 250 ms |
+| $T_{\mathrm{cached}}$ | GPU encode time with one miss and two hits | Calculated here |
+| $T_{\mathrm{uncached}}$ | GPU encode time for three separate passes | Step 1, 750 ms |
+| $S$ | Repeated GPU encode time skipped by the cache | Calculated here |
+
+### The numbers on the stage
+
+$$T_{\mathrm{cached}}=1\times250=250\ \text{ms}$$
+
+$$S=750-250=500\ \text{ms}$$
+
+The two hits are counted as two cache hits, not as two 250 ms encodes. The 500 ms is an approximate avoided GPU-work total for this constructed sequence, not a promised end-to-end speedup.
+
+### Next
+
+A warm cache helps only after the first result exists. The next step puts all three requests before that first result and shares the encode already in flight.
+
+Sources: `sglang_omni/scheduling/reference_encoder.py:24-35,84-119,344-413`; `sglang_omni/models/moss_tts/reference_encoder.py:74-105`; `tests/unit_test/scheduling/test_reference_encoder.py:85-119,182-193`.

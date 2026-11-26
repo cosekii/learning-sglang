@@ -30,3 +30,41 @@ $$T_{\mathrm{uncached}}=3\times250\ \text{ms}=750\ \text{ms}$$
 地图第一项要保留已经完成的 encoder 结果。下一步看 later 请求凭什么确认自己能安全复用它。
 
 来源：`Awesome-ML-SYS-Tutorial/sglang/sglang-omni/moss-tts-local-v15-blog-zh.md:54-58`；`sglang_omni/models/moss_tts/reference_encoder.py:110-143`。
+
+## 第 2 步 · 用完整 key 复用已完成的结果
+
+**一句话。** 首次编码按完整输入和 encoder 身份保存 codes，后两个匹配请求读取副本，不再运行 encoder。
+
+### 图上是什么
+
+- `cache` 指能按 key 找到的已存结果。`完整 key` 要求每个身份字段都匹配：模型、模型版本、encoder 及其配置、结果类型、输入内容和选项。
+- prompt 文本不在参考 encoder 的 key 里。A、B、C 可以有不同 prompt，因为缓存对象只描述共用的参考音频和转换它的 encoder。
+- A 是 `miss`：还没有已存结果，所以 encoder 跑一次并保存 codes。B、C 是 `hit`：直接读取 codes，不再做 GPU encode。
+- 蓝色表示 GPU encoder 工作，橙色表示已存 codes 的路径。读取仍有 host 和传输成本；横条只比较 GPU encode 时间，不是整个请求的延迟。
+- 每次读取都返回副本。调用方改自己的输出，不会改到另一个调用方看到的缓存 tensor。
+
+### 公式与符号
+
+$$T_{\mathrm{cached}}=m\times t_{\mathrm{encode}},\qquad S=T_{\mathrm{uncached}}-T_{\mathrm{cached}}$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $m$ | 必须运行 encoder 的 cache miss 数 | 本例，1 |
+| $t_{\mathrm{encode}}$ | 一次参考编码的大致耗时 | 第 1 步，250 ms |
+| $T_{\mathrm{cached}}$ | 一次 miss、两次 hit 时的 GPU encode 时间 | 本步计算 |
+| $T_{\mathrm{uncached}}$ | 三次独立编码的 GPU 时间 | 第 1 步，750 ms |
+| $S$ | cache 少做的重复 GPU encode 时间 | 本步计算 |
+
+### 代入图上的数
+
+$$T_{\mathrm{cached}}=1\times250=250\ \text{ms}$$
+
+$$S=750-250=500\ \text{ms}$$
+
+两个 hit 是两次缓存命中，不能再各算一次 250 ms 编码。500 ms 是这个构造序列少做的大致 GPU 工作，不保证端到端也快同样多。
+
+### 接下来
+
+热 cache 只在首次结果完成后有帮助。下一步把三个请求都放在结果完成之前，让它们共享正在进行的编码。
+
+来源：`sglang_omni/scheduling/reference_encoder.py:24-35,84-119,344-413`；`sglang_omni/models/moss_tts/reference_encoder.py:74-105`；`tests/unit_test/scheduling/test_reference_encoder.py:85-119,182-193`。
