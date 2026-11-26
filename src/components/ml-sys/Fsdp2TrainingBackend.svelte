@@ -75,7 +75,7 @@
     mobileTitle: `Forward starts with ${FSDP_FORWARD_RESIDENT_GB} GB`, mobileTitleZh: `Forward 先保留 ${FSDP_FORWARD_RESIDENT_GB} GB`,
     mobileSubtitle: 'all-gather = rebuild a full layer', mobileSubtitleZh: 'all-gather = 拼出完整一层',
     mobileFoot: 'Initial forward after zero_grad; U is unknown.', mobileFootZh: 'zero_grad 后的初始 forward；U 大小未知。',
-    mobileLegend: 'Orange = weights + optimizer · blue = temporary layer', mobileLegendZh: '橙 = 权重 + 优化器 · 蓝 = 临时完整层',
+    mobileLegend: 'Orange = weights + optimizer · blue = layer', mobileLegendZh: '橙 = 权重 + 优化器 · 蓝 = 临时完整层',
     mobile: [
       { title: 'WEIGHTS + OPTIMIZER', titleZh: '权重 + 优化器', body: `${FSDP_SHARD_WEIGHT_GB} GB + ${FSDP_SHARD_OPTIMIZER_GB} GB = ${FSDP_FORWARD_RESIDENT_GB} GB`, bodyZh: `${FSDP_SHARD_WEIGHT_GB} GB + ${FSDP_SHARD_OPTIMIZER_GB} GB = ${FSDP_FORWARD_RESIDENT_GB} GB`, tone: 'orange' },
       { title: 'ALL-GATHER · ONE LAYER', titleZh: 'ALL-GATHER · 完整一层', body: 'every rank contributes its shard', bodyZh: '每个 rank 都拿出自己的一片', tone: 'plain' },
@@ -122,7 +122,7 @@
     mobileTitle: `The ${FSDP_SHARD_STATE_PER_GPU_GB} GB bill is below the peak`, mobileTitleZh: `${FSDP_SHARD_STATE_PER_GPU_GB} GB 训练账不是峰值`,
     mobileSubtitle: 'peak = training state + temporary work', mobileSubtitleZh: '峰值 = 训练状态 + 临时工作',
     mobileFoot: 'No exact FSDP2 peak is supplied.', mobileFootZh: '来源没有给出 FSDP2 的精确峰值。',
-    mobileLegend: 'Orange = training bill · blue = layer · grey = intermediates', mobileLegendZh: '橙 = 训练账 · 蓝 = 完整层 · 灰 = 中间结果',
+    mobileLegend: 'Orange = bill · blue = layer · grey = intermediates', mobileLegendZh: '橙 = 训练账 · 蓝 = 完整层 · 灰 = 中间结果',
     mobile: [
       { title: `TRAINING BILL · ${FSDP_SHARD_STATE_PER_GPU_GB} GB`, titleZh: `训练状态账 · ${FSDP_SHARD_STATE_PER_GPU_GB} GB`, body: 'weights + gradients + optimizer', bodyZh: '权重 + 梯度 + 优化器状态', tone: 'orange' },
       { title: 'LARGEST BORROWED LAYER', titleZh: '最大临时完整层', body: 'temporary full values, size unknown', bodyZh: '临时完整数值，大小未知', tone: 'blue' },
