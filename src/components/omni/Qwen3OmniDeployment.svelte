@@ -110,7 +110,7 @@
   const speechGpu1 = QWEN_SPEECH_DEFAULT_STAGE_PROCESSES.filter((stage) => stage.gpu === 1);
 
   // One walking outline shows each scene in reading order.
-  const PHASE_COUNTS = [3, 3, 4, 4, 3, 4, 0, 0];
+  const PHASE_COUNTS = [3, 3, 4, 4, 3, 4, 4, 0];
   const PHASE_MS = 1500;
   const REST_MS = 1800;
   type Frame = { x: number; y: number; w: number; h: number };
@@ -174,6 +174,17 @@
       { x: 394, y: 275, w: 292, h: 58 },
       { x: 394, y: 343, w: 292, h: 58 },
       { x: 394, y: 417, w: 292, h: 62 },
+    ];
+    if (s === 6) return isPhone ? [
+      { x: 15, y: 105, w: 270, h: 340 },
+      { x: 30, y: 539, w: 240, h: 172 },
+      { x: 30, y: 719, w: 240, h: 60 },
+      { x: 30, y: 791, w: 240, h: 60 },
+    ] : [
+      { x: 20, y: 105, w: 320, h: 420 },
+      { x: 395, y: 179, w: 290, h: 172 },
+      { x: 395, y: 359, w: 290, h: 60 },
+      { x: 395, y: 431, w: 290, h: 60 },
     ];
     return [];
   };
@@ -430,14 +441,14 @@
             <text x={panel.x + 15} y={panel.y + 109} class="tag">{t('inputs · sampling · hardware · warmup', '输入 · 采样 · 硬件 · 预热')}</text>
             <text x={panel.x + 15} y={panel.y + 134} class="tag">{t('change one deployment choice', '只改一个部署选择')}</text>
             <rect x={panel.x + 15} y={panel.y + 153} width={panel.w - 30} height="58" rx="8" fill="var(--bg)" stroke="var(--gen)" />
-            <text x={panel.x + panel.w / 2} y={panel.y + 188} text-anchor="middle" class="tag strong">{phone ? t(`${QWEN_BENCH_CONCURRENCIES.length} levels × ${QWEN_BENCH_REPEATS} repeats = ${QWEN_BENCH_RUNS_PER_ARM} runs / arm`, `${QWEN_BENCH_CONCURRENCIES.length} 档并发 × ${QWEN_BENCH_REPEATS} 次 = ${QWEN_BENCH_RUNS_PER_ARM} 次 / 组`) : t(`${QWEN_BENCH_CONCURRENCIES.length} concurrency levels × ${QWEN_BENCH_REPEATS} repeats = ${QWEN_BENCH_RUNS_PER_ARM} runs / arm`, `${QWEN_BENCH_CONCURRENCIES.length} 档并发 × 每档 ${QWEN_BENCH_REPEATS} 次 = ${QWEN_BENCH_RUNS_PER_ARM} 次 / 组`)}</text>
+            <text x={panel.x + panel.w / 2} y={panel.y + 188} text-anchor="middle" class="tag strong">{phone ? t(`example: ${QWEN_BENCH_CONCURRENCIES.length} levels × ${QWEN_BENCH_REPEATS} = ${QWEN_BENCH_RUNS_PER_ARM} runs / arm`, `文档算例：${QWEN_BENCH_CONCURRENCIES.length} 档 × ${QWEN_BENCH_REPEATS} 次 = ${QWEN_BENCH_RUNS_PER_ARM} 次 / 组`) : t(`documented: ${QWEN_BENCH_CONCURRENCIES.length} levels × ${QWEN_BENCH_REPEATS} repeats = ${QWEN_BENCH_RUNS_PER_ARM} runs / arm`, `文档算例：${QWEN_BENCH_CONCURRENCIES.length} 档 × 每档 ${QWEN_BENCH_REPEATS} 次 = ${QWEN_BENCH_RUNS_PER_ARM} 次 / 组`)}</text>
             <text x={panel.x + panel.w / 2} y={panel.y + 233} text-anchor="middle" class="tag">{phone ? t(`c = ${QWEN_BENCH_CONCURRENCIES.join(', ')} · ${QWEN_BENCH_REPEATS} repeats each`, `c = ${QWEN_BENCH_CONCURRENCIES.join('、')} · 每档 ${QWEN_BENCH_REPEATS} 次`) : t(`levels: c = ${QWEN_BENCH_CONCURRENCIES.join(', ')} · ${QWEN_BENCH_REPEATS} repeats at each level`, `并发档：c = ${QWEN_BENCH_CONCURRENCIES.join('、')} · 每档重复 ${QWEN_BENCH_REPEATS} 次`)}</text>
             <rect x={panel.x + 15} y={panel.y + 254} width={panel.w - 30} height="60" rx="8" fill="var(--bg)" stroke="var(--line)" />
             <text x={panel.x + 26} y={panel.y + 279} class="tag strong">{t('SERVER RECORD', '服务器记录')}</text>
-            <text x={panel.x + 26} y={panel.y + 302} class="tag">{t('first audio · total · throughput · failures', '首音 · 总耗时 · 吞吐 · 失败')}</text>
+            <text x={panel.x + 26} y={panel.y + 302} class="tag">{phone ? t('p90/p99 first audio · total · throughput · fails', '首音 p90/p99 · 总耗时 · 吞吐 · 失败') : t('first audio p90/p99 · total · throughput · failures', '首音 p90/p99 · 总耗时 · 吞吐 · 失败')}</text>
             <rect x={panel.x + 15} y={panel.y + 326} width={panel.w - 30} height="60" rx="8" fill="var(--bg)" stroke="var(--line)" />
             <text x={panel.x + 26} y={panel.y + 351} class="tag strong">{t('LISTENER RECORD', '听者记录')}</text>
-            <text x={panel.x + 26} y={panel.y + 374} class="tag">{t('stalls · stop L−S · response N−R', '卡顿 · 停答 L−S · 回应 N−R')}</text>
+            <text x={panel.x + 26} y={panel.y + 374} class="tag">{t('stalls · stop wait · response wait', '卡顿 · 停答等待 · 回应等待')}</text>
           {/if}
         {/each}
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{phone ? t('Readiness skips larger inputs and batches.', 'readiness 可能没有预热更大的输入和 batch。') : t('Readiness can leave video, large batches and other input sizes unwarmed.', 'readiness 可能没有预热视频、大 batch 和其他输入大小。')}</text>
