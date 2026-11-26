@@ -71,7 +71,7 @@ FSDP2 represents each parameter as a DTensor: the logical tensor plus its distri
 
 Keeping shards saves persistent memory, but a layer still needs its full parameter values for computation. The next step gathers one layer temporarily.
 
-Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:16-23,71-74`; `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:43-47,62-82`; `THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7`, `slime/backends/fsdp_utils/actor.py:94-98,158-186`.
+Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:16-23`; `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:43-47,62-82`; `THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7`, `slime/backends/fsdp_utils/actor.py:94-98,158-186`.
 
 ## Step 3 · Borrow a full layer for forward computation
 
@@ -114,7 +114,7 @@ Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:18`; `Awesome-ML-SYS
 
 - Each rank used different training records. Summing matching gradients combines the contributions from those records.
 - The blue temporary gradient belongs to one layer, not to the whole model's 8 GB logical gradient table. FSDP reduce-scatters each layer's gradient when it is ready.
-- The orange box is the rank's reduced shard for this layer. The 1 GB label comes from Step 2's whole-model saved total, not from this layer's temporary size.
+- The orange box is the rank's reduced shard for this layer. The label shows the whole-model gradient table: 8 GB ÷ 8 = 1 GB per rank, not this layer's temporary size.
 - The optimizer updates the owned weight shards after all layers finish, not once for each box in this flow.
 
 ### Formula and symbols
@@ -132,7 +132,7 @@ $$g_{\ell,i}=S_{\ell,i}\!\left(\sum_{r=1}^{R}g_\ell^{(r)}\right)$$
 
 ### The numbers on the stage
 
-The only gradient size on the stage is Step 2's whole-model saved total: the logical gradient table is 8 GB, so equal sharding gives $8/8=1$ GB per rank across all layers. Neither the temporary layer gradient nor the reduced layer shard has a supplied size. The optimizer runs after all layers finish, not once per layer.
+The stage labels the whole-model gradient table: 8 GB ÷ 8 = 1 GB per rank across all layers. This is only the gradient table's shard; the rank's total training state is 8 GB from Step 2. Neither the temporary layer gradient nor the reduced layer shard has a supplied size. The optimizer runs after all layers finish, not once per layer.
 
 Slime calls `loss.backward()` and `optimizer.step()` in the actor. The FSDP wrapper handles parameter gathers and per-layer gradient reduce-scatter; the actor does not write separate collective calls beside those methods.
 
@@ -140,7 +140,7 @@ Slime calls `loss.backward()` and `optimizer.step()` in the actor. The FSDP wrap
 
 Persistent shards are smaller, but full units and other temporary results still need space. The next step separates owned state from peak memory.
 
-Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:19,71-74`; `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:47-58`; `THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7`, `slime/backends/fsdp_utils/actor.py:687-702,1000-1039`.
+Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:19`; `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:47-58`; `THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7`, `slime/backends/fsdp_utils/actor.py:687-702,1000-1039`.
 
 ## Step 5 · Owned state is only one part of peak memory
 
@@ -184,7 +184,7 @@ Sources: `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:31,93-107`; `Aw
 
 - The export starts with weight shards only. Gradients and optimizer-state tables remain in the training box.
 - `Replicate()` reconstructs one complete logical weight tensor from its DTensor shards. It does not reconstruct every parameter at once.
-- Full tensors join a bucket. After asynchronous results are ready, the bucket uses Chapter 7's update path and rollout receives `v1`.
+- Full tensors join a bucket. After asynchronous results are ready, the bucket follows Ch. 7 Step 5's one-bucket-at-a-time handoff. Ch. 7 Step 6 then waits for one complete version and rejects old KV, so rollout receives `v1` as a complete version.
 - The closing question concerns the 16-bit and 32-bit saved tables from earlier steps: sharding changed their copies, not their bits per number.
 
 ### Formula and symbols

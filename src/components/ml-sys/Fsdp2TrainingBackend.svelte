@@ -4,6 +4,7 @@
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
+  import { HBM_GB } from '../../numbers';
   import { FSDP_EXAMPLE_PARAMS_B, FSDP_DP_SIZE, FSDP_FULL_WEIGHT_GB, FSDP_FULL_GRADIENT_GB, FSDP_FULL_OPTIMIZER_GB, FSDP_FULL_STATE_PER_GPU_GB, FSDP_FULL_CLUSTER_STATE_GB, FSDP_FULL_CARD_SHARE, FSDP_SHARD_WEIGHT_GB, FSDP_SHARD_GRADIENT_GB, FSDP_SHARD_OPTIMIZER_GB, FSDP_SHARD_STATE_PER_GPU_GB, FSDP_SHARD_CLUSTER_STATE_GB } from '../../ml-sys/numbers';
 
   type Tone = 'plain' | 'blue' | 'orange';
@@ -38,7 +39,7 @@
     formulas: [
       { en: `${FSDP_EXAMPLE_PARAMS_B}B values × 16 bytes = ${FSDP_FULL_STATE_PER_GPU_GB} GB per GPU`, zh: `每张 GPU：${FSDP_EXAMPLE_PARAMS_B}B 个数 × 16 字节 = ${FSDP_FULL_STATE_PER_GPU_GB} GB` },
       { en: `${FSDP_FULL_STATE_PER_GPU_GB} GB × ${FSDP_DP_SIZE} = ${FSDP_FULL_CLUSTER_STATE_GB} GB`, zh: `${FSDP_FULL_STATE_PER_GPU_GB} GB × ${FSDP_DP_SIZE} = ${FSDP_FULL_CLUSTER_STATE_GB} GB` },
-      { en: `${FSDP_FULL_STATE_PER_GPU_GB} GB ÷ 80 GB = ${(FSDP_FULL_CARD_SHARE * 100).toFixed(0)}% of one H100`, zh: `${FSDP_FULL_STATE_PER_GPU_GB} GB ÷ 80 GB = 一张 H100 的 ${(FSDP_FULL_CARD_SHARE * 100).toFixed(0)}%` },
+      { en: `${FSDP_FULL_STATE_PER_GPU_GB} GB ÷ ${HBM_GB} GB = ${(FSDP_FULL_CARD_SHARE * 100).toFixed(0)}% of one H100`, zh: `${FSDP_FULL_STATE_PER_GPU_GB} GB ÷ ${HBM_GB} GB = 一张 H100 的 ${(FSDP_FULL_CARD_SHARE * 100).toFixed(0)}%` },
       { en: '16 bytes = 2 + 2 + 3 × 4 per value', zh: '每个数 16 字节 = 2 + 2 + 3 × 4' },
     ],
   }, {
@@ -108,7 +109,7 @@
       { en: 'why sum: different records per rank', zh: '为何汇总：各 rank 用不同样本' },
       { en: 'parameters: all-gather', zh: '参数：all-gather' },
       { en: 'gradients: reduce-scatter, layer by layer', zh: '梯度：逐层 reduce-scatter' },
-      { en: 'Step 2 total: 1 GB saved per rank', zh: '第 2 步合计：每个 rank 保存 1 GB' },
+      { en: 'whole-model gradient table: 8 GB ÷ 8 = 1 GB per rank', zh: '全模型梯度表：8 GB ÷ 8 = 每个 rank 1 GB' },
     ],
   }, {
     caption: `The owned shards total ${FSDP_SHARD_STATE_PER_GPU_GB} GB. Peak memory also includes the largest borrowed layer and training intermediates.`,
@@ -137,17 +138,17 @@
     title: 'Rollout receives full weights bucket by bucket', titleZh: 'Rollout 按桶收到完整权重',
     subtitle: 'Replicate() = gather one weight tensor\'s shards into a full tensor',
     subtitleZh: 'Replicate() = 把一个张量在各 rank 的分片拼成完整张量',
-    foot: 'The whole training model is not gathered at once; Ch. 7 owns transport and cache rules.',
-    footZh: '不会一次拼出整套训练模型；传输和缓存规则见第 7 章。',
+    foot: 'No whole-model gather; Ch. 7 Steps 5 and 6 show bucket handoffs, whole-version waits and old-KV rejection.',
+    footZh: '不会一次拼出整套训练模型；第 7 章第 5、6 步讲按桶交接、整版等待和旧 KV 失效。',
     mobileTitle: 'Full weights, one bucket at a time', mobileTitleZh: '完整权重，一次一桶',
     mobileSubtitle: 'Replicate() = gather one tensor\'s shards', mobileSubtitleZh: 'Replicate() = 拼起一个张量的各 rank 分片',
-    mobileFoot: 'Next: which tables can use fewer bits?', mobileFootZh: '下一章：哪些表能用更少位？',
+    mobileFoot: 'Ch. 7 Step 6: whole-version wait; old KV rejected.', mobileFootZh: '第 7 章第 6 步：等待完整版本，旧 KV 失效。',
     mobileLegend: 'Orange = training state · blue = full weights', mobileLegendZh: '橙 = 训练状态 · 蓝 = 完整权重',
     mobile: [
       { title: 'WEIGHT SHARDS ONLY', titleZh: '只取权重分片', body: 'gradients + optimizer stay in training', bodyZh: '梯度和优化器留在训练端', tone: 'orange' },
       { title: 'REPLICATE()', titleZh: 'REPLICATE()', body: 'one full weight tensor', bodyZh: '拼出一个完整权重张量', tone: 'plain' },
       { title: 'BUCKET', titleZh: '一桶', body: 'full tensors wait together', bodyZh: '完整张量一起等待发送', tone: 'blue' },
-      { title: 'CH. 7 UPDATE → ROLLOUT', titleZh: '第 7 章更新 → ROLLOUT', body: 'use v1 after completion', bodyZh: '更新完成后使用 v1', tone: 'plain' },
+      { title: 'CH. 7 STEP 5 → ROLLOUT', titleZh: '第 7 章第 5 步 → ROLLOUT', body: 'one-bucket handoff', bodyZh: '每次交接一桶', tone: 'plain' },
     ],
     formulas: [
       { en: 'weights + gradients: 16 bits = 2 bytes', zh: '权重 + 梯度：16 位 = 2 字节' },
@@ -200,7 +201,7 @@
           {/if}
         {/each}
         {#each cur.formulas as line, i}
-          <text x="150" y={80 + cur.mobile.length * 91 + 12 + i * 27} text-anchor="middle" class={i === 0 ? 'result' : 'small'}>{t(line.en, line.zh)}</text>
+          <text x="150" y={80 + cur.mobile.length * 91 + 12 + i * 27} text-anchor="middle" class={i === 0 ? 'result' : 'small'} style={step === 3 && i === 3 ? 'font-size: 11px' : undefined}>{t(line.en, line.zh)}</text>
         {/each}
         <text x="150" y={80 + cur.mobile.length * 91 + 12 + cur.formulas.length * 27} text-anchor="middle" class="small">{t(cur.mobileLegend, cur.mobileLegendZh)}</text>
       {:else if step === 0}
@@ -215,7 +216,7 @@
         <line x1="60" y1="250" x2="320" y2="250" stroke="var(--line)" />
         <text x="65" y="284" class="small strong">{t('TOTAL ON THIS GPU', '这张 GPU 合计')}</text>
         <text x="315" y="284" text-anchor="end" class="big">{FSDP_FULL_STATE_PER_GPU_GB} GB</text>
-        <text x="190" y="318" text-anchor="middle" class="small">{FSDP_FULL_STATE_PER_GPU_GB} GB ÷ 80 GB = {(FSDP_FULL_CARD_SHARE * 100).toFixed(0)}% {t('of H100', 'H100')}</text>
+        <text x="190" y="318" text-anchor="middle" class="small">{FSDP_FULL_STATE_PER_GPU_GB} GB ÷ {HBM_GB} GB = {(FSDP_FULL_CARD_SHARE * 100).toFixed(0)}% {t('of H100', 'H100')}</text>
         <rect x="375" y="88" width="310" height="252" rx="13" fill="var(--accent-soft)" stroke="var(--accent)" />
         <text x="530" y="120" text-anchor="middle" class="section">{t('8 GPUS · SAME COPIES', '8 张 GPU · 相同副本')}</text>
         {#each Array.from({ length: FSDP_DP_SIZE }, (_, i) => i) as i}
@@ -283,7 +284,7 @@
         <rect x="35" y="292" width="365" height="99" rx="11" fill="var(--bg)" stroke="var(--line)" />
         <text x="217" y="324" text-anchor="middle" class="small strong">{t('WHY SUM? EACH RANK USED DIFFERENT RECORDS', '为何汇总？各 rank 用了不同训练样本')}</text>
         <text x="217" y="359" text-anchor="middle" class="result">parameters: all-gather</text>
-        <text x="217" y="383" text-anchor="middle" class="result">{t('Step 2 total', '第 2 步合计')}: 1 GB {t('saved per rank', '每个 rank 保存')}</text>
+        <text x="217" y="383" text-anchor="middle" class="small">{t('whole-model gradient table: 8 GB ÷ 8 = 1 GB per rank', '全模型梯度表：8 GB ÷ 8 = 每个 rank 1 GB')}</text>
         <text x="360" y="435" text-anchor="middle" class="small">{t('Orange = owned shard · blue = temporary layer gradient', '橙 = 拥有分片 · 蓝 = 临时的本层梯度')}</text>
       {:else if step === 4}
         <rect x="70" y="88" width="300" height="79" rx="10" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />
@@ -305,7 +306,7 @@
           { x: 25, title: 'WEIGHT SHARDS', titleZh: '权重分片', result: 'weights only', body: 'grad + opt stay', bodyZh: '梯度和优化器留下', tone: 'orange' },
           { x: 205, title: 'REPLICATE()', titleZh: 'REPLICATE()', result: 'full tensor', body: 'one parameter', bodyZh: '一个参数', tone: 'plain' },
           { x: 385, title: 'BUCKET', titleZh: '一桶', result: 'full tensors', body: 'wait + send', bodyZh: '等待并发送', tone: 'blue' },
-          { x: 565, title: 'ROLLOUT', titleZh: 'ROLLOUT', result: 'v1', body: 'after Ch. 7 update', bodyZh: '第 7 章更新后', tone: 'plain' },
+          { x: 565, title: 'ROLLOUT', titleZh: 'ROLLOUT', result: 'v1', body: 'Ch. 7 Step 5 · handoff', bodyZh: '第 7 章第 5 步交接', tone: 'plain' },
         ] as node, i}
           <rect x={node.x} y="95" width="130" height="151" rx="12" fill={fill(node.tone)} stroke={stroke(node.tone)} stroke-dasharray={node.tone === 'plain' ? '5 4' : '0'} />
           <text x={node.x + 65} y="127" text-anchor="middle" class="small strong">{t(node.title, node.titleZh)}</text>
@@ -324,7 +325,7 @@
         <text x="532" y="363" text-anchor="middle" class="small">{t('optimizer tables: 32 bits = 4 bytes · 2×', '优化器表：32 位 = 4 字节 · 2 倍')}</text>
         <text x="532" y="386" text-anchor="middle" class="small strong">{t('Which tables can use fewer bits?', '哪些表能用更少位？')}</text>
         <text x="360" y="441" text-anchor="middle" class="small">{t('Orange = training state · blue = temporary full weights for export', '橙 = 训练状态 · 蓝 = 导出的临时完整权重')}</text>
-        <text x="360" y="478" text-anchor="middle" class="small">{t('Ch. 7 transports the buckets; this chapter does not repeat those routes.', '第 7 章负责传输这些桶；本章不重复那些路线。')}</text>
+        <text x="360" y="478" text-anchor="middle" class="small">{t('Ch. 7 Step 5 shows one-bucket handoffs; Step 6 shows whole-version waits and old-KV rejection.', '第 7 章第 5 步讲按桶交接，第 6 步讲整版等待和旧 KV 失效。')}</text>
       {/if}
       <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t(cur.mobileFoot, cur.mobileFootZh) : t(cur.foot, cur.footZh)}</text>
     </svg>

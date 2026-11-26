@@ -71,7 +71,7 @@ FSDP2 把每个参数表示为 DTensor：逻辑张量、分布信息和本地分
 
 分片能减少长期保存的显存，但计算一层时仍需要这一层的完整参数。下一步临时聚齐这一层。
 
-来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:16-23,71-74`；`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:43-47,62-82`；`THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7` 的 `slime/backends/fsdp_utils/actor.py:94-98,158-186`。
+来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:16-23`；`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:43-47,62-82`；`THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7` 的 `slime/backends/fsdp_utils/actor.py:94-98,158-186`。
 
 ## 第 3 步 · 前向计算先借来完整一层
 
@@ -114,7 +114,7 @@ $$M_{\text{forward}}\approx M_i+U,\qquad M_{\text{after}}=M_i$$
 
 - 每个 rank 使用不同的训练样本。汇总对应梯度，就是合并这些样本提供的更新方向。
 - 蓝色临时梯度属于当前一层，不是整个模型的 8 GB 逻辑梯度表。FSDP 在每层梯度算好时就执行 reduce-scatter。
-- 橙格是这个 rank 为本层留下的汇总分片。1 GB 标签来自第 2 步的全模型保存总量，不是本层临时梯度的大小。
+- 橙格是这个 rank 为本层留下的汇总分片。标签写的是全模型梯度表：8 GB ÷ 8 = 每个 rank 1 GB，不是本层临时梯度的大小。
 - 所有层算完后，优化器才更新拥有的权重分片，不是图中每流过一个框就更新一次。
 
 ### 公式与符号
@@ -132,7 +132,7 @@ $$g_{\ell,i}=S_{\ell,i}\!\left(\sum_{r=1}^{R}g_\ell^{(r)}\right)$$
 
 ### 代入图上的数
 
-图上唯一的梯度大小是第 2 步的全模型保存总量：逻辑梯度表为 8 GB，等分后每个 rank 在所有层合计保存 $8/8=1$ GB。临时本层梯度和汇总后的本层分片都没有给定大小。优化器在所有层算完后运行，不是每层运行一次。
+图上写的是全模型梯度表：8 GB ÷ 8 = 每个 rank 1 GB。这里只算梯度表的分片；第 2 步中每个 rank 的训练状态总量是 8 GB。临时本层梯度和汇总后的本层分片都没有给定大小。优化器在所有层算完后运行，不是每层运行一次。
 
 slime 在 actor 中调用 `loss.backward()` 和 `optimizer.step()`。参数聚合和逐层梯度 reduce-scatter 由 FSDP 包装层处理，actor 没有在这些方法旁另写集合通信调用。
 
@@ -140,7 +140,7 @@ slime 在 actor 中调用 `loss.backward()` 和 `optimizer.step()`。参数聚�
 
 长期分片变小了，完整 unit 和其他临时结果仍要占空间。下一步区分长期保存状态与峰值显存。
 
-来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:19,71-74`；`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:47-58`；`THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7` 的 `slime/backends/fsdp_utils/actor.py:687-702,1000-1039`。
+来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:19`；`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:47-58`；`THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7` 的 `slime/backends/fsdp_utils/actor.py:687-702,1000-1039`。
 
 ## 第 5 步 · 长期状态只是峰值的一部分
 
@@ -184,7 +184,7 @@ $$M_{\text{peak}}\approx M_i+U_{\max}+A+T_{\text{other}}$$
 
 - 导出只取权重分片，梯度和优化器状态表留在训练框。
 - `Replicate()` 把一个 DTensor 的各分片重建为完整逻辑权重张量，不会一次重建所有参数。
-- 完整张量加入一个桶。异步结果准备好后，桶走第 7 章的更新路径，rollout 收到 `v1`。
+- 完整张量加入一个桶。异步结果准备好后，按第 7 章第 5 步每次交接一桶。第 7 章第 6 步会等到完整版本更新完并拒绝旧 KV，所以 rollout 收到的是完整的 `v1`。
 - 结尾回到前面步骤的 16 位和 32 位保存表：分片改变的是副本数量，不是每个数占用的位数。
 
 ### 公式与符号
