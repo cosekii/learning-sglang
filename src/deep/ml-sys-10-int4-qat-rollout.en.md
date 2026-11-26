@@ -178,3 +178,46 @@ The public Kimi-K2-Thinking config excludes `lm_head`, self-attention, shared ex
 The integer codes still need compact storage. The next step packs eight four-bit codes into one 32-bit word and accounts for a whole group's bytes.
 
 Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:94-103`; `THUDM/slime@58525eb986c66a271aa31077e17b8afebe704b4f`, `quantizer_compressed_tensors.py:88-159,162-191` and `update_weight_from_distributed.py:93-154`; Kimi-K2-Thinking `config.json:79-110`.
+
+## Step 6 · Pack eight codes into one 32-bit word
+
+**One sentence.** Packing adds 8 to map signed codes into $[0,15]$, then places eight four-bit fields in one 32-bit word; one group with its scale takes 18 bytes.
+
+### On the stage
+
+- The BF16 group holds 32 values in $32\times2=64$ bytes.
+- Adding 8 to each signed code maps $[-8,7]$ into unsigned $[0,15]$.
+- Eight four-bit codes form one 32-bit word, or 4 bytes. INT32 is the 32-bit integer type that holds this word.
+- The complete group has 16 packed-weight bytes and one 2-byte BF16 scale, totaling 18 bytes. The first and last bars both use 64 bytes as full width.
+
+### Formula and symbols
+
+$$u_i=q_i+8,\qquad P=\sum_{i=0}^{7}u_i2^{4i}$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $q_i$ | Signed INT4 code at position $i$ | Step 5, range $[-8,7]$ |
+| $u_i$ | Unsigned four-bit field after adding 8 | `pack_to_int32`, range $[0,15]$ |
+| $P$ | One 32-bit word containing eight fields | Sum after bit shifts |
+| $i$ | Code position within one word | 0 through 7 |
+| $2^{4i}$ | Shift for field $i$ | Bit shifts in the packing code |
+
+### The numbers on the stage
+
+The example codes `[-8,-7,-1,0,1,4,6,7]` become `[0,1,7,8,9,12,14,15]` after adding 8. Their total width is:
+
+$$8\times4=32\ \text{bits}=4\ \text{B}$$
+
+The complete 32-weight group has this storage bill:
+
+$$32\times2=64\ \text{B},\qquad 32\times4/8=16\ \text{B}$$
+$$16+2=18\ \text{B},\qquad 18\times8/32=4.5\ \text{bits/weight}$$
+$$(64-18)/64=71.875\%$$
+
+Step 1's 75% covers raw INT4 payload only. Adding one BF16 scale gives 71.875% for this group. Unquantized tensors, other metadata, KV cache and runtime workspaces remain outside the example, so this is not a whole-rollout memory saving.
+
+### Next
+
+The standard packed layout is not Marlin's working layout. The next step restores the buffer shape, loads new values and repacks them after every update.
+
+Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:101-114`; `THUDM/slime@58525eb986c66a271aa31077e17b8afebe704b4f`, `quantizer_compressed_tensors.py:47-85`.

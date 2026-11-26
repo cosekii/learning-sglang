@@ -199,6 +199,43 @@
         { en: 'Every RL update converts again', zh: '每轮 RL 更新都重新转换' },
       ],
     },
+  }, {
+    caption: 'Pack eight INT4 codes into one 32-bit word. A 32-value group takes 18 bytes with its scale.',
+    captionZh: '八个 INT4 编码装进一个 32 位字。一组权重加 scale 共占 18 字节。',
+    title: 'Pack eight codes into one 32-bit word', titleZh: '把八个编码装进一个 32 位字',
+    subtitle: 'packing = eight 4-bit codes share one word', subtitleZh: '打包 = 八个 4 位编码共用一个字',
+    foot: 'Constructed group with one BF16 scale; other metadata and tensors are excluded.',
+    footZh: '构造的一组权重和一个 BF16 scale；其他元数据与张量不计入。',
+    legend: 'Orange = BF16 · blue = INT4 · grey = packed weights plus scale', legendZh: '橙 = BF16 · 蓝 = INT4 · 灰 = 打包权重加 scale',
+    flow: true,
+    nodes: [
+      { title: 'BF16 GROUP', titleZh: 'BF16 权重组', result: `${N.INT4_GROUP_BF16_BYTES} B`, resultZh: `${N.INT4_GROUP_BF16_BYTES} 字节`, body: '32 values × 2 B', bodyZh: '32 个数 × 2 字节', tone: 'orange', bar: 1 },
+      { title: 'SIGNED CODES', titleZh: '有符号编码', result: '[−8, …, 7]', resultZh: '[−8, …, 7]', body: 'add 8 before packing', bodyZh: '打包前先加 8', tone: 'blue', compact: true },
+      { title: 'PACKED WORD', titleZh: '打包后的字', result: '8 × 4 = 32 bits', resultZh: '8 × 4 = 32 位', body: 'eight codes, 4 B', bodyZh: '八个编码，共 4 字节', tone: 'blue', compact: true },
+      { title: 'GROUP + SCALE', titleZh: '权重组 + SCALE', result: `${N.INT4_GROUP_STORED_BYTES} B`, resultZh: `${N.INT4_GROUP_STORED_BYTES} 字节`, body: '16 B packed + 2 B scale', bodyZh: '16 字节打包 + 2 字节 scale', tone: 'plain', bar: N.INT4_GROUP_STORED_BYTES / N.INT4_GROUP_BF16_BYTES, compact: true },
+    ],
+    formulas: [
+      { en: 'q + 8 maps [−8, 7] to unsigned [0, 15]', zh: 'q + 8 把 [−8, 7] 映射为无符号的 [0, 15]' },
+      { en: '8 codes × 4 bits = 32 bits = 4 B', zh: '8 个编码 × 4 位 = 32 位 = 4 字节' },
+      { en: 'BF16: 32 × 2 B = 64 B', zh: 'BF16：32 × 2 字节 = 64 字节' },
+      { en: 'INT4: 32 × 4 ÷ 8 = 16 B · scale = 2 B', zh: 'INT4：32 × 4 ÷ 8 = 16 字节 · scale = 2 字节' },
+      { en: '16 + 2 = 18 B = 4.5 bits per weight', zh: '16 + 2 = 18 字节 = 每个权重 4.5 位' },
+      { en: '(64 − 18) ÷ 64 = 71.875% saved', zh: '(64 − 18) ÷ 64 = 省下 71.875%' },
+    ],
+    mobile: {
+      title: 'Pack eight codes into one word', titleZh: '把八个编码装进一个字',
+      subtitle: 'packing = eight 4-bit codes per word', subtitleZh: '打包 = 每字装八个 4 位编码',
+      foot: 'One constructed group and BF16 scale only.', footZh: '只算构造的一组权重和 BF16 scale。',
+      legend: 'Orange = BF16 · blue = INT4 · grey = total', legendZh: '橙 = BF16 · 蓝 = INT4 · 灰 = 总存储',
+      formulas: [
+        { en: 'q + 8 maps [−8, 7] to [0, 15]', zh: 'q + 8 把 [−8, 7] 映射为 [0, 15]' },
+        { en: '8 × 4 bits = 32 bits = 4 B', zh: '8 × 4 位 = 32 位 = 4 字节' },
+        { en: 'BF16: 32 × 2 B = 64 B', zh: 'BF16：32 × 2 字节 = 64 字节' },
+        { en: 'INT4: 16 B · scale: 2 B', zh: 'INT4：16 字节 · scale：2 字节' },
+        { en: '16 + 2 = 18 B = 4.5 bits per weight', zh: '16 + 2 = 18 字节 = 每个权重 4.5 位' },
+        { en: '(64 − 18) ÷ 64 = 71.875% saved', zh: '(64 − 18) ÷ 64 = 省下 71.875%' },
+      ],
+    },
   }];
   let step = $state(0);
   $effect(() => {

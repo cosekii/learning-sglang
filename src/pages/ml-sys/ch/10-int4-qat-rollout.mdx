@@ -25,6 +25,8 @@ Step 4 follows the exact backward implementation at `docker/patch/latest/megatro
 
 Step 5 follows `slime/backends/megatron_utils/megatron_to_hf/processors/quantizer_compressed_tensors.py:88-159,162-191` and `update_weight_from_distributed.py:93-154`. Real export runs during every RL update. It uses the same `max_abs ÷ 7` scale rule but literally clamps codes to `[-8,7]`, unlike fake QAT's `[-7,7]`. Scales return to the source weight's BF16 dtype. Kimi-K2-Thinking's public `config.json:79-110` quantizes selected expert weights and excludes `lm_head`, self-attention, shared experts and dense MLP projections.
 
+Step 6 follows `quantizer_compressed_tensors.py:47-85`. Packing adds 8 to each signed code and places eight four-bit fields in one INT32. The complete 32-value group is constructed: 64 BF16 bytes become 16 packed bytes plus one 2-byte BF16 scale, totaling 18 bytes or 4.5 bits per weight. Its 71.875% saving differs from Step 1's raw-payload 75%; neither ratio describes the whole engine.
+
 Further reading: [zero-to-sglang Part III Chapter 2: Quantization and Low-Precision Inference](https://zero-to-sglang.datawhale.cc/eng/part3/Chapter2_Quantization-and-Low-Precision-Inference.html).
 
 </details>
@@ -43,6 +45,8 @@ Further reading: [zero-to-sglang Part III Chapter 2: Quantization and Low-Precis
 第 4 步依据 `docker/patch/latest/megatron.patch:112-122` 的反向实现：`return grad_output, None`。STE 在梯度计算中把整段往返近似为恒等映射，不会消除前向误差。Megatron 的 `arguments.py:751-765` 在这个配置下把模型参数设为 BF16，`arguments.py:3475-3484` 则把优化器主参数默认设为 FP32。因此本章不把两种存储都称为“BF16 master weights”。
 
 第 5 步依据 `slime/backends/megatron_utils/megatron_to_hf/processors/quantizer_compressed_tensors.py:88-159,162-191` 和 `update_weight_from_distributed.py:93-154`。真实导出在每轮 RL 更新中执行。scale 仍按 `最大绝对值 ÷ 7` 计算，但代码的字面截断范围是 `[-8,7]`，与 fake QAT 的 `[-7,7]` 不同。scale 转回源权重的 BF16 类型。Kimi-K2-Thinking 的公开 `config.json:79-110` 只量化选定的专家权重，并排除 `lm_head`、self-attention、shared experts 和 dense MLP projections。
+
+第 6 步依据 `quantizer_compressed_tensors.py:47-85`。打包把每个有符号编码加 8，再把八个 4 位字段放进一个 INT32。完整的 32 权重组是构造算例：64 字节 BF16 变成 16 字节打包权重，加一个 2 字节 BF16 scale，总计 18 字节，即每个权重 4.5 位。71.875% 的节省与第 1 步原始负载的 75% 不同，两者都不代表整个引擎。
 
 延伸阅读：[zero-to-sglang 第 3 部分第 2 章：量化与低精度推理](https://zero-to-sglang.datawhale.cc/ch/part3/%E7%AC%AC2%E7%AB%A0_%E9%87%8F%E5%8C%96%E4%B8%8E%E4%BD%8E%E7%B2%BE%E5%BA%A6%E6%8E%A8%E7%90%86.html)。
 
