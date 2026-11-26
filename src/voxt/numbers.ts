@@ -105,3 +105,7 @@ export const VOXT_LLM_REQUEST_ITEM_COUNT = VOXT_LLM_TEXT_COUNT + VOXT_LLM_MODEL_
 // Two constructed address alternatives; one setup selects one destination.
 export const VOXT_LLM_ADDRESS_OPTION_COUNT = 2;
 export const VOXT_LLM_DESTINATION_COUNT = 1;
+
+// One constructed raw text can be paired with cleanup, translation or rewriting.
+export const VOXT_COMPOSE_TASK_COUNT = 3;
+export const VOXT_COMPOSE_PROMPT_PART_COUNT = 5;
