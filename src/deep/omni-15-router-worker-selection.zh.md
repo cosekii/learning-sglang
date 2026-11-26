@@ -193,3 +193,30 @@ selector 的锁覆盖最近使用顺序、负载观察和预留，避免两个�
 租约开始时 worker 是 healthy，但之后发生故障仍会截断响应。最后一步沿着这个边界进入下一章。
 
 来源：`sglang_omni_router/src/worker_pool/admission.rs:49-88`；`sglang_omni_router/src/http_relay/mod.rs:151-233`；`sglang_omni_router/src/http_relay/response_body.rs:16-101`；`sglang_omni_router/tests/chat_http.rs:901-939,1282-1336,1419-1432`。
+
+## 第 8 步 · 选中之后仍可能故障
+
+**一句话。** router 选中一个兼容且 healthy 的 worker 后，如果它中途故障，router 不会把这个请求转到另一个 worker。
+
+### 图上是什么
+
+- A 的 profile 不匹配，不是候选。B、C 兼容且 healthy，活跃数分别是 2 和 1。least requests 选择 C，并在 dispatch 前把 C 增加到 2。
+- 随后 C 发送 `200 OK` 和 `data: one`，再发生构造的 reset。B 仍是 healthy，但没有路径让这个响应转到 B 继续。
+- C 被选中时的 health 不能保证整个响应完成。传输或 body 错误可以请求立即 health probe，后续能否入选仍要等配置门槛。
+- 图上的问题指向两个边界：这个客户端收到什么，以及后续选择何时能排除 C。
+
+### 代入图上的数
+
+| worker | profile | 选择时 health | 选择前活跃数 | 选择后活跃数 |
+|---|---|---|---:|---:|
+| A | 不匹配 | 不使用 | 不使用 | 未选择 |
+| B | 匹配 | HEALTHY | 2 | 2 |
+| C | 匹配 | HEALTHY | 1 | 2 |
+
+上游 HTTP 客户端禁用重试，relay 只向选中目标发送一次，没有备选 dispatch 循环。响应体租约仍会终止并释放计数，但清理不会把部分响应变成完整响应。
+
+### 接下来
+
+下一章分开提交前错误和提交后截断，跟随租约清理与 health probe，并解释 worker 如何平滑退出。
+
+来源：`sglang_omni_router/src/worker_pool/resolver.rs:108-125`；`sglang_omni_router/src/http_relay/mod.rs:151-209`；`sglang_omni_router/src/http_relay/response_body.rs:38-72`；`sglang_omni_router/tests/chat_http.rs:1419-1432`。
