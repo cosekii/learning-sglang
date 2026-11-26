@@ -85,26 +85,26 @@
       { en: 'U is not a measured value', zh: 'U 不是实测数值' },
     ],
   }, {
-    caption: 'Backward reduces gradients across ranks. Each rank keeps its gradient slice and updates its weight slice.',
-    captionZh: '反向计算会汇总各 rank 的梯度。每个 rank 留下自己的梯度片，再更新自己的权重片。',
-    title: 'Backward keeps a reduced gradient slice', titleZh: '反向计算留下归约后的梯度片',
-    subtitle: 'reduce-scatter = sum matching gradients, then keep one slice',
-    subtitleZh: 'reduce-scatter = 汇总对应梯度，再各留一片',
+    caption: 'Backward computes gradients, the directions for changing weights. Reduce-scatter sums matching values; each rank keeps one shard for its update.',
+    captionZh: 'Backward 算出梯度，也就是修改权重的方向。各 rank 汇总对应值，各留一个分片来更新权重。',
+    title: 'Backward keeps a summed gradient shard', titleZh: 'Backward 留下汇总后的梯度分片',
+    subtitle: 'reduce-scatter = sum matching gradients, then keep one shard',
+    subtitleZh: 'reduce-scatter = 汇总对应梯度，再各留一个分片',
     foot: 'Backward also gathers parameters as needed; this step follows the gradient path.',
     footZh: '反向计算也会按需聚合参数；本步只跟梯度这条线。',
-    mobileTitle: 'Keep one reduced gradient slice', mobileTitleZh: '留下一片归约后的梯度',
+    mobileTitle: 'Keep one summed gradient shard', mobileTitleZh: '留下一个汇总后的梯度分片',
     mobileSubtitle: 'reduce-scatter = sum, then split', mobileSubtitleZh: 'reduce-scatter = 汇总再分片',
-    mobileFoot: 'The optimizer updates only the owned weight shard.', mobileFootZh: '优化器只更新自己拥有的权重片。',
+    mobileFoot: 'The optimizer updates only the owned weight shard.', mobileFootZh: '优化器只更新自己拥有的权重分片。',
     mobile: [
       { title: 'FULL GRADIENT · TEMPORARY', titleZh: '完整梯度 · 临时', body: 'produced during backward', bodyZh: '反向计算时产生', tone: 'blue' },
-      { title: 'REDUCE-SCATTER', titleZh: 'REDUCE-SCATTER', body: 'sum matching values, then split', bodyZh: '汇总对应数值，再分片', tone: 'orange' },
-      { title: 'OWNED GRADIENT · 1 GB', titleZh: '拥有的梯度 · 1 GB', body: 'only this rank\'s slice', bodyZh: '只留这个 rank 的一片', tone: 'orange' },
-      { title: 'OPTIMIZER', titleZh: '优化器', body: 'update the owned weight shard', bodyZh: '更新自己拥有的权重片', tone: 'orange' },
+      { title: 'REDUCE-SCATTER', titleZh: 'REDUCE-SCATTER', body: 'sum matching values, then split', bodyZh: '汇总对应数值，再分片', tone: 'plain' },
+      { title: 'OWNED GRADIENT · 1 GB', titleZh: '拥有的梯度 · 1 GB', body: 'only this rank\'s shard', bodyZh: '只留这个 rank 的一片', tone: 'orange' },
+      { title: 'OPTIMIZER', titleZh: '优化器', body: 'update the owned weight shard', bodyZh: '更新自己拥有的权重分片', tone: 'plain' },
     ],
     formulas: [
       { en: 'parameters: all-gather', zh: '参数：all-gather' },
       { en: 'gradients: reduce-scatter', zh: '梯度：reduce-scatter' },
-      { en: 'owned gradient = 1 GB', zh: '拥有的梯度 = 1 GB' },
+      { en: 'full gradient table: 8 GB ÷ 8 = 1 GB per rank', zh: '完整梯度表：8 GB ÷ 8 = 每个 rank 1 GB' },
     ],
   }, {
     caption: `The owned slices total ${FSDP_SHARD_STATE_PER_GPU_GB} GB. Peak memory also includes the largest temporary unit and activations.`,
@@ -176,6 +176,9 @@
         <marker id="fsdp-arrow-orange" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
           <path d="M0,0 L8,4 L0,8 z" fill="var(--gen)" />
         </marker>
+        <marker id="fsdp-arrow-plain" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 z" fill="var(--line)" />
+        </marker>
       </defs>
       <text x={phone ? 18 : 36} y="30" class="title">{phone ? t(cur.mobileTitle, cur.mobileTitleZh) : t(cur.title, cur.titleZh)}</text>
       <text x={phone ? 18 : 36} y="55" class="label">{phone ? t(cur.mobileSubtitle, cur.mobileSubtitleZh) : t(cur.subtitle, cur.subtitleZh)}</text>
@@ -186,7 +189,7 @@
           <text x="150" y={y + 25} text-anchor="middle" class="small strong">{t(item.title, item.titleZh)}</text>
           <text x="150" y={y + 50} text-anchor="middle" class="small">{t(item.body, item.bodyZh)}</text>
           {#if i < cur.mobile.length - 1}
-            <line x1="150" y1={y + 70} x2="150" y2={y + 86} stroke={stroke(item.tone)} stroke-width="2.5" marker-end={item.tone === 'orange' ? 'url(#fsdp-arrow-orange)' : 'url(#fsdp-arrow-blue)'} />
+            <line x1="150" y1={y + 70} x2="150" y2={y + 86} stroke={step === 3 ? 'var(--line)' : stroke(item.tone)} stroke-width="2.5" marker-end={step === 3 ? 'url(#fsdp-arrow-plain)' : item.tone === 'orange' ? 'url(#fsdp-arrow-orange)' : 'url(#fsdp-arrow-blue)'} />
           {/if}
         {/each}
         {#each cur.formulas as line, i}
@@ -257,24 +260,24 @@
       {:else if step === 3}
         {#each [
           { x: 40, title: 'FULL GRADIENT', titleZh: '完整梯度', result: 'temporary', body: 'from backward', bodyZh: '反向计算产生', tone: 'blue' },
-          { x: 275, title: 'REDUCE-SCATTER', titleZh: 'REDUCE-SCATTER', result: 'sum + split', body: 'across all ranks', bodyZh: '跨所有 rank', tone: 'orange' },
-          { x: 510, title: 'OWNED GRADIENT', titleZh: '拥有的梯度', result: '1 GB', body: 'this rank\'s slice', bodyZh: '这个 rank 的一片', tone: 'orange' },
+          { x: 275, title: 'REDUCE-SCATTER', titleZh: 'REDUCE-SCATTER', result: 'sum + split', body: 'across all ranks', bodyZh: '跨所有 rank', tone: 'plain' },
+          { x: 510, title: 'OWNED GRADIENT', titleZh: '拥有的梯度', result: '1 GB', body: 'this rank\'s shard', bodyZh: '这个 rank 的一片', tone: 'orange' },
         ] as node, i}
           <rect x={node.x} y="95" width="170" height="157" rx="12" fill={fill(node.tone)} stroke={stroke(node.tone)} />
           <text x={node.x + 85} y="129" text-anchor="middle" class="small strong">{t(node.title, node.titleZh)}</text>
           <text x={node.x + 85} y="174" text-anchor="middle" class="result">{node.result}</text>
           <text x={node.x + 85} y="217" text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
-          {#if i < 2}<line x1={node.x + 170} y1="174" x2={node.x + 225} y2="174" stroke="var(--gen)" stroke-width="2.5" marker-end="url(#fsdp-arrow-orange)" />{/if}
+          {#if i < 2}<line x1={node.x + 170} y1="174" x2={node.x + 225} y2="174" stroke="var(--line)" stroke-width="2.5" marker-end="url(#fsdp-arrow-plain)" />{/if}
         {/each}
-        <line x1="595" y1="252" x2="595" y2="292" stroke="var(--gen)" stroke-width="2.5" marker-end="url(#fsdp-arrow-orange)" />
-        <rect x="485" y="302" width="220" height="79" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <line x1="595" y1="252" x2="595" y2="292" stroke="var(--line)" stroke-width="2.5" marker-end="url(#fsdp-arrow-plain)" />
+        <rect x="485" y="302" width="220" height="79" rx="11" fill="var(--bg)" stroke="var(--line)" />
         <text x="595" y="332" text-anchor="middle" class="section">{t('OPTIMIZER', '优化器')}</text>
-        <text x="595" y="361" text-anchor="middle" class="small">{t('update the owned weight shard', '更新自己拥有的权重片')}</text>
+        <text x="595" y="361" text-anchor="middle" class="small">{t('update the owned weight shard', '更新自己拥有的权重分片')}</text>
         <rect x="35" y="292" width="365" height="99" rx="11" fill="var(--bg)" stroke="var(--line)" />
         <text x="217" y="324" text-anchor="middle" class="small strong">{t('DO NOT ALL-GATHER THE GRADIENT', '不要 all-gather 梯度')}</text>
         <text x="217" y="359" text-anchor="middle" class="result">parameters: all-gather</text>
-        <text x="217" y="383" text-anchor="middle" class="result">gradients: reduce-scatter</text>
-        <text x="360" y="435" text-anchor="middle" class="small">{t('Orange = reduction and owned state · blue = temporary full gradient', '橙 = 归约与拥有状态 · 蓝 = 临时完整梯度')}</text>
+        <text x="217" y="383" text-anchor="middle" class="result">8 GB ÷ 8 = 1 GB {t('per rank', '每个 rank')}</text>
+        <text x="360" y="435" text-anchor="middle" class="small">{t('Orange = owned state · blue = temporary full gradient', '橙 = 拥有的状态 · 蓝 = 临时完整梯度')}</text>
       {:else if step === 4}
         <rect x="70" y="88" width="300" height="79" rx="10" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />
         <text x="220" y="119" text-anchor="middle" class="result">A + other ?</text>
