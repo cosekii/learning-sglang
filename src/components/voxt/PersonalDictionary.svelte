@@ -73,23 +73,23 @@
   const W = $derived(phone ? 300 : 720);
   const H = $derived((phone ? [640, 720, 640, 700, 760, 620, 620] : [470, 520, 430, 450, 500, 430, 560])[step]);
 
-  const PHASE_COUNTS = [3, 5, 3, 4, 3, 3, 4];
-  const PHASE_MS = 900;
+  const PHASE_COUNTS = [3, 5, 3, 5, 4, 3, 4];
+  const PHASE_MS = 800;
   const REST_MS = 1200;
   const motionFrames = (isPhone: boolean, s: number): { x: number; y: number; w: number; h: number }[] => (isPhone ? [
     [{ x: 28, y: 406, w: 244, h: 24 }, { x: 28, y: 436, w: 244, h: 24 }, { x: 28, y: 466, w: 244, h: 24 }],
     [{ x: 20, y: 62, w: 260, h: 132 }, { x: 20, y: 222, w: 260, h: 86 }, { x: 20, y: 320, w: 260, h: 86 }, { x: 20, y: 418, w: 260, h: 86 }, { x: 20, y: 516, w: 260, h: 86 }],
     [{ x: 20, y: 62, w: 260, h: 150 }, { x: 20, y: 244, w: 260, h: 96 }, { x: 20, y: 348, w: 260, h: 44 }],
-    [{ x: 20, y: 62, w: 260, h: 58 }, { x: 20, y: 146, w: 260, h: 58 }, { x: 20, y: 230, w: 260, h: 52 }, { x: 20, y: 454, w: 260, h: 70 }],
-    [{ x: 20, y: 62, w: 260, h: 230 }, { x: 20, y: 308, w: 260, h: 272 }, { x: 34, y: 426, w: 232, h: 132 }],
+    [{ x: 20, y: 62, w: 260, h: 58 }, { x: 20, y: 146, w: 260, h: 58 }, { x: 20, y: 230, w: 260, h: 52 }, { x: 20, y: 306, w: 260, h: 134 }, { x: 20, y: 454, w: 260, h: 70 }],
+    [{ x: 20, y: 62, w: 260, h: 230 }, { x: 20, y: 308, w: 260, h: 272 }, { x: 34, y: 426, w: 232, h: 132 }, { x: 20, y: 308, w: 260, h: 272 }],
     [{ x: 20, y: 62, w: 260, h: 120 }, { x: 20, y: 212, w: 260, h: 96 }, { x: 20, y: 330, w: 260, h: 70 }],
     [{ x: 20, y: 80, w: 260, h: 66 }, { x: 20, y: 160, w: 260, h: 66 }, { x: 20, y: 240, w: 260, h: 66 }, { x: 20, y: 320, w: 260, h: 66 }],
   ] : [
     [{ x: 30, y: 305, w: 180, h: 60 }, { x: 220, y: 305, w: 180, h: 60 }, { x: 410, y: 305, w: 270, h: 60 }],
     [{ x: 20, y: 78, w: 220, h: 300 }, { x: 300, y: 66, w: 400, h: 72 }, { x: 300, y: 156, w: 400, h: 72 }, { x: 300, y: 246, w: 400, h: 72 }, { x: 300, y: 336, w: 400, h: 72 }],
     [{ x: 20, y: 72, w: 300, h: 190 }, { x: 384, y: 96, w: 316, h: 140 }, { x: 20, y: 286, w: 680, h: 72 }],
-    [{ x: 20, y: 76, w: 150, h: 66 }, { x: 204, y: 76, w: 176, h: 66 }, { x: 414, y: 76, w: 286, h: 66 }, { x: 410, y: 164, w: 290, h: 150 }],
-    [{ x: 20, y: 72, w: 340, h: 250 }, { x: 380, y: 72, w: 320, h: 250 }, { x: 394, y: 192, w: 292, h: 130 }],
+    [{ x: 20, y: 76, w: 150, h: 66 }, { x: 204, y: 76, w: 176, h: 66 }, { x: 414, y: 76, w: 286, h: 66 }, { x: 20, y: 164, w: 370, h: 176 }, { x: 410, y: 164, w: 290, h: 150 }],
+    [{ x: 20, y: 72, w: 340, h: 250 }, { x: 380, y: 72, w: 320, h: 250 }, { x: 394, y: 192, w: 292, h: 130 }, { x: 380, y: 72, w: 320, h: 250 }],
     [{ x: 20, y: 72, w: 240, h: 140 }, { x: 324, y: 72, w: 376, h: 140 }, { x: 20, y: 240, w: 680, h: 90 }],
     [{ x: 20, y: 82, w: 510, h: 58 }, { x: 20, y: 154, w: 510, h: 58 }, { x: 20, y: 226, w: 510, h: 58 }, { x: 20, y: 298, w: 510, h: 58 }],
   ])[s];
@@ -302,7 +302,7 @@
           <text x="20" y="408" class="tag">{t('same spot: the longest wins', '同一位置：最长的胜出')}</text>
           <text x="20" y="432" class="tag">{t('a correct term is left alone', '已经对的词条不动')}</text>
           <rect x="20" y="454" width="260" height="70" rx="8" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />
-          <text x="34" y="478" class="tag strong">{phase >= 3 ? t('model off: still call Priya', '模型关掉：仍是 call Priya') : t('model off or failed?', '模型关了或失败？')}</text>
+          <text x="34" y="478" class="tag strong">{phase >= 4 ? t('model off: still call Priya', '模型关掉：仍是 call Priya') : t('model off or failed?', '模型关了或失败？')}</text>
           <text x="34" y="504" class="tag">{t('still “call Priya”', '仍是 “call Priya”')}</text>
         {:else}
           <rect x="20" y="76" width="150" height="66" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
@@ -324,7 +324,7 @@
           <text x="34" y="288" class="tag">{t('when several could match at one spot, the longest wins', '同一位置有多个能匹配时，最长的胜出')}</text>
           <text x="34" y="312" class="tag">{t('a term already written stays', '已经写对的词条保持原样')}</text>
           <rect x="410" y="164" width="290" height="150" rx="10" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />
-          <text x="424" y="190" class="rowlabel">{phase >= 3 ? t('model off: the swap still ran', '模型关掉：替换照样跑了') : t('with the model off or failing', '模型关掉或失败时')}</text>
+          <text x="424" y="190" class="rowlabel">{phase >= 4 ? t('model off: the swap still ran', '模型关掉：替换照样跑了') : t('with the model off or failing', '模型关掉或失败时')}</text>
           <text x="424" y="222" class="tag strong">call <tspan fill="var(--accent)">{VOXT_DICT_TERM}</tspan>.</text>
           <text x="424" y="252" class="tag">{t('the swap runs before cleanup', '替换在清理之前跑')}</text>
           <text x="424" y="276" class="tag">{t('so it does not need the model', '所以不靠语言模型')}</text>
@@ -360,11 +360,15 @@
             <text x="46" y="480" class="detail">{t('candidate: Priya', '候选：Priya')}</text>
             <text x="46" y="506" class="detail">{t('the text names it', '文字点名了它')}</text>
             <text x="46" y="540" class="tag">call {VOXT_DICT_TERM}.</text>
-          {:else}
+          {:else if phase === 3}
             <text x="46" y="474" class="mono">{t('<glossary>', '<glossary>')}</text>
             <text x="46" y="498" class="detail">{t('matched terms', '匹配到的词条')}</text>
             <text x="46" y="522" class="mono">{t('</glossary>', '</glossary>')}</text>
             <text x="46" y="548" class="tag">call {VOXT_DICT_TERM}.</text>
+          {:else}
+            <text x="46" y="480" class="detail">{t('no match, or caps block all', '没有匹配，或被上限挡住')}</text>
+            <text x="46" y="506" class="detail">{t('glossary empty → none added', '术语表为空 → 不加')}</text>
+            <text x="46" y="540" class="tag">call {VOXT_DICT_TERM}.</text>
           {/if}
 
           <text x="20" y="612" class="tag">{t('≤30: all terms · >30: text names term or alias', '≤30：全部词条 · >30：文字点名词条或别名')}</text>
@@ -395,11 +399,15 @@
             <text x="408" y="246" class="detail">{t('candidate: Priya', '候选：Priya')}</text>
             <text x="408" y="272" class="detail">{t('the text names it', '文字点名了它')}</text>
             <text x="408" y="306" class="tag">call {VOXT_DICT_TERM}.</text>
-          {:else}
+          {:else if phase === 3}
             <text x="408" y="240" class="mono">{t('<glossary>', '<glossary>')}</text>
             <text x="408" y="264" class="detail">{t('matched terms', '匹配到的词条')}</text>
             <text x="408" y="288" class="mono">{t('</glossary>', '</glossary>')}</text>
             <text x="408" y="312" class="tag">call {VOXT_DICT_TERM}.</text>
+          {:else}
+            <text x="408" y="246" class="detail">{t('no match, or caps block all', '没有匹配，或被上限挡住')}</text>
+            <text x="408" y="272" class="detail">{t('glossary empty → none added', '术语表为空 → 不加')}</text>
+            <text x="408" y="306" class="tag">call {VOXT_DICT_TERM}.</text>
           {/if}
 
           <text x="20" y="352" class="tag">{t('≤30: all terms · >30: text names term or alias', '≤30：全部词条 · >30：文字点名词条或别名')}</text>
