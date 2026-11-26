@@ -114,6 +114,7 @@ Source: `THUDM/slime@f68dc4a25f362fc0335165a17ff976f5b6f675e1`, `examples/geo3k_
 - The rollout fork copies the initial and observation images onto the rollout path. The next model call receives both encoded images in `image_data`.
 - The second fork copies the observation onto the training path. Buffer `Q` holds two processor dictionaries, `D0` for the initial input and `D1` for the observation.
 - The `processor` prepares images and text as model inputs. Each bundle is a dictionary: a field name points to a `tensor`, which is a grid of model numbers.
+- Both `D0` and `D1` exclude the processor's `input_ids` and `attention_mask` fields. `input_ids` holds token IDs, and `attention_mask` marks real positions instead of padding. Step 3 already saved `O` in the separate ordered token record, so `Q` keeps only the other multimodal tensors.
 
 ### Formula and symbols
 

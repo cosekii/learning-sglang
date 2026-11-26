@@ -114,6 +114,7 @@ $$\ell=|\operatorname{enc}(U)|=6,\qquad \Delta=F[6:],\qquad 9-6=3$$
 - rollout 分叉把初始图片和观察图片复制到 rollout 路径，下一次模型调用收到 `image_data` 里的两张编码图片。
 - 第二个分叉把观察复制到训练路径。buffer `Q` 保存两本 processor 张量字典：`D0` 对应初始输入，`D1` 对应观察。
 - `processor` 把图片和文字整理成模型输入。每份输入包是一个字典：字段名指向 `tensor`，也就是模型使用的数字网格。
+- `D0` 和 `D1` 都排除 processor 的 `input_ids` 和 `attention_mask` 字段。`input_ids` 保存 token ID，`attention_mask` 标出真实位置而不是 padding。第 3 步已把 `O` 单独存入有序 token 记录，所以 `Q` 只保留其他多模态张量。
 
 ### 公式与符号
 
