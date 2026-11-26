@@ -122,19 +122,18 @@ $$\frac{g}{d}=\frac{0.3}{0.8}=37.5\%$$
 ### 图上是什么
 
 - `SGLANG_OMNI_COMM_TRACE=1` 打开日志；未设置、设为 0 或 false 等值时，`emit` 直接返回。
-- `comm_send_enqueue` 记录发送进入队列。示例字段包含请求 A、chunk 7、两端 stage 和 transport；这些标识符是构造的。
-- `comm_stream_read` 记录一次读取。跨进程读取使用 `object_id`、transport、bytes 和 `elapsed_ms`；inline 路径还可带 request、stage 与 chunk 字段。
-- 橙色区域区分两种时间：`ts_ns` 是写日志时的 `time.time_ns()` 时间戳，`elapsed_ms` 是一个局部调用前后的差值。
-- `elapsed_ms: <operation>` 与 `<read>` 是字段含义占位，不是把未知耗时写成 0。
+- 本步只看一条 `comm_stream_read`，它表示读取一个 chunk。`obj-17` 是构造的对象标识，不需要与其他事件建立对应关系。
+- `ns` 是纳秒。`ts_ns` 是写日志时的事件时间戳，`elapsed_ms` 是这次读取的局部耗时。
+- `start_ns` 是这次读取开始时的读数，`end_ns` 是这次读取结束时的读数。`elapsed_ms: <read>` 是字段含义占位，不是把未知耗时写成 0。
 
 ### 公式与符号
 
-$$d=\frac{c_{\mathrm{end}}-c_{\mathrm{start}}}{1{,}000{,}000}$$
+$$d=\frac{\mathrm{end\_ns}-\mathrm{start\_ns}}{1{,}000{,}000}$$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
-| $c_{\mathrm{start}}$ | 操作前的 `perf_counter_ns()` | `now_ns()` |
-| $c_{\mathrm{end}}$ | 操作后的 `perf_counter_ns()` | `elapsed_ms()` |
+| $\mathrm{start\_ns}$ | 操作前的 `perf_counter_ns()` | `now_ns()` |
+| $\mathrm{end\_ns}$ | 操作后的 `perf_counter_ns()` | `elapsed_ms()` |
 | $d$ | 这段操作的毫秒数 | 本步相减并换算 |
 | $1{,}000{,}000$ | 1 毫秒包含的纳秒数 | 单位换算 |
 
@@ -142,7 +141,7 @@ $$d=\frac{c_{\mathrm{end}}-c_{\mathrm{start}}}{1{,}000{,}000}$$
 
 本步不虚构耗时数值。若某次局部区间是 20,000 纳秒，则 $d=20{,}000\div1{,}000{,}000=0.020$ 毫秒；这只是公式读法示例，不是图上新加的测量结果。
 
-`comm_send_enqueue` 的日志在 `await ready` 之前发出，所以它的 `elapsed_ms` 只覆盖 enqueue 附近的工作，不包含等待发送完成的全部时间。`comm_stream_read` 则在读取结束后记录该次读取耗时。两类字段不能混当成端到端等待。
+`comm_stream_read` 在读取结束后记录该次读取耗时，不能当成整个请求的等待。实现中，`time.time_ns()` 给出日历时间戳，`perf_counter_ns()` 给出适合相减的读数；两种时间用途不同。
 
 ### 接下来
 
@@ -191,9 +190,9 @@ $$r=12-5=7\ \text{ms}$$
 ### 图上是什么
 
 - `partial-start` 表示 talker 在部分前缀就绪后开始，不等完整 thinker 输入。B 的阈值是 5 个 chunk，A 明确关闭这个开关。
-- 蓝色表示两边保持不变的工作，橙色标出 B 改动的设置。除此之外，prompt、seed、最大 token 数、模型和 talker 采样参数都保持相同。
-- `warmup` 是不计入结果的预热请求，用来吸收冷启动工作。每个 prompt 先做 2 次，再做 5 次正式测量。
-- 每个标签有 short、medium 两个 prompt，因此剔除 $2\times2=4$ 次预热，保留 $2\times5=10$ 次正式结果。
+- 蓝色表示两边保持不变的工作，橙色标出 B 改动的设置。两边的采样方式和生成 token 上限也相同，具体值见下文。
+- 图上的练习运行对应脚本的 `warmup`，不计入结果，先让缓存和首次执行准备在正式计时前完成。每个 prompt 先练 2 次，再正式测量 5 次。
+- `short` 是 7 个英文词的问题，`medium` 是 34 个英文词的问题。两个标签各用这两个 prompt，因此剔除 $2\times2=4$ 次预热，保留 $2\times5=10$ 次正式结果。
 - 本步没有画出结果快慢，因为仓库脚本本身不包含一组固定的测量输出。
 
 ### 公式与符号
@@ -212,7 +211,7 @@ $$N_{\mathrm{warm}}=p\times w,\qquad N_{\mathrm{kept}}=p\times r$$
 
 $$N_{\mathrm{warm}}=2\times2=4,\qquad N_{\mathrm{kept}}=2\times5=10$$
 
-预热和正式测量使用同一个 seed 1000，减少冷启动与采样差异对 A/B 的混入。每个正式结果仍逐条保存，不能只留一个平均数。脚本还会写入 label、base URL、采样参数与可用的 fingerprint 字段，便于核对实验条件。
+预热和正式测量使用同一个 seed 1000，减少冷启动与采样差异对 A/B 的混入。`max_tokens 256` 限制生成的 token 数，不限制输入长度。seed 控制采样选择，但并发调度下不保证输出逐字相同。每个正式结果仍逐条保存，不能只留一个平均数。脚本还会写入 label、base URL、采样参数与可用的 fingerprint 字段，便于核对实验条件。
 
 ### 接下来
 
@@ -222,14 +221,14 @@ $$N_{\mathrm{warm}}=2\times2=4,\qquad N_{\mathrm{kept}}=2\times5=10$$
 
 ## 第 7 步 · 均值旁边保留离散程度
 
-**一句话。** 同一组五次结果中，一次 2.6 秒把均值抬到 1.60 秒；min、max 和 stdev 能把这次慢运行重新显示出来。
+**一句话。** 同一组五次结果中，一次 2.6 秒使均值为 1.60 秒；min、max 和 stdev 能把这次慢运行重新显示出来。
 
 ### 图上是什么
 
 - 五根柱使用同一时间比例，四次较快结果是 1.3、1.4、1.3、1.4 秒，橙色慢结果是 2.6 秒。
-- 五个值合计 8.0 秒，所以均值是 1.60 秒。单看均值，看不出四次结果其实都低于它。
+- 五个值合计 8.0 秒，所以均值是 1.60 秒。四次较快结果的均值是 $5.4\div4=1.35$ 秒，单看总均值看不出它们都低于 1.60 秒。
 - `min=1.30`、`max=2.60` 给出两端；最大值是最小值的 2 倍。
-- `stdev` 表示各次结果相对均值的离散程度。脚本使用总体标准差 `statistics.pstdev`，本例约为 0.502。
+- `stdev` 也可写成 σ，表示各次结果相对均值的离散程度。这里的 population 指全部 5 次都计入；0.3、0.2、0.3、0.2、1.0 秒分别是五次结果与均值 1.60 的距离。脚本使用 `statistics.pstdev`，本例约为 0.502 秒。
 - 这是同一个 prompt 的五个构造结果，不是把第 6 步两个 prompt 的十次结果混在一起，也不是实测。
 
 ### 公式与符号
@@ -265,11 +264,11 @@ $$\sigma=\sqrt{\frac{1.26}{5}}=\sqrt{0.252}\approx0.502\ \text{s}$$
 
 ### 图上是什么
 
-- `SAME INPUT` 保留 prompt、seed 和输入、输出长度，防止两边实际做了不同工作。
-- `SAME CONDITIONS` 保留硬件、配置和预热方式，防止环境变化混进开关的效果。
+- `SAME INPUT` 保留 prompt、采样方式和输入、输出长度，防止两边实际做了不同工作。源码用 seed 控制采样选择。
+- `SAME CONDITIONS` 保留硬件、配置和练习运行方式，防止环境变化混进开关的效果。练习运行对应脚本的 warmup。
 - `PER-RUN WAITS` 对齐每次 TTFT、chunk 空档和 host／GPU 字段，指出缩短发生在哪段等待。
-- `VALID RESULTS` 检查请求完成与输出质量，同时保留均值和离散程度。性能数字不能替代质量检查。
-- `AR` 是逐个生成 token 的循环；`encoder` 把参考输入变成模型特征。它们是下一章分别检查的两处工作，不是本图新排的一条先后流水线。
+- `VALID RESULTS` 先确认请求完成，再把生成音频转写为文字并数错词，音色则与输入的参考音频比较。不同 workload 还可检查答案正确率；性能数字不能替代这些质量检查。均值和离散程度也要保留。
+- `AR` 是逐个生成 token 的循环；`encoder` 把参考音频变成模型可读取的数字特征。它们是下一章分别检查的两处工作，不是本图新排的一条先后流水线。
 
 ### 公式与符号
 

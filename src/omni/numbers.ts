@@ -290,9 +290,7 @@ export const STREAM_STALL_S = Math.max(0, STREAM_CHUNK2_ARRIVAL_S - STREAM_CHUNK
 export const STREAM_CHUNK2_END_S = STREAM_CHUNK2_ARRIVAL_S + STREAM_CHUNK_DURATION_S;
 export const STREAM_STALL_CHUNK_PERCENT = STREAM_STALL_S / STREAM_CHUNK_DURATION_S * 100;
 
-// Constructed identifiers used to read a communication trace, not captured log output.
-export const STREAM_TRACE_REQUEST_ID = 'A';
-export const STREAM_TRACE_CHUNK_ID = 7;
+// A constructed identifier used to read a communication trace, not captured log output.
 export const STREAM_TRACE_OBJECT_ID = 'obj-17';
 
 // Constructed CUDA IPC timing record for reading host and GPU-event intervals.
@@ -306,6 +304,10 @@ export const STREAM_BENCH_WARMUP_PER_PROMPT = 2;
 export const STREAM_BENCH_REPEATS_PER_PROMPT = 5;
 export const STREAM_BENCH_SEED = 1000;
 export const STREAM_BENCH_MAX_TOKENS = 256;
+export const STREAM_SHORT_PROMPT = 'Please reply: Hello, how are you today?';
+export const STREAM_MEDIUM_PROMPT = 'Please respond with the following sentence verbatim: The quick brown fox jumps over the lazy dog while the sun sets over the quiet hills, and the river continues to flow gently through the valley.';
+export const STREAM_SHORT_WORDS = STREAM_SHORT_PROMPT.split(/\s+/).length;
+export const STREAM_MEDIUM_WORDS = STREAM_MEDIUM_PROMPT.split(/\s+/).length;
 export const STREAM_PARTIAL_START_MIN_CHUNKS = 5;
 export const STREAM_BENCH_WARMUP_PER_LABEL = STREAM_BENCH_PROMPT_COUNT * STREAM_BENCH_WARMUP_PER_PROMPT;
 export const STREAM_BENCH_KEPT_PER_LABEL = STREAM_BENCH_PROMPT_COUNT * STREAM_BENCH_REPEATS_PER_PROMPT;
@@ -316,5 +318,7 @@ export const STREAM_EXAMPLE_RUN_SUM_S = STREAM_EXAMPLE_RUNS_S.reduce((sum, value
 export const STREAM_EXAMPLE_MEAN_S = STREAM_EXAMPLE_RUN_SUM_S / STREAM_EXAMPLE_RUNS_S.length;
 export const STREAM_EXAMPLE_MIN_S = Math.min(...STREAM_EXAMPLE_RUNS_S);
 export const STREAM_EXAMPLE_MAX_S = Math.max(...STREAM_EXAMPLE_RUNS_S);
-export const STREAM_EXAMPLE_STDEV_S = Math.sqrt(STREAM_EXAMPLE_RUNS_S.reduce((sum, value) => sum + (value - STREAM_EXAMPLE_MEAN_S) ** 2, 0) / STREAM_EXAMPLE_RUNS_S.length);
+export const STREAM_EXAMPLE_SQUARED_DEVIATION_SUM = STREAM_EXAMPLE_RUNS_S.reduce((sum, value) => sum + (value - STREAM_EXAMPLE_MEAN_S) ** 2, 0);
+export const STREAM_EXAMPLE_STDEV_S = Math.sqrt(STREAM_EXAMPLE_SQUARED_DEVIATION_SUM / STREAM_EXAMPLE_RUNS_S.length);
 export const STREAM_EXAMPLE_MAX_OVER_MIN = STREAM_EXAMPLE_MAX_S / STREAM_EXAMPLE_MIN_S;
+export const STREAM_EXAMPLE_FAST_MEAN_S = STREAM_EXAMPLE_RUNS_S.slice(0, 4).reduce((sum, value) => sum + value, 0) / 4;

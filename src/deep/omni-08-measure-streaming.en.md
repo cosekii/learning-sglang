@@ -122,19 +122,18 @@ Sources: `benchmarks/eval/benchmark_omni_streaming_ttft.py:179-205`; Learning SG
 ### On the stage
 
 - `SGLANG_OMNI_COMM_TRACE=1` enables the records. With no value, 0, false or another disabled value, `emit` returns without logging.
-- `Comm_send_enqueue` marks a send entering its queue. The constructed example carries request A, chunk 7, both stage names and the transport.
-- `Comm_stream_read` marks one read. A cross-process read carries `object_id`, transport, bytes and `elapsed_ms`; the inline path can also carry request, stage and chunk fields.
-- The orange area separates two clocks. `Ts_ns` is the `time.time_ns()` timestamp at emission, while `elapsed_ms` measures a local interval around an operation.
-- `Elapsed_ms: <operation>` and `<read>` describe the fields without inventing zero durations.
+- This step shows one `comm_stream_read`, which reads one chunk. `Obj-17` is a constructed object identifier that needs no mapping to another event.
+- `Ns` means nanoseconds. `Ts_ns` is the event timestamp at emission, while `elapsed_ms` measures this read's local duration.
+- `Start_ns` is the reading when this read starts, and `end_ns` is the reading when it ends. `Elapsed_ms: <read>` describes the field without inventing a zero duration.
 
 ### Formula and symbols
 
-$$d=\frac{c_{\mathrm{end}}-c_{\mathrm{start}}}{1{,}000{,}000}$$
+$$d=\frac{\mathrm{end\_ns}-\mathrm{start\_ns}}{1{,}000{,}000}$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
-| $c_{\mathrm{start}}$ | `Perf_counter_ns()` before the operation | `now_ns()` |
-| $c_{\mathrm{end}}$ | `Perf_counter_ns()` after the operation | `elapsed_ms()` |
+| $\mathrm{start\_ns}$ | `Perf_counter_ns()` before the operation | `now_ns()` |
+| $\mathrm{end\_ns}$ | `Perf_counter_ns()` after the operation | `elapsed_ms()` |
 | $d$ | Duration of this operation in milliseconds | Calculated and converted here |
 | $1{,}000{,}000$ | Nanoseconds in one millisecond | Unit conversion |
 
@@ -142,7 +141,7 @@ $$d=\frac{c_{\mathrm{end}}-c_{\mathrm{start}}}{1{,}000{,}000}$$
 
 This step invents no duration. A local interval of 20,000 nanoseconds would give $d=20{,}000\div1{,}000{,}000=0.020$ milliseconds. This arithmetic example is not a new measurement or a value on the stage.
 
-The `comm_send_enqueue` record is emitted before `await ready`. Its `elapsed_ms` covers work near the enqueue call, not the whole wait for the send to finish. `Comm_stream_read` is emitted after reading and measures that read. Neither field is end-to-end request latency.
+`Comm_stream_read` is emitted after reading and measures that read, not the whole request. In the implementation, `time.time_ns()` gives the wall-clock timestamp, while `perf_counter_ns()` supplies readings suited to duration subtraction.
 
 ### Next
 
@@ -191,9 +190,9 @@ Sources: `sglang_omni/relay/cuda_ipc.py:526-581`; `sglang_omni/profiler/comm_tra
 ### On the stage
 
 - `Partial-start` starts the talker when part of the prefix is ready, without waiting for the whole thinker input. B sets the threshold to 5 chunks; A disables the feature.
-- Blue marks unchanged work, and orange marks B's changed setting. Prompt, seed, token cap, model and talker sampling parameters remain the same.
-- A `Warmup` is an uncounted request that absorbs cold work. Each prompt gets 2 warmups and then 5 measured repeats.
-- Each label has short and medium prompts, so it discards $2\times2=4$ warmups and keeps $2\times5=10$ measured results.
+- Blue marks unchanged work, and orange marks B's changed setting. Both sides also keep the same sampling method and generated-token limit, detailed below.
+- The stage's practice runs are the script's `warmup`: uncounted requests that fill caches and finish first-run setup. Each prompt gets 2 practice runs and then 5 measured repeats.
+- The short prompt has 7 English words, and the medium prompt has 34. Each label uses both, so it discards $2\times2=4$ warmups and keeps $2\times5=10$ measured results.
 - The stage shows no winning result because the repository script does not include a fixed set of outputs.
 
 ### Formula and symbols
@@ -212,7 +211,7 @@ $$N_{\mathrm{warm}}=p\times w,\qquad N_{\mathrm{kept}}=p\times r$$
 
 $$N_{\mathrm{warm}}=2\times2=4,\qquad N_{\mathrm{kept}}=2\times5=10$$
 
-Warmup and measured requests reuse seed 1000, reducing cold-start and sampling differences between A and B. Every measured result remains in the JSON instead of leaving only an average. The output also records the label, base URL, sampling parameters and available fingerprint fields for checking conditions.
+Warmup and measured requests reuse seed 1000, reducing cold-start and sampling differences between A and B. `Max_tokens 256` caps generated tokens rather than input length. The seed controls sampling choices but does not guarantee identical outputs under concurrent scheduling. Every measured result remains in the JSON instead of leaving only an average. The output also records the label, base URL, sampling parameters and available fingerprint fields for checking conditions.
 
 ### Next
 
@@ -222,14 +221,14 @@ Sources: `benchmarks/eval/benchmark_omni_streaming_ttft.py:11-25,59-69,73-95,126
 
 ## Step 7 · Keep the spread beside the mean
 
-**One sentence.** One 2.6-second run lifts this five-run mean to 1.60 seconds; min, max and stdev make that slow run visible again.
+**One sentence.** One 2.6-second run makes this five-run mean 1.60 seconds; min, max and stdev make that slow run visible again.
 
 ### On the stage
 
 - The five bars share one time scale. The four faster runs are 1.3, 1.4, 1.3 and 1.4 seconds, and the orange run is 2.6 seconds.
-- Their sum is 8.0 seconds, giving a mean of 1.60 seconds. The mean alone hides that all four faster runs sit below it.
+- Their sum is 8.0 seconds, giving a mean of 1.60 seconds. The four faster runs average $5.4\div4=1.35$ seconds, which the overall mean alone cannot show.
 - `Min=1.30` and `max=2.60` show the endpoints. The maximum is twice the minimum.
-- `Stdev` describes spread around the mean. The script uses `statistics.pstdev`, the population standard deviation, giving about 0.502 here.
+- `Stdev`, also written σ, describes spread around the mean. Population means all 5 runs are included. The values 0.3, 0.2, 0.3, 0.2 and 1.0 seconds are the runs' distances from the 1.60-second mean. The script uses `statistics.pstdev`, giving about 0.502 seconds.
 - These are five constructed results for one prompt, not a mixture of Step 6's two prompts and not measurements.
 
 ### Formula and symbols
@@ -265,11 +264,11 @@ Sources: `benchmarks/eval/benchmark_omni_streaming_ttft.py:245-296,354-365`; `Aw
 
 ### On the stage
 
-- `SAME INPUT` preserves prompts, seed and input/output lengths so the two sides perform the same work.
-- `SAME CONDITIONS` preserves hardware, configuration and warmup so an environment change cannot hide inside the switch's effect.
+- `SAME INPUT` preserves prompts, sampling and input/output lengths so the two sides perform the same work. The source uses a seed to control sampling choices.
+- `SAME CONDITIONS` preserves hardware, configuration and practice runs so an environment change cannot hide inside the switch's effect. Practice runs are the script's warmup.
 - `PER-RUN WAITS` aligns TTFT, chunk gaps and host/GPU fields for every run, locating the wait that changed.
-- `VALID RESULTS` checks request completion and output quality while keeping the mean and spread. Performance numbers do not replace quality checks.
-- `AR` is the loop that generates tokens one by one. The `encoder` turns reference input into model features. They are two places to inspect in the next chapter, not a new sequential pipeline in this picture.
+- `VALID RESULTS` first checks completion, then transcribes the generated audio and counts word errors. Voice match compares the speaker with the input reference audio. Other workloads can check answer accuracy. Performance numbers do not replace these checks, and the mean and spread remain beside them.
+- `AR` is the loop that generates tokens one by one. The `encoder` turns reference audio into numeric features the model can read. They are two places to inspect in the next chapter, not a new sequential pipeline in this picture.
 
 ### Formula and symbols
 

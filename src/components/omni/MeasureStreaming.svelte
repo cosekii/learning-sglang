@@ -11,13 +11,15 @@
     STREAM_TEACHING_TTFT_S, STREAM_TEACHING_TOTAL_S,
     STREAM_CHUNK_DURATION_S, STREAM_CHUNK1_ARRIVAL_S, STREAM_CHUNK1_END_S,
     STREAM_CHUNK2_ARRIVAL_S, STREAM_CHUNK2_END_S, STREAM_STALL_S, STREAM_STALL_CHUNK_PERCENT,
-    STREAM_TRACE_REQUEST_ID, STREAM_TRACE_CHUNK_ID, STREAM_TRACE_OBJECT_ID,
+    STREAM_TRACE_OBJECT_ID,
     STREAM_TRACE_HOST_WAIT_MS, STREAM_TRACE_GPU_EVENT_MS, STREAM_TRACE_HOST_REST_MS,
     STREAM_BENCH_PROMPT_COUNT, STREAM_BENCH_WARMUP_PER_PROMPT, STREAM_BENCH_REPEATS_PER_PROMPT,
-    STREAM_BENCH_SEED, STREAM_BENCH_MAX_TOKENS, STREAM_PARTIAL_START_MIN_CHUNKS,
+    STREAM_PARTIAL_START_MIN_CHUNKS,
+    STREAM_SHORT_WORDS, STREAM_MEDIUM_WORDS,
     STREAM_BENCH_WARMUP_PER_LABEL, STREAM_BENCH_KEPT_PER_LABEL,
     STREAM_EXAMPLE_RUNS_S, STREAM_EXAMPLE_RUN_SUM_S, STREAM_EXAMPLE_MEAN_S,
     STREAM_EXAMPLE_MIN_S, STREAM_EXAMPLE_MAX_S, STREAM_EXAMPLE_STDEV_S, STREAM_EXAMPLE_MAX_OVER_MIN,
+    STREAM_EXAMPLE_SQUARED_DEVIATION_SUM,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -30,7 +32,7 @@
     captionZh: 'TTFT 在首个 audio delta 停止。总计时继续到 [DONE]。',
   }, {
     caption: `Chunk 2 arrives ${STREAM_STALL_S.toFixed(1)} seconds after chunk 1 ends. The player stays silent for ${STREAM_STALL_S.toFixed(1)} seconds.`,
-    captionZh: `chunk 2 晚于 chunk 1 结束 ${STREAM_STALL_S.toFixed(1)} 秒。播放器因此静音 ${STREAM_STALL_S.toFixed(1)} 秒。`,
+    captionZh: `chunk 1 播完 ${STREAM_STALL_S.toFixed(1)} 秒后，chunk 2 才到。播放器因此静音 ${STREAM_STALL_S.toFixed(1)} 秒。`,
   }, {
     caption: 'Communication tracing records each event with a timestamp. Duration fields show how long that operation waited.',
     captionZh: '通信 trace 给每个事件记下时间戳。耗时字段记录这次操作等了多久。',
@@ -38,11 +40,11 @@
     caption: `The host waited ${STREAM_TRACE_HOST_WAIT_MS} ms; the GPU event covered ${STREAM_TRACE_GPU_EVENT_MS} ms. The remaining ${STREAM_TRACE_HOST_REST_MS} ms was elsewhere on the host path.`,
     captionZh: `host 等了 ${STREAM_TRACE_HOST_WAIT_MS} ms，GPU event 覆盖 ${STREAM_TRACE_GPU_EVENT_MS} ms。其余 ${STREAM_TRACE_HOST_REST_MS} ms 在 host 路径上。`,
   }, {
-    caption: `Warm up ${STREAM_BENCH_WARMUP_PER_PROMPT} times, then record ${STREAM_BENCH_REPEATS_PER_PROMPT} runs per prompt. Change only the partial-start setting.`,
-    captionZh: `每个 prompt 预热 ${STREAM_BENCH_WARMUP_PER_PROMPT} 次，再测 ${STREAM_BENCH_REPEATS_PER_PROMPT} 次。只改 partial-start 设置。`,
+    caption: `Exclude ${STREAM_BENCH_WARMUP_PER_PROMPT} practice runs, then record ${STREAM_BENCH_REPEATS_PER_PROMPT} per prompt. Change only the partial-start setting.`,
+    captionZh: `每个 prompt 先练 ${STREAM_BENCH_WARMUP_PER_PROMPT} 次，再测 ${STREAM_BENCH_REPEATS_PER_PROMPT} 次。只改 partial-start 设置。`,
   }, {
-    caption: `One ${STREAM_EXAMPLE_MAX_S.toFixed(1)}-second run lifts the mean to ${STREAM_EXAMPLE_MEAN_S.toFixed(2)}. Report min, max and stdev beside it.`,
-    captionZh: `一次 ${STREAM_EXAMPLE_MAX_S.toFixed(1)} 秒把均值抬到 ${STREAM_EXAMPLE_MEAN_S.toFixed(2)}。还要报告 min、max 和 stdev。`,
+    caption: `One ${STREAM_EXAMPLE_MAX_S.toFixed(1)}-second run makes the mean ${STREAM_EXAMPLE_MEAN_S.toFixed(2)}. Report min, max and stdev beside it.`,
+    captionZh: `一次 ${STREAM_EXAMPLE_MAX_S.toFixed(1)} 秒使均值为 ${STREAM_EXAMPLE_MEAN_S.toFixed(2)}。还要报告 min、max 和 stdev。`,
   }, {
     caption: 'Compare the same wait under the same conditions, and check output quality. Next, which AR or encoder work can disappear?',
     captionZh: '相同条件下比较同段等待，并检查输出质量。下一步，AR 或 encoder 能省掉什么？',
@@ -62,7 +64,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [590, 650, 600, 650, 610, 680, 650, 720][step] : [430, 460, 480, 480, 460, 500, 480, 500][step]);
+  const H = $derived(phone ? [590, 650, 600, 540, 610, 680, 700, 720][step] : [430, 460, 480, 480, 460, 520, 540, 500][step]);
   const barMax = $derived(phone ? 185 : 400);
   const barScale = $derived(barMax / STREAM_P90_SHARED_S);
   const timeX = (seconds: number) => 60 + (seconds / STREAM_TEACHING_DONE_S) * 600;
@@ -87,30 +89,31 @@
         <text x={phone ? 18 : 36} y="79" class="label">{t('p90 = 9 in 10 first sounds arrived within this time', 'p90 = 十个首音里九个在此时间内到达')}</text>
         {#if !phone}
           <rect x="36" y="105" width="648" height="215" rx="13" fill="var(--bg)" stroke="var(--line)" />
-          <text x="58" y="136" class="small strong">{t('SAME MODEL · SAME 8-REQUEST LOAD', '同一模型 · 同样同时 8 个请求')}</text>
+          <text x="58" y="136" class="small strong">{t('MEAN OF TWO P90 RUNS · SAME 8-REQUEST LOAD', '两次 p90 的均值 · 同样同时 8 个请求')}</text>
           <text x="58" y="177" class="small">{t('TALKER BESIDE THINKER', 'talker 与 thinker 同卡')}</text>
           <rect x="260" y="156" width={STREAM_P90_SHARED_S * barScale} height="33" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="648" y="179" text-anchor="end" class="result">{STREAM_P90_SHARED_S.toFixed(1)} s</text>
           <text x="58" y="236" class="small">{t('TALKER ON ITS OWN GPU', 'talker 独占一张 GPU')}</text>
           <rect x="260" y="215" width={STREAM_P90_ALONE_S * barScale} height="33" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x={272 + STREAM_P90_ALONE_S * barScale} y="237" class="result">{STREAM_P90_ALONE_S.toFixed(1)} s</text>
-          <text x="58" y="289" class="small">{t('blue = measured p90 wait, one scale', '蓝 = 实测 p90 等待，同一比例')}</text>
-          <text x="648" y="289" text-anchor="end" class="result">+{STREAM_P90_EXTRA_S.toFixed(1)} s</text>
+          <text x="58" y="289" class="small">{t('blue = mean p90 wait, one scale', '蓝 = 平均 p90 等待，同一比例')}</text>
+          <text x="648" y="289" text-anchor="end" class="result">{STREAM_P90_SHARED_S.toFixed(2)} − {STREAM_P90_ALONE_S.toFixed(2)} ≈ {STREAM_P90_EXTRA_S.toFixed(1)} s</text>
           <text x="360" y="356" text-anchor="middle" class="result">1 − {STREAM_P90_ALONE_S.toFixed(2)} ÷ {STREAM_P90_SHARED_S.toFixed(2)} ≈ {STREAM_P90_SOONER_PERCENT.toFixed(0)}% {t('sooner', '更早')}</text>
           <text x="360" y="392" text-anchor="middle" class="small strong">{t('Which part of the wait did the move remove?', '这次挪动省掉了哪段等待？')}</text>
         {:else}
           <rect x="18" y="104" width="264" height="251" rx="12" fill="var(--bg)" stroke="var(--line)" />
-          <text x="32" y="134" class="small strong">{t('SAME 8-REQUEST LOAD', '同样同时 8 个请求')}</text>
+          <text x="32" y="134" class="small strong">{t('MEAN p90 · 8 REQUESTS', '平均 p90 · 8 个请求')}</text>
           <text x="32" y="174" class="small">{t('BESIDE THINKER', '与 thinker 同卡')}</text>
           <rect x="32" y="188" width={STREAM_P90_SHARED_S * barScale} height="31" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="32" y="244" class="result">{STREAM_P90_SHARED_S.toFixed(1)} s</text>
           <text x="32" y="278" class="small">{t('OWN GPU', '独占 GPU')}</text>
           <rect x="32" y="292" width={STREAM_P90_ALONE_S * barScale} height="31" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="32" y="347" class="result">{STREAM_P90_ALONE_S.toFixed(1)} s · −{STREAM_P90_EXTRA_S.toFixed(1)} s</text>
-          <text x="18" y="391" class="small">{t('blue = p90 wait · one scale', '蓝 = p90 等待 · 同一比例')}</text>
-          <text x="150" y="435" text-anchor="middle" class="result">1 − {STREAM_P90_ALONE_S.toFixed(2)} ÷ {STREAM_P90_SHARED_S.toFixed(2)}</text>
-          <text x="150" y="465" text-anchor="middle" class="result">≈ {STREAM_P90_SOONER_PERCENT.toFixed(0)}% {t('sooner', '更早')}</text>
-          <text x="150" y="510" text-anchor="middle" class="small strong">{t('Which wait disappeared?', '省掉了哪段等待？')}</text>
+          <text x="150" y="391" text-anchor="middle" class="result">{STREAM_P90_SHARED_S.toFixed(2)} − {STREAM_P90_ALONE_S.toFixed(2)} ≈ {STREAM_P90_EXTRA_S.toFixed(1)} s</text>
+          <text x="150" y="423" text-anchor="middle" class="small">{t('blue = mean p90 · one scale', '蓝 = 平均 p90 · 同一比例')}</text>
+          <text x="150" y="465" text-anchor="middle" class="result">1 − {STREAM_P90_ALONE_S.toFixed(2)} ÷ {STREAM_P90_SHARED_S.toFixed(2)}</text>
+          <text x="150" y="495" text-anchor="middle" class="result">≈ {STREAM_P90_SOONER_PERCENT.toFixed(0)}% {t('sooner', '更早')}</text>
+          <text x="150" y="545" text-anchor="middle" class="small strong">{t('Which wait disappeared?', '省掉了哪段等待？')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'PR #1235 · H200 · two runs each' : 'PR #1235 · H200 · 8 requests at once · two runs each', phone ? 'PR #1235 · H200 · 各跑两次' : 'PR #1235 · H200 · 同时 8 个请求 · 各跑两次')}</text>
       {:else if step === 1}
@@ -182,43 +185,34 @@
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Constructed times · 800 ms from Ch. 20' : 'Constructed arrival times; the 800 ms chunk follows Learning SGLang Ch. 20.', phone ? '构造时刻 · 800 ms 见第 20 章' : '构造到达时刻；800 ms chunk 见 Learning SGLang 第 20 章。')}</text>
       {:else if step === 3}
-        <text x={phone ? 18 : 36} y="30" class="title">{t(phone ? 'Put the hand-off in a log' : 'A trace puts every hand-off in a log', phone ? '把交接写进日志' : 'trace 把每次交接写进日志')}</text>
-        <text x={phone ? 18 : 36} y="55" class="label">{t('trace = timestamped records of runtime events', 'trace = 带时间戳的运行事件记录')}</text>
+        <text x={phone ? 18 : 36} y="30" class="title">{t(phone ? 'One trace record' : 'A trace puts a read in a log', phone ? '一条 trace 记录' : 'trace 把一次读取写进日志')}</text>
+        <text x={phone ? 18 : 36} y="55" class="label">{t('trace = timestamped event records', 'trace = 带时间戳的事件记录')}</text>
         <text x={phone ? 18 : 36} y="79" class="code">SGLANG_OMNI_COMM_TRACE=1</text>
         {#if !phone}
-          <rect x="25" y="108" width="310" height="205" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="45" y="139" class="code strong">comm_send_enqueue</text>
-          <text x="45" y="174" class="small">request_id: {STREAM_TRACE_REQUEST_ID} · chunk_id: {STREAM_TRACE_CHUNK_ID}</text>
-          <text x="45" y="202" class="small">talker_ar → code2wav</text>
-          <text x="45" y="230" class="small">transport: cuda_ipc</text>
-          <text x="45" y="270" class="code">elapsed_ms: {'<operation>'}</text>
-          <rect x="385" y="108" width="310" height="205" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="405" y="139" class="code strong">comm_stream_read</text>
-          <text x="405" y="174" class="small">object_id: {STREAM_TRACE_OBJECT_ID}</text>
-          <text x="405" y="202" class="small">transport: cuda_ipc</text>
-          <text x="405" y="230" class="small">bytes: {'<buffer size>'}</text>
-          <text x="405" y="270" class="code">elapsed_ms: {'<read>'}</text>
-          <rect x="25" y="342" width="670" height="91" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="45" y="371" class="code">ts_ns = time.time_ns()  ·  {t('event time', '事件时刻')}</text>
-          <text x="45" y="405" class="code">elapsed_ms = (perf_counter_ns() − start) ÷ 1,000,000</text>
+          <rect x="205" y="108" width="310" height="205" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="225" y="139" class="code strong">comm_stream_read</text>
+          <text x="225" y="174" class="small">object_id: {STREAM_TRACE_OBJECT_ID}</text>
+          <text x="225" y="202" class="small">transport: cuda_ipc</text>
+          <text x="225" y="230" class="small">{t('read one chunk', '读取一个 chunk')}</text>
+          <text x="225" y="270" class="code">elapsed_ms: {'<read>'}</text>
+          <rect x="25" y="335" width="670" height="110" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="45" y="362" class="code">ts_ns = time.time_ns() · {t('wall-clock event time', '日历时间戳')}</text>
+          <text x="45" y="397" class="code">elapsed_ms = (end_ns − start_ns) ÷ 1,000,000</text>
+          <text x="45" y="429" class="code">start_ns = read start · end_ns = read end · ns = {t('nanoseconds', '纳秒')}</text>
         {:else}
           <rect x="20" y="103" width="260" height="172" rx="11" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="34" y="133" class="code strong">comm_send_enqueue</text>
-          <text x="34" y="166" class="small">request: {STREAM_TRACE_REQUEST_ID} · chunk: {STREAM_TRACE_CHUNK_ID}</text>
-          <text x="34" y="194" class="small">talker_ar → code2wav</text>
-          <text x="34" y="222" class="small">cuda_ipc</text>
-          <text x="34" y="253" class="code">elapsed_ms: {'<operation>'}</text>
-          <rect x="20" y="295" width="260" height="147" rx="11" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="34" y="325" class="code strong">comm_stream_read</text>
-          <text x="34" y="358" class="small">object: {STREAM_TRACE_OBJECT_ID}</text>
-          <text x="34" y="386" class="small">bytes: {'<buffer size>'}</text>
-          <text x="34" y="417" class="code">elapsed_ms: {'<read>'}</text>
-          <rect x="20" y="465" width="260" height="143" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="34" y="494" class="code">ts_ns = time.time_ns()</text>
-          <text x="34" y="522" class="small">{t('event timestamp', '事件时间戳')}</text>
-          <text x="34" y="554" class="code">elapsed_ms =</text>
-          <text x="34" y="580" class="code">(perf_counter_ns() − start)</text>
-          <text x="34" y="601" class="code">÷ 1,000,000</text>
+          <text x="34" y="133" class="code strong">comm_stream_read</text>
+          <text x="34" y="166" class="small">object: {STREAM_TRACE_OBJECT_ID}</text>
+          <text x="34" y="194" class="small">{t('read one chunk', '读取一个 chunk')}</text>
+          <text x="34" y="225" class="code">elapsed_ms: {'<read>'}</text>
+          <rect x="20" y="305" width="260" height="210" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="34" y="332" class="code">ts_ns = time.time_ns()</text>
+          <text x="34" y="358" class="small">{t('event timestamp', '事件时间戳')}</text>
+          <text x="34" y="390" class="code">elapsed_ms =</text>
+          <text x="34" y="416" class="code">(end_ns − start_ns) ÷ 1,000,000</text>
+          <text x="34" y="448" class="code">start_ns = read start</text>
+          <text x="34" y="474" class="code">end_ns = read end</text>
+          <text x="34" y="502" class="code">ns = {t('nanoseconds', '纳秒')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Constructed fields · trace off by default' : 'Constructed identifiers; tracing is off unless the environment switch enables it.', phone ? '构造字段 · trace 默认关闭' : '构造标识符；环境开关未打开时，trace 默认关闭。')}</text>
       {:else if step === 4}
@@ -256,7 +250,7 @@
       {:else if step === 5}
         <text x={phone ? 18 : 36} y="30" class="title">{t(phone ? 'Change one switch only' : 'A fair A/B changes one switch only', phone ? '只改一个开关' : '公平 A/B 只改一个开关')}</text>
         <text x={phone ? 18 : 36} y="55" class="label">{t(phone ? `partial-start = talker starts after ${STREAM_PARTIAL_START_MIN_CHUNKS} chunks` : `partial-start = start the talker after ${STREAM_PARTIAL_START_MIN_CHUNKS} thinker chunks, not the whole input`, `partial-start = ${STREAM_PARTIAL_START_MIN_CHUNKS} 个 thinker chunk 后就启动 talker`)}</text>
-        <text x={phone ? 18 : 36} y="79" class="label">{t('warmup = uncounted runs that absorb cold work', '预热 = 不计入结果，用来吸收冷启动工作')}</text>
+        <text x={phone ? 18 : 36} y="79" class="label">{t('practice runs are not counted', '练习运行不计入结果')}</text>
         {#if !phone}
           <rect x="25" y="108" width="320" height="190" rx="12" fill="var(--bg)" stroke="var(--line)" />
           <text x="45" y="139" class="small strong">A · BASELINE</text>
@@ -273,11 +267,12 @@
           <text x="460" y="226" text-anchor="middle" class="small">{STREAM_PARTIAL_START_MIN_CHUNKS} {t('chunks', '个 chunk')}</text>
           <line x1="530" y1="220" x2="578" y2="220" stroke="var(--gen)" stroke-width="3" marker-end="url(#measure-arrow-gen)" />
           <text x="590" y="226" class="small">talker</text>
-          <rect x="25" y="326" width="670" height="129" rx="11" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="45" y="355" class="small strong">{t('KEEP IDENTICAL', '保持不变')}</text>
-          <text x="45" y="383" class="small">short + medium prompts · seed {STREAM_BENCH_SEED} · max_tokens {STREAM_BENCH_MAX_TOKENS} · {t('same server', '同一服务配置')}</text>
-          <text x="45" y="414" class="result">{STREAM_BENCH_PROMPT_COUNT} × {STREAM_BENCH_WARMUP_PER_PROMPT} = {STREAM_BENCH_WARMUP_PER_LABEL} {t('warmups excluded', '次预热剔除')}</text>
-          <text x="45" y="442" class="result">{STREAM_BENCH_PROMPT_COUNT} × {STREAM_BENCH_REPEATS_PER_PROMPT} = {STREAM_BENCH_KEPT_PER_LABEL} {t('runs kept per label', '次结果保留 / 标签')}</text>
+          <rect x="25" y="326" width="670" height="158" rx="11" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="45" y="352" class="small strong">{t('SAME SERVER · SAME WORK', '同一服务配置 · 同样工作')}</text>
+          <text x="45" y="379" class="small">short = {STREAM_SHORT_WORDS} {t('words', '词')} · medium = {STREAM_MEDIUM_WORDS} {t('words', '词')}</text>
+          <text x="45" y="406" class="small">{t('same sampling + generated-token limit', '相同采样与生成 token 上限')}</text>
+          <text x="45" y="437" class="result">{STREAM_BENCH_PROMPT_COUNT} × {STREAM_BENCH_WARMUP_PER_PROMPT} = {STREAM_BENCH_WARMUP_PER_LABEL} {t('practice runs excluded', '次练习剔除')}</text>
+          <text x="45" y="466" class="result">{STREAM_BENCH_PROMPT_COUNT} × {STREAM_BENCH_REPEATS_PER_PROMPT} = {STREAM_BENCH_KEPT_PER_LABEL} {t('runs kept per label', '次结果保留 / 标签')}</text>
         {:else}
           <rect x="20" y="101" width="260" height="144" rx="11" fill="var(--bg)" stroke="var(--line)" />
           <text x="34" y="130" class="small strong">A · BASELINE</text>
@@ -290,18 +285,18 @@
           <text x="34" y="346" class="code">--partial-start-min-chunks {STREAM_PARTIAL_START_MIN_CHUNKS}</text>
           <text x="34" y="384" class="small">{STREAM_PARTIAL_START_MIN_CHUNKS} {t('chunks', '个 chunk')} → talker</text>
           <text x="34" y="409" class="small">{t('orange = changed setting', '橙 = 改动的设置')}</text>
-          <rect x="20" y="442" width="260" height="192" rx="11" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="34" y="470" class="small strong">{t('KEEP IDENTICAL', '保持不变')}</text>
-          <text x="34" y="497" class="small">short + medium · seed {STREAM_BENCH_SEED}</text>
-          <text x="34" y="523" class="small">max_tokens {STREAM_BENCH_MAX_TOKENS} · {t('same server', '同一服务配置')}</text>
-          <text x="34" y="557" class="result">{STREAM_BENCH_PROMPT_COUNT}×{STREAM_BENCH_WARMUP_PER_PROMPT}={STREAM_BENCH_WARMUP_PER_LABEL} {t('warmups excluded', '次预热剔除')}</text>
-          <text x="34" y="587" class="result">{STREAM_BENCH_PROMPT_COUNT}×{STREAM_BENCH_REPEATS_PER_PROMPT}={STREAM_BENCH_KEPT_PER_LABEL} {t('kept / label', '次保留 / 标签')}</text>
-          <text x="34" y="617" class="small">{t('5 measured runs per prompt', '每个 prompt 实测 5 次')}</text>
+          <rect x="20" y="442" width="260" height="211" rx="11" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="34" y="470" class="small strong">{t('SAME SERVER · SAME WORK', '同一服务配置 · 同样工作')}</text>
+          <text x="34" y="497" class="small">short {STREAM_SHORT_WORDS} · medium {STREAM_MEDIUM_WORDS} {t('words', '词')}</text>
+          <text x="34" y="536" class="small">{t('same sampling + token limit', '相同采样与生成上限')}</text>
+          <text x="34" y="583" class="result">{STREAM_BENCH_PROMPT_COUNT}×{STREAM_BENCH_WARMUP_PER_PROMPT}={STREAM_BENCH_WARMUP_PER_LABEL} {t('practice excluded', '次练习剔除')}</text>
+          <text x="34" y="613" class="result">{STREAM_BENCH_PROMPT_COUNT}×{STREAM_BENCH_REPEATS_PER_PROMPT}={STREAM_BENCH_KEPT_PER_LABEL} {t('kept / label', '次保留 / 标签')}</text>
+          <text x="34" y="640" class="small">{t('5 measured runs per prompt', '每个 prompt 实测 5 次')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Benchmark protocol · no result claimed' : 'Protocol from the shipped benchmark; no result claimed here.', phone ? 'benchmark 协议 · 不声称结果' : '协议来自随仓库发布的 benchmark；本步不声称性能结果。')}</text>
       {:else if step === 6}
         <text x={phone ? 18 : 36} y="30" class="title">{t(phone ? 'The mean hides one slow run' : 'One slow run can hide inside the mean', phone ? '平均数藏起一次慢运行' : '一次慢运行可能被平均数藏起来')}</text>
-        <text x={phone ? 18 : 36} y="55" class="label">{t('stdev = how spread out the runs are around their mean', 'stdev = 各次运行相对均值的离散程度')}</text>
+        <text x={phone ? 18 : 36} y="55" class="label">{t(phone ? 'stdev (σ) = spread of all 5 runs' : 'stdev (σ) = spread using all five runs', phone ? 'stdev（σ）= 五次结果的离散程度' : 'stdev（σ）= 使用全部五次结果计算离散程度')}</text>
         <text x={phone ? 18 : 36} y="79" class="label">{t('blue = four faster runs · orange = one slow run', '蓝 = 四次较快运行 · 橙 = 一次慢运行')}</text>
         <line x1={phone ? 20 : 50} y1="245" x2={phone ? 280 : 670} y2="245" stroke="var(--line)" stroke-width="2" />
         {#each STREAM_EXAMPLE_RUNS_S as value, i}
@@ -311,44 +306,57 @@
           <text x={x + (phone ? 20 : 43)} y={232 - height} text-anchor="middle" class="result">{value.toFixed(1)}</text>
           <text x={x + (phone ? 20 : 43)} y="269" text-anchor="middle" class="small">run {i + 1}</text>
         {/each}
-        <text x={W / 2} y="315" text-anchor="middle" class="result">mean = {STREAM_EXAMPLE_RUN_SUM_S.toFixed(1)} ÷ {STREAM_EXAMPLE_RUNS_S.length} = {STREAM_EXAMPLE_MEAN_S.toFixed(2)} s</text>
+        {#if !phone}
+          <text x="360" y="315" text-anchor="middle" class="result">mean = ({STREAM_EXAMPLE_RUNS_S.map((v) => v.toFixed(1)).join(' + ')}) ÷ {STREAM_EXAMPLE_RUNS_S.length} = {STREAM_EXAMPLE_MEAN_S.toFixed(2)} s</text>
+        {:else}
+          <text x="150" y="303" text-anchor="middle" class="result">{STREAM_EXAMPLE_RUNS_S.map((v) => v.toFixed(1)).join(' + ')} = {STREAM_EXAMPLE_RUN_SUM_S.toFixed(1)} s</text>
+          <text x="150" y="332" text-anchor="middle" class="result">mean = {STREAM_EXAMPLE_RUN_SUM_S.toFixed(1)} ÷ {STREAM_EXAMPLE_RUNS_S.length} = {STREAM_EXAMPLE_MEAN_S.toFixed(2)} s</text>
+        {/if}
         {#if !phone}
           {#each [
             { x: 50, name: 'MIN', value: `${STREAM_EXAMPLE_MIN_S.toFixed(2)} s` },
             { x: 280, name: 'MAX', value: `${STREAM_EXAMPLE_MAX_S.toFixed(2)} s` },
-            { x: 510, name: 'STDEV · PSTDDEV', value: STREAM_EXAMPLE_STDEV_S.toFixed(2) },
+            { x: 510, name: 'STDEV · ALL 5 RUNS', value: `${STREAM_EXAMPLE_STDEV_S.toFixed(2)} s` },
           ] as item}
             <rect x={item.x} y="343" width="160" height="65" rx="9" fill="var(--bg)" stroke="var(--line)" />
             <text x={item.x + 80} y="366" text-anchor="middle" class="small strong">{item.name}</text>
             <text x={item.x + 80} y="394" text-anchor="middle" class="result">{item.value}</text>
           {/each}
-          <text x="360" y="444" text-anchor="middle" class="result">max ÷ min = {STREAM_EXAMPLE_MAX_S.toFixed(1)} ÷ {STREAM_EXAMPLE_MIN_S.toFixed(1)} = {STREAM_EXAMPLE_MAX_OVER_MIN.toFixed(0)}×</text>
+          <text x="360" y="432" text-anchor="middle" class="small">{t('distances from mean 1.60: 0.3, 0.2, 0.3, 0.2, 1.0 s', '与均值 1.60 的距离：0.3、0.2、0.3、0.2、1.0 秒')}</text>
+          <text x="360" y="470" text-anchor="middle" class="result">σ = √[(0.3² + 0.2² + 0.3² + 0.2² + 1.0²) ÷ 5] = {STREAM_EXAMPLE_STDEV_S.toFixed(3)} s</text>
+          <text x="360" y="510" text-anchor="middle" class="result">max ÷ min = {STREAM_EXAMPLE_MAX_S.toFixed(1)} ÷ {STREAM_EXAMPLE_MIN_S.toFixed(1)} = {STREAM_EXAMPLE_MAX_OVER_MIN.toFixed(0)}×</text>
         {:else}
-          <rect x="20" y="343" width="260" height="151" rx="10" fill="var(--bg)" stroke="var(--line)" />
-          <text x="40" y="373" class="small strong">MIN = {STREAM_EXAMPLE_MIN_S.toFixed(2)} s</text>
-          <text x="40" y="407" class="small strong">MAX = {STREAM_EXAMPLE_MAX_S.toFixed(2)} s</text>
-          <text x="40" y="441" class="small strong">STDEV = {STREAM_EXAMPLE_STDEV_S.toFixed(2)} · PSTDDEV</text>
-          <text x="150" y="535" text-anchor="middle" class="result">max ÷ min = {STREAM_EXAMPLE_MAX_S.toFixed(1)} ÷ {STREAM_EXAMPLE_MIN_S.toFixed(1)} = {STREAM_EXAMPLE_MAX_OVER_MIN.toFixed(0)}×</text>
-          <text x="150" y="581" text-anchor="middle" class="small strong">{t('Keep every run; read the spread too.', '保留每次结果，也读离散程度。')}</text>
+          <rect x="20" y="352" width="260" height="171" rx="10" fill="var(--bg)" stroke="var(--line)" />
+          <text x="40" y="382" class="small strong">MIN = {STREAM_EXAMPLE_MIN_S.toFixed(2)} s</text>
+          <text x="40" y="416" class="small strong">MAX = {STREAM_EXAMPLE_MAX_S.toFixed(2)} s</text>
+          <text x="40" y="450" class="small strong">STDEV = {STREAM_EXAMPLE_STDEV_S.toFixed(2)} s · ALL 5</text>
+          <text x="40" y="484" class="small">0.3²+0.2²+0.3²+0.2²+1.0² = {STREAM_EXAMPLE_SQUARED_DEVIATION_SUM.toFixed(2)}</text>
+          <text x="150" y="548" text-anchor="middle" class="small">{t('distance from 1.60: 0.3, 0.2, 0.3, 0.2, 1.0 s', '距离：0.3、0.2、0.3、0.2、1.0 秒')}</text>
+          <text x="150" y="580" text-anchor="middle" class="result">σ = √({STREAM_EXAMPLE_SQUARED_DEVIATION_SUM.toFixed(2)} ÷ 5) = {STREAM_EXAMPLE_STDEV_S.toFixed(3)} s</text>
+          <text x="150" y="620" text-anchor="middle" class="result">max ÷ min = {STREAM_EXAMPLE_MAX_S.toFixed(1)} ÷ {STREAM_EXAMPLE_MIN_S.toFixed(1)} = {STREAM_EXAMPLE_MAX_OVER_MIN.toFixed(0)}×</text>
+          <text x="150" y="665" text-anchor="middle" class="small strong">{t('Keep every run; read the spread too.', '保留每次结果，也读离散程度。')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Constructed five runs, not benchmark output.', '构造的五次运行，不是 benchmark 输出。')}</text>
       {:else if step === 7}
         <text x={phone ? 18 : 36} y="30" class="title">{t(phone ? 'Keep the comparison honest' : 'Compare the same wait, then locate it', phone ? '把比较条件对齐' : '比较同一段等待，再定位它')}</text>
-        <text x={phone ? 18 : 36} y="55" class="label">{t('blue = evidence to keep · orange = work to inspect next', '蓝 = 要保留的证据 · 橙 = 下一步检查的工作')}</text>
+        <text x={phone ? 18 : 36} y="55" class="label">{t(phone ? 'blue = evidence · orange = next work' : 'blue = evidence to keep · orange = work to inspect next', phone ? '蓝 = 证据 · 橙 = 下一步工作' : '蓝 = 要保留的证据 · 橙 = 下一步检查的工作')}</text>
         {#each [
-          { title: 'SAME INPUT', body: 'prompts · seed', foot: 'lengths', titleZh: '相同输入', bodyZh: 'prompt · seed', footZh: '长度' },
-          { title: 'SAME CONDITIONS', body: 'hardware · config', foot: 'warmup', titleZh: '相同条件', bodyZh: '硬件 · 配置', footZh: '预热' },
+          { title: 'SAME INPUT', body: 'sampling · input + output', foot: 'lengths', titleZh: '相同输入', bodyZh: '采样 · 输入 + 输出', footZh: '长度' },
+          { title: 'SAME CONDITIONS', body: 'hardware · config', foot: 'practice runs', titleZh: '相同条件', bodyZh: '硬件 · 配置', footZh: '练习运行' },
           { title: 'PER-RUN WAITS', body: 'TTFT · stalls', foot: 'host / GPU', titleZh: '逐次等待', bodyZh: '首音 · 空档', footZh: 'host / GPU' },
-          { title: 'VALID RESULTS', body: 'completion · quality', foot: 'mean + spread', titleZh: '有效结果', bodyZh: '完成 · 质量', footZh: '均值 + 离散程度' },
+          { title: 'VALID RESULTS', body: 'complete · audio → text', foot: 'word errors + spread', titleZh: '有效结果', bodyZh: '完成 · 声音转文字', footZh: '错词数 + 离散程度' },
         ] as card, i}
           {@const x = phone ? 20 + (i % 2) * 135 : 20 + i * 170}
           {@const y = phone ? 92 + Math.floor(i / 2) * 122 : 92}
-          <rect x={x} y={y} width={phone ? 125 : 150} height="105" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <rect x={x} y={y} width={phone ? 125 : 150} height="120" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x={x + (phone ? 62.5 : 75)} y={y + 28} text-anchor="middle" class="small strong">{t(card.title, card.titleZh)}</text>
-          <text x={x + (phone ? 62.5 : 75)} y={y + 59} text-anchor="middle" class="small">{t(card.body, card.bodyZh)}</text>
-          <text x={x + (phone ? 62.5 : 75)} y={y + 83} text-anchor="middle" class="small">{t(card.foot, card.footZh)}</text>
+          <text x={x + (phone ? 62.5 : 75)} y={y + 59} text-anchor="middle" class="small">{phone && i === 0 ? t('sampling · in + out', '采样 · 输入输出') : phone && i === 3 ? t('done · audio → text', '完成 · 声音转文字') : t(card.body, card.bodyZh)}</text>
+          <text x={x + (phone ? 62.5 : 75)} y={y + 83} text-anchor="middle" class="small">{phone && i === 3 ? t('word errors', '错词数') : t(card.foot, card.footZh)}</text>
+          {#if i === 3}
+            <text x={x + (phone ? 62.5 : 75)} y={y + 105} text-anchor="middle" class="small">{t(phone ? 'match input voice' : 'voice match = input reference', phone ? '对照输入音色' : '音色匹配 = 对照输入参考音频')}</text>
+          {/if}
         {/each}
-        <text x={W / 2} y={phone ? 355 : 238} text-anchor="middle" class="result">{t('same wait · same conditions · valid output', '同段等待 · 相同条件 · 输出有效')}</text>
+        <text x={W / 2} y={phone ? 355 : 238} text-anchor="middle" class="result">{t(phone ? 'same wait · same setup · quality' : 'same wait · same conditions · valid output', '同段等待 · 相同条件 · 输出有效')}</text>
         {#if !phone}
           <rect x="40" y="282" width="290" height="116" rx="12" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="185" y="316" text-anchor="middle" class="small strong">AR</text>
@@ -356,7 +364,7 @@
           <text x="185" y="376" text-anchor="middle" class="small">{t('which work can it skip?', '能省掉哪些工作？')}</text>
           <rect x="390" y="282" width="290" height="116" rx="12" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="535" y="316" text-anchor="middle" class="small strong">ENCODER</text>
-          <text x="535" y="348" text-anchor="middle" class="small">{t('turns reference input into features', '把参考输入变成特征')}</text>
+          <text x="535" y="348" text-anchor="middle" class="small">{t('reference audio → model-ready numbers', '参考音频 → 模型可用的数字')}</text>
           <text x="535" y="376" text-anchor="middle" class="small">{t('which work can it skip?', '能省掉哪些工作？')}</text>
           <text x="360" y="449" text-anchor="middle" class="small strong">{t('Next chapter: remove work only after the trace locates it.', '下一章：先用 trace 定位，再减少工作。')}</text>
         {:else}
@@ -366,7 +374,7 @@
           <text x="150" y="481" text-anchor="middle" class="small">{t('what can it skip?', '能省掉什么？')}</text>
           <rect x="20" y="520" width="260" height="105" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="150" y="551" text-anchor="middle" class="small strong">ENCODER</text>
-          <text x="150" y="580" text-anchor="middle" class="small">{t('reference input → features', '参考输入 → 特征')}</text>
+          <text x="150" y="580" text-anchor="middle" class="small">{t('reference audio → model numbers', '参考音频 → 模型数字')}</text>
           <text x="150" y="606" text-anchor="middle" class="small">{t('what can it skip?', '能省掉什么？')}</text>
           <text x="150" y="666" text-anchor="middle" class="small strong">{t('Next: locate the wait, then remove work.', '下一步：先定位，再减少工作。')}</text>
         {/if}
