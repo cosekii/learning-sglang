@@ -157,6 +157,26 @@
       { en: '7.047 − 2.202 = 4.845 s saved', zh: '7.047 − 2.202 = 少等 4.845 秒' },
       { en: '7.047 ÷ 2.202 ≈ 3.20×', zh: '7.047 ÷ 2.202 ≈ 3.20 倍' },
     ],
+  }, {
+    caption: 'Training also keeps gradients and optimizer records. If the full state does not fit, what should each GPU keep?',
+    captionZh: '训练还要保存梯度和优化器记录。完整状态装不下时，每张 GPU 该留哪一片？',
+    title: 'The next limit is the full training state', titleZh: '下一个限制是完整训练状态',
+    subtitle: 'training state = the number tables that training must keep', subtitleZh: '训练状态 = 训练必须保存的那些数字表',
+    foot: 'Next chapter: FSDP2 training backend.', footZh: '下一章：FSDP2 训练后端。',
+    mobileTitle: 'The full training state', mobileTitleZh: '完整训练状态',
+    mobileSubtitle: 'training keeps more than weights', mobileSubtitleZh: '训练保存的不只是权重',
+    mobileFoot: 'Next: FSDP2 training backend.', mobileFootZh: '下一章：FSDP2 训练后端。',
+    mobile: [
+      { title: 'WEIGHTS v1', titleZh: '权重 v1', body: 'the model numbers', bodyZh: '模型的数字', tone: 'orange' },
+      { title: 'GRADIENTS', titleZh: '梯度', body: 'directions for changing weights', bodyZh: '修改权重的方向', tone: 'orange' },
+      { title: 'OPTIMIZER STATE', titleZh: '优化器状态', body: 'bookkeeping for later changes', bodyZh: '后续修改所需的记录', tone: 'orange' },
+      { title: 'FULL STATE MAY NOT FIT', titleZh: '完整状态可能装不下', body: 'fast transfer does not shrink it', bodyZh: '传输变快也不会让它变小', tone: 'plain' },
+      { title: 'EACH GPU KEEPS ?', titleZh: '每张 GPU 留下 ?', body: 'which slice of each table?', bodyZh: '每张表各留哪一片？', tone: 'blue' },
+    ],
+    formulas: [
+      { en: 'weights + gradients + optimizer', zh: '训练状态 = 权重 + 梯度 + 优化器状态' },
+      { en: 'next: which slice per GPU?', zh: '下一章：每张 GPU 各留哪一片？' },
+    ],
   }];
   let step = $state(0);
   $effect(() => {
@@ -173,7 +193,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [480, 620, 510, 620, 620, 640, 520][step] : [410, 480, 460, 500, 490, 490, 520][step]);
+  const H = $derived(phone ? [480, 620, 510, 620, 620, 640, 520, 640][step] : [410, 480, 460, 500, 490, 490, 520, 500][step]);
 </script>
 
 <figure class="viz">
@@ -373,6 +393,26 @@
         <text x="360" y="427" text-anchor="middle" class="result">{UPDATE_DEBUG_INNER_MS} + {UPDATE_DEBUG_SLEEP_TOTAL_MS} + {UPDATE_DEBUG_OTHER_MS} = {UPDATE_DEBUG_OUTER_MS} ms</text>
         <text x="360" y="462" text-anchor="middle" class="small">{t('Three orange sleeps sit outside ModelRunner.', '三个橙色 sleep 都在 ModelRunner 外面。')}</text>
         <text x="360" y="490" text-anchor="middle" class="small">{t('Both full-update bars use the same seconds scale.', '两条完整更新柱使用相同的秒数比例。')}</text>
+      {:else if step === 7}
+        <rect x="25" y="82" width="670" height="195" rx="13" fill="var(--bg)" stroke="var(--gen)" />
+        <text x="360" y="112" text-anchor="middle" class="section">{t('FULL TRAINING STATE', '完整训练状态')}</text>
+        {#each [
+          { x: 45, title: 'WEIGHTS v1', titleZh: '权重 v1', body: 'model numbers', bodyZh: '模型的数字' },
+          { x: 260, title: 'GRADIENTS', titleZh: '梯度', body: 'directions to change them', bodyZh: '修改权重的方向' },
+          { x: 475, title: 'OPTIMIZER STATE', titleZh: '优化器状态', body: 'later-update bookkeeping', bodyZh: '后续修改的记录' },
+        ] as node}
+          <rect x={node.x} y="134" width="200" height="112" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x={node.x + 100} y="169" text-anchor="middle" class="small strong">{t(node.title, node.titleZh)}</text>
+          <text x={node.x + 100} y="205" text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
+          <text x={node.x + 100} y="229" text-anchor="middle" class="small">{t('kept for training', '训练需要保存')}</text>
+        {/each}
+        <text x="360" y="309" text-anchor="middle" class="small">{t('Step 4 transferred the weight tensor. Training keeps these other tables too.', '第 4 步传的是权重张量；训练还要保存这些其他数字表。')}</text>
+        <text x="360" y="345" text-anchor="middle" class="result">{t('If the full set does not fit, which slice should each GPU keep?', '如果完整状态装不下，每张 GPU 该留下哪一片？')}</text>
+        {#each [0, 1, 2] as i}
+          <rect x={45 + i * 215} y="375" width="200" height="66" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-dasharray="5 4" />
+          <text x={145 + i * 215} y="415" text-anchor="middle" class="result">GPU {i} · ?</text>
+        {/each}
+        <text x="360" y="470" text-anchor="middle" class="small">{t('Orange = training state · blue outline = the unanswered per-GPU share', '橙 = 训练状态 · 蓝框 = 尚未回答的每张 GPU 份额')}</text>
       {/if}
       {#if cur.foot2}
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t(cur.foot2, cur.foot2Zh ?? cur.foot2)}</text>

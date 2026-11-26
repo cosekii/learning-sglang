@@ -221,3 +221,34 @@ The values are rounded successive measurements from one author's setup. They do 
 Removing a fixed wait does not shrink the training state. The final step leaves the remaining memory question: how can training keep only slices when the full state does not fit?
 
 Source: `Awesome-ML-SYS-Tutorial/sglang/latency-accelerate-for-weight-updates/readme.md:584-605,980-1007,1023-1030,1061-1065`.
+
+## Step 8 · Leave the full training state as the next problem
+
+**One sentence.** Weight transfer delivers model parameters, but training also keeps gradients and optimizer state, so the next chapter must divide the full training state when one GPU cannot hold it.
+
+### On the stage
+
+- `Weights v1` are the model numbers transferred in this chapter. `Gradients` describe how those numbers should change, and optimizer state holds the bookkeeping used for later changes.
+- Together, these make the full training state in the orange box. A faster update channel does not reduce that state's size.
+- The three blue-outlined GPU cards contain question marks. The figure deliberately does not answer how their shares are chosen.
+
+### Formula and symbols
+
+$$\mathcal{T}=\{W,G,O\}$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $W$ | Model weights | `v1` from this chapter |
+| $G$ | Gradients, the directions for changing weights | Training process |
+| $O$ | Optimizer state for later updates | Training process |
+| $\mathcal{T}$ | Full training state | The set of all three |
+
+### The numbers on the stage
+
+Step 4's assembled weight tensor has $1024\times1024=1{,}048{,}576$ elements. This step assigns no gradient or optimizer size because the source example does not specify them.
+
+### Next
+
+Chapter 8 answers the visible question with FSDP2: parameters, gradients and optimizer state can be sharded during training, then weights can be gathered for rollout. This chapter stops before that mechanism.
+
+Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:16`; `docs/plan-ml-sys.md:27-28`.
