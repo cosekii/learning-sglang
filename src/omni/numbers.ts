@@ -264,3 +264,12 @@ export const AUK_OFFLOAD_SLEEPING_COUNT = AUK_OFFLOAD_COMPONENT_COUNT - AUK_OFFL
 export const AUK_OFFLOAD_REQUEST_OWNER_COUNT = 1;
 export const AUK_OFFLOAD_MAX_BATCH_SIZE = 1;
 export const AUK_OFFLOAD_PROCESS_REPLICA_COUNT = 1;
+
+// PR #1235: p90 first sound on H200, two runs per talker placement.
+const mean = (values: readonly number[]) => values.reduce((sum, value) => sum + value, 0) / values.length;
+export const STREAM_P90_SHARED_RUNS_S = [2.697, 2.663] as const;
+export const STREAM_P90_ALONE_RUNS_S = [1.463, 1.415] as const;
+export const STREAM_P90_SHARED_S = mean(STREAM_P90_SHARED_RUNS_S);
+export const STREAM_P90_ALONE_S = mean(STREAM_P90_ALONE_RUNS_S);
+export const STREAM_P90_EXTRA_S = STREAM_P90_SHARED_S - STREAM_P90_ALONE_S;
+export const STREAM_P90_SOONER_PERCENT = (1 - STREAM_P90_ALONE_S / STREAM_P90_SHARED_S) * 100;
