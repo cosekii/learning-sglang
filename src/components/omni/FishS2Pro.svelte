@@ -23,6 +23,16 @@
     FISH_TEACHING_PROMPT_TOKENS,
     FISH_TEACHING_CONTEXT_REMAINING,
     FISH_TEACHING_GENERATION_BUDGET,
+    FISH_STREAM_TOTAL_FRAMES,
+    FISH_STREAM_NEXT_NEW_FRAMES,
+    FISH_STREAM_LEFT_CONTEXT_FRAMES,
+    FISH_STREAM_FINAL_NEW_FRAMES,
+    FISH_STREAM_TAIL_SAMPLES,
+    FISH_STREAM_SECOND_TOTAL_FRAMES,
+    FISH_STREAM_NEXT_INPUT_FRAMES,
+    FISH_STREAM_FINAL_INPUT_FRAMES,
+    FISH_STREAM_TOTAL_INPUT_FRAMES,
+    FISH_STREAM_REDECODED_FRAMES,
     VOC_FISH_CODEBOOK_ROWS,
   } from '../../omni/numbers';
 
@@ -46,6 +56,9 @@
   }, {
     caption: 'Stopping has three exits: EOS, length and abort. Abort delivers no remaining sound.',
     captionZh: '停止有 EOS、长度用尽和中止三条路。中止不会交付剩余声音。',
+  }, {
+    caption: 'Streaming decodes 40 frames first, then overlapping windows. Old frames and a sound tail smooth the joins.',
+    captionZh: '流式先解 40 帧，再解有重叠的窗口。旧帧和声音尾巴用于接好接缝。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -62,8 +75,13 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [710, 800, 790, 900, 790, 880][step] : [540, 630, 600, 650, 600, 630][step]);
+  const H = $derived(phone ? [710, 800, 790, 900, 790, 880, 930][step] : [540, 630, 600, 650, 600, 630, 700][step]);
   const fmt = (value: number) => value.toLocaleString('en-US', { maximumFractionDigits: 0 });
+  const streamEvents = [
+    { title: 'FIRST · total 40', titleZh: '首次 · 累计 40', old: 0, added: FISH_FIRST_WINDOW_FRAMES, input: FISH_FIRST_WINDOW_FRAMES, emitted: `40F−${FISH_STREAM_TAIL_SAMPLES}` },
+    { title: `NEXT · total ${FISH_STREAM_SECOND_TOTAL_FRAMES}`, titleZh: `下次 · 累计 ${FISH_STREAM_SECOND_TOTAL_FRAMES}`, old: FISH_STREAM_LEFT_CONTEXT_FRAMES, added: FISH_STREAM_NEXT_NEW_FRAMES, input: FISH_STREAM_NEXT_INPUT_FRAMES, emitted: '45F' },
+    { title: `FINAL · total ${FISH_STREAM_TOTAL_FRAMES}`, titleZh: `最后 · 累计 ${FISH_STREAM_TOTAL_FRAMES}`, old: FISH_STREAM_LEFT_CONTEXT_FRAMES, added: FISH_STREAM_FINAL_NEW_FRAMES, input: FISH_STREAM_FINAL_INPUT_FRAMES, emitted: `5F+${FISH_STREAM_TAIL_SAMPLES}` },
+  ];
 </script>
 
 <figure class="viz">
@@ -445,6 +463,47 @@
           {/each}
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'The 1,000-token prompt is constructed' : 'The 1,000-token prompt is constructed; the three limits and default request cap come from source.', phone ? '1,000-token prompt 是构造算例' : '1,000-token prompt 是构造值；三项限制和请求默认上限来自源码。')}</text>
+      {:else if step === 6}
+        <text x={phone ? 18 : 30} y="30" class="title">{t('One constructed 90-frame stream', '构造的 90 帧流')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'blue = new · orange = old frames read again' : 'blue = new frames · orange = old frames read again · grey = held sound tail', phone ? '蓝 = 新帧 · 橙 = 重读旧帧' : '蓝 = 新帧 · 橙 = 重读旧帧 · 灰 = 留下的声音尾巴')}</text>
+        {#if !phone}
+          {#each streamEvents as event, i}
+            {@const y = 91 + i * 140}
+            <rect x="30" y={y} width="660" height="121" rx="11" fill="var(--bg)" stroke="var(--line)" />
+            <text x="48" y={y + 29} class="small strong">{t(event.title, event.titleZh)}</text>
+            <text x="48" y={y + 65} class="small">input = {event.input}</text>
+            <text x="48" y={y + 94} class="small">new = {event.added}</text>
+            {#if event.old > 0}
+              <rect x="190" y={y + 48} width={event.old * 4.5} height="47" rx="6" fill="var(--gen-soft)" stroke="var(--gen)" />
+            {/if}
+            <rect x={190 + event.old * 4.5} y={y + 48} width={event.added * 4.5} height="47" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="500" y={y + 60} class="small">{t('samples out', '输出采样点')}</text>
+            <text x="500" y={y + 91} class="result">{event.emitted}</text>
+          {/each}
+          <text x="360" y="544" text-anchor="middle" class="result">{FISH_FIRST_WINDOW_FRAMES} + {FISH_STREAM_NEXT_INPUT_FRAMES} + {FISH_STREAM_FINAL_INPUT_FRAMES} = {FISH_STREAM_TOTAL_INPUT_FRAMES} {t('input frames', '帧输入')}</text>
+          <text x="360" y="579" text-anchor="middle" class="small">20 + 20 = {FISH_STREAM_REDECODED_FRAMES} {t('old frames decoded again', '帧旧内容被再次解码')}</text>
+          <text x="360" y="616" text-anchor="middle" class="result">(40F−512) + 45F + (5F+512) = 90F</text>
+          <text x="360" y="650" text-anchor="middle" class="small">F = {fmt(FISH_SAMPLES_PER_FRAME)} {t('samples · the 512-sample tail is delayed, not dropped', '个采样点 · 512 尾巴延后交付，没有丢弃')}</text>
+        {:else}
+          {#each streamEvents as event, i}
+            {@const y = 82 + i * 220}
+            <rect x="18" y={y} width="264" height="200" rx="11" fill="var(--bg)" stroke="var(--line)" />
+            <text x="32" y={y + 29} class="small strong">{t(event.title, event.titleZh)}</text>
+            <text x="32" y={y + 57} class="small">input = {event.input} · new = {event.added}</text>
+            {#if event.old > 0}
+              <rect x="32" y={y + 77} width={event.old * 3.2} height="44" rx="6" fill="var(--gen-soft)" stroke="var(--gen)" />
+            {/if}
+            <rect x={32 + event.old * 3.2} y={y + 77} width={event.added * 3.2} height="44" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="32" y={y + 151} class="small">{t('samples out', '输出采样点')}</text>
+            <text x="32" y={y + 181} class="result">{event.emitted}</text>
+          {/each}
+          <text x="150" y="766" text-anchor="middle" class="result">40 + 65 + 25 = {FISH_STREAM_TOTAL_INPUT_FRAMES} {t('inputs', '帧输入')}</text>
+          <text x="150" y="801" text-anchor="middle" class="small">20 + 20 = {FISH_STREAM_REDECODED_FRAMES} {t('old frames repeated', '帧旧内容重算')}</text>
+          <text x="150" y="839" text-anchor="middle" class="result">(40F−512)+45F+(5F+512)=90F</text>
+          <text x="150" y="875" text-anchor="middle" class="small">F = {fmt(FISH_SAMPLES_PER_FRAME)} {t('samples', '个采样点')}</text>
+          <text x="150" y="902" text-anchor="middle" class="small">{t('the 512-sample tail is delayed', '512 尾巴只是延后交付')}</text>
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Constructed 90 frames · shipped window defaults' : 'Constructed 90-frame stream; 40/45/20/512 are the shipped window defaults.', phone ? '构造 90 帧 · 默认窗口规则' : '90 帧是构造流；40/45/20/512 是默认窗口规则。')}</text>
       {/if}
     </svg>
   </div>

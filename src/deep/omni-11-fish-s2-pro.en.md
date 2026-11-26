@@ -257,3 +257,43 @@ An immediate EOS produces zero accepted frames. Result adaptation raises “gene
 Step 7 follows accepted frames into the streaming vocoder's overlapping windows.
 
 Sources: `models/fishaudio_s2_pro/model_runner.py:48-76`; `models/fishaudio_s2_pro/request_builders.py:148-167,192-202,233-248`; `models/fishaudio_s2_pro/engine_builder.py:87-100`; `tests/unit_test/fishaudio_s2_pro/test_tts.py:486-531,616-673`.
+
+## Step 7 · Streaming windows overlap
+
+> **In one line:** The streaming vocoder re-reads old frames and holds a short sound tail to join each new window.
+
+### On the stage
+
+- This constructed request generates 90 frames in total.
+- The first window reads 40 new frames. The next reads 20 old plus 45 new. The final flush reads 20 old plus five new.
+- Blue segments are new frames. Orange segments are old frames decoded again.
+- The grey 512-sample tail is earlier sound held for a crossfade, then released at the final flush.
+- $F$ means the 2,048 audio samples represented by one codec frame.
+
+### Formula and the numbers on the stage
+
+| Event | Input frames | New frames | Samples emitted by this event |
+|---|---:|---:|---:|
+| First, total 40 | 40 | 40 | $40F-512$ |
+| Next, total 85 | $20+45=65$ | 45 | $45F$ |
+| Final, total 90 | $20+5=25$ | 5 | $5F+512$ |
+
+$$
+40 + 65 + 25 = 130\ \text{input frames}
+$$
+
+$$
+20 + 20 = 40\ \text{old frames decoded again}
+$$
+
+$$
+(40F-512)+45F+(5F+512)=90F
+$$
+
+The 40 extra input frames are repeated work, not extra output. The 512-sample tails cancel in the total because the tail is delayed rather than discarded.
+
+### Next
+
+Step 8 compares these per-request streaming windows with the non-streaming batch path for completed requests.
+
+Sources: `scheduling/audio_stream.py:65-148,151-239,242-333`; `scheduling/audio_vocoder.py:116-182`; `models/fishaudio_s2_pro/request_builders.py:276-298`.

@@ -25,6 +25,8 @@ Step 5 follows `model_runner.py:62-100,148-191` and `sglang_model.py:365-382,484
 
 Step 6 follows `model_runner.py:48-76` and `request_builders.py:148-167,192-202,233-248`. EOS is `<|im_end|>`: Fast AR still runs for that Slow output, but the collector drops the terminal frame. Earlier accepted frames remain. An immediate EOS leaves no audio codes and produces an error instead of empty audio. Length exhaustion retains accepted frames with `finish_reason="length"`. The effective cap is `min(request max, 2048, max(4096−1−prompt tokens,1))`; the request default is 1,024 (`engine_builder.py:87-100`). Abort suppresses pending chunks and terminal success output and clears stream state. It cannot recall chunks already delivered.
 
+Step 7 uses a constructed 90-frame stream through `scheduling/audio_stream.py:65-148,151-239,242-333`. The shipped rules open at 40 frames, later take 20 old frames plus up to 45 new ones, and hold a 512-sample sound tail for crossfading. The three calls therefore read 40, 65 and 25 frames. Their emitted samples close to `90 × 2,048`: the first holds 512 samples, the final flush releases them. The old frames and tail join windows; they are not Qwen-style retained neural codec state. `request_builders.py:276-298` and `scheduling/audio_vocoder.py:116-182` avoid a second full-request decode after streamed audio exists.
+
 Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`. Fetching a newer ref failed with `Operation not permitted`. The chapter reads source; it does not run a model or benchmark.
 
 </details>
@@ -43,6 +45,8 @@ Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37
 第 5 步依据 `model_runner.py:62-100,148-191` 和 `sglang_model.py:365-382,484-488`。上一帧的原始 token 和全部十个 DAC codes 会进入下一次 Slow 输入。Slow KV 通过 SGLang 保留 prompt 和之前的帧。`request_builders.py:65-78,160-168` 对全部十行参考 codes 做指纹，避免只有 code 0 相同的参考声音错误共享前缀。Fast KV 只覆盖一帧内的 0–9 位置，在下一次 Slow 输出前重置（`fish_speech/models/text2semantic/audio_decoder.py:394-411,505-526,547-595`）。第 2 步的参考 code 缓存是另一种 CPU 成品缓存。
 
 第 6 步依据 `model_runner.py:48-76` 和 `request_builders.py:148-167,192-202,233-248`。EOS 是 `<|im_end|>`：Fast AR 仍会为这次 Slow 输出运行，但收集器丢掉结束帧，保留之前接受的帧。立即遇到 EOS 会留下零个音频 codes，随后报错，不返回空声音。长度用尽会保留接受的帧，并写 `finish_reason="length"`。有效上限是 `min(请求上限, 2048, max(4096−1−prompt tokens,1))`，请求默认上限是 1,024（`engine_builder.py:87-100`）。中止会清掉流状态，拦截待送 chunks 和最终成功输出，但不能收回已经交付的 chunks。
+
+第 7 步用构造的 90 帧流走过 `scheduling/audio_stream.py:65-148,151-239,242-333`。默认规则在 40 帧开窗，后续读取 20 帧旧内容和最多 45 帧新内容，并保留 512 个采样点的声音尾巴做交叉混合。三次调用因此分别读取 40、65、25 帧。输出采样点合计是 `90 × 2,048`：第一次留下 512 个，最后一次释放。旧帧和声音尾巴用于连接窗口，不是 Qwen 式保留神经 codec 状态。`request_builders.py:276-298` 和 `scheduling/audio_vocoder.py:116-182` 在已有流式声音后不会再解码整个请求。
 
 本章代码出处固定到 `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`。获取更新 ref 时出现 `Operation not permitted`。本章只读源码，没有运行模型或 benchmark。
 
