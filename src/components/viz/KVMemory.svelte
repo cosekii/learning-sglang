@@ -60,7 +60,7 @@
     { scene: 'alloc', base: pages0, alloc: allocA, owner: 5, name: 'req 6', caption: `<b>Paging</b>: cut the room into fixed-size pages. A newcomer's cache isn't one block; it's however many pages it needs, taken from anywhere that's free, with the page numbers written in its table. No holes, no pages held in advance.`, captionZh: `<b>Paging</b>：把空间切成固定大小的 page。req 6 任取 5 个空闲 page，位置不限。` },
     { scene: 'free', caption: `When a request finishes, its pages go straight back to the pool. No compaction, nobody else moves. The pool just has more free pages, wherever they happen to be.`, captionZh: `request 结束后，它的 page 直接变回空闲。别人的 page 不移动，也不用整理。`, foot: `with prefix caching off · SGLang keeps a finished request's pages in its prefix cache until it needs them (chapter ${CH_PREFIX})`, footZh: `关闭 prefix caching · SGLang 把已结束 request 的 page 留在 prefix cache 里，直到需要它们（第 ${CH_PREFIX} 章）` },
     { scene: 'alloc', base: pages2, alloc: allocB, owner: 6, name: 'req 7', caption: `The next newcomer takes what it needs from those, or any other free pages. Its table lists them, and the attention kernel follows the table. vLLM pages ${VLLM_PAGE_TOKENS} tokens at a time; SGLang, ${SGLANG_PAGE_TOKENS}.`, captionZh: `页表是按顺序记页号的清单。req 7 记下 8 个页号，attention 照表读。` },
-    { scene: 'closing', caption: `Admission is a count: free pages against pages needed. Yes: admit and write the table. No: wait for a finish. If the running requests themselves run out, one is retracted. Sharing pages: next chapter.`, captionZh: `接纳是计数：空闲 page 对所需 page。够：接纳并写表。不够：等一个 request 结束。运行中的 request 耗尽 page 时，撤回一个。共享 page：下一章。` },
+    { scene: 'closing', caption: `Admission is a count: free pages against pages needed. Yes: admit and write the table. No: wait for a finish. If the running requests themselves run out, one is retracted. Sharing pages: next chapter.`, captionZh: `先估新来者和运行中的 cache。够就接纳，不够就等待或撤回。` },
   ];
 
   let step = $state(0);
@@ -84,7 +84,7 @@
 
 <figure class="viz">
   <div class="canvas">
-    <svg class:step-one={step === 0 && $lang === 'zh'} class:step-two={step === 1 && $lang === 'zh'} class:step-three={step === 2 && $lang === 'zh'} class:step-four={step === 3 && $lang === 'zh'} class:step-five={step === 4 && $lang === 'zh'} class:step-six={step === 5} viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="KV memory, step {step + 1}">
+    <svg class:step-one={step === 0 && $lang === 'zh'} class:step-two={step === 1 && $lang === 'zh'} class:step-three={step === 2 && $lang === 'zh'} class:step-four={step === 3 && $lang === 'zh'} class:step-five={step === 4 && $lang === 'zh'} class:step-six={step === 5} class:step-seven={step === 6 && $lang === 'zh'} viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="KV memory, step {step + 1}">
       <defs>
         <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
           <rect width="6" height="6" fill="#e0f2fe" />
@@ -321,7 +321,7 @@
         {@const MG = 2}
         {@const MX = 372}
         {@const MY = 214}
-        <g transition:fade={{ duration: 250 }}>
+        <g class:desktop-only={$lang === 'zh'} transition:fade={{ duration: 250 }}>
           <defs>
             <marker id="kvarrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
               <path d="M 0 0 L 10 5 L 0 10 z" fill="#b8b4aa" />
@@ -332,8 +332,8 @@
           <text x="40" y="52" class="rowlabel">{t('admitting a newcomer', '接纳新 request')}</text>
           <g in:fly={{ y: 8, duration: 300 }}>
             <rect x="40" y="70" width="290" height="56" rx="12" fill="white" stroke="var(--fg)" stroke-width="1.5" />
-            <text x="185" y="94" text-anchor="middle" class="slab strong small">{t('free pages ≥ pages needed?', '空闲 page ≥ 所需 page？')}</text>
-            <text x="185" y="114" text-anchor="middle" class="tag">{t('needed: its prompt, plus every answer still to come', '所需：它的 prompt，加上还没生成的回答')}</text>
+            <text x="185" y="94" text-anchor="middle" class="slab strong small">{t('free pages ≥ pages needed?', '新来估计 + 运行预留 ≤ 可用 page？')}</text>
+            <text x="185" y="114" text-anchor="middle" class="tag">{t('needed: its prompt, plus every answer still to come', '估计包括未缓存 prompt 和剩余回答')}</text>
           </g>
           <g in:fly={{ y: 8, delay: 300, duration: 300 }}>
             <path d="M 110 126 V 168" fill="none" stroke="#b8b4aa" stroke-width="1.5" marker-end="url(#kvarrow)" />
@@ -380,6 +380,21 @@
           </g>
           <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote" in:fade={{ delay: 1500 }}>SGLang: <tspan class="mono">MHATokenToKVPool</tspan> · <tspan class="mono">TokenToKVPoolAllocator</tspan> · <tspan class="mono">req_to_token</tspan> · <tspan class="mono">PrefillAdder</tspan> · <tspan class="mono">retract_decode</tspan></text>
         </g>
+        {#if $lang === 'zh'}
+          <g class="phone-only">
+            <text x="40" y="48" class="rowlabel">接纳前：先估两份 cache</text>
+            <rect x="40" y="70" width="640" height="110" rx="12" fill="white" stroke="var(--fg)" stroke-width="1.5" />
+            <text x="360" y="112" text-anchor="middle" class="slab strong">新来估计 + 运行预留</text>
+            <text x="360" y="153" text-anchor="middle" class="slab strong">≤ 可用 page？</text>
+            <rect x="40" y="210" width="300" height="76" rx="12" fill="#fbfaf7" stroke="#16a34a" />
+            <text x="60" y="256" class="slab strong">够：接纳并写页表</text>
+            <rect x="380" y="210" width="320" height="142" rx="12" fill="#fbfaf7" stroke="var(--eos)" />
+            <text x="400" y="248" class="slab strong">不够：等待</text>
+            <text x="400" y="292" class="tag">运行也放不下</text>
+            <text x="400" y="328" class="tag">→ 撤回一个</text>
+            <text x="40" y="382" class="legend">撤回后重新 prefill；页表见上一步</text>
+          </g>
+        {/if}
       {/if}
       {#if cur.foot}
         {#key cur.foot}
@@ -406,13 +421,14 @@
   .legend.muted, .legend .muted { fill: var(--muted); font-weight: 400; }
   .phone-only { display: none; }
   @media (max-width: 900px) {
-    .step-one .desktop-only, .step-one .context-label, .step-two .desktop-only, .step-three .desktop-only, .step-three .hole-label, .step-four .desktop-only, .step-four .past-key, .step-five .desktop-only, .step-five .past-key, .step-six .desktop-only, .step-six .past-key { display: none; }
-    .step-one .phone-only, .step-two .phone-only, .step-three .phone-only, .step-four .phone-only, .step-five .phone-only, .step-six .phone-only { display: inline; }
+    .step-one .desktop-only, .step-one .context-label, .step-two .desktop-only, .step-three .desktop-only, .step-three .hole-label, .step-four .desktop-only, .step-four .past-key, .step-five .desktop-only, .step-five .past-key, .step-six .desktop-only, .step-six .past-key, .step-seven .desktop-only { display: none; }
+    .step-one .phone-only, .step-two .phone-only, .step-three .phone-only, .step-four .phone-only, .step-five .phone-only, .step-six .phone-only, .step-seven .phone-only { display: inline; }
     .step-one .rowlabel, .step-one .legend, .step-one .tag, .step-one .pt, .step-one .steplabel, .step-one .footnote,
     .step-two .rowlabel, .step-two .legend, .step-two .steplabel, .step-two .footnote,
     .step-three .rowlabel, .step-three .legend, .step-three .tag,
     .step-four .rowlabel, .step-four .legend, .step-four .tag, .step-four .pt,
     .step-five .rowlabel, .step-five .legend, .step-five .tag, .step-five .footnote,
-    .step-six .rowlabel, .step-six .legend, .step-six .tag, .step-six .pt { font-size: 23px; }
+    .step-six .rowlabel, .step-six .legend, .step-six .tag, .step-six .pt,
+    .step-seven .rowlabel, .step-seven .legend, .step-seven .tag, .step-seven .slab { font-size: 23px; }
   }
 </style>

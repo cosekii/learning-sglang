@@ -358,13 +358,13 @@ $$
 
 ## 第 7 步 · 接纳是一次计数；request 持有的是页表
 
-> **一句话：** 空闲 page 够这个新来者的 prompt 加上预计还要写的回答，就接纳并写页表；不够就等；运行中的 request 自己都放不下时，撤回一个。
+> **一句话：** 新来者的估计与运行中 request 的预留不超过可用位置，就接纳并写页表；不够就等；运行中的 request 自己都放不下时，撤回一个。
 
 ### 图上是什么
 
 左边是接纳流程：
 
-- 判断框「空闲 page ≥ 所需 page？」，下面写「所需：它的 prompt，加上还没生成的回答」。
+- 判断框「新来估计 + 运行预留 ≤ 可用 page？」，下面写「估计包括未缓存 prompt 和剩余回答」。
 - 「是」（绿色）→「接纳：任取空闲 page，写页表」。
 - 「否」（红色）→「等待：直到某个运行中的 request 结束并释放它的 page」；框里再一句：运行中的 request 没了 page，又没人结束？撤回输出最少的那个，之后重新 prefill。
 
@@ -374,7 +374,7 @@ $$
 - 「同样的 page 在池中的实际位置」：一个缩小的 120 格网格，req 7 的格里写着序号，灰色是别人的，白框是空闲的。
 - 两行说明：attention 按顺序走列表；page 从来不需要相邻。
 - 两行浅灰：同一个 page 在两个列表里 → 第 8 章；列表发给另一块 GPU → 第 28 章。
-- 底部脚注：SGLang 里对应的 5 个名字（见下表）。
+- 底部脚注：SGLang 里对应的 5 个名字（见下表）。中文手机改画一张大判断卡和「接纳／等待／撤回」三种结果；req 7 的页表沿用第 6 步，不缩小整张桌面图。
 
 ### SGLang 里的对应
 
@@ -388,18 +388,34 @@ $$
 
 ### 「所需」具体怎么算
 
-`PrefillAdder` 不只数这一步要写的 page，还要给回答留地方：
+`PrefillAdder` 不只数这一步要写的 page，还要给回答留地方。先把核心判断统一成 **token 位置**的账；不同后端另有保留量时，还要再扣掉那些余量：
 
-| 给谁留 | 留多少（token） |
-|---|---|
-| 新来者 | prompt 长度 + $\min(\text{max\_new\_tokens},\ 4096)$ |
-| 每个运行中的 request | $\min(\text{max\_new\_tokens} - \text{已写},\ 4096) \times r$ |
+$$
+E_{\text{new}}=U_{\text{new}}+\min(N_{\text{new}},4096)
+$$
 
-- $\text{max\_new\_tokens}$：这个 request 允许生成的最多 token 数（请求参数）。
-- 4,096：估算时的上限（`SGLANG_CLIP_MAX_NEW_TOKENS_ESTIMATION`）。
-- $r$：预计还会真的写出来的比例。从 0.7 开始，每个没发生撤回的 decode 步减一点，600 步后降到 0.7 × 0.14 ≈ 0.1；发生撤回时按这批 request 已写的 token 数重新估一次。
+$$
+R_{\text{running}}=\sum_j\min(N_j-W_j,4096)\times\rho
+$$
 
-这个判断是估计：回答可能比预计的长。
+$$
+\boxed{E_{\text{new}}+R_{\text{running}}\le A_{\text{available}}}
+$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $U_{\text{new}}$ | 新来者尚未缓存的 prompt token 数 | prompt 长度减去可复用前缀；第 8 章 |
+| $N_{\text{new}},N_j$ | 新来者、第 $j$ 个运行中 request 的 `max_new_tokens` | 请求参数 |
+| $W_j$ | 第 $j$ 个运行中 request 已生成的 token 数 | 当前输出 |
+| $E_{\text{new}}$ | 新来者的未缓存输入与输出上限估计 | 本步 |
+| $R_{\text{running}}$ | 所有运行中 request 的剩余输出预留合计 | 本步 |
+| $A_{\text{available}}$ | 空闲及可驱逐前缀能提供的 KV token 位置 | allocator 与前缀 cache；锁定中的前缀不算可驱逐 |
+| $\rho$ | 剩余输出预计会真正写出的比例 | 从 0.7 起，随未发生撤回的 decode 步衰减；约 600 步后为 $0.7\times0.14\approx0.1$，撤回时按已写 token 重新估计 |
+| 4,096 | 单次估算的输出上限 | `SGLANG_CLIP_MAX_NEW_TOKENS_ESTIMATION` |
+
+**估计不等于实际分配。** 通过检查不代表把未来回答的 page 全部分出去；实际 prefill／decode 才按 token 写到哪里分配，$p>1$ 时再按页取整。估计偏乐观、后来真放不下时，才走下面的撤回。可复用前缀会减少 $U_{\text{new}}$，可驱逐前缀会增加 $A_{\text{available}}$；如何锁定和驱逐属于第 8 章。
+
+第 6 章第 9 步的另外两项检查不要混进这个不等式：**请求槽位**决定有没有 request 表的一行，**本轮 prefill token 预算**决定本次算多少未缓存 prompt。续块已有槽位、也做过 KV 接纳，不重复预留；prompt 没算完就继续回 waiting。
 
 ### 撤回
 

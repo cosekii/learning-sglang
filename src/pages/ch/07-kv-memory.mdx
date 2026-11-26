@@ -39,6 +39,6 @@ SGLang 并不会把全部 $\text{HBM} - \text{weights}$ 都交给 cache：它把
 
 按每个 request 的最大长度预留，会浪费从未写入的部分，通常远超一半，而且 request 结束后会产生外部碎片。分页消除 KV page pool 内的外部碎片，但尾页仍可能有最多 $p - 1$ 个 token 的内部碎片；SGLang 默认 $p=1$ 时这部分为零。一个 request 的 cache 是一串页号，attention kernel 按这串页号收集数据。在 SGLang 中，`MHATokenToKVPool` 存放 K 和 V，`TokenToKVPoolAllocator` 分发空闲槽位，`req_to_token` 保存页表。
 
-接纳（`PrefillAdder`）统计的不止一步要写的 page。它为每个运行中的 request 预留预期的剩余输出：$\min(\text{max\_new\_tokens} - \text{written},\ 4096)$ 乘一个比例，该比例从 0.7 起，随着 request 提前结束衰减到约 0.1；对新来者则计入它的 prompt 加上 $\min(\text{max\_new\_tokens},\ 4096)$。撤回是另一项检查：当运行中的 batch 自己的下一步放不下、又没有 request 要结束时，`retract_decode` 退回输出 token 最少的 request，稍后重新 prefill。跨 request 共享 page 是下一章。
+接纳（`PrefillAdder`）统计的不止一步要写的 page。它为每个运行中的 request 预留预期的剩余输出：$\min(\text{max\_new\_tokens} - \text{written},\ 4096)$ 乘一个比例，该比例从 0.7 起，随未发生撤回的 decode 步衰减到约 0.1；对新来者则计入未缓存的 prompt 加上 $\min(\text{max\_new\_tokens},\ 4096)$。撤回是另一项检查：当运行中的 batch 自己的下一步放不下、又没有 request 要结束时，`retract_decode` 退回输出 token 最少的 request，稍后重新 prefill。跨 request 共享 page 是下一章。
 
 </details>
