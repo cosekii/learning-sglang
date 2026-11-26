@@ -4,6 +4,7 @@
 
 ## 本轮记录
 
+- 03:15 第 9 章按复审再修：导出拆成两步（第 7 步 JSONL、第 8 步 Markdown），每步只引入一个新格式名，R2 解决；JSONL 的 `app`／`instruction`／`target_lang`／`selection`／`typed` 标成条件字段，空的可选字段不写；Markdown 只写时间、应用、文字；手机第 2 步端点和第 5 步 aria 改成到期＋下一次清扫。重评：9 步每步文本易读 **10/10**（R1–R5）、原分文本项 **20/20**；R6/#4/#5 仍待有图片输入的目视，不记 12/12、24/24 或完成。
 - 03:05 Learning SGLang Omni 第 10 章《流式 vocoder 优化》8 步文本完成：无状态窗口的 25+10 帧、跨请求 batch、codec-state slot、首/后窗口测量、精确 graph key、c16 吞吐、三种模型路径边界和 Fish 的十行 codebook。独立冷读两轮整改完成，**8/8 步 R1–R5 为 10/10，0 内容洞和机械显示洞**；R6、原 #4/#5 和总分不记，本章为 **text-complete / visual-blocked-on-owner**。
 - 逐步提交并推送至 `3a29d7d`；`build`、本章 `transcript`、全章 `readability`、中英三种宽度 `mobile`、中文逐步字号、`deep-check 10`、`zh-check`、16 个深入讲解渲染视图和 `git diff --check` 通过。最终 32 张图位于 `/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-ggjihowl/opencode/ls-k1-omni10-final/`；主模型和独立冷读者均不支持图片输入，未声称目测通过。本轮只跑本章检查，未跑全站回归、真实模型、GPU benchmark 或音频质量评测。本轮类型：**新书**；下一章是 `11-fish-s2-pro`。
 - 03:00 撤回第 9 章上一版的 12/12、24/24 与完成状态。复审指出：第 7 步把 JSONL 字段当成两种格式共有（Markdown 只写时间、应用、文字）；重试输出可能被短语替换、清理、翻译或改写覆盖；重试录音钟起点是录音保存而非记录写下；90 天/7 天是到期门槛，不是精确删除时刻；`PerKind` 赋值在 `history_settings_ops.go:43-44`；审计不覆盖格式错误请求；且无图不能给 R6/#4/#5 打分。上述均已修，评分卡恢复 0/1/2 与「最差的两条」列，本章回到 **text-complete / visual-blocked**，不记总分。
@@ -163,7 +164,7 @@
 
 ## Inside Voxt
 
-规划完成：`docs/plan-voxt.md` 共 3 部分、16 章；第 1 章已制作 4 步并完成，第 2 章已制作 3 步并完成，第 3 章已制作 8 步并完成，第 4 章已制作 7 步并完成，第 5 章已制作 5 步并完成，第 6 章已制作 8 步并完成，第 7 章已制作 5 步，待目视，第 8 章已制作 7 步、内容完成，待目视，第 9 章已制作 8 步、内容完成，待目视。事实来源只使用 `sglang-omni` 的 `origin/main` 公开代码和文档。
+规划完成：`docs/plan-voxt.md` 共 3 部分、16 章；第 1 章已制作 4 步并完成，第 2 章已制作 3 步并完成，第 3 章已制作 8 步并完成，第 4 章已制作 7 步并完成，第 5 章已制作 5 步并完成，第 6 章已制作 8 步并完成，第 7 章已制作 5 步，待目视，第 8 章已制作 7 步、内容完成，待目视，第 9 章已制作 9 步、文本完成，待目视。事实来源只使用 `sglang-omni` 的 `origin/main` 公开代码和文档。
 
 | 章 | slug | 状态 | 平均分 |
 |---|---|---|---:|
@@ -175,7 +176,7 @@
 | 06 | compose-and-cleanup | 完成：8/8 步易读满分 | 23.88 |
 | 07 | deliver-text-safely | 待目视：5 个源码级内容洞已修；R6/#4/#5 未评 | — |
 | 08 | personal-dictionary | 内容完成：7/7 步文本 R1–R5、0 内容洞；R6/#4/#5 待目视 | — |
-| 09 | history-retry-retention | 文本完成、待目视：本轮 6 类复审错误已修，文本项通过；R6/#4/#5 无图不评，不记总分 | — |
+| 09 | history-retry-retention | 文本完成、待目视：9 步每步文本易读 10/10、原分文本项 20/20；R2 已拆分解决；R6/#4/#5 无图不评，不记总分 | — |
 | 10 | file-transcription | 规划 | — |
 | 11 | models-and-app-updates | 规划 | — |
 | 12 | meeting-capture-modes | 规划 | — |
