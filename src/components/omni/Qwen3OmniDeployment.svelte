@@ -110,7 +110,7 @@
   const speechGpu1 = QWEN_SPEECH_DEFAULT_STAGE_PROCESSES.filter((stage) => stage.gpu === 1);
 
   // One walking outline shows each scene in reading order.
-  const PHASE_COUNTS = [3, 3, 4, 4, 3, 0, 0, 0];
+  const PHASE_COUNTS = [3, 3, 4, 4, 3, 4, 0, 0];
   const PHASE_MS = 1500;
   const REST_MS = 1800;
   type Frame = { x: number; y: number; w: number; h: number };
@@ -163,6 +163,17 @@
       { x: 20, y: 130, w: 210, h: 320 },
       { x: 255, y: 130, w: 210, h: 320 },
       { x: 490, y: 130, w: 210, h: 320 },
+    ];
+    if (s === 5) return isPhone ? [
+      { x: 29, y: 280, w: 242, h: 151 },
+      { x: 29, y: 635, w: 242, h: 58 },
+      { x: 29, y: 703, w: 242, h: 58 },
+      { x: 29, y: 777, w: 242, h: 62 },
+    ] : [
+      { x: 34, y: 280, w: 292, h: 151 },
+      { x: 394, y: 275, w: 292, h: 58 },
+      { x: 394, y: 343, w: 292, h: 58 },
+      { x: 394, y: 417, w: 292, h: 62 },
     ];
     return [];
   };
@@ -371,7 +382,7 @@
             <text x={panel.x + 25} y={panel.y + 181} class="tag strong">GPU 1 · talker_ar × 1</text>
             <text x={panel.x + 25} y={panel.y + 207} class="formula">talker cap = {QWEN_TALKER_MAX_RUNNING_REQUESTS}</text>
             <rect x={panel.x + 14} y={panel.y + 244} width={panel.w - 28} height="62" rx="7" fill="var(--gen-soft)" stroke="var(--gen)" />
-            <text x={panel.x + panel.w / 2} y={panel.y + 264} text-anchor="middle" class="tag strong">{t('PER CODE2WAV PROCESS', '每个 CODE2WAV 进程')}</text>
+            <text x={panel.x + panel.w / 2} y={panel.y + 264} text-anchor="middle" class="tag strong">{t('EACH CODE2WAV PROCESS · ITS OWN SLOTS', '每个 CODE2WAV 进程 · 自己的状态位')}</text>
             <text x={panel.x + panel.w / 2} y={panel.y + 290} text-anchor="middle" class="formula">codec_state_slots = {QWEN_TALKER_MAX_RUNNING_REQUESTS} × 1 = {QWEN_TALKER_MAX_RUNNING_REQUESTS}</text>
             <text x={panel.x + panel.w / 2} y={panel.y + 326} text-anchor="middle" class="tag">{t('one talker and one code2wav process', '一个 talker 和一个 code2wav 进程')}</text>
           {:else}
@@ -381,9 +392,9 @@
               <text x={panel.x + 25} y={panel.y + 198 + replica * 68} class="formula">talker cap = {QWEN_TALKER_MAX_RUNNING_REQUESTS}</text>
             {/each}
             <rect x={panel.x + 14} y={panel.y + 292} width={panel.w - 28} height="62" rx="7" fill="var(--gen-soft)" stroke="var(--gen)" />
-            <text x={panel.x + panel.w / 2} y={panel.y + 314} text-anchor="middle" class="tag strong">{t('PER CODE2WAV PROCESS', '每个 CODE2WAV 进程')}</text>
+            <text x={panel.x + panel.w / 2} y={panel.y + 314} text-anchor="middle" class="tag strong">{t('EACH CODE2WAV PROCESS · ITS OWN SLOTS', '每个 CODE2WAV 进程 · 自己的状态位')}</text>
             <text x={panel.x + panel.w / 2} y={panel.y + 340} text-anchor="middle" class="formula">codec_state_slots = {QWEN_TALKER_MAX_RUNNING_REQUESTS} × {QWEN_SPEECH_REPLICA2_COUNT} = {QWEN_REPLICA2_CODEC_STATE_SLOTS}</text>
-            <text x={panel.x + 14} y={panel.y + 374} class="tag">{QWEN_REPLICA2_TALKER_GPU_PERCENT}% + {QWEN_REPLICA2_CODE2WAV_GPU_PERCENT}% = {QWEN_REPLICA2_GPU_PERCENT.toFixed(1)}% {t('per replica GPU', '每个副本 GPU')}</text>
+            <text x={panel.x + 14} y={panel.y + 374} class="tag">{t(`per GPU: ${QWEN_REPLICA2_TALKER_GPU_PERCENT}% talker + ${QWEN_REPLICA2_CODE2WAV_GPU_PERCENT}% code2wav = ${QWEN_REPLICA2_GPU_PERCENT.toFixed(1)}%`, `每卡：talker ${QWEN_REPLICA2_TALKER_GPU_PERCENT}% + code2wav ${QWEN_REPLICA2_CODE2WAV_GPU_PERCENT}% = ${QWEN_REPLICA2_GPU_PERCENT.toFixed(1)}%`)}</text>
           {/if}
         {/each}
         {#if !phone}
