@@ -19,6 +19,8 @@ Step 2 follows `sglang_omni/scheduling/streaming_vocoder.py:819-842` and `sglang
 
 Step 3 follows `sglang_omni/models/qwen3_omni/components/codec_state_pool.py:13-24,63-115` and `code2wav_scheduler.py:296-327,999-1011,1283-1300`. A slot holds K/V rings, convolution histories, overlap samples and stream position. The first window writes state; a later slot-backed window reads only 10 new frames instead of 25 old plus 10 new. A request without a free slot remains stateless for life, and a short stream ending before its first threshold window decodes statelessly. The 35→10 comparison counts input frames, not latency or memory savings.
 
+Step 4 quotes [public PR #2909](https://github.com/sgl-project/sglang-omni/pull/2909), measured on Qwen3-Omni colocated BF16 on H200 with eight rows and one graph replay, median of 20 timings. The first window rises from 3,656.3 to 3,992.0 µs because it writes state; the later window falls from 10,777.5 to 4,255.3 µs. Both arms use graph replay, so this is a retained-state comparison, not a graph-versus-eager result. The 9.2% increase and 60.5% reduction are derived from those displayed timings and apply only to window GPU time. PR #2909 reports 2.8% end-to-end c64 QPS growth instead.
+
 Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`. The chapter reads source and public results; it does not run a model or benchmark.
 
 </details>
@@ -31,6 +33,8 @@ Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37
 第 2 步依据 `sglang_omni/scheduling/streaming_vocoder.py:819-842` 和 `sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:999-1079`。构造对照把三次独立 `[B=1,T=10]` 首个窗口调用变成一次 `[B=3,T=10]` 调用。真实分组还要求首个/后续类型和 slot/无状态模式匹配，每次最多重放八行，不把不同长度补进同一次 replay。`tests/unit_test/qwen3_omni/test_code2wav_batching.py:111-191` 检查共享行和首个/后续边界。3→1 是调用数，不是耗时结果。
 
 第 3 步依据 `sglang_omni/models/qwen3_omni/components/codec_state_pool.py:13-24,63-115` 和 `code2wav_scheduler.py:296-327,999-1011,1283-1300`。slot 保存 K/V 环、卷积历史、重叠样本和流位置。首个窗口写入状态；后续 slot 窗口只读取 10 帧新内容，不再读取 25 帧旧内容加 10 帧新内容。没有空 slot 的请求始终走无状态路径，首个阈值窗口前结束的短流也无状态解码。35→10 比较输入帧数，不是延迟或显存收益。
+
+第 4 步引用[公开 PR #2909](https://github.com/sgl-project/sglang-omni/pull/2909)，条件是 Qwen3-Omni 同卡 BF16、H200、8 行、一次 graph replay、20 次取中位数。首窗口写入状态，从 3,656.3 升到 3,992.0 µs；后续窗口从 10,777.5 降到 4,255.3 µs。两边都用 graph replay，所以这是保留状态对照，不是 graph 对 eager。9.2% 增幅和 60.5% 降幅由展示的耗时推导，只适用于窗口 GPU 时间。PR #2909 的端到端 c64 QPS 增幅是 2.8%。
 
 本章代码出处固定到 `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`。本章只读源码和公开结果，没有运行模型或 benchmark。
 

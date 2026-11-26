@@ -100,3 +100,42 @@ slot 让这个后续窗口少读 25 帧输入。这是帧数对照，不是 3.5 
 下一步把公开的首窗口和后续窗口耗时放到同一比例，包含首窗口写入状态的额外成本。
 
 来源：`sglang_omni/models/qwen3_omni/components/codec_state_pool.py:13-24,63-115`；`sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:296-327,999-1011,1230-1246,1283-1300`；`sglang_omni/models/qwen3_omni/components/code2wav.py:380-402,419-462`。
+
+## 第 4 步 · 测量首个窗口和后续窗口
+
+**一句话。** PR #2909 的 8 行 H200 测试里，保留状态让后续窗口快 60.5%，首个窗口慢 9.2%。
+
+### 图上是什么
+
+- 每次计时使用 Qwen3-Omni 同卡 BF16、一张 H200、8 行和一次 CUDA graph replay。图中取 20 次计时的中位数，也就是排在中间的值。
+- 两边都使用 graph replay，所以这里只比较无状态窗口和 slot 窗口，不比较 graph 与 eager。
+- 首个窗口在两条路径上都输入 10 帧。slot 路径还要写 K/V、卷积历史和重叠样本，因此耗时从 3,656.3 升到 3,992.0 µs。
+- 后续窗口的输入从 35 帧降到 10 帧，耗时从 10,777.5 降到 4,255.3 µs。四根横条使用同一个微秒比例。
+- 蓝色表示无状态，橙色表示使用 slot。百分比描述窗口 GPU 耗时，不是整个请求的延迟或通用加速比。
+
+### 公式与符号
+
+$$\Delta_{\mathrm{first}}=\left(\frac{t_{\mathrm{first,slot}}}{t_{\mathrm{first,main}}}-1\right)100,\qquad R_{\mathrm{later}}=\left(1-\frac{t_{\mathrm{later,slot}}}{t_{\mathrm{later,main}}}\right)100$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $t_{\mathrm{first,main}}$ | 无状态首窗口耗时 | PR #2909，3,656.3 µs |
+| $t_{\mathrm{first,slot}}$ | slot 首窗口耗时 | PR #2909，3,992.0 µs |
+| $t_{\mathrm{later,main}}$ | 无状态后续窗口耗时 | PR #2909，10,777.5 µs |
+| $t_{\mathrm{later,slot}}$ | slot 后续窗口耗时 | PR #2909，4,255.3 µs |
+| $\Delta_{\mathrm{first}}$ | 首窗口耗时增幅 | 本步计算 |
+| $R_{\mathrm{later}}$ | 后续窗口耗时降幅 | 本步计算 |
+
+### 代入图上的数
+
+$$\Delta_{\mathrm{first}}=\left(\frac{3992.0}{3656.3}-1\right)100\approx9.2\%$$
+
+$$R_{\mathrm{later}}=\left(1-\frac{4255.3}{10777.5}\right)100\approx60.5\%$$
+
+PR #2909 还报告端到端 c64 QPS 提升 2.8%，不是 60.5%。后续窗口省下的时间要覆盖首窗口的额外成本，不能把窗口降幅当成端到端增幅。
+
+### 接下来
+
+保留状态改变窗口读取多少帧。下一种机制录下窗口的 kernel launches，只有 graph key 完全匹配时才重放。
+
+来源：[公开 PR #2909 的机制与结果](https://github.com/sgl-project/sglang-omni/pull/2909)；`sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:999-1011`。

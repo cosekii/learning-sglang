@@ -12,6 +12,12 @@
     VOC_BATCH_REQUEST_COUNT,
     VOC_BATCH_CALLS_BEFORE,
     VOC_BATCH_CALLS_AFTER,
+    VOC_STATE_FIRST_MAIN_US,
+    VOC_STATE_FIRST_SLOT_US,
+    VOC_STATE_LATER_MAIN_US,
+    VOC_STATE_LATER_SLOT_US,
+    VOC_STATE_FIRST_CHANGE_PERCENT,
+    VOC_STATE_LATER_REDUCTION_PERCENT,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -25,6 +31,9 @@
   }, {
     caption: 'A codec-state slot keeps decoder work between windows. The next window reads only 10 new frames.',
     captionZh: 'codec-state slot 保存窗口之间的解码工作。下个窗口只读 10 帧新内容。',
+  }, {
+    caption: 'In PR #2909’s eight-row test, later windows got faster. First windows got slower because they also wrote state.',
+    captionZh: 'PR #2909 的 8 行测试里，后续窗口更快。首个窗口还要写入状态，所以更慢。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -40,8 +49,9 @@
     return () => query.removeEventListener('change', update);
   });
   const cur = $derived(steps[step]);
+  const fmt = (value: number) => value.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [790, 850, 850][step] : [570, 630, 640][step]);
+  const H = $derived(phone ? [790, 850, 850, 740][step] : [570, 630, 640, 570][step]);
   const roadmap = $derived([
     { title: 'ready windows', body: 'decode them together', titleZh: '准备好的窗口', bodyZh: '放在一起解码' },
     { title: 'earlier decoder work', body: 'keep it for next time', titleZh: '之前算过的内容', bodyZh: '留给下个窗口' },
@@ -181,6 +191,31 @@
           <text x="360" y="583" text-anchor="middle" class="small">{t('The slot replaces repeated decoding with saved decoder work.', 'slot 用已存解码工作替代重复解码。')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Frame counts, not latency · first window writes state' : 'Input-frame counts, not latency. The first window writes the slot; no free slot keeps the stateless path.', phone ? '帧数不是耗时 · 首个窗口写入状态' : '输入帧数不是耗时。首个窗口写入 slot；没有空 slot 就走无状态路径。')}</text>
+      {:else if step === 3}
+        <text x={phone ? 18 : 30} y="30" class="title">{t('Measure the slot · 2 of 3 · 2/2', '测量 slot · 2 / 3 · 2/2')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? '8 rows · middle of 20 timings' : '8 rows per call · 20 timings; the middle value is shown', phone ? '8 行 · 20 次计时取中间值' : '每次调用 8 行 · 20 次计时，取中间值')}</text>
+        <text x={phone ? 18 : 30} y="79" class="label">{t(phone ? 'blue stateless · orange slot · one scale' : 'blue = stateless · orange = slot-backed · one shared scale', phone ? '蓝无状态 · 橙 slot · 同比例' : '蓝 = 无状态 · 橙 = 使用 slot · 同一比例')}</text>
+        {#each [true, false] as first}
+          {@const main = first ? VOC_STATE_FIRST_MAIN_US : VOC_STATE_LATER_MAIN_US}
+          {@const kept = first ? VOC_STATE_FIRST_SLOT_US : VOC_STATE_LATER_SLOT_US}
+          {@const x = phone ? 18 : first ? 30 : 375}
+          {@const y = phone ? first ? 102 : 374 : 102}
+          {@const pw = phone ? 264 : 315}
+          {@const bw = phone ? 125 : 175}
+          <rect x={x} y={y} width={pw} height="260" rx="12" fill="var(--bg)" stroke="var(--line)" />
+          <text x={x + 15} y={y + 28} class="small strong">{first ? t('FIRST WINDOW', '首个窗口') : t('LATER WINDOW', '后续窗口')}</text>
+          <text x={x + 15} y={y + 52} class="small">{first ? t('10 frames + write state', '10 帧 + 写入状态') : t('35 frames → 10 frames', '35 帧 → 10 帧')}</text>
+          <text x={x + 15} y={y + 80} class="small">{t('stateless', '无状态')}</text>
+          <rect x={x + 15} y={y + 89} width={bw * main / VOC_STATE_LATER_MAIN_US} height="27" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x={x + 27 + bw} y={y + 109} class="result">{fmt(main)} µs</text>
+          <text x={x + 15} y={y + 145} class="small">{t('slot-backed', '使用 slot')}</text>
+          <rect x={x + 15} y={y + 154} width={bw * kept / VOC_STATE_LATER_MAIN_US} height="27" rx="5" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x={x + 27 + bw} y={y + 174} class="result">{fmt(kept)} µs</text>
+          <text x={x + 15} y={y + 229} class="result">{first ? '+' : '−'}{fmt(first ? VOC_STATE_FIRST_CHANGE_PERCENT : VOC_STATE_LATER_REDUCTION_PERCENT)}% {t('time', '耗时')}</text>
+        {/each}
+        <text x={W / 2} y={phone ? 674 : 444} text-anchor="middle" class="small strong">{t(phone ? 'Both replay one CUDA graph' : 'Both sides replay one CUDA graph; only the window path changes.', phone ? '两边都重放一次 CUDA graph' : '两边都重放一次 CUDA graph；只有窗口路径不同。')}</text>
+        <text x={W / 2} y={phone ? 700 : 478} text-anchor="middle" class="small">{t(phone ? 'Window GPU time, not request latency' : 'These are window GPU times, not whole-request latency.', phone ? '窗口 GPU 耗时，不是请求延迟' : '这些是窗口 GPU 耗时，不是整个请求的延迟。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'PR #2909 · Qwen3-Omni BF16 · H200' : 'Public PR #2909 · Qwen3-Omni colocated BF16 on H200 · median of 20 graph replays.', phone ? 'PR #2909 · Qwen3-Omni BF16 · H200' : '公开 PR #2909 · Qwen3-Omni 同卡 BF16 · H200 · 20 次 graph 重放取中位数。')}</text>
       {/if}
     </svg>
   </div>

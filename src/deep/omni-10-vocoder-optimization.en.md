@@ -100,3 +100,42 @@ The slot avoids 25 input frames in this later window. This is a frame-count comp
 The next step puts public first-window and later-window timings on one scale, including the first window's extra state-writing cost.
 
 Sources: `sglang_omni/models/qwen3_omni/components/codec_state_pool.py:13-24,63-115`; `sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:296-327,999-1011,1230-1246,1283-1300`; `sglang_omni/models/qwen3_omni/components/code2wav.py:380-402,419-462`.
+
+## Step 4 · Measure the first and later windows
+
+**One sentence.** In PR #2909's eight-row H200 test, retained state made the later window 60.5% faster and the first window 9.2% slower.
+
+### On the stage
+
+- Every timing uses Qwen3-Omni colocated BF16 on one H200, eight rows and one CUDA graph replay. The displayed value is the median, the middle result, of 20 timings.
+- Both sides use graph replay, so this comparison isolates stateless windows against slot-backed windows. It does not measure graphs against eager execution.
+- The first window has 10 input frames on both paths. The slot-backed path also writes K/V, convolution histories and overlaps, so its time rises from 3,656.3 to 3,992.0 µs.
+- The later window falls from 35 input frames to 10. Its time falls from 10,777.5 to 4,255.3 µs. All four bars use the same microsecond scale.
+- Blue means stateless and orange means slot-backed. The percentages describe these window GPU timings, not whole-request latency or a universal speedup.
+
+### Formula and symbols
+
+$$\Delta_{\mathrm{first}}=\left(\frac{t_{\mathrm{first,slot}}}{t_{\mathrm{first,main}}}-1\right)100,\qquad R_{\mathrm{later}}=\left(1-\frac{t_{\mathrm{later,slot}}}{t_{\mathrm{later,main}}}\right)100$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $t_{\mathrm{first,main}}$ | Stateless first-window time | PR #2909, 3,656.3 µs |
+| $t_{\mathrm{first,slot}}$ | Slot-backed first-window time | PR #2909, 3,992.0 µs |
+| $t_{\mathrm{later,main}}$ | Stateless later-window time | PR #2909, 10,777.5 µs |
+| $t_{\mathrm{later,slot}}$ | Slot-backed later-window time | PR #2909, 4,255.3 µs |
+| $\Delta_{\mathrm{first}}$ | First-window time increase | Calculated here |
+| $R_{\mathrm{later}}$ | Later-window time reduction | Calculated here |
+
+### The numbers on the stage
+
+$$\Delta_{\mathrm{first}}=\left(\frac{3992.0}{3656.3}-1\right)100\approx9.2\%$$
+
+$$R_{\mathrm{later}}=\left(1-\frac{4255.3}{10777.5}\right)100\approx60.5\%$$
+
+PR #2909 also reports end-to-end c64 QPS rising 2.8%, not 60.5%. The window win pays back the first-window cost over later windows; it does not multiply into the same end-to-end gain.
+
+### Next
+
+Retained state changes how many frames a window reads. The next mechanism records a window's kernel launches and replays them only for an exact graph key.
+
+Sources: [public PR #2909, mechanism and results](https://github.com/sgl-project/sglang-omni/pull/2909); `sglang_omni/models/qwen3_omni/components/code2wav_scheduler.py:999-1011`.
