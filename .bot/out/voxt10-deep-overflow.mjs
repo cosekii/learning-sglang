@@ -39,7 +39,14 @@ try {
           const bodyRect = body.getBoundingClientRect();
           const padR = parseFloat(getComputedStyle(body).paddingRight) || 0;
           const contentRight = bodyRect.right - padR;
-          const wide = [...body.querySelectorAll('*')].map((el) => {
+          const clipped = (el) => {
+            for (let n = el.parentElement; n && n !== body; n = n.parentElement) {
+              const o = getComputedStyle(n).overflowX;
+              if (o === 'auto' || o === 'scroll' || o === 'hidden') return true;
+            }
+            return false;
+          };
+          const wide = [...body.querySelectorAll('*')].filter((el) => !clipped(el)).map((el) => {
             const b = el.getBoundingClientRect();
             return { tag: el.tagName, cls: typeof el.className === 'string' ? el.className : '', text: (el.textContent || '').trim().replace(/\\s+/g, ' ').slice(0, 50), right: Math.round(b.right * 100) / 100, w: Math.round(b.width * 100) / 100 };
           }).filter((x) => x.w > 0 && x.right > contentRight + 0.5)

@@ -71,5 +71,11 @@
 - 根因：deep 的 `$$` 渲染成 `<p>` 内联 `.katex`，没有 `.katex-display` 包裹，CSS 的 `overflow-x: auto` 不生效，公式只能按真实宽度排版；表格里不可断行的长出处（`transcribe_socket.go:64-80`、`docs/transcribe.md`、`transcribe_cli.go:98-101`）把来源列撑宽。
 - 修复（只改双语 deep 文字）：第 9 步三分支公式的条件收窄（`any cue fails`／`success, no -o or -o -`／`success, -o FILE`，中文对应），符号表补 `stdout` 行，表格出处用 `cli.go` 短写并各加一行说明；第 11 步 provider 公式拆成两个 display，表格出处改用 `socket.go`／`transcribe.md` 短写并各加一行说明。三个分支和全部数字未丢。
 - 新证据 `.bot/out/voxt10-deep-overflow.mjs`（可重跑）：第 9／11 步 × 英中 × 1440／360／390／430 px 共 16 个视图，开抽屉（`localStorage deep=1`）核对 counter、`aria-expanded=true`、无残留 `$$`、无 `.katex-error`，`.deep-body` 的 `scrollWidth ≤ clientWidth` 全部通过；结果 `.bot/out/voxt10-deep-overflow/report.json`。
-- 全章扫描（同脚本 `STEPS=1..11`，`.bot/out/voxt10-deep-overflow-all/report.json`）另发现**本轮之前就存在**的 360/390 px 抽屉溢出：第 2 步 afconvert 代码行、第 3 步 1 px、第 7 步 `asr.Recognize(...)` 代码行、第 8 步 SRT 代入表、第 10 步 `fmt.Sprintf` 代码行。这些不在本轮范围，待协调排期；代码块 `<pre>` 若无 overflow 规则，或许该由共享 CSS 统一处理。
+- 全章扫描（同脚本 `STEPS=1..11`，`.bot/out/voxt10-deep-overflow-all/report.json`）另发现**本轮之前就存在**的 360/390 px 抽屉溢出：第 2 步 afconvert 代码行、第 3 步 1 px、第 7 步 segments 公式、第 8 步 SRT 代入表、第 10 步 `fmt.Sprintf` 代码行。代码块 `<pre>` 若无 overflow 规则，或许该由共享 CSS 统一处理。
 - 协调基线 `04ded697` 不变：R1–R5 **110/110**、原十个非视觉项 **217/220**、原 #4／#5 **44/44**、原十二项 **261/264**、机制 R6 **0/22**；本跟进待复审，不自行记 GO。修后重跑 build（60 页）、transcript（无 diff）、readability（0 机械问题）、deep-check、zh-check、英中 mobile 均通过。
+
+## 跟进二（同日，全章抽屉溢出清零，待复审）
+
+- 按复审要求修完全章剩余 10 处抽屉溢出：第 2 步 afconvert 续行与符号表瘦身、第 3 步 `uploaded` 符号与 `Request.Bytes` 格式、第 7 步 segments 公式拆两个 display（复审更正：肇事者是公式，不是 `asr.Recognize`）、第 8 步 SRT 表并成三列、第 10 步 `fmt.Sprintf` 改 inline code 与 `socket.go` 短写。溢出脚本的 widest 探测同步修正：排除被 overflow 祖先裁剪的元素，按内容盒判断。
+- 全量 88 视图（11 步 × 英中 × 1440/360/390/430 px）连续两轮 `failures` 为 0：`.bot/out/voxt10-deep-overflow-all/report.json`、`-r2/report.json`。
+- 协调基线不变，整章仍 **NO-GO**：其余十步机制动画 R6 未做，抽屉修复与机械门槛不构成整章完成。build、transcript（无 diff）、readability、deep-check、zh-check、英中 mobile 重跑通过。
