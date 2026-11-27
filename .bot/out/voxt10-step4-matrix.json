@@ -1,0 +1,44 @@
+{
+  "base": "http://localhost:4489/learning-sglang",
+  "when": "2026-11-27T18:32:41.061Z",
+  "combinations": 6,
+  "failures": [],
+  "results": [
+    {
+      "combo": "en-desktop-direct",
+      "cursorPositions": 8,
+      "quietHighlightSeen": true,
+      "counter": "04 / 11"
+    },
+    {
+      "combo": "zh-desktop-direct",
+      "cursorPositions": 9,
+      "quietHighlightSeen": true,
+      "counter": "04 / 11"
+    },
+    {
+      "combo": "zh-390-direct",
+      "cursorPositions": 8,
+      "quietHighlightSeen": true,
+      "counter": "04 / 11"
+    },
+    {
+      "combo": "en-desktop-prev-entry",
+      "cursorPositions": 9,
+      "quietHighlightSeen": true,
+      "counter": "04 / 11"
+    },
+    {
+      "combo": "zh-desktop-prev-entry",
+      "cursorPositions": 9,
+      "quietHighlightSeen": true,
+      "counter": "04 / 11"
+    },
+    {
+      "combo": "zh-390-prev-entry",
+      "cursorPositions": 9,
+      "quietHighlightSeen": true,
+      "counter": "04 / 11"
+    }
+  ]
+}

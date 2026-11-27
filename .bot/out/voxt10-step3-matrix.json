@@ -1,0 +1,200 @@
+{
+  "base": "http://localhost:4489/learning-sglang",
+  "when": "2026-11-27T18:31:32.282Z",
+  "combinations": 6,
+  "failures": [],
+  "results": [
+    {
+      "combo": "en-desktop-direct",
+      "states": {
+        "phase3": {
+          "reached": true,
+          "phase": "3",
+          "counter": "03 / 11",
+          "segmentLines": 1,
+          "donePayload": false,
+          "sending": true,
+          "allSent": false
+        },
+        "phase4": {
+          "reached": true,
+          "phase": "4",
+          "counter": "03 / 11",
+          "segmentLines": 2,
+          "donePayload": false,
+          "sending": true,
+          "allSent": false
+        },
+        "phase5": {
+          "reached": true,
+          "phase": "5",
+          "counter": "03 / 11",
+          "segmentLines": 2,
+          "donePayload": true,
+          "sending": false,
+          "allSent": true
+        }
+      }
+    },
+    {
+      "combo": "zh-desktop-direct",
+      "states": {
+        "phase3": {
+          "reached": true,
+          "phase": "3",
+          "counter": "03 / 11",
+          "segmentLines": 1,
+          "donePayload": false,
+          "sending": true,
+          "allSent": false
+        },
+        "phase4": {
+          "reached": true,
+          "phase": "4",
+          "counter": "03 / 11",
+          "segmentLines": 2,
+          "donePayload": false,
+          "sending": true,
+          "allSent": false
+        },
+        "phase5": {
+          "reached": true,
+          "phase": "5",
+          "counter": "03 / 11",
+          "segmentLines": 2,
+          "donePayload": true,
+          "sending": false,
+          "allSent": true
+        }
+      }
+    },
+    {
+      "combo": "zh-390-direct",
+      "states": {
+        "phase3": {
+          "reached": true,
+          "phase": "3",
+          "counter": "03 / 11",
+          "segmentLines": 1,
+          "donePayload": false,
+          "sending": true,
+          "allSent": false
+        },
+        "phase4": {
+          "reached": true,
+          "phase": "4",
+          "counter": "03 / 11",
+          "segmentLines": 2,
+          "donePayload": false,
+          "sending": true,
+          "allSent": false
+        },
+        "phase5": {
+          "reached": true,
+          "phase": "5",
+          "counter": "03 / 11",
+          "segmentLines": 2,
+          "donePayload": true,
+          "sending": false,
+          "allSent": true
+        }
+      }
+    },
+    {
+      "combo": "en-desktop-prev-entry",
+      "states": {
+        "phase3": {
+          "reached": true,
+          "phase": "3",
+          "counter": "03 / 11",
+          "segmentLines": 1,
+          "donePayload": false,
+          "sending": true,
+          "allSent": false
+        },
+        "phase4": {
+          "reached": true,
+          "phase": "4",
+          "counter": "03 / 11",
+          "segmentLines": 2,
+          "donePayload": false,
+          "sending": true,
+          "allSent": false
+        },
+        "phase5": {
+          "reached": true,
+          "phase": "5",
+          "counter": "03 / 11",
+          "segmentLines": 2,
+          "donePayload": true,
+          "sending": false,
+          "allSent": true
+        }
+      }
+    },
+    {
+      "combo": "zh-desktop-prev-entry",
+      "states": {
+        "phase3": {
+          "reached": true,
+          "phase": "3",
+          "counter": "03 / 11",
+          "segmentLines": 1,
+          "donePayload": false,
+          "sending": true,
+          "allSent": false
+        },
+        "phase4": {
+          "reached": true,
+          "phase": "4",
+          "counter": "03 / 11",
+          "segmentLines": 2,
+          "donePayload": false,
+          "sending": true,
+          "allSent": false
+        },
+        "phase5": {
+          "reached": true,
+          "phase": "5",
+          "counter": "03 / 11",
+          "segmentLines": 2,
+          "donePayload": true,
+          "sending": false,
+          "allSent": true
+        }
+      }
+    },
+    {
+      "combo": "zh-390-prev-entry",
+      "states": {
+        "phase3": {
+          "reached": true,
+          "phase": "3",
+          "counter": "03 / 11",
+          "segmentLines": 1,
+          "donePayload": false,
+          "sending": true,
+          "allSent": false
+        },
+        "phase4": {
+          "reached": true,
+          "phase": "4",
+          "counter": "03 / 11",
+          "segmentLines": 2,
+          "donePayload": false,
+          "sending": true,
+          "allSent": false
+        },
+        "phase5": {
+          "reached": true,
+          "phase": "5",
+          "counter": "03 / 11",
+          "segmentLines": 2,
+          "donePayload": true,
+          "sending": false,
+          "allSent": true
+        }
+      }
+    }
+  ]
+}

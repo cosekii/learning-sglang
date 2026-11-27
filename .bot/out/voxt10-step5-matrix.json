@@ -1,0 +1,134 @@
+{
+  "base": "http://localhost:4489/learning-sglang",
+  "when": "2026-11-27T18:36:56.077Z",
+  "combinations": 6,
+  "failures": [],
+  "results": [
+    {
+      "combo": "en-desktop-direct",
+      "states": {
+        "phase1": {
+          "reached": true,
+          "phase": "1",
+          "counter": "05 / 11",
+          "cue2": true,
+          "preroll": false,
+          "bullets": false
+        },
+        "phase3": {
+          "reached": true,
+          "phase": "3",
+          "counter": "05 / 11",
+          "cue2": true,
+          "preroll": true,
+          "bullets": true
+        }
+      }
+    },
+    {
+      "combo": "zh-desktop-direct",
+      "states": {
+        "phase1": {
+          "reached": true,
+          "phase": "1",
+          "counter": "05 / 11",
+          "cue2": true,
+          "preroll": false,
+          "bullets": false
+        },
+        "phase3": {
+          "reached": true,
+          "phase": "3",
+          "counter": "05 / 11",
+          "cue2": true,
+          "preroll": true,
+          "bullets": true
+        }
+      }
+    },
+    {
+      "combo": "zh-390-direct",
+      "states": {
+        "phase1": {
+          "reached": true,
+          "phase": "1",
+          "counter": "05 / 11",
+          "cue2": true,
+          "preroll": false,
+          "bullets": false
+        },
+        "phase3": {
+          "reached": true,
+          "phase": "3",
+          "counter": "05 / 11",
+          "cue2": true,
+          "preroll": true,
+          "bullets": true
+        }
+      }
+    },
+    {
+      "combo": "en-desktop-prev-entry",
+      "states": {
+        "phase1": {
+          "reached": true,
+          "phase": "1",
+          "counter": "05 / 11",
+          "cue2": true,
+          "preroll": false,
+          "bullets": false
+        },
+        "phase3": {
+          "reached": true,
+          "phase": "3",
+          "counter": "05 / 11",
+          "cue2": true,
+          "preroll": true,
+          "bullets": true
+        }
+      }
+    },
+    {
+      "combo": "zh-desktop-prev-entry",
+      "states": {
+        "phase1": {
+          "reached": true,
+          "phase": "1",
+          "counter": "05 / 11",
+          "cue2": true,
+          "preroll": false,
+          "bullets": false
+        },
+        "phase3": {
+          "reached": true,
+          "phase": "3",
+          "counter": "05 / 11",
+          "cue2": true,
+          "preroll": true,
+          "bullets": true
+        }
+      }
+    },
+    {
+      "combo": "zh-390-prev-entry",
+      "states": {
+        "phase1": {
+          "reached": true,
+          "phase": "1",
+          "counter": "05 / 11",
+          "cue2": true,
+          "preroll": false,
+          "bullets": false
+        },
+        "phase3": {
+          "reached": true,
+          "phase": "3",
+          "counter": "05 / 11",
+          "cue2": true,
+          "preroll": true,
+          "bullets": true
+        }
+      }
+    }
+  ]
+}

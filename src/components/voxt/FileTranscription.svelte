@@ -124,11 +124,12 @@
     return () => cancelAnimationFrame(raf);
   });
   const quietNow = $derived(clock >= 2900 && clock <= 3350);
-  // Steps 0–2 loop a phase build-up: Step 0 shows the two routes, then the file's input and
+  // Steps 0–2 and 4 loop a phase build-up: Step 0 shows the two routes, then the file's input and
   // transcribe, then its output; Step 1 shows the file, then the converter, then the decoded bytes,
   // then the size comparison; Step 2 shows the socket route, then the request, then the PCM going,
-  // then the replies coming back.
-  const STEP_PHASES: Record<number, number> = { 0: 3, 1: 4, 2: 6 };
+  // then the replies coming back; Step 4 shows the waveform, then cue 2's early bracket, then the
+  // 300 ms head start, then the numbers. Step 3 has its own clock sweep instead.
+  const STEP_PHASES: Record<number, number> = { 0: 3, 1: 4, 2: 6, 4: 4 };
   const PHASE_MS = 900, REST_MS = 2200;
   let phase = $state(0);
   $effect(() => {
@@ -508,13 +509,15 @@
         <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('so the first consonant is not cut off', '这样第一个辅音不会被切掉')}</text>
         {#if !phone}
           <text x="174" y="84" text-anchor="middle" class="label">{t('CUE 1', '第 1 句')} 0.00–{sec(VOXT_TRANSCRIBE_CUE_ENDS_MS[0])} s</text>
-          <text x="490" y="84" text-anchor="middle" class="label">{t('CUE 2', '第 2 句')} {sec(VOXT_TRANSCRIBE_CUE_STARTS_MS[1])}–{sec(VOXT_TRANSCRIBE_CUE_ENDS_MS[1])} s</text>
           <line x1="40" y1="96" x2="308" y2="96" stroke="var(--accent)" stroke-width="2" />
           <line x1="40" y1="90" x2="40" y2="102" stroke="var(--accent)" stroke-width="2" />
           <line x1="308" y1="90" x2="308" y2="102" stroke="var(--accent)" stroke-width="2" />
-          <line x1="312" y1="96" x2="668" y2="96" stroke="var(--accent)" stroke-width="2" />
-          <line x1="312" y1="90" x2="312" y2="102" stroke="var(--accent)" stroke-width="2" />
-          <line x1="668" y1="90" x2="668" y2="102" stroke="var(--accent)" stroke-width="2" />
+          {#if phase >= 1}
+            <text x="490" y="84" text-anchor="middle" class="label">{t('CUE 2', '第 2 句')} {sec(VOXT_TRANSCRIBE_CUE_STARTS_MS[1])}–{sec(VOXT_TRANSCRIBE_CUE_ENDS_MS[1])} s</text>
+            <line x1="312" y1="96" x2="668" y2="96" stroke="var(--accent)" stroke-width="2" />
+            <line x1="312" y1="90" x2="312" y2="102" stroke="var(--accent)" stroke-width="2" />
+            <line x1="668" y1="90" x2="668" y2="102" stroke="var(--accent)" stroke-width="2" />
+          {/if}
           {#each Array.from({ length: 160 }, (_, i) => i) as i}
             {@const time = i / 20}
             {@const speech = (time <= VOXT_TRANSCRIBE_SPEECH_ENDS_MS[0] / 1000) || (time >= VOXT_TRANSCRIBE_SPEECH_STARTS_MS[1] / 1000 && time <= VOXT_TRANSCRIBE_SPEECH_ENDS_MS[1] / 1000)}
@@ -522,23 +525,30 @@
             <line x1={40 + i * 4} y1={150 - height / 2} x2={40 + i * 4} y2={150 + height / 2}
               stroke={speech ? 'var(--accent)' : 'var(--line)'} stroke-width="3" stroke-linecap="round" />
           {/each}
-          <rect x="312" y="182" width="24" height="12" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="368" y="214" text-anchor="middle" class="detail">{VOXT_CUTTER_PREROLL_MS} ms</text>
-          <text x="368" y="232" text-anchor="middle" class="detail">{t('starts early', '提前开始')}</text>
-          <text x="40" y="270" class="pt">·</text>
-          <text x="50" y="270" class="detail">{t(`speech starts at ${sec(VOXT_TRANSCRIBE_SPEECH_STARTS_MS[1])} s; the cue starts at ${sec(VOXT_TRANSCRIBE_CUE_STARTS_MS[1])} s`, `讲话从 ${sec(VOXT_TRANSCRIBE_SPEECH_STARTS_MS[1])} 秒开始；句子从 ${sec(VOXT_TRANSCRIBE_CUE_STARTS_MS[1])} 秒开始`)}</text>
-          <text x="40" y="294" class="pt">·</text>
-          <text x="50" y="294" class="detail">{t('that keeps the first consonant', '这样保住第一个辅音')}</text>
+          {#if phase >= 2}
+            <rect x="312" y="182" width="24" height="12" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="368" y="214" text-anchor="middle" class="detail">{VOXT_CUTTER_PREROLL_MS} ms</text>
+            <text x="368" y="232" text-anchor="middle" class="detail">{t('starts early', '提前开始')}</text>
+          {/if}
+          {#if phase >= 3}
+            <text x="40" y="270" class="pt">·</text>
+            <text x="50" y="270" class="detail">{t(`speech starts at ${sec(VOXT_TRANSCRIBE_SPEECH_STARTS_MS[1])} s; the cue starts at ${sec(VOXT_TRANSCRIBE_CUE_STARTS_MS[1])} s`, `讲话从 ${sec(VOXT_TRANSCRIBE_SPEECH_STARTS_MS[1])} 秒开始；句子从 ${sec(VOXT_TRANSCRIBE_CUE_STARTS_MS[1])} 秒开始`)}</text>
+            <text x="40" y="294" class="pt">·</text>
+            <text x="50" y="294" class="detail">{t('that keeps the first consonant', '这样保住第一个辅音')}</text>
+          {/if}
           <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Constructed 8-second example; the cue starts before its speech.', '构造的 8 秒例子；句子在讲话前开始。')}</text>
+          {#if !reduced}<LoopProgress ms={lapMs} {lap} />{/if}
         {:else}
           <text x="65" y="82" text-anchor="middle" class="label">{t('CUE 1', '第 1 句')}</text>
-          <text x="222" y="82" text-anchor="middle" class="label">{t('CUE 2', '第 2 句')}</text>
           <line x1="20" y1="94" x2="129" y2="94" stroke="var(--accent)" stroke-width="2" />
           <line x1="20" y1="88" x2="20" y2="100" stroke="var(--accent)" stroke-width="2" />
           <line x1="129" y1="88" x2="129" y2="100" stroke="var(--accent)" stroke-width="2" />
-          <line x1="131" y1="94" x2="276" y2="94" stroke="var(--accent)" stroke-width="2" />
-          <line x1="131" y1="88" x2="131" y2="100" stroke="var(--accent)" stroke-width="2" />
-          <line x1="276" y1="88" x2="276" y2="100" stroke="var(--accent)" stroke-width="2" />
+          {#if phase >= 1}
+            <text x="222" y="82" text-anchor="middle" class="label">{t('CUE 2', '第 2 句')}</text>
+            <line x1="131" y1="94" x2="276" y2="94" stroke="var(--accent)" stroke-width="2" />
+            <line x1="131" y1="88" x2="131" y2="100" stroke="var(--accent)" stroke-width="2" />
+            <line x1="276" y1="88" x2="276" y2="100" stroke="var(--accent)" stroke-width="2" />
+          {/if}
           {#each Array.from({ length: 80 }, (_, i) => i) as i}
             {@const time = i / 10}
             {@const x = 20 + i * 3.25}
@@ -547,14 +557,19 @@
             <line x1={x} y1={150 - height / 2} x2={x} y2={150 + height / 2}
               stroke={speech ? 'var(--accent)' : 'var(--line)'} stroke-width="2.5" stroke-linecap="round" />
           {/each}
-          <rect x="131" y="182" width="10" height="12" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="150" y="216" text-anchor="middle" class="detail">{VOXT_CUTTER_PREROLL_MS} ms</text>
-          <text x="150" y="234" text-anchor="middle" class="detail">{t('starts early', '提前开始')}</text>
-          <text x="30" y="270" class="pt">·</text>
-          <text x="40" y="270" class="detail">{t('speech at 3.70 s', '讲话在 3.70 秒')}</text>
-          <text x="30" y="296" class="pt">·</text>
-          <text x="40" y="296" class="detail">{t('cue at 3.40 s', '句子在 3.40 秒')}</text>
+          {#if phase >= 2}
+            <rect x="131" y="182" width="10" height="12" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="150" y="216" text-anchor="middle" class="detail">{VOXT_CUTTER_PREROLL_MS} ms</text>
+            <text x="150" y="234" text-anchor="middle" class="detail">{t('starts early', '提前开始')}</text>
+          {/if}
+          {#if phase >= 3}
+            <text x="30" y="270" class="pt">·</text>
+            <text x="40" y="270" class="detail">{t('speech at 3.70 s', '讲话在 3.70 秒')}</text>
+            <text x="30" y="296" class="pt">·</text>
+            <text x="40" y="296" class="detail">{t('cue at 3.40 s', '句子在 3.40 秒')}</text>
+          {/if}
           <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Constructed 8-second example.', '构造的 8 秒例子。')}</text>
+          {#if !reduced}<LoopProgress ms={lapMs} {lap} x={236} y={H - 44} />{/if}
         {/if}
       {:else if step === 5}
         <text x={W / 2} y="27" text-anchor="middle" class="title">{t('NO PAUSE? CUT AT THE QUIETEST POINT', '没有停顿？在最安静处切')}</text>

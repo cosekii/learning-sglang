@@ -235,19 +235,40 @@
 
 ---
 
+# lane d 本轮报告 · Voxt 10 displayed Step 5 机制动画＋Step 3 断言矩阵更正＋Step 4 既有动画核销
+
+日期：2026-11-27。类型：新步＋验证更正（按复审：先跑真正的断言矩阵，再把报告更正并入下一个教程提交，不出 report-only 提交）。教程改动只有 `FileTranscription.svelte` 的 Step 5（组件内 step 4）与生成 transcript；另按复审把 Step 3 报告的「断言」措辞更正、两个断言矩阵脚本与 JSON 输出（`.bot/out/voxt10-step3-matrix.*`、`voxt10-step4-matrix.*`、`voxt10-step5-matrix.*`）一并提交。caption、deep、MDX、数字未改。
+
+## 提交
+
+- 本次教程提交：**Voxt 10 displayed Step 5 机制动画完成，待协调固定复审，不自行销项。** Step 5 原为静态图，现循环四相：波形＋CUE 1 → CUE 2 括号（起点 3.40 早于讲话 3.70）→ 300 ms 提前块与「提前开始」→ 两行数字（讲话 3.70、句子 3.40、保住第一个辅音）。桌面与手机同相序；`STEP_PHASES` 加 step 4，reduced motion 停末相。同一提交含 Step 3 报告措辞更正与三个矩阵脚本及输出。
+- Step 4 核销：**Step 4 的既有动画（游标扫过波形、450 ms 安静窗高亮）经 `.bot/out/voxt10-step4-matrix.mjs` 六组断言通过**（游标位置 8–9 个不同值、安静窗高亮出现、counter 均 `04 / 11`），无需教程改动，不单独提交。
+- Step 3 断言更正：见下方 Step 3 报告的「验证口径更正」条目；旧探针只打印观测，新矩阵对 phase 3／4／5 分别断言精确 segment 行数、精确 `{"done":true,"count":2}` 载荷和发送状态文本，18 个状态全过。
+
+## 硬门与证据
+
+- `npm run build` **60 页**通过；`BOOK=voxt ONLY=10 STEP=5 npm run readability` **0 机械问题**；`deep-check 10`、英中全章 360／390／430 px `mobile`、`STEP=5 LANG=zh` 中文字号门、`zh-check`（`all clear`）全过；transcript 重生成，Step 5 新增 `loops` 行、末相内容完整。
+- Step 5 机制矩阵 `.bot/out/voxt10-step5-matrix.mjs`：六组 × phase 1／3 断言全过（phase 1 有 CUE 2 括号、无 300 ms 与数字行；phase 3 齐全），输出存 `.bot/out/voxt10-step5-matrix.json`。首轮探针把桌面 CUE 2 括号标签里的 `3.40` 误当数字行而 FAIL，探针改为按 `speech at`／`讲话` 匹配后通过；这是探针误报，不是组件问题。
+- Step 5 作者复评（协调基线不改写）：R1–R5 **10/10**、机制 R6 **2/2**（DOM 证据，未见图）、原十个非视觉项 **20/20**（#4／#5 待视觉复核）。R1 小学生复述：「句子不是等讲话开始才算起，而是提前 300 毫秒开始，这样第一个辅音不会被切掉。」冷读洞 **0**（300 ms 与两个时刻都在图上，原因在 caption 和末行）。截图存档（未能读取）：`/tmp/ls-d-s5/zh-390.png`。**未声称看过图片或视觉通过；未跑全站回归、真实 Voxt 或主人最终验收。**
+
+## 剩余
+
+- Step 1 的 P2（115.2 MB 可感比较、decoded 白话）按 TASK 顺序排在新步之后；下一单元为 Voxt 10 displayed Step 6。
+
 # lane d 本轮报告 · Voxt 10 displayed Step 3 机制动画
 
 日期：2026-11-27。类型：新步（一个 Step 一个提交；Step 1 的 P2 继续押后）。改动只有 `FileTranscription.svelte` 的 Step 3（组件内 step 2）动画与生成 transcript；caption、deep、MDX、数字均未改。
 
 ## 提交
 
-- `2e11a6c`：**复审发现的协议错误已修。** 原四相末相把 `{"done":true,"count":2}` 和「还在发送」同时留在图上；pinned `Voxt/internal/fileasr/socket.go:98-106,114-123` 确认 `done` 只在上传完成（`body.n == req.Bytes`）后发出。Step 3 改为六相：路线 → 请求行 → PCM「还在发送」→ segment 1 → segment 2（PCM 仍未完）→ PCM「全部送完」＋`done`＋图例行。桌面与手机分支同相序，caption、deep、数字未改。机制矩阵按复审要求加两条断言并六组全过：中间相（phase 3）有 `segment`＋「还在发送」且无 `done`；末相（phase 5）有 `done`＋「全部送完」且无「还在发送」（探针按相位轮询，`/tmp/ls-d-probe7.mjs`）。transcript 重生成，末相为「all sent」＋两行 segment＋done。推送前 rebase 到 k1 `308a9d5` 之上，未 force-push。
+- `2e11a6c`：**复审发现的协议错误已修。** 原四相末相把 `{"done":true,"count":2}` 和「还在发送」同时留在图上；pinned `Voxt/internal/fileasr/socket.go:98-106,114-123` 确认 `done` 只在上传完成（`body.n == req.Bytes`）后发出。Step 3 改为六相：路线 → 请求行 → PCM「还在发送」→ segment 1 → segment 2（PCM 仍未完）→ PCM「全部送完」＋`done`＋图例行。桌面与手机分支同相序，caption、deep、数字未改。transcript 重生成，末相为「all sent」＋两行 segment＋done。推送前 rebase 到 k1 `308a9d5` 之上，未 force-push。
+- 验证口径更正（本轮）：此前 `/tmp/ls-d-probe7.mjs` 只打印观测、不含会失败的断言，且 `has('done')` 会把图例行 `done + count` 误判为 done 载荷，六组又都只采到 phase 3、没查 phase 4；上一轮把这样的观测记录写成「断言」是不准确的。已改为真正的断言矩阵 `.bot/out/voxt10-step3-matrix.mjs`：六组分别等 phase 3／4／5，要求精确的 segment 行数（1／2／2）、精确载荷 `{"done":true,"count":2}` 只在 phase 5 出现、「还在发送」与「全部送完」文本各在其相位、counter 均 `03 / 11`，任一不符即抛错退出。18 个状态全部通过，输出存 `.bot/out/voxt10-step3-matrix.json`。
 - `e02da4c`：**Voxt 10 displayed Step 3 机制动画完成，待协调固定复审，不自行销项。** Step 3 原为静态图，现按同款模式循环四相：命令＋`transcribe.sock`＋运行中的 Voxt → JSON 请求行（`op`＋字节数）→ PCM 条「还在发送」→ 回复逐段回来（两个 `segment`＋`done`+句数）与图例行。末相同时看到 PCM 还在发送和回复已回来，对应 deep 的「边收边切句、识别」。桌面与手机分支同相序；`STEP_PHASES` 扩到 step 2，reduced motion 停末相。
 
 ## 硬门与证据
 
 - `npm run build` **60 页**通过；`BOOK=voxt ONLY=10 STEP=3 npm run readability` **0 机械问题**；`deep-check 10`、英中全章 360／390／430 px `mobile`、`STEP=3 LANG=zh` 中文字号门、`zh-check`（`all clear`）全过；transcript 重生成，Step 3 新增 `loops` 行、末相内容完整，无 caption／出界／重叠报告。（协议修复后上述门全部重跑，`zh-check` 用 `WAIT=6000` 落在末相窗口内，结果不变。）
-- 机制矩阵（DOM，无图像输入）：英文桌面直接 `?step=3`、中文桌面直接、中文 390×844 直接、英文桌面前步经 Next 进入、中文桌面前步进入、中文 390×844 前步进入，共 **6 组 × 2 状态**；协议修复后按 `/tmp/ls-d-probe7.mjs` 重采，六组均满足两条协议断言（见 `2e11a6c` 条目），counter 均 `03 / 11`。
+- 机制矩阵（DOM，无图像输入）：英文桌面直接 `?step=3`、中文桌面直接、中文 390×844 直接、英文桌面前步经 Next 进入、中文桌面前步进入、中文 390×844 前步进入，共 **6 组**。协议修复后先按 `/tmp/ls-d-probe7.mjs` 重采（只打印观测，不是断言）；本轮改按 `.bot/out/voxt10-step3-matrix.mjs` 的抛错断言矩阵重采，六组 × phase 3／4／5 全部通过（见上一条目），counter 均 `03 / 11`。
 - Step 3 作者复评（协调基线不改写）：R1–R5 **10/10**、机制 R6 **2/2**（DOM 证据，未见图）、原十个非视觉项 **20/20**（#4／#5 待视觉复核）。R1 小学生复述：「命令先告诉运行中的 Voxt 要转多少字节，再把声音从本机 socket 送过去；声音还没送完，识别好的句子就一行一行回来了。」冷读洞 **0**（socket 由 subtitle「同一台 Mac 上两个程序之间的一扇门」解释，JSON 字段由图例行解释）。截图存档（未能读取）：`/tmp/ls-d-s3/zh-390.png`。环境同上轮；**未声称看过图片或视觉通过；未跑全站回归、真实 Voxt 或主人最终验收。**
 
 ## 剩余
