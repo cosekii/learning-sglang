@@ -1,3 +1,41 @@
+# lane k2 本轮报告 · ML Systems 13 Step 5 的 ML-52
+
+日期：2026-11-27。类型：修旧（ML-51 后按 owner rule 处理本书开放 P1）。本轮开始 HEAD 与 `origin/tutorials` 均为 `3d7ac9f`，工作树干净。范围只有 ML 13 Step 5 的组件、数字常量、双语 deep、生成 transcript、本章评分卡与进度记录、定向审计和本报告；未改其他步、其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。ML-53 与共享 ML-21／22 保持独立，未开第 14 章。
+
+## 提交与 finding
+
+- `0547d98`：**ML-52 作者修复完成，待协调固定复审，不自行销项。** 三个中性底色面板用同一行宽对照「每轮都拼接」与「先 buffer 再拼接」，第三张卡展示两种做法共有的输入／输出生命周期。相位依次形成两组输入、左卡输出、右卡输出和末相的六行同时存活状态；`torch.cat([T0, T1], dim=0)` 仍在图上。
+- 每轮做法明确下一轮会重抄当前 3 行，buffer 做法只复制一次。两种做法在拼接时都保留 `2+1+3=6` 行输入和输出；这些是构造行数，不是字节数，峰值是否下降明确标为未测量。双语 deep 标明下一轮及其新片段未画出，并对齐公开文章、pinned 实现和这一边界。
+- 首次教程提交为 `a3a1781`，推送被拒后按指示 `git pull --rebase origin tutorials`，带入 k1／d 的新提交。`memory/progress.md` 冲突保留双方记录，最终 `0547d98` 推送成功；未 force-push。
+- 首轮手机 deep 审计发现长 commit 标识造成英文 52 px、中文 47 px 横溢；只在 `/` 与 `@` 后加 `<wbr>` 后，双语 390 px 复验均无横溢，字段和出处内容未变。
+
+## 作者评分与独立冷读
+
+| 步 | R1–R5 | 机制 R6 | 原十个非视觉项 | R1 小学生复述 | 新内容洞 |
+|---|---:|---:|---:|---|---:|
+| 5 | 10/10 | 2/2 | 20/20 | 每轮拼接会把旧行再抄一遍；先存好片段只抄一次，但拼接时输入和输出都在，所以不知道峰值是否下降。 | 0 |
+
+- 独立 `explore` 冷读 **PASS**：事实、双语一致性、同尺对照、相位顺序、deep 对齐和峰值边界均无剩余洞。作者随后又做了一次完整 diff 审查，把卡片底色改为中性以保留一色一义，并恢复图上的 `torch.cat` 调用；最终硬门和浏览器审计再次通过。
+- 这些是作者复评与独立源码、transcript、DOM 冷读，不是协调 verdict。原 #4/#5、整章新总分和销项不由本轮自行改写。ML-53 是下一项 P1，共享 ML-21／22 未改。
+
+## 硬门与证据
+
+- 最终 rebase 后 `npm run build`：**60 页**通过；8 步 `readability`：**0 机械问题**；`BOOK=ml-sys node scripts/deep-check.mjs 13`、`zh-check`、英中全章 360／390／430 px `mobile`、中文 Step 5 字号门和 `git diff --check` 全过。
+- transcript 连续两次 SHA-256 相同：`2386763e5e7d9c0ffdf90ced35dfad3137faf00a8468bfcb6d746f23f3c94ca3`，**1,830 词**。无 caption、文字出界、重叠或文本规则报告。
+- `.bot/out/ml52-step5-audit/report.json` 覆盖英文桌面、中文桌面、中文 390 px × 直接 URL／前步入口，共 **6 组合、24 个状态、18/18 个机制转变**；另有双语 1440／390 px 共 **4 个 deep 状态**。最终审计有 **23 个唯一 PNG 哈希**，最低 **10.130859375 CSS px**，重叠、SVG 出界、页面或抽屉横溢和 `failures` 均为 **0**。可见行数按相位为 **6／9／12／18**，三张末相卡各有 3 行输入与 3 行输出，所有行共用同一宽度和高度。可重跑脚本：`.bot/out/ml52-step5-audit.mjs`。
+- 四个 deep 状态均展开到 Step 5，无 raw math、KaTeX 错误、页面或抽屉横溢。deep 打开后的舞台最低 **5.721 CSS px**，属于既有共享 ML-21，本单元未改也不声称该项通过。
+- 代表截图：`.bot/out/ml52-step5-audit/en-1440-direct-s5-p3.png`、`.bot/out/ml52-step5-audit/zh-390-direct-s5-p3.png`。**当前模型不能读取 PNG；以上结论来自构建、transcript、源码、独立冷读、DOM 和几何检查，未声称看过图片或视觉通过。**
+- 本轮核对公开 `Awesome-ML-SYS-Tutorial/rlhf/slime/vlm-multi-turn/readme.md` 附录与 pinned `THUDM/slime@f68dc4a25f362fc0335165a17ff976f5b6f675e1` 的 `rollout.py`。实现先 buffer 再按 key 做一次 `torch.cat`；文章提供减少重复分配和复制的动机，没有给本例峰值测量。本章没有直接 zero-to-sglang 对照章。未跑全站回归、真实训练、rollout、VLM、GPU benchmark、显存测量或 reduced-motion 动态切换。
+
+## 剩余与清理
+
+- 剩余事项是 ML-52 的协调固定复审、原 #4/#5、整章评分、具备图像能力的复审和主人最终视觉验收。下一单元按本书 P1 顺序处理 ML-53；其他开放 finding 未改。
+- 本 clone 的 `node_modules` 原指向协调人 checkout；已只删除本目录内符号链接并在本目录安装依赖，package 文件无 diff，未写协调人的 checkout。
+- 本地查看前运行 `npx astro dev --background --host 127.0.0.1 --port 4505`，地址：`http://localhost:4505/learning-sglang/ml-sys/ch/13-multi-turn-agent-rl/?step=5`。本轮 4505 服务已停止，端口无监听。
+- 审计脚本调用 `browser.close()`。收尾 `pgrep -P 1 -fl 'headless=new.*cdp-'` 无输出；本轮没有遗留浏览器。
+
+---
+
 # lane k2 本轮报告 · ML Systems 09 Step 6 的 ML-51
 
 日期：2026-11-27。类型：修旧（ML-50 后按 owner rule 处理本书开放 P1）。本轮开始 HEAD 与 `origin/tutorials` 均为 `4bae53e`，工作树干净。范围只有 ML 09 Step 6 的组件、双语 deep、MDX 出处、生成 transcript、本章评分卡与进度记录、定向审计和本报告；未改其他步、其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。ML-38 和共享 ML-21／22 保持独立，未开第 14 章。
