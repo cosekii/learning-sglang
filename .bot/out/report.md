@@ -25,6 +25,30 @@
 
 ---
 
+# lane k1 跟进复核 · Omni 14 桌面小字（无新教程改动）
+
+日期：2026-11-27。类型：修旧复核。范围只有 Learning SGLang Omni 第 14 章的既有修复、逐相审计和本报告；未改 Omni 11／13／15、其他书、其他 lane、第 1 本受保护英文原文或 `.bot/memory/`。
+
+## 单元与 review 状态
+
+- 本轮 HEAD 与 `origin/tutorials` 均为 `968eb98`，direction 仍指定 Omni 14 桌面小字。Step 2 的 `584f99d`、其余七步的 `b6b8f6f`、`728802d`、`5187280`、`68ef3b7`、`a086e57`、`dce37ea`、`25553d6` 及记录 `968eb98` 已提交并推送，本轮不重复改教程。
+- **Omni-02 第 14 章部分的作者返工已完成，仍待协调固定复审。** 本轮没有自行关闭 finding，也没有改分数：协调历史 R1–R5 **80/80**、机制 R6 **16/16**、原十个非视觉项 **160/160**、原十二项 **192/192** 保持；完整 verdict 仍为 **呈现 NO-GO / coordinator-rereview-pending**。Omni-37 和其他书内开放项不变。
+
+## 复核证据
+
+- 重跑 `.bot/out/omni14-phase-audit.mjs`，覆盖八步 **34 个 1440×900 桌面相位**。各步最低字号为 **11.064、10.630、10.826、10.561、10.630、10.580、10.891、10.326 CSS px**；文字重叠 **0**、SVG 出界 **0**。counter、step 和 phase 身份全部匹配，八步都有机制状态；26 个相邻转变中 24 个改变机制签名，Step 4／7 的末相停留保持。Step 4 单独重跑得到相同四相签名。
+- `npm run build`：**60 页**通过。默认 transcript 连续两次逐字一致并与 pinned 无差异：**2,302 词**，SHA-256 `070b24bc84a94f1c76e362db7d4f3f16e0b49b9ba1f95876f3dc98e897c458ba`。八步 `readability` 为 **0 机械问题**；`deep-check 14`、`zh-check`、英文全章三宽度 `mobile`、中文逐步三宽度字号门均通过。
+- 独立 explore 只读冷读判定源码范围、caption／事实／deep 不变、机制保持、stage／deep 对齐和新增内容洞均为 **PASS**。当前模型不能读取 PNG，未声称已看图或视觉通过；协调实图复审与主人最终视觉验收仍待。
+- 本 clone 的 `node_modules` 初始为指向协调人 checkout 的符号链接。已只删除本目录内的符号链接并执行本地 `npm install`，所有构建和检查均使用本目录依赖。
+
+## 剩余与本地查看
+
+- 未跑全站回归、真实 SSE／WebSocket／raw-PCM 连接、SGLang-Omni 服务、模型、GPU benchmark、故障注入或 reduced-motion 动态切换。不开第 16／17 章，不处理其他 lane 的开放项。
+- 本轮只提交复核记录和重生的 `.bot/out/omni14-phase-audit/report.json`。代表截图：`/Users/shuohuang/code/hmz-work/ls-k1-1127-003738/.bot/out/omni14-phase-audit/s2-p3.png`。
+- 本地章节地址：`http://localhost:4467/learning-sglang/omni/ch/14-slow-reader-backpressure/?step=2`。本轮 dev server 和浏览器在收尾关闭；查看前在本目录运行 `npx astro dev --background --port 4467`。
+
+---
+
 # lane k1 本轮报告 · Omni 14 八步桌面小字返工
 
 日期：2026-11-27。类型：修旧。范围只含 Learning SGLang Omni 第 14 章 `SlowReaderBackpressure.svelte`、本章评分记录、验证产物和本报告；未改 Omni 11／13／15、其他书、其他 lane 的章节、第 1 本受保护英文原文或 `.bot/memory/`。
