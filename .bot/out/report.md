@@ -221,3 +221,32 @@
 - 六个步骤分别提交并推送，随后分别提交抽屉修复和冷读／出处修复。多次推送被拒后均按要求 `git pull --rebase origin tutorials` 再推，没有 force-push。评分卡、progress 和本报告随后续 `[k2] ` 记录提交推送。
 - 等协调复审 ML-03／28／30、相位图与最终分数；主人最终视觉与真实产品验收另计。下一单元按 direction 继续 ML 03–10／12 的静态机制 P0 和 ML-14，不开第 14 章新书。
 - 未跑全站回归、真实 SGLang／CUDA、allocator trace、GPU benchmark、reduced-motion 动态切换或全相位手机检查；`G`、`A`、`D` 没有实测值。
+
+---
+
+# lane k2 本轮报告 · ML Systems 01 记录同步与 02 定点返工
+
+日期：2026-11-26。范围只含 ML Systems 第 1 章评分记录、第 2 章手机标题与评分记录、仓库 progress 和本报告。未改 Omni、Voxt、第 1 本受保护英文原文或 `.bot/memory/`。
+
+## review 项与当前分数
+
+- **ML 01 记录同步**：固定 `7887a2d` 的协调 EVAL **GO** 已写入评分卡和 progress：R1–R5 **70/70**、机制 R6 **14/14**、R1–R6 **84/84**、原十个非视觉项 **140/140**、原 #4/#5 **28/28**、原十二项 **168/168**、未决内容洞 **0**。ML-02／15／24 全部关闭，未重做教程。
+- **ML-40 capture 事实**：当前 `a406a2e` 已在 Step 3、双语深入讲解和 MDX 写明 capture 只记录 GPU 工作而不执行，输出由 replay 写入。与第 1 本 Ch. 11 Step 6 的 `nothing executes` 一致；本轮未重复改写。
+- **ML-30 章间接缝**：当前 Step 6 直接问 `num_batch` 1024／64 怎样改变短请求等待与重算 token 数。ML 03 Step 1 正展示 **3.95／0.91 s** 与 **1,019–1,029／63–69** 个重算 token，问题与首步回答一致；本轮未重复改写。
+- **ML-39 手机交叠**：`1334bf5` 和 `5b278f7` 缩短英文 Step 1／6 手机标题，`a4d2fa4` 缩短中文 Step 1 标题。改前英文 Step 1 纵向交叠约 **4.94 px**、Step 6 约 **2.78 px**；改后英中三宽度均无交叠。
+- ML 02 固定 `3060023` 的协调 **NO-GO** 基线保留：R1–R5 **58/60**、机制 R6 **12/12**、R1–R6 **70/72**、原十个非视觉项 **118/120**、原 #4/#5 **24/24**、原十二项 **142/144**、未决内容洞 **2**。上述后续修复待协调复审，不改固定快照分数，不记 `complete-under-EVAL`。
+
+## 验证
+
+- 最终源码 `npm run build -- --config .astro/k2.config.mjs`：**60 页**通过。本地忽略配置只隔离 Vite cache 并允许读取共享依赖，未写协调人的 checkout。
+- 本章默认 transcript 重生成与 pinned 一致：**1,074 词**，SHA-256 `22a954d5c607211627a613d5e326f99ff08c017f436983543a5f5397a1bef91d`。6 步 `readability`、`deep-check 02`、`zh-check`、英中全章 `mobile`、中文 Step 1／6 字号门和 `git diff --check` 全过。
+- `.bot/out/ml02-review/final-desktop-settled/report.json`：**35 个**英文桌面相位均核对身份和末态，逐相机制签名均变化，文字重叠／出界为 **0**；最低 **10.3262 CSS px**。每步保存首末相 PNG。
+- `.bot/out/ml02-review/final-phone-clean/report.json`：英中六步 × 三宽度共 **36 个**手机末相，文字重叠／出界均为 **0**，最低 **10.7602 CSS px**。代表图 `en-390-s6.png`。
+- `.bot/out/ml02-review/deep-audit/report.json`：**12 个**双语 deep 视图均 `aria-expanded=true`，横向溢出、KaTeX 错误和残留 `$$` 均为 **0**，Step 3 双语均含不执行语义。
+- 主线程按 transcript、双语 deep、Ch. 03 Step 1 和 live DOM 完成冷读；未把 `deep-check ok` 当作语义通过。独立子代理因配置的模型不存在而未运行，未计为证据。当前模型不能读取 PNG，未声称已看图或视觉通过。
+
+## 提交与剩余
+
+- 教程提交：`1334bf5`（Step 1 英文手机标题）、`5b278f7`（Step 6 英文手机标题）、`a4d2fa4`（Step 1 中文手机标题）。两次推送被拒后均按要求 `git pull --rebase origin tutorials` 再推，没有 force-push。
+- 评分卡、progress 和本报告随后续 `[k2] ` 记录提交推送。ML-39／40／30 等协调复审；ML-14 和其余静态机制 P0 尚未开始，不开第 14 章。
+- 未跑全站回归、真实 SGLang／CUDA、allocator trace、GPU benchmark、故障注入、reduced-motion 动态切换或主人最终视觉验收。

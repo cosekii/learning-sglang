@@ -3,9 +3,9 @@
 日期：2026-11-24。评分办法：`EVAL.md` 易读性 R1–R6 与原 12 项，每项 0 / 1 / 2。
 材料：每步的最终中英桌面截图、中文手机截图、深入讲解截图和逐步 transcript；第 1 步位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s01/`，第 2 步位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s02/`，第 3 步位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s03/`，第 4 步最新复核位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-repair-20261124-1622/mlsys/`，第 5 步位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s05-20261124-1711/`；第 5 步本轮修旧材料位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s05-repair-20261124-1851/final/`，检查日志在相邻的 `checks/`；第 6 步材料位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s06-20261124-1901/final/`，检查日志在相邻的 `checks/`；第 7 步材料位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ml-sys-ch01-s07-20261124-2130/final/`，检查日志在相邻的 `checks/`。冷读者只带 request、token、prefill 和毫秒的前置知识；后续步骤另带前面步骤的 TTFT、ITL、TPOT、E2E、P50、P99。
 
-## 2026-11-26 k2 机制返工 · 当前作者自评
+## 2026-11-26 k2 机制返工 · 协调复审 verdict
 
-材料：`.bot/out/ml01-rework/` 的 42 个英文桌面相位 DOM、42 个英中三宽度末相手机 DOM、首末相 PNG 和深入讲解图；默认 transcript 两次 SHA-256 均为 `bf32ad2fa2867ffbac2f151cc154570be4dda61e977fc69a8d257730c2d10ff5`。独立冷读者从 transcript、双语深入讲解和相位 DOM 复审，结论为文本 GO、机制 GO、0 未决内容洞。当前模型无图像输入，PNG 未读，不把 DOM 和几何检查写成视觉通过。
+材料：协调人在固定 `7887a2d` 快照完成独立冷读、源码和相位审查、目标硬门、双语 deep 对齐、桌面／手机字号和实图复审。默认 transcript 两次 SHA-256 均为 `bf32ad2fa2867ffbac2f151cc154570be4dda61e977fc69a8d257730c2d10ff5`；协调人读取 24 张接触表，审计 154 张 PNG、140 个普通测量状态和 14 个 deep 视图。证据与结论见只读 `.bot/memory/review.md`。
 
 | 步 | R1–R5 /10 | 机制 R6 /2 | R1 小学生复述 | 原十个非视觉项 /20 | 未决洞 | 日期 |
 |---|---:|---:|---|---:|---:|---|
@@ -17,7 +17,7 @@
 | 6 | 10 | 2 | 同一两批里，A 第 99 个是 300 ms，B 是 400 ms，最慢的都是 2000 ms。 | 20 | 0 | 2026-11-26 |
 | 7 | 10 | 2 | 同一 0–25 秒尺上，A 用 20 秒完成 100 个，B 用 25 秒，所以每秒各完成 5 和 4 个。 | 20 | 0 | 2026-11-26 |
 
-**当前作者自评：R1–R5 70/70、机制 R6 14/14、原十个非视觉项 140/140、0 未决内容洞。** ML-02、ML-15、ML-24 的本章返工已完成，待协调复审；原 #4/#5 和原十二项总分待图像评审，不记 `complete-under-EVAL`。本章 transcript 为 1,300 余词，薄于原版同类章；本章只定义核心指标并演示同刻度构造例，请求集、预热、token/s、SLA、Goodput 和控制变量 profiling 的范围已在 MDX 与第 7 步深入讲解说清，控制变量实验归第 14 章。
+**协调复审 GO：R1–R5 70/70、机制 R6 14/14、R1–R6 84/84、原十个非视觉项 140/140、原 #4/#5 28/28、原十二项 168/168、0 未决内容洞。** 七步逐步均为 R1–R5 10/10、机制 2/2、R1–R6 12/12、原十二项 24/24。ML-02、ML-15、ML-24 全部关闭，不重做本章；主人最终产品验收另计。本章 transcript 为 1,317 词，薄于原版同类章；本章只定义核心指标并演示同刻度构造例，请求集、预热、token/s、SLA、Goodput 和控制变量 profiling 的范围已在 MDX 与第 7 步深入讲解说清，控制变量实验归第 14 章。
 
 ## 2026-11-24 历史评分与逐轮记录
 
