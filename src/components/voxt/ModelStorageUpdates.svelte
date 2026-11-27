@@ -77,7 +77,7 @@
   const W = $derived(phone ? 300 : 720);
   const H = $derived((phone ? [660, 610, 700, 820, 730, 640] : [470, 450, 460, 480, 480, 560])[step]);
 
-  const PHASE_COUNTS = [4, 3, 3, 3, 3, 3];
+  const PHASE_COUNTS = [4, 4, 3, 3, 3, 3];
   const PHASE_MS = 900;
   const REST_MS = 2200;
   let phase = $state(0);
@@ -100,14 +100,14 @@
   });
   const motionFrames = (isPhone: boolean, s: number): { x: number; y: number; w: number; h: number }[] => (isPhone ? [
     [{ x: 15, y: 64, w: 270, h: 112 }, { x: 15, y: 64, w: 270, h: 112 }, { x: 15, y: 583, w: 270, h: 44 }, { x: 29, y: 36, w: 246, h: 14 }],
-    [{ x: 15, y: 64, w: 270, h: 110 }, { x: 15, y: 202, w: 270, h: 240 }, { x: 20, y: 370, w: 270, h: 60 }],
+    [{ x: 15, y: 64, w: 270, h: 110 }, { x: 22, y: 241, w: 256, h: 38 }, { x: 22, y: 287, w: 256, h: 56 }, { x: 22, y: 352, w: 256, h: 13 }],
     [{ x: 15, y: 62, w: 270, h: 134 }, { x: 15, y: 62, w: 270, h: 134 }, { x: 15, y: 300, w: 270, h: 76 }],
     [{ x: 15, y: 64, w: 270, h: 170 }, { x: 15, y: 274, w: 270, h: 190 }, { x: 15, y: 274, w: 270, h: 190 }],
     [{ x: 15, y: 64, w: 270, h: 150 }, { x: 15, y: 576, w: 270, h: 46 }, { x: 40, y: 636, w: 220, h: 26 }],
     [{ x: 15, y: 64, w: 270, h: 92 }, { x: 15, y: 166, w: 270, h: 92 }, { x: 15, y: 268, w: 270, h: 92 }],
   ] : [
     [{ x: 20, y: 72, w: 212, h: 225 }, { x: 20, y: 72, w: 212, h: 225 }, { x: 191, y: 413, w: 338, h: 28 }, { x: 239, y: 38, w: 242, h: 15 }],
-    [{ x: 20, y: 74, w: 250, h: 190 }, { x: 300, y: 74, w: 400, h: 190 }, { x: 36, y: 304, w: 320, h: 60 }],
+    [{ x: 20, y: 74, w: 250, h: 190 }, { x: 310, y: 110, w: 380, h: 44 }, { x: 310, y: 158, w: 380, h: 56 }, { x: 310, y: 219, w: 380, h: 18 }],
     [{ x: 30, y: 72, w: 660, h: 124 }, { x: 30, y: 72, w: 660, h: 124 }, { x: 256, y: 208, w: 208, h: 124 }],
     [{ x: 20, y: 72, w: 300, h: 190 }, { x: 356, y: 72, w: 346, h: 190 }, { x: 356, y: 72, w: 346, h: 190 }],
     [{ x: 20, y: 72, w: 330, h: 170 }, { x: 460, y: 334, w: 224, h: 66 }, { x: 120, y: 414, w: 480, h: 28 }],
@@ -225,7 +225,7 @@
           <text x="40" y="98" class="label">{t('REPO · ONLINE HOME', '仓库 · 网上地址')}</text>
           <text x="40" y="122" class="mono">mlx-community/</text>
           <text x="40" y="142" class="mono">Qwen3-ASR-1.7B-8bit</text>
-          <text x="40" y="168" class="label">{t('commit', '提交')} {commitShort} {t('= first 7 of the full commit', '= 完整提交的前 7 位')}</text>
+          <text x="40" y="168" class="label">{t('commit', '提交')} {commitShort} {t('= first 7 chars', '= 完整提交的前 7 位')}</text>
           <line x1="272" y1="129" x2="294" y2="129" stroke="var(--muted)" stroke-width="2" marker-end="url(#ms-arrow)" />
           <rect x="300" y="74" width="400" height="190" rx="10" fill="var(--bg)" stroke="var(--line)" />
           <text x="316" y="98" class="label">{t(`${VOXT_MODEL_FILE_COUNT} FILES · STEP 1 TOTAL = ${gb} GB`, `${VOXT_MODEL_FILE_COUNT} 个文件 · 第 1 步总数 = ${gb} GB`)}</text>
@@ -236,7 +236,7 @@
           <text x="684" y="172" text-anchor="end" class="mono">{vocabMb} MB</text>
           <text x="316" y="190" class="mono small">{phase >= 2 ? '✓ ' : ''}{t("git blob ID = git's byte fingerprint", 'git blob ID = git 的字节指纹')}</text>
           <text x="316" y="208" class="mono small">{vocabBytes} B ≈ {vocabMb} MB</text>
-          <text x="316" y="230" class="detail">{phase >= 2 ? t('all checks pass', '校验全部通过') : t(`… and ${VOXT_MODEL_FILE_COUNT - 2} more files`, `… 还有 ${VOXT_MODEL_FILE_COUNT - 2} 个文件`)}</text>
+          <text x="316" y="230" class="detail">{phase >= 3 ? t('all checks pass', '校验全部通过') : t(`… and ${VOXT_MODEL_FILE_COUNT - 2} more files`, `… 还有 ${VOXT_MODEL_FILE_COUNT - 2} 个文件`)}</text>
           <text x="316" y="254" class="mono small">snapshots/{VOXT_MODEL_COMMIT}</text>
           <text x="40" y="316" class="label">{t("ON DISK · THIS COMMIT'S FILES", '在磁盘上 · 这个提交的文件')}</text>
           <text x="40" y="340" class="mono small">models--mlx-community--Qwen3-ASR-1.7B-8bit</text>
@@ -260,7 +260,7 @@
           <text x="30" y="300" class="mono">vocab.json</text>
           <text x="30" y="318" class="mono small">{phase >= 2 ? '✓ ' : ''}{vocabMb} MB · {t('git blob ID = byte fingerprint', 'git blob ID = 字节指纹')}</text>
           <text x="30" y="336" class="mono small">{vocabBytes} B ≈ {vocabMb} MB</text>
-          <text x="30" y="364" class="detail">{phase >= 2 ? t('all checks pass', '校验全部通过') : t(`… and ${VOXT_MODEL_FILE_COUNT - 2} more files`, `… 还有 ${VOXT_MODEL_FILE_COUNT - 2} 个文件`)}</text>
+          <text x="30" y="364" class="detail">{phase >= 3 ? t('all checks pass', '校验全部通过') : t(`… and ${VOXT_MODEL_FILE_COUNT - 2} more files`, `… 还有 ${VOXT_MODEL_FILE_COUNT - 2} 个文件`)}</text>
           <text x="30" y="382" class="mono small">models--mlx-community--</text>
           <text x="30" y="402" class="mono small">Qwen3-ASR-1.7B-8bit/snapshots/</text>
           <text x="30" y="422" class="mono small">{VOXT_MODEL_COMMIT}</text>

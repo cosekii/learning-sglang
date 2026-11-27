@@ -495,3 +495,39 @@
 - **形状×文字审计**：live DOM 把 `.motion-focus` 四条描边带（±strokeWidth/2，经 inverse CTM 换算）与全部可见文字 bbox 求交，覆盖英／中 × 桌面／360／390／430 × 4 相共 32 个视图，全部 0 相交；相位身份由 `data-animation-phase` 确认。
 - **Voxt 08 提交记录**：report 第 202 行原写「教程源码、评分卡、progress 和本报告：一条 `[d]` 提交」，已改为教程提交 `bb70918` 与报告提交 `b233fbe` 两笔分开，对齐 review.md:582 和 direction.md:17。
 - 复跑门：`astro build`（60 页）、本章 transcript（重生成仍无 diff，文字内容未变）、STEP=1 readability、英中 STEP=1 mobile 三宽度、zh-check、deep-check 11 全部通过。
+
+---
+
+# lane d 本轮 · Voxt 11 Step 2 逐相机制（最小单元）
+
+日期：2026-11-26。direction：等 Step 1 复审时只做 Step 2 一个最小单元，修「多处状态同时变化或红框离开变化对象」，不动 Step 3–5，不整批移植旧草稿。
+
+## 单元与基线
+
+- 只改 `src/components/voxt/ModelStorageUpdates.svelte` 的第 2 步（固定快照）与一处第 2 步内文字。基线不变：协调 `6467ab7` 内容 R1–R5 **54/60**、原十项 **119/120**、静态 R6 **12/12**、原 #4/#5 **24/24**、原十二项 **143/144**；协调 `c3a7773` 机制 R6 **7/12**（逐步 1、1、1、1、1、2）。本轮不自行把第 2 步记为 2/2，待协调读相位证据重评。
+
+## 修的协调扣分（`c3a7773`）
+
+- 原命题：「第 2 步末相新增 vocab ✓ 和 `all checks pass` 时红框已移到磁盘路径」——末相两处状态同时变化，且红框指的对象（磁盘路径）本相没有变化。
+- 修法：`PHASE_COUNTS[1]` 3→4。vocab ✓ 留在第 2 相，`all checks pass` 单独第 3 相；从不变化的磁盘路径不再占相位。四相红框：仓库卡 → safetensors 两行 → vocab 三行 → `all checks pass` 一行（桌面 `{310,110,380,44}`／`{310,158,380,56}`／`{310,219,380,18}`，手机 `{22,241,256,38}`／`{22,287,256,56}`／`{22,352,256,13}`）。
+- 顺带一处红框描边穿字：桌面仓库卡内英文 `= first 7 of the full commit` 实测宽 251.4 px（x 40→291.4），越出 250 px 卡片并被相位 0 红框右边（x=274）穿过；改为与手机一致的 `= first 7 chars`，中文未动。这是本步唯一文字变化，transcript 重生成只差这一行。
+
+## 逐相机制证据（DOM/bbox，当前模型不能读 PNG）
+
+- 方法：`scripts/lib/browser.mjs` 无头 Chrome，`data-animation-phase` 确认相位身份，focus rect 240 ms 过渡后读 `getBBox()`，与全部可见文字 bbox 求交（相交且不被包住＝描边穿字）。
+- 英桌面 1440×900：p0 红框在仓库卡（含 commit 行，0 穿字）；p1 只新增 `✓ SHA-256…`；p2 只新增 `✓ git blob ID…`；p3 只变 `all checks pass`。4 相穿字数均为 **0**。
+- 中文 390 px 手机：同上，`… 还有 7 个文件` → `校验全部通过` 只在 p3；4 相穿字数均为 **0**（初版 p3 手机框底边擦到磁盘路径首行，框高 17→13 后归零）。
+
+## 门槛（本轮，只本章第 2 步）
+
+- `npm run build`：60 页通过。
+- `BOOK=voxt ONLY=11 npm run transcript`：6 步，无出界／重叠／脚注告警；与 pinned 仅上述一行英文差异。
+- `BOOK=voxt ONLY=11 STEP=2 npm run readability`：0 机械问题。
+- `BOOK=voxt node scripts/deep-check.mjs 11`：通过。`BOOK=voxt ONLY=11 node scripts/zh-check.mjs`：all clear。
+- `BOOK=voxt ONLY=11`（英）与 `BOOK=voxt ONLY=11 STEP=2 LANG=zh`（中）`mobile`：360／390／430 px 均 no layout breaks。
+- 环境修复：本 clone 的 `node_modules` 曾是指向主 checkout 的符号链接，Vite 写 `.vite` 缓存被围栏拒（EPERM）；本轮改为本目录真实 `npm install`，未再写入主 checkout。
+
+## 剩余
+
+- 等复审读第 1／2 步四相证据并重评这两步机制分；通过后按 direction 依次做第 3–5 步同类返工（每步一个最小单元），再 Voxt 10，最后 `12-meeting-capture-modes`。
+- 未跑全站回归、真实 Voxt、模型下载、更新或模型进程；主人最终验收另计。本轮 4321 dev server 与浏览器已在收尾关闭。
