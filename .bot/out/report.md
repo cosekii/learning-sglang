@@ -20,12 +20,19 @@
 
 # lane d 本轮报告 · Voxt 性能公开事实增量
 
-日期：2026-11-27。类型：修旧（deep 出处增量）。范围只含 5 个 Voxt deep 文件（双语各一）和本报告；未改任何组件、舞台、caption、MDX、transcript、评分卡、`memory/progress.md`、`.bot/memory/`、其他书或第 1 本受保护英文原文。
+日期：2026-11-27。类型：修旧（deep 出处增量）。范围只含 5 个 Voxt deep 文件（双语各一）、`.bot/out/voxt-perf-public-deeps.mjs` 与结果和本报告；未改任何组件、舞台、caption、MDX、transcript、评分卡、`memory/progress.md`、`.bot/memory/`、其他书或第 1 本受保护英文原文。
+
+## 复审跟进（同一单元内）
+
+- **#2549 测量条件补齐**：识别路线 Step 6 双语条目现在写明两行是不同的对照——Final 是 A0/C/C/A0 interleaved 的 median，first preview 是 live C 第 1 轮对 A0 第 14–16 轮（依据 `public.md:70`），不再让读者以为 first-preview 退化与 Final 是同一比较。
+- **打开抽屉的截图证据**：`.bot/out/voxt-perf-public-deeps.mjs`（可重跑）对 6 个改动小节 × 英中 = **12 张**桌面 1440×900 图，采集前核对 counter、html lang、`aria-expanded=true`，把 PR 链接 `scrollIntoView` 到抽屉视口内并断言可见；页面与抽屉横向溢出均为 0。结果 `.bot/out/voxt-perf-public-deeps/report.json`：failures 为空，12 张 PNG 哈希互不相同。代表图：`/Users/shuohuang/code/hmz-work/ls-d-1127-015553/.bot/out/voxt-perf-public-deeps/speech-recognition-routes-s6-en.png`。本模型无图像输入，以上为 DOM 与几何证据，未声称看过图片或视觉通过。
+- **素材引用更正**：本报告素材出处改为只引 `/Users/shuohuang/.orca/bots/bot/research_notes/Voxt 性能优化全景/public.md`；该文件不复制进仓库、不提交，不再引用仓库内不存在的副本路径。
+- 跟进后重跑：`npm run build` **60 页**通过；`BOOK=voxt node scripts/deep-check.mjs` 03／04／06／08／11 均 `ok`；`BOOK=voxt ONLY=4 zh-check` **all clear**。
 
 ## 单元与边界
 
 - direction 的 lane d 单元：Step 4 已由上一轮提交 `2d1e868`／`3aa0d2d` 完成并推 `origin/tutorials`（协调 review.md 01:56 已记录 origin 到 `3aa0d2d`），本轮做下一个独立最小单元：**Voxt 性能公开事实增量**。
-- 素材只取自 `.bot/perf-public.md`（与 `~/.orca/bots/bot/research_notes/Voxt 性能优化全景/public.md` 逐字节相同，本地未提交）第二节的可引用数字表与第一／五节的公开 PR 事实。每条保留 PR 链接、测量 head（或「未记录／未绑定」的明说）、setup 和指标边界。
+- 素材只取自 `/Users/shuohuang/.orca/bots/bot/research_notes/Voxt 性能优化全景/public.md` 第二节的可引用数字表与第一／五节的公开 PR 事实（该文件不复制进仓库、不提交）。每条保留 PR 链接、测量 head（或「未记录／未绑定」的明说）、setup 和指标边界。
 - 未补群名、人名、主人机器名或 NAACL 内容；setup 只含公开 PR 的硬件行（Apple M5／M4 等）。CI、UI 帧率、模型延迟、Stop-to-text／insert／paste 各归各条，未混写；没有新增真实 App 验收宣称，每条都带「不是完整真实 App／只证明提前调度」类边界；未创建 `perf-public-done`。
 - 新增内容全部在各步既有 `### Sources`／`### 源码出处` 内，或在该步末尾新增同名小节；不改舞台， transcript 不含 deep，故 pinned transcript 不重生成。评分卡不动：Voxt 11 固定 `fa8d912` 基线 **54/60、机制 9/12、143/144 NO-GO** 与 Voxt 08 的 GO 均不变，本轮不自行关闭任何协调 finding。
 
