@@ -112,8 +112,10 @@ try {
         const overflow = boxes.filter(({ rect }) => rect.left < svgRect.left - 1 || rect.right > svgRect.right + 1)
           .map(({ el }) => el.textContent.trim());
         let focusHits = [];
+        let focusBox = null;
         if (focus) {
           const f = focus.getBoundingClientRect();
+          focusBox = [f.left, f.top, f.right, f.bottom];
           const band = 1.6;
           const bands = [
             { left: f.left - band, right: f.left + band, top: f.top, bottom: f.bottom },
@@ -126,9 +128,20 @@ try {
             Math.min(rect.bottom, b.bottom) - Math.max(rect.top, b.top) > 0.5))
             .map(({ el }) => el.textContent.trim().replace(/\\s+/g, ' ').slice(0, 40));
         }
+        const rectOf = (el) => {
+          const r = el.getBoundingClientRect();
+          return [r.left, r.top, r.right, r.bottom];
+        };
         return {
           phase: Number(root.getAttribute('data-animation-phase')),
           fillWidth: fill ? Number(fill.getAttribute('width')) : null,
+          fillBox: fill ? rectOf(fill) : null,
+          focusBox,
+          textBoxes: texts.map((el) => ({
+            key: el.getAttribute('x') + '|' + el.getAttribute('y'),
+            text: el.textContent.trim().replace(/\\s+/g, ' '),
+            box: rectOf(el),
+          })),
           markerPresent: Boolean(marker),
           status: texts.map((el) => el.textContent.trim().replace(/\\s+/g, ' '))
             .filter((s) => /cancel|next start|resumed|checks|取消|接着|满格|校验/i.test(s)),
@@ -172,6 +185,28 @@ for (const view of views) {
     if (row.overlaps.length) failures.push(`${view.name} p${row.phase}: text overlaps ${JSON.stringify(row.overlaps)}`);
     if (row.overflow.length) failures.push(`${view.name} p${row.phase}: svg overflow ${JSON.stringify(row.overflow)}`);
     if (row.focusHits.length) failures.push(`${view.name} p${row.phase}: focus stroke crosses text ${JSON.stringify(row.focusHits)}`);
+  }
+  const inside = (box, f) => f && box && box[0] >= f[0] - 1 && box[1] >= f[1] - 1 && box[2] <= f[2] + 1 && box[3] <= f[3] + 1;
+  // Containment: every element a transition changes must sit inside that phase's focus rect.
+  // Phase 0 has no incoming transition, so its frame must hold the objects the next transition changes.
+  const transitions = rows.map((row, p) => (p === 0 ? null : { at: p, from: p - 1 }));
+  if (rows.length > 1) transitions.push({ at: 0, from: 0, forward: true });
+  for (const tr of transitions) {
+    if (!tr) continue;
+    const row = rows[tr.at];
+    const other = tr.forward ? rows[1] : rows[tr.from];
+    if (!row.focusBox) {
+      failures.push(`${view.name} p${tr.at}: no focus rect`);
+      continue;
+    }
+    const prevTexts = new Map(other.textBoxes.map((b) => [b.key, b.text]));
+    const changed = row.textBoxes.filter((b) => prevTexts.has(b.key) && prevTexts.get(b.key) !== b.text);
+    for (const b of changed) {
+      if (!inside(b.box, row.focusBox)) failures.push(`${view.name} p${tr.at}: changed text outside focus (${b.text})`);
+    }
+    if (row.fillWidth !== other.fillWidth && !inside(row.fillBox, row.focusBox)) {
+      failures.push(`${view.name} p${tr.at}: changed fill outside focus`);
+    }
   }
 }
 
