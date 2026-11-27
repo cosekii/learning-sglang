@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import StepControls from '../StepControls.svelte';
+  import LoopProgress from '../LoopProgress.svelte';
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
@@ -162,21 +163,51 @@
     if (q >= 1 && q <= steps.length) step = q - 1;
   });
   let phone = $state(false);
+  let reduceMotion = $state(false);
   onMount(() => {
     const query = window.matchMedia('(max-width: 600px)');
+    const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
     const update = () => (phone = query.matches);
+    const updateMotion = () => (reduceMotion = motion.matches);
     update();
+    updateMotion();
     query.addEventListener('change', update);
-    return () => query.removeEventListener('change', update);
+    motion.addEventListener('change', updateMotion);
+    return () => {
+      query.removeEventListener('change', update);
+      motion.removeEventListener('change', updateMotion);
+    };
+  });
+  const PHASE_COUNTS = [3, 3, 5, 5, 3, 4];
+  const PHASE_MS = 1000, REST_MS = 2800;
+  let phase = $state(0);
+  let lap = $state(0), lapMs = $state(0);
+  const nextLap = (ms: number) => untrack(() => { lapMs = ms; lap++; });
+  $effect(() => {
+    const count = PHASE_COUNTS[step];
+    phase = 0;
+    if (reduceMotion) { phase = count - 1; return; }
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const run = () => {
+      timers.length = 0;
+      phase = 0;
+      for (let i = 1; i < count; i++) timers.push(setTimeout(() => (phase = i), i * PHASE_MS));
+      const ms = count * PHASE_MS + REST_MS;
+      timers.push(setTimeout(run, ms));
+      nextLap(ms);
+    };
+    run();
+    return () => timers.forEach(clearTimeout);
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
   const H = $derived(phone ? [560, 560, 600, 600, 560, 600][step] : [500, 500, 500, 500, 500, 520][step]);
 </script>
 
-<figure class="viz">
+<figure class="viz" data-animation-step={step} data-animation-phase={phase} data-animation-final-phase={PHASE_COUNTS[step] - 1}>
   <div class="canvas">
     <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={$lang === 'zh' ? cur.captionZh : cur.caption}>
+      {#if !reduceMotion}<LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={4} />{/if}
       <defs>
         <marker id="fsdp-arrow-blue" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
           <path d="M0,0 L8,4 L0,8 z" fill="var(--accent)" />
@@ -193,17 +224,21 @@
       {#if phone}
         {#each cur.mobile as item, i}
           {@const y = 80 + i * 91}
-          <rect x="25" y={y} width="250" height="70" rx="11" fill={fill(item.tone)} stroke={stroke(item.tone)} />
-          <text x="150" y={y + 25} text-anchor="middle" class="small strong">{t(item.title, item.titleZh)}</text>
-          <text x="150" y={y + 50} text-anchor="middle" class="small">{t(item.body, item.bodyZh)}</text>
-          {#if i < cur.mobile.length - 1 && step !== 4}
-            <line x1="150" y1={y + 70} x2="150" y2={y + 86} stroke={step >= 2 ? 'var(--line)' : stroke(item.tone)} stroke-width="2.5" marker-end={step >= 2 ? 'url(#fsdp-arrow-plain)' : item.tone === 'orange' ? 'url(#fsdp-arrow-orange)' : 'url(#fsdp-arrow-blue)'} />
-          {/if}
+          <g opacity={phase >= Math.min(i, PHASE_COUNTS[step] - 2) ? 1 : 0}>
+            <rect x="25" y={y} width="250" height="70" rx="11" fill={fill(item.tone)} stroke={stroke(item.tone)} />
+            <text x="150" y={y + 25} text-anchor="middle" class="small strong">{t(item.title, item.titleZh)}</text>
+            <text x="150" y={y + 50} text-anchor="middle" class="small">{t(item.body, item.bodyZh)}</text>
+            {#if i < cur.mobile.length - 1 && step !== 4}
+              <line x1="150" y1={y + 70} x2="150" y2={y + 86} stroke={step >= 2 ? 'var(--line)' : stroke(item.tone)} stroke-width="2.5" marker-end={step >= 2 ? 'url(#fsdp-arrow-plain)' : item.tone === 'orange' ? 'url(#fsdp-arrow-orange)' : 'url(#fsdp-arrow-blue)'} />
+            {/if}
+          </g>
         {/each}
-        {#each cur.formulas as line, i}
-          <text x="150" y={80 + cur.mobile.length * 91 + 12 + i * 27} text-anchor="middle" class={i === 0 ? 'result' : 'small'} style={step === 3 && i === 3 ? 'font-size: 11px' : undefined}>{t(line.en, line.zh)}</text>
-        {/each}
-        <text x="150" y={80 + cur.mobile.length * 91 + 12 + cur.formulas.length * 27} text-anchor="middle" class="small">{t(cur.mobileLegend, cur.mobileLegendZh)}</text>
+        <g opacity={phase >= PHASE_COUNTS[step] - 1 ? 1 : 0}>
+          {#each cur.formulas as line, i}
+            <text x="150" y={80 + cur.mobile.length * 91 + 12 + i * 27} text-anchor="middle" class={i === 0 ? 'result' : 'small'} style={step === 3 && i === 3 ? 'font-size: 11px' : undefined}>{t(line.en, line.zh)}</text>
+          {/each}
+          <text x="150" y={80 + cur.mobile.length * 91 + 12 + cur.formulas.length * 27} text-anchor="middle" class="small">{t(cur.mobileLegend, cur.mobileLegendZh)}</text>
+        </g>
       {:else if step === 0}
         <rect x="35" y="88" width="310" height="252" rx="13" fill="var(--gen-soft)" stroke="var(--gen)" />
         <text x="190" y="120" text-anchor="middle" class="section">{t('ONE GPU · FULL COPY', '一张 GPU · 完整复制')}</text>
@@ -217,17 +252,21 @@
         <text x="65" y="284" class="small strong">{t('TOTAL ON THIS GPU', '这张 GPU 合计')}</text>
         <text x="315" y="284" text-anchor="end" class="big">{FSDP_FULL_STATE_PER_GPU_GB} GB</text>
         <text x="190" y="318" text-anchor="middle" class="small">{FSDP_FULL_STATE_PER_GPU_GB} GB ÷ {HBM_GB} GB = {(FSDP_FULL_CARD_SHARE * 100).toFixed(0)}% {t('of H100', 'H100')}</text>
-        <rect x="375" y="88" width="310" height="252" rx="13" fill="var(--accent-soft)" stroke="var(--accent)" />
-        <text x="530" y="120" text-anchor="middle" class="section">{t('8 GPUS · SAME COPIES', '8 张 GPU · 相同副本')}</text>
-        {#each Array.from({ length: FSDP_DP_SIZE }, (_, i) => i) as i}
-          <rect x={393 + (i % 4) * 70} y={140 + Math.floor(i / 4) * 72} width="60" height="56" rx="8" fill="var(--bg)" stroke="var(--accent)" />
-          <text x={423 + (i % 4) * 70} y={163 + Math.floor(i / 4) * 72} text-anchor="middle" class="small">GPU {i}</text>
-          <text x={423 + (i % 4) * 70} y={184 + Math.floor(i / 4) * 72} text-anchor="middle" class="small strong">{FSDP_FULL_STATE_PER_GPU_GB} GB</text>
-        {/each}
-        <text x="530" y="318" text-anchor="middle" class="big">{FSDP_FULL_CLUSTER_STATE_GB} GB</text>
-        <text x="360" y="382" text-anchor="middle" class="result">{FSDP_EXAMPLE_PARAMS_B}B values × 16 bytes = {FSDP_FULL_STATE_PER_GPU_GB} GB {t('per GPU', '每张 GPU')}</text>
-        <text x="360" y="416" text-anchor="middle" class="result">{FSDP_FULL_STATE_PER_GPU_GB} GB × {FSDP_DP_SIZE} = {FSDP_FULL_CLUSTER_STATE_GB} GB</text>
-        <text x="360" y="452" text-anchor="middle" class="small">{t('Orange = saved training tables · blue = repeated full copies', '橙 = 训练保存的表 · 蓝 = 重复的完整副本')}</text>
+        <g opacity={phase >= 1 ? 1 : 0}>
+          <rect x="375" y="88" width="310" height="252" rx="13" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="530" y="120" text-anchor="middle" class="section">{t('8 GPUS · SAME COPIES', '8 张 GPU · 相同副本')}</text>
+          {#each Array.from({ length: FSDP_DP_SIZE }, (_, i) => i) as i}
+            <rect x={393 + (i % 4) * 70} y={140 + Math.floor(i / 4) * 72} width="60" height="56" rx="8" fill="var(--bg)" stroke="var(--accent)" />
+            <text x={423 + (i % 4) * 70} y={163 + Math.floor(i / 4) * 72} text-anchor="middle" class="small">GPU {i}</text>
+            <text x={423 + (i % 4) * 70} y={184 + Math.floor(i / 4) * 72} text-anchor="middle" class="small strong">{FSDP_FULL_STATE_PER_GPU_GB} GB</text>
+          {/each}
+          <text x="530" y="318" text-anchor="middle" class="big">{FSDP_FULL_CLUSTER_STATE_GB} GB</text>
+        </g>
+        <g opacity={phase >= 2 ? 1 : 0}>
+          <text x="360" y="382" text-anchor="middle" class="result">{FSDP_EXAMPLE_PARAMS_B}B values × 16 bytes = {FSDP_FULL_STATE_PER_GPU_GB} GB {t('per GPU', '每张 GPU')}</text>
+          <text x="360" y="416" text-anchor="middle" class="result">{FSDP_FULL_STATE_PER_GPU_GB} GB × {FSDP_DP_SIZE} = {FSDP_FULL_CLUSTER_STATE_GB} GB</text>
+          <text x="360" y="452" text-anchor="middle" class="small">{t('Orange = saved training tables · blue = repeated full copies', '橙 = 训练保存的表 · 蓝 = 重复的完整副本')}</text>
+        </g>
       {:else if step === 1}
         <rect x="30" y="88" width="315" height="248" rx="13" fill="var(--gen-soft)" stroke="var(--gen)" />
         <text x="187" y="120" text-anchor="middle" class="section">{t('BEFORE · FULL COPY', '之前 · 完整复制')}</text>
@@ -236,16 +275,20 @@
         <text x="187" y="231" text-anchor="middle" class="small">{FSDP_FULL_WEIGHT_GB} + {FSDP_FULL_GRADIENT_GB} + {FSDP_FULL_OPTIMIZER_GB} = {FSDP_FULL_STATE_PER_GPU_GB} GB</text>
         <text x="187" y="270" text-anchor="middle" class="result">{FSDP_DP_SIZE} {t('copies', '份')} = {FSDP_FULL_CLUSTER_STATE_GB} GB</text>
         <text x="187" y="305" text-anchor="middle" class="small">{t('every GPU keeps every table', '每张 GPU 都保存所有表')}</text>
-        <rect x="375" y="88" width="315" height="248" rx="13" fill="var(--accent-soft)" stroke="var(--accent)" />
-        <text x="532" y="120" text-anchor="middle" class="section">{t('WITH FSDP2 · ONE RANK', '使用 FSDP2 · 一个 rank')}</text>
-        <rect x="405" y="140" width={250 / FSDP_DP_SIZE} height="64" rx="4" fill="var(--bg)" stroke="var(--accent)" />
-        <text x="450" y="180" class="big">{FSDP_SHARD_STATE_PER_GPU_GB} GB</text>
-        <text x="532" y="231" text-anchor="middle" class="small">{FSDP_SHARD_WEIGHT_GB} + {FSDP_SHARD_GRADIENT_GB} + {FSDP_SHARD_OPTIMIZER_GB} = {FSDP_SHARD_STATE_PER_GPU_GB} GB</text>
-        <text x="532" y="270" text-anchor="middle" class="result">{FSDP_DP_SIZE} {t('ranks', '个 rank')} = {FSDP_SHARD_CLUSTER_STATE_GB} GB</text>
-        <text x="532" y="305" text-anchor="middle" class="small">{t('each rank owns one shard', '每个 rank 拥有一片')}</text>
-        <text x="360" y="370" text-anchor="middle" class="small strong">{t('The two bars use one scale: 250 px = 64 GB.', '两条柱使用同一比例：250 px = 64 GB。')}</text>
-        <text x="360" y="407" text-anchor="middle" class="result">{FSDP_FULL_STATE_PER_GPU_GB} GB ÷ {FSDP_DP_SIZE} = {FSDP_SHARD_STATE_PER_GPU_GB} GB {t('per rank', '每个 rank')}</text>
-        <text x="360" y="450" text-anchor="middle" class="small">{t('Orange = full copies · blue = owned shards', '橙 = 完整副本 · 蓝 = 拥有的分片')}</text>
+        <g opacity={phase >= 1 ? 1 : 0}>
+          <rect x="375" y="88" width="315" height="248" rx="13" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="532" y="120" text-anchor="middle" class="section">{t('WITH FSDP2 · ONE RANK', '使用 FSDP2 · 一个 rank')}</text>
+          <rect x="405" y="140" width={250 / FSDP_DP_SIZE} height="64" rx="4" fill="var(--bg)" stroke="var(--accent)" />
+          <text x="450" y="180" class="big">{FSDP_SHARD_STATE_PER_GPU_GB} GB</text>
+          <text x="532" y="231" text-anchor="middle" class="small">{FSDP_SHARD_WEIGHT_GB} + {FSDP_SHARD_GRADIENT_GB} + {FSDP_SHARD_OPTIMIZER_GB} = {FSDP_SHARD_STATE_PER_GPU_GB} GB</text>
+          <text x="532" y="270" text-anchor="middle" class="result">{FSDP_DP_SIZE} {t('ranks', '个 rank')} = {FSDP_SHARD_CLUSTER_STATE_GB} GB</text>
+          <text x="532" y="305" text-anchor="middle" class="small">{t('each rank owns one shard', '每个 rank 拥有一片')}</text>
+        </g>
+        <g opacity={phase >= 2 ? 1 : 0}>
+          <text x="360" y="370" text-anchor="middle" class="small strong">{t('The two bars use one scale: 250 px = 64 GB.', '两条柱使用同一比例：250 px = 64 GB。')}</text>
+          <text x="360" y="407" text-anchor="middle" class="result">{FSDP_FULL_STATE_PER_GPU_GB} GB ÷ {FSDP_DP_SIZE} = {FSDP_SHARD_STATE_PER_GPU_GB} GB {t('per rank', '每个 rank')}</text>
+          <text x="360" y="450" text-anchor="middle" class="small">{t('Orange = full copies · blue = owned shards', '橙 = 完整副本 · 蓝 = 拥有的分片')}</text>
+        </g>
       {:else if step === 2}
         {#each [
           { x: 25, title: 'WEIGHTS + OPT', titleZh: '权重 + 优化器', result: `${FSDP_FORWARD_RESIDENT_GB} GB`, resultZh: `${FSDP_FORWARD_RESIDENT_GB} GB`, body: 'after zero_grad', bodyZh: 'zero_grad 之后', tone: 'orange' },
@@ -253,58 +296,74 @@
           { x: 385, title: 'FULL LAYER', titleZh: '完整一层', result: 'U', resultZh: 'U', body: 'compute', bodyZh: '计算', tone: 'blue' },
           { x: 565, title: 'RELEASE', titleZh: '释放', result: 'U gone', resultZh: 'U 已释放', body: `${FSDP_FORWARD_RESIDENT_GB} GB remains`, bodyZh: `仍留 ${FSDP_FORWARD_RESIDENT_GB} GB`, tone: 'plain' },
         ] as node, i}
-          <rect x={node.x} y="105" width="130" height="151" rx="12" fill={fill(node.tone)} stroke={stroke(node.tone)} stroke-dasharray={node.tone === 'plain' ? '5 4' : '0'} />
-          <text x={node.x + 65} y="137" text-anchor="middle" class="small strong">{t(node.title, node.titleZh)}</text>
-          <text x={node.x + 65} y="180" text-anchor="middle" class="result">{t(node.result, node.resultZh)}</text>
-          <text x={node.x + 65} y="222" text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
-          {#if i < 3}
-            <line x1={node.x + 130} y1="181" x2={node.x + 170} y2="181" stroke="var(--line)" stroke-width="2.5" marker-end="url(#fsdp-arrow-plain)" />
-          {/if}
+          <g opacity={phase >= i ? 1 : 0}>
+            <rect x={node.x} y="105" width="130" height="151" rx="12" fill={fill(node.tone)} stroke={stroke(node.tone)} stroke-dasharray={node.tone === 'plain' ? '5 4' : '0'} />
+            <text x={node.x + 65} y="137" text-anchor="middle" class="small strong">{t(node.title, node.titleZh)}</text>
+            <text x={node.x + 65} y="180" text-anchor="middle" class="result">{t(node.result, node.resultZh)}</text>
+            <text x={node.x + 65} y="222" text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
+            {#if i < 3}
+              <line x1={node.x + 130} y1="181" x2={node.x + 170} y2="181" stroke="var(--line)" stroke-width="2.5" marker-end="url(#fsdp-arrow-plain)" opacity={phase > i ? 1 : 0} />
+            {/if}
+          </g>
         {/each}
-        <text x="360" y="304" text-anchor="middle" class="result">{t('DURING COMPUTE', '计算时')} · {FSDP_FORWARD_RESIDENT_GB} GB + U</text>
-        <text x="360" y="342" text-anchor="middle" class="result">{t('AFTER RELEASE', '释放后')} · {FSDP_FORWARD_RESIDENT_GB} GB</text>
+        <text x="360" y="304" text-anchor="middle" class="result" opacity={phase >= 2 ? 1 : 0}>{t('DURING COMPUTE', '计算时')} · {FSDP_FORWARD_RESIDENT_GB} GB + U</text>
+        <text x="360" y="342" text-anchor="middle" class="result" opacity={phase >= 3 ? 1 : 0}>{t('AFTER RELEASE', '释放后')} · {FSDP_FORWARD_RESIDENT_GB} GB</text>
         <text x="360" y="383" text-anchor="middle" class="small">{FSDP_SHARD_WEIGHT_GB} GB {t('weights', '权重')} + {FSDP_SHARD_OPTIMIZER_GB} GB {t('optimizer', '优化器')} = {FSDP_FORWARD_RESIDENT_GB} GB</text>
-        <text x="360" y="409" text-anchor="middle" class="small">{t('Backward adds the', 'Backward 加入')} {FSDP_SHARD_GRADIENT_GB} GB {t('gradient shard', '梯度分片')}：{FSDP_FORWARD_RESIDENT_GB} + {FSDP_SHARD_GRADIENT_GB} = {FSDP_SHARD_STATE_PER_GPU_GB} GB</text>
-        <text x="360" y="449" text-anchor="middle" class="small">{t('Orange = weights + optimizer · blue = temporary full values', '橙 = 权重 + 优化器 · 蓝 = 临时完整数值')}</text>
+        <g opacity={phase >= 4 ? 1 : 0}>
+          <text x="360" y="409" text-anchor="middle" class="small">{t('Backward adds the', 'Backward 加入')} {FSDP_SHARD_GRADIENT_GB} GB {t('gradient shard', '梯度分片')}：{FSDP_FORWARD_RESIDENT_GB} + {FSDP_SHARD_GRADIENT_GB} = {FSDP_SHARD_STATE_PER_GPU_GB} GB</text>
+          <text x="360" y="449" text-anchor="middle" class="small">{t('Orange = weights + optimizer · blue = temporary full values', '橙 = 权重 + 优化器 · 蓝 = 临时完整数值')}</text>
+        </g>
       {:else if step === 3}
         {#each [
           { x: 40, title: 'LAYER GRADIENT', titleZh: '本层梯度', result: 'temporary', resultZh: '临时', body: 'after forward', bodyZh: '前向之后算出', tone: 'blue' },
           { x: 275, title: 'REDUCE-SCATTER', titleZh: 'REDUCE-SCATTER', result: 'AVG + split', resultZh: '平均 + 分片', body: 'FP32 default', bodyZh: 'FP32 默认', tone: 'plain' },
           { x: 510, title: 'OWNED GRADIENT', titleZh: '拥有的梯度', result: 'one shard', resultZh: '一个分片', body: 'this layer\'s shard', bodyZh: '本层的分片', tone: 'orange' },
         ] as node, i}
-          <rect x={node.x} y="95" width="170" height="157" rx="12" fill={fill(node.tone)} stroke={stroke(node.tone)} />
-          <text x={node.x + 85} y="129" text-anchor="middle" class="small strong">{t(node.title, node.titleZh)}</text>
-          <text x={node.x + 85} y="174" text-anchor="middle" class="result">{t(node.result, node.resultZh)}</text>
-          <text x={node.x + 85} y="217" text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
-          {#if i < 2}<line x1={node.x + 170} y1="174" x2={node.x + 225} y2="174" stroke="var(--line)" stroke-width="2.5" marker-end="url(#fsdp-arrow-plain)" />{/if}
+          <g opacity={phase >= (i === 0 ? 0 : i === 1 ? 2 : 3) ? 1 : 0}>
+            <rect x={node.x} y="95" width="170" height="157" rx="12" fill={fill(node.tone)} stroke={stroke(node.tone)} />
+            <text x={node.x + 85} y="129" text-anchor="middle" class="small strong">{t(node.title, node.titleZh)}</text>
+            <text x={node.x + 85} y="174" text-anchor="middle" class="result">{t(node.result, node.resultZh)}</text>
+            <text x={node.x + 85} y="217" text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
+            {#if i < 2}<line x1={node.x + 170} y1="174" x2={node.x + 225} y2="174" stroke="var(--line)" stroke-width="2.5" marker-end="url(#fsdp-arrow-plain)" opacity={phase >= (i === 0 ? 2 : 3) ? 1 : 0} />{/if}
+          </g>
         {/each}
-        <line x1="595" y1="252" x2="595" y2="292" stroke="var(--line)" stroke-width="2.5" marker-end="url(#fsdp-arrow-plain)" />
-        <rect x="485" y="302" width="220" height="79" rx="11" fill="var(--bg)" stroke="var(--line)" />
-        <text x="595" y="332" text-anchor="middle" class="section">{t('OPTIMIZER', '优化器')}</text>
-        <text x="595" y="361" text-anchor="middle" class="small">{t('after all layers: update owned weights', '所有层算完后：更新拥有的权重')}</text>
-        <rect x="35" y="292" width="365" height="124" rx="11" fill="var(--bg)" stroke="var(--line)" />
-        <text x="217" y="320" text-anchor="middle" class="small strong">{t('PRE-SCALE EACH RANK\'S LOSS', '先缩放每个 rank 的 LOSS')}</text>
-        <text x="217" y="350" text-anchor="middle" class="small">{t('loss = loss * dp_size / global_batch_size', 'loss = loss * dp_size / global_batch_size')}</text>
-        <text x="217" y="380" text-anchor="middle" class="small">{t('R = 8 ranks · B = global batch · AVG = sum ÷ R', 'R = 8 个 rank · B = 全批大小 · AVG = 求和 ÷ R')}</text>
-        <text x="217" y="406" text-anchor="middle" class="small">{t('all layers\' gradients: 8 GB ÷ 8 = 1 GB per rank', '所有层的梯度：8 GB ÷ 8 = 每个 rank 1 GB')}</text>
-        <text x="360" y="455" text-anchor="middle" class="small">{t('Orange = owned shard · blue = temporary layer gradient', '橙 = 拥有分片 · 蓝 = 临时的本层梯度')}</text>
+        <g opacity={phase >= 4 ? 1 : 0}>
+          <line x1="595" y1="252" x2="595" y2="292" stroke="var(--line)" stroke-width="2.5" marker-end="url(#fsdp-arrow-plain)" />
+          <rect x="485" y="302" width="220" height="79" rx="11" fill="var(--bg)" stroke="var(--line)" />
+          <text x="595" y="332" text-anchor="middle" class="section">{t('OPTIMIZER', '优化器')}</text>
+          <text x="595" y="361" text-anchor="middle" class="small">{t('after all layers: update owned weights', '所有层算完后：更新拥有的权重')}</text>
+        </g>
+        <g opacity={phase >= 1 ? 1 : 0}>
+          <rect x="35" y="292" width="365" height="124" rx="11" fill="var(--bg)" stroke="var(--line)" />
+          <text x="217" y="320" text-anchor="middle" class="small strong">{t('PRE-SCALE EACH RANK\'S LOSS', '先缩放每个 rank 的 LOSS')}</text>
+          <text x="217" y="350" text-anchor="middle" class="small">{t('loss = loss * dp_size / global_batch_size', 'loss = loss * dp_size / global_batch_size')}</text>
+          <text x="217" y="380" text-anchor="middle" class="small">{t('R = 8 ranks · B = global batch · AVG = sum ÷ R', 'R = 8 个 rank · B = 全批大小 · AVG = 求和 ÷ R')}</text>
+        </g>
+        <text x="217" y="406" text-anchor="middle" class="small" opacity={phase >= 4 ? 1 : 0}>{t('all layers\' gradients: 8 GB ÷ 8 = 1 GB per rank', '所有层的梯度：8 GB ÷ 8 = 每个 rank 1 GB')}</text>
+        <text x="360" y="455" text-anchor="middle" class="small" opacity={phase >= 4 ? 1 : 0}>{t('Orange = owned shard · blue = temporary layer gradient', '橙 = 拥有分片 · 蓝 = 临时的本层梯度')}</text>
       {:else if step === 4}
-        <rect x="70" y="88" width="300" height="79" rx="10" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />
-        <text x="220" y="119" text-anchor="middle" class="result">{t('training intermediates', '训练中间结果')}</text>
-        <text x="220" y="148" text-anchor="middle" class="small">{t('+ other temporary results · size unknown', '+ 其他临时结果 · 大小未知')}</text>
-        <rect x="70" y="177" width="300" height="79" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
-        <text x="220" y="208" text-anchor="middle" class="result">{t('largest borrowed layer', '最大临时完整层')}</text>
-        <text x="220" y="237" text-anchor="middle" class="small">{t('temporary, size unknown', '临时占用，大小未知')}</text>
+        <g opacity={phase >= 2 ? 1 : 0}>
+          <rect x="70" y="88" width="300" height="79" rx="10" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />
+          <text x="220" y="119" text-anchor="middle" class="result">{t('training intermediates', '训练中间结果')}</text>
+          <text x="220" y="148" text-anchor="middle" class="small">{t('+ other temporary results · size unknown', '+ 其他临时结果 · 大小未知')}</text>
+          <text x="420" y="125" class="small">{t('intermediates = values made during training', '中间结果 = 训练时算出的值')}</text>
+          <text x="420" y="286" class="small">{t('? = no exact total in the source', '? = 来源没有精确总量')}</text>
+        </g>
+        <g opacity={phase >= 1 ? 1 : 0}>
+          <rect x="70" y="177" width="300" height="79" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="220" y="208" text-anchor="middle" class="result">{t('largest borrowed layer', '最大临时完整层')}</text>
+          <text x="220" y="237" text-anchor="middle" class="small">{t('temporary, size unknown', '临时占用，大小未知')}</text>
+          <text x="420" y="199" class="small">{t('the biggest layer borrowed at once', '同一时刻借来的最大一层')}</text>
+        </g>
         <rect x="70" y="266" width="300" height="89" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
         <text x="220" y="302" text-anchor="middle" class="big">{FSDP_SHARD_STATE_PER_GPU_GB} GB</text>
         <text x="220" y="334" text-anchor="middle" class="small">{t('weights + gradients + optimizer state', '权重 + 梯度 + 优化器状态')}</text>
-        <text x="420" y="125" class="small">{t('intermediates = values made during training', '中间结果 = 训练时算出的值')}</text>
-        <text x="420" y="199" class="small">{t('the biggest layer borrowed at once', '同一时刻借来的最大一层')}</text>
-        <text x="420" y="286" class="small">{t('? = no exact total in the source', '? = 来源没有精确总量')}</text>
         <text x="420" y="322" class="small">{FSDP_SHARD_STATE_PER_GPU_GB} GB {t('is the training-state bill,', '是完整训练状态账，')}</text>
         <text x="420" y="346" class="small">{t('not a permanent forward floor.', '不是 forward 的永久常驻量。')}</text>
-        <text x="360" y="411" text-anchor="middle" class="result">{t('PEAK', '峰值')} &gt; {FSDP_SHARD_STATE_PER_GPU_GB} GB · {t('exact total unknown', '精确总量未知')}</text>
-        <text x="360" y="458" text-anchor="middle" class="small">{t('Orange = training-state bill · blue = borrowed layer · grey = intermediates + other', '橙 = 训练状态账 · 蓝 = 临时完整层 · 灰 = 中间结果和其他临时显存')}</text>
+        <g opacity={phase >= 2 ? 1 : 0}>
+          <text x="360" y="411" text-anchor="middle" class="result">{t('PEAK', '峰值')} &gt; {FSDP_SHARD_STATE_PER_GPU_GB} GB · {t('exact total unknown', '精确总量未知')}</text>
+          <text x="360" y="458" text-anchor="middle" class="small">{t('Orange = training-state bill · blue = borrowed layer · grey = intermediates + other', '橙 = 训练状态账 · 蓝 = 临时完整层 · 灰 = 中间结果和其他临时显存')}</text>
+        </g>
       {:else if step === 5}
         {#each [
           { x: 25, title: 'WEIGHT SHARDS', titleZh: '权重分片', result: 'weights only', resultZh: '仅权重', body: 'grad + opt stay', bodyZh: '梯度和优化器留下', tone: 'orange' },
@@ -312,24 +371,28 @@
           { x: 385, title: 'BUCKET', titleZh: '一桶', result: 'full tensors', resultZh: '完整张量', body: 'wait + send', bodyZh: '等待并发送', tone: 'blue' },
           { x: 565, title: 'ROLLOUT', titleZh: 'ROLLOUT', result: 'v1', resultZh: 'v1', body: 'Ch. 7 Step 5 · handoff', bodyZh: '第 7 章第 5 步交接', tone: 'plain' },
         ] as node, i}
-          <rect x={node.x} y="95" width="130" height="151" rx="12" fill={fill(node.tone)} stroke={stroke(node.tone)} stroke-dasharray={node.tone === 'plain' ? '5 4' : '0'} />
-          <text x={node.x + 65} y="127" text-anchor="middle" class="small strong">{t(node.title, node.titleZh)}</text>
-          <text x={node.x + 65} y="170" text-anchor="middle" class="result">{t(node.result, node.resultZh)}</text>
-          <text x={node.x + 65} y="212" text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
-          {#if i < 3}
-            <line x1={node.x + 130} y1="171" x2={node.x + 170} y2="171" stroke="var(--line)" stroke-width="2.5" marker-end="url(#fsdp-arrow-plain)" />
-          {/if}
+          <g opacity={phase >= i ? 1 : 0}>
+            <rect x={node.x} y="95" width="130" height="151" rx="12" fill={fill(node.tone)} stroke={stroke(node.tone)} stroke-dasharray={node.tone === 'plain' ? '5 4' : '0'} />
+            <text x={node.x + 65} y="127" text-anchor="middle" class="small strong">{t(node.title, node.titleZh)}</text>
+            <text x={node.x + 65} y="170" text-anchor="middle" class="result">{t(node.result, node.resultZh)}</text>
+            <text x={node.x + 65} y="212" text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
+            {#if i < 3}
+              <line x1={node.x + 130} y1="171" x2={node.x + 170} y2="171" stroke="var(--line)" stroke-width="2.5" marker-end="url(#fsdp-arrow-plain)" opacity={phase > i ? 1 : 0} />
+            {/if}
+          </g>
         {/each}
         <rect x="35" y="294" width="305" height="100" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" stroke-dasharray="5 4" />
         <text x="187" y="326" text-anchor="middle" class="section">{t('STAYS IN TRAINING', '留在训练端')}</text>
         <text x="187" y="362" text-anchor="middle" class="small">{t('gradients + optimizer state', '梯度 + 优化器状态')}</text>
-        <rect x="380" y="294" width="305" height="100" rx="11" fill="var(--bg)" stroke="var(--line)" />
-        <text x="532" y="316" text-anchor="middle" class="small strong">{t('NEXT · FEWER BITS', '下一章 · 更少位')}</text>
-        <text x="532" y="340" text-anchor="middle" class="small">{t('weights + gradients: 16 bits = 2 bytes', '权重 + 梯度：16 位 = 2 字节')}</text>
-        <text x="532" y="363" text-anchor="middle" class="small">{t('optimizer tables: 32 bits = 4 bytes · 2×', '优化器表：32 位 = 4 字节 · 2 倍')}</text>
-        <text x="532" y="386" text-anchor="middle" class="small strong">{t('Which tables can use fewer bits?', '哪些表能用更少位？')}</text>
-        <text x="360" y="441" text-anchor="middle" class="small">{t('Orange = training state · blue = temporary full weights for export', '橙 = 训练状态 · 蓝 = 导出的临时完整权重')}</text>
-        <text x="360" y="478" text-anchor="middle" class="small">{t('Ch. 7 Step 5 shows one-bucket handoffs; Step 6 shows whole-version waits and old-KV rejection.', '第 7 章第 5 步讲按桶交接，第 6 步讲整版等待和旧 KV 失效。')}</text>
+        <g opacity={phase >= 3 ? 1 : 0}>
+          <rect x="380" y="294" width="305" height="100" rx="11" fill="var(--bg)" stroke="var(--line)" />
+          <text x="532" y="316" text-anchor="middle" class="small strong">{t('NEXT · FEWER BITS', '下一章 · 更少位')}</text>
+          <text x="532" y="340" text-anchor="middle" class="small">{t('weights + gradients: 16 bits = 2 bytes', '权重 + 梯度：16 位 = 2 字节')}</text>
+          <text x="532" y="363" text-anchor="middle" class="small">{t('optimizer tables: 32 bits = 4 bytes · 2×', '优化器表：32 位 = 4 字节 · 2 倍')}</text>
+          <text x="532" y="386" text-anchor="middle" class="small strong">{t('Which tables can use fewer bits?', '哪些表能用更少位？')}</text>
+          <text x="360" y="441" text-anchor="middle" class="small">{t('Orange = training state · blue = temporary full weights for export', '橙 = 训练状态 · 蓝 = 导出的临时完整权重')}</text>
+          <text x="360" y="478" text-anchor="middle" class="small">{t('Ch. 7 Step 5 shows one-bucket handoffs; Step 6 shows whole-version waits and old-KV rejection.', '第 7 章第 5 步讲按桶交接，第 6 步讲整版等待和旧 KV 失效。')}</text>
+        </g>
       {/if}
       <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t(cur.mobileFoot, cur.mobileFootZh) : t(cur.foot, cur.footZh)}</text>
     </svg>
