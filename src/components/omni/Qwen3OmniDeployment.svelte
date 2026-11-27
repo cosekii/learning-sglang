@@ -82,6 +82,9 @@
     caption: 'This config has no explicit AR fraction. Its thinker declares 78%, subtracts 5 percentage points, and keeps 73% for AR.',
     captionZh: '这份配置没有显式 AR 比例。78% 减 5 个百分点，AR 得 73%。',
   }, {
+    caption: 'The video test needs 85.7 GB on an 80 GB card. Moving the 8 GB talker leaves 77.7 GB.',
+    captionZh: '视频测试需要 85.7 GB，显卡只有 80 GB。移走 8 GB 的 talker 后，剩 77.7 GB。',
+  }, {
     caption: 'Precision is the number of bits used to store each weight. INT4 roughly halves the BF16 estimate; its talker and code2wav stay BF16.',
     captionZh: '精度是保存每个权重所用的 bit 数。INT4 约省一半，它的 talker 和 code2wav 仍用 BF16。',
   }, {
@@ -109,7 +112,7 @@
     return () => query.removeEventListener('change', update);
   });
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [870, 820, 900, 930, 850, 930, 1050, 1130][step] : [560, 600, 650, 680, 600, 630, 650, 680][step]);
+  const H = $derived(phone ? [870, 820, 900, 560, 650, 850, 930, 1050, 1130][step] : [560, 600, 650, 480, 560, 600, 630, 650, 680][step]);
   const budgetSegments = [
     ...COLOCATED_STAGE_SHARES.flatMap((stage) => stage.name === 'thinker' ? [
       { name: 'thinker AR', percent: QWEN_THINKER_EFFECTIVE_AR_PERCENT, kind: 'stage' },
@@ -133,14 +136,14 @@
 
   const axes = [
     { label: '1 of 5 · route', labelZh: '1/5 · 输出路线', steps: 'Step 2', stepsZh: '第 2 步', detail: 'text or text + sound', detailZh: '文字，或文字 + 声音' },
-    { label: '2 of 5 · placement', labelZh: '2/5 · 摆卡', steps: 'Steps 3–4', stepsZh: '第 3–4 步', detail: 'talker GPU · one-card shares', detailZh: 'talker 摆卡 · 单卡份额' },
-    { label: '3 of 5 · precision', labelZh: '3/5 · 精度', steps: 'Step 5', stepsZh: '第 5 步', detail: 'BF16 · FP8 · INT4', detailZh: 'BF16 · FP8 · INT4' },
-    { label: '4 of 5 · capacity', labelZh: '4/5 · 容量', steps: 'Step 6', stepsZh: '第 6 步', detail: 'running caps · codec slots', detailZh: '运行上限 · codec 状态位' },
-    { label: '5 of 5 · evidence', labelZh: '5/5 · 证据', steps: 'Steps 7–8', stepsZh: '第 7–8 步', detail: 'readiness · A/B records', detailZh: 'readiness · A/B 记录' },
+    { label: '2 of 5 · placement', labelZh: '2/5 · 摆卡', steps: 'Steps 3–5', stepsZh: '第 3–5 步', detail: 'talker GPU · one-card shares', detailZh: 'talker 摆卡 · 单卡份额' },
+    { label: '3 of 5 · precision', labelZh: '3/5 · 精度', steps: 'Step 6', stepsZh: '第 6 步', detail: 'BF16 · FP8 · INT4', detailZh: 'BF16 · FP8 · INT4' },
+    { label: '4 of 5 · capacity', labelZh: '4/5 · 容量', steps: 'Step 7', stepsZh: '第 7 步', detail: 'running caps · codec slots', detailZh: '运行上限 · codec 状态位' },
+    { label: '5 of 5 · evidence', labelZh: '5/5 · 证据', steps: 'Steps 8–9', stepsZh: '第 8–9 步', detail: 'readiness · A/B records', detailZh: 'readiness · A/B 记录' },
   ];
 
   // Each scene builds its own objects and numbers, then holds the finished state.
-  const PHASE_COUNTS = [3, 5, 6, 4, 3, 4, 6, 6];
+  const PHASE_COUNTS = [3, 5, 6, 3, 3, 3, 4, 6, 6];
   const PHASE_MS = 1100, REST_MS = 2500;
   let phase = $state(0);
   let lap = $state(0), lapMs = $state(0);
@@ -320,29 +323,43 @@
             <text x={phone ? 282 : 700} y={y} text-anchor="end" class="formula">{segment.percent}%</text>
           {/each}
         </g>
-        <g opacity={phase >= 3 ? 1 : 0} style="transition: opacity 450ms">
-          <rect x={phone ? 15 : 20} y={phone ? 550 : 465} width={phone ? 270 : 680} height={phone ? 320 : 150} rx="9" fill="var(--bg)" stroke="var(--eos)" />
-          <text x={phone ? 28 : 34} y={phone ? 577 : 492} class="tag strong">{t('WHY THE TALKER MOVES · VIDEO-TEST MINIMUM', '为什么 talker 要移卡 · 视频测试最低需求')}</text>
-          {#if phone}
-            <text x="28" y="610" class="tag">{QWEN_VIDEO_TEST_THINKER_WEIGHT_GB.toFixed(1)} = {QWEN_VIDEO_TEST_THINKER_PARAMS_B}B × 2 B · {t('thinker weights', 'thinker 权重')}</text>
-            <text x="28" y="637" class="tag">{QWEN_VIDEO_TEST_ENCODER_RESERVE_GB.toFixed(1)} = 5% × {QWEN_VIDEO_TEST_CARD_GB} · {t('video reserve', '视频预留')}</text>
-            <text x="28" y="664" class="tag">{QWEN_VIDEO_TEST_KV_GB.toFixed(1)} ≈ {QWEN_VIDEO_TEST_MAX_TOKENS.toLocaleString('en-US')} × {QWEN_VIDEO_TEST_KV_KB_PER_TOKEN} KB · KV</text>
-            <text x="28" y="691" class="tag">{QWEN_VIDEO_TEST_OTHER_STAGES_GB.toFixed(1)} = 6% × {QWEN_VIDEO_TEST_CARD_GB} · {t('encoders + code2wav', 'encoders + code2wav')}</text>
-            <text x="28" y="718" class="tag">{QWEN_VIDEO_TEST_HELD_BACK_GB.toFixed(1)} = 6% × {QWEN_VIDEO_TEST_CARD_GB} · {t('held back', '预留')}</text>
-            <text x="28" y="745" class="tag">{QWEN_VIDEO_TEST_TALKER_GB.toFixed(1)} = 10% × {QWEN_VIDEO_TEST_CARD_GB} · talker</text>
-            <text x="28" y="779" class="formula">{t('total', '合计')} = {QWEN_VIDEO_TEST_TOTAL_GB.toFixed(1)} GB · {t('card', '显卡')} = {QWEN_VIDEO_TEST_CARD_GB} GB</text>
-            <text x="28" y="806" class="formula" fill="var(--eos)">{QWEN_VIDEO_TEST_TOTAL_GB.toFixed(1)} − {QWEN_VIDEO_TEST_CARD_GB} = {QWEN_VIDEO_TEST_OVERFLOW_GB.toFixed(1)} GB {t('too much', '超出')}</text>
-            <text x="28" y="833" class="tag strong">{t('without talker', '去掉 talker')}: {QWEN_VIDEO_TEST_TOTAL_GB.toFixed(1)} − {QWEN_VIDEO_TEST_TALKER_GB.toFixed(1)} = {QWEN_VIDEO_TEST_WITHOUT_TALKER_GB.toFixed(1)} GB {t('fits', '放得下')}</text>
-          {:else}
-            <text x="34" y="519" class="tag">{QWEN_VIDEO_TEST_THINKER_WEIGHT_GB.toFixed(1)} {t('weights', '权重')} ({QWEN_VIDEO_TEST_THINKER_PARAMS_B}B × 2 B) + {QWEN_VIDEO_TEST_ENCODER_RESERVE_GB.toFixed(1)} {t('video reserve', '视频预留')} (5% × {QWEN_VIDEO_TEST_CARD_GB}) + {QWEN_VIDEO_TEST_KV_GB.toFixed(1)} KV ({QWEN_VIDEO_TEST_MAX_TOKENS.toLocaleString('en-US')} × {QWEN_VIDEO_TEST_KV_KB_PER_TOKEN} KB)</text>
-            <text x="34" y="544" class="tag">+ {QWEN_VIDEO_TEST_OTHER_STAGES_GB.toFixed(1)} {t('encoders + code2wav', 'encoders + code2wav')} (6% × {QWEN_VIDEO_TEST_CARD_GB}) + {QWEN_VIDEO_TEST_HELD_BACK_GB.toFixed(1)} {t('held back', '预留')} (6% × {QWEN_VIDEO_TEST_CARD_GB}) + {QWEN_VIDEO_TEST_TALKER_GB.toFixed(1)} talker (10% × {QWEN_VIDEO_TEST_CARD_GB})</text>
-            <text x="34" y="569" class="formula">{t('total', '合计')} = {QWEN_VIDEO_TEST_TOTAL_GB.toFixed(1)} GB · {t('card', '显卡')} = {QWEN_VIDEO_TEST_CARD_GB} GB · {QWEN_VIDEO_TEST_TOTAL_GB.toFixed(1)} − {QWEN_VIDEO_TEST_CARD_GB} = {QWEN_VIDEO_TEST_OVERFLOW_GB.toFixed(1)} GB {t('too much', '超出')}</text>
-            <text x="34" y="594" class="tag strong">{t('without talker', '去掉 talker')}: {QWEN_VIDEO_TEST_TOTAL_GB.toFixed(1)} − {QWEN_VIDEO_TEST_TALKER_GB.toFixed(1)} = {QWEN_VIDEO_TEST_WITHOUT_TALKER_GB.toFixed(1)} GB {t('fits, so talker moves to GPU 1', '放得下，所以 talker 移到 GPU 1')}</text>
-          {/if}
-        </g>
-        <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{phone ? t('6% is undeclared, not measured free memory.', '6% 在申报比例之外，不是实测空闲显存。') : t('The 6% grey segment is outside declarations, not measured free memory.', '灰色 6% 在申报比例之外，不是实测空闲显存。')}</text>
-        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Ch. 19 Step 4: old 32,768 · new 65,536 needs more.', '第 19 章第 4 步：旧 32,768；新 65,536 默认需要更多。') : t('Ch. 19 Step 4: old 32,768-token bound · current 65,536 needs more.', '第 19 章第 4 步：旧 32,768 token 下限；当前 65,536 默认值需要更多。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('6% is undeclared, not measured free memory.', '6% 在申报比例之外，不是实测空闲显存。') : t('The 6% grey segment is outside declarations, not measured free memory.', '灰色 6% 在申报比例之外，不是实测空闲显存。')}</text>
       {:else if step === 4}
+        <text x={phone ? 15 : 20} y="24" class="rowlabel">{t(phone ? '2/5 · PLACEMENT · WHY TALKER MOVES' : '2 of 5 · PLACEMENT · WHY THE TALKER MOVES', phone ? '2/5 · 摆卡 · TALKER 为什么移卡' : '2/5 · 摆卡 · TALKER 为什么移卡')}</text>
+        <text x={phone ? 15 : 20} y="49" class="tag">{t('video-test minimum = the least this example needs', '视频测试最低需求 = 这个算例至少需要多少显存')}</text>
+        <text x={phone ? 15 : 20} y="72" class="tag">{t('blue = stays on GPU 0 · orange = talker · red = overflow', '蓝 = 留在 GPU 0 · 橙 = talker · 红 = 超出显卡')}</text>
+        <text x={phone ? 15 : 20} y="95" class="tag">{t('both bars: 0–90 GB · dashed line = 80 GB card', '两根柱共用 0–90 GB · 虚线 = 80 GB 显卡')}</text>
+        {#if phone}
+          <text x="28" y="130" class="tag">{QWEN_VIDEO_TEST_THINKER_WEIGHT_GB.toFixed(1)} = {QWEN_VIDEO_TEST_THINKER_PARAMS_B}B × 2 B · {t('thinker weights', 'thinker 权重')}</text>
+          <text x="28" y="157" class="tag">{QWEN_VIDEO_TEST_ENCODER_RESERVE_GB.toFixed(1)} = 5% × {QWEN_VIDEO_TEST_CARD_GB} · {t('video reserve', '视频预留')}</text>
+          <text x="28" y="184" class="tag">{QWEN_VIDEO_TEST_KV_GB.toFixed(1)} ≈ {QWEN_VIDEO_TEST_MAX_TOKENS.toLocaleString('en-US')} × {QWEN_VIDEO_TEST_KV_KB_PER_TOKEN} KB · KV</text>
+          <text x="28" y="211" class="tag">{QWEN_VIDEO_TEST_OTHER_STAGES_GB.toFixed(1)} = 6% × {QWEN_VIDEO_TEST_CARD_GB} · {t('encoders + code2wav', 'encoders + code2wav')}</text>
+          <text x="28" y="238" class="tag">{QWEN_VIDEO_TEST_HELD_BACK_GB.toFixed(1)} = 6% × {QWEN_VIDEO_TEST_CARD_GB} · {t('held back', '预留')}</text>
+          <text x="28" y="265" class="tag">{QWEN_VIDEO_TEST_TALKER_GB.toFixed(1)} = 10% × {QWEN_VIDEO_TEST_CARD_GB} · talker</text>
+        {:else}
+          <text x="34" y="130" class="tag">{QWEN_VIDEO_TEST_THINKER_WEIGHT_GB.toFixed(1)} {t('weights', '权重')} ({QWEN_VIDEO_TEST_THINKER_PARAMS_B}B × 2 B) + {QWEN_VIDEO_TEST_ENCODER_RESERVE_GB.toFixed(1)} {t('video reserve', '视频预留')} (5% × {QWEN_VIDEO_TEST_CARD_GB}) + {QWEN_VIDEO_TEST_KV_GB.toFixed(1)} KV ({QWEN_VIDEO_TEST_MAX_TOKENS.toLocaleString('en-US')} × {QWEN_VIDEO_TEST_KV_KB_PER_TOKEN} KB)</text>
+          <text x="34" y="155" class="tag">+ {QWEN_VIDEO_TEST_OTHER_STAGES_GB.toFixed(1)} {t('encoders + code2wav', 'encoders + code2wav')} (6% × {QWEN_VIDEO_TEST_CARD_GB}) + {QWEN_VIDEO_TEST_HELD_BACK_GB.toFixed(1)} {t('held back', '预留')} (6% × {QWEN_VIDEO_TEST_CARD_GB}) + {QWEN_VIDEO_TEST_TALKER_GB.toFixed(1)} talker (10% × {QWEN_VIDEO_TEST_CARD_GB})</text>
+        {/if}
+        <g opacity={phase >= 1 ? 1 : 0} style="transition: opacity 450ms">
+          <text x={phone ? 30 : 60} y={phone ? 310 : 200} class="tag strong">{t('BEFORE · EVERYTHING ON GPU 0', '移卡前 · 全部放在 GPU 0')}</text>
+          <rect x={phone ? 30 : 60} y={phone ? 325 : 215} width={QWEN_VIDEO_TEST_WITHOUT_TALKER_GB / 90 * (phone ? 230 : 600)} height={phone ? 32 : 36} rx="5" fill="var(--accent)" />
+          <rect x={(phone ? 30 : 60) + QWEN_VIDEO_TEST_WITHOUT_TALKER_GB / 90 * (phone ? 230 : 600)} y={phone ? 325 : 215} width={QWEN_VIDEO_TEST_TALKER_GB / 90 * (phone ? 230 : 600)} height={phone ? 32 : 36} rx="5" fill="var(--gen)" />
+          <rect x={(phone ? 30 : 60) + QWEN_VIDEO_TEST_CARD_GB / 90 * (phone ? 230 : 600)} y={phone ? 325 : 215} width={QWEN_VIDEO_TEST_OVERFLOW_GB / 90 * (phone ? 230 : 600)} height={phone ? 32 : 36} fill="var(--eos)" fill-opacity="0.65" />
+          <line x1={(phone ? 30 : 60) + QWEN_VIDEO_TEST_CARD_GB / 90 * (phone ? 230 : 600)} y1={phone ? 315 : 205} x2={(phone ? 30 : 60) + QWEN_VIDEO_TEST_CARD_GB / 90 * (phone ? 230 : 600)} y2={phone ? 390 : 290} stroke="var(--text)" stroke-dasharray="4 3" />
+          <text x={phone ? 30 : 60} y={phone ? 380 : 275} class="formula">{QWEN_VIDEO_TEST_TOTAL_GB.toFixed(1)} GB · {QWEN_VIDEO_TEST_TOTAL_GB.toFixed(1)} − {QWEN_VIDEO_TEST_CARD_GB} = {QWEN_VIDEO_TEST_OVERFLOW_GB.toFixed(1)} GB {t('too much', '超出')}</text>
+          <text x={(phone ? 30 : 60) + QWEN_VIDEO_TEST_CARD_GB / 90 * (phone ? 230 : 600)} y={phone ? 407 : 307} text-anchor="middle" class="tag">{QWEN_VIDEO_TEST_CARD_GB} GB {t('card', '显卡')}</text>
+        </g>
+        <g opacity={phase >= 2 ? 1 : 0} style="transition: opacity 450ms">
+          <text x={phone ? 30 : 60} y={phone ? 440 : 350} class="tag strong">{t('AFTER · TALKER MOVES TO GPU 1', '移卡后 · TALKER 移到 GPU 1')}</text>
+          <rect x={phone ? 30 : 60} y={phone ? 455 : 365} width={QWEN_VIDEO_TEST_WITHOUT_TALKER_GB / 90 * (phone ? 230 : 600)} height={phone ? 32 : 36} rx="5" fill="var(--accent)" />
+          <line x1={(phone ? 30 : 60) + QWEN_VIDEO_TEST_CARD_GB / 90 * (phone ? 230 : 600)} y1={phone ? 445 : 355} x2={(phone ? 30 : 60) + QWEN_VIDEO_TEST_CARD_GB / 90 * (phone ? 230 : 600)} y2={phone ? 520 : 420} stroke="var(--text)" stroke-dasharray="4 3" />
+          <text x={phone ? 30 : 60} y={phone ? 510 : 425} class="formula">{QWEN_VIDEO_TEST_TOTAL_GB.toFixed(1)} − {QWEN_VIDEO_TEST_TALKER_GB.toFixed(1)} = {QWEN_VIDEO_TEST_WITHOUT_TALKER_GB.toFixed(1)} GB {t('fits', '放得下')}</text>
+          <text x={(phone ? 30 : 60) + QWEN_VIDEO_TEST_CARD_GB / 90 * (phone ? 230 : 600)} y={phone ? 537 : 437} text-anchor="middle" class="tag">{QWEN_VIDEO_TEST_CARD_GB} GB {t('card', '显卡')}</text>
+          <text x={phone ? 30 : 60} y={phone ? 575 : 480} class="tag strong" fill="var(--gen)">talker {QWEN_VIDEO_TEST_TALKER_GB.toFixed(1)} GB → GPU 1</text>
+        </g>
+        <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{phone ? t('Constructed lower bound, not measured memory.', '构造下限，不是实测显存。') : t('Constructed video-test lower bound, not measured memory occupancy.', '视频测试的构造下限，不是实测显存占用。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Ch. 19 Step 4: old 32,768 · new 65,536 needs more.', '第 19 章第 4 步：旧 32,768；新 65,536 默认需要更多。') : t('Ch. 19 Step 4: old 32,768-token bound · current 65,536 needs more.', '第 19 章第 4 步：旧 32,768 token 下限；当前 65,536 默认值需要更多。')}</text>
+      {:else if step === 5}
         <text x={phone ? 15 : 20} y="24" class="rowlabel">{t(phone ? '3/5 · PRECISION AND MEMORY' : '3 of 5 · PRECISION AND MEMORY', '3/5 · 精度与显存估计')}</text>
         <text x={phone ? 15 : 20} y="49" class="tag">precision = {t('bits used to store each weight', '保存每个权重所用的 bit 数')}</text>
         <text x={phone ? 15 : 20} y="72" class="tag">{phone ? t('weight = saved model number · bit = 0 or 1', '权重 = 模型保存的数 · bit = 0 或 1') : t('weight = one saved model number · bit = one 0-or-1 digit', '权重 = 模型保存的一个数 · bit = 一个 0 或 1')}</text>
@@ -371,7 +388,7 @@
         </g>
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{phone ? t('BF16 default · INT4 code2wav stays BF16', 'BF16 是默认 · INT4 的 code2wav 仍用 BF16') : t('BF16 is the default. INT4 also keeps code2wav BF16.', 'BF16 是默认值。INT4 的 code2wav 也仍是 BF16。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Not a per-card budget or quality measurement', '不是单卡预算或质量实测') : t('The source does not make these values a per-card budget; no local quality measurement.', '来源没有把这些数值定义为单卡预算；本地也没有质量实测。')}</text>
-      {:else if step === 5}
+      {:else if step === 6}
         <text x={phone ? 15 : 20} y="24" class="rowlabel">{t(phone ? '4/5 · CAPACITY · MORE SPEECH COPIES' : '4 of 5 · CAPACITY · MORE SPEECH COPIES, EXPLICIT CAPACITY', phone ? '4/5 · 容量 · 更多语音副本' : '4/5 · 容量 · 更多语音副本，明确算容量')}</text>
         <text x={phone ? 15 : 20} y="49" class="tag">running cap = {t('most requests one stage works on at once', '一个 stage 同时最多处理的请求数')}</text>
         <text x={phone ? 15 : 20} y="72" class="tag">codec state slot = {t('saved decoder state for one stream', '一路声音保存的 decoder 状态')}</text>
@@ -424,7 +441,7 @@
         {/if}
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{phone ? t('unchanged: preprocessing · 2 encoders · thinker · decode', '不变：preprocessing · 2 encoders · thinker · decode') : t('Unchanged: preprocessing · image_encoder · audio_encoder · thinker · decode', '不变：preprocessing · image_encoder · audio_encoder · thinker · decode')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Pairing keeps codec on one GPU; custom policies differ', '配对让 codec 留在一卡；自定义策略可能不同') : t('Default pairing keeps each codec stream on one GPU; a custom policy need not preserve it.', '默认配对让每路 codec 留在一卡；自定义策略不保证这种配对。')}</text>
-      {:else if step === 6}
+      {:else if step === 7}
         <text x={phone ? 15 : 20} y="24" class="rowlabel">{t(phone ? '5/5 · EVIDENCE · TWO CHECKS' : '5 of 5 · EVIDENCE · TWO CHECKS ANSWER TWO QUESTIONS', phone ? '5/5 · 证据 · 两种检查' : '5/5 · 证据 · 两种检查回答两个问题')}</text>
         <text x={phone ? 15 : 20} y="49" class="tag">readiness = {t('a startup health check, not a speed result', '启动健康检查，不是速度结果')}</text>
         <text x={phone ? 15 : 20} y="72" class="tag">{t('blue = startup request · orange = measurement plan', '蓝 = 启动请求 · 橙 = 测量计划')}</text>
@@ -499,7 +516,7 @@
         </g>
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{phone ? t('Readiness skips larger inputs and batches.', 'readiness 可能没有预热更大的输入和 batch。') : t('Readiness can leave video, large batches and other input sizes unwarmed.', 'readiness 可能没有预热视频、大 batch 和其他输入大小。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t(`p99: 99% at/below · ≥${QWEN_P99_MIN_SAMPLES} requests · runs vary`, `p99：99% 请求不超过 · 至少 ${QWEN_P99_MIN_SAMPLES} 个请求 · 运行次数不定`) : t(`p99 = 99% at or below · require ≥${QWEN_P99_MIN_SAMPLES} requests; ten runs may or may not contain them`, `p99 = 99% 请求不超过 · 至少 ${QWEN_P99_MIN_SAMPLES} 个请求；十次运行可能够，也可能不够`)}</text>
-      {:else if step === 7}
+      {:else if step === 8}
         <text x={phone ? 15 : 20} y="24" class="rowlabel">{t(phone ? '5/5 · EVIDENCE · DECISION SHEET' : '5 of 5 · EVIDENCE · ONE DEPLOYMENT DECISION SHEET', phone ? '5/5 · 证据 · 决策表' : '5/5 · 证据 · 一张部署决策表')}</text>
         <text x={phone ? 15 : 20} y="49" class="tag">{t('blue = starting choice · orange = evidence still required', '蓝 = 起步选择 · 橙 = 还需要的证据')}</text>
         <text x={phone ? 15 : 20} y="72" class="tag strong">{phone ? t('EXAMPLE: 8 requests at once · earlier first audio', '算例：8 路并发 · 首音更早') : t('EXAMPLE: 8 concurrent spoken requests, earlier first audio', '算例：8 路并发语音请求，希望首音更早')}</text>

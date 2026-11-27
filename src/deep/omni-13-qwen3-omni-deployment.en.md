@@ -33,7 +33,7 @@ The next step opens with a five-axis map: route, placement, precision, capacity 
 
 ### On the stage
 
-- The opening map puts this step at `1 of 5 · route`. The later axes are placement in Steps 3–4, precision in Step 5, capacity in Step 6, and evidence in Steps 7–8.
+- The opening map puts this step at `1 of 5 · route`. The later axes are placement in Steps 3–5, precision in Step 6, capacity in Step 7, and evidence in Steps 8–9.
 - `modalities` lists the output kinds the client wants. Its public default is `["text"]`.
 - A text-only server joins preprocessing and active encoders at `mm_aggregate`, then runs thinker and decode.
 - A speech server running a text-output request lets its thinker join those inputs, then runs decode. Talker and code2wav stay unused.
@@ -103,7 +103,7 @@ The single-stream 14–17% increase is the source's reported range. The stage st
 
 ### Boundaries and sources
 
-The exact four raw values come from Chapter 8 Step 1's PR #1235 data. The pinned tuning guide reports the rounded shared range 2.66–2.70 seconds and isolated range 1.42–1.46 seconds, plus the single-stream comparison (`docs/cookbook/qwen3_omni/tuning.md:52-69`). These are H200, thinker-TP2 public experiments. Step 8's TP1 plan is a different topology and needs its own A/B comparison.
+The exact four raw values come from Chapter 8 Step 1's PR #1235 data. The pinned tuning guide reports the rounded shared range 2.66–2.70 seconds and isolated range 1.42–1.46 seconds, plus the single-stream comparison (`docs/cookbook/qwen3_omni/tuning.md:52-69`). These are H200, thinker-TP2 public experiments. Step 9's TP1 plan is a different topology and needs its own A/B comparison.
 
 ### Next
 
@@ -120,7 +120,6 @@ The next step packs all five GPU stages onto one card and accounts for their dec
 - The thinker's original 78% appears as two segments: 73% for its effective AR budget and five whole-card percentage points for the reserve.
 - `Explicit AR fraction` means setting AR's whole-card share directly. This config leaves it unset, so the factory derives it. Five percentage points means five of the card's 100 equal shares, not 5% of 78%.
 - The other stage shares stay at 2%, 2%, 10% and 2%.
-- The bottom panel adds the constructed video-test minimum: 61.0 GB of thinker weights, 4.0 GB of video reserve, 3.1 GB of KV cache, 4.8 GB for encoders and code2wav, 4.8 GB held back and 8.0 GB for the talker. The 85.7 GB total exceeds the 80 GB card by 5.7 GB. Removing the talker's 8.0 GB leaves 77.7 GB, so the talker moves to GPU 1.
 
 ### Formula
 
@@ -142,7 +141,45 @@ $$
 
 The subtraction uses fractions of the whole card, so it removes five percentage points rather than 5% of 78%. The declared stage total remains `2 + 2 + 78 + 10 + 2 = 94%`. Splitting 78% into 73% and 5% does not add another 5% to the card. The remaining `100 − 94 = 6%` is outside these declarations, not a measured free-memory reading.
 
-### The video-test arithmetic on the stage
+### Boundaries and sources
+
+The config values come from `examples/configs/qwen3_omni_colocated_h100_bf16.yaml:7-20`. The reserve mechanism is in `sglang_omni/models/qwen3_omni/stages.py:155-215,1230-1243,1358-1373`; encoder headroom is described in `backend/server_args_builder.py:176-210`, where `backend/` abbreviates sglang_omni/scheduling/sglang_backend/. With no explicit `thinker.engine.mem_fraction_static`, the factory derives 73%. A matching explicit fraction skips the reserve; a conflicting fraction is rejected (`tests/unit_test/qwen3_omni/test_sglang_ar_budget.py:491-511,540-562`). A byte-sized KV declaration skips the fraction adjustment (`stages.py:1384-1402`). Off the stage, this colocated layout permits only TP 1. A worker is the group of processes running this deployment. One colocated worker cannot add process replicas for a stage; extra copies must run as separate workers behind a router. Every GPU stage declares a budget (`sglang_omni/models/qwen3_omni/placement.py:55-60,84-108,122-187`).
+
+### Next
+
+The next step turns these shares into GB and tests whether the video example fits on one card.
+
+## Step 5 · The video test overflows one H100
+
+> **In one line:** The constructed video test needs 85.7 GB on an 80 GB card, so the 8 GB talker moves to GPU 1.
+
+### On the stage
+
+- The six input rows reproduce Step 4's shares in GB: 61.0 GB of thinker weights, 4.0 GB of video reserve, 3.1 GB of KV cache, 4.8 GB for encoders and code2wav, 4.8 GB held back and 8.0 GB for the talker.
+- Both bars use the same 0–90 GB scale. The dashed line marks the 80 GB card.
+- In the before bar, blue covers the 77.7 GB that can stay on GPU 0 and orange covers the 8.0 GB talker. The red part beyond the dashed line is the 5.7 GB overflow.
+- In the after bar, removing the orange talker leaves 77.7 GB on GPU 0. The talker moves to GPU 1.
+
+### Formula
+
+$$
+T=W+V+K+O+H+X,\qquad R=T-C,\qquad S=T-X
+$$
+
+| Symbol | Meaning | Size | Source |
+|---|---|---:|---|
+| $T$ | Total video-test minimum | 85.7 GB | This step |
+| $W$ | Thinker weights | 61.0 GB | `30.5B × 2 B` |
+| $V$ | Video encoder reserve | 4.0 GB | `5% × 80 GB` |
+| $K$ | KV cache for the constructed request | about 3.1 GB | `32,768 × 96 KB` |
+| $O$ | Other stages | 4.8 GB | `(2% + 2% + 2%) × 80 GB` |
+| $H$ | Held back outside declarations | 4.8 GB | `6% × 80 GB` |
+| $X$ | Talker | 8.0 GB | `10% × 80 GB` |
+| $C$ | H100 capacity used in this example | 80 GB | Learning SGLang Ch. 19 Step 4 |
+| $R$ | Overflow | 5.7 GB | This step |
+| $S$ | What remains without the talker | 77.7 GB | This step |
+
+### The numbers on the stage
 
 | Part | Arithmetic | GB |
 |---|---|---:|
@@ -154,17 +191,17 @@ The subtraction uses fractions of the whole card, so it removes five percentage 
 | Talker | `10% × 80 GB` | 8.0 |
 | Total | sum of the six rows | about 85.7 |
 
-The overflow is `85.7 − 80 = 5.7 GB`. Removing only the talker gives `85.7 − 8.0 = 77.7 GB`, which fits. These values come from `src/omni/numbers.ts` and reproduce Learning SGLang Ch. 19 Step 4's constructed lower bound. Its 32,768-token KV entry uses the previous limit. The checkpoint's current 65,536-token default raises that entry, so this is not a current peak-memory measurement and the overflow conclusion still holds.
+The overflow is `85.7 − 80 = 5.7 GB`. Removing only the talker gives `85.7 − 8.0 = 77.7 GB`, which fits.
 
 ### Boundaries and sources
 
-The config values come from `examples/configs/qwen3_omni_colocated_h100_bf16.yaml:7-20`. The reserve mechanism is in `sglang_omni/models/qwen3_omni/stages.py:155-215,1230-1243,1358-1373`; encoder headroom is described in `backend/server_args_builder.py:176-210`, where `backend/` abbreviates sglang_omni/scheduling/sglang_backend/. With no explicit `thinker.engine.mem_fraction_static`, the factory derives 73%. A matching explicit fraction skips the reserve; a conflicting fraction is rejected (`tests/unit_test/qwen3_omni/test_sglang_ar_budget.py:491-511,540-562`). A byte-sized KV declaration skips the fraction adjustment (`stages.py:1384-1402`). Off the stage, this colocated layout permits only TP 1. A worker is the group of processes running this deployment. One colocated worker cannot add process replicas for a stage; extra copies must run as separate workers behind a router. Every GPU stage declares a budget (`sglang_omni/models/qwen3_omni/placement.py:55-60,84-108,122-187`).
+These values come from `src/omni/numbers.ts` and reproduce Learning SGLang Ch. 19 Step 4's constructed lower bound. Its 32,768-token KV entry uses the previous limit. The checkpoint's current 65,536-token default raises that entry, so this is not a current peak-memory measurement and the overflow conclusion still holds.
 
 ### Next
 
 Memory also depends on the checkpoint's precision, so the next step compares BF16, FP8 and INT4.
 
-## Step 5 · Fewer bits, different stage precisions
+## Step 6 · Fewer bits, different stage precisions
 
 > **In one line:** BF16, FP8 and INT4 checkpoints reduce the documented estimate from about 60 to 40 to 30 GB, while INT4 keeps talker AR and code2wav at BF16.
 
@@ -199,13 +236,13 @@ These ratios come from approximate values.
 
 Off the stage, INT4 uses groups of 128 weights. Its approximate estimate is `30 ÷ 40 × 100% = 75%` of FP8, or 25% less. These details are not drawn on this slide.
 
-BF16 is the default. The FP8 checkpoint supplies its own precision config; `--dtype fp8` is not the selection mechanism (`docs/cookbook/qwen3_omni.md:153-169`; `sglang_omni/models/weight_loader.py:19-42`). The INT4 stage boundary and estimates are in `docs/cookbook/qwen3_omni.md:181-200`. Code2wav's default dtype is resolved in `components/code2wav_scheduler.py:146-154,1230-1260` and `sglang_omni/models/weight_loader.py:19-26`. Here and in Step 6, `components/` abbreviates sglang_omni/models/qwen3_omni/components/. The compatibility matrix permits each precision for text-only output, separate thinker/talker cards at TP1 or TP2, or one shared card at TP1 (`docs/cookbook/qwen3_omni.md:25-44`). The chapter does not claim a local memory, speed or accuracy measurement.
+BF16 is the default. The FP8 checkpoint supplies its own precision config; `--dtype fp8` is not the selection mechanism (`docs/cookbook/qwen3_omni.md:153-169`; `sglang_omni/models/weight_loader.py:19-42`). The INT4 stage boundary and estimates are in `docs/cookbook/qwen3_omni.md:181-200`. Code2wav's default dtype is resolved in `components/code2wav_scheduler.py:146-154,1230-1260` and `sglang_omni/models/weight_loader.py:19-26`. Here and in Step 7, `components/` abbreviates sglang_omni/models/qwen3_omni/components/. The compatibility matrix permits each precision for text-only output, separate thinker/talker cards at TP1 or TP2, or one shared card at TP1 (`docs/cookbook/qwen3_omni.md:25-44`). The chapter does not claim a local memory, speed or accuracy measurement.
 
 ### Next
 
 After choosing a checkpoint and layout, more simultaneous speech requests may require another talker/code2wav pair rather than another precision.
 
-## Step 6 · Two talker copies, 64 codec slots
+## Step 7 · Two talker copies, 64 codec slots
 
 > **In one line:** Replica2 keeps one 64-request thinker, adds a second 32-request talker and configures 64 codec-state slots per code2wav process.
 
@@ -252,7 +289,7 @@ Caps and slot computation: `sglang_omni/models/qwen3_omni/stages.py:1276-1286`, 
 
 The next step checks a resolved configuration and then measures it with real traffic instead of treating these caps as results.
 
-## Step 7 · Readiness is not a benchmark
+## Step 8 · Readiness is not a benchmark
 
 > **In one line:** Readiness proves one small request can finish; a deployment comparison needs controlled traffic and separate benchmark-client and listener clocks.
 
@@ -296,7 +333,7 @@ Resolve the configuration with `sgl-omni config resolve --config <config.yaml> -
 
 The final step puts configuration, waiting, data and memory on one decision sheet reviewing Chapters 1–12.
 
-## Step 8 · One deployment decision sheet
+## Step 9 · One deployment decision sheet
 
 > **In one line:** An eight-request example starts with default BF16 speech and an isolated talker, then keeps or changes that choice only from recorded evidence.
 
@@ -319,7 +356,7 @@ $$
 | Symbol | Meaning | Size | Source |
 |---|---|---:|---|
 | $V$ | Requests of talker-cap headroom | 24 | This step |
-| $X$ | Running-request cap per talker | 32 | Step 6 |
+| $X$ | Running-request cap per talker | 32 | Step 7 |
 | $I$ | Expected concurrent requests in this example | 8 | Constructed goal |
 
 ### The numbers on the stage
@@ -332,7 +369,7 @@ This headroom sits below the configured cap. It is not measured spare throughput
 
 ### Decision boundary
 
-This is a constructed TP1 starting hypothesis from H200/TP2 evidence, not a benchmark winner. INT4 is outside this first A/B; the chapter neither rejects it nor claims to have measured it. First resolve the configuration and run readiness. Then compare BF16 with native FP8 while holding the starting layout and Step 7's other controls fixed at target concurrency 8. With only `c = 8`, five repeats give five runs per arm. Off the stage, the shipped summary provides first-audio median, p95 and p99. For the custom p90 named on this slide, apply `numpy.percentile(..., 90)` to non-null `per_request.audio_ttfp_s` values from successful streaming requests, separately for each arm at `c = 8` (`benchmarks/metrics/performance.py:219-223,480`). Keep separate first-audio, total-time and listener results, and run the output-quality checks outside the generate-only sweep. Change a choice only after the records identify a problem to solve, which may be memory or quality rather than waiting.
+This is a constructed TP1 starting hypothesis from H200/TP2 evidence, not a benchmark winner. INT4 is outside this first A/B; the chapter neither rejects it nor claims to have measured it. First resolve the configuration and run readiness. Then compare BF16 with native FP8 while holding the starting layout and Step 8's other controls fixed at target concurrency 8. With only `c = 8`, five repeats give five runs per arm. Off the stage, the shipped summary provides first-audio median, p95 and p99. For the custom p90 named on this slide, apply `numpy.percentile(..., 90)` to non-null `per_request.audio_ttfp_s` values from successful streaming requests, separately for each arm at `c = 8` (`benchmarks/metrics/performance.py:219-223,480`). Keep separate first-audio, total-time and listener results, and run the output-quality checks outside the generate-only sweep. Change a choice only after the records identify a problem to solve, which may be memory or quality rather than waiting.
 
 ### Next
 
