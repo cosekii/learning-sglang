@@ -280,6 +280,8 @@ $$M=M_{\text{raw}}\odot Z$$
 
 ### 代入图上的数
 
+这个代入例假设 tokenizer 的 pad ID 是 0。pinned 实现先用这个 ID 填充原始 response mask，再逐元素相乘。如果 pad ID 不是 0，原始 mask 的 padding 格就是这个 ID；因为这里 $Z=0$，最终 padding 的 mask 仍然是 0。
+
 S2 的原始 response mask 为 `[1,1,1,1,0,0,0,0,0,0,0,0]`，响应 attention mask 为 `[1,1,1,1,1,1,1,0,0,0,0,0]`。逐元素相乘后，观察与 padding 的 response mask 都是 0。
 
 样本 S2 的宽度来自配置：$7+5=12$。如果换一条更长的响应，也不能超出这个配置；pinned 实现先按 `response_length` 截断，再 padding。padding 只让张量形状对齐，不增加交互内容。

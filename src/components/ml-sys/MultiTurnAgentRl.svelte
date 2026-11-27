@@ -262,7 +262,7 @@
     },
   }, {
     caption: 'Right padding aligns seven-token and twelve-token responses. Padding gets zero response and attention masks.',
-    captionZh: '右侧 padding 对齐 7 和 12 个响应。padding 的两种 mask 都是 0。',
+    captionZh: '右侧 padding 对齐 7 和 12 个 token 的响应。padding 的两种 mask 都是 0。',
     title: 'Pad responses into one training batch', titleZh: '把响应 padding 成训练 batch',
     subtitle: `configured response_length = ${N.AGENT_CONFIGURED_RESPONSE_LENGTH} · padding aligns empty cells`, subtitleZh: `配置的 response_length = ${N.AGENT_CONFIGURED_RESPONSE_LENGTH} · padding 用来对齐空格`,
     foot: 'Constructed config, not the longest response in this batch. Padding is not real.', footZh: '构造的配置长度，不是本 batch 的最长响应。padding 不是真 token。',

@@ -280,6 +280,8 @@ $$M=M_{\text{raw}}\odot Z$$
 
 ### The numbers on the stage
 
+This worked example assumes that the tokenizer's pad ID is 0. The pinned implementation pads the raw response mask with that ID before the elementwise product. With a nonzero pad ID, the raw padding entries would contain that ID instead; $Z=0$ still makes the final padding mask 0.
+
 S2's raw response mask is `[1,1,1,1,0,0,0,0,0,0,0,0]`, and its response attention mask is `[1,1,1,1,1,1,1,0,0,0,0,0]`. Their elementwise product leaves response mask 0 on observations and padding.
 
 Sample S2's width comes from the configuration: $7+5=12$. A longer response cannot exceed that configuration; the pinned implementation truncates to `response_length` before padding. Padding aligns tensor shapes without adding interaction content.
