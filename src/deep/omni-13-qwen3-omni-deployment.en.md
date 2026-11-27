@@ -201,17 +201,15 @@ These values come from `src/omni/numbers.ts` and reproduce Learning SGLang Ch. 1
 
 Memory also depends on the checkpoint's precision, so the next step compares BF16, FP8 and INT4.
 
-## Step 6 · Fewer bits, different stage precisions
+## Step 6 · Fewer bits, smaller documented estimates
 
-> **In one line:** BF16, FP8 and INT4 checkpoints reduce the documented estimate from about 60 to 40 to 30 GB, while INT4 keeps talker AR and code2wav at BF16.
+> **In one line:** BF16, FP8 and INT4 reduce the documented estimate from about 60 to 40 to 30 GB.
 
 ### On the stage
 
 - Precision is the number of bits used to store a weight. A weight is one saved number in the model; a bit is one 0-or-1 digit.
 - The three blue bars use one scale for approximate 60, 40 and 30 GB values in a single-GPU H100/H20 section. The source does not define whether the quantity is weights alone, loaded stages, runtime peak or whole-server footprint, so these are not measured per-card budgets.
 - The bottom arithmetic shows `40 ÷ 60 ≈ 67%` and `30 ÷ 60 = 50%`. A separate line warns that other data and unquantized parts also use memory, so bit counts alone do not produce the GB estimates.
-- BF16 loads thinker and talker AR as BF16. The FP8 checkpoint loads those two AR stages as FP8. The INT4 checkpoint quantizes the thinker transformer layers to 4 bits; talker AR and code2wav remain BF16.
-- The cookbook explicitly names code2wav's BF16 precision for INT4. The implementation also defaults omitted code2wav `dtype` to BF16, so all three precision panels show that default.
 
 ### Formula
 
@@ -235,6 +233,8 @@ These ratios come from approximate values.
 ### Boundaries and sources
 
 Off the stage, INT4 uses groups of 128 weights. Its approximate estimate is `30 ÷ 40 × 100% = 75%` of FP8, or 25% less. These details are not drawn on this slide.
+
+Off the stage, BF16 loads thinker and talker AR as BF16. The FP8 checkpoint loads those two AR stages as FP8. The INT4 checkpoint quantizes the thinker transformer layers to 4 bits; talker AR and code2wav remain BF16. The cookbook explicitly names code2wav's BF16 precision for INT4, and the implementation defaults omitted code2wav `dtype` to BF16.
 
 BF16 is the default. The FP8 checkpoint supplies its own precision config; `--dtype fp8` is not the selection mechanism (`docs/cookbook/qwen3_omni.md:153-169`; `sglang_omni/models/weight_loader.py:19-42`). The INT4 stage boundary and estimates are in `docs/cookbook/qwen3_omni.md:181-200`. Code2wav's default dtype is resolved in `components/code2wav_scheduler.py:146-154,1230-1260` and `sglang_omni/models/weight_loader.py:19-26`. Here and in Step 7, `components/` abbreviates sglang_omni/models/qwen3_omni/components/. The compatibility matrix permits each precision for text-only output, separate thinker/talker cards at TP1 or TP2, or one shared card at TP1 (`docs/cookbook/qwen3_omni.md:25-44`). The chapter does not claim a local memory, speed or accuracy measurement.
 

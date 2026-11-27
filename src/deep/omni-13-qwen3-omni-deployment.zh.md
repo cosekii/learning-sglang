@@ -201,17 +201,16 @@ $$
 
 显存也取决于 checkpoint 的精度，下一步对照 BF16、FP8 和 INT4。
 
-## 第 6 步 · bit 变少，各 stage 精度不同
+## 第 6 步 · bit 变少，文档估计变小
 
-> **一句话：** 三种 checkpoint 的文档估计约为 60、40、30 GB，而 INT4 的 talker AR 和 code2wav 仍用 BF16。
+> **一句话：** BF16、FP8 和 INT4 的文档估计约为 60、40、30 GB。
 
 ### 图上是什么
 
 - 精度是保存一个权重所用的 bit 数。权重是模型保存的一个数，一个 bit 是一个 0 或 1。
 - 三根蓝柱用同一比例画单卡 H100/H20 章节里约 60、40、30 GB 的估计。来源没有定义它量的是权重本身、加载的 stages、运行峰值还是整个服务器，因此不能当成实测单卡预算。
 - 底部的算式写出 `40 ÷ 60 ≈ 67%` 和 `30 ÷ 60 = 50%`。另一行说明其他数据和未量化部分也占显存，所以不能只按 bit 数算出这些 GB。
-- BF16 把 thinker 和 talker AR 加载为 BF16。FP8 checkpoint 把这两个 AR stage 加载为 FP8。INT4 checkpoint 对 thinker 的 transformer 层做 4 bit 量化；talker AR 和 code2wav 仍用 BF16。
-- 教程文档在 INT4 行明确写出 code2wav 使用 BF16；实现也在省略 code2wav `dtype` 时默认使用 BF16，所以三栏都标出这个默认值。
+
 
 ### 公式
 
@@ -235,6 +234,8 @@ $$
 ### 边界与出处
 
 图外的细节：INT4 每 128 个权重分成一组。它的估计值相对 FP8 是 `30 ÷ 40 × 100% = 75%`，即少 25%。这些内容没有画在本步舞台上。
+
+图外的 stage 边界：BF16 把 thinker 和 talker AR 加载为 BF16。FP8 checkpoint 把这两个 AR stage 加载为 FP8。INT4 checkpoint 对 thinker 的 transformer 层做 4 bit 量化；talker AR 和 code2wav 仍用 BF16。教程文档在 INT4 行明确写出 code2wav 使用 BF16；实现也在省略 code2wav `dtype` 时默认使用 BF16。
 
 BF16 是默认值。FP8 checkpoint 自带精度配置，`--dtype fp8` 不是选择机制（`docs/cookbook/qwen3_omni.md:153-169`；`sglang_omni/models/weight_loader.py:19-42`）。INT4 的 stage 边界与估计见 `docs/cookbook/qwen3_omni.md:181-200`。code2wav 的默认 dtype 见 `components/code2wav_scheduler.py:146-154,1230-1260` 和 `sglang_omni/models/weight_loader.py:19-26`。本步和第 7 步用 `components/` 缩写 sglang_omni/models/qwen3_omni/components/。兼容矩阵允许三种精度用于纯文字输出、thinker/talker 分卡的 TP1 或 TP2，以及同卡 TP1（`docs/cookbook/qwen3_omni.md:25-44`）。本章不声称本地显存、速度或准确率测量。
 

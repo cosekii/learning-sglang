@@ -85,8 +85,8 @@
     caption: 'The video test needs 85.7 GB on an 80 GB card. Moving the 8 GB talker leaves 77.7 GB.',
     captionZh: '视频测试需要 85.7 GB，显卡只有 80 GB。移走 8 GB 的 talker 后，剩 77.7 GB。',
   }, {
-    caption: 'Precision is the number of bits used to store each weight. INT4 roughly halves the BF16 estimate; its talker and code2wav stay BF16.',
-    captionZh: '精度是保存每个权重所用的 bit 数。INT4 约省一半，它的 talker 和 code2wav 仍用 BF16。',
+    caption: "Precision is the bits used to store each weight. INT4's estimate is half BF16's: 30 versus 60 GB.",
+    captionZh: '精度是保存每个权重所用的 bit 数。INT4 的估计是 30 GB，约为 BF16 60 GB 的一半。',
   }, {
     caption: 'Both panels keep 2 encoders + thinker on GPU 0; default adds code2wav there. Each code2wav process gets 32 slots by default, 64 with Replica2, not double throughput.',
     captionZh: '两图的 GPU 0 都有 2 encoders + thinker；默认还有 code2wav。code2wav 每进程默认 32 个状态位，replica2 每进程 64，吞吐未必翻倍。',
@@ -126,9 +126,9 @@
   ];
   const budgetX = (index: number, width: number, segments = budgetSegments) => segments.slice(0, index).reduce((sum, segment) => sum + segment.percent, 0) * width / 100;
   const precisionOptions = [
-    { name: 'BF16', bits: QWEN_BF16_BITS_PER_WEIGHT, memory: QWEN_BF16_ESTIMATED_MEMORY_GB, ratio: 100, stageA: 'thinker: BF16', stageAZh: 'thinker：BF16', stageB: 'talker AR: BF16 · code2wav: BF16 default', stageBZh: 'talker AR：BF16 · code2wav：默认 BF16' },
-    { name: 'FP8', bits: QWEN_FP8_BITS_PER_WEIGHT, memory: QWEN_FP8_ESTIMATED_MEMORY_GB, ratio: QWEN_FP8_MEMORY_OF_BF16_PERCENT, stageA: 'thinker: FP8', stageAZh: 'thinker：FP8', stageB: 'talker AR: FP8 · code2wav: BF16 default', stageBZh: 'talker AR：FP8 · code2wav：默认 BF16' },
-    { name: 'INT4', bits: QWEN_INT4_BITS_PER_WEIGHT, memory: QWEN_INT4_ESTIMATED_MEMORY_GB, ratio: QWEN_INT4_MEMORY_OF_BF16_PERCENT, stageA: 'thinker: INT4', stageAZh: 'thinker：INT4', stageB: 'talker AR + code2wav: BF16', stageBZh: 'talker AR + code2wav：BF16' },
+    { name: 'BF16', bits: QWEN_BF16_BITS_PER_WEIGHT, memory: QWEN_BF16_ESTIMATED_MEMORY_GB, ratio: 100 },
+    { name: 'FP8', bits: QWEN_FP8_BITS_PER_WEIGHT, memory: QWEN_FP8_ESTIMATED_MEMORY_GB, ratio: QWEN_FP8_MEMORY_OF_BF16_PERCENT },
+    { name: 'INT4', bits: QWEN_INT4_BITS_PER_WEIGHT, memory: QWEN_INT4_ESTIMATED_MEMORY_GB, ratio: QWEN_INT4_MEMORY_OF_BF16_PERCENT },
   ];
   const isCpuStage = (name: string) => name === 'preprocessing' || name === 'decode';
   const speechGpu0 = QWEN_SPEECH_DEFAULT_STAGE_PROCESSES.filter((stage) => stage.gpu === 0);
@@ -369,16 +369,12 @@
           {@const y = phone ? 120 + i * 205 : 130}
           {@const w = phone ? 270 : 210}
           <g opacity={phase >= i ? 1 : 0.12} style="transition: opacity 450ms">
-            <rect {x} {y} width={w} height={phone ? 180 : 320} rx="11" fill="var(--bg)" stroke="var(--line)" />
+            <rect {x} {y} width={w} height={phone ? 165 : 240} rx="11" fill="var(--bg)" stroke="var(--line)" />
             <text x={x + 15} y={y + 30} class="rowlabel">{option.name}</text>
             <text x={x + 15} y={y + (phone ? 51 : 58)} class="tag">{option.bits} bits / weight</text>
             <rect x={x + 15} y={y + (phone ? 67 : 85)} width={phase >= i ? option.memory / QWEN_BF16_ESTIMATED_MEMORY_GB * (w - 30) : 0} height={phone ? 32 : 42} rx="5" fill="var(--accent)" style="transition: width 700ms" />
             <text x={x + 15} y={y + (phone ? 123 : 157)} class="formula">≈ {option.memory} GB</text>
-            <text x={x + 15} y={y + (phone ? 148 : 207)} class="tag strong">{t(option.stageA, option.stageAZh)}</text>
-            <text x={x + 15} y={y + (phone ? 171 : 233)} class="tag">{t(option.stageB, option.stageBZh)}</text>
-            {#if !phone}
-              <text x={x + 15} y={y + 282} class="formula">{option.ratio.toFixed(0)}% {t('of BF16', 'BF16 的比例')}</text>
-            {/if}
+            <text x={x + 15} y={y + (phone ? 148 : 207)} class="formula">{option.ratio.toFixed(0)}% {t('of BF16', 'BF16 的比例')}</text>
           </g>
         {/each}
         <g opacity={phase >= 2 ? 1 : 0.12} style="transition: opacity 350ms">
@@ -386,7 +382,7 @@
           <text x={W / 2} y={phone ? 760 : 505} text-anchor="middle" class="tag">{phone ? t('bits ≠ GB: other data also uses memory', 'bit 数不等于 GB：其他数据也占显存') : t('bits do not make GB: other data and unquantized parts also use memory', 'bit 数不能直接算出 GB：其他数据和未量化部分也占显存')}</text>
           <text x={W / 2} y={phone ? 790 : 535} text-anchor="middle" class="formula">{phone ? t('60→40→30 GB · estimates', '60→40→30 GB · 仅估计') : t('60 → 40 → 30 GB · documentation estimates only', '60 → 40 → 30 GB · 仅为文档估计')}</text>
         </g>
-        <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{phone ? t('BF16 default · INT4 code2wav stays BF16', 'BF16 是默认 · INT4 的 code2wav 仍用 BF16') : t('BF16 is the default. INT4 also keeps code2wav BF16.', 'BF16 是默认值。INT4 的 code2wav 也仍是 BF16。')}</text>
+
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Not a per-card budget or quality measurement', '不是单卡预算或质量实测') : t('The source does not make these values a per-card budget; no local quality measurement.', '来源没有把这些数值定义为单卡预算；本地也没有质量实测。')}</text>
       {:else if step === 6}
         <text x={phone ? 15 : 20} y="24" class="rowlabel">{t(phone ? '4/5 · CAPACITY · MORE SPEECH COPIES' : '4 of 5 · CAPACITY · MORE SPEECH COPIES, EXPLICIT CAPACITY', phone ? '4/5 · 容量 · 更多语音副本' : '4/5 · 容量 · 更多语音副本，明确算容量')}</text>
