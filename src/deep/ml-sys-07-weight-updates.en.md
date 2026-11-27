@@ -152,7 +152,7 @@ Sources: `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-1.md:51-60,132-204`; `v
 ### On the stage
 
 - The two panels compare the same SGLang and KV allocation with either the whole training model or one bucket beside it. The shapes are schematic, not a byte-scale drawing.
-- `Bucket 1` is the only training-weight group restored in the right panel. Later buckets wait outside the GPU.
+- At first, `Bucket 1` is on the GPU and later buckets wait off the GPU. After SGLang finishes loading, `Bucket 1` is cleared. In the final phase, `Bucket 2` is on the GPU, so only one bucket occupies the temporary training-weight space.
 - The bottom order arranges the bucket for SGLang's loader before sending handles, then ends with `ray.get`, the call that waits for SGLang to finish loading, and `clear`. The sender releases the converted bucket copy only after that wait.
 
 ### Formula and symbols
