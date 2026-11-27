@@ -12,6 +12,9 @@
   const steps = [{
     caption: `In this example, ${DEMO_MEM_FRACTION_LOW.toFixed(2)} leaves KV ${Math.abs(DEMO_KV_LOW_GB)} GB short. Raising it to ${DEMO_MEM_FRACTION_HIGH.toFixed(2)} gives KV ${DEMO_KV_HIGH_GB} GB by shrinking dynamic headroom.`,
     captionZh: `例中，${DEMO_MEM_FRACTION_LOW.toFixed(2)} 让 KV 短缺 ${Math.abs(DEMO_KV_LOW_GB)} GB。调到 ${DEMO_MEM_FRACTION_HIGH.toFixed(2)} 后，KV 有 ${DEMO_KV_HIGH_GB} GB，动态余量缩小。`,
+  }, {
+    caption: `Startup loads the model, creates the KV pool, then allocates graph buffers. The buffers use headroom.`,
+    captionZh: `启动先装模型，再建 KV pool，最后分配 graph 缓冲。缓冲使用动态余量。`,
   }];
   let step = $state(0);
   $effect(() => {
@@ -34,7 +37,7 @@
       motion.removeEventListener('change', updateMotion);
     };
   });
-  const PHASE_COUNTS = [6];
+  const PHASE_COUNTS = [6, 5];
   const PHASE_MS = 1000, REST_MS = 2600;
   let phase = $state(0);
   let lap = $state(0), lapMs = $state(0);
@@ -56,7 +59,7 @@
     return () => timers.forEach(clearTimeout);
   });
   const cur = $derived(steps[step]);
-  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 0 ? 400 : 420) : 410);
+  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 0 ? 400 : 540) : (step === 0 ? 410 : 430));
   const barWidth = (gb: number, total: number) => gb / DEMO_PRE_MODEL_FREE_GB * total;
 </script>
 
@@ -160,69 +163,71 @@
           <text x="150" y="379" text-anchor="middle" class="label">{t('red=KV short · KV saves token history', '红=KV 短缺 · KV 保存 token 历史')}</text>
         </g>
       {/if}
-      {:else}
+      {:else if step === 1}
         {#if !phone}
-          <text x="40" y="28" class="title">{t('Beyond model and KV · where headroom goes', '模型和 KV 之外 · 动态余量去哪了')}</text>
-          <rect x="40" y="48" width="640" height="54" fill="var(--bg)" stroke="var(--line)" />
+          <text x="40" y="28" class="title">{t('Startup order · one 78 GB card', '启动顺序 · 同一张 78 GB 卡')}</text>
+          <rect x="40" y="48" width="640" height="54" fill="url(#headroom)" stroke="var(--line)" />
           <rect x="40" y="48" width={barWidth(DEMO_MODEL_LOAD_GB, 640)} height="54" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <rect x={40 + barWidth(DEMO_MODEL_LOAD_GB, 640)} y="48" width={barWidth(DEMO_KV_HIGH_GB, 640)} height="54" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <rect x={40 + barWidth(DEMO_MODEL_LOAD_GB + DEMO_KV_HIGH_GB, 640)} y="48" width={barWidth(DEMO_DYNAMIC_HIGH_GB, 640)} height="54" fill="url(#headroom)" stroke="var(--muted)" />
           <text x={40 + barWidth(DEMO_MODEL_LOAD_GB, 640) / 2} y="81" text-anchor="middle" class="barlabel">{t(`model ≈${DEMO_MODEL_LOAD_GB} GB`, `模型 ≈${DEMO_MODEL_LOAD_GB} GB`)}</text>
-          <text x={40 + barWidth(DEMO_MODEL_LOAD_GB + DEMO_KV_HIGH_GB / 2, 640)} y="81" text-anchor="middle" class="barlabel">{DEMO_KV_HIGH_GB}</text>
+          <g opacity={phase >= 1 ? 1 : 0} style="transition: opacity 300ms">
+            <rect x={40 + barWidth(DEMO_MODEL_LOAD_GB, 640)} y="48" width={barWidth(DEMO_KV_HIGH_GB, 640)} height="54" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x={40 + barWidth(DEMO_MODEL_LOAD_GB + DEMO_KV_HIGH_GB / 2, 640)} y="81" text-anchor="middle" class="barlabel">KV {DEMO_KV_HIGH_GB}</text>
+          </g>
           <text x={40 + barWidth(DEMO_MODEL_LOAD_GB + DEMO_KV_HIGH_GB + DEMO_DYNAMIC_HIGH_GB / 2, 640)} y="81" text-anchor="middle" class="barlabel">{DEMO_DYNAMIC_HIGH_GB}</text>
-          <text x="40" y="124" class="label">{t('same 78 GB · orange model · blue KV · gray headroom', '同一 78 GB 标尺 · 橙=模型 · 蓝=KV · 灰=动态余量')}</text>
-          <text x="680" y="124" text-anchor="end" class="derive">{DEMO_DYNAMIC_LOW_GB} → {DEMO_DYNAMIC_HIGH_GB} GB · {t('half', '减半')}</text>
+          <text x="40" y="124" class="label">{t('orange=model · blue=KV · gray=dynamic headroom', '橙=模型 · 蓝=KV · 灰=动态余量')}</text>
 
-          <rect x="40" y="145" width="300" height="160" rx="12" fill="var(--bg)" stroke="var(--line)" />
-          <text x="190" y="171" text-anchor="middle" class="fraction">{t('startup · CUDA Graph', '启动 · CUDA Graph')}</text>
-          <rect x="80" y="190" width="220" height="48" rx="7" fill="url(#headroom)" stroke="var(--muted)" />
-          <text x="190" y="220" text-anchor="middle" class="label">{t('buffers', 'buffers（缓冲）')}</text>
-          <path d="M190 242 v8" stroke="var(--muted)" stroke-width="2" />
-          <path d="M184 247 l6 7 6-7" fill="none" stroke="var(--muted)" stroke-width="2" />
-          <text x="190" y="274" text-anchor="middle" class="label">{t('record GPU steps once; replay them later', 'GPU 步骤先录下来，之后照着跑')}</text>
-          <text x="190" y="295" text-anchor="middle" class="label">{t('buffers keep their input / output data', '缓冲留着装这些计算的输入输出')}</text>
-
-          <rect x="380" y="145" width="300" height="160" rx="12" fill="var(--bg)" stroke="var(--line)" />
-          <text x="530" y="171" text-anchor="middle" class="fraction">{t('runtime · compute tokens', '运行 · 算 token')}</text>
-          <rect x="415" y="190" width="52" height="48" rx="6" fill="url(#headroom)" stroke="var(--muted)" />
-          <rect x="477" y="190" width="52" height="48" rx="6" fill="url(#headroom)" stroke="var(--muted)" />
-          <rect x="539" y="190" width="52" height="48" rx="6" fill="url(#headroom)" stroke="var(--muted)" />
-          <text x="617" y="220" class="label">…</text>
-          <text x="530" y="261" text-anchor="middle" class="label">{t('temporary, intermediate results', '临时的中间结果')}</text>
-          <text x="530" y="284" text-anchor="middle" class="label">{t('made while computing tokens', '算 token 时产生')}</text>
-
-          <text x="360" y="340" text-anchor="middle" class="formula budget">buffers + results ≤ {DEMO_DYNAMIC_HIGH_GB} GB</text>
-          <text x="360" y="369" text-anchor="middle" class="label">{t('Startup buffers stay; runtime results join them.', '启动的缓冲还在，运行时又产生临时结果。')}</text>
+          <rect x="40" y="160" width="170" height="105" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="125" y="190" text-anchor="middle" class="fraction">1 · model</text>
+          <text x="125" y="220" text-anchor="middle" class="number">≈{DEMO_MODEL_LOAD_GB} GB</text>
+          <text x="125" y="247" text-anchor="middle" class="label">{t('loaded first', '最先装入')}</text>
+          <g opacity={phase >= 1 ? 1 : 0} style="transition: opacity 300ms">
+            <path d="M215 212 h38" stroke="var(--fg)" stroke-width="3" /><path d="M253 212 l-10 -6 v12 z" fill="var(--fg)" />
+            <rect x="265" y="160" width="170" height="105" rx="11" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="350" y="190" text-anchor="middle" class="fraction">2 · KV pool</text>
+            <text x="350" y="220" text-anchor="middle" class="number">{DEMO_KV_HIGH_GB} GB</text>
+            <text x="350" y="247" text-anchor="middle" class="label">{t('created second', '第二步创建')}</text>
+          </g>
+          <g opacity={phase >= 2 ? 1 : 0} style="transition: opacity 300ms">
+            <path d="M440 212 h38" stroke="var(--fg)" stroke-width="3" /><path d="M478 212 l-10 -6 v12 z" fill="var(--fg)" />
+            <rect x="490" y="160" width="190" height="105" rx="11" fill="var(--bg)" stroke="var(--fg)" />
+            <text x="585" y="190" text-anchor="middle" class="fraction">3 · graph buffers G</text>
+            <text x="585" y="220" text-anchor="middle" class="label">{t('input + output space', '装输入输出的空间')}</text>
+            <text x="585" y="247" text-anchor="middle" class="label">{t('allocated last', '最后分配')}</text>
+          </g>
+          <g opacity={phase >= 3 ? 1 : 0} style="transition: opacity 300ms">
+            <path d="M585 155 v-35" stroke="var(--fg)" stroke-width="3" /><path d="M585 112 l-6 10 h12 z" fill="var(--fg)" />
+            <text x="360" y="306" text-anchor="middle" class="formula budget">G ⊂ {DEMO_DYNAMIC_HIGH_GB} GB headroom · G = ? GB</text>
+          </g>
+          <text x="360" y="358" text-anchor="middle" class="formula budget" opacity={phase >= 4 ? 1 : 0}>≈{DEMO_MODEL_LOAD_GB} + {DEMO_KV_HIGH_GB} + {DEMO_DYNAMIC_HIGH_GB} = {DEMO_PRE_MODEL_FREE_GB} GB</text>
         {:else}
-          <text x="20" y="25" class="title">{t('Where headroom goes', '动态余量去哪了')}</text>
-          <rect x="20" y="43" width="260" height="32" fill="var(--bg)" stroke="var(--line)" />
+          <text x="20" y="25" class="title">{t('Startup order', '启动顺序')}</text>
+          <rect x="20" y="43" width="260" height="32" fill="url(#headroom)" stroke="var(--line)" />
           <rect x="20" y="43" width={barWidth(DEMO_MODEL_LOAD_GB, 260)} height="32" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <rect x={20 + barWidth(DEMO_MODEL_LOAD_GB, 260)} y="43" width={barWidth(DEMO_KV_HIGH_GB, 260)} height="32" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <rect x={20 + barWidth(DEMO_MODEL_LOAD_GB + DEMO_KV_HIGH_GB, 260)} y="43" width={barWidth(DEMO_DYNAMIC_HIGH_GB, 260)} height="32" fill="url(#headroom)" stroke="var(--muted)" />
+          <g opacity={phase >= 1 ? 1 : 0} style="transition: opacity 300ms">
+            <rect x={20 + barWidth(DEMO_MODEL_LOAD_GB, 260)} y="43" width={barWidth(DEMO_KV_HIGH_GB, 260)} height="32" fill="var(--accent-soft)" stroke="var(--accent)" />
+          </g>
           <text x="150" y="96" text-anchor="middle" class="label">≈{DEMO_MODEL_LOAD_GB} + {DEMO_KV_HIGH_GB} + {DEMO_DYNAMIC_HIGH_GB} = {DEMO_PRE_MODEL_FREE_GB} GB</text>
-          <text x="150" y="113" text-anchor="middle" class="label">{t('orange=model · blue=KV · gray=headroom', '橙=模型 · 蓝=KV · 灰=动态余量')}</text>
-
-          <rect x="20" y="126" width="260" height="98" rx="10" fill="var(--bg)" stroke="var(--line)" />
-          <text x="150" y="148" text-anchor="middle" class="fraction">{t('startup · CUDA Graph', '启动 · CUDA Graph')}</text>
-          <rect x="55" y="160" width="190" height="27" rx="5" fill="url(#headroom)" stroke="var(--muted)" />
-          <text x="150" y="179" text-anchor="middle" class="label">{t('buffers', 'buffers（缓冲）')}</text>
-          <text x="150" y="204" text-anchor="middle" class="label">{t('record GPU steps once; replay later', 'GPU 步骤先录下，以后照着跑')}</text>
-          <text x="150" y="220" text-anchor="middle" class="label">{t('buffers keep their input / output data', '缓冲留着装这些计算的输入输出')}</text>
-
-          <rect x="20" y="234" width="260" height="92" rx="10" fill="var(--bg)" stroke="var(--line)" />
-          <text x="150" y="255" text-anchor="middle" class="fraction">{t('runtime · compute tokens', '运行 · 算 token')}</text>
-          <rect x="57" y="265" width="42" height="24" rx="5" fill="url(#headroom)" stroke="var(--muted)" />
-          <rect x="109" y="265" width="42" height="24" rx="5" fill="url(#headroom)" stroke="var(--muted)" />
-          <rect x="161" y="265" width="42" height="24" rx="5" fill="url(#headroom)" stroke="var(--muted)" />
-          <text x="225" y="284" class="label">…</text>
-          <text x="150" y="306" text-anchor="middle" class="label">{t('temporary, intermediate results', '临时的中间结果')}</text>
-          <text x="150" y="322" text-anchor="middle" class="label">{t('made while computing tokens', '算 token 时产生')}</text>
-
-          <text x="150" y="352" text-anchor="middle" class="formula budget">buffers + results ≤ {DEMO_DYNAMIC_HIGH_GB} GB</text>
-          <text x="150" y="378" text-anchor="middle" class="label">{t(`${DEMO_DYNAMIC_LOW_GB} → ${DEMO_DYNAMIC_HIGH_GB} GB · half`, `${DEMO_DYNAMIC_LOW_GB} → ${DEMO_DYNAMIC_HIGH_GB} GB · 减半`) }</text>
+          <text x="150" y="116" text-anchor="middle" class="label">{t('orange=model · blue=KV · gray=headroom', '橙=模型 · 蓝=KV · 灰=动态余量')}</text>
+          <rect x="20" y="135" width="260" height="72" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="150" y="162" text-anchor="middle" class="fraction">1 · model ≈{DEMO_MODEL_LOAD_GB} GB</text>
+          <text x="150" y="190" text-anchor="middle" class="label">{t('loaded first', '最先装入')}</text>
+          <g opacity={phase >= 1 ? 1 : 0} style="transition: opacity 300ms">
+            <path d="M150 212 v18" stroke="var(--fg)" stroke-width="3" /><path d="M150 235 l-6 -10 h12 z" fill="var(--fg)" />
+            <rect x="20" y="240" width="260" height="72" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="150" y="267" text-anchor="middle" class="fraction">2 · KV pool {DEMO_KV_HIGH_GB} GB</text>
+            <text x="150" y="295" text-anchor="middle" class="label">{t('created second', '第二步创建')}</text>
+          </g>
+          <g opacity={phase >= 2 ? 1 : 0} style="transition: opacity 300ms">
+            <path d="M150 317 v18" stroke="var(--fg)" stroke-width="3" /><path d="M150 340 l-6 -10 h12 z" fill="var(--fg)" />
+            <rect x="20" y="345" width="260" height="72" rx="10" fill="var(--bg)" stroke="var(--fg)" />
+            <text x="150" y="372" text-anchor="middle" class="fraction">3 · graph buffers G</text>
+            <text x="150" y="400" text-anchor="middle" class="label">{t('input + output space · allocated last', '装输入输出 · 最后分配')}</text>
+          </g>
+          <text x="150" y="452" text-anchor="middle" class="formula budget" opacity={phase >= 3 ? 1 : 0}>G ⊂ {DEMO_DYNAMIC_HIGH_GB} GB · G = ? GB</text>
+          <text x="150" y="494" text-anchor="middle" class="label" opacity={phase >= 4 ? 1 : 0}>{t('model → KV pool → graph buffers', '模型 → KV pool → graph 缓冲')}</text>
         {/if}
       {/if}
-      <text x={W / 2} y={H - 7} text-anchor="middle" class="footnote">{step === 0 ? t('Rounded example; headroom is a reserve.', '约数例子；动态余量只是预留。') : t(`Two uses; schematic shares, not ${DEMO_DYNAMIC_HIGH_GB} GB each.`, `只画两类；示意份额，并非各有 ${DEMO_DYNAMIC_HIGH_GB} GB。`)}</text>
+      <text x={W / 2} y={H - 7} text-anchor="middle" class="footnote">{step === 0 ? t('Rounded example; headroom is a reserve.', '约数例子；动态余量只是预留。') : t('G has no measured GB value in this example.', '本例没有 G 的实测 GB 数。')}</text>
     </svg>
   </div>
   <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh}

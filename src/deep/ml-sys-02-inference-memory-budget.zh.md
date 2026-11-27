@@ -71,3 +71,48 @@ SGLang 在分布式初始化后、模型装入前读取 `pre_model_load_memory`�
 ### 接下来
 
 下一步沿着 0.85 的成功启动顺序，依次看模型、KV pool 和 CUDA Graph 缓冲怎样进入同一张卡。
+
+## 第 2 步 · 启动顺序
+
+**一句话。** SGLang 先装模型，再建 KV pool，最后在剩下的动态余量里分配 CUDA Graph 的输入输出缓冲。
+
+### 图上是什么
+
+- 顶部沿用第 1 步 0.85 的成功预算，仍是同一把 78 GB 标尺：橙色模型约 60 GB，蓝色 KV 为 6.3 GB，灰色动态余量为 11.7 GB。
+- 三张卡按执行顺序出现。模型装入完成后才创建 KV pool，graph 缓冲分配又在 KV pool 之后。
+- `G` 表示 CUDA Graph 的输入输出缓冲。指向灰色区域的箭头说明缓冲使用动态余量，不表示它们独占全部 11.7 GB。
+- 本例没有测量 `G` 的大小，所以图上写 `G = ? GB`，不编一个分项数值。
+
+### 公式与符号
+
+这张卡的约数预算是 $M+K+R=P$。graph 缓冲是 $R$ 的一种用途，分配后满足 $0<G\le R$。
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $P$ | 装入模型前的当前可用显存 | 第 1 步；78 GB |
+| $M$ | 模型装入前后减少的可用显存 | 第 1 步；约 60 GB |
+| $K$ | KV pool 分到的空间 | 第 1 步；0.85 时为 6.3 GB |
+| $R$ | 动态余量 | 第 1 步；0.85 时为 11.7 GB |
+| $G$ | CUDA Graph 输入输出缓冲 | 本步；没有实测大小 |
+
+### 代入图上的数
+
+$$M+K+R\approx60+6.3+11.7=78\ \mathrm{GB}$$
+
+包含关系写成 $G\le11.7\ \mathrm{GB}$。它是预算边界，不是实测值，也不是 allocator 单独强制执行的配额。
+
+### 源码顺序与边界
+
+`ModelRunner` 先装入模型，再初始化 KV pool，之后初始化 device graph。`CudaGraphRunner` 分配 capture 使用的输入缓冲。下一步把「分配缓冲」与「记录计算」分开看。
+
+以下来源位于 `sglang@4fa3482`：
+
+- [模型、KV pool、device graph 的初始化顺序：`python/sglang/srt/model_executor/model_runner.py:567-569,656-677,709-726`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner.py#L709-L726)。
+- [capture 输入缓冲的分配：`python/sglang/srt/model_executor/cuda_graph_runner.py:624-655`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L624-L655)。
+- [权重与 KV pool 和激活与 graph buffers 的分类：`python/sglang/srt/server_args.py:1227-1238`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/server_args.py#L1227-L1238)。
+
+本步不测量缓冲字节，也不展开临时 workspace、多模态预留和其他进程。
+
+### 接下来
+
+下一步记录一张 graph，看这次记录使用哪些缓冲。
