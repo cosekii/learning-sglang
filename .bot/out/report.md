@@ -120,6 +120,24 @@
 
 ---
 
+# lane d 本轮报告 · Voxt 10 displayed Step 2 机制动画
+
+日期：2026-11-27。类型：新步（复审指定的下一最小单元，一个 Step 一个提交；Step 1 的 P2 按 TASK 顺序继续押后）。改动只有 `FileTranscription.svelte` 的 Step 2（组件内 step 1）动画与生成 transcript；caption、deep、MDX、数字均未改，其余步、章、书、`.bot/memory/` 和第 1 本受保护英文原文未动。
+
+## 提交
+
+- `17f43dc`：**Voxt 10 displayed Step 2 机制动画完成，待协调固定复审，不自行销项。** Step 2 原为静态图，现按 Step 1 同款模式循环四相：构造的 `talk.m4a`（8 s）→ Mac 声音工具（16 kHz · 单声道 · 16 位）→ `audio.wav` 与字节算式（8 × 16,000 × 2 = 256,000 B，+44 B 头 = 256,044 B）→ 大小比较（约 256 KB 小于一张手机照片；一小时 115.2 MB ≈ 29 张）。桌面与手机分支同相序；`phase` 效果由只跑 Step 1 改为按 `STEP_PHASES` 驱动 Step 1／2，`data-animation-step/phase/final-phase` 同步；reduced motion 停在末相。推送前 rebase 到 k2 `4bae53e` 之上，未 force-push。
+
+## 硬门与证据
+
+- `npm run build` **60 页**通过；`BOOK=voxt ONLY=10 STEP=2 npm run readability` **0 机械问题**；`deep-check 10`、英中全章 360／390／430 px `mobile`、`STEP=2 LANG=zh` 中文字号门、`zh-check`（`all clear`）全过；transcript 重生成，Step 2 新增 `loops` 行、末相内容完整，无 caption／出界／重叠报告。
+- 机制矩阵（DOM，无图像输入）：英文桌面直接 `?step=2`、中文桌面直接、中文 390×844 直接、英文桌面前步经 Next 进入，共 **4 组 × 2 状态**。四组均为 phase 1（只有文件＋转换器）与 phase 3（`audio.wav`＋字节算式＋照片比较）两个不同机制状态，counter 均 `02 / 11`。探针脚本 `/tmp/ls-d-probe4.mjs`。
+- 截图存档（未能读取）：`/tmp/ls-d-s2/en-early.png`、`en-final.png`、`zh-final.png`、`zh-390.png`。环境同上轮（临时 `vite.cacheDir`＋preview 4489，提交前已还原 `astro.config.mjs`）。**未声称看过图片或视觉通过；未跑全站回归、真实 Voxt 或主人最终验收。**
+
+## 剩余
+
+- Step 1 的 P2（115.2 MB 可感比较、decoded 白话）按 TASK 顺序排在新步之后；下一单元为 Voxt 10 displayed Step 3。
+
 # lane d 本轮报告 · Voxt 10 Step 1 P1 修复补完（hook、输入扩展名、输出措辞）
 
 日期：2026-11-27。类型：修旧（复审指出 `da08045` 审计面过窄后的补完）。改动只有 `src/voxt/chapters.ts` 的 hook、`FileTranscription.svelte` 的 Step 1、双语 deep 第 1 步、生成 transcript 和本报告；其余步、章、书、`.bot/memory/` 和第 1 本受保护英文原文未改。
