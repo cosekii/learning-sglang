@@ -352,19 +352,19 @@ Resolve the configuration with `sgl-omni config resolve --config <config.yaml> -
 
 The final step applies this method to one eight-request BF16/FP8 comparison.
 
-## Step 10 · One deployment decision sheet
+## Step 10 · The first A/B changes precision only
 
-> **In one line:** An eight-request example starts with default BF16 speech and an isolated talker, then keeps or changes that choice only from recorded evidence.
+> **In one line:** An eight-request example holds the default BF16 speech layout fixed, compares only BF16 with native FP8, and decides from the recorded evidence.
 
 ### On the stage
 
-- The goal is eight concurrent spoken requests with earlier first audio.
-- The starting route requests text and audio from the default speech graph. BF16 is the initial checkpoint because it is the default, not because this chapter measured it as best. The precision row tests FP8 first. INT4 needs separate memory and quality evidence and is not part of this first A/B.
-- GPU 0 holds the input encoders, thinker and code2wav; GPU 1 holds the talker. This TP1 starting hypothesis is motivated by Step 3's different H200/TP2 experiment and requires a local precision A/B with this layout fixed.
-- The talker cap has 24 requests of headroom after subtracting the example's eight requests. No second pair is added before a queue is measured.
-- Both evidence arms keep the same two-GPU TP1 hardware, request route, code2wav placement and isolated talker. Arm A uses the default BF16 checkpoint; arm B uses the native FP8 checkpoint, changing only checkpoint precision. The row limits this first comparison to BF16 and FP8 at `c = 8`, with total time, memory and raw results. The decision procedure below adds failures and listener metrics. For an odd number of results, the median is the middle first-audio value; for an even number, it is the mean of the two middle values. The stage defines this as the middle result. Custom p90 means our own 90% cutoff, calculated by the off-stage procedure below rather than the shipped summary. Ch. 8 Step 8 supplies separate output-quality checks where applicable.
-- The bottom map reviews Chapters 1–12: Chapters 1–3 cover configuration, routes and binding; 4–6 waiting rules, data and queues; 7–8 memory and measurement; 9–12 optimization and model strategies.
-- The closing line defines `queued audio` as sound waiting in the API process for the client to read, then asks what happens when that reader is too slow.
+- The goal is eight concurrent spoken requests with earlier first audio. The fixed route requests text and audio from the default speech graph.
+- The fixed placement keeps input encoders, thinker and code2wav on GPU 0 and the talker on GPU 1. This two-GPU TP1 starting hypothesis is motivated by Step 3's different H200/TP2 experiment.
+- The fixed capacity leaves `32 − 8 = 24` requests of talker-cap headroom. No second pair is added before a queue is measured.
+- The first A/B changes only checkpoint precision. Choice A uses the default BF16 checkpoint; choice B uses the native FP8 checkpoint. Both use the same TP1 layout at `c = 8`. Five repeats make five runs per choice. INT4 needs separate memory and quality evidence and is not part of this A/B.
+- The first-audio record uses the median and a custom p90. For an odd number of results, the median is the middle first-audio value; for an even number, it is the mean of the two middle values. The stage calls it the middle result. Custom p90 means our own 90% cutoff, calculated by the off-stage procedure below rather than the shipped summary.
+- The other records are total time, playback stalls, failures, memory and raw per-run results. Output-quality checks run separately, following Ch. 8 Step 8; they sit outside generate-only.
+- The decision rule compares all records before keeping BF16 or switching to FP8. Any later change needs another comparison. No local model run has produced a measured winner. The closing line defines `queued audio` as sound waiting in the API process for the client to read, then asks what happens when that reader is too slow.
 
 ### Formula
 
@@ -388,7 +388,7 @@ This headroom sits below the configured cap. It is not measured spare throughput
 
 ### Decision boundary
 
-This is a constructed TP1 starting hypothesis from H200/TP2 evidence, not a benchmark winner. INT4 is outside this first A/B; the chapter neither rejects it nor claims to have measured it. First resolve the configuration and run readiness. Then compare BF16 with native FP8 while holding the starting layout and Step 9's other controls fixed at target concurrency 8. With only `c = 8`, five repeats give five runs per arm. Off the stage, the shipped summary provides first-audio median, p95 and p99. For the custom p90 named on this slide, apply `numpy.percentile(..., 90)` to non-null `per_request.audio_ttfp_s` values from successful streaming requests, separately for each arm at `c = 8` (`benchmarks/metrics/performance.py:219-223,480`). Keep separate first-audio, total-time and listener results, and run the output-quality checks outside the generate-only sweep. Change a choice only after the records identify a problem to solve, which may be memory or quality rather than waiting.
+This is a constructed TP1 starting hypothesis from H200/TP2 evidence, not a benchmark winner. INT4 is outside this first A/B; the chapter neither rejects it nor claims to have measured it. First resolve the configuration and run readiness. Then compare BF16 with native FP8 while holding the starting layout and Step 9's other controls fixed at target concurrency 8. With only `c = 8`, five repeats give five runs per arm. Off the stage, the shipped summary provides first-audio median, p95 and p99. For the custom p90 named on this slide, apply `numpy.percentile(..., 90)` to non-null `per_request.audio_ttfp_s` values from successful streaming requests, separately for each arm at `c = 8` (`benchmarks/metrics/performance.py:219-223,480`). Keep separate first-audio, total-time and listener results, and run the output-quality checks outside the generate-only sweep. Compare all records before keeping BF16 or switching to FP8; memory or quality can outweigh a first-audio gain. Retest after any later change.
 
 ### Next
 
