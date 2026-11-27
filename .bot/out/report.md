@@ -1,3 +1,26 @@
+# lane d 本轮报告 · Voxt 08／11 评分卡同步到固定复审
+
+日期：2026-11-27。类型：修旧（记录同步）。本轮开始 HEAD 与 `origin/tutorials` 均为 `e7511b2`，工作树干净。范围只有 `memory/scores/inside-voxt/personal-dictionary.md`、`memory/scores/inside-voxt/models-and-app-updates.md` 与本报告；未改教程源码、transcript、`.bot/memory/`、其他书或第 1 本受保护英文原文。最新回归只有 `(exit 13)`，按 direction 没有可分配布局步骤，未据此返工。
+
+## 本轮修复的 review finding
+
+- **评分卡同步项（review.md 多次列为 [d] 开放项）。** Voxt 08 评分卡原仍记「完整 EVAL NO-GO、字号 P0 待复审」，已同步为协调固定 `bb70918` 的 verdict：R1–R5 70/70、原十项 140/140、静态 R6 14/14、原 #4/#5 28/28、原十二项 168/168、机制 R6 14/14、未决内容洞 0，**本章 GO**；主人最终视觉与真实 Voxt 产品验收另计。后续 `17b8c38` 性能 deep 增量已经固定 `5dce1be` 复核 GO、不改章分，一并记录。
+- **同上。** Voxt 11 评分卡原仍记「机制 11/12、Step 5 冻结待复审、原十二项 143/144」，已同步为协调固定 `26941bb` 的 verdict：Step 5 GO，机制 R6 **12/12**（逐步 2、2、2、2、2、2），原十二项 **144/144**；R1–R5 保持 **54/60**，整章仍因易读基线 **NO-GO**，不记整章完成。同步只采用协调已发布的 verdict，不采用作者自评。
+- **Voxt 08 报告句记录项（review.md:1010）：已在此前一轮改毕**（本文件历史：「教程提交 `bb70918` 与报告提交 `b233fbe` 两笔分开」），本轮复核无需再改，仅登记关闭。
+
+## 逐项核对后无可行动项的开放 finding
+
+- Voxt 10 `04ded697` 复审的 Step 9 公式、中文第 9／11 步深入讲解结构、ARIA 收窄与评分卡同步，已由 `bdd5d78`／`5ea23fe`／`8790312` 修毕并写入评分卡待复审；本轮逐条对照当前树确认修复在位（双语公式三分支、中文结构、ARIA 只问模型文件、`cutter.go:199` 出处、MDX 无「应用更新」措辞）。
+- Voxt 10 机制 R6 0/22：displayed Step 1 的 `bd884d2` 按 direction 冻结等固定复审；Steps 2–11 的机制动画（含复审后指定的 displayed Step 2）在复审指定前不开，不重做已冻结内容，也不追加 freeze／wait 报告。
+- Voxt 11 无剩余开放项；Voxt 08 无剩余开放项。Voxt 12 排在性能谱系与 P0 清理之后，lane d 暂停新写作，本轮不开。
+
+## 验证与边界
+
+- 无教程源码 diff，未跑硬门（评分卡在构建外）；`git diff --check` 通过。未启动 dev server 或浏览器。
+- 本轮不是 freeze／wait 报告：含两处评分卡实质同步。不改任何协调分数、不销任何队列行、不改变 `bd884d2` 与其他线的冻结状态。
+
+---
+
 # lane k2 本轮报告 · ML Systems 10 Step 8 R2 与 Step 9 ML-19
 
 日期：2026-11-27。类型：修旧（direction 在两个 P0 之后指定的 ML-19，同章 Step 8 的 R2 一并完成）。本轮开始 HEAD 与 `origin/tutorials` 均为 `1617877`，工作树干净。范围只有 ML 10 Steps 8–9、对应双语 deep、MDX 出处、规划、生成 transcript、本章评分卡与进度记录、定向审计和本报告；未改其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。此前的 ML-45／46 已在 `c4ab9c8`／`d9b4ede` 完成本轮前修复，未重做。
