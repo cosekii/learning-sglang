@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import StepControls from '../StepControls.svelte';
+  import LoopProgress from '../LoopProgress.svelte';
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
@@ -64,7 +65,7 @@
     foot: 'FP8 holds a finite set of values; 176 is the nearest to 179.2.',
     footZh: 'FP8 只能保存一组离散数值；176 最接近 179.2。',
     legend: 'Orange = high-precision values · blue = FP8 values · dashed = scale', legendZh: '橙 = 高精度数值 · 蓝 = FP8 数值 · 虚线 = scale',
-    flow: true, desktopH: 560,
+    flow: true, desktopH: 540,
     nodes: [
       { title: 'ORIGINAL', titleZh: '原数', result: '[1, 3.2, 8]', resultZh: '[1, 3.2, 8]', body: 'one group', bodyZh: '一组三个数', tone: 'orange', compact: true },
       { title: 'SCALE', titleZh: 'SCALE', result: '8 ÷ 448 = 1/56', resultZh: '8 ÷ 448 = 1/56', body: 'largest ÷ 448', bodyZh: '最大绝对值 ÷ 448', tone: 'plain', compact: true },
@@ -192,7 +193,7 @@
     foot: 'InfiR2 public non-RL row; exact configuration is in the deep dive.',
     footZh: 'InfiR2 公开非 RL 一行；精确配置见深入讲解。',
     legend: 'Orange = BF16 · blue = FP8 · time and memory each use one shared scale', legendZh: '橙 = BF16 · 蓝 = FP8 · 时间和显存各自使用同一比例',
-    measure: true, desktopH: 590,
+    measure: true, desktopH: 540,
     nodes: [
       { title: 'TIME · BF16', titleZh: '时间 · BF16', result: `${N.FP8_PUBLIC_TOTAL_BF16_MS.toLocaleString('en-US')} ms`, resultZh: `${N.FP8_PUBLIC_TOTAL_BF16_MS.toLocaleString('en-US')} ms`, body: `${N.FP8_PUBLIC_FORWARD_BF16_MS} + ${N.FP8_PUBLIC_BACKWARD_BF16_MS.toLocaleString('en-US')} ms`, bodyZh: `${N.FP8_PUBLIC_FORWARD_BF16_MS} + ${N.FP8_PUBLIC_BACKWARD_BF16_MS.toLocaleString('en-US')} ms`, tone: 'orange', bar: 1 },
       { title: 'TIME · FP8', titleZh: '时间 · FP8', result: `${N.FP8_PUBLIC_TOTAL_FP8_MS.toLocaleString('en-US')} ms`, resultZh: `${N.FP8_PUBLIC_TOTAL_FP8_MS.toLocaleString('en-US')} ms`, body: `${N.FP8_PUBLIC_FORWARD_FP8_MS} + ${N.FP8_PUBLIC_BACKWARD_FP8_MS.toLocaleString('en-US')} ms`, bodyZh: `${N.FP8_PUBLIC_FORWARD_FP8_MS} + ${N.FP8_PUBLIC_BACKWARD_FP8_MS.toLocaleString('en-US')} ms`, tone: 'blue', bar: N.FP8_PUBLIC_TOTAL_FP8_MS / N.FP8_PUBLIC_TOTAL_BF16_MS },
@@ -295,12 +296,41 @@
     if (q >= 1 && q <= steps.length) step = q - 1;
   });
   let phone = $state(false);
+  let reduceMotion = $state(false);
   onMount(() => {
     const query = window.matchMedia('(max-width: 600px)');
+    const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
     const update = () => (phone = query.matches);
+    const updateMotion = () => (reduceMotion = motion.matches);
     update();
+    updateMotion();
     query.addEventListener('change', update);
-    return () => query.removeEventListener('change', update);
+    motion.addEventListener('change', updateMotion);
+    return () => {
+      query.removeEventListener('change', update);
+      motion.removeEventListener('change', updateMotion);
+    };
+  });
+  const PHASE_COUNTS = [3, 5, 4, 4, 4, 5, 4, 3];
+  const PHASE_MS = 1000, REST_MS = 2800;
+  let phase = $state(0);
+  let lap = $state(0), lapMs = $state(0);
+  const nextLap = (ms: number) => untrack(() => { lapMs = ms; lap++; });
+  $effect(() => {
+    const count = PHASE_COUNTS[step];
+    phase = 0;
+    if (reduceMotion) { phase = count - 1; return; }
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const run = () => {
+      timers.length = 0;
+      phase = 0;
+      for (let i = 1; i < count; i++) timers.push(setTimeout(() => (phase = i), i * PHASE_MS));
+      const ms = count * PHASE_MS + REST_MS;
+      timers.push(setTimeout(run, ms));
+      nextLap(ms);
+    };
+    run();
+    return () => timers.forEach(clearTimeout);
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
@@ -312,9 +342,10 @@
   const nodeX = (i: number, count: number) => count === 2 ? 65 + i * 330 : count === 3 ? 35 + i * 225 : 25 + i * 175;
 </script>
 
-<figure class="viz">
+<figure class="viz" data-animation-step={step} data-animation-phase={phase} data-animation-final-phase={PHASE_COUNTS[step] - 1}>
   <div class="canvas">
     <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={$lang === 'zh' ? cur.captionZh : cur.caption}>
+      {#if !reduceMotion}<LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={4} />{/if}
       <defs>
         <marker id="fp8-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
           <path d="M0,0 L8,4 L0,8 z" fill="var(--line)" />
@@ -326,60 +357,74 @@
       {#if phone}
         {#each cur.nodes as node, i}
           {@const y = start + i * 96}
-          <rect x="25" y={y} width="250" height="80" rx="11" fill={fill(node.tone)} stroke={stroke(node.tone)} />
-          <text x="150" y={y + 20} text-anchor="middle" class="small strong">{t(node.title, node.titleZh)}</text>
-          <text x="150" y={y + 43} text-anchor="middle" class={node.compact ? 'small' : 'result'}>{t(node.result, node.resultZh)}</text>
-          <text x="150" y={y + 64} text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
-          {#if node.bar !== undefined}
-            <rect x="35" y={y + 72} width="230" height="5" rx="2" fill="var(--bg)" />
-            <rect x="35" y={y + 72} width={230 * node.bar} height="5" rx="2" fill={stroke(node.tone)} />
-          {/if}
-          {#if cur.flow && i < cur.nodes.length - 1}
-            <line x1="150" y1={y + 80} x2="150" y2={y + 92} stroke="var(--line)" stroke-width="2.5" marker-end="url(#fp8-arrow)" />
-          {/if}
+          <g opacity={phase >= i ? 1 : 0}>
+            <rect x="25" y={y} width="250" height="80" rx="11" fill={fill(node.tone)} stroke={stroke(node.tone)} />
+            <text x="150" y={y + 20} text-anchor="middle" class="small strong">{t(node.title, node.titleZh)}</text>
+            <text x="150" y={y + 43} text-anchor="middle" class={node.compact ? 'small' : 'result'}>{t(node.result, node.resultZh)}</text>
+            <text x="150" y={y + 64} text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
+            {#if node.bar !== undefined}
+              <rect x="35" y={y + 72} width="230" height="5" rx="2" fill="var(--bg)" />
+              <rect x="35" y={y + 72} width={230 * node.bar} height="5" rx="2" fill={stroke(node.tone)} />
+            {/if}
+            {#if cur.flow && i < cur.nodes.length - 1}
+              <line x1="150" y1={y + 80} x2="150" y2={y + 92} stroke="var(--line)" stroke-width="2.5" marker-end="url(#fp8-arrow)" opacity={phase > i ? 1 : 0} />
+            {/if}
+          </g>
         {/each}
-        {#each formulas as line, i}
-          <text x="150" y={start + cur.nodes.length * 96 + 15 + i * 27} text-anchor="middle" class={i === 0 ? 'result' : 'small'}>{t(line.en, line.zh)}</text>
-        {/each}
-        <text x="150" y={legendY} text-anchor="middle" class="small">{t(cur.mobile?.legend ?? cur.legend, cur.mobile?.legendZh ?? cur.legendZh)}</text>
+        <g opacity={phase >= PHASE_COUNTS[step] - 1 ? 1 : 0}>
+          {#each formulas as line, i}
+            <text x="150" y={start + cur.nodes.length * 96 + 15 + i * 27} text-anchor="middle" class={i === 0 ? 'result' : 'small'}>{t(line.en, line.zh)}</text>
+          {/each}
+          <text x="150" y={legendY} text-anchor="middle" class="small">{t(cur.mobile?.legend ?? cur.legend, cur.mobile?.legendZh ?? cur.legendZh)}</text>
+        </g>
       {:else if cur.measure}
         {#each [0, 2] as group}
           {@const x = group === 0 ? 35 : 375}
-          <rect x={x} y="90" width="310" height="240" rx="13" fill="var(--bg)" stroke="var(--line)" />
-          <text x={x + 155} y="122" text-anchor="middle" class="section">{group === 0 ? t('TOTAL TIME', '总时间') : t('PEAK MEMORY', '峰值显存')}</text>
-          {#each [0, 1] as offset}
-            {@const node = cur.nodes[group + offset]}
-            {@const y = 151 + offset * 82}
-            <text x={x + 20} y={y} class="small strong">{t(node.title, node.titleZh)}</text>
-            <rect x={x + 20} y={y + 12} width="270" height="27" rx="5" fill="var(--bg)" stroke="var(--line)" />
-            <rect x={x + 20} y={y + 12} width={270 * (node.bar ?? 1)} height="27" rx="5" fill={fill(node.tone)} stroke={stroke(node.tone)} />
-            <text x={x + 155} y={y + 32} text-anchor="middle" class="result">{t(node.result, node.resultZh)}</text>
+          <g opacity={phase >= group ? 1 : 0}>
+            <rect x={x} y="90" width="310" height="240" rx="13" fill="var(--bg)" stroke="var(--line)" />
+            <text x={x + 155} y="122" text-anchor="middle" class="section">{group === 0 ? t('TOTAL TIME', '总时间') : t('PEAK MEMORY', '峰值显存')}</text>
+            {#each [0, 1] as offset}
+              {@const node = cur.nodes[group + offset]}
+              {@const y = 151 + offset * 82}
+              <g opacity={phase >= group + offset ? 1 : 0}>
+                <text x={x + 20} y={y} class="small strong">{t(node.title, node.titleZh)}</text>
+                <rect x={x + 20} y={y + 12} width="270" height="27" rx="5" fill="var(--bg)" stroke="var(--line)" />
+                <rect x={x + 20} y={y + 12} width={270 * (node.bar ?? 1)} height="27" rx="5" fill={fill(node.tone)} stroke={stroke(node.tone)} />
+                <text x={x + 155} y={y + 32} text-anchor="middle" class="result">{t(node.result, node.resultZh)}</text>
+              </g>
+            {/each}
+          </g>
+        {/each}
+        <g opacity={phase >= PHASE_COUNTS[step] - 1 ? 1 : 0}>
+          {#each cur.formulas as line, i}
+            <text x="360" y={320 + i * 29} text-anchor="middle" class={i === 0 ? 'result' : 'small'}>{t(line.en, line.zh)}</text>
           {/each}
-        {/each}
-        {#each cur.formulas as line, i}
-          <text x="360" y={350 + i * 29} text-anchor="middle" class={i === 0 ? 'result' : 'small'}>{t(line.en, line.zh)}</text>
-        {/each}
-        <text x="360" y={H - 55} text-anchor="middle" class="small">{t(cur.legend, cur.legendZh)}</text>
+          <text x="360" y={H - 55} text-anchor="middle" class="small">{t(cur.legend, cur.legendZh)}</text>
+        </g>
       {:else}
         {#each cur.nodes as node, i}
           {@const w = nodeW(cur.nodes.length)}
           {@const x = nodeX(i, cur.nodes.length)}
-          <rect x={x} y="105" width={w} height="160" rx="12" fill={fill(node.tone)} stroke={stroke(node.tone)} stroke-dasharray={node.tone === 'plain' ? '5 4' : '0'} />
-          <text x={x + w / 2} y="137" text-anchor="middle" class="small strong">{t(node.title, node.titleZh)}</text>
-          <text x={x + w / 2} y="180" text-anchor="middle" class={node.compact ? 'small' : 'result'}>{t(node.result, node.resultZh)}</text>
-          <text x={x + w / 2} y={node.bar === undefined ? 222 : 211} text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
-          {#if node.bar !== undefined}
-            <rect x={x + 10} y="237" width={w - 20} height="10" rx="3" fill="var(--bg)" />
-            <rect x={x + 10} y="237" width={(w - 20) * node.bar} height="10" rx="3" fill={stroke(node.tone)} />
-          {/if}
-          {#if cur.flow && i < cur.nodes.length - 1}
-            <line x1={x + w} y1="185" x2={nodeX(i + 1, cur.nodes.length)} y2="185" stroke="var(--line)" stroke-width="2.5" marker-end="url(#fp8-arrow)" />
-          {/if}
+          <g opacity={phase >= i ? 1 : 0}>
+            <rect x={x} y="105" width={w} height="160" rx="12" fill={fill(node.tone)} stroke={stroke(node.tone)} stroke-dasharray={node.tone === 'plain' ? '5 4' : '0'} />
+            <text x={x + w / 2} y="137" text-anchor="middle" class="small strong">{t(node.title, node.titleZh)}</text>
+            <text x={x + w / 2} y="180" text-anchor="middle" class={node.compact ? 'small' : 'result'}>{t(node.result, node.resultZh)}</text>
+            <text x={x + w / 2} y={node.bar === undefined ? 222 : 211} text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
+            {#if node.bar !== undefined}
+              <rect x={x + 10} y="237" width={w - 20} height="10" rx="3" fill="var(--bg)" />
+              <rect x={x + 10} y="237" width={(w - 20) * node.bar} height="10" rx="3" fill={stroke(node.tone)} />
+            {/if}
+            {#if cur.flow && i < cur.nodes.length - 1}
+              <line x1={x + w} y1="185" x2={nodeX(i + 1, cur.nodes.length)} y2="185" stroke="var(--line)" stroke-width="2.5" marker-end="url(#fp8-arrow)" opacity={phase > i ? 1 : 0} />
+            {/if}
+          </g>
         {/each}
-        {#each cur.formulas as line, i}
-          <text x="360" y={320 + i * 29} text-anchor="middle" class={i === 0 ? 'result' : 'small'}>{t(line.en, line.zh)}</text>
-        {/each}
-        <text x="360" y={H - 55} text-anchor="middle" class="small">{t(cur.legend, cur.legendZh)}</text>
+        <g opacity={phase >= PHASE_COUNTS[step] - 1 ? 1 : 0}>
+          {#each cur.formulas as line, i}
+            <text x="360" y={320 + i * 29} text-anchor="middle" class={i === 0 ? 'result' : 'small'}>{t(line.en, line.zh)}</text>
+          {/each}
+          <text x="360" y={H - 55} text-anchor="middle" class="small">{t(cur.legend, cur.legendZh)}</text>
+        </g>
       {/if}
       <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t(cur.mobile?.foot ?? cur.foot, cur.mobile?.footZh ?? cur.footZh) : t(cur.foot, cur.footZh)}</text>
     </svg>
