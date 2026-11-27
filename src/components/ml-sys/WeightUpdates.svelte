@@ -8,7 +8,7 @@
   import { UPDATE_DEBUG_BF16_BYTES, UPDATE_DEBUG_WEIGHT_GB, UPDATE_DEBUG_INITIAL_S, UPDATE_DEBUG_INNER_S, UPDATE_DEBUG_OUTER_S, UPDATE_GROUP_SIZE_TP_ONE, UPDATE_GROUP_SIZE_TP_TWO, UPDATE_EXAMPLE_FULL_ROWS, UPDATE_EXAMPLE_FULL_COLS, UPDATE_EXAMPLE_FSDP_TP, UPDATE_EXAMPLE_FSDP_ROWS, UPDATE_EXAMPLE_FULL_ELEMENTS, UPDATE_DEBUG_SLEEP_COUNT, UPDATE_DEBUG_SLEEP_MS, UPDATE_DEBUG_SLEEP_TOTAL_MS, UPDATE_DEBUG_OUTER_MS, UPDATE_DEBUG_INNER_MS, UPDATE_DEBUG_OTHER_MS, UPDATE_DEBUG_NO_SLEEP_S, UPDATE_DEBUG_SAVED_S, UPDATE_DEBUG_SPEEDUP, UPDATE_DEBUG_YARDSTICK_MS, UPDATE_DEBUG_FULL_YARDSTICK_RATIO, UPDATE_DEBUG_SLEEP_CALLS } from '../../ml-sys/numbers';
 
   type Tone = 'plain' | 'blue' | 'orange';
-  type MobileItem = { title: string; titleZh: string; body: string; bodyZh: string; tone: Tone };
+  type MobileItem = { title: string; titleZh: string; body: string; bodyZh: string; body2?: string; body2Zh?: string; tone: Tone };
   type Step = {
     caption: string; captionZh: string; title: string; titleZh: string; subtitle: string; subtitleZh: string;
     foot: string; footZh: string; foot2?: string; foot2Zh?: string;
@@ -135,7 +135,7 @@
       { title: 'ROLLOUT 0 STOPS', titleZh: '第 0 轮停止', body: 'no new generation', bodyZh: '不再生成', tone: 'blue' },
       { title: 'DRAIN ACTIVE REQUESTS', titleZh: '等当前请求结束', body: 'no reader inside the update', bodyZh: '更新时没有读者', tone: 'orange' },
       { title: 'UPDATE EVERY PARAMETER', titleZh: '更新每个参数', body: 'do not reuse KV from v0', bodyZh: '不复用 v0 留下的 KV', tone: 'orange' },
-      { title: 'AWAIT COMPLETION', titleZh: '等待全部完成', body: 'required: discard partial failure', bodyZh: '部分失败必须整套弃用', tone: 'orange' },
+      { title: 'AWAIT COMPLETION', titleZh: '等待全部完成', body: 'on failure, discard the', bodyZh: '失败时，弃用', body2: 'partially updated model', body2Zh: '部分更新的模型', tone: 'orange' },
       { title: 'ROLLOUT 1 USES v1', titleZh: '第 1 轮使用 v1', body: 'one complete version', bodyZh: '完整的同一版本', tone: 'blue' },
     ],
     formulas: [
@@ -256,7 +256,8 @@
           <g opacity={phase >= (step === 1 ? [0, 3, 4][i] : Math.min(i, PHASE_COUNTS[step] - 2)) ? 1 : 0}>
             <rect x="25" y={y} width="250" height="70" rx="11" fill={fill(item.tone)} stroke={stroke(item.tone)} />
             <text x="150" y={y + 25} text-anchor="middle" class="small strong">{t(item.title, item.titleZh)}</text>
-            <text x="150" y={y + 50} text-anchor="middle" class="small">{step === 1 && i === 0 && phase === 0 ? t('save v1 checkpoint', '保存 v1 checkpoint') : step === 1 && i === 0 && phase === 1 ? t('save → read checkpoint', '保存 → 读取 checkpoint') : step === 4 && i === 1 && phase >= 4 ? t('bucket 1 cleared', '第 1 桶已清空') : step === 4 && i === 3 && phase >= 5 ? t('bucket 2 is on the GPU', '第 2 桶在 GPU 上') : t(item.body, item.bodyZh)}</text>
+            <text x="150" y={y + (item.body2 ? 42 : 50)} text-anchor="middle" class="small">{step === 1 && i === 0 && phase === 0 ? t('save v1 checkpoint', '保存 v1 checkpoint') : step === 1 && i === 0 && phase === 1 ? t('save → read checkpoint', '保存 → 读取 checkpoint') : step === 4 && i === 1 && phase >= 4 ? t('bucket 1 cleared', '第 1 桶已清空') : step === 4 && i === 3 && phase >= 5 ? t('bucket 2 is on the GPU', '第 2 桶在 GPU 上') : t(item.body, item.bodyZh)}</text>
+            {#if item.body2}<text x="150" y={y + 61} text-anchor="middle" class="small">{t(item.body2, item.body2Zh ?? item.body2)}</text>{/if}
             {#if cur.mobileArrows !== false && i < cur.mobile.length - 1}
               <line x1="150" y1={y + 70} x2="150" y2={y + 86} stroke={item.tone === 'plain' ? 'var(--accent)' : stroke(item.tone)} stroke-width="2.5" marker-end={item.tone === 'orange' ? 'url(#update-arrow-orange)' : 'url(#update-arrow-blue)'} />
             {/if}
@@ -455,7 +456,7 @@
           </g>
         {/each}
         <g opacity={phase >= 4 ? 1 : 0}>
-          <text x="360" y="411" text-anchor="middle" class="small strong">{t('On failure, discard the partial model; automatic rollback is not shown.', '失败时必须弃用部分更新的模型；图中没有自动回滚。')}</text>
+          <text x="360" y="411" text-anchor="middle" class="small strong">{t('On failure, discard the partially updated model; automatic rollback is not shown.', '失败时，弃用部分更新的模型；图中没有自动回滚。')}</text>
           <text x="360" y="447" text-anchor="middle" class="small">{t('Blue = complete versions · orange = update work · red outline = unsafe mixture', '蓝 = 完整版本 · 橙 = 更新工作 · 红框 = 危险的新旧混合')}</text>
         </g>
       {:else if step === 6}

@@ -200,7 +200,7 @@ $$U=\bigwedge_{i=1}^{n}u_i,\qquad \text{start rollout}\Rightarrow U$$
 
 ### The numbers on the stage
 
-The figure assigns no parameter count. If any $u_i$ fails, the model may contain a partial update and must be discarded rather than used for rollout. This rule does not claim that the pictured implementations provide crash-safe transactions.
+The figure assigns no parameter count. On failure, discard the partially updated model instead of using it for rollout. This rule does not claim that the pictured implementations provide crash-safe transactions.
 
 ### Next
 
