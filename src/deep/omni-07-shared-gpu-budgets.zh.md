@@ -245,21 +245,24 @@ weight sharing 要求 process 中恰好一个 SGLang engine stage，并要求显
 
 第 5 步打开 MPS。它管理同卡进程的执行附着，不改变前几步已经算出的显存申报。
 
-## 第 5 步 · MPS 管执行附着，不改显存加法
+## 第 5 步 · MPS 管进程执行，不改显存加法
 
 > **一句话：** 两个合格的单卡非 TP 进程在同一物理 GPU 上可加入一份 pipeline MPS 租约，TP 进程不加入。
 
 ### 图上是什么
 
-- MPS 是让多个进程共享 GPU 执行的 CUDA 服务。本例用 `mps=auto`，两个 process 都只解析到 GPU 0、使用 worker 本地的 `cuda:0`，且没有 TP。
-- 运行时先把逻辑 GPU ordinal 解析成物理 UUID，再按 UUID 收集 client。两个蓝色 process 因此进入同一个 physical plan。
-- pipeline 对这张物理 GPU 持有一份 MPS lease。租约是本次 pipeline 对 daemon 所有权的记录，不是一块显存，也不是每个 client 各一份。
-- 启动服务前，运行时还会验证两个预期的 client 都出现在 daemon 名单中，防止进程悄悄退回普通 time slicing。
-- 右侧 TP process 的 `tp_size>1`，不作为合格 client。一个 process 若解析到多张物理 GPU，也会被 native MPS 拒绝。
+- MPS 是让多个进程共享 GPU 执行的 CUDA 服务。第一相读取每个 process 的 GPU 放置和 TP 设置。两个构造 process 使用 GPU 0、worker 本地的 `cuda:0`，且没有 TP。另外两个输入分别是一个 TP process 和一个放在 GPU 0 加 GPU 1 上的 process。
+- 第二相保留有 GPU 放置的非 TP 候选，移除橙色 TP process，合格 TP client 数为零。TP 表示张量并行。蓝色标出此 pipeline 的 MPS 对象：合格 process、它们的 GPU 组、租约和加入箭头。橙色表示被排除的 process，虚线表示对象或结果尚未出现。
+- 第三相解析物理 GPU ID。两个合格 process 都解析到 `GPU-A`，它是一张物理卡的教学代号。代码把这个物理 ID 叫作 UUID。跨卡输入解析成两个物理 ID，所以在任何租约之前拒绝它。这与实现的解析顺序一致。
+- 第四相把两个合格 process 归入 `GPU-A` 上的一个 GPU 组。代码把这个对象叫作 `PhysicalMpsPlan`。图上的 `2 ≥ 2` 达到本例的两个进程下限。
+- 第五相为这个 pipeline 在 `GPU-A` 上创建一份蓝色租约。租约是这个 pipeline 后续做 MPS 检查和清理的钥匙。它记录此 pipeline 对自己 MPS runtime 的所有权，不表示独占整张 GPU；既不分配显存，也不是每个 client 各一份。
+- 第六相画出两条加入箭头，显示名牌 `t0` 和 `t1`。代码把这两个每进程唯一的值叫作 token。MPS 服务现有两个已加入的 process，但启动前还没有核对它们。
+- 第七相在舞台上把 `t0 → process 0`、`t1 → process 1` 分别对上。运行时把每个预期 process 的 token 与 daemon 当前 client 对照。两个都找到，接入验证才成功。这个检查防止 process 悄悄退回普通 time slicing。
+- 底部把 process 0 在第 3 步的 2 GiB KV 申报带过租约和最后检查。末相 `2 GiB 租约前 → 2 GiB 验证后` 两边用的是同一份申报。MPS 改变执行共享，不改变这份申报。2 GiB 仍是教学值，不再加到 reserve 上。
 
 ### 代入图上的数
 
-设同一物理 UUID 上的合格 client 数为 $N_c=2$，auto 的最小 client 数为 $N_{min}=2$：
+本例使用 `mps=auto`，这个设置名不画在舞台上。设 `GPU-A` 上的合格 client 数为 $N_c=2$，auto 的最小 client 数为 $N_{min}=2$：
 
 $$N_c=2\geq N_{min}=2\Rightarrow\text{create one physical MPS plan}$$
 
@@ -271,32 +274,41 @@ $$N_{lease}=1$$
 
 $$N_{TP}=0$$
 
+process 0 的 KV 申报在 MPS 前后不变：
+
+$$K_{before}=K_{after}=2\ \mathrm{GiB}$$
+
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
 | $N_c$ | 同一张物理 GPU 上的合格 client 数 | 教学构造的两个 process |
 | $N_{min}$ | `mps=auto` 启用所需的 client 下限 | runtime 的 2 |
 | $N_{lease}$ | 此 pipeline 在这张卡上的 MPS 租约数 | 每 UUID acquire 一次 |
 | $N_{TP}$ | 本例允许加入的 TP client 数 | TP process 在候选收集时排除 |
+| $K_{before},K_{after}$ | process 0 在 MPS 前后的 KV 申报 | 与第 3 步相同的 2 GiB 教学值 |
 
 这里 $N_{lease}=1$ 不表示整台机器只能有一个 pipeline。文档说明多个 serve 可加入同一物理 GPU 的 daemon，各自持有所有权，最后一个离开时才退出 daemon。本图只画一个 pipeline。
 
-### auto 与 on 的差别
+### 模式边界 · 未画出
 
-`auto` 要求同一物理 GPU 至少两个合格 process；只有一个 client 时不启用 MPS。`on` 对一个合格 process 也可启用，但没有合格 physical plan、平台不支持或物理映射不完整时会硬报错。
+`auto` 要求同一物理 GPU 至少两个合格 process；只有一个 client 时不启用 MPS。`on` 对一个合格 process 也可启用，但没有合格 physical plan、平台不支持或物理映射不完整时会硬报错。舞台只播放两个进程的 `auto` 示例，不在图上比较这两种模式。
 
-启动过程逐 GPU acquire，若中途失败则按相反顺序 rollback 已取得的 lease。运行时的 `verify()` 再核对 lease 和 client 身份。关闭时的 client 清理和 daemon 生命周期不属于本图。
+### 实现细节 · 未画出
+
+启动过程逐 GPU acquire，若中途失败则按相反顺序 rollback 已取得的 lease。本图播放 `verify()` 里的名牌对照，但不播放 live-lease 检查、轮询或 PID 级快照，也不播放 rollback、关闭时的 client 清理或 daemon 生命周期。
 
 ### 边界与出处
 
 MPS 是否更快取决于进程之间是否有可重叠的 GPU 工作，本步没有性能测量。pipeline edge 的传输路由不参与 MPS 资格判断。`CUDA_VISIBLE_DEVICES`、外部 MPS pipe 和手写 weight-share 环境变量等冲突配置也未展开。
 
-- `docs/basic_usage/mps_dp.md:11-49`：on/auto 规则、单物理 GPU 限制和按 UUID 共享 daemon。
-- `docs/basic_usage/mps_dp.md:71-97`：client 验证、watchdog、关闭与 dirty state。
-- `sglang_omni/mps/runtime.py:81-178`：TP 排除、物理 UUID 解析和多卡 process 拒绝。
-- `sglang_omni/mps/runtime.py:182-279`：按 UUID 分组、auto 的至少两个 client 和 physical plan。
-- `sglang_omni/mps/runtime.py:390-492`：事务式 acquire、回滚、client token 与 verify 所面对的对象。
+- <code>docs/basic_usage/<wbr>mps_dp.md:11-49</code>：on/auto 规则、单物理 GPU 限制和按 UUID 共享 daemon。
+- <code>docs/basic_usage/<wbr>mps_dp.md:71-97</code>：client 验证、watchdog、关闭与 dirty state。
+- <code>sglang_omni/mps/<wbr>runtime.py:81-178</code>：TP 排除、物理 UUID 解析和多卡 process 拒绝。
+- <code>sglang_omni/mps/<wbr>runtime.py:182-279</code>：按 UUID 分组、auto 的至少两个 client 和 physical plan。
+- <code>sglang_omni/mps/<wbr>runtime.py:390-492</code>：事务式 acquire、回滚、client token 与 verify 所面对的对象。
+- <code>sglang_omni/mps/<wbr>manager.py:125-255</code>：创建或加入 daemon，以及 pipeline 的 owner lease。
+- <code>sglang_omni/mps/<wbr>manager.py:440-478,784-802</code>：当前 client 快照、逐 process token 对照和接入验证成功条件。
 
-行号对应 `origin/main@db7cbf39ccffde7f95b81c2dcc7da1b52a5c0bb6`。
+行号对应 <code>origin/main@<wbr>db7cbf39ccffde7f95b81c2dcc7da1b52a5c0bb6</code>。
 
 ### 接下来
 

@@ -54,7 +54,7 @@
     if (q >= 1 && q <= steps.length) step = q - 1;
   });
   const cur = $derived(steps[step]);
-  const PHASE_COUNTS = [4, 4, 4, 6, 1, 1];
+  const PHASE_COUNTS = [4, 4, 4, 6, 7, 1];
   let phase = $state(0);
   let lap = $state(0), lapMs = $state(0);
   const nextLap = (ms: number) => untrack(() => { lapMs = ms; lap++; });
@@ -83,7 +83,7 @@
     return () => query.removeEventListener('change', update);
   });
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [480, 690, 730, 730, 650, 790][step] : [440, 470, 460, 480, 450, 500][step]);
+  const H = $derived(phone ? [480, 690, 730, 730, 710, 790][step] : [440, 470, 460, 480, 480, 500][step]);
   const fractionPct = (value: number) => (value * 100).toFixed(2);
   const budgetX = $derived(phone ? 20 : 60);
   const budgetWidth = $derived(phone ? 260 : 600);
@@ -128,6 +128,15 @@
     t('the follower aliases W instead of copying it', 'follower 指向同一个 W，不再复制'),
     t('each replica builds its own KV pool', '两个副本各自建立一个 KV 池'),
     t('count one W, then add the two pool caps', '最后数一份 W，并加上两个池的上限'),
+  ][phase]);
+  const mpsNow = $derived([
+    t('read each process’s GPU placement and TP setting', '读取每个进程的 GPU 放置和 TP 设置'),
+    t('keep GPU-placed, non-TP processes; remove TP', '保留有 GPU 放置的非 TP 进程，移除 TP'),
+    t('resolve physical GPU IDs; reject a multi-GPU process', '解析物理 GPU ID；拒绝跨多卡的进程'),
+    phone ? t('two processes on GPU-A meet the minimum', 'GPU-A 上两个进程达到下限') : t('group two processes on GPU-A; this example needs at least two', '把两个进程归入 GPU-A；本例至少需要两个'),
+    phone ? t('acquire one lease for checks and cleanup', '取得一份租约，用于检查和清理') : t('this pipeline acquires one lease for MPS checks and cleanup', '这个 pipeline 取得一份租约，用于 MPS 检查和清理'),
+    phone ? t('join with name tag t0 or t1', '带名牌 t0／t1 加入') : t('join with name tag t0 or t1; each tag is unique', '带着名牌 t0 或 t1 加入；每个名牌都唯一'),
+    phone ? t('match t0 and t1 to joined processes', '把 t0／t1 对到已加入的进程') : t('match name tags t0 and t1 to the two joined processes', '把名牌 t0 和 t1 对到两个已加入的进程'),
   ][phase]);
   const aukFrames = $derived(AUK_OFFLOAD_COMPONENTS.map((active, index) => ({
     active, index, x: phone ? 15 : 20 + index * 235, y: phone ? 100 + index * 180 : 110,
@@ -290,34 +299,55 @@
         <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{phone ? t('W is symbolic · KV, graphs and request state stay private', 'W 是符号 · KV、graph 和请求状态仍私有') : t('W is symbolic: no byte saving is claimed · KV, graphs and request state stay private', 'W 只是符号，不声称省下多少字节 · KV、graph 和请求状态仍私有')}</text>
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Next: MPS does not change memory sums', '下一步：MPS 不改变显存加法') : t('Next: MPS manages execution, not these memory sums', '下一步：MPS 管执行，不改变这些显存加法')}</text>
       {:else if step === 4}
-        <text x="20" y="22" class="tag strong">mps = auto · {t('one physical GPU', '一张物理 GPU')}</text>
+        <text x="20" y="22" class="tag strong">MPS · {t('one physical GPU', '一张物理 GPU')}</text>
+        <LoopProgress ms={lapMs} {lap} x={phone ? 230 : 640} y={16} />
         <text x="20" y="46" class="tag">MPS = {phone ? t('shared GPU execution among processes', '多个进程共享 GPU 执行') : t('a service that shares GPU execution among processes', '让多个进程共享 GPU 执行的服务')}</text>
-        <text x="20" y="68" class="tag">{t('Blue: eligible client · orange: excluded TP process', '蓝色：合格 client · 橙色：被排除的 TP 进程')}</text>
-        <rect x={phone ? 15 : 20} y="96" width={phone ? 270 : 445} height="260" rx="12" fill="var(--bg)" stroke="var(--accent)" stroke-width="2" />
-        <text x={phone ? 29 : 34} y="122" class="rowlabel">GPU 0 · UUID → {MPS_LEASE_COUNT_PER_GPU} {t('pipeline lease', '份 pipeline 租约')}</text>
+        <rect x="20" y="58" width="10" height="10" rx="2" fill="var(--accent)" />
+        <text x="36" y="68" class="tag">{t('pipeline MPS', 'pipeline 的 MPS')}</text>
+        <rect x={phone ? 130 : 180} y="58" width="10" height="10" rx="2" fill="var(--gen)" />
+        <text x={phone ? 146 : 196} y="68" class="tag">{t('excluded', '被排除')}</text>
+        <rect x={phone ? 225 : 285} y="58" width="10" height="10" rx="2" fill="var(--bg)" stroke="var(--faint)" stroke-dasharray="2 2" />
+        <text x={phone ? 241 : 301} y="68" class="tag">{t('not yet', '尚未')}</text>
+        <rect data-mps="plan" x={phone ? 15 : 20} y="96" width={phone ? 270 : 445} height="260" rx="12" fill="var(--bg)" stroke={phase >= 3 ? 'var(--accent)' : 'var(--line)'} stroke-width={phase >= 3 ? 2 : 1} style="transition: stroke 300ms" />
+        <text data-mps="uuid" x={phone ? 29 : 34} y="122" class="rowlabel">{phase >= 2 ? `GPU 0 → GPU-A · ${t('physical ID', '物理 ID')}` : `GPU 0 → ${t('physical ID ?', '物理 ID ?')}`}</text>
         {#each Array(MPS_TEACHING_CLIENT_COUNT) as _, i}
-          <rect x={phone ? 30 : 36} y={143 + i * 66} width={phone ? 160 : 230} height="46" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x={phone ? 44 : 50} y={172 + i * 66} class="tag strong">process {i} · cuda:0 · non-TP</text>
-          <path d="M{phone ? 195 : 272} {166 + i * 66} H{phone ? 226 : 322}" stroke="var(--accent)" stroke-width="2" marker-end="url(#budget-arrow)" />
+          <rect data-mps="process" data-client={i} x={phone ? 30 : 36} y={143 + i * 70} width={phone ? 160 : 230} height="52" rx="7" fill={phase >= 1 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={phase >= 1 ? 'var(--accent)' : 'var(--faint)'} stroke-dasharray={phase >= 1 ? 'none' : '4 3'} style="transition: fill 300ms, stroke 300ms" />
+          <text x={phone ? 44 : 50} y={164 + i * 70} class="tag strong">process {i} · cuda:0{phone ? '' : ' · non-TP'}</text>
+          <text data-mps="client-state" data-client={i} x={phone ? 44 : 50} y={184 + i * 70} class="tag">{phase >= 6 ? (phone ? `non-TP · t${i} ✓` : `tag t${i} ✓ ${t('checked', '已核对')}`) : phase >= 5 ? (phone ? `non-TP · tag t${i}` : `${t('joined', '已加入')} · tag t${i}`) : (phone ? t('non-TP · not joined', '非 TP · 未加入') : t('not joined', '尚未加入'))}</text>
+          <path data-mps="attachment" data-client={i} d="M{phone ? 195 : 272} {169 + i * 70} H{phone ? 226 : 322}" stroke="var(--accent)" stroke-width="2" marker-end="url(#budget-arrow)" opacity={phase >= 5 ? 1 : 0} style="transition: opacity 300ms" />
         {/each}
-        <rect x={phone ? 210 : 330} y="153" width={phone ? 60 : 110} height="120" rx="9" fill="white" stroke="var(--accent)" />
-        <text x={phone ? 240 : 385} y="196" text-anchor="middle" class="tag strong">MPS</text>
-        <text x={phone ? 240 : 385} y="221" text-anchor="middle" class="tag">{MPS_TEACHING_CLIENT_COUNT} clients</text>
-        <text x={phone ? 240 : 385} y="246" text-anchor="middle" class="tag">{MPS_LEASE_COUNT_PER_GPU} lease</text>
-        <text x={phone ? 29 : 34} y="310" class="mono strong">{MPS_TEACHING_CLIENT_COUNT} ≥ {MPS_AUTO_MIN_CLIENT_COUNT} → {t('enable', '启用')}</text>
-        <text x={phone ? 29 : 34} y="338" class="tag">{t('Runtime verifies each named client.', '运行时逐个核对 client 名单。')}</text>
-        <rect x={phone ? 15 : 490} y={phone ? 382 : 96} width={phone ? 270 : 210} height={phone ? 128 : 260} rx="12" fill="var(--gen-soft)" stroke="var(--gen)" />
-        <text x={phone ? 29 : 504} y={phone ? 408 : 122} class="rowlabel">TP process · {MPS_TEACHING_TP_CLIENT_COUNT} client</text>
-        <text x={phone ? 29 : 504} y={phone ? 437 : 153} class="tag">tp_size &gt; 1 → {t('not eligible', '不合格')}</text>
-        <text x={phone ? 29 : 504} y={phone ? 465 : 183} class="tag">{t('No MPS attachment', '不加入 MPS')}</text>
-        {#if !phone}
-          <text x="504" y="213" class="tag">{t('A multi-GPU placement', '跨多卡的进程')}</text>
-          <text x="504" y="239" class="tag">{t('is also rejected.', '也会被拒绝。')}</text>
-          <text x="504" y="284" class="tag strong">mps=on: {t('failure is an error', '失败会报错')}</text>
-          <text x="504" y="315" class="tag">auto: {t('ineligible → no MPS', '不合格 → 不用 MPS')}</text>
+        <rect data-mps="service" x={phone ? 210 : 330} y="153" width={phone ? 60 : 110} height="120" rx="9" fill={phase >= 4 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={phase >= 4 ? 'var(--accent)' : 'var(--faint)'} stroke-dasharray={phase >= 4 ? 'none' : '4 3'} style="transition: fill 300ms, stroke 300ms" />
+        <text x={phone ? 240 : 385} y="178" text-anchor="middle" class="tag strong">MPS</text>
+        <text x={phone ? 240 : 385} y="199" text-anchor="middle" class="tag">{t('service', '服务')}</text>
+        <text data-mps="lease" x={phone ? 240 : 385} y="222" text-anchor="middle" class="tag strong">{phase >= 4 ? (phone ? `${MPS_LEASE_COUNT_PER_GPU} ${t('lease', '租约')}` : `${MPS_LEASE_COUNT_PER_GPU} ${t('pipeline lease', 'pipeline 租约')}`) : t('no lease', '无租约')}</text>
+        <text data-mps="client-count" x={phone ? 240 : 385} y="245" text-anchor="middle" class="tag">{phase >= 5 ? MPS_TEACHING_CLIENT_COUNT : 0} {t('processes', '进程')}</text>
+        <text data-mps="verified" x={phone ? 240 : 385} y="266" text-anchor="middle" class="tag strong" opacity={phase >= 6 ? 1 : 0} style="transition: opacity 300ms">t0 ✓ t1 ✓</text>
+        {#if phase >= 6}
+          <text data-mps="verify-0" x={phone ? 29 : 34} y="310" class="mono strong">t0 → process 0 ✓</text>
+        {:else}
+          <text data-mps="auto-rule" x={phone ? 29 : 34} y="310" class="mono strong">{phase >= 3 ? `${MPS_TEACHING_CLIENT_COUNT} ≥ ${MPS_AUTO_MIN_CLIENT_COUNT} → ${t('one GPU group', '一个 GPU 组')}` : t('this example needs 2 processes on one GPU', '本例需要同一物理 GPU 上有 2 个进程')}</text>
         {/if}
-        <text x={W / 2} y={phone ? 550 : 388} text-anchor="middle" class="tag strong">{t('A lease is the pipeline’s ownership record, not extra memory.', '租约是 pipeline 的所有权记录，不是额外显存。')}</text>
-        <text x={W / 2} y={phone ? 580 : 414} text-anchor="middle" class="tag">{phone ? t('Execution sharing changes; memory declarations do not.', '执行共享改变；显存申报不变。') : t('MPS changes execution sharing; fractions, KV and reserves stay as declared.', 'MPS 改变执行共享；比例、KV 和 reserve 申报不变。')}</text>
+        <text data-mps="serve" x={phone ? 29 : 34} y="338" class={phase >= 6 ? 'mono strong' : 'tag'}>{phase >= 6 ? 't1 → process 1 ✓' : (phone ? t('check tags after joining', '加入后核对名牌') : t('check that each process has joined', '检查每个进程都已加入'))}</text>
+        <rect data-mps="tp-panel" x={phone ? 15 : 490} y={phone ? 382 : 96} width={phone ? 270 : 210} height={phone ? 190 : 260} rx="12" fill="var(--bg)" stroke="var(--line)" />
+        <rect data-mps="tp-excluded" x={phone ? 20 : 496} y={phone ? 394 : 108} width={phone ? 260 : 198} height={phone ? 86 : 90} rx="7" fill={phase >= 1 ? 'var(--gen-soft)' : 'var(--bg)'} stroke={phase >= 1 ? 'var(--gen)' : 'var(--faint)'} stroke-dasharray={phase >= 1 ? 'none' : '4 3'} style="transition: fill 300ms, stroke 300ms" />
+        <rect data-mps="multi-excluded" x={phone ? 20 : 496} y={phone ? 484 : 202} width={phone ? 260 : 198} height={phone ? 56 : 58} rx="7" fill={phase >= 2 ? 'var(--gen-soft)' : 'var(--bg)'} stroke={phase >= 2 ? 'var(--gen)' : 'var(--faint)'} stroke-dasharray={phase >= 2 ? 'none' : '4 3'} style="transition: fill 300ms, stroke 300ms" />
+        <text x={phone ? 29 : 504} y={phone ? 408 : 122} class="rowlabel">TP = {t('tensor parallel', '张量并行')}</text>
+        <text x={phone ? 29 : 504} y={phone ? 437 : 153} class="tag">tp_size &gt; 1</text>
+        <text data-mps="tp-result" x={phone ? 29 : 504} y={phone ? 465 : 183} class="tag" opacity={phase >= 1 ? 1 : 0} style="transition: opacity 300ms">{MPS_TEACHING_TP_CLIENT_COUNT} {t('eligible processes · no MPS', '合格进程 · 不接 MPS')}</text>
+        <text x={phone ? 29 : 504} y={phone ? 493 : 213} class="tag">process → GPU 0 + GPU 1</text>
+        <text data-mps="multi-result" x={phone ? 29 : 504} y={phone ? 521 : 239} class="tag" opacity={phase >= 2 ? 1 : 0} style="transition: opacity 300ms">2 {t('physical IDs → reject before lease', '物理 ID → 租约前拒绝')}</text>
+        {#if !phone}
+          <text x="504" y="292" class="tag">{t('Excluded before any lease.', '都在租约之前排除。')}</text>
+        {/if}
+        <text data-mps="now" x={W / 2} y={phone ? 600 : 380} text-anchor="middle" class="tag strong">now: {mpsNow}</text>
+        {#if phone}
+          <text x={W / 2} y="626" text-anchor="middle" class="tag strong">{t('Lease = this pipeline’s key for MPS checks + cleanup', '租约 = 这个 pipeline 做 MPS 检查和清理的钥匙')}</text>
+          <text x={W / 2} y="652" text-anchor="middle" class="tag strong">{t('not GPU ownership or extra memory', '不表示独占 GPU，也不是额外显存')}</text>
+          <text data-mps="memory" x={W / 2} y="678" text-anchor="middle" class="tag">{phase >= 6 ? `process 0 KV: ${KV_SCOPE_TEACHING_GIB} GiB ${t('before →', '租约前 →')} ${KV_SCOPE_TEACHING_GIB} GiB ${t('after', '验证后')}` : phase >= 4 ? `process 0 KV = ${KV_SCOPE_TEACHING_GIB} GiB ${t('after the lease', '租约后')}` : `process 0 KV = ${KV_SCOPE_TEACHING_GIB} GiB ${t('before the lease', '租约前')}`}</text>
+        {:else}
+          <text x={W / 2} y="412" text-anchor="middle" class="tag strong">{t('Lease = this pipeline’s key for MPS checks and cleanup, not GPU-wide ownership or extra memory.', '租约 = 这个 pipeline 做 MPS 检查和清理的钥匙，不表示独占 GPU，也不是额外显存。')}</text>
+          <text data-mps="memory" x={W / 2} y="440" text-anchor="middle" class="tag">{phase >= 6 ? `process 0 KV: ${KV_SCOPE_TEACHING_GIB} GiB ${t('before lease →', '租约前 →')} ${KV_SCOPE_TEACHING_GIB} GiB ${t('after verification · MPS does not change it', '验证后 · MPS 不改变它')}` : phase >= 4 ? `process 0 KV = ${KV_SCOPE_TEACHING_GIB} GiB ${t('after the lease · MPS does not change it', '租约后 · MPS 不改变它')}` : `process 0 KV = ${KV_SCOPE_TEACHING_GIB} GiB ${t('before the lease', '租约前')}`}</text>
+        {/if}
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Next: keep one AuK component resident', '下一步：只让一件 AuK 组件常驻') : t('Next: instead of more replicas, keep only one AuK component resident', '下一步：不增加副本，改为只让一件 AuK 组件常驻')}</text>
       {:else if step === 5}
         <text x="20" y="22" class="tag strong">AuK serial offload · {phone ? t('one resident component', '一次一件组件常驻') : t('one request, one GPU component at a time', '一个请求，一次只让一件组件上 GPU')}</text>

@@ -245,21 +245,24 @@ Line numbers refer to <code>origin/main@<wbr>db7cbf39ccffde7f95b81c2dcc7da1b52a5
 
 Step 5 enables MPS. It manages process attachment for execution and leaves the earlier memory declarations unchanged.
 
-## Step 5 · MPS manages execution attachment, not memory arithmetic
+## Step 5 · MPS manages process execution, not memory arithmetic
 
 > **In one sentence:** Two eligible single-GPU, non-TP processes can join one pipeline MPS lease on a physical GPU; a TP process does not join.
 
 ### What the picture shows
 
-- MPS is a CUDA service that shares GPU execution among processes. This `mps=auto` example has two processes, each resolving only to GPU 0, using worker-local `cuda:0`, and containing no TP.
-- The runtime resolves logical GPU ordinals to physical UUIDs, then groups clients by UUID. Both blue processes therefore enter one physical plan.
-- The pipeline holds one MPS lease for this physical GPU. The lease records this pipeline's daemon ownership; it is neither memory nor one lease per client.
-- Before serving, the runtime verifies that both expected clients appear in the daemon's client list, preventing a process from silently falling back to ordinary time slicing.
-- The orange TP process has `tp_size>1` and is not an eligible client. A process resolving to multiple physical GPUs is also rejected by native MPS.
+- MPS is a CUDA service that shares GPU execution among processes. The initial phase reads each process's GPU placement and TP setting. Two constructed processes use GPU 0, worker-local `cuda:0`, and no TP. The other two inputs are a TP process and a process placed on GPU 0 plus GPU 1.
+- The second phase keeps GPU-placed, non-TP candidates and removes the orange TP process, leaving zero eligible TP clients. TP means tensor parallel. Blue marks the objects in this pipeline's MPS path: eligible processes, their GPU group, the lease, and the joining arrows. Orange marks an excluded process, and a dashed outline means that an object or result has not arrived yet.
+- The third phase resolves physical GPU IDs. Both eligible processes resolve to `GPU-A`, a teaching label for one physical card. The code calls this physical ID a UUID. The multi-GPU input resolves to two physical IDs, so the stage rejects it before any lease. This is the same resolution order as the implementation.
+- The fourth phase groups the two eligible processes on `GPU-A`. The code calls this object a `PhysicalMpsPlan`. The visible `2 ≥ 2` check meets this example's two-process minimum.
+- The fifth phase creates one blue lease for this pipeline on `GPU-A`. The lease is this pipeline's key for later MPS checks and cleanup. It records this pipeline's ownership of its MPS runtime, not ownership of the whole GPU. It neither allocates memory nor creates one lease per client.
+- The sixth phase draws both joining arrows and reveals name tags `t0` and `t1`. The code calls these unique per-process values tokens. The service now has two joined processes, but startup has not checked them yet.
+- The seventh phase matches `t0 → process 0` and `t1 → process 1` on the stage. The runtime compares each expected process token with the daemon's current clients. Both matches must exist before attachment verification succeeds. This check prevents a process from silently falling back to ordinary time slicing.
+- The bottom line carries process 0's two-GiB KV declaration from Step 3 through the lease and the final check. The final `2 GiB before → 2 GiB after` uses the same declaration on both sides. MPS changes execution sharing, not that declaration. The two-GiB value remains a teaching value and is not added to a reserve again.
 
 ### Work through the numbers
 
-Let eligible clients on one physical UUID be $N_c=2$, and auto's minimum be $N_{min}=2$:
+This example uses `mps=auto`; that setting name stays off the stage. Let eligible clients on `GPU-A` be $N_c=2$, and auto's minimum be $N_{min}=2$:
 
 $$N_c=2\geq N_{min}=2\Rightarrow\text{create one physical MPS plan}$$
 
@@ -271,32 +274,41 @@ The eligible TP-client count in this example is:
 
 $$N_{TP}=0$$
 
+Process 0 keeps the same teaching KV declaration before and after MPS:
+
+$$K_{before}=K_{after}=2\ \mathrm{GiB}$$
+
 | Symbol | Meaning | Source |
 |---|---|---|
 | $N_c$ | Eligible clients on this physical GPU | Two constructed processes |
 | $N_{min}$ | Minimum clients for `mps=auto` | Two in the runtime |
 | $N_{lease}$ | This pipeline's leases on the card | One acquire per UUID |
 | $N_{TP}$ | Eligible TP clients in this example | TP is excluded during candidate collection |
+| $K_{before},K_{after}$ | Process 0's KV declaration before and after MPS | The same two-GiB teaching value as Step 3 |
 
 One lease here does not mean only one pipeline can use the machine. Separate serve commands can join the same physical GPU's daemon with their own ownership records; the last owner leaving drains it. This figure shows one pipeline.
 
-### Auto versus on
+### Mode boundary · not drawn
 
-`auto` requires at least two eligible processes on a physical GPU; one client runs without MPS. `on` can enable a single eligible process, but no eligible physical plan, an unsupported platform or incomplete physical mapping is a hard error.
+`auto` requires at least two eligible processes on a physical GPU; one client runs without MPS. `on` can enable a single eligible process, but no eligible physical plan, an unsupported platform, or incomplete physical mapping is a hard error. The stage plays only the two-process `auto` example and does not compare these modes visually.
 
-Startup acquires each GPU transactionally and rolls back earlier leases in reverse order after a failure. `verify()` checks lease and client identity. Shutdown draining and daemon cleanup are outside this figure.
+### Implementation details · not drawn
+
+Startup acquires each GPU transactionally and rolls back earlier leases in reverse order after a failure. The figure plays the name-tag match inside `verify()`, but not its live-lease check, polling, or PID-level snapshot. It does not play rollback, shutdown draining, or daemon cleanup.
 
 ### Boundaries and sources
 
-Whether MPS is faster depends on overlappable GPU work; no performance measurement is made here. Pipeline-edge transport does not participate in eligibility. Conflicting `CUDA_VISIBLE_DEVICES`, external MPS pipe and manually supplied weight-share environment settings are not expanded.
+Whether MPS is faster depends on overlappable GPU work; no performance measurement is made here. Pipeline-edge transport does not participate in eligibility. Conflicting `CUDA_VISIBLE_DEVICES`, external MPS pipe, and manually supplied weight-share environment settings are not expanded.
 
-- `docs/basic_usage/mps_dp.md:11-49`: on/auto rules, one-physical-GPU restriction and UUID-keyed daemon sharing.
-- `docs/basic_usage/mps_dp.md:71-97`: client verification, watchdog, shutdown and dirty-state behavior.
-- `sglang_omni/mps/runtime.py:81-178`: TP exclusion, physical UUID resolution and multi-GPU-process rejection.
-- `sglang_omni/mps/runtime.py:182-279`: UUID grouping, auto's two-client minimum and physical plans.
-- `sglang_omni/mps/runtime.py:390-492`: transactional acquisition, rollback, client tokens and verification inputs.
+- <code>docs/basic_usage/<wbr>mps_dp.md:11-49</code>: on/auto rules, one-physical-GPU restriction, and UUID-keyed daemon sharing.
+- <code>docs/basic_usage/<wbr>mps_dp.md:71-97</code>: client verification, watchdog, shutdown, and dirty-state behavior.
+- <code>sglang_omni/mps/<wbr>runtime.py:81-178</code>: TP exclusion, physical UUID resolution, and multi-GPU-process rejection.
+- <code>sglang_omni/mps/<wbr>runtime.py:182-279</code>: UUID grouping, auto's two-client minimum, and physical plans.
+- <code>sglang_omni/mps/<wbr>runtime.py:390-492</code>: transactional acquisition, rollback, client tokens, and verification inputs.
+- <code>sglang_omni/mps/<wbr>manager.py:125-255</code>: daemon creation or joining and the pipeline's owner lease.
+- <code>sglang_omni/mps/<wbr>manager.py:440-478,784-802</code>: current-client snapshots, per-process token matching, and successful attachment verification.
 
-Line numbers refer to `origin/main@db7cbf39ccffde7f95b81c2dcc7da1b52a5c0bb6`.
+Line numbers refer to <code>origin/main@<wbr>db7cbf39ccffde7f95b81c2dcc7da1b52a5c0bb6</code>.
 
 ### Next
 
