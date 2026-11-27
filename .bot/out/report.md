@@ -1,3 +1,40 @@
+# lane k2 本轮报告 · ML Systems 09 Step 6 的 ML-51
+
+日期：2026-11-27。类型：修旧（ML-50 后按 owner rule 处理本书开放 P1）。本轮开始 HEAD 与 `origin/tutorials` 均为 `4bae53e`，工作树干净。范围只有 ML 09 Step 6 的组件、双语 deep、MDX 出处、生成 transcript、本章评分卡与进度记录、定向审计和本报告；未改其他步、其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。ML-38 和共享 ML-21／22 保持独立，未开第 14 章。
+
+## 提交与 finding
+
+- `9fd99a0`：**ML-51 作者修复完成，待协调固定复审，不自行销项。** Step 6 保留 2,030→1,590 ms、68.1→58.3 GB、440 ms 和 9.8 GB 的公开对照。末相在桌面补出输入量化、额外转置 FP8 输出和高精度激活副本三张成本卡；手机用一个「转换成本」框列出同一组对象，并用「行变成列」解释转置。
+- 双语 deep 和 MDX 与桌面、手机逐一对齐，明确来源没有这些对象的分项字节或毫秒。本步不把前向从 463 升到 529 ms 归因于 CPU 或另一个单一原因。
+- 首次教程提交为 `a95de80`，推送被拒后按指示 `git pull --rebase origin tutorials`，带入远端 `fdb63df`，最终 `9fd99a0` 推送成功；未 force-push。
+
+## 作者评分与独立冷读
+
+| 步 | R1–R5 | 机制 R6 | 原十个非视觉项 | R1 小学生复述 | 新内容洞 |
+|---|---:|---:|---:|---|---:|
+| 6 | 10/10 | 2/2 | 20/20 | FP8 总体省时省显存，但前向更慢；它还要多转一次数、多写一份行列对调的输出，并留下反向要用的副本，这些成本没有分项数字。 | 0 |
+
+- 第一轮独立 `explore` 冷读为 **FAIL**：Step 6 新用 `kernel` 未解释，手机 deep 仍按桌面 panel 描述，手机漏写 `extra`。改成「转换代码／conversion code」、补手机合并框说明和 `extra transposed FP8 output` 后，第二轮 **PASS**，ML-51 范围无剩余洞。
+- 这些是作者复评与独立源码、transcript 冷读，不是协调 verdict。原 #4/#5、整章新总分和销项不由本轮自行改写。ML-38 的第三组吞吐与配置边界、共享 ML-21／22 均未改。
+
+## 硬门与证据
+
+- 最终 `npm run build`：**60 页**通过；8 步 `readability`：**0 机械问题**；`BOOK=ml-sys node scripts/deep-check.mjs 09`、`zh-check`、英中全章 360／390／430 px `mobile`、中文 Step 6 字号门和 `git diff --check` 全过。
+- transcript 连续三次 SHA-256 相同：`35807bcec15eea2ea9f76e44076a6846bccb56d7fad7a6d9e257698c51decad1`，**2,020 词**。无 caption、文字出界、重叠或文本规则报告。
+- `.bot/out/ml51-step6-audit/report.json` 覆盖英文桌面、中文桌面、中文 390 px × 直接 URL／前步入口，共 **6 组合、30 个状态、24/24 个机制转变、29 个唯一 PNG 哈希**；另有双语 1440／390 px 共 **4 个 deep 状态**。最低 **10.506 CSS px**，重叠、SVG 出界、页面横溢和 `failures` 均为 **0**。四条收益柱逐条按各自同一比例验算，宽度误差小于 0.01。可重跑脚本：`.bot/out/ml51-step6-audit.mjs`。
+- 四个 deep 状态均展开到 Step 6，无 raw math、KaTeX 错误、页面或抽屉横溢。deep 打开后的舞台最低 **8.406 CSS px**，属于既有共享 ML-21，本单元未改也不声称该项通过。
+- 代表截图：`.bot/out/ml51-step6-audit/en-1440-direct-s6-p4.png`、`.bot/out/ml51-step6-audit/zh-390-direct-s6-p4.png`。**当前模型不能读取 PNG；以上结论来自构建、transcript、源码、独立冷读、DOM 和几何检查，未声称看过图片或视觉通过。**
+- 本轮重读 zero-to-sglang 第 3 部分第 2 章、InfiR2 §5.4 表 6 和固定 TransformerEngine 转换源码。未引入新测量数字；未跑全站回归、真实 FP8 训练、GPU benchmark、模型质量评测或 reduced-motion 动态切换。最新回归只有 `(exit 13)`，没有可分配布局步骤。
+
+## 剩余与清理
+
+- 剩余事项是 ML-51 的协调固定复审、原 #4/#5、整章评分、具备图像能力的复审和主人最终视觉验收。ML-38 与共享 ML-21／22 继续独立开放；其他 P1 与新写作按 owner rule 另行处理。
+- 本 clone 的 `node_modules` 原指向协调人 checkout；已只删除本目录内符号链接并在本目录安装依赖，package 文件无 diff，未写协调人的 checkout。
+- 本地查看前运行 `npx astro dev --background --host 127.0.0.1 --port 4504`，地址：`http://localhost:4504/learning-sglang/ml-sys/ch/09-fp8-rollout-training/?step=6`。本轮 4504 服务已停止，端口无监听。
+- 审计脚本调用 `browser.close()`。收尾 `pgrep -P 1 -fl 'headless=new.*cdp-'` 无输出；本轮没有遗留浏览器。
+
+---
+
 # lane k2 本轮报告 · ML Systems 07 Step 7 的 ML-50
 
 日期：2026-11-27。类型：修旧（ML-61／62 后按 owner rule 处理本书开放 P1）。本轮开始 HEAD 与 `origin/tutorials` 均为 `749347d`，工作树干净。范围只有 ML 07 Step 7 的组件、数字常量、双语 deep、MDX 出处、生成 transcript、本章评分卡与进度记录、定向审计和本报告；未改其他步、其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。ML-55 与其他开放项保持原样，未开第 14 章。
