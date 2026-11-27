@@ -192,11 +192,50 @@ selector 的锁覆盖最近使用顺序、负载观察和预留，避免两个�
 
 ### 接下来
 
-凭证开始时 worker 是 healthy，但之后发生故障仍会截断响应。最后一步沿着这个边界进入下一章。
+普通 HTTP 计数只是路由的一项输入。下一步先看服务类别、session 容量和固定目标，再进入故障边界。
 
 来源：`sglang_omni_router/src/worker_pool/admission.rs:49-88`；`sglang_omni_router/src/http_relay/mod.rs:151-233`；`sglang_omni_router/src/http_relay/response_body.rs:16-101`；`sglang_omni_router/tests/chat_http.rs:901-939,1282-1336,1419-1432`。
 
-## 第 8 步 · 选中之后仍可能故障
+## 第 8 步 · 服务类别、session 槽位和固定目标
+
+**一句话。** `ServiceClass` 决定 admission 桶，WebSocket session 还需要 worker 有空槽位，固定目标则不经过选择策略。
+
+### 图上是什么
+
+- `ServiceClass` 是请求的服务类型。它对应同名的 `CapacityClass`，后者持有这类服务的 admission permits。六种类型是 `generation_http`、`speech_http`、`speech_batch`、`transcription_http`、`speech_websocket` 和 `realtime_websocket`。
+- 前四种使用普通 HTTP dispatch。profile 和 health 过滤后，round robin 或 least requests 选择 worker。活跃负载供策略比较，不是每个 worker 的请求上限。
+- 两种 WebSocket 类型使用 session dispatch。兼容且 healthy 的 worker 还要有空 session permit，才能进入策略的候选集合。session 占用数和活跃请求数是两本账。
+- 构造例中，A 的活跃工作更少，但唯一 session 槽位已满，所以 router 跳过 A。B 有 3 个活跃请求，两个 session 槽位已用 1 个，因此 B 可以入选并被选中。选择后，B 变成 4 个活跃请求、2 个 session 槽位已用。`RequestLease` 持有第二个槽位。
+- uploaded-voice 请求交给配置的 voice owner，不经过策略。指定 worker 的后续请求交给这个 pinned worker。voice owner 仍要匹配 profile 且 healthy；session 还要有空槽位。pinned worker 也必须 healthy。
+
+### 公式与符号
+
+$$F_w=C_w-U_w$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $C_w$ | worker $w$ 配置的 session 容量 | 图上分母 |
+| $U_w$ | 已经占用容量的 session 数 | 图上分子 |
+| $F_w$ | 空 session 槽位数 | $C_w-U_w$ |
+
+通过 profile 和 health 检查后，只有 $F_w>0$ 的 worker 才能进入 session 选择。least requests 使用的活跃数不能代替 $F_w$。
+
+### 代入图上的数
+
+| worker | 选择前活跃数 | session 已用 / 上限 | 空槽位 | 能否入选 | 选择后活跃数 | 选择后 session |
+|---|---:|---:|---:|---|---:|---:|
+| A | 0 | 1 / 1 | $1-1=0$ | 不能 | 0 | 1 / 1 |
+| B | 3 | 1 / 2 | $2-1=1$ | 能，被选中 | 4 | 2 / 2 |
+
+B 的凭证同时持有普通活跃数 +1 和额外的 session permit。凭证丢弃时一起释放。图上的数量是构造的，用来说明活跃数更少也不能越过已满的 session 池。
+
+### 接下来
+
+这张地图最后回到一次普通 HTTP 响应选中的 worker。最后一步跟随这个 worker 经历提交后的 reset。
+
+来源：`sglang_omni_router/src/worker_pool/profile.rs:15-82,133-139`；`sglang_omni_router/src/worker_pool/mod.rs:338-463,499-541,635-644,792-801,942-977`；`sglang_omni_router/src/worker_pool/admission.rs:66-87`。
+
+## 第 9 步 · 选中之后仍可能故障
 
 **一句话。** router 选中一个兼容且 healthy 的 worker 后，如果它中途故障，router 不会把这个请求转到另一个 worker。
 

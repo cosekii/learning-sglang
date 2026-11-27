@@ -16,6 +16,11 @@
     ROUTER_LEAST_SELECTIONS,
     ROUTER_LEASE_ACTIVE_BEFORE,
     ROUTER_LEASE_ACTIVE_DURING,
+    ROUTER_SERVICE_CLASSES,
+    ROUTER_HTTP_SERVICE_CLASSES,
+    ROUTER_SESSION_SERVICE_CLASSES,
+    ROUTER_SESSION_EXAMPLE,
+    ROUTER_SESSION_SELECTED,
     ROUTER_FINAL_LOADS,
   } from '../../omni/numbers';
 
@@ -42,6 +47,9 @@
   }, {
     caption: 'Selection adds one to the worker’s active count before sending the request. Response end, error, or cancellation releases it.',
     captionZh: '选择后、发送请求前，worker 活跃数先加一。响应结束、出错或取消时才收回。',
+  }, {
+    caption: 'ServiceClass picks the admission bucket. Sessions need a free slot, while fixed targets skip the selection policy.',
+    captionZh: 'ServiceClass 决定使用哪个 admission 桶。session 还要有空槽位；固定目标不经过选择策略。',
   }, {
     caption: 'C can fail after selection; the router does not retry that response on B. What does the client receive, and when can later requests avoid C?',
     captionZh: 'C 被选中后仍可能故障，router 不会把这个响应转到 B 重试。客户端会收到什么，后续请求何时不再选择 C？',
@@ -85,10 +93,10 @@
   const LEAST_SEQUENCE_PHASE = leastSteps.length * 2 + 1;
   const LEAST_FINAL_PHASE = LEAST_SEQUENCE_PHASE + 1;
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [650, 750, 830, 840, 680, 790, 760, 880][step] : [520, 560, 600, 600, 570, 680, 560, 650][step]);
+  const H = $derived(phone ? [650, 750, 830, 840, 680, 790, 760, 850, 880][step] : [520, 560, 600, 600, 570, 680, 560, 600, 650][step]);
 
   // Each step reveals one routing event at a time, then holds the finished scene before looping.
-  const PHASE_COUNTS = [4, 5, 4, 6, 7, LEAST_FINAL_PHASE + 1, 5, 6];
+  const PHASE_COUNTS = [4, 5, 4, 6, 7, LEAST_FINAL_PHASE + 1, 5, 5, 6];
   const PHASE_MS = 1100, REST_MS = 2500;
   let phase = $state(0);
   let lap = $state(0), lapMs = $state(0);
@@ -357,6 +365,61 @@
         <text x={W / 2} y={phone ? 680 : 345} text-anchor="middle" class="small strong" opacity={phase >= 4 ? 1 : 0.12} style="transition: opacity 350ms">{t('Each exit releases the lease once.', '每条退出路径都只收回一次凭证。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('dispatch = send to the worker · EOF = response end', 'dispatch = 发送请求给 worker · EOF = 响应结束')}</text>
       {:else if step === 7}
+        <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'ServiceClass picks the rule' : 'ServiceClass picks the admission bucket', 'ServiceClass 决定 admission 桶')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'ServiceClass = service + admission bucket' : 'ServiceClass = the request’s service type and its admission bucket', phone ? 'ServiceClass = 服务类型 + admission 桶' : 'ServiceClass = 请求的服务类型，对应一个 admission 桶')}</text>
+        <text x={phone ? 18 : 30} y="79" class="label">{t(`${ROUTER_SERVICE_CLASSES.length} service types · 3 routing shapes`, `${ROUTER_SERVICE_CLASSES.length} 种服务类型 · 3 种路由形状`)}</text>
+        <g opacity={phase >= 1 ? 1 : 0.15} style="transition: opacity 350ms">
+          <rect x={phone ? 18 : 30} y="100" width={phone ? 264 : 660} height={phone ? 190 : 110} rx="12" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width={phase === 1 ? 3 : 1} />
+          <text x={phone ? 32 : 48} y="128" class="small strong">1 · ORDINARY HTTP</text>
+          {#if phone}
+            <text x="32" y="157" class="code">generation_http · speech_http</text>
+            <text x="32" y="183" class="code">speech_batch · transcription_http</text>
+            <text x="32" y="219" class="small">{t('profile + health', 'profile + health')}</text>
+            <text x="32" y="247" class="small strong">→ round robin / least requests</text>
+          {:else}
+            <text x="48" y="157" class="code">{ROUTER_HTTP_SERVICE_CLASSES.join(' · ')}</text>
+            <text x="48" y="187" class="small strong">{t('profile + health → round robin / least requests', 'profile + health → round robin / least requests')}</text>
+          {/if}
+        </g>
+        <g opacity={phase >= 2 ? 1 : 0.15} style="transition: opacity 350ms">
+          <rect x={phone ? 18 : 30} y={phone ? 310 : 225} width={phone ? 264 : 660} height={phone ? 310 : 205} rx="12" fill="var(--bg)" stroke={phase === 2 || phase === 3 ? 'var(--accent)' : 'var(--line)'} stroke-width={phase === 2 || phase === 3 ? 3 : 1} />
+          <text x={phone ? 32 : 48} y={phone ? 338 : 253} class="small strong">2 · WEBSOCKET SESSION</text>
+          {#if phone}
+            <text x="32" y="367" class="code">speech_websocket</text>
+            <text x="32" y="393" class="code">realtime_websocket</text>
+          {:else}
+            <text x="48" y="280" class="code">{ROUTER_SESSION_SERVICE_CLASSES.join(' · ')}</text>
+          {/if}
+          {#each ROUTER_SESSION_EXAMPLE as worker, i}
+            {@const x = phone ? 32 : i === 0 ? 48 : 372}
+            {@const y = phone ? i === 0 ? 415 : 505 : 300}
+            {@const selected = worker.worker === ROUTER_SESSION_SELECTED.worker}
+            {@const updated = selected && phase >= 3}
+            <rect x={x} y={y} width={phone ? 236 : 300} height={phone ? selected ? 85 : 75 : 90} rx="8" fill={selected && phase >= 2 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={selected && phase >= 2 ? 'var(--accent)' : 'var(--faint)'} stroke-width={selected && phase === 2 ? 3 : 1} />
+            <text x={x + 14} y={y + 27} class="small strong">{worker.worker} · active {updated ? `${worker.active}→${worker.active + 1}` : worker.active}</text>
+            <text x={x + 14} y={y + 53} class="small">session {worker.inFlight}/{worker.limit}{updated ? `→${worker.limit}/${worker.limit}` : ''} · {selected ? t(phase >= 2 ? 'FREE → select' : 'free', phase >= 2 ? '有空 → 选择' : '有空') : t('FULL → skip', '已满 → 跳过')}</text>
+            {#if selected}
+              <text x={x + 14} y={y + 78} class="small" opacity={phase >= 3 ? 1 : 0.15}>{t('RequestLease holds the slot', 'RequestLease 持有这个槽位')}</text>
+            {/if}
+          {/each}
+          {#if !phone}
+            <text x="48" y="416" class="small strong" opacity={phase >= 3 ? 1 : 0.15}>{t('free session slot → eligible → lease holds the slot', 'session 有空槽位才可入选 · 凭证持有槽位')}</text>
+          {/if}
+        </g>
+        <g opacity={phase >= 4 ? 1 : 0.15} style="transition: opacity 350ms">
+          <rect x={phone ? 18 : 30} y={phone ? 640 : 445} width={phone ? 264 : 660} height={phone ? 150 : 105} rx="12" fill="var(--gen-soft)" stroke="var(--gen)" stroke-width={phase === 4 ? 3 : 1} />
+          <text x={phone ? 32 : 48} y={phone ? 668 : 473} class="small strong">3 · FIXED TARGET · {t('skip selection policy', '不经过选择策略')}</text>
+          {#if phone}
+            <text x="32" y="699" class="small">uploaded voice</text>
+            <text x="32" y="725" class="small strong">→ {t('configured voice owner', '配置的 voice owner')}</text>
+            <text x="32" y="755" class="small">named follow-up → pinned worker</text>
+          {:else}
+            <text x="48" y="505" class="small">uploaded voice → {t('configured voice owner', '配置的 voice owner')}</text>
+            <text x="48" y="535" class="small">named follow-up → pinned worker · {t('the caller names the worker', '调用方直接指定 worker')}</text>
+          {/if}
+        </g>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Active load ≠ session slots.' : 'Constructed session counts; active load and session slots are different limits.', phone ? '活跃负载 ≠ session 槽位' : '构造的 session 数量；活跃负载和 session 槽位是不同的限制。')}</text>
+      {:else if step === 8}
         <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'Selection is not a guarantee' : 'A selected worker can still fail', phone ? '选中不代表不会故障' : '选中的 worker 仍可能故障')}</text>
         <text x={phone ? 18 : 30} y="55" class="label">{t('New example · constructed loads', '新例子 · 构造的负载')}</text>
         <text x={phone ? 18 : 30} y="79" class="label">{t('blue = eligible workers · orange = failed response', '蓝 = 候选 worker · 橙 = 失败的响应')}</text>

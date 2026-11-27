@@ -192,11 +192,50 @@ For HTTP, this active count is not a per-worker request cap. It feeds least-requ
 
 ### Next
 
-The worker was healthy when its lease began, but a later failure can still truncate the response. The last step follows that boundary to the next chapter.
+The ordinary HTTP count is only one routing input. The next step maps service classes, session capacity and fixed targets before the failure boundary.
 
 Sources: `sglang_omni_router/src/worker_pool/admission.rs:49-88`; `sglang_omni_router/src/http_relay/mod.rs:151-233`; `sglang_omni_router/src/http_relay/response_body.rs:16-101`; `sglang_omni_router/tests/chat_http.rs:901-939,1282-1336,1419-1432`.
 
-## Step 8 · Selection does not prevent a later failure
+## Step 8 · Service classes, session slots and fixed targets
+
+**One sentence.** `ServiceClass` selects the admission bucket, WebSocket sessions also need a free per-worker slot, and a fixed target bypasses the selection policy.
+
+### On the stage
+
+- `ServiceClass` is the request's service type. It maps to the same-named `CapacityClass`, which owns that service's admission permits. The six types are `generation_http`, `speech_http`, `speech_batch`, `transcription_http`, `speech_websocket` and `realtime_websocket`.
+- The first four types use ordinary HTTP dispatch. After profile and health filters, round robin or least requests chooses a worker. Active load guides that policy; it is not a per-worker request cap.
+- The two WebSocket types use session dispatch. A compatible healthy worker also needs a free session permit before it enters the policy's eligible set. Session occupancy and active-request load are separate counts.
+- In the constructed example, A has less active work but its one session slot is full, so the router skips it. B has three active requests and one of two session slots occupied, so B is eligible and selected. Selection changes B to four active requests and two occupied session slots. `RequestLease` holds the second slot.
+- An uploaded-voice request goes to the configured voice owner instead of the policy. A follow-up that names a worker goes to that pinned worker. The uploaded-voice owner still needs a matching profile and good health; a session also needs its free slot. A pinned worker must be healthy.
+
+### Formula and symbols
+
+$$F_w=C_w-U_w$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $C_w$ | Configured session capacity on worker $w$ | The denominator on the stage |
+| $U_w$ | Sessions already using that capacity | The numerator on the stage |
+| $F_w$ | Free session slots | $C_w-U_w$ |
+
+A worker enters session selection only when $F_w>0$, after the profile and health checks. The active count used by least requests does not replace $F_w$.
+
+### The numbers on the stage
+
+| Worker | Active before | Session used / limit | Free slots | Eligible | Active after | Session after |
+|---|---:|---:|---:|---|---:|---:|
+| A | 0 | 1 / 1 | $1-1=0$ | No | 0 | 1 / 1 |
+| B | 3 | 1 / 2 | $2-1=1$ | Yes, selected | 4 | 2 / 2 |
+
+B's lease owns both its ordinary active +1 and the additional session permit. Dropping the lease releases them together. The displayed counts are constructed to show why a lower active count cannot override a full session pool.
+
+### Next
+
+The map ends with the worker chosen for one ordinary HTTP response. The last step follows that worker through a post-commit reset.
+
+Sources: `sglang_omni_router/src/worker_pool/profile.rs:15-82,133-139`; `sglang_omni_router/src/worker_pool/mod.rs:338-463,499-541,635-644,792-801,942-977`; `sglang_omni_router/src/worker_pool/admission.rs:66-87`.
+
+## Step 9 · Selection does not prevent a later failure
 
 **One sentence.** The router selects one compatible healthy worker, but it does not move that request to another worker if the selected worker fails mid-response.
 

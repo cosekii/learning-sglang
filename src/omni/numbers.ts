@@ -340,6 +340,21 @@ export const ROUTER_LEAST_INITIAL_LOADS = [2, 0, 0] as const;
 export const ROUTER_LEAST_SELECTIONS = [1, 2, 1, 2] as const;
 export const ROUTER_LEASE_ACTIVE_BEFORE = 0;
 export const ROUTER_LEASE_ACTIVE_DURING = ROUTER_LEASE_ACTIVE_BEFORE + 1;
+export const ROUTER_SERVICE_CLASSES = [
+  'generation_http',
+  'speech_http',
+  'speech_batch',
+  'transcription_http',
+  'speech_websocket',
+  'realtime_websocket',
+] as const;
+export const ROUTER_HTTP_SERVICE_CLASSES = ROUTER_SERVICE_CLASSES.slice(0, 4);
+export const ROUTER_SESSION_SERVICE_CLASSES = ROUTER_SERVICE_CLASSES.slice(4);
+export const ROUTER_SESSION_EXAMPLE = [
+  { worker: 'A', active: 0, inFlight: 1, limit: 1 },
+  { worker: 'B', active: 3, inFlight: 1, limit: 2 },
+] as const;
+export const ROUTER_SESSION_SELECTED = ROUTER_SESSION_EXAMPLE.find(({ worker, inFlight, limit }) => worker === 'B' && inFlight < limit)!;
 export const ROUTER_FINAL_LOADS = [2, 1] as const;
 
 // A constructed identifier used to read a communication trace, not captured log output.
