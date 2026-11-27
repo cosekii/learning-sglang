@@ -41,8 +41,8 @@
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
   const steps = [{
-    caption: 'Delivery reaches 2.0 seconds, but playback reaches 1.2. The remaining 800 ms is already beyond the server queues.',
-    captionZh: '声音已交付 2.0 秒，但只播放了 1.2 秒。其余 800 ms 已不在服务器队列里。',
+    caption: 'An old reply has D = 2.0 seconds delivered and H = 1.2 seconds heard. The remaining 800 ms is beyond the server queues.',
+    captionZh: '旧回答已交付 D = 2.0 秒，已播放 H = 1.2 秒。其余 800 ms 已不在服务器队列里。',
   }, {
     caption: 'Three designs handle the same interruption. A streaming cascade separates recognition, language and speech services.',
     captionZh: '三种设计处理同一次打断。streaming cascade 让识别、语言模型和语音生成接力。',
@@ -89,8 +89,8 @@
   <div class="canvas">
     <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={$lang === 'zh' ? cur.captionZh : cur.caption}>
       {#if step === 0}
-        <text x={phone ? 18 : 30} y="30" class="title">{t('Delivered sound is not played sound', '交付的声音不等于播过的声音')}</text>
-        <text x={phone ? 18 : 30} y="55" class="label">{t('one constructed reply · blue = reply audio', '同一段构造回答 · 蓝 = 回答声音')}</text>
+        <text x={phone ? 18 : 30} y="30" class="title">{t('Old reply: delivered is not heard', '旧回答：交付不等于听过')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'old work queued · blue = reply audio' : 'Ch. 11’s old reply · queued old work can be dropped · blue = reply audio', phone ? '旧工作可删 · 蓝 = 回答声音' : '第 11 章的旧回答 · 排队旧工作可删除 · 蓝 = 回答声音')}</text>
         <text x={phone ? 18 : 30} y="79" class="label">{t('red outline = delivered but not played', '红框 = 已交付但还没播放')}</text>
         {#if !phone}
           {#each [
@@ -105,7 +105,7 @@
           {/each}
           <rect x={240 + (DUPLEX_HEARD_MS / DUPLEX_GENERATED_MS) * 410} y="205" width={(DUPLEX_DELIVERED_UNPLAYED_MS / DUPLEX_GENERATED_MS) * 410} height="50" rx="7" fill="none" stroke="var(--eos)" stroke-width="3" />
           <text x="360" y="393" text-anchor="middle" class="result">D − H = {seconds(DUPLEX_DELIVERED_MS)} − {seconds(DUPLEX_HEARD_MS)} = {seconds(DUPLEX_DELIVERED_UNPLAYED_MS)} s = {DUPLEX_DELIVERED_UNPLAYED_MS} ms</text>
-          <text x="360" y="433" text-anchor="middle" class="small strong">{t('The server can delete queued sound, not this delivered interval.', '服务器能删掉排队声音，删不掉这段已交付声音。')}</text>
+          <text x="360" y="433" text-anchor="middle" class="small strong">{t('The server can drop queued old reply work, not this delivered interval.', '服务器能删除排队的旧回答工作，删不掉这段已交付声音。')}</text>
           <text x="360" y="477" text-anchor="middle" class="result">{t('What does each design keep in the next answer?', '三种设计会把多少旧回答留进下一次回答？')}</text>
         {:else}
           {#each [
@@ -120,7 +120,7 @@
           <rect x={18 + (DUPLEX_HEARD_MS / DUPLEX_GENERATED_MS) * 230} y="250" width={(DUPLEX_DELIVERED_UNPLAYED_MS / DUPLEX_GENERATED_MS) * 230} height="48" rx="7" fill="none" stroke="var(--eos)" stroke-width="3" />
           <text x="150" y="477" text-anchor="middle" class="result">D − H = {seconds(DUPLEX_DELIVERED_MS)} − {seconds(DUPLEX_HEARD_MS)}</text>
           <text x="150" y="507" text-anchor="middle" class="result">= {DUPLEX_DELIVERED_UNPLAYED_MS} ms {t('not played', '还没播放')}</text>
-          <text x="150" y="551" text-anchor="middle" class="small">{t('Queued sound can be deleted.', '服务器能删掉排队声音。')}</text>
+          <text x="150" y="551" text-anchor="middle" class="small">{t('Queued old reply work can be dropped.', '队列中的旧回答工作可删除。')}</text>
           <text x="150" y="577" text-anchor="middle" class="small">{t('This delivered interval cannot.', '删不掉这段已交付声音。')}</text>
           <text x="150" y="617" text-anchor="middle" class="small strong">{t('What enters the next answer?', '多少旧回答进入下次回答？')}</text>
         {/if}

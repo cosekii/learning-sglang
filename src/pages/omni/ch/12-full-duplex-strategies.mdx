@@ -13,7 +13,7 @@ export const deep = await deepFor('omni-12-full-duplex-strategies');
 <details class="i18n-en">
 <summary>Where this chapter's claims come from</summary>
 
-Step 1 uses a constructed 2.5-second reply. The delivery ledger reaches 2.0 seconds and the client reports 1.2 seconds played, leaving 800 ms delivered but unplayed. `DeliveryPacer.sent()` counts audio handed to the client; it does not observe acoustic playback (`sglang_omni/pipeline/session_delivery.py:112-128`). The default `max_output_lead_ms` is 1,000 ms (`sglang_omni/proto/session.py:19-28`), so the constructed 800 ms interval fits within that delivery horizon. Later steps reuse these exact positions.
+Step 1 directly continues Ch. 11 Step 8's old-reply handoff: queued old work can be dropped, while `D` and `H` track delivered and heard audio. It uses a constructed 2.5-second reply. The delivery ledger reaches 2.0 seconds and the client reports 1.2 seconds played, leaving 800 ms delivered but unplayed. `DeliveryPacer.sent()` counts audio handed to the client; it does not observe acoustic playback (`sglang_omni/pipeline/session_delivery.py:112-128`). The default `max_output_lead_ms` is 1,000 ms (`sglang_omni/proto/session.py:19-28`), so the constructed 800 ms interval fits within that delivery horizon. Later steps reuse these exact positions.
 
 Step 2 maps alternatives rather than stages in one pipeline. Turn-based and native full-duplex recall Learning SGLang Ch. 21 Steps 1–2. The new streaming-cascade route sends audio through ASR, a chat-completion LLM and sentence-wise TTS (`docs/developer_reference/full_duplex_guide.md:1582-1591,1622-1645`). MiniCPM-o consumes 1,000 ms units and makes model-led listen/speak decisions (`docs/developer_reference/full_duplex_guide.md:391-397`). These are different systems, so the chapter does not treat their measurements as an isolated architecture benchmark.
 
@@ -36,7 +36,7 @@ Code references in this chapter pin to `sglang-omni origin/main@9725235249df8512
 <details class="i18n-zh">
 <summary>本章说法的出处</summary>
 
-第 1 步构造一段 2.5 秒回答。交付记录到 2.0 秒，客户端报告播放到 1.2 秒，因此有 800 ms 已交付但未播放。`DeliveryPacer.sent()` 统计交给客户端连接的声音，不观察真实播放（`sglang_omni/pipeline/session_delivery.py:112-128`）。默认 `max_output_lead_ms` 是 1,000 ms（`sglang_omni/proto/session.py:19-28`），所以这段 800 ms 构造间隔在默认交付范围内。后续步骤沿用同一组位置。
+第 1 步直接承接第 11 章第 8 步交出的旧回答：排队旧工作可以删除，`D` 和 `H` 分别记录已交付、已播放的位置。这里构造一段 2.5 秒回答。交付记录到 2.0 秒，客户端报告播放到 1.2 秒，因此有 800 ms 已交付但未播放。`DeliveryPacer.sent()` 统计交给客户端连接的声音，不观察真实播放（`sglang_omni/pipeline/session_delivery.py:112-128`）。默认 `max_output_lead_ms` 是 1,000 ms（`sglang_omni/proto/session.py:19-28`），所以这段 800 ms 构造间隔在默认交付范围内。后续步骤沿用同一组位置。
 
 第 2 步画的是替代方案，不是同一条流水线的三段。turn-based 和 native full-duplex 回指 Learning SGLang 第 21 章第 1–2 步。新的 streaming cascade 路线把声音依次交给 ASR、聊天补全 LLM 和逐句 TTS（`docs/developer_reference/full_duplex_guide.md:1582-1591,1622-1645`）。MiniCPM-o 每份输入是 1,000 ms，由模型选择听或说（`docs/developer_reference/full_duplex_guide.md:391-397`）。三者是不同系统，本章不把它们的测量差值当成只由架构造成的 benchmark 结果。
 

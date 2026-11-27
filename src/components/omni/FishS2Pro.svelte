@@ -65,8 +65,8 @@
     caption: 'Streaming re-reads old frames and delays 512 samples. Old frames are not played again.',
     captionZh: '流式会重读旧帧，并延后 512 个采样点。旧帧不会再次播放。',
   }, {
-    caption: 'Without streaming, Fish batches completed requests. Padding makes one shared call; trimming restores each length.',
-    captionZh: '不用流式时，Fish 合并已完成请求。先补成同长，再各裁回长度。',
+    caption: 'Without streaming, Fish pads completed requests into one call, then trims each output. Next, an interruption leaves old reply work, with D = delivered and H = heard.',
+    captionZh: '不用流式时，Fish 先补成同长调用，再裁回各份长度。下一步，打断留下旧回答工作；D 记交付，H 记播放。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -732,9 +732,9 @@
           <text x="360" y="477" text-anchor="middle" class="small" opacity={phase >= 1 ? 1 : 0.06} style="transition: opacity 350ms">11→10: {t('drop raw token', '去掉原始 token')} · [requests, code rows, frames]</text>
           <g opacity={phase >= 3 ? 1 : 0.06} style="transition: opacity 350ms">
             <rect x="30" y="491" width="660" height="100" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" />
-            <text x="360" y="520" text-anchor="middle" class="small strong">{t('THIS ONE-WAY REQUEST IS DONE', '这条单向请求已完成')}</text>
-            <text x="360" y="543" text-anchor="middle" class="small">{t('audio input is still arriving · sound output is playing', '输入声音仍在到达 · 输出声音正在播放')}</text>
-            <text x="360" y="570" text-anchor="middle" class="result">{t('If audio keeps arriving, what must a session keep?', '如果声音持续到达，session 要保留什么？')}</text>
+            <text x="360" y="520" text-anchor="middle" class="small strong">{t('NEXT · INTERRUPT AN OLD REPLY', '下一步 · 打断一条旧回答')}</text>
+            <text x="360" y="543" text-anchor="middle" class="small">{t('old work still queued · D = delivered · H = heard', '旧工作仍在队列 · D = 已交付 · H = 已播放')}</text>
+            <text x="360" y="570" text-anchor="middle" class="result">{t('What can the server drop, and what already left its queues?', '服务器能删什么，什么已经离开队列？')}</text>
           </g>
         {:else}
           <rect x="18" y="82" width="264" height="128" rx="11" fill="var(--bg)" stroke="var(--line)" />
@@ -771,9 +771,9 @@
           <text x="150" y="750" text-anchor="middle" class="small" opacity={phase >= 1 ? 1 : 0.06} style="transition: opacity 350ms">11→10: {t('drop raw', '去原始行')} · [requests, rows, frames]</text>
           <g opacity={phase >= 3 ? 1 : 0.06} style="transition: opacity 350ms">
             <rect x="18" y="763" width="264" height="108" rx="11" fill="var(--accent-soft)" stroke="var(--accent)" />
-            <text x="150" y="790" text-anchor="middle" class="small strong">{t('ONE-WAY REQUEST DONE', '单向请求已完成')}</text>
-            <text x="150" y="817" text-anchor="middle" class="small">{t('audio in: arriving · sound out: playing', '输入声音仍到达 · 输出声音正播放')}</text>
-            <text x="150" y="848" text-anchor="middle" class="result">{t('What must a session remember?', '声音持续到达：session 保留什么？')}</text>
+            <text x="150" y="790" text-anchor="middle" class="small strong">{t('NEXT · INTERRUPT AN OLD REPLY', '下一步 · 打断一条旧回答')}</text>
+            <text x="150" y="817" text-anchor="middle" class="small">{t('old work queued · D delivered · H heard', '旧工作仍在队列 · D 已交付 · H 已播放')}</text>
+            <text x="150" y="848" text-anchor="middle" class="result">{t('What can the server still drop?', '服务器还能删除什么？')}</text>
           </g>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t(`Completed: max ${FISH_NONSTREAM_MAX_BATCH} · wait up to ${FISH_NONSTREAM_WAIT_MS} ms`, `已完成：最多 ${FISH_NONSTREAM_MAX_BATCH} 个 · 最多等 ${FISH_NONSTREAM_WAIT_MS} ms`) : t(`Completed defaults: max ${FISH_NONSTREAM_MAX_BATCH}, wait up to ${FISH_NONSTREAM_WAIT_MS} ms for more. Streaming stays per request.`, `已完成请求默认最多 ${FISH_NONSTREAM_MAX_BATCH} 个，额外请求最多等 ${FISH_NONSTREAM_WAIT_MS} ms；流式 chunks 仍逐请求运行。`)}</text>

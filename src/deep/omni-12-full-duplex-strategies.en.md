@@ -1,9 +1,10 @@
-## Step 1 · Delivered is not heard
+## Step 1 · The old reply: delivered is not heard
 
-> **In one line:** The server has delivered 800 ms more reply audio than the client has played.
+> **In one line:** Ch. 11's old reply has 800 ms delivered but not played, separately from its queued old work.
 
 ### On the stage
 
+- Ch. 11 Step 8 hands off this old reply and its queued old work. `D` and `H` keep the delivered and heard positions named there.
 - One constructed reply contains 2.5 seconds of generated audio.
 - Blue bars show three positions of that same reply on one scale.
 - `D = 2.0 s` is the audio duration handed to the client connection.

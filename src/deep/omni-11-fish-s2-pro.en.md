@@ -357,6 +357,7 @@ Sources: `scheduling/audio_stream.py:65-148,151-239,242-333`; `scheduling/audio_
 - Blue bars are real code frames. Grey bars are 50 padding frames added to B.
 - One `[2,10,90]` vocoder call returns two outputs. Trimming removes B's padding.
 - The factory collects at most eight completed requests and waits up to 2 ms for additional requests. Streaming windows remain per request.
+- The closing card moves to an interrupted old reply. Old work may still be queued, `D` marks delivered audio, and `H` marks audio the client heard.
 
 ### Formula and the numbers on the stage
 
@@ -390,7 +391,7 @@ The two frame counts are constructed. The batch limit and collection wait are sh
 
 ### Next
 
-This one-way request is complete. Chapter 12 asks what state a session must retain when input audio continues while output is playing.
+Chapter 12 Step 1 takes that same old reply. It compares `D = 2.0 s` delivered with `H = 1.2 s` heard, leaving 800 ms outside the server queues.
 
 Source shorthand: `fish/` = `sglang_omni/models/fishaudio_s2_pro/`; other paths start at `sglang_omni/`.
 
