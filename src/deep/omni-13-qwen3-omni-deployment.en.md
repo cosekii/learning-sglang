@@ -149,53 +149,60 @@ The config values come from `examples/configs/qwen3_omni_colocated_h100_bf16.yam
 
 The next step tests a separate video example in GB and asks whether it fits on one card.
 
-## Step 5 · The video test overflows one H100
+## Step 5 · The current default still overflows after the talker moves
 
-> **In one line:** The constructed video test needs 85.7 GB on an 80 GB card, so the 8 GB talker moves to GPU 1.
+> **In one line:** At 65,536 tokens, moving the 8 GB talker leaves 80.891456 GB, still 0.891456 GB above the card.
 
 ### On the stage
 
-- The six input rows form a separate constructed video-test lower bound. The video-reserve, other-stage, held-back and talker rows use Step 4's shares; weights and KV use their own byte arithmetic. The rows are 61.0 GB of thinker weights, 4.0 GB of video reserve, 3.1 GB of KV cache, 4.8 GB for encoders and code2wav, 4.8 GB held back and 8.0 GB for the talker.
-- Both bars use the same 0–90 GB scale. The dashed line marks the 80 GB card.
-- In the before bar, blue covers the 77.7 GB that can stay on GPU 0 and orange covers the 8.0 GB talker. The red part beyond the dashed line is the 5.7 GB overflow.
-- In the after bar, removing the orange talker leaves 77.7 GB on GPU 0. The talker moves to GPU 1.
+- Both panels share 82.6 GB before KV: 61.0 GB of thinker weights, 4.0 GB of video reserve, 4.8 GB for other stages, 4.8 GB held back and 8.0 GB for the talker. The weight row uses `30.5B × 2 B`; the other rows use Step 4's shares.
+- The previous panel uses 32,768 tokens. Its KV entry is 3.145728 GB, its before total is 85.745728 GB and moving the talker leaves 77.745728 GB, which fits with 2.254272 GB free.
+- The current-default panel uses 65,536 tokens. Its KV entry is 6.291456 GB, its before total is 88.891456 GB and moving the talker leaves 80.891456 GB, still 0.891456 GB over.
+- All four bars use the same 0–90 GB scale and the same 80 GB dashed card line. Blue stays on GPU 0, orange is the talker and red is overflow.
 
 ### Formula
 
 $$
-T=W+V+K+O+H+X,\qquad R=T-C,\qquad S=T-X
+\begin{gathered}
+B=W+V+O+H+X\\
+K_n=n\times96\times10^{-6}\ \mathrm{GB}
+\end{gathered}
+$$
+$$
+\begin{gathered}
+T_n=B+K_n\\
+S_n=T_n-X\\
+D_n=S_n-C
+\end{gathered}
 $$
 
-| Symbol | Meaning | Size | Source |
-|---|---|---:|---|
-| $T$ | Total video-test minimum | 85.7 GB | This step |
-| $W$ | Thinker weights | 61.0 GB | `30.5B × 2 B` |
-| $V$ | Video encoder reserve | 4.0 GB | `5% × 80 GB` |
-| $K$ | KV cache for the constructed request | about 3.1 GB | `32,768 × 96 KB` |
-| $O$ | Other stages | 4.8 GB | `(2% + 2% + 2%) × 80 GB` |
-| $H$ | Held back outside declarations | 4.8 GB | `6% × 80 GB` |
-| $X$ | Talker | 8.0 GB | `10% × 80 GB` |
-| $C$ | H100 capacity used in this example | 80 GB | Learning SGLang Ch. 19 Step 4 |
-| $R$ | Overflow | 5.7 GB | This step |
-| $S$ | What remains without the talker | 77.7 GB | This step |
+| Symbol | Meaning, size and source |
+|---|---|
+| $B$ | Shared total before KV: 82.6 GB from $W+V+O+H+X$. |
+| $W$ | Thinker weights: 61.0 GB from `30.5B × 2 B`. |
+| $V$ | Video encoder reserve: 4.0 GB from `5% × 80 GB`. |
+| $O$ | Other stages: 4.8 GB from `(2% + 2% + 2%) × 80 GB`. |
+| $H$ | Held back outside declarations: 4.8 GB from `6% × 80 GB`. |
+| $X$ | Talker: 8.0 GB from `10% × 80 GB`. |
+| $n$ | Token limit: 32,768 from the tutorial snapshot or 65,536 from PR #2735. |
+| $K_n$ | KV cache at limit $n$: 3.145728 or 6.291456 GB from $n\times96\ \mathrm{KB}$. |
+| $T_n$ | Total before the move: $B+K_n$, 85.745728 or 88.891456 GB. |
+| $S_n$ | What remains after the move: $T_n-X$, 77.745728 or 80.891456 GB. |
+| $C$ | H100 capacity in this example: 80 GB from Learning SGLang Ch. 19 Step 4. |
+| $D_n$ | Remaining demand minus card capacity: −2.254272 GB fits; +0.891456 GB overflows. |
 
 ### The numbers on the stage
 
-| Part | Arithmetic | GB |
-|---|---|---:|
-| Thinker weights | `30.5B × 2 B` | 61.0 |
-| Video encoder reserve | `5% × 80 GB` | 4.0 |
-| KV cache for the constructed longest request | `32,768 × 96 KB` | about 3.1 |
-| Two encoders and code2wav | `(2% + 2% + 2%) × 80 GB` | 4.8 |
-| Held back outside declarations | `6% × 80 GB` | 4.8 |
-| Talker | `10% × 80 GB` | 8.0 |
-| Total | sum of the six rows | about 85.7 |
+- Previous, $n=32{,}768$: `K_n = 32,768 × 96 KB = 3.145728 GB` and `T_n = 82.6 + 3.145728 = 85.745728 GB`.
+- After the previous move: `S_n = 85.745728 − 8 = 77.745728 GB` and `D_n = 77.745728 − 80 = −2.254272 GB`, so it fits.
+- Current default, $n=65{,}536$: `K_n = 65,536 × 96 KB = 6.291456 GB` and `T_n = 82.6 + 6.291456 = 88.891456 GB`.
+- After the current move: `S_n = 88.891456 − 8 = 80.891456 GB` and `D_n = 80.891456 − 80 = 0.891456 GB`, so it still overflows.
 
-Here `30.5B` means 30.5 billion saved values and `2 B` means 2 bytes per value. The overflow is `85.7 − 80 = 5.7 GB`. Removing only the talker gives `85.7 − 8.0 = 77.7 GB`, which fits.
+Here `30.5B` means 30.5 billion saved values and `2 B` means 2 bytes per value. Before the move, the two examples overflow by `85.745728 − 80 = 5.745728 GB` and `88.891456 − 80 = 8.891456 GB`. The current default still overflows after the move.
 
 ### Boundaries and sources
 
-These values come from `src/omni/numbers.ts` and reproduce Learning SGLang Ch. 19 Step 4's constructed lower bound. Its 32,768-token KV entry uses the previous limit. The checkpoint's current 65,536-token default raises that entry, so this is not a current peak-memory measurement and the overflow conclusion still holds.
+The values come from `src/omni/numbers.ts`. The previous panel reproduces Learning SGLang Ch. 19 Step 4's 32,768-token tutorial snapshot. Since PR #2735, SGLang-Omni takes the thinker limit from the checkpoint context by default; the Instruct checkpoint uses 65,536 tokens. These are constructed configuration lower bounds, not measured peak-memory occupancy.
 
 ### Next
 

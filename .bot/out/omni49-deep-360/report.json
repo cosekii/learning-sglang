@@ -1,0 +1,224 @@
+{
+  "base": "http://127.0.0.1:4501/learning-sglang",
+  "width": 360,
+  "states": [
+    {
+      "step": 5,
+      "lang": "en",
+      "counter": "05 / 10",
+      "expanded": "true",
+      "title": "Step 5 · The current default still overflows after the talker moves",
+      "pageOverflow": false,
+      "drawerOverflow": false,
+      "drawerClientWidth": 359,
+      "drawerScrollWidth": 359,
+      "children": [
+        {
+          "tag": "H2",
+          "clientWidth": 311,
+          "scrollWidth": 311,
+          "text": "Step 5 · The current default still overflows after the talker moves"
+        },
+        {
+          "tag": "BLOCKQUOTE",
+          "clientWidth": 311,
+          "scrollWidth": 311,
+          "text": "In one line: At 65,536 tokens, moving the 8 GB talker leaves 80.891456 GB, still 0.891456 GB above t"
+        },
+        {
+          "tag": "H3",
+          "clientWidth": 311,
+          "scrollWidth": 311,
+          "text": "On the stage"
+        },
+        {
+          "tag": "UL",
+          "clientWidth": 311,
+          "scrollWidth": 311,
+          "text": "Both panels share 82.6 GB before KV: 61.0 GB of thinker weights, 4.0 GB of video reserve, 4.8 GB for"
+        },
+        {
+          "tag": "H3",
+          "clientWidth": 311,
+          "scrollWidth": 311,
+          "text": "Formula"
+        },
+        {
+          "tag": "SPAN",
+          "clientWidth": 311,
+          "scrollWidth": 311,
+          "text": "B=W+V+O+H+XKn=n×96×10−6 GB\\begin{gathered} B=W+V+O+H+X\\\\ K_n=n\\times96\\times10^{-6}\\ \\mathrm{GB} \\en"
+        },
+        {
+          "tag": "SPAN",
+          "clientWidth": 311,
+          "scrollWidth": 311,
+          "text": "Tn=B+KnSn=Tn−XDn=Sn−C\\begin{gathered} T_n=B+K_n\\\\ S_n=T_n-X\\\\ D_n=S_n-C \\end{gathered}Tn​=B+Kn​Sn​=T"
+        },
+        {
+          "tag": "TABLE",
+          "clientWidth": 311,
+          "scrollWidth": 311,
+          "text": "SymbolMeaning, size and sourceBBBShared total before KV: 82.6 GB from W+V+O+H+XW+V+O+H+XW+V+O+H+X.WW"
+        },
+        {
+          "tag": "H3",
+          "clientWidth": 311,
+          "scrollWidth": 311,
+          "text": "The numbers on the stage"
+        },
+        {
+          "tag": "UL",
+          "clientWidth": 311,
+          "scrollWidth": 311,
+          "text": "Previous, n=32,768n=32{,}768n=32,768: K_n = 32,768 × 96 KB = 3.145728 GB and T_n = 82.6 + 3.145728 ="
+        },
+        {
+          "tag": "P",
+          "clientWidth": 311,
+          "scrollWidth": 311,
+          "text": "Here 30.5B means 30.5 billion saved values and 2 B means 2 bytes per value. Before the move, the two"
+        },
+        {
+          "tag": "H3",
+          "clientWidth": 311,
+          "scrollWidth": 311,
+          "text": "Boundaries and sources"
+        },
+        {
+          "tag": "P",
+          "clientWidth": 311,
+          "scrollWidth": 311,
+          "text": "The values come from src/omni/numbers.ts. The previous panel reproduces Learning SGLang Ch. 19 Step "
+        },
+        {
+          "tag": "H3",
+          "clientWidth": 311,
+          "scrollWidth": 311,
+          "text": "Next"
+        },
+        {
+          "tag": "P",
+          "clientWidth": 311,
+          "scrollWidth": 311,
+          "text": "Memory also depends on the checkpoint’s precision, so the next step compares BF16, FP8 and INT4."
+        }
+      ],
+      "wide": [],
+      "katexErrors": 0,
+      "rawMath": false,
+      "minStageFont": 10.760416666666666,
+      "activeElement": "",
+      "missing": []
+    },
+    {
+      "step": 5,
+      "lang": "zh",
+      "counter": "05 / 10",
+      "expanded": "true",
+      "title": "第 5 步 · 当前默认在 talker 移卡后仍超出一卡",
+      "pageOverflow": false,
+      "drawerOverflow": false,
+      "drawerClientWidth": 359,
+      "drawerScrollWidth": 359,
+      "children": [
+        {
+          "tag": "H2",
+          "clientWidth": 311,
+          "scrollWidth": 311,
+          "text": "第 5 步 · 当前默认在 talker 移卡后仍超出一卡"
+        },
+        {
+          "tag": "BLOCKQUOTE",
+          "clientWidth": 311,
+          "scrollWidth": 311,
+          "text": "一句话： 65,536 token 时，移走 8 GB talker 后仍需 80.891456 GB，比显卡多 0.891456 GB。"
+        },
+        {
+          "tag": "H3",
+          "clientWidth": 311,
+          "scrollWidth": 311,
+          "text": "图上是什么"
+        },
+        {
+          "tag": "UL",
+          "clientWidth": 311,
+          "scrollWidth": 311,
+          "text": "两栏在 KV 前共用 82.6 GB：61.0 GB thinker 权重、4.0 GB 视频预留、4.8 GB 其他 stages、4.8 GB 比例外预留和 8.0 GB talker。权重来自 "
+        },
+        {
+          "tag": "H3",
+          "clientWidth": 311,
+          "scrollWidth": 311,
+          "text": "公式"
+        },
+        {
+          "tag": "SPAN",
+          "clientWidth": 311,
+          "scrollWidth": 311,
+          "text": "B=W+V+O+H+XKn=n×96×10−6 GB\\begin{gathered} B=W+V+O+H+X\\\\ K_n=n\\times96\\times10^{-6}\\ \\mathrm{GB} \\en"
+        },
+        {
+          "tag": "SPAN",
+          "clientWidth": 311,
+          "scrollWidth": 311,
+          "text": "Tn=B+KnSn=Tn−XDn=Sn−C\\begin{gathered} T_n=B+K_n\\\\ S_n=T_n-X\\\\ D_n=S_n-C \\end{gathered}Tn​=B+Kn​Sn​=T"
+        },
+        {
+          "tag": "TABLE",
+          "clientWidth": 311,
+          "scrollWidth": 311,
+          "text": "符号含义、大小和来源BBBKV 前的共用合计：W+V+O+H+XW+V+O+H+XW+V+O+H+X，82.6 GB。WWWthinker 权重：30.5B × 2 B，61.0 GB。VVV视频 e"
+        },
+        {
+          "tag": "H3",
+          "clientWidth": 311,
+          "scrollWidth": 311,
+          "text": "代入图上的数"
+        },
+        {
+          "tag": "UL",
+          "clientWidth": 311,
+          "scrollWidth": 311,
+          "text": "旧例，n=32,768n=32{,}768n=32,768：K_n = 32,768 × 96 KB = 3.145728 GB，T_n = 82.6 + 3.145728 = 85.745728 G"
+        },
+        {
+          "tag": "P",
+          "clientWidth": 311,
+          "scrollWidth": 311,
+          "text": "这里 30.5B 是 305 亿个保存的权重数，2 B 是每个权重占 2 字节。移卡前，两个算例分别超出 85.745728 − 80 = 5.745728 GB 和 88.891456 − 80 ="
+        },
+        {
+          "tag": "H3",
+          "clientWidth": 311,
+          "scrollWidth": 311,
+          "text": "边界与出处"
+        },
+        {
+          "tag": "P",
+          "clientWidth": 311,
+          "scrollWidth": 311,
+          "text": "数值由 src/omni/numbers.ts 推导。旧例栏复现 Learning SGLang 第 19 章第 4 步的 32,768 token 教程快照。PR #2735 之后，SGLang-O"
+        },
+        {
+          "tag": "H3",
+          "clientWidth": 311,
+          "scrollWidth": 311,
+          "text": "接下来"
+        },
+        {
+          "tag": "P",
+          "clientWidth": 311,
+          "scrollWidth": 311,
+          "text": "显存也取决于 checkpoint 的精度，下一步对照 BF16、FP8 和 INT4。"
+        }
+      ],
+      "wide": [],
+      "katexErrors": 0,
+      "rawMath": false,
+      "minStageFont": 10.760416666666666,
+      "activeElement": "",
+      "missing": []
+    }
+  ]
+}

@@ -1,0 +1,512 @@
+{
+  "base": "http://127.0.0.1:4501/learning-sglang",
+  "lang": "en",
+  "entry": "direct",
+  "width": 1440,
+  "summary": {
+    "states": 5,
+    "transitions": 4,
+    "changedTransitions": 4,
+    "minFont": 11.578,
+    "overlaps": 0,
+    "overflow": 0,
+    "geometryFailures": []
+  },
+  "states": [
+    {
+      "phase": 0,
+      "step": 5,
+      "finalPhase": 4,
+      "counter": "05 / 10",
+      "minFont": 11.578,
+      "minFontText": "2 of 5 · PLACEMENT · CHECK THE TALKER MOVE",
+      "overlaps": [],
+      "overflow": [],
+      "bars": [
+        {
+          "fill": "var(--accent)",
+          "x": 35,
+          "y": 296,
+          "width": 250.51401244444446,
+          "opacity": 0.08
+        },
+        {
+          "fill": "var(--gen)",
+          "x": 285.51401244444446,
+          "y": 296,
+          "width": 25.77777777777778,
+          "opacity": 0.08
+        },
+        {
+          "fill": "var(--eos)",
+          "x": 292.77777777777777,
+          "y": 296,
+          "width": 18.514012444444443,
+          "opacity": 0.08
+        },
+        {
+          "fill": "var(--accent)",
+          "x": 35,
+          "y": 387,
+          "width": 250.51401244444446,
+          "opacity": 0.08
+        },
+        {
+          "fill": "var(--accent)",
+          "x": 395,
+          "y": 296,
+          "width": 260.65024711111107,
+          "opacity": 0.08
+        },
+        {
+          "fill": "var(--gen)",
+          "x": 655.6502471111111,
+          "y": 296,
+          "width": 25.77777777777778,
+          "opacity": 0.08
+        },
+        {
+          "fill": "var(--eos)",
+          "x": 652.7777777777778,
+          "y": 296,
+          "width": 28.65024711111108,
+          "opacity": 0.08
+        },
+        {
+          "fill": "var(--accent)",
+          "x": 395,
+          "y": 387,
+          "width": 260.65024711111107,
+          "opacity": 0.08
+        },
+        {
+          "fill": "var(--eos)",
+          "x": 652.7777777777778,
+          "y": 387,
+          "width": 2.8724693333333042,
+          "opacity": 0.08
+        }
+      ],
+      "limits": [
+        {
+          "x1": 292.77777777777777,
+          "y1": 290,
+          "opacity": 0.08
+        },
+        {
+          "x1": 292.77777777777777,
+          "y1": 381,
+          "opacity": 0.08
+        },
+        {
+          "x1": 652.7777777777778,
+          "y1": 290,
+          "opacity": 0.08
+        },
+        {
+          "x1": 652.7777777777778,
+          "y1": 381,
+          "opacity": 0.08
+        }
+      ],
+      "signature": "6062b67b61878201251cd532b71f01afe3abbfc55bf49c7e02204a8437e205e8",
+      "changed": null
+    },
+    {
+      "phase": 1,
+      "step": 5,
+      "finalPhase": 4,
+      "counter": "05 / 10",
+      "minFont": 11.578,
+      "minFontText": "2 of 5 · PLACEMENT · CHECK THE TALKER MOVE",
+      "overlaps": [],
+      "overflow": [],
+      "bars": [
+        {
+          "fill": "var(--accent)",
+          "x": 35,
+          "y": 296,
+          "width": 250.51401244444446,
+          "opacity": 1
+        },
+        {
+          "fill": "var(--gen)",
+          "x": 285.51401244444446,
+          "y": 296,
+          "width": 25.77777777777778,
+          "opacity": 1
+        },
+        {
+          "fill": "var(--eos)",
+          "x": 292.77777777777777,
+          "y": 296,
+          "width": 18.514012444444443,
+          "opacity": 1
+        },
+        {
+          "fill": "var(--accent)",
+          "x": 35,
+          "y": 387,
+          "width": 250.51401244444446,
+          "opacity": 0.08
+        },
+        {
+          "fill": "var(--accent)",
+          "x": 395,
+          "y": 296,
+          "width": 260.65024711111107,
+          "opacity": 0.08
+        },
+        {
+          "fill": "var(--gen)",
+          "x": 655.6502471111111,
+          "y": 296,
+          "width": 25.77777777777778,
+          "opacity": 0.08
+        },
+        {
+          "fill": "var(--eos)",
+          "x": 652.7777777777778,
+          "y": 296,
+          "width": 28.65024711111108,
+          "opacity": 0.08
+        },
+        {
+          "fill": "var(--accent)",
+          "x": 395,
+          "y": 387,
+          "width": 260.65024711111107,
+          "opacity": 0.08
+        },
+        {
+          "fill": "var(--eos)",
+          "x": 652.7777777777778,
+          "y": 387,
+          "width": 2.8724693333333042,
+          "opacity": 0.08
+        }
+      ],
+      "limits": [
+        {
+          "x1": 292.77777777777777,
+          "y1": 290,
+          "opacity": 1
+        },
+        {
+          "x1": 292.77777777777777,
+          "y1": 381,
+          "opacity": 0.08
+        },
+        {
+          "x1": 652.7777777777778,
+          "y1": 290,
+          "opacity": 0.08
+        },
+        {
+          "x1": 652.7777777777778,
+          "y1": 381,
+          "opacity": 0.08
+        }
+      ],
+      "signature": "7d763bfa9588a5490809f9925b1ccc5365f260f434e54af199d6fd1905d0831c",
+      "changed": true
+    },
+    {
+      "phase": 2,
+      "step": 5,
+      "finalPhase": 4,
+      "counter": "05 / 10",
+      "minFont": 11.578,
+      "minFontText": "2 of 5 · PLACEMENT · CHECK THE TALKER MOVE",
+      "overlaps": [],
+      "overflow": [],
+      "bars": [
+        {
+          "fill": "var(--accent)",
+          "x": 35,
+          "y": 296,
+          "width": 250.51401244444446,
+          "opacity": 1
+        },
+        {
+          "fill": "var(--gen)",
+          "x": 285.51401244444446,
+          "y": 296,
+          "width": 25.77777777777778,
+          "opacity": 1
+        },
+        {
+          "fill": "var(--eos)",
+          "x": 292.77777777777777,
+          "y": 296,
+          "width": 18.514012444444443,
+          "opacity": 1
+        },
+        {
+          "fill": "var(--accent)",
+          "x": 35,
+          "y": 387,
+          "width": 250.51401244444446,
+          "opacity": 1
+        },
+        {
+          "fill": "var(--accent)",
+          "x": 395,
+          "y": 296,
+          "width": 260.65024711111107,
+          "opacity": 0.08
+        },
+        {
+          "fill": "var(--gen)",
+          "x": 655.6502471111111,
+          "y": 296,
+          "width": 25.77777777777778,
+          "opacity": 0.08
+        },
+        {
+          "fill": "var(--eos)",
+          "x": 652.7777777777778,
+          "y": 296,
+          "width": 28.65024711111108,
+          "opacity": 0.08
+        },
+        {
+          "fill": "var(--accent)",
+          "x": 395,
+          "y": 387,
+          "width": 260.65024711111107,
+          "opacity": 0.08
+        },
+        {
+          "fill": "var(--eos)",
+          "x": 652.7777777777778,
+          "y": 387,
+          "width": 2.8724693333333042,
+          "opacity": 0.08
+        }
+      ],
+      "limits": [
+        {
+          "x1": 292.77777777777777,
+          "y1": 290,
+          "opacity": 1
+        },
+        {
+          "x1": 292.77777777777777,
+          "y1": 381,
+          "opacity": 1
+        },
+        {
+          "x1": 652.7777777777778,
+          "y1": 290,
+          "opacity": 0.08
+        },
+        {
+          "x1": 652.7777777777778,
+          "y1": 381,
+          "opacity": 0.08
+        }
+      ],
+      "signature": "893d73847ccb7b8738f1bc3b5c9f337c1e6b503590988661839b846a5ed1d759",
+      "changed": true
+    },
+    {
+      "phase": 3,
+      "step": 5,
+      "finalPhase": 4,
+      "counter": "05 / 10",
+      "minFont": 11.578,
+      "minFontText": "2 of 5 · PLACEMENT · CHECK THE TALKER MOVE",
+      "overlaps": [],
+      "overflow": [],
+      "bars": [
+        {
+          "fill": "var(--accent)",
+          "x": 35,
+          "y": 296,
+          "width": 250.51401244444446,
+          "opacity": 1
+        },
+        {
+          "fill": "var(--gen)",
+          "x": 285.51401244444446,
+          "y": 296,
+          "width": 25.77777777777778,
+          "opacity": 1
+        },
+        {
+          "fill": "var(--eos)",
+          "x": 292.77777777777777,
+          "y": 296,
+          "width": 18.514012444444443,
+          "opacity": 1
+        },
+        {
+          "fill": "var(--accent)",
+          "x": 35,
+          "y": 387,
+          "width": 250.51401244444446,
+          "opacity": 1
+        },
+        {
+          "fill": "var(--accent)",
+          "x": 395,
+          "y": 296,
+          "width": 260.65024711111107,
+          "opacity": 1
+        },
+        {
+          "fill": "var(--gen)",
+          "x": 655.6502471111111,
+          "y": 296,
+          "width": 25.77777777777778,
+          "opacity": 1
+        },
+        {
+          "fill": "var(--eos)",
+          "x": 652.7777777777778,
+          "y": 296,
+          "width": 28.65024711111108,
+          "opacity": 1
+        },
+        {
+          "fill": "var(--accent)",
+          "x": 395,
+          "y": 387,
+          "width": 260.65024711111107,
+          "opacity": 0.08
+        },
+        {
+          "fill": "var(--eos)",
+          "x": 652.7777777777778,
+          "y": 387,
+          "width": 2.8724693333333042,
+          "opacity": 0.08
+        }
+      ],
+      "limits": [
+        {
+          "x1": 292.77777777777777,
+          "y1": 290,
+          "opacity": 1
+        },
+        {
+          "x1": 292.77777777777777,
+          "y1": 381,
+          "opacity": 1
+        },
+        {
+          "x1": 652.7777777777778,
+          "y1": 290,
+          "opacity": 1
+        },
+        {
+          "x1": 652.7777777777778,
+          "y1": 381,
+          "opacity": 0.08
+        }
+      ],
+      "signature": "6cd4deae1f6fc77ec959e18fd8e32b7ecf07b1f502f2ee687a57dbf3aba9caef",
+      "changed": true
+    },
+    {
+      "phase": 4,
+      "step": 5,
+      "finalPhase": 4,
+      "counter": "05 / 10",
+      "minFont": 11.578,
+      "minFontText": "2 of 5 · PLACEMENT · CHECK THE TALKER MOVE",
+      "overlaps": [],
+      "overflow": [],
+      "bars": [
+        {
+          "fill": "var(--accent)",
+          "x": 35,
+          "y": 296,
+          "width": 250.51401244444446,
+          "opacity": 1
+        },
+        {
+          "fill": "var(--gen)",
+          "x": 285.51401244444446,
+          "y": 296,
+          "width": 25.77777777777778,
+          "opacity": 1
+        },
+        {
+          "fill": "var(--eos)",
+          "x": 292.77777777777777,
+          "y": 296,
+          "width": 18.514012444444443,
+          "opacity": 1
+        },
+        {
+          "fill": "var(--accent)",
+          "x": 35,
+          "y": 387,
+          "width": 250.51401244444446,
+          "opacity": 1
+        },
+        {
+          "fill": "var(--accent)",
+          "x": 395,
+          "y": 296,
+          "width": 260.65024711111107,
+          "opacity": 1
+        },
+        {
+          "fill": "var(--gen)",
+          "x": 655.6502471111111,
+          "y": 296,
+          "width": 25.77777777777778,
+          "opacity": 1
+        },
+        {
+          "fill": "var(--eos)",
+          "x": 652.7777777777778,
+          "y": 296,
+          "width": 28.65024711111108,
+          "opacity": 1
+        },
+        {
+          "fill": "var(--accent)",
+          "x": 395,
+          "y": 387,
+          "width": 260.65024711111107,
+          "opacity": 1
+        },
+        {
+          "fill": "var(--eos)",
+          "x": 652.7777777777778,
+          "y": 387,
+          "width": 2.8724693333333042,
+          "opacity": 1
+        }
+      ],
+      "limits": [
+        {
+          "x1": 292.77777777777777,
+          "y1": 290,
+          "opacity": 1
+        },
+        {
+          "x1": 292.77777777777777,
+          "y1": 381,
+          "opacity": 1
+        },
+        {
+          "x1": 652.7777777777778,
+          "y1": 290,
+          "opacity": 1
+        },
+        {
+          "x1": 652.7777777777778,
+          "y1": 381,
+          "opacity": 1
+        }
+      ],
+      "signature": "c16211ac734ee3035fdec13241942849cc330553eb03ed112b7d25db8e092d0f",
+      "changed": true
+    }
+  ]
+}
