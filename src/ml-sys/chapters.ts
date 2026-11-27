@@ -30,5 +30,7 @@ export const mlSysHrefOf = (slug: string) => `${import.meta.env.BASE_URL.replace
 export function mlSysNeighbors(slug: string): { prev?: NavLink; next?: NavLink } {
   const i = mlSysChapters.findIndex((c) => c.slug === slug);
   const link = (c?: Chapter) => (c ? { title: c.title, titleZh: c.titleZh, href: mlSysHrefOf(c.slug), ready: c.ready } : undefined);
-  return { prev: link(mlSysChapters[i - 1]), next: link(mlSysChapters[i + 1]) };
+  const prev = mlSysChapters.slice(0, i).reverse().find((c) => c.ready);
+  const next = mlSysChapters.slice(i + 1).find((c) => c.ready);
+  return { prev: link(prev), next: link(next) };
 }

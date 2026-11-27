@@ -330,6 +330,7 @@ Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:105-119,147-171`; `s
 - The left panel compares the 594.206 GB checkpoint tensors with one 141 GB H200. Since $594.206/141\approx4.21$, the tensor payload is about 4.21 times that card's capacity.
 - The right panel compares the same tensor payload with eight cards' 1,128 GB aggregate capacity.
 - All four bars use 1,128 GB as full width. Orange always means checkpoint tensor bytes and blue always means card memory.
+- The lines below define the index as a table showing which file holds each tensor, and metadata as notes in that table. `metadata.total_size` is the tensor-byte total recorded in those notes.
 - The 74.276 GB per-GPU average is division, not a measured per-rank allocation.
 
 ### Formula and symbols
@@ -357,6 +358,6 @@ The article says “one node,” not one H200 card. The pinned recipe also assig
 
 ### Next
 
-The final two lines place training's fake BF16 round trip beside rollout's real INT4 Marlin path. Following those visible paths, the next chapter asks whether the same checkpoint and token sequence must produce identical log probabilities in the two engines.
+The chapter closes on its two visible paths: training uses a fake BF16 round trip and rollout uses real INT4 Marlin. Later, Chapter 13 Step 1 extends rollout to one tool call: the second model call needs the prompt, first action and tool observation, totaling $2+4+3=9$ context tokens.
 
 Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:19-23,160-182`; Kimi-K2-Thinking `model.safetensors.index.json`, revision `a51ccc050d73dab088bf7b0e2dd9b30ae85a4e55`, `metadata.total_size`; `THUDM/slime@58525eb986c66a271aa31077e17b8afebe704b4f`, `run-kimi-k2-Thinking-int4.sh:119-139`.

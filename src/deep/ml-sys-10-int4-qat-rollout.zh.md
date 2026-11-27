@@ -330,6 +330,7 @@ W4A16 的 W4 指 4 位权重，A16 在这里指 BF16 激活值。KV cache 是第
 - 左栏把 594.206 GB checkpoint 张量与一张 141 GB H200 对照，$594.206/141\approx4.21$，即单卡容量的约 4.21 倍。
 - 右栏把同一份张量负载与八张卡的 1,128 GB 总容量对照。
 - 四条柱都以 1,128 GB 为满宽。橙色始终是 checkpoint 张量字节，蓝色始终是卡容量。
+- 图下把 index 解释成“每个张量放在哪个文件”的目录，把 metadata 解释成目录里的说明；`metadata.total_size` 就是这些说明记录的张量总字节。
 - 八卡平均每张 74.276 GB 只是除法，不是测得的每个 rank 分配。
 
 ### 公式与符号
@@ -357,6 +358,6 @@ $K<C$ 只说明这些张量字节小于八卡总容量。KV cache 是保存旧 k
 
 ### 接下来
 
-图上最后两行把训练的 fake BF16 往返与 rollout 的真实 INT4 Marlin 并排。下一章沿着这两条可见路径问：同一 checkpoint、同一 token 序列在两个引擎里的 log probability 是否必然完全相等？
+本章在两条可见路径处收尾：训练使用 fake BF16 往返，rollout 使用真实 INT4 Marlin。后续第 13 章第 1 步把 rollout 扩展到一次工具调用：第二次模型调用需要 prompt、第一个动作和工具观察，共 $2+4+3=9$ 个上下文 token。
 
 来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:19-23,160-182`；Kimi-K2-Thinking `model.safetensors.index.json`（revision `a51ccc050d73dab088bf7b0e2dd9b30ae85a4e55`）的 `metadata.total_size`；`THUDM/slime@58525eb986c66a271aa31077e17b8afebe704b4f` 的 `run-kimi-k2-Thinking-int4.sh:119-139`。
