@@ -13,6 +13,7 @@
     caption: string; captionZh: string; title: string; titleZh: string; subtitle: string; subtitleZh: string;
     foot: string; footZh: string; foot2?: string; foot2Zh?: string;
     mobileTitle?: string; mobileTitleZh?: string; mobileSubtitle?: string; mobileSubtitleZh?: string; mobileFoot?: string; mobileFootZh?: string;
+    mobileArrows?: boolean;
     mobile: MobileItem[]; formulas: { en: string; zh: string }[];
   };
 
@@ -49,6 +50,7 @@
     subtitle: 'update channel = the route that carries v1 into rollout', subtitleZh: '更新通道 = 把 v1 送进 rollout 的路线',
     foot: 'The three routes are alternatives; disk timing is not supplied.', footZh: '三条路线是三选一；来源没有给出磁盘计时。',
     mobileTitle: 'Three update channels', mobileTitleZh: '三条更新通道',
+    mobileArrows: false,
     mobileSubtitle: 'channel = a route for v1', mobileSubtitleZh: '通道 = v1 走的路线',
     mobileFoot: 'Choose one route; no disk time is claimed.', mobileFootZh: '三条选一条；不虚构磁盘时间。',
     mobile: [
@@ -169,6 +171,7 @@
     subtitle: 'saved tables = weights, gradients and optimizer state; activations are outside this step', subtitleZh: '长期保存的表 = 权重、梯度和优化器状态；本步不展开激活',
     foot: 'Example only: three GPUs; no sourced count. Next: FSDP2 divides these tables.', footZh: '三张 GPU 只是示例，来源未指定数量。下一章：FSDP2 分这些表。',
     mobileTitle: 'Training\'s saved tables', mobileTitleZh: '训练长期保存的表',
+    mobileArrows: false,
     mobileSubtitle: 'weights + gradients + optimizer state', mobileSubtitleZh: '权重 + 梯度 + 优化器状态',
     mobileFoot: 'Three GPUs are an example; FSDP2 is next.', mobileFootZh: '三张 GPU 只是示例；下一章讲 FSDP2。',
     mobile: [
@@ -254,7 +257,7 @@
             <rect x="25" y={y} width="250" height="70" rx="11" fill={fill(item.tone)} stroke={stroke(item.tone)} />
             <text x="150" y={y + 25} text-anchor="middle" class="small strong">{t(item.title, item.titleZh)}</text>
             <text x="150" y={y + 50} text-anchor="middle" class="small">{step === 4 && i === 1 && phase >= 4 ? t('bucket 1 cleared', '第 1 桶已清空') : step === 4 && i === 3 && phase >= 5 ? t('bucket 2 is on the GPU', '第 2 桶在 GPU 上') : t(item.body, item.bodyZh)}</text>
-            {#if i < cur.mobile.length - 1}
+            {#if cur.mobileArrows !== false && i < cur.mobile.length - 1}
               <line x1="150" y1={y + 70} x2="150" y2={y + 86} stroke={item.tone === 'plain' ? 'var(--accent)' : stroke(item.tone)} stroke-width="2.5" marker-end={item.tone === 'orange' ? 'url(#update-arrow-orange)' : 'url(#update-arrow-blue)'} />
             {/if}
           </g>
