@@ -1,3 +1,29 @@
+# lane k1 本轮报告 · Omni 14 桌面小字固定树复核
+
+日期：2026-11-27。类型：修旧复核。范围只有 Learning SGLang Omni 第 14 章的既有字号修复、逐相审计和本报告；未改 Omni 11／13／15、其他书、其他 lane、第 1 本受保护英文原文或 `.bot/memory/`。
+
+## 单元与 review 状态
+
+- 本轮开始时 HEAD 与 `origin/tutorials` 均为 `934a4f3`。Step 2 的 `584f99d`、其余七步的 `b6b8f6f`、`728802d`、`5187280`、`68ef3b7`、`a086e57`、`dce37ea`、`25553d6` 已在当前树中，本轮不重复改教程。
+- **Omni-02 第 14 章部分的作者返工已完成，仍待协调固定复审。** 独立 explore 冷读判 scoped repair GO，未发现新的内容洞。本轮不自行关闭 finding 或提高协调分数：历史 R1–R5 **80/80**、机制 R6 **16/16**、原十个非视觉项 **160/160**、原十二项 **192/192** 保持；完整 verdict 仍为 **呈现 NO-GO / coordinator-rereview-pending**。Omni-37 和其他书内开放项不变。
+- 源码对照确认本轮范围只有桌面字号和两处桌面几何。caption、事实、数字、相位数量、机制对象、双语 deep 和手机布局均未改。
+
+## 复核证据
+
+- `npm run build`：**60 页**通过。默认 transcript 连续两次逐字一致并与 pinned 无差异：**2,302 词**，SHA-256 `070b24bc84a94f1c76e362db7d4f3f16e0b49b9ba1f95876f3dc98e897c458ba`。八步 `readability` 为 **0 机械问题**；`deep-check 14`、`zh-check`、英文全章三宽度 `mobile`、中文逐步三宽度字号门均通过。
+- 重跑 `.bot/out/omni14-phase-audit.mjs`，覆盖八步 **34 个 1440×900 桌面相位**。各步最低字号为 **11.064、10.630、10.826、10.561、10.630、10.580、10.891、10.326 CSS px**；文字重叠 **0**、SVG 出界 **0**。counter、step 和 phase 身份全部匹配，八步都有机制状态；26 个相邻转变中 24 个改变机制签名，Step 4／7 的末相停留保持。
+- 首次重跑在 Step 4 phase 2 拍到 500 ms 淡入过程，导致同一末相被记成两次机制变化。审计等待由 550 ms 改为 750 ms 后，Step 4／7 都在末相稳定停留；教程组件未因此改动。最终报告为 `.bot/out/omni14-phase-audit/report.json`，34 张 PNG 在同目录，代表图为 `s2-p3.png`。
+- 当前模型不能读取 PNG，工具已返回 `Cannot read image`；本轮只报告源码、transcript、DOM 和几何结果，未声称看过图片或视觉通过。协调实图复审与主人最终视觉验收仍待。
+- 本 clone 的 `node_modules` 初始为指向协调人 checkout 的符号链接。已只删除本目录内的符号链接，并使用本目录缓存执行 `npm install`，后续构建和检查均未写协调人的 checkout。
+
+## 剩余与本地查看
+
+- 未跑全站回归、真实 SSE／WebSocket／raw-PCM 连接、SGLang-Omni 服务、模型、GPU benchmark、故障注入或 reduced-motion 动态切换。不开第 16／17 章，不处理其他 lane 的开放项。
+- 代表截图：`/Users/shuohuang/code/hmz-work/ls-k1-1127-004926/.bot/out/omni14-phase-audit/s2-p3.png`。本地章节地址：`http://localhost:4472/learning-sglang/omni/ch/14-slow-reader-backpressure/?step=2`。
+- 本轮 4472 dev server（PID 19977）已停止，脚本启动的浏览器均已关闭；`pgrep -P 1` 未发现父进程为 1 的 Chrome，其他归属不明的浏览器未触碰。查看前在本目录运行 `npx astro dev --background --port 4470`。
+
+---
+
 # lane k2 跟进复核 · ML Systems 08 Step 2 的 ML-17
 
 日期：2026-11-27。类型：修旧复核。范围只有本报告和 Step 2 审计结果；未改教程、其他 ML 章、Omni、Voxt、第 1 本受保护英文原文或 `.bot/memory/`。

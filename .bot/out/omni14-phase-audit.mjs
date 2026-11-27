@@ -46,7 +46,7 @@ try {
         };
         check();
       })`);
-      await sleep(550);
+      await sleep(750);
       const state = await page.evaluate(`(() => {
         const root = document.querySelector('.viz');
         const svg = root.querySelector('svg');
