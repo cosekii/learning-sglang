@@ -1,3 +1,40 @@
+# lane k1 本轮报告 · Omni 05 Steps 4–5 的 Omni-09 动画补完
+
+日期：2026-11-27。类型：修旧（direction 指定的下一最小单元）。本轮开始 HEAD 与 `origin/tutorials` 均为 `6fcb7d0`，工作树干净。范围只有 Omni 05 Steps 4–5 的组件、双语 MDX 与 deep、生成 transcript、本章评分卡、定向审计和本报告；未改 Steps 1–3、其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。Omni-50 已提交文字未重复返工，Omni-34 与 Omni 11／13／14 未改，未开新章。
+
+## 提交与 finding
+
+- `05543c7`：**Omni-09 的 Step 4 作者补完，待协调固定复审，不自行销项。** 第 2 相先把接收空间改为 `copy ✓`，源 SHM 块和打开的句柄仍在；第 3 相才把源块改为 `SHM A · unlinked` 并关闭句柄。随后依次返回接收空间、用副本还原、发送 ACK。桌面和手机使用同一对象顺序。
+- `abc9a49`：**Omni-09 的 Step 5 作者补完，待协调固定复审。** ACK 匹配并完成 `pending.ack` 后，`mark_receiver_done` 把 `receiver: reading` 改为 `receiver: done ✓`；随后进入 `wait_for_completion`，在 `finally: sem.release` 把空闲名额从 1 改为 2，最后才 `pending.pop(A)`。本例明确总名额为 2、本次 put 占 1，图和双语 deep 都有 `2−1=1`、`1+1=2` 的来源。
+- 两步 caption 保持原样，双语 MDX 与 deep 只同步新增的对象状态。Step 4 首次推送被拒后按指示 `git pull --rebase origin tutorials`，带入 `3519b89`，最终推送成功；未 force-push。
+
+## 作者评分与独立冷读
+
+| 步 | R1–R5 | 机制 R6 | 原十个非视觉项 | R1 小学生复述 | 新内容洞 |
+|---|---:|---:|---:|---|---:|
+| 4 | 10/10 | 2/2 | 20/20 | 接收方先把 SHM 字节复制到自己的空间，再关句柄、去掉共享块名字，最后用副本还原并回 ACK。 | 0 |
+| 5 | 10/10 | 2/2 | 20/20 | ACK 到了，发送方先标记读者读完，再把空闲名额从一个变回两个，最后删除 pending。 | 0 |
+
+- 两步各由独立 `explore` 做源码／transcript 冷读，均为 **PASS**，没有阻塞内容洞；未读取 PNG，也不是协调 verdict。Omni-09 不自行销项，原 #4/#5、整章总分和完成结论不由本轮改写。进度只记为 Steps 4–5 的作者动画补完，不记整章 GO。
+
+## 硬门与证据
+
+- 最终 `npm run build`：**60 页**通过；五步 `readability`：**0 机械问题**；`BOOK=omni node scripts/deep-check.mjs 05`、`zh-check`、英中全章 360／390／430 px `mobile`、中文 Steps 4／5 字号门和 `git diff --check` 全过。
+- transcript 连续重生成与提交一致，**1,290 词**，SHA-256 `6875248e2fac15a75735ebb6c4620bffc4abca3e4dae233f7ed460a75347364b`。无 caption、文字出界、重叠或文本规则报告。
+- `.bot/out/omni50-phase-audit.mjs` 覆盖 Steps 4／5 × 英中 × direct／前步入口 × 桌面／360／390／430 px，共 **32 组合、208 状态、176/176 机制转变、176 个唯一 PNG 哈希**。逐相断言复制先于 unlink、receiver done 先于 permit 归还、pending 最后删除，并禁止提前完成。最低 **10.760 CSS px**，重叠、SVG 出界、页面横溢均为 0。
+- `.bot/out/omni50-deep-audit.mjs` 在 360／390／430／1440 px 覆盖双语 Steps 4／5，共 **16 个打开抽屉视图**；目标文本、`aria-expanded=true`、页面与抽屉横溢、KaTeX 和 raw-math 检查通过。桌面抽屉打开后的舞台最低 **8.006 CSS px**，焦点记录为空，属于既有共享 ML-21／22；本单元未改也不声称这两项通过。
+- 代表截图：`.bot/out/omni09-r-s4-en1440-direct/s4-p3.png`、`.bot/out/omni09-r-s5-zh390-direct/s5-p4.png`。读取 PNG 时工具返回「this model does not support image input」；以上结论来自构建、transcript、源码、独立冷读、DOM 和几何检查，未声称看过图片或视觉通过。
+- 未跑全站回归、真实 SGLang-Omni、SHM 进程间传输、模型、GPU 或 reduced-motion 动态切换。本章无新增 zero-to-sglang 对照内容，本单元只补指定 SHM 对象动画。
+
+## 剩余与清理
+
+- 剩余事项是 Omni-09 的协调固定复审、共享 ML-21／22、具备图像能力的复审和主人最终视觉验收。Steps 1–3 与其他待复审批次保持原样，未处理 Omni-34，未改其他开放 finding。
+- 本 clone 的 `node_modules` 开始时指向协调人 checkout；只删除本目录内的符号链接并在本目录安装依赖，package 文件无 diff，未写协调人的 checkout。
+- 本地查看前运行 `npx astro dev --background --host 127.0.0.1 --port 4511`，地址：`http://127.0.0.1:4511/learning-sglang/omni/ch/05-data-lifetime/?step=4`。本轮 4511 服务已停止，端口无监听。
+- 审计脚本均调用 `browser.close()`。收尾 `pgrep -P 1 -fl 'headless=new.*cdp-'` 无输出；未动其他 lane 的浏览器或服务。
+
+---
+
 # lane k2 本轮报告 · ML Systems 13 Step 8 的 ML-63／64
 
 日期：2026-11-27。类型：修旧（direction 指定的 ML-55 后下一独立单元）。本轮开始 HEAD 与 `origin/tutorials` 均为 `6b63241`，工作树干净；ML-55 已由 `622eac2` 完成并留下完整证据，本轮不回改待复审批次，直接处理 ML 13 Step 8。范围只有该步组件、双语 deep、生成 transcript、本章评分卡与进度记录、定向审计和本报告；未改其他步、其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。ML-52／53 保持关闭，未开第 14 章。

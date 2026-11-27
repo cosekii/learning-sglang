@@ -52,3 +52,17 @@
 - `.bot/out/omni09-phase-audit.mjs` 覆盖 Steps 1–3 × 英文桌面／中文桌面／中文 390 px × 直接 URL／跨步入口，共 **18 组合、78 状态、60/60 机制转变**，最低 **11.760 CSS px**，重叠、SVG 出界、页面横溢均为 0。
 - `.bot/out/omni09-deep-audit.mjs` 在 360／390／1440 px 覆盖双语 Steps 1–3，共 **18 个打开抽屉视图**；目标文本、展开身份、页面和抽屉横溢、KaTeX 与 raw-math 检查通过。桌面抽屉打开后的舞台最低 **8.006 CSS px**，焦点记录为空，仍属共享 ML-21／22。
 - 当前模型不能读取 PNG；结论来自构建、transcript、源码、独立冷读、DOM 与几何检查，未声称看过图片或视觉通过。未跑全站回归、真实 SGLang-Omni、SHM 进程间传输、模型、GPU 或 reduced-motion 动态切换。
+
+## 2026-11-27 · Omni-09 Steps 4–5 动画补完作者复评（待协调固定复审）
+
+| 步 | R1–R5 /10 | 机制 R6 /2 | 原十个非视觉项 /20 | R1 小学生复述 | 新内容洞 |
+|---|---:|---:|---:|---|---:|
+| 4 | 10 | 2 | 20 | 接收方先把 SHM 字节复制到自己的空间，再关句柄、去掉共享块名字，最后用副本还原并回 ACK。 | 0 |
+| 5 | 10 | 2 | 20 | ACK 到了，发送方先标记读者读完，再把空闲名额从一个变回两个，最后删除 pending。 | 0 |
+
+- 教程提交：`05543c7`（Step 4）、`abc9a49`（Step 5）。Step 4 第 2 相先让接收空间显示 `copy ✓`，源 SHM 块仍在；第 3 相才把源块改为 `SHM A · unlinked` 并关闭句柄。Step 5 依次改变 ACK future、`receiver: reading → done`、`wait_for_completion`、`free permits = 1 → 2` 和 pending 是否存在。
+- 两步的独立 `explore` 源码／transcript 冷读均为 **PASS**，没有阻塞内容洞。它们未读取 PNG，也不是协调 verdict；Omni-09 不自行销项，Omni-50 已提交文字没有另行返工。
+- 最终 `npm run build`：60 页通过；五步 `readability`：0 机械问题；`deep-check 05`、`zh-check`、英中全章 360／390／430 px `mobile`、中文 Steps 4／5 字号门与 `git diff --check` 全过。连续重生成 transcript 与提交一致，**1,290 词**，SHA-256 `6875248e2fac15a75735ebb6c4620bffc4abca3e4dae233f7ed460a75347364b`。
+- `.bot/out/omni50-phase-audit.mjs` 覆盖 Steps 4／5 × 英中 × direct／前步入口 × 桌面／360／390／430 px，共 **32 组合、208 状态、176/176 机制转变、176 个唯一 PNG 哈希**。最低 **10.760 CSS px**，重叠、SVG 出界、页面横溢和提前完成状态均为 0。
+- 双语 Steps 4／5 在 360／390／430／1440 px 共 **16 个打开抽屉视图**通过目标文本、展开身份、页面和抽屉横溢、KaTeX 与 raw-math 检查。桌面抽屉打开后的舞台最低 **8.006 CSS px**，焦点记录为空，仍属共享 ML-21／22，本单元不改也不声称这两项通过。
+- 当前模型不能读取 PNG；结论来自构建、transcript、源码、独立冷读、DOM 与几何检查，未声称看过图片或视觉通过。未跑全站回归、真实 SGLang-Omni、SHM 进程间传输、模型、GPU 或 reduced-motion 动态切换。剩余是 Omni-09 的协调固定复审、共享 ML-21／22、具备图像能力的复审和主人最终视觉验收。
