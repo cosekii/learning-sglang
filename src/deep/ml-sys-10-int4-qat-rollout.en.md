@@ -271,25 +271,24 @@ A buffer is reusable memory, a kernel is a GPU routine that performs one operati
 
 ### Next
 
-The new layout is ready for Marlin. The next step opens its compute path: INT4 storage becomes BF16 matrix multiplication with FP32 accumulation.
+The new layout is ready for Marlin. The next step opens its W4A16 compute path: INT4 storage becomes BF16 weights for multiplication with BF16 activations.
 
 Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:80-103`; `THUDM/slime@58525eb986c66a271aa31077e17b8afebe704b4f`, `actor.py:126-133`, `update_weight_from_tensor.py:106-143` and `docker/patch/latest/sglang.patch:732-823`; `sgl-project/sglang@dce8b0606c06d3a191a24c7b8cbe8e238ab316c9`, `python/sglang/srt/layers/quantization/marlin_utils.py:301-347`.
 
 ## Step 8 · Store INT4 and compute in BF16 with W4A16
 
-**One sentence.** Marlin undoes the packing offset to recover signed codes and dequantizes weights to BF16 for matrix multiplication; separately, FP32 accumulates products inside that instruction.
+**One sentence.** Marlin undoes the packing offset to recover signed codes, dequantizes weights to BF16, and multiplies them by BF16 activations.
 
 ### On the stage
 
 - The unpack card computes `field − 8`, undoing Step 6's offset to recover the signed code.
 - The BF16 weight card multiplies the signed code by its scale. It does not multiply the nonnegative packed field directly by that scale.
 - The BF16 multiplication card receives BF16 activations as its other input. Activations are values produced during computation.
-- The FP32 running-sum card appears separately. It keeps a running product sum in 32-bit values only inside this matrix instruction, not for every later reduction or the final output.
-- The first three lines below the cards follow W4A16. The last two introduce FP32 accumulation and its boundary as a separate detail.
+- The three lines below the cards follow only this W4A16 path.
 
 ### Formula and symbols
 
-$$q_j=u_j-8,\qquad w_j=sq_j,\qquad y_{\mathrm{inner}}=\operatorname{FP32\ accumulate}\left(\sum_j w_j a_j\right)$$
+$$q_j=u_j-8,\qquad w_j=sq_j,\qquad p_j=w_j a_j$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
@@ -298,7 +297,7 @@ $$q_j=u_j-8,\qquad w_j=sq_j,\qquad y_{\mathrm{inner}}=\operatorname{FP32\ accumu
 | $s$ | Scale for this group | BF16 scale exported in Step 5 |
 | $w_j$ | Dequantized BF16 weight | $sq_j$ |
 | $a_j$ | Corresponding BF16 activation | Current rollout computation |
-| $y_{\mathrm{inner}}$ | Accumulated result inside this MMA instruction, not the final MoE output | Marlin's MMA instruction |
+| $p_j$ | One product in the visible multiplication | $w_j a_j$ |
 
 ### The numbers on the stage
 
@@ -306,9 +305,17 @@ Using Step 6's field $u=12$ and Step 5's scale $s=0.10$:
 
 $$q=12-8=4,\qquad w=4\times0.10=0.40$$
 
+### Deep-only detail: FP32 accumulation (not drawn)
+
 The pinned kernel instruction is `mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32`: both inputs are BF16, while this MMA's accumulator is FP32. It does not perform matrix arithmetic directly on INT4 values or prove zero-cost dequantization. `marlin_template.h:178-187,1290-1311` shows multiplication by the group scale.
 
+$$y_{\mathrm{inner}}=\operatorname{FP32\ accumulate}\left(\sum_j p_j\right)$$
+
+Here, $y_{\mathrm{inner}}$ is the accumulated result inside this MMA instruction, not the final MoE output. This implementation detail stays out of the stage so the step introduces only W4A16.
+
 This MoE path has another cross-slice reduction level. The atomic path performs `atomicAdd` on `scalar_t2` at `marlin_template.h:1635-1648`, which means BF16 pairs in this configuration. Output intermediates also use `hidden_states.dtype`. The chapter therefore limits FP32 to the MMA accumulator rather than every reduction or the final BF16 output.
+
+### Scope and reported results beyond the stage
 
 In W4A16, W4 means four-bit weights and A16 means BF16 activations in this path. KV cache is the old-k/v storage introduced in Learning SGLang Chapter 3; this label does not quantize it to INT4. Weight-read bytes and matrix-compute precision answer different questions.
 

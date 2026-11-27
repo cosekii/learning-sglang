@@ -271,25 +271,24 @@ buffer 是一份可复用内存，kernel 是在 GPU 上完成一项操作的程�
 
 ### 接下来
 
-新布局已经可供 Marlin 使用。下一步打开计算路径，看 INT4 存储怎样变成 BF16 矩阵乘法，并在哪里使用 FP32 累加。
+新布局已经可供 Marlin 使用。下一步打开 W4A16 计算路径：INT4 存储先还原成 BF16 权重，再与 BF16 激活值相乘。
 
 来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:80-103`；`THUDM/slime@58525eb986c66a271aa31077e17b8afebe704b4f` 的 `actor.py:126-133`、`update_weight_from_tensor.py:106-143` 和 `docker/patch/latest/sglang.patch:732-823`；`sgl-project/sglang@dce8b0606c06d3a191a24c7b8cbe8e238ab316c9` 的 `python/sglang/srt/layers/quantization/marlin_utils.py:301-347`。
 
 ## 第 8 步 · W4A16 保存 INT4，计算用 BF16
 
-**一句话。** Marlin 先撤销打包偏移并取回有符号编码，再把权重反量化成 BF16 做矩阵乘法；另一个细节是这条指令内部用 FP32 累加乘积。
+**一句话。** Marlin 先撤销打包偏移并取回有符号编码，再把权重反量化成 BF16，与 BF16 激活值相乘。
 
 ### 图上是什么
 
 - 解开 INT4 打包卡先计算 `字段 − 8`，撤销第 6 步的偏移，取回有符号编码。
 - BF16 权重卡用有符号编码乘 scale 完成反量化，不是直接拿打包后的非负字段乘 scale。
 - BF16 乘法卡的另一个输入是 BF16 激活值。激活值是计算过程中产生的数。
-- 随后单独出现 FP32 累加卡：用 32 位数值保存不断累加的乘积总和。它只表示这条矩阵乘法指令内部的总和，不表示后续每种归约或最终输出都用 FP32。
-- 图下前三行讲 W4A16 路径，后两行再讲 FP32 累加的范围，把两个概念分开。
+- 图下三行只讲这条 W4A16 路径。
 
 ### 公式与符号
 
-$$q_j=u_j-8,\qquad w_j=sq_j,\qquad y_{\mathrm{inner}}=\operatorname{FP32\ accumulate}\left(\sum_j w_j a_j\right)$$
+$$q_j=u_j-8,\qquad w_j=sq_j,\qquad p_j=w_j a_j$$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
@@ -298,7 +297,7 @@ $$q_j=u_j-8,\qquad w_j=sq_j,\qquad y_{\mathrm{inner}}=\operatorname{FP32\ accumu
 | $s$ | 该组的 scale | 第 5 步导出的 BF16 scale |
 | $w_j$ | 反量化后的 BF16 权重 | $sq_j$ |
 | $a_j$ | 对应的 BF16 激活值 | 当前 rollout 计算 |
-| $y_{\mathrm{inner}}$ | 这条 MMA 指令内部的累加结果，不是整个 MoE 的最终输出 | Marlin 的 MMA 指令 |
+| $p_j$ | 图上乘法得到的一个乘积 | $w_j a_j$ |
 
 ### 代入图上的数
 
@@ -306,9 +305,17 @@ $$q_j=u_j-8,\qquad w_j=sq_j,\qquad y_{\mathrm{inner}}=\operatorname{FP32\ accumu
 
 $$q=12-8=4,\qquad w=4\times0.10=0.40$$
 
+### 仅深入讲解：FP32 累加（图外细节）
+
 固定 kernel 的指令是 `mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32`：两个输入是 BF16，这条 MMA 的累加器是 FP32。它不是在 INT4 数值上直接做矩阵乘法，也没有证明反量化零开销。`marlin_template.h:178-187,1290-1311` 还展示了组 scale 乘法。
 
+$$y_{\mathrm{inner}}=\operatorname{FP32\ accumulate}\left(\sum_j p_j\right)$$
+
+这里的 $y_{\mathrm{inner}}$ 是这条 MMA 指令内部的累加结果，不是整个 MoE 的最终输出。这个实现细节只放在深入讲解，舞台本步只引入 W4A16。
+
 这条 MoE 路径另有跨 slice 归约。支持原子加的路径在 `marlin_template.h:1635-1648` 对 `scalar_t2` 做 `atomicAdd`，本配置就是 BF16 对；输出中间张量也使用 `hidden_states.dtype`。因此本章只说 MMA 内部累加器是 FP32，不把每次归约或最终 BF16 输出都称为 FP32。
+
+### 图外范围与文章报告
 
 W4A16 的 W4 指 4 位权重，A16 在这里指 BF16 激活值。KV cache 是第 1 本第 3 章保存旧 k、v 的显存，这个标签没有把它量化成 INT4。权重读取字节减少与矩阵计算精度是两个独立问题。
 
