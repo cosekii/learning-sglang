@@ -310,27 +310,31 @@
         {@const barW = phone ? 238 : 280}
         {@const scale = AUDIO_ABC_MEL_FRAMES}
         <rect x={panel.x} y={panel.y} width={phone ? 270 : 325} height="222" rx="12" fill="var(--bg)" stroke={panel.accepted ? 'var(--accent)' : 'var(--gen)'} stroke-width={panel.accepted ? 2 : 1} />
-        <text x={panel.x + 14} y={panel.y + 25} class="rowlabel">{panel.title}</text>
-        <text x={panel.x + 14} y={panel.y + 49} class="tag">{panel.accepted ? t('2 / 8 request slots used', '用了 2 / 8 个请求位置') : t('3 ≤ 8 · request count still fits', '3 ≤ 8 · 条数仍然装得下')}</text>
+        {@const tried = !panel.accepted && phase >= 1}
+        {@const returned = !panel.accepted && phase >= 2}
+        <text x={panel.x + 14} y={panel.y + 25} class="rowlabel">{panel.accepted ? panel.title : returned ? t('C REJECTED · back to pending', 'C 被拒绝 · 放回 pending') : tried ? panel.title : t('C WAITS · pending_messages', 'C 等待 · pending_messages')}</text>
+        <text x={panel.x + 14} y={panel.y + 49} class="tag">{panel.accepted ? t('2 / 8 request slots used', '用了 2 / 8 个请求位置') : tried ? t('3 ≤ 8 · request count still fits', '3 ≤ 8 · 条数仍然装得下') : t('2 / 8 used · C not added', '用了 2 / 8 · 尚未加入 C')}</text>
         <rect x={panel.x + 16} y={panel.y + 65} width={barW * AUDIO_A_MEL_FRAMES / scale} height="46" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
         <rect x={panel.x + 16 + barW * AUDIO_A_MEL_FRAMES / scale} y={panel.y + 65} width={barW * AUDIO_B_MEL_FRAMES / scale} height="46" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
-        {#if !panel.accepted}
-          <rect x={panel.x + 16 + barW * AUDIO_AB_MEL_FRAMES / scale} y={panel.y + 65} width={barW * AUDIO_C_MEL_FRAMES / scale} height="46" rx="5" fill="var(--gen-soft)" stroke="var(--gen)" />
+        {#if tried}
+          <rect x={panel.x + 16 + barW * AUDIO_AB_MEL_FRAMES / scale} y={panel.y + 65} width={barW * AUDIO_C_MEL_FRAMES / scale} height="46" rx="5" fill={returned ? 'white' : 'var(--gen-soft)'} stroke="var(--gen)" stroke-dasharray={returned ? '4 3' : '0'} />
         {:else}
           <rect x={panel.x + 16 + barW * AUDIO_AB_MEL_FRAMES / scale} y={panel.y + 65} width={barW * AUDIO_REMAINING_MEL_FRAMES / scale} height="46" rx="3" fill="white" stroke="var(--faint)" stroke-dasharray="3 3" />
+        {/if}
+        {#if !tried}
           <text x={panel.x + 16} y={panel.y + 137} class="tag">{AUDIO_REMAINING_MEL_FRAMES} {t('frames left', '帧剩余')}</text>
         {/if}
         <path d="M{panel.x + 16 + barW * AUDIO_MAX_MEL_FRAMES / scale} {panel.y + 58} V{panel.y + 120}" stroke="var(--gen)" stroke-width="2" stroke-dasharray="4 3" />
         <text x={panel.x + 16 + barW * AUDIO_MAX_MEL_FRAMES / scale} y={panel.y + 137} text-anchor="middle" class="tag strong">{AUDIO_MAX_MEL_FRAMES} {t('limit', '上限')}</text>
         <text x={panel.x + 16 + barW * AUDIO_A_MEL_FRAMES / scale / 2} y={panel.y + 94} text-anchor="middle" class="mono strong">A · {AUDIO_A_MEL_FRAMES}</text>
         <text x={panel.x + 16 + barW * (AUDIO_A_MEL_FRAMES + AUDIO_B_MEL_FRAMES / 2) / scale} y={panel.y + 94} text-anchor="middle" class="mono strong">B · {AUDIO_B_MEL_FRAMES}</text>
-        {#if !panel.accepted}
+        {#if tried}
           <text x={panel.x + 16 + barW * (AUDIO_AB_MEL_FRAMES + AUDIO_C_MEL_FRAMES / 2) / scale} y={panel.y + 94} text-anchor="middle" class="mono strong">C · {AUDIO_C_MEL_FRAMES}</text>
         {/if}
-        <text x={panel.x + (phone ? 135 : 162)} y={panel.y + 169} text-anchor="middle" class="mono strong">{panel.accepted ? `${AUDIO_A_MEL_FRAMES} + ${AUDIO_B_MEL_FRAMES} = ${AUDIO_AB_MEL_FRAMES}` : `${AUDIO_AB_MEL_FRAMES} + ${AUDIO_C_MEL_FRAMES} = ${AUDIO_ABC_MEL_FRAMES}`}</text>
-        <text x={panel.x + (phone ? 135 : 162)} y={panel.y + 198} text-anchor="middle" class="tag strong">{panel.accepted ? t(`collect A + B · ${AUDIO_REMAINING_MEL_FRAMES} frames left`, `收集 A + B · 还剩 ${AUDIO_REMAINING_MEL_FRAMES} 帧`) : t('keep C in pending_messages · stop', 'C 留回 pending_messages · 停止收集')}</text>
+        <text x={panel.x + (phone ? 135 : 162)} y={panel.y + 169} text-anchor="middle" class="mono strong">{panel.accepted || !tried ? `${AUDIO_A_MEL_FRAMES} + ${AUDIO_B_MEL_FRAMES} = ${AUDIO_AB_MEL_FRAMES}` : `${AUDIO_AB_MEL_FRAMES} + ${AUDIO_C_MEL_FRAMES} = ${AUDIO_ABC_MEL_FRAMES}`}</text>
+        <text x={panel.x + (phone ? 135 : 162)} y={panel.y + 198} text-anchor="middle" class="tag strong">{panel.accepted ? t(`collect A + B · ${AUDIO_REMAINING_MEL_FRAMES} frames left`, `收集 A + B · 还剩 ${AUDIO_REMAINING_MEL_FRAMES} 帧`) : returned ? t('keep C in pending_messages · stop', 'C 留回 pending_messages · 停止收集') : tried ? t(`${AUDIO_ABC_MEL_FRAMES} > ${AUDIO_MAX_MEL_FRAMES} · reject C`, `${AUDIO_ABC_MEL_FRAMES} > ${AUDIO_MAX_MEL_FRAMES} · 拒绝 C`) : t('C waits in pending_messages', 'C 在 pending_messages 等待')}</text>
       {/each}
-      <text x={W / 2} y={phone ? 586 : 340} text-anchor="middle" class="mono strong">{AUDIO_ABC_MEL_FRAMES} − {AUDIO_MAX_MEL_FRAMES} = {AUDIO_OVERFLOW_MEL_FRAMES} {t('frames too many', '帧超出')}</text>
+      <text x={W / 2} y={phone ? 586 : 340} text-anchor="middle" class="mono strong">{phase >= 1 ? `${AUDIO_ABC_MEL_FRAMES} − ${AUDIO_MAX_MEL_FRAMES} = ${AUDIO_OVERFLOW_MEL_FRAMES} ${t('frames too many', '帧超出')}` : t('C is still pending · no overflow yet', 'C 仍在等待 · 尚未超出')}</text>
       <text x={W / 2} y={phone ? 612 : 366} text-anchor="middle" class="tag">{AUDIO_FULL_CHUNK_COUNT} × {AUDIO_FULL_CHUNK_MEL_FRAMES} = {AUDIO_MAX_MEL_FRAMES} · {phone ? t('eight full 30-s chunks fit', '真实预算可容纳八段完整的 30 秒音频') : t('the real budget admits eight full 30-second chunks', '真实预算可容纳八段完整的 30 秒音频')}</text>
       <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{phone ? t('Teaching costs, not a benchmark: 15000 + 6000 + 6000', 'A、B、C 是教学成本；15000 + 6000 + 6000 不是实测数据。') : t('A, B and C use teaching costs; 15,000 + 6,000 + 6,000 is not a benchmark.', 'A、B、C 是教学成本；15000 + 6000 + 6000 不是实测数据。')}</text>
       <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Next: streaming chunks use a different batch path.', '下一步：流式 chunk 需要不同于一次性请求的成批路径。') : t('Next: streaming chunks need a different batch path from one-shot requests.', '下一步：流式 chunk 需要不同于一次性请求的成批路径。')}</text>

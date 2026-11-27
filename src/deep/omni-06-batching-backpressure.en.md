@@ -177,6 +177,7 @@ Step 4 adds a mel-frame cost to each request. A request can wait for the next ba
 - The teaching example charges A for five full windows and B and C for two each. At 3,000 frames per full window, their costs are 15,000, 6,000 and 6,000.
 - Both panels start at the same origin and use one 27,000-frame scale. Their dashed 24,000-frame limits sit at the same position, so identical A and B segments have identical widths.
 - The left panel collects A and B for 21,000 frames, leaving 3,000. The right panel tries C, reaching 27,000 and crossing the dashed 24,000-frame limit.
+- The animation holds C in `pending_messages`, reveals the fixed-width trial segment and the 27,000-frame total, then outlines that rejected segment and returns C with `appendleft()`. The trial stays visible so the arithmetic has a visible producer.
 - The scheduler returns C to the head of `pending_messages` and ends this collection. Both the request-count and frame-cost limits must pass.
 
 ### Work through the numbers
