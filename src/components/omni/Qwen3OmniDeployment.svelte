@@ -91,7 +91,7 @@
     return () => query.removeEventListener('change', update);
   });
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [870, 820, 900, 850, 850, 930, 910, 1080][step] : [560, 600, 650, 580, 600, 630, 600, 740][step]);
+  const H = $derived(phone ? [870, 820, 900, 850, 850, 930, 910, 1080][step] : [560, 600, 650, 580, 600, 630, 600, 650][step]);
   const budgetSegments = [
     ...COLOCATED_STAGE_SHARES.flatMap((stage) => stage.name === 'thinker' ? [
       { name: 'thinker AR', percent: QWEN_THINKER_EFFECTIVE_AR_PERCENT, kind: 'stage' },
@@ -109,126 +109,39 @@
   const speechGpu0 = QWEN_SPEECH_DEFAULT_STAGE_PROCESSES.filter((stage) => stage.gpu === 0);
   const speechGpu1 = QWEN_SPEECH_DEFAULT_STAGE_PROCESSES.filter((stage) => stage.gpu === 1);
 
-  // One walking outline shows each scene in reading order.
-  const PHASE_COUNTS = [3, 3, 4, 4, 3, 4, 4, 6];
-  const PHASE_MS = 1500;
-  const REST_MS = 1800;
-  type Frame = { x: number; y: number; w: number; h: number };
-  const motionFrames = (isPhone: boolean, s: number): Frame[] => {
-    if (s === 0) return isPhone ? [
-      { x: 30, y: 170, w: 240, h: 192 },
-      { x: 30, y: 522, w: 240, h: 153 },
-      { x: 30, y: 684, w: 240, h: 116 },
-    ] : [
-      { x: 35, y: 172, w: 290, h: 255 },
-      { x: 395, y: 174, w: 290, h: 154 },
-      { x: 395, y: 330, w: 290, h: 117 },
-    ];
-    if (s === 1) return isPhone ? [
-      { x: 15, y: 120, w: 270, h: 190 },
-      { x: 15, y: 325, w: 270, h: 190 },
-      { x: 15, y: 530, w: 270, h: 220 },
-    ] : [
-      { x: 20, y: 122, w: 680, h: 125 },
-      { x: 20, y: 262, w: 680, h: 125 },
-      { x: 20, y: 402, w: 680, h: 145 },
-    ];
-    if (s === 2) return isPhone ? [
-      { x: 15, y: 102, w: 270, h: 175 },
-      { x: 15, y: 287, w: 270, h: 175 },
-      { x: 15, y: 488, w: 270, h: 215 },
-      { x: 15, y: 725, w: 270, h: 100 },
-    ] : [
-      { x: 20, y: 105, w: 320, h: 165 },
-      { x: 380, y: 105, w: 320, h: 165 },
-      { x: 20, y: 280, w: 680, h: 198 },
-      { x: 20, y: 495, w: 680, h: 70 },
-    ];
-    if (s === 3) return isPhone ? [
-      { x: 25.8, y: 125, w: 210.6, h: 65 },
-      { x: 222.9, y: 125, w: 13.5, h: 65 },
-      { x: 25.8, y: 125, w: 197.1, h: 65 },
-      { x: 15, y: 95, w: 270, h: 100 },
-    ] : [
-      { x: 47.2, y: 125, w: 530.4, h: 65 },
-      { x: 543.6, y: 125, w: 34, h: 65 },
-      { x: 47.2, y: 125, w: 496.4, h: 65 },
-      { x: 20, y: 95, w: 680, h: 100 },
-    ];
-    if (s === 4) return isPhone ? [
-      { x: 15, y: 120, w: 270, h: 180 },
-      { x: 15, y: 325, w: 270, h: 180 },
-      { x: 15, y: 530, w: 270, h: 180 },
-    ] : [
-      { x: 20, y: 130, w: 210, h: 320 },
-      { x: 255, y: 130, w: 210, h: 320 },
-      { x: 490, y: 130, w: 210, h: 320 },
-    ];
-    if (s === 5) return isPhone ? [
-      { x: 29, y: 280, w: 242, h: 151 },
-      { x: 29, y: 635, w: 242, h: 58 },
-      { x: 29, y: 703, w: 242, h: 58 },
-      { x: 29, y: 777, w: 242, h: 62 },
-    ] : [
-      { x: 34, y: 280, w: 292, h: 151 },
-      { x: 394, y: 275, w: 292, h: 58 },
-      { x: 394, y: 343, w: 292, h: 58 },
-      { x: 394, y: 417, w: 292, h: 62 },
-    ];
-    if (s === 6) return isPhone ? [
-      { x: 15, y: 105, w: 270, h: 340 },
-      { x: 30, y: 539, w: 240, h: 172 },
-      { x: 30, y: 719, w: 240, h: 60 },
-      { x: 30, y: 791, w: 240, h: 60 },
-    ] : [
-      { x: 20, y: 105, w: 320, h: 420 },
-      { x: 395, y: 179, w: 290, h: 172 },
-      { x: 395, y: 359, w: 290, h: 60 },
-      { x: 395, y: 431, w: 290, h: 60 },
-    ];
-    if (s === 7) return isPhone ? [
-      { x: 15, y: 105, w: 270, h: 88 },
-      { x: 15, y: 205, w: 270, h: 88 },
-      { x: 15, y: 305, w: 270, h: 88 },
-      { x: 15, y: 405, w: 270, h: 188 },
-      { x: 15, y: 605, w: 270, h: 106 },
-      { x: 15, y: 730, w: 270, h: 318 },
-    ] : [
-      { x: 20, y: 105, w: 680, h: 65 },
-      { x: 20, y: 180, w: 680, h: 65 },
-      { x: 20, y: 255, w: 680, h: 65 },
-      { x: 20, y: 330, w: 680, h: 140 },
-      { x: 20, y: 480, w: 680, h: 65 },
-      { x: 20, y: 585, w: 680, h: 134 },
-    ];
-    return [];
-  };
+  const axes = [
+    { label: '1 of 5 · route', labelZh: '1/5 · 输出路线', steps: 'Step 2', stepsZh: '第 2 步', detail: 'text or text + sound', detailZh: '文字，或文字 + 声音' },
+    { label: '2 of 5 · placement', labelZh: '2/5 · 摆卡', steps: 'Steps 3–4', stepsZh: '第 3–4 步', detail: 'talker GPU · one-card shares', detailZh: 'talker 摆卡 · 单卡份额' },
+    { label: '3 of 5 · precision', labelZh: '3/5 · 精度', steps: 'Step 5', stepsZh: '第 5 步', detail: 'BF16 · FP8 · INT4', detailZh: 'BF16 · FP8 · INT4' },
+    { label: '4 of 5 · capacity', labelZh: '4/5 · 容量', steps: 'Step 6', stepsZh: '第 6 步', detail: 'running caps · codec slots', detailZh: '运行上限 · codec 状态位' },
+    { label: '5 of 5 · evidence', labelZh: '5/5 · 证据', steps: 'Steps 7–8', stepsZh: '第 7–8 步', detail: 'readiness · A/B records', detailZh: 'readiness · A/B 记录' },
+  ];
+
+  // Each scene builds its own objects and numbers, then holds the finished state.
+  const PHASE_COUNTS = [3, 5, 4, 4, 3, 4, 4, 6];
+  const PHASE_MS = 1100, REST_MS = 2500;
   let phase = $state(0);
   let lap = $state(0), lapMs = $state(0);
   const nextLap = (ms: number) => untrack(() => { lapMs = ms; lap++; });
   $effect(() => {
-    const s = step;
-    phase = 0;
-    const count = PHASE_COUNTS[s];
-    if (!count) return;
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    const run = () => {
-      timers.length = 0;
-      phase = 0;
-      for (let i = 1; i < count; i++) timers.push(setTimeout(() => (phase = i), i * PHASE_MS));
-      const ms = count * PHASE_MS + REST_MS;
-      timers.push(setTimeout(run, ms));
-      nextLap(ms);
+    const count = PHASE_COUNTS[step];
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { phase = count - 1; return; }
+    const ms = count * PHASE_MS + REST_MS;
+    let raf = 0, t0 = 0;
+    const tick = (now: number) => {
+      if (!t0 || now - t0 >= ms) { t0 = now; nextLap(ms); }
+      phase = Math.min(count - 1, Math.floor((now - t0) / PHASE_MS));
+      raf = requestAnimationFrame(tick);
     };
-    run();
-    return () => timers.forEach(clearTimeout);
+    phase = 0;
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
   });
-  const focus = $derived(motionFrames(phone, step)[phase]);
 </script>
 
-<figure class="viz">
+<figure class="viz" data-animation-step={step} data-animation-phase={phase} data-animation-final-phase={PHASE_COUNTS[step] - 1}>
   <div class="canvas">
-    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={$lang === 'zh' ? cur.captionZh : cur.caption}>
+    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={$lang === 'zh' ? cur.captionZh : cur.caption} style:--small-desktop={H > 600 ? '13px' : '12px'}>
       {#if step === 0}
         <text x={phone ? 15 : 20} y="24" class="rowlabel">{t('ONE MODEL, TWO STARTUP SHAPES', '同一个模型，两种启动形态')}</text>
         <text x={phone ? 15 : 20} y="49" class="tag">{t('deployment = the stages, processes and cards you start', 'deployment = 你启动的 stage、进程和卡')}</text>
@@ -242,7 +155,8 @@
         ] as panel}
           <rect x={panel.x} y={panel.y} width={panel.w} height={panel.h} rx="12" fill="var(--bg)" stroke="var(--line)" />
           <text x={panel.x + 15} y={panel.y + 28} class="rowlabel">{panel.speech ? t('DEFAULT SPEECH', '默认语音部署') : t('TEXT-ONLY DEPLOYMENT', '纯文字部署')}</text>
-          <text x={panel.x + 15} y={panel.y + 52} class="tag strong">{panel.speech ? `${QWEN_SPEECH_DEFAULT_GPU_COUNT} GPUs · ${QWEN_SPEECH_DEFAULT_COPY_COUNT} processes` : `${QWEN_TEXT_GPU_COUNT} GPU · ${QWEN_TEXT_PROCESS_COUNT} process`}</text>
+          <text x={panel.x + 15} y={panel.y + 52} class="tag strong" opacity={phase >= 2 ? 1 : 0.15} style="transition: opacity 350ms">{panel.speech ? `${QWEN_SPEECH_DEFAULT_GPU_COUNT} GPUs · ${QWEN_SPEECH_DEFAULT_COPY_COUNT} processes` : `${QWEN_TEXT_GPU_COUNT} GPU · ${QWEN_TEXT_PROCESS_COUNT} process`}</text>
+          <g opacity={panel.speech && phase < 1 ? 0 : 1} style="transition: opacity 450ms">
           {#if !panel.speech}
             <rect x={panel.x + 15} y={panel.y + 70} width={panel.w - 30} height={phone ? 192 : 255} rx="9" fill="var(--accent-soft)" fill-opacity="0.25" stroke="var(--accent)" stroke-dasharray="5 4" />
             <text x={panel.x + 27} y={panel.y + 91} class="tag strong">process: pipeline</text>
@@ -255,8 +169,8 @@
                 <text x={panel.x + 35 + col * 132} y={panel.y + 143 + row * 67} class="tag">{stage === 'mm_aggregate' ? t('join inputs · GPU 0', '汇合输入 · GPU 0') : isCpuStage(stage) ? 'CPU' : 'GPU 0'}</text>
               {/if}
             {/each}
-            <text x={panel.x + panel.w / 2} y={panel.y + (phone ? 295 : 354)} text-anchor="middle" class="formula">{QWEN_TEXT_STAGE_COUNT} stages · {QWEN_TEXT_PROCESS_COUNT} process</text>
-            <text x={panel.x + panel.w / 2} y={panel.y + (phone ? 318 : 382)} text-anchor="middle" class="tag">{t('text, image, audio, video → text', '文字、图像、声音、视频 → 文字')}</text>
+            <text x={panel.x + panel.w / 2} y={panel.y + (phone ? 295 : 354)} text-anchor="middle" class="formula" opacity={phase >= 2 ? 1 : 0.12} style="transition: opacity 350ms">{QWEN_TEXT_STAGE_COUNT} stages · {QWEN_TEXT_PROCESS_COUNT} process</text>
+            <text x={panel.x + panel.w / 2} y={panel.y + (phone ? 318 : 382)} text-anchor="middle" class="tag" opacity={phase >= 2 ? 1 : 0.12} style="transition: opacity 350ms">{t('text, image, audio, video → text', '文字、图像、声音、视频 → 文字')}</text>
           {:else}
             <text x={panel.x + 15} y={panel.y + 76} class="tag strong">GPU 0</text>
             {#each speechGpu0 as stage, i}
@@ -270,9 +184,10 @@
             {/each}
             <text x={panel.x + 15} y={panel.y + 302} class="tag strong">CPU</text>
             <text x={panel.x + 62} y={panel.y + 302} class="mono">preprocessing · decode</text>
-            <text x={panel.x + panel.w / 2} y={panel.y + 337} text-anchor="middle" class="formula">4 + 1 + 2 = {QWEN_SPEECH_DEFAULT_COPY_COUNT} processes</text>
-            <text x={panel.x + panel.w / 2} y={panel.y + 360} text-anchor="middle" class="tag">{t('text or text + sound output', '文字，或文字 + 声音输出')}</text>
+            <text x={panel.x + panel.w / 2} y={panel.y + 337} text-anchor="middle" class="formula" opacity={phase >= 2 ? 1 : 0.12} style="transition: opacity 350ms">4 + 1 + 2 = {QWEN_SPEECH_DEFAULT_COPY_COUNT} processes</text>
+            <text x={panel.x + panel.w / 2} y={panel.y + 360} text-anchor="middle" class="tag" opacity={phase >= 2 ? 1 : 0.12} style="transition: opacity 350ms">{t('text or text + sound output', '文字，或文字 + 声音输出')}</text>
           {/if}
+          </g>
         {/each}
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{phone ? t('speech: 7 boxes/processes · text: 6 boxes, 1 process', '语音：七框七进程 · 文字：六框一进程') : t('Each speech box is one process. Text-only keeps all six stages in one process.', '语音部署每个 stage 框是一个进程；纯文字部署的六个 stage 同住一个进程。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Stage processes only; no HTTP server or coordinator.', '只数 stage 进程，不数 HTTP server 和 coordinator。') : t('Stage processes only; the HTTP server and coordinator are not counted.', '只数 stage 进程，不数 HTTP server 和 coordinator。')}</text>
@@ -478,27 +393,27 @@
           { label: 'ROUTE', labelZh: '路线', a: 'modalities=["text", "audio"]', aZh: 'modalities=["text", "audio"]', b: 'default speech graph · text + sound', bZh: '默认语音图 · 文字 + 声音', evidence: false },
           { label: 'PRECISION', labelZh: '精度', a: 'BF16 checkpoint first', aZh: '先用 BF16 checkpoint', b: 'FP8 or INT4 needs memory + quality evidence', bZh: '换 FP8 或 INT4 要有显存和质量证据', evidence: false },
           { label: 'PLACEMENT', labelZh: '摆卡', a: 'GPU 0: encoders + thinker + code2wav', aZh: 'GPU 0：encoders + thinker + code2wav', b: 'GPU 1: talker · 2 GPUs · 7 processes', bZh: 'GPU 1：talker · 2 张卡 · 7 个进程', evidence: false },
-          { label: 'CAPACITY', labelZh: '容量', a: `8 ≤ ${QWEN_TALKER_MAX_RUNNING_REQUESTS} talker running cap`, aZh: `8 ≤ talker 运行上限 ${QWEN_TALKER_MAX_RUNNING_REQUESTS}`, b: `32 − 8 = ${QWEN_EXAMPLE_UNALLOCATED_TALKER_SLOTS} requests of talker-cap headroom · no replica yet`, bZh: `32 − 8 = ${QWEN_EXAMPLE_UNALLOCATED_TALKER_SLOTS} 个请求的 talker 上限余量 · 先不加副本`, evidence: false },
-          { label: 'EVIDENCE', labelZh: '证据', a: 'A=BF16 · B=FP8 · same isolated-talker TP1 layout · c=8 · first audio median/custom p90', aZh: 'A=BF16 · B=FP8 · 同一 talker 独占 TP1 摆卡 · c=8 · 首音中位数/自定义 p90', b: 'total · failures · memory · stalls · stop/response waits · Ch. 8 Step 8 quality · per-run raw results', bZh: '总耗时 · 失败 · 显存 · 卡顿 · 停答/回应等待 · 第 8 章第 8 步质量检查 · 每次运行的原始结果', evidence: true },
+          { label: 'CAPACITY', labelZh: '容量', a: `8 ≤ ${QWEN_TALKER_MAX_RUNNING_REQUESTS} talker running cap`, aZh: `8 ≤ talker 运行上限 ${QWEN_TALKER_MAX_RUNNING_REQUESTS}`, b: `32 − 8 = ${QWEN_EXAMPLE_UNALLOCATED_TALKER_SLOTS} requests of headroom · no replica yet`, bZh: `32 − 8 = ${QWEN_EXAMPLE_UNALLOCATED_TALKER_SLOTS} 个请求余量 · 先不加副本`, evidence: false },
+          { label: 'EVIDENCE', labelZh: '证据', a: 'A=BF16 · B=FP8 · same TP1 layout · c=8 · median/custom p90', aZh: 'A=BF16 · B=FP8 · 同一 TP1 摆卡 · c=8 · 首音中位数/自定义 p90', b: 'total · failures · memory · stalls · waits · Ch. 8 Step 8 quality · raw results', bZh: '总耗时 · 失败 · 显存 · 卡顿 · 等待 · 第 8 章第 8 步质量检查 · 原始结果', evidence: true },
         ] as row, i}
-          {@const y = phone ? 105 + i * 100 : 105 + i * 75}
-          <rect x={phone ? 15 : 20} {y} width={phone ? 270 : 680} height={phone ? (row.evidence ? 106 : 88) : 65} rx="8" fill={row.evidence ? 'var(--gen-soft)' : 'var(--accent-soft)'} fill-opacity="0.25" stroke={row.evidence ? 'var(--gen)' : 'var(--accent)'} />
-          <text x={phone ? 29 : 34} y={y + 24} class="tag strong" fill={row.evidence ? 'var(--gen)' : 'var(--accent)'}>{t(row.label, row.labelZh)}</text>
-          <text x={phone ? 29 : 170} y={y + (phone ? 49 : 25)} class="tag strong">{phone && row.evidence ? t('A=BF16 · B=FP8 · same TP1 layout · c=8', 'A=BF16 · B=FP8 · 同一 TP1 摆卡 · c=8') : t(row.a, row.aZh)}</text>
-          <text x={phone ? 29 : 170} y={y + (phone ? 73 : 49)} class="tag">{phone && row.label === 'CAPACITY' ? t(`32 − 8 = ${QWEN_EXAMPLE_UNALLOCATED_TALKER_SLOTS} requests of headroom`, `32 − 8 = ${QWEN_EXAMPLE_UNALLOCATED_TALKER_SLOTS} 个请求余量`) : phone && row.evidence ? t('median/custom p90 · total · per-run results', '首音中位数/自定义 p90 · 总耗时 · 逐次原始结果') : t(row.b, row.bZh)}</text>
+          {@const y = phone ? 105 + i * 100 : 105 + i * 62}
+          <rect x={phone ? 15 : 20} {y} width={phone ? 270 : 680} height={phone ? (row.evidence ? 106 : 88) : 52} rx="8" fill={row.evidence ? 'var(--gen-soft)' : 'var(--accent-soft)'} fill-opacity="0.25" stroke={row.evidence ? 'var(--gen)' : 'var(--accent)'} />
+          <text x={phone ? 29 : 34} y={y + (phone ? 24 : 22)} class="tag strong" fill={row.evidence ? 'var(--gen)' : 'var(--accent)'}>{t(row.label, row.labelZh)}</text>
+          <text x={phone ? 29 : 170} y={y + (phone ? 49 : 22)} class="tag strong">{phone && row.evidence ? t('A=BF16 · B=FP8 · same TP1 layout · c=8', 'A=BF16 · B=FP8 · 同一 TP1 摆卡 · c=8') : t(row.a, row.aZh)}</text>
+          <text x={phone ? 29 : 170} y={y + (phone ? 73 : 42)} class="tag">{phone && row.label === 'CAPACITY' ? t(`32 − 8 = ${QWEN_EXAMPLE_UNALLOCATED_TALKER_SLOTS} requests of headroom`, `32 − 8 = ${QWEN_EXAMPLE_UNALLOCATED_TALKER_SLOTS} 个请求余量`) : phone && row.evidence ? t('median/custom p90 · total · per-run results', '首音中位数/自定义 p90 · 总耗时 · 逐次原始结果') : t(row.b, row.bZh)}</text>
           {#if phone && row.evidence}
             <text x="29" y={y + 97} class="tag">{t('memory · stalls · failures · Ch. 8 Step 8 quality', '显存 · 卡顿 · 失败 · 第 8 章第 8 步质量检查')}</text>
           {/if}
         {/each}
-        <text x={W / 2} y={phone ? 738 : 593} text-anchor="middle" class="rowlabel">{t('CHAPTERS 1–12 REVIEW', '第 1–12 章回顾')}</text>
+        <text x={W / 2} y={phone ? 738 : 498} text-anchor="middle" class="rowlabel">{t('CHAPTERS 1–12 REVIEW', '第 1–12 章回顾')}</text>
         {#each [
           { ref: 'Ch. 1–3', refZh: '第 1–3 章', text: 'config · route · binding', textZh: '配置 · 路线 · 绑定' },
           { ref: 'Ch. 4–6', refZh: '第 4–6 章', text: 'waiting rules · data · queues', textZh: '等待规则 · 数据 · 队列' },
           { ref: 'Ch. 7–8', refZh: '第 7–8 章', text: 'memory · measurement', textZh: '显存 · 测量' },
-          { ref: 'Ch. 9–12', refZh: '第 9–12 章', text: 'optimization · model strategies', textZh: '优化 · 模型策略' },
+          { ref: 'Ch. 9–12', refZh: '第 9–12 章', text: 'optimization · models', textZh: '优化 · 模型' },
         ] as card, i}
           {@const x = phone ? 15 : 20 + i * 172}
-          {@const y = phone ? 765 + i * 58 : 620}
+          {@const y = phone ? 765 + i * 58 : 522}
           <rect {x} {y} width={phone ? 270 : 160} height={phone ? 48 : 60} rx="7" fill="var(--bg)" stroke="var(--line)" />
           <text x={x + 12} y={y + 21} class="tag strong">{t(card.ref, card.refZh)}</text>
           <text x={x + 12} y={y + (phone ? 39 : 43)} class="tag">{t(card.text, card.textZh)}</text>
@@ -507,15 +422,12 @@
           <text x={W / 2} y="1013" text-anchor="middle" class="tag strong">client ← queued audio (API process)</text>
           <text x={W / 2} y="1038" text-anchor="middle" class="tag strong">{t('What if the client reads too slowly?', '客户端读得太慢会怎样？')}</text>
         {:else}
-          <text x={W / 2} y="709" text-anchor="middle" class="tag strong">{t('client ← queued audio (API process) · What happens when the client reads too slowly?', 'client ← queued audio (API process) · 客户端读得太慢会怎样？')}</text>
+          <text x={W / 2} y="615" text-anchor="middle" class="tag strong">{t('client ← queued audio (API process) · What happens when the client reads too slowly?', 'client ← queued audio (API process) · 客户端读得太慢会怎样？')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Constructed TP1 hypothesis · local A/B required', '构造的 TP1 假设 · 仍需本地 A/B') : t('Constructed TP1 hypothesis from H200/TP2 evidence; local A/B required. No local model run.', '由 H200/TP2 证据构造的 TP1 假设，仍需本地 A/B；未运行模型。')}</text>
       {/if}
       {#if PHASE_COUNTS[step] > 0}
-        <LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={4} label={t('loops · red = current', '循环 · 红框 = 当前')} />
-      {/if}
-      {#if focus}
-        <rect class="motion-focus" x={focus.x - 4} y={focus.y - 4} width={focus.w + 8} height={focus.h + 8} rx="12" fill="none" stroke="var(--eos)" stroke-width="3" />
+        <LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={4} label="loops" />
       {/if}
     </svg>
   </div>
@@ -523,5 +435,7 @@
 </figure>
 
 <style>
-  .motion-focus { pointer-events: none; transition: x 240ms, y 240ms, width 240ms, height 240ms; }
+  @media (min-width: 901px) {
+    .canvas :global(.tag), .canvas :global(.mono), .canvas :global(.rowlabel), .canvas :global(.footnote) { font-size: var(--small-desktop); }
+  }
 </style>
