@@ -50,14 +50,14 @@ $D$ 和 $F$ 必须使用同一种时间单位。本例都用秒，所以分子�
 
 ### 源码出处
 
-公开基线：`sglang-omni@91d06c70b00746c0b2b84db12a318240db360f1d`，路径均相对该仓库。
+公开基线：<code>sglang-omni@<wbr>91d06c70b00746c0<wbr>b2b84db12a318240db360f1d</code>，路径均相对该仓库。
 
-- 默认 16,000 Hz 和 100 ms：`Voxt/helper/Sources/VoxtNewHelper/Capture.swift:150-160`。
-- 单声道、重采样后进入切帧器：`Voxt/helper/Sources/VoxtNewHelperKit/CaptureSource.swift:4-12,58-74`；接收并调用 `framer.push`：`Voxt/helper/Sources/VoxtNewHelper/Capture.swift:480-487`。
-- 每帧测量值个数的算法、从 0 编号和样本偏移：`Voxt/helper/Sources/VoxtNewHelperKit/PCMFramer.swift:18-23,33-37,77-87`。
-- 完整帧与停止时的末尾不足帧：`Voxt/helper/Sources/VoxtNewHelperKit/PCMFramer.swift:59-72`；3,300 值例子的公开测试：`Voxt/helper/Tests/VoxtNewHelperKitTests/HotkeyRecognizerTests.swift:474-488`。
-- `capture.pcm` 按帧发出：`Voxt/helper/Sources/VoxtNewHelper/Capture.swift:506-515`；协议默认设置：`Voxt/docs/helper-protocol.md:105-107`。
-- 语音检测的 20 ms 分析帧是另一层：`Voxt/internal/vad/doc.go:7-10`。
+- 默认 16,000 Hz 和 100 ms：<code>Voxt/<wbr>helper/<wbr>Sources/<wbr>VoxtNewHelper/<wbr>Capture.swift:150-160</code>。
+- 单声道、重采样后进入切帧器：<code>Voxt/<wbr>helper/<wbr>Sources/<wbr>VoxtNewHelperKit/<wbr>CaptureSource.swift:4-12,<wbr>58-74</code>；接收并调用 `framer.push`：<code>Voxt/<wbr>helper/<wbr>Sources/<wbr>VoxtNewHelper/<wbr>Capture.swift:480-487</code>。
+- 每帧测量值个数的算法、从 0 编号和样本偏移：<code>Voxt/<wbr>helper/<wbr>Sources/<wbr>VoxtNewHelperKit/<wbr>PCMFramer.swift:18-23,<wbr>33-37,<wbr>77-87</code>。
+- 完整帧与停止时的末尾不足帧：<code>Voxt/<wbr>helper/<wbr>Sources/<wbr>VoxtNewHelperKit/<wbr>PCMFramer.swift:59-72</code>；3,300 值例子的公开测试：<code>Voxt/<wbr>helper/<wbr>Tests/<wbr>VoxtNewHelperKitTests/<wbr>HotkeyRecognizerTests.swift:474-488</code>。
+- `capture.pcm` 按帧发出：<code>Voxt/<wbr>helper/<wbr>Sources/<wbr>VoxtNewHelper/<wbr>Capture.swift:506-515</code>；协议默认设置：<code>Voxt/<wbr>docs/<wbr>helper-protocol.md:105-107</code>。
+- 语音检测的 20 ms 分析帧是另一层：<code>Voxt/<wbr>internal/<wbr>vad/<wbr>doc.go:7-10</code>。
 
 ## 第 2 步 · 一个样本存成两个字节
 
@@ -114,12 +114,12 @@ $$
 
 ### 源码出处
 
-公开基线：`sglang-omni@f6827ed1907e392fd67d5f13fa315c016e2056e8`，路径均相对该仓库。
+公开基线：<code>sglang-omni@<wbr>f6827ed1907e392f<wbr>d67d5f13fa315c016e2056e8</code>，路径均相对该仓库。
 
-- 默认采样率和每帧样本数：`Voxt/helper/Sources/VoxtNewHelperKit/PCMFramer.swift:33-37`。
-- 输入限制、乘以 32,767 并转成 `Int16`：`Voxt/helper/Sources/VoxtNewHelperKit/PCMFramer.swift:40-47`。
-- 逐样本转换为 little-endian 字节：`Voxt/helper/Sources/VoxtNewHelperKit/PCMFramer.swift:77-87`。
-- `0.5 → 16383`、字节 `FF 3F` 和完整帧 3,200 字节的公开测试：`Voxt/helper/Tests/VoxtNewHelperKitTests/HotkeyRecognizerTests.swift:474-488`。
+- 默认采样率和每帧样本数：<code>Voxt/<wbr>helper/<wbr>Sources/<wbr>VoxtNewHelperKit/<wbr>PCMFramer.swift:33-37</code>。
+- 输入限制、乘以 32,767 并转成 `Int16`：<code>Voxt/<wbr>helper/<wbr>Sources/<wbr>VoxtNewHelperKit/<wbr>PCMFramer.swift:40-47</code>。
+- 逐样本转换为 little-endian 字节：<code>Voxt/<wbr>helper/<wbr>Sources/<wbr>VoxtNewHelperKit/<wbr>PCMFramer.swift:77-87</code>。
+- `0.5 → 16383`、字节 `FF 3F` 和完整帧 3,200 字节的公开测试：<code>Voxt/<wbr>helper/<wbr>Tests/<wbr>VoxtNewHelperKitTests/<wbr>HotkeyRecognizerTests.swift:474-488</code>。
 
 ## 第 3 步 · 停止时送出末尾不足帧
 
@@ -164,12 +164,12 @@ $$
 
 ### 源码出处
 
-公开基线：`sglang-omni@6d8ed2dcf70da1b021bb14b62239a3add428636c`，路径均相对该仓库。
+公开基线：<code>sglang-omni@<wbr>6d8ed2dcf70da1b0<wbr>21bb14b62239a3add428636c</code>，路径均相对该仓库。
 
-- 攒满 1,600 个样本就形成完整帧：`Voxt/helper/Sources/VoxtNewHelperKit/PCMFramer.swift:33-37,59-61`。
-- `flush()` 只发送剩余样本；帧编号、样本偏移和字节生成：`Voxt/helper/Sources/VoxtNewHelperKit/PCMFramer.swift:70-87`。
-- 停止时先发送已转换数据和末尾不足帧：`Voxt/helper/Sources/VoxtNewHelper/Capture.swift:552-568`。
-- 3,300 样本、两个完整帧、200 字节尾帧和偏移 3,200 的公开测试：`Voxt/helper/Tests/VoxtNewHelperKitTests/HotkeyRecognizerTests.swift:474-488`。
+- 攒满 1,600 个样本就形成完整帧：<code>Voxt/<wbr>helper/<wbr>Sources/<wbr>VoxtNewHelperKit/<wbr>PCMFramer.swift:33-37,<wbr>59-61</code>。
+- `flush()` 只发送剩余样本；帧编号、样本偏移和字节生成：<code>Voxt/<wbr>helper/<wbr>Sources/<wbr>VoxtNewHelperKit/<wbr>PCMFramer.swift:70-87</code>。
+- 停止时先发送已转换数据和末尾不足帧：<code>Voxt/<wbr>helper/<wbr>Sources/<wbr>VoxtNewHelper/<wbr>Capture.swift:552-568</code>。
+- 3,300 样本、两个完整帧、200 字节尾帧和偏移 3,200 的公开测试：<code>Voxt/<wbr>helper/<wbr>Tests/<wbr>VoxtNewHelperKitTests/<wbr>HotkeyRecognizerTests.swift:474-488</code>。
 
 ## 第 4 步 · 原始录音与模型副本分开
 
@@ -194,13 +194,13 @@ $$
 
 ### 源码出处
 
-公开基线：`sglang-omni@6d8ed2dcf70da1b021bb14b62239a3add428636c`，路径均相对该仓库。
+公开基线：<code>sglang-omni@<wbr>6d8ed2dcf70da1b0<wbr>21bb14b62239a3add428636c</code>，路径均相对该仓库。
 
-- helper 的 PCM 追加到 session 的原始缓冲区：`Voxt/internal/session/run_audio.go:66-72`；缓冲区追加实现：`Voxt/internal/session/pcm.go:8-28`。
-- 流式路径保留 `raw`，处理阶段生成副本后发送：`Voxt/internal/session/run_audio.go:122-150`。
-- 文件处理明确不修改输入 `pcm`，历史保留原始录音：`Voxt/internal/session/run_audio.go:261-269`；实现：`Voxt/internal/dsp/level.go:125-169`。
-- 历史 WAV 写入 `r.pcm.bytes()`：`Voxt/internal/session/run.go:545-554`。
-- 公开文档也说明录音是在高通、增益和静音裁剪之前的麦克风信号：`Voxt/docs/dictation-collection.md:37-40`。
+- helper 的 PCM 追加到 session 的原始缓冲区：<code>Voxt/<wbr>internal/<wbr>session/<wbr>run_audio.go:66-72</code>；缓冲区追加实现：<code>Voxt/<wbr>internal/<wbr>session/<wbr>pcm.go:8-28</code>。
+- 流式路径保留 `raw`，处理阶段生成副本后发送：<code>Voxt/<wbr>internal/<wbr>session/<wbr>run_audio.go:122-150</code>。
+- 文件处理明确不修改输入 `pcm`，历史保留原始录音：<code>Voxt/<wbr>internal/<wbr>session/<wbr>run_audio.go:261-269</code>；实现：<code>Voxt/<wbr>internal/<wbr>dsp/<wbr>level.go:125-169</code>。
+- 历史 WAV 写入 `r.pcm.bytes()`：<code>Voxt/<wbr>internal/<wbr>session/<wbr>run.go:545-554</code>。
+- 公开文档也说明录音是在高通、增益和静音裁剪之前的麦克风信号：<code>Voxt/<wbr>docs/<wbr>dictation-collection.md:37-40</code>。
 
 ## 第 5 步 · 高通减弱低频嗡声
 
@@ -223,7 +223,7 @@ $$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
-| $D$ | 某频率的分贝响应 | 公开 `TestHighPassResponse` |
+| $D$ | 某频率的分贝响应 | 公开 <code>Test<wbr>High<wbr>Pass<wbr>Response</code> |
 | $G$ | 输出振幅与输入振幅之比 | 由分贝定义换算；代码 `Response` 返回 1 表示 0 dB |
 
 ### 代入图上的数
@@ -246,12 +246,12 @@ $$
 
 ### 源码出处
 
-公开基线：`sglang-omni@6d8ed2dcf70da1b021bb14b62239a3add428636c`，路径均相对该仓库。
+公开基线：<code>sglang-omni@<wbr>6d8ed2dcf70da1b0<wbr>21bb14b62239a3add428636c</code>，路径均相对该仓库。
 
-- 高通位于语音检测之前，默认 80 Hz 和各频率响应：`Voxt/internal/dsp/doc.go:6-24`。
-- 默认转折频率：`Voxt/internal/dsp/params.go:5-10,41-50`。
-- 四阶滤波、响应函数和新切片输出：`Voxt/internal/dsp/highpass.go:65-106`。
-- 50 Hz 约 −16.4 dB、80 Hz 约 −3 dB、200 Hz 接近不变的公开测试：`Voxt/internal/dsp/dsp_test.go:12-44`。
+- 高通位于语音检测之前，默认 80 Hz 和各频率响应：<code>Voxt/<wbr>internal/<wbr>dsp/<wbr>doc.go:6-24</code>。
+- 默认转折频率：<code>Voxt/<wbr>internal/<wbr>dsp/<wbr>params.go:5-10,<wbr>41-50</code>。
+- 四阶滤波、响应函数和新切片输出：<code>Voxt/<wbr>internal/<wbr>dsp/<wbr>highpass.go:65-106</code>。
+- 50 Hz 约 −16.4 dB、80 Hz 约 −3 dB、200 Hz 接近不变的公开测试：<code>Voxt/<wbr>internal/<wbr>dsp/<wbr>dsp_test.go:12-44</code>。
 
 ## 第 6 步 · 连续 60 ms 才开始说话段
 
@@ -308,12 +308,12 @@ $$
 
 ### 源码出处
 
-公开基线：`sglang-omni@6d8ed2dcf70da1b021bb14b62239a3add428636c`，路径均相对该仓库。
+公开基线：<code>sglang-omni@<wbr>6d8ed2dcf70da1b0<wbr>21bb14b62239a3add428636c</code>，路径均相对该仓库。
 
-- 20 ms 分析帧、60 ms 起点、门槛和 300 ms 结束等待：`Voxt/internal/vad/vad.go:21-57`。
-- 起点必须连续达到门槛，段起点回退到连续段首：`Voxt/internal/vad/vad.go:239-278`。
-- 20 ms 音量公式和保守检测动机：`Voxt/internal/vad/doc.go:1-31`。
-- 原始与滤波版本任一听到就保留：`Voxt/internal/vad/doc.go:54-62`；流式接入：`Voxt/internal/session/run_audio.go:128-145`；文件合并：`Voxt/internal/dsp/level.go:144-148`。
+- 20 ms 分析帧、60 ms 起点、门槛和 300 ms 结束等待：<code>Voxt/<wbr>internal/<wbr>vad/<wbr>vad.go:21-57</code>。
+- 起点必须连续达到门槛，段起点回退到连续段首：<code>Voxt/<wbr>internal/<wbr>vad/<wbr>vad.go:239-278</code>。
+- 20 ms 音量公式和保守检测动机：<code>Voxt/<wbr>internal/<wbr>vad/<wbr>doc.go:1-31</code>。
+- 原始与滤波版本任一听到就保留：<code>Voxt/<wbr>internal/<wbr>vad/<wbr>doc.go:54-62</code>；流式接入：<code>Voxt/<wbr>internal/<wbr>session/<wbr>run_audio.go:128-145</code>；文件合并：<code>Voxt/<wbr>internal/<wbr>dsp/<wbr>level.go:144-148</code>。
 
 公开性能证据（保留 PR、测量 head、setup 与边界；不来自 pinned 代码基线）：
 
@@ -379,12 +379,12 @@ $$
 
 ### 源码出处
 
-公开基线：`sglang-omni@6d8ed2dcf70da1b021bb14b62239a3add428636c`，路径均相对该仓库。
+公开基线：<code>sglang-omni@<wbr>6d8ed2dcf70da1b0<wbr>21bb14b62239a3add428636c</code>，路径均相对该仓库。
 
-- 默认目标、最大增益、噪声底、峰值上限和余量：`Voxt/internal/dsp/params.go:20-56`。
-- 四项轻声增益限制与 loud 分支：`Voxt/internal/dsp/params.go:95-119`。
-- quiet 例的输入与 7 dB 结果：`Voxt/internal/dsp/dsp_test.go:98-120`。
-- 文件增益测量与流式行为：`Voxt/internal/dsp/level.go:125-169,172-210`；静音不提升：`Voxt/internal/dsp/dsp_test.go:172-212`。
+- 默认目标、最大增益、噪声底、峰值上限和余量：<code>Voxt/<wbr>internal/<wbr>dsp/<wbr>params.go:20-56</code>。
+- 四项轻声增益限制与 loud 分支：<code>Voxt/<wbr>internal/<wbr>dsp/<wbr>params.go:95-119</code>。
+- quiet 例的输入与 7 dB 结果：<code>Voxt/<wbr>internal/<wbr>dsp/<wbr>dsp_test.go:98-120</code>。
+- 文件增益测量与流式行为：<code>Voxt/<wbr>internal/<wbr>dsp/<wbr>level.go:125-169,<wbr>172-210</code>；静音不提升：<code>Voxt/<wbr>internal/<wbr>dsp/<wbr>dsp_test.go:172-212</code>。
 
 ## 第 8 步 · 限幅守住峰值上限
 
@@ -440,9 +440,9 @@ $$
 
 ### 源码出处
 
-公开基线：`sglang-omni@6d8ed2dcf70da1b021bb14b62239a3add428636c`，路径均相对该仓库。
+公开基线：<code>sglang-omni@<wbr>6d8ed2dcf70da1b0<wbr>21bb14b62239a3add428636c</code>，路径均相对该仓库。
 
-- 默认 −1 dBFS 上限和 50 ms 释放时间：`Voxt/internal/dsp/params.go:30-38,41-56`。
-- 逐样本上限换算、降低乘数与恢复：`Voxt/internal/dsp/level.go:11-38`。
-- 文件路径先增益后限幅：`Voxt/internal/dsp/level.go:125-169`；流式路径先增益后限幅：`Voxt/internal/dsp/level.go:241-268`。
-- 文件与流式都不让峰值越过上限：`Voxt/internal/dsp/dsp_test.go:248-287`。
+- 默认 −1 dBFS 上限和 50 ms 释放时间：<code>Voxt/<wbr>internal/<wbr>dsp/<wbr>params.go:30-38,<wbr>41-56</code>。
+- 逐样本上限换算、降低乘数与恢复：<code>Voxt/<wbr>internal/<wbr>dsp/<wbr>level.go:11-38</code>。
+- 文件路径先增益后限幅：<code>Voxt/<wbr>internal/<wbr>dsp/<wbr>level.go:125-169</code>；流式路径先增益后限幅：<code>Voxt/<wbr>internal/<wbr>dsp/<wbr>level.go:241-268</code>。
+- 文件与流式都不让峰值越过上限：<code>Voxt/<wbr>internal/<wbr>dsp/<wbr>dsp_test.go:248-287</code>。

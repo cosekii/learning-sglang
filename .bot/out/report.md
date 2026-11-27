@@ -3324,3 +3324,33 @@ npx astro dev stop
 
 - Voxt 01 deep 在 360 px 抽屉展开也有长路径横溢（en +23／zh +34 px）；Voxt 03 Step 1 deep 在 360 px 横溢 +248 px。均记此备协调编号；Voxt-03 按 direction 是下一个 P0 单元。
 - Voxt-11 是否核销由协调固定复审决定；本模型无图像输入，视觉 verdict 留协调侧。
+
+---
+
+# lane d 本轮报告 · Voxt 03 全章机制动画（Voxt-03）
+
+日期：2026-11-27。类型：修 review.md 的 P0 finding Voxt-03（03/1–8 音频帧、flush 与处理链静态）。一个组件、两个 deep 文件、一份 transcript，一个提交。
+
+## 修复内容
+
+- **8 步全部改为逐相循环动画**（沿用 Voxt 02 的 phase 模式：`data-animation-step/phase/final-phase`、900 ms 相位、2.2 s 间歇循环、`LoopProgress`、reduced-motion 直达末相）：
+  - Step 1：波形按每 100 ms 逐段绘出，每画完一段，下方落出一帧，共 12 相；最后出现切割箭头和 `1 s ÷ 0.1 s = 10 帧`。
+  - Step 2：`16,383` → 箭头 → `÷ 256` → `= 63 余 255` → 第 1 字节 255（先放）→ 第 2 字节 63（后放）→ 底部字节顺序，共 7 相。
+  - Step 3：`3,300 = 1,600 + 1,600 + 100` → 完整帧 0 → 完整帧 1 → `STOP → flush` → 最后一帧（100 样本）→ `100 × 2 = 200` 与图例，共 6 相。
+  - Step 4：helper 音频帧 → 保留的历史录音（原件不动）→ 识别模型副本（处理只改这份）→ `原件不动 · 副本处理`，共 4 相。
+  - Step 5：50 Hz 行先播处理前、再播变小后的波形与「嗡声变小」；200 Hz 行再播处理前、处理后与「声音不变」，共 6 相。
+  - Step 6：按键图先升 1 个小段、判 `还不够`；说话图 3 个小段逐个升起、判 `说话段`，共 8 相（小段升起用 `{#key}` 切换，DOM 属性可核）。
+  - Step 7／8：处理前波形（尖峰越限）→ 箭头 → 处理后波形（2.24 倍高／降到上限）→ 结论，各 4 相。
+- **末相画面与原静态完全一致**（文字、几何未动），transcript 仅新增 `loops` 标记与 DOM 顺序差。
+- **顺带修复本章既有手机缺陷**（复验时发现，非本 finding 回归）：Step 2 手机 viewBox 高 340 但内容排到 y≈493，底部字节框、公式和图例被裁掉；改为 phone 510。Step 4 手机脚注超 SVG 2 px，拆成两行。Voxt 03 Step 1 deep 360 px 横溢 +248 px（上轮记录备协调编号）：两个 deep 文件所有含 `/` 的出处与 40 位 commit hash 统一加 `<wbr>` 断行机会（与 Voxt-11 修法一致），Step 5 表格 `TestHighPassResponse` 按驼峰加 `<wbr>`。
+
+## 验证（全过）
+
+- `npm run build` 60 页；`BOOK=voxt node scripts/deep-check.mjs 03` ok；`BOOK=voxt ONLY=3 zh-check` all clear；readability 0 机械问题；`BOOK=voxt ONLY=3` mobile 360／390／430 no layout breaks；`BOOK=voxt ONLY=3` transcript 无报告项；`git diff --check` 干净。
+- 逐相矩阵（`.bot/out/voxt03-phase-audit.mjs`）：3 视图（英桌面、中桌面、中 390 px）× 8 步 × direct 全相位 + prev 入口首末相 = **195 状态、0 失败**；每个相邻转变都有机制对象变化（文字集合＋形状几何签名），最低可见字 **11.76 CSS px**，重叠、SVG 出界、页面横溢均为 0。代表图 `.bot/out/voxt03-phase-audit/zh-390-s6-final.png`。
+- deep 抽屉复验（`.bot/out/voxt03-deep-overflow.mjs`，`localStorage deep=1`）：8 步 × 英中 × 桌面／360／390／430 = 64 状态，`aria-expanded=true`、`.deep-body` scrollWidth ≤ clientWidth 全过，无 raw `$$`／KaTeX 错误。
+
+## 自评与遗留
+
+- 自评 R6：8/8 步机制动画（每步 ≥2 个机制状态，矩阵逐相核对）；R1–R5 内容未动，维持原分。是否核销 Voxt-03 由协调固定复审决定；本模型无图像输入，视觉 verdict 留协调侧。
+- 遗留：Voxt 01 deep 的 360 px 长路径横溢（en +23／zh +34 px）仍未修，已在上轮记录备协调编号。`node_modules` 本轮又是指向协调 checkout 的符号链接，仍只删本目录符号链接并本地 `npm install`，未进入或修改协调 checkout。

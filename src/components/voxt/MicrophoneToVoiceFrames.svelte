@@ -1,6 +1,8 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
+  import { fade } from 'svelte/transition';
   import StepControls from '../StepControls.svelte';
+  import LoopProgress from '../LoopProgress.svelte';
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
@@ -58,29 +60,29 @@
     captionZh: '限幅器把越界尖峰降到 −1 dBFS 上限。',
   }];
   const ariaLabels = [{
-    en: 'The helper cuts one second of continuous sound into ten ordered audio frames, each holding 100 milliseconds',
-    zh: 'helper 把一秒连续声音按顺序切成十段音频帧，每段装 100 毫秒',
+    en: 'The picture builds in order: the microphone box appears, the sound wave draws 100 milliseconds at a time and one audio frame appears under each finished piece, until ten frames fill one second.',
+    zh: '画面按顺序形成：麦克风框出现，声波每画过 100 毫秒，下面就出现一帧，直到十帧装满一秒。',
   }, {
-    en: 'One sound measurement in whole-number form, 16383, is split into 63 groups of 256 and remainder 255. Remainder byte 255 is stored first, then group byte 63.',
-    zh: '一次声音测量的整数形式 16383 拆成 63 组 256，余下 255。装余数的字节 255 先存，装组数的字节 63 后存。',
+    en: 'The example 16383 appears first, then the split by 256 with its result 63 remainder 255, then byte 1 holding 255 and byte 2 holding 63 in storage order.',
+    zh: '先出现例子 16383，再出现按 256 分组和结果 63 余 255，随后第 1 个字节存 255、第 2 个字节存 63，按存放顺序出现。',
   }, {
-    en: 'A total of 3300 samples fills two frames of 1600 samples. At stop, the remaining 100 samples form a final partial frame of 200 bytes.',
-    zh: '共 3300 个样本，先装满两个各有 1600 个样本的帧。停止时，剩下的 100 个样本也装成最后一帧，占 200 个字节。',
+    en: 'The total 3300 samples split into 1600 plus 1600 plus 100. Two full frames appear one at a time, then the stop signal, and the leftover 100 samples form a shorter final frame.',
+    zh: '共 3300 个样本拆成 1600 加 1600 加 100。两个完整帧依次出现，随后停止信号到达，剩下的 100 个样本装成更短的最后一帧。',
   }, {
-    en: 'One recording takes two paths. The kept history preserves the original sound. A separate copy changes during processing for the speech model.',
-    zh: '同一段录音走两条路。保留的历史录音原样不动，另一份副本经过处理后送给识别模型。',
+    en: 'The audio frames from the helper appear first, then split two ways: the kept history box keeps the original sound unchanged, and the model copy box holds the copy that processing changes.',
+    zh: '先出现 helper 送来的音频帧，再分成两路：保留的历史录音框原样保存，识别模型副本框装的是处理会修改的副本。',
   }, {
-    en: 'A high-pass filter reduces a slow 50 Hz hum in the model copy while a faster 200 Hz sound stays the same. Hz means vibrations each second.',
-    zh: '高通滤波把模型副本里每秒振动 50 次的低沉嗡声减弱，每秒振动 200 次的声音保持不变。',
+    en: 'The 50 Hz hum row plays first: its wave before processing, then the smaller wave after. Then the 200 Hz row plays the same way, and its wave stays the same.',
+    zh: '先播放 50 Hz 嗡声这一行：处理前的波形，再是处理后变小的波形。随后 200 Hz 这一行同样播放，它的波形保持不变。',
   }, {
-    en: 'Voice activity detection compares 20 millisecond slices with room noise. One louder slice is not enough. Three louder slices in a row total 60 milliseconds and start a speech segment.',
-    zh: '语音活动检测把 20 毫秒的小段与房间噪声比较。一个较响的小段还不够，连续三个较响的小段共 60 毫秒，开始一个说话段。',
+    en: 'The one-key-click panel plays first: one louder slice rises above the noise line, and 20 milliseconds is not enough. Then the speech panel plays three louder slices rising one at a time, reaching 60 milliseconds and starting a speech segment.',
+    zh: '先播放一次按键声这幅图：一个较响的小段高过噪声线，但 20 毫秒还不够。随后说话图里三个较响的小段逐个升起，凑够 60 毫秒，开始一个说话段。',
   }, {
-    en: 'Gain means making sound stronger. This quiet voice receives 7 decibels of gain, so its wave becomes about 2.24 times taller on the same scale.',
-    zh: '增益是让声音变强。这次较轻的说话声增加 7 分贝，按同一尺度画，波形高度约变成 2.24 倍。',
+    en: 'The quiet wave appears before processing, then the same wave 2.24 times taller after 7 decibels of gain.',
+    zh: '先出现处理前较轻的波形，增加 7 分贝增益后，同一波形变成约 2.24 倍高。',
   }, {
-    en: 'A limiter turns down a peak that crosses the safety ceiling. A constructed high peak crosses the orange line before processing and touches the minus one dBFS ceiling afterwards.',
-    zh: '限幅器把越过安全上限的尖峰调低。构造尖峰在处理前越过橙线，处理后刚好到 −1 dBFS 上限。',
+    en: 'The dashed ceiling and the crossing peak appear before processing, then the peak after processing, lowered to touch the ceiling.',
+    zh: '先出现虚线上限和处理前越界的尖峰，随后出现处理后的尖峰，降到刚好碰到上限。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -97,7 +99,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(step === 0 ? (phone ? 590 : 380) : step === 2 ? (phone ? 450 : 340) : step === 3 ? (phone ? 475 : 370) : step === 4 ? (phone ? 480 : 420) : step === 5 ? (phone ? 445 : 335) : step === 6 ? (phone ? 320 : 300) : (phone ? 340 : 320));
+  const H = $derived(step === 0 ? (phone ? 590 : 380) : step === 1 ? (phone ? 510 : 320) : step === 2 ? (phone ? 450 : 340) : step === 3 ? (phone ? 475 : 370) : step === 4 ? (phone ? 480 : 420) : step === 5 ? (phone ? 445 : 335) : step === 6 ? (phone ? 320 : 300) : (phone ? 340 : 320));
   const frames = Array.from({ length: VOXT_CAPTURE_FRAME_COUNT }, (_, i) => ({
     seq: i,
     start: i * VOXT_CAPTURE_FRAME_MS,
@@ -136,9 +138,45 @@
       height: phone ? 60 : 90,
     };
   }));
+  // Every step builds its mechanism as a looping process: Step 1 draws the
+  // wave 100 ms at a time and drops one frame per finished piece; Step 2
+  // walks the number into the split and then the two bytes in storage order;
+  // Step 3 fills two full frames, stops, and flushes the tail; Step 4 splits
+  // the frames into kept history and model copy; Steps 5, 7 and 8 play
+  // before then after on each row; Step 6 raises one slice, then three.
+  const PHASE_COUNTS = [12, 7, 6, 4, 6, 8, 4, 4];
+  // Phone LoopProgress spot per step, kept clear of rows, legends and footnotes.
+  const LP_PHONE: [number, number][] = [[225, 548], [222, 499], [230, 56], [225, 430], [225, 430], [230, 410], [225, 265], [225, 284]];
+  const PHASE_MS = 900;
+  const REST_MS = 2200;
+  let phase = $state(0);
+  let lap = $state(0), lapMs = $state(0), reduced = $state(false);
+  const nextLap = (ms: number) => untrack(() => { lapMs = ms; lap++; });
+  $effect(() => {
+    const s = step;
+    reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) { phase = PHASE_COUNTS[s] - 1; return; }
+    phase = 0;
+    const count = PHASE_COUNTS[s];
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const run = () => {
+      phase = 0;
+      for (let i = 1; i < count; i++) timers.push(setTimeout(() => (phase = i), i * PHASE_MS));
+      const ms = count * PHASE_MS + REST_MS;
+      timers.push(setTimeout(run, ms));
+      nextLap(ms);
+    };
+    run();
+    return () => timers.forEach(clearTimeout);
+  });
+  // Step 1: the wave is revealed up to the current 100 ms piece.
+  const waveW = $derived(phone ? 240 : 620);
+  const revealW = $derived(Math.min(Math.max(phase, 0), VOXT_CAPTURE_FRAME_COUNT) / VOXT_CAPTURE_FRAME_COUNT * waveW);
+  // Step 6: how many slices have risen in each panel at this phase.
+  const vadActive = (panel: number) => panel === 0 ? (phase >= 1 ? 1 : 0) : Math.min(Math.max(phase - 3, 0), VOXT_VAD_ONSET_FRAMES);
 </script>
 
-<figure class="viz">
+<figure class="viz" data-animation-step={step} data-animation-phase={phase} data-animation-final-phase={PHASE_COUNTS[step] - 1}>
   <div class="canvas">
     <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={t(ariaLabels[step].en, ariaLabels[step].zh)}>
       <defs>
@@ -151,7 +189,13 @@
         <marker id="original-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
           <path d="M0,0 L8,4 L0,8 z" fill="var(--gen)" />
         </marker>
+        <clipPath id="wave-reveal">
+          <rect x="-5" y="100" width={revealW + 5} height="120" />
+        </clipPath>
       </defs>
+      {#if !reduced}
+        {#if phone}<LoopProgress ms={lapMs} {lap} x={LP_PHONE[step][0]} y={LP_PHONE[step][1]} />{:else}<LoopProgress ms={lapMs} {lap} />{/if}
+      {/if}
       {#if step === 0}
       <text x={W / 2} y={phone ? 25 : 30} text-anchor="middle" class="title">{t(`${VOXT_DEMO_AUDIO_MS / 1000} SECOND OF SOUND → ${VOXT_CAPTURE_FRAME_COUNT} SHORT PIECES`, `${VOXT_DEMO_AUDIO_MS / 1000} 秒连续声音 → ${VOXT_CAPTURE_FRAME_COUNT} 小段声音`)}</text>
       <text x={W / 2} y={phone ? 47 : 52} text-anchor="middle" class="subtitle">{t('audio frame = a short sound slice · ms = milliseconds', '音频帧 = 一小段声音 · ms = 毫秒')}</text>
@@ -161,25 +205,37 @@
       <text x={phone ? 150 : 360} y={phone ? 106 : 117} text-anchor="middle" class="detail">{t('blue line = sound strength changing over time', '蓝线 = 声音强弱随时间变化')}</text>
       <g transform={`translate(${phone ? 30 : 50} 0)`}>
         <line x1="0" y1={phone ? 157 : 160} x2={phone ? 240 : 620} y2={phone ? 157 : 160} stroke="var(--line)" />
-        <path d={wave(phone ? 240 : 620, phone ? 157 : 160)} fill="none" stroke="var(--accent)" stroke-width="2.5" />
+        <g clip-path="url(#wave-reveal)">
+          <path d={wave(phone ? 240 : 620, phone ? 157 : 160)} fill="none" stroke="var(--accent)" stroke-width="2.5" />
+        </g>
         {#each Array.from({ length: VOXT_CAPTURE_FRAME_COUNT + 1 }, (_, i) => i) as tick}
-          {@const x = tick * (phone ? 24 : 62)}
-          <line x1={x} y1={phone ? 120 : 123} x2={x} y2={phone ? 194 : 197} stroke="var(--line)" stroke-dasharray="3 4" />
+          {#if phase >= 1 && tick <= Math.min(phase, VOXT_CAPTURE_FRAME_COUNT)}
+            {@const x = tick * (phone ? 24 : 62)}
+            <line in:fade={{ duration: 200 }} x1={x} y1={phone ? 120 : 123} x2={x} y2={phone ? 194 : 197} stroke="var(--line)" stroke-dasharray="3 4" />
+          {/if}
         {/each}
-        <text x="0" y={phone ? 214 : 214} text-anchor="middle" class="detail">0 ms</text>
-        <text x={phone ? 120 : 310} y={phone ? 214 : 214} text-anchor="middle" class="detail">500 ms</text>
-        <text x={phone ? 240 : 620} y={phone ? 214 : 214} text-anchor="middle" class="detail">1000 ms</text>
+        {#if phase >= 1}<text in:fade={{ duration: 200 }} x="0" y={phone ? 214 : 214} text-anchor="middle" class="detail">0 ms</text>{/if}
+        {#if phase >= 6}<text in:fade={{ duration: 200 }} x={phone ? 120 : 310} y={phone ? 214 : 214} text-anchor="middle" class="detail">500 ms</text>{/if}
+        {#if phase >= 10}<text in:fade={{ duration: 200 }} x={phone ? 240 : 620} y={phone ? 214 : 214} text-anchor="middle" class="detail">1000 ms</text>{/if}
       </g>
+      {#if phase >= 11}
+      <g in:fade={{ duration: 250 }}>
       <line x1={W / 2} y1={phone ? 239 : 228} x2={W / 2} y2={phone ? 259 : 248} stroke="var(--accent)" stroke-width="2" marker-end="url(#frame-arrow)" />
       <text x={W / 2 + 10} y={phone ? 254 : 244} class="cut">{t(`helper cuts every ${VOXT_CAPTURE_FRAME_MS} ms`, `helper 每 ${VOXT_CAPTURE_FRAME_MS} ms 切一段`)}</text>
 
       <text x={W / 2} y={phone ? 281 : 273} text-anchor="middle" class="formula">{VOXT_DEMO_AUDIO_MS / 1000} {t('s', '秒')} ÷ {VOXT_CAPTURE_FRAME_MS / 1000} {t('s', '秒')} = {VOXT_CAPTURE_FRAME_COUNT} {t('frames', '帧')}</text>
+      </g>
+      {/if}
       {#each frames as frame, i}
+        {#if phase >= i + 1}
         {@const x = phone ? 15 + (i % 2) * 140 : 30 + i * 66}
         {@const y = phone ? 296 + Math.floor(i / 2) * 50 : 292}
+        <g in:fade={{ duration: 250 }}>
         <rect {x} {y} width={phone ? 130 : 60} height={phone ? 40 : 52} rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
         <text x={x + (phone ? 65 : 30)} y={y + (phone ? 16 : 20)} text-anchor="middle" class="frame-title">{t(`frame ${frame.seq}`, `第 ${frame.seq} 帧`)}</text>
         <text x={x + (phone ? 65 : 30)} y={y + (phone ? 32 : 40)} text-anchor="middle" class="frame-time">{frame.start}–{frame.end} ms</text>
+        </g>
+        {/if}
       {/each}
       <text x={W / 2} y={H - (phone ? 14 : 16)} text-anchor="middle" class="footnote">{t(`Constructed waveform; the default frame lasts ${VOXT_CAPTURE_FRAME_MS} ms.`, `波形是示意图；默认每帧 ${VOXT_CAPTURE_FRAME_MS} ms。`)}</text>
       {:else if step === 1}
@@ -190,35 +246,58 @@
       <text x={phone ? 150 : 95} y={phone ? 103 : 110} text-anchor="middle" class="label">{t('EXAMPLE', '例子')}</text>
       <text x={phone ? 150 : 95} y={phone ? 137 : 153} text-anchor="middle" class="number">{VOXT_DEMO_PCM_VALUE.toLocaleString('en-US')}</text>
       {#if !phone}<text x="95" y="190" text-anchor="middle" class="detail">{t('whole-number form', '整数形式')}</text>{/if}
-      <line x1={phone ? 150 : 163} y1={phone ? 161 : 150} x2={phone ? 150 : 220} y2={phone ? 180 : 150} stroke="var(--muted)" stroke-width="2" marker-end="url(#byte-arrow)" />
+      {#if phase >= 1}
+      <line in:fade={{ duration: 250 }} x1={phone ? 150 : 163} y1={phone ? 161 : 150} x2={phone ? 150 : 220} y2={phone ? 180 : 150} stroke="var(--muted)" stroke-width="2" marker-end="url(#byte-arrow)" />
+      {/if}
 
+      {#if phase >= 2}
+      <g in:fade={{ duration: 250 }}>
       <rect x={phone ? 85 : 225} y={phone ? 185 : 85} width="130" height={phone ? 75 : 145} rx="10" fill="var(--bg)" stroke="var(--line)" />
       <text x={phone ? 150 : 290} y={phone ? 206 : 110} text-anchor="middle" class="label">{t('SPLIT BY 256', '按 256 分组')}</text>
       <text x={phone ? 150 : 290} y={phone ? 232 : 148} text-anchor="middle" class="small-formula">{VOXT_DEMO_PCM_VALUE.toLocaleString('en-US')} ÷ {VOXT_BYTE_STATES}</text>
-      <text x={phone ? 150 : 290} y={phone ? 250 : 181} text-anchor="middle" class="detail">{t('= 63 remainder 255', '= 63 余 255')}</text>
-      <line x1={phone ? 150 : 358} y1={phone ? 264 : 150} x2={phone ? 150 : 420} y2={phone ? 283 : 150} stroke="var(--muted)" stroke-width="2" marker-end="url(#byte-arrow)" />
+      {#if phase >= 3}
+      <text in:fade={{ duration: 250 }} x={phone ? 150 : 290} y={phone ? 250 : 181} text-anchor="middle" class="detail">{t('= 63 remainder 255', '= 63 余 255')}</text>
+      {/if}
+      </g>
+      {/if}
+      {#if phase >= 4}
+      <line in:fade={{ duration: 250 }} x1={phone ? 150 : 358} y1={phone ? 264 : 150} x2={phone ? 150 : 420} y2={phone ? 283 : 150} stroke="var(--muted)" stroke-width="2" marker-end="url(#byte-arrow)" />
 
+      <g in:fade={{ duration: 250 }}>
       <rect x={phone ? 35 : 445} y={phone ? 292 : 85} width={phone ? 95 : 105} height={phone ? 120 : 145} rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2" />
       <text x={phone ? 82.5 : 497.5} y={phone ? 314 : 110} text-anchor="middle" class="label">{t('BYTE 1', '第 1 个字节')}</text>
       <text x={phone ? 82.5 : 497.5} y={phone ? 350 : 153} text-anchor="middle" class="number">{VOXT_DEMO_LOW_BYTE}</text>
       <text x={phone ? 82.5 : 497.5} y={phone ? 374 : 184} text-anchor="middle" class="detail">{t('remainder', '余下的数')}</text>
       <text x={phone ? 82.5 : 497.5} y={phone ? 398 : 208} text-anchor="middle" class="order">{t('1st', '先放')}</text>
+      </g>
+      {/if}
 
+      {#if phase >= 5}
+      <g in:fade={{ duration: 250 }}>
       <rect x={phone ? 170 : 575} y={phone ? 292 : 85} width={phone ? 95 : 105} height={phone ? 120 : 145} rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2" />
       <text x={phone ? 217.5 : 627.5} y={phone ? 314 : 110} text-anchor="middle" class="label">{t('BYTE 2', '第 2 个字节')}</text>
       <text x={phone ? 217.5 : 627.5} y={phone ? 350 : 153} text-anchor="middle" class="number">{VOXT_DEMO_HIGH_BYTE}</text>
       <text x={phone ? 217.5 : 627.5} y={phone ? 374 : 184} text-anchor="middle" class="detail">{t('groups of 256', '有几个 256')}</text>
       <text x={phone ? 217.5 : 627.5} y={phone ? 398 : 208} text-anchor="middle" class="order">{t('2nd', '后放')}</text>
+      </g>
+      {/if}
 
+      {#if phase >= 6}
+      <g in:fade={{ duration: 250 }}>
       <text x={W / 2} y={phone ? 438 : 256} text-anchor="middle" class="formula">{VOXT_DEMO_PCM_VALUE.toLocaleString('en-US')} &gt; 255 · {t('one byte cannot hold it', '一个字节装不下')}</text>
       <text x={W / 2} y={phone ? 464 : 281} text-anchor="middle" class="label">{t('BYTE ORDER IN THE FRAME: 255 → 63', '这次测量在帧里的字节顺序：255 → 63')}</text>
       <rect x={W / 2 - 80} y={phone ? 482 : 299} width="12" height="12" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
       <text x={W / 2 - 60} y={phone ? 493 : 310} class="detail">{t('blue = stored bytes', '蓝色 = 存好的字节')}</text>
+      </g>
+      {/if}
       {:else if step === 2}
       <text x={W / 2} y={phone ? 25 : 30} text-anchor="middle" class="title">{t('STOP KEEPS THE LAST PARTIAL FRAME', '停止时，末尾不足一帧也保留')}</text>
       <text x={W / 2} y={phone ? 48 : 55} text-anchor="middle" class="subtitle">{t(`${VOXT_DEMO_TOTAL_SAMPLES.toLocaleString('en-US')} samples · ${VOXT_CAPTURE_FRAME_SAMPLES.toLocaleString('en-US')} fill one frame`, `共 ${VOXT_DEMO_TOTAL_SAMPLES.toLocaleString('en-US')} 个样本 · 每 ${VOXT_CAPTURE_FRAME_SAMPLES.toLocaleString('en-US')} 个装满一帧`)}</text>
-      <text x={W / 2} y={phone ? 76 : 88} text-anchor="middle" class="formula">{VOXT_DEMO_TOTAL_SAMPLES.toLocaleString('en-US')} = {VOXT_CAPTURE_FRAME_SAMPLES.toLocaleString('en-US')} + {VOXT_CAPTURE_FRAME_SAMPLES.toLocaleString('en-US')} + {VOXT_DEMO_TAIL_SAMPLES}</text>
+      <text in:fade={{ duration: 250 }} x={W / 2} y={phone ? 76 : 88} text-anchor="middle" class="formula">{VOXT_DEMO_TOTAL_SAMPLES.toLocaleString('en-US')} = {VOXT_CAPTURE_FRAME_SAMPLES.toLocaleString('en-US')} + {VOXT_CAPTURE_FRAME_SAMPLES.toLocaleString('en-US')} + {VOXT_DEMO_TAIL_SAMPLES}</text>
       {#each partialLayout as frame}
+        {@const showAt = frame.full ? frame.seq + 1 : 4}
+        {#if phase >= showAt}
+        <g in:fade={{ duration: 250 }}>
         <rect x={frame.x} y={frame.y} width={frame.width} height={frame.height} rx="7" fill={frame.full ? 'var(--accent-soft)' : 'var(--gen-soft)'} stroke={frame.full ? 'var(--accent)' : 'var(--gen)'} stroke-width={frame.full ? 1.5 : 2.5} />
         {#if frame.full}
           <text x={frame.x + frame.width / 2} y={frame.y + (phone ? 19 : 27)} text-anchor="middle" class="label">{t(`FULL FRAME ${frame.seq}`, `完整帧 ${frame.seq}`)}</text>
@@ -229,13 +308,21 @@
           <text x={frame.x + (phone ? 30 : 27)} y={frame.y + (phone ? 35 : 48)} class="detail">{frame.samples} {t('samples', '个样本')}</text>
           <text x={frame.x + (phone ? 30 : 27)} y={frame.y + (phone ? 52 : 70)} class="detail">{frame.bytes} {t('bytes', '个字节')}</text>
         {/if}
+        </g>
+        {/if}
       {/each}
-      <text x={W / 2} y={phone ? 346 : 241} text-anchor="middle" class="cut amber">{t('STOP → flush sends the leftover', '停止 → flush 送出剩下的样本')}</text>
+      {#if phase >= 3}
+      <text in:fade={{ duration: 250 }} x={W / 2} y={phone ? 346 : 241} text-anchor="middle" class="cut amber">{t('STOP → flush sends the leftover', '停止 → flush 送出剩下的样本')}</text>
+      {/if}
+      {#if phase >= 5}
+      <g in:fade={{ duration: 250 }}>
       <text x={W / 2} y={phone ? 378 : 272} text-anchor="middle" class="formula">{VOXT_DEMO_TAIL_SAMPLES} {t('samples', '个样本')} × 2 {t('bytes', '个字节')} = {VOXT_DEMO_TAIL_BYTES} {t('bytes', '个字节')}</text>
       <rect x={phone ? 36 : 191} y={phone ? 403 : 296} width="12" height="12" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
       <text x={phone ? 56 : 211} y={phone ? 414 : 307} class="detail">{t('full frames', '完整帧')}</text>
       <rect x={phone ? 165 : 414} y={phone ? 403 : 296} width="12" height="12" rx="2" fill="var(--gen-soft)" stroke="var(--gen)" />
       <text x={phone ? 185 : 434} y={phone ? 414 : 307} class="detail">{t('final partial frame', '末尾不足帧')}</text>
+      </g>
+      {/if}
       <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Public test example; the last frame is shorter, not padded.', '公开测试示例；最后一帧更短，不补齐。')}</text>
       {:else if step === 3}
       <text x={W / 2} y={phone ? 25 : 30} text-anchor="middle" class="title">{t('ONE RECORDING, TWO COPIES', '同一段录音，分成两份')}</text>
@@ -243,97 +330,166 @@
       <rect x={phone ? 45 : 250} y={phone ? 70 : 80} width={phone ? 210 : 220} height={phone ? 60 : 70} rx="10" fill="var(--bg)" stroke="var(--line)" />
       <text x={W / 2} y={phone ? 96 : 108} text-anchor="middle" class="label">{t('AUDIO FRAMES FROM HELPER', 'helper 送来的音频帧')}</text>
       <text x={W / 2} y={phone ? 117 : 131} text-anchor="middle" class="detail">{t('one recording', '同一段录音')}</text>
-      <line x1={phone ? 105 : 310} y1={phone ? 132 : 151} x2={phone ? 80 : 180} y2={phone ? 177 : 184} stroke="var(--gen)" stroke-width="2" marker-end="url(#original-arrow)" />
-      <line x1={phone ? 195 : 410} y1={phone ? 132 : 151} x2={phone ? 220 : 540} y2={phone ? 177 : 184} stroke="var(--accent)" stroke-width="2" marker-end="url(#frame-arrow)" />
+      {#if phase >= 1}
+      <line in:fade={{ duration: 250 }} x1={phone ? 105 : 310} y1={phone ? 132 : 151} x2={phone ? 80 : 180} y2={phone ? 177 : 184} stroke="var(--gen)" stroke-width="2" marker-end="url(#original-arrow)" />
+      <g in:fade={{ duration: 250 }}>
       <rect x={phone ? 15 : 40} y={phone ? 190 : 195} width={phone ? 130 : 290} height={phone ? 190 : 105} rx="10" fill="var(--gen-soft)" stroke="var(--gen)" stroke-width="2" />
       <text x={phone ? 80 : 185} y={phone ? 219 : 224} text-anchor="middle" class="label amber">{t('KEPT HISTORY', '保留的历史录音')}</text>
       <text x={phone ? 80 : 185} y={phone ? 246 : 252} text-anchor="middle" class="detail">{t('ORIGINAL SOUND', '原来的声音')}</text>
       <text x={phone ? 80 : 185} y={phone ? 270 : 275} text-anchor="middle" class="detail">{t('unchanged', '保持原样')}</text>
+      {#if phone}
+        <text x="80" y="311" text-anchor="middle" class="detail">{t('same bytes', '同样的字节')}</text>
+        <text x="80" y="345" text-anchor="middle" class="detail">{t('as received', '按收到的保存')}</text>
+      {:else}
+        <text x="185" y="294" text-anchor="middle" class="detail">{t('same bytes as received', '按收到的字节保存')}</text>
+      {/if}
+      </g>
+      {/if}
+      {#if phase >= 2}
+      <line in:fade={{ duration: 250 }} x1={phone ? 195 : 410} y1={phone ? 132 : 151} x2={phone ? 220 : 540} y2={phone ? 177 : 184} stroke="var(--accent)" stroke-width="2" marker-end="url(#frame-arrow)" />
+      <g in:fade={{ duration: 250 }}>
       <rect x={phone ? 155 : 390} y={phone ? 190 : 195} width={phone ? 130 : 290} height={phone ? 190 : 105} rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2" />
       <text x={phone ? 220 : 535} y={phone ? 219 : 224} text-anchor="middle" class="label">{t('MODEL COPY', '识别模型副本')}</text>
       <text x={phone ? 220 : 535} y={phone ? 246 : 252} text-anchor="middle" class="detail">{t('COPIED SOUND', '复制出的声音')}</text>
       <text x={phone ? 220 : 535} y={phone ? 270 : 275} text-anchor="middle" class="detail">{t('processing changes it', '处理只改这份')}</text>
       {#if phone}
-        <text x="80" y="311" text-anchor="middle" class="detail">{t('same bytes', '同样的字节')}</text>
-        <text x="80" y="345" text-anchor="middle" class="detail">{t('as received', '按收到的保存')}</text>
         <text x="220" y="311" text-anchor="middle" class="detail">{t('same sound', '同样的声音')}</text>
         <text x="220" y="337" text-anchor="middle" class="detail">{t('new storage', '另存一份')}</text>
         <text x="220" y="356" text-anchor="middle" class="detail">{t('for the model', '送给模型')}</text>
       {:else}
-        <text x="185" y="294" text-anchor="middle" class="detail">{t('same bytes as received', '按收到的字节保存')}</text>
         <text x="535" y="294" text-anchor="middle" class="detail">{t('same sound, new storage', '同样的声音，另存一份')}</text>
       {/if}
-      <text x={W / 2} y={phone ? 414 : 328} text-anchor="middle" class="formula">{t('ORIGINAL STAYS · COPY CHANGES', '原件不动 · 副本处理')}</text>
+      </g>
+      {/if}
+      {#if phase >= 3}
+      <text in:fade={{ duration: 250 }} x={W / 2} y={phone ? 414 : 328} text-anchor="middle" class="formula">{t('ORIGINAL STAYS · COPY CHANGES', '原件不动 · 副本处理')}</text>
+      {/if}
+      {#if phone}
+      <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('Processing is on here;', '图中开启处理；')}</text>
+      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('keeping audio is a separate setting.', '是否保存录音由另一项设置决定。')}</text>
+      {:else}
       <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Processing is on here; keeping audio is a separate setting.', '图中开启处理；是否保存录音由另一项设置决定。')}</text>
+      {/if}
       {:else if step === 4}
       <text x={W / 2} y={phone ? 25 : 30} text-anchor="middle" class="title">{t('HIGH-PASS REDUCES LOW HUM', '高通滤波减弱低沉嗡声')}</text>
       <text x={W / 2} y={phone ? 47 : 53} text-anchor="middle" class="subtitle">{t('high-pass = reduces slow vibrations', '高通 = 减弱振动慢的声音')}</text>
       <text x={W / 2} y={phone ? 68 : 75} text-anchor="middle" class="definition">{t('Hz = vibrations each second', 'Hz = 每秒振动多少次')}</text>
+      <g in:fade={{ duration: 250 }}>
       <text x={W / 2} y={phone ? 96 : 103} text-anchor="middle" class="label">{VOXT_HIGH_PASS_HUM_HZ} Hz {t('hum', '低沉嗡声')}</text>
       <text x={phone ? 75 : 190} y={phone ? 119 : 126} text-anchor="middle" class="detail">{t('BEFORE', '处理前')}</text>
-      <text x={phone ? 225 : 530} y={phone ? 119 : 126} text-anchor="middle" class="detail">{t('AFTER', '处理后')}</text>
       <line x1={phone ? 20 : 80} y1={phone ? 161 : 168} x2={phone ? 130 : 300} y2={phone ? 161 : 168} stroke="var(--line)" />
-      <line x1={phone ? 170 : 420} y1={phone ? 161 : 168} x2={phone ? 280 : 640} y2={phone ? 161 : 168} stroke="var(--line)" />
       <g transform={`translate(${phone ? 20 : 80} 0)`}><path d={sine(phone ? 110 : 220, phone ? 161 : 168, 34, 3)} fill="none" stroke="var(--accent)" stroke-width="2.5" /></g>
+      </g>
+      {#if phase >= 1}
+      <g in:fade={{ duration: 250 }}>
+      <text x={phone ? 225 : 530} y={phone ? 119 : 126} text-anchor="middle" class="detail">{t('AFTER', '处理后')}</text>
+      <line x1={phone ? 170 : 420} y1={phone ? 161 : 168} x2={phone ? 280 : 640} y2={phone ? 161 : 168} stroke="var(--line)" />
       <g transform={`translate(${phone ? 170 : 420} 0)`}><path d={sine(phone ? 110 : 220, phone ? 161 : 168, 34 * VOXT_HIGH_PASS_HUM_RATIO, 3)} fill="none" stroke="var(--accent)" stroke-width="2.5" /></g>
       <line x1={phone ? 137 : 330} y1={phone ? 161 : 168} x2={phone ? 158 : 390} y2={phone ? 161 : 168} stroke="var(--muted)" stroke-width="2" marker-end="url(#byte-arrow)" />
-      <text x={phone ? 225 : 530} y={phone ? 211 : 218} text-anchor="middle" class="cut">{t('hum becomes smaller', '嗡声变小')}</text>
+      </g>
+      {/if}
+      {#if phase >= 2}
+      <text in:fade={{ duration: 250 }} x={phone ? 225 : 530} y={phone ? 211 : 218} text-anchor="middle" class="cut">{t('hum becomes smaller', '嗡声变小')}</text>
+      {/if}
+      {#if phase >= 3}
+      <g in:fade={{ duration: 250 }}>
       <text x={W / 2} y={phone ? 280 : 263} text-anchor="middle" class="label">{VOXT_HIGH_PASS_CLEAR_HZ} Hz {t('sound', '声音')}</text>
       <text x={phone ? 75 : 190} y={phone ? 303 : 286} text-anchor="middle" class="detail">{t('BEFORE', '处理前')}</text>
-      <text x={phone ? 225 : 530} y={phone ? 303 : 286} text-anchor="middle" class="detail">{t('AFTER', '处理后')}</text>
       <line x1={phone ? 20 : 80} y1={phone ? 355 : 328} x2={phone ? 130 : 300} y2={phone ? 355 : 328} stroke="var(--line)" />
-      <line x1={phone ? 170 : 420} y1={phone ? 355 : 328} x2={phone ? 280 : 640} y2={phone ? 355 : 328} stroke="var(--line)" />
       <g transform={`translate(${phone ? 20 : 80} 0)`}><path d={sine(phone ? 110 : 220, phone ? 355 : 328, 25, 10)} fill="none" stroke="var(--accent)" stroke-width="2.5" /></g>
+      </g>
+      {/if}
+      {#if phase >= 4}
+      <g in:fade={{ duration: 250 }}>
+      <text x={phone ? 225 : 530} y={phone ? 303 : 286} text-anchor="middle" class="detail">{t('AFTER', '处理后')}</text>
+      <line x1={phone ? 170 : 420} y1={phone ? 355 : 328} x2={phone ? 280 : 640} y2={phone ? 355 : 328} stroke="var(--line)" />
       <g transform={`translate(${phone ? 170 : 420} 0)`}><path d={sine(phone ? 110 : 220, phone ? 355 : 328, 25, 10)} fill="none" stroke="var(--accent)" stroke-width="2.5" /></g>
       <line x1={phone ? 137 : 330} y1={phone ? 355 : 328} x2={phone ? 158 : 390} y2={phone ? 355 : 328} stroke="var(--muted)" stroke-width="2" marker-end="url(#byte-arrow)" />
-      <text x={phone ? 225 : 530} y={phone ? 410 : 378} text-anchor="middle" class="cut">{t('same sound', '声音不变')}</text>
+      </g>
+      {/if}
+      {#if phase >= 5}
+      <text in:fade={{ duration: 250 }} x={phone ? 225 : 530} y={phone ? 410 : 378} text-anchor="middle" class="cut">{t('same sound', '声音不变')}</text>
+      {/if}
       <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Public response; both sides share one scale.', '按公开响应绘制；处理前后同一尺度。')}</text>
       {:else if step === 5}
       <text x={W / 2} y={phone ? 25 : 30} text-anchor="middle" class="title">{t('VOICE DETECTION WAITS FOR 60 MS', '语音检测要等连续 60 ms')}</text>
       <text x={W / 2} y={phone ? 47 : 53} text-anchor="middle" class="subtitle">{t('VAD = voice activity detection · finds speech', 'VAD = 语音活动检测，找出说话声')}</text>
       <text x={W / 2} y={phone ? 69 : 75} text-anchor="middle" class="definition">{t('grey line = room noise · blue = louder slices', '灰线 = 房间噪声 · 蓝柱 = 更响的小段')}</text>
-      {#each vadPanels as panel}
+      {#each vadPanels as panel, pi}
+        {@const panelAt = pi === 0 ? 0 : 3}
+        {@const verdictAt = pi === 0 ? 2 : 7}
+        {@const active = vadActive(pi)}
+        {@const base = panel.y + (phone ? 75 : 87)}
+        {#if phase >= panelAt}
+        <g in:fade={{ duration: 250 }}>
         <rect x={panel.x} y={panel.y} width={panel.width} height={panel.height} rx="10" fill="var(--bg)" stroke={panel.count === 1 ? 'var(--line)' : 'var(--accent)'} stroke-width={panel.count === 1 ? 1 : 2} />
         <text x={panel.x + panel.width / 2} y={panel.y + 22} text-anchor="middle" class="label">{panel.count === 1 ? t('ONE KEY CLICK', '一次按键声') : t('THREE VOICE SLICES', '连续三个说话小段')}</text>
-        {@const base = panel.y + (phone ? 75 : 87)}
         <line x1={panel.x + 20} y1={base - 25} x2={panel.x + panel.width - 20} y2={base - 25} stroke="var(--muted)" stroke-dasharray="4 3" />
         {#each Array.from({ length: VOXT_VAD_ONSET_FRAMES }, (_, j) => j) as j}
-          {@const active = j < panel.count}
+          {@const on = j < active}
           {@const barX = panel.x + panel.width / 2 + (j - 1) * 60 - 22}
-          <rect x={barX} y={active ? base - (phone ? 42 : 52) : base - 14} width="44" height={active ? (phone ? 42 : 52) : 14} rx="4" fill={active ? 'var(--accent-soft)' : 'var(--bg)'} stroke={active ? 'var(--accent)' : 'var(--line)'} stroke-width={active ? 2 : 1} />
+          {#key on}
+          <rect in:fade={{ duration: 250 }} x={barX} y={on ? base - (phone ? 42 : 52) : base - 14} width="44" height={on ? (phone ? 42 : 52) : 14} rx="4" fill={on ? 'var(--accent-soft)' : 'var(--bg)'} stroke={on ? 'var(--accent)' : 'var(--line)'} stroke-width={on ? 2 : 1} />
+          {/key}
           <text x={barX + 22} y={base + 17} text-anchor="middle" class="detail">{VOXT_VAD_FRAME_MS} ms</text>
         {/each}
-        <text x={panel.x + panel.width / 2} y={panel.y + (phone ? 110 : 143)} text-anchor="middle" class={panel.count === 1 ? 'detail' : 'cut'}>{panel.count === 1 ? t(`${VOXT_VAD_FRAME_MS} ms < ${VOXT_VAD_ONSET_MS} ms · NOT YET`, `${VOXT_VAD_FRAME_MS} ms < ${VOXT_VAD_ONSET_MS} ms · 还不够`) : t(`${VOXT_VAD_ONSET_FRAMES} × ${VOXT_VAD_FRAME_MS} = ${VOXT_VAD_ONSET_MS} ms · SPEECH`, `${VOXT_VAD_ONSET_FRAMES} × ${VOXT_VAD_FRAME_MS} = ${VOXT_VAD_ONSET_MS} ms · 说话段`)}</text>
+        {#if phase >= verdictAt}
+        <text in:fade={{ duration: 250 }} x={panel.x + panel.width / 2} y={panel.y + (phone ? 110 : 143)} text-anchor="middle" class={panel.count === 1 ? 'detail' : 'cut'}>{panel.count === 1 ? t(`${VOXT_VAD_FRAME_MS} ms < ${VOXT_VAD_ONSET_MS} ms · NOT YET`, `${VOXT_VAD_FRAME_MS} ms < ${VOXT_VAD_ONSET_MS} ms · 还不够`) : t(`${VOXT_VAD_ONSET_FRAMES} × ${VOXT_VAD_FRAME_MS} = ${VOXT_VAD_ONSET_MS} ms · SPEECH`, `${VOXT_VAD_ONSET_FRAMES} × ${VOXT_VAD_FRAME_MS} = ${VOXT_VAD_ONSET_MS} ms · 说话段`)}</text>
+        {/if}
+        </g>
+        {/if}
       {/each}
-      <text x={W / 2} y={phone ? 400 : 290} text-anchor="middle" class="formula">{VOXT_VAD_ONSET_MS} ms ÷ {VOXT_VAD_FRAME_MS} ms = {VOXT_VAD_ONSET_FRAMES} {t('slices in a row', '个连续小段')}</text>
+      {#if phase >= 7}
+      <text in:fade={{ duration: 250 }} x={W / 2} y={phone ? 400 : 290} text-anchor="middle" class="formula">{VOXT_VAD_ONSET_MS} ms ÷ {VOXT_VAD_FRAME_MS} ms = {VOXT_VAD_ONSET_FRAMES} {t('slices in a row', '个连续小段')}</text>
+      {/if}
       <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Constructed slices; public detector defaults.', '构造示例；采用公开检测器默认值。')}</text>
       {:else if step === 6}
       <text x={W / 2} y={phone ? 25 : 30} text-anchor="middle" class="title">{t('GAIN RAISES QUIET SPEECH', '增益让较轻的说话声变响')}</text>
       <text x={W / 2} y={phone ? 47 : 53} text-anchor="middle" class="subtitle">{t('gain = makes sound stronger · dB = a sound-level unit', '增益 = 让声音变强 · dB = 分贝，音量单位')}</text>
       <text x={W / 2} y={phone ? 69 : 75} text-anchor="middle" class="definition">+{VOXT_QUIET_GAIN_DB} dB ≈ {VOXT_QUIET_GAIN_RATIO.toFixed(2)} × {t('wave height', '波形高度')}</text>
+      <g in:fade={{ duration: 250 }}>
       <text x={phone ? 75 : 190} y="120" text-anchor="middle" class="detail">{t('BEFORE', '处理前')}</text>
-      <text x={phone ? 225 : 530} y="120" text-anchor="middle" class="detail">{t('AFTER', '处理后')}</text>
       <line x1={phone ? 20 : 80} y1="175" x2={phone ? 130 : 300} y2="175" stroke="var(--line)" />
-      <line x1={phone ? 170 : 420} y1="175" x2={phone ? 280 : 640} y2="175" stroke="var(--line)" />
       <g transform={`translate(${phone ? 20 : 80} 0)`}><path d={sine(phone ? 110 : 220, 175, 20, 5)} fill="none" stroke="var(--accent)" stroke-width="2.5" /></g>
+      </g>
+      {#if phase >= 1}
+      <line in:fade={{ duration: 250 }} x1={phone ? 137 : 330} y1="175" x2={phone ? 158 : 390} y2="175" stroke="var(--muted)" stroke-width="2" marker-end="url(#byte-arrow)" />
+      {/if}
+      {#if phase >= 2}
+      <g in:fade={{ duration: 250 }}>
+      <text x={phone ? 225 : 530} y="120" text-anchor="middle" class="detail">{t('AFTER', '处理后')}</text>
+      <line x1={phone ? 170 : 420} y1="175" x2={phone ? 280 : 640} y2="175" stroke="var(--line)" />
       <g transform={`translate(${phone ? 170 : 420} 0)`}><path d={sine(phone ? 110 : 220, 175, 20 * VOXT_QUIET_GAIN_RATIO, 5)} fill="none" stroke="var(--accent)" stroke-width="2.5" /></g>
-      <line x1={phone ? 137 : 330} y1="175" x2={phone ? 158 : 390} y2="175" stroke="var(--muted)" stroke-width="2" marker-end="url(#byte-arrow)" />
-      <text x={phone ? 225 : 530} y="240" text-anchor="middle" class="cut">+{VOXT_QUIET_GAIN_DB} dB · {t('louder', '更响')}</text>
+      </g>
+      {/if}
+      {#if phase >= 3}
+      <text in:fade={{ duration: 250 }} x={phone ? 225 : 530} y="240" text-anchor="middle" class="cut">+{VOXT_QUIET_GAIN_DB} dB · {t('louder', '更响')}</text>
+      {/if}
       <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Public gain value; constructed waves share one scale.', '增益数值来自公开测试；波形同尺度构造。')}</text>
       {:else}
       <text x={W / 2} y={phone ? 25 : 30} text-anchor="middle" class="title">{t('LIMITER TURNS DOWN CROSSING PEAKS', '限幅器调低越过上限的尖峰')}</text>
       <text x={W / 2} y={phone ? 47 : 53} text-anchor="middle" class="subtitle">{t('0 dBFS = full scale (maximum)', '0 dBFS = 满幅（最大刻度）')}</text>
       <text x={W / 2} y={phone ? 69 : 75} text-anchor="middle" class="definition">{VOXT_LIMITER_CEILING_DB} dBFS ≈ {VOXT_LIMITER_CEILING_RATIO.toFixed(2)} × {t('full scale', '满幅')}</text>
+      <g in:fade={{ duration: 250 }}>
       <text x={phone ? 75 : 190} y="125" text-anchor="middle" class="detail">{t('BEFORE', '处理前')}</text>
-      <text x={phone ? 225 : 530} y="125" text-anchor="middle" class="detail">{t('AFTER', '处理后')}</text>
       <line x1={phone ? 20 : 80} y1="190" x2={phone ? 130 : 300} y2="190" stroke="var(--gen)" stroke-dasharray="4 3" />
-      <line x1={phone ? 170 : 420} y1="190" x2={phone ? 280 : 640} y2="190" stroke="var(--gen)" stroke-dasharray="4 3" />
       <text x={phone ? 130 : 300} y="185" text-anchor="end" class="detail amber">{t('CEILING', '上限')}</text>
-      <text x={phone ? 280 : 640} y="185" text-anchor="end" class="detail amber">{t('CEILING', '上限')}</text>
       <g transform={`translate(${phone ? 20 : 80} 0)`}><path d={spike(phone ? 110 : 220, 225, 60)} fill="none" stroke="var(--accent)" stroke-width="2.5" /></g>
+      </g>
+      {#if phase >= 1}
+      <line in:fade={{ duration: 250 }} x1={phone ? 137 : 330} y1="225" x2={phone ? 158 : 390} y2="225" stroke="var(--muted)" stroke-width="2" marker-end="url(#byte-arrow)" />
+      {/if}
+      {#if phase >= 2}
+      <g in:fade={{ duration: 250 }}>
+      <text x={phone ? 225 : 530} y="125" text-anchor="middle" class="detail">{t('AFTER', '处理后')}</text>
+      <line x1={phone ? 170 : 420} y1="190" x2={phone ? 280 : 640} y2="190" stroke="var(--gen)" stroke-dasharray="4 3" />
+      <text x={phone ? 280 : 640} y="185" text-anchor="end" class="detail amber">{t('CEILING', '上限')}</text>
       <g transform={`translate(${phone ? 170 : 420} 0)`}><path d={spike(phone ? 110 : 220, 225, 35)} fill="none" stroke="var(--accent)" stroke-width="2.5" /></g>
-      <line x1={phone ? 137 : 330} y1="225" x2={phone ? 158 : 390} y2="225" stroke="var(--muted)" stroke-width="2" marker-end="url(#byte-arrow)" />
-      <text x={phone ? 225 : 530} y="275" text-anchor="middle" class="cut">{t('peak at the ceiling', '尖峰降到上限')}</text>
+      </g>
+      {/if}
+      {#if phase >= 3}
+      <text in:fade={{ duration: 250 }} x={phone ? 225 : 530} y="275" text-anchor="middle" class="cut">{t('peak at the ceiling', '尖峰降到上限')}</text>
+      {/if}
       <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Public ceiling; constructed peak; same scale.', '公开默认上限；尖峰同尺度构造。')}</text>
       {/if}
     </svg>

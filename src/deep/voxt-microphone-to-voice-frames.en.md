@@ -50,14 +50,14 @@ The ten slices are packed in order. Next, look at how the measurements inside ea
 
 ### Sources
 
-Public baseline: `sglang-omni@91d06c70b00746c0b2b84db12a318240db360f1d`; paths are relative to that repository.
+Public baseline: <code>sglang-omni@<wbr>91d06c70b00746c0<wbr>b2b84db12a318240db360f1d</code>; paths are relative to that repository.
 
-- Defaults of 16,000 Hz and 100 ms: `Voxt/helper/Sources/VoxtNewHelper/Capture.swift:150-160`.
-- Downmixing and resampling before the framer: `Voxt/helper/Sources/VoxtNewHelperKit/CaptureSource.swift:4-12,58-74`; `framer.push` receives the converted samples at `Voxt/helper/Sources/VoxtNewHelper/Capture.swift:480-487`.
-- Frame-size calculation, zero-based sequence and sample offset: `Voxt/helper/Sources/VoxtNewHelperKit/PCMFramer.swift:18-23,33-37,77-87`.
-- Complete frames and a partial final frame at stop: `Voxt/helper/Sources/VoxtNewHelperKit/PCMFramer.swift:59-72`; the public 3,300-value test: `Voxt/helper/Tests/VoxtNewHelperKitTests/HotkeyRecognizerTests.swift:474-488`.
-- Frames emitted as `capture.pcm`: `Voxt/helper/Sources/VoxtNewHelper/Capture.swift:506-515`; protocol defaults: `Voxt/docs/helper-protocol.md:105-107`.
-- The separate 20 ms voice-detection analysis frame: `Voxt/internal/vad/doc.go:7-10`.
+- Defaults of 16,000 Hz and 100 ms: <code>Voxt/<wbr>helper/<wbr>Sources/<wbr>VoxtNewHelper/<wbr>Capture.swift:150-160</code>.
+- Downmixing and resampling before the framer: <code>Voxt/<wbr>helper/<wbr>Sources/<wbr>VoxtNewHelperKit/<wbr>CaptureSource.swift:4-12,<wbr>58-74</code>; `framer.push` receives the converted samples at <code>Voxt/<wbr>helper/<wbr>Sources/<wbr>VoxtNewHelper/<wbr>Capture.swift:480-487</code>.
+- Frame-size calculation, zero-based sequence and sample offset: <code>Voxt/<wbr>helper/<wbr>Sources/<wbr>VoxtNewHelperKit/<wbr>PCMFramer.swift:18-23,<wbr>33-37,<wbr>77-87</code>.
+- Complete frames and a partial final frame at stop: <code>Voxt/<wbr>helper/<wbr>Sources/<wbr>VoxtNewHelperKit/<wbr>PCMFramer.swift:59-72</code>; the public 3,300-value test: <code>Voxt/<wbr>helper/<wbr>Tests/<wbr>VoxtNewHelperKitTests/<wbr>HotkeyRecognizerTests.swift:474-488</code>.
+- Frames emitted as `capture.pcm`: <code>Voxt/<wbr>helper/<wbr>Sources/<wbr>VoxtNewHelper/<wbr>Capture.swift:506-515</code>; protocol defaults: <code>Voxt/<wbr>docs/<wbr>helper-protocol.md:105-107</code>.
+- The separate 20 ms voice-detection analysis frame: <code>Voxt/<wbr>internal/<wbr>vad/<wbr>doc.go:7-10</code>.
 
 ## Step 2 · One sample becomes two bytes
 
@@ -114,12 +114,12 @@ Each sample now has an ordered pair of bytes. Next, see what happens to the fina
 
 ### Sources
 
-Public baseline: `sglang-omni@f6827ed1907e392fd67d5f13fa315c016e2056e8`; paths are relative to that repository.
+Public baseline: <code>sglang-omni@<wbr>f6827ed1907e392f<wbr>d67d5f13fa315c016e2056e8</code>; paths are relative to that repository.
 
-- Default sample rate and samples per frame: `Voxt/helper/Sources/VoxtNewHelperKit/PCMFramer.swift:33-37`.
-- Input clamp, multiplication by 32,767 and `Int16` conversion: `Voxt/helper/Sources/VoxtNewHelperKit/PCMFramer.swift:40-47`.
-- Per-sample little-endian byte conversion: `Voxt/helper/Sources/VoxtNewHelperKit/PCMFramer.swift:77-87`.
-- Public test for `0.5 → 16383`, bytes `FF 3F` and 3,200 bytes per full frame: `Voxt/helper/Tests/VoxtNewHelperKitTests/HotkeyRecognizerTests.swift:474-488`.
+- Default sample rate and samples per frame: <code>Voxt/<wbr>helper/<wbr>Sources/<wbr>VoxtNewHelperKit/<wbr>PCMFramer.swift:33-37</code>.
+- Input clamp, multiplication by 32,767 and `Int16` conversion: <code>Voxt/<wbr>helper/<wbr>Sources/<wbr>VoxtNewHelperKit/<wbr>PCMFramer.swift:40-47</code>.
+- Per-sample little-endian byte conversion: <code>Voxt/<wbr>helper/<wbr>Sources/<wbr>VoxtNewHelperKit/<wbr>PCMFramer.swift:77-87</code>.
+- Public test for `0.5 → 16383`, bytes `FF 3F` and 3,200 bytes per full frame: <code>Voxt/<wbr>helper/<wbr>Tests/<wbr>VoxtNewHelperKitTests/<wbr>HotkeyRecognizerTests.swift:474-488</code>.
 
 ## Step 3 · Stop emits the partial final frame
 
@@ -164,12 +164,12 @@ Every sample has now joined an ordered frame. Next, see how the same recording c
 
 ### Sources
 
-Public baseline: `sglang-omni@6d8ed2dcf70da1b021bb14b62239a3add428636c`; paths are relative to that repository.
+Public baseline: <code>sglang-omni@<wbr>6d8ed2dcf70da1b0<wbr>21bb14b62239a3add428636c</code>; paths are relative to that repository.
 
-- Full frames form at 1,600 samples: `Voxt/helper/Sources/VoxtNewHelperKit/PCMFramer.swift:33-37,59-61`.
-- `flush()` emits only the leftovers; sequence numbers, sample offsets and byte generation: `Voxt/helper/Sources/VoxtNewHelperKit/PCMFramer.swift:70-87`.
-- Stop sends converted buffers and the partial final frame first: `Voxt/helper/Sources/VoxtNewHelper/Capture.swift:552-568`.
-- Public test for 3,300 samples, two full frames, a 200-byte tail and offset 3,200: `Voxt/helper/Tests/VoxtNewHelperKitTests/HotkeyRecognizerTests.swift:474-488`.
+- Full frames form at 1,600 samples: <code>Voxt/<wbr>helper/<wbr>Sources/<wbr>VoxtNewHelperKit/<wbr>PCMFramer.swift:33-37,<wbr>59-61</code>.
+- `flush()` emits only the leftovers; sequence numbers, sample offsets and byte generation: <code>Voxt/<wbr>helper/<wbr>Sources/<wbr>VoxtNewHelperKit/<wbr>PCMFramer.swift:70-87</code>.
+- Stop sends converted buffers and the partial final frame first: <code>Voxt/<wbr>helper/<wbr>Sources/<wbr>VoxtNewHelper/<wbr>Capture.swift:552-568</code>.
+- Public test for 3,300 samples, two full frames, a 200-byte tail and offset 3,200: <code>Voxt/<wbr>helper/<wbr>Tests/<wbr>VoxtNewHelperKitTests/<wbr>HotkeyRecognizerTests.swift:474-488</code>.
 
 ## Step 4 · Separate the original recording from the model copy
 
@@ -194,13 +194,13 @@ The original recording stays on the amber path. Next, follow the blue copy to it
 
 ### Sources
 
-Public baseline: `sglang-omni@6d8ed2dcf70da1b021bb14b62239a3add428636c`; paths are relative to that repository.
+Public baseline: <code>sglang-omni@<wbr>6d8ed2dcf70da1b0<wbr>21bb14b62239a3add428636c</code>; paths are relative to that repository.
 
-- Helper PCM appends to the session's original buffer: `Voxt/internal/session/run_audio.go:66-72`; buffer append: `Voxt/internal/session/pcm.go:8-28`.
-- The streaming path preserves `raw`, sends processed copies: `Voxt/internal/session/run_audio.go:122-150`.
-- File processing leaves input `pcm` unchanged for history: `Voxt/internal/session/run_audio.go:261-269`; implementation: `Voxt/internal/dsp/level.go:125-169`.
-- History WAV writes `r.pcm.bytes()`: `Voxt/internal/session/run.go:545-554`.
-- The public documentation describes the recording as the microphone signal before high-pass, gain and silence trimming: `Voxt/docs/dictation-collection.md:37-40`.
+- Helper PCM appends to the session's original buffer: <code>Voxt/<wbr>internal/<wbr>session/<wbr>run_audio.go:66-72</code>; buffer append: <code>Voxt/<wbr>internal/<wbr>session/<wbr>pcm.go:8-28</code>.
+- The streaming path preserves `raw`, sends processed copies: <code>Voxt/<wbr>internal/<wbr>session/<wbr>run_audio.go:122-150</code>.
+- File processing leaves input `pcm` unchanged for history: <code>Voxt/<wbr>internal/<wbr>session/<wbr>run_audio.go:261-269</code>; implementation: <code>Voxt/<wbr>internal/<wbr>dsp/<wbr>level.go:125-169</code>.
+- History WAV writes `r.pcm.bytes()`: <code>Voxt/<wbr>internal/<wbr>session/<wbr>run.go:545-554</code>.
+- The public documentation describes the recording as the microphone signal before high-pass, gain and silence trimming: <code>Voxt/<wbr>docs/<wbr>dictation-collection.md:37-40</code>.
 
 ## Step 5 · High-pass reduces low hum
 
@@ -223,7 +223,7 @@ $$
 
 | Symbol | Meaning | Source |
 |---|---|---|
-| $D$ | Response at one frequency, in decibels | Public `TestHighPassResponse` |
+| $D$ | Response at one frequency, in decibels | Public <code>Test<wbr>High<wbr>Pass<wbr>Response</code> |
 | $G$ | Output amplitude divided by input amplitude | Decibel conversion; the code's `Response` returns 1 for 0 dB |
 
 ### The numbers on the stage
@@ -246,12 +246,12 @@ After the low hum falls, VAD checks which 20 ms slices contain speech. Detection
 
 ### Sources
 
-Public baseline: `sglang-omni@6d8ed2dcf70da1b021bb14b62239a3add428636c`; paths are relative to that repository.
+Public baseline: <code>sglang-omni@<wbr>6d8ed2dcf70da1b0<wbr>21bb14b62239a3add428636c</code>; paths are relative to that repository.
 
-- High-pass before detection, the default 80 Hz corner and frequency responses: `Voxt/internal/dsp/doc.go:6-24`.
-- Default corner: `Voxt/internal/dsp/params.go:5-10,41-50`.
-- Fourth-order filter, response function and new-slice output: `Voxt/internal/dsp/highpass.go:65-106`.
-- Public test for about −16.4 dB at 50 Hz, −3 dB at 80 Hz and nearly unchanged 200 Hz audio: `Voxt/internal/dsp/dsp_test.go:12-44`.
+- High-pass before detection, the default 80 Hz corner and frequency responses: <code>Voxt/<wbr>internal/<wbr>dsp/<wbr>doc.go:6-24</code>.
+- Default corner: <code>Voxt/<wbr>internal/<wbr>dsp/<wbr>params.go:5-10,<wbr>41-50</code>.
+- Fourth-order filter, response function and new-slice output: <code>Voxt/<wbr>internal/<wbr>dsp/<wbr>highpass.go:65-106</code>.
+- Public test for about −16.4 dB at 50 Hz, −3 dB at 80 Hz and nearly unchanged 200 Hz audio: <code>Voxt/<wbr>internal/<wbr>dsp/<wbr>dsp_test.go:12-44</code>.
 
 ## Step 6 · Speech starts after 60 ms in a row
 
@@ -308,12 +308,12 @@ Detection finds the speech before level processing measures its strength. Gain f
 
 ### Sources
 
-Public baseline: `sglang-omni@6d8ed2dcf70da1b021bb14b62239a3add428636c`; paths are relative to that repository.
+Public baseline: <code>sglang-omni@<wbr>6d8ed2dcf70da1b0<wbr>21bb14b62239a3add428636c</code>; paths are relative to that repository.
 
-- Twenty-millisecond analysis frames, the 60 ms onset, thresholds and 300 ms hangover: `Voxt/internal/vad/vad.go:21-57`.
-- Consecutive onset thresholds and segment start at the first qualifying frame: `Voxt/internal/vad/vad.go:239-278`.
-- Level formula and conservative detection rationale: `Voxt/internal/vad/doc.go:1-31`.
-- Speech found in either original or filtered audio is kept: `Voxt/internal/vad/doc.go:54-62`; streaming wiring: `Voxt/internal/session/run_audio.go:128-145`; file merge: `Voxt/internal/dsp/level.go:144-148`.
+- Twenty-millisecond analysis frames, the 60 ms onset, thresholds and 300 ms hangover: <code>Voxt/<wbr>internal/<wbr>vad/<wbr>vad.go:21-57</code>.
+- Consecutive onset thresholds and segment start at the first qualifying frame: <code>Voxt/<wbr>internal/<wbr>vad/<wbr>vad.go:239-278</code>.
+- Level formula and conservative detection rationale: <code>Voxt/<wbr>internal/<wbr>vad/<wbr>doc.go:1-31</code>.
+- Speech found in either original or filtered audio is kept: <code>Voxt/<wbr>internal/<wbr>vad/<wbr>doc.go:54-62</code>; streaming wiring: <code>Voxt/<wbr>internal/<wbr>session/<wbr>run_audio.go:128-145</code>; file merge: <code>Voxt/<wbr>internal/<wbr>dsp/<wbr>level.go:144-148</code>.
 
 Public performance evidence (kept with its PR, measurement head, setup and boundary; not part of the pinned code baseline):
 
@@ -379,12 +379,12 @@ Gain can make a quiet voice easier to recognize, but it can also push a high sam
 
 ### Sources
 
-Public baseline: `sglang-omni@6d8ed2dcf70da1b021bb14b62239a3add428636c`; paths are relative to that repository.
+Public baseline: <code>sglang-omni@<wbr>6d8ed2dcf70da1b0<wbr>21bb14b62239a3add428636c</code>; paths are relative to that repository.
 
-- Default target, maximum gain, noise ceiling, sample ceiling and headroom: `Voxt/internal/dsp/params.go:20-56`.
-- Four quiet-gain limits and the loud-speech branch: `Voxt/internal/dsp/params.go:95-119`.
-- Public quiet-case inputs and 7 dB result: `Voxt/internal/dsp/dsp_test.go:98-120`.
-- File gain measurement and streaming behavior: `Voxt/internal/dsp/level.go:125-169,172-210`; silence receives no boost: `Voxt/internal/dsp/dsp_test.go:172-212`.
+- Default target, maximum gain, noise ceiling, sample ceiling and headroom: <code>Voxt/<wbr>internal/<wbr>dsp/<wbr>params.go:20-56</code>.
+- Four quiet-gain limits and the loud-speech branch: <code>Voxt/<wbr>internal/<wbr>dsp/<wbr>params.go:95-119</code>.
+- Public quiet-case inputs and 7 dB result: <code>Voxt/<wbr>internal/<wbr>dsp/<wbr>dsp_test.go:98-120</code>.
+- File gain measurement and streaming behavior: <code>Voxt/<wbr>internal/<wbr>dsp/<wbr>level.go:125-169,<wbr>172-210</code>; silence receives no boost: <code>Voxt/<wbr>internal/<wbr>dsp/<wbr>dsp_test.go:172-212</code>.
 
 ## Step 8 · The limiter holds the peak ceiling
 
@@ -440,9 +440,9 @@ The model copy has now passed high-pass, voice detection, gain and limiting, whi
 
 ### Sources
 
-Public baseline: `sglang-omni@6d8ed2dcf70da1b021bb14b62239a3add428636c`; paths are relative to that repository.
+Public baseline: <code>sglang-omni@<wbr>6d8ed2dcf70da1b0<wbr>21bb14b62239a3add428636c</code>; paths are relative to that repository.
 
-- Default −1 dBFS ceiling and 50 ms release: `Voxt/internal/dsp/params.go:30-38,41-56`.
-- Per-sample ceiling conversion, reduction and recovery: `Voxt/internal/dsp/level.go:11-38`.
-- File gain followed by limiting: `Voxt/internal/dsp/level.go:125-169`; streaming gain followed by limiting: `Voxt/internal/dsp/level.go:241-268`.
-- File and stream peaks stay within the ceiling: `Voxt/internal/dsp/dsp_test.go:248-287`.
+- Default −1 dBFS ceiling and 50 ms release: <code>Voxt/<wbr>internal/<wbr>dsp/<wbr>params.go:30-38,<wbr>41-56</code>.
+- Per-sample ceiling conversion, reduction and recovery: <code>Voxt/<wbr>internal/<wbr>dsp/<wbr>level.go:11-38</code>.
+- File gain followed by limiting: <code>Voxt/<wbr>internal/<wbr>dsp/<wbr>level.go:125-169</code>; streaming gain followed by limiting: <code>Voxt/<wbr>internal/<wbr>dsp/<wbr>level.go:241-268</code>.
+- File and stream peaks stay within the ceiling: <code>Voxt/<wbr>internal/<wbr>dsp/<wbr>dsp_test.go:248-287</code>.
