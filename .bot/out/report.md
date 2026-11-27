@@ -276,7 +276,7 @@
 ## 验证
 
 - 每章均运行并通过 `npm run build`（60 页）、目标默认 transcript、全章 `readability`、`deep-check`、`zh-check`、英中全章 360／390／430 px `mobile`、中文逐步字号门和 `git diff --check`。最终记录提交前再次运行 build 与 diff check。
-- ML 03–07 的默认 transcript 均连续两次逐字一致。自定义逐相审计保存 **152 张**桌面 PNG 和对应可见文本签名：ML 03 **26**、ML 04 **29**、ML 05 **31**、ML 06 **29**、ML 07 **37**。每个相位都有本步机制对象或数值变化；文字重叠、SVG 出界均为 **0**，全书本轮最低 **10.390625 CSS px**。
+- ML 03–07 的默认 transcript 均连续两次逐字一致。自定义逐相审计保存 **151 张桌面 PNG、152 条可见文本签名**：ML 03 **25 张 PNG／26 条记录**，ML 04 **29**、ML 05 **31**、ML 06 **29**、ML 07 **37**。每个相位都有本步机制对象或数值变化；文字重叠、SVG 出界均为 **0**，全书本轮最低 **10.390625 CSS px**。
 - 证据目录：`/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-hu5cwwuz/opencode/ml03-phases/`、`ml04-phases/`、`ml05-phases/`、`ml06-phases/`、`ml07-phases/`。代表图：`ml04-phases/s6-p4.png`、`ml07-phases/s5-p4.png`。
 - ML-14 的独立算术脚本通过；双语 Step 4 deep 均为 `aria-expanded=true`，`counter=04 / 06`，无横向溢出、KaTeX 错误或残留 `$$`。截图在同级 `ml14-en/`、`ml14-zh-phone/`、`ml14-deep-en/`、`ml14-deep-zh/`。
 - 当前模型无图像输入。已尝试读取代表 PNG，但工具返回 `Cannot read image`，因此没有声称已看图、视觉通过或主人验收通过。独立 reviewer 因配置的模型不存在而未启动，未计为证据；主线程完成 transcript、源码、双语 deep 和 live DOM 冷读。

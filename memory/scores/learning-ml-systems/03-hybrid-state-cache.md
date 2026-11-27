@@ -4,7 +4,8 @@
 
 - 六步加入 `[3,4,4,5,4,5]` 个相位，逐步机制变化数为 **2、3、3、4、3、4**。等待对照逐行形成；共同前缀、40 个新增 K/V 和释放依次出现；recurrent state 从 5,500 更新到 5,540；checkpoint 拒绝越界副本并推进 511／1,022 个重算位置；hybrid 截断逐层形成；M 从 `mamba_value = state` 变为 `None`，再回退到 P。
 - 本轮作者 DOM 机制分为 **R6 12/12**。R1–R5 沿用既有 **60/60** 文本基线，不重打已关闭内容项；原 #4/#5、原十二项总分和协调 verdict 留待复审，不记 `complete-under-EVAL`。
-- `.bot/out` 外的本轮证据目录为 `/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-hu5cwwuz/opencode/ml03-phases/`：26 个桌面相位全部保存 PNG 和可见文本签名，文字重叠、SVG 出界均为 **0**，最低 **13.1784 CSS px**。当前模型无图像输入，未把这些 PNG 记为已读图或视觉通过。
+- 厚度边界：transcript **1,316 词**，薄于原版同类章约 2,000 词。本章只覆盖 `num_batch` 对照、全注意力 KV、recurrent state、checkpoint、hybrid 截断与 MambaRadixCache 墓碑；不展开完整 Radix 树操作、并发分配、其他 hybrid 架构或性能复测，这些超出 pinned 文章和本章选择的恢复主链，不用重复内容凑字数。
+- `.bot/out` 外的本轮证据目录为 `/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-hu5cwwuz/opencode/ml03-phases/`：**26 条桌面相位记录、25 张 PNG** 和对应可见文本签名，文字重叠、SVG 出界均为 **0**，最低 **13.1784 CSS px**。当前模型无图像输入，未把这些 PNG 记为已读图或视觉通过。
 - `build`（60 页）、默认 transcript、6 步 readability、英中全章及中文逐步三宽度 mobile、`deep-check 03`、`zh-check`、`git diff --check` 均通过。未跑全站回归、真实 SGLang、模型、GPU benchmark 或 reduced-motion 动态切换。
 
 ## 2026-11-25 历史内容与静态视觉评分

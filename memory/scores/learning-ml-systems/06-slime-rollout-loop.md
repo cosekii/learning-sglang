@@ -4,6 +4,7 @@
 
 - 八步加入 `[4,3,4,4,3,3,4,4]` 个相位，逐步机制变化数为 **3、2、3、3、2、2、3、3**。同一 prompt group 先复制，再经 rollout 形成记录；reward、居中值和归一化值依次出现；256 份记录经 controller 进入训练并产生 v1；更新完成后才出现使用 v1 的 rollout 1。
 - 本轮作者 DOM 机制分为 **R6 16/16**。R1–R5 沿用既有 **80/80** 文本基线，不重打已关闭内容项；原 #4/#5、原十二项总分和协调 verdict 留待复审，不记 `complete-under-EVAL`。
+- 厚度边界：transcript **1,475 词**，薄于原版同类章约 2,000 词。本章只跟随一轮 prompt 复制、rollout record、reward、GRPO、训练和权重版本；不展开完整 PPO／GRPO 推导、reward model 训练、异步调度细节或生产实验，避免超出 pinned 代码与配置能核对的一轮闭环。
 - 证据目录 `/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-hu5cwwuz/opencode/ml06-phases/` 保存 **29 个**桌面相位 PNG 和可见文本签名；文字重叠、SVG 出界均为 **0**，最低 **11.7459 CSS px**。当前模型无图像输入，未把 PNG 记为已读图或视觉通过。
 - `build`（60 页）、默认 transcript、8 步 readability、英中全章及中文逐步三宽度 mobile、`deep-check 06`、`zh-check`、`git diff --check` 均通过。未跑全站回归、真实 slime 训练、GPU benchmark 或 reduced-motion 动态切换。
 

@@ -4,6 +4,7 @@
 
 - 八步加入 `[4,4,4,5,6,5,4,5]` 个相位，逐步机制变化数为 **3、3、3、4、5、4、3、4**。三条通道逐一展开；完整张量先拼好，再发送 handle；bucket 1 从恢复到清空，随后 bucket 2 上卡；生成在更新中暂停，完整 v1 才出现；外部调用和三次 sleep 分别形成。
 - 本轮作者 DOM 机制分为 **R6 16/16**。R1–R5 沿用既有 **80/80** 文本基线，不重做 ML-16／23／35 等其他内容项；原 #4/#5、原十二项总分和协调 verdict 留待复审，不记 `complete-under-EVAL`。
+- 厚度边界：transcript **1,948 词**，接近原版同类章约 2,000 词。本章覆盖三条更新通道、handle、bucket、版本边界和 sleep 账；不展开 GPU 内存访问细节、自动回滚、全部框架对照或通用加速结论。ML-16 的 disk 端到端展开仍是独立待修内容项，本行不销项。
 - 证据目录 `/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-hu5cwwuz/opencode/ml07-phases/` 保存 **37 个**桌面相位 PNG 和可见文本签名；文字重叠、SVG 出界均为 **0**，最低 **10.390625 CSS px**。当前模型无图像输入，未把 PNG 记为已读图或视觉通过。
 - `build`（60 页）、默认 transcript、8 步 readability、英中全章及中文逐步三宽度 mobile、`deep-check 07`、`zh-check`、`git diff --check` 均通过。未跑全站回归、真实权重更新、GPU benchmark 或 reduced-motion 动态切换。
 

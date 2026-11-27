@@ -4,6 +4,7 @@
 
 - 七步加入 `[3,3,5,4,2,8,4]` 个相位，逐步机制变化数为 **2、2、4、3、1、7、3**。对照卡与求和结果逐步形成；四个 rank 逐一接入；调用进入 `torch.distributed` 再到 NCCL；两条物理路径分别出现；Ring 播放三轮 Reduce-Scatter 和三轮 All-Gather，分块从输入到归约结果再到完整张量；慢链路的第 2 轮与后续轮次依次进入。
 - 本轮作者 DOM 机制分为 **R6 14/14**。R1–R5 沿用既有 **70/70** 文本基线，不重打已关闭内容项；原 #4/#5、原十二项总分和协调 verdict 留待复审，不记 `complete-under-EVAL`。双语深入讲解已改为描述实际逐轮动画，不再声称只画终态。
+- 厚度边界：transcript **1,204 词**，薄于原版同类章约 2,000 词。本章只覆盖通信代价、SUM all-reduce、进程组、NCCL 接口、物理链路、教学 Ring 和拓扑等待；不展开 Tree、SHARP、NCCL 实际算法选择、具体链路速率、TP／EP／PP 或真实通信 benchmark，避免把教学 Ring 冒充生产实现。
 - 证据目录 `/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-hu5cwwuz/opencode/ml04-phases/` 保存 **29 个**桌面相位 PNG 和可见文本签名；文字重叠、SVG 出界均为 **0**，最低 **12.5930 CSS px**。当前模型无图像输入，未把 PNG 记为已读图或视觉通过。
 - `build`（60 页）、默认 transcript、7 步 readability、英中全章及中文逐步三宽度 mobile、`deep-check 04`、`zh-check`、`git diff --check` 均通过。未跑全站回归、真实 NCCL、GPU benchmark 或 reduced-motion 动态切换。
 
