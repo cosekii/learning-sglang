@@ -338,7 +338,7 @@
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('Placeholders replace local names; 8 is a teaching cap.', '占位符代替本机名称；8 是教学上限。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('One stream does not test quality, speed or concurrency.', '一条流不检验质量、速度或并发。')}</text>
       {:else if step === 5}
-        <text x={phone ? 18 : 36} y="30" class="title">{t('Rank 0 leads the TP workers', 'rank 0 调度器带领 TP worker')}</text>
+        <text x={phone ? 18 : 36} y="30" class="title">{t('Rank 0 leads the TP workers', 'rank 0 调度器派发工作')}</text>
         {#if phone}
           <text x="18" y="55" class="label">{t('ZMQ = local messages · blue in · orange out', 'ZMQ = 本机消息 · 蓝进 · 橙出')}</text>
         {:else}

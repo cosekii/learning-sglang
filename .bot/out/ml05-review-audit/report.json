@@ -1,6 +1,6 @@
 {
   "base": "http://127.0.0.1:4494/learning-sglang",
-  "generatedAt": "2026-11-27T12:08:04.854Z",
+  "generatedAt": "2026-11-27T12:22:53.638Z",
   "summary": {
     "states": 50,
     "desktopStates": 32,
@@ -56,8 +56,8 @@
       "disappeared": [],
       "signature": "e2ab418730e5a883ad90b2879a3e2e6118b95caf02a711cf06f1957e540d644e",
       "changed": null,
-      "pngBytes": 161904,
-      "pngMd5": "aed7c817cf11ad1677615e6c15599552"
+      "pngBytes": 161901,
+      "pngMd5": "007b8d9aefb014d1731fcee6bc3760ad"
     },
     {
       "lang": "en",
@@ -98,8 +98,8 @@
       "disappeared": [],
       "signature": "6b0b0a73ace8bdc01288bd44827b0e69c879b5304c17c753effaa068272cccd6",
       "changed": true,
-      "pngBytes": 172675,
-      "pngMd5": "44dbb2ce0aa8c4435bc986707208e9de"
+      "pngBytes": 172683,
+      "pngMd5": "d1561977a9af5f98ec2cedd6413399bc"
     },
     {
       "lang": "en",
@@ -137,8 +137,8 @@
       "disappeared": [],
       "signature": "e705af26000eacead0bf66f4380bd394642a176c117e9ac23810388bc51cc9b8",
       "changed": true,
-      "pngBytes": 174852,
-      "pngMd5": "f820a561a4b9ac41e3f704d81f34eb70"
+      "pngBytes": 174848,
+      "pngMd5": "8d47f98c3bb1c495d890e1bbac26b3ef"
     },
     {
       "lang": "en",
@@ -179,8 +179,8 @@
       "disappeared": [],
       "signature": "5e4b33ae7d730627dd8812e0e64e9e549b1f23f345b53f734f3c9f5577d6a649",
       "changed": true,
-      "pngBytes": 186433,
-      "pngMd5": "285e605ad52f1afc959fe012dcd4b355"
+      "pngBytes": 186439,
+      "pngMd5": "c570ee6e07a9644ba1ca40bce3ce7f8e"
     },
     {
       "lang": "en",
@@ -225,8 +225,8 @@
       "disappeared": [],
       "signature": "4c7b9f573c5efff5dfd5065324f202b36946fee3bea22964f52de4d6305851fb",
       "changed": null,
-      "pngBytes": 162037,
-      "pngMd5": "4b9cc41bcc390b15f8490c435b99f7da"
+      "pngBytes": 162034,
+      "pngMd5": "91ec11b5ae23e097922873d9909062ac"
     },
     {
       "lang": "en",
@@ -263,8 +263,8 @@
       "disappeared": [],
       "signature": "26b8ff068ef092cf9bebd8921b3d5652276ff6a8708ac12818d02160fdf2a51c",
       "changed": true,
-      "pngBytes": 166383,
-      "pngMd5": "9eb304ad727ba3484ce40b4907fff137"
+      "pngBytes": 166373,
+      "pngMd5": "5581dfa8f11d59295edd60038892c982"
     },
     {
       "lang": "en",
@@ -303,8 +303,8 @@
       "disappeared": [],
       "signature": "8d177941b9404c0ffbe6b51e86e882ccddd7c3b55f8f58d69952c06b8597f4c7",
       "changed": true,
-      "pngBytes": 171516,
-      "pngMd5": "d3e2342acdd51ed2b69f8cd66f14e3ea"
+      "pngBytes": 171511,
+      "pngMd5": "5f1278b9adb0e9e65c10d521d12e49a3"
     },
     {
       "lang": "en",
@@ -349,8 +349,8 @@
       "disappeared": [],
       "signature": "8712671750c808dbea4eb859932d1b5442ded46ef1c6c6b4d22517a1eb9ba0e7",
       "changed": true,
-      "pngBytes": 183542,
-      "pngMd5": "69b7c8f4b24e4bda22ebf62198af68d1"
+      "pngBytes": 183540,
+      "pngMd5": "6077ce7be0442d6d85c69fd8b44fac1c"
     },
     {
       "lang": "en",
@@ -397,8 +397,8 @@
       "disappeared": [],
       "signature": "4bdff079be37c9f8f2ed7948a04fbd4fb229d2d3f411097299dad88ab7d3794d",
       "changed": true,
-      "pngBytes": 194211,
-      "pngMd5": "17fc2806972b7d072981f7317994cb12"
+      "pngBytes": 194207,
+      "pngMd5": "224935565450ceb5c3a0b3ed9fd1f1f3"
     },
     {
       "lang": "en",
@@ -451,8 +451,8 @@
       "disappeared": [],
       "signature": "56ec83720c77729f3bd21bd852c99b0c7b3640b070b741eb9589f7f86adeaafc",
       "changed": true,
-      "pngBytes": 205419,
-      "pngMd5": "1e9811b471cf686a3d3ca8e14f7c61bc"
+      "pngBytes": 205417,
+      "pngMd5": "26043ff63dfeec0382d55bb291893eb1"
     },
     {
       "lang": "en",
@@ -485,8 +485,8 @@
       "disappeared": [],
       "signature": "43b480d6099f71918b05f5aa912b70f5da00e426f33b66fbe5e52f8aec7c4287",
       "changed": null,
-      "pngBytes": 155909,
-      "pngMd5": "0fdfde1804bcd55f58d946655c3d07a1"
+      "pngBytes": 155899,
+      "pngMd5": "1d3098049f6f3fc1f5e8ec085da95041"
     },
     {
       "lang": "en",
@@ -521,8 +521,8 @@
       "disappeared": [],
       "signature": "f4507433a2cea5b027c31f87fe0c413ea753f38e8ccc72c6c6a18467c24d4fed",
       "changed": true,
-      "pngBytes": 163432,
-      "pngMd5": "066290f837e1d557e71986af393fa7b7"
+      "pngBytes": 163429,
+      "pngMd5": "006ec63f3d7b36384cde608cb5c37ffa"
     },
     {
       "lang": "en",
@@ -561,8 +561,8 @@
       "disappeared": [],
       "signature": "6605c287c8fde2051ff89862edd961513d1867924c763db8691faaee5c61dead",
       "changed": true,
-      "pngBytes": 170563,
-      "pngMd5": "3218f3d290d66ecadb00ab0ac3ac6a53"
+      "pngBytes": 170561,
+      "pngMd5": "b01b13069c9d760381d6848ed520d090"
     },
     {
       "lang": "en",
@@ -606,8 +606,8 @@
       ],
       "signature": "ff56377007c716f3725db0e052d757ab1c5192d63871e1d757e74f7aa0406ded",
       "changed": true,
-      "pngBytes": 170557,
-      "pngMd5": "3b543dcf2e8a220699384ce6f7ecd87d"
+      "pngBytes": 170555,
+      "pngMd5": "358e7f7f14ae5f0c50534787a677be95"
     },
     {
       "lang": "en",
@@ -651,8 +651,8 @@
       ],
       "signature": "2564abbe8689bbfbfc5d21681cb4ba27c1f4e5fc35994e3940e1141a5f0f2cdf",
       "changed": true,
-      "pngBytes": 170966,
-      "pngMd5": "011bab7209c4ca7df5d8f0600f0479c9"
+      "pngBytes": 170962,
+      "pngMd5": "f7332b2f107a9b6b8e6760f64448e9b4"
     },
     {
       "lang": "en",
@@ -691,8 +691,8 @@
       "disappeared": [],
       "signature": "b7d81e306b04321a4f82dcc4e96087541ab2b83eb6b98973d1b7006e02b5595f",
       "changed": true,
-      "pngBytes": 184254,
-      "pngMd5": "ad58ca4ace1f15e52f8444583fe4f54c"
+      "pngBytes": 184257,
+      "pngMd5": "06e29c7e11f99143a3c4a229342c0ab6"
     },
     {
       "lang": "zh",
@@ -733,8 +733,8 @@
       "disappeared": [],
       "signature": "876210798edecbada6afa0ff9823888dbf5bd780395b4979f14012e26414f73e",
       "changed": null,
-      "pngBytes": 169040,
-      "pngMd5": "dbf5561c7716ec9d0ca23cbaa94f7041"
+      "pngBytes": 169030,
+      "pngMd5": "634c656609f0e787a05c2b8ec426cf9c"
     },
     {
       "lang": "zh",
@@ -775,8 +775,8 @@
       "disappeared": [],
       "signature": "f23bf71e655559e41790396492b6bc0f822d09debe847010e7da7036868981ff",
       "changed": true,
-      "pngBytes": 180865,
-      "pngMd5": "1aaa0bce1a43bc019e873d77573b9b9f"
+      "pngBytes": 180841,
+      "pngMd5": "010882f6766b9cacc5ec811f9ad420ad"
     },
     {
       "lang": "zh",
@@ -814,8 +814,8 @@
       "disappeared": [],
       "signature": "86cbce75a701db66f1d3f85c6e918f81e1f42563bb9bac87bc25235e29facd2c",
       "changed": true,
-      "pngBytes": 183131,
-      "pngMd5": "e6fd4573e83c168838122ffdcd4d9bc2"
+      "pngBytes": 183134,
+      "pngMd5": "f04562b1c06389d6ea838f53b3efc0bd"
     },
     {
       "lang": "zh",
@@ -856,8 +856,8 @@
       "disappeared": [],
       "signature": "4aadc078188184e9ec6a7d3a06fb43af038e740e5a237aacb2c7641597d5621a",
       "changed": true,
-      "pngBytes": 196449,
-      "pngMd5": "636a73f73d6f3703a81788b9658f6bc4"
+      "pngBytes": 196440,
+      "pngMd5": "1cef6061de3609403e476e282995ea68"
     },
     {
       "lang": "zh",
@@ -871,7 +871,7 @@
       "overlaps": [],
       "overflow": [],
       "visibleTexts": [
-        "rank 0 调度器带领 TP worker",
+        "rank 0 调度器派发工作",
         "local ZMQ = 本机消息 · leader = rank 0 调度器",
         "蓝 = 输入 · 橙 = 输出",
         "请求 · stream:true",
@@ -886,7 +886,7 @@
       ],
       "visibleShapes": 1,
       "appeared": [
-        "rank 0 调度器带领 TP worker",
+        "rank 0 调度器派发工作",
         "local ZMQ = 本机消息 · leader = rank 0 调度器",
         "蓝 = 输入 · 橙 = 输出",
         "请求 · stream:true",
@@ -900,10 +900,10 @@
         "固定 Dynamo 路径；不展开序列化和 socket 缓冲。"
       ],
       "disappeared": [],
-      "signature": "7d742df52348acbff11693856768e2b13e04b77b1180da8227924adebed823b9",
+      "signature": "a8c535f178bd673a1a7f577ba0b8fa91ba9c534d683784b943c61ab86f5b0be8",
       "changed": null,
-      "pngBytes": 169350,
-      "pngMd5": "ac9e08b714d1de9c0dc21c9ed6a31cb5"
+      "pngBytes": 168434,
+      "pngMd5": "70d9beca5aaf571e0ece65492a82c9ca"
     },
     {
       "lang": "zh",
@@ -917,7 +917,7 @@
       "overlaps": [],
       "overflow": [],
       "visibleTexts": [
-        "rank 0 调度器带领 TP worker",
+        "rank 0 调度器派发工作",
         "local ZMQ = 本机消息 · leader = rank 0 调度器",
         "蓝 = 输入 · 橙 = 输出",
         "请求 · stream:true",
@@ -938,10 +938,10 @@
         "文本 → token"
       ],
       "disappeared": [],
-      "signature": "e81010bdc9a72fbef653600c4d084eefb25272ba90289362ea5d5ade96bae42f",
+      "signature": "d96763f06484ba88948633ba9e9cff30e2bf357d12356547dca3e118673dd2a7",
       "changed": true,
-      "pngBytes": 174251,
-      "pngMd5": "769784167808513d42731440f2c8fe9a"
+      "pngBytes": 173359,
+      "pngMd5": "fdaafb15eb10507e57c798122b22d053"
     },
     {
       "lang": "zh",
@@ -955,7 +955,7 @@
       "overlaps": [],
       "overflow": [],
       "visibleTexts": [
-        "rank 0 调度器带领 TP worker",
+        "rank 0 调度器派发工作",
         "local ZMQ = 本机消息 · leader = rank 0 调度器",
         "蓝 = 输入 · 橙 = 输出",
         "请求 · stream:true",
@@ -978,10 +978,10 @@
         "scheduler 角色"
       ],
       "disappeared": [],
-      "signature": "3537dad4bf2d5d32125928de6aca75daee4ebf7467bb697254bfd117ee66f586",
+      "signature": "3a16f10d53765a947471e7e25327013dd3ac4fa5bb5108df2e77d362498e6f65",
       "changed": true,
-      "pngBytes": 180591,
-      "pngMd5": "870cbc04827a70aaadbdddea5256d567"
+      "pngBytes": 179680,
+      "pngMd5": "9c6504c8d297e4af82a9630ebe906350"
     },
     {
       "lang": "zh",
@@ -995,7 +995,7 @@
       "overlaps": [],
       "overflow": [],
       "visibleTexts": [
-        "rank 0 调度器带领 TP worker",
+        "rank 0 调度器派发工作",
         "local ZMQ = 本机消息 · leader = rank 0 调度器",
         "蓝 = 输入 · 橙 = 输出",
         "请求 · stream:true",
@@ -1024,10 +1024,10 @@
         "第 4 章：交换张量"
       ],
       "disappeared": [],
-      "signature": "6d18fc8f5de10641ed62b02182e81c10968fd63177c30aa32c4953f178d7861b",
+      "signature": "6f4f6dec23f8b5a47d9119d45e63c8ce5ce286841510a8a342c17705767b143a",
       "changed": true,
-      "pngBytes": 193412,
-      "pngMd5": "0343aacb239d3ad64ddc766423e0e165"
+      "pngBytes": 192552,
+      "pngMd5": "743fda8b303382ac5c5c0a60529e6878"
     },
     {
       "lang": "zh",
@@ -1041,7 +1041,7 @@
       "overlaps": [],
       "overflow": [],
       "visibleTexts": [
-        "rank 0 调度器带领 TP worker",
+        "rank 0 调度器派发工作",
         "local ZMQ = 本机消息 · leader = rank 0 调度器",
         "蓝 = 输入 · 橙 = 输出",
         "请求 · stream:true",
@@ -1071,10 +1071,10 @@
         "scheduler 输出"
       ],
       "disappeared": [],
-      "signature": "65f0250b5e275a736150cb3753dad433ff563786f364c063fd8f31ed7de3a9e6",
+      "signature": "47de8642430c222f5699efff22cc338bb4743648502686953d0cd5e112697c57",
       "changed": true,
-      "pngBytes": 204583,
-      "pngMd5": "617a88c992265a7f1bcfe516a2124bf0"
+      "pngBytes": 203755,
+      "pngMd5": "7fee8ea3e86f49eb121e060e06888073"
     },
     {
       "lang": "zh",
@@ -1088,7 +1088,7 @@
       "overlaps": [],
       "overflow": [],
       "visibleTexts": [
-        "rank 0 调度器带领 TP worker",
+        "rank 0 调度器派发工作",
         "local ZMQ = 本机消息 · leader = rank 0 调度器",
         "蓝 = 输入 · 橙 = 输出",
         "请求 · stream:true",
@@ -1125,10 +1125,10 @@
         "1 条流 · 2 台节点 · 8 个 TP worker"
       ],
       "disappeared": [],
-      "signature": "9f1b2c163f1c112a689a139b20e7e6d6f9b5fe042a6e4c87e47702c3c9805ca6",
+      "signature": "39d6f741eb8c30686972d6eed071ae619cc3e4e592a23533463eb07cf3c1337f",
       "changed": true,
-      "pngBytes": 218145,
-      "pngMd5": "405ca1dbd709a7268f14cc4d5f8c8c66"
+      "pngBytes": 217267,
+      "pngMd5": "0ad55b9503e818489f4b58a438138b9e"
     },
     {
       "lang": "zh",
@@ -1161,8 +1161,8 @@
       "disappeared": [],
       "signature": "baf6604f26f2984b6d0f7ba003e1482e3da7be5eb1f802cc90776802d723b71d",
       "changed": null,
-      "pngBytes": 167369,
-      "pngMd5": "957fdce1143220c11982ac2d0030bc76"
+      "pngBytes": 167381,
+      "pngMd5": "90193720a649dad1ac6cc99d4b653088"
     },
     {
       "lang": "zh",
@@ -1237,8 +1237,8 @@
       "disappeared": [],
       "signature": "2e963fca55cc93f524faadbc65815f38457479a13d8dd4b6be72bcb0d73833c3",
       "changed": true,
-      "pngBytes": 183128,
-      "pngMd5": "234e988ca849c06586d12357fca5bdb2"
+      "pngBytes": 183124,
+      "pngMd5": "f62bdfaa4f9f859df7f16d7ef4b47d16"
     },
     {
       "lang": "zh",
@@ -1283,7 +1283,7 @@
       "signature": "ae69baee8359a1cb3b4ffeb407981f529507ce23d7f9949d0a1ca67e24655092",
       "changed": true,
       "pngBytes": 185034,
-      "pngMd5": "f46c1ff2780f54bcfe2641397ddb90ef"
+      "pngMd5": "2b9e5ec0d9b96e028ddcb23443be0f8f"
     },
     {
       "lang": "zh",
@@ -1327,8 +1327,8 @@
       ],
       "signature": "440d02a11d1687c3698fff562a85273ebfaefdc1ae78d2fb71f15b9bfc4b1c44",
       "changed": true,
-      "pngBytes": 184230,
-      "pngMd5": "74aa0bca4778747ec1824c168f2260ff"
+      "pngBytes": 184227,
+      "pngMd5": "7ea06cfdbf5f8e347a25c58fd600757c"
     },
     {
       "lang": "zh",
@@ -1367,8 +1367,8 @@
       "disappeared": [],
       "signature": "784bbe4720fe53b7915abf8698d30213b03dce4cd87f99fcca2be1972482ae5b",
       "changed": true,
-      "pngBytes": 199473,
-      "pngMd5": "658a2d207314e067bca7f0a951f4866c"
+      "pngBytes": 199482,
+      "pngMd5": "3abde98816d984ea5d67acd0053f5a8a"
     },
     {
       "lang": "en",
@@ -1419,8 +1419,8 @@
       "disappeared": [],
       "signature": "f97ae604792f141ad27a37e0a044ef45007b73f6ba41c5825d8cdcad51eb44ad",
       "changed": null,
-      "pngBytes": 57710,
-      "pngMd5": "60f78d3ba415a9b02280c36dd1f699c1"
+      "pngBytes": 57718,
+      "pngMd5": "675983ee5c9e40fe3696ba91c9f8bcec"
     },
     {
       "lang": "en",
@@ -1479,8 +1479,8 @@
       "disappeared": [],
       "signature": "1cc041417f94e2144ce753f9d6e70d153a1ef5c118e5f7bfbcc3d62bf57e5843",
       "changed": null,
-      "pngBytes": 55640,
-      "pngMd5": "c573949b78b0cc608b09b3a5bca6011d"
+      "pngBytes": 55646,
+      "pngMd5": "3177a90bee06d371079f01c2839e97a3"
     },
     {
       "lang": "en",
@@ -1583,8 +1583,8 @@
       "disappeared": [],
       "signature": "20c999db883a34e921a359571cd585772f135d3428a8026f06154249d3248c40",
       "changed": null,
-      "pngBytes": 58816,
-      "pngMd5": "368e343bbefdf32d4a06b944f001e023"
+      "pngBytes": 58817,
+      "pngMd5": "58caf4b12f4e87e6726dc0319f21e0b3"
     },
     {
       "lang": "zh",
@@ -1598,7 +1598,7 @@
       "overlaps": [],
       "overflow": [],
       "visibleTexts": [
-        "rank 0 调度器带领 TP worker",
+        "rank 0 调度器派发工作",
         "ZMQ = 本机消息 · 蓝进 · 橙出",
         "CLIENT · 问题",
         "NODE 0 · HTTP :8080",
@@ -1620,7 +1620,7 @@
       ],
       "visibleShapes": 11,
       "appeared": [
-        "rank 0 调度器带领 TP worker",
+        "rank 0 调度器派发工作",
         "ZMQ = 本机消息 · 蓝进 · 橙出",
         "CLIENT · 问题",
         "NODE 0 · HTTP :8080",
@@ -1641,10 +1641,10 @@
         "固定路径；不展开缓冲。"
       ],
       "disappeared": [],
-      "signature": "14d7aa57c1c9e762f754d5860b766a2370665b72d9d0ee242c65fa2a15c2e1d9",
+      "signature": "c8beb7c6c9fae2b71a92df443f31c9555350a7ec059d7c28ee4603e3d7b7a5d4",
       "changed": null,
-      "pngBytes": 58755,
-      "pngMd5": "efcca8e109d949199c1b05405663d9c0"
+      "pngBytes": 58195,
+      "pngMd5": "520269d36bd4bc231cd782bd16394b73"
     },
     {
       "lang": "zh",
@@ -1695,8 +1695,8 @@
       "disappeared": [],
       "signature": "f985aae9fada5794187b6bbeb20f70ae2679d23d21b29f3902eb8c1d25e3f048",
       "changed": null,
-      "pngBytes": 57252,
-      "pngMd5": "97039b1bf5eb93c433b01c48d949375c"
+      "pngBytes": 57235,
+      "pngMd5": "848deaafcd30de2096e66794659869e0"
     },
     {
       "lang": "en",
@@ -1747,8 +1747,8 @@
       "disappeared": [],
       "signature": "f97ae604792f141ad27a37e0a044ef45007b73f6ba41c5825d8cdcad51eb44ad",
       "changed": null,
-      "pngBytes": 59586,
-      "pngMd5": "0b3c7a47fb7ec95ab2eeeb9621856742"
+      "pngBytes": 59575,
+      "pngMd5": "64bb40ef4a5640db79beda6a7ea2efe3"
     },
     {
       "lang": "en",
@@ -1807,8 +1807,8 @@
       "disappeared": [],
       "signature": "1cc041417f94e2144ce753f9d6e70d153a1ef5c118e5f7bfbcc3d62bf57e5843",
       "changed": null,
-      "pngBytes": 58053,
-      "pngMd5": "7d42307c009d05f8a8a5a35f16ad3106"
+      "pngBytes": 58048,
+      "pngMd5": "04dba063b47b8dbcf7eff92dd83e83b0"
     },
     {
       "lang": "en",
@@ -1859,8 +1859,8 @@
       "disappeared": [],
       "signature": "03be1b109dedd5f0fe7ffd4572eb2d0f55815fda4aadc36101f4a879544dd999",
       "changed": null,
-      "pngBytes": 58522,
-      "pngMd5": "91f8e3556a5654346b6e0a79008949fb"
+      "pngBytes": 58528,
+      "pngMd5": "0a21499ca7ba544fd824f5c3e62e728c"
     },
     {
       "lang": "zh",
@@ -1911,8 +1911,8 @@
       "disappeared": [],
       "signature": "20c999db883a34e921a359571cd585772f135d3428a8026f06154249d3248c40",
       "changed": null,
-      "pngBytes": 60783,
-      "pngMd5": "658df0ddd2b36091ac9f7f86bf7cb96d"
+      "pngBytes": 60782,
+      "pngMd5": "66bff718d3a692df36518cee1583b983"
     },
     {
       "lang": "zh",
@@ -1926,7 +1926,7 @@
       "overlaps": [],
       "overflow": [],
       "visibleTexts": [
-        "rank 0 调度器带领 TP worker",
+        "rank 0 调度器派发工作",
         "ZMQ = 本机消息 · 蓝进 · 橙出",
         "CLIENT · 问题",
         "NODE 0 · HTTP :8080",
@@ -1948,7 +1948,7 @@
       ],
       "visibleShapes": 11,
       "appeared": [
-        "rank 0 调度器带领 TP worker",
+        "rank 0 调度器派发工作",
         "ZMQ = 本机消息 · 蓝进 · 橙出",
         "CLIENT · 问题",
         "NODE 0 · HTTP :8080",
@@ -1969,10 +1969,10 @@
         "固定路径；不展开缓冲。"
       ],
       "disappeared": [],
-      "signature": "14d7aa57c1c9e762f754d5860b766a2370665b72d9d0ee242c65fa2a15c2e1d9",
+      "signature": "c8beb7c6c9fae2b71a92df443f31c9555350a7ec059d7c28ee4603e3d7b7a5d4",
       "changed": null,
-      "pngBytes": 59829,
-      "pngMd5": "933068246ab63245c9e71cbc3cf7d259"
+      "pngBytes": 59118,
+      "pngMd5": "c0a63f3fe1c917aa7caa85128f80746f"
     },
     {
       "lang": "zh",
@@ -2075,8 +2075,8 @@
       "disappeared": [],
       "signature": "f97ae604792f141ad27a37e0a044ef45007b73f6ba41c5825d8cdcad51eb44ad",
       "changed": null,
-      "pngBytes": 60062,
-      "pngMd5": "28973654bdf9610d8d3a3e3135b297f2"
+      "pngBytes": 60057,
+      "pngMd5": "a63b30eb6c81b4e1b144baa4488ce7a1"
     },
     {
       "lang": "en",
@@ -2135,8 +2135,8 @@
       "disappeared": [],
       "signature": "1cc041417f94e2144ce753f9d6e70d153a1ef5c118e5f7bfbcc3d62bf57e5843",
       "changed": null,
-      "pngBytes": 59319,
-      "pngMd5": "f9913a0526afc3fa0dfac31fba759e5a"
+      "pngBytes": 59312,
+      "pngMd5": "46c38db9fe7eac12a08d3e161d3743a1"
     },
     {
       "lang": "en",
@@ -2187,8 +2187,8 @@
       "disappeared": [],
       "signature": "03be1b109dedd5f0fe7ffd4572eb2d0f55815fda4aadc36101f4a879544dd999",
       "changed": null,
-      "pngBytes": 57574,
-      "pngMd5": "7e438b0d1dd72e0c16fd8eb7832249a1"
+      "pngBytes": 57566,
+      "pngMd5": "aed8ce967e8f0cc9b308fbf7d4057db9"
     },
     {
       "lang": "zh",
@@ -2239,8 +2239,8 @@
       "disappeared": [],
       "signature": "20c999db883a34e921a359571cd585772f135d3428a8026f06154249d3248c40",
       "changed": null,
-      "pngBytes": 61991,
-      "pngMd5": "b90c620b36c6ce9d50523f78c1ec764f"
+      "pngBytes": 61990,
+      "pngMd5": "9c8ec7adcebe526123bee26846e7fb94"
     },
     {
       "lang": "zh",
@@ -2254,7 +2254,7 @@
       "overlaps": [],
       "overflow": [],
       "visibleTexts": [
-        "rank 0 调度器带领 TP worker",
+        "rank 0 调度器派发工作",
         "ZMQ = 本机消息 · 蓝进 · 橙出",
         "CLIENT · 问题",
         "NODE 0 · HTTP :8080",
@@ -2276,7 +2276,7 @@
       ],
       "visibleShapes": 11,
       "appeared": [
-        "rank 0 调度器带领 TP worker",
+        "rank 0 调度器派发工作",
         "ZMQ = 本机消息 · 蓝进 · 橙出",
         "CLIENT · 问题",
         "NODE 0 · HTTP :8080",
@@ -2297,10 +2297,10 @@
         "固定路径；不展开缓冲。"
       ],
       "disappeared": [],
-      "signature": "14d7aa57c1c9e762f754d5860b766a2370665b72d9d0ee242c65fa2a15c2e1d9",
+      "signature": "c8beb7c6c9fae2b71a92df443f31c9555350a7ec059d7c28ee4603e3d7b7a5d4",
       "changed": null,
-      "pngBytes": 61388,
-      "pngMd5": "188d95abd61b2b2b1006d33cac5c44e2"
+      "pngBytes": 60666,
+      "pngMd5": "3044357298aa16cdfbfc9cf49821c2e7"
     },
     {
       "lang": "zh",
@@ -2351,8 +2351,8 @@
       "disappeared": [],
       "signature": "f985aae9fada5794187b6bbeb20f70ae2679d23d21b29f3902eb8c1d25e3f048",
       "changed": null,
-      "pngBytes": 60527,
-      "pngMd5": "48011eed6ee6ebe7c8c51188d72542ea"
+      "pngBytes": 60524,
+      "pngMd5": "d300c08cc81c916ca4950f7dfc55be34"
     }
   ],
   "deepStates": [
@@ -2364,7 +2364,7 @@
       "katexErrors": 0,
       "rawMath": false,
       "overflow": 0,
-      "pngMd5": "5a597a770226d943c32649e375e13341"
+      "pngMd5": "1c789883972477d89393413e3815bff0"
     },
     {
       "lang": "en",
@@ -2374,7 +2374,7 @@
       "katexErrors": 0,
       "rawMath": false,
       "overflow": 0,
-      "pngMd5": "fc07662bdeb4daf5ddea9695501f8859"
+      "pngMd5": "d487babf454617628b0ffc869dae67a9"
     },
     {
       "lang": "en",
@@ -2384,7 +2384,7 @@
       "katexErrors": 0,
       "rawMath": false,
       "overflow": 0,
-      "pngMd5": "d755bbfed7249e75712524cf55407ec0"
+      "pngMd5": "c351be309f680508295fdd94d2115a4f"
     },
     {
       "lang": "zh",
@@ -2394,7 +2394,7 @@
       "katexErrors": 0,
       "rawMath": false,
       "overflow": 0,
-      "pngMd5": "f33d2f46de01ffcb3921875ce4b7df5b"
+      "pngMd5": "a8e741cb9e2c826d8c2a4cad4eb8426b"
     },
     {
       "lang": "zh",
@@ -2404,7 +2404,7 @@
       "katexErrors": 0,
       "rawMath": false,
       "overflow": 0,
-      "pngMd5": "9921224395f29717d13916ad32dd0e57"
+      "pngMd5": "7d442d30f6b5e0f830d17ad74e73e5c2"
     },
     {
       "lang": "zh",
@@ -2414,7 +2414,7 @@
       "katexErrors": 0,
       "rawMath": false,
       "overflow": 0,
-      "pngMd5": "aa209d38ccf4e932f12b670ca9972bfd"
+      "pngMd5": "da2f8c91939b7643c2602bd7c68ef06c"
     }
   ]
 }

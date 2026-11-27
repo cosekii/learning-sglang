@@ -219,7 +219,7 @@ $$r_{\mathrm{leader}}=0,\qquad R_{\mathrm{compute}}=R_0\cup R_1=\{0,1,\ldots,7\}
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
-| $r_{\mathrm{leader}}$ | scheduler 带领本次请求的 TP rank | 固定版本配置，0 |
+| $r_{\mathrm{leader}}$ | 其 scheduler 负责本次请求交接的 TP rank | 固定版本配置，0 |
 | $R_{\mathrm{compute}}$ | 参加本次 TP 计算的 rank 集合 | 第 3 步 |
 | $R_0,R_1$ | 两台节点上的 rank 集合 | 第 3 步，各 4 个 |
 
