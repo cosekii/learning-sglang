@@ -21,6 +21,52 @@
 
 ---
 
+# lane k1 本轮报告 · Omni 11 三项修复定点复核
+
+日期：2026-11-27。类型：修旧复核。范围只有 Omni 11 的 Omni-22／33／45、Omni 12 Step 1 接缝、验证材料和本报告。未改教程源码、transcript、`.bot/memory/`、Omni 14、其他书或其他 lane 的文件。
+
+## 固定范围与结论
+
+- 本轮开始 HEAD 与 `origin/tutorials` 均为 `b1dbae6`。三项教程修复 `d222476`／`287f946`／`676b6d4` 和完成报告 `f68e067` 都是当前 HEAD 的祖先；`f68e067..HEAD` 没有改这些冻结教程文件。
+- **非视觉复核通过，实图与协调 verdict 仍待审。** 本轮没有自行关闭 finding，也没有把固定 `e71ab01` 的 **80/80、16/16、189/192 NO-GO** 当成当前树 verdict。Omni 14 另审，不与本结果混用。
+
+| finding | 本轮直接复核 | 当前状态 |
+|---|---|---|
+| Omni-22 · Ch.10→11 entry 选择 | Ch.10 Step 8 问谁选十个 entries；Ch.11 Step 1 的标题和 caption 立即交出 Slow AR → `c0`、Fast AR → `c1–c9`，再形成 40 帧首窗。双语 deep 与 MDX 使用同一映射。 | 文本、机制和 DOM 复核通过，待协调核销。 |
+| Omni-33 · Ch.11→12 状态接缝 | Ch.11 Step 8 收尾列出 queued old work、`D = delivered`、`H = heard`；Ch.12 Step 1 从同一旧回答开始，给出 `D = 2.0 s`、`H = 1.2 s` 和 `D−H = 800 ms`。 | 两章文本、deep 和手机检查通过，待协调核销。 |
+| Omni-45 · Step 7 灰尾标签出徽标 | 英中桌面及 360／390／430 px 共 **24 个相位**的灰尾标签上下左右越界均为 **0**；英文 `old 512 used`、`512 released` 和中文 `用掉旧 512` 都包含在各自灰框内。 | 几何复核通过，实图待审。 |
+
+## 作者评分与冷读
+
+主线程按当前 transcript、组件、双语 deep 和逐相 DOM 冷读。下表只重评三个改动步；未改的 Steps 2–6 保留固定复审的满分。原十个非视觉项不含需要实图的 #4／#5。
+
+| 步 | R1–R5 | 机制 R6 | 原十个非视觉项 | 小学生复述 | 新内容洞 |
+|---|---:|---:|---:|---|---:|
+| Step 1 | 10/10 | 2/2 | 20/20 | Slow AR 每帧先选 c0，Fast AR 在同一帧补另外九个；攒够 40 帧就开首个窗口。 | 0 |
+| Step 7 | 10/10 | 2/2 | 20/20 | 三个窗口会重读旧帧，但旧声音不重复播放；512 个采样点先留下，下次用掉，最后放出。 | 0 |
+| Step 8 | 10/10 | 2/2 | 20/20 | 完成的请求补成一样长，一起解码再裁回；打断后服务器能删排队旧工作，D、H 分别记交付和播放。 | 0 |
+
+当前树的作者参考值为 R1–R5 **80/80**、机制 R6 **16/16**、原十个非视觉项 **160/160**。原 #4／#5 和原十二项总分 **/192** 留待图像能力复审；这里不写 **192/192**，不授予协调 GO。独立 `pstack-explorer` 因配置模型 `qweneval/qwen-latest-series-invite-1102#high` 不存在而未启动，未计为证据。
+
+## 硬门与逐相证据
+
+- `npm run build`：**60 页**通过。Omni 11 八步与 Omni 12 Step 1 的 `readability` 均为 **0 机械问题**；两章 `deep-check` 各识别八步，`zh-check` 均为 `all clear`，`git diff --check` 通过。
+- 所有计入结果的浏览器检查都显式连接本 clone 的 **4484** 服务。早期默认端口尝试和一次超时采集未计入。两章 transcript 各完成两次有效采集，均与 pinned 逐字一致。Omni 11 为 **2,229 词**，SHA-256 `982f3fe0da7184b704d1a5c279acaac825aea60a4cac9756b969d204284b72a4`；Omni 12 为 **2,298 词**，SHA-256 `fffa4eb49ad80b0ddd8ce9fa3ed661bf6d26780ca5c67de4e2e7ef045c2d503a`。
+- Omni 11 英中全章及 Omni 12 Step 1 英中手机检查均在 360／390／430 px 报 `no layout breaks`。中文 Steps 1／7／8 的逐步字号门也通过。
+- `.bot/out/omni11-review-en/report.json` 与 `.bot/out/omni11-review-zh/report.json`：每种语言 **40 个桌面相位、32/32 机制转变**，counter、step、phase 身份全部匹配。最低可见字号英文 **10.506**、中文 **11.253 CSS px**；文字重叠、SVG 出界和灰尾标签越界均为 **0**。
+- `.bot/out/omni11-review-{en,zh}-{360,390,430}/report.json`：六种语言×宽度组合各 **3 个 Step 7 相位**，加上桌面共 **24 个相位**，灰尾标签四边越界全部为 **0**；手机最低 **10.76 CSS px**。
+- `.bot/out/omni11-review-deep/report.json`：Omni 11 Steps 1／7／8 和 Omni 12 Step 1 的英中 **8 个 deep 视图**均为 `aria-expanded=true`，counter 和标题正确，指定接缝文字齐全；页面／drawer 横溢、KaTeX 错误和残留 `$$` 均为 **0**。
+- 上述目录共保留 **106 张 PNG**，逐文件 SHA-256 去重后为 **106 个不同哈希**。代表图：`/Users/shuohuang/code/hmz-work/ls-k1-1127-024000/.bot/out/omni11-review-en/s7-p1.png`、`/Users/shuohuang/code/hmz-work/ls-k1-1127-024000/.bot/out/omni11-review-zh/s8-p3.png`、`/Users/shuohuang/code/hmz-work/ls-k1-1127-024000/.bot/out/omni11-review-deep/12-1-en.png`。
+
+## 剩余与清理
+
+- 当前模型读取实图返回 `Cannot read image (this model does not support image input)`。这里只报告 transcript、源码、DOM、几何、文件和哈希结果，**未声称看过图片或视觉通过**。剩余是图像能力固定复审、协调 verdict 和主人最终验收。
+- 未跑全站回归、真实 Fish／SGLang-Omni 模型或服务、GPU benchmark、音频质量、故障注入或 reduced-motion 动态切换。最新回归只有不可分配布局步骤的 `(exit 13)`，不据此返工。
+- 本 clone 的 `node_modules` 原指向协调人 checkout。已只删除本目录内的符号链接并用本目录缓存执行 `npm install`，package 文件无 diff，未写协调人的 checkout。
+- 本地查看前运行 `npx astro dev --background --port 4484`。地址：`http://localhost:4484/learning-sglang/omni/ch/11-fish-s2-pro/?step=1`、`?step=7`、`?step=8`；接缝另一端为 `http://localhost:4484/learning-sglang/omni/ch/12-full-duplex-strategies/?step=1`。本轮服务和浏览器在收尾关闭。
+
+---
+
 # lane k2 本轮报告 · ML Systems 10 冻结复核
 
 日期：2026-11-27。类型：等待固定复审。范围只有本报告；未改教程、transcript、评分卡、`.bot/memory/`、其他书、其他 lane 或第 1 本受保护英文原文。
