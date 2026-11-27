@@ -146,7 +146,7 @@
 - `npm run build`：**60 页**通过；`git diff --check` 通过。Omni 13 十步与 Omni 14 八步 `readability` 均为 **0 机械问题**；`BOOK=omni node scripts/deep-check.mjs 13／14` 均通过。
 - 两章 `transcript` 均在本 lane 4497 服务重采，无 caption、文字出界、重叠或文本规则报告，生成文件相对 pinned **无 diff**。
 - 两章英文和中文全章 360／390／430 px `mobile` 均报 **no layout breaks**；两章中文 Steps 6／7 的逐步字号门也通过。`BOOK=omni ONLY=13,14 node scripts/zh-check.mjs`：**all clear**。
-- 代表截图：`.bot/out/omni47-step-controls/omni14-en-step7.png` 与 `.bot/out/omni47-step-controls/omni13-zh-step7.png`。旧 clone 的 PNG 未随提交保留；本 clone 已在 `e153ede` 从直接 Step 6 后按 ArrowRight 重采并提交。重采后的 DOM 复核为 Omni 14 `06 / 08 → 07 / 08`、Omni 13 `06 / 10 → 07 / 10`，两章 `data-animation-step` 均为 `5→6`。当前模型不支持图像输入，**未声称看过图片或视觉通过**；原 28 个状态的错误监听结论不变，本次只补图并复核 counter 和相位。
+- 代表截图：`.bot/out/omni47-step-controls/omni14-en-step7.png` 与 `.bot/out/omni47-step-controls/omni13-zh-step7.png`。旧 clone 的 PNG 未随提交保留；本 clone 已从直接 Step 6 后按 ArrowRight 重采，截图由 `18f0b6e` 提交。重采后的 DOM 复核为 Omni 14 `06 / 08 → 07 / 08`、Omni 13 `06 / 10 → 07 / 10`，两章 `data-animation-step` 均为 `5→6`。当前模型不支持图像输入，**未声称看过图片或视觉通过**；原 28 个状态的错误监听结论不变，本次只补图并复核 counter 和相位。
 - 本地查看地址：`http://localhost:4497/learning-sglang/omni/ch/14-slow-reader-backpressure/?step=6`。查看前运行 `npx astro dev --background --host 127.0.0.1 --port 4497`。
 
 ## 剩余与清理
