@@ -45,7 +45,15 @@ $$R=(1-0.85)\times78=11.7\ \mathrm{GB}$$
 
 $$K=18-11.7=6.3\ \mathrm{GB}$$
 
-Raising the fraction from 0.70 to 0.85 leaves the model-loading readings unchanged. Headroom falls by $23.4-11.7=11.7$ GB and KV room rises by $6.3-(-5.4)=11.7$ GB. The article writes GB; the code helper divides bytes by `1 << 30`. This step preserves the article's rounded values without a separate unit conversion.
+Raising the fraction from 0.70 to 0.85 leaves the model-loading readings unchanged. Headroom falls by 11.7 GB:
+
+$$23.4-11.7=11.7\ \mathrm{GB}$$
+
+KV room rises by the same 11.7 GB:
+
+$$6.3-(-5.4)=11.7\ \mathrm{GB}$$
+
+The article writes GB; the code helper divides bytes by `1 << 30`. This step preserves the article's rounded values without a separate unit conversion.
 
 ### How the source calculates KV room
 
@@ -60,13 +68,13 @@ Dynamic headroom is not all occupied memory. KV-pool initialization precedes CUD
 Sources use `Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7` and `sglang@4fa3482`:
 
 - Worked readings, formula and −5.4/6.3 GB results: `sglang/kvcache-code-walk-through/mem-fraction-static.md:34-60,73-85`.
-- [Pre-load available-memory read: `python/sglang/srt/model_executor/model_runner.py:451-452,1083-1088`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner.py#L1083-L1088).
-- [CUDA free-memory read, distributed minimum and byte conversion: `python/sglang/srt/utils/common.py:498-525,594-601`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/utils/common.py#L498-L525).
-- [Model-loading and KV-pool initialization order: `python/sglang/srt/model_executor/model_runner.py:567-569,656-677`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner.py#L656-L677).
-- [Direct `rest` calculation: `python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py:56-70`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py#L56-L70).
-- [Non-positive token counts fail: `python/sglang/srt/model_executor/pool_configurator.py:39-44,170-175`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/pool_configurator.py#L170-L175).
-- [CUDA Graph capture follows KV-pool initialization: `python/sglang/srt/model_executor/model_runner.py:676-677,709-726`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner.py#L709-L726).
-- [Parameter help distinguishes weights and KV from activations and graph buffers: `python/sglang/srt/server_args.py:1227-1236`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/server_args.py#L1227-L1236).
+- [Pre-load available-memory read: `model_executor/model_runner.py:451-452,1083-1088`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner.py#L1083-L1088).
+- [CUDA free-memory read, distributed minimum and byte conversion: `utils/common.py:498-525,594-601`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/utils/common.py#L498-L525).
+- [Model-loading and KV-pool initialization order: `model_executor/model_runner.py:567-569,656-677`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner.py#L656-L677).
+- [Direct `rest` calculation: `model_executor/model_runner_kv_cache_mixin.py:56-70`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py#L56-L70).
+- [Non-positive token counts fail: `model_executor/pool_configurator.py:39-44,170-175`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/pool_configurator.py#L170-L175).
+- [CUDA Graph capture follows KV-pool initialization: `model_executor/model_runner.py:676-677,709-726`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner.py#L709-L726).
+- [Parameter help distinguishes weights and KV from activations and graph buffers: `server_args.py:1227-1236`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/server_args.py#L1227-L1236).
 
 ### Next
 
@@ -107,9 +115,9 @@ The subset relationship is $G\le11.7\ \mathrm{GB}$. This is a budget boundary, n
 
 Sources use `sglang@4fa3482`:
 
-- [Model, KV-pool and device-graph initialization order: `python/sglang/srt/model_executor/model_runner.py:567-569,656-677,709-726`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner.py#L709-L726).
-- [Capture input-buffer allocation: `python/sglang/srt/model_executor/cuda_graph_runner.py:624-655`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L624-L655).
-- [Weights and KV are distinct from activations and graph buffers: `python/sglang/srt/server_args.py:1227-1238`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/server_args.py#L1227-L1238).
+- [Model, KV-pool and device-graph initialization order: `model_executor/model_runner.py:567-569,656-677,709-726`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner.py#L709-L726).
+- [Capture input-buffer allocation: `model_executor/cuda_graph_runner.py:624-655`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L624-L655).
+- [Weights and KV are distinct from activations and graph buffers: `server_args.py:1227-1238`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/server_args.py#L1227-L1238).
 
 This step does not measure buffer bytes or cover temporary workspaces, multimodal reserves and other processes.
 
@@ -151,8 +159,8 @@ During capture, `CudaGraphRunner` uses allocated input buffers and records the m
 
 Sources use `sglang@4fa3482`:
 
-- [Capture input buffers and capture entry: `python/sglang/srt/model_executor/cuda_graph_runner.py:624-655,801-802`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L624-L655).
-- [Graph capture over model execution: `python/sglang/srt/model_executor/cuda_graph_runner.py:1112-1222`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L1112-L1222).
+- [Capture input buffers and capture entry: `model_executor/cuda_graph_runner.py:624-655,801-802`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L624-L655).
+- [Graph capture over model execution: `model_executor/cuda_graph_runner.py:1112-1222`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L1112-L1222).
 
 The chapter does not enumerate every captured operation or every batch-shape rung.
 
@@ -194,8 +202,8 @@ The replay path copies the current input into the runner's input buffers and inv
 
 Sources use `sglang@4fa3482`:
 
-- [Input-buffer preparation and copy: `python/sglang/srt/model_executor/cuda_graph_runner.py:262-298,520-521`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L262-L298).
-- [Captured graph replay: `python/sglang/srt/model_executor/cuda_graph_runner.py:1112-1222`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L1112-L1222).
+- [Input-buffer preparation and copy: `model_executor/cuda_graph_runner.py:262-298,520-521`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L262-L298).
+- [Captured graph replay: `model_executor/cuda_graph_runner.py:1112-1222`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L1112-L1222).
 
 The example fixes one batch shape. Padding, shape selection and output processing are outside this step.
 
@@ -238,7 +246,7 @@ SGLang's parameter help distinguishes weights and KV from activations and graph 
 
 Sources:
 
-- [Memory categories: `python/sglang/srt/server_args.py:1227-1238`, `sglang@4fa3482`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/server_args.py#L1227-L1238).
+- [Memory categories: `server_args.py:1227-1238`, `sglang@4fa3482`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/server_args.py#L1227-L1238).
 - Runtime activation OOM: `Awesome-ML-SYS-Tutorial/sglang/kvcache-code-walk-through/mem-fraction-static.md:89-96`, pinned at `d1f309b46f81a23e8b6ca0718c05bc897fafacf7`.
 - [zero-to-sglang Part I Chapter 4 §4: temporary activations versus persistent state](https://zero-to-sglang.datawhale.cc/eng/part1/Chapter4_KV%20Cache%20The%20Core%20Data%20Structure%20of%20Inference.html).
 
@@ -286,8 +294,8 @@ SGLang lists activations and CUDA Graph buffers among the uses outside static we
 
 Sources:
 
-- [Static and dynamic memory categories: `python/sglang/srt/server_args.py:1227-1238`, `sglang@4fa3482`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/server_args.py#L1227-L1238).
-- [The parameter guidance for OOM: `python/sglang/srt/server_args.py:4227-4232`, `sglang@4fa3482`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/server_args.py#L4227-L4232).
+- [Static and dynamic memory categories: `server_args.py:1227-1238`, `sglang@4fa3482`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/server_args.py#L1227-L1238).
+- [The parameter guidance for OOM: `server_args.py:4227-4232`, `sglang@4fa3482`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/server_args.py#L4227-L4232).
 - Startup and runtime failure directions: `Awesome-ML-SYS-Tutorial/sglang/kvcache-code-walk-through/mem-fraction-static.md:67-100`, pinned at `d1f309b46f81a23e8b6ca0718c05bc897fafacf7`.
 
 This chapter excludes KV-byte derivation, paging, request admission, multimodal reserves, allocator internals and a complete process-wide memory census.

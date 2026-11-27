@@ -45,7 +45,15 @@ $$R=(1-0.85)\times78=11.7\ \mathrm{GB}$$
 
 $$K=18-11.7=6.3\ \mathrm{GB}$$
 
-比例从 0.70 调到 0.85，模型装入读数不变；动态余量减少 $23.4-11.7=11.7$ GB，KV 空间增加 $6.3-(-5.4)=11.7$ GB。原文写的是 GB；代码辅助函数把字节数除以 `1 << 30`，本步保留原文的约数，不另做单位换算。
+比例从 0.70 调到 0.85，模型装入读数不变。动态余量减少 11.7 GB：
+
+$$23.4-11.7=11.7\ \mathrm{GB}$$
+
+KV 空间同样增加 11.7 GB：
+
+$$6.3-(-5.4)=11.7\ \mathrm{GB}$$
+
+原文写的是 GB；代码辅助函数把字节数除以 `1 << 30`，本步保留原文的约数，不另做单位换算。
 
 ### 源码怎样算出 KV 空间
 
@@ -60,13 +68,13 @@ SGLang 在分布式初始化后、模型装入前读取 `pre_model_load_memory`�
 以下来源位于 `Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7` 与 `sglang@4fa3482`：
 
 - 原文的两次读数、公式和 −5.4／6.3 GB 例子：`sglang/kvcache-code-walk-through/mem-fraction-static.md:34-60,73-85`。
-- [装入模型前读取可用显存：`python/sglang/srt/model_executor/model_runner.py:451-452,1083-1088`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner.py#L1083-L1088)。
-- [CUDA 读取空闲显存、分布式取最小值、字节换算：`python/sglang/srt/utils/common.py:498-525,594-601`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/utils/common.py#L498-L525)。
-- [装入模型与 KV 池初始化顺序：`python/sglang/srt/model_executor/model_runner.py:567-569,656-677`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner.py#L656-L677)。
-- [`rest` 的直接计算：`python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py:56-70`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py#L56-L70)。
-- [非正 token 数不能启动：`python/sglang/srt/model_executor/pool_configurator.py:39-44,170-175`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/pool_configurator.py#L170-L175)。
-- [KV 池后才 capture CUDA Graph：`python/sglang/srt/model_executor/model_runner.py:676-677,709-726`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner.py#L709-L726)。
-- [参数说明区分权重与 KV 池、激活与 graph 缓冲区：`python/sglang/srt/server_args.py:1227-1236`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/server_args.py#L1227-L1236)。
+- [装入模型前读取可用显存：`model_executor/model_runner.py:451-452,1083-1088`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner.py#L1083-L1088)。
+- [CUDA 读取空闲显存、分布式取最小值、字节换算：`utils/common.py:498-525,594-601`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/utils/common.py#L498-L525)。
+- [装入模型与 KV 池初始化顺序：`model_executor/model_runner.py:567-569,656-677`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner.py#L656-L677)。
+- [`rest` 的直接计算：`model_executor/model_runner_kv_cache_mixin.py:56-70`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py#L56-L70)。
+- [非正 token 数不能启动：`model_executor/pool_configurator.py:39-44,170-175`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/pool_configurator.py#L170-L175)。
+- [KV 池后才 capture CUDA Graph：`model_executor/model_runner.py:676-677,709-726`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner.py#L709-L726)。
+- [参数说明区分权重与 KV 池、激活与 graph 缓冲区：`server_args.py:1227-1236`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/server_args.py#L1227-L1236)。
 
 ### 接下来
 
@@ -107,9 +115,9 @@ $$M+K+R\approx60+6.3+11.7=78\ \mathrm{GB}$$
 
 以下来源位于 `sglang@4fa3482`：
 
-- [模型、KV pool、device graph 的初始化顺序：`python/sglang/srt/model_executor/model_runner.py:567-569,656-677,709-726`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner.py#L709-L726)。
-- [capture 输入缓冲的分配：`python/sglang/srt/model_executor/cuda_graph_runner.py:624-655`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L624-L655)。
-- [权重与 KV pool 和激活与 graph buffers 的分类：`python/sglang/srt/server_args.py:1227-1238`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/server_args.py#L1227-L1238)。
+- [模型、KV pool、device graph 的初始化顺序：`model_executor/model_runner.py:567-569,656-677,709-726`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner.py#L709-L726)。
+- [capture 输入缓冲的分配：`model_executor/cuda_graph_runner.py:624-655`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L624-L655)。
+- [权重与 KV pool 和激活与 graph buffers 的分类：`server_args.py:1227-1238`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/server_args.py#L1227-L1238)。
 
 本步不测量缓冲字节，也不展开临时 workspace、多模态预留和其他进程。
 
@@ -151,8 +159,8 @@ capture 时，`CudaGraphRunner` 使用已经分配的输入缓冲，记录模型
 
 以下来源位于 `sglang@4fa3482`：
 
-- [capture 输入缓冲与入口：`python/sglang/srt/model_executor/cuda_graph_runner.py:624-655,801-802`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L624-L655)。
-- [对模型执行进行 graph capture：`python/sglang/srt/model_executor/cuda_graph_runner.py:1112-1222`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L1112-L1222)。
+- [capture 输入缓冲与入口：`model_executor/cuda_graph_runner.py:624-655,801-802`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L624-L655)。
+- [对模型执行进行 graph capture：`model_executor/cuda_graph_runner.py:1112-1222`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L1112-L1222)。
 
 本章不逐项展开所有被记录的操作，也不列出全部 batch 形状档位。
 
@@ -194,8 +202,8 @@ replay 路径把当前输入复制进 runner 的输入缓冲，再调用已经 c
 
 以下来源位于 `sglang@4fa3482`：
 
-- [输入缓冲准备与复制：`python/sglang/srt/model_executor/cuda_graph_runner.py:262-298,520-521`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L262-L298)。
-- [调用 capture 后的 graph：`python/sglang/srt/model_executor/cuda_graph_runner.py:1112-1222`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L1112-L1222)。
+- [输入缓冲准备与复制：`model_executor/cuda_graph_runner.py:262-298,520-521`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L262-L298)。
+- [调用 capture 后的 graph：`model_executor/cuda_graph_runner.py:1112-1222`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L1112-L1222)。
 
 本例固定一个 batch 形状，不展开 padding、形状选择和输出处理。
 
@@ -238,7 +246,7 @@ SGLang 的参数说明把权重和 KV 与激活和 graph 缓冲区分开。课�
 
 来源：
 
-- [显存分类：`python/sglang/srt/server_args.py:1227-1238`，`sglang@4fa3482`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/server_args.py#L1227-L1238)。
+- [显存分类：`server_args.py:1227-1238`，`sglang@4fa3482`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/server_args.py#L1227-L1238)。
 - 运行时激活 OOM：`Awesome-ML-SYS-Tutorial/sglang/kvcache-code-walk-through/mem-fraction-static.md:89-96`，固定于 `d1f309b46f81a23e8b6ca0718c05bc897fafacf7`。
 - [zero-to-sglang 第 1 部分第 4 章 §4：临时激活与持久状态](https://zero-to-sglang.datawhale.cc/ch/part1/%E7%AC%AC4%E7%AB%A0_%E6%8E%A8%E7%90%86%E7%9A%84%E6%A0%B8%E5%BF%83%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%85%A5%E9%97%A8.html)。
 
@@ -286,8 +294,8 @@ SGLang 把激活和 CUDA Graph buffers 列为权重与 KV 静态分配之外的�
 
 来源：
 
-- [静态与动态显存分类：`python/sglang/srt/server_args.py:1227-1238`，`sglang@4fa3482`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/server_args.py#L1227-L1238)。
-- [参数文档的 OOM 建议：`python/sglang/srt/server_args.py:4227-4232`，`sglang@4fa3482`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/server_args.py#L4227-L4232)。
+- [静态与动态显存分类：`server_args.py:1227-1238`，`sglang@4fa3482`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/server_args.py#L1227-L1238)。
+- [参数文档的 OOM 建议：`server_args.py:4227-4232`，`sglang@4fa3482`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/server_args.py#L4227-L4232)。
 - 启动与运行时失败的调参方向：`Awesome-ML-SYS-Tutorial/sglang/kvcache-code-walk-through/mem-fraction-static.md:67-100`，固定于 `d1f309b46f81a23e8b6ca0718c05bc897fafacf7`。
 
 本章不展开 KV 字节推导、paging、请求准入、多模态预留、allocator 内部和整个进程的完整显存普查。
