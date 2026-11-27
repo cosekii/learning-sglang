@@ -102,21 +102,21 @@
     en: 'Dictation writes history only when history is enabled, which is the default. The file route writes no history row and keeps no recording. It writes one log line with the audio length and the cue count, not the text.',
     zh: '听写只在历史开启时写历史，默认开启。文件路线不写历史记录，也不留录音。它只写一行日志，记音频长度和句子数，不记文字。',
   }, {
-    en: 'The audio goes to the model chosen for Transcribe: on this Mac or a configured remote service. The next chapter asks how model files and app updates reach this Mac.',
-    zh: '声音送给 Transcribe 选定的模型：本机或配置的远端服务。下一章问模型文件和应用更新怎样到达这台 Mac。',
+    en: 'The audio goes to the model chosen for Transcribe: on this Mac or a configured remote service. The next chapter asks how these model files reach this Mac.',
+    zh: '声音送给 Transcribe 选定的模型：本机或配置的远端服务。下一章问这些模型文件怎样到达这台 Mac。',
   }];
   let step = $state(0);
   let clock = $state(0), lap = $state(0), lapMs = $state(0), reduced = $state(false);
   const nextLap = (ms: number) => untrack(() => { lapMs = ms; lap++; });
   $effect(() => {
-    if (step !== 2) { clock = 0; return; }
+    if (step !== 3) { clock = 0; return; }
     reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduced) { clock = 8000; return; }
     const SPAN = 8000, SLOW = 1.6, REST = 1400, lapLen = SPAN / SLOW + REST;
     let raf = 0, t0 = 0;
     const tick = (now: number) => {
       if (!t0 || now - t0 >= lapLen) { t0 = now; nextLap(lapLen); }
-      clock = Math.min(SPAN, (now - t0) / SLOW);
+      clock = Math.min(SPAN, (now - t0) * SLOW);
       raf = requestAnimationFrame(tick);
     };
     clock = 0;
@@ -380,10 +380,8 @@
             <line x1={40 + i * 4} y1={150 - height / 2} x2={40 + i * 4} y2={150 + height / 2}
               stroke={speech ? 'var(--accent)' : 'var(--line)'} stroke-width="3" stroke-linecap="round" />
           {/each}
-          {#if step === 2}
-            <line x1={40 + clock / 8000 * 636} y1="128" x2={40 + clock / 8000 * 636} y2="172" stroke="var(--fg)" stroke-width="2" />
-            <circle cx={40 + clock / 8000 * 636} cy="124" r="4" fill="var(--fg)" />
-          {/if}
+          <line x1={40 + clock / 8000 * 636} y1="128" x2={40 + clock / 8000 * 636} y2="172" stroke="var(--fg)" stroke-width="2" />
+          <circle cx={40 + clock / 8000 * 636} cy="124" r="4" fill="var(--fg)" />
           <rect x="272" y="182" width="36" height="12" fill="var(--gen-soft)" stroke="var(--gen)" />
           {#if quietNow}<rect x="272" y="182" width="36" height="12" fill="none" stroke="var(--fg)" stroke-width="2" />{/if}
           <text x="290" y="214" text-anchor="middle" class="detail amber">{sec(VOXT_TRANSCRIBE_SPEECH_ENDS_MS[0])}–{sec(VOXT_TRANSCRIBE_CUE_ENDS_MS[0])} s</text>
@@ -393,7 +391,7 @@
           <text x="40" y="294" class="pt">·</text>
           <text x="50" y="294" class="detail">{t('the cue keeps that quiet at its end', '句尾的安静也一起留下')}</text>
           <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Constructed 8-second example; quiet parts depend on the sound.', '构造的 8 秒例子；安静段由实际声音决定。')}</text>
-          {#if step === 2 && !reduced}<LoopProgress ms={lapMs} {lap} />{/if}
+          {#if !reduced}<LoopProgress ms={lapMs} {lap} />{/if}
         {:else}
           <text x="65" y="82" text-anchor="middle" class="label">{t('CUE 1', '第 1 句')}</text>
           <text x="222" y="82" text-anchor="middle" class="label">{t('CUE 2', '第 2 句')}</text>
@@ -411,10 +409,10 @@
             <line x1={x} y1={150 - height / 2} x2={x} y2={150 + height / 2}
               stroke={speech ? 'var(--accent)' : 'var(--line)'} stroke-width="2.5" stroke-linecap="round" />
           {/each}
-          {#if step === 2}
-            <line x1={20 + clock / 8000 * 256} y1="132" x2={20 + clock / 8000 * 256} y2="168" stroke="var(--fg)" stroke-width="2" />
-            <circle cx={20 + clock / 8000 * 256} cy="128" r="3.5" fill="var(--fg)" />
-          {/if}
+          <line x1={20 + clock / 8000 * 256} y1="132" x2={20 + clock / 8000 * 256} y2="168" stroke="var(--fg)" stroke-width="2" />
+          <circle cx={20 + clock / 8000 * 256} cy="128" r="3.5" fill="var(--fg)" />
+          <rect x="113" y="172" width="14" height="10" fill="var(--gen-soft)" stroke="var(--gen)" />
+          {#if quietNow}<rect x="113" y="172" width="14" height="10" fill="none" stroke="var(--fg)" stroke-width="2" />{/if}
           <text x="65" y="178" text-anchor="middle" class="detail">0.00–{sec(VOXT_TRANSCRIBE_CUE_ENDS_MS[0])} s</text>
           <text x="222" y="178" text-anchor="middle" class="detail">{sec(VOXT_TRANSCRIBE_CUE_STARTS_MS[1])}–{sec(VOXT_TRANSCRIBE_CUE_ENDS_MS[1])} s</text>
           <text x="30" y="216" class="pt">·</text>
@@ -424,7 +422,7 @@
           <text x="30" y="268" class="pt">·</text>
           <text x="40" y="268" class="detail">{t('the quiet stays with the cue', '安静跟着句子留下')}</text>
           <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Constructed 8-second example.', '构造的 8 秒例子。')}</text>
-          {#if step === 2 && !reduced}<LoopProgress ms={lapMs} {lap} x={232} y={18} />{/if}
+          {#if !reduced}<LoopProgress ms={lapMs} {lap} x={232} y={62} />{/if}
         {/if}
       {:else if step === 4}
         <text x={W / 2} y="27" text-anchor="middle" class="title">{t('A CUE STARTS A LITTLE EARLY', '一句稍微提前开始')}</text>

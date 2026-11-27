@@ -381,7 +381,26 @@ TXT 只有两行：`Good morning.` 和 `See you at noon.`。
 
 ### 为什么识别失败不会创建或覆盖输出
 
-命令先把结果写进内存里的 `bytes.Buffer`。如果识别在中途失败，`err != nil`，函数在打开输出前返回，所以不会创建新文件，也不会覆盖旧文件（`Voxt/transcribe_cli.go:73-87`）。识别成功后，命令才调用 `os.WriteFile`（`transcribe_cli.go:91-100`）。这个写入不是原子的：写盘失败可能截断旧文件或留下部分新文件，本章不保证所有失败都不留半个文件。`-o -` 或没有 `-o` 时，它把缓冲区写到标准输出，也不创建文件。
+命令先把结果写进内存里的 `bytes.Buffer`。如果识别在中途失败，`err != nil`，函数在打开输出前返回，所以不会创建新文件，也不会覆盖旧文件（`Voxt/transcribe_cli.go:73-87`）。`-o -` 或没有 `-o` 时，它把缓冲区写到标准输出，也不创建文件（`transcribe_cli.go:94-97`）。`-o FILE` 时，识别成功后命令才调用 `os.WriteFile`（`transcribe_cli.go:98-101`）。这个写入不是原子的：写盘失败可能截断旧文件或留下部分新文件，本章不保证所有失败都不留半个文件。
+
+$$ \text{output} = \begin{cases} \text{none} & \text{任一句失败} \\ \text{buffer 写到标准输出} & \text{全部成功，\texttt{-o -} 或没有 \texttt{-o}} \\ \text{one WriteFile(buffer)} & \text{全部成功，\texttt{-o FILE}} \end{cases} $$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| cue | 识别出的一句 | 第 7–8 步 |
+| fail | 某一句的识别错误 | `fileasr.go:44-56` |
+| buffer | 内存里攒下的全部句子文字 | `transcribe_cli.go:92-93` |
+| `-o` | 结果写去哪里；默认是 `-`，即标准输出 | `transcribe_cli.go:43` |
+| WriteFile | 唯一一次非原子写盘，只在 `-o FILE` 时发生 | `transcribe_cli.go:98-101` |
+| output | 标准输出，或那个文件 | `transcribe_cli.go:94-101` |
+
+### 代入图上的数
+
+| 运行 | 句数 | 失败 | 输出 |
+|---|---|---|---|
+| 左边 | 2 | 1（第 1 句失败） | 无；旧文件保持原样 |
+| 右边，`-o talk.srt` | 2 | 0 | 一次 WriteFile：`talk.srt` |
+| 右边，`-o -` 或没有 `-o` | 2 | 0 | SRT 文字上标准输出；不创建文件 |
 
 ### 接下来
 
@@ -440,6 +459,22 @@ $$ \text{log} = \{\text{audio length},\ \text{segment count},\ \text{error?}\} $
 ### 模型
 
 `fileRecognizer` 先读 Transcribe 的功能模型（`transcribe_socket.go:64-67`），再用 `a.local.ASR(ctx, p.id)` 拿到这个模型的 provider（`transcribe_socket.go:80`）。模型可以装在本机，也可以配置成远端服务；`docs/transcribe.md` 的 Privacy 一节写的是：声音去 Transcribe 的音频去的地方，本机模型或远端服务，Voxt 不保留它。
+
+$$ \text{provider} = \text{model}(\text{Transcribe}) \in \{\text{本机},\ \text{远端}\} $$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| provider | 一句的声音在哪里识别 | `transcribe_socket.go:64-80` |
+| Transcribe | 在设置里选模型的那个功能 | `transcribe_socket.go:64-67` |
+| 本机 | 装在这台 Mac 上、在本机运行的模型 | 本步左边的框 |
+| 远端 | 为 Transcribe 配置的服务 | `docs/transcribe.md` |
+| audio | 每句的 PCM 字节 | 第 2–7 步，构造文件为 256,000 B |
+
+### 代入图上的数
+
+| 运行 | 声音 | provider | Voxt 保留 |
+|---|---|---|---|
+| 图上这次 | 256,000 B，切成 2 句 | 两个框之一，由 Transcribe 的设置决定 | 什么都不留 |
 
 | 问题 | 答案 | 出处 |
 |---|---|---|

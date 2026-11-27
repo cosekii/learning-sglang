@@ -381,24 +381,26 @@ The cues now have a format. Step 9 covers when the output file is opened.
 
 ### Why recognition failure creates or overwrites no output
 
-The command builds the whole result in an in-memory `bytes.Buffer`. If recognition fails midway, `err != nil` and the function returns before opening the output, so it creates no new file and overwrites no old file (`Voxt/transcribe_cli.go:73-87`). Only after recognition succeeds does the command call `os.WriteFile` (`transcribe_cli.go:91-100`). That write is not atomic: a disk-write failure can truncate an old file or leave a partial new file, so the chapter does not promise that every failure leaves no partial file. With `-o -` or no `-o`, it writes the buffer to standard output and creates no file.
+The command builds the whole result in an in-memory `bytes.Buffer`. If recognition fails midway, `err != nil` and the function returns before opening the output, so it creates no new file and overwrites no old file (`Voxt/transcribe_cli.go:73-87`). With `-o -` or no `-o`, it writes the buffer to standard output and creates no file (`transcribe_cli.go:94-97`). With `-o FILE`, only after recognition succeeds does the command call `os.WriteFile` (`transcribe_cli.go:98-101`). That write is not atomic: a disk-write failure can truncate an old file or leave a partial new file, so the chapter does not promise that every failure leaves no partial file.
 
-$$ \text{output} = \begin{cases} \text{none} & \text{if any cue fails} \\ \text{one WriteFile(buffer)} & \text{if every cue succeeds} \end{cases} $$
+$$ \text{output} = \begin{cases} \text{none} & \text{if any cue fails} \\ \text{buffer to standard output} & \text{if every cue succeeds, with \texttt{-o -} or no \texttt{-o}} \\ \text{one WriteFile(buffer)} & \text{if every cue succeeds, with \texttt{-o FILE}} \end{cases} $$
 
 | Symbol | What it is | Where it comes from |
 |---|---|---|
 | cue | one recognized segment | Steps 7–8 |
 | fail | a recognition error for one cue | `fileasr.go:44-56` |
-| buffer | all cue text held in memory | `transcribe_cli.go:73-87` |
-| WriteFile | the single non-atomic write | `transcribe_cli.go:91-100` |
-| output | the file, or standard output with `-o -` | `transcribe_cli.go:91-100` |
+| buffer | all cue text held in memory | `transcribe_cli.go:92-93` |
+| `-o` | where the result goes; the default is `-`, standard output | `transcribe_cli.go:43` |
+| WriteFile | the single non-atomic write, only with `-o FILE` | `transcribe_cli.go:98-101` |
+| output | standard output, or the file | `transcribe_cli.go:94-101` |
 
 ### Plugging in the stage's numbers
 
 | Run | Cues | Failures | Output |
 |---|---|---|---|
 | left | 2 | 1 (cue 1 fails) | none; an old file stays as it was |
-| right | 2 | 0 | one SRT or TXT write |
+| right, `-o talk.srt` | 2 | 0 | one WriteFile: `talk.srt` |
+| right, `-o -` or no `-o` | 2 | 0 | the SRT text on standard output; no file created |
 
 ### Next
 
