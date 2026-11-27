@@ -77,7 +77,7 @@
   const W = $derived(phone ? 300 : 720);
   const H = $derived((phone ? [660, 610, 700, 820, 730, 640] : [470, 450, 460, 480, 480, 560])[step]);
 
-  const PHASE_COUNTS = [4, 4, 3, 3, 3, 3];
+  const PHASE_COUNTS = [4, 4, 4, 3, 3, 3];
   const PHASE_MS = 900;
   const REST_MS = 2200;
   let phase = $state(0);
@@ -101,14 +101,14 @@
   const motionFrames = (isPhone: boolean, s: number): { x: number; y: number; w: number; h: number }[] => (isPhone ? [
     [{ x: 15, y: 64, w: 270, h: 112 }, { x: 15, y: 64, w: 270, h: 112 }, { x: 15, y: 583, w: 270, h: 44 }, { x: 29, y: 36, w: 246, h: 14 }],
     [{ x: 15, y: 64, w: 270, h: 110 }, { x: 22, y: 241, w: 256, h: 38 }, { x: 22, y: 287, w: 256, h: 56 }, { x: 22, y: 352, w: 256, h: 13 }],
-    [{ x: 15, y: 62, w: 270, h: 134 }, { x: 15, y: 62, w: 270, h: 134 }, { x: 15, y: 300, w: 270, h: 76 }],
+    [{ x: 24, y: 78, w: 252, h: 52 }, { x: 24, y: 78, w: 252, h: 52 }, { x: 24, y: 78, w: 252, h: 52 }, { x: 24, y: 140, w: 252, h: 38 }],
     [{ x: 15, y: 64, w: 270, h: 170 }, { x: 15, y: 274, w: 270, h: 190 }, { x: 15, y: 274, w: 270, h: 190 }],
     [{ x: 15, y: 64, w: 270, h: 150 }, { x: 15, y: 576, w: 270, h: 46 }, { x: 40, y: 636, w: 220, h: 26 }],
     [{ x: 15, y: 64, w: 270, h: 92 }, { x: 15, y: 166, w: 270, h: 92 }, { x: 15, y: 268, w: 270, h: 92 }],
   ] : [
     [{ x: 20, y: 72, w: 212, h: 225 }, { x: 20, y: 72, w: 212, h: 225 }, { x: 191, y: 413, w: 338, h: 28 }, { x: 239, y: 38, w: 242, h: 15 }],
     [{ x: 20, y: 74, w: 250, h: 190 }, { x: 310, y: 110, w: 380, h: 44 }, { x: 310, y: 158, w: 380, h: 56 }, { x: 310, y: 219, w: 380, h: 18 }],
-    [{ x: 30, y: 72, w: 660, h: 124 }, { x: 30, y: 72, w: 660, h: 124 }, { x: 256, y: 208, w: 208, h: 124 }],
+    [{ x: 44, y: 84, w: 632, h: 58 }, { x: 44, y: 84, w: 632, h: 58 }, { x: 44, y: 84, w: 632, h: 58 }, { x: 44, y: 152, w: 632, h: 26 }],
     [{ x: 20, y: 72, w: 300, h: 190 }, { x: 356, y: 72, w: 346, h: 190 }, { x: 356, y: 72, w: 346, h: 190 }],
     [{ x: 20, y: 72, w: 330, h: 170 }, { x: 460, y: 334, w: 224, h: 66 }, { x: 120, y: 414, w: 480, h: 28 }],
     [{ x: 30, y: 110, w: 660, h: 60 }, { x: 30, y: 182, w: 660, h: 60 }, { x: 30, y: 254, w: 660, h: 60 }],
@@ -279,10 +279,10 @@
           <rect x="30" y="74" width="660" height="120" rx="10" fill="var(--bg)" stroke="var(--line)" />
           <text x="50" y="98" class="label">{t('DOWNLOAD · ONE JOB', '下载 · 一个任务')}</text>
           <rect x="50" y="112" width="620" height="26" rx="6" fill="var(--accent-soft)" stroke="var(--line)" />
-          <rect x="50" y="112" width={phase === 0 ? 248 : 620} height="26" rx="6" fill="var(--accent)" />
-          {#if phase === 0}<line x1="298" y1="106" x2="298" y2="144" stroke="var(--eos)" stroke-width="2" />{/if}
-          <text x="50" y="162" class="detail">{phase === 0 ? t('Cancel here; these bytes stay.', '在这里取消；这些字节留着。') : phase === 1 ? t('The next start continues from here.', '下次从这里接着下。') : t('Checks: all 9 files pass; the job is done.', '校验：9 个文件全部通过；任务完成。')}</text>
-          <text x="670" y="162" text-anchor="end" class="mono">{gb} GB{phase === 2 ? ' ✓' : ''}</text>
+          <rect x="50" y="112" width={phase === 0 ? 248 : phase === 1 ? 434 : 620} height="26" rx="6" fill="var(--accent)" />
+          <line x1="298" y1="106" x2="298" y2="144" stroke="var(--eos)" stroke-width="2" />
+          <text x="50" y="162" class="detail">{phase === 0 ? t('Cancel here; these bytes stay.', '在这里取消；这些字节留着。') : phase === 1 ? t('The next start continues from here.', '下次从这里接着下。') : phase === 2 ? t('The resumed download fills the bar.', '续传把进度条下满。') : t('Checks: all 9 files pass; the job is done.', '校验：9 个文件全部通过；任务完成。')}</text>
+          <text x="670" y="162" text-anchor="end" class="mono">{gb} GB{phase === 3 ? ' ✓' : ''}</text>
 
           <rect x="30" y="212" width="200" height="116" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="130" y="236" text-anchor="middle" class="label">{t('ROOM', '空位')}</text>
@@ -310,10 +310,10 @@
           <rect x="15" y="64" width="270" height="130" rx="10" fill="var(--bg)" stroke="var(--line)" />
           <text x="30" y="88" class="label">{t('DOWNLOAD · ONE JOB', '下载 · 一个任务')}</text>
           <rect x="30" y="102" width="240" height="24" rx="6" fill="var(--accent-soft)" stroke="var(--line)" />
-          <rect x="30" y="102" width={phase === 0 ? 96 : 240} height="24" rx="6" fill="var(--accent)" />
-          {#if phase === 0}<line x1="126" y1="96" x2="126" y2="132" stroke="var(--eos)" stroke-width="2" />{/if}
-          <text x="30" y="148" class="detail">{phase === 0 ? t('cancel keeps the bytes', '取消后字节留着') : phase === 1 ? t('next start continues', '下次接着下') : t('all checks pass; done', '校验全过；完成')}</text>
-          <text x="30" y="168" class="mono">{gb} GB{phase === 2 ? ' ✓' : ''}</text>
+          <rect x="30" y="102" width={phase === 0 ? 96 : phase === 1 ? 168 : 240} height="24" rx="6" fill="var(--accent)" />
+          <line x1="126" y1="96" x2="126" y2="132" stroke="var(--eos)" stroke-width="2" />
+          <text x="30" y="148" class="detail">{phase === 0 ? t('cancel keeps the bytes', '取消后字节留着') : phase === 1 ? t('next start continues', '下次接着下') : phase === 2 ? t('the bar fills up', '下到满格') : t('all checks pass; done', '校验全过；完成')}</text>
+          <text x="30" y="168" class="mono">{gb} GB{phase === 3 ? ' ✓' : ''}</text>
           <text x="270" y="168" text-anchor="end" class="detail">{t('total', '总共')}</text>
 
           <rect x="15" y="210" width="270" height="76" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
