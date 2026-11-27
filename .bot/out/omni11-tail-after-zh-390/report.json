@@ -1,0 +1,88 @@
+{
+  "base": "http://localhost:4483/learning-sglang",
+  "lang": "zh",
+  "generatedAt": "2026-11-27T09:46:08.456Z",
+  "summary": {
+    "steps": 1,
+    "phases": 3,
+    "transitions": 2,
+    "changedTransitions": 2,
+    "minFont": 11.76,
+    "minFontStep": 7,
+    "minFontPhase": 2,
+    "minFontText": "循环",
+    "overlaps": 0,
+    "overflow": 0,
+    "tailOverflow": 0,
+    "maxTailLeftOverflow": 0,
+    "maxTailRightOverflow": 0
+  },
+  "states": [
+    {
+      "step": 7,
+      "phase": 0,
+      "finalPhase": 2,
+      "counter": "07 / 08",
+      "texts": 24,
+      "solidTexts": 9,
+      "solidShapes": 5,
+      "minFont": 11.76,
+      "minFontText": "循环",
+      "overlaps": [],
+      "overflow": [],
+      "tail": {
+        "text": "留下 512",
+        "leftOverflow": 0,
+        "rightOverflow": 0,
+        "topOverflow": 0,
+        "bottomOverflow": 0
+      },
+      "signature": "f0415698402cecfe27af395985eece5ca12dc7776a142f965b06a8768b6fa132",
+      "changed": null
+    },
+    {
+      "step": 7,
+      "phase": 1,
+      "finalPhase": 2,
+      "counter": "07 / 08",
+      "texts": 24,
+      "solidTexts": 13,
+      "solidShapes": 8,
+      "minFont": 11.76,
+      "minFontText": "循环",
+      "overlaps": [],
+      "overflow": [],
+      "tail": {
+        "text": "用掉旧 512",
+        "leftOverflow": 0,
+        "rightOverflow": 0,
+        "topOverflow": 0,
+        "bottomOverflow": 0
+      },
+      "signature": "18b89e14684b1fd1d990dd1dbe3d283d87f7319917a3d497323c62bb508392e1",
+      "changed": true
+    },
+    {
+      "step": 7,
+      "phase": 2,
+      "finalPhase": 2,
+      "counter": "07 / 08",
+      "texts": 24,
+      "solidTexts": 24,
+      "solidShapes": 11,
+      "minFont": 11.76,
+      "minFontText": "循环",
+      "overlaps": [],
+      "overflow": [],
+      "tail": {
+        "text": "释放 512",
+        "leftOverflow": 0,
+        "rightOverflow": 0,
+        "topOverflow": 0,
+        "bottomOverflow": 0
+      },
+      "signature": "53a05fb5f183f875baf755c44e75371049bc3f223344a1b64ff0fc590879d4ac",
+      "changed": true
+    }
+  ]
+}

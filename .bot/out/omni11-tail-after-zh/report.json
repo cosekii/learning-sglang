@@ -1,0 +1,88 @@
+{
+  "base": "http://localhost:4483/learning-sglang",
+  "lang": "zh",
+  "generatedAt": "2026-11-27T09:45:52.806Z",
+  "summary": {
+    "steps": 1,
+    "phases": 3,
+    "transitions": 2,
+    "changedTransitions": 2,
+    "minFont": 11.891,
+    "minFontStep": 7,
+    "minFontPhase": 2,
+    "minFontText": "蓝 = 新帧 · 橙 = 重读旧帧 · 灰 = 留下的声音尾巴",
+    "overlaps": 0,
+    "overflow": 0,
+    "tailOverflow": 0,
+    "maxTailLeftOverflow": 0,
+    "maxTailRightOverflow": 0
+  },
+  "states": [
+    {
+      "step": 7,
+      "phase": 0,
+      "finalPhase": 2,
+      "counter": "07 / 08",
+      "texts": 26,
+      "solidTexts": 10,
+      "solidShapes": 5,
+      "minFont": 11.891,
+      "minFontText": "蓝 = 新帧 · 橙 = 重读旧帧 · 灰 = 留下的声音尾巴",
+      "overlaps": [],
+      "overflow": [],
+      "tail": {
+        "text": "留下 512",
+        "leftOverflow": 0,
+        "rightOverflow": 0,
+        "topOverflow": 0,
+        "bottomOverflow": 0
+      },
+      "signature": "188e57554e282d2c5af986701a32cdb33d09a8aff21a07cf66241f0a3a333fef",
+      "changed": null
+    },
+    {
+      "step": 7,
+      "phase": 1,
+      "finalPhase": 2,
+      "counter": "07 / 08",
+      "texts": 26,
+      "solidTexts": 15,
+      "solidShapes": 8,
+      "minFont": 11.891,
+      "minFontText": "蓝 = 新帧 · 橙 = 重读旧帧 · 灰 = 留下的声音尾巴",
+      "overlaps": [],
+      "overflow": [],
+      "tail": {
+        "text": "用掉旧 512",
+        "leftOverflow": 0,
+        "rightOverflow": 0,
+        "topOverflow": 0,
+        "bottomOverflow": 0
+      },
+      "signature": "2c0f6d592e30801a7b942a8ee6229e6ac2e3fe188a967139ede8d023773da2b4",
+      "changed": true
+    },
+    {
+      "step": 7,
+      "phase": 2,
+      "finalPhase": 2,
+      "counter": "07 / 08",
+      "texts": 26,
+      "solidTexts": 26,
+      "solidShapes": 11,
+      "minFont": 11.891,
+      "minFontText": "蓝 = 新帧 · 橙 = 重读旧帧 · 灰 = 留下的声音尾巴",
+      "overlaps": [],
+      "overflow": [],
+      "tail": {
+        "text": "释放 512",
+        "leftOverflow": 0,
+        "rightOverflow": 0,
+        "topOverflow": 0,
+        "bottomOverflow": 0
+      },
+      "signature": "06209d04575050c963388cf9e029c8cd07d2f367a798e5dcaeab155d192c32e8",
+      "changed": true
+    }
+  ]
+}

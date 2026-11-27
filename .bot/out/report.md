@@ -27,6 +27,56 @@
 
 ---
 
+# lane k1 本轮报告 · Omni 11 的 Omni-22／33／45
+
+日期：2026-11-27。类型：修旧。范围只有 Omni 11 Steps 1／7／8、Omni-33 要求的 Omni 12 Step 1 接缝、对应双语 deep／MDX／transcript、验证材料及本报告。未改 Omni 13／14／15、其他书、其他 lane、第 1 本受保护英文原文或 `.bot/memory/`。
+
+本轮开始 HEAD 为 `372903e`。教程提交依次为 `d222476`（Step 1）、`287f946`（Step 8 与 Ch.12 Step 1）、`676b6d4`（Step 7）。最后一次推送被拒后执行 `git pull --rebase origin tutorials`，纳入 k2 的 `4a6f275` 再推成功；未 force-push。
+
+## review 修复与结论边界
+
+| finding | 教程改动 | 本轮证据 |
+|---|---|---|
+| Omni-22 · Ch.10→11 entry 选择 | Step 1 的标题、caption、deep 和出处先回答 Ch.10 Step 8：Slow AR 逐帧选 `c0`，Fast AR 在帧内补 `c1–c9`；40 帧首窗机制保持不变。 | `d222476`；Step 1 英中 readability、三宽度手机和双语 deep 通过。 |
+| Omni-33 · Ch.11→12 状态接缝 | Step 8 收尾直接列出 queued old work、`D = delivered`、`H = heard`；Ch.12 Step 1 以同一旧回答开头，给出 `D = 2.0 s`、`H = 1.2 s` 和 `D−H = 800 ms`。 | `287f946`；两步英中 readability、三宽度手机、两章 deep／zh-check 通过。 |
+| Omni-45 · Step 7 灰尾标签出徽标 | 桌面灰框 `x/w = 600/70 → 594/92`，手机 `180/88 → 176/96`；文字、相位和机制不变。 | `676b6d4`；英文改前最大左右越界 **8.009／8.009 CSS px**，改后英中桌面及三宽度手机全部为 **0**。 |
+
+**三项均为作者返工完成，仍待协调固定复审核销。** 新树不继承固定 `e71ab01` 的 **80/80、16/16、189/192**，也不提前写成 192/192；当前统一记为 **coordinator-rereview-pending**。Omni 14 `5c5f749`、证据整理 `b707104` 和其他 lane 的待审内容保持冻结。
+
+## 本轮评分与冷读
+
+下表是本轮对改动步的作者重评，不是协调新总分。原 #4／#5 和原十二项整步总分留待实图复审；未改步不重新给分。
+
+| 步 | R1–R5 | 机制 R6 | 原十个非视觉项 | 小学生复述 | 新内容洞 |
+|---|---:|---:|---:|---|---:|
+| Omni 11 Step 1 | 10/10 | 2/2 | 20/20 | Slow AR 每帧先选 c0，Fast AR 在同一帧补另外九个；攒够 40 帧就开首个窗口。 | 0 |
+| Omni 11 Step 7 | 10/10 | 2/2 | 20/20 | 三个窗口会重读旧帧，但旧声音不重复播放；512 个采样点先留下，下次用掉，最后放出。 | 0 |
+| Omni 11 Step 8 | 10/10 | 2/2 | 20/20 | 完成的请求补成一样长，一起解码再裁回；下一步看旧回答哪些工作能删，D、H 分别记交付和播放。 | 0 |
+
+- Ch.10 的「谁选十个 entries」、Ch.11 收尾的「哪些旧工作能删、D／H 是什么」和 Step 7 的「标签是否在自己的灰框里」都能由当前舞台、caption 或 deep 直接回答。Omni 12 Step 1 只做这条接缝的重读，不给该章新总分。
+- 主线程完成 transcript、组件、双语 deep 和 DOM 冷读。独立 `pstack-explorer` 因配置模型 `qweneval/qwen-latest-series-invite-1102#high` 不存在而未启动，未计为证据。
+
+## 硬门与逐相证据
+
+- `npm run build`：**60 页**通过。Omni 11 全八步 `readability` 为 **0 机械问题**；`deep-check 11／12` 均识别八步；两章 `zh-check` 均为 `all clear`；`git diff --check` 通过。
+- Omni 11 英中全章 360／390／430 px `mobile` 均 `no layout breaks`。中文 Steps 1／7／8 的字号门分别通过；Omni 12 Step 1 的英中三宽度检查也通过。
+- 两章 transcript 各连续采集两次，均与 pinned 逐字一致。Omni 11 为 **2,229 词**，SHA-256 `982f3fe0da7184b704d1a5c279acaac825aea60a4cac9756b969d204284b72a4`；Omni 12 为 **2,298 词**，SHA-256 `fffa4eb49ad80b0ddd8ce9fa3ed661bf6d26780ca5c67de4e2e7ef045c2d503a`。
+- `.bot/out/omni11-final-en/report.json` 与 `omni11-final-zh/report.json`：每种语言 **40 个桌面相位、32/32 机制转变**，counter／step／phase 身份全部匹配；文字重叠、SVG 出界和灰尾标签越界均为 **0**。最低可见字号英文 **10.506**、中文 **11.253 CSS px**，保持固定基线。
+- Step 7 定向审计 `.bot/out/omni11-tail-after-{en,zh}/report.json` 和 `omni11-tail-after-{en,zh}-{360,390,430}/report.json`：英中桌面及三宽度手机共 **24 个相位**，灰尾标签上下左右越界全部为 **0**；手机最低 **10.76 CSS px**。英文改前报告为 `.bot/out/omni11-tail-before/report.json`，复现 `old 512 used` 约 **7.720**、`512 released` 约 **8.009 CSS px** 的左右越界。
+- `.bot/out/omni11-final-deep/report.json`：Omni 11 Steps 1／7／8 和 Omni 12 Step 1 的英中 **8 个 deep 视图**均为 `aria-expanded=true`，counter 和标题正确，指定接缝文字齐全；页面／drawer 横溢、KaTeX 错误和残留 `$$` 均为 **0**。
+- 最终报告 SHA-256：英文逐相 `cfc82446a111819ca70355e040c489cd0db79575007b5323bdcda67c79fd2ba2`，中文逐相 `079e82fc5ed653a290e68d8bf83626dafbe2eba12a9c9d75e617f4a3c2936792`，deep `2b657b4d708487dfadffdfa65a41cf986e9d739575e895539d6921ce03a5023c`。
+
+## 实图、剩余和清理
+
+- 代表实图：`/Users/shuohuang/code/hmz-work/ls-k1-1127-013124/.bot/out/omni11-final-en/s7-p1.png`、`/Users/shuohuang/code/hmz-work/ls-k1-1127-013124/.bot/out/omni11-final-zh/s8-p3.png`、`/Users/shuohuang/code/hmz-work/ls-k1-1127-013124/.bot/out/omni11-final-deep/11-1-en.png`。各目录保留全部 PNG；PNG 被本地 exclude 规则忽略，只提交审计脚本和 JSON。
+- 当前模型读取 PNG 返回 `Cannot read image`，因此这里只报告 DOM、几何、文件和哈希结果，**未声称看过图片或视觉通过**。三项 finding 的协调实图复审和主人最终视觉验收仍待。
+- 未跑全站回归、真实 Fish／SGLang-Omni 模型或服务、GPU benchmark、音频质量、故障注入或 reduced-motion 动态切换。最新回归只有不能分配到布局步骤的 `(exit 13)`，本轮未据此改教程。
+- 本 clone 的 `node_modules` 原指向协调人 checkout。已只删除本目录内的符号链接并本地 `npm install`，package 文件无 diff，未写协调人的 checkout。
+- 本轮 4483 dev server（PID 13785）已停止，端口无监听。已确认属于本轮的 Chrome（PID 92044）及对应 `cdp-YRBWrB` 已清理；另一个归属不明的 Chrome 未触碰，未在 `ps` 权限受限时猜测其归属。
+- 查看前在本目录运行 `npx astro dev --background --port 4483`。本地地址：`http://localhost:4483/learning-sglang/omni/ch/11-fish-s2-pro/?step=1`、`?step=7`、`?step=8`，接缝另一端为 `http://localhost:4483/learning-sglang/omni/ch/12-full-duplex-strategies/?step=1`。
+
+---
+
 # lane k1 本轮报告 · Omni 11／14 固定复审材料二次核对
 
 日期：2026-11-27。类型：修旧证据整理。范围只有两份追加的逐相报告和本报告；未改教程、transcript、评分卡、`.bot/memory/`、其他书或其他 lane 的文件。本轮开始及采集时的 HEAD 与 `origin/tutorials` 均为 `8eea186`。
