@@ -5,8 +5,8 @@
 ### On the stage
 
 - Training has produced `weights v1`, the new number tables. Rollout waits for the update before using them, continuing Chapter 6 Step 8.
-- The left card derives the weight size and an HBM-bandwidth yardstick. The right card separates the full 1B update from a different one-tensor example.
-- The dashed `WHOLE CALL` box surrounds the update. Its inner `model code` copies v1. In the one-tensor example, the timing pair compares that model-code operation with the whole external call.
+- The left card derives the weight size and an HBM-bandwidth yardstick. The right card separates the full 1B update from the `q_proj` tensor example.
+- The dashed `WHOLE CALL` box surrounds the update. Its inner `model code` copies v1. In the `q_proj` example, the timing pair compares that model-code operation with the whole external call.
 
 ### Formula and symbols
 
@@ -29,7 +29,7 @@ $$B=1{,}000{,}000{,}000\times2=2{,}000{,}000{,}000\ \text{bytes}=2\ \text{GB}$$
 $$T_{\text{yard}}=2\ \text{GB}/(3.35\ \text{TB/s})\approx0.000597\ \text{s}\approx0.6\ \text{ms}$$
 $$R=7.047\ \text{s}/0.000597\ \text{s}\approx11{,}800$$
 
-The 7.047-second measurement covers the full distributed 1B update. The 0.001- and 0.033-second values belong to a separate one-tensor example; only that pair has the rounded ratio $0.033/0.001\approx33\times$. The HBM figure is a comparison, not a prediction for this transport.
+The 7.047-second measurement covers the full distributed 1B update. The 0.001- and 0.033-second values belong to the separate `q_proj` tensor example; only that pair has the rounded ratio $0.033/0.001\approx33\times$. `q_proj` is the tensor name used by this debug example. The HBM figure is a comparison, not a prediction for this transport.
 
 ### Next
 

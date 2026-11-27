@@ -23,10 +23,10 @@
   const steps: Step[] = [{
     caption: `A 1B bf16 model has about ${UPDATE_DEBUG_WEIGHT_GB} GB of weights. One debug run took ${UPDATE_DEBUG_INITIAL_S} seconds to update them.`,
     captionZh: `1B bf16 模型约有 ${UPDATE_DEBUG_WEIGHT_GB} GB 权重。一次调试中，完整更新花了 ${UPDATE_DEBUG_INITIAL_S} 秒。`,
-    title: 'Model code is fast, but the whole call is slow', titleZh: '模型代码本身很快，整个调用却很慢',
+    title: 'One q_proj tensor: model code vs whole call', titleZh: '一个 q_proj 张量：模型代码与整个调用',
     subtitle: 'weight update = replace the rollout model\'s old number tables after training', subtitleZh: '权重更新 = 训练后换掉 rollout 模型里的旧数字表',
     foot: 'One author\'s distributed-update debug log; not a disk-versus-direct benchmark.', footZh: '一位作者的 distributed 更新调试记录，不是磁盘与直传的对比实验。',
-    mobileTitle: 'The call is slow', mobileTitleZh: '整个调用很慢',
+    mobileTitle: 'q_proj: model code vs whole call', mobileTitleZh: 'q_proj：模型代码与整个调用',
     mobileSubtitle: 'weight update = replace old weights', mobileSubtitleZh: '权重更新 = 换掉旧数字表',
     mobileFoot: 'Debug log; not a transport comparison.', mobileFootZh: '调试记录，不是传输对照实验。',
     mobile: [
@@ -38,7 +38,7 @@
       { en: `1 billion values × ${UPDATE_DEBUG_BF16_BYTES} bytes = ${UPDATE_DEBUG_WEIGHT_GB} GB`, zh: `10 亿个数 × 每个 ${UPDATE_DEBUG_BF16_BYTES} 字节 = ${UPDATE_DEBUG_WEIGHT_GB} GB` },
       { en: `2 GB ÷ 3.35 TB/s ≈ ${UPDATE_DEBUG_YARDSTICK_MS.toFixed(1)} ms (HBM)`, zh: `2 GB ÷ 3.35 TB/s ≈ ${UPDATE_DEBUG_YARDSTICK_MS.toFixed(1)} ms（HBM 对照）` },
       { en: `full 1B: ${UPDATE_DEBUG_INITIAL_S} s ≈ ${UPDATE_DEBUG_FULL_YARDSTICK_RATIO.toLocaleString('en-US')} × ${UPDATE_DEBUG_YARDSTICK_MS.toFixed(1)} ms`, zh: `完整 1B：${UPDATE_DEBUG_INITIAL_S} 秒 ≈ ${UPDATE_DEBUG_FULL_YARDSTICK_RATIO.toLocaleString('en-US')} × ${UPDATE_DEBUG_YARDSTICK_MS.toFixed(1)} ms` },
-      { en: `one tensor: model code ${UPDATE_DEBUG_INNER_S} s`, zh: `一个张量：模型代码本身 ${UPDATE_DEBUG_INNER_S} 秒` },
+      { en: `q_proj: model code ${UPDATE_DEBUG_INNER_S} s`, zh: `q_proj：模型代码本身 ${UPDATE_DEBUG_INNER_S} 秒` },
       { en: `whole call ${UPDATE_DEBUG_OUTER_S} s`, zh: `整个调用 ${UPDATE_DEBUG_OUTER_S} 秒` },
       { en: '0.033 ÷ 0.001 ≈ 33×, rounded', zh: '0.033 ÷ 0.001 ≈ 33 倍，均为舍入值' },
     ],
@@ -295,7 +295,7 @@
           <rect x="375" y="235" width="310" height="150" rx="12" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="530" y="263" text-anchor="middle" class="small strong">{t('FULL 1B UPDATE', '完整 1B 更新')}</text>
           <text x="530" y="298" text-anchor="middle" class="result">{UPDATE_DEBUG_INITIAL_S} s ≈ {UPDATE_DEBUG_FULL_YARDSTICK_RATIO.toLocaleString('en-US')} × {UPDATE_DEBUG_YARDSTICK_MS.toFixed(1)} ms</text>
-          <text x="530" y="326" text-anchor="middle" class="small strong">{t('ONE TENSOR EXAMPLE', '一个张量示例')}</text>
+          <text x="530" y="326" text-anchor="middle" class="small strong">{t('ONE q_proj TENSOR EXAMPLE', '一个 q_proj 张量示例')}</text>
           <text x="530" y="350" text-anchor="middle" class="small">{t(`model code ${UPDATE_DEBUG_INNER_S} s · whole call ${UPDATE_DEBUG_OUTER_S} s`, `模型代码本身 ${UPDATE_DEBUG_INNER_S} 秒 · 整个调用 ${UPDATE_DEBUG_OUTER_S} 秒`)}</text>
           <text x="530" y="374" text-anchor="middle" class="small">{t('0.033 ÷ 0.001 ≈ 33×, rounded', '0.033 ÷ 0.001 ≈ 33 倍，均为舍入值')}</text>
         </g>
