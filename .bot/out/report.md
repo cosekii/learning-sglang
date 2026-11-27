@@ -1,3 +1,42 @@
+# lane k1 本轮报告 · Omni 11 Step 7／8 固定树复核
+
+日期：2026-11-26。类型：修旧复核。范围只含 Learning SGLang Omni 第 11 章和本报告；未改其他步、其他书、其他 lane、第 1 本受保护英文原文或 `.bot/memory/`。
+
+## 当前单元与 open review 项
+
+- 本轮开始时 HEAD 与 `origin/tutorials` 均为 `4f3576a`。direction 的 23:10 版本要求完成 Step 8 和 Step 7 完整机制后停下待固定复审；当前 origin 已包含 `d8c7c4f`（Step 8）、`50297db`（Step 7）和 `6b16377`（本章桌面字号），因此本轮不重复改写教程，只复核这组既有提交。
+- **Omni-15 · 第 11 章机制**：Step 7 依次形成 40 帧首窗、20 旧帧加 45 新帧的第二窗、20 旧帧加 5 新帧的最后窗，灰色 512 尾巴随相位经历留下、使用和释放。Step 8 依次形成 B 的 50 帧补位、`[2,10,90]` 的一次 vocoder 调用和裁回 90F／40F 的两份输出。红框和 LoopProgress 不计入机制证据。
+- **Omni-02 的第 11 章桌面字号部分**：40 个桌面相位最低 **10.506 CSS px**；Step 7 最低 **11.102 CSS px**，Step 8 最低 **10.643 CSS px**。本轮没有新增字号修复。
+- 本轮没有新关闭协调 finding。协调基线仍是机制 R6 **1/16**，直至固定复审；Omni-33 的 session 状态接缝和其他书内开放项保持不变。按 direction 停在这里，不提前处理 Omni 14。
+
+## 作者冷读与评分边界
+
+主线程按 transcript、组件、双语深入讲解和相位 DOM 冷读，未把 `deep-check ok` 当作语义通过。Step 7／8 的作者评分均为 R1–R5 **10/10**、机制 R6 **2/2**、原十个非视觉项 **20/20**，新增内容洞 **0**。
+
+| 步 | R1–R6 | 小学生复述 | 新洞 |
+|---|---:|---|---:|
+| 7 | 12/12 | 三个窗口会重读旧帧，但旧声音不重复播放；512 个采样点先留下，最后再放出。 | 0 |
+| 8 | 12/12 | B 的 40 帧先补到 A 的 90 帧，一起解码后再裁掉补的 50 帧。 | 0 |
+
+独立 pstack-reviewer 因配置模型 `qweneval/qwen-latest-series-invite-1102#high` 不存在而未启动，未计为证据。当前模型不能读取 PNG，已生成但不声称看过图片；原 #4／#5、原十二项新总分和协调 verdict 均留待固定复审。
+
+## 验证
+
+- `npm run build`：**60 页**通过。全章八步 `readability` 为 **0 机械问题**；`deep-check 11`、`zh-check`、英中全章 360／390／430 px `mobile`、中文 Step 7／8 字号门和 `git diff --check` 全过。
+- 默认 transcript 连续两次逐字一致并与 pinned 无差异：**2,144 词**，SHA-256 `fec68ad32da78557d31306fb9664b6a983991cc0a0a59da85a73059bbc28afa1`。
+- `OUT=.bot/out/omni11-rereview BASE=http://localhost:4466/learning-sglang node .bot/out/omni11-phase-audit.mjs`：覆盖 **40 个桌面相位**，身份均匹配，排除红框和 LoopProgress 后 **32/32** 个步内相邻转变改变机制签名。文字重叠和 SVG 出界均为 **0**。报告在 `.bot/out/omni11-rereview/report.json`，代表图路径为 `.bot/out/omni11-rereview/s7-p1.png` 和 `.bot/out/omni11-rereview/s8-p3.png`。
+- Step 7／8 的英中深入讲解均实际打开，`aria-expanded=true`，counter 为对应步，横向溢出、KaTeX 错误和残留 `$$` 均为 **0**。截图在 `.bot/out/omni11-rereview/deep-en/` 和 `deep-zh/`。
+- 本 clone 的 `node_modules` 初始为指向协调人 checkout 的符号链接。已只删除本目录内的符号链接并执行本地 `npm install`，避免 Vite 写入协调人的目录；package 文件无 diff。
+- 未跑全站回归、真实 Fish S2 Pro、SGLang-Omni 服务、GPU benchmark、音频质量、故障注入或 reduced-motion 动态切换。主人最终视觉与产品验收另计。
+
+## 提交与剩余
+
+- Step 7／8 的教程提交及桌面字号提交均已在此前推送到 `origin/tutorials`；本轮没有教程 diff，只提交这份复核记录。
+- 本地章节地址：`http://localhost:4466/learning-sglang/omni/ch/11-fish-s2-pro/?step=8`。本轮 4466 dev server 已停止；查看前在本目录运行 `npx astro dev --background --port 4466`。
+- 本轮脚本启动的浏览器均已关闭。另发现两个启动更早的 headless Chrome，因无法读取父进程且归属不明，未触碰。
+
+---
+
 # lane k2 本轮报告 · 继续等 ML Systems 固定复审
 
 日期：2026-11-26。类型：修旧等待。范围只有本报告；未改教程、评分卡、`.bot/memory/`、其他书或其他 lane 的章节。
