@@ -12,7 +12,7 @@
 - `runtime`（第 1–5 章）：从配置生成部署图，跟随请求和数据走完生命周期。
 - `performance`（第 6–10 章）：控制排队与显存，测量等待，再优化 AR、encoder 和 vocoder。
 - `models`（第 11–13 章）：把前面的机制用到 Fish S2 Pro、全双工和 Qwen3-Omni 部署。
-- `serving`（第 14–17 章）：部署开始服务后，限制交付积压、选择 worker、处理故障，再把一次请求的事件拼回去。
+- `serving`（第 14–15 章）：部署开始服务后，限制交付积压，再选择 worker；最后分清一次响应的清理和后续健康资格。
 
 ## 章节表
 
@@ -32,10 +32,8 @@
 | 12 | `models` | `full-duplex-strategies` | 全双工策略与测量 | 用同一次打断比较 turn-based、streaming cascade 和 native full-duplex。 | 三种策略各自保留什么状态，打断与回话怎样测量？ | 第 3、6 章；第 1 本 Ch. 21 Steps 1–8 | `Omni/docs/developer_reference/full_duplex_guide.md`；`Omni/docs/basic_usage/omni.md`；`Omni/sglang_omni/pipeline/{session_graph,sessions}.py`；`Omni/sglang_omni/serve/realtime/manager.py`；`Omni/sglang_omni/profiler/duplex_metrics.py` | 怎样把部署、预算和测量一起用到完整的 Qwen3-Omni？ |
 | 13 | `models` | `qwen3-omni-deployment` | Qwen3-Omni 部署调优 | 从官方配置生成一条可检查的 Qwen3-Omni 部署方案。 | 文本或语音、单卡或多卡、精度和并发应该怎样一起选？ | 第 1、2、7、8 章；第 1 本 Ch. 16 Steps 1–5 | `Omni/docs/cookbook/qwen3_omni.md`；`Omni/sglang_omni/models/qwen3_omni/{config,placement}.py`；`Omni/examples/configs/qwen3_omni_colocated_h100_bf16.yaml`；`Omni/examples/configs/qwen3_omni_speech_replica2.yaml` | 部署开始服务后，客户端读得太慢会发生什么？ |
 | 14 | `serving` | `slow-reader-backpressure` | 客户端读得太慢 | 生成结束后，声音仍可能排在 API 进程里；共享字节上限决定哪些流失败。 | 为什么完成的请求仍占内存，慢读者攒满共享积压后谁先失败？ | 第 3 章第 3 步、第 6 章第 7–8 步、第 8 章第 3 步、第 13 章第 8 步 | `Omni/docs/cookbook/qwen3_tts/tuning.md`；`Omni/sglang_omni/pipeline/coordinator.py`；`Omni/sglang_omni/serve/speech_streaming.py`；`Omni/tests/unit_test/pipeline/test_coordinator.py` | 一个 API 进程能管自己的积压；两个 worker 共用一个网址时，下一个请求给谁？ |
-| 15 | `serving` | `router-worker-selection` | 给请求选 worker | 把 worker 能力、健康检查和当前请求数画成一次选择。 | router 怎样过滤不兼容或不健康的 worker，再在剩余 worker 中选择？ | 第 2、6、14 章 | `Omni/docs/basic_usage/omni_router.md`；`Omni/sglang_omni_router/src/worker_pool/{mod,profile,health}.rs` | worker 选中后发生故障，正在服务的请求会怎样结束？ |
-| 16 | `serving` | `worker-failure-and-drain` | worker 故障与退出 | 跟着一个故障进程看请求终止、连接错误和后续摘除。 | stage 进程退出时，流式与非流式请求分别看到什么，router 又怎样停止再选它？ | 第 3、15 章 | `Omni/sglang_omni/pipeline/mp_runner.py`；`Omni/sglang_omni/serve/launcher.py`；`Omni/tests/unit_test/pipeline/test_process_failure.py`；`Omni/docs/basic_usage/omni_router.md` | 请求结束后，怎样把分散在各进程的事件拼回同一条时间线？ |
-| 17 | `serving` | `request-event-traces` | 拼回一次请求的事件 | 开始一次 profiling，收集各进程事件文件，再按 request id 对齐。 | 一次请求的事件何时落盘，怎样检查文件完整，再比较各段等待？ | 第 8、16 章 | `Omni/docs/developer_reference/profiler.md`；`Omni/sglang_omni/profiler/` | 回到服务地图，分别标出交付、选择、故障和事件证据的边界。 |
+| 15 | `serving` | `router-worker-selection` | 给请求选 worker | 把 worker 能力、健康检查、服务类别和当前请求数画成路由地图。 | router 怎样过滤不兼容或不健康的 worker，再按服务类别和容量选择？ | 第 2、6、14 章 | `Omni/docs/basic_usage/omni_router.md`；`Omni/sglang_omni_router/src/worker_pool/{mod,profile,health}.rs` | 收束：RESET 释放本次凭证，health probe 决定后续资格。 |
 
 ## 制作顺序
 
-按 01 → 13 做，每轮一步。第 1 章先画「配置字段 → 运行对象 → 请求路线」的总图，再拆每一步；后续章都回指这张图。具体模型章只使用已讲过的概念，新术语首次出现仍须按 `~/.orca/bots/learning-sglang/EVAL.md` 第 0 节解释。
+按 01 → 15 做，每轮一整章。第 1 章先画「配置字段 → 运行对象 → 请求路线」的总图，再拆每一步；后续章都回指这张图。具体模型章只使用已讲过的概念，新术语首次出现仍须按 `~/.orca/bots/learning-sglang/EVAL.md` 第 0 节解释。

@@ -246,7 +246,7 @@ B 的凭证同时持有普通活跃数 +1 和额外的 session permit。凭证�
 - 随后 C 发送 `200 OK` 和 `data: one`，再发生构造的 reset，也就是连接断开。B 仍是 healthy，但没有路径让这个响应转到 B 继续。
 - reset 丢弃响应体凭证。图上 C 的活跃数从 2 降到 1；这次清理不会把截断的响应补完。
 - C 被选中时的 health 不能保证整个响应完成。传输或 body 错误可以请求立即 health probe，后续能否入选仍要等配置门槛。
-- 图上的问题指向两个边界：这个客户端收到什么，以及后续选择何时能排除 C。
+- 收尾分开两个边界：RESET 释放这次响应的凭证，后续选择仍看 health probe。两个边界都不会让响应转到 B 继续。
 
 ### 代入图上的数
 
@@ -258,8 +258,8 @@ B 的凭证同时持有普通活跃数 +1 和额外的 session permit。凭证�
 
 上游 HTTP 客户端禁用重试，relay 只向选中目标发送一次，没有备选 dispatch 循环。响应体凭证仍会终止并释放计数，如最后的 $2\rightarrow1$ 所示，但清理不会把部分响应变成完整响应。
 
-### 接下来
+### 全书边界
 
-下一章分开提交前错误和提交后截断，跟随凭证清理与 health probe，并解释 worker 如何平滑退出。
+这是本书最后一章。选择决定一个目标，终止清理释放凭证，health probe 决定后续选择。图上已经回答 RESET 后凭证怎样释放，但不承诺响应完整完成。
 
 来源：`sglang_omni_router/src/worker_pool/resolver.rs:108-125`；`sglang_omni_router/src/http_relay/mod.rs:151-209`；`sglang_omni_router/src/http_relay/response_body.rs:38-72`；`sglang_omni_router/tests/chat_http.rs:1419-1432`。

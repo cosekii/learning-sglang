@@ -4,7 +4,7 @@ export const omniParts: Part[] = [
   { id: 'runtime', title: 'From config to a running request', blurb: 'Follow configuration, requests and data through the runtime.', titleZh: '从配置到运行中的请求', blurbZh: '跟着配置、请求和数据走完运行时。' },
   { id: 'performance', title: 'Waiting and memory', blurb: 'Measure the wait, then change the work or the budget.', titleZh: '等待与显存', blurbZh: '先量等待，再改变工作或预算。' },
   { id: 'models', title: 'Real model pipelines', blurb: 'Apply the same maps to Fish S2 Pro, full duplex and Qwen3-Omni.', titleZh: '真实模型流水线', blurbZh: '把同一套图用到 Fish S2 Pro、全双工和 Qwen3-Omni。' },
-  { id: 'serving', title: 'Serve, route and diagnose', blurb: 'Bound delivery, choose workers, handle failures and rebuild requests.', titleZh: '服务、路由与诊断', blurbZh: '限制交付积压、选择 worker、处理故障，再拼回请求。' },
+  { id: 'serving', title: 'Serve and route', blurb: 'Bound delivery, then choose a worker.', titleZh: '服务与路由', blurbZh: '限制交付积压，再选择 worker。' },
 ];
 
 export const omniChapters: Chapter[] = [

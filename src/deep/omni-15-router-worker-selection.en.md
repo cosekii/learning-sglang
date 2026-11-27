@@ -246,7 +246,7 @@ Sources: `sglang_omni_router/src/worker_pool/profile.rs:15-82,133-139`; `sglang_
 - C then sends `200 OK` and `data: one` before a constructed reset, meaning the connection breaks. B remains healthy, but no path continues this response on B.
 - The reset drops the response-body lease. C's active count visibly falls from 2 to 1; this cleanup does not complete the truncated response.
 - C's selection-time health does not guarantee the whole response. A transport or body error can request an immediate health probe; later eligibility still waits for the configured thresholds.
-- The question points at two separate boundaries: what this client receives, and when later selections can exclude C.
+- The closing lines separate two boundaries: RESET releases this response's lease, while later selections still depend on health probes. Neither boundary resumes the response on B.
 
 ### The numbers on the stage
 
@@ -258,8 +258,8 @@ Sources: `sglang_omni_router/src/worker_pool/profile.rs:15-82,133-139`; `sglang_
 
 The upstream HTTP client disables retries, and the relay performs one send to the selected target. There is no alternate-dispatch loop. The response-body lease still terminates and releases its count, as the final $2\rightarrow1$ shows, but that cleanup does not turn the partial response into a complete one.
 
-### Next
+### Book boundary
 
-The next chapter separates pre-commit errors from post-commit truncation, follows lease cleanup and health probes, and explains how a worker finishes existing work and exits.
+This is the book's final chapter. Selection chooses one target, terminal cleanup releases its lease, and health probes govern later selections. The stage has answered the lease-cleanup part of the reset; it does not promise a completed response.
 
 Sources: `sglang_omni_router/src/worker_pool/resolver.rs:108-125`; `sglang_omni_router/src/http_relay/mod.rs:151-209`; `sglang_omni_router/src/http_relay/response_body.rs:38-72`; `sglang_omni_router/tests/chat_http.rs:1419-1432`.

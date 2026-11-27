@@ -51,8 +51,8 @@
     caption: 'ServiceClass picks the admission bucket. Sessions need a free slot, while fixed targets skip the selection policy.',
     captionZh: 'ServiceClass 决定使用哪个 admission 桶。session 还要有空槽位；固定目标不经过选择策略。',
   }, {
-    caption: 'C can fail after selection; the router does not retry that response on B. What does the client receive, and when can later requests avoid C?',
-    captionZh: 'C 被选中后仍可能故障，router 不会把这个响应转到 B 重试。客户端会收到什么，后续请求何时不再选择 C？',
+    caption: 'C can fail after selection, and the router does not retry that response on B. RESET releases C’s lease, while health probes decide later eligibility.',
+    captionZh: 'C 被选中后仍可能故障，router 不会把这个响应转到 B 重试。RESET 释放 C 的凭证，后续能否入选仍看健康探测。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -474,11 +474,11 @@
         {/if}
         </g>
         <text x={W / 2} y={phone ? 735 : 495} text-anchor="middle" class="small strong" opacity={phase >= 4 ? 1 : 0.12} style="transition: opacity 350ms">{t('This response stops; B does not continue it.', '这个响应停止，B 不会接着发送。')}</text>
-        <text x={W / 2} y={phone ? 778 : 545} text-anchor="middle" class="result" style="fill:var(--gen)">{t(phone ? 'What does the client receive?' : 'What does the client receive, and when do later requests avoid C?', phone ? '客户端会收到什么？' : '客户端会收到什么？后续请求何时不再选择 C？')}</text>
+        <text x={W / 2} y={phone ? 778 : 545} text-anchor="middle" class="result" style="fill:var(--gen)">{t(phone ? 'RESET releases C’s lease, while' : 'RESET releases C’s lease, while health probes decide later eligibility.', phone ? 'RESET 释放 C 的凭证，' : 'RESET 释放 C 的凭证，后续能否入选仍看健康探测。')}</text>
         {#if phone}
-          <text x="150" y="815" text-anchor="middle" class="result" style="fill:var(--gen)">{t('When do later requests avoid C?', '后续请求何时不再选择 C？')}</text>
+          <text x="150" y="815" text-anchor="middle" class="result" style="fill:var(--gen)">{t('health probes decide later eligibility.', '后续能否入选仍看健康探测。')}</text>
         {/if}
-        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Next chapter: worker failure and graceful exit.', '下一章：worker 故障与退出。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Constructed reset · no retry on B' : 'Constructed reset · no alternate-dispatch loop in this path', phone ? '构造的 reset · 不在 B 重试' : '构造的 reset · 这条路径没有备选 dispatch 循环')}</text>
       {/if}
       <g class="router-loop">
         <LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={4} label={t('loops', '循环')} />
