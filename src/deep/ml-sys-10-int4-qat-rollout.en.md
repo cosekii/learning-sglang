@@ -113,7 +113,7 @@ Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:37-49,63-78`; `THUDM
 
 ### On the stage
 
-- The subtitle defines a gradient as the direction and amount for changing a weight. The left card receives that update direction as `grad_output` from later computation.
+- The subtitle defines a gradient as the direction for changing a weight. The left card receives that update direction as `grad_output` from later computation.
 - The dashed blue STE card returns the same `grad_output` without using rounding's ordinary derivative. STE means straight-through estimator.
 - The right BF16 model-weight card receives that gradient and can update. The forward error from 0.35 to 0.40 remains.
 
@@ -196,7 +196,7 @@ Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:94-103`; `THUDM/slim
 
 - The BF16 group holds 32 values in $32\times2=64$ bytes.
 - Adding 8 to each signed code maps $[-8,7]$ into unsigned $[0,15]$.
-- Eight four-bit codes form one 32-bit word, or 4 bytes. INT32 is the 32-bit integer type that holds this word.
+- Eight four-bit codes form one 32-bit word, or 4 bytes.
 - The complete group has 16 packed-weight bytes and one 2-byte BF16 scale, totaling 18 bytes. The first and last bars both use 64 bytes as full width.
 
 ### Formula and symbols
@@ -213,7 +213,7 @@ $$u_i=q_i+8,\qquad P_{\mathrm{bit}}=\sum_{i=0}^{7}u_i2^{4i}$$
 
 ### The numbers on the stage
 
-$q$ is the signed code. This packing format needs nonnegative fields from 0 to 15, so it adds 8. A word here means a 32-bit storage slot. The example codes `[-8,-7,-1,0,1,4,6,7]` become `[0,1,7,8,9,12,14,15]`, with bit pattern `0xFEC98710`. This is a bit pattern, not the signed decimal value of the INT32. Their total width is:
+$q$ is the signed code. This packing format needs nonnegative fields from 0 to 15, so it adds 8. A word here means a 32-bit storage slot; INT32 is the 32-bit integer type that holds it. The example codes `[-8,-7,-1,0,1,4,6,7]` become `[0,1,7,8,9,12,14,15]`, with bit pattern `0xFEC98710`. This is a bit pattern, not the signed decimal value of the INT32. Their total width is:
 
 $$8\times4=32\ \text{bits}=4\ \text{B}$$
 
@@ -239,7 +239,7 @@ Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:101-114`; `THUDM/sli
 
 - The pause card prevents generation from reading a mixture of old and new weights. The resize card only calls `resize_` to restore the reusable memory's cached original shape.
 - The combined `LOAD + REORDER` card overwrites that memory with this round's packed weights and scales, then changes Step 6's generic four-bit packing into the order required by the Marlin multiplication routine and arranges the corresponding scales.
-- The continue card resumes generation with the new weights. The `is_marlin_converted` flag moves from true to false and back to true.
+- The continue card resumes generation with the new weights.
 - A concrete 64-scale mapping appears below the cards. The reordered output starts with `s0, s8, …, s56`, then `s1, s9, …, s57`, and ends with `s7, s15, …, s63`.
 
 ### Formula and symbols
