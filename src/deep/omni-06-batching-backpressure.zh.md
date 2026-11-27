@@ -240,7 +240,8 @@ $$O=C_{ABC}-24000=27000-24000=3000$$
 - 左边是当前 MiniCPM-o `code2wav` 工厂：上限 16 条、零收集等待、`batch_wait_when_idle=false`。输入是两条完整的 `new_request`。
 - `SimpleScheduler.collect_batch()` 收好现成请求后，调用 `vocode_and_release([A, B])`。结果仍按 A、B 分开返回。
 - 右边是 `StreamingVocoderBase` 的可选跨请求 coalescing。输入是陆续到达的 `stream_chunk`，本例假设 A、B 都已满足本步子类的就绪条件。
-- 右侧先把 A、B 的 chunk 分别 ingest 到各自 stream state，再选出参与者、构造计划，并调用一次 `run_step([A, B])`。返回的 waveform 仍按 request id 对应到各自输出。
+- 右侧先把 A、B 的 chunk 分别 ingest 到各自 stream state，再选出参与者并调用一次 `run_step([A, B])`。构造计划发生在选择与调用之间，图中没有单独的计划卡片。返回的 waveform 仍按 request id 对应到各自输出。
+- 动画先播放左侧收集与批量调用，再播放右侧 ingest、选择参与者和共享一步。每相只有一幅图变化。
 - 橙色都表示共享计算，但两边入口、状态和函数不同。不能把右图的 `run_step()` 标到 MiniCPM-o 左边的工厂里。
 
 ### 代入图上的数

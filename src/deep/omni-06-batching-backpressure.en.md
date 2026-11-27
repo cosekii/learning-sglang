@@ -240,7 +240,8 @@ Step 5 contrasts Code2Wav's one-shot batch with streaming-vocoder coalescing acr
 - The left panel is the current MiniCPM-o `code2wav` factory: cap 16, zero collection delay and `batch_wait_when_idle=false`. Its inputs are two complete `new_request` messages.
 - `SimpleScheduler.collect_batch()` gathers the available requests and invokes `vocode_and_release([A, B])`. A and B still receive separate results.
 - The right panel is optional cross-request coalescing in `StreamingVocoderBase`. Its inputs are arriving `stream_chunk` messages; this example assumes both A and B satisfy their subclass's readiness rule.
-- The right path ingests each chunk into its own stream state, selects participants, builds a plan and invokes `run_step([A, B])` once. Returned waveforms remain keyed by request id.
+- The right path ingests each chunk into its own stream state, selects participants and invokes `run_step([A, B])` once. Plan construction happens between selection and the call but has no separate card. Returned waveforms remain keyed by request id.
+- The animation plays the left collection and batch call first, then the right ingest, participant selection and shared step. Only one panel changes in each phase.
 - Orange marks shared compute in both panels, but their inputs, states and functions differ. The right panel's `run_step()` does not belong in MiniCPM-o's left-hand factory.
 
 ### Work through the numbers
