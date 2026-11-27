@@ -44,29 +44,29 @@
       { en: '0.033 ÷ 0.001 ≈ 33×, rounded', zh: '0.033 ÷ 0.001 ≈ 33 倍，均为舍入值' },
     ],
   }, {
-    caption: "Three channels carry v1 into rollout. Disk saves and reads a checkpoint, then loads each worker's local shard.",
-    captionZh: '三条通道把 v1 送进 rollout。磁盘路线存取 checkpoint，再装入各 worker 的本地分片。',
-    title: 'Three channels · 1 of 3: save, read, load', titleZh: '三条通道 · 第 1 条：保存、读取、装入',
-    subtitle: "update channel = a route for v1 · local shard = one inference worker's own part", subtitleZh: '更新通道 = v1 走的路线 · 本地分片 = 每个推理 worker 自己那片',
+    caption: "Three routes carry v1 into rollout. The disk route saves and reads a checkpoint, then loads each worker's own part.",
+    captionZh: '三条路线把 v1 送进 rollout。磁盘路线存取 checkpoint，再装入各自部分。',
+    title: 'Three routes · 1 of 3: save, read, load', titleZh: '三条路线 · 第 1 条：保存、读取、装入',
+    subtitle: 'checkpoint = saved weights · each worker loads its own part', subtitleZh: 'checkpoint = 存好的权重 · 每个 worker 装入自己那份',
     foot: 'The three routes are alternatives; disk timing is not supplied.', footZh: '三条路线是三选一；来源没有给出磁盘计时。',
     mobileTitle: '1 of 3 · save, read, load', mobileTitleZh: '第 1 条 · 保存、读取、装入',
     mobileArrows: false,
     mobileSubtitle: 'checkpoint = saved weights', mobileSubtitleZh: 'checkpoint = 存好的权重',
     mobileFoot: 'Choose one route; no disk time is claimed.', mobileFootZh: '三条选一条；不虚构磁盘时间。',
     mobile: [
-      { title: 'DISK · CHECKPOINT', titleZh: '磁盘 · CHECKPOINT', body: 'save → read → load local shard', bodyZh: '保存 → 读取 → 装入本地分片', tone: 'blue' },
-      { title: 'DISTRIBUTED · GROUP', titleZh: 'DISTRIBUTED · 通信组', body: 'one sender → many receivers', bodyZh: '一个发送方 → 多个接收方', tone: 'blue' },
-      { title: 'TENSOR · HANDLE', titleZh: 'TENSOR · 位置便签', body: 'handle = GPU location note', bodyZh: 'handle = GPU 位置便签', tone: 'blue' },
+      { title: 'DISK · CHECKPOINT', titleZh: '磁盘 · CHECKPOINT', body: 'save → read → load own part', bodyZh: '保存 → 读取 → 装入自己那份', tone: 'blue' },
+      { title: '2 · SEND VALUES', titleZh: '2 · 传权重数值', body: 'weight values · Step 3 explains', bodyZh: '权重数值 · 第 3 步展开', tone: 'blue' },
+      { title: '3 · SEND LOCATIONS', titleZh: '3 · 传权重位置', body: 'weight locations · Step 4 explains', bodyZh: '权重位置 · 第 4 步展开', tone: 'blue' },
     ],
     formulas: [
-      { en: "local shard = one worker's own part", zh: '本地分片 = 每个推理 worker 自己那片' },
-      { en: 'distributed: send values → receive', zh: 'distributed：发数值 → 收数值' },
-      { en: 'tensor: location note → find tensor', zh: 'tensor：位置便签 → 找到张量' },
+      { en: 'checkpoint = saved weights', zh: 'checkpoint = 存好的权重' },
+      { en: 'save → read → load own part', zh: '保存 → 读取 → 装入自己那份' },
+      { en: 'route 2: weight values · route 3: weight locations', zh: '路线 2：权重数值 · 路线 3：权重位置' },
     ],
   }, {
     caption: 'Training rank 0 broadcasts each full weight tensor. Each inference rank keeps and loads its part.',
     captionZh: '训练 rank 0 广播每个完整张量。推理 rank 留下并装入各自部分。',
-    title: 'Three channels · 2 of 3: broadcast values', titleZh: '三条通道 · 第 2 条：广播数值',
+    title: 'Three routes · 2 of 3: broadcast values', titleZh: '三条路线 · 第 2 条：广播数值',
     subtitle: 'rank = member number · broadcast = send identical values to every member', subtitleZh: 'rank = 成员编号 · broadcast = 把相同数值发给每个成员',
     foot: 'This example\'s process group has 1 training rank plus inference TP ranks.', footZh: '本例 process group 有 1 个训练 rank 和推理端 TP rank。',
     mobileTitle: '2 of 3 · broadcast values', mobileTitleZh: '第 2 条 · 广播数值',
@@ -85,7 +85,7 @@
   }, {
     caption: 'The tensor route assembles one full parameter. It sends handles that locate GPU memory, not the parameter\'s bytes.',
     captionZh: 'Tensor 路线先拼出一个完整参数。它发送的是 GPU 内存定位句柄，不是参数字节。',
-    title: 'Three channels · 3 of 3: send GPU handles', titleZh: '三条通道 · 第 3 条：发送 GPU 句柄',
+    title: 'Three routes · 3 of 3: send GPU handles', titleZh: '三条路线 · 第 3 条：发送 GPU 句柄',
     subtitle: 'parameter = one weight table · handle = its GPU location note', subtitleZh: 'parameter = 一张权重表 · handle = 它在 GPU 上的位置便签',
     foot: 'Handles carry no weight bytes; memory-access details are outside this step.', footZh: '句柄不含权重字节；接收方怎样访问那块 GPU 内存，本步不展开。',
     mobileTitle: '3 of 3 · GPU handles', mobileTitleZh: '第 3 条 · GPU 句柄',
@@ -304,9 +304,9 @@
         </g>
       {:else if step === 1}
         {#each [
-          { x: 30, at: 0, title: '1 · DISK', titleZh: '1 · 磁盘', name: 'checkpoint', detail: 'saved weights', detailZh: '存好的整套权重', flow: 'save v1 checkpoint', flowZh: '保存 v1 checkpoint', end: 'read checkpoint', endZh: '读取 checkpoint', end2: 'load local shard', end2Zh: '装入本地分片' },
-          { x: 265, at: 3, title: '2 · DISTRIBUTED', titleZh: '2 · DISTRIBUTED', name: 'process group', detail: 'cooperating members', detailZh: '一起传权的成员', flow: 'one sender', flowZh: '一个发送方', end: 'many receivers', endZh: '多个接收方', end2: '', end2Zh: '' },
-          { x: 500, at: 4, title: '3 · TENSOR', titleZh: '3 · TENSOR', name: 'handle', detail: 'GPU location note', detailZh: 'GPU 位置便签', flow: 'send note', flowZh: '发送便签', end: 'find tensor', endZh: '找到张量', end2: '', end2Zh: '' },
+          { x: 30, at: 0, title: '1 · DISK', titleZh: '1 · 磁盘', name: 'checkpoint', detail: 'saved weights', detailZh: '存好的整套权重', flow: 'save v1 checkpoint', flowZh: '保存 v1 checkpoint', end: 'read checkpoint', endZh: '读取 checkpoint', end2: 'load own part', end2Zh: '装入自己那份' },
+          { x: 265, at: 3, title: '2 · SEND VALUES', titleZh: '2 · 传权重数值', name: 'weight values', detail: 'Step 3 explains this route', detailZh: '第 3 步命名并展开', flow: '', flowZh: '', end: '', endZh: '', end2: '', end2Zh: '' },
+          { x: 500, at: 4, title: '3 · SEND LOCATIONS', titleZh: '3 · 传权重位置', name: 'weight locations', detail: 'Step 4 explains this route', detailZh: '第 4 步命名并展开', flow: '', flowZh: '', end: '', endZh: '', end2: '', end2Zh: '' },
         ] as route, i}
           <g opacity={phase >= route.at ? 1 : 0}>
             <rect x={route.x} y="88" width="190" height="282" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" />
@@ -314,10 +314,12 @@
             <text x={route.x + 95} y="166" text-anchor="middle" class="code">{route.name}</text>
             <text x={route.x + 95} y="195" text-anchor="middle" class="small">{t(route.detail, route.detailZh)}</text>
             <text x={route.x + 95} y={i === 0 ? 225 : 250} text-anchor="middle" class="small">{t(route.flow, route.flowZh)}</text>
-            <g opacity={i !== 0 || phase >= 1 ? 1 : 0}>
-              <text x={route.x + 95} y={i === 0 ? 249 : 280} text-anchor="middle" class="small">↓</text>
-              <text x={route.x + 95} y={i === 0 ? 273 : 310} text-anchor="middle" class="small">{t(route.end, route.endZh)}</text>
-            </g>
+            {#if route.end}
+              <g opacity={i !== 0 || phase >= 1 ? 1 : 0}>
+                <text x={route.x + 95} y={i === 0 ? 249 : 280} text-anchor="middle" class="small">↓</text>
+                <text x={route.x + 95} y={i === 0 ? 273 : 310} text-anchor="middle" class="small">{t(route.end, route.endZh)}</text>
+              </g>
+            {/if}
             {#if route.end2}
               <g opacity={phase >= 2 ? 1 : 0}>
                 <text x={route.x + 95} y="297" text-anchor="middle" class="small">↓</text>
@@ -327,7 +329,7 @@
           </g>
         {/each}
         <g opacity={phase >= 5 ? 1 : 0}>
-          <text x="360" y="405" text-anchor="middle" class="small strong">{t("Disk: save checkpoint → read it → load each worker's local shard", '磁盘：保存 checkpoint → 读取 → 装入各 worker 的本地分片')}</text>
+          <text x="360" y="405" text-anchor="middle" class="small strong">{t("Disk: save checkpoint → read it → load each worker's own part", '磁盘：保存 checkpoint → 读取 → 各 worker 装入自己那份')}</text>
           <text x="360" y="434" text-anchor="middle" class="small">{t('Blue = the three alternative weight handoffs', '蓝 = 三条备选权重交接路线')}</text>
         </g>
       {:else if step === 2}

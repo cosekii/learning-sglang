@@ -33,40 +33,44 @@ $$R=7.047\ \text{s}/0.000597\ \text{s}\approx11{,}800$$
 
 ### 接下来
 
-控制器知道 rollout 要拿到 v1，还不知道哪条路把 v1 送过去。下一步比较三条更新通道。
+控制器知道 rollout 要拿到 v1，还不知道哪条路把 v1 送过去。下一步比较三条路线。
 
 来源：`Awesome-ML-SYS-Tutorial/sglang/latency-accelerate-for-weight-updates/readme.md:556-558,980-1007`；第 6 章第 8 步。
 
-## 第 2 步 · 画出三条通道，再走磁盘路线
+## 第 2 步 · 画出三条路线，再走磁盘路线
 
-**一句话。** 三条路线都能交付同一套 v1 权重；磁盘路线先保存并读取 checkpoint，再让每个推理 worker 装入自己的本地分片。
+**一句话。** 三条路线都能交付同一套 v1 权重；磁盘路线先保存并读取 checkpoint，再让每个推理 worker 装入自己那份。
 
 ### 图上是什么
 
-- 三张卡画出备选的更新通道。`checkpoint` 是存好权重的文件，`process group` 是一起传权的成员，`handle` 是 GPU 位置便签。
-- 磁盘卡依次播放三个动作：把 v1 保存为 checkpoint，通过 `update_weights_from_disk` 读取它，再调用模型的权重加载器。每个推理 worker 装入本地分片，也就是自己负责的那部分权重。
-- Distributed 卡概括一个发送方和多个接收方。Tensor 卡概括位置便签的交接，第 4 步展开这个机制。
+- 三张卡画出备选路线。磁盘卡写出 `checkpoint`，也就是存好的权重；第二张卡传权重数值，第三张卡传权重位置。
+- 磁盘卡依次播放三个动作：把 v1 保存为 checkpoint，读取 checkpoint，再让每个 worker 装入自己那份。
+- 第二张和第三张卡只标明传什么。第 3 步和第 4 步再命名并展开它们的机制。
 - 三张卡都是蓝色，因为它们都是备选权重交接路线。一次更新只选一条。
 
 ### 公式与符号
 
-$$c\in\{\text{disk},\text{distributed},\text{tensor}\},\qquad d:\;v1\rightarrow C\rightarrow S_{\text{local}}$$
+$$c\in\{\text{disk},\text{values},\text{locations}\},\qquad d:\;v1\rightarrow C\rightarrow P_{\text{own}}$$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
-| $c$ | 一次交接选用的更新通道 | 三张卡中的一张 |
-| $d$ | 磁盘路线的保存、读取和本地装入顺序 | 磁盘卡 |
-| $v1$ | 这条通道交付的权重版本 | 第 6 章第 8 步 |
-| $C$ | 保存权重的 checkpoint 文件 | 磁盘卡 |
-| $S_{\text{local}}$ | 一个推理 worker 装入的本地分片 | 它自己负责的那部分权重 |
+| $c$ | 一次交接选用的路线 | 三张卡中的一张 |
+| $d$ | 磁盘路线的保存、读取和装入顺序 | 磁盘卡 |
+| $v1$ | 这条路线交付的权重版本 | 第 6 章第 8 步 |
+| $C$ | 存好权重的 checkpoint | 磁盘卡 |
+| $P_{\text{own}}$ | 一个推理 worker 装入的部分 | 它自己负责的那部分权重 |
 
 ### 代入图上的数
 
 地图有 3 条备选路线，磁盘卡有 3 个顺序动作。本步不新增引擎数量、字节总数或计时，尤其不虚构磁盘耗时。
 
+### 图外实现
+
+固定实现通过 `update_weights_from_disk` 读取 checkpoint，再调用模型的权重加载器。这两个 API 名都没有画上舞台。
+
 ### 接下来
 
-下一步展开 distributed 卡：训练 rank 0 在 process group 里广播完整权重张量。
+下一步展开第二张卡，并把这条路线命名为 distributed：训练 rank 0 在 process group 里广播完整权重张量。
 
 来源：`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-1.md:400-409`；`sgl-project/sglang@392e441ad17c78b68638f2d959fcf592d19b4834` 的 `python/sglang/srt/model_executor/model_runner.py:641-694`。
 

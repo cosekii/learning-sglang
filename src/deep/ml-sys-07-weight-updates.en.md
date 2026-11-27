@@ -33,40 +33,44 @@ The 7.047-second measurement covers the full distributed 1B update. The 0.001- a
 
 ### Next
 
-The controller knows that rollout must receive `v1`, but not which route carries it. The next step compares three update channels.
+The controller knows that rollout must receive `v1`, but not which route carries it. The next step compares three routes.
 
 Sources: `Awesome-ML-SYS-Tutorial/sglang/latency-accelerate-for-weight-updates/readme.md:556-558,980-1007`; Chapter 6 Step 8.
 
-## Step 2 · Map the channels and follow the disk route
+## Step 2 · Map the routes and follow the disk route
 
-**One sentence.** Three routes can deliver the same `v1` weights; the disk route saves and reads a checkpoint before each inference worker loads its local shard.
+**One sentence.** Three routes can deliver the same `v1` weights; the disk route saves and reads a checkpoint before each inference worker loads its own part.
 
 ### On the stage
 
-- The three cards map alternative update channels. A `checkpoint` is a file of saved weights, a `process group` is a set of cooperating members, and a `handle` is a GPU location note.
-- The disk card plays three actions in order: save `v1` as a checkpoint, read that checkpoint through `update_weights_from_disk`, then call the model's weight loader. Each inference worker loads its local shard, meaning its own part of the saved weights.
-- The distributed card summarizes one sender and many receivers. The tensor card summarizes the location-note handoff that Step 4 opens.
+- The three cards map alternative routes. The disk card names a `checkpoint`, meaning saved weights. The second card carries weight values, and the third carries weight locations.
+- The disk card plays three actions in order: save `v1` as a checkpoint, read that checkpoint, then load each worker's own part.
+- The second and third cards only identify what they carry. Steps 3 and 4 name and explain their mechanisms.
 - All three cards are blue because all are alternative weight handoffs. One update chooses one route.
 
 ### Formula and symbols
 
-$$c\in\{\text{disk},\text{distributed},\text{tensor}\},\qquad d:\;v1\rightarrow C\rightarrow S_{\text{local}}$$
+$$c\in\{\text{disk},\text{values},\text{locations}\},\qquad d:\;v1\rightarrow C\rightarrow P_{\text{own}}$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
-| $c$ | Update channel selected for one handoff | One of the three cards |
-| $d$ | Disk route's save, read and local-load chain | Disk card |
-| $v1$ | Weight version carried by that channel | Chapter 6 Step 8 |
-| $C$ | Checkpoint file containing saved weights | Disk card |
-| $S_{\text{local}}$ | Local shard loaded by one inference worker | Its own part of the saved weights |
+| $c$ | Route selected for one handoff | One of the three cards |
+| $d$ | Disk route's save, read and load chain | Disk card |
+| $v1$ | Weight version carried by that route | Chapter 6 Step 8 |
+| $C$ | Checkpoint containing saved weights | Disk card |
+| $P_{\text{own}}$ | Part loaded by one inference worker | Its own part of the saved weights |
 
 ### The numbers on the stage
 
 The map has three alternatives, and the disk card has three ordered actions. It adds no engine count, byte total or timing. In particular, the source supplies no disk timing.
 
+### Implementation · not drawn
+
+The pinned implementation reads the checkpoint through `update_weights_from_disk`, then calls the model's weight loader. Neither API name appears on the slide.
+
 ### Next
 
-The next step opens the distributed card: training rank 0 broadcasts full weight tensors inside the process group.
+The next step opens the second card and names the distributed route: training rank 0 broadcasts full weight tensors inside the process group.
 
 Sources: `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-1.md:400-409`; `python/sglang/srt/model_executor/model_runner.py:641-694` at `sgl-project/sglang@392e441ad17c78b68638f2d959fcf592d19b4834`.
 
