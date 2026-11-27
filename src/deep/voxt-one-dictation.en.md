@@ -108,6 +108,7 @@ Public baseline: `sglang-omni@14014b833299c6158a5daa88e1e0740cf7efe606`. Paths a
 
 ### On the stage
 
+- The picture builds in order: the setup (A starts first, B later; A's result arrives late), late A's box, the `A ≠ B` check, the block with A's own route, then B's result, the `B = B` check and the write into B.
 - Time order: A starts first, B starts later; A is tidying text, and its result arrives late.
 - First row: `A ≠ B`, so A does not write into B. A appears in its own result window and its saved results.
 - Second row: `B = B`, so B writes into its own result.
@@ -163,6 +164,7 @@ Public baseline: `sglang-omni@48ee40b2563492de95efc952a0c7470db087d8a9`. Paths a
 
 ### On the stage
 
+- The picture builds in order: you press cancel, the two possible late results appear (either one is enough), A is marked cancelled, the late results are stopped before the screen, and the saved record writes `cancelled` with an empty result.
 - You cancel A: this step covers cancellation only during recognition or clean-up.
 - The two boxes on the left are alternatives, not events that must happen together: a late recognition result or a late clean-up result.
 - The red box in the center marks A cancelled. Late results stop here.

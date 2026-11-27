@@ -17,8 +17,8 @@
     caption: 'One key press starts session A. A travels with the sentence to text and history.',
     captionZh: '按一下键启动 session A。A 跟着这句话，一路到屏幕文字和保存记录。',
   }, {
-    caption: "Late A appears in A's result window and is saved. B appears where you type or in B's result window.",
-    captionZh: '晚到的 A 显示在自己的结果小窗，也保存下来。B 显示在打字位置或自己的结果小窗。',
+    caption: 'Late A fails the A ≠ B check and goes to its own window. B passes B = B and is written.',
+    captionZh: '晚到的 A 没通过 A ≠ B 检查，回到自己的结果小窗。B 通过 B = B，写进自己的结果。',
   }, {
     caption: 'Cancel A while it recognizes or tidies. Late results stay off screen; its saved result is empty.',
     captionZh: '取消 A，晚到结果不显示。保存记录写着已取消，结果为空。',
@@ -30,11 +30,11 @@
     en: 'One key press starts session A, and the blue A tag walks the six stops in order: key press, helper, sound to words, tidy words, you see text, save text. Each stop, with its name and product, appears as the tag arrives and stays; no stop gets a new tag.',
     zh: '按一下键启动 session A，蓝色的 A 标签按顺序走过六站：按键、helper、声音变文字、整理文字、看到文字、保存文字。标签走到哪一站，哪一站才带着名字和产物出现并留下；没有一站换新标签。',
   }, {
-    en: "Late session A goes to its own result window and saved results, while B goes where you type or to B's result window",
-    zh: '晚到的 session A 进入自己的结果小窗和保存记录，B 进入打字位置或 B 的结果小窗',
+    en: 'A starts first and B later. Late A arrives, meets the check A ≠ B, and is kept out of B, going to A’s own result window and saved results; B’s own result passes B = B and is written into B.',
+    zh: 'A 先开始，B 后开始。晚到的 A 到达后遇到 A ≠ B 检查，被挡在 B 外，回到 A 自己的结果小窗和保存记录；B 自己的结果通过 B = B，写进 B。',
   }, {
-    en: 'Cancelling session A stops late text, and its saved record has no result text',
-    zh: '取消 session A 后晚到的文字停下，它的保存记录没有结果文字',
+    en: 'You press cancel while A recognizes or tidies. The two possible late results appear, A is marked cancelled, the late results are stopped before the screen, and the saved record says cancelled with an empty result.',
+    zh: '你在 A 识别或整理时按取消。两种可能的晚到结果出现，A 被标记为已取消，晚到结果在到达屏幕前被拦下，保存记录写着已取消、结果为空。',
   }];
   const route = [
     { name: 'YOU PRESS', nameZh: '你按一下', detail: 'one key', detailZh: '一个键' },
@@ -66,11 +66,14 @@
   ];
   const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 0 ? 440 : step === 3 ? 560 : 640) : 390);
 
-  // Steps 1 and 2 build as a process: Step 1 phases add dictation → tag → results
-  // for A then B, then A ≠ B; Step 2 phases walk one A tag through the six stops,
-  // each stop's product appearing as the tag arrives.
-  const ANIMATED = [true, true, false, false];
-  const PHASE_COUNTS = [7, 6, 1, 1];
+  // All four steps build as a process: Step 1 adds dictation → tag → results
+  // for A then B, then A ≠ B; Step 2 walks one A tag through the six stops;
+  // Step 3 plays late A through the A ≠ B check, then B through B = B;
+  // Step 4 plays cancel → late sources → cancelled state → interception → record.
+  const ANIMATED = [true, true, true, true];
+  const PHASE_COUNTS = [7, 6, 8, 5];
+  // Phone LoopProgress spot per step, kept clear of each step's titles.
+  const LP_PHONE: [number, number][] = [[227, 14], [220, 46], [220, 46], [230, 52]];
   const PHASE_MS = 900;
   const REST_MS = 2200;
   let phase = $state(0);
@@ -114,7 +117,7 @@
         </marker>
       </defs>
       {#if ANIMATED[step] && !reduced}
-        {#if phone}<LoopProgress ms={lapMs} {lap} x={step === 0 ? 227 : 220} y={step === 0 ? 14 : 46} />{:else}<LoopProgress ms={lapMs} {lap} />{/if}
+        {#if phone}<LoopProgress ms={lapMs} {lap} x={LP_PHONE[step][0]} y={LP_PHONE[step][1]} />{:else}<LoopProgress ms={lapMs} {lap} />{/if}
       {/if}
       {#if step === 0}
         {#if !phone}
@@ -230,57 +233,88 @@
         <text x={W / 2} y={phone ? 69 : 55} text-anchor="middle" class="route-detail">{t('A starts first → B starts later', 'A 先开始 → B 后开始')}</text>
         <text x={W / 2} y={phone ? 89 : 75} text-anchor="middle" class="route-detail">{t('A is tidying text; its result arrives late', 'A 正在整理文字，结果稍后才到')}</text>
         {#each gateRows as row, i}
+          {@const base = i * 3 + 1}
           {#if !phone}
             {@const y = 100 + i * 125}
-            <rect x="20" {y} width="180" height="88" rx="12" fill={row.ok ? 'var(--accent-soft)' : 'var(--bg)'} stroke={row.ok ? 'var(--accent)' : 'var(--line)'} />
-            <text x="110" y={y + 28} text-anchor="middle" class={row.ok ? 'session' : 'label'}>session {row.id}</text>
-            <text x="110" y={y + 52} text-anchor="middle" class="route-detail">{row.ok ? t('current result', '当前结果') : t('late result', '晚到的结果')}</text>
-            {#if !row.ok}
-              <text x="110" y={y + 75} text-anchor="middle" class="route-detail">{t("→ A's window + saved results", '→ A 的结果小窗 + 保存记录')}</text>
+            {#if phase >= base}
+              <g in:fade={{ duration: 250 }}>
+                <rect x="20" {y} width="180" height="88" rx="12" fill={row.ok || phase === base ? 'var(--accent-soft)' : 'var(--bg)'} stroke={row.ok || phase === base ? 'var(--accent)' : 'var(--line)'} stroke-width={phase === base ? 2.5 : 1} />
+                <text x="110" y={y + 28} text-anchor="middle" class={row.ok ? 'session' : 'label'}>session {row.id}</text>
+                <text x="110" y={y + 52} text-anchor="middle" class="route-detail">{row.ok ? t('current result', '当前结果') : t('late result', '晚到的结果')}</text>
+              </g>
             {/if}
-            <line x1="200" y1={y + 44} x2="245" y2={y + 44} stroke="var(--muted)" stroke-width="2" marker-end="url(#session-arrow)" />
-            <rect x="255" {y} width="210" height="88" rx="12" fill="var(--bg)" stroke="var(--line)" />
-            <text x="360" y={y + 23} text-anchor="middle" class="route-name">{t('SAME SESSION?', '同一个 session 吗？')}</text>
-            <text x="360" y={y + 50} text-anchor="middle" class={row.ok ? 'check yes' : 'check no'}>{row.id} {row.ok ? '=' : '≠'} B</text>
-            <text x="360" y={y + 73} text-anchor="middle" class={row.ok ? 'check yes' : 'check no'}>{row.ok ? t('write into B', '写进 B') : t('keep out of B', '不写进 B')}</text>
-            {#if row.ok}
-              <line x1="465" y1={y + 44} x2="515" y2={y + 44} stroke="var(--accent)" stroke-width="3" marker-end="url(#current-arrow)" />
-            {:else}
-              <line x1="465" y1={y + 44} x2="495" y2={y + 44} stroke="var(--muted)" stroke-width="2" />
-              <path d="M500 {y + 36} l16 16 M516 {y + 36} l-16 16" stroke="var(--eos)" stroke-width="3" />
+            {#if phase >= base + 1}
+              <g in:fade={{ duration: 250 }}>
+                <line x1="200" y1={y + 44} x2="245" y2={y + 44} stroke="var(--muted)" stroke-width="2" marker-end="url(#session-arrow)" />
+                <rect x="255" {y} width="210" height="88" rx="12" fill={phase === base + 1 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={phase === base + 1 ? 'var(--accent)' : 'var(--line)'} stroke-width={phase === base + 1 ? 2.5 : 1} />
+                <text x="360" y={y + 23} text-anchor="middle" class="route-name">{t('SAME SESSION?', '同一个 session 吗？')}</text>
+                <text x="360" y={y + 50} text-anchor="middle" class={row.ok ? 'check yes' : 'check no'}>{row.id} {row.ok ? '=' : '≠'} B</text>
+              </g>
             {/if}
-            <rect x="525" {y} width="170" height="88" rx="12" fill={row.ok ? 'var(--accent-soft)' : 'var(--bg)'} stroke={row.ok ? 'var(--accent)' : 'var(--line)'} stroke-dasharray={row.ok ? undefined : '5 4'} />
-            <text x="610" y={y + 23} text-anchor="middle" class="route-name">{t("B'S RESULT", 'B 这次的结果')}</text>
-            <text x="610" y={y + 47} text-anchor="middle" class="route-detail">{t('typing spot or result window', '打字位置或结果小窗')}</text>
-            <text x="610" y={y + 70} text-anchor="middle" class="route-detail">{row.ok ? t('B’s text appears', '显示 B 的文字') : t('no A here', 'A 写不进来')}</text>
+            {#if phase >= base + 2}
+              <g in:fade={{ duration: 250 }}>
+                <text x="360" y={y + 73} text-anchor="middle" class={row.ok ? 'check yes' : 'check no'}>{row.ok ? t('write into B', '写进 B') : t('keep out of B', '不写进 B')}</text>
+                {#if row.ok}
+                  <line x1="465" y1={y + 44} x2="515" y2={y + 44} stroke="var(--accent)" stroke-width="3" marker-end="url(#current-arrow)" />
+                {:else}
+                  <line x1="465" y1={y + 44} x2="495" y2={y + 44} stroke="var(--muted)" stroke-width="2" />
+                  <path d="M500 {y + 36} l16 16 M516 {y + 36} l-16 16" stroke="var(--eos)" stroke-width="3" />
+                {/if}
+                <rect x="525" {y} width="170" height="88" rx="12" fill={row.ok || phase === base + 2 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={row.ok || phase === base + 2 ? 'var(--accent)' : 'var(--line)'} stroke-width={phase === base + 2 ? 2.5 : 1} stroke-dasharray={row.ok ? undefined : '5 4'} />
+                <text x="610" y={y + 23} text-anchor="middle" class="route-name">{t("B'S RESULT", 'B 这次的结果')}</text>
+                <text x="610" y={y + 47} text-anchor="middle" class="route-detail">{t('typing spot or result window', '打字位置或结果小窗')}</text>
+                <text x="610" y={y + 70} text-anchor="middle" class="route-detail">{row.ok ? t('B’s text appears', '显示 B 的文字') : t('no A here', 'A 写不进来')}</text>
+                {#if !row.ok}
+                  <text x="110" y={y + 75} text-anchor="middle" class="route-detail">{t("→ A's window + saved results", '→ A 的结果小窗 + 保存记录')}</text>
+                {/if}
+              </g>
+            {/if}
           {:else}
             {@const y = 105 + i * 245}
-            <rect x="35" {y} width="230" height="46" rx="11" fill={row.ok ? 'var(--accent-soft)' : 'var(--bg)'} stroke={row.ok ? 'var(--accent)' : 'var(--line)'} />
-            <text x="150" y={y + 18} text-anchor="middle" class={row.ok ? 'session' : 'label'}>session {row.id}</text>
-            <text x="150" y={y + 37} text-anchor="middle" class="route-detail">{row.ok ? t('current result', '当前结果') : t('late → result window + saved results', '晚到 → 结果小窗 + 保存记录')}</text>
-            <line x1="150" y1={y + 46} x2="150" y2={y + 58} stroke="var(--muted)" stroke-width="2" marker-end="url(#session-arrow)" />
-            <rect x="35" y={y + 62} width="230" height="64" rx="11" fill="var(--bg)" stroke="var(--line)" />
-            <text x="150" y={y + 84} text-anchor="middle" class="route-name">{t('SAME SESSION?', '同一个 session 吗？')}</text>
-            <text x="150" y={y + 110} text-anchor="middle" class={row.ok ? 'check yes' : 'check no'}>{row.id} {row.ok ? '=' : '≠'} B · {row.ok ? t('write into B', '写进 B') : t('keep out of B', '不写进 B')}</text>
-            {#if row.ok}
-              <line x1="150" y1={y + 126} x2="150" y2={y + 146} stroke="var(--accent)" stroke-width="3" marker-end="url(#current-arrow)" />
-            {:else}
-              <line x1="150" y1={y + 126} x2="150" y2={y + 134} stroke="var(--muted)" stroke-width="2" />
-              <path d="M142 {y + 134} l16 16 M158 {y + 134} l-16 16" stroke="var(--eos)" stroke-width="3" />
+            {#if phase >= base}
+              <g in:fade={{ duration: 250 }}>
+                <rect x="35" {y} width="230" height="46" rx="11" fill={row.ok || phase === base ? 'var(--accent-soft)' : 'var(--bg)'} stroke={row.ok || phase === base ? 'var(--accent)' : 'var(--line)'} stroke-width={phase === base ? 2.5 : 1} />
+                <text x="150" y={y + 18} text-anchor="middle" class={row.ok ? 'session' : 'label'}>session {row.id}</text>
+                <text x="150" y={y + 37} text-anchor="middle" class="route-detail">{row.ok ? t('current result', '当前结果') : phase >= base + 2 ? t('late → result window + saved results', '晚到 → 结果小窗 + 保存记录') : t('late result', '晚到的结果')}</text>
+              </g>
             {/if}
-            <rect x="35" y={y + 150} width="230" height="60" rx="11" fill={row.ok ? 'var(--accent-soft)' : 'var(--bg)'} stroke={row.ok ? 'var(--accent)' : 'var(--line)'} stroke-dasharray={row.ok ? undefined : '5 4'} />
-            <text x="150" y={y + 169} text-anchor="middle" class="route-name">{t("B'S RESULT", 'B 这次的结果')}</text>
-            <text x="150" y={y + 187} text-anchor="middle" class="route-detail">{t('typing spot or result window', '打字位置或结果小窗')}</text>
-            <text x="150" y={y + 203} text-anchor="middle" class="route-detail">{row.ok ? t('B’s text appears', '显示 B 的文字') : t('no A here', 'A 写不进来')}</text>
+            {#if phase >= base + 1}
+              <g in:fade={{ duration: 250 }}>
+                <line x1="150" y1={y + 46} x2="150" y2={y + 58} stroke="var(--muted)" stroke-width="2" marker-end="url(#session-arrow)" />
+                <rect x="35" y={y + 62} width="230" height="64" rx="11" fill={phase === base + 1 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={phase === base + 1 ? 'var(--accent)' : 'var(--line)'} stroke-width={phase === base + 1 ? 2.5 : 1} />
+                <text x="150" y={y + 84} text-anchor="middle" class="route-name">{t('SAME SESSION?', '同一个 session 吗？')}</text>
+                <text x="150" y={y + 101} text-anchor="middle" class={row.ok ? 'check yes' : 'check no'}>{row.id} {row.ok ? '=' : '≠'} B</text>
+              </g>
+            {/if}
+            {#if phase >= base + 2}
+              <g in:fade={{ duration: 250 }}>
+                <text x="150" y={y + 118} text-anchor="middle" class={row.ok ? 'check yes' : 'check no'}>{row.ok ? t('write into B', '写进 B') : t('keep out of B', '不写进 B')}</text>
+                {#if row.ok}
+                  <line x1="150" y1={y + 126} x2="150" y2={y + 146} stroke="var(--accent)" stroke-width="3" marker-end="url(#current-arrow)" />
+                {:else}
+                  <line x1="150" y1={y + 126} x2="150" y2={y + 134} stroke="var(--muted)" stroke-width="2" />
+                  <path d="M142 {y + 134} l16 16 M158 {y + 134} l-16 16" stroke="var(--eos)" stroke-width="3" />
+                {/if}
+                <rect x="35" y={y + 150} width="230" height="60" rx="11" fill={row.ok || phase === base + 2 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={row.ok || phase === base + 2 ? 'var(--accent)' : 'var(--line)'} stroke-width={phase === base + 2 ? 2.5 : 1} stroke-dasharray={row.ok ? undefined : '5 4'} />
+                <text x="150" y={y + 169} text-anchor="middle" class="route-name">{t("B'S RESULT", 'B 这次的结果')}</text>
+                <text x="150" y={y + 187} text-anchor="middle" class="route-detail">{t('typing spot or result window', '打字位置或结果小窗')}</text>
+                <text x="150" y={y + 203} text-anchor="middle" class="route-detail">{row.ok ? t('B’s text appears', '显示 B 的文字') : t('no A here', 'A 写不进来')}</text>
+              </g>
+            {/if}
           {/if}
         {/each}
+        {#if phase >= 7}
+          {#if !phone}
+            <text x="360" y="338" text-anchor="middle" class="route-detail" in:fade={{ duration: 250 }}><tspan fill="var(--eos)">× {t('A keeps out of B', 'A 不写进 B')}</tspan><tspan dx="24" fill="var(--accent)">✓ {t('B writes into B', 'B 写进 B')}</tspan></text>
+          {:else}
+            <text x="150" y="574" text-anchor="middle" class="route-detail" in:fade={{ duration: 250 }}><tspan fill="var(--eos)">× {t('A keeps out of B', 'A 不写进 B')}</tspan><tspan dx="18" fill="var(--accent)">✓ {t('B writes into B', 'B 写进 B')}</tspan></text>
+          {/if}
+        {/if}
         {#if !phone}
-          <text x="360" y="338" text-anchor="middle" class="route-detail"><tspan fill="var(--eos)">× {t('A keeps out of B', 'A 不写进 B')}</tspan><tspan dx="24" fill="var(--accent)">✓ {t('B writes into B', 'B 写进 B')}</tspan></text>
           <text x="360" y="352" text-anchor="middle" class="footnote">{t("Both rows show B's result. You can choose the result window.", '两行都是 B 这次的结果；你可选结果小窗。')}</text>
           <text x="360" y="368" text-anchor="middle" class="footnote">{t('If insertion fails, text stays in the window.', '能贴就到打字位置，贴不进去就留在结果小窗。')}</text>
           <text x="360" y="384" text-anchor="middle" class="footnote">{t('Clean-up succeeds and saving is on in this example.', '本例整理成功，并开启保存记录。')}</text>
         {:else}
-          <text x="150" y="574" text-anchor="middle" class="route-detail"><tspan fill="var(--eos)">× {t('A keeps out of B', 'A 不写进 B')}</tspan><tspan dx="18" fill="var(--accent)">✓ {t('B writes into B', 'B 写进 B')}</tspan></text>
           <text x="150" y="594" text-anchor="middle" class="footnote">{t("Both rows are B's result; the window is optional.", '两行都是 B 这次的结果；你可选结果小窗。')}</text>
           <text x="150" y="612" text-anchor="middle" class="footnote">{t('If insertion fails, text stays in the window.', '能贴就到打字位置，贴不进去就留在结果小窗。')}</text>
           <text x="150" y="630" text-anchor="middle" class="footnote">{t('Clean-up succeeds and saving is on in this example.', '本例整理成功，并开启保存记录。')}</text>
@@ -288,63 +322,105 @@
       {:else}
         {#if !phone}
           <text x="360" y="28" text-anchor="middle" class="title">{t('CANCEL A · LATE RESULTS STOP', '取消 A · 晚到的结果停下')}</text>
-          <rect x="270" y="46" width="180" height="44" rx="12" fill="var(--bg)" stroke="var(--eos)" stroke-width="2" />
-          <text x="360" y="67" text-anchor="middle" class="cancel-title">{t('YOU PRESS CANCEL', '你按取消键')}</text>
-          <text x="360" y="84" text-anchor="middle" class="route-detail">{t('while recognizing or tidying', '识别或整理时')}</text>
-          <line x1="360" y1="90" x2="360" y2="116" stroke="var(--eos)" stroke-width="2" marker-end="url(#cancel-arrow)" />
-          {#each cancelSources as source, i}
-            {@const y = 126 + i * 86}
-            <rect x="20" {y} width="190" height="68" rx="12" fill="var(--bg)" stroke="var(--line)" />
-            <text x="115" y={y + 25} text-anchor="middle" class="route-name">{t(source.name, source.nameZh)}</text>
-            <text x="115" y={y + 50} text-anchor="middle" class="route-detail">{t(source.detail, source.detailZh)}</text>
-            <line x1="210" y1={y + 34} x2="260" y2={y + 34} stroke="var(--muted)" stroke-width="2" marker-end="url(#session-arrow)" />
-          {/each}
-          <rect x="270" y="126" width="180" height="146" rx="12" fill="var(--bg)" stroke="var(--eos)" stroke-width="2" />
-          <text x="360" y="154" text-anchor="middle" class="cancel-title">{t('A = CANCELLED', 'A = 已取消')}</text>
-          <text x="360" y="202" text-anchor="middle" class="cancel-x">×</text>
-          <text x="360" y="235" text-anchor="middle" class="route-name">{t('late results stop', '晚到的结果停下')}</text>
-          <line x1="450" y1="194" x2="480" y2="194" stroke="var(--eos)" stroke-width="2" />
-          <path d="M489 186 l16 16 M505 186 l-16 16" stroke="var(--eos)" stroke-width="3" />
-          <rect x="525" y="150" width="170" height="88" rx="12" fill="var(--bg)" stroke="var(--line)" />
-          <text x="610" y="174" text-anchor="middle" class="route-name">{t('YOU SEE TEXT', '看到文字')}</text>
-          <text x="610" y="197" text-anchor="middle" class="route-detail">{t('typing spot or result window', '打字位置或结果小窗')}</text>
-          <text x="610" y="222" text-anchor="middle" class="check no">{t('× no late A result', '× 没有晚到的 A 结果')}</text>
-          <line x1="360" y1="272" x2="360" y2="288" stroke="var(--muted)" stroke-width="2" marker-end="url(#session-arrow)" />
-          <text x="375" y="287" class="route-detail">{t('save cancellation', '保存取消状态')}</text>
-          <rect x="250" y="296" width="220" height="50" rx="12" fill="var(--bg)" stroke="var(--line)" />
-          <text x="360" y="316" text-anchor="middle" class="route-name">{t('SAVED RECORD', '保存记录')}</text>
-          <text x="360" y="336" text-anchor="middle" class="route-detail">{t('A · cancelled · result: empty', 'A · 已取消 · 结果文字：空')}</text>
+          <g in:fade={{ duration: 250 }}>
+            <rect x="270" y="46" width="180" height="44" rx="12" fill="var(--bg)" stroke="var(--eos)" stroke-width={phase === 0 ? 3 : 2} />
+            <text x="360" y="67" text-anchor="middle" class="cancel-title">{t('YOU PRESS CANCEL', '你按取消键')}</text>
+            <text x="360" y="84" text-anchor="middle" class="route-detail">{t('while recognizing or tidying', '识别或整理时')}</text>
+          </g>
+          {#if phase >= 1}
+            <g in:fade={{ duration: 250 }}>
+              {#each cancelSources as source, i}
+                {@const y = 126 + i * 86}
+                <rect x="20" {y} width="190" height="68" rx="12" fill={phase === 1 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={phase === 1 ? 'var(--accent)' : 'var(--line)'} stroke-width={phase === 1 ? 2.5 : 1} />
+                <text x="115" y={y + 25} text-anchor="middle" class="route-name">{t(source.name, source.nameZh)}</text>
+                <text x="115" y={y + 50} text-anchor="middle" class="route-detail">{t(source.detail, source.detailZh)}</text>
+              {/each}
+            </g>
+          {/if}
+          {#if phase >= 2}
+            <g in:fade={{ duration: 250 }}>
+              {#each cancelSources as _source, i}
+                {@const y = 126 + i * 86}
+                <line x1="210" y1={y + 34} x2="260" y2={y + 34} stroke="var(--muted)" stroke-width="2" marker-end="url(#session-arrow)" />
+              {/each}
+              <line x1="360" y1="90" x2="360" y2="116" stroke="var(--eos)" stroke-width="2" marker-end="url(#cancel-arrow)" />
+              <rect x="270" y="126" width="180" height="146" rx="12" fill="var(--bg)" stroke="var(--eos)" stroke-width={phase === 2 ? 3 : 2} />
+              <text x="360" y="154" text-anchor="middle" class="cancel-title">{t('A = CANCELLED', 'A = 已取消')}</text>
+              <text x="360" y="202" text-anchor="middle" class="cancel-x">×</text>
+              <text x="360" y="235" text-anchor="middle" class="route-name">{t('late results stop', '晚到的结果停下')}</text>
+            </g>
+          {/if}
+          {#if phase >= 3}
+            <g in:fade={{ duration: 250 }}>
+              <line x1="450" y1="194" x2="480" y2="194" stroke="var(--eos)" stroke-width="2" />
+              <path d="M489 186 l16 16 M505 186 l-16 16" stroke="var(--eos)" stroke-width="3" />
+              <rect x="525" y="150" width="170" height="88" rx="12" fill={phase === 3 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={phase === 3 ? 'var(--accent)' : 'var(--line)'} stroke-width={phase === 3 ? 2.5 : 1} />
+              <text x="610" y="174" text-anchor="middle" class="route-name">{t('YOU SEE TEXT', '看到文字')}</text>
+              <text x="610" y="197" text-anchor="middle" class="route-detail">{t('typing spot or result window', '打字位置或结果小窗')}</text>
+              <text x="610" y="222" text-anchor="middle" class="check no">{t('× no late A result', '× 没有晚到的 A 结果')}</text>
+            </g>
+          {/if}
+          {#if phase >= 4}
+            <g in:fade={{ duration: 250 }}>
+              <line x1="360" y1="272" x2="360" y2="288" stroke="var(--muted)" stroke-width="2" marker-end="url(#session-arrow)" />
+              <text x="375" y="287" class="route-detail">{t('save cancellation', '保存取消状态')}</text>
+              <rect x="250" y="296" width="220" height="50" rx="12" fill={phase === 4 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={phase === 4 ? 'var(--accent)' : 'var(--line)'} stroke-width={phase === 4 ? 2.5 : 1} />
+              <text x="360" y="316" text-anchor="middle" class="route-name">{t('SAVED RECORD', '保存记录')}</text>
+              <text x="360" y="336" text-anchor="middle" class="route-detail">{t('A · cancelled · result: empty', 'A · 已取消 · 结果文字：空')}</text>
+            </g>
+          {/if}
           <text x="360" y="364" text-anchor="middle" class="footnote">{t('Next: which program receives the cancel key?', '接下来：哪个程序接收取消键？')}</text>
           <text x="360" y="380" text-anchor="middle" class="footnote">{t('This example has a saved record.', '本例有这条保存记录。')}</text>
         {:else}
           <text x="150" y="24" text-anchor="middle" class="title">{t('CANCEL A', '取消 A')}</text>
           <text x="150" y="44" text-anchor="middle" class="title">{t('LATE RESULTS STOP', '晚到的结果停下')}</text>
-          <rect x="60" y="60" width="180" height="44" rx="12" fill="var(--bg)" stroke="var(--eos)" stroke-width="2" />
-          <text x="150" y="81" text-anchor="middle" class="cancel-title">{t('YOU PRESS CANCEL', '你按取消键')}</text>
-          <text x="150" y="98" text-anchor="middle" class="route-detail">{t('while recognizing or tidying', '识别或整理时')}</text>
-          {#each cancelSources as source, i}
-            {@const x = 15 + i * 140}
-            <rect {x} y="128" width="130" height="72" rx="12" fill="var(--bg)" stroke="var(--line)" />
-            <text x={x + 65} y="153" text-anchor="middle" class="route-name">{t(source.name, source.nameZh)}</text>
-            <text x={x + 65} y="178" text-anchor="middle" class="route-detail">{t(source.detail, source.detailZh)}</text>
-            <line x1={x + 65} y1="200" x2={100 + i * 100} y2="226" stroke="var(--muted)" stroke-width="2" marker-end="url(#session-arrow)" />
-          {/each}
-          <rect x="50" y="236" width="200" height="96" rx="12" fill="var(--bg)" stroke="var(--eos)" stroke-width="2" />
-          <text x="150" y="260" text-anchor="middle" class="cancel-title">{t('A = CANCELLED', 'A = 已取消')}</text>
-          <text x="150" y="294" text-anchor="middle" class="cancel-x">×</text>
-          <text x="150" y="319" text-anchor="middle" class="route-name">{t('late results stop', '晚到的结果停下')}</text>
-          <line x1="110" y1="332" x2="86" y2="356" stroke="var(--eos)" stroke-width="2" />
-          <path d="M72 358 l16 16 M88 358 l-16 16" stroke="var(--eos)" stroke-width="3" />
-          <line x1="190" y1="332" x2="220" y2="380" stroke="var(--muted)" stroke-width="2" marker-end="url(#session-arrow)" />
-          <text x="220" y="366" text-anchor="middle" class="route-detail">{t('save cancellation', '保存取消状态')}</text>
-          <rect x="15" y="390" width="130" height="100" rx="12" fill="var(--bg)" stroke="var(--line)" />
-          <text x="80" y="416" text-anchor="middle" class="route-name">{t('YOU SEE TEXT', '看到文字')}</text>
-          <text x="80" y="440" text-anchor="middle" class="route-detail">{t('typing spot or window', '打字位置或小窗')}</text>
-          <text x="80" y="468" text-anchor="middle" class="check no">{t('× no late result', '× 没有晚到的结果')}</text>
-          <rect x="155" y="390" width="130" height="100" rx="12" fill="var(--bg)" stroke="var(--line)" />
-          <text x="220" y="416" text-anchor="middle" class="route-name">{t('SAVED RECORD', '保存记录')}</text>
-          <text x="220" y="442" text-anchor="middle" class="route-detail">{t('A: cancelled', 'A：已取消')}</text>
-          <text x="220" y="468" text-anchor="middle" class="route-detail">{t('result: empty', '结果文字：空')}</text>
+          <g in:fade={{ duration: 250 }}>
+            <rect x="60" y="60" width="180" height="44" rx="12" fill="var(--bg)" stroke="var(--eos)" stroke-width={phase === 0 ? 3 : 2} />
+            <text x="150" y="81" text-anchor="middle" class="cancel-title">{t('YOU PRESS CANCEL', '你按取消键')}</text>
+            <text x="150" y="98" text-anchor="middle" class="route-detail">{t('while recognizing or tidying', '识别或整理时')}</text>
+          </g>
+          {#if phase >= 1}
+            <g in:fade={{ duration: 250 }}>
+              {#each cancelSources as source, i}
+                {@const x = 15 + i * 140}
+                <rect {x} y="128" width="130" height="72" rx="12" fill={phase === 1 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={phase === 1 ? 'var(--accent)' : 'var(--line)'} stroke-width={phase === 1 ? 2.5 : 1} />
+                <text x={x + 65} y="153" text-anchor="middle" class="route-name">{t(source.name, source.nameZh)}</text>
+                <text x={x + 65} y="178" text-anchor="middle" class="route-detail">{t(source.detail, source.detailZh)}</text>
+              {/each}
+            </g>
+          {/if}
+          {#if phase >= 2}
+            <g in:fade={{ duration: 250 }}>
+              {#each cancelSources as _source, i}
+                {@const x = 15 + i * 140}
+                <line x1={x + 65} y1="200" x2={100 + i * 100} y2="226" stroke="var(--muted)" stroke-width="2" marker-end="url(#session-arrow)" />
+              {/each}
+              <rect x="50" y="236" width="200" height="96" rx="12" fill="var(--bg)" stroke="var(--eos)" stroke-width={phase === 2 ? 3 : 2} />
+              <text x="150" y="260" text-anchor="middle" class="cancel-title">{t('A = CANCELLED', 'A = 已取消')}</text>
+              <text x="150" y="298" text-anchor="middle" class="cancel-x">×</text>
+              <text x="150" y="319" text-anchor="middle" class="route-name">{t('late results stop', '晚到的结果停下')}</text>
+            </g>
+          {/if}
+          {#if phase >= 3}
+            <g in:fade={{ duration: 250 }}>
+              <line x1="110" y1="332" x2="86" y2="356" stroke="var(--eos)" stroke-width="2" />
+              <path d="M72 358 l16 16 M88 358 l-16 16" stroke="var(--eos)" stroke-width="3" />
+              <rect x="15" y="390" width="130" height="100" rx="12" fill={phase === 3 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={phase === 3 ? 'var(--accent)' : 'var(--line)'} stroke-width={phase === 3 ? 2.5 : 1} />
+              <text x="80" y="416" text-anchor="middle" class="route-name">{t('YOU SEE TEXT', '看到文字')}</text>
+              <text x="80" y="440" text-anchor="middle" class="route-detail">{t('typing spot or window', '打字位置或小窗')}</text>
+              <text x="80" y="468" text-anchor="middle" class="check no">{t('× no late result', '× 没有晚到的结果')}</text>
+            </g>
+          {/if}
+          {#if phase >= 4}
+            <g in:fade={{ duration: 250 }}>
+              <line x1="190" y1="332" x2="220" y2="380" stroke="var(--muted)" stroke-width="2" marker-end="url(#session-arrow)" />
+              <text x="220" y="366" text-anchor="middle" class="route-detail">{t('save cancellation', '保存取消状态')}</text>
+              <rect x="155" y="390" width="130" height="100" rx="12" fill={phase === 4 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={phase === 4 ? 'var(--accent)' : 'var(--line)'} stroke-width={phase === 4 ? 2.5 : 1} />
+              <text x="220" y="416" text-anchor="middle" class="route-name">{t('SAVED RECORD', '保存记录')}</text>
+              <text x="220" y="442" text-anchor="middle" class="route-detail">{t('A: cancelled', 'A：已取消')}</text>
+              <text x="220" y="468" text-anchor="middle" class="route-detail">{t('result: empty', '结果文字：空')}</text>
+            </g>
+          {/if}
           <text x="150" y="534" text-anchor="middle" class="footnote">{t('Next: which program receives the cancel key?', '接下来：哪个程序接收取消键？')}</text>
           <text x="150" y="550" text-anchor="middle" class="footnote">{t('This example has a saved record.', '本例有这条保存记录。')}</text>
         {/if}
@@ -372,5 +448,6 @@
   @media (max-width: 600px) {
     .title { font-size: 14px; }
     .label, .session, .rowlabel, .footnote, .route-name, .route-detail, .check { font-size: 12px; }
+    .cancel-x { font-size: 26px; }
   }
 </style>
