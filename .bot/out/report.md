@@ -1,3 +1,40 @@
+# lane k2 本轮报告 · ML Systems 13 Step 8 的 ML-63／64
+
+日期：2026-11-27。类型：修旧（direction 指定的 ML-55 后下一独立单元）。本轮开始 HEAD 与 `origin/tutorials` 均为 `6b63241`，工作树干净；ML-55 已由 `622eac2` 完成并留下完整证据，本轮不回改待复审批次，直接处理 ML 13 Step 8。范围只有该步组件、双语 deep、生成 transcript、本章评分卡与进度记录、定向审计和本报告；未改其他步、其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。ML-52／53 保持关闭，未开第 14 章。
+
+## 提交与 finding
+
+- `6fcb7d0`：**ML-63／64 作者修复完成，待协调固定复审，不自行销项。** 中文 caption 从「7 和 12 个响应」改为「7 和 12 个 token 的响应」，英文、两种 mask 为 0 和舞台机制不变。
+- 双语 deep 都声明代入例假设 tokenizer 的 pad ID 为 0。pinned `verl-project/verl@c5b189a1af496d0bc68320cd1d5bd7a1f1e3638a` 的 `agent_loop.py:354-365` 先用 `tokenizer.pad` 填充原始 response mask，再乘 response attention mask；pad ID 非 0 时原始 padding 格是该 ID，但 `$Z=0$` 使最终 padding mask 仍为 0。
+- 首次教程提交为 `1d74b8c`，推送被拒后按指示 `git pull --rebase origin tutorials`，带入 d 的 `7b758d6`、`1d6132b` 和 k1 的 `844c554`。最终 `6fcb7d0` 推送成功；未 force-push。评分卡、进度、审计和本报告随下一记录提交推送。
+
+## 作者评分与独立冷读
+
+| 步 | R1–R5 | 机制 R6 | 原十个非视觉项 | R1 小学生复述 | 新内容洞 |
+|---|---:|---:|---:|---|---:|
+| 8 | 10/10 | 2/2 | 20/20 | 两条响应分别有 7 和 12 个 token，右侧 padding 把它们对齐；pad ID 非 0 会留在原始 mask，但最终 mask 仍排除 padding。 | 0 |
+
+- 独立 `explore` 冷读 **PASS**：中文长度含义、两句短 caption、双语 pad-ID 前提、非 0 反例和 deep／舞台／transcript 对齐均通过，两项均 ready for coordinator review，剩余新内容洞 **0**。
+- 这些是作者复评与独立源码、transcript、DOM 冷读，不是协调 verdict。协调固定 `0ad6a13` 的 **80/80、158/160、16/16、190/192、NO-GO** 基线不改写；原 #4/#5、整章新总分和销项不由本轮自行决定。
+
+## 硬门与证据
+
+- 最终 rebase 后 `npm run build`：**60 页**通过；Step 8 `readability`：**0 机械问题**；`BOOK=ml-sys node scripts/deep-check.mjs 13`、`zh-check`、英中全章 360／390／430 px `mobile`、中文 Step 8 字号门和 `git diff --check` 全过。
+- transcript 连续两次 SHA-256 相同，rebase 后仍为 `b39adf25ee01ac079cb5140cc685b15e46404a897ac7d1cdbdbb43fe05e6cb0e`，**1,833 词**。无 caption、文字出界、重叠或文本规则报告。
+- `.bot/out/ml63-step8-audit/report.json` 覆盖英中桌面与中文 390 px × direct／前步入口，共 **6 组合、24 个状态、18/18 个机制转变**；另有双语 1440／390 px 共 **4 个 deep 状态**。审计逐相检查 counter、phase、中文 token 长度和双语 pad-ID 前提，所有 deep 均 `aria-expanded=true`，无 KaTeX、raw-math 或横溢失败。
+- 最终审计最低 **10.175376647834275 CSS px**，重叠、SVG 出界、页面或抽屉横溢和 `failures` 均为 **0**。可重跑脚本：`.bot/out/ml63-step8-audit.mjs`。桌面 deep 打开后舞台最低 **5.746527777777778 CSS px**，仍属共享 ML-21，本单元未改。
+- 代表截图：`.bot/out/ml63-step8-audit/en-1440-direct-s8-p3.png`、`.bot/out/ml63-step8-audit/zh-390-direct-s8-p3.png`。读取 PNG 时工具返回「this model does not support image input」；以上结论来自构建、transcript、源码、独立冷读、DOM 和几何检查，未声称看过图片或视觉通过。
+- 本章没有直接 zero-to-sglang 对照章。本单元只核对了 pinned verl 的 padding 实现，未引入新测量数字；未跑全站回归、真实训练、rollout、工具调用、VLM、GPU benchmark 或 reduced-motion 动态切换。最新回归只有 `(exit 13)`，没有可分配布局步骤。
+
+## 剩余与清理
+
+- 剩余事项是 ML-63／64 的协调固定复审、原 #4/#5、整章评分、具备图像能力的复审和主人最终视觉验收。共享 ML-21／22、ML-55 和其他待审或开放 finding 未改。
+- 本 clone 的 `node_modules` 开始时指向协调人 checkout。第一次 build 因该符号链接的缓存权限报 EPERM，未写入目标；随后只删除本目录内的符号链接并在本目录 `npm ci`，package 文件无 diff，最终 build 通过，未写协调人的 checkout。
+- 本地查看地址：`http://localhost:4511/learning-sglang/ml-sys/ch/13-multi-turn-agent-rl/?step=8`。本轮 4511 服务已在收尾停止，端口无监听。
+- 审计脚本调用 `browser.close()`。收尾 `pgrep -P 1 -fl 'headless=new.*cdp-'` 无输出；本轮没有遗留浏览器。
+
+---
+
 # lane k2 本轮报告 · ML Systems 07 Step 5 的 ML-55
 
 日期：2026-11-27。类型：修旧（direction 指定的下一最小单元）。本轮开始 HEAD 与 `origin/tutorials` 均为 `975362f`，工作树干净。范围只有 ML 07 Step 5 的组件、双语 deep、MDX 出处、生成 transcript、本章评分卡与进度记录、定向审计和本报告；未改其他步、其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。ML-41～44 与 ML-50 的关闭结论保持不变，Step 7 的 warm-up 链未改；`3a106be 0547d98` 的 ML 13 Step 5 记录保持独立，本单元不关闭 ML-52，也未开第 14 章。

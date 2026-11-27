@@ -4,6 +4,9 @@
 
 ## 本轮记录
 
+- 修旧 Learning ML Systems 第 13 章 Step 8 的 ML-63／64：中文 caption 明确两条响应分别有 7 和 12 个 token；双语 deep 声明代入例的 pad ID 为 0，并解释 pad ID 非 0 时原始 response mask 的 padding 格是该 ID，但 attention mask 为 0，最终 padding mask 仍为 0。教程提交 `6fcb7d0` 待协调固定复审，不自行销项；ML-52／53 保持关闭，既有 ML-55 提交未回改，未开第 14 章。
+- Step 8 作者参考值为 R1–R5 **10/10**、机制 R6 **2/2**、原十个非视觉项 **20/20**、0 新内容洞，独立 `explore` 冷读 **PASS**。rebase 后 `build`（60 页）、Step 8 `readability`、哈希一致的 `transcript`（1,833 词，`b39adf25…e6cb0e`）、`deep-check 13`、`zh-check`、英中全章与中文 Step 8 三宽度 `mobile`、`git diff --check` 全过；定向审计 **24 个状态、18/18 个机制转变、4 个 deep 状态**，最低 **10.175376647834275 CSS px**，重叠、出界和 `failures` 为 0。固定 `0ad6a13` 的协调 **80/80、158/160、16/16、190/192、NO-GO** 基线不改写；当前模型不能读 PNG，视觉、原 #4/#5 和整章 verdict 待协调。本轮类型：**修旧**。
+
 - 修旧 Learning SGLang Omni 第 13 章 Step 9 的 Omni-51：direction 指定的 Omni-50 已由当前 HEAD 的 `ac65a00`、`308a9d5` 完成，保留待复审批次，不重复返工；按上一轮报告的下一单元处理本项。Step 9 改为八相：warmup 1 发送、HTTP 200，warmup 2 发送、HTTP 200 后就绪，再进入 A/B、两类记录和听者时钟。`max(process.num_replicas) = 2` 与 pinned `serve/launcher.py` 的顺序请求、逐个 200、全部成功才 `UP` 一致；双语组件、MDX、deep 与 transcript 已同步，教程修复待协调固定复审，不自行销项。
 - Step 9 作者参考值为 R1–R5 **10/10**、机制 R6 **2/2**、原十个非视觉项 **20/20**、0 新内容洞，独立 `explore` 冷读 **PASS**。`build`（60 页）、十步 `readability`、两次一致的 transcript（3,586 词，`9f5e5a3f…7796`）、`deep-check 13`、`zh-check`、英中全章与中文 Step 9 三宽度 `mobile`、`git diff --check` 全过。定向审计 **6 组合、48 状态、42/42 转变**，最低 **10.806 CSS px**；双语 deep **8 视图**。桌面抽屉缩舞台与焦点仍属共享 ML-21／22。当前模型不能读 PNG，视觉与整章 verdict 待协调；未跑真实服务器、warmup、模型或全站回归。本轮类型：**修旧**；下一单元按本书 P1 顺序处理 **Omni-52**。
 
