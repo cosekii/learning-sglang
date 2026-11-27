@@ -1,3 +1,40 @@
+# lane k2 本轮报告 · ML Systems 13 Step 8 的 ML-53
+
+日期：2026-11-27。类型：修旧（ML-52 后按 owner rule 处理本书开放 P1）。本轮开始 HEAD 与 `origin/tutorials` 均为 `3a106be`，工作树干净。范围只有 ML 13 Step 8 的组件、双语 deep、生成 transcript、本章评分卡与进度记录、定向审计和本报告；未改其他步、其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。共享 ML-21／22 保持独立，未开第 14 章。
+
+## 提交与 finding
+
+- `0282af3`：**ML-53 作者修复完成，待协调固定复审，不自行销项。** 桌面、手机和双语 deep 都以 padding 后的 batch 收尾，明确本章不测量模型生成、工具执行和训练的等待，删除「哪段等待最长」及下一章承诺。第 14–16 章仍为 `ready:false`，浏览器确认末步没有下一章链接。
+- padding、`7+5=12`、response mask 和 attention mask 的相位机制未改。双语 deep 的长 commit 标识和源码路径只在 `/`、`@` 后增加 `<wbr>`；首轮手机 deep 审计的 55／50 px 横溢降为 0，来源文字未变。
+- 首次教程提交为 `ed6c220`，推送被拒后按指示 `git pull --rebase origin tutorials`，带入 d 的 `00365a2`。最终 `0282af3` 推送成功；未 force-push。
+
+## 作者评分与独立冷读
+
+| 步 | R1–R5 | 机制 R6 | 原十个非视觉项 | R1 小学生复述 | 新内容洞 |
+|---|---:|---:|---:|---|---:|
+| 8 | 10/10 | 2/2 | 20/20 | 配置要求响应占 12 格，S2 只有 7 个真实 token，所以右边补 5 格；两种 mask 都把补上的格子标为 0，本章没有测量生成、工具和训练的等待。 | 0 |
+
+- 独立 `explore` 对 ML-53 内容给出 **PASS**：旧问题和下一章承诺已删除，双语同义，没有新增术语、性能断言或内容洞，实际 roster 没有 ready 的下一章。它另确认共享 ML-21 的桌面 drawer 字号门仍未通过，因此没有给出全 EVAL PASS。
+- 这些是作者复评与独立源码、transcript、DOM 冷读，不是协调 verdict。原 #4/#5、整章新总分和销项不由本轮自行改写。
+
+## 硬门与证据
+
+- 最终 rebase 后 `npm run build`：**60 页**通过；8 步 `readability`：**0 机械问题**；`BOOK=ml-sys node scripts/deep-check.mjs 13`、`zh-check`、英中全章 360／390／430 px `mobile`、中文 Step 8 字号门和 `git diff --check` 全过。
+- transcript 连续两次 SHA-256 相同，rebase 后第三次仍相同：`bbf346860045c4573f2952d3b3f20cbe6d8c76487a2f1ec826755fac1dfe042d`，**1,831 词**。无 caption、文字出界、重叠或文本规则报告。
+- `.bot/out/ml53-step8-audit/report.json` 覆盖英文桌面、中文桌面、中文 390 px × 直接 URL／前步入口，共 **6 组合、24 个状态、18/18 个机制转变**；另有双语 1440／390 px 共 **4 个 deep 状态**。最终审计有 **24 个唯一 PNG 哈希**，普通舞台最低 **10.175376647834275 CSS px**，重叠、SVG 出界、页面或抽屉横溢和 `failures` 均为 **0**。可重跑脚本：`.bot/out/ml53-step8-audit.mjs`。
+- 四个 deep 状态均展开到 Step 8，无 raw math、KaTeX 错误、页面或抽屉横溢。deep 打开后的桌面舞台最低 **5.746527777777778 CSS px**，属于既有共享 ML-21，本单元未改共享布局，不声称该呈现门通过。
+- 代表截图：`.bot/out/ml53-step8-audit/en-1440-direct-s8-p3.png`、`.bot/out/ml53-step8-audit/zh-390-direct-s8-p3.png`。读取 PNG 时工具返回「this model does not support image input」；以上结论来自构建、transcript、源码、独立冷读、DOM 和几何检查，未声称看过图片或视觉通过。
+- 本章没有直接 zero-to-sglang 或上游对应章。本单元只改章末范围声明和断行，不引入新的机制事实；未跑全站回归、真实训练、rollout、工具调用、VLM、GPU benchmark 或 reduced-motion 动态切换。最新回归只有 `(exit 13)`，没有可分配布局步骤。
+
+## 剩余与清理
+
+- 剩余事项是 ML-53 的协调固定复审、原 #4/#5、整章评分、共享 ML-21／22、具备图像能力的复审和主人最终视觉验收。ML-52 及其他待审或开放 finding 未改。
+- 本 clone 的 `node_modules` 开始时指向协调人 checkout；只删除本目录内的符号链接并在本目录安装依赖，package 文件无 diff，未写协调人的 checkout。
+- 本地查看前运行 `npx astro dev --background --host 127.0.0.1 --port 4506`，地址：`http://127.0.0.1:4506/learning-sglang/ml-sys/ch/13-multi-turn-agent-rl/?step=8`。本轮 4506 服务已停止，端口无监听。
+- 审计脚本调用 `browser.close()`。收尾 `pgrep -P 1 -fl 'headless=new.*cdp-'` 无输出；本轮没有遗留浏览器。
+
+---
+
 # lane k2 本轮报告 · ML Systems 13 Step 5 的 ML-52
 
 日期：2026-11-27。类型：修旧（ML-51 后按 owner rule 处理本书开放 P1）。本轮开始 HEAD 与 `origin/tutorials` 均为 `3d7ac9f`，工作树干净。范围只有 ML 13 Step 5 的组件、数字常量、双语 deep、生成 transcript、本章评分卡与进度记录、定向审计和本报告；未改其他步、其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。ML-53 与共享 ML-21／22 保持独立，未开第 14 章。
