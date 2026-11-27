@@ -5,8 +5,9 @@
 - 教程提交 `cebc7bd`。只改第 2 步及其双语深入讲解、出处说明和生成 transcript；第 4 步 FP32 AVG 与其他步未改。固定 `f358bbf` 的协调 GO 仍是既有基线，本项作者返工待协调核销，不自行改成协调关闭。
 - 舞台按五相展示 logical tensor `W` → `Shard(0)` placement → 各 rank 的 local shard → 同尺度训练状态对照 → 后续聚合指引。`ALL SAVED TABLES` 把单参数的一行分片与每个 rank 的 8 GB 整体训练状态分开；`250 px = 512 GB` 的双柱保留 512 GB 对 64 GB 的同尺度比较。末相用一个「需要完整数值时拼回去」的指引连接第 3 步 all-gather 和第 6 步 `Replicate()`，不把它们另教成两个新概念。
 - 独立 explore 冷读首轮发现分片范围和术语解释两个阻塞，返工后复读为 **ML-17 PASS、R1–R5 10/10、机制 R6 2/2、剩余阻塞 0**。小学生复述：「8 张 GPU 把每张权重表按行分开，各留一片，所以每卡保存的训练表从 64 GB 变成 8 GB。」作者非视觉原项 **20/20**；原 #4／#5 与整章原十二项新总分不自行提分，留待协调实图复审。
+- 后续独立 explore 复审发现 caption 的 `every tensor` 会误含 activation 等不分片张量。`75bb176` 把英中 caption 收窄为 `every parameter tensor`／`每个参数张量`，不改舞台机制或 Step 4 的 FP32 AVG。复读为 **ML-17 PASS、R1–R5 10/10、机制 R6 2/2、非视觉原项 20/20、剩余内容洞 0**。
 - 可重跑脚本 `.bot/out/ml08-step2-audit.mjs` 审计 **40 个普通状态**：英中桌面五相 10 个，英中 360／390／430 px 五相 30 个。counter／step／phase 身份均正确，**32/32** 个相邻相位改变机制，文字重叠和 SVG 出界均为 **0**，最低可见字体 **10.407 CSS px**。另存 2 张双语 deep 图，`aria-expanded=true`、`Shard(0)`／`Replicate()` 文本、KaTeX 和横向溢出检查通过。报告为 `.bot/out/ml08-step2-audit/report.json`。
-- `build`（60 页）、Step 2 readability、英中全章及中文 Step 2 三宽度 mobile、`deep-check 08`、`zh-check`、`git diff --check` 均通过。默认 transcript 连续两次逐字一致，**1,883 词**，SHA-256 `53197a468c6545732b1c466b34534884cab8e5c514ebc113c0f8fdf1dee200a3`。
+- `build`（60 页）、Step 2 readability、英中全章及中文 Step 2 三宽度 mobile、`deep-check 08`、`zh-check`、`git diff --check` 均通过。`75bb176` 的默认 transcript 连续两次逐字一致，**1,884 词**，SHA-256 `9cbc88c326308bb17fa6fc6c7cffe0a6bffbddae8c348e15fe2e9d010e8faf36`。
 - 当前模型不能读 PNG，未声称视觉通过。未跑全站回归、真实 FSDP2 训练、GPU benchmark、故障注入或 reduced-motion 动态切换；主人最终视觉与产品验收另计。
 
 ## 2026-11-26 ML-09 静态机制返工与 ML-14 事实修复

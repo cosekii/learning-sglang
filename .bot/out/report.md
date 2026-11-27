@@ -1,3 +1,30 @@
+# lane k2 本轮报告 · ML Systems 08 Step 2 的 ML-17 收尾
+
+日期：2026-11-27。类型：修旧。范围只有 ML Systems 第 8 章第 2 步、生成 transcript、本章评分与进度记录、验证材料和本报告；未改其他 ML 章、Omni、Voxt、第 1 本受保护英文原文或 `.bot/memory/`。
+
+## 修复与评分
+
+- 本轮开始时 HEAD 为 `968eb98`，既有 `cebc7bd` 已完成 logical tensor `W` → `Shard(0)` placement → local shard 的五相演示，并连接第 3 步 all-gather 与第 6 步 `Replicate()`。本轮没有重做这些相位，也没有改第 4 步的 FP32 `ReduceOp.AVG` 与 `R/B` 预缩放。
+- 独立 explore 复审首先判 **NO-GO**：caption 的 `every tensor` 会误含 activation 等不分片张量。教程提交 `75bb176 [k2] Scope ML 08 sharding to parameters` 已推 `origin/tutorials`，把英中 caption 分别收窄为 `every parameter tensor` 和 `每个参数张量`。
+- 同一 explore 复读为 **ML-17 PASS**：R1–R5 **10/10**、机制 R6 **2/2**、非视觉原项 **20/20**、剩余内容洞 **0**。小学生复述：「八张显卡把一张权重表按行分成八份，每张只留一份，所以每卡要保存的训练表从 64 GB 减到 8 GB；需要整张表时，再把各份拼回来。」
+- 协调的 ML-17 仍待固定复审，本报告不自行销项或改写整章协调总分。pstack-reviewer 因配置模型不存在而未启动，未计为证据；上述独立结论来自 explore 的源码、transcript、deep 与 DOM 复核。
+
+## 验证与证据
+
+- `npm run build`：**60 页**通过。Step 2 readability、`BOOK=ml-sys node scripts/deep-check.mjs 08`、`zh-check`、英中全章三宽度 mobile、中文 Step 2 字号门和 `git diff --check` 全过。
+- 默认 transcript 连续两次逐字一致：**1,884 词**，SHA-256 `9cbc88c326308bb17fa6fc6c7cffe0a6bffbddae8c348e15fe2e9d010e8faf36`。
+- 重跑 `.bot/out/ml08-step2-audit.mjs`：**40 个普通状态、32/32 个机制转变**，最低可见字体 **10.407 CSS px**，文字重叠和 SVG 出界均为 **0**。双语 deep 均确认展开，并包含 `Shard(0)` 与 `Replicate()`；KaTeX、残留公式和横向溢出检查通过。报告为 `.bot/out/ml08-step2-audit/report.json`。
+- 代表截图：`/Users/shuohuang/code/hmz-work/ls-k2-1127-003249/.bot/out/ml08-step2-audit/en-1440-s2-p4.png`。当前模型不能读取 PNG，工具已返回 `Cannot read image`；本轮只报告 DOM、文本和几何结果，未声称看过图片或视觉通过，原 #4／#5 与协调视觉 verdict 留待复审。
+- 本 clone 的 `node_modules` 初始为指向协调人 checkout 的符号链接。已只删除本目录内的符号链接并执行本地 `npm install`，后续依赖、cache、dev server 和构建均在本 clone，未写协调人的 checkout。
+
+## 剩余与本地查看
+
+- 未跑全站回归、真实 FSDP2 训练、SGLang／CUDA、GPU benchmark、故障注入或 reduced-motion 动态切换。其他 ML 开放 findings 不因本轮自动关闭，不开第 14 章。
+- 本地章节地址：`http://localhost:4468/learning-sglang/ml-sys/ch/08-fsdp2-training-backend/?step=2`。本轮 4468 dev server 和脚本启动的浏览器均在收尾关闭；查看前在本目录运行 `npx astro dev --background --port 4468`。
+- 本记录随后续 `[k2] ` 提交推送。主人与协调人的最终视觉和产品验收另计。
+
+---
+
 # lane k1 本轮报告 · Omni 14 八步桌面小字返工
 
 日期：2026-11-27。类型：修旧。范围只含 Learning SGLang Omni 第 14 章 `SlowReaderBackpressure.svelte`、本章评分记录、验证产物和本报告；未改 Omni 11／13／15、其他书、其他 lane 的章节、第 1 本受保护英文原文或 `.bot/memory/`。
