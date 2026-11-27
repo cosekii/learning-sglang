@@ -133,6 +133,11 @@ export const QWEN_BENCH_REPEATS = 5;
 export const QWEN_BENCH_RUNS_PER_ARM = QWEN_BENCH_CONCURRENCIES.length * QWEN_BENCH_REPEATS;
 export const QWEN_P99_MIN_SAMPLES = 100;
 
+// Playback deadline from Learning SGLang Ch. 20 Steps 1–3: ten 80 ms frames make one 800 ms chunk.
+export const QWEN_STREAM_CHUNK_FRAMES = 10;
+export const QWEN_STREAM_FRAME_MS = 80;
+export const QWEN_STREAM_CHUNK_MS = QWEN_STREAM_CHUNK_FRAMES * QWEN_STREAM_FRAME_MS;
+
 // A minimal tensor-parallel layout: one logical stage, one process per rank.
 export const TP_EXAMPLE_SIZE = 2;
 export const TP_EXAMPLE_STAGE_COUNT = 1;

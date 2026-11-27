@@ -62,6 +62,9 @@
     QWEN_VIDEO_TEST_TOTAL_GB,
     QWEN_VIDEO_TEST_OVERFLOW_GB,
     QWEN_VIDEO_TEST_WITHOUT_TALKER_GB,
+    QWEN_STREAM_CHUNK_FRAMES,
+    QWEN_STREAM_FRAME_MS,
+    QWEN_STREAM_CHUNK_MS,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -106,7 +109,7 @@
     return () => query.removeEventListener('change', update);
   });
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [870, 820, 900, 930, 850, 930, 910, 1080][step] : [560, 600, 650, 680, 600, 630, 600, 650][step]);
+  const H = $derived(phone ? [870, 820, 900, 930, 850, 930, 1050, 1080][step] : [560, 600, 650, 680, 600, 630, 650, 650][step]);
   const budgetSegments = [
     ...COLOCATED_STAGE_SHARES.flatMap((stage) => stage.name === 'thinker' ? [
       { name: 'thinker AR', percent: QWEN_THINKER_EFFECTIVE_AR_PERCENT, kind: 'stage' },
@@ -137,7 +140,7 @@
   ];
 
   // Each scene builds its own objects and numbers, then holds the finished state.
-  const PHASE_COUNTS = [3, 5, 6, 4, 3, 4, 4, 6];
+  const PHASE_COUNTS = [3, 5, 6, 4, 3, 4, 6, 6];
   const PHASE_MS = 1100, REST_MS = 2500;
   let phase = $state(0);
   let lap = $state(0), lapMs = $state(0);
@@ -426,12 +429,13 @@
         <text x={phone ? 15 : 20} y="24" class="rowlabel">{t(phone ? '5/5 · EVIDENCE · TWO CHECKS' : '5 of 5 · EVIDENCE · TWO CHECKS ANSWER TWO QUESTIONS', phone ? '5/5 · 证据 · 两种检查' : '5/5 · 证据 · 两种检查回答两个问题')}</text>
         <text x={phone ? 15 : 20} y="49" class="tag">readiness = {t('a startup health check, not a speed result', '启动健康检查，不是速度结果')}</text>
         <text x={phone ? 15 : 20} y="72" class="tag">{t('blue = startup request · orange = measurement plan', '蓝 = 启动请求 · 橙 = 测量计划')}</text>
+        <text x={phone ? 15 : 20} y="95" class="tag strong">{phone ? t('resolve config → readiness → controlled A/B', '解析 config → readiness → 受控 A/B') : t('config resolve = check parsed settings → readiness → controlled A/B', 'config resolve = 核对解析后的配置 → readiness → 受控 A/B')}</text>
         {#each phone ? [
           { x: 15, y: 105, w: 270, h: 340, measure: false },
           { x: 15, y: 465, w: 270, h: 400, measure: true },
         ] : [
-          { x: 20, y: 105, w: 320, h: 420, measure: false },
-          { x: 380, y: 105, w: 320, h: 420, measure: true },
+          { x: 20, y: 105, w: 320, h: 400, measure: false },
+          { x: 380, y: 105, w: 320, h: 400, measure: true },
         ] as panel}
           <rect x={panel.x} y={panel.y} width={panel.w} height={panel.h} rx="11" fill={panel.measure ? 'var(--gen-soft)' : 'var(--accent-soft)'} fill-opacity="0.25" stroke={panel.measure ? 'var(--gen)' : 'var(--accent)'} />
           <text x={panel.x + 15} y={panel.y + 29} class="rowlabel">{panel.measure ? t('A/B MEASUREMENT', 'A/B 测量') : t('STARTUP READINESS', '启动就绪检查')}</text>
@@ -445,7 +449,8 @@
               <text x={panel.x + panel.w / 2} y={panel.y + 215} text-anchor="middle" class="formula">↓ {t('every required stage', '每个需要的 stage')}</text>
               <rect x={panel.x + 15} y={panel.y + 235} width={panel.w - 30} height="64" rx="8" fill="var(--bg)" stroke="var(--accent)" />
               <text x={panel.x + panel.w / 2} y={panel.y + 273} text-anchor="middle" class="formula">≤ {QWEN_WARMUP_MAX_NEW_TOKENS} tokens / {t('generating stage', '生成 stage')}</text>
-              <text x={panel.x + panel.w / 2} y={panel.y + 333} text-anchor="middle" class="tag strong">{t('health evidence only', '只作为健康证据')}</text>
+              <text x={panel.x + panel.w / 2} y={panel.y + 315} text-anchor="middle" class="tag">{t('8 text tokens ≈ 6 English words', '8 个文字 token 约 6 个英文单词')}</text>
+              <text x={panel.x + panel.w / 2} y={panel.y + 333} text-anchor="middle" class="tag strong">{t('health only · audio tokens carry sound', '只查健康 · 声音 token 不是单词')}</text>
             </g>
           {:else}
             <g opacity={phase >= 2 ? 1 : 0} style="transition: opacity 450ms">
@@ -460,7 +465,7 @@
                   <rect x={panel.x + 55 + level * 130 + run * 12} y={panel.y + 196} width="8" height="8" rx="2" fill="var(--gen)" />
                 {/each}
               {/each}
-              <text x={panel.x + panel.w / 2} y={panel.y + 233} text-anchor="middle" class="tag">{phone ? t(`c = ${QWEN_BENCH_CONCURRENCIES.join(', ')} · ${QWEN_BENCH_REPEATS} repeats each`, `c = ${QWEN_BENCH_CONCURRENCIES.join('、')} · 每档 ${QWEN_BENCH_REPEATS} 次`) : t(`levels: c = ${QWEN_BENCH_CONCURRENCIES.join(', ')} · ${QWEN_BENCH_REPEATS} repeats at each level`, `并发档：c = ${QWEN_BENCH_CONCURRENCIES.join('、')} · 每档重复 ${QWEN_BENCH_REPEATS} 次`)}</text>
+              <text x={panel.x + panel.w / 2} y={panel.y + 233} text-anchor="middle" class="tag">{phone ? t(`c = concurrency: ${QWEN_BENCH_CONCURRENCIES.join(' or ')} · ${QWEN_BENCH_REPEATS} runs each`, `c = 并发请求数：${QWEN_BENCH_CONCURRENCIES.join(' 或 ')} · 各 ${QWEN_BENCH_REPEATS} 次`) : t(`c = concurrency: ${QWEN_BENCH_CONCURRENCIES.join(' or ')} · ${QWEN_BENCH_REPEATS} repeats each`, `c = 并发请求数：${QWEN_BENCH_CONCURRENCIES.join(' 或 ')} · 每档 ${QWEN_BENCH_REPEATS} 次`)}</text>
             </g>
             <g opacity={phase >= 3 ? 1 : 0} style="transition: opacity 450ms">
               <rect x={panel.x + 15} y={panel.y + 254} width={panel.w - 30} height="60" rx="8" fill="var(--bg)" stroke="var(--line)" />
@@ -472,6 +477,27 @@
             </g>
           {/if}
         {/each}
+        <g opacity={phase >= 4 ? 1 : 0} style="transition: opacity 450ms">
+          <text x={phone ? 15 : 20} y={phone ? 890 : 535} class="rowlabel">{phone ? t(`${QWEN_STREAM_CHUNK_FRAMES} × ${QWEN_STREAM_FRAME_MS} ms = ${QWEN_STREAM_CHUNK_MS} ms · late chunk = stall`, `${QWEN_STREAM_CHUNK_FRAMES} × ${QWEN_STREAM_FRAME_MS} ms = ${QWEN_STREAM_CHUNK_MS} ms · 迟到就卡顿`) : t(`WHY THE LISTENER RECORDS STALLS · ${QWEN_STREAM_CHUNK_FRAMES} frames × ${QWEN_STREAM_FRAME_MS} ms = ${QWEN_STREAM_CHUNK_MS} ms`, `听者为什么记录卡顿 · ${QWEN_STREAM_CHUNK_FRAMES} 帧 × ${QWEN_STREAM_FRAME_MS} ms = ${QWEN_STREAM_CHUNK_MS} ms`)}</text>
+          {#if phone}
+            <rect x="15" y="915" width="125" height="45" rx="6" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="77" y="935" text-anchor="middle" class="tag strong">chunk 1</text>
+            <text x="77" y="954" text-anchor="middle" class="tag">{QWEN_STREAM_CHUNK_MS} ms {t('playing', '播放')}</text>
+            <rect x="160" y="915" width="125" height="45" rx="6" fill={phase >= 5 ? 'var(--gen-soft)' : 'var(--bg)'} stroke="var(--gen)" stroke-dasharray={phase >= 5 ? 'none' : '4 3'} />
+            <text x="222" y="935" text-anchor="middle" class="tag strong">chunk 2</text>
+            <text x="222" y="954" text-anchor="middle" class="tag">{t(phase >= 5 ? 'ready' : 'pending', phase >= 5 ? '就绪' : '未就绪')}</text>
+            <line x1="150" y1="905" x2="150" y2="970" stroke="var(--eos)" stroke-width="1.5" stroke-dasharray="4 3" />
+            <text x="150" y="990" text-anchor="middle" class="tag strong" fill="var(--eos)">{t('chunk 1 ends · chunk 2 must be ready', 'chunk 1 结束 · chunk 2 必须就绪')}</text>
+          {:else}
+            <rect x="20" y="550" width="250" height="34" rx="6" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="145" y="572" text-anchor="middle" class="tag strong">chunk 1 · {QWEN_STREAM_CHUNK_MS} ms {t('playing', '播放')}</text>
+            <rect x="290" y="550" width="190" height="34" rx="6" fill={phase >= 5 ? 'var(--gen-soft)' : 'var(--bg)'} stroke="var(--gen)" stroke-dasharray={phase >= 5 ? 'none' : '4 3'} />
+            <text x="385" y="572" text-anchor="middle" class="tag strong">chunk 2 · {t(phase >= 5 ? 'ready' : 'pending', phase >= 5 ? '就绪' : '未就绪')}</text>
+            <line x1="510" y1="540" x2="510" y2="594" stroke="var(--eos)" stroke-width="1.5" stroke-dasharray="4 3" />
+            <text x="525" y="562" class="tag strong" fill="var(--eos)">{t('chunk 1 ends', 'chunk 1 结束')}</text>
+            <text x="525" y="585" class="tag">{t('chunk 2 must be ready', 'chunk 2 必须就绪')}</text>
+          {/if}
+        </g>
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{phone ? t('Readiness skips larger inputs and batches.', 'readiness 可能没有预热更大的输入和 batch。') : t('Readiness can leave video, large batches and other input sizes unwarmed.', 'readiness 可能没有预热视频、大 batch 和其他输入大小。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t(`p99: 99% at/below · ≥${QWEN_P99_MIN_SAMPLES} requests · runs vary`, `p99：99% 请求不超过 · 至少 ${QWEN_P99_MIN_SAMPLES} 个请求 · 运行次数不定`) : t(`p99 = 99% at or below · require ≥${QWEN_P99_MIN_SAMPLES} requests; ten runs may or may not contain them`, `p99 = 99% 请求不超过 · 至少 ${QWEN_P99_MIN_SAMPLES} 个请求；十次运行可能够，也可能不够`)}</text>
       {:else if step === 7}
