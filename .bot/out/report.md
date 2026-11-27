@@ -21,6 +21,33 @@
 
 ---
 
+# lane d 本轮报告 · Voxt 11 Step 5 逐相机制返工（冻结待审）
+
+日期：2026-11-27。类型：修旧（direction 04:31 指定的 lane d 下一最小单元）。范围：`src/components/voxt/ModelStorageUpdates.svelte` 的 Step 5、生成 transcript、评分卡与进度记录、本报告；未改其他步、双语 deep、MDX、`.bot/memory/`、其他书、其他 lane 或第 1 本受保护英文原文。Voxt 10 继续冻结，Voxt 12 未开。
+
+## 做了什么
+
+- 本轮开始 HEAD 与 `origin/tutorials` 均为 `c76b855`，工作树干净。direction（04:31）lane d 单元：只修 Voxt 11 Step 5，把 release／feed 查询、匹配 DMG 或发布页、helper 因版本不匹配而拒绝拆成可辨认相位。
+- **Step 5 从 3 相改为 4 相，每相只改变一个对象，变化内容完整进入红框**：p0 feed 查询待定（左侧面板虚线 `update list ?`／`the updater asks`，红框在左侧面板）→ p1 应用内路线完成（`Voxt 2.1 on disk`＋`the updater replaces the bundle`＋`a card then asks for a restart`，红框在左侧面板）→ p2 无源路线决定（`a DMG for this Mac?`→`matching DMG · download and install`，同时 `no match → release page` 出现，红框在右侧决定块）→ p3 重启前 helper 被拒（`does the new helper start?`→`app's helper manager refuses it · mismatch with the app`，红框在拒绝盒）。`RESTART VOXT → UPDATE DONE` 从分相 cut 改为静态行。
+- 保留：既有条件路由（feed→应用内；无源→匹配 DMG，否则发布页）、`development builds have no update` 静态行、模型文件夹不动条、15 词英文 caption（未动）、中文 caption（未动）与双语 deep（未动）。
+
+## 检查结果
+
+- `npm run build`：60 页通过。
+- Step 5 `readability`：0 机械问题；本章 `transcript` 连续两次逐字一致（SHA-256 `22f8695915e45441d6f38bbec9ccf996a6be5dd0d05cbf922d74cc13cbea696a`，1510 词），与 pinned 只差新增的 `a card then asks for a restart` 一行，无出界／重叠／规则标记。
+- `deep-check 11`、`zh-check`：通过。英中本章三宽度 `mobile`：无布局断裂；`ONLY=11 STEP=5 LANG=zh` 字号门通过。
+- 逐相 DOM 审计（`.bot/out/voxt11-step5/audit.mjs`，英中 × 桌面／390 px）：p0→p1、p1→p2、p2→p3 每次只有一个对象的文字新增／消失，全部落在红框内；四相均无文字出界、无文字重叠。相位截图 16 张在 `.bot/out/voxt11-step5/`；本 lane 模型不能读 PNG，实图仍待协调人读取或重拍。
+- 环境：本 lane `node_modules` 是指向主 checkout 的符号链接，Vite 默认 403 链接外文件（hydration 失败、相位不走）；本轮用 `VITE_CACHE_DIR`／`VITE_FS_ALLOW` 环境变量绕行，`astro.config.mjs` 的临时改动已还原、未提交。4321 被占，dev server 用 4322，已关闭。发现一台非本轮起的残留 headless Chrome（pid 36299，`cdp-bnP9r7`），无法查 ppid，未 kill。本轮自起的浏览器均已关闭。
+
+## 修复的 finding 与剩余
+
+- 本轮修复的 review finding：Voxt 11 Step 5 机制 **1/2** 的返工项（direction 04:31 指定），冻结待协调固定复审核销，不自行提分；机制 R6 保持协调 `3aa0d2d` 的 **11/12**，整章 **54/60、119/120、24/24、143/144** NO-GO 不变。评分卡与 `memory/progress.md` 已同步上述口径。
+- 未动的开放项：评分卡同步类 findings（review.md 的 Voxt 10 11 步口径重记两行、Voxt 11 评分卡旧基线两行）——它们要求按 Voxt 10 冻结树的口径重记分数，direction 将 Voxt 10 继续冻结待审，本轮单元仅限 Step 5。
+- 剩余：Step 5 待协调固定复审（建议读 `.bot/out/voxt11-step5/` 相位图或重拍）；之后按 direction 承接旧目录 `ls-d-1127-031109` 的 FileTranscription 草稿 displayed Step 1（一个 Step 一个提交，不移植其余九步）；Voxt 10 复审；Voxt 12 排在性能谱系与 P0 清理之后。
+- 未跑真实 Voxt、模型下载、应用更新、模型进程、全站回归或 reduced-motion 动态切换；事实沿用 pinned `updates.go`／`updates_github.go`，无新事实引入。
+
+---
+
 # lane k1 本轮报告 · Omni 11／14 按协调要求继续冻结
 
 日期：2026-11-27。类型：等待固定复审。范围只有本报告；未改教程、transcript、评分卡、`.bot/memory/`、其他书、其他 lane 或第 1 本受保护英文原文。
