@@ -44,6 +44,21 @@
 - `Voxt/docs/MTDEvaluation.zh-CN.md` 末尾关于当前路径拿不到分人结果的旧结论已被代码超越，不采用。2/3/4 人标签结果只限公开合成样本；代码没有四人硬上限，也没有证明五人以上的效果。真实噪声、重叠说话和远场效果仍标未测。
 - 文档有评测不等于完整链路全部验证。写第 16 章时逐项区分单元测试、固定样本、真实 helper 的单一样本和尚未覆盖的模型、设备及应用组合。
 
+## 性能公开谱系（规划）
+
+性能内容不开新章，补进已有章节的对应步；第 12 章仍排在本书 P0 清理之后。事实只用 `.bot/perf-public.md`（本轮 SHA-256 `f79e86576628ac5baef23e9ac85c41acea446cefdf3c963909258f8e2574ffb8`）和 `sglang-omni` main 的公开代码与 PR；不写群名、聊天原文、人名（含 GitHub 用户名）、主人的机器名或 NAACL，不补 public.md 没有的事实，不把旧 head 的测量数字写成当前结果。每条优化按同一模板写全：**瓶颈 → 方案 → PR（公开编号）→ head 演变 → 数字（各带测量 head／机器／样本／证据等级）→ 合入 → 发布（beta／stable 分层）→ 真机验收 → 未闭环项**。MERGED 不等于发布，发布不等于真机性能验收；CI wall-clock、模型微基准和 Stop-to-text／Stop-to-insert／Stop-to-paste 不混写；负结果和未落地分支保留。数字进 `src/voxt/numbers.ts`，组件从它推导。
+
+六个主题，各标落点；写作时先在第 04、06、16 章相关步补指向，再在落点写全。
+
+1. **停止到出字**（落点：第 6 章整理等待的步；口径细节归第 16 章）。瓶颈：按下 stop 后串行等 ASR Final 和整理。方案链：Final 复用 `#4589→#4593→#4650→#4707`，提前整理 `#4295→#4551→#4552→#4592→#4612→#4618→#4643/#4655→#4709`，readiness `#3784→#4602→#4700`。可引数字：`#4618` Stop-to-insert p50/p90 1199/2425→804/1543 ms（M4 Air、回放 ASR＋真实 Claude Haiku thinking off、600 sessions、8 并发，candidate `2fabbaa86add` 早于最终 head，非完整真实 App）；`#4612` 的 1000→300/400/300 ms 是 fake clock，不写成 wall-clock；`#4295` Stop 前 19 次 cleanup、Stop 后 1 次（fake LLM 每答 3 s，real-App head 归属有争议，只证明提前调度）。未闭环：`#4650`/`#4655`/`#4707` 已 MERGED 但真实模型输出等价、复用率和延迟未测；`#4709` 真实 backlog、cancellation、stop-to-TTLC 未测。
+2. **分段识别**（落点：第 4 章「安静处分块、按序合并」步；第 10 章切分步补指向）。瓶颈：长录音一次识别慢且占内存。方案链：`#2549→#2576` 独立 MLX server 落地、`#2577` native C++、`#4433` 长请求切 pieces、`#3360` 长音频测量。可引数字：`#2549` Apple M5/24 GB、392 clips，Final short p50/p95 194/279→111/145 ms、throughput 21.0→49.8 audio-s/s，同时 first-preview p95 202/1207→197/2518 ms 退化（负结果保留；主表测量 head 未记录，main 落地归 `#2576`）。未闭环：`#2615` 的 first-real-text 指标是 CLOSED 提案，不用新口径宣布旧门槛通过。
+3. **预填和复用**（落点：第 4 章「本机 Omni 预览后的 Final」步）。瓶颈：Final 重算 live 预览已经算过的音频窗口、KV 和文本。方案链：`#3780→#4182`（后者替代前者并加入 DFlash path）→`#4589`→`#4593`→`#4650`（verified guesses）→`#4707`（segment finalization 复用 encoder/KV）。可引数字：`#4589` fanless M4 Air、1.7B 8-bit＋DFlash、93 段各一次 Final 的 mean：无词典 535→290 ms、30 terms 643→304 ms、463 terms 2769→382 ms（测量 head 未单列）；`#4593` 8 段 64–77 s：无词典 1262→716 ms、463 terms 3618→879 ms。未闭环：`#4650` 的 `Performance validation is pending`；`#4707` 真实模型执行和实际延迟未测。
+4. **流式整理**（落点：第 6 章整理请求的步）。瓶颈：整理等整段说完才开始。方案链：`#4295`→`#4551`→`#4552`→`#4592`→`#4612`→`#4618`→`#4643`（本机 LLM，OPEN、默认关闭）/`#4655`→`#4709`。可引数字：`#4643` M1 Pro/16 GB、本地 llama.cpp Qwen3-4B：Stop→text median 1.69→0.94 s，但 ASR Final 0.44→0.48 s、first preview 0.45→0.51 s 的共享资源成本同时画出；PR 仍 OPEN、默认关闭。未闭环：`#4592` 改后真实模型、`#4552` 真实 provider、`#4709` 真实 backlog 未测。
+5. **启动**（落点：第 11 章「用模型会启动服务器」步；第 4 章首次等待可补指向）。瓶颈：首次识别等模型服务器和 VAD 初始化。方案链：`#3784`→`#4602`→`#4700`；`#4407` Silero Metal 预热；`#2833` VAD session leak。可引数字：`#4407` 8 GB Apple silicon、95.394 s clip、median of 3：server ready 0.099→0.882 s、warm-ready request 1.928→1.203 s、cold 合计 2.027→2.085 s——首个请求变快，合计未变快（负结果保留）；`#2833` 修复前第 65 次 activation 失败、修复后 70 次全过（功能回归，不是延迟 benchmark）。未闭环：`#4602` 真实 cold start、`#4700` 真实 piece 路径未测。
+6. **评测口径**（落点：第 16 章；写作前先在 04、06 的深入讲解用同一口径）。口径：Stop-to-text／Stop-to-insert／Stop-to-paste 分列；fake clock、fake provider、离线回放、loopback real-App、回放 ASR＋真实 provider、完整真实 App 不混写；每个数字带测量 head／机器／样本／证据等级；MERGED→beta→stable→真机验收分层。测量链 `#4525/#4529/#4671/#4692/#4693`；`#4671` 仍 OPEN／CHANGES_REQUESTED；`#4697` 不同 replay 批次的模型对照不写成净效应；issue #94 的 incremental LogMel `NO_MATERIAL_GAIN` 保留。未闭环：在同一构建上分别测 ASR Final、first cleaned presentation、Stop-to-text/insert/paste（public.md 公开待办 1）。
+
 ## 制作顺序
 
 按 01 → 16 制作，每轮一步；来源不足的章节跳过并后补。第 1 章建立全书共用的 session 路线，第 12 章再把一条音轨扩成两条。每一步先过易读性检查，再核对原 12 项评分和冷读洞。
+
+性能谱系按上节六个主题做：先在第 04、06 章相关步补指向，再在各落点写全，评测口径随第 16 章完成；每条按模板写齐瓶颈、方案、PR、head 演变、数字边界、合入、发布、真机验收和未闭环项，并过本章 EVAL 硬门。

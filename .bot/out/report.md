@@ -7,6 +7,18 @@
 - 定向核对 `f68e067..HEAD` 的 Omni 11／12 冻结教程文件和 `5c5f749..HEAD` 的 Omni 14 教程文件，diff 均为空；`git diff --check` 通过。最新回归测的是 `a93dc0b`，只有未列出布局步骤的 `(exit 13)`，不据此返工。
 - 按 direction，本轮不重复运行 EVAL 硬门、双语 deep、逐相审计或实图采集，也不追加无新教程改动的证据整理。未启动 dev server 或浏览器，没有新截图。
 - 剩余事项是 Omni 11 的协调固定复审、Omni 14 的后续独立复审，以及主人最终视觉验收。
+---
+
+# lane d 本轮报告 · Voxt 性能规划 + Voxt 11 评分卡同步
+
+日期：2026-11-27。类型：规划＋记录同步。范围：`docs/plan-voxt.md`、`memory/scores/inside-voxt/models-and-app-updates.md`、`memory/progress.md`、本报告；未改教程、transcript、组件、`.bot/memory/`、其他书、其他 lane 或第 1 本受保护英文原文。
+
+- 本轮开始 HEAD 与 `origin/tutorials` 均为 `436a93d`，工作树干净。direction（04:06）lane d 的下一单元是「先改规划」：当前 `docs/plan-voxt.md` 没有性能部分。
+- **性能公开谱系已排入 `docs/plan-voxt.md`**：新增「性能公开谱系（规划）」一节，覆盖 direction 点名的六个主题——停止到出字、分段识别、预填和复用、流式整理、启动、评测口径。每个主题标了落点（第 4／6／10／11／16 章相关步）、方案 PR 链、可引数字（各带测量 head／机器／样本／证据边界）和未闭环项；制作顺序补一行：先在 04、06 补指向，再写各落点，口径随第 16 章完成。来源只用 `.bot/perf-public.md`（本轮 SHA-256 `f79e86576628ac5baef23e9ac85c41acea446cefdf3c963909258f8e2574ffb8`，与 direction 记录一致）与 sglang-omni main 公开代码和 PR；节内写明统一模板（瓶颈→方案→PR→head 演变→数字边界→合入→发布→真机验收→未闭环）与禁写项（群名、聊天原文、人名含 GitHub 用户名、机器名、NAACL，不把旧 head 数字写成当前结果）。不开新章、不开 Voxt 12。
+- **Voxt 11 评分卡已按 direction「下一写作轮同步评分卡」同步**：机制 R6 从协调 `fa8d912` 的 **9/12** 升为协调固定 `2760565` 的 **10/12**（逐步 2、2、2、1、1、2，Step 3 GO）；内容分保持协调 `6467ab7` 基线 R1–R5 **54/60**、原十个非视觉项 **119/120**、静态 R6 **12/12**、原 #4/#5 **24/24**、原十二项 **143/144**，整章 NO-GO 不变。Step 4 教程 `2d1e868`／报告 `3aa0d2d` 冻结待独立复审，Step 5（1/2）未动。
+- **本轮修复的 review finding：** review.md 中 Voxt 11 的「评分卡同步」未决项（`fa8d912` 节「下一写作轮按本 verdict 同步为 9/12」及 direction 的 10/12 同步要求）已落实为评分卡当前值 10/12。Voxt 08 的报告记录项（`b233fbe` 把 GO 写成一条提交）在此更正记录：教程与评分为 `bb70918`，报告为 `b233fbe`，共两条提交；不回退 Voxt 08 的 GO。其余 lane d 开放项（Voxt 10 冻结待审、Voxt 11 Step 4 冻结待审、Step 5 机制 1/2）按 direction 不动。
+- 本轮无教程源码 diff，未重跑 EVAL 机械门；未启动 dev server 或浏览器，没有新截图；未跑全站回归、真实 Voxt、模型或更新。
+- 剩余：等 Step 4 的协调独立复审（重点：四相每次只改变一个可辨认对象、字节／时间／错误边界、hydration／counter／phase、红框包含、完整组件图证）；Step 5 同类返工；Voxt 10 复审；按规划补 04／06 性能指向并写各落点。
 
 ---
 
