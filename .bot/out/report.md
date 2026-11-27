@@ -2950,3 +2950,23 @@ npx astro dev stop
 ## 修订自评
 
 - Step 1 易读 **12/12**：R1「按一下键，helper 包成一条消息，Go app 原本空闲，消息一到就开始」；R6 一相一变化，Go 的状态在同一个对象上从 idle 变成 START；EVAL #5 蓝色单义由逐相断言守住。Steps 2–3 维持上轮 12/12 不变（本轮未改）。
+
+---
+
+# lane d 本轮报告 · Voxt 02 Step 1 修复（消息箭头与 idle→START 同相）
+
+日期：2026-11-27。类型：主人对 `38a6d10` 的一条机制 finding，仍属 Step 1，一个提交。
+
+## 修复
+
+- JSON→Go 消息箭头由第 6 相移到第 7 相：第 6 相 Go app 只有框与 `idle`，台上没有已送达的消息；第 7 相箭头（消息到达）与同一 action 行 `idle → START` 同时出现，与双语 deep「Go app 先以空闲出现，消息到达后把它变成开始」一致。组件内注释记明该箭头是"到达的消息"。
+- 探针新增逐相消息箭头计数断言（`marker-end` 含 `message-arrow` 的 line 数），Step 1 期望 0,0,1,1,1,1,1,2；此前的文本与颜色断言确实抓不到该错位。
+
+## 硬门复跑（全过）
+
+- `npm run build` 60 页；transcript 无 diff（本修复不加文字）；readability、deep-check、zh-check、mobile 英 360/390/430 与中文 STEP 1–3 均过；`git diff --check` 干净。
+- 探针：**144 个相位状态、1,100 项断言、0 失败，exit=0**（新增 32 项箭头断言）。
+
+## 自评
+
+- Step 1 维持 **12/12**：相位顺序现在是「Go 空闲（无消息）→ 消息到达 → START」，机制与 deep 字面一致；Steps 2–3 未动。

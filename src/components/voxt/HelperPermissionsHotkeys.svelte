@@ -56,7 +56,9 @@
     { x: 300, y: 90, w: 250, h: 170 },
     { x: 570, y: 90, w: 130, h: 170 },
   ]);
-  // Step 1: the phase at which each box (and the arrow into it) appears.
+  // Step 1: the phase at which each box appears. Arrows appear with the box
+  // they enter, except the JSON→Go arrow, which is the arriving message
+  // that switches the idle Go app to START at phase 7.
   const INTRO = [0, 1, 2, 6];
   const permissionPanels = $derived(phone ? [
     { x: 10, y: 78, allowed: false },
@@ -133,7 +135,7 @@
             <rect x={box.x} y={box.y} width={box.w} height={box.h} rx="12" fill={i === 2 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={i === 2 ? 'var(--accent)' : 'var(--line)'} stroke-width={i === 2 ? 2 : 1} />
           </g>
         {/if}
-        {#if i < boxes.length - 1 && phase >= INTRO[i + 1]}
+        {#if i < boxes.length - 1 && phase >= (i === 2 ? 7 : INTRO[i + 1])}
           <line in:fade={{ duration: 250 }} x1={phone ? box.x + box.w / 2 : box.x + box.w} y1={phone ? box.y + box.h : box.y + box.h / 2} x2={phone ? box.x + box.w / 2 : boxes[i + 1].x - 4} y2={phone ? boxes[i + 1].y - 5 : box.y + box.h / 2} stroke={i === 0 ? 'var(--muted)' : 'var(--accent)'} stroke-width="2" marker-end={`url(#${i === 0 ? 'key-arrow' : 'message-arrow'})`} />
         {/if}
       {/each}
