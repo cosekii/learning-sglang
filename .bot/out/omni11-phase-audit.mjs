@@ -9,10 +9,11 @@ import { launch, sleep } from '../../scripts/lib/browser.mjs';
 const base = (process.env.BASE || 'http://localhost:4466/learning-sglang').replace(/\/$/, '');
 const out = process.env.OUT || '.bot/out/omni11-phase-audit';
 const lang = process.env.LANG === 'zh' ? 'zh' : 'en';
+const entry = process.env.ENTRY === 'prev' ? 'prev' : 'direct';
 const onlyStep = Number(process.env.STEP) || null;
 const width = Number(process.env.WIDTH) || 1440;
 const height = width <= 900 ? 844 : 900;
-const expectedCounts = [4, 4, 3, 12, 5, 4, 3, 4];
+const expectedCounts = [5, 4, 3, 12, 5, 4, 3, 4];
 const selectedCounts = expectedCounts.filter((_, index) => !onlyStep || onlyStep === index + 1);
 const expectedStates = selectedCounts.reduce((sum, count) => sum + count, 0);
 const expectedTransitions = selectedCounts.reduce((sum, count) => sum + count - 1, 0);
@@ -24,10 +25,20 @@ const keepAlive = setInterval(() => {}, 1000);
 try {
   const page = await browser.tab({ width, height, mobile: width <= 900 });
   await page.goto(`${base}/omni/ch/11-fish-s2-pro/?step=1`);
-  await page.evaluate(`localStorage.setItem('lang', '${lang}')`);
+  await page.evaluate(`localStorage.setItem('lang', '${lang}'); localStorage.setItem('deep', '0')`);
   for (let step = 1; step <= expectedCounts.length; step++) {
     if (onlyStep && step !== onlyStep) continue;
-    await page.goto(`${base}/omni/ch/11-fish-s2-pro/?step=${step}`);
+    if (entry === 'prev' && step === 1) {
+      await page.goto(`${base}/omni/ch/10-vocoder-optimization/?step=8`);
+      await sleep(850);
+      await page.evaluate(`document.querySelector('a.chapter.next')?.click()`);
+    } else {
+      await page.goto(`${base}/omni/ch/11-fish-s2-pro/?step=${entry === 'prev' ? step - 1 : step}`);
+      if (entry === 'prev') {
+        await sleep(850);
+        await page.press('ArrowRight');
+      }
+    }
     await sleep(850);
     const finalPhase = await page.evaluate(`Number(document.querySelector('.viz')?.getAttribute('data-animation-final-phase'))`);
     if (finalPhase !== expectedCounts[step - 1] - 1) {
@@ -166,7 +177,7 @@ const summary = {
   maxTailLeftOverflow: Math.max(0, ...states.map((state) => state.tail?.leftOverflow || 0)),
   maxTailRightOverflow: Math.max(0, ...states.map((state) => state.tail?.rightOverflow || 0)),
 };
-const report = { base, lang, generatedAt: new Date().toISOString(), summary, states };
+const report = { base, lang, entry, generatedAt: new Date().toISOString(), summary, states };
 writeFileSync(join(out, 'report.json'), JSON.stringify(report, null, 2) + '\n');
 console.log(JSON.stringify({ summary, report: join(out, 'report.json') }, null, 2));
 if (states.length !== expectedStates || transitions.length !== expectedTransitions || changedTransitions !== expectedTransitions ||

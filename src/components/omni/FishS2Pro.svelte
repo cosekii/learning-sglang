@@ -17,6 +17,10 @@
     FISH_FAST_REMAINING_ROWS,
     FISH_FAST_CALLS_PER_FRAME,
     FISH_ENGINE_ROWS_PER_FRAME,
+    FISH_TEACHING_GENERATED_FRAMES,
+    FISH_TEACHING_GENERATED_SAMPLES,
+    FISH_TEACHING_GENERATED_MS,
+    FISH_TEACHING_GENERATED_FAST_CALLS,
     FISH_STREAM_TOTAL_FRAMES,
     FISH_STREAM_NEXT_NEW_FRAMES,
     FISH_STREAM_LEFT_CONTEXT_FRAMES,
@@ -42,8 +46,8 @@
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
   const steps = [{
-    caption: 'Slow AR chooses c0 first. Fast AR then fills c1–c9 in the same frame.',
-    captionZh: 'Slow AR 先选 c0。Fast AR 再在同一帧补齐 c1–c9。',
+    caption: 'Slow AR samples by making one choice. Fast call 0 comes before c0 and calls 1–9.',
+    captionZh: 'Slow AR 先采样，也就是做一个选择。Fast 第 0 次调用后得到 c0，再选 c1–c9。',
   }, {
     caption: 'Reference audio becomes ten rows of codes before generation. One second makes 22 frames.',
     captionZh: '参考声音先变成十行 codes。1 秒会得到 22 帧。',
@@ -81,7 +85,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [630, 800, 790, 900, 790, 880, 990, 900][step] : [540, 630, 600, 650, 600, 630, 730, 660][step]);
+  const H = $derived(phone ? [790, 800, 790, 900, 790, 880, 990, 900][step] : [650, 630, 600, 650, 600, 630, 730, 660][step]);
   const fmt = (value: number) => value.toLocaleString('en-US', { maximumFractionDigits: 0 });
   const streamEvents = [
     { title: 'FIRST · total 40', titleZh: '首次 · 累计 40', old: 0, added: FISH_FIRST_WINDOW_FRAMES, input: FISH_FIRST_WINDOW_FRAMES, emitted: `40F−${FISH_STREAM_TAIL_SAMPLES}` },
@@ -90,17 +94,19 @@
   ];
 
   // Each phase changes the mechanism on screen, then holds the finished scene before looping.
-  const PHASE_COUNTS = [4, 4, 3, 12, 5, 4, 3, 4];
+  const PHASE_COUNTS = [5, 4, 3, 12, 5, 4, 3, 4];
   const PHASE_MS = [1000, 1100, 1100, 650, 1100, 1200, 1800, 1100];
   const REST_MS = 1800;
   type Frame = { x: number; y: number; w: number; h: number };
   const motionFrames = (isPhone: boolean, s: number): Frame[] => {
     if (s === 0) return isPhone ? [
-      { x: 18, y: 84, w: 264, h: 67 }, { x: 18, y: 270, w: 264, h: 282 },
-      { x: 18, y: 177, w: 264, h: 67 }, { x: 18, y: 270, w: 264, h: 282 },
+      { x: 18, y: 270, w: 264, h: 282 }, { x: 18, y: 84, w: 264, h: 67 },
+      { x: 18, y: 177, w: 264, h: 67 }, { x: 18, y: 270, w: 264, h: 80 },
+      { x: 18, y: 270, w: 264, h: 282 },
     ] : [
-      { x: 30, y: 86, w: 300, h: 76 }, { x: 180, y: 196, w: 360, h: 282 },
-      { x: 390, y: 86, w: 300, h: 76 }, { x: 180, y: 196, w: 360, h: 282 },
+      { x: 180, y: 196, w: 360, h: 282 }, { x: 30, y: 86, w: 300, h: 76 },
+      { x: 390, y: 86, w: 300, h: 76 }, { x: 180, y: 196, w: 360, h: 80 },
+      { x: 180, y: 196, w: 360, h: 282 },
     ];
     if (s === 1) return isPhone ? [
       { x: 18, y: 82, w: 264, h: 62 }, { x: 18, y: 166, w: 264, h: 62 },
@@ -186,8 +192,8 @@
         </marker>
       </defs>
       {#if step === 0}
-        <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'Slow AR → c0 · Fast AR → c1–c9' : 'Ch. 10 Step 8: Slow AR → c0, Fast AR → c1–c9', phone ? 'Slow AR → c0 · Fast AR → c1–c9' : '第 10 章第 8 步：Slow AR → c0，Fast AR → c1–c9')}</text>
-        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'one frame · blue = codes' : 'one frame = one time position · blue = chosen codes', '一帧 = 一个时间位置 · 蓝 = 选出的 codes')}</text>
+        <text x={phone ? 18 : 30} y="30" class={phone ? 'small strong' : 'title'}>preprocessing → tts_engine → vocoder</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'Ch. 10 Step 8 → tts_engine' : 'Ch. 10 Step 8 → this chapter: tts_engine · vocoder turns codes into sound', phone ? '第 10 章第 8 步 → tts_engine' : '第 10 章第 8 步 → 本章：tts_engine · vocoder 把 codes 变成声音')}</text>
         {#each [
           { name: '1 · Slow AR', sub: 'one frame at a time', subZh: '一次一帧' },
           { name: '2 · Fast AR', sub: 'inside that same frame', subZh: '在同一帧内' },
@@ -202,17 +208,33 @@
         <rect x={phone ? 18 : 180} y={phone ? 270 : 196} width={phone ? 264 : 360} height="282" rx="12" fill="var(--bg)" stroke="var(--line)" />
         <text x={phone ? 150 : 360} y={phone ? 298 : 224} text-anchor="middle" class="small strong">{t('ONE FRAME · TEN ENTRIES', '一帧 · 十个条目')}</text>
         {#each Array(VOC_FISH_CODEBOOK_ROWS) as _, i}
-          {@const chosen = i === 0 ? phase >= 1 : phase >= 3}
+          {@const chosen = i === 0 ? phase >= 3 : phase >= 4}
           <g opacity={chosen ? 1 : 0.16} style="transition: opacity 350ms">
             <text x={phone ? 48 : 220} y={phone ? 323 + i * 17 : 250 + i * 17} class="code">c{i}</text>
             <rect x={phone ? 80 : 250} y={phone ? 314 + i * 17 : 241 + i * 17} width={phone ? 170 : 250} height="10" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" />
           </g>
         {/each}
         <text x={phone ? 150 : 360} y={phone ? 505 : 432} text-anchor="middle" class="small strong">{t(
-          ['1 · Slow AR starts this frame', '1 · Slow AR chose c0', '2 · Fast AR goes next', '2 · Fast AR filled c1–c9'][phase],
-          ['1 · Slow AR 开始这一帧', '1 · Slow AR 选出了 c0', '2 · 接着轮到 Fast AR', '2 · Fast AR 补齐了 c1–c9'][phase],
+          (phone
+            ? ['Slow AR goes first', 'Slow AR samples one choice', 'Fast call 0 · reset · no code', 'sem_id = c0', 'Fast calls 1–9 → c1–c9']
+            : ['Slow AR goes first', '1 · Slow AR samples one choice', 'reset + Fast call 0 · no code yet', 'sem_id = c0 · Slow choice appears', 'Fast calls 1–9 fill c1–c9'])[phase],
+          (phone
+            ? ['先轮到 Slow AR', 'Slow AR 采样，做一个选择', 'Fast 第 0 次 · 重置 · 无 code', 'sem_id = c0', 'Fast 第 1–9 次 → c1–c9']
+            : ['先轮到 Slow AR', '1 · Slow AR 采样，做一个选择', '重置 + Fast 第 0 次调用 · 还没有 code', 'sem_id = c0 · Slow 的选择出现', 'Fast 第 1–9 次调用补齐 c1–c9'])[phase],
         )}</text>
-        <text x={phone ? 150 : 360} y={phone ? 531 : 458} text-anchor="middle" class="result" opacity={phase >= 3 ? 1 : 0.06} style="transition: opacity 350ms">1 + 9 = 10 {t('codes in this frame', '个 codes 组成这一帧')}</text>
+        <text x={phone ? 150 : 360} y={phone ? 531 : 458} text-anchor="middle" class="result" opacity={phase >= 4 ? 1 : 0.06} style="transition: opacity 350ms">1 + 9 = 10 {t('codes in this frame', '个 codes 组成这一帧')}</text>
+        <rect x={phone ? 18 : 30} y={phone ? 570 : 500} width={phone ? 264 : 660} height={phone ? 164 : 120} rx="12" fill="var(--bg)" stroke="var(--line)" />
+        <text x={phone ? 150 : 360} y={phone ? 594 : 524} text-anchor="middle" class="small strong">{FISH_TEACHING_GENERATED_FRAMES} {t(phone ? 'FRAMES · OPERATION COUNT' : 'GENERATED FRAMES · OPERATION COUNT', '个生成帧 · 调用次数')}</text>
+        <text x={phone ? 150 : 360} y={phone ? 620 : 551} text-anchor="middle" class="small">{FISH_TEACHING_GENERATED_FRAMES} × {fmt(FISH_SAMPLES_PER_FRAME)} = {fmt(FISH_TEACHING_GENERATED_SAMPLES)} {t('samples', '个采样点')}{phone ? '' : ` · ≈${(FISH_TEACHING_GENERATED_MS / 1000).toFixed(3)} s`}</text>
+        {#if phone}
+          <text x="150" y="647" text-anchor="middle" class="small">≈{(FISH_TEACHING_GENERATED_MS / 1000).toFixed(3)} s · {FISH_TEACHING_GENERATED_FRAMES} Slow {t('samples', '次采样')}</text>
+          <text x="150" y="674" text-anchor="middle" class="result">{FISH_TEACHING_GENERATED_FRAMES} × {FISH_FAST_CALLS_PER_FRAME} = {FISH_TEACHING_GENERATED_FAST_CALLS} Fast {t('calls', '次调用')}</text>
+          <text x="150" y="701" text-anchor="middle" class="small">2 × 4 × 8 × 8 × 4 = {fmt(FISH_SAMPLES_PER_FRAME)} / {t('frame', '帧')}</text>
+        {:else}
+          <text x="360" y="581" text-anchor="middle" class="result">{FISH_TEACHING_GENERATED_FRAMES} Slow {t('samples', '次采样')} · {FISH_TEACHING_GENERATED_FRAMES} × {FISH_FAST_CALLS_PER_FRAME} = {FISH_TEACHING_GENERATED_FAST_CALLS} Fast {t('calls', '次调用')}</text>
+          <text x="360" y="606" text-anchor="middle" class="small">2 × 4 × 8 × 8 × 4 = {fmt(FISH_SAMPLES_PER_FRAME)} / {t('frame', '帧')} · call 0 + calls 1–9 = {FISH_FAST_CALLS_PER_FRAME}</text>
+        {/if}
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? '22 accepted frames · no terminal work · not timed' : 'Constructed 22 accepted nonterminal frames · terminal work excluded · not a latency measurement', phone ? '构造 22 个接受帧 · 不含结束工作 · 未计时' : '构造 22 个非结束接受帧 · 不含结束工作 · 不是实测延迟')}</text>
       {:else if step === 1}
         <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'Reference → ten code rows' : 'Reference voice → ten rows of codes', '参考声音 → 十行 codes')}</text>
         <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'reference = the voice to copy · blue = codes' : 'reference = a recording of the wanted voice · blue = codes', phone ? '参考声音 = 要模仿的录音 · 蓝 = codes' : '参考声音 = 要模仿的录音 · 蓝 = codes')}</text>

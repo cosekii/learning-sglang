@@ -13,7 +13,7 @@ export const deep = await deepFor('omni-11-fish-s2-pro');
 <details class="i18n-en">
 <summary>Where this chapter's claims come from</summary>
 
-Step 1 answers Ch. 10 Step 8's entry-choice question first: Slow AR chooses c0 in the outer frame loop, and Fast AR chooses c1–c9 inside that frame (`sglang_model.py:418-510`). Each generated frame carries one semantic code and nine remaining codes for the vocoder, so the ten entries come from 1 + 9 choices (`sglang_model.py:418-510`; `payload_types.py:35-50`).
+Step 1 locates the chapter in `preprocessing → tts_engine → vocoder` (`config.py:24-67`). It then answers Ch. 10 Step 8's entry-choice question in pinned order: Slow samples, Fast call 0 resets and receives Slow's hidden state, the engine derives `sem_id` (c0), then Fast calls 1–9 choose c1–c9 (`sglang_model.py:418-510`). Each generated frame carries one semantic code and nine remaining codes for the vocoder (`payload_types.py:35-50`). The shipped encoder rates and frame factor give 2 × 4 × 8 × 8 × 4 = 2,048 samples per frame. A constructed set of 22 accepted nonterminal frames contains 22 × 2,048 = 45,056 samples, about 1.022 seconds at 44,100 samples per second. It therefore involves 22 Slow samples and 22 × 10 = 220 Fast calls. This operation count excludes terminal work and is not a measured latency (`fish_speech/configs/modded_dac_vq.yaml:3,5`; `fish_speech/models/dac/modded_dac.py:885,913`; `scheduling/audio_vocoder.py:218-223`).
 
 Step 2 follows `sglang_omni/models/fishaudio_s2_pro/stages.py:249-376,425-490`: reference audio becomes mono, resamples to 44,100 Hz and enters the reference DAC. The constructed one-second clip starts at 16 kHz. The DAC's 2,048-sample codec frame gives `ceil(44,100 ÷ 2,048) = 22` frames and 956 padding samples. The output has ten rows. `scheduling/reference_encoder.py:344-413` caches matching reference codes on CPU and returns copies; this cache is not AR KV. Already supplied `vq_codes` bypass encoding, and a request without references omits this voice prompt.
 
@@ -36,7 +36,7 @@ Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37
 <details class="i18n-zh">
 <summary>本章说法的出处</summary>
 
-第 1 步先回答第 10 章第 8 步的条目选择问题：Slow AR 在外层逐帧循环里选 c0，Fast AR 在这帧内选 c1–c9（`sglang_model.py:418-510`）。每个生成帧带一个语义 code 和其余九个 codes 给 vocoder，所以十个条目来自 1 + 9 个选择（`sglang_model.py:418-510`；`payload_types.py:35-50`）。
+第 1 步先把本章定位到 `preprocessing → tts_engine → vocoder`（`config.py:24-67`），再按 pinned 顺序回答第 10 章第 8 步的条目选择问题：Slow 采样，Fast 第 0 次调用重置并接收 Slow 隐藏状态，engine 得到 `sem_id`（c0），Fast 第 1–9 次调用再选 c1–c9（`sglang_model.py:418-510`）。每个生成帧带一个语义 code 和其余九个 codes 给 vocoder（`payload_types.py:35-50`）。实现中的编码倍率和帧倍率给出 2 × 4 × 8 × 8 × 4 = 2,048 个采样点 / 帧。构造的 22 个非结束接受帧共有 22 × 2,048 = 45,056 个采样点，按每秒 44,100 个采样点计算约为 1.022 秒。这个算例因此有 22 次 Slow 采样和 22 × 10 = 220 次 Fast 调用；调用次数不含结束工作，也不是实测延迟（`fish_speech/configs/modded_dac_vq.yaml:3,5`；`fish_speech/models/dac/modded_dac.py:885,913`；`scheduling/audio_vocoder.py:218-223`）。
 
 第 2 步依据 `sglang_omni/models/fishaudio_s2_pro/stages.py:249-376,425-490`：参考声音先变单声道，重采样到 44,100 Hz，再进入参考 DAC。构造算例从 16 kHz 的 1 秒声音开始。DAC 每帧 2,048 个采样点，所以 `ceil(44,100 ÷ 2,048) = 22` 帧，需要补 956 个采样点，输出共十行。`scheduling/reference_encoder.py:344-413` 在 CPU 缓存相同参考声音的 codes 并返回副本；这不是 AR KV。已有 `vq_codes` 可以跳过编码，没有参考声音的请求会省略这段声音提示。
 

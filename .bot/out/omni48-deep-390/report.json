@@ -1,0 +1,1269 @@
+{
+  "base": "http://127.0.0.1:4501/learning-sglang",
+  "width": 390,
+  "generatedAt": "2026-11-27T17:17:25.294Z",
+  "states": [
+    {
+      "chapter": 11,
+      "step": 1,
+      "lang": "en",
+      "counter": "01 / 08",
+      "expanded": "true",
+      "title": "Step 1 · Slow samples, Fast call 0 runs, then the codes appear",
+      "pageOverflow": false,
+      "drawerOverflow": false,
+      "drawerClientWidth": 389,
+      "drawerScrollWidth": 389,
+      "children": [
+        {
+          "tag": "H2",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "Step 1 · Slow samples, Fast call 0 runs, then the codes appear"
+        },
+        {
+          "tag": "BLOCKQUOTE",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "In one line: Slow AR samples one choice, Fast call 0 resets the inner work, and only then do c0 and "
+        },
+        {
+          "tag": "H3",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "On the stage"
+        },
+        {
+          "tag": "UL",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "The request route is preprocessing → tts_engine → vocoder. This chapter is inside tts_engine; the vo"
+        },
+        {
+          "tag": "H3",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "Formula"
+        },
+        {
+          "tag": "SPAN",
+          "className": "katex-display",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "Nframe=NSlow+NFastN_{\\text{frame}} = N_{\\text{Slow}} + N_{\\text{Fast}}Nframe​=NSlow​+NFast​"
+        },
+        {
+          "tag": "TABLE",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "SymbolWhat it isValueWhere it comes fromNframeN_{\\text{frame}}Nframe​Codebook entries in one frame10"
+        },
+        {
+          "tag": "H3",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "The numbers on the stage"
+        },
+        {
+          "tag": "SPAN",
+          "className": "katex-display",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "1+9=10 codes in this frame1 + 9 = 10\\ \\text{codes in this frame}1+9=10 codes in this frame"
+        },
+        {
+          "tag": "P",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "The encoder rates multiply to 2 × 4 × 8 × 8 = 512, and one frame spans four hops, so one frame is 51"
+        },
+        {
+          "tag": "P",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "The card constructs 22 accepted nonterminal frames. At 2,048 samples per frame, they contain 22 × 2,"
+        },
+        {
+          "tag": "P",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "These are operation counts for the constructed accepted frames. They exclude terminal work and are n"
+        },
+        {
+          "tag": "H3",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "Next"
+        },
+        {
+          "tag": "P",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "The next step creates the same ten-row representation from a reference voice before generation start"
+        },
+        {
+          "tag": "P",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "Source shorthand: fish/ = sglang_omni/models/fishaudio_s2_pro/; speech/ = fish/fish_speech/; other p"
+        },
+        {
+          "tag": "P",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "Sources: fish/config.py:24-67; fish/sglang_model.py:418-510; fish/payload_types.py:35-50; speech/con"
+        }
+      ],
+      "wide": [
+        {
+          "tag": "semantics",
+          "className": "",
+          "clientWidth": 201,
+          "scrollWidth": 201,
+          "text": "1+9=10 codes in this frame1 + 9 = 10\\ \\text{codes in this frame}"
+        },
+        {
+          "tag": "mrow",
+          "className": "",
+          "clientWidth": 201,
+          "scrollWidth": 201,
+          "text": "1+9=10 codes in this frame"
+        },
+        {
+          "tag": "mtext",
+          "className": "",
+          "clientWidth": 131,
+          "scrollWidth": 131,
+          "text": "codes in this frame"
+        }
+      ],
+      "katexErrors": 0,
+      "rawMath": false,
+      "missing": []
+    },
+    {
+      "chapter": 11,
+      "step": 4,
+      "lang": "en",
+      "counter": "04 / 08",
+      "expanded": "true",
+      "title": "Step 4 · Fast AR fills the inner nine rows",
+      "pageOverflow": false,
+      "drawerOverflow": false,
+      "drawerClientWidth": 389,
+      "drawerScrollWidth": 389,
+      "children": [
+        {
+          "tag": "H2",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "Step 4 · Fast AR fills the inner nine rows"
+        },
+        {
+          "tag": "BLOCKQUOTE",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "In one line: Fast AR starts inside one Slow frame and makes the nine remaining vocoder choices."
+        },
+        {
+          "tag": "H3",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "On the stage"
+        },
+        {
+          "tag": "UL",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "Fast AR is the inner loop: it stays inside one audio frame. Slow AR first samples raw semantic_token"
+        },
+        {
+          "tag": "H3",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "Formula"
+        },
+        {
+          "tag": "P",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "For a nonterminal frame,"
+        },
+        {
+          "tag": "SPAN",
+          "className": "katex-display",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "raw=B+c0,c0=raw−Braw = B + c_0,\\qquad c_0 = raw - Braw=B+c0​,c0​=raw−B"
+        },
+        {
+          "tag": "SPAN",
+          "className": "katex-display",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "NFast=1+9=10N_{\\text{Fast}} = 1 + 9 = 10NFast​=1+9=10"
+        },
+        {
+          "tag": "SPAN",
+          "className": "katex-display",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "Nengine=1+1+9=11N_{\\text{engine}} = 1 + 1 + 9 = 11Nengine​=1+1+9=11"
+        },
+        {
+          "tag": "SPAN",
+          "className": "katex-display",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "NDAC=1+9=10N_{\\text{DAC}} = 1 + 9 = 10NDAC​=1+9=10"
+        },
+        {
+          "tag": "TABLE",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "SymbolWhat it isSourcerawrawrawSlow AR’s raw semantic_token in the semantic vocabularySource list be"
+        },
+        {
+          "tag": "H3",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "The numbers on the stage"
+        },
+        {
+          "tag": "P",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "One Slow choice creates one derived code 0. Nine Fast choices create codes 1–9. The initial Fast cal"
+        },
+        {
+          "tag": "H3",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "Next"
+        },
+        {
+          "tag": "P",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "Step 5 follows these codes into the next Slow frame and compares what the two loops retain."
+        },
+        {
+          "tag": "P",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "Source shorthand: fish/ = sglang_omni/models/fishaudio_s2_pro/; other paths start at sglang_omni/."
+        },
+        {
+          "tag": "P",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "Sources: fish/sglang_model.py:294-300,418-510; fish/payload_types.py:35-50; fish/streaming_vocoder.p"
+        }
+      ],
+      "wide": [
+        {
+          "tag": "semantics",
+          "className": "",
+          "clientWidth": 215,
+          "scrollWidth": 215,
+          "text": "raw=B+c0,c0=raw−Braw = B + c_0,\\qquad c_0 = raw - B"
+        },
+        {
+          "tag": "mrow",
+          "className": "",
+          "clientWidth": 215,
+          "scrollWidth": 215,
+          "text": "raw=B+c0,c0=raw−B"
+        },
+        {
+          "tag": "mo",
+          "className": "",
+          "clientWidth": 12,
+          "scrollWidth": 12,
+          "text": "−"
+        },
+        {
+          "tag": "mi",
+          "className": "",
+          "clientWidth": 9,
+          "scrollWidth": 9,
+          "text": "B"
+        }
+      ],
+      "katexErrors": 0,
+      "rawMath": false,
+      "missing": []
+    },
+    {
+      "chapter": 11,
+      "step": 5,
+      "lang": "en",
+      "counter": "05 / 08",
+      "expanded": "true",
+      "title": "Step 5 · The two loops keep different state",
+      "pageOverflow": false,
+      "drawerOverflow": false,
+      "drawerClientWidth": 389,
+      "drawerScrollWidth": 389,
+      "children": [
+        {
+          "tag": "H2",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "Step 5 · The two loops keep different state"
+        },
+        {
+          "tag": "BLOCKQUOTE",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "In one line: The next frame reuses Slow work and ten code values, while Fast AR clears its inner KV."
+        },
+        {
+          "tag": "H3",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "On the stage"
+        },
+        {
+          "tag": "UL",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "Grey Fast KV resets first. A fresh inner KV appears before the next Slow input. The blue feedback ar"
+        },
+        {
+          "tag": "H3",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "Formula and the numbers on the stage"
+        },
+        {
+          "tag": "SPAN",
+          "className": "katex-display",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "xf+1=etext(rawf)+∑r=09er(cr,f)11x_{f+1}=\\frac{e_{\\text{text}}(raw_f)+\\sum_{r=0}^{9}e_r(c_{r,f})}{\\sq"
+        },
+        {
+          "tag": "TABLE",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "SymbolWhat it isWhere it comes fromxf+1x_{f+1}xf+1​Input embedding for the next Slow positionThis fe"
+        },
+        {
+          "tag": "P",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "One completed frame returns 1+9=101+9=101+9=10 DAC codes. The next Slow position combines those ten "
+        },
+        {
+          "tag": "P",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "Fast call 0 resets its inner KV before positions 0–9 of the new frame. It does not read the previous"
+        },
+        {
+          "tag": "H3",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "Three kinds of reuse"
+        },
+        {
+          "tag": "TABLE",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "Saved thingLifetimeOwnerReference codesMatching requests, as CPU copiesReference serviceSlow attenti"
+        },
+        {
+          "tag": "P",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "The picture compares feedback with cache lifetime. It does not claim that Fish’s streaming vocoder r"
+        },
+        {
+          "tag": "H3",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "Next"
+        },
+        {
+          "tag": "P",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "Step 6 follows the same loop to its three exits: EOS, length exhaustion and abort."
+        },
+        {
+          "tag": "P",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "Source shorthand: fish/ = sglang_omni/models/fishaudio_s2_pro/; decoder/ = fish/fish_speech/models/t"
+        },
+        {
+          "tag": "P",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "Sources: fish/model_runner.py:62-100,148-191; fish/sglang_model.py:365-382,484-488; fish/request_bui"
+        }
+      ],
+      "wide": [
+        {
+          "tag": "semantics",
+          "className": "",
+          "clientWidth": 237,
+          "scrollWidth": 237,
+          "text": "xf+1=etext(rawf)+∑r=09er(cr,f)11x_{f+1}=\\frac{e_{\\text{text}}(raw_f)+\\sum_{r=0}^{9}e_r(c_{r,f})}{\\sqrt{11}}"
+        },
+        {
+          "tag": "mrow",
+          "className": "",
+          "clientWidth": 237,
+          "scrollWidth": 237,
+          "text": "xf+1=etext(rawf)+∑r=09er(cr,f)11"
+        },
+        {
+          "tag": "mfrac",
+          "className": "",
+          "clientWidth": 182,
+          "scrollWidth": 182,
+          "text": "etext(rawf)+∑r=09er(cr,f)11"
+        },
+        {
+          "tag": "mrow",
+          "className": "",
+          "clientWidth": 180,
+          "scrollWidth": 180,
+          "text": "etext(rawf)+∑r=09er(cr,f)"
+        },
+        {
+          "tag": "msub",
+          "className": "",
+          "clientWidth": 12,
+          "scrollWidth": 12,
+          "text": "er"
+        },
+        {
+          "tag": "mi",
+          "className": "",
+          "clientWidth": 7,
+          "scrollWidth": 7,
+          "text": "e"
+        },
+        {
+          "tag": "mi",
+          "className": "",
+          "clientWidth": 5,
+          "scrollWidth": 5,
+          "text": "r"
+        },
+        {
+          "tag": "mo",
+          "className": "",
+          "clientWidth": 6,
+          "scrollWidth": 6,
+          "text": "("
+        },
+        {
+          "tag": "msub",
+          "className": "",
+          "clientWidth": 23,
+          "scrollWidth": 23,
+          "text": "cr,f"
+        },
+        {
+          "tag": "mi",
+          "className": "",
+          "clientWidth": 7,
+          "scrollWidth": 7,
+          "text": "c"
+        },
+        {
+          "tag": "mrow",
+          "className": "",
+          "clientWidth": 16,
+          "scrollWidth": 16,
+          "text": "r,f"
+        },
+        {
+          "tag": "mi",
+          "className": "",
+          "clientWidth": 5,
+          "scrollWidth": 5,
+          "text": "r"
+        }
+      ],
+      "katexErrors": 0,
+      "rawMath": false,
+      "missing": []
+    },
+    {
+      "chapter": 11,
+      "step": 1,
+      "lang": "zh",
+      "counter": "01 / 08",
+      "expanded": "true",
+      "title": "第 1 步 · Slow 采样，Fast 第 0 次调用后出现 codes",
+      "pageOverflow": false,
+      "drawerOverflow": false,
+      "drawerClientWidth": 389,
+      "drawerScrollWidth": 389,
+      "children": [
+        {
+          "tag": "H2",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "第 1 步 · Slow 采样，Fast 第 0 次调用后出现 codes"
+        },
+        {
+          "tag": "BLOCKQUOTE",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "一句话： Slow AR 采样做一个选择，Fast 第 0 次调用重置内层工作，随后才出现 c0 和 c1–c9。"
+        },
+        {
+          "tag": "H3",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "图上是什么"
+        },
+        {
+          "tag": "UL",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "请求路线是 preprocessing → tts_engine → vocoder。本章位于 tts_engine，vocoder 把生成的 codes 变成声音。 第 10 章第 8 步已经给出这"
+        },
+        {
+          "tag": "H3",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "公式"
+        },
+        {
+          "tag": "SPAN",
+          "className": "katex-display",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "Nframe=NSlow+NFastN_{\\text{frame}} = N_{\\text{Slow}} + N_{\\text{Fast}}Nframe​=NSlow​+NFast​"
+        },
+        {
+          "tag": "TABLE",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "符号是什么大小从哪来NframeN_{\\text{frame}}Nframe​一帧的 codebook 条目数10第 10 章第 8 步NSlowN_{\\text{Slow}}NSlow​由 Slow"
+        },
+        {
+          "tag": "H3",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "代入图上的数"
+        },
+        {
+          "tag": "SPAN",
+          "className": "katex-display",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "1+9=10 个 codes 组成这一帧1 + 9 = 10\\ \\text{个 codes 组成这一帧}1+9=10 个 codes 组成这一帧"
+        },
+        {
+          "tag": "P",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "编码倍率相乘得到 2 × 4 × 8 × 8 = 512，一帧覆盖四个 hop，所以一帧是 512 × 4 = 2,048 个采样点。"
+        },
+        {
+          "tag": "P",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "卡片构造 22 个非结束接受帧。每帧有 2,048 个采样点，所以共有 22 × 2,048 = 45,056 个采样点。按每秒 44,100 个采样点计算，对应约 45,056 ÷ 44,100 ="
+        },
+        {
+          "tag": "P",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "这些是构造接受帧的调用次数，不含结束工作，也不是实测延迟。"
+        },
+        {
+          "tag": "H3",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "接下来"
+        },
+        {
+          "tag": "P",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "下一步先把参考声音也变成同样的十行表示，再开始生成。"
+        },
+        {
+          "tag": "P",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "路径缩写：fish/ = sglang_omni/models/fishaudio_s2_pro/；speech/ = fish/fish_speech/；其他路径从 sglang_omni/ 开始。"
+        },
+        {
+          "tag": "P",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "出处：fish/config.py:24-67；fish/sglang_model.py:418-510；fish/payload_types.py:35-50；speech/configs/modd"
+        }
+      ],
+      "wide": [
+        {
+          "tag": "semantics",
+          "className": "",
+          "clientWidth": 215,
+          "scrollWidth": 215,
+          "text": "1+9=10 个 codes 组成这一帧1 + 9 = 10\\ \\text{个 codes 组成这一帧}"
+        },
+        {
+          "tag": "mrow",
+          "className": "",
+          "clientWidth": 215,
+          "scrollWidth": 215,
+          "text": "1+9=10 个 codes 组成这一帧"
+        },
+        {
+          "tag": "mtext",
+          "className": "",
+          "clientWidth": 145,
+          "scrollWidth": 145,
+          "text": "个 codes 组成这一帧"
+        }
+      ],
+      "katexErrors": 0,
+      "rawMath": false,
+      "missing": []
+    },
+    {
+      "chapter": 11,
+      "step": 4,
+      "lang": "zh",
+      "counter": "04 / 08",
+      "expanded": "true",
+      "title": "第 4 步 · Fast AR 补齐内层九行",
+      "pageOverflow": false,
+      "drawerOverflow": false,
+      "drawerClientWidth": 389,
+      "drawerScrollWidth": 389,
+      "children": [
+        {
+          "tag": "H2",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "第 4 步 · Fast AR 补齐内层九行"
+        },
+        {
+          "tag": "BLOCKQUOTE",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "一句话： Fast AR 在一个 Slow 帧里启动，做出 vocoder 还缺的九个选择。"
+        },
+        {
+          "tag": "H3",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "图上是什么"
+        },
+        {
+          "tag": "UL",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "Fast AR 是内层循环，只在一个音频帧里工作。 Slow AR 先采样得到原始 semantic_token。 Fast 第 0 次调用重置内层 KV，并接收 Slow 算出的数；其输出分数不当作"
+        },
+        {
+          "tag": "H3",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "公式"
+        },
+        {
+          "tag": "P",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "对一个非结束帧："
+        },
+        {
+          "tag": "SPAN",
+          "className": "katex-display",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "raw=B+c0,c0=raw−Braw = B + c_0,\\qquad c_0 = raw - Braw=B+c0​,c0​=raw−B"
+        },
+        {
+          "tag": "SPAN",
+          "className": "katex-display",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "NFast=1+9=10N_{\\text{Fast}} = 1 + 9 = 10NFast​=1+9=10"
+        },
+        {
+          "tag": "SPAN",
+          "className": "katex-display",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "Nengine=1+1+9=11N_{\\text{engine}} = 1 + 1 + 9 = 11Nengine​=1+1+9=11"
+        },
+        {
+          "tag": "SPAN",
+          "className": "katex-display",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "NDAC=1+9=10N_{\\text{DAC}} = 1 + 9 = 10NDAC​=1+9=10"
+        },
+        {
+          "tag": "TABLE",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "符号是什么从哪来rawrawrawSlow AR 在语义词表里的原始 semantic_token下方出处列表BBB附加语义词表起点，这个 checkpoint 是 151,678下方出处列表c0c_"
+        },
+        {
+          "tag": "H3",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "代入图上的数"
+        },
+        {
+          "tag": "P",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "一次 Slow 选择得到一个 code 0，九次 Fast 选择得到 code 1–9。第 0 次 Fast 调用提供上下文，不增加一行，所以一共是十次 Fast 调用和十一行保存结果。原始 sema"
+        },
+        {
+          "tag": "H3",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "接下来"
+        },
+        {
+          "tag": "P",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "第 5 步跟着这些 codes 进入下一个 Slow 帧，比较两层循环分别记住什么。"
+        },
+        {
+          "tag": "P",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "路径缩写：fish/ = sglang_omni/models/fishaudio_s2_pro/；其他路径从 sglang_omni/ 开始。"
+        },
+        {
+          "tag": "P",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "出处：fish/sglang_model.py:294-300,418-510；fish/payload_types.py:35-50；fish/streaming_vocoder.py:88-106"
+        }
+      ],
+      "wide": [
+        {
+          "tag": "semantics",
+          "className": "",
+          "clientWidth": 215,
+          "scrollWidth": 215,
+          "text": "raw=B+c0,c0=raw−Braw = B + c_0,\\qquad c_0 = raw - B"
+        },
+        {
+          "tag": "mrow",
+          "className": "",
+          "clientWidth": 215,
+          "scrollWidth": 215,
+          "text": "raw=B+c0,c0=raw−B"
+        },
+        {
+          "tag": "mo",
+          "className": "",
+          "clientWidth": 12,
+          "scrollWidth": 12,
+          "text": "−"
+        },
+        {
+          "tag": "mi",
+          "className": "",
+          "clientWidth": 9,
+          "scrollWidth": 9,
+          "text": "B"
+        }
+      ],
+      "katexErrors": 0,
+      "rawMath": false,
+      "missing": []
+    },
+    {
+      "chapter": 11,
+      "step": 5,
+      "lang": "zh",
+      "counter": "05 / 08",
+      "expanded": "true",
+      "title": "第 5 步 · 两层循环记住不同的状态",
+      "pageOverflow": false,
+      "drawerOverflow": false,
+      "drawerClientWidth": 389,
+      "drawerScrollWidth": 389,
+      "children": [
+        {
+          "tag": "H2",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "第 5 步 · 两层循环记住不同的状态"
+        },
+        {
+          "tag": "BLOCKQUOTE",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "一句话： 下一帧复用 Slow 工作和十个 code 值，Fast AR 则清空内层 KV。"
+        },
+        {
+          "tag": "H3",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "图上是什么"
+        },
+        {
+          "tag": "UL",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "灰色 Fast KV 先重置，新的内层 KV 在下一次 Slow 输入前出现。 蓝色反馈箭头随后把上一帧的全部十个 DAC codes 送回这次 Slow 输入。 橙色 Slow KV 横跨 prom"
+        },
+        {
+          "tag": "H3",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "公式与代入图上的数"
+        },
+        {
+          "tag": "SPAN",
+          "className": "katex-display",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "xf+1=etext(rawf)+∑r=09er(cr,f)11x_{f+1}=\\frac{e_{\\text{text}}(raw_f)+\\sum_{r=0}^{9}e_r(c_{r,f})}{\\sq"
+        },
+        {
+          "tag": "TABLE",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "符号是什么从哪来xf+1x_{f+1}xf+1​下一个 Slow 位置的输入 embedding本步反馈构造fff已完成帧的编号本步rawfraw_frawf​上一帧保存的原始 semantic_to"
+        },
+        {
+          "tag": "P",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "一个完成帧返回 1+9=101+9=101+9=10 个 DAC codes。下一个 Slow 位置把这十份 codec embeddings 和原始语义 token embedding 合并，沿用第"
+        },
+        {
+          "tag": "P",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "Fast 第 0 次调用先重置内层 KV，再处理新帧的 0–9 位置，不读上一帧的 Fast 位置。"
+        },
+        {
+          "tag": "H3",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "三种复用"
+        },
+        {
+          "tag": "TABLE",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "保存内容保存多久谁保存参考 codes跨匹配请求，以 CPU 副本返回参考声音服务Slow 注意力 KVprompt 和之前的帧；相同缓存前缀仍在 cache 时可共享SGLangFast 注意力 K"
+        },
+        {
+          "tag": "P",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "这张图比较反馈和 cache 寿命，没有声称 Fish 流式 vocoder 保留 Qwen 式 codec 执行状态。"
+        },
+        {
+          "tag": "H3",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "接下来"
+        },
+        {
+          "tag": "P",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "第 6 步跟随同一个循环走到 EOS、长度用尽和中止三个出口。"
+        },
+        {
+          "tag": "P",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "路径缩写：fish/ = sglang_omni/models/fishaudio_s2_pro/；decoder/ = fish/fish_speech/models/text2semantic/；"
+        },
+        {
+          "tag": "P",
+          "className": "",
+          "clientWidth": 341,
+          "scrollWidth": 341,
+          "left": 25,
+          "right": 366,
+          "text": "出处：fish/model_runner.py:62-100,148-191；fish/sglang_model.py:365-382,484-488；fish/request_builders.py"
+        }
+      ],
+      "wide": [
+        {
+          "tag": "semantics",
+          "className": "",
+          "clientWidth": 237,
+          "scrollWidth": 237,
+          "text": "xf+1=etext(rawf)+∑r=09er(cr,f)11x_{f+1}=\\frac{e_{\\text{text}}(raw_f)+\\sum_{r=0}^{9}e_r(c_{r,f})}{\\sqrt{11}}"
+        },
+        {
+          "tag": "mrow",
+          "className": "",
+          "clientWidth": 237,
+          "scrollWidth": 237,
+          "text": "xf+1=etext(rawf)+∑r=09er(cr,f)11"
+        },
+        {
+          "tag": "mfrac",
+          "className": "",
+          "clientWidth": 182,
+          "scrollWidth": 182,
+          "text": "etext(rawf)+∑r=09er(cr,f)11"
+        },
+        {
+          "tag": "mrow",
+          "className": "",
+          "clientWidth": 180,
+          "scrollWidth": 180,
+          "text": "etext(rawf)+∑r=09er(cr,f)"
+        },
+        {
+          "tag": "msub",
+          "className": "",
+          "clientWidth": 12,
+          "scrollWidth": 12,
+          "text": "er"
+        },
+        {
+          "tag": "mi",
+          "className": "",
+          "clientWidth": 7,
+          "scrollWidth": 7,
+          "text": "e"
+        },
+        {
+          "tag": "mi",
+          "className": "",
+          "clientWidth": 5,
+          "scrollWidth": 5,
+          "text": "r"
+        },
+        {
+          "tag": "mo",
+          "className": "",
+          "clientWidth": 6,
+          "scrollWidth": 6,
+          "text": "("
+        },
+        {
+          "tag": "msub",
+          "className": "",
+          "clientWidth": 23,
+          "scrollWidth": 23,
+          "text": "cr,f"
+        },
+        {
+          "tag": "mi",
+          "className": "",
+          "clientWidth": 7,
+          "scrollWidth": 7,
+          "text": "c"
+        },
+        {
+          "tag": "mrow",
+          "className": "",
+          "clientWidth": 16,
+          "scrollWidth": 16,
+          "text": "r,f"
+        },
+        {
+          "tag": "mi",
+          "className": "",
+          "clientWidth": 5,
+          "scrollWidth": 5,
+          "text": "r"
+        }
+      ],
+      "katexErrors": 0,
+      "rawMath": false,
+      "missing": []
+    }
+  ]
+}

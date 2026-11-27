@@ -1,13 +1,15 @@
-## 第 1 步 · Slow AR 先选，Fast AR 再补齐
+## 第 1 步 · Slow 采样，Fast 第 0 次调用后出现 codes
 
-> **一句话：** Slow AR 先选 `c0`，Fast AR 再在同一帧补齐 `c1–c9`。
+> **一句话：** Slow AR 采样做一个选择，Fast 第 0 次调用重置内层工作，随后才出现 `c0` 和 `c1–c9`。
 
 ### 图上是什么
 
+- 请求路线是 `preprocessing → tts_engine → vocoder`。本章位于 `tts_engine`，vocoder 把生成的 codes 变成声音。
 - 第 10 章第 8 步已经给出这一帧的十个 codebook 条目，即 `c0` 到 `c9`。
-- `1 · Slow AR` 一次走一帧。第 1 相只填 `c0`，另外九个条目还在等待。
-- `2 · Fast AR` 在同一帧内工作。第 2 相把工作交给 Fast AR，不新增 code。第 3 相填满 `c1–c9`。
-- 蓝色条目是选出的 codes，淡色条目还在等待。最后由 Slow 的一个选择和 Fast 的九个选择组成一帧。
+- 第 1 相由 Slow AR 为这一帧采样，也就是做一个选择。
+- 第 2 相重置 Fast AR 存下的内层工作，并运行 Fast 第 0 次调用；它不新增 code。
+- 第 3 相由 Slow 的选择得到 `sem_id = c0`。第 4 相运行 Fast 第 1–9 次调用，补齐 `c1–c9`。
+- 蓝色条目是选出的 codes，淡色条目还在等待。底部卡片计算 22 个生成帧要做多少工作。
 
 ### 公式
 
@@ -18,7 +20,7 @@ $$
 | 符号 | 是什么 | 大小 | 从哪来 |
 |---|---|---:|---|
 | $N_{\text{frame}}$ | 一帧的 codebook 条目数 | 10 | 第 10 章第 8 步 |
-| $N_{\text{Slow}}$ | Slow AR 选出的 `c0` | 1 | 本步 |
+| $N_{\text{Slow}}$ | 由 Slow AR 原始采样得到的条目：`c0` | 1 | 本步 |
 | $N_{\text{Fast}}$ | Fast AR 选出的 `c1–c9` | 9 | 本步 |
 
 ### 代入图上的数
@@ -27,13 +29,19 @@ $$
 1 + 9 = 10\ \text{个 codes 组成这一帧}
 $$
 
+编码倍率相乘得到 `2 × 4 × 8 × 8 = 512`，一帧覆盖四个 hop，所以一帧是 `512 × 4 = 2,048 个采样点`。
+
+卡片构造 22 个非结束接受帧。每帧有 2,048 个采样点，所以共有 `22 × 2,048 = 45,056 个采样点`。按每秒 44,100 个采样点计算，对应约 `45,056 ÷ 44,100 = 1.022 秒` 声音。每帧有一次 Slow 采样和十次 Fast 调用，即第 0 次加第 1–9 次。因此，这个算例有 22 次 Slow 采样和 `22 × 10 = 220 次 Fast 调用`。
+
+这些是构造接受帧的调用次数，不含结束工作，也不是实测延迟。
+
 ### 接下来
 
 下一步先把参考声音也变成同样的十行表示，再开始生成。
 
-路径缩写：`fish/` = `sglang_omni/models/fishaudio_s2_pro/`。
+路径缩写：`fish/` = `sglang_omni/models/fishaudio_s2_pro/`；`speech/` = `fish/fish_speech/`；其他路径从 `sglang_omni/` 开始。
 
-出处：`fish/sglang_model.py:418-510`；`fish/payload_types.py:35-50`。
+出处：`fish/config.py:24-67`；`fish/sglang_model.py:418-510`；`fish/payload_types.py:35-50`；`speech/configs/modded_dac_vq.yaml:3,5`；`speech/models/dac/modded_dac.py:885,913`；`scheduling/audio_vocoder.py:218-223`。
 
 ## 第 2 步 · 参考声音变成十行
 
@@ -164,12 +172,12 @@ $$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
-| $raw$ | Slow AR 在语义词表里的原始 `semantic_token` | `sglang_model.py` 的 Slow 输出 |
-| $B$ | 附加语义词表起点，这个 checkpoint 是 151,678 | `request_builders.py:133-137` |
+| $raw$ | Slow AR 在语义词表里的原始 `semantic_token` | 下方出处列表 |
+| $B$ | 附加语义词表起点，这个 checkpoint 是 151,678 | 下方出处列表 |
 | $c_0$ | 从 $raw$ 得到的 `sem_id`，即语义 DAC code | 本步公式 |
 | $N_{\text{Fast}}$ | 本帧 Fast 调用数，包含第 0 次 | Fast 循环 |
-| $N_{\text{engine}}$ | 保存行数：一个原始 token 加十个 DAC codes | `payload_types.py` |
-| $N_{\text{DAC}}$ | 去掉 $raw$ 后送入 vocoder 的行数 | `streaming_vocoder.py` |
+| $N_{\text{engine}}$ | 保存行数：一个原始 token 加十个 DAC codes | 下方出处列表 |
+| $N_{\text{DAC}}$ | 去掉 $raw$ 后送入 vocoder 的行数 | 下方出处列表 |
 
 ### 代入图上的数
 
@@ -205,11 +213,11 @@ $$
 |---|---|---|
 | $x_{f+1}$ | 下一个 Slow 位置的输入 embedding | 本步反馈构造 |
 | $f$ | 已完成帧的编号 | 本步 |
-| $raw_f$ | 上一帧保存的原始 `semantic_token` | 第 4 步；`sglang_model.py` |
+| $raw_f$ | 上一帧保存的原始 `semantic_token` | 第 4 步 |
 | $c_{r,f}$ | 上一帧第 $r$ 行的 DAC code，第 0 行是 `sem_id` | 第 4 步 |
 | $e_{\text{text}}$ | 原始语义 token 的 embedding | tokenizer 和 model runner |
 | $e_r$ | 第 $r$ 行的 codec embedding | `audio_decoder.py` |
-| $\sqrt{11}$ | 一份文字加十份 codec embeddings 的缩放 | `audio_decoder.py:597-612` |
+| $\sqrt{11}$ | 一份文字加十份 codec embeddings 的缩放 | 下方出处列表 |
 
 一个完成帧返回 $1+9=10$ 个 DAC codes。下一个 Slow 位置把这十份 codec embeddings 和原始语义 token embedding 合并，沿用第 3 步的 $1/\sqrt{11}$ 规则。
 
@@ -219,7 +227,7 @@ Fast 第 0 次调用先重置内层 KV，再处理新帧的 0–9 位置，不�
 
 | 保存内容 | 保存多久 | 谁保存 |
 |---|---|---|
-| 参考 codes | 跨匹配请求，以 CPU 副本返回 | `ReferenceEncodeService` |
+| 参考 codes | 跨匹配请求，以 CPU 副本返回 | 参考声音服务 |
 | Slow 注意力 KV | prompt 和之前的帧；相同缓存前缀仍在 cache 时可共享 | SGLang |
 | Fast 注意力 KV | 只到本帧内部位置结束 | Fast AR |
 
@@ -229,9 +237,9 @@ Fast 第 0 次调用先重置内层 KV，再处理新帧的 0–9 位置，不�
 
 第 6 步跟随同一个循环走到 EOS、长度用尽和中止三个出口。
 
-路径缩写：`fish/` = `sglang_omni/models/fishaudio_s2_pro/`；其他路径从 `sglang_omni/` 开始。
+路径缩写：`fish/` = `sglang_omni/models/fishaudio_s2_pro/`；`decoder/` = `fish/fish_speech/models/text2semantic/`；其他路径从 `sglang_omni/` 开始。
 
-出处：`fish/model_runner.py:62-100,148-191`；`fish/sglang_model.py:365-382,484-488`；`fish/request_builders.py:65-78,160-168`；`fish/fish_speech/models/text2semantic/audio_decoder.py:394-411,505-526,547-595`。
+出处：`fish/model_runner.py:62-100,148-191`；`fish/sglang_model.py:365-382,484-488`；`fish/request_builders.py:65-78,160-168`；`decoder/audio_decoder.py:597-612`；`decoder/audio_decoder.py:394-411`；`decoder/audio_decoder.py:505-526`；`decoder/audio_decoder.py:547-595`。
 
 ## 第 6 步 · 三种停止方式
 

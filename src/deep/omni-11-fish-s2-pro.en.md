@@ -1,13 +1,15 @@
-## Step 1 · Slow AR chooses first, Fast AR fills next
+## Step 1 · Slow samples, Fast call 0 runs, then the codes appear
 
-> **In one line:** Slow AR chooses `c0` before Fast AR fills `c1–c9` in the same frame.
+> **In one line:** Slow AR samples one choice, Fast call 0 resets the inner work, and only then do `c0` and `c1–c9` appear.
 
 ### On the stage
 
+- The request route is `preprocessing → tts_engine → vocoder`. This chapter is inside `tts_engine`; the vocoder turns the resulting codes into sound.
 - Ch. 10 Step 8 supplied the frame's ten codebook entries, `c0` through `c9`.
-- `1 · Slow AR` moves one frame at a time. Phase 1 fills only `c0`; the other nine entries still wait.
-- `2 · Fast AR` works inside that same frame. Phase 2 passes the work to Fast AR without adding a code. Phase 3 fills `c1–c9`.
-- Blue entries are chosen codes. Faded entries still wait. The final count is one Slow choice plus nine Fast choices.
+- Phase 1 makes Slow AR's one sampling choice for this frame. Sampling means choosing.
+- Phase 2 resets Fast AR's saved inner work and runs Fast call 0. It adds no code.
+- Phase 3 derives `sem_id = c0` from Slow's choice. Phase 4 runs Fast calls 1–9 to fill `c1–c9`.
+- Blue entries are chosen codes. Faded entries still wait. The bottom card counts the work for 22 generated frames.
 
 ### Formula
 
@@ -18,7 +20,7 @@ $$
 | Symbol | What it is | Value | Where it comes from |
 |---|---|---:|---|
 | $N_{\text{frame}}$ | Codebook entries in one frame | 10 | Ch. 10 Step 8 |
-| $N_{\text{Slow}}$ | Entries chosen by Slow AR: `c0` | 1 | This step |
+| $N_{\text{Slow}}$ | Entries derived from Slow AR's raw sample: `c0` | 1 | This step |
 | $N_{\text{Fast}}$ | Entries chosen by Fast AR: `c1–c9` | 9 | This step |
 
 ### The numbers on the stage
@@ -27,13 +29,19 @@ $$
 1 + 9 = 10\ \text{codes in this frame}
 $$
 
+The encoder rates multiply to `2 × 4 × 8 × 8 = 512`, and one frame spans four hops, so one frame is `512 × 4 = 2,048 samples`.
+
+The card constructs 22 accepted nonterminal frames. At 2,048 samples per frame, they contain `22 × 2,048 = 45,056 samples`. At 44,100 samples per second, that is about `45,056 ÷ 44,100 = 1.022 s` of sound. Each frame has one Slow sample and ten Fast calls: call 0 plus calls 1–9. This example therefore involves 22 Slow samples and `22 × 10 = 220 Fast calls`.
+
+These are operation counts for the constructed accepted frames. They exclude terminal work and are not a measured latency.
+
 ### Next
 
 The next step creates the same ten-row representation from a reference voice before generation starts.
 
-Source shorthand: `fish/` = `sglang_omni/models/fishaudio_s2_pro/`.
+Source shorthand: `fish/` = `sglang_omni/models/fishaudio_s2_pro/`; `speech/` = `fish/fish_speech/`; other paths start at `sglang_omni/`.
 
-Sources: `fish/sglang_model.py:418-510`; `fish/payload_types.py:35-50`.
+Sources: `fish/config.py:24-67`; `fish/sglang_model.py:418-510`; `fish/payload_types.py:35-50`; `speech/configs/modded_dac_vq.yaml:3,5`; `speech/models/dac/modded_dac.py:885,913`; `scheduling/audio_vocoder.py:218-223`.
 
 ## Step 2 · Reference audio becomes ten rows
 
@@ -162,14 +170,14 @@ $$
 N_{\text{DAC}} = 1 + 9 = 10
 $$
 
-| Symbol | What it is | Where it comes from |
+| Symbol | What it is | Source |
 |---|---|---|
-| $raw$ | Slow AR's raw `semantic_token` in the semantic vocabulary | Slow output in `sglang_model.py` |
-| $B$ | Added semantic-vocabulary base, 151,678 in this checkpoint | `request_builders.py:133-137` |
+| $raw$ | Slow AR's raw `semantic_token` in the semantic vocabulary | Source list below |
+| $B$ | Added semantic-vocabulary base, 151,678 in this checkpoint | Source list below |
 | $c_0$ | `sem_id`, the semantic DAC code derived from $raw$ | This formula |
 | $N_{\text{Fast}}$ | Fast calls for this frame, including call 0 | Fast loop |
-| $N_{\text{engine}}$ | Stored rows: one raw token plus ten DAC codes | `payload_types.py` |
-| $N_{\text{DAC}}$ | Rows sent to the vocoder after dropping $raw$ | `streaming_vocoder.py` |
+| $N_{\text{engine}}$ | Stored rows: one raw token plus ten DAC codes | Source list below |
+| $N_{\text{DAC}}$ | Rows sent to the vocoder after dropping $raw$ | Source list below |
 
 ### The numbers on the stage
 
@@ -205,11 +213,11 @@ $$
 |---|---|---|
 | $x_{f+1}$ | Input embedding for the next Slow position | This feedback construction |
 | $f$ | Completed frame index | This step |
-| $raw_f$ | Previous frame's saved raw `semantic_token` | Step 4; `sglang_model.py` |
+| $raw_f$ | Previous frame's saved raw `semantic_token` | Step 4 |
 | $c_{r,f}$ | Previous frame's DAC code in row $r$, with `sem_id` in row 0 | Step 4 |
 | $e_{\text{text}}$ | Raw semantic-token embedding | Tokenizer and model runner |
 | $e_r$ | Codec embedding for row $r$ | `audio_decoder.py` |
-| $\sqrt{11}$ | Scale for one text plus ten codec embeddings | `audio_decoder.py:597-612` |
+| $\sqrt{11}$ | Scale for one text plus ten codec embeddings | Source list below |
 
 One completed frame returns $1+9=10$ DAC codes. The next Slow position combines those ten codec embeddings with the raw semantic token embedding, using the same $1/\sqrt{11}$ rule as Step 3.
 
@@ -219,7 +227,7 @@ Fast call 0 resets its inner KV before positions 0–9 of the new frame. It does
 
 | Saved thing | Lifetime | Owner |
 |---|---|---|
-| Reference codes | Matching requests, as CPU copies | `ReferenceEncodeService` |
+| Reference codes | Matching requests, as CPU copies | Reference service |
 | Slow attention KV | Prompt and earlier frames; the same cached prefix may share while cached | SGLang |
 | Fast attention KV | Positions inside one frame only | Fast AR |
 
@@ -229,9 +237,9 @@ The picture compares feedback with cache lifetime. It does not claim that Fish's
 
 Step 6 follows the same loop to its three exits: EOS, length exhaustion and abort.
 
-Source shorthand: `fish/` = `sglang_omni/models/fishaudio_s2_pro/`; other paths start at `sglang_omni/`.
+Source shorthand: `fish/` = `sglang_omni/models/fishaudio_s2_pro/`; `decoder/` = `fish/fish_speech/models/text2semantic/`; other paths start at `sglang_omni/`.
 
-Sources: `fish/model_runner.py:62-100,148-191`; `fish/sglang_model.py:365-382,484-488`; `fish/request_builders.py:65-78,160-168`; `fish/fish_speech/models/text2semantic/audio_decoder.py:394-411,505-526,547-595`.
+Sources: `fish/model_runner.py:62-100,148-191`; `fish/sglang_model.py:365-382,484-488`; `fish/request_builders.py:65-78,160-168`; `decoder/audio_decoder.py:597-612`; `decoder/audio_decoder.py:394-411`; `decoder/audio_decoder.py:505-526`; `decoder/audio_decoder.py:547-595`.
 
 ## Step 6 · Three ways to stop
 
