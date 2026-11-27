@@ -358,7 +358,7 @@
       <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Next: return a sender write permit, then clear pending.', '下一步：发送方归还写入名额，再删除 pending。') : t('Next: the sender returns a write permit, then removes pending[A].', '下一步：发送方归还写入名额，再删除 pending[A]。')}</text>
       {:else}
       <text x={phone ? 15 : 20} y="20" class="tag strong">{phone ? t('ACK → finish SHM put → return permit → clear pending', 'ACK → SHM put 收尾 → 归还名额 → 删除 pending') : t('Normal SHM sender path: ACK → finish put → return permit → clear pending', 'SHM 发送方正常路径：ACK → put 收尾 → 归还名额 → 删除 pending')}</text>
-      <text x={phone ? 15 : 20} y="45" class="tag">{t('sem = SHM write permits · each put takes one', 'sem = SHM 写入名额 · 每次 put 拿走一个')}</text>
+      <text x={phone ? 15 : 20} y="45" class="tag">{t('Example: sem = 2 write permits · this put holds 1', '示例：sem = 2 个写入名额 · 本次 put 占 1 个')}</text>
       {#if !phone}
         <path d="M225 180 H252" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" opacity={phase >= 2 ? 1 : 0.25} />
         <path d="M462 180 H490" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" opacity={phase >= 5 ? 1 : 0.25} />
@@ -375,14 +375,15 @@
           <rect x="257" y="80" width="205" height="220" rx="12" fill="var(--bg)" stroke={phase >= 2 && phase <= 4 ? 'var(--accent)' : 'var(--line)'} stroke-width={phase >= 2 && phase <= 4 ? 2 : 1} />
           <text x="272" y="108" class="rowlabel">2 · {t('FINISH', '收尾')}</text>
           <text x="360" y="132" text-anchor="middle" class="mono strong">watch_pending</text>
-          <rect x="279" y="142" width="161" height="36" rx="7" fill="white" stroke="var(--accent)" opacity={phase >= 2 ? 1 : 0.25} />
-          <text x="360" y="165" text-anchor="middle" class="mono" opacity={phase >= 2 ? 1 : 0.25}>mark_receiver_done</text>
-          <path d="M360 178 V190" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" opacity={phase >= 3 ? 1 : 0.25} />
-          <rect x="279" y="194" width="161" height="96" rx="7" fill="white" stroke="var(--accent)" opacity={phase >= 3 ? 1 : 0.25} />
-          <text x="360" y="217" text-anchor="middle" class="mono" opacity={phase >= 3 ? 1 : 0.25}>wait_for_completion</text>
-          <rect x="289" y="228" width="141" height="52" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" opacity={phase >= 4 ? 1 : 0.2} />
-          <text x="360" y="250" text-anchor="middle" class="mono strong" opacity={phase >= 4 ? 1 : 0.2}>{phase >= 4 ? 'finally: sem.release' : 'waiting…'}</text>
-          <text x="360" y="272" text-anchor="middle" class="tag" opacity={phase >= 4 ? 1 : 0.2}>{t('return 1 write permit', '归还 1 个写入名额')}</text>
+          <rect x="279" y="142" width="161" height="44" rx="7" fill="white" stroke={phase >= 2 ? 'var(--accent)' : 'var(--faint)'} />
+          <text x="360" y="159" text-anchor="middle" class="mono">mark_receiver_done</text>
+          <text x="360" y="177" text-anchor="middle" class="tag strong">{phase >= 2 ? t('receiver: done ✓', '接收方：已读完 ✓') : t('receiver: reading', '接收方：正在读')}</text>
+          <path d="M360 186 V192" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" opacity={phase >= 3 ? 1 : 0.25} />
+          <rect x="279" y="198" width="161" height="92" rx="7" fill="white" stroke={phase >= 3 ? 'var(--accent)' : 'var(--faint)'} />
+          <text x="360" y="216" text-anchor="middle" class="mono" opacity={phase >= 3 ? 1 : 0.25}>wait_for_completion</text>
+          <rect x="289" y="226" width="141" height="54" rx="6" fill={phase >= 4 ? 'var(--accent-soft)' : 'white'} stroke={phase >= 4 ? 'var(--accent)' : 'var(--faint)'} />
+          <text x="360" y="248" text-anchor="middle" class="mono strong">{phase >= 4 ? 'finally: sem.release' : 'waiting…'}</text>
+          <text x="360" y="270" text-anchor="middle" class="tag strong">{phase >= 4 ? t('free permits = 2 ✓', '空闲名额 = 2 ✓') : t('free permits = 1', '空闲名额 = 1')}</text>
         </g>
 
         <g opacity={phase >= 5 ? 1 : 0.25}>
@@ -409,12 +410,13 @@
         <g opacity={phase >= 2 ? 1 : 0.25}>
           <rect x="15" y="220" width="270" height="155" rx="10" fill="var(--bg)" stroke={phase >= 2 && phase <= 4 ? 'var(--accent)' : 'var(--line)'} stroke-width={phase >= 2 && phase <= 4 ? 2 : 1} />
           <text x="30" y="244" class="rowlabel">2 · {t('FINISH', '收尾')} · watch_pending</text>
-          <text x="150" y="270" text-anchor="middle" class="mono" opacity={phase >= 2 ? 1 : 0.25}>mark_receiver_done</text>
-          <rect x="40" y="281" width="220" height="82" rx="6" fill="white" stroke="var(--accent)" opacity={phase >= 3 ? 1 : 0.25} />
-          <text x="150" y="301" text-anchor="middle" class="mono" opacity={phase >= 3 ? 1 : 0.25}>wait_for_completion</text>
-          <rect x="50" y="309" width="200" height="44" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" opacity={phase >= 4 ? 1 : 0.2} />
-          <text x="150" y="327" text-anchor="middle" class="mono strong" opacity={phase >= 4 ? 1 : 0.2}>{phase >= 4 ? 'finally: sem.release' : 'waiting…'}</text>
-          <text x="150" y="347" text-anchor="middle" class="tag strong" opacity={phase >= 4 ? 1 : 0.2}>{t('return 1 write permit', '归还 1 个写入名额')}</text>
+          <text x="150" y="263" text-anchor="middle" class="mono">mark_receiver_done</text>
+          <text x="150" y="280" text-anchor="middle" class="tag strong">{phase >= 2 ? t('receiver: done ✓', '接收方：已读完 ✓') : t('receiver: reading', '接收方：正在读')}</text>
+          <rect x="40" y="289" width="220" height="74" rx="6" fill="white" stroke={phase >= 3 ? 'var(--accent)' : 'var(--faint)'} />
+          <text x="150" y="307" text-anchor="middle" class="mono" opacity={phase >= 3 ? 1 : 0.25}>wait_for_completion</text>
+          <rect x="50" y="314" width="200" height="41" rx="5" fill={phase >= 4 ? 'var(--accent-soft)' : 'white'} stroke={phase >= 4 ? 'var(--accent)' : 'var(--faint)'} />
+          <text x="150" y="330" text-anchor="middle" class="mono strong">{phase >= 4 ? 'finally: sem.release' : 'waiting…'}</text>
+          <text x="150" y="348" text-anchor="middle" class="tag strong">{phase >= 4 ? t('free permits = 2 ✓', '空闲名额 = 2 ✓') : t('free permits = 1', '空闲名额 = 1')}</text>
         </g>
 
         <g opacity={phase >= 5 ? 1 : 0.25}>

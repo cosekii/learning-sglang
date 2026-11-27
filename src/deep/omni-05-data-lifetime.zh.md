@@ -178,7 +178,7 @@ SHM 使用 `put_chunks_async()`，其他 relay 使用 `put_async()`。两种 put
 
 - 第 1 格收到 `DataAck(A)`。`ack_transfer()` 用 A 找到 `pending[A]`，成功 ACK 会把这张记录里的 ACK future 置为完成。
 - 第 1 格还画出 `ack_transfer()` 完成 `pending.ack`，让 `watch_pending()` 得以继续。
-- 第 2 格是 `watch_pending()` 的正常 SHM 路径：先调 `mark_receiver_done()`，再等待 `wait_for_completion()`。在这次等待的 `finally` 里，`ShmPutOperation` 调 `sem.release` 归还一个写入名额，然后等待才返回。
+- 第 2 格是 `watch_pending()` 的正常 SHM 路径：先调 `mark_receiver_done()`，下方状态从 `接收方：正在读` 变成 `接收方：已读完 ✓`，再等待 `wait_for_completion()`。在这次等待的 `finally` 里，`ShmPutOperation` 调 `sem.release`，图上的空闲名额从一个变成两个，然后等待才返回。
 - 第 3 格的 `pending: no A` 和 `pending.pop(A)` 表示只删除生命周期记录。第 4 步已在复制后关闭接收方句柄、移除共享块名字；这里的 pop 不释放复制后的接收空间。
 - 最下面固定顺序：`sem.release` 在 `wait_for_completion()` 的 `finally` 里执行，先于 `pending.pop(A)`。其他 relay 保留各自的资源语义。
 
@@ -195,7 +195,7 @@ SHM 使用 `put_chunks_async()`，其他 relay 使用 `put_async()`。两种 put
 
 ### 写入名额限制什么
 
-`ShmRelay` 创建 `sem = asyncio.Semaphore(credits)`，构造参数默认 `credits = 2`。每次 `put_async()` 或 `put_chunks_async()` 都先拿走一个名额，再创建共享块。源码把这些名额叫作 `credits`，图上叫作写入名额。它们限制在途 SHM put 的数量，不限制读者数、字节数，也不是第 1 步的示意空间。
+`ShmRelay` 创建 `sem = asyncio.Semaphore(credits)`，构造参数默认 `credits = 2`。每次 `put_async()` 或 `put_chunks_async()` 都先拿走一个名额，再创建共享块。源码把这些名额叫作 `credits`，图上叫作写入名额。它们限制在途 SHM put 的数量，不限制读者数、字节数，也不是第 1 步的示意空间。本例使用这个默认值，且只有一次 put 在途，所以归还前空闲名额是 `2 − 1 = 1`，归还后是 `1 + 1 = 2`。
 
 正常路径里，`ShmPutOperation.wait_for_completion()` 进入 `finally`，把 operation 标为完成，再调用 `release_cb=self.sem.release`。这个等待返回后，`watch_pending()` 才进入自己的 `finally` 删除 pending。删除记录只是记账，不是归还名额。
 

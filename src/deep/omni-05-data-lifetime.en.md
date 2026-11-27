@@ -178,7 +178,7 @@ Step 5 returns to the sender: match the ACK's `object_id` to pending, finish the
 
 - The first box receives `DataAck(A)`. `ack_transfer()` uses A to find `pending[A]`; a successful ACK completes that record's ACK future.
 - The first box also shows `ack_transfer()` resolving `pending.ack`, which releases `watch_pending()` to continue.
-- The second box is `watch_pending()` on its normal SHM path. It calls `mark_receiver_done()`, then awaits `wait_for_completion()`. Inside that wait's `finally`, `ShmPutOperation` calls `sem.release` to return one write permit before the await returns.
+- The second box is `watch_pending()` on its normal SHM path. It calls `mark_receiver_done()`, and the status below changes from `receiver: reading` to `receiver: done ✓`. It then awaits `wait_for_completion()`. Inside that wait's `finally`, `ShmPutOperation` calls `sem.release`, and the visible count changes from one free permit to two before the await returns.
 - In the third box, `pending: no A` and `pending.pop(A)` mean that only the lifetime record has been removed. Step 4 already closed the receiver's handle and unlinked the block's name after copying; this pop does not free the copied buffer.
 - The bottom line fixes the order: `sem.release` runs inside `wait_for_completion()`'s `finally`, before `pending.pop(A)`. Other relays keep their own resource semantics.
 
@@ -195,7 +195,7 @@ A stale ACK whose pending record no longer exists is ignored. A failed ACK store
 
 ### What a write permit limits
 
-`ShmRelay` creates `sem = asyncio.Semaphore(credits)`, with constructor default `credits = 2`. Each `put_async()` or `put_chunks_async()` acquires one permit before creating a block. The source calls these permits “credits”; the stage calls them write permits. They limit in-flight SHM puts, not readers, bytes or the illustrative storage space in Step 1.
+`ShmRelay` creates `sem = asyncio.Semaphore(credits)`, with constructor default `credits = 2`. Each `put_async()` or `put_chunks_async()` acquires one permit before creating a block. The source calls these permits “credits”; the stage calls them write permits. They limit in-flight SHM puts, not readers, bytes or the illustrative storage space in Step 1. The stage uses that default with one put in flight, so `2 − 1 = 1` permit is free before release and `1 + 1 = 2` permits are free afterward.
 
 On the normal path, `ShmPutOperation.wait_for_completion()` reaches `finally`, marks the operation completed and calls `release_cb=self.sem.release`. Only after that await returns does `watch_pending()` enter its own `finally` and pop pending. Removing the record is bookkeeping, not the permit return.
 

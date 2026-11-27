@@ -113,7 +113,7 @@ try {
     }
     const required = step === 4
       ? [[], ['ShmGetOperation', 'SHM block A'], [lang === 'zh' ? '复制完成 ✓' : 'copy ✓'], ['SHM A · unlinked', lang === 'zh' ? 'finally：close + unlink' : 'finally: close + unlink'], [lang === 'zh' ? '接收空间返回 ✓' : 'buffer returns ✓'], [lang === 'zh' ? '数据 A' : 'payload A'], ['success = true']][target]
-      : [[], ['pending.ack.set_result'], ['mark_receiver_done'], ['wait_for_completion'], ['finally: sem.release'], ['pending.pop(A) ✓']][target];
+      : [['sem = 2', lang === 'zh' ? '空闲名额 = 1' : 'free permits = 1'], ['pending.ack.set_result'], ['mark_receiver_done', lang === 'zh' ? '接收方：已读完 ✓' : 'receiver: done ✓'], ['wait_for_completion', lang === 'zh' ? '空闲名额 = 1' : 'free permits = 1'], ['finally: sem.release', lang === 'zh' ? '空闲名额 = 2 ✓' : 'free permits = 2 ✓'], ['pending.pop(A) ✓']][target];
     const missing = required.filter((text) => !state.text.some((line) => line.includes(text)));
     if (missing.length) throw new Error(`phase ${target}: missing ${missing.join(', ')}`);
     const forbidden = step === 4
@@ -125,7 +125,8 @@ try {
         ]
       : [
           ...(target < 1 ? ['pending.ack.set_result ✓'] : []),
-          ...(target < 4 ? ['finally: sem.release'] : []),
+          ...(target < 2 ? [lang === 'zh' ? '接收方：已读完 ✓' : 'receiver: done ✓'] : []),
+          ...(target < 4 ? ['finally: sem.release', lang === 'zh' ? '空闲名额 = 2 ✓' : 'free permits = 2 ✓'] : []),
           ...(target < 5 ? ['pending: no A', 'pending.pop(A) ✓'] : []),
         ];
     const premature = forbidden.filter((text) => state.text.some((line) => text === 'finally: sem.release' ? line === text : line.includes(text)));
