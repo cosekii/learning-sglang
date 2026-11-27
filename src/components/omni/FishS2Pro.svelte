@@ -321,51 +321,63 @@
           <rect x="48" y="140" width="264" height="76" rx="9" fill="white" stroke="var(--line)" />
           <text x="64" y="169" class="small strong">{t('target text', '目标文字')}</text>
           <text x="64" y="196" class="small">“Read this sentence.” → {t('ordinary tokens', '普通 tokens')}</text>
-          <rect x="48" y="238" width="264" height="227" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="64" y="265" class="small strong">{t('reference voice · [10,22]', '参考声音 · [10,22]')}</text>
-          {#each Array(VOC_FISH_CODEBOOK_ROWS) as _, row}
-            {#each Array(FISH_REFERENCE_FRAMES) as _, col}
-              <rect x={65 + col * 9} y={280 + row * 10} width="7" height="7" rx="2" fill="var(--accent)" />
+          <g opacity={phase >= 1 ? 1 : 0.10} style="transition: opacity 350ms">
+            <rect x="48" y="238" width="264" height="227" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="64" y="265" class="small strong">{t('reference voice · [10,22]', '参考声音 · [10,22]')}</text>
+            {#each Array(VOC_FISH_CODEBOOK_ROWS) as _, row}
+              {#each Array(FISH_REFERENCE_FRAMES) as _, col}
+                <rect x={65 + col * 9} y={280 + row * 10} width="7" height="7" rx="2" fill="var(--accent)" />
+              {/each}
             {/each}
-          {/each}
-          <text x="64" y="400" class="small">22 {t('reference frames', '个参考帧')}</text>
-          <text x="64" y="428" class="small">code 0 → {t('one model token', '一个模型 token')}</text>
-          <text x="64" y="451" class="small">{t('all 10 rows add voice detail', '全部十行补充声音细节')}</text>
-          <line x1="334" y1="278" x2="370" y2="278" stroke="var(--gen)" stroke-width="2" marker-end="url(#fish-arrow-gen)" />
-          <rect x="382" y="221" width="133" height="114" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="448" y="264" text-anchor="middle" class="result" style="fill:var(--gen)">Slow AR</text>
-          <text x="448" y="296" text-anchor="middle" class="small">{t('one frame at a time', '一次一帧')}</text>
-          <line x1="519" y1="278" x2="550" y2="278" stroke="var(--gen)" stroke-width="2" marker-end="url(#fish-arrow-gen)" />
-          <rect x="562" y="221" width="128" height="114" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="626" y="256" text-anchor="middle" class="small strong">{t('frame 1', '第 1 帧')}</text>
-          <text x="626" y="295" text-anchor="middle" class="result" style="fill:var(--gen)">code 0</text>
-          <text x="448" y="382" text-anchor="middle" class="small">{t('one time position', '一个时间位置')}</text>
-          <text x="448" y="410" text-anchor="middle" class="small">{t('one new choice', '一个新选择')}</text>
-          <text x="448" y="472" text-anchor="middle" class="result">1 {t('frame', '帧')} → 1 code 0</text>
+            <text x="64" y="400" class="small">22 {t('reference frames', '个参考帧')}</text>
+            <text x="64" y="428" class="small">code 0 → {t('one model token', '一个模型 token')}</text>
+            <text x="64" y="451" class="small">{t('all 10 rows add voice detail', '全部十行补充声音细节')}</text>
+          </g>
+          <g opacity={phase >= 1 ? 1 : 0.10} style="transition: opacity 350ms">
+            <line x1="334" y1="278" x2="370" y2="278" stroke="var(--gen)" stroke-width="2" marker-end="url(#fish-arrow-gen)" />
+            <rect x="382" y="221" width="133" height="114" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="448" y="264" text-anchor="middle" class="result" style="fill:var(--gen)">Slow AR</text>
+            <text x="448" y="296" text-anchor="middle" class="small">{t('one frame at a time', '一次一帧')}</text>
+          </g>
+          <g opacity={phase >= 2 ? 1 : 0.06} style="transition: opacity 350ms">
+            <line x1="519" y1="278" x2="550" y2="278" stroke="var(--gen)" stroke-width="2" marker-end="url(#fish-arrow-gen)" />
+            <rect x="562" y="221" width="128" height="114" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="626" y="256" text-anchor="middle" class="small strong">{t('frame 1', '第 1 帧')}</text>
+            <text x="626" y="295" text-anchor="middle" class="result" style="fill:var(--gen)">code 0</text>
+            <text x="448" y="382" text-anchor="middle" class="small">{t('one time position', '一个时间位置')}</text>
+            <text x="448" y="410" text-anchor="middle" class="small">{t('one new choice', '一个新选择')}</text>
+            <text x="448" y="472" text-anchor="middle" class="result">1 {t('frame', '帧')} → 1 code 0</text>
+          </g>
         {:else}
           <rect x="18" y="84" width="264" height="362" rx="11" fill="var(--bg)" stroke="var(--line)" />
           <text x="32" y="110" class="small strong">{t('THE PROMPT', 'PROMPT')}</text>
           <rect x="32" y="127" width="236" height="73" rx="8" fill="white" stroke="var(--line)" />
           <text x="45" y="154" class="small strong">{t('target text', '目标文字')}</text>
           <text x="45" y="180" class="small">“Read this sentence.”</text>
-          <rect x="32" y="218" width="236" height="202" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="45" y="244" class="small strong">{t('reference · [10,22]', '参考声音 · [10,22]')}</text>
-          {#each Array(VOC_FISH_CODEBOOK_ROWS) as _, row}
-            {#each Array(FISH_REFERENCE_FRAMES) as _, col}
-              <rect x={49 + col * 8} y={258 + row * 9} width="6" height="6" rx="2" fill="var(--accent)" />
+          <g opacity={phase >= 1 ? 1 : 0.10} style="transition: opacity 350ms">
+            <rect x="32" y="218" width="236" height="202" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="45" y="244" class="small strong">{t('reference · [10,22]', '参考声音 · [10,22]')}</text>
+            {#each Array(VOC_FISH_CODEBOOK_ROWS) as _, row}
+              {#each Array(FISH_REFERENCE_FRAMES) as _, col}
+                <rect x={49 + col * 8} y={258 + row * 9} width="6" height="6" rx="2" fill="var(--accent)" />
+              {/each}
             {/each}
-          {/each}
-          <text x="45" y="368" class="small">22 {t('reference frames', '个参考帧')}</text>
-          <text x="45" y="397" class="small">code 0 → token · 10 {t('rows add detail', '行补充细节')}</text>
-          <line x1="150" y1="449" x2="150" y2="477" stroke="var(--gen)" stroke-width="2" marker-end="url(#fish-arrow-gen)" />
-          <rect x="18" y="488" width="264" height="82" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="150" y="522" text-anchor="middle" class="result" style="fill:var(--gen)">Slow AR</text>
-          <text x="150" y="550" text-anchor="middle" class="small">{t('one frame at a time', '一次一帧')}</text>
-          <line x1="150" y1="574" x2="150" y2="601" stroke="var(--gen)" stroke-width="2" marker-end="url(#fish-arrow-gen)" />
-          <rect x="18" y="612" width="264" height="86" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="150" y="644" text-anchor="middle" class="small strong">{t('frame 1', '第 1 帧')}</text>
-          <text x="150" y="677" text-anchor="middle" class="result" style="fill:var(--gen)">code 0</text>
-          <text x="150" y="735" text-anchor="middle" class="result">1 {t('frame', '帧')} → 1 code 0</text>
+            <text x="45" y="368" class="small">22 {t('reference frames', '个参考帧')}</text>
+            <text x="45" y="397" class="small">code 0 → token · 10 {t('rows add detail', '行补充细节')}</text>
+          </g>
+          <g opacity={phase >= 1 ? 1 : 0.10} style="transition: opacity 350ms">
+            <line x1="150" y1="449" x2="150" y2="477" stroke="var(--gen)" stroke-width="2" marker-end="url(#fish-arrow-gen)" />
+            <rect x="18" y="488" width="264" height="82" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="150" y="522" text-anchor="middle" class="result" style="fill:var(--gen)">Slow AR</text>
+            <text x="150" y="550" text-anchor="middle" class="small">{t('one frame at a time', '一次一帧')}</text>
+          </g>
+          <g opacity={phase >= 2 ? 1 : 0.06} style="transition: opacity 350ms">
+            <line x1="150" y1="574" x2="150" y2="601" stroke="var(--gen)" stroke-width="2" marker-end="url(#fish-arrow-gen)" />
+            <rect x="18" y="612" width="264" height="86" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="150" y="644" text-anchor="middle" class="small strong">{t('frame 1', '第 1 帧')}</text>
+            <text x="150" y="677" text-anchor="middle" class="result" style="fill:var(--gen)">code 0</text>
+            <text x="150" y="735" text-anchor="middle" class="result">1 {t('frame', '帧')} → 1 code 0</text>
+          </g>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Code 0 becomes a token; all rows add voice detail' : 'Code 0 becomes a model token; all ten rows supply voice information at that reference frame.', phone ? 'code 0 变成 token，十行一起补充声音细节' : 'code 0 变成模型 token；十行 codes 一起提供这个参考帧的声音信息。')}</text>
       {:else if step === 3}
