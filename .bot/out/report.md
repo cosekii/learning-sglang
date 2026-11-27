@@ -10,6 +10,20 @@
 
 ---
 
+# lane d 本轮跟进 · Voxt 10 deep 抽屉溢出修复
+
+日期：2026-11-27。类型：修旧（本轮复审跟进的必修）。范围只含 `voxt-file-transcription` 双语 deep、溢出检查脚本与结果、本章评分卡和本报告；未改组件、transcript、`.bot/memory/`、其他书或第 1 本受保护英文原文。
+
+- 复审检出：`4be48ad` 的第 9 步三分支公式让 deep 抽屉横向溢出（英文桌面 client/scroll = 489/509，360 px 359/509，390 px 389/509；中文 360 px 359/390），第 11 步手机 360 px 英 359/418、中 359/414。`deep-check` 只查接线、`mobile` 不开抽屉，所以上一轮的门槛全绿却没发现。
+- 根因两条：deep 的 `$$` 经管道渲染成 `<p>` 里的内联 `.katex`，没有 `.katex-display` 包裹，StepControls 的 `.katex-display { overflow-x: auto }` 不生效，公式只能按真实宽度排版；表格里不可断行的长出处（`transcribe_socket.go:64-80`、`docs/transcribe.md`、`transcribe_cli.go:98-101`）把来源列撑过抽屉。
+- 修复（只改双语 deep 文字，三个分支与全部数字保留）：第 9 步公式条件收窄为 `any cue fails`／`success, no -o or -o -`／`success, -o FILE`（中文对应），符号表补 `stdout` 行、出处改 `cli.go` 短写；第 11 步 provider 公式拆成两个 display，表格出处改 `socket.go`／`transcribe.md` 短写；两处各加一行短写说明。
+- 新证据 `.bot/out/voxt10-deep-overflow.mjs`（可重跑）：第 9／11 步 × 英中 × 1440／360／390／430 px 共 16 个开抽屉视图，counter、`aria-expanded=true`、无残留 `$$`、无 `.katex-error`、`.deep-body scrollWidth ≤ clientWidth` 全部通过（`.bot/out/voxt10-deep-overflow/report.json`）。本模型无图像输入，结论来自实时 DOM 几何。
+- **全章扫描另发现本轮之前已有的 360/390 px 抽屉溢出**（`.bot/out/voxt10-deep-overflow-all/report.json`）：第 2 步 afconvert 代码行、第 3 步 1 px、第 7 步 `asr.Recognize(...)`、第 8 步 SRT 代入表、第 10 步 `fmt.Sprintf` 代码行。不在本轮范围，待协调排期；`<pre>` 是否该由共享 CSS 加 overflow 规则另请协调定。
+- 修后重跑：build 60 页、transcript 无 diff、readability 0 机械问题、`deep-check 10`、`zh-check`、英中 360/390/430 px mobile 均通过；第 4 步动画审计结论不变。
+- 协调基线 `04ded697` 不变：R1–R5 **110/110**、原十个非视觉项 **217/220**、原 #4／#5 **44/44**、原十二项 **261/264**、机制 R6 **0/22**；本跟进与上一轮修复均待复审，不自行记 GO。4488 dev server 已关闭，浏览器随脚本退出。
+
+---
+
 # lane k2 本轮报告 · ML Systems 09 Step 2 的 ML-25
 
 日期：2026-11-27。类型：修旧（单个布局 finding）。范围只有 `Fp8RolloutTraining.svelte` 的两行布局修改和本报告；未改文字、数字、动画相位、transcript、评分卡、`.bot/memory/`、其他章、其他书或第 1 本受保护英文原文。

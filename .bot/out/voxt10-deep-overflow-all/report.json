@@ -1,0 +1,2450 @@
+{
+  "failures": [
+    "en-360-s2: drawer overflow client=359 scroll=396 widest=[{\"tag\":\"CODE\",\"cls\":\"\",\"text\":\"/usr/bin/afconvert -f WAVE -d LEI16@16000 -c 1 tal\",\"right\":502.55,\"w\":458.95},{\"tag\":\"SPAN\",\"cls\":\"line\",\"text\":\"/usr/bin/afconvert -f WAVE -d LEI16@16000 -c 1 tal\",\"right\":498.52,\"w\":450.89},{\"tag\":\"SPAN\",\"cls\":\"\",\"text\":\"audio.wav\",\"right\":498.52,\"w\":69.36},{\"tag\":\"SPAN\",\"cls\":\"\",\"text\":\"talk.m4a\",\"right\":429.16,\"w\":62.44}]",
+    "en-360-s3: drawer overflow client=359 scroll=360 widest=[{\"tag\":\"CODE\",\"cls\":\"\",\"text\":\"{\\\"segment\\\":{\\\"start\\\":0,\\\"end\\\":3350000000,\\\"text\\\":\\\"Goo\",\"right\":563.86,\"w\":520.27},{\"tag\":\"SPAN\",\"cls\":\"line\",\"text\":\"{\\\"segment\\\":{\\\"start\\\":3400000000,\\\"end\\\":7850000000,\\\"t\",\"right\":563.86,\"w\":520.27},{\"tag\":\"SPAN\",\"cls\":\"\",\"text\":\"}}\",\"right\":563.86,\"w\":13.88},{\"tag\":\"SPAN\",\"cls\":\"\",\"text\":\"\\\"See you at noon.\\\"\",\"right\":549.98,\"w\":124.86}]",
+    "en-360-s7: drawer overflow client=359 scroll=364 widest=[{\"tag\":\"math\",\"cls\":\"\",\"text\":\"segments≤cues,segment is emitted only if trim(text\",\"right\":450.03,\"w\":425.03},{\"tag\":\"semantics\",\"cls\":\"\",\"text\":\"segments≤cues,segment is emitted only if trim(text\",\"right\":450.03,\"w\":425.03},{\"tag\":\"mrow\",\"cls\":\"\",\"text\":\"segments≤cues,segment is emitted only if trim(text\",\"right\":450.03,\"w\":425.03},{\"tag\":\"mi\",\"cls\":\"\",\"text\":\"\\\"\",\"right\":450.03,\"w\":5.34}]",
+    "en-360-s8: drawer overflow client=359 scroll=387 widest=[{\"tag\":\"TABLE\",\"cls\":\"\",\"text\":\"CueStartEndText100:00:00,00000:00:03,350Good morni\",\"right\":364.44,\"w\":339.44},{\"tag\":\"THEAD\",\"cls\":\"\",\"text\":\"CueStartEndText\",\"right\":364.44,\"w\":339.44},{\"tag\":\"TR\",\"cls\":\"\",\"text\":\"CueStartEndText\",\"right\":364.44,\"w\":339.44},{\"tag\":\"TH\",\"cls\":\"\",\"text\":\"Text\",\"right\":364.44,\"w\":77.59}]",
+    "en-360-s10: drawer overflow client=359 scroll=397 widest=[{\"tag\":\"CODE\",\"cls\":\"\",\"text\":\"Message: fmt.Sprintf(\\\"transcribed a file for the c\",\"right\":703.67,\"w\":660.08},{\"tag\":\"SPAN\",\"cls\":\"line\",\"text\":\"Message: fmt.Sprintf(\\\"transcribed a file for the c\",\"right\":699.64,\"w\":652.02},{\"tag\":\"SPAN\",\"cls\":\"\",\"text\":\")\",\"right\":699.64,\"w\":6.94},{\"tag\":\"SPAN\",\"cls\":\"\",\"text\":\"...\",\"right\":692.7,\"w\":20.81}]",
+    "zh-360-s7: drawer overflow client=359 scroll=364 widest=[{\"tag\":\"math\",\"cls\":\"\",\"text\":\"segments≤cues,segment is emitted only if trim(text\",\"right\":450.03,\"w\":425.03},{\"tag\":\"semantics\",\"cls\":\"\",\"text\":\"segments≤cues,segment is emitted only if trim(text\",\"right\":450.03,\"w\":425.03},{\"tag\":\"mrow\",\"cls\":\"\",\"text\":\"segments≤cues,segment is emitted only if trim(text\",\"right\":450.03,\"w\":425.03},{\"tag\":\"mi\",\"cls\":\"\",\"text\":\"\\\"\",\"right\":450.03,\"w\":5.34}]",
+    "zh-360-s8: drawer overflow client=359 scroll=375 widest=[{\"tag\":\"TABLE\",\"cls\":\"\",\"text\":\"句开始结束文字100:00:00,00000:00:03,350Good morning.200:0\",\"right\":352.41,\"w\":327.41},{\"tag\":\"THEAD\",\"cls\":\"\",\"text\":\"句开始结束文字\",\"right\":352.41,\"w\":327.41},{\"tag\":\"TR\",\"cls\":\"\",\"text\":\"句开始结束文字\",\"right\":352.41,\"w\":327.41},{\"tag\":\"TH\",\"cls\":\"\",\"text\":\"文字\",\"right\":352.41,\"w\":77.59}]",
+    "zh-360-s10: drawer overflow client=359 scroll=362 widest=[{\"tag\":\"CODE\",\"cls\":\"\",\"text\":\"Message: fmt.Sprintf(\\\"transcribed a file for the c\",\"right\":703.67,\"w\":660.08},{\"tag\":\"SPAN\",\"cls\":\"line\",\"text\":\"Message: fmt.Sprintf(\\\"transcribed a file for the c\",\"right\":699.64,\"w\":652.02},{\"tag\":\"SPAN\",\"cls\":\"\",\"text\":\")\",\"right\":699.64,\"w\":6.94},{\"tag\":\"SPAN\",\"cls\":\"\",\"text\":\"...\",\"right\":692.7,\"w\":20.81}]",
+    "en-390-s2: drawer overflow client=389 scroll=396 widest=[{\"tag\":\"CODE\",\"cls\":\"\",\"text\":\"/usr/bin/afconvert -f WAVE -d LEI16@16000 -c 1 tal\",\"right\":502.55,\"w\":458.95},{\"tag\":\"SPAN\",\"cls\":\"line\",\"text\":\"/usr/bin/afconvert -f WAVE -d LEI16@16000 -c 1 tal\",\"right\":498.52,\"w\":450.89},{\"tag\":\"SPAN\",\"cls\":\"\",\"text\":\"audio.wav\",\"right\":498.52,\"w\":69.36},{\"tag\":\"SPAN\",\"cls\":\"\",\"text\":\"talk.m4a\",\"right\":429.16,\"w\":62.44}]",
+    "en-390-s10: drawer overflow client=389 scroll=397 widest=[{\"tag\":\"CODE\",\"cls\":\"\",\"text\":\"Message: fmt.Sprintf(\\\"transcribed a file for the c\",\"right\":703.67,\"w\":660.08},{\"tag\":\"SPAN\",\"cls\":\"line\",\"text\":\"Message: fmt.Sprintf(\\\"transcribed a file for the c\",\"right\":699.64,\"w\":652.02},{\"tag\":\"SPAN\",\"cls\":\"\",\"text\":\")\",\"right\":699.64,\"w\":6.94},{\"tag\":\"SPAN\",\"cls\":\"\",\"text\":\"...\",\"right\":692.7,\"w\":20.81}]"
+  ],
+  "results": [
+    {
+      "view": "desktop",
+      "lang": "en",
+      "step": 1,
+      "counter": "01 / 11",
+      "expanded": "true",
+      "client": 489,
+      "scroll": 489,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "desktop",
+      "lang": "en",
+      "step": 2,
+      "counter": "02 / 11",
+      "expanded": "true",
+      "client": 489,
+      "scroll": 489,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "CODE",
+          "cls": "",
+          "text": "/usr/bin/afconvert -f WAVE -d LEI16@16000 -c 1 tal",
+          "right": 1452.95,
+          "w": 458.95
+        },
+        {
+          "tag": "SPAN",
+          "cls": "line",
+          "text": "/usr/bin/afconvert -f WAVE -d LEI16@16000 -c 1 tal",
+          "right": 1448.92,
+          "w": 450.89
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "audio.wav",
+          "right": 1448.92,
+          "w": 69.36
+        }
+      ]
+    },
+    {
+      "view": "desktop",
+      "lang": "en",
+      "step": 3,
+      "counter": "03 / 11",
+      "expanded": "true",
+      "client": 489,
+      "scroll": 489,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "CODE",
+          "cls": "",
+          "text": "{\"segment\":{\"start\":0,\"end\":3350000000,\"text\":\"Goo",
+          "right": 1514.27,
+          "w": 520.27
+        },
+        {
+          "tag": "SPAN",
+          "cls": "line",
+          "text": "{\"segment\":{\"start\":3400000000,\"end\":7850000000,\"t",
+          "right": 1514.27,
+          "w": 520.27
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "}}",
+          "right": 1514.27,
+          "w": 13.88
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "\"See you at noon.\"",
+          "right": 1500.39,
+          "w": 124.86
+        }
+      ]
+    },
+    {
+      "view": "desktop",
+      "lang": "en",
+      "step": 4,
+      "counter": "04 / 11",
+      "expanded": "true",
+      "client": 489,
+      "scroll": 489,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "desktop",
+      "lang": "en",
+      "step": 5,
+      "counter": "05 / 11",
+      "expanded": "true",
+      "client": 489,
+      "scroll": 489,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "math",
+          "cls": "",
+          "text": "cue start=max⁡(0, speech onset−300 ms),keeppause ⟺",
+          "right": 1517.55,
+          "w": 542.14
+        },
+        {
+          "tag": "semantics",
+          "cls": "",
+          "text": "cue start=max⁡(0, speech onset−300 ms),keeppause ⟺",
+          "right": 1517.55,
+          "w": 542.14
+        },
+        {
+          "tag": "mrow",
+          "cls": "",
+          "text": "cue start=max⁡(0, speech onset−300 ms),keeppause ⟺",
+          "right": 1517.55,
+          "w": 542.14
+        },
+        {
+          "tag": "mtext",
+          "cls": "",
+          "text": "ms",
+          "right": 1517.55,
+          "w": 23.66
+        }
+      ]
+    },
+    {
+      "view": "desktop",
+      "lang": "en",
+      "step": 6,
+      "counter": "06 / 11",
+      "expanded": "true",
+      "client": 489,
+      "scroll": 489,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "math",
+          "cls": "",
+          "text": "search=[ 7−1, 7 ] s,w∗=arg⁡min⁡w⊂searchRMS(w),cut=",
+          "right": 1488.97,
+          "w": 513.56
+        },
+        {
+          "tag": "semantics",
+          "cls": "",
+          "text": "search=[ 7−1, 7 ] s,w∗=arg⁡min⁡w⊂searchRMS(w),cut=",
+          "right": 1488.97,
+          "w": 513.56
+        },
+        {
+          "tag": "mrow",
+          "cls": "",
+          "text": "search=[ 7−1, 7 ] s,w∗=arg⁡min⁡w⊂searchRMS(w),cut=",
+          "right": 1488.97,
+          "w": 513.56
+        },
+        {
+          "tag": "mo",
+          "cls": "",
+          "text": ")",
+          "right": 1488.97,
+          "w": 5.7
+        }
+      ]
+    },
+    {
+      "view": "desktop",
+      "lang": "en",
+      "step": 7,
+      "counter": "07 / 11",
+      "expanded": "true",
+      "client": 489,
+      "scroll": 489,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "desktop",
+      "lang": "en",
+      "step": 8,
+      "counter": "08 / 11",
+      "expanded": "true",
+      "client": 489,
+      "scroll": 489,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "desktop",
+      "lang": "en",
+      "step": 9,
+      "counter": "09 / 11",
+      "expanded": "true",
+      "client": 489,
+      "scroll": 489,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "desktop",
+      "lang": "en",
+      "step": 10,
+      "counter": "10 / 11",
+      "expanded": "true",
+      "client": 489,
+      "scroll": 489,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "CODE",
+          "cls": "",
+          "text": "Message: fmt.Sprintf(\"transcribed a file for the c",
+          "right": 1654.08,
+          "w": 660.08
+        },
+        {
+          "tag": "SPAN",
+          "cls": "line",
+          "text": "Message: fmt.Sprintf(\"transcribed a file for the c",
+          "right": 1650.05,
+          "w": 652.02
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": ")",
+          "right": 1650.05,
+          "w": 6.94
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "...",
+          "right": 1643.11,
+          "w": 20.81
+        }
+      ]
+    },
+    {
+      "view": "desktop",
+      "lang": "en",
+      "step": 11,
+      "counter": "11 / 11",
+      "expanded": "true",
+      "client": 489,
+      "scroll": 489,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "desktop",
+      "lang": "zh",
+      "step": 1,
+      "counter": "01 / 11",
+      "expanded": "true",
+      "client": 489,
+      "scroll": 489,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "desktop",
+      "lang": "zh",
+      "step": 2,
+      "counter": "02 / 11",
+      "expanded": "true",
+      "client": 489,
+      "scroll": 489,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "CODE",
+          "cls": "",
+          "text": "/usr/bin/afconvert -f WAVE -d LEI16@16000 -c 1 tal",
+          "right": 1452.95,
+          "w": 458.95
+        },
+        {
+          "tag": "SPAN",
+          "cls": "line",
+          "text": "/usr/bin/afconvert -f WAVE -d LEI16@16000 -c 1 tal",
+          "right": 1448.92,
+          "w": 450.89
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "audio.wav",
+          "right": 1448.92,
+          "w": 69.36
+        }
+      ]
+    },
+    {
+      "view": "desktop",
+      "lang": "zh",
+      "step": 3,
+      "counter": "03 / 11",
+      "expanded": "true",
+      "client": 489,
+      "scroll": 489,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "CODE",
+          "cls": "",
+          "text": "{\"segment\":{\"start\":0,\"end\":3350000000,\"text\":\"Goo",
+          "right": 1514.27,
+          "w": 520.27
+        },
+        {
+          "tag": "SPAN",
+          "cls": "line",
+          "text": "{\"segment\":{\"start\":3400000000,\"end\":7850000000,\"t",
+          "right": 1514.27,
+          "w": 520.27
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "}}",
+          "right": 1514.27,
+          "w": 13.88
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "\"See you at noon.\"",
+          "right": 1500.39,
+          "w": 124.86
+        }
+      ]
+    },
+    {
+      "view": "desktop",
+      "lang": "zh",
+      "step": 4,
+      "counter": "04 / 11",
+      "expanded": "true",
+      "client": 489,
+      "scroll": 489,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "desktop",
+      "lang": "zh",
+      "step": 5,
+      "counter": "05 / 11",
+      "expanded": "true",
+      "client": 489,
+      "scroll": 489,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "math",
+          "cls": "",
+          "text": "cue start=max⁡(0, speech onset−300 ms),keeppause ⟺",
+          "right": 1517.55,
+          "w": 542.14
+        },
+        {
+          "tag": "semantics",
+          "cls": "",
+          "text": "cue start=max⁡(0, speech onset−300 ms),keeppause ⟺",
+          "right": 1517.55,
+          "w": 542.14
+        },
+        {
+          "tag": "mrow",
+          "cls": "",
+          "text": "cue start=max⁡(0, speech onset−300 ms),keeppause ⟺",
+          "right": 1517.55,
+          "w": 542.14
+        },
+        {
+          "tag": "mtext",
+          "cls": "",
+          "text": "ms",
+          "right": 1517.55,
+          "w": 23.66
+        }
+      ]
+    },
+    {
+      "view": "desktop",
+      "lang": "zh",
+      "step": 6,
+      "counter": "06 / 11",
+      "expanded": "true",
+      "client": 489,
+      "scroll": 489,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "math",
+          "cls": "",
+          "text": "search=[ 7−1, 7 ] s,w∗=arg⁡min⁡w⊂searchRMS(w),cut=",
+          "right": 1488.97,
+          "w": 513.56
+        },
+        {
+          "tag": "semantics",
+          "cls": "",
+          "text": "search=[ 7−1, 7 ] s,w∗=arg⁡min⁡w⊂searchRMS(w),cut=",
+          "right": 1488.97,
+          "w": 513.56
+        },
+        {
+          "tag": "mrow",
+          "cls": "",
+          "text": "search=[ 7−1, 7 ] s,w∗=arg⁡min⁡w⊂searchRMS(w),cut=",
+          "right": 1488.97,
+          "w": 513.56
+        },
+        {
+          "tag": "mo",
+          "cls": "",
+          "text": ")",
+          "right": 1488.97,
+          "w": 5.7
+        }
+      ]
+    },
+    {
+      "view": "desktop",
+      "lang": "zh",
+      "step": 7,
+      "counter": "07 / 11",
+      "expanded": "true",
+      "client": 489,
+      "scroll": 489,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "desktop",
+      "lang": "zh",
+      "step": 8,
+      "counter": "08 / 11",
+      "expanded": "true",
+      "client": 489,
+      "scroll": 489,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "desktop",
+      "lang": "zh",
+      "step": 9,
+      "counter": "09 / 11",
+      "expanded": "true",
+      "client": 489,
+      "scroll": 489,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "desktop",
+      "lang": "zh",
+      "step": 10,
+      "counter": "10 / 11",
+      "expanded": "true",
+      "client": 489,
+      "scroll": 489,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "CODE",
+          "cls": "",
+          "text": "Message: fmt.Sprintf(\"transcribed a file for the c",
+          "right": 1654.08,
+          "w": 660.08
+        },
+        {
+          "tag": "SPAN",
+          "cls": "line",
+          "text": "Message: fmt.Sprintf(\"transcribed a file for the c",
+          "right": 1650.05,
+          "w": 652.02
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": ")",
+          "right": 1650.05,
+          "w": 6.94
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "...",
+          "right": 1643.11,
+          "w": 20.81
+        }
+      ]
+    },
+    {
+      "view": "desktop",
+      "lang": "zh",
+      "step": 11,
+      "counter": "11 / 11",
+      "expanded": "true",
+      "client": 489,
+      "scroll": 489,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "360",
+      "lang": "en",
+      "step": 1,
+      "counter": "01 / 11",
+      "expanded": "true",
+      "client": 359,
+      "scroll": 359,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "360",
+      "lang": "en",
+      "step": 2,
+      "counter": "02 / 11",
+      "expanded": "true",
+      "client": 359,
+      "scroll": 396,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "CODE",
+          "cls": "",
+          "text": "/usr/bin/afconvert -f WAVE -d LEI16@16000 -c 1 tal",
+          "right": 502.55,
+          "w": 458.95
+        },
+        {
+          "tag": "SPAN",
+          "cls": "line",
+          "text": "/usr/bin/afconvert -f WAVE -d LEI16@16000 -c 1 tal",
+          "right": 498.52,
+          "w": 450.89
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "audio.wav",
+          "right": 498.52,
+          "w": 69.36
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "talk.m4a",
+          "right": 429.16,
+          "w": 62.44
+        }
+      ]
+    },
+    {
+      "view": "360",
+      "lang": "en",
+      "step": 3,
+      "counter": "03 / 11",
+      "expanded": "true",
+      "client": 359,
+      "scroll": 360,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "CODE",
+          "cls": "",
+          "text": "{\"segment\":{\"start\":0,\"end\":3350000000,\"text\":\"Goo",
+          "right": 563.86,
+          "w": 520.27
+        },
+        {
+          "tag": "SPAN",
+          "cls": "line",
+          "text": "{\"segment\":{\"start\":3400000000,\"end\":7850000000,\"t",
+          "right": 563.86,
+          "w": 520.27
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "}}",
+          "right": 563.86,
+          "w": 13.88
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "\"See you at noon.\"",
+          "right": 549.98,
+          "w": 124.86
+        }
+      ]
+    },
+    {
+      "view": "360",
+      "lang": "en",
+      "step": 4,
+      "counter": "04 / 11",
+      "expanded": "true",
+      "client": 359,
+      "scroll": 359,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "360",
+      "lang": "en",
+      "step": 5,
+      "counter": "05 / 11",
+      "expanded": "true",
+      "client": 359,
+      "scroll": 359,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "math",
+          "cls": "",
+          "text": "cue start=max⁡(0, speech onset−300 ms),keeppause ⟺",
+          "right": 567.14,
+          "w": 542.14
+        },
+        {
+          "tag": "semantics",
+          "cls": "",
+          "text": "cue start=max⁡(0, speech onset−300 ms),keeppause ⟺",
+          "right": 567.14,
+          "w": 542.14
+        },
+        {
+          "tag": "mrow",
+          "cls": "",
+          "text": "cue start=max⁡(0, speech onset−300 ms),keeppause ⟺",
+          "right": 567.14,
+          "w": 542.14
+        },
+        {
+          "tag": "mtext",
+          "cls": "",
+          "text": "ms",
+          "right": 567.14,
+          "w": 23.66
+        }
+      ]
+    },
+    {
+      "view": "360",
+      "lang": "en",
+      "step": 6,
+      "counter": "06 / 11",
+      "expanded": "true",
+      "client": 359,
+      "scroll": 359,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "math",
+          "cls": "",
+          "text": "search=[ 7−1, 7 ] s,w∗=arg⁡min⁡w⊂searchRMS(w),cut=",
+          "right": 538.56,
+          "w": 513.56
+        },
+        {
+          "tag": "semantics",
+          "cls": "",
+          "text": "search=[ 7−1, 7 ] s,w∗=arg⁡min⁡w⊂searchRMS(w),cut=",
+          "right": 538.56,
+          "w": 513.56
+        },
+        {
+          "tag": "mrow",
+          "cls": "",
+          "text": "search=[ 7−1, 7 ] s,w∗=arg⁡min⁡w⊂searchRMS(w),cut=",
+          "right": 538.56,
+          "w": 513.56
+        },
+        {
+          "tag": "mo",
+          "cls": "",
+          "text": ")",
+          "right": 538.56,
+          "w": 5.7
+        }
+      ]
+    },
+    {
+      "view": "360",
+      "lang": "en",
+      "step": 7,
+      "counter": "07 / 11",
+      "expanded": "true",
+      "client": 359,
+      "scroll": 364,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "math",
+          "cls": "",
+          "text": "segments≤cues,segment is emitted only if trim(text",
+          "right": 450.03,
+          "w": 425.03
+        },
+        {
+          "tag": "semantics",
+          "cls": "",
+          "text": "segments≤cues,segment is emitted only if trim(text",
+          "right": 450.03,
+          "w": 425.03
+        },
+        {
+          "tag": "mrow",
+          "cls": "",
+          "text": "segments≤cues,segment is emitted only if trim(text",
+          "right": 450.03,
+          "w": 425.03
+        },
+        {
+          "tag": "mi",
+          "cls": "",
+          "text": "\"",
+          "right": 450.03,
+          "w": 5.34
+        }
+      ]
+    },
+    {
+      "view": "360",
+      "lang": "en",
+      "step": 8,
+      "counter": "08 / 11",
+      "expanded": "true",
+      "client": 359,
+      "scroll": 387,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "TABLE",
+          "cls": "",
+          "text": "CueStartEndText100:00:00,00000:00:03,350Good morni",
+          "right": 364.44,
+          "w": 339.44
+        },
+        {
+          "tag": "THEAD",
+          "cls": "",
+          "text": "CueStartEndText",
+          "right": 364.44,
+          "w": 339.44
+        },
+        {
+          "tag": "TR",
+          "cls": "",
+          "text": "CueStartEndText",
+          "right": 364.44,
+          "w": 339.44
+        },
+        {
+          "tag": "TH",
+          "cls": "",
+          "text": "Text",
+          "right": 364.44,
+          "w": 77.59
+        }
+      ]
+    },
+    {
+      "view": "360",
+      "lang": "en",
+      "step": 9,
+      "counter": "09 / 11",
+      "expanded": "true",
+      "client": 359,
+      "scroll": 359,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "360",
+      "lang": "en",
+      "step": 10,
+      "counter": "10 / 11",
+      "expanded": "true",
+      "client": 359,
+      "scroll": 397,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "CODE",
+          "cls": "",
+          "text": "Message: fmt.Sprintf(\"transcribed a file for the c",
+          "right": 703.67,
+          "w": 660.08
+        },
+        {
+          "tag": "SPAN",
+          "cls": "line",
+          "text": "Message: fmt.Sprintf(\"transcribed a file for the c",
+          "right": 699.64,
+          "w": 652.02
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": ")",
+          "right": 699.64,
+          "w": 6.94
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "...",
+          "right": 692.7,
+          "w": 20.81
+        }
+      ]
+    },
+    {
+      "view": "360",
+      "lang": "en",
+      "step": 11,
+      "counter": "11 / 11",
+      "expanded": "true",
+      "client": 359,
+      "scroll": 359,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "360",
+      "lang": "zh",
+      "step": 1,
+      "counter": "01 / 11",
+      "expanded": "true",
+      "client": 359,
+      "scroll": 359,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "360",
+      "lang": "zh",
+      "step": 2,
+      "counter": "02 / 11",
+      "expanded": "true",
+      "client": 359,
+      "scroll": 359,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "CODE",
+          "cls": "",
+          "text": "/usr/bin/afconvert -f WAVE -d LEI16@16000 -c 1 tal",
+          "right": 502.55,
+          "w": 458.95
+        },
+        {
+          "tag": "SPAN",
+          "cls": "line",
+          "text": "/usr/bin/afconvert -f WAVE -d LEI16@16000 -c 1 tal",
+          "right": 498.52,
+          "w": 450.89
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "audio.wav",
+          "right": 498.52,
+          "w": 69.36
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "talk.m4a",
+          "right": 429.16,
+          "w": 62.44
+        }
+      ]
+    },
+    {
+      "view": "360",
+      "lang": "zh",
+      "step": 3,
+      "counter": "03 / 11",
+      "expanded": "true",
+      "client": 359,
+      "scroll": 359,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "CODE",
+          "cls": "",
+          "text": "{\"segment\":{\"start\":0,\"end\":3350000000,\"text\":\"Goo",
+          "right": 563.86,
+          "w": 520.27
+        },
+        {
+          "tag": "SPAN",
+          "cls": "line",
+          "text": "{\"segment\":{\"start\":3400000000,\"end\":7850000000,\"t",
+          "right": 563.86,
+          "w": 520.27
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "}}",
+          "right": 563.86,
+          "w": 13.88
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "\"See you at noon.\"",
+          "right": 549.98,
+          "w": 124.86
+        }
+      ]
+    },
+    {
+      "view": "360",
+      "lang": "zh",
+      "step": 4,
+      "counter": "04 / 11",
+      "expanded": "true",
+      "client": 359,
+      "scroll": 359,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "360",
+      "lang": "zh",
+      "step": 5,
+      "counter": "05 / 11",
+      "expanded": "true",
+      "client": 359,
+      "scroll": 359,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "math",
+          "cls": "",
+          "text": "cue start=max⁡(0, speech onset−300 ms),keeppause ⟺",
+          "right": 567.14,
+          "w": 542.14
+        },
+        {
+          "tag": "semantics",
+          "cls": "",
+          "text": "cue start=max⁡(0, speech onset−300 ms),keeppause ⟺",
+          "right": 567.14,
+          "w": 542.14
+        },
+        {
+          "tag": "mrow",
+          "cls": "",
+          "text": "cue start=max⁡(0, speech onset−300 ms),keeppause ⟺",
+          "right": 567.14,
+          "w": 542.14
+        },
+        {
+          "tag": "mtext",
+          "cls": "",
+          "text": "ms",
+          "right": 567.14,
+          "w": 23.66
+        }
+      ]
+    },
+    {
+      "view": "360",
+      "lang": "zh",
+      "step": 6,
+      "counter": "06 / 11",
+      "expanded": "true",
+      "client": 359,
+      "scroll": 359,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "math",
+          "cls": "",
+          "text": "search=[ 7−1, 7 ] s,w∗=arg⁡min⁡w⊂searchRMS(w),cut=",
+          "right": 538.56,
+          "w": 513.56
+        },
+        {
+          "tag": "semantics",
+          "cls": "",
+          "text": "search=[ 7−1, 7 ] s,w∗=arg⁡min⁡w⊂searchRMS(w),cut=",
+          "right": 538.56,
+          "w": 513.56
+        },
+        {
+          "tag": "mrow",
+          "cls": "",
+          "text": "search=[ 7−1, 7 ] s,w∗=arg⁡min⁡w⊂searchRMS(w),cut=",
+          "right": 538.56,
+          "w": 513.56
+        },
+        {
+          "tag": "mo",
+          "cls": "",
+          "text": ")",
+          "right": 538.56,
+          "w": 5.7
+        }
+      ]
+    },
+    {
+      "view": "360",
+      "lang": "zh",
+      "step": 7,
+      "counter": "07 / 11",
+      "expanded": "true",
+      "client": 359,
+      "scroll": 364,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "math",
+          "cls": "",
+          "text": "segments≤cues,segment is emitted only if trim(text",
+          "right": 450.03,
+          "w": 425.03
+        },
+        {
+          "tag": "semantics",
+          "cls": "",
+          "text": "segments≤cues,segment is emitted only if trim(text",
+          "right": 450.03,
+          "w": 425.03
+        },
+        {
+          "tag": "mrow",
+          "cls": "",
+          "text": "segments≤cues,segment is emitted only if trim(text",
+          "right": 450.03,
+          "w": 425.03
+        },
+        {
+          "tag": "mi",
+          "cls": "",
+          "text": "\"",
+          "right": 450.03,
+          "w": 5.34
+        }
+      ]
+    },
+    {
+      "view": "360",
+      "lang": "zh",
+      "step": 8,
+      "counter": "08 / 11",
+      "expanded": "true",
+      "client": 359,
+      "scroll": 375,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "TABLE",
+          "cls": "",
+          "text": "句开始结束文字100:00:00,00000:00:03,350Good morning.200:0",
+          "right": 352.41,
+          "w": 327.41
+        },
+        {
+          "tag": "THEAD",
+          "cls": "",
+          "text": "句开始结束文字",
+          "right": 352.41,
+          "w": 327.41
+        },
+        {
+          "tag": "TR",
+          "cls": "",
+          "text": "句开始结束文字",
+          "right": 352.41,
+          "w": 327.41
+        },
+        {
+          "tag": "TH",
+          "cls": "",
+          "text": "文字",
+          "right": 352.41,
+          "w": 77.59
+        }
+      ]
+    },
+    {
+      "view": "360",
+      "lang": "zh",
+      "step": 9,
+      "counter": "09 / 11",
+      "expanded": "true",
+      "client": 359,
+      "scroll": 359,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "360",
+      "lang": "zh",
+      "step": 10,
+      "counter": "10 / 11",
+      "expanded": "true",
+      "client": 359,
+      "scroll": 362,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "CODE",
+          "cls": "",
+          "text": "Message: fmt.Sprintf(\"transcribed a file for the c",
+          "right": 703.67,
+          "w": 660.08
+        },
+        {
+          "tag": "SPAN",
+          "cls": "line",
+          "text": "Message: fmt.Sprintf(\"transcribed a file for the c",
+          "right": 699.64,
+          "w": 652.02
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": ")",
+          "right": 699.64,
+          "w": 6.94
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "...",
+          "right": 692.7,
+          "w": 20.81
+        }
+      ]
+    },
+    {
+      "view": "360",
+      "lang": "zh",
+      "step": 11,
+      "counter": "11 / 11",
+      "expanded": "true",
+      "client": 359,
+      "scroll": 359,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "390",
+      "lang": "en",
+      "step": 1,
+      "counter": "01 / 11",
+      "expanded": "true",
+      "client": 389,
+      "scroll": 389,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "390",
+      "lang": "en",
+      "step": 2,
+      "counter": "02 / 11",
+      "expanded": "true",
+      "client": 389,
+      "scroll": 396,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "CODE",
+          "cls": "",
+          "text": "/usr/bin/afconvert -f WAVE -d LEI16@16000 -c 1 tal",
+          "right": 502.55,
+          "w": 458.95
+        },
+        {
+          "tag": "SPAN",
+          "cls": "line",
+          "text": "/usr/bin/afconvert -f WAVE -d LEI16@16000 -c 1 tal",
+          "right": 498.52,
+          "w": 450.89
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "audio.wav",
+          "right": 498.52,
+          "w": 69.36
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "talk.m4a",
+          "right": 429.16,
+          "w": 62.44
+        }
+      ]
+    },
+    {
+      "view": "390",
+      "lang": "en",
+      "step": 3,
+      "counter": "03 / 11",
+      "expanded": "true",
+      "client": 389,
+      "scroll": 389,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "CODE",
+          "cls": "",
+          "text": "{\"segment\":{\"start\":0,\"end\":3350000000,\"text\":\"Goo",
+          "right": 563.86,
+          "w": 520.27
+        },
+        {
+          "tag": "SPAN",
+          "cls": "line",
+          "text": "{\"segment\":{\"start\":3400000000,\"end\":7850000000,\"t",
+          "right": 563.86,
+          "w": 520.27
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "}}",
+          "right": 563.86,
+          "w": 13.88
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "\"See you at noon.\"",
+          "right": 549.98,
+          "w": 124.86
+        }
+      ]
+    },
+    {
+      "view": "390",
+      "lang": "en",
+      "step": 4,
+      "counter": "04 / 11",
+      "expanded": "true",
+      "client": 389,
+      "scroll": 389,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "390",
+      "lang": "en",
+      "step": 5,
+      "counter": "05 / 11",
+      "expanded": "true",
+      "client": 389,
+      "scroll": 389,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "math",
+          "cls": "",
+          "text": "cue start=max⁡(0, speech onset−300 ms),keeppause ⟺",
+          "right": 567.14,
+          "w": 542.14
+        },
+        {
+          "tag": "semantics",
+          "cls": "",
+          "text": "cue start=max⁡(0, speech onset−300 ms),keeppause ⟺",
+          "right": 567.14,
+          "w": 542.14
+        },
+        {
+          "tag": "mrow",
+          "cls": "",
+          "text": "cue start=max⁡(0, speech onset−300 ms),keeppause ⟺",
+          "right": 567.14,
+          "w": 542.14
+        },
+        {
+          "tag": "mtext",
+          "cls": "",
+          "text": "ms",
+          "right": 567.14,
+          "w": 23.66
+        }
+      ]
+    },
+    {
+      "view": "390",
+      "lang": "en",
+      "step": 6,
+      "counter": "06 / 11",
+      "expanded": "true",
+      "client": 389,
+      "scroll": 389,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "math",
+          "cls": "",
+          "text": "search=[ 7−1, 7 ] s,w∗=arg⁡min⁡w⊂searchRMS(w),cut=",
+          "right": 538.56,
+          "w": 513.56
+        },
+        {
+          "tag": "semantics",
+          "cls": "",
+          "text": "search=[ 7−1, 7 ] s,w∗=arg⁡min⁡w⊂searchRMS(w),cut=",
+          "right": 538.56,
+          "w": 513.56
+        },
+        {
+          "tag": "mrow",
+          "cls": "",
+          "text": "search=[ 7−1, 7 ] s,w∗=arg⁡min⁡w⊂searchRMS(w),cut=",
+          "right": 538.56,
+          "w": 513.56
+        },
+        {
+          "tag": "mo",
+          "cls": "",
+          "text": ")",
+          "right": 538.56,
+          "w": 5.7
+        }
+      ]
+    },
+    {
+      "view": "390",
+      "lang": "en",
+      "step": 7,
+      "counter": "07 / 11",
+      "expanded": "true",
+      "client": 389,
+      "scroll": 389,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "math",
+          "cls": "",
+          "text": "segments≤cues,segment is emitted only if trim(text",
+          "right": 450.03,
+          "w": 425.03
+        },
+        {
+          "tag": "semantics",
+          "cls": "",
+          "text": "segments≤cues,segment is emitted only if trim(text",
+          "right": 450.03,
+          "w": 425.03
+        },
+        {
+          "tag": "mrow",
+          "cls": "",
+          "text": "segments≤cues,segment is emitted only if trim(text",
+          "right": 450.03,
+          "w": 425.03
+        },
+        {
+          "tag": "mi",
+          "cls": "",
+          "text": "\"",
+          "right": 450.03,
+          "w": 5.34
+        }
+      ]
+    },
+    {
+      "view": "390",
+      "lang": "en",
+      "step": 8,
+      "counter": "08 / 11",
+      "expanded": "true",
+      "client": 389,
+      "scroll": 389,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "390",
+      "lang": "en",
+      "step": 9,
+      "counter": "09 / 11",
+      "expanded": "true",
+      "client": 389,
+      "scroll": 389,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "390",
+      "lang": "en",
+      "step": 10,
+      "counter": "10 / 11",
+      "expanded": "true",
+      "client": 389,
+      "scroll": 397,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "CODE",
+          "cls": "",
+          "text": "Message: fmt.Sprintf(\"transcribed a file for the c",
+          "right": 703.67,
+          "w": 660.08
+        },
+        {
+          "tag": "SPAN",
+          "cls": "line",
+          "text": "Message: fmt.Sprintf(\"transcribed a file for the c",
+          "right": 699.64,
+          "w": 652.02
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": ")",
+          "right": 699.64,
+          "w": 6.94
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "...",
+          "right": 692.7,
+          "w": 20.81
+        }
+      ]
+    },
+    {
+      "view": "390",
+      "lang": "en",
+      "step": 11,
+      "counter": "11 / 11",
+      "expanded": "true",
+      "client": 389,
+      "scroll": 389,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "390",
+      "lang": "zh",
+      "step": 1,
+      "counter": "01 / 11",
+      "expanded": "true",
+      "client": 389,
+      "scroll": 389,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "390",
+      "lang": "zh",
+      "step": 2,
+      "counter": "02 / 11",
+      "expanded": "true",
+      "client": 389,
+      "scroll": 389,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "CODE",
+          "cls": "",
+          "text": "/usr/bin/afconvert -f WAVE -d LEI16@16000 -c 1 tal",
+          "right": 502.55,
+          "w": 458.95
+        },
+        {
+          "tag": "SPAN",
+          "cls": "line",
+          "text": "/usr/bin/afconvert -f WAVE -d LEI16@16000 -c 1 tal",
+          "right": 498.52,
+          "w": 450.89
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "audio.wav",
+          "right": 498.52,
+          "w": 69.36
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "talk.m4a",
+          "right": 429.16,
+          "w": 62.44
+        }
+      ]
+    },
+    {
+      "view": "390",
+      "lang": "zh",
+      "step": 3,
+      "counter": "03 / 11",
+      "expanded": "true",
+      "client": 389,
+      "scroll": 389,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "CODE",
+          "cls": "",
+          "text": "{\"segment\":{\"start\":0,\"end\":3350000000,\"text\":\"Goo",
+          "right": 563.86,
+          "w": 520.27
+        },
+        {
+          "tag": "SPAN",
+          "cls": "line",
+          "text": "{\"segment\":{\"start\":3400000000,\"end\":7850000000,\"t",
+          "right": 563.86,
+          "w": 520.27
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "}}",
+          "right": 563.86,
+          "w": 13.88
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "\"See you at noon.\"",
+          "right": 549.98,
+          "w": 124.86
+        }
+      ]
+    },
+    {
+      "view": "390",
+      "lang": "zh",
+      "step": 4,
+      "counter": "04 / 11",
+      "expanded": "true",
+      "client": 389,
+      "scroll": 389,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "390",
+      "lang": "zh",
+      "step": 5,
+      "counter": "05 / 11",
+      "expanded": "true",
+      "client": 389,
+      "scroll": 389,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "math",
+          "cls": "",
+          "text": "cue start=max⁡(0, speech onset−300 ms),keeppause ⟺",
+          "right": 567.14,
+          "w": 542.14
+        },
+        {
+          "tag": "semantics",
+          "cls": "",
+          "text": "cue start=max⁡(0, speech onset−300 ms),keeppause ⟺",
+          "right": 567.14,
+          "w": 542.14
+        },
+        {
+          "tag": "mrow",
+          "cls": "",
+          "text": "cue start=max⁡(0, speech onset−300 ms),keeppause ⟺",
+          "right": 567.14,
+          "w": 542.14
+        },
+        {
+          "tag": "mtext",
+          "cls": "",
+          "text": "ms",
+          "right": 567.14,
+          "w": 23.66
+        }
+      ]
+    },
+    {
+      "view": "390",
+      "lang": "zh",
+      "step": 6,
+      "counter": "06 / 11",
+      "expanded": "true",
+      "client": 389,
+      "scroll": 389,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "math",
+          "cls": "",
+          "text": "search=[ 7−1, 7 ] s,w∗=arg⁡min⁡w⊂searchRMS(w),cut=",
+          "right": 538.56,
+          "w": 513.56
+        },
+        {
+          "tag": "semantics",
+          "cls": "",
+          "text": "search=[ 7−1, 7 ] s,w∗=arg⁡min⁡w⊂searchRMS(w),cut=",
+          "right": 538.56,
+          "w": 513.56
+        },
+        {
+          "tag": "mrow",
+          "cls": "",
+          "text": "search=[ 7−1, 7 ] s,w∗=arg⁡min⁡w⊂searchRMS(w),cut=",
+          "right": 538.56,
+          "w": 513.56
+        },
+        {
+          "tag": "mo",
+          "cls": "",
+          "text": ")",
+          "right": 538.56,
+          "w": 5.7
+        }
+      ]
+    },
+    {
+      "view": "390",
+      "lang": "zh",
+      "step": 7,
+      "counter": "07 / 11",
+      "expanded": "true",
+      "client": 389,
+      "scroll": 389,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "math",
+          "cls": "",
+          "text": "segments≤cues,segment is emitted only if trim(text",
+          "right": 450.03,
+          "w": 425.03
+        },
+        {
+          "tag": "semantics",
+          "cls": "",
+          "text": "segments≤cues,segment is emitted only if trim(text",
+          "right": 450.03,
+          "w": 425.03
+        },
+        {
+          "tag": "mrow",
+          "cls": "",
+          "text": "segments≤cues,segment is emitted only if trim(text",
+          "right": 450.03,
+          "w": 425.03
+        },
+        {
+          "tag": "mi",
+          "cls": "",
+          "text": "\"",
+          "right": 450.03,
+          "w": 5.34
+        }
+      ]
+    },
+    {
+      "view": "390",
+      "lang": "zh",
+      "step": 8,
+      "counter": "08 / 11",
+      "expanded": "true",
+      "client": 389,
+      "scroll": 389,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "390",
+      "lang": "zh",
+      "step": 9,
+      "counter": "09 / 11",
+      "expanded": "true",
+      "client": 389,
+      "scroll": 389,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "390",
+      "lang": "zh",
+      "step": 10,
+      "counter": "10 / 11",
+      "expanded": "true",
+      "client": 389,
+      "scroll": 389,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "CODE",
+          "cls": "",
+          "text": "Message: fmt.Sprintf(\"transcribed a file for the c",
+          "right": 703.67,
+          "w": 660.08
+        },
+        {
+          "tag": "SPAN",
+          "cls": "line",
+          "text": "Message: fmt.Sprintf(\"transcribed a file for the c",
+          "right": 699.64,
+          "w": 652.02
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": ")",
+          "right": 699.64,
+          "w": 6.94
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "...",
+          "right": 692.7,
+          "w": 20.81
+        }
+      ]
+    },
+    {
+      "view": "390",
+      "lang": "zh",
+      "step": 11,
+      "counter": "11 / 11",
+      "expanded": "true",
+      "client": 389,
+      "scroll": 389,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "430",
+      "lang": "en",
+      "step": 1,
+      "counter": "01 / 11",
+      "expanded": "true",
+      "client": 429,
+      "scroll": 429,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "430",
+      "lang": "en",
+      "step": 2,
+      "counter": "02 / 11",
+      "expanded": "true",
+      "client": 429,
+      "scroll": 429,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "CODE",
+          "cls": "",
+          "text": "/usr/bin/afconvert -f WAVE -d LEI16@16000 -c 1 tal",
+          "right": 502.55,
+          "w": 458.95
+        },
+        {
+          "tag": "SPAN",
+          "cls": "line",
+          "text": "/usr/bin/afconvert -f WAVE -d LEI16@16000 -c 1 tal",
+          "right": 498.52,
+          "w": 450.89
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "audio.wav",
+          "right": 498.52,
+          "w": 69.36
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "talk.m4a",
+          "right": 429.16,
+          "w": 62.44
+        }
+      ]
+    },
+    {
+      "view": "430",
+      "lang": "en",
+      "step": 3,
+      "counter": "03 / 11",
+      "expanded": "true",
+      "client": 429,
+      "scroll": 429,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "CODE",
+          "cls": "",
+          "text": "{\"segment\":{\"start\":0,\"end\":3350000000,\"text\":\"Goo",
+          "right": 563.86,
+          "w": 520.27
+        },
+        {
+          "tag": "SPAN",
+          "cls": "line",
+          "text": "{\"segment\":{\"start\":3400000000,\"end\":7850000000,\"t",
+          "right": 563.86,
+          "w": 520.27
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "}}",
+          "right": 563.86,
+          "w": 13.88
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "\"See you at noon.\"",
+          "right": 549.98,
+          "w": 124.86
+        }
+      ]
+    },
+    {
+      "view": "430",
+      "lang": "en",
+      "step": 4,
+      "counter": "04 / 11",
+      "expanded": "true",
+      "client": 429,
+      "scroll": 429,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "430",
+      "lang": "en",
+      "step": 5,
+      "counter": "05 / 11",
+      "expanded": "true",
+      "client": 429,
+      "scroll": 429,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "math",
+          "cls": "",
+          "text": "cue start=max⁡(0, speech onset−300 ms),keeppause ⟺",
+          "right": 567.14,
+          "w": 542.14
+        },
+        {
+          "tag": "semantics",
+          "cls": "",
+          "text": "cue start=max⁡(0, speech onset−300 ms),keeppause ⟺",
+          "right": 567.14,
+          "w": 542.14
+        },
+        {
+          "tag": "mrow",
+          "cls": "",
+          "text": "cue start=max⁡(0, speech onset−300 ms),keeppause ⟺",
+          "right": 567.14,
+          "w": 542.14
+        },
+        {
+          "tag": "mtext",
+          "cls": "",
+          "text": "ms",
+          "right": 567.14,
+          "w": 23.66
+        }
+      ]
+    },
+    {
+      "view": "430",
+      "lang": "en",
+      "step": 6,
+      "counter": "06 / 11",
+      "expanded": "true",
+      "client": 429,
+      "scroll": 429,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "math",
+          "cls": "",
+          "text": "search=[ 7−1, 7 ] s,w∗=arg⁡min⁡w⊂searchRMS(w),cut=",
+          "right": 538.56,
+          "w": 513.56
+        },
+        {
+          "tag": "semantics",
+          "cls": "",
+          "text": "search=[ 7−1, 7 ] s,w∗=arg⁡min⁡w⊂searchRMS(w),cut=",
+          "right": 538.56,
+          "w": 513.56
+        },
+        {
+          "tag": "mrow",
+          "cls": "",
+          "text": "search=[ 7−1, 7 ] s,w∗=arg⁡min⁡w⊂searchRMS(w),cut=",
+          "right": 538.56,
+          "w": 513.56
+        },
+        {
+          "tag": "mo",
+          "cls": "",
+          "text": ")",
+          "right": 538.56,
+          "w": 5.7
+        }
+      ]
+    },
+    {
+      "view": "430",
+      "lang": "en",
+      "step": 7,
+      "counter": "07 / 11",
+      "expanded": "true",
+      "client": 429,
+      "scroll": 429,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "math",
+          "cls": "",
+          "text": "segments≤cues,segment is emitted only if trim(text",
+          "right": 450.03,
+          "w": 425.03
+        },
+        {
+          "tag": "semantics",
+          "cls": "",
+          "text": "segments≤cues,segment is emitted only if trim(text",
+          "right": 450.03,
+          "w": 425.03
+        },
+        {
+          "tag": "mrow",
+          "cls": "",
+          "text": "segments≤cues,segment is emitted only if trim(text",
+          "right": 450.03,
+          "w": 425.03
+        },
+        {
+          "tag": "mi",
+          "cls": "",
+          "text": "\"",
+          "right": 450.03,
+          "w": 5.34
+        }
+      ]
+    },
+    {
+      "view": "430",
+      "lang": "en",
+      "step": 8,
+      "counter": "08 / 11",
+      "expanded": "true",
+      "client": 429,
+      "scroll": 429,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "430",
+      "lang": "en",
+      "step": 9,
+      "counter": "09 / 11",
+      "expanded": "true",
+      "client": 429,
+      "scroll": 429,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "430",
+      "lang": "en",
+      "step": 10,
+      "counter": "10 / 11",
+      "expanded": "true",
+      "client": 429,
+      "scroll": 429,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "CODE",
+          "cls": "",
+          "text": "Message: fmt.Sprintf(\"transcribed a file for the c",
+          "right": 703.67,
+          "w": 660.08
+        },
+        {
+          "tag": "SPAN",
+          "cls": "line",
+          "text": "Message: fmt.Sprintf(\"transcribed a file for the c",
+          "right": 699.64,
+          "w": 652.02
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": ")",
+          "right": 699.64,
+          "w": 6.94
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "...",
+          "right": 692.7,
+          "w": 20.81
+        }
+      ]
+    },
+    {
+      "view": "430",
+      "lang": "en",
+      "step": 11,
+      "counter": "11 / 11",
+      "expanded": "true",
+      "client": 429,
+      "scroll": 429,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "430",
+      "lang": "zh",
+      "step": 1,
+      "counter": "01 / 11",
+      "expanded": "true",
+      "client": 429,
+      "scroll": 429,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "430",
+      "lang": "zh",
+      "step": 2,
+      "counter": "02 / 11",
+      "expanded": "true",
+      "client": 429,
+      "scroll": 429,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "CODE",
+          "cls": "",
+          "text": "/usr/bin/afconvert -f WAVE -d LEI16@16000 -c 1 tal",
+          "right": 502.55,
+          "w": 458.95
+        },
+        {
+          "tag": "SPAN",
+          "cls": "line",
+          "text": "/usr/bin/afconvert -f WAVE -d LEI16@16000 -c 1 tal",
+          "right": 498.52,
+          "w": 450.89
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "audio.wav",
+          "right": 498.52,
+          "w": 69.36
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "talk.m4a",
+          "right": 429.16,
+          "w": 62.44
+        }
+      ]
+    },
+    {
+      "view": "430",
+      "lang": "zh",
+      "step": 3,
+      "counter": "03 / 11",
+      "expanded": "true",
+      "client": 429,
+      "scroll": 429,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "CODE",
+          "cls": "",
+          "text": "{\"segment\":{\"start\":0,\"end\":3350000000,\"text\":\"Goo",
+          "right": 563.86,
+          "w": 520.27
+        },
+        {
+          "tag": "SPAN",
+          "cls": "line",
+          "text": "{\"segment\":{\"start\":3400000000,\"end\":7850000000,\"t",
+          "right": 563.86,
+          "w": 520.27
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "}}",
+          "right": 563.86,
+          "w": 13.88
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "\"See you at noon.\"",
+          "right": 549.98,
+          "w": 124.86
+        }
+      ]
+    },
+    {
+      "view": "430",
+      "lang": "zh",
+      "step": 4,
+      "counter": "04 / 11",
+      "expanded": "true",
+      "client": 429,
+      "scroll": 429,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "430",
+      "lang": "zh",
+      "step": 5,
+      "counter": "05 / 11",
+      "expanded": "true",
+      "client": 429,
+      "scroll": 429,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "math",
+          "cls": "",
+          "text": "cue start=max⁡(0, speech onset−300 ms),keeppause ⟺",
+          "right": 567.14,
+          "w": 542.14
+        },
+        {
+          "tag": "semantics",
+          "cls": "",
+          "text": "cue start=max⁡(0, speech onset−300 ms),keeppause ⟺",
+          "right": 567.14,
+          "w": 542.14
+        },
+        {
+          "tag": "mrow",
+          "cls": "",
+          "text": "cue start=max⁡(0, speech onset−300 ms),keeppause ⟺",
+          "right": 567.14,
+          "w": 542.14
+        },
+        {
+          "tag": "mtext",
+          "cls": "",
+          "text": "ms",
+          "right": 567.14,
+          "w": 23.66
+        }
+      ]
+    },
+    {
+      "view": "430",
+      "lang": "zh",
+      "step": 6,
+      "counter": "06 / 11",
+      "expanded": "true",
+      "client": 429,
+      "scroll": 429,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "math",
+          "cls": "",
+          "text": "search=[ 7−1, 7 ] s,w∗=arg⁡min⁡w⊂searchRMS(w),cut=",
+          "right": 538.56,
+          "w": 513.56
+        },
+        {
+          "tag": "semantics",
+          "cls": "",
+          "text": "search=[ 7−1, 7 ] s,w∗=arg⁡min⁡w⊂searchRMS(w),cut=",
+          "right": 538.56,
+          "w": 513.56
+        },
+        {
+          "tag": "mrow",
+          "cls": "",
+          "text": "search=[ 7−1, 7 ] s,w∗=arg⁡min⁡w⊂searchRMS(w),cut=",
+          "right": 538.56,
+          "w": 513.56
+        },
+        {
+          "tag": "mo",
+          "cls": "",
+          "text": ")",
+          "right": 538.56,
+          "w": 5.7
+        }
+      ]
+    },
+    {
+      "view": "430",
+      "lang": "zh",
+      "step": 7,
+      "counter": "07 / 11",
+      "expanded": "true",
+      "client": 429,
+      "scroll": 429,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "math",
+          "cls": "",
+          "text": "segments≤cues,segment is emitted only if trim(text",
+          "right": 450.03,
+          "w": 425.03
+        },
+        {
+          "tag": "semantics",
+          "cls": "",
+          "text": "segments≤cues,segment is emitted only if trim(text",
+          "right": 450.03,
+          "w": 425.03
+        },
+        {
+          "tag": "mrow",
+          "cls": "",
+          "text": "segments≤cues,segment is emitted only if trim(text",
+          "right": 450.03,
+          "w": 425.03
+        },
+        {
+          "tag": "mi",
+          "cls": "",
+          "text": "\"",
+          "right": 450.03,
+          "w": 5.34
+        }
+      ]
+    },
+    {
+      "view": "430",
+      "lang": "zh",
+      "step": 8,
+      "counter": "08 / 11",
+      "expanded": "true",
+      "client": 429,
+      "scroll": 429,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "430",
+      "lang": "zh",
+      "step": 9,
+      "counter": "09 / 11",
+      "expanded": "true",
+      "client": 429,
+      "scroll": 429,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "430",
+      "lang": "zh",
+      "step": 10,
+      "counter": "10 / 11",
+      "expanded": "true",
+      "client": 429,
+      "scroll": 429,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "CODE",
+          "cls": "",
+          "text": "Message: fmt.Sprintf(\"transcribed a file for the c",
+          "right": 703.67,
+          "w": 660.08
+        },
+        {
+          "tag": "SPAN",
+          "cls": "line",
+          "text": "Message: fmt.Sprintf(\"transcribed a file for the c",
+          "right": 699.64,
+          "w": 652.02
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": ")",
+          "right": 699.64,
+          "w": 6.94
+        },
+        {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "...",
+          "right": 692.7,
+          "w": 20.81
+        }
+      ]
+    },
+    {
+      "view": "430",
+      "lang": "zh",
+      "step": 11,
+      "counter": "11 / 11",
+      "expanded": "true",
+      "client": 429,
+      "scroll": 429,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    }
+  ]
+}
