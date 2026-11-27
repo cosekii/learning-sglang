@@ -202,3 +202,48 @@ replay 路径把当前输入复制进 runner 的输入缓冲，再调用已经 c
 ### 接下来
 
 下一步加入运行时与这些常驻 graph 缓冲同时存在的临时激活。
+
+## 第 5 步 · 激活的使用期更短
+
+**一句话。** 运行时激活是当前计算需要的临时中间结果，只在需要它们时与常驻 graph 缓冲同时存在。
+
+### 图上是什么
+
+- `Γ.replay()` 之前、期间和之后，`G` 都留在 11.7 GB 动态余量里。
+- 计算 token 时，`A` 出现，表示叫激活的中间结果。这些结果仍在使用时，图上写出 `G + A ≤ 11.7 GB`。
+- 当前计算不再需要这些中间结果后，`A` 的使用期结束。`G` 和其中的输出仍保留，供下一次 replay 使用。
+- 虚线表示对象的使用期结束，不保证 allocator 立即把字节还给驱动。
+
+### 公式与符号
+
+计算同时需要两个对象时：
+
+$$G+A\le R=(1-0.85)\times78$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $G$ | 常驻 CUDA Graph 缓冲 | 第 2–4 步；没有实测大小 |
+| $A$ | 仍在使用的激活，也就是中间结果 | 当前前向计算；没有实测大小 |
+| $R$ | 动态余量 | 第 1 步；0.85 时为 11.7 GB |
+
+### 代入图上的数
+
+$$G+A\le11.7\ \mathrm{GB}$$
+
+源码没有给本例的 $G$ 和 $A$ 分项 GB 数。这条式子是计入其他动态开销前的必要预算关系，不是 allocator 强制执行的配额，也不保证不会 OOM。
+
+### 源码与边界
+
+SGLang 的参数说明把权重和 KV 与激活和 graph 缓冲区分开。课程也区分临时激活与长期保存的 KV 状态。原文把激活余量不足列为运行时 OOM 的一种路径，它不同于第 1 步 KV 尺寸非正导致的启动失败。
+
+来源：
+
+- [显存分类：`python/sglang/srt/server_args.py:1227-1238`，`sglang@4fa3482`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/server_args.py#L1227-L1238)。
+- 运行时激活 OOM：`Awesome-ML-SYS-Tutorial/sglang/kvcache-code-walk-through/mem-fraction-static.md:89-96`，固定于 `d1f309b46f81a23e8b6ca0718c05bc897fafacf7`。
+- [zero-to-sglang 第 1 部分第 4 章 §4：临时激活与持久状态](https://zero-to-sglang.datawhale.cc/ch/part1/%E7%AC%AC4%E7%AB%A0_%E6%8E%A8%E7%90%86%E7%9A%84%E6%A0%B8%E5%BF%83%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%85%A5%E9%97%A8.html)。
+
+本步不测量激活峰值，不指定复用地址，也不展开其他动态分配。
+
+### 接下来
+
+最后一步把模型、KV、常驻 graph 缓冲和临时激活放回同一份有明确范围的账里。

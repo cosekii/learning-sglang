@@ -21,6 +21,9 @@
   }, {
     caption: `Replay reuses the same graph and buffers. New input and output overwrite the old values.`,
     captionZh: `replay 复用同一张 graph 和同一组缓冲。新输入输出覆盖旧值。`,
+  }, {
+    caption: `Activations are temporary results. They join persistent graph buffers, then their live range ends.`,
+    captionZh: `激活是计算时的临时结果。它们与常驻 graph 缓冲同时存在，随后结束。`,
   }];
   let step = $state(0);
   $effect(() => {
@@ -43,7 +46,7 @@
       motion.removeEventListener('change', updateMotion);
     };
   });
-  const PHASE_COUNTS = [6, 5, 5, 6];
+  const PHASE_COUNTS = [6, 5, 5, 6, 6];
   const PHASE_MS = 1000, REST_MS = 2600;
   let phase = $state(0);
   let lap = $state(0), lapMs = $state(0);
@@ -316,8 +319,51 @@
           <text x="150" y="420" text-anchor="middle" class="label" opacity={phase >= 4 ? 1 : 0}>t+1: input t+1 → output t+1</text>
           <text x="150" y="480" text-anchor="middle" class="formula budget" opacity={phase >= 5 ? 1 : 0}>capture = 1 · replay = {replayCount}</text>
         {/if}
+      {:else if step === 4}
+        {#if !phone}
+          <text x="40" y="28" class="title">{t('Runtime · persistent G, temporary A', '运行时 · 常驻的 G，临时的 A')}</text>
+          <rect x="40" y="55" width="640" height="115" rx="11" fill="url(#headroom)" stroke="var(--muted)" />
+          <text x="55" y="80" class="label">{DEMO_DYNAMIC_HIGH_GB} GB {t('dynamic headroom', '动态余量')}</text>
+          <rect x="65" y="95" width="250" height="55" rx="8" fill="var(--bg)" stroke="var(--fg)" />
+          <text x="190" y="119" text-anchor="middle" class="fraction">G · graph buffers</text>
+          <text x="190" y="141" text-anchor="middle" class="label">{phase >= 3 ? 'output t · persistent' : t('persistent', '常驻')}</text>
+          <g opacity={phase >= 2 && phase < 4 ? 1 : 0} style="transition: opacity 300ms">
+            <rect x="385" y="95" width="220" height="55" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="495" y="119" text-anchor="middle" class="fraction">A · activations</text>
+            <text x="495" y="141" text-anchor="middle" class="label">{t('temporary results · live', '临时结果 · 正在使用')}</text>
+          </g>
+          <g opacity={phase >= 4 ? 1 : 0} style="transition: opacity 300ms">
+            <rect x="385" y="95" width="220" height="55" rx="8" fill="var(--bg)" stroke="var(--gen)" stroke-dasharray="6 4" />
+            <text x="495" y="130" text-anchor="middle" class="label">A · {t('live range ended', '使用结束')}</text>
+          </g>
+          <rect x="215" y="205" width="290" height="65" rx="10" fill="var(--panel)" stroke={phase >= 1 && phase < 4 ? 'var(--fg)' : 'var(--line)'} stroke-width={phase >= 1 && phase < 4 ? 3 : 1} />
+          <text x="360" y="245" text-anchor="middle" class="fraction">Γ.replay() · {t('compute token', '计算 token')}</text>
+          <path d="M360 170 v28" stroke="var(--fg)" stroke-width="3" opacity={phase >= 2 && phase < 4 ? 1 : 0} /><path d="M360 203 l-6 -10 h12 z" fill="var(--fg)" opacity={phase >= 2 && phase < 4 ? 1 : 0} />
+          <text x="360" y="310" text-anchor="middle" class="formula budget" opacity={phase >= 3 ? 1 : 0}>{t('while computing', '计算期间')}: G + A ≤ {DEMO_DYNAMIC_HIGH_GB} GB</text>
+          <text x="360" y="365" text-anchor="middle" class="label" opacity={phase >= 5 ? 1 : 0}>{t('G remains; A is not a second permanent pool.', 'G 仍在；A 不是另一个常驻池。')}</text>
+        {:else}
+          <text x="20" y="25" class="title">{t('Runtime · G and A', '运行时 · G 和 A')}</text>
+          <rect x="20" y="50" width="260" height="345" rx="11" fill="url(#headroom)" stroke="var(--muted)" />
+          <text x="150" y="75" text-anchor="middle" class="label">{DEMO_DYNAMIC_HIGH_GB} GB {t('headroom', '动态余量')}</text>
+          <rect x="45" y="95" width="210" height="60" rx="8" fill="var(--bg)" stroke="var(--fg)" />
+          <text x="150" y="120" text-anchor="middle" class="fraction">G · graph buffers</text>
+          <text x="150" y="145" text-anchor="middle" class="label">{phase >= 3 ? 'output t · persistent' : t('persistent', '常驻')}</text>
+          <rect x="45" y="180" width="210" height="55" rx="8" fill="var(--panel)" stroke={phase >= 1 && phase < 4 ? 'var(--fg)' : 'var(--line)'} />
+          <text x="150" y="214" text-anchor="middle" class="fraction">Γ.replay()</text>
+          <g opacity={phase >= 2 && phase < 4 ? 1 : 0} style="transition: opacity 300ms">
+            <rect x="45" y="260" width="210" height="60" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="150" y="285" text-anchor="middle" class="fraction">A · activations</text>
+            <text x="150" y="310" text-anchor="middle" class="label">{t('temporary results · live', '临时结果 · 正在使用')}</text>
+          </g>
+          <g opacity={phase >= 4 ? 1 : 0} style="transition: opacity 300ms">
+            <rect x="45" y="260" width="210" height="60" rx="8" fill="var(--bg)" stroke="var(--gen)" stroke-dasharray="6 4" />
+            <text x="150" y="296" text-anchor="middle" class="label">A · {t('live range ended', '使用结束')}</text>
+          </g>
+          <text x="150" y="355" text-anchor="middle" class="formula budget" opacity={phase >= 3 ? 1 : 0}>G + A ≤ {DEMO_DYNAMIC_HIGH_GB} GB</text>
+          <text x="150" y="445" text-anchor="middle" class="label" opacity={phase >= 5 ? 1 : 0}>{t('G remains; A ends.', 'G 仍在；A 结束。')}</text>
+        {/if}
       {/if}
-      <text x={W / 2} y={H - 7} text-anchor="middle" class="footnote">{step === 0 ? t('Rounded example; headroom is a reserve.', '约数例子；动态余量只是预留。') : step === 1 ? t('G has no measured GB value in this example.', '本例没有 G 的实测 GB 数。') : step === 2 ? t('One schematic graph; real capture depends on batch shape.', '示意一张 graph；实际 capture 随 batch 形状而变。') : t('Schematic values; the allocation stays fixed.', '数值仅示意；分配保持不变。')}</text>
+      <text x={W / 2} y={H - 7} text-anchor="middle" class="footnote">{step === 0 ? t('Rounded example; headroom is a reserve.', '约数例子；动态余量只是预留。') : step === 1 ? t('G has no measured GB value in this example.', '本例没有 G 的实测 GB 数。') : step === 2 ? t('One schematic graph; real capture depends on batch shape.', '示意一张 graph；实际 capture 随 batch 形状而变。') : step === 3 ? t('Schematic values; the allocation stays fixed.', '数值仅示意；分配保持不变。') : t('A’s live range ends; this is not an allocator trace.', '这里只画 A 的使用期结束，不是 allocator 轨迹。')}</text>
     </svg>
   </div>
   <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh}

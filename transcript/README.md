@@ -43,7 +43,7 @@ Read it to check wording and numbers across chapters without opening the compone
 | omni | 14 | [When the client reads too slowly](omni/14-slow-reader-backpressure.md) | 8 |
 | omni | 15 | [Choose a compatible worker](omni/15-router-worker-selection.md) | 9 |
 | ml-sys | 01 | [Measure one inference request](ml-sys/01-measure-inference.md) | 7 |
-| ml-sys | 02 | [Memory for startup and runtime](ml-sys/02-inference-memory-budget.md) | 4 |
+| ml-sys | 02 | [Memory for startup and runtime](ml-sys/02-inference-memory-budget.md) | 5 |
 | ml-sys | 03 | [Prefix state in hybrid models](ml-sys/03-hybrid-state-cache.md) | 6 |
 | ml-sys | 04 | [The tensor road between GPUs](ml-sys/04-gpu-communication.md) | 7 |
 | ml-sys | 05 | [A distributed serving experiment](ml-sys/05-distributed-serving.md) | 7 |

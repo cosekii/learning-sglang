@@ -202,3 +202,48 @@ The example fixes one batch shape. Padding, shape selection and output processin
 ### Next
 
 The next step adds the temporary activations that coexist with these persistent graph buffers during runtime.
+
+## Step 5 · Activations have a shorter live range
+
+**One sentence.** Runtime activations are temporary intermediate results that coexist with persistent graph buffers only while the current computation needs them.
+
+### What the diagram shows
+
+- `G` remains inside the 11.7 GB headroom before, during and after `Γ.replay()`.
+- During the token computation, `A` appears as the intermediate results called activations. While those results are live, the diagram shows `G + A ≤ 11.7 GB`.
+- When the computation no longer needs those intermediate results, `A`'s live range ends. `G` and its output remain allocated for the next replay.
+- The dashed ending describes object lifetime, not a guarantee that the allocator immediately returns bytes to the driver.
+
+### Formula and symbols
+
+While the computation needs both objects:
+
+$$G+A\le R=(1-0.85)\times78$$
+
+| Symbol | Meaning | Origin |
+|---|---|---|
+| $G$ | Persistent CUDA Graph buffers | Steps 2–4; size not measured |
+| $A$ | Live activations, or intermediate results | Current forward computation; size not measured |
+| $R$ | Dynamic headroom | Step 1; 11.7 GB at 0.85 |
+
+### Substitute the diagram's numbers
+
+$$G+A\le11.7\ \mathrm{GB}$$
+
+The source supplies no separate GB values for this example's $G$ and $A$. The inequality is a necessary budget relationship before other dynamic overhead; it is not an allocator-enforced quota or a guarantee against OOM.
+
+### Source and scope
+
+SGLang's parameter help distinguishes weights and KV from activations and graph buffers. The course likewise distinguishes temporary activation storage from persistent KV state. The article identifies insufficient activation headroom as a runtime OOM path that differs from Step 1's non-positive KV sizing failure.
+
+Sources:
+
+- [Memory categories: `python/sglang/srt/server_args.py:1227-1238`, `sglang@4fa3482`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/server_args.py#L1227-L1238).
+- Runtime activation OOM: `Awesome-ML-SYS-Tutorial/sglang/kvcache-code-walk-through/mem-fraction-static.md:89-96`, pinned at `d1f309b46f81a23e8b6ca0718c05bc897fafacf7`.
+- [zero-to-sglang Part I Chapter 4 §4: temporary activations versus persistent state](https://zero-to-sglang.datawhale.cc/eng/part1/Chapter4_KV%20Cache%20The%20Core%20Data%20Structure%20of%20Inference.html).
+
+This step does not measure peak activation bytes, specify reuse addresses or cover other dynamic allocations.
+
+### Next
+
+The final step puts model, KV, persistent graph buffers and temporary activations back into one scoped account.
