@@ -4,6 +4,9 @@
 
 ## 本轮记录
 
+- 修旧 Learning ML Systems 第 13 章 Step 5 的 ML-52：三个同刻度面板对照每轮拼接与先 buffer 再拼接，依次形成两种输出和共享的输入／输出生命周期。每轮做法明确下一轮会重抄当前 3 行；两种做法在拼接时都保留 `2+1+3=6` 行输入和输出，峰值是否下降标为未测量。双语 deep 对齐图外下一轮、构造行数和 pinned 来源，教程修复待协调固定复审，不自行销项；ML-53 与其他开放项未改，未开第 14 章。
+- Step 5 作者参考值为 R1–R5 **10/10**、机制 R6 **2/2**、原十个非视觉项 **20/20**、0 新内容洞，独立 `explore` 冷读 **PASS**。`build`（60 页）、八步 `readability`、两次哈希一致的 `transcript`（1,830 词，`2386763e…4ca3`）、`deep-check 13`、`zh-check`、英中全章与中文 Step 5 三宽度 `mobile`、`git diff --check` 全过；定向审计 **24 个状态、18/18 个机制转变、4 个 deep 状态**，最低 **10.130859375 CSS px**，重叠和出界为 0。当前模型不能读 PNG，视觉、原 #4/#5 和整章 verdict 待协调。本轮类型：**修旧**；下一单元按本书 P1 顺序处理 ML-53。
+
 - 修旧 Learning SGLang Omni 第 5 章 Steps 4–5 的 Omni-50：Step 4 以七相上演 `get_async → ShmGetOperation`、等待内复制、close/unlink、接收空间返回、副本还原和成功 ACK；Step 5 以六相上演 `pending.ack.set_result`、receiver done、等待内 `finally: sem.release` 和最后的 pending 删除。教程提交 `ac65a00`，Step 5 caption 与证据另随本单元收尾；Omni-50 待协调固定复审，不自行销项。Steps 1–3 未改，Omni-09 保持开放。
 - Steps 4／5 作者参考值均为 R1–R5 **10/10**、机制 R6 **2/2**、原十个非视觉项 **20/20**、新内容洞 **0**，独立 `explore` 冷读最终 **PASS**。`build`（60 页）、五步 `readability`、transcript（1,213 词，`95f15493…bd78`）、`deep-check 05`、`zh-check`、英中全章与中文 Steps 4／5 三宽度 `mobile`、`git diff --check` 全过。动画矩阵 **12 组合、78 状态、66/66 转变**，最低 **11.760 CSS px**；双语 deep **12 视图**。桌面抽屉缩舞台与焦点仍属共享 ML-21／22。当前模型不能读 PNG，视觉与整章 verdict 待协调；未跑全站回归或真实 SHM 传输。本轮类型：**修旧**；下一单元先处理同章 P0 Omni-09（Steps 1–3），再按协调顺序处理 Omni-51。
 

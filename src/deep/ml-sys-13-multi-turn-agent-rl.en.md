@@ -141,15 +141,17 @@ Training wants merged tensors. The next step groups values by dictionary key and
 
 Source: `THUDM/slime@f68dc4a25f362fc0335165a17ff976f5b6f675e1`, `examples/geo3k_vlm_multi_turn/rollout.py:90-112,250-280,341-359`.
 
-## Step 5 · Concatenate each key once
+## Step 5 · Buffer chunks, then concatenate once
 
-**One sentence.** Gather each turn's tensors by key, then run one `torch.cat` per key, producing three rows in this example.
+**One sentence.** Buffer each turn's tensors and concatenate each key once to avoid recopying old rows. This does not prove lower peak memory.
 
 ### On the stage
 
 - The initial tensor `T0` and observation tensor `T1` share key `k`, the field name that points to the same kind of tensor in dictionaries `D0` and `D1`.
-- Two orange row bars appear under `T0`, and one appears under `T1`. Each bar is one row along dimension 0.
-- The concat card gathers those bars into one three-row stack, placing the observation row after the initial rows. The final training card shows the merged stack in blue.
+- The first two cards use the same scale. Each starts with two orange input rows and one orange input row, then adds a three-row blue output.
+- The left card is a comparison: concatenating every turn copies three rows now and recopies those three old rows when another turn arrives. The next turn and its new chunk are not drawn.
+- The middle card is the pinned implementation: buffer the chunks, then copy the three rows into the output once.
+- The right card applies to both approaches. While `torch.cat` writes the output, the two input chunks and the output coexist: $2+1+3=6$ rows. These are constructed row counts, not byte measurements.
 - Non-tensor fields do not join. A key also gets no merged value when not all its values are tensors.
 
 ### Formula and symbols
@@ -169,13 +171,15 @@ $$X_k=\operatorname{cat}([T_{0,k},T_{1,k}],\ dim=0),\qquad r_k=r_{0,k}+r_{1,k}$$
 
 $$r_k=2+1=3$$
 
-The implementation first builds `k → [T0, T1]`, then runs `torch.cat([T0, T1], dim=0)` once. The chunks retain their initial-then-observation order.
+Concatenating every turn copies three rows now and recopies those three old rows next turn. Buffering first copies three rows once. Both approaches keep $2+1+3=6$ input and output rows alive during this concat.
+
+The implementation builds `k → [T0, T1]`, then runs `torch.cat([T0, T1], dim=0)` once. The article motivates this choice with fewer repeated allocations and copies. The final input chunks still coexist with the output, and this step has no byte or peak-memory measurement. It claims fewer repeated copies, not a lower peak.
 
 ### Next
 
 The context and multimodal inputs are ready. The next step checks the conditions that end this interaction trajectory.
 
-Source: `THUDM/slime@f68dc4a25f362fc0335165a17ff976f5b6f675e1`, `examples/geo3k_vlm_multi_turn/rollout.py:115-138,300-306`.
+Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/vlm-multi-turn/readme.md`, the appendix on handling `multimodal_train_inputs`; <code>THUDM/<wbr>slime@<wbr>f68dc4a25f362fc0335165a17ff976f5b6f675e1</code>, `examples/geo3k_vlm_multi_turn/rollout.py:115-138,300-306`.
 
 ## Step 6 · Three stop exits
 

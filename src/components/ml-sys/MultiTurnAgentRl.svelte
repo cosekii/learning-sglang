@@ -159,35 +159,36 @@
       ],
     },
   }, {
-    caption: 'Training buffers each turn’s tensors. One concat per key makes a three-row result.',
-    captionZh: '训练先按轮保存张量。最后每个 key 拼一次，得到 3 行。',
-    title: 'Merge each tensor key once', titleZh: '每个 tensor key 只拼接一次',
-    subtitle: 'concat = join rows along dimension 0, the first axis', subtitleZh: 'concat = 沿第 0 维，也就是第一条轴拼接行',
+    caption: 'Concatenating every turn recopies old rows; buffering first copies them once. Peak savings are unmeasured.',
+    captionZh: '每轮都拼接会重复复制旧行，先存片段只复制一次。峰值是否下降未测量。',
+    title: 'Buffer chunks, then concat once', titleZh: '先存片段，再拼接一次',
+    subtitle: 'concat = copy rows into one new tensor on dimension 0', subtitleZh: 'concat = 沿第 0 维把行复制到一个新张量',
     foot: 'Constructed rows; key k names the same tensor field in both bundles.', footZh: '构造行数；key k 是两份输入包里同一个张量字段的名字。',
-    legend: 'Orange = turn chunks · blue = merged tensor · red = current', legendZh: '橙 = 各轮片段 · 蓝 = 合并张量 · 红 = 当前',
-    flow: true,
+    legend: 'Orange = input chunks · blue = new output · red = current', legendZh: '橙 = 输入片段 · 蓝 = 新输出 · 红 = 当前',
+    compare: true,
     nodes: [
-      { title: 'INITIAL CHUNK', titleZh: '初始片段', result: 'k: 2 rows', resultZh: 'k：2 行', body: 'T0 from the initial input', bodyZh: '初始输入的 T0', tone: 'orange' },
-      { title: 'OBSERVATION CHUNK', titleZh: '观察片段', result: 'k: 1 row', resultZh: 'k：1 行', body: 'T1 from the observation', bodyZh: '观察输入的 T1', tone: 'orange' },
-      { title: 'CONCAT DIM 0', titleZh: '沿第 0 维拼接', result: '2 + 1 = 3 rows', resultZh: '2 + 1 = 3 行', body: 'one concat for key k', bodyZh: 'key k 只拼一次', tone: 'blue' },
-      { title: 'TRAINING INPUT', titleZh: '训练输入', result: 'k: 3 rows', resultZh: 'k：3 行', body: 'all-or-none per key', bodyZh: '每个 key 要么全拼，要么不拼', tone: 'blue' },
+      { title: 'CONCAT EVERY TURN', titleZh: '每轮都拼接', result: `k: ${N.AGENT_INITIAL_TENSOR_ROWS} + ${N.AGENT_OBSERVATION_TENSOR_ROWS} → ${N.AGENT_MERGED_TENSOR_ROWS} rows`, resultZh: `k：${N.AGENT_INITIAL_TENSOR_ROWS} + ${N.AGENT_OBSERVATION_TENSOR_ROWS} → ${N.AGENT_MERGED_TENSOR_ROWS} 行`, body: `next turn recopies all ${N.AGENT_MERGED_TENSOR_ROWS}`, bodyZh: `下一轮又复制这 ${N.AGENT_MERGED_TENSOR_ROWS} 行`, tone: 'plain' },
+      { title: 'BUFFER, THEN CONCAT', titleZh: '先存片段再拼接', result: `k: ${N.AGENT_INITIAL_TENSOR_ROWS} + ${N.AGENT_OBSERVATION_TENSOR_ROWS} → ${N.AGENT_MERGED_TENSOR_ROWS} rows`, resultZh: `k：${N.AGENT_INITIAL_TENSOR_ROWS} + ${N.AGENT_OBSERVATION_TENSOR_ROWS} → ${N.AGENT_MERGED_TENSOR_ROWS} 行`, body: 'old rows copied this once', bodyZh: '旧行只在这里复制一次', tone: 'plain' },
+      { title: 'WHILE CONCAT RUNS', titleZh: '拼接进行时', result: `${N.AGENT_INITIAL_TENSOR_ROWS} + ${N.AGENT_OBSERVATION_TENSOR_ROWS} + ${N.AGENT_MERGED_TENSOR_ROWS} = ${N.AGENT_CONCAT_LIVE_ROWS} rows`, resultZh: `${N.AGENT_INITIAL_TENSOR_ROWS} + ${N.AGENT_OBSERVATION_TENSOR_ROWS} + ${N.AGENT_MERGED_TENSOR_ROWS} = ${N.AGENT_CONCAT_LIVE_ROWS} 行`, body: 'inputs + output coexist', bodyZh: '输入和输出同时保留', tone: 'plain' },
     ],
     formulas: [
-      { en: 'collect by key: k → [T0, T1]', zh: '按 key 收集：k → [T0, T1]' },
-      { en: 'torch.cat([T0, T1], dim=0)', zh: 'torch.cat([T0, T1], dim=0)' },
-      { en: '2 rows + 1 row = 3 rows', zh: '2 行 + 1 行 = 3 行' },
+      { en: `repeat: copy ${N.AGENT_MERGED_TENSOR_ROWS} rows now; recopy them next turn`, zh: `每轮拼接：现在复制 ${N.AGENT_MERGED_TENSOR_ROWS} 行，下一轮再复制它们` },
+      { en: `buffer: torch.cat([T0, T1], dim=0) copies ${N.AGENT_MERGED_TENSOR_ROWS} rows once`, zh: `先存片段：torch.cat([T0, T1], dim=0) 只复制 ${N.AGENT_MERGED_TENSOR_ROWS} 行一次` },
+      { en: `both: ${N.AGENT_INITIAL_TENSOR_ROWS} + ${N.AGENT_OBSERVATION_TENSOR_ROWS} inputs + ${N.AGENT_MERGED_TENSOR_ROWS} output = ${N.AGENT_CONCAT_LIVE_ROWS} rows alive`, zh: `两种做法：${N.AGENT_INITIAL_TENSOR_ROWS} + ${N.AGENT_OBSERVATION_TENSOR_ROWS} 行输入 + ${N.AGENT_MERGED_TENSOR_ROWS} 行输出 = 同时保留 ${N.AGENT_CONCAT_LIVE_ROWS} 行` },
+      { en: 'peak = most rows alive at once · reduction not measured', zh: '峰值 = 同时保留的最多行数 · 是否下降未测量' },
       { en: 'merge a key only when every value is a tensor', zh: '只有 key 下的值全是张量才合并' },
       { en: 'Next: when does the interaction stop?', zh: '下一步：交互什么时候停止？' },
     ],
     mobile: {
-      title: 'Merge each key once', titleZh: '每个 key 只拼接一次',
-      subtitle: 'concat = join rows on the first axis', subtitleZh: 'concat = 沿第一条轴拼接行',
-      foot: 'Constructed rows; key k = shared tensor field name.', footZh: '构造行数；key k = 共有的张量字段名。',
-      legend: 'Orange = chunks · blue = merged · red = current', legendZh: '橙 = 片段 · 蓝 = 合并 · 红 = 当前',
+      title: 'Buffer, then concat once', titleZh: '先存片段，再拼接一次',
+      subtitle: 'concat = copy rows into a new tensor', subtitleZh: 'concat = 把行复制到新张量',
+      foot: 'Constructed row counts, not bytes.', footZh: '构造行数，不是字节数。',
+      legend: 'Orange = inputs · blue = output · red = current', legendZh: '橙 = 输入 · 蓝 = 输出 · 红 = 当前',
       formulas: [
-        { en: 'Collect by key: k → [T0, T1]', zh: '按 key 收集：k → [T0, T1]' },
-        { en: 'torch.cat([T0, T1], dim=0)', zh: 'torch.cat([T0, T1], dim=0)' },
-        { en: '2 rows + 1 row = 3 rows', zh: '2 行 + 1 行 = 3 行' },
+        { en: `Repeat: copy ${N.AGENT_MERGED_TENSOR_ROWS} now; recopy ${N.AGENT_MERGED_TENSOR_ROWS} next turn`, zh: `每轮拼接：现在复制 ${N.AGENT_MERGED_TENSOR_ROWS} 行，下轮再复制` },
+        { en: `Buffer: torch.cat([T0,T1], dim=0) copies ${N.AGENT_MERGED_TENSOR_ROWS} once`, zh: `先存片段：torch.cat([T0,T1], dim=0) 复制 ${N.AGENT_MERGED_TENSOR_ROWS} 行一次` },
+        { en: `Both: ${N.AGENT_INITIAL_TENSOR_ROWS} + ${N.AGENT_OBSERVATION_TENSOR_ROWS} + ${N.AGENT_MERGED_TENSOR_ROWS} = ${N.AGENT_CONCAT_LIVE_ROWS} rows alive`, zh: `两种做法都同时保留 ${N.AGENT_CONCAT_LIVE_ROWS} 行` },
+        { en: 'Peak reduction: not measured', zh: '峰值是否下降：未测量' },
         { en: 'Merge only all-tensor keys', zh: '只合并全为张量的 key' },
         { en: 'Next: when does interaction stop?', zh: '下一步：交互何时停止？' },
       ],
@@ -371,10 +372,10 @@
   {/each}
 {/snippet}
 
-{#snippet tensorRows(x: number, y: number, w: number, count: number, tone: Tone)}
+{#snippet tensorRows(x: number, y: number, w: number, count: number, tone: Tone, pitch = 12, height = 8)}
   <g in:fly={{ y: -6, duration: 350 }} out:fade={{ duration: 120 }}>
     {#each Array(count) as _, j}
-      <rect data-row={j} {x} y={y + j * 12} width={w} height="8" rx="3" fill={fill(tone)} stroke={stroke(tone)} />
+      <rect data-row={j} {x} y={y + j * pitch} width={w} {height} rx="3" fill={fill(tone)} stroke={stroke(tone)} />
     {/each}
   </g>
 {/snippet}
@@ -438,14 +439,19 @@
       {/each}
     {/if}
   {:else if step === 4}
-    {#if i === 0}
-      {@render tensorRows(x + 25, y + 62, w - 50, N.AGENT_INITIAL_TENSOR_ROWS, 'orange')}
-    {:else if i === 1}
-      {@render tensorRows(x + 25, y + 62, w - 50, N.AGENT_OBSERVATION_TENSOR_ROWS, 'orange')}
-    {:else if i === 2 && phase >= 2}
-      {@render tensorRows(x + 25, y + 58, w - 50, N.AGENT_MERGED_TENSOR_ROWS, 'orange')}
-    {:else if i === 3 && phase >= 3}
-      {@render tensorRows(x + 25, y + 58, w - 50, N.AGENT_MERGED_TENSOR_ROWS, 'blue')}
+    {@const rowY = y + (phone ? 50 : 58)}
+    {@const pitch = phone ? 8 : 12}
+    {@const rowHeight = phone ? 6 : 8}
+    {#if i < 2}
+      {@render tensorRows(x + 25, rowY, w - 50, N.AGENT_INITIAL_TENSOR_ROWS, 'orange', pitch, rowHeight)}
+      {@render tensorRows(x + 25, rowY + 2 * pitch, w - 50, N.AGENT_OBSERVATION_TENSOR_ROWS, 'orange', pitch, rowHeight)}
+      {#if phase >= i + 1}
+        {@render tensorRows(x + 25, rowY + 3 * pitch, w - 50, N.AGENT_MERGED_TENSOR_ROWS, 'blue', pitch, rowHeight)}
+      {/if}
+    {:else if phase >= 3}
+      {@render tensorRows(x + 25, rowY, w - 50, N.AGENT_INITIAL_TENSOR_ROWS, 'orange', pitch, rowHeight)}
+      {@render tensorRows(x + 25, rowY + 2 * pitch, w - 50, N.AGENT_OBSERVATION_TENSOR_ROWS, 'orange', pitch, rowHeight)}
+      {@render tensorRows(x + 25, rowY + 3 * pitch, w - 50, N.AGENT_MERGED_TENSOR_ROWS, 'blue', pitch, rowHeight)}
     {/if}
   {:else if step === 5}
     {#if i === 0}
