@@ -124,7 +124,7 @@
   ];
 
   // Each scene builds its own objects and numbers, then holds the finished state.
-  const PHASE_COUNTS = [3, 5, 4, 4, 3, 4, 4, 6];
+  const PHASE_COUNTS = [3, 5, 6, 4, 3, 4, 4, 6];
   const PHASE_MS = 1100, REST_MS = 2500;
   let phase = $state(0);
   let lap = $state(0), lapMs = $state(0);
@@ -239,7 +239,7 @@
       {:else if step === 2}
         <text x={phone ? 15 : 20} y="24" class="rowlabel">{t(phone ? '2/5 · PLACEMENT · ONE MOVE, TWO RESULTS' : '2 of 5 · PLACEMENT · ONE MOVE, TWO DIFFERENT RESULTS', phone ? '2/5 · 摆卡 · 同一次移卡，两种结果' : '2/5 · 摆卡 · 同一次移卡，两种不同结果')}</text>
         <text x={phone ? 15 : 20} y="49" class="tag">{phone ? t('talker isolation = talker uses its own GPU', 'talker 独占 = talker 自己用一张 GPU') : t('talker isolation = move talker off the thinker GPU it shares', 'talker 独占 = 把 talker 移出它共用的 thinker GPU')}</text>
-        <text x={phone ? 15 : 20} y="72" class="tag">{phone ? t('blue=talker · white=others · dark=p90 · orange=increase', '蓝=talker · 白框=其他 · 深=p90 · 橙=增加') : t('blue = talker · white boxes = other stages · dark = p90 wait · orange = increase', '蓝 = talker · 白框 = 其他 stage · 深 = p90 等待 · 橙 = 增加')}</text>
+        <text x={phone ? 15 : 20} y="72" class="tag">{phone ? t('blue=talker · amber=thinker turn · red=wait', '蓝=talker · 橙=thinker 轮次 · 红=等待') : t('blue = talker · amber = thinker turn · red dashes = ready talker waiting', '蓝 = talker · 橙 = thinker 轮次 · 红虚线 = talker 就绪后在等')}</text>
         {#each phone ? [
           { x: 15, y: 102, w: 270, isolated: false },
           { x: 15, y: 287, w: 270, isolated: true },
@@ -248,13 +248,19 @@
           { x: 380, y: 105, w: 320, isolated: true },
         ] as panel}
           <rect x={panel.x} y={panel.y} width={panel.w} height={phone ? 175 : 165} rx="11" fill="var(--bg)" stroke="var(--line)" />
-          <text x={panel.x + 14} y={panel.y + 25} class="tag strong">{panel.isolated ? t(phase >= 1 ? 'TALKER ALONE' : 'COMPARE: START SHARED', phase >= 1 ? 'TALKER 独占' : '对照：先从共用开始') : t('TALKER SHARES GPU 4', 'TALKER 共用 GPU 4')}</text>
-          <rect x={panel.x + 14} y={panel.y + 42} width={panel.w - 28} height="32" rx="6" fill="var(--bg)" stroke="var(--faint)" />
-          <text x={panel.x + 24} y={panel.y + 63} class="tag">GPU 4 · thinker TP process</text>
+          <text x={panel.x + 14} y={panel.y + 25} class="tag strong">{panel.isolated ? t(phase >= 3 ? 'TALKER ALONE' : 'COMPARE: START SHARED', phase >= 3 ? 'TALKER 独占' : '对照：先从共用开始') : t('TALKER SHARES GPU 4', 'TALKER 共用 GPU 4')}</text>
+          <rect x={panel.x + 14} y={panel.y + 42} width={panel.w - 28} height="32" rx="6" fill={!panel.isolated && phase === 1 ? 'var(--gen-soft)' : 'var(--bg)'} stroke={!panel.isolated && phase === 1 ? 'var(--gen)' : 'var(--faint)'} style="transition: fill 350ms, stroke 350ms" />
+          <text x={panel.x + 24} y={panel.y + 63} class="tag">{!panel.isolated && phase === 1 ? t("GPU 4 · thinker's turn", 'GPU 4 · thinker 的轮次') : 'GPU 4 · thinker TP process'}</text>
           <rect x={panel.x + 14} y={panel.y + 81} width={panel.w - 28} height="32" rx="6" fill="var(--bg)" stroke="var(--faint)" />
           <text x={panel.x + 24} y={panel.y + 102} class="tag">GPU 5 · thinker TP process + code2wav</text>
           <rect x={panel.x + 14} y={panel.y + 120} width={panel.w - 28} height="32" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x={panel.x + 24} y={panel.y + 141} class="tag strong">{panel.isolated && phase >= 1 ? 'GPU 2 · talker_ar' : 'GPU 4 · talker_ar'}</text>
+          <text x={panel.x + 24} y={panel.y + 141} class="tag strong">{panel.isolated && phase >= 3 ? 'GPU 2 · talker_ar' : 'GPU 4 · talker_ar'}</text>
+          {#if !panel.isolated && phase < 3}
+            <text x={panel.x + panel.w - 24} y={panel.y + 141} text-anchor="end" class="tag strong" fill={phase === 1 ? 'var(--eos)' : 'var(--accent)'}>{t(phase === 0 ? 'ready' : phase === 1 ? 'waits' : 'turn', phase === 0 ? '就绪' : phase === 1 ? '等待' : '轮次')}</text>
+            {#if phase === 1}
+              <line x1={panel.x + panel.w - 35} y1={panel.y + 119} x2={panel.x + panel.w - 35} y2={panel.y + 75} stroke="var(--eos)" stroke-width="1.5" stroke-dasharray="4 3" />
+            {/if}
+          {/if}
         {/each}
         <text x={phone ? 15 : 20} y={phone ? 493 : 285} class="rowlabel">{QWEN_PLACEMENT_CONCURRENCY} {t('CONCURRENT REQUESTS · P90 FIRST AUDIO', '路并发 · P90 首音')}</text>
         <text x={phone ? 15 : 20} y={phone ? 517 : 309} class="tag">{phone ? t('p90 = 90% at/below · mean of two', 'p90 = 90% 请求不超过 · 两次均值') : t('same scale · p90 = 90% at or below · mean of two measured values', '同一比例 · p90 = 90% 请求不超过 · 两次实测均值')}</text>
@@ -263,19 +269,19 @@
           { name: 'alone', nameZh: '独占', value: STREAM_P90_ALONE_S, runs: STREAM_P90_ALONE_RUNS_S },
         ] as bar, i}
           {@const y = (phone ? 545 : 340) + i * (phone ? 65 : 55)}
-          {@const shownValue = i === 1 && phase < 2 ? STREAM_P90_SHARED_S : bar.value}
-          <text x={phone ? 15 : 20} y={y + 22} class="tag strong">{t(i === 1 && phase < 1 ? 'compare: shared' : bar.name, i === 1 && phase < 1 ? '对照：共用' : bar.nameZh)}</text>
-          <rect x={phone ? 70 : 100} y={y} width={shownValue / 3 * (phone ? 165 : 430)} height="34" rx="5" fill="var(--muted)" style="transition: width 700ms" />
-          <text x={phone ? 282 : 690} y={y + 23} text-anchor="end" class="formula">{shownValue.toFixed(2)} s</text>
-          {#if phase >= 2}
+          <g opacity={phase >= 4 ? 1 : 0} style="transition: opacity 450ms">
+            <text x={phone ? 15 : 20} y={y + 22} class="tag strong">{t(bar.name, bar.nameZh)}</text>
+            <rect x={phone ? 70 : 100} y={y} width={bar.value / 3 * (phone ? 165 : 430)} height="34" rx="5" fill="var(--muted)" style="transition: width 700ms" />
+            <text x={phone ? 282 : 690} y={y + 23} text-anchor="end" class="formula">{bar.value.toFixed(2)} s</text>
             <text x={phone ? 70 : 100} y={y + 49} class="tag">({bar.runs[0].toFixed(3)} + {bar.runs[1].toFixed(3)}) ÷ 2 = {bar.value.toFixed(3)} s</text>
-          {/if}
+          </g>
         {/each}
-        <text x={W / 2} y={phone ? 690 : 463} text-anchor="middle" class="formula" opacity={phase >= 3 ? 1 : 0.12} style="transition: opacity 350ms">{STREAM_P90_SHARED_S.toFixed(2)} → {STREAM_P90_ALONE_S.toFixed(2)} s · {phone ? t(`${STREAM_P90_SOONER_PERCENT.toFixed(0)}% less wait`, `首音等待减少 ${STREAM_P90_SOONER_PERCENT.toFixed(0)}%`) : t(`${STREAM_P90_SOONER_PERCENT.toFixed(0)}% less first-audio wait`, `首音等待减少 ${STREAM_P90_SOONER_PERCENT.toFixed(0)}%`)}</text>
-        <g opacity={phase >= 3 ? 1 : 0.12} style="transition: opacity 350ms">
-          <rect x={phone ? 15 : 20} y={phone ? 725 : 495} width={phone ? 270 : 680} height={phone ? 100 : 70} rx="10" fill="var(--bg)" stroke="var(--gen)" />
+        <text x={W / 2} y={phone ? 690 : 463} text-anchor="middle" class="formula" opacity={phase >= 5 ? 1 : 0.12} style="transition: opacity 350ms">{STREAM_P90_SHARED_S.toFixed(2)} → {STREAM_P90_ALONE_S.toFixed(2)} s · {phone ? t(`${STREAM_P90_SOONER_PERCENT.toFixed(0)}% less wait`, `首音等待减少 ${STREAM_P90_SOONER_PERCENT.toFixed(0)}%`) : t(`${STREAM_P90_SOONER_PERCENT.toFixed(0)}% less first-audio wait`, `首音等待减少 ${STREAM_P90_SOONER_PERCENT.toFixed(0)}%`)}</text>
+        <g opacity={phase >= 5 ? 1 : 0.12} style="transition: opacity 350ms">
+          <rect x={phone ? 15 : 20} y={phone ? 725 : 495} width={phone ? 270 : 680} height={phone ? 125 : 90} rx="10" fill="var(--bg)" stroke="var(--gen)" />
           <text x={W / 2} y={phone ? 757 : 524} text-anchor="middle" class="tag strong" fill="var(--gen)">{t('ONE REQUEST AT A TIME · TOTAL TIME', '每次一个请求 · 总耗时')}</text>
           <text x={W / 2} y={phone ? 791 : 552} text-anchor="middle" class="formula" fill="var(--gen)">+{QWEN_SINGLE_STREAM_ISOLATION_E2E_INCREASE_PERCENT[0]}–{QWEN_SINGLE_STREAM_ISOLATION_E2E_INCREASE_PERCENT[1]}% {t('with talker isolation', 'talker 独占后增加')}</text>
+          <text x={W / 2} y={phone ? 821 : 578} text-anchor="middle" class="tag">{t('relative change only · no absolute total-time pair published', '只有相对增幅 · 来源未给两个绝对总耗时')}</text>
         </g>
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{phone ? t('PR #1235 · H200 · thinker TP2 · code2wav fixed', 'PR #1235 · H200 · thinker TP2 · code2wav 位置不变') : t('PR #1235 · H200 · thinker TP2 · code2wav stayed on the same thinker GPU.', 'PR #1235 · H200 · thinker TP2 · code2wav 留在同一个 thinker GPU 上。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Public TP2 evidence · final TP1 plan needs A/B', '公开 TP2 证据 · 最终 TP1 方案仍需 A/B') : t('Public TP2 evidence; the final TP1 starting plan needs its own A/B comparison.', '公开 TP2 证据；最后的 TP1 起步方案仍需自己的 A/B 比较。')}</text>

@@ -65,10 +65,11 @@ Once audio activates the talker, its GPU placement changes the first audio wait.
 ### On the stage
 
 - The public H200 experiment splits the thinker across GPU 4 and GPU 5. Code2wav stays with the thinker process on GPU 5 in both panels.
-- In the shared panel, the talker also uses GPU 4. In the isolated panel, it moves to GPU 2. This preserves the experiment's TP2 topology.
+- In the shared panel, the talker also uses GPU 4. Its next step first becomes ready, then waits through the thinker's current turn, then runs when that turn ends. The red dashed link marks that wait.
+- In the isolated panel, the talker moves to GPU 2. This preserves the experiment's TP2 topology. The comparison holds the first two bars back until this final topology is visible, so a 2.68-second shared measurement never appears under the isolated label.
 - First audio means the first returned audio chunk, not proof of acoustic playback. The p90 boundary has 90% of measured first-audio waits at or below it.
 - The two dark bars use the same scale. Their means of two measured p90 values fall from 2.680 to 1.439 seconds.
-- The orange card reports a different workload. With one request at a time, total time rises 14–17% after isolation.
+- The orange card reports a different workload. With one request at a time, total time rises 14–17% after isolation. Its last line limits this to a relative change because the source does not publish the two absolute total times.
 
 ### Formula
 
@@ -98,7 +99,7 @@ $$
 \rho=(1-1.439\div2.680)\times100\%\approx46\%
 $$
 
-The single-stream 14–17% increase is the source's reported range. It has no absolute bar here because the guide does not provide the underlying pair of total times in this table.
+The single-stream 14–17% increase is the source's reported range. The stage states this relative-only boundary beside the number. The guide does not provide the underlying pair of total times, so the chapter does not invent an absolute bar.
 
 ### Boundaries and sources
 
