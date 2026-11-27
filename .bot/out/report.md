@@ -7,7 +7,7 @@
 - 定向运行 `git diff --name-only 8e27f28..origin/tutorials -- <ML 10 组件、MDX、双语 deep、transcript 和最终审计>`，结果为空。后续提交只改 Omni 和共享报告，没有改这些冻结文件。
 - 既有 `8e27f28` 已记录 60 页 build、目标硬门和逐相审计；其提交内报告仍为 **78 个状态、60/60 个机制转变、9/9 个机制步、78 个不同 PNG 哈希**，重叠／SVG 出界为 **0/0**，最低 **10.843 CSS px**。本轮只核对这些已提交结果，没有冒充重跑。
 - `git diff --check` 通过。按 direction 的冻结要求，本轮不重复运行 `8e27f28` 已记录的 EVAL 硬门、双语 deep、逐相审计或实图采集，也不追加无新教程改动的证据包。
-- 未启动 dev server 或浏览器，没有新截图。剩余事项只有 ML 10 的协调固定复审、原 #4／#5 与原十二项评分，以及主人最终视觉验收。
+- 未启动 dev server 或浏览器。本 clone 没有任何 ML 10 审计 PNG；本轮回复改引已提交的 `.bot/out/ml10-final-audit/report.json` 和 `.bot/out/ml10-final-audit.mjs`，不再引用旧 clone 的截图路径。当前 `node_modules` 仍是指向协调人 checkout 的符号链接，因此撤回本地 URL 和启动命令，不在本 clone 运行 `npx` 或 `npm`。剩余事项只有 ML 10 的协调固定复审、原 #4／#5 与原十二项评分，以及主人最终视觉验收。
 
 ---
 
@@ -60,14 +60,14 @@
 - 可重跑脚本 `.bot/out/ml10-final-audit.mjs` 对每种语言采集 **39 个桌面相位**，共 **78 个状态、60/60 个机制转变、9/9 个机制步**。采集逐一核对 counter、`data-animation-step`、`data-animation-final-phase` 和当前 phase；每相记录可见文字、出现与消失对象、截图字节数和哈希。
 - `.bot/out/ml10-final-audit/report.json`：**78/78 个 PNG 哈希不同**，文字重叠 **0**，SVG 出界 **0**，最低可见字号 **10.843 CSS px**（`en-s9-p2` 的 tensor-byte 脚注）。报告 SHA-256 为 `d0738783d514e4403c6f848eebcf99c037dd86c7b5276af11d1c04d4da11051e`。
 - Steps 4–9 的英中 **12 个 deep 视图**均为 `aria-expanded=true`，counter 正确；KaTeX 错误、残留 `$$` 和抽屉横向溢出均为 **0**。审计同时断言 Step 7 的具体排列、Step 8 的 FP32 边界、Step 9 的 index／metadata 与第 13 章后续接缝都在对应 deep 中。
-- 代表 PNG：`/Users/shuohuang/code/hmz-work/ls-k2-1127-020240/.bot/out/ml10-final-audit/zh-s7-p4.png`、`en-s9-p2.png`、`zh-s9-deep.png`。PNG 保留在本地，未提交。Read 工具返回 **Cannot read image (this model does not support image input)**，所以这里只报告 DOM、几何、文件和哈希证据，未声称看过图片或视觉通过。
+- 旧报告记录的三个 PNG 路径属于旧 clone，不能作为当前 clone 的截图路径。当前 clone 没有这些 PNG；可核材料只有已提交的 `.bot/out/ml10-final-audit/report.json` 和 `.bot/out/ml10-final-audit.mjs`。Read 工具返回 **Cannot read image (this model does not support image input)**，所以这里只报告 DOM、几何和哈希证据，未声称看过图片或视觉通过。
 
-## 剩余与本地查看
+## 剩余与证据边界
 
 - 当前状态：**作者检查收尾完成，整章冻结，coordinator-rereview-pending**。剩余事项是协调固定复审、原 #4／#5 与原十二项评分，以及主人最终视觉验收。ML 12 留作复审后的独立单元，不开第 14 章。
 - 未跑全站回归、真实 INT4 训练、Marlin GPU、rollout 显存测量、故障注入或 reduced-motion 动态切换。最新回归只有不可分配布局步骤的 `(exit 13)`，按 direction 不据此返工。
-- 本 clone 的 `node_modules` 原指向协调人 checkout。已只删除本目录内的符号链接，并用本目录缓存执行 `npm install`；后续构建与检查未写协调人的 checkout，package 文件无 diff。
-- 本地章节地址：`http://localhost:4484/learning-sglang/ml-sys/ch/10-int4-qat-rollout/?step=7`。本轮 4484 dev server 与脚本浏览器在收尾关闭；查看前在本目录运行 `npx astro dev --background --port 4484`。
+- 旧 clone 曾在移除符号链接后执行本地 `npm install`。当前 clone 的 `node_modules` 又是指向协调人 checkout 的符号链接；本轮没有通过这个链接运行构建、检查、dev server 或安装命令。
+- 撤回当前 clone 的本地章节 URL 和 `npx astro dev` 启动命令。只有先移除当前目录内的 `node_modules` 符号链接并在本目录完成本地安装，才能提供本地查看地址。
 
 ---
 
