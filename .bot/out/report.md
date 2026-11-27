@@ -4,8 +4,8 @@
 
 ## 单元状态
 
-- direction 的 lane d 单元：从 `ls-d-1126-163623` 旧草稿移植 **Voxt 11 Step 1** 相关 hunks 并跑 `ONLY=11 STEP=1` 门。核对结果：Step 1 的全部旧草稿 hunks 已在 `origin/tutorials` 上——`971535b`（4 相位移植）、`dac183d`（手机 loops 抬起）、`f97c179`（红框窄框避字）。旧草稿与 HEAD 的组件 diff 只剩第 2–5 步的 hunks（`PHASE_COUNTS` 2–5 步、校验打勾、停止／退出拆分、update 流程显形），按 direction 留给后续轮，本轮未移植。
-- 旧草稿 transcript 与 HEAD 的 diff 只涉及第 2–5 步文字；第 1 步逐字相同。HEAD 的评分卡和 progress 已按 direction 只写第 1 步实际结果（机制栏同步协调 `c3a7773` 的 7/12，逐步 1、1、1、1、1、2，不自行提分），不需要旧报告覆盖。旧草稿 5 个未提交文件原树未动，只读 diff。
+- direction 的 lane d 单元：从 `ls-d-1126-163623` 旧草稿移植 **Voxt 11 Step 1** 相关 hunks 并跑 `ONLY=11 STEP=1` 门。核对结果：Step 1 的全部旧草稿功能 hunks 已在 `origin/tutorials` 上——`971535b`（4 相位移植）、`dac183d`（手机 loops 抬起）、`f97c179`（红框窄框避字）。`git diff --no-index`（旧草稿 → HEAD）显示：旧草稿待移植的功能 hunks 只剩 Step 2–5（`PHASE_COUNTS` 2–5 步、逐行校验打勾、停止请求与退出拆相、update 流程显形），按 direction 留给后续轮，本轮未移植；HEAD 另有旧草稿没有的 Step 1 复审几何修正（当前文件 `:101-109` 窄红框、`:175-181` 桌面 bullet／公式 y、`:216-217` 手机公式 y、`:556` 手机 loops 抬起）；旧草稿还有 Step 6 桌面高度 560→520（`:78`），超出 Step 1 最小单元，按 direction 不移植。
+- 旧草稿 transcript 与 HEAD 的 diff 只涉及 Step 3、4、5 的文字（下载完成与校验打勾、停止请求／进程退出、重启后 helper）；Step 1 逐字相同，Step 2 文字也相同（差异只在组件相位）。HEAD 的评分卡和 progress 已按 direction 只写第 1 步实际结果（机制栏同步协调 `c3a7773` 的 7/12，逐步 1、1、1、1、1、2，不自行提分），不需要旧报告覆盖。旧草稿 5 个未提交文件原树未动，只读 diff。
 - 本轮无教程改动，只有核验和本报告。
 
 ## 验证（本 clone，端口 4399）
