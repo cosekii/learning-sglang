@@ -136,8 +136,9 @@ Sources: `fish/tokenizer.py:53-73,94-162`; `fish/model_runner.py:288-356`; `fish
 ### On the stage
 
 - Fast AR is the inner loop: it stays inside one audio frame.
-- Slow AR first produces raw `semantic_token`. The engine derives `sem_id`, the vocoder's `code 0`, from that token and saves both.
-- Fast call 0 receives Slow's computed numbers. Its output scores are not used as a vocoder choice.
+- Slow AR first samples raw `semantic_token`.
+- Fast call 0 resets the inner KV and receives Slow's computed numbers. Its output scores are not used as a vocoder choice.
+- The engine then derives `sem_id`, the vocoder's `code 0`, from the raw token and saves both rows.
 - Fast calls 1–9 each choose one remaining code.
 - Orange marks Slow's raw token. Blue marks the ten rows sent to the vocoder.
 
@@ -188,9 +189,9 @@ Sources: `fish/sglang_model.py:294-300,418-510`; `fish/payload_types.py:35-50`; 
 
 ### On the stage
 
-- The blue feedback arrow returns all ten previous DAC codes to the next Slow input.
+- Grey Fast KV resets first. A fresh inner KV appears before the next Slow input.
+- The blue feedback arrow then returns all ten previous DAC codes to that next Slow input.
 - Orange Slow KV spans the prompt and every accepted frame. KV means attention's saved key and value work from Learning SGLang Ch. 3.
-- Grey Fast KV ends at the frame boundary. A fresh inner loop starts for the next frame.
 - The same cached prefix can reuse SGLang KV while that prefix remains cached. A match does not guarantee a hit.
 - `extra_key` fingerprints all ten reference code rows, so different reference voices cannot share radix KV merely because code 0 matches (`request_builders.py:65-78,160-168`). Requests with the same references and prefix can reuse their common prefix even when their target suffixes differ; `model_runner.py:324-344` applies `req.prefix_len`.
 

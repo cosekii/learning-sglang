@@ -136,8 +136,9 @@ Slow AR 的选择开启一帧。第 4 步打开内层 Fast AR 循环，补齐 vo
 ### 图上是什么
 
 - Fast AR 是内层循环，只在一个音频帧里工作。
-- Slow AR 先产生原始 `semantic_token`，engine 再由它得到 vocoder 的 `sem_id`（code 0），两者都保存。
-- Fast 第 0 次调用接收 Slow 算出的数，其输出分数不当作 vocoder 选择。
+- Slow AR 先采样得到原始 `semantic_token`。
+- Fast 第 0 次调用重置内层 KV，并接收 Slow 算出的数；其输出分数不当作 vocoder 选择。
+- engine 随后由原始 token 得到 vocoder 的 `sem_id`（code 0），原始行和 code 0 行都保存。
 - Fast 第 1–9 次调用各选一个剩余 code。
 - 橙色是 Slow 原始 token，蓝色是送进 vocoder 的十行。
 
@@ -188,9 +189,9 @@ $$
 
 ### 图上是什么
 
-- 蓝色反馈箭头把上一帧的全部十个 DAC codes 送回下一次 Slow 输入。
+- 灰色 Fast KV 先重置，新的内层 KV 在下一次 Slow 输入前出现。
+- 蓝色反馈箭头随后把上一帧的全部十个 DAC codes 送回这次 Slow 输入。
 - 橙色 Slow KV 横跨 prompt 和每个 accepted 帧。KV 是第 1 本第 3 章讲过的注意力 key、value 工作。
-- 灰色 Fast KV 在帧边界结束，下一帧重新开始内层循环。
 - 相同缓存前缀仍在 cache 里时，可以复用 SGLang KV；匹配不保证命中。
 - `extra_key` 对全部十行参考 codes 做指纹，避免不同参考声音仅因 code 0 相同就共享 radix KV（`request_builders.py:65-78,160-168`）。参考声音和前缀相同，即使目标后缀不同，也能复用共同前缀；`model_runner.py:324-344` 实际处理 `req.prefix_len`。
 
