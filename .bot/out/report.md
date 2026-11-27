@@ -1,49 +1,48 @@
-# lane k1 本轮报告 · Omni 13 机制与呈现返工
+# lane k1 本轮报告 · Omni 13 冷读与手机返工
 
 日期：2026-11-26。范围只含 Learning SGLang Omni 第 13 章的组件、双语深入讲解、MDX、生成 transcript、评分卡、仓库 progress 和本报告。未碰其他书、其他 lane 的章节、第 1 本受保护英文原文或 `.bot/memory/`。
 
 ## 修掉的 open review 项
 
-- **Omni-01 · 八步只动红框**：删除 `motionFrames` 和聚焦框。33 个相位分别演示本步机制：第 1 步组建两种启动形态；第 2 步先给五轴地图，再逐条形成输出路线；第 3 步只移动 talker，再形成两组均值柱；第 4 步把 thinker 78% 拆成 73% AR + 5% reserve；第 5 步形成 60／40／30 GB 柱；第 6 步增加 replica 并显示两个独立 64 位 codec 池；第 7 步先完成 readiness，再形成十次测量和两类记录；第 8 步逐行形成决策表。
-- **Omni-02 · 本章桌面小字**：桌面小字按画布高度使用 12／13px，Step 8 高度由 740 缩至 650。1440×900 的 33 个英文桌面相位最低 **10.806 CSS px**，中文 390 px 手机相位最低 **11.760 CSS px**；66 个相位均无文字出界或重叠。其他章的 Omni-02 不在本轮范围。
-- **Omni-30 · 五轴地图过晚**：第 2 步开场显示路线、摆卡、精度、容量、证据五轴及对应步号。第 2–8 步依次标 `1/5`、两个 `2/5`、`3/5`、`4/5` 和两个 `5/5`。
-- **Omni-36 · Step 7 使用下一步 c=8**：第 7 步只保留通用 `c=1,16`、十次运行和 p99 规则；`c=8` 的五次运行及自定义 p90 移到第 8 步明确标注的图外决策边界。
-- **Omni-39 · Step 5 图外细节混入**：group size 128 和 INT4 相对 FP8 的 75%／25% 移入双语 boundaries/sources。舞台新增实际使用的 `40 ÷ 60 ≈ 67%`、`30 ÷ 60 = 50%`，并说明其他数据和未量化部分也占显存。
-- 独立冷读另修复三项：Step 5 比值与 bit≠GB 解释、Step 6 `12.3% + 1.4% = 13.7%` 的“每个副本 GPU 申报显存”分母、Step 7 custom-p90 错放。手机 Step 6 第二行面板越界也已修正；冷读复核未发现新内容洞。
+- **Omni-41**：已有 `297698f` 的英文 Step 2 手机短标题通过本轮自定义末相审计；360／390／430 px 的 SVG 出界均为 **0**，不再只依赖默认 mobile 的 `no layout breaks`。
+- **Step 1**：删除启动步里的输出限制，只保留两种启动形态；输出路线仍由 Step 2 单独讲。
+- **旧 Step 4**：拆为当前 Step 4 的 78→73 份额拆分和 Step 5 的 85.7 GB 对 80 GB 视频溢出例。新 Step 5 用同一 0–90 GB 刻度画移卡前后两柱，保留 `85.7 − 8.0 = 77.7 GB`。
+- **旧 Step 5**：当前 Step 6 只比较 BF16／FP8／INT4 的 60／40／30 GB 估计及 67%／50% 算式；各 stage 的混合精度规则移到深入讲解的图外边界。
+- **旧 Step 6**：拆为当前 Step 7 的副本拓扑与 32 请求 cap，以及 Step 8 的独立 codec 状态池。Step 8 分相形成默认 32 位、`r0` 64 位和 `r1` 64 位，明确两个进程不是共享 128 位池。
+- **当前 Step 9／10**：复核并保留已有 `c = concurrency`、8 token 约为 6 个英文单词、config resolve→readiness→A/B、BF16/FP8 范围、median/custom p90 和 queued audio 解释，没有重做已通过机制。
+- **独立 reviewer 追加发现**：修复 Step 7 默认 code2wav 被误画到两张 GPU 的冲突；修复 Step 5 深入讲解把权重和 KV 误说成来自 Step 4 份额；说明每个池按两个 talker 配容量，但默认配对仍把每路流交给一个 codec。复审三项均 **CLOSED**，未发现新事实矛盾。
+- 评分卡和 progress 已同步协调固定 `18f9bc1` 的分数，不再保留旧的八步满分口径。
 
 ## 分数边界
 
-- 协调历史基线保留：R1–R5 **80/80**、原十个非视觉项 **160/160**、静态原 #4/#5 **32/32**、原十二项 **192/192**；全书核销时的机制 **0/16** 和桌面 **7.30px** 是旧快照 verdict。
-- 本轮作者机制自检 **16/16（八步各 2/2）**，依据源码、66 个 live DOM 相位和独立只读冷读；**待协调读图，不覆盖协调 verdict，不记 `complete-under-EVAL`**。
-- 第 5 步实测柱宽 `[180,0,0] → [180,120,0] → [180,120,90]`；第 8 步六行依次从 opacity 0.12 淡入到 1。当前模型和独立冷读者均不能读 PNG，未声称视觉通过或主人验收通过。
+- 协调固定八步基线保持：R1–R5 **68/80**、机制 R6 **16/16**、R1–R6 **84/96**、原十个非视觉项 **156/160**、原 #4/#5 **32/32**、原十二项 **188/192**。
+- 当前树扩为 **10 步**，不沿用旧分母。作者机制复核 **20/20**，独立只读 reviewer 的未决事实洞 **0**；当前 R1–R5 总分、原 #4/#5 和协调 verdict 留待复审，不记 `complete-under-EVAL`。
+- 小学生逐步复述已写入 `memory/scores/learning-sglang-omni/13-qwen3-omni-deployment.md`。当前模型不能读取 PNG，未声称视觉通过或主人验收通过。
 
 ## 验证
 
-- `npx astro --config .astro/local.config.mjs build`：60 页通过。本地配置只隔离 Vite cache 并允许读取共享依赖。
-- 本章默认 `transcript` 最终与 pinned 逐字一致，8 步无 caption、出界、重叠或脚注告警，全文 **2909 词**；全章 `readability` 为 0 机械问题。
-- 英中全章 `mobile` 在 360／390／430 px 均通过；中文逐步字号门通过。`deep-check 13`、`zh-check` 和 `git diff --check` 通过。
-- `.bot/out/omni13-phase-audit/report.json` 记录 **66 个 DOM 状态**，英文桌面和中文手机各 33 个；对应 **66 张 PNG** 在同目录。代表图 `.bot/out/omni13-phase-audit/en-desktop/s8-p5.png`。
-- 英中第 2、3、5、7、8 步深入讲解共 10 个视图均 `aria-expanded=true`，横向溢出 0、KaTeX 错误 0、无残留 `$$`；证据在 `.bot/out/omni13-deep-audit/`。
+- `npm run build`：60 页通过。全章 10 步 `readability` 为 0 机械问题；`deep-check 13`、`zh-check`、英中全章 `mobile`、改动中文步字号门和 `git diff --check` 通过。
+- 默认 `transcript` 连续两次逐字一致：**3484 词**，SHA-256 `09c6cd90035f1fae25600f4261e80adfa6ffdb9e600a0bb944c1e48969ad77c8`；10 步无 caption、出界、重叠或脚注告警。
+- `.bot/out/omni13-final/report.json` 覆盖 **42 个桌面相位 + 60 个英中手机末相 + 20 个双语 deep = 122 个状态**。身份、计数器和末相编号一致；SVG 出界、文字重叠、小字、页面横溢、deep 失败、KaTeX 错误均为 **0**。桌面最低 **10.329503676470589 CSS px**，手机最低 **10.760289634146341 CSS px**。
+- 同目录保存 PNG 和可重跑的 `audit.mjs`。代表图：`.bot/out/omni13-final/phone-en-390-s02-final.png`、`.bot/out/omni13-final/desktop-en-s05-p2.png`、`.bot/out/omni13-final/deep-zh-s08.png`。未把这些文件记为模型已读图证据。
+- 独立 cold-read／alignment reviewer 先发现两处事实问题，修复后同一 reviewer 复核关闭。另一个 reviewer 因配置模型不可用失败、一个空调用无报告，均未计为证据。
 
 ## 提交
 
-- `e0cb46c`：第 1 步启动分组及共享动画框架。
-- `87544a4`：第 2 步五轴地图与输出路线。
-- `895bfc0`：第 3 步 talker 移卡和计时柱。
-- `5648904`：第 4 步 thinker 预算拆分。
-- `1b166d8`：第 5 步精度比较及图外边界。
-- `7f0c0f6`：第 6 步 replicas 与独立 codec 池。
-- `76d7342`：第 7 步 readiness 与测量。
-- `47a3223`：第 8 步决策表。
-- `b07bf63`：英文手机地图短标签。
-- `ebe36c0`：三个冷读洞及手机面板边界。
-- 评分卡、progress 和本报告随本轮最后 `[k1] ` 记录提交推送；所有教程提交均已推 `origin/tutorials`，没有 force-push。
+- `b39b544`：分离启动形态与输出概念。
+- `b3c48ab`：拆分份额与视频溢出步。
+- `192be1c`：收窄精度和显存比较。
+- `f328860`：拆分副本与 codec 状态池。
+- `c1f7636`：缩短新溢出步的手机算式。
+- `e5aba00`：修正默认 code2wav 拓扑及容量／路由说明。
+- `61e82fc`：修正视频算式的来源说明。
+- 评分卡、progress 和本报告随后续 `[k1] ` 记录提交推送；所有教程提交均已推 `origin/tutorials`，没有 force-push。
 
 ## 剩余
 
-- 等协调人读取当前固定提交的相位图并复审机制、视觉和分数；复审前保持 **NO-GO / coordinator-rereview-pending**。
-- 下一单元按 direction 修 Omni 11 除 Step 7 tail 外的机制，之后处理 Omni 14 小字；不开新章。
+- 等协调人按当前固定提交复审本章十步的内容、相位、视觉和分数；复审前保持 **NO-GO / coordinator-rereview-pending**。协调通过后再按 direction 修 Omni 11 和 Omni 14，不开新章。
 - 未跑全站回归、真实模型、服务、GPU benchmark、音频质量评测、故障注入或 reduced-motion 动态切换。代码出处固定到 `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`。
+- 本轮 4323 dev server 已停止；自定义审计浏览器已关闭，匹配本轮 `zh-check` 的孤儿 Chrome 已清理，未动其他 lane 的进程。
 
 ---
 
