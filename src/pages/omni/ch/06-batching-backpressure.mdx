@@ -15,7 +15,7 @@ export const deep = await deepFor('omni-06-batching-backpressure');
 
 Step 1 constructs a `SimpleScheduler` collection example with four batch slots. A and B are queued at 0 ms; C arrives at 6 ms. With `max_batch_wait_ms=0`, the scheduler takes A and B without waiting for the two empty slots. In the counterfactual five-ms panel, the collection deadline expires at 5 ms, before C arrives, so A and B enter compute five ms later. The animation plays the zero-delay start, the five-ms deadline and start, then C's late arrival. The timelines omit compute time and every other delay. The five-ms budget is not a shipped MiniCPM-o default or a recommendation.
 
-Step 2 constructs two running rows. A and B occupy both rows in round 1, so C waits. A finishes after that round; B remains in `running_batch`, and C can take the free row if token memory also permits. The two-row cap is a teaching device. MiniCPM-o's talker factory currently passes `max_running_requests=32`, which this small figure does not depict. `generation_batch_policy.py` builds and validates server arguments; `OmniScheduler` owns `waiting_queue`, `running_batch` and admission. Optional prefill coalescing is outside this step.
+Step 2 constructs two running rows. A and B occupy both rows in round 1, so C waits. A finishes after that round; B remains in `running_batch`, and C can take the free row if token memory also permits. The animation shows A's grey finished card, C's refill, then B and C advancing together. The two-row cap is a teaching device. MiniCPM-o's talker factory currently passes `max_running_requests=32`, which this small figure does not depict. `generation_batch_policy.py` builds and validates server arguments; `OmniScheduler` owns `waiting_queue`, `running_batch` and admission. Optional prefill coalescing is outside this step.
 
 Step 3 constructs a batch-capable `ReferenceEncodeService` with cap four and zero delay. A, B and C are ready, so non-blocking collection takes all three and leaves one slot empty. D arrives afterward and belongs to the next collection. The shipped defaults remain cap one and zero delay; a larger cap enables this path only when `hook.can_encode_batch()` also succeeds. One batch call returns separate outcomes to the three requests.
 
@@ -38,7 +38,7 @@ Source revision for the chapter: `sglang-omni origin/main@21a6d229c3d2075da5e978
 
 第 1 步构造一个四格 `SimpleScheduler` 收集例子。A、B 在 0 ms 已入队，C 在 6 ms 才到。`max_batch_wait_ms=0` 时，scheduler 直接拿走 A、B，不等另外两个空位。在对照的 5 ms 面板里，收集截止时间是 5 ms，仍早于 C 到达，因此 A、B 晚 5 ms 进入计算。动画依次播放零等待启动、5 ms 到期启动和 C 晚到。时间线不画计算耗时和其他等待。5 ms 不是 MiniCPM-o 的出厂默认值，也不是推荐配置。
 
-第 2 步构造两行 running batch。第 1 轮 A、B 占满两行，C 等待。该轮后 A 结束，B 继续留在 `running_batch`；token 显存也允许时，C 补进空行。两行上限只是教学构造。MiniCPM-o talker 工厂当前传入 `max_running_requests=32`，这张小图没有描绘 32 行。`generation_batch_policy.py` 构造并校验 server args；`OmniScheduler` 持有 `waiting_queue`、`running_batch` 并执行准入。可选的 prefill 凑批不在本步展开。
+第 2 步构造两行 running batch。第 1 轮 A、B 占满两行，C 等待。该轮后 A 结束，B 继续留在 `running_batch`；token 显存也允许时，C 补进空行。动画依次显示灰色 A 结束卡、C 补位，以及 B、C 一起前进。两行上限只是教学构造。MiniCPM-o talker 工厂当前传入 `max_running_requests=32`，这张小图没有描绘 32 行。`generation_batch_policy.py` 构造并校验 server args；`OmniScheduler` 持有 `waiting_queue`、`running_batch` 并执行准入。可选的 prefill 凑批不在本步展开。
 
 第 3 步构造一个支持批处理的 `ReferenceEncodeService`，上限为 4，等待为 0。A、B、C 已就绪，非阻塞收集一次带走三条，留下一个空位。D 随后才到，属于下一次收集。出厂默认值仍是上限 1、等待 0；只有 `hook.can_encode_batch()` 也通过，调大上限才会启用这条路径。一次批量调用把三份结果分别交还三条请求。
 

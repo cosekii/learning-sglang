@@ -61,6 +61,7 @@ $$E=B-N=4-2=2$$
 - 本例把 `max_running_requests` 设为 2，方便看清补位。第 1 轮的 `running_batch` 有 A、B，`waiting_queue` 有 C。
 - A、B 各产生下一个 token 后仍未结束，就会继续参与后续轮次。图中让 A 在第 1 轮后结束，B 仍未结束。
 - 第 2 轮保留 B，并把 C 从等待队列补进 A 空出的行。两条蓝色请求再次一起前进一步。
+- 动画先让 A 结束，再让 C 补进空行，最后让 B、C 一起前进。灰色 A 卡片就是已结束对象，不在下一轮的 running batch 里。
 - 蓝色始终表示 running row，橙色表示 waiting request，灰色表示 finished。C 从橙色变为蓝色，表示所属集合改变，不是请求内容改变。
 - 最下面的 `generation_batch_policy.py` 只负责构造和校验配置。真正的队列状态与补位循环属于 `OmniScheduler`。
 

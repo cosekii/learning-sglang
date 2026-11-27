@@ -61,6 +61,7 @@ Step 2 switches to autoregressive generation. A request stays in the running bat
 - This example sets `max_running_requests` to two so that a refill is visible. In round 1, `running_batch` contains A and B while `waiting_queue` contains C.
 - A and B each produce another token. Unfinished requests continue into later rounds. The example finishes A after round 1 and keeps B unfinished.
 - Round 2 retains B and moves C from the waiting queue into A's row. The two blue requests advance together again.
+- The animation finishes A first, then moves C into the freed row, then advances B and C together. The grey A card is the finished object, outside the next running batch.
 - Blue marks a running row, orange a waiting request and grey a finished request. C changes from orange to blue because its scheduling set changes.
 - The bottom label separates responsibilities. `generation_batch_policy.py` builds and validates configuration; `OmniScheduler` owns the queues and scheduling loop.
 

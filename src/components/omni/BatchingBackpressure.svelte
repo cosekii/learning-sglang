@@ -223,26 +223,37 @@
       <text x={phone ? 15 : 20} y="44" class="tag">{phone ? t(`max_running_requests = ${AR_TEACHING_MAX_RUNNING} · memory must fit`, `教学上限 · max_running_requests = ${AR_TEACHING_MAX_RUNNING} · 显存也必须放得下`) : t(`Teaching cap · max_running_requests = ${AR_TEACHING_MAX_RUNNING} · memory must also fit`, `教学上限 · max_running_requests = ${AR_TEACHING_MAX_RUNNING} · 显存也必须放得下`)}</text>
       <text x={phone ? 15 : 20} y="66" class="tag">{t('Blue: running row · orange: waiting request · grey: finished', '蓝色：运行中的行 · 橙色：等待请求 · 灰色：已结束')}</text>
       {#each arPanels as panel, round}
+        {@const later = round === 1}
+        {@const joined = later && phase >= 2}
+        {@const finished = !later && phase >= 1}
         <rect x={panel.x} y={panel.y} width={phone ? 270 : 325} height="230" rx="12" fill="var(--bg)" stroke="var(--line)" />
-        <text x={panel.x + 14} y={panel.y + 25} class="rowlabel">{panel.title}</text>
+        <text x={panel.x + 14} y={panel.y + 25} class="rowlabel">{later ? (joined ? panel.title : t('ROUND 2 · not started', '第 2 轮 · 尚未开始')) : (finished ? t('ROUND 1 · A finished', '第 1 轮 · A 已结束') : panel.title)}</text>
         <text x={panel.x + 14} y={panel.y + 52} class="tag strong">running_batch</text>
-        {#each panel.running as id, i}
-          <rect x={panel.x + 16 + i * (phone ? 119 : 143)} y={panel.y + 65} width={phone ? 107 : 128} height="48" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x={panel.x + (phone ? 69 : 80) + i * (phone ? 119 : 143)} y={panel.y + 95} text-anchor="middle" class="mono strong">{id} · {t('next token', '下一 token')}</text>
-        {/each}
+        {#if !later || joined}
+          {#each panel.running as id, i}
+            {@const isFinishedA = finished && id === 'A'}
+            <rect x={panel.x + 16 + i * (phone ? 119 : 143)} y={panel.y + 65} width={phone ? 107 : 128} height="48" rx="7" fill={isFinishedA ? 'var(--line)' : 'var(--accent-soft)'} stroke={isFinishedA ? 'var(--faint)' : 'var(--accent)'} />
+            <text x={panel.x + (phone ? 69 : 80) + i * (phone ? 119 : 143)} y={panel.y + 95} text-anchor="middle" class="mono strong">{id} · {isFinishedA ? t('finished', '已结束') : t('next token', '下一 token')}</text>
+          {/each}
+        {:else}
+          {#each Array(AR_TEACHING_MAX_RUNNING) as _, i}
+            <rect x={panel.x + 16 + i * (phone ? 119 : 143)} y={panel.y + 65} width={phone ? 107 : 128} height="48" rx="7" fill="white" stroke="var(--faint)" stroke-dasharray="4 3" />
+            <text x={panel.x + (phone ? 69 : 80) + i * (phone ? 119 : 143)} y={panel.y + 95} text-anchor="middle" class="tag">·</text>
+          {/each}
+        {/if}
         <text x={panel.x + 14} y={panel.y + 140} class="tag strong">waiting_queue</text>
-        {#if panel.waiting.length}
+        {#if !later && phase < 2}
           <rect x={panel.x + 16} y={panel.y + 152} width={phone ? 107 : 128} height="42" rx="7" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x={panel.x + (phone ? 69 : 80)} y={panel.y + 179} text-anchor="middle" class="mono strong">C · {t('waits', '等待')}</text>
           <text x={panel.x + (phone ? 139 : 163)} y={panel.y + 179} class="tag">{AR_ROUND_ONE_WAITING_COUNT} {t('request · no free row', '条请求 · 没有空行')}</text>
         {:else}
           <rect x={panel.x + 16} y={panel.y + 152} width={phone ? 238 : 293} height="42" rx="7" fill="white" stroke="var(--faint)" stroke-dasharray="4 3" />
-          <text x={panel.x + (phone ? 135 : 162)} y={panel.y + 179} text-anchor="middle" class="tag">{t('empty · C has joined the running batch', '空了 · C 已补进 running batch')}</text>
+          <text x={panel.x + (phone ? 135 : 162)} y={panel.y + 179} text-anchor="middle" class="tag">{later && !joined ? t('waiting for round 1', '等待第 1 轮结束') : t('empty · C has joined the running batch', '空了 · C 已补进 running batch')}</text>
         {/if}
-        <text x={panel.x + (phone ? 135 : 162)} y={panel.y + 216} text-anchor="middle" class="tag strong">{round === 0 ? t('A and B each advance one token', 'A、B 各自前进一个 token') : t('B and C each advance one token', 'B、C 各自前进一个 token')}</text>
+        <text x={panel.x + (phone ? 135 : 162)} y={panel.y + 216} text-anchor="middle" class="tag strong">{later ? (phase >= 3 ? t('B and C each advance one token', 'B、C 各自前进一个 token') : joined ? t("C takes A's old row", 'C 补进 A 空出的行') : t('no free row yet', '还没有空行')) : (finished ? t('A finished · one row free', 'A 结束 · 空出一行') : t('A and B each advance one token', 'A、B 各自前进一个 token'))}</text>
       {/each}
       {#if !phone}
-        <path d="M348 200 H371" stroke="var(--accent)" stroke-width="2" marker-end="url(#batch-arrow)" />
+        <path d="M348 200 H371" stroke="var(--accent)" stroke-width="2" marker-end="url(#batch-arrow)" opacity={phase >= 2 ? 1 : 0.15} />
       {/if}
       <text x={W / 2} y={phone ? 600 : 350} text-anchor="middle" class="mono strong">A {t('finished', '结束')} → 1 {t('free row', '空行')} → C {t('joins if memory allows', '在显存允许时补入')}</text>
       <text x={W / 2} y={phone ? 626 : 372} text-anchor="middle" class="tag">{phone ? t('policy builds limits · OmniScheduler schedules', 'policy 构造并校验上限 · OmniScheduler 调度') : t('generation_batch_policy.py builds and validates limits; OmniScheduler schedules', 'generation_batch_policy.py 构造并校验上限；OmniScheduler 执行调度')}</text>
