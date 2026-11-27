@@ -136,33 +136,41 @@ $$\mathcal L_{\mathrm{MTP}}=-\log p_{\mathrm{draft}}(x_{t+2}\mid u_t)$$
 
 ### 图上是什么
 
-- 蓝色 CE 和 draft 层之间的梯度路径畅通，所以 draft 参数能从第 4 步的标签学习。
-- 橙色 target 主干被 detach，辅助 CE 不能继续向 target hidden state 回传。
-- 最后一行单独说明主 RL 学习仍训练 target，不能把“这条 CE 被挡住”误读成 target 完全不训练。
+- 蓝色 CE 和 draft 层卡片保持可训练。CE 一行说明第 4 步标签产生的调整权重信号能到达 draft 层。
+- 共享表卡片列出 embedding 和 LM head。第一条前向路线用 embedding 把 token ID 变成模型数列，第二条用 LM head 把 hidden state 变成 token 分数。两者都使用当前参数值。
+- 橙色虚线卡片和两条 CE 路线分别挡住辅助 CE 通向 target 主干与共享表的梯度。这是两组不同的参数。
+- 最后一行说明主 RL 学习仍训练 target 和共享表。挡住辅助 CE 不等于冻结这些权重。
 
 ### 公式与符号
 
 gradient 是训练时调整权重的信号，指明权重改变的方向和幅度。
 
-$$g^{\mathrm{CE}}_{\theta_{\mathrm{detached}}}=0,\qquad g^{\mathrm{CE}}_{\theta_{\mathrm{MTP}}}\ \text{正常计算}$$
+$$g^{\mathrm{CE}}_{\theta_{\mathrm{detached}}}=0$$
+
+$$g^{\mathrm{CE}}_{\theta_{\mathrm{shared}}}=0$$
+
+$$g^{\mathrm{CE}}_{\theta_{\mathrm{MTP}}}\ \text{正常计算}$$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
 | $\theta_{\mathrm{detached}}$ | 这条辅助 CE 分支上被 detach 的 target 主干参数 | 第 2、5 步的 target 主干 |
+| $\theta_{\mathrm{shared}}$ | 与 draft 共享的 embedding 和 LM head 参数，只在这条辅助 CE 调用中 detach | 本步共享表卡片 |
 | $\theta_{\mathrm{MTP}}$ | draft 自带 MTP 层的参数 | 第 1 步 |
 | $g^{\mathrm{CE}}_{\theta}$ | 辅助 CE 对参数 $\theta$ 的梯度 | 本步反向路径 |
 
 ### 代入图上的数
 
-本步不构造梯度数值。左式表示辅助 CE 对被 detach 的 target 主干参数的梯度被这条分支切为 0；右式表示 MTP 参数的梯度路径保留，并不保证每个位置都得到非零值。主 RL 损失的梯度是另一条路径，不在左式里。
+本步不构造梯度数值。前两式把辅助 CE 对被 detach 的 target 主干及共享 embedding／LM head 的梯度贡献设为 0；右式保留 MTP 参数的梯度路径，并不保证每个位置都得到非零值。主 RL 损失的梯度是另一条路径，不在这些等式里。
 
-图上没有展开共享表。实现还处理 embedding 与共享打分表：打分表就是 LM head，把 hidden state 变成 token 分数。代码先对 embedding 输出和 target hidden state 做 detach，再用 `functional_call` 调用共享 LM head，并传入 detach 后的参数。MTP 自己的 hidden 输出没有 detach，所以 CE 仍能回到 MTP 层；主 RL 损失仍训练这些共享表。
+### 图外实现
+
+实现对 embedding 输出做 detach。target hidden state 经过 <code>make_viewless_tensor(...,<wbr> requires_grad=True,<wbr> keep_graph=False)</code>，再通过 `functional_call` 调用共享 LM head，并传入 detach 后的参数视图。这些视图不修改原参数或它们的 `requires_grad` 标志。MTP 自己的 hidden 输出没有 detach，所以 CE 仍能回到 MTP 层；主 RL 损失仍训练 target 主干和共享表。
 
 ### 接下来
 
 下一步用 loss mask 决定哪些位置计入 CE，避免没有两个有效后续 token 的位置教错 draft。
 
-来源：`Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7`, `rlhf/slime/spec/readme.md:58-60,184-234`；`THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a` 的 `docker/patch/latest/megatron.patch:170-179,596-603`。
+来源：<code>Awesome-ML-SYS-Tutorial@<wbr>d1f309b46f81a23e8b6ca0718c05bc897fafacf7</code>, `rlhf/slime/spec/readme.md:58-60,184-234`；<code>THUDM/<wbr>slime@<wbr>1278475ef4757ac8b03b1836dc1dc20fcc2dd56a</code> 的 `docker/patch/latest/megatron.patch:164-180,596-603`。
 
 ## 第 6 步 · 两个后续 token 都有效才计分
 

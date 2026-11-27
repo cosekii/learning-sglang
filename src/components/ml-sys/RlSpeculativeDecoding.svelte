@@ -153,34 +153,39 @@
       ],
     },
   }, {
-    caption: 'Detach keeps values but stops weight-change instructions. Main RL learning still updates the target.',
-    captionZh: 'detach 保留数值，挡住调整权重的信号。主 RL 学习仍更新 target。',
+    caption: 'Detach keeps forward values but stops CE updates to target and shared tables. Main RL still updates them.',
+    captionZh: 'detach 保留前向数值，挡住辅助 CE 更新 target 和共享表。主 RL 仍更新它们。',
     title: 'Detach keeps the draft lesson on the draft', titleZh: 'detach 把 draft 的课程留在 draft',
     subtitle: 'gradient = weight-change instructions · detach stops them on this branch', subtitleZh: 'gradient = 调整权重的信号 · detach 在这条分支挡住它们',
-    foot: 'Only this CE path is stopped; draft weights can still learn.',
-    footZh: '这里只挡这条 CE 路径；draft 权重仍能学习。',
-    legend: 'Blue = trainable draft · orange dashed = detached target', legendZh: '蓝 = 可训练的 draft · 橙色虚线 = detach 的 target',
+    foot: 'Only auxiliary CE is blocked; these weights are not frozen.',
+    footZh: '这里只挡辅助 CE，不是永久冻结这些权重。',
+    legend: 'Blue = trainable draft · orange dashed = detached target + shared tables', legendZh: '蓝 = 可训练的 draft · 橙色虚线 = detach 的 target 和共享表',
     nodes: [
       { title: 'DRAFT CE', titleZh: 'DRAFT 的 CE', result: 'extra draft lesson', resultZh: '额外的 draft 课程', body: 'from Step 4', bodyZh: '来自第 4 步', tone: 'blue', compact: true },
       { title: 'DRAFT LAYER', titleZh: 'DRAFT 层', result: 'instructions pass', resultZh: '调整权重的信号通过', body: 'weights can learn', bodyZh: '权重可以学习', tone: 'blue', compact: true },
-      { title: 'TARGET’S MAIN LAYERS', titleZh: 'TARGET 的主要层', result: 'detach', resultZh: 'detach', body: 'CE instructions stop', bodyZh: 'CE 的调整权重的信号停下', tone: 'orange', compact: true, dashed: true },
+      { title: 'SHARED TABLES', titleZh: '共享表', result: 'embedding · LM head', resultZh: 'embedding · LM head', body: 'forward uses current values', bodyZh: '前向使用当前数值', tone: 'orange', compact: true, dashed: true },
+      { title: 'TARGET TRUNK', titleZh: 'TARGET 主干', result: 'detach', resultZh: 'detach', body: 'CE instructions stop', bodyZh: 'CE 的调整权重的信号停下', tone: 'orange', compact: true, dashed: true },
     ],
     formulas: [
-      { en: 'CE → draft: weight-change instructions pass', zh: 'CE → draft：调整权重的信号通过' },
-      { en: 'CE ✕→ target’s main layers', zh: 'CE ✕→ target 的主要层' },
-      { en: 'dashed = detached', zh: '虚线 = 已 detach' },
-      { en: 'main RL learning still updates the target', zh: '主 RL 学习仍更新 target' },
+      { en: 'forward: token IDs → embedding → model numbers', zh: '前向：token ID → embedding → 模型数列' },
+      { en: 'forward: hidden states → LM head → token scores', zh: '前向：hidden state → LM head → token 分数' },
+      { en: 'CE → draft layer: weight-change instructions pass', zh: 'CE → draft 层：调整权重的信号通过' },
+      { en: 'CE ✕→ target trunk', zh: 'CE ✕→ target 主干' },
+      { en: 'CE ✕→ shared embedding + LM head', zh: 'CE ✕→ 共享 embedding 和 LM head' },
+      { en: 'main RL updates target + shared tables', zh: '主 RL 仍更新 target 和共享表' },
     ],
     mobile: {
       title: 'Keep the lesson on the draft', titleZh: '把课程留在 draft',
       subtitle: 'gradient = weight-change instructions', subtitleZh: 'gradient = 调整权重的信号',
-      foot: 'Only this CE path stops; the draft still learns.', footZh: '只挡这条 CE 路径；draft 仍会学习。',
-      legend: 'Blue = draft · orange dashed = detached target', legendZh: '蓝 = draft · 橙色虚线 = detach 的 target',
+      foot: 'Auxiliary CE stops; the weights are not frozen.', footZh: '只挡辅助 CE，不是永久冻结权重。',
+      legend: 'Blue = draft · orange dashed = detached', legendZh: '蓝 = draft · 橙色虚线 = detach',
       formulas: [
-      { en: 'CE → draft: instructions pass', zh: 'CE → draft：调整权重的信号通过' },
-      { en: 'CE ✕→ target’s main layers', zh: 'CE ✕→ target 的主要层' },
-      { en: 'dashed = detached', zh: '虚线 = 已 detach' },
-      { en: 'Main RL learning still updates target', zh: '主 RL 学习仍更新 target' },
+        { en: 'IDs → embedding → model numbers', zh: 'token ID → embedding → 模型数列' },
+        { en: 'hidden states → LM head → scores', zh: 'hidden state → LM head → 分数' },
+        { en: 'CE → draft: instructions pass', zh: 'CE → draft：调整信号通过' },
+        { en: 'CE ✕→ target trunk', zh: 'CE ✕→ target 主干' },
+        { en: 'CE ✕→ shared tables', zh: 'CE ✕→ 共享表' },
+        { en: 'Main RL updates target + shared tables', zh: '主 RL 更新 target 和共享表' },
       ],
     },
   }, {
@@ -314,7 +319,7 @@
       motion.removeEventListener('change', updateMotion);
     };
   });
-  const PHASE_COUNTS = [3, 4, 5, 5, 4, 5, 4, 4];
+  const PHASE_COUNTS = [3, 4, 5, 5, 5, 5, 4, 4];
   const PHASE_MS = 1000, REST_MS = 2800;
   let phase = $state(0);
   let lap = $state(0), lapMs = $state(0);

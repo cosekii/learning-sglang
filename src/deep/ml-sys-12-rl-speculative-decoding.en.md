@@ -136,33 +136,41 @@ Sources: `Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7`, `rl
 
 ### On the stage
 
-- The blue path between CE and the draft layer stays open, so draft parameters learn from Step 4's labels.
-- The orange target trunk is detached. Auxiliary CE cannot propagate into target hidden states.
-- The final line says main RL learning still trains the target. Blocking this CE path does not leave the target untrained.
+- The blue CE and draft-layer cards stay trainable. The CE line says weight-change instructions reach the draft layer from Step 4's labels.
+- The shared-tables card names the embedding and LM head. The first forward line turns token IDs into model numbers through the embedding. The second turns hidden states into token scores through the LM head. Both use current parameter values.
+- Separate orange dashed cards and CE lines block auxiliary CE gradients into the target trunk and the shared tables. These are two distinct parameter sets.
+- The final line says main RL learning still trains the target and shared tables. Blocking auxiliary CE does not freeze their weights.
 
 ### Formula and symbols
 
 A gradient tells each weight which direction and how far to change during learning. The stage calls it weight-change instructions.
 
-$$g^{\mathrm{CE}}_{\theta_{\mathrm{detached}}}=0,\qquad g^{\mathrm{CE}}_{\theta_{\mathrm{MTP}}}\ \text{is computed normally}$$
+$$g^{\mathrm{CE}}_{\theta_{\mathrm{detached}}}=0$$
+
+$$g^{\mathrm{CE}}_{\theta_{\mathrm{shared}}}=0$$
+
+$$g^{\mathrm{CE}}_{\theta_{\mathrm{MTP}}}\ \text{is computed normally}$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
 | $\theta_{\mathrm{detached}}$ | Target-trunk parameters detached on this auxiliary CE branch | Target trunk in Steps 2 and 5 |
+| $\theta_{\mathrm{shared}}$ | Embedding and LM-head parameters shared with the draft, detached only for this auxiliary CE call | Shared-tables card in this step |
 | $\theta_{\mathrm{MTP}}$ | Parameters of the draft's built-in MTP layer | Step 1 |
 | $g^{\mathrm{CE}}_{\theta}$ | Auxiliary CE gradient with respect to parameters $\theta$ | Backward path in this step |
 
 ### The numbers on the stage
 
-This step constructs no gradient values. The left equation sets the auxiliary CE gradient for the detached target-trunk parameters to zero on this branch. The right side leaves the MTP path open; it does not guarantee a nonzero value at every position. Main-loss gradients use a separate path and are outside the left equation.
+This step constructs no gradient values. The first two equations set auxiliary CE's gradient contribution to zero for the detached target trunk and the shared embedding/LM head. The right side leaves the MTP path open; it does not guarantee a nonzero value at every position. Main-loss gradients use a separate path and are outside these equations.
 
-The stage leaves shared tables out. The implementation also handles the embedding and shared score table: the score table is the LM head, which turns hidden states into token scores. It detaches the embedding output and target hidden state, then calls the shared LM head with `functional_call` and detached parameters. It does not detach the MTP hidden output, so CE can still reach the MTP layer. The main RL loss still trains these shared tables.
+### Implementation behind the stage
+
+The implementation detaches the embedding output. It passes the target hidden state through <code>make_viewless_tensor(...,<wbr> requires_grad=True,<wbr> keep_graph=False)</code>, then calls the shared LM head through `functional_call` with detached parameter views. Those views do not mutate the original parameters or their `requires_grad` flags. The MTP hidden output is not detached, so CE can still reach the MTP layer. The main RL loss still trains the target trunk and shared tables.
 
 ### Next
 
 The next step uses a loss mask to select CE positions, excluding positions without two valid future tokens.
 
-Sources: `Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7`, `rlhf/slime/spec/readme.md:58-60,184-234`; `THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a`, `docker/patch/latest/megatron.patch:170-179,596-603`.
+Sources: <code>Awesome-ML-SYS-Tutorial@<wbr>d1f309b46f81a23e8b6ca0718c05bc897fafacf7</code>, `rlhf/slime/spec/readme.md:58-60,184-234`; <code>THUDM/<wbr>slime@<wbr>1278475ef4757ac8b03b1836dc1dc20fcc2dd56a</code>, `docker/patch/latest/megatron.patch:164-180,596-603`.
 
 ## Step 6 · Keep positions with two valid future tokens
 
