@@ -23,17 +23,17 @@
 ### Omni 15 `router-worker-selection`
 
 - 保留协调已关闭的五组内容返工和英文手机第 8 步 handoff；本轮没有重做这些项。
-- 第 1 步由两个未检查候选开始，先排除不收图片的 A，再确认 B，最后 dispatch 到 B。独立 reviewer 检出手机旧箭头仍进入 A，现已改成从请求右侧绕到 B 并复评通过。
-- 第 6 步由 active 数和 recency 实时推导四次选择。每个请求先显示最小集合和顺序扫描，再显示被选 worker 的 active `before→after` 与队尾更新，得到 B、C、B、C。
-- 协调内容与静态基线保持 R1–R5 **80/80**、原十个非视觉项 **160/160**、静态 R6 **16/16**、原 #4/#5 **32/32**、原十二项 **192/192**。协调机制分恢复为 **14/16**（1、2、2、2、2、1、2、2），不再误写历史 0 分；本轮作者与独立只读 reviewer 的源码＋live DOM 复评为 **16/16**，两列分开记录，不记协调满分或 `complete-under-EVAL`。
+- 第 1 步由两个未检查候选开始，先排除不收图片的 A，再确认 B，最后 dispatch 到 B。头部在 phase 0、1 分别写 `2 to check`、`1 to check`，phase 2 接受 B 后才写 `1 compatible`。手机 dispatch 从请求右侧绕到 B。
+- 第 6 步由 active 数和 recency 实时推导四次选择，逐相显示最小集合、顺序扫描、active `before→after` 和队尾更新。保留 B、C、B、C 与策略对照，另加 active `[2,1,1]`、recency `[A,C,B]` 的独立轮换并列例，由 C 获胜。
+- 协调内容与静态基线保持 R1–R5 **80/80**、原十个非视觉项 **160/160**、静态 R6 **16/16**、原 #4/#5 **32/32**、原十二项 **192/192**。协调机制分保持 **14/16**（1、2、2、2、2、1、2、2）。本轮源码＋live DOM 复核只作非视觉参考，不换算成机制分，也不作为 EVAL §6 硬门通过证据；不记 `complete-under-EVAL`。
 
 ## 验证
 
 - `npx astro --config .astro/local.config.mjs build`：60 页通过。忽略的本地配置隔离 Vite cache 并允许 shared `node_modules` 符号链接。
 - 本章默认 `transcript`：8 步，无布局问题，生成文件已提交；8 步 `readability` 0 机械问题；`deep-check 15` 通过。一次本地 transcript 出现 unsettled await 且未写出结果，换新 CDP 端口后完整重跑通过。
-- 英中全章 `mobile` 在 360／390／430 px 通过；中文第 1、6 步字号门通过。`WAIT=11000` 的本章 `zh-check` 和 `git diff --check` 通过。忽略的 `.astro/run-with-cdp-port.mjs` 只替换检查脚本的 CDP 端口，避免连接其他 lane 的浏览器。
-- 第 1 步 4 相、第 6 步 10 相均核对 live SVG 状态、文本与几何。英文桌面和中文 390 px 手机共 **28 张**相位 PNG 在 `.bot/out/omni15-k1-step1/`、`.bot/out/omni15-k1-step6/`；未发现文字出界、重叠或低于 10 CSS px。
-- 独立只读 reviewer 对第 6 步给出源码＋DOM GO；第 1 步先因手机 dispatch 指向 A 而 NO-GO，修复后复评 GO。第 1、6 步英中深入讲解 DOM 均无横向溢出或 KaTeX 错误，4 张图在 `.bot/out/omni15-k1-deep/`。
+- 英中全章 `mobile` 在 360／390／430 px 通过；中文第 1、6 步字号门通过。`WAIT=13000` 的本章 `zh-check` 和 `git diff --check` 通过。忽略的 `.astro/run-with-cdp-port.mjs` 只替换检查脚本的 CDP 端口，避免连接其他 lane 的浏览器。
+- 第 1 步 4 相、第 6 步 11 相均核对 live SVG 状态、文本与几何。英文桌面和中文 390 px 手机共 **30 张**相位 PNG 在 `.bot/out/omni15-k1-step1/`、`.bot/out/omni15-k1-step6/`；未发现文字出界、重叠或低于 10 CSS px。
+- 独立只读 reviewer 对两项后续加强均给出源码、transcript 和 live DOM GO，但不换算成机制分。深入讲解有 4 张图在 `.bot/out/omni15-k1-deep/`；两次补跑抽屉 DOM 检查时 Chrome 未能启动，未计为通过。
 - 当前模型和 reviewer 都不能读取 PNG。上述证据不冒充 PNG 冷读、协调视觉 verdict 或主人最终验收。
 
 ## 提交
@@ -41,11 +41,13 @@
 - `ed092b5 [k1] Animate Omni 15 compatibility filtering`：第 1 步输入驱动的兼容性过滤。
 - `e128beb [k1] Animate Omni 15 least-requests selection`：第 6 步 recency、并列与 active 更新。
 - `8c8ccfa [k1] Fix Omni 15 phone dispatch target`：手机 dispatch 绕到 B。
-- 三条教程提交均已推 `origin/tutorials`；被拒后均 `git pull --rebase origin tutorials` 再推，没有 force-push。评分卡、progress 和本报告随最后一条 `[k1]` 记录提交推送。
+- `540c9e0 [k1] Clarify Omni 15 compatibility count phases`：接受 B 后才显示 compatible。
+- `cc1377b [k1] Show Omni 15 rotated-order tie break`：独立轮换并列由 C 获胜。
+- 教程提交均已推 `origin/tutorials`；被拒后均 `git pull --rebase origin tutorials` 再推，没有 force-push。评分卡、progress 和本报告随最后一条 `[k1]` 记录提交推送。
 
 ## 剩余
 
-- 等协调人读取第 1、6 步新相位 PNG 并更新正式机制 verdict，主人最终视觉验收另计。复审前不开第 16 章。
+- 等具备图像输入的评审读取 `.bot/out/omni15-k1-step1/{en,zh-phone}-p0..3.png` 和 `.bot/out/omni15-k1-step6/{en,zh-phone}-p0..10.png`，再由协调人更新正式机制 verdict。复审前不开第 16 章。
 - 未跑全站回归、真实 router、模型、GPU benchmark、故障注入或 reduced-motion 动态切换。
 
 ---
