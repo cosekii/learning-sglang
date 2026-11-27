@@ -3,6 +3,24 @@
 日期：2026-11-24。评分办法：`EVAL.md` 易读性 R1–R6 与原 12 项，每项 0 / 1 / 2。
 材料：每步的最终中英桌面截图、中文手机截图、深入讲解截图和逐步 transcript；第 1 步位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s01/`，第 2 步位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s02/`，第 3 步位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s03/`，第 4 步最新复核位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-repair-20261124-1622/mlsys/`，第 5 步位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s05-20261124-1711/`；第 5 步本轮修旧材料位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s05-repair-20261124-1851/final/`，检查日志在相邻的 `checks/`；第 6 步材料位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch01-s06-20261124-1901/final/`，检查日志在相邻的 `checks/`；第 7 步材料位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-ml-sys-ch01-s07-20261124-2130/final/`，检查日志在相邻的 `checks/`。冷读者只带 request、token、prefill 和毫秒的前置知识；后续步骤另带前面步骤的 TTFT、ITL、TPOT、E2E、P50、P99。
 
+## 2026-11-26 k2 机制返工 · 当前作者自评
+
+材料：`.bot/out/ml01-rework/` 的 42 个英文桌面相位 DOM、42 个英中三宽度末相手机 DOM、首末相 PNG 和深入讲解图；默认 transcript 两次 SHA-256 均为 `bf32ad2fa2867ffbac2f151cc154570be4dda61e977fc69a8d257730c2d10ff5`。独立冷读者从 transcript、双语深入讲解和相位 DOM 复审，结论为文本 GO、机制 GO、0 未决内容洞。当前模型无图像输入，PNG 未读，不把 DOM 和几何检查写成视觉通过。
+
+| 步 | R1–R5 /10 | 机制 R6 /2 | R1 小学生复述 | 原十个非视觉项 /20 | 未决洞 | 日期 |
+|---|---:|---:|---|---:|---:|---|
+| 1 | 10 | 2 | 我发出请求后，客户端在 250 ms 读到第一个 token delta，这段等待叫 TTFT。 | 20 | 0 | 2026-11-26 |
+| 2 | 10 | 2 | 后面三个 token 依次到达，相邻 token 的间隔分别是 25、20、30 ms，每段叫 ITL。 | 20 | 0 | 2026-11-26 |
+| 3 | 10 | 2 | 首个 token 后的三段间隔加起来除以 3，TPOT 是 25 ms，不含 TTFT。 | 20 | 0 | 2026-11-26 |
+| 4 | 10 | 2 | 从发出到最后的 delta，整个请求是 250 + 75 = 325 ms。 | 20 | 0 | 2026-11-26 |
+| 5 | 10 | 2 | 两批请求都排序后，A 第 50 个是 200 ms，B 是 250 ms，两把尺子相同。 | 20 | 0 | 2026-11-26 |
+| 6 | 10 | 2 | 同一两批里，A 第 99 个是 300 ms，B 是 400 ms，最慢的都是 2000 ms。 | 20 | 0 | 2026-11-26 |
+| 7 | 10 | 2 | 同一 0–25 秒尺上，A 用 20 秒完成 100 个，B 用 25 秒，所以每秒各完成 5 和 4 个。 | 20 | 0 | 2026-11-26 |
+
+**当前作者自评：R1–R5 70/70、机制 R6 14/14、原十个非视觉项 140/140、0 未决内容洞。** ML-02、ML-15、ML-24 的本章返工已完成，待协调复审；原 #4/#5 和原十二项总分待图像评审，不记 `complete-under-EVAL`。本章 transcript 为 1,300 余词，薄于原版同类章；本章只定义核心指标并演示同刻度构造例，请求集、预热、token/s、SLA、Goodput 和控制变量 profiling 的范围已在 MDX 与第 7 步深入讲解说清，控制变量实验归第 14 章。
+
+## 2026-11-24 历史评分与逐轮记录
+
 | 步 | 易读分 /12 | R1 小学生复述 | 分数 /24 | 冷读者洞数 | 最差的两条 | 日期 |
 |---|---:|---|---:|---:|---|---|
 | 1 | 12 | 我发出请求后，等了 250 毫秒，也就是 1/4 秒，才看到回答的第一个 token，这段等待叫 TTFT。 | 24 | 0 | — | 2026-11-23 |
