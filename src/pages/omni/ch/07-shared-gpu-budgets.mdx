@@ -13,7 +13,7 @@ export const deep = await deepFor('omni-07-shared-gpu-budgets');
 <details class="i18n-en">
 <summary>Where this chapter's claims come from</summary>
 
-Step 1 reads the shipped Qwen3-TTS B200 DP9 YAML. Every replica declares `gpu_memory_fraction=0.0667` for `tts_engine` and `0.0178` for `vocoder`, all on GPU 0. One replica therefore declares 0.0845; nine declare 0.7605, or 76.05%. The remaining 23.95% is only outside this fraction sum, not a measured free-memory reading. Each engine separately declares `max_total_tokens=32768`.
+Step 1 uses a constructed 80-GiB card, not a memory measurement. It places 60 GiB of weights on the card, leaving 20 GiB for the KV budget. The two fractions are 60 ÷ 80 = 75% and 20 ÷ 80 = 25%, so they account for the whole constructed card. This example isolates the arithmetic; it does not claim that a real model has these sizes or that a live free-memory reading is a KV allocation.
 
 Step 2 uses the paired unit-test cases in `test_placement.py`, not B200 measurements. On a teaching 80-GiB card, a 0.50 fraction plus a 20-GiB total reserve declares 60 GiB and passes. A 0.90 fraction plus the same reserve declares 92 GiB and fails by 12 GiB. The reserve denotes the stage footprint, including its two-GiB KV pool, so that pool is not added to the same reserve again. Placement separately checks that summed KV pools alone fit.
 
@@ -32,7 +32,7 @@ Source revision for the chapter: `sglang-omni origin/main@db7cbf39ccffde7f95b81c
 <details class="i18n-zh">
 <summary>本章说法的出处</summary>
 
-第 1 步读取仓库自带的 Qwen3-TTS B200 DP9 YAML。每个副本的 `tts_engine` 申报 `gpu_memory_fraction=0.0667`，`vocoder` 申报 `0.0178`，全部放在 GPU 0。一个副本合计 0.0845，九个合计 0.7605，即 76.05%。其余 23.95% 只表示不在这项比例之和中，不是实测空闲显存。每个 engine 另设 `max_total_tokens=32768`。
+第 1 步使用构造的 80 GiB 卡，不是显存实测。先放进 60 GiB 权重，剩下 20 GiB 作为 KV 预算。两项比例分别是 60 ÷ 80 = 75% 和 20 ÷ 80 = 25%，合起来正好是这张构造卡。这个例子只展示算术，不声称真实模型具有这些大小，也不把实时空闲显存读数当成已经分配的 KV。
 
 第 2 步使用 `test_placement.py` 的一对单元测试，不是 B200 实测。在教学用 80 GiB 卡上，0.50 比例加 20 GiB 总 reserve 申报 60 GiB，可以通过。0.90 比例加同一 reserve 申报 92 GiB，超出 12 GiB。reserve 表示 stage 整体占用，包括其中 2 GiB KV 池，所以不能再把这个池加到同一份 reserve 上。placement 还单独检查所有 KV 池之和能否装下。
 

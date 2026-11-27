@@ -1,13 +1,13 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import StepControls from '../StepControls.svelte';
+  import LoopProgress from '../LoopProgress.svelte';
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
   import {
-    DP9_REPLICA_COUNT, DP9_TTS_FRACTION, DP9_VOCODER_FRACTION,
-    DP9_REPLICA_FRACTION, DP9_TTS_TOTAL_PERCENT, DP9_VOCODER_TOTAL_PERCENT,
-    DP9_USED_PERCENT, DP9_UNASSIGNED_PERCENT,
+    BUDGET_CARD_GIB, BUDGET_WEIGHT_GIB, BUDGET_KV_GIB,
+    BUDGET_WEIGHT_PERCENT, BUDGET_KV_PERCENT,
     CAPACITY_CARD_GIB, CAPACITY_RESERVE_GIB, CAPACITY_KV_GIB,
     CAPACITY_PASS_FRACTION, CAPACITY_FAIL_FRACTION,
     CAPACITY_PASS_FRACTION_GIB, CAPACITY_FAIL_FRACTION_GIB,
@@ -30,8 +30,8 @@
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
   const steps = [{
-    caption: 'Nine replicas each declare 8.45% of the card. Together they declare 76.05%, leaving 23.95% outside these fractions.',
-    captionZh: '每个副本申报 8.45%，九个合计 76.05%。其余 23.95% 不在比例预算里。',
+    caption: 'An 80-GiB card holds 60 GiB of weights, leaving 20 GiB for KV. Their fractions are 75% and 25%.',
+    captionZh: '80 GiB 卡放进 60 GiB 权重，剩下 20 GiB 给 KV。两者分别占 75% 和 25%。',
   }, {
     caption: 'A 50% fraction plus 20 GiB fits an 80-GiB card. Raising the fraction to 90% exceeds it by 12 GiB.',
     captionZh: '50% 比例加 20 GiB，能装进 80 GiB 卡。改成 90% 后超出 12 GiB。',
@@ -54,6 +54,26 @@
     if (q >= 1 && q <= steps.length) step = q - 1;
   });
   const cur = $derived(steps[step]);
+  const PHASE_COUNTS = [4, 1, 1, 1, 1, 1];
+  let phase = $state(0);
+  let lap = $state(0), lapMs = $state(0);
+  const nextLap = (ms: number) => untrack(() => { lapMs = ms; lap++; });
+  $effect(() => {
+    const count = PHASE_COUNTS[step];
+    phase = 0;
+    if (count === 1) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { phase = count - 1; return; }
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const run = () => {
+      phase = 0;
+      for (let i = 1; i < count; i++) timers.push(setTimeout(() => (phase = i), i * 1400));
+      const ms = count * 1400 + 1800;
+      timers.push(setTimeout(run, ms));
+      nextLap(ms);
+    };
+    run();
+    return () => timers.forEach(clearTimeout);
+  });
   let phone = $state(false);
   onMount(() => {
     const query = window.matchMedia('(max-width: 900px)');
@@ -63,15 +83,18 @@
     return () => query.removeEventListener('change', update);
   });
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [610, 690, 700, 650, 650, 790][step] : [480, 470, 460, 480, 450, 500][step]);
-  const pct = (value: number) => value.toFixed(2);
+  const H = $derived(phone ? [480, 690, 700, 650, 650, 790][step] : [440, 470, 460, 480, 450, 500][step]);
   const fractionPct = (value: number) => (value * 100).toFixed(2);
-  const dp9Scale = $derived(phone ? 2.5 : 6.5);
-  const dp9Bar = $derived([
-    { label: '9 × tts_engine', value: DP9_TTS_TOTAL_PERCENT, color: 'var(--accent)' },
-    { label: '9 × vocoder', value: DP9_VOCODER_TOTAL_PERCENT, color: 'var(--gen)' },
-    { label: t('outside fractions', '比例之外'), value: DP9_UNASSIGNED_PERCENT, color: 'var(--faint)' },
-  ]);
+  const budgetX = $derived(phone ? 20 : 60);
+  const budgetWidth = $derived(phone ? 260 : 600);
+  const budgetWeightWidth = $derived(budgetWidth * BUDGET_WEIGHT_GIB / BUDGET_CARD_GIB);
+  const budgetKvWidth = $derived(budgetWidth - budgetWeightWidth);
+  const budgetNow = $derived([
+    t(`start with the whole card: ${BUDGET_CARD_GIB} GiB`, `先看整张卡：${BUDGET_CARD_GIB} GiB`),
+    t(`weights take ${BUDGET_WEIGHT_GIB} GiB`, `权重占去 ${BUDGET_WEIGHT_GIB} GiB`),
+    t(`the remaining ${BUDGET_KV_GIB} GiB is the KV budget`, `剩余 ${BUDGET_KV_GIB} GiB 是 KV 预算`),
+    t('divide each part by the whole card', '分别除以整卡，得到比例'),
+  ][phase]);
   const capacityPanels = $derived([
     { x: phone ? 15 : 20, y: phone ? 90 : 96, fraction: CAPACITY_PASS_FRACTION, fractionGib: CAPACITY_PASS_FRACTION_GIB, declared: CAPACITY_PASS_DECLARED_GIB, pass: true },
     { x: phone ? 15 : 375, y: phone ? 350 : 96, fraction: CAPACITY_FAIL_FRACTION, fractionGib: CAPACITY_FAIL_FRACTION_GIB, declared: CAPACITY_FAIL_DECLARED_GIB, pass: false },
@@ -91,7 +114,7 @@
   })));
 </script>
 
-<figure class="viz">
+<figure class="viz" data-animation-step={step} data-animation-phase={phase} data-animation-final-phase={PHASE_COUNTS[step] - 1}>
   <div class="canvas">
     <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={t('Declared GPU fractions, byte reserves and runtime ownership determine whether colocated stages fit.', '同卡 stage 能否装下，要看比例、字节预留和运行时所有权。')}>
       <defs>
@@ -103,32 +126,32 @@
         </marker>
       </defs>
       {#if step === 0}
-        <text x="20" y="22" class="tag strong">Qwen3-TTS 1.7B · B200 · GPU 0 · {DP9_REPLICA_COUNT} {t('replicas', '个副本')}</text>
-        <text x="20" y="46" class="tag">gpu_memory_fraction = {phone ? t('stage ÷ whole card', 'stage 占整卡比例') : t('one stage share of physical card bytes', '一个 stage 申报的整卡字节比例')}</text>
-        <text x="20" y="68" class="tag">{phone ? t('Blue: TTS · orange: vocoder · grey: other', '蓝：TTS · 橙：vocoder · 灰：其他') : t('Blue: TTS engine · orange: vocoder · grey: outside these fractions', '蓝色：TTS engine · 橙色：vocoder · 灰色：比例之外')}</text>
-        <rect x={phone ? 15 : 20} y="92" width={phone ? 270 : 680} height="88" rx="10" fill="var(--bg)" stroke="var(--line)" />
-        <text x={phone ? 29 : 34} y="118" class="rowlabel">{t('ONE REPLICA', '一个副本')}</text>
-        <text x={phone ? 29 : 34} y="145" class="mono strong">tts {fractionPct(DP9_TTS_FRACTION)}% + vocoder {fractionPct(DP9_VOCODER_FRACTION)}%</text>
-        <text x={phone ? 29 : 34} y="167" class="mono strong">= {fractionPct(DP9_REPLICA_FRACTION)}% × {DP9_REPLICA_COUNT}</text>
-        <rect x={phone ? 15 : 20} y="208" width={DP9_TTS_TOTAL_PERCENT * dp9Scale} height="72" fill="var(--accent)" />
-        <rect x={(phone ? 15 : 20) + DP9_TTS_TOTAL_PERCENT * dp9Scale} y="208" width={DP9_VOCODER_TOTAL_PERCENT * dp9Scale} height="72" fill="var(--gen)" />
-        <rect x={(phone ? 15 : 20) + DP9_USED_PERCENT * dp9Scale} y="208" width={DP9_UNASSIGNED_PERCENT * dp9Scale} height="72" fill="var(--bg)" stroke="var(--faint)" stroke-dasharray="4 3" />
-        <text x={(phone ? 15 : 20) + DP9_TTS_TOTAL_PERCENT * dp9Scale / 2} y="249" text-anchor="middle" class={phone ? 'tag strong' : 'mono strong'} fill="white">{pct(DP9_TTS_TOTAL_PERCENT)}%</text>
-        <text x={(phone ? 15 : 20) + (DP9_TTS_TOTAL_PERCENT + DP9_VOCODER_TOTAL_PERCENT / 2) * dp9Scale} y="249" text-anchor="middle" class="tag strong" fill="white">{pct(DP9_VOCODER_TOTAL_PERCENT)}%</text>
-        <text x={(phone ? 15 : 20) + (DP9_USED_PERCENT + DP9_UNASSIGNED_PERCENT / 2) * dp9Scale} y="249" text-anchor="middle" class="tag strong">{pct(DP9_UNASSIGNED_PERCENT)}%</text>
-        <text x={phone ? 15 : 20} y="307" class="tag strong">{phone ? `9 × tts = ${pct(DP9_TTS_TOTAL_PERCENT)}% · 9 × vocoder = ${pct(DP9_VOCODER_TOTAL_PERCENT)}%` : `9 × ${DP9_TTS_FRACTION} = ${pct(DP9_TTS_TOTAL_PERCENT)}% · 9 × ${DP9_VOCODER_FRACTION} = ${pct(DP9_VOCODER_TOTAL_PERCENT)}%`}</text>
-        <text x={phone ? 15 : 20} y="334" class="mono strong">{pct(DP9_TTS_TOTAL_PERCENT)} + {pct(DP9_VOCODER_TOTAL_PERCENT)} = {pct(DP9_USED_PERCENT)}% ≤ 100%</text>
-        <text x={phone ? 15 : 20} y="361" class="mono strong">100 − {pct(DP9_USED_PERCENT)} = {pct(DP9_UNASSIGNED_PERCENT)}%</text>
-        <rect x={phone ? 15 : 20} y="384" width={phone ? 270 : 680} height={phone ? 126 : 64} rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
-        <text x={phone ? 29 : 34} y="409" class="tag strong">{phone ? t('These fractions declare about 3/4 of the card.', '这些比例约占整卡 3/4。') : t('About three quarters of the card is declared by these fractions.', '这些比例申报了约四分之三张卡。')}</text>
-        {#if phone}
-          <text x="29" y="435" class="tag">23.95% {t('is not a measured free-memory reading.', '不是实测的空闲显存。')}</text>
-          <text x="29" y="461" class="tag">{t('Each engine also caps its KV pool at 32768 tokens.', '每个 engine 还另设 32768 token 上限。')}</text>
-          <text x="29" y="487" class="tag">{t('The next step adds byte reserves.', '下一步加入字节预留。')}</text>
-        {:else}
-          <text x="34" y="434" class="tag">{t('The remaining 23.95% is outside this fraction sum, not a measured free-memory reading.', '23.95% 只是比例之和以外，不是实测空闲显存。')}</text>
+        <text x="20" y="22" class="tag strong">{phone ? t('CONSTRUCTED · ONE GPU', '构造例 · 一张 GPU') : t('CONSTRUCTED EXAMPLE · ONE GPU', '构造例 · 一张 GPU')}</text>
+        <text x="20" y="46" class="tag">gpu_memory_fraction = {phone ? t('part bytes ÷ whole card', '部分字节 ÷ 整卡字节') : t('bytes for one purpose ÷ total card bytes', '一种用途的字节 ÷ 整卡字节')}</text>
+        <text x="20" y="68" class="tag">KV = {t('saved token keys and values', '保存已算 token 的 key 和 value')}</text>
+        <LoopProgress ms={lapMs} {lap} x={phone ? 230 : 640} y={16} />
+        <text x={budgetX} y="102" class="rowlabel">{phone ? t('TOTAL', '总显存') : t('TOTAL MEMORY', '总显存')} · {BUDGET_CARD_GIB} GiB</text>
+        <rect data-budget="card" x={budgetX} y="116" width={budgetWidth} height="80" rx="8" fill="var(--bg)" />
+        <rect data-budget="weights" x={budgetX} y="116" width={phase >= 1 ? budgetWeightWidth : 0} height="80" fill="var(--accent)" style="transition: width 450ms" />
+        <rect data-budget="kv" x={budgetX + budgetWeightWidth} y="116" width={phase >= 2 ? budgetKvWidth : 0} height="80" fill="var(--gen)" style="transition: width 450ms" />
+        <rect x={budgetX} y="116" width={budgetWidth} height="80" rx="8" fill="none" stroke={phase === 0 ? 'var(--text)' : 'var(--line)'} stroke-width={phase === 0 ? 2 : 1} style="transition: stroke 250ms" />
+        <g opacity={phase >= 1 ? 1 : 0} style="transition: opacity 300ms">
+          <text x={budgetX + budgetWeightWidth / 2} y="150" text-anchor="middle" class="tag strong" fill="white">{t('WEIGHTS', '权重')}</text>
+          <text x={budgetX + budgetWeightWidth / 2} y="176" text-anchor="middle" class="mono strong" fill="white">{BUDGET_WEIGHT_GIB} GiB</text>
+        </g>
+        <g opacity={phase >= 2 ? 1 : 0} style="transition: opacity 300ms">
+          <text x={budgetX + budgetWeightWidth + budgetKvWidth / 2} y="150" text-anchor="middle" class="tag strong" fill="white">{t('KV BUDGET', 'KV 预算')}</text>
+          <text x={budgetX + budgetWeightWidth + budgetKvWidth / 2} y="176" text-anchor="middle" class="mono strong" fill="white">{BUDGET_KV_GIB} GiB</text>
+        </g>
+        <text x={W / 2} y="228" text-anchor="middle" class="tag strong">now: {budgetNow}</text>
+        {#if phase === 2}
+          <text x={W / 2} y="264" text-anchor="middle" class="mono strong">{BUDGET_CARD_GIB} − {BUDGET_WEIGHT_GIB} = {BUDGET_KV_GIB} GiB {t('KV budget', 'KV 预算')}</text>
+        {:else if phase >= 3}
+          <text x={W / 2} y="258" text-anchor="middle" class="mono strong">{t('weights', '权重')}: {BUDGET_WEIGHT_GIB} ÷ {BUDGET_CARD_GIB} = {BUDGET_WEIGHT_PERCENT}%</text>
+          <text x={W / 2} y="288" text-anchor="middle" class="mono strong">KV: {BUDGET_KV_GIB} ÷ {BUDGET_CARD_GIB} = {BUDGET_KV_PERCENT}%</text>
+          <text x={W / 2} y="318" text-anchor="middle" class="mono strong">{BUDGET_WEIGHT_PERCENT}% + {BUDGET_KV_PERCENT}% = 100% {t('of the card', '整卡')}</text>
         {/if}
-        <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('DP9 YAML · next: add byte reserves', 'DP9 YAML · 下一步：加入字节预留') : t('Source: shipped DP9 YAML · next: combine fractions with byte reserves', '出处：随仓库发布的 DP9 YAML · 下一步：比例与字节预留合并校验')}</text>
+        <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Constructed values · next: check reserves', '构造数值 · 下一步：检查字节预留') : t('Constructed values, not measured memory · next: combine fractions with byte reserves', '构造数值，不是实测显存 · 下一步：比例与字节预留合并校验')}</text>
       {:else if step === 1}
         <text x="20" y="22" class="tag strong">validate_gpu_capacity · {t('convert every declaration to GiB', '把所有申报换算成 GiB')}</text>
         <text x="20" y="46" class="tag">{phone ? t('80-GiB teaching card · 20-GiB reserve includes 2-GiB KV', '80 GiB 教学卡 · 20 GiB reserve 含 2 GiB KV') : t('Teaching card: 80 GiB · reserve covers one stage footprint, including its 2-GiB KV pool', '教学卡：80 GiB · reserve 覆盖 stage 整体，包括其中 2 GiB KV 池')}</text>

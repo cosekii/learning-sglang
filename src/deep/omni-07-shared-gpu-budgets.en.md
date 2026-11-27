@@ -1,60 +1,53 @@
-## Step 1 · Add the fractions for all nine replicas
+## Step 1 · Build memory fractions from one card
 
-> **In one sentence:** Each DP9 replica declares 8.45% of the card, nine declare 76.05%, and 23.95% remains outside this particular sum.
+> **In one sentence:** On a constructed 80-GiB card, 60 GiB of weights leave 20 GiB for KV, giving fractions of 75% and 25%.
 
 ### What the picture shows
 
-- This is the shipped Qwen3-TTS 1.7B B200 DP9 configuration. Both `pipeline` and `vocoder` have nine replicas, with GPU 0 repeated nine times in their device lists.
-- Within one replica, `tts_engine` declares `gpu_memory_fraction=0.0667` and `vocoder` declares `0.0178`. Each fraction refers to physical card bytes.
-- The blue bar contains all nine TTS-engine fractions, orange contains the vocoder fractions, and the dashed grey region is outside those two sums. All segments use one 100% scale.
-- Every engine separately declares `max_total_tokens=32768`. That is a token-pool cap, not an automatic byte value, so this step does not add it to the fractions.
-- The same YAML sets `mps: 'on'`, but execution sharing belongs to Step 5. Here we only sum the fractions collected by placement.
+- This is a constructed example, not a model configuration or a memory measurement. One outlined bar represents the same 80-GiB card throughout.
+- The first held phase shows only the 80-GiB total. The second fills 60 GiB with blue weights. The third fills the remaining 20 GiB with the orange KV budget. The last phase divides both parts by the same total.
+- KV stores previously computed token keys and values. `gpu_memory_fraction` means the bytes assigned to one purpose divided by total card bytes.
+- The bar grows in place; these are not before-and-after result cards. Blue always means weights and orange always means the KV budget.
 
 ### Work through the numbers
 
-For one replica:
+Let card capacity be $C=80\,\mathrm{GiB}$ and weights be $W=60\,\mathrm{GiB}$. The remaining KV budget is:
 
-$$f_r=f_{tts}+f_{voc}=0.0667+0.0178=0.0845=8.45\%$$
+$$K=C-W=80-60=20\,\mathrm{GiB}$$
 
-Across nine replicas:
+The two fractions are:
 
-$$F_{tts}=9f_{tts}=9\times0.0667=0.6003=60.03\%$$
+$$f_W=\frac{W}{C}=\frac{60}{80}=0.75=75\%$$
 
-$$F_{voc}=9f_{voc}=9\times0.0178=0.1602=16.02\%$$
+$$f_K=\frac{K}{C}=\frac{20}{80}=0.25=25\%$$
 
-The total and the region outside it are:
+They account for the whole constructed card:
 
-$$F=9f_r=9\times0.0845=0.7605=76.05\%$$
-
-$$U=1-F=1-0.7605=0.2395=23.95\%$$
+$$f_W+f_K=75\%+25\%=100\%$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
-| $f_{tts}$ | One TTS engine's fraction of the card | 0.0667 in the DP9 YAML |
-| $f_{voc}$ | One vocoder's fraction of the card | 0.0178 in the DP9 YAML |
-| $f_r$ | One replica's combined fraction | 0.0667 plus 0.0178 |
-| $F_{tts},F_{voc}$ | Nine-replica sums for each stage | Each stage fraction times nine |
-| $F$ | Total declared fraction on GPU 0 | 60.03% plus 16.02% |
-| $U$ | Fraction outside $F$ | 100% minus 76.05% |
+| $C$ | Total memory on the teaching card | Constructed value: 80 GiB |
+| $W$ | Memory occupied by model weights | Constructed value: 60 GiB |
+| $K$ | KV budget left after weights in this example | 80 GiB minus 60 GiB |
+| $f_W$ | Weight bytes divided by card bytes | 60 divided by 80 |
+| $f_K$ | KV-budget bytes divided by card bytes | 20 divided by 80 |
 
-About three quarters of the card is covered by these declarations. That does not mean 76.05% of bytes are allocated at every instant, and 23.95% is not an `nvidia-smi` free-memory reading.
+The subtraction is a teaching simplification with only weights and KV. A real card can have reserves and other consumers, so its unallocated bytes are not automatically one engine's KV pool.
 
-### How placement sums the entries
+### How this relates to placement
 
-`StagePlacementPlanner` adds every GPU-resident stage to the corresponding `gpu_entries`. `build_gpu_placement()` sums `total_gpu_memory_fraction`, KV bytes and reserve bytes in their own domains. `validate_memory_budgets()` compares the fraction sum with the configured placement limit.
-
-Our manual check uses 100% as an intuitive upper bound; the code reads `max_total_gpu_memory_fraction_per_gpu`. Thus `76.05% ≤ 100%` is an arithmetic sanity check, not a substitute for complete startup validation or proof that every unshown consumer is absent.
+A real configuration declares `gpu_memory_fraction` for GPU-resident stages. `StagePlacementPlanner` collects the entries for each GPU, and `build_gpu_placement()` sums their fractions separately from KV bytes and reserve bytes. This constructed example explains what a fraction means; it does not claim that placement derives weights or KV by subtracting 60 from 80.
 
 ### Boundaries and sources
 
-This step does not multiply `gpu_memory_fraction` by the engine's internal `mem_fraction_static=0.911`, or expand how that internal setting divides weights and KV. The YAML comment identifies a 183-GB B200, but this step does not convert that label into GiB or confuse declarations with a live measurement.
+The 80, 60 and 20 GiB values are constructed for readable arithmetic. No B200, model checkpoint, token cap, `nvidia-smi` reading or runtime allocator is measured here. The example also leaves out reserves and other GPU consumers; Step 2 adds a reserve explicitly.
 
-- `examples/mps_dp/b200/qwen3_tts_1_7b_b200_dp9.yaml:2-25`: the 183-GB B200, MPS, both fractions, 32768-token cap and nine-replica placement.
 - `sglang_omni/config/placement.py:73-104`: per-stage GPU entries and plan construction.
 - `sglang_omni/config/placement.py:111-119`: the configured fraction-limit check.
 - `sglang_omni/config/placement.py:252-286`: separate same-GPU sums for fractions, KV bytes and reserves.
 
-Line numbers refer to `origin/main@db7cbf39ccffde7f95b81c2dcc7da1b52a5c0bb6`.
+Line numbers refer to <code>origin/main@<wbr>db7cbf39ccffde7f95b81c2dcc7da1b52a5c0bb6</code>.
 
 ### Next
 

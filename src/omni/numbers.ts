@@ -270,16 +270,12 @@ export const RELAY_POLL_COUNT = 1;
 export const RELAY_MAX_FRAMES_PER_POLL = 1;
 export const RELAY_ADAPTER_QUEUE_COUNT = 0;
 
-// Qwen3-TTS B200 DP9: examples/mps_dp/b200/qwen3_tts_1_7b_b200_dp9.yaml.
-export const DP9_REPLICA_COUNT = 9;
-export const DP9_TTS_FRACTION = 0.0667;
-export const DP9_VOCODER_FRACTION = 0.0178;
-export const DP9_REPLICA_FRACTION = DP9_TTS_FRACTION + DP9_VOCODER_FRACTION;
-export const DP9_TTS_TOTAL_PERCENT = DP9_TTS_FRACTION * DP9_REPLICA_COUNT * 100;
-export const DP9_VOCODER_TOTAL_PERCENT = DP9_VOCODER_FRACTION * DP9_REPLICA_COUNT * 100;
-export const DP9_USED_PERCENT = DP9_REPLICA_FRACTION * DP9_REPLICA_COUNT * 100;
-export const DP9_UNASSIGNED_PERCENT = 100 - DP9_USED_PERCENT;
-export const DP9_ENGINE_TOKEN_CAP = 32768;
+// Constructed memory-fraction example: one card, weights first, the remainder for KV.
+export const BUDGET_CARD_GIB = 80;
+export const BUDGET_WEIGHT_GIB = 60;
+export const BUDGET_KV_GIB = BUDGET_CARD_GIB - BUDGET_WEIGHT_GIB;
+export const BUDGET_WEIGHT_PERCENT = BUDGET_WEIGHT_GIB / BUDGET_CARD_GIB * 100;
+export const BUDGET_KV_PERCENT = BUDGET_KV_GIB / BUDGET_CARD_GIB * 100;
 
 // The paired physical-capacity cases in tests/unit_test/pipeline/test_placement.py.
 export const CAPACITY_CARD_GIB = 80;

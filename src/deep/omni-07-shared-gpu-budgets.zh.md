@@ -1,60 +1,53 @@
-## 第 1 步 · 九个副本的比例要逐个相加
+## 第 1 步 · 从一张卡算出显存比例
 
-> **一句话：** DP9 的每个副本申报 8.45% 整卡比例，九个共申报 76.05%，剩余 23.95% 只是这项加法之外的部分。
+> **一句话：** 构造的 80 GiB 卡放进 60 GiB 权重，剩下 20 GiB 给 KV，所以两者分别占 75% 和 25%。
 
 ### 图上是什么
 
-- 这是仓库自带的 Qwen3-TTS 1.7B B200 DP9 配置。`pipeline` 和 `vocoder` 各有九个副本，设备列表把 GPU 0 重复九次。
-- 一个副本里，`tts_engine` 的 `gpu_memory_fraction=0.0667`，`vocoder` 为 `0.0178`。这两个 stage 都按物理整卡字节申报比例。
-- 蓝色长条是九个 TTS engine 的比例，橙色是九个 vocoder，灰色虚线框是不在这两项比例中的部分。长条使用同一个 100% 刻度。
-- 配置另给每个 engine 设置 `max_total_tokens=32768`。它是 token 池上限，不会自动换成图上的字节数；本步不把它和比例相加。
-- `mps: 'on'` 也写在同一份 YAML 中，但执行共享留到第 5 步。本步只算 placement 收集到的比例。
+- 这是构造例，不是模型配置或显存实测。同一个描边长条始终表示这张 80 GiB 卡。
+- 第一相只显示 80 GiB 总显存。第二相把 60 GiB 蓝色权重填进去。第三相把剩余 20 GiB 填成橙色 KV 预算。最后一相用同一个总显存分别算出两项比例。
+- KV 保存已经算过的 token key 和 value。`gpu_memory_fraction` 表示一种用途的字节数除以整卡字节数。
+- 长条在原位逐段形成，不是 before／after 结果卡。蓝色始终表示权重，橙色始终表示 KV 预算。
 
 ### 代入图上的数
 
-一个副本的比例为：
+设整卡容量为 $C=80\,\mathrm{GiB}$，权重占用为 $W=60\,\mathrm{GiB}$。剩余 KV 预算为：
 
-$$f_r=f_{tts}+f_{voc}=0.0667+0.0178=0.0845=8.45\%$$
+$$K=C-W=80-60=20\,\mathrm{GiB}$$
 
-九个副本的两类比例分别为：
+两项比例为：
 
-$$F_{tts}=9f_{tts}=9\times0.0667=0.6003=60.03\%$$
+$$f_W=\frac{W}{C}=\frac{60}{80}=0.75=75\%$$
 
-$$F_{voc}=9f_{voc}=9\times0.0178=0.1602=16.02\%$$
+$$f_K=\frac{K}{C}=\frac{20}{80}=0.25=25\%$$
 
-总申报比例与比例之外的部分为：
+它们合起来正好是这张构造卡：
 
-$$F=9f_r=9\times0.0845=0.7605=76.05\%$$
-
-$$U=1-F=1-0.7605=0.2395=23.95\%$$
+$$f_W+f_K=75\%+25\%=100\%$$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
-| $f_{tts}$ | 一个 TTS engine 的整卡比例 | DP9 YAML 的 0.0667 |
-| $f_{voc}$ | 一个 vocoder 的整卡比例 | DP9 YAML 的 0.0178 |
-| $f_r$ | 一个副本两项比例之和 | 0.0667 加 0.0178 |
-| $F_{tts},F_{voc}$ | 九个副本各自的 stage 比例之和 | 每项乘 9 |
-| $F$ | GPU 0 上两项 stage 的总申报比例 | 60.03% 加 16.02% |
-| $U$ | 不在 $F$ 中的比例 | 100% 减 76.05% |
+| $C$ | 教学卡的总显存 | 构造值：80 GiB |
+| $W$ | 模型权重占用的显存 | 构造值：60 GiB |
+| $K$ | 本例扣除权重后的 KV 预算 | 80 GiB 减 60 GiB |
+| $f_W$ | 权重字节除以整卡字节 | 60 除以 80 |
+| $f_K$ | KV 预算字节除以整卡字节 | 20 除以 80 |
 
-76.05% 约为整卡的四分之三，帮助感受这份配置的覆盖程度。它不表示此刻有 76.05% 字节一定已分配；23.95% 也不是 `nvidia-smi` 的空闲读数。
+这里的减法只有权重和 KV 两项，是教学简化。真实显卡还可能有 reserve 和其他占用，所以未分配字节不会自动成为某个 engine 的 KV 池。
 
-### placement 怎样累加
+### 与 placement 的关系
 
-`StagePlacementPlanner` 把每个解析到 GPU 的 stage 放进对应 `gpu_entries`。`build_gpu_placement()` 再逐 entry 累加 `total_gpu_memory_fraction`，另外分别累加 KV 字节和 reserve 字节。`validate_memory_budgets()` 用 placement 配置的上限检查比例之和。
-
-本例手工验算使用 100% 作为直观上限；代码实际读取 `max_total_gpu_memory_fraction_per_gpu`。因此图中 `76.05% ≤ 100%` 是算术 sanity check，不代替完整启动校验，也不证明其他未画出的占用为零。
+真实配置为 GPU 上的 stage 声明 `gpu_memory_fraction`。`StagePlacementPlanner` 收集每张 GPU 的 entry，`build_gpu_placement()` 把比例、KV 字节和 reserve 字节分别求和。本构造例只解释比例的含义，不声称 placement 会用 80 减 60 推导权重或 KV。
 
 ### 边界与出处
 
-本步不把 `gpu_memory_fraction` 和 engine 内部的 `mem_fraction_static=0.911` 相乘，也不展开后者怎样划分权重与 KV。配置注释记录这张卡为 183 GB B200，但本步不换算 GiB，避免把物理内存读数和申报比例混成实测。
+80、60 和 20 GiB 都是为方便口算而构造的数值。本步没有测量 B200、模型 checkpoint、token 上限、`nvidia-smi` 读数或运行时 allocator，也暂未画出 reserve 和其他 GPU 占用；第 2 步会明确加入 reserve。
 
-- `examples/mps_dp/b200/qwen3_tts_1_7b_b200_dp9.yaml:2-25`：183 GB B200、MPS、两项比例、32768 token 上限和九副本放置。
 - `sglang_omni/config/placement.py:73-104`：逐 stage 建立 GPU entry 并构造 placement plan。
 - `sglang_omni/config/placement.py:111-119`：按配置上限拒绝比例超额的 GPU。
 - `sglang_omni/config/placement.py:252-286`：同卡 entry 的比例、KV 字节和 reserve 字节分别求和。
 
-行号对应 `origin/main@db7cbf39ccffde7f95b81c2dcc7da1b52a5c0bb6`。
+行号对应 <code>origin/main@<wbr>db7cbf39ccffde7f95b81c2dcc7da1b52a5c0bb6</code>。
 
 ### 接下来
 
