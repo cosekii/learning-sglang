@@ -375,7 +375,7 @@
           {#each formulas as line, i}
             <text x="150" y={start + cur.nodes.length * 96 + 15 + i * 27} text-anchor="middle" class={i === 0 ? 'result' : 'small'}>{t(line.en, line.zh)}</text>
           {/each}
-          <text x="150" y={legendY} text-anchor="middle" class="small">{t(cur.mobile?.legend ?? cur.legend, cur.mobile?.legendZh ?? cur.legendZh)}</text>
+          <text x="150" y={legendY} text-anchor="middle" class={step === 1 && $lang === 'en' ? 'small tight-legend' : 'small'}>{t(cur.mobile?.legend ?? cur.legend, cur.mobile?.legendZh ?? cur.legendZh)}</text>
         </g>
       {:else if cur.measure}
         {#each [0, 2] as group}
@@ -440,6 +440,7 @@
   .section { font-family: var(--mono); font-size: 15px; font-weight: 700; fill: var(--fg); }
   .strong { font-weight: 650; }
   .result { font-family: var(--mono); font-size: 15px; font-weight: 650; fill: var(--fg); }
+  .tight-legend { letter-spacing: -0.2px; }
   @media (max-width: 600px) {
     .title { font-size: 16px; }
     .label, .small { font-size: 12px; }

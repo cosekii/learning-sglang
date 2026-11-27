@@ -1,3 +1,30 @@
+# lane k2 本轮报告 · ML Systems 09 Step 2 的 ML-25
+
+日期：2026-11-27。类型：修旧（单个布局 finding）。范围只有 `Fp8RolloutTraining.svelte` 的两行布局修改和本报告；未改文字、数字、动画相位、transcript、评分卡、`.bot/memory/`、其他章、其他书或第 1 本受保护英文原文。
+
+## 修复
+
+- 本轮开始 HEAD 为 `676304d`。按 review.md 的 ML-25 返工点只处理 ML 09 Step 2 手机图例的 preview overflow，不重做已通过 GO 的机制。
+- 改前在 preview 等到 Step 2 末相后复现：英文图例在 **360／390／430 px** 各有 **3 px** SVG 出界。根因是这段文字宽约 **304.4 SVG units**，超过手机的 **300-unit** viewBox；中文图例没有这个问题。
+- 修复只给英文 Step 2 的手机图例加 `letter-spacing: -0.2px`。文字、字号、颜色、位置、数据、相位和计时器均未改，中文渲染也不受影响。**ML-25 作者修复完成，待协调核销。**
+
+## 硬门与证据
+
+- 最终代码的 `npm run build`：**60 页**通过。
+- `BOOK=ml-sys ONLY=9` transcript 连续生成两次，均与 pinned 文件逐字一致：**1,945 词**，SHA-256 `581558bcc38ebc08948f854ba31fa010d7f90de03edee7c229f42ce31a68c034`。最终 `git diff --exit-code -- transcript/ml-sys/09-fp8-rollout-training.md` 通过。
+- Step 2 readability：**0 机械问题**；`deep-check 09`：八步接线正确；`zh-check`：**all clear**。
+- 英中全章 `mobile` 均在 360／390／430 px 报 **no layout breaks**。英中 Step 2 另以 `WAIT=5500` 等到末相检查，也都通过。
+- 修正后的英文末相 DOM 审计逐一确认 counter 为 `02 / 08`、phase 为 `4 / 4`。图例左右边距在 360／390／430 px 分别为 **3.328／3.633／4.047 CSS px**，出界均为 **0**；图例实际字号均不低于 **12.912 CSS px**。`git diff --check` 通过。
+- 截图：`.bot/out/ml25-after-desktop/step2.png` 和 `.bot/out/ml25-after-phone/step2.png`。当前模型不能读取图片，因此以上结论只来自构建、transcript、DOM 和几何检查，**未声称看过图片或视觉通过**。
+
+## 剩余与清理
+
+- 其余开放项 ML-16／23／26／27／29／31／32／35／37／38 未改。ML 10 继续冻结等待固定复审，ML 12 继续延期，第 14 章未开启。本轮不修改既有协调分数，也不把其他 findings 标成完成。
+- 未跑全站回归、真实 FP8 训练、rollout、GPU benchmark 或 reduced-motion 动态切换。主人最终视觉验收仍待。
+- 本地查看命令：`npx astro preview --host 127.0.0.1 --port 4492`。地址：`http://localhost:4492/learning-sglang/ml-sys/ch/09-fp8-rollout-training/?step=2`。本轮 4492 preview 已关闭，检查脚本启动的浏览器均已关闭。
+
+---
+
 # lane k1 本轮报告 · Omni 11／14 继续等待固定复审
 
 日期：2026-11-27。类型：等待固定复审。范围只有本报告；未改教程、transcript、评分卡、`.bot/memory/`、其他书、其他 lane 或第 1 本受保护英文原文。
