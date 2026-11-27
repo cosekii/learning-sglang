@@ -1,5 +1,14 @@
 # 第 6 章评分卡 · One RL round in slime
 
+## 2026-11-27 ML-60 · Step 7 分清图上字段与图外条件
+
+- **ML-60 作者修复完成，待协调固定复审，不自行销项。** 舞台与 caption 保持 `tokens · lengths · rewards`，双语 deep 的「图上是什么」只描述这些可见字段；新增的「图外字段 · 未画出」说明 `raw_reward` 等额外字段。只有首份样本的 metadata 含有 `raw_reward` 时，源码才用各样本 metadata 中的值替换后处理得到的原始分列表；双语 MDX 出处说明保持一致。
+- 定向审计另发现本步符号表在 360／390 px 的既有横溢，给 `global-batch-size`、`buffer.py:118-154` 和 `actor_model.async_train` 加断行机会后，双语四种宽度的 deep 均无横溢。
+- Step 7 作者参考值：R1–R5 **10/10**、机制 R6 **2/2**、原十个非视觉项 **20/20**、新内容洞 **0**。R1 复述：「控制器把 32 组变成 256 份训练记录，一次训练调用用它们算出新权重。」独立 `explore` 首轮指出条件门过宽，修为 `samples[0].metadata` 的首份样本条件后复审 **PASS**；这不是协调 verdict，固定协调 **80/80、16/16、191/192** 基线不改写。
+- 最终 `build`（60 页）、Step 7 `readability`、`deep-check 06`、`zh-check`、英中 Step 7 三宽度 `mobile` 和 `git diff --check` 全过。连续两次 transcript 均为 **1,551 词**，SHA-256 `f203326b17cd1c8a9d8b8538f4ed936664e1582b3e630c9505d740bef7d13cf7`。
+- `.bot/out/ml60-step7-audit.mjs` 覆盖英中桌面、中文 390 px × direct／前步入口，共 **24 状态、18/18 个机制转变**，另有双语 1440／360／390／430 px 共 **8 个 deep 状态**。普通舞台最低 **11.760416666666666 CSS px**，重叠、SVG 出界、页面或 deep 横溢和 `failures` 均为 **0**。证据：`.bot/out/ml60-step7-audit/report.json`。
+- 桌面 deep 打开后舞台最低 **8.00564236111111 CSS px**，属于既有共享 ML-21；手机 drawer 焦点属于 ML-22，本单元未改也不声称这两项通过。当前模型不能读取 PNG，原 #4/#5、视觉判断和整章 verdict 留待协调与主人。未跑全站回归、真实 slime 训练、GPU benchmark 或 reduced-motion 动态切换。
+
 ## 2026-11-27 ML-37 · Step 3 区分两种分数
 
 - **ML-37 作者修复完成，待协调固定复审，不自行销项。** Step 3 展开一份 rollout record：`rollout_log_probs` 是模型写每个回答 token 时的分数，`reward = ?` 留给第 4 步的回答检查器填写。前者逐 token 记录，后者给整个回答打分；caption、图、双语 deep 和出处说明使用同一区分。

@@ -208,9 +208,13 @@ Sources: `slime/ray/buffer.py:86-103`; `run-qwen3-4B.sh:80-88`; `slime/utils/arg
 ### On the stage
 
 - The left side retains the 32 groups, the middle `CONTROLLER` flattens and converts them, and the right side holds 256 training records.
-- `Train_data` contains tokens, response lengths, normalized `rewards` and raw `raw_reward`. The source also packs truncation flags, sample indices, loss masks and available rollout log probabilities.
+- `Train_data` is summarized on the slide as tokens, response lengths and normalized `rewards`.
 - `Global batch size 256` matches this round's record count. The orange training box represents one `actor_model.async_train(0, data)` call.
 - The training backend can divide that call into smaller batches and may update the weights more than once; the figure leaves those internal steps out.
+
+### Off-stage fields · not drawn
+
+The source also packs `raw_reward`, truncation flags, sample indices, loss masks and available rollout log probabilities. If the first sample's metadata contains `raw_reward`, the source replaces the post-processed list with the samples' metadata values. The slide omits these additional fields and the conditional replacement.
 
 ### Formula and symbols
 
@@ -221,10 +225,10 @@ $$N=g\times n_s=B,\qquad W_1=\operatorname{Train}(W_0,D)$$
 | $g$ | Prompt groups | Step 2: 32 |
 | $n_s$ | Answers per group | Step 1: 8 |
 | $N$ | Training records after flattening | Multiplied here |
-| $B$ | Configured global batch size | `global-batch-size`: 256 |
-| $D$ | `Train_data` built by the controller | `buffer.py:118-154` |
+| $B$ | Configured global batch size | <code>global-<wbr>batch-<wbr>size</code>: 256 |
+| $D$ | `Train_data` built by the controller | <code>buffer.py:<wbr>118-154</code> |
 | $W_0,W_1$ | Model weights before and after training | This training call |
-| $\operatorname{Train}$ | Training call awaited by the main loop | `actor_model.async_train` |
+| $\operatorname{Train}$ | Training call awaited by the main loop | <code>actor_model.<wbr>async_<wbr>train</code> |
 
 ### The numbers on the stage
 

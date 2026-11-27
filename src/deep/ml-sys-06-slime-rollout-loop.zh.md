@@ -208,9 +208,13 @@ $$u(0)=-u(1)\approx-0.9354$$
 ### 图上是什么
 
 - 左侧仍按 32 组排列，中间 `CONTROLLER` 负责展开和转换，右侧成为 256 份训练记录。
-- `train_data` 包含 token、回答长度、归一化 `rewards` 和原始 `raw_reward`；源码还打包截断标记、样本编号、loss mask 与已有的 rollout log probability。
+- 舞台上的 `train_data` 只概括了 token、回答长度和归一化 `rewards`。
 - `global batch size 256` 与本轮记录数相等。橙色训练框表示一次 `actor_model.async_train(0, data)` 调用。
 - 训练后端可以把这次调用拆成更小批次，也可能多次更新权重；这些内部步骤不在图中。
+
+### 图外字段 · 未画出
+
+源码还打包 `raw_reward`、截断标记、样本编号、loss mask 与已有的 rollout log probability。如果首份样本的 metadata 含有 `raw_reward`，源码就用各样本 metadata 中的值替换后处理得到的原始分列表。舞台没有画这些额外字段或这次条件替换。
 
 ### 公式与符号
 
@@ -221,10 +225,10 @@ $$N=g\times n_s=B,\qquad W_1=\operatorname{Train}(W_0,D)$$
 | $g$ | prompt 组数 | 第 2 步，32 |
 | $n_s$ | 每组回答数 | 第 1 步，8 |
 | $N$ | 展开后的训练记录数 | 本步相乘 |
-| $B$ | 配置的全局批大小 | `global-batch-size`，256 |
-| $D$ | 控制器生成的 `train_data` | `buffer.py:118-154` |
+| $B$ | 配置的全局批大小 | <code>global-<wbr>batch-<wbr>size</code>，256 |
+| $D$ | 控制器生成的 `train_data` | <code>buffer.py:<wbr>118-154</code> |
 | $W_0,W_1$ | 训练前、后的模型权重 | 本步训练调用 |
-| $\operatorname{Train}$ | 等待完成的训练调用 | `actor_model.async_train` |
+| $\operatorname{Train}$ | 等待完成的训练调用 | <code>actor_model.<wbr>async_<wbr>train</code> |
 
 ### 代入图上的数
 

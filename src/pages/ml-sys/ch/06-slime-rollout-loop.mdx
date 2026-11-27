@@ -25,7 +25,7 @@ Step 4 uses `--rm-type deepscaler` from `run-qwen3-4B.sh:44`. `slime/rollout/rm_
 
 Steps 5 and 6 follow `slime/ray/buffer.py:82-103`. The shipped config selects `--advantage-estimator grpo` and does not disable reward or GRPO standard-deviation normalization (`run-qwen3-4B.sh:80-88`; `slime/utils/arguments.py:546-550,573-584`). The code reshapes rewards into prompt groups, subtracts each group's mean, divides by `torch.std(...) + 1e-6`, and returns both raw and normalized rewards. The example uses the default unbiased standard deviation, whose denominator is 7 for eight values.
 
-Step 7 follows `buffer.py:42-72,105-154` and `train.py:51-62`. The controller flattens the groups and packs tokens, response lengths, normalized rewards, raw rewards, truncation flags, sample indices, loss masks and available rollout log probabilities. `ray.get(actor_model.async_train(...))` waits for the training call. The matching 256-value global batch does not imply one micro-batch or one optimizer update; those internals stay outside the figure.
+Step 7 follows `buffer.py:42-72,105-154` and `train.py:51-62`. The controller flattens the groups and packs tokens, response lengths and normalized rewards. Off stage, it also packs raw rewards, truncation flags, sample indices, loss masks and available rollout log probabilities. If the first sample's metadata contains `raw_reward`, the source replaces the post-processed list with the samples' metadata values; the slide omits these additional fields and the conditional replacement. `ray.get(actor_model.async_train(...))` waits for the training call. The matching 256-value global batch does not imply one micro-batch or one optimizer update; those internals stay outside the figure.
 
 Step 8 follows `train.py:49-78`: each loop iteration waits for generation, training and then `actor_model.async_update_weights()` before continuing. There is also an initial weight update at lines 43-44. The chapter does not describe the transfer mechanism; that is Chapter 7's subject.
 
@@ -46,7 +46,7 @@ Step 8 follows `train.py:49-78`: each loop iteration waits for generation, train
 
 第 5、6 步依据 `slime/ray/buffer.py:82-103`。自带配置选择 `--advantage-estimator grpo`，没有关闭 reward 或 GRPO 标准差归一化（`run-qwen3-4B.sh:80-88`；`slime/utils/arguments.py:546-550,573-584`）。代码按 prompt 分组，减组内平均，再除以 `torch.std(...) + 1e-6`，同时返回原始分和归一化分数。示例采用默认的无偏标准差，所以 8 个值的分母是 7。
 
-第 7 步依据 `buffer.py:42-72,105-154` 和 `train.py:51-62`。控制器展开各组，打包 token、回答长度、归一化分数、原始分、截断标记、样本编号、loss mask 和已有的 rollout log probability。`ray.get(actor_model.async_train(...))` 等待训练调用完成。256 与 global batch 相等不代表只有一个 micro-batch 或一次 optimizer 更新，图不展开这些内部过程。
+第 7 步依据 `buffer.py:42-72,105-154` 和 `train.py:51-62`。控制器展开各组，打包 token、回答长度和归一化分数。图外还打包原始分、截断标记、样本编号、loss mask 和已有的 rollout log probability。如果首份样本的 metadata 含有 `raw_reward`，源码就用各样本 metadata 中的值替换后处理得到的原始分列表；舞台没有画这些额外字段或这次条件替换。`ray.get(actor_model.async_train(...))` 等待训练调用完成。256 与 global batch 相等不代表只有一个 micro-batch 或一次 optimizer 更新，图不展开这些内部过程。
 
 第 8 步依据 `train.py:49-78`：每轮依次等待生成、训练和 `actor_model.async_update_weights()`，然后才进入下一轮。第 43–44 行另有一次初始权重更新。本章不展开传输机制，那是第 7 章的内容。
 

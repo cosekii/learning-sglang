@@ -33,7 +33,34 @@
 - 本 clone 的 `node_modules` 开始时指向协调人 checkout，第一次 build 因该符号链接的缓存权限报 EPERM。只删除本目录内的符号链接并在本目录 `npm install`，package 文件无 diff，未写协调人的 checkout。
 - 本轮查看地址为 `http://localhost:4325/learning-sglang/omni/ch/06-batching-backpressure/?step=4`。收尾已用 `npx astro dev stop` 停止本轮 pid 2641；随后 4325 显示为 `ls-d-1127-104804` 的进程，未动其他 lane 的服务。
 - 审计脚本均调用 `browser.close()`。收尾 `pgrep -P 1 -fl 'headless=new.*cdp-'` 无输出；未动其他 lane 的浏览器或 Chrome 配置目录。
+---
 
+# lane k2 本轮报告 · ML Systems 06 Step 7 的 ML-60
+
+日期：2026-11-27。类型：修旧（direction 指定的下一最小单元）。本轮开始 HEAD 与 `origin/tutorials` 均为 `f577514`，工作树干净。范围只有 ML 06 Step 7 的双语 deep、双语 MDX 出处、生成 transcript、本章评分卡与进度记录、定向审计和本报告；组件已只画 `tokens · lengths · rewards`，无需改动。未改 ML 13 Step 8 的 `6fcb7d0`，未重开 ML 07，未开第 14 章，未改其他书、`.bot/memory/` 或第 1 本受保护英文原文。
+
+## 修复与 finding
+
+- **ML-60 作者修复完成，待协调固定复审，不自行销项。** 双语 deep 的「图上是什么」现在只写舞台上实际概括的 token、回答长度和归一化 `rewards`；新增「Off-stage fields · not drawn／图外字段 · 未画出」容纳 `raw_reward`、截断标记、样本编号、loss mask 和已有的 rollout log probability。
+- pinned `THUDM/slime@261ecee` 的 `buffer.py` 先由 `post_process_rewards` 建立 `raw_reward`，再只在 `samples[0].metadata` 含 `raw_reward` 时用各样本 metadata 中的值替换完整列表。双语 deep 和 MDX 都保留这个首份样本条件，没有把 `raw_reward` 写成图上必有字段，也没有把条件泛化成任意样本。
+- 定向审计发现本步符号表在 360／390 px 的既有横溢；给 `global-batch-size`、`buffer.py:118-154` 和 `actor_model.async_train` 加断行机会后，双语四种宽度的 deep 均无横溢。舞台、caption、相位和组件逻辑未改。
+- 独立 `explore` 冷读首轮 **FAIL**，指出 override 条件过宽；按首份样本门槛修正后复审 **PASS**，剩余阻塞项为 0。R1 复述：「控制器把 32 组变成 256 份训练记录，一次训练调用用它们算出新权重。」作者参考值为 R1–R5 **10/10**、机制 R6 **2/2**、原十个非视觉项 **20/20**、新内容洞 **0**；固定协调 **80/80、16/16、191/192** 基线和 ML-48 的开放状态不改写。
+
+## 硬门与证据
+
+- 最终 `npm run build`：**60 页**通过；Step 7 `readability`：**0 机械问题**；`BOOK=ml-sys node scripts/deep-check.mjs 06`、`zh-check`、英中 Step 7 的 360／390／430 px `mobile` 和 `git diff --check` 全过。所有列出的浏览器检查均针对本轮 `4512` 服务；早前误用默认 `4321` 的结果全部作废并重跑。
+- transcript 连续两次生成哈希一致：**1,551 词**，SHA-256 `f203326b17cd1c8a9d8b8538f4ed936664e1582b3e630c9505d740bef7d13cf7`。无 caption、文字出界、重叠或文本规则报告。
+- `.bot/out/ml60-step7-audit.mjs` 覆盖英中桌面、中文 390 px × direct／前步入口，共 **24 状态、18/18 个机制转变**，另覆盖双语 1440／360／390／430 px 共 **8 个 deep 状态**。普通舞台最低 **11.760416666666666 CSS px**，重叠、SVG 出界、页面或 deep 横溢和 `failures` 均为 **0**。每相都没有 `raw_reward`，末相保留实际字段概括；deep 均展开并含图外字段与首份样本条件。证据：`.bot/out/ml60-step7-audit/report.json`。
+- 桌面 deep 打开后舞台最低 **8.00564236111111 CSS px**，属于既有共享 ML-21；手机 drawer 焦点属于 ML-22，本单元未改也不声称这两项通过。
+- 代表截图：`.bot/out/ml60-step7-audit/zh-390-direct-p3.png`、`.bot/out/ml60-step7-audit/en-1440-deep.png`。读取 PNG 时工具返回「this model does not support image input」；上述结论来自构建、transcript、源码、独立冷读、DOM 和几何检查，未声称看过图片或视觉通过。
+- `docs/z2s-map.md` 没有本章 slime RL loop 的直接对应课程章；本单元只修 pinned `buffer.py` 的字段归属和条件，不新增课程范围。未跑全站回归、真实 slime 训练、rollout、GPU benchmark 或 reduced-motion 动态切换。
+
+## 剩余与清理
+
+- 剩余事项是 ML-60 的协调固定复审、同章 ML-48、共享 ML-21／22、具备图像能力的复审和主人最终视觉验收。ML 13 与其他待复审批次保持原样。
+- 本 clone 的 `node_modules` 开始时指向协调人 checkout；只删除本目录内的符号链接并在本目录 `npm ci`，package 文件无 diff，未写协调人的 checkout。
+- 本地查看地址：`http://127.0.0.1:4512/learning-sglang/ml-sys/ch/06-slime-rollout-loop/?step=7`。本轮 4512 服务已停止，端口无监听。
+- 审计脚本均调用 `browser.close()`。收尾发现一个 PPID 1 的本轮 headless Chrome，已停止并删除对应 `cdp-*`；复查 `pgrep -P 1 -fl 'headless=new.*cdp-'` 无输出，未动其他 lane 的浏览器或服务。
 ---
 
 # lane k1 本轮报告 · Omni 05 Steps 4–5 的 Omni-09 动画补完

@@ -4,6 +4,9 @@
 
 ## 本轮记录
 
+- 修旧 Learning ML Systems 第 6 章 Step 7 的 ML-60（direction 指定最小单元）：舞台与 caption 保持 `tokens · lengths · rewards`，双语 deep 把 `raw_reward` 等额外字段移入显式「图外字段 · 未画出」，并准确保留首份样本 metadata 含 `raw_reward` 时才替换后处理原始分列表的条件。双语 MDX 出处同步；符号表长标识补断行机会，清掉本步 360／390 px deep 横溢。组件无需改动，ML 13 Step 8 的 `6fcb7d0` 未回改，未重开 ML 07，未开第 14 章。教程修复待协调固定复审，不自行销项。
+- Step 7 作者参考值为 R1–R5 **10/10**、机制 R6 **2/2**、原十个非视觉项 **20/20**、0 新内容洞；独立 `explore` 首轮 FAIL 后修正首份样本条件，复审 **PASS**。`build`（60 页）、Step 7 `readability`、`deep-check 06`、`zh-check`、英中 Step 7 三宽度 `mobile`、`git diff --check` 全过；两次 transcript 均为 **1,551 词**、SHA-256 `f203326b…d13cf7`。定向审计 **24 状态、18/18 个机制转变、8 个 deep 状态**，普通舞台最低 **11.760416666666666 CSS px**，重叠、出界、deep 横溢和 `failures` 为 0。固定协调 **80/80、16/16、191/192** 基线不改写；共享 ML-21／22、视觉与整章 verdict 待协调，当前模型不能读 PNG。本轮类型：**修旧**。
+
 - 修旧 Learning ML Systems 第 12 章 Step 5 的 ML-18：同一新增共享表卡片展示 embedding 与 LM head 的前向用途，分开 target 主干与共享表的辅助 CE 零梯度边界；MTP 梯度正常计算，主 RL 仍更新 target 与共享表。双语 deep 补三组参数公式和图外 `make_viewless_tensor`／`functional_call` 实现，顺手把 ML-34 不存在的「蓝线路径」改成实际蓝色卡片和 CE 行。教程提交 `f7a492f` 待协调固定复审，不自行销项；ML-55 与 ML-63／64 的待复审批次未回改，未开第 14 章。
 - Step 5 作者参考值为 R1–R5 **10/10**、机制 R6 **2/2**、原十个非视觉项 **20/20**、0 新内容洞，两个独立 `explore` 复审均 **PASS**。rebase 后 `build`（60 页）、Step 5 `readability`、`deep-check 12`、`zh-check`、英中全章与中文 Step 5 三宽度 `mobile`、`git diff --check` 全过；两次 transcript 均为 **2,189 词**、SHA-256 `1f085248…a1e5`。定向审计 **40 个状态、32/32 个机制转变、8 个 deep 状态、39 个唯一 PNG 哈希**，最低 **10.8425625 CSS px**，重叠、出界和 `failures` 为 0。固定协调基线不改写；当前模型不能读 PNG，视觉、原 #4/#5 和整章 verdict 待协调。本轮类型：**修旧**；下一单元按本书 P1 顺序处理 **ML-20**。
 
