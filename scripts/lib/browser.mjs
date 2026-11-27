@@ -1,7 +1,7 @@
 // Headless Chrome over the DevTools protocol, using Node 22's built-in WebSocket. Shared by shot.mjs and transcript.mjs.
 // Finds the browser in this order: $CHROME, chromium / google-chrome on PATH, then the usual macOS install.
 import { spawn, execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readdirSync, rmSync, statSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -35,7 +35,9 @@ export async function launch({ port, width = 1440, height = 900 }) {
   // These flags keep every tab running at full speed, so several tabs can render at once.
   const chrome = spawn(findChrome(), ['--headless=new', '--no-sandbox', '--disable-gpu', '--hide-scrollbars',
     '--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding',
-    `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, `--window-size=${width},${height}`, 'about:blank'], { stdio: 'ignore' });
+    // Port 0 + DevToolsActivePort: a fixed port would reach a Chrome left over from a killed run, and every
+    // later run would open its tabs there and never close them (11-25: one such Chrome held 600+ tabs, 21 GB).
+    '--remote-debugging-port=0', `--user-data-dir=${profile}`, `--window-size=${width},${height}`, 'about:blank'], { stdio: 'ignore' });
   const shutdown = () => {
     chrome.once('exit', () => { try { rmSync(profile, { recursive: true, force: true }); } catch {} });
     chrome.kill();
@@ -43,7 +45,10 @@ export async function launch({ port, width = 1440, height = 900 }) {
 
   let version;
   for (let i = 0; i < 50 && !version; i++) {
-    try { version = await (await fetch(`http://127.0.0.1:${port}/json/version`)).json(); } catch { await sleep(100); }
+    try {
+      const ownPort = readFileSync(join(profile, 'DevToolsActivePort'), 'utf8').split('\n')[0];
+      version = await (await fetch(`http://127.0.0.1:${ownPort}/json/version`)).json();
+    } catch { await sleep(100); }
   }
   if (!version) { shutdown(); throw new Error('the browser did not start'); }
 
