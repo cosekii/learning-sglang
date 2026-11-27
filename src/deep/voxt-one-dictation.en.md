@@ -108,8 +108,9 @@ Public baseline: `sglang-omni@14014b833299c6158a5daa88e1e0740cf7efe606`. Paths a
 
 ### On the stage
 
-- The picture builds in order: the setup (A starts first, B later; A's result arrives late), late A's box, the `A ≠ B` check, the block with A's own route, then B's result, the `B = B` check and the write into B.
+- The picture builds in order: the setup (A starts first, B later; A's result arrives late), late A's box, the same-session check answered `A ≠ B` (no), the block with A's own route, then B's result, the same check answered `B = B` (yes) and the write into B.
 - Time order: A starts first, B starts later; A is tidying text, and its result arrives late.
+- Amber marks the accepted result: session B's boxes, `B = B` and the write into B. Blue only highlights the box that appears in the current phase.
 - First row: `A ≠ B`, so A does not write into B. A appears in its own result window and its saved results.
 - Second row: `B = B`, so B writes into its own result.
 - Both rows show B's result on the right. You can choose the result window. Text also stays there if insertion where you type fails.
@@ -118,16 +119,17 @@ Public baseline: `sglang-omni@14014b833299c6158a5daa88e1e0740cf7efe606`. Paths a
 ### The check
 
 $$
-\operatorname{write}(r,c) \iff r=c
+\operatorname{write}(r,c) \iff r=c \ \land\ \lnot\operatorname{ended}(r)
 $$
 
 | Symbol | Meaning | Where it comes from |
 |---|---|---|
 | $r$ | The `run` carrying this result, the object for one dictation | The result's session |
 | $c$ | The `run` that owns this dictation's result now | B in this step |
+| $\operatorname{ended}(r)$ | The result's `run` has already ended | The current path's completion check |
 | $\operatorname{write}(r,c)$ | Whether the result can update B's result | The current path's identity check |
 
-Equality means the same `run`, not merely the same string attached to a result.
+Equality means the same `run`, not merely the same string attached to a result, and that `run` must not have ended.
 
 ### The numbers on the stage
 
@@ -158,23 +160,24 @@ Public baseline: `sglang-omni@48ee40b2563492de95efc952a0c7470db087d8a9`. Paths a
 - The corresponding checks in `Manager.end`: `Voxt/internal/session/manager.go:378-417`.
 - History uses this run's ID: `Voxt/internal/session/run.go:446-460`.
 
-## Step 4 · Cancellation stops late results
+## Step 4 · Cancellation keeps late results undelivered
 
 > **In one line:** If you cancel A during recognition or clean-up, its late result does not appear where you type or in the result window. In this example, A's saved record says cancelled and its `Result` is empty.
 
 ### On the stage
 
-- The picture builds in order: you press cancel, the two possible late results appear (either one is enough), A is marked cancelled, the late results are stopped before the screen, and the saved record writes `cancelled` with an empty result.
+- The picture builds in order: you press cancel, A is marked cancelled, then each possible late result arrives in turn — the recognized words, then the cleaned words — meets the cancelled check and is not delivered; the screen shows nothing, and the saved record writes `cancelled` with an empty result.
 - You cancel A: this step covers cancellation only during recognition or clean-up.
-- The two boxes on the left are alternatives, not events that must happen together: a late recognition result or a late clean-up result.
-- The red box in the center marks A cancelled. Late results stop here.
+- The two late results are alternatives, staged one at a time: a late recognition result, then a late clean-up result. Each meets its own check — two separate checks, not one shared one.
+- The red box marks A cancelled before any late result arrives; every late result checks this flag first.
+- Not delivered means no insertion and nothing in the result window; the late result is still checked, and the cancellation is still recorded.
 - On the right, no late A result appears where you type or in the result window.
 - The saved record marks A cancelled and leaves `Result`, the final-result field, empty. This example has history on and a recording long enough to keep.
 
 ### The result after cancellation
 
 $$
-C_A=\mathrm{true}\quad\Longrightarrow\quad D_A=\mathrm{stopped},\qquad R_A=\mathrm{empty}
+C_A=\mathrm{true}\quad\Longrightarrow\quad D_A=\mathrm{undelivered},\qquad R_A=\mathrm{empty}
 $$
 
 | Symbol | Meaning | Where it comes from |
@@ -182,7 +185,7 @@ $$
 | $C_A$ | A's cancellation flag | `Manager.Cancel` sets `r.cancelled` |
 | $D_A$ | Delivery of the late result | The cancellation check after recognition or clean-up returns |
 | $R_A$ | `Result` in the saved record | The snapshot when cancellation ends the run |
-| $\mathrm{stopped}$ | No insertion and no final result in the result window | The outcome this step explains |
+| $\mathrm{undelivered}$ | No insertion and no final result in the result window | The outcome this step explains |
 | $\mathrm{empty}$ | The empty string; it says nothing about the recognized original text | No final result has been delivered in this example |
 
 ### The two cases on the stage
