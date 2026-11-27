@@ -128,7 +128,7 @@
   // transcribe, then its output; Step 1 shows the file, then the converter, then the decoded bytes,
   // then the size comparison; Step 2 shows the socket route, then the request, then the PCM going,
   // then the replies coming back.
-  const STEP_PHASES: Record<number, number> = { 0: 3, 1: 4, 2: 4 };
+  const STEP_PHASES: Record<number, number> = { 0: 3, 1: 4, 2: 6 };
   const PHASE_MS = 900, REST_MS = 2200;
   let phase = $state(0);
   $effect(() => {
@@ -376,14 +376,22 @@
             <text x="36" y="194" class="label">{t('PCM →', 'PCM →')}</text>
             <rect x="110" y="180" width="550" height="20" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" />
             <line x1="660" y1="190" x2="676" y2="190" stroke="var(--accent)" stroke-width="2" marker-end="url(#ft-arrow-accent)" />
-            <text x="400" y="220" text-anchor="middle" class="detail">{t(`${pcm} bytes, still being sent`, `${pcm} 字节，还在发送`)}</text>
+            {#if phase >= 5}
+              <text x="400" y="220" text-anchor="middle" class="detail">{t(`${pcm} bytes, all sent`, `${pcm} 字节，全部送完`)}</text>
+            {:else}
+              <text x="400" y="220" text-anchor="middle" class="detail">{t(`${pcm} bytes, still being sent`, `${pcm} 字节，还在发送`)}</text>
+            {/if}
           {/if}
           {#if phase >= 3}
             <text x="36" y="252" class="label">{t('← one reply per piece of speech', '← 每段讲话一行回复')}</text>
             <line x1="660" y1="258" x2="110" y2="258" stroke="var(--accent)" stroke-width="2" marker-end="url(#ft-arrow-accent)" />
-            {#each replyLines as line, i}
-              <text x="120" y={286 + i * 22} class="mono">{line}</text>
-            {/each}
+            <text x="120" y="286" class="mono">{replyLines[0]}</text>
+          {/if}
+          {#if phase >= 4}
+            <text x="120" y="308" class="mono">{replyLines[1]}</text>
+          {/if}
+          {#if phase >= 5}
+            <text x="120" y="330" class="mono">{replyLines[2]}</text>
             <text x="36" y="350" class="detail">{t('op = action · segment = one cue · done + count = finished, how many', 'op = 要做什么 · segment = 一句 · done + count = 完成和句数')}</text>
           {/if}
           <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('No network port; only your account can open it; Voxt reads none of your folders.', '没有网络端口；只有你的账户能打开；Voxt 不读你的文件夹。')}</text>
@@ -410,13 +418,21 @@
             <text x="26" y="374" class="label">PCM →</text>
             <rect x="30" y="384" width="240" height="18" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" />
             <line x1="270" y1="393" x2="282" y2="393" stroke="var(--accent)" stroke-width="2" marker-end="url(#ft-arrow-accent)" />
-            <text x="150" y="414" text-anchor="middle" class="detail">{t(`${pcm} bytes, still being sent`, `${pcm} 字节，还在发送`)}</text>
+            {#if phase >= 5}
+              <text x="150" y="414" text-anchor="middle" class="detail">{t(`${pcm} bytes, all sent`, `${pcm} 字节，全部送完`)}</text>
+            {:else}
+              <text x="150" y="414" text-anchor="middle" class="detail">{t(`${pcm} bytes, still being sent`, `${pcm} 字节，还在发送`)}</text>
+            {/if}
           {/if}
           {#if phase >= 3}
             <text x="26" y="444" class="label">← {t('one reply per piece', '每段讲话一行回复')}</text>
             <line x1="270" y1="450" x2="30" y2="450" stroke="var(--accent)" stroke-width="2" marker-end="url(#ft-arrow-accent)" />
             <text x="36" y="474" class="mono small">{replyLines[0]}</text>
+          {/if}
+          {#if phase >= 4}
             <text x="36" y="496" class="mono small">{replyLines[1]}</text>
+          {/if}
+          {#if phase >= 5}
             <text x="36" y="518" class="mono small">{replyLines[2]}</text>
             <text x="36" y="536" class="detail">{t('op = action · segment = one cue', 'op = 要做什么 · segment = 一句')}</text>
             <text x="36" y="556" class="detail">{t('done + count = finished, how many', 'done + count = 完成和句数')}</text>
