@@ -77,7 +77,7 @@
   const W = $derived(phone ? 300 : 720);
   const H = $derived((phone ? [660, 610, 700, 820, 730, 640] : [470, 450, 460, 480, 480, 560])[step]);
 
-  const PHASE_COUNTS = [4, 4, 4, 3, 3, 3];
+  const PHASE_COUNTS = [4, 4, 4, 4, 3, 3];
   const PHASE_MS = 900;
   const REST_MS = 2200;
   let phase = $state(0);
@@ -102,14 +102,14 @@
     [{ x: 15, y: 64, w: 270, h: 112 }, { x: 15, y: 64, w: 270, h: 112 }, { x: 15, y: 583, w: 270, h: 44 }, { x: 29, y: 36, w: 246, h: 14 }],
     [{ x: 15, y: 64, w: 270, h: 110 }, { x: 22, y: 241, w: 256, h: 38 }, { x: 22, y: 287, w: 256, h: 56 }, { x: 22, y: 352, w: 256, h: 13 }],
     [{ x: 24, y: 78, w: 252, h: 98 }, { x: 24, y: 78, w: 252, h: 98 }, { x: 24, y: 78, w: 252, h: 98 }, { x: 24, y: 140, w: 252, h: 38 }],
-    [{ x: 15, y: 64, w: 270, h: 170 }, { x: 15, y: 274, w: 270, h: 190 }, { x: 15, y: 274, w: 270, h: 190 }],
+    [{ x: 15, y: 274, w: 270, h: 190 }, { x: 25, y: 382, w: 250, h: 50 }, { x: 25, y: 382, w: 250, h: 50 }, { x: 25, y: 382, w: 250, h: 50 }],
     [{ x: 15, y: 64, w: 270, h: 150 }, { x: 15, y: 576, w: 270, h: 46 }, { x: 40, y: 636, w: 220, h: 26 }],
     [{ x: 15, y: 64, w: 270, h: 92 }, { x: 15, y: 166, w: 270, h: 92 }, { x: 15, y: 268, w: 270, h: 92 }],
   ] : [
     [{ x: 20, y: 72, w: 212, h: 225 }, { x: 20, y: 72, w: 212, h: 225 }, { x: 191, y: 413, w: 338, h: 28 }, { x: 239, y: 38, w: 242, h: 15 }],
     [{ x: 20, y: 74, w: 250, h: 190 }, { x: 310, y: 110, w: 380, h: 44 }, { x: 310, y: 158, w: 380, h: 56 }, { x: 310, y: 219, w: 380, h: 18 }],
     [{ x: 44, y: 84, w: 632, h: 92 }, { x: 44, y: 84, w: 632, h: 92 }, { x: 44, y: 84, w: 632, h: 92 }, { x: 44, y: 152, w: 632, h: 26 }],
-    [{ x: 20, y: 72, w: 300, h: 190 }, { x: 356, y: 72, w: 346, h: 190 }, { x: 356, y: 72, w: 346, h: 190 }],
+    [{ x: 356, y: 72, w: 346, h: 190 }, { x: 370, y: 184, w: 318, h: 50 }, { x: 370, y: 184, w: 318, h: 50 }, { x: 370, y: 184, w: 318, h: 50 }],
     [{ x: 20, y: 72, w: 330, h: 170 }, { x: 460, y: 334, w: 224, h: 66 }, { x: 120, y: 414, w: 480, h: 28 }],
     [{ x: 30, y: 110, w: 660, h: 60 }, { x: 30, y: 182, w: 660, h: 60 }, { x: 30, y: 254, w: 660, h: 60 }],
   ])[s];
@@ -354,8 +354,8 @@
           <text x="529" y="122" text-anchor="middle" class="mono">qwen3_asr_server</text>
           <text x="529" y="148" text-anchor="middle" class="detail">{t('loads the model from the folder', '从这个文件夹读模型')}</text>
           <text x="529" y="172" text-anchor="middle" class="detail">{t('VAD has its own small server', 'VAD 有自己的小服务器')}</text>
-          <text x="529" y="196" text-anchor="middle" class="label">{phase === 0 ? t('starting… → ready', '启动中… → 就绪') : phase === 1 ? t(`ready · idle ${VOXT_SERVER_IDLE_MINUTES}/${VOXT_SERVER_IDLE_MINUTES} min`, `就绪 · 空闲 ${VOXT_SERVER_IDLE_MINUTES}/${VOXT_SERVER_IDLE_MINUTES} 分钟`) : t('stop request sent', '已发停止请求')}</text>
-          <text x="529" y="222" text-anchor="middle" class="detail">{phase === 0 ? t('files stay on disk', '文件留在磁盘') : phase === 1 ? t('next use → restart', '下次用 → 再启动') : t('process exits → memory freed', '进程退出 → 内存释放')}</text>
+          <text x="529" y="196" text-anchor="middle" class="label">{phase === 0 ? t('starting… → ready', '启动中… → 就绪') : phase === 1 ? t(`ready · idle ${VOXT_SERVER_IDLE_MINUTES}/${VOXT_SERVER_IDLE_MINUTES} min`, `就绪 · 空闲 ${VOXT_SERVER_IDLE_MINUTES}/${VOXT_SERVER_IDLE_MINUTES} 分钟`) : phase === 2 ? t('stop request sent', '已发停止请求') : t('process exits → memory freed', '进程退出 → 内存释放')}</text>
+          <text x="529" y="222" text-anchor="middle" class="detail">{phase === 0 ? t('files stay on disk', '文件留在磁盘') : phase === 1 ? t('next use → restart', '下次用 → 再启动') : phase === 2 ? t('the process still runs', '进程还在运行') : t('files stay on disk', '文件留在磁盘')}</text>
 
           <rect x="20" y="284" width="680" height="110" rx="10" fill="var(--bg)" stroke="var(--line)" />
           <text x="40" y="308" class="label">{t('DELETE MODEL FILES', '删除模型文件')}</text>
@@ -381,8 +381,8 @@
           <text x="150" y="322" text-anchor="middle" class="mono">qwen3_asr_server</text>
           <text x="150" y="346" text-anchor="middle" class="detail">{t('loads the model from the folder', '从文件夹读模型')}</text>
           <text x="150" y="368" text-anchor="middle" class="detail">{t('VAD has its own small server', 'VAD 有自己的小服务器')}</text>
-          <text x="150" y="394" text-anchor="middle" class="label">{phase === 0 ? t('starting… → ready', '启动中… → 就绪') : phase === 1 ? t(`ready · idle ${VOXT_SERVER_IDLE_MINUTES}/${VOXT_SERVER_IDLE_MINUTES} min`, `就绪 · 空闲 ${VOXT_SERVER_IDLE_MINUTES}/${VOXT_SERVER_IDLE_MINUTES} 分钟`) : t('stop request sent', '已发停止请求')}</text>
-          <text x="150" y="420" text-anchor="middle" class="detail">{phase === 0 ? t('files stay on disk', '文件留在磁盘') : phase === 1 ? t('next use → restart', '下次用 → 再启动') : t('process exits → memory freed', '进程退出 → 内存释放')}</text>
+          <text x="150" y="394" text-anchor="middle" class="label">{phase === 0 ? t('starting… → ready', '启动中… → 就绪') : phase === 1 ? t(`ready · idle ${VOXT_SERVER_IDLE_MINUTES}/${VOXT_SERVER_IDLE_MINUTES} min`, `就绪 · 空闲 ${VOXT_SERVER_IDLE_MINUTES}/${VOXT_SERVER_IDLE_MINUTES} 分钟`) : phase === 2 ? t('stop request sent', '已发停止请求') : t('process exits → memory freed', '进程退出 → 内存释放')}</text>
+          <text x="150" y="420" text-anchor="middle" class="detail">{phase === 0 ? t('files stay on disk', '文件留在磁盘') : phase === 1 ? t('next use → restart', '下次用 → 再启动') : phase === 2 ? t('the process still runs', '进程还在运行') : t('files stay on disk', '文件留在磁盘')}</text>
 
           <rect x="15" y="486" width="270" height="200" rx="10" fill="var(--bg)" stroke="var(--line)" />
           <text x="30" y="510" class="label">{t('DELETE MODEL FILES', '删除模型文件')}</text>
@@ -553,7 +553,7 @@
       {#if focus}
         <rect class="motion-focus" x={focus.x - 4} y={focus.y - 4} width={focus.w + 8} height={focus.h + 8} rx="10" fill="none" stroke="var(--eos)" stroke-width="3" />
       {/if}
-      <LoopProgress ms={lapMs} {lap} x={phone ? 236 : 640} y={phone ? (step === 0 ? H - 94 : H - 44) : 20} />
+      <LoopProgress ms={lapMs} {lap} x={phone ? 236 : 640} y={phone ? (step === 0 ? H - 94 : step === 3 ? H - 60 : H - 44) : 20} />
     </svg>
   </div>
   <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh}
