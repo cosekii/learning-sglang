@@ -37,6 +37,33 @@
 
 ---
 
+# lane d 本轮报告 · Voxt 10 第 4 步动画可见性与三处文本返工
+
+日期：2026-11-27。类型：修旧。范围只含 Inside Voxt 第 10 章 `file-transcription`（`FileTranscription.svelte`、双语深入讲解、transcript）、本章评分卡、`memory/progress.md`、逐相审计脚本与结果和本报告；未改 Voxt 08／11、其他书、第 1 本受保护英文原文或 `.bot/memory/`。
+
+## 单元与复审跟进
+
+- direction（03:04）的 lane d 单元：继续 Voxt 10 `FileTranscription` 最小单元。本目录是干净 clone，上一轮未提交的工作不在其中；本轮按协调 review.md 对固定 `04ded697` 的四项开放 finding 重做：第 3 步看不见的 RAF、第 9 步英文公式与 stdout 分支矛盾、中文第 9／11 步缺公式／符号表／代入、第 11 步 ARIA 仍问「模型文件和应用更新」。
+- **第 4 步动画可见性**：clock 的 `$effect` 从 `step === 2` 移到波形所在的 `step === 3`（第 4 步），删掉分支内恒假的 `step === 2` 守卫；逐相审计另发现 `(now - t0) / SLOW` 的旧错让播放头只扫半程就被 lap 重置，改为 `* SLOW`，5 s 扫完 0–8 s、rest 1.4 s 循环；进入 2.90–3.35 s 安静窗时窗口加框。手机波形补上安静窗小框与 quietNow 高亮（旧版手机没有可高亮的对象），手机 loops 标签从 y=18 移到 y=62（审计检出与标题重叠）。
+- **第 9 步英文深入讲解**：公式改三分支（任一句失败无输出／全部成功且 `-o -` 或无 `-o` 写标准输出／全部成功且 `-o FILE` 一次 WriteFile），符号表补 `-o`（默认 `-`，`transcribe_cli.go:43`），代入表补 stdout 行；正文把 stdout 分支 `:94-97` 与 WriteFile `:98-101` 分开引，按 pinned `sglang-omni@3a31bd72e034db37ce5115a03dd4827b449683be` 核对。
+- **中文第 9／11 步**：补齐与英文一致的公式、符号表和代入（第 9 步含 stdout 行；第 11 步 `provider = model(Transcribe)` 与 256,000 B 代入）。
+- **第 11 步 ARIA**：收窄为「下一章问这些模型文件怎样到达这台 Mac」，与 caption、MDX、双语深入讲解一致。
+- **本轮修复的 review finding**：固定 `04ded697` 复审的 4 项开放内容 finding（上述），全部列为待复审；评分卡按该 verdict 的 **110/110、217/220、44/44、261/264、机制 0/22** 重记，不自行记 GO，其余十步机制动画仍是硬门。
+
+## 验证
+
+- `npm run build`：60 页通过。`BOOK=voxt ONLY=10` 的 `transcript` 连续两次逐字一致，相对 pinned 只多第 4 步一行 `loops`；`readability` 0 机械问题；`deep-check 10` 通过；`zh-check` all clear；英中本章与中文第 4 步 360／390／430 px `mobile` 均无布局断裂。全部检查连本 clone 的 4488 服务。
+- 逐相审计 `.bot/out/voxt10-step4-audit.mjs`（可重跑）：英中桌面 1440×900 与英中 390 px 共 4 组 × 40 次采样，核对 hydration、counter（`04 / 11`）、viewBox、lang；第 3 步无播放头、无 loops 标签；第 4 步播放头 40 次采样持续前进并扫过 6500 ms 以上，安静窗高亮只出现在窗口内；桌面可见 SVG 最小字号 ≥10 CSS px，文字重叠与 SVG 出界均为 0。12 张 PNG 与 `report.json` 在 `.bot/out/voxt10-step4-audit/`。
+- 本模型无图像输入，未读 PNG；以上为构建、脚本、DOM 与几何证据，不声称视觉通过。未跑全站回归、真实 Voxt、音频文件或语音识别。
+- 本 clone 的 `node_modules` 原是指向协调人 checkout 的符号链接；已只删本目录内符号链接并本地 `npm install`，package 文件无 diff，未写协调人 checkout。
+
+## 剩余与本地查看
+
+- 剩余：Voxt 10 等协调固定复审（第 4 步 R6 重评、第 9 步公式与中文结构核销、其余十步机制动画硬门）；随后按 direction 处理 Voxt 12。Voxt 11 Step 3／4 与性能公开事实增量继续冻结待审。
+- 本地章节地址（查看前在本目录运行 `npx astro dev --background --port 4488`）：`http://localhost:4488/learning-sglang/voxt/ch/file-transcription/?step=4`（播放头与安静窗高亮）、`?step=9`（按 `D` 打开深入讲解看三分支公式）。本轮 4488 dev server 已关闭，未启动持久浏览器。
+
+---
+
 # lane k1 本轮报告 · Omni 11／14 按协调要求继续冻结
 
 日期：2026-11-27。类型：等待固定复审。范围只有本报告；未改教程、transcript、评分卡、`.bot/memory/`、其他书、其他 lane 或第 1 本受保护英文原文。
