@@ -44,8 +44,8 @@
       { en: '16 bytes = 2 + 2 + 3 × 4 per value', zh: '每个数 16 字节 = 2 + 2 + 3 × 4' },
     ],
   }, {
-    caption: `FSDP2 shards every tensor across the same 8 ranks. One rank per GPU leaves ${FSDP_SHARD_STATE_PER_GPU_GB} GB of saved training state each.`,
-    captionZh: `FSDP2 把每个张量分给 8 个 rank。每卡一个 rank，训练状态共 ${FSDP_SHARD_STATE_PER_GPU_GB} GB。`,
+    caption: `FSDP2 shards every parameter tensor across the same 8 ranks. One rank per GPU leaves ${FSDP_SHARD_STATE_PER_GPU_GB} GB of saved training state each.`,
+    captionZh: `FSDP2 把每个参数张量分给 8 个 rank。每卡一个 rank，训练状态共 ${FSDP_SHARD_STATE_PER_GPU_GB} GB。`,
     title: 'FSDP2 keeps one shard per rank', titleZh: 'FSDP2 让每个 rank 各留一个分片',
     subtitle: 'DTensor = logical tensor (whole table) + placement (split rule) + local shard (rank\'s part)',
     subtitleZh: 'DTensor = 逻辑张量（完整数值表）+ placement（拆分规则）+ 本地分片（rank 的部分）',
