@@ -116,3 +116,46 @@ This step does not measure buffer bytes or cover temporary workspaces, multimoda
 ### Next
 
 The next step records one graph and shows which buffers the recording uses.
+
+## Step 3 · Capture records the work
+
+**One sentence.** Capture runs and records GPU steps with fixed input and output buffers, then keeps both the recorded graph and its buffers for replay.
+
+### What the diagram shows
+
+- `G.input` receives the example input tokens. The GPU steps run, and `G.output` receives the output token.
+- At the same time, the right panel records the ordered GPU steps as one graph. The recording is not a saved copy of the output token.
+- `G.input` and `G.output` keep the same identities and positions after capture. They remain allocated so a later replay can reuse them.
+- This step follows one schematic graph. The first book's Ch. 11 Steps 2–4 explains why a real server captures graphs for selected batch shapes.
+
+### Formula and symbols
+
+Let $G=(I,O)$ be the graph's input and output buffers, $F$ be the ordered GPU work and $\Gamma$ be the recorded graph:
+
+$$\Gamma=\operatorname{record}(F,I,O)$$
+
+| Symbol | Meaning | Origin |
+|---|---|---|
+| $I$ | Fixed input buffer, `G.input` on stage | Capture input allocation |
+| $O$ | Fixed output buffer, `G.output` on stage | Graph output storage |
+| $F$ | Ordered GPU steps | The work being captured |
+| $\Gamma$ | Recorded CUDA Graph | Saved for the next step's replay |
+
+### Substitute the diagram's numbers
+
+This example records one graph, so its capture count is 1. Step 2's budget boundary still holds: $G\le11.7\ \mathrm{GB}$, with no measured split between $I$ and $O$. The token cards are schematic and carry no byte count.
+
+### Source and scope
+
+During capture, `CudaGraphRunner` uses allocated input buffers and records the model's GPU operations. The graph and its buffers persist for subsequent replay. This step does not claim that capture caches a request's answer; replay still needs new input.
+
+Sources use `sglang@4fa3482`:
+
+- [Capture input buffers and capture entry: `python/sglang/srt/model_executor/cuda_graph_runner.py:624-655,801-802`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L624-L655).
+- [Graph capture over model execution: `python/sglang/srt/model_executor/cuda_graph_runner.py:1112-1222`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L1112-L1222).
+
+The chapter does not enumerate every captured operation or every batch-shape rung.
+
+### Next
+
+The next step replays the same graph twice and overwrites the same buffers with new input and output.

@@ -116,3 +116,46 @@ $$M+K+R\approx60+6.3+11.7=78\ \mathrm{GB}$$
 ### 接下来
 
 下一步记录一张 graph，看这次记录使用哪些缓冲。
+
+## 第 3 步 · capture 记录计算
+
+**一句话。** capture 用固定的输入输出缓冲执行并记录 GPU 步骤，然后把记录好的 graph 和这些缓冲都留给重放。
+
+### 图上是什么
+
+- `G.input` 收到本例的输入 token。GPU 步骤执行后，`G.output` 收到输出 token。
+- 同时，右栏按顺序把 GPU 步骤记录成一张 graph。记录的是计算步骤，不是把这次输出 token 当答案保存下来。
+- capture 后，`G.input` 和 `G.output` 的名字与位置都不变。它们继续占用分配的空间，供之后的 replay 复用。
+- 本步只跟随一张示意 graph。第 1 本 Ch. 11 Steps 2–4 已讲真实服务为什么按选定的 batch 形状分别 capture。
+
+### 公式与符号
+
+设 $G=(I,O)$ 是 graph 的输入输出缓冲，$F$ 是有序的 GPU 计算，$\Gamma$ 是记录好的 graph：
+
+$$\Gamma=\operatorname{record}(F,I,O)$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $I$ | 固定输入缓冲，图上的 `G.input` | capture 的输入分配 |
+| $O$ | 固定输出缓冲，图上的 `G.output` | graph 的输出存储 |
+| $F$ | 按顺序排列的 GPU 步骤 | 本次被记录的工作 |
+| $\Gamma$ | 记录好的 CUDA Graph | 留给下一步 replay |
+
+### 代入图上的数
+
+本例只记录一张 graph，所以 capture 次数是 1。第 2 步的预算边界仍然成立：$G\le11.7\ \mathrm{GB}$，但没有 $I$、$O$ 的分项实测值。token 卡片只是示意，不带字节数。
+
+### 源码与边界
+
+capture 时，`CudaGraphRunner` 使用已经分配的输入缓冲，记录模型执行的 GPU 操作。graph 和缓冲随后保留，供 replay 使用。本步不把 capture 说成缓存某个请求的答案；replay 仍需写入新输入。
+
+以下来源位于 `sglang@4fa3482`：
+
+- [capture 输入缓冲与入口：`python/sglang/srt/model_executor/cuda_graph_runner.py:624-655,801-802`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L624-L655)。
+- [对模型执行进行 graph capture：`python/sglang/srt/model_executor/cuda_graph_runner.py:1112-1222`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L1112-L1222)。
+
+本章不逐项展开所有被记录的操作，也不列出全部 batch 形状档位。
+
+### 接下来
+
+下一步把同一张 graph 重放两次，用新输入输出覆盖同一组缓冲。

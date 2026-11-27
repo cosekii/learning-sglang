@@ -15,6 +15,9 @@
   }, {
     caption: `Startup loads the model, creates the KV pool, then allocates graph buffers. The buffers use headroom.`,
     captionZh: `启动先装模型，再建 KV pool，最后分配 graph 缓冲。缓冲使用动态余量。`,
+  }, {
+    caption: `Capture records GPU steps once. It uses fixed input and output buffers that remain allocated.`,
+    captionZh: `capture 把 GPU 步骤记录一次。它使用固定的输入输出缓冲，缓冲一直保留。`,
   }];
   let step = $state(0);
   $effect(() => {
@@ -37,7 +40,7 @@
       motion.removeEventListener('change', updateMotion);
     };
   });
-  const PHASE_COUNTS = [6, 5];
+  const PHASE_COUNTS = [6, 5, 5];
   const PHASE_MS = 1000, REST_MS = 2600;
   let phase = $state(0);
   let lap = $state(0), lapMs = $state(0);
@@ -226,8 +229,49 @@
           <text x="150" y="452" text-anchor="middle" class="formula budget" opacity={phase >= 3 ? 1 : 0}>G ⊂ {DEMO_DYNAMIC_HIGH_GB} GB · G = ? GB</text>
           <text x="150" y="494" text-anchor="middle" class="label" opacity={phase >= 4 ? 1 : 0}>{t('model → KV pool → graph buffers', '模型 → KV pool → graph 缓冲')}</text>
         {/if}
+      {:else if step === 2}
+        {#if !phone}
+          <text x="40" y="28" class="title">{t('Capture once · fixed input and output buffers', '记录一次 · 固定的输入输出缓冲')}</text>
+          <rect x="40" y="75" width="190" height="75" rx="10" fill="var(--bg)" stroke="var(--fg)" />
+          <text x="135" y="105" text-anchor="middle" class="fraction">G.input</text>
+          <text x="135" y="135" text-anchor="middle" class="label" opacity={phase >= 1 ? 1 : 0}>{t('input tokens', '输入 token')}</text>
+          <path d="M235 112 h65" stroke="var(--fg)" stroke-width="3" opacity={phase >= 2 ? 1 : 0} /><path d="M305 112 l-10 -6 v12 z" fill="var(--fg)" opacity={phase >= 2 ? 1 : 0} />
+          <rect x="310" y="75" width="160" height="75" rx="10" fill={phase >= 2 ? 'var(--panel)' : 'var(--bg)'} stroke={phase >= 2 ? 'var(--fg)' : 'var(--line)'} stroke-width={phase >= 2 ? 3 : 1} />
+          <text x="390" y="105" text-anchor="middle" class="fraction">GPU work</text>
+          <text x="390" y="135" text-anchor="middle" class="label">{t('steps run once', '步骤执行一次')}</text>
+          <path d="M310 150 L235 260" stroke="var(--fg)" stroke-width="3" opacity={phase >= 3 ? 1 : 0} /><path d="M230 267 l1 -13 11 5 z" fill="var(--fg)" opacity={phase >= 3 ? 1 : 0} />
+          <rect x="40" y="240" width="190" height="75" rx="10" fill="var(--bg)" stroke="var(--fg)" />
+          <text x="135" y="270" text-anchor="middle" class="fraction">G.output</text>
+          <text x="135" y="300" text-anchor="middle" class="label" opacity={phase >= 3 ? 1 : 0}>{t('output token', '输出 token')}</text>
+          <rect x="520" y="75" width="160" height="240" rx="10" fill="var(--bg)" stroke={phase >= 2 ? 'var(--fg)' : 'var(--line)'} stroke-width={phase >= 2 ? 3 : 1} />
+          <text x="600" y="105" text-anchor="middle" class="fraction">{t('recorded graph', '记录的 graph')}</text>
+          <g opacity={phase >= 2 ? 1 : 0} style="transition: opacity 300ms">
+            <text x="545" y="150" class="label">1 · GPU step</text>
+            <text x="545" y="180" class="label">2 · GPU step</text>
+            <text x="545" y="210" class="label">…</text>
+          </g>
+          <text x="600" y="270" text-anchor="middle" class="label" opacity={phase >= 3 ? 1 : 0}>{t('saved for replay', '保存，等待重放')}</text>
+          <text x="360" y="365" text-anchor="middle" class="formula budget" opacity={phase >= 4 ? 1 : 0}>capture = 1 · G {t('stays allocated', '保留分配')}</text>
+        {:else}
+          <text x="20" y="25" class="title">{t('Capture once', '记录一次')}</text>
+          <rect x="20" y="50" width="260" height="65" rx="10" fill="var(--bg)" stroke="var(--fg)" />
+          <text x="150" y="77" text-anchor="middle" class="fraction">G.input</text>
+          <text x="150" y="103" text-anchor="middle" class="label" opacity={phase >= 1 ? 1 : 0}>{t('input tokens', '输入 token')}</text>
+          <path d="M150 120 v25" stroke="var(--fg)" stroke-width="3" opacity={phase >= 2 ? 1 : 0} /><path d="M150 150 l-6 -10 h12 z" fill="var(--fg)" opacity={phase >= 2 ? 1 : 0} />
+          <rect x="20" y="155" width="260" height="65" rx="10" fill={phase >= 2 ? 'var(--panel)' : 'var(--bg)'} stroke={phase >= 2 ? 'var(--fg)' : 'var(--line)'} stroke-width={phase >= 2 ? 3 : 1} />
+          <text x="150" y="182" text-anchor="middle" class="fraction">GPU work</text>
+          <text x="150" y="208" text-anchor="middle" class="label">{t('steps run and are recorded', '步骤执行并被记录')}</text>
+          <path d="M150 225 v25" stroke="var(--fg)" stroke-width="3" opacity={phase >= 3 ? 1 : 0} /><path d="M150 255 l-6 -10 h12 z" fill="var(--fg)" opacity={phase >= 3 ? 1 : 0} />
+          <rect x="20" y="260" width="260" height="65" rx="10" fill="var(--bg)" stroke="var(--fg)" />
+          <text x="150" y="287" text-anchor="middle" class="fraction">G.output</text>
+          <text x="150" y="313" text-anchor="middle" class="label" opacity={phase >= 3 ? 1 : 0}>{t('output token', '输出 token')}</text>
+          <rect x="20" y="350" width="260" height="75" rx="10" fill="var(--bg)" stroke={phase >= 2 ? 'var(--fg)' : 'var(--line)'} />
+          <text x="150" y="377" text-anchor="middle" class="fraction">{t('recorded graph · saved for replay', '记录的 graph · 保存待重放')}</text>
+          <text x="150" y="405" text-anchor="middle" class="label" opacity={phase >= 2 ? 1 : 0}>GPU step 1 → GPU step 2 → …</text>
+          <text x="150" y="480" text-anchor="middle" class="formula budget" opacity={phase >= 4 ? 1 : 0}>capture = 1 · G {t('stays allocated', '保留分配')}</text>
+        {/if}
       {/if}
-      <text x={W / 2} y={H - 7} text-anchor="middle" class="footnote">{step === 0 ? t('Rounded example; headroom is a reserve.', '约数例子；动态余量只是预留。') : t('G has no measured GB value in this example.', '本例没有 G 的实测 GB 数。')}</text>
+      <text x={W / 2} y={H - 7} text-anchor="middle" class="footnote">{step === 0 ? t('Rounded example; headroom is a reserve.', '约数例子；动态余量只是预留。') : step === 1 ? t('G has no measured GB value in this example.', '本例没有 G 的实测 GB 数。') : t('One schematic graph; real capture depends on batch shape.', '示意一张 graph；实际 capture 随 batch 形状而变。')}</text>
     </svg>
   </div>
   <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh}
