@@ -265,7 +265,8 @@
       foot: 'Resize changes shape only; old values stay gone.', footZh: '调整形状只改外形，旧值不会回来。',
       legend: 'Orange = update · blue = Marlin-ready', legendZh: '橙 = 更新 · 蓝 = Marlin 可用',
       formulas: [
-        { en: 'Resize changes shape · new values overwrite it', zh: '调整形状只改外形 · 新值覆盖它' },
+        { en: 'Resize changes shape only', zh: '调整形状只改外形' },
+        { en: 'New values overwrite it', zh: '新值随后覆盖它' },
         { en: 'Step 6 packs fields · Step 7 reorders for Marlin', zh: '第 6 步打包字段 · 第 7 步按 Marlin 重排' },
         { en: '64 scales before: s0, s1, …, s63', zh: '64 个 scale 重排前：s0, s1, …, s63' },
         { en: 'after: s0,s8,…,s56 | s1,s9,…,s57', zh: '重排后：s0,s8,…,s56 | s1,s9,…,s57' },
