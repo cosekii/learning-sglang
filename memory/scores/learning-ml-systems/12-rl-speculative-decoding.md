@@ -1,5 +1,15 @@
 # 第 12 章评分卡 · 协调内容返工通过
 
+## 2026-11-26 ML-12 静态机制返工
+
+- 八步加入 `[3,4,5,5,4,5,4,4]` 个相位，逐步机制变化数为 **2、3、4、4、3、4、3、3**。在线／冻结对照、hidden state、token 左移与 embedding、二移标签、detach、两次 mask 移位与相乘、rollout 吞吐和训练秒数依次形成。
+- 本轮作者 DOM 机制分为 **R6 16/16**。R1–R5 沿用协调 **80/80** 内容基线，不重打已关闭内容项；原十二项总分和协调 verdict 留待复审，不记 `complete-under-EVAL`。ML-18 的 shared tables 与 ML-20 的 draft-pair 接缝仍是独立开放内容项，本轮不销项。
+- transcript **2,115 词**，覆盖原有机制，没有靠新增范围凑厚度。本轮只加动画并压缩桌面纵向间距；caption、双语深入讲解和章末 draft-pair 问题未改。
+- 证据目录 `/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-w32gl41i/opencode/ml12-phases/` 保存 **34 个**桌面相位 PNG 和可见文本签名；每个相位都有机制对象变化，文字重叠、SVG 出界均为 **0**，最低 **10.8425625 CSS px**。当前模型无图像输入，未把 PNG 记为已读图或视觉通过。
+- `build`（60 页）、默认 transcript 连续两次逐字一致（SHA-256 `9b1ef58701ad68630fa39a4e8bedb10248d1b4595de8af939ee1f5f073ff9141`）、8 步 readability、英中全章及中文逐步三宽度 mobile、`deep-check 12`、`zh-check`、`git diff --check` 均通过。未跑全站回归、真实 RL 训练、rollout、GPU benchmark 或 reduced-motion 动态切换。
+
+## 协调内容基线
+
 日期：2026-11-26。协调人对 `ba32bf7…2476dcb` 的复审结果为 R1–R5 **80/80**、非视觉原项 **160/160**、静态 R6 **16/16**、原 #4／#5 **32/32**，原十二项 **192/192**。双语公式、符号表和梯度说明已统一使用 `θ_detached`，只指辅助 CE 分支上被 detach 的 target 主干参数；未决内容洞为 0。静态场景记录不满足当前 EVAL 第 6 节的动画硬门，也不替代主人的最终视觉验收。
 
 材料：协调人在固定 `720a6f7` 快照读取英中第 5 步深入讲解打开图 2 张，公式和符号完整可读。证据目录为 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-coord-20261126-1202-all.2ptRHD/`。

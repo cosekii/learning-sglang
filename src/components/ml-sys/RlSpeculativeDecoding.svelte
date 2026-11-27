@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import StepControls from '../StepControls.svelte';
+  import LoopProgress from '../LoopProgress.svelte';
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
@@ -298,55 +299,93 @@
     if (q >= 1 && q <= steps.length) step = q - 1;
   });
   let phone = $state(false);
+  let reduceMotion = $state(false);
   onMount(() => {
     const query = window.matchMedia('(max-width: 600px)');
+    const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
     const update = () => (phone = query.matches);
+    const updateMotion = () => (reduceMotion = motion.matches);
     update();
+    updateMotion();
     query.addEventListener('change', update);
-    return () => query.removeEventListener('change', update);
+    motion.addEventListener('change', updateMotion);
+    return () => {
+      query.removeEventListener('change', update);
+      motion.removeEventListener('change', updateMotion);
+    };
+  });
+  const PHASE_COUNTS = [3, 4, 5, 5, 4, 5, 4, 4];
+  const PHASE_MS = 1000, REST_MS = 2800;
+  let phase = $state(0);
+  let lap = $state(0), lapMs = $state(0);
+  const nextLap = (ms: number) => untrack(() => { lapMs = ms; lap++; });
+  $effect(() => {
+    const count = PHASE_COUNTS[step];
+    phase = 0;
+    if (reduceMotion) { phase = count - 1; return; }
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const run = () => {
+      timers.length = 0;
+      phase = 0;
+      for (let i = 1; i < count; i++) timers.push(setTimeout(() => (phase = i), i * PHASE_MS));
+      const ms = count * PHASE_MS + REST_MS;
+      timers.push(setTimeout(run, ms));
+      nextLap(ms);
+    };
+    run();
+    return () => timers.forEach(clearTimeout);
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
   const start = 80;
   const formulas = $derived(phone && cur.mobile?.formulas ? cur.mobile.formulas : cur.formulas);
-  const formulaStart = 315;
-  const legendY = $derived(phone ? start + cur.nodes.length * 96 + 15 + formulas.length * 27 : formulaStart + (cur.formulas.length - 1) * 29 + 45);
-  const H = $derived(phone ? legendY + 55 : Math.max(cur.desktopH ?? 500, legendY + 55));
+  const formulaStart = 290;
+  const legendY = $derived(phone ? start + cur.nodes.length * 96 + 15 + formulas.length * 27 : formulaStart + (cur.formulas.length - 1) * 18 + 32);
+  const H = $derived(phone ? legendY + 55 : Math.max(500, legendY + 24));
   const nodeW = (count: number) => count === 2 ? 260 : count === 3 ? 200 : 155;
   const nodeX = (i: number, count: number) => count === 2 ? 65 + i * 330 : count === 3 ? 35 + i * 225 : 25 + i * 175;
 </script>
 
-<figure class="viz">
+<figure class="viz" data-animation-step={step} data-animation-phase={phase} data-animation-final-phase={PHASE_COUNTS[step] - 1}>
   <div class="canvas">
     <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={$lang === 'zh' ? cur.captionZh : cur.caption}>
+      {#if !reduceMotion}<LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={4} />{/if}
       <defs><marker id="rl-spec-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--line)" /></marker></defs>
       <text x={phone ? 18 : 36} y="30" class="title">{phone ? t(cur.mobile?.title ?? cur.title, cur.mobile?.titleZh ?? cur.titleZh) : t(cur.title, cur.titleZh)}</text>
       <text x={phone ? 18 : 36} y="55" class="label">{phone ? t(cur.mobile?.subtitle ?? cur.subtitle, cur.mobile?.subtitleZh ?? cur.subtitleZh) : t(cur.subtitle, cur.subtitleZh)}</text>
       {#if phone}
         {#each cur.nodes as node, i}
           {@const y = start + i * 96}
-          <rect x="25" y={y} width="250" height="80" rx="11" fill={fill(node.tone)} stroke={stroke(node.tone)} stroke-dasharray={node.dashed ? '5 4' : '0'} />
-          <text x="150" y={y + 20} text-anchor="middle" class="small strong">{t(node.title, node.titleZh)}</text>
-          <text x="150" y={y + 43} text-anchor="middle" class={node.compact ? 'small' : 'result'}>{t(node.result, node.resultZh)}</text>
-          <text x="150" y={y + 64} text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
-          {#if node.bar !== undefined}<rect x="35" y={y + 72} width="230" height="5" rx="2" fill="var(--bg)" /><rect x="35" y={y + 72} width={230 * node.bar} height="5" rx="2" fill={stroke(node.tone)} />{/if}
-          {#if cur.flow && i < cur.nodes.length - 1}<line x1="150" y1={y + 80} x2="150" y2={y + 92} stroke="var(--line)" stroke-width="2.5" marker-end="url(#rl-spec-arrow)" />{/if}
+          <g opacity={phase >= i ? 1 : 0}>
+            <rect x="25" y={y} width="250" height="80" rx="11" fill={fill(node.tone)} stroke={stroke(node.tone)} stroke-dasharray={node.dashed ? '5 4' : '0'} />
+            <text x="150" y={y + 20} text-anchor="middle" class="small strong">{t(node.title, node.titleZh)}</text>
+            <text x="150" y={y + 43} text-anchor="middle" class={node.compact ? 'small' : 'result'}>{t(node.result, node.resultZh)}</text>
+            <text x="150" y={y + 64} text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
+            {#if node.bar !== undefined}<rect x="35" y={y + 72} width="230" height="5" rx="2" fill="var(--bg)" /><rect x="35" y={y + 72} width={230 * node.bar} height="5" rx="2" fill={stroke(node.tone)} />{/if}
+            {#if cur.flow && i < cur.nodes.length - 1}<line x1="150" y1={y + 80} x2="150" y2={y + 92} stroke="var(--line)" stroke-width="2.5" marker-end="url(#rl-spec-arrow)" opacity={phase > i ? 1 : 0} />{/if}
+          </g>
         {/each}
-        {#each formulas as line, i}<text x="150" y={start + cur.nodes.length * 96 + 15 + i * 27} text-anchor="middle" class={i === 0 ? 'result' : 'small'}>{t(line.en, line.zh)}</text>{/each}
-        <text x="150" y={legendY} text-anchor="middle" class="small">{t(cur.mobile?.legend ?? cur.legend, cur.mobile?.legendZh ?? cur.legendZh)}</text>
+        <g opacity={phase >= PHASE_COUNTS[step] - 1 ? 1 : 0}>
+          {#each formulas as line, i}<text x="150" y={start + cur.nodes.length * 96 + 15 + i * 27} text-anchor="middle" class={i === 0 ? 'result' : 'small'}>{t(line.en, line.zh)}</text>{/each}
+          <text x="150" y={legendY} text-anchor="middle" class="small">{t(cur.mobile?.legend ?? cur.legend, cur.mobile?.legendZh ?? cur.legendZh)}</text>
+        </g>
       {:else}
         {#each cur.nodes as node, i}
           {@const w = nodeW(cur.nodes.length)}
           {@const x = nodeX(i, cur.nodes.length)}
-          <rect x={x} y="105" width={w} height="160" rx="12" fill={fill(node.tone)} stroke={stroke(node.tone)} stroke-dasharray={node.dashed ? '5 4' : '0'} />
-          <text x={x + w / 2} y="137" text-anchor="middle" class="small strong">{t(node.title, node.titleZh)}</text>
-          <text x={x + w / 2} y="180" text-anchor="middle" class={node.compact ? 'small' : 'result'}>{t(node.result, node.resultZh)}</text>
-          <text x={x + w / 2} y={node.bar === undefined ? 222 : 211} text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
-          {#if node.bar !== undefined}<rect x={x + 10} y="237" width={w - 20} height="10" rx="3" fill="var(--bg)" /><rect x={x + 10} y="237" width={(w - 20) * node.bar} height="10" rx="3" fill={stroke(node.tone)} />{/if}
-          {#if cur.flow && i < cur.nodes.length - 1}<line x1={x + w} y1="185" x2={nodeX(i + 1, cur.nodes.length)} y2="185" stroke="var(--line)" stroke-width="2.5" marker-end="url(#rl-spec-arrow)" />{/if}
+          <g opacity={phase >= i ? 1 : 0}>
+            <rect x={x} y="105" width={w} height="160" rx="12" fill={fill(node.tone)} stroke={stroke(node.tone)} stroke-dasharray={node.dashed ? '5 4' : '0'} />
+            <text x={x + w / 2} y="137" text-anchor="middle" class="small strong">{t(node.title, node.titleZh)}</text>
+            <text x={x + w / 2} y="180" text-anchor="middle" class={node.compact ? 'small' : 'result'}>{t(node.result, node.resultZh)}</text>
+            <text x={x + w / 2} y={node.bar === undefined ? 222 : 211} text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
+            {#if node.bar !== undefined}<rect x={x + 10} y="237" width={w - 20} height="10" rx="3" fill="var(--bg)" /><rect x={x + 10} y="237" width={(w - 20) * node.bar} height="10" rx="3" fill={stroke(node.tone)} />{/if}
+            {#if cur.flow && i < cur.nodes.length - 1}<line x1={x + w} y1="185" x2={nodeX(i + 1, cur.nodes.length)} y2="185" stroke="var(--line)" stroke-width="2.5" marker-end="url(#rl-spec-arrow)" opacity={phase > i ? 1 : 0} />{/if}
+          </g>
         {/each}
-        {#each cur.formulas as line, i}<text x="360" y={formulaStart + i * 29} text-anchor="middle" class={i === 0 ? 'result' : 'small'}>{t(line.en, line.zh)}</text>{/each}
-        <text x="360" y={H - 55} text-anchor="middle" class="small">{t(cur.legend, cur.legendZh)}</text>
+        <g opacity={phase >= PHASE_COUNTS[step] - 1 ? 1 : 0}>
+          {#each cur.formulas as line, i}<text x="360" y={formulaStart + i * 18} text-anchor="middle" class={i === 0 ? 'result' : 'small'}>{t(line.en, line.zh)}</text>{/each}
+          <text x="360" y={legendY} text-anchor="middle" class="small">{t(cur.legend, cur.legendZh)}</text>
+        </g>
       {/if}
       <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t(cur.mobile?.foot ?? cur.foot, cur.mobile?.footZh ?? cur.footZh) : t(cur.foot, cur.footZh)}</text>
     </svg>
@@ -359,5 +398,6 @@
   .label, .small { font-size: 13px; fill: var(--fg); }
   .strong { font-weight: 650; }
   .result { font-family: var(--mono); font-size: 15px; font-weight: 650; fill: var(--fg); }
+  .viz :global(.tag) { font-size: 11px; }
   @media (max-width: 600px) { .title { font-size: 16px; } .label, .small { font-size: 12px; } .result { font-size: 12px; } }
 </style>
