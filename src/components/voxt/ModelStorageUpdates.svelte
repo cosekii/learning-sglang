@@ -77,7 +77,7 @@
   const W = $derived(phone ? 300 : 720);
   const H = $derived((phone ? [660, 610, 700, 820, 730, 640] : [470, 450, 460, 480, 480, 560])[step]);
 
-  const PHASE_COUNTS = [4, 4, 4, 4, 3, 3];
+  const PHASE_COUNTS = [4, 4, 4, 4, 4, 3];
   const PHASE_MS = 900;
   const REST_MS = 2200;
   let phase = $state(0);
@@ -103,14 +103,14 @@
     [{ x: 15, y: 64, w: 270, h: 110 }, { x: 22, y: 241, w: 256, h: 38 }, { x: 22, y: 287, w: 256, h: 56 }, { x: 22, y: 352, w: 256, h: 13 }],
     [{ x: 24, y: 78, w: 252, h: 98 }, { x: 24, y: 78, w: 252, h: 98 }, { x: 24, y: 78, w: 252, h: 98 }, { x: 24, y: 140, w: 252, h: 38 }],
     [{ x: 15, y: 274, w: 270, h: 190 }, { x: 25, y: 382, w: 250, h: 50 }, { x: 25, y: 382, w: 250, h: 50 }, { x: 25, y: 382, w: 250, h: 50 }],
-    [{ x: 15, y: 64, w: 270, h: 150 }, { x: 15, y: 576, w: 270, h: 46 }, { x: 40, y: 636, w: 220, h: 26 }],
+    [{ x: 15, y: 64, w: 270, h: 150 }, { x: 15, y: 64, w: 270, h: 150 }, { x: 26, y: 268, w: 248, h: 66 }, { x: 15, y: 576, w: 270, h: 46 }],
     [{ x: 15, y: 64, w: 270, h: 92 }, { x: 15, y: 166, w: 270, h: 92 }, { x: 15, y: 268, w: 270, h: 92 }],
   ] : [
     [{ x: 20, y: 72, w: 212, h: 225 }, { x: 20, y: 72, w: 212, h: 225 }, { x: 191, y: 413, w: 338, h: 28 }, { x: 239, y: 38, w: 242, h: 15 }],
     [{ x: 20, y: 74, w: 250, h: 190 }, { x: 310, y: 110, w: 380, h: 44 }, { x: 310, y: 158, w: 380, h: 56 }, { x: 310, y: 219, w: 380, h: 18 }],
     [{ x: 44, y: 84, w: 632, h: 92 }, { x: 44, y: 84, w: 632, h: 92 }, { x: 44, y: 84, w: 632, h: 92 }, { x: 44, y: 152, w: 632, h: 26 }],
     [{ x: 356, y: 72, w: 346, h: 190 }, { x: 370, y: 184, w: 318, h: 50 }, { x: 370, y: 184, w: 318, h: 50 }, { x: 370, y: 184, w: 318, h: 50 }],
-    [{ x: 20, y: 72, w: 330, h: 170 }, { x: 460, y: 334, w: 224, h: 66 }, { x: 120, y: 414, w: 480, h: 28 }],
+    [{ x: 20, y: 72, w: 330, h: 170 }, { x: 20, y: 72, w: 330, h: 170 }, { x: 386, y: 108, w: 298, h: 92 }, { x: 466, y: 340, w: 214, h: 54 }],
     [{ x: 30, y: 110, w: 660, h: 60 }, { x: 30, y: 182, w: 660, h: 60 }, { x: 30, y: 254, w: 660, h: 60 }],
   ])[s];
   const frames = $derived(motionFrames(phone, step));
@@ -408,17 +408,18 @@
           <text x="95" y="134" text-anchor="middle" class="detail">{t('Voxt 2.0', 'Voxt 2.0')}</text>
           <text x="95" y="151" text-anchor="middle" class="detail">{t('running now', '正在运行')}</text>
           <line x1="154" y1="137" x2="176" y2="137" stroke="var(--muted)" stroke-width="2" marker-end="url(#ms-arrow)" />
-          <rect x="182" y="112" width="148" height="50" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="256" y="134" text-anchor="middle" class="detail">{t('Voxt 2.1', 'Voxt 2.1')}</text>
-          <text x="256" y="151" text-anchor="middle" class="detail">{t('on disk', '在磁盘上')}</text>
-          <text x="185" y="192" text-anchor="middle" class="detail">{t('the updater replaces the bundle', '更新器替换整个应用包')}</text>
+          <rect x="182" y="112" width="148" height="50" rx="8" fill={phase === 0 ? 'var(--bg)' : 'var(--accent-soft)'} stroke="var(--accent)" stroke-dasharray={phase === 0 ? '6 4' : 'none'} />
+          <text x="256" y="134" text-anchor="middle" class="detail">{phase === 0 ? t('update list ?', '更新清单？') : t('Voxt 2.1', 'Voxt 2.1')}</text>
+          <text x="256" y="151" text-anchor="middle" class="detail">{phase === 0 ? t('the updater asks', '更新器在查询') : t('on disk', '在磁盘上')}</text>
+          <text x="185" y="192" text-anchor="middle" class="detail">{phase === 0 ? t('a signed list of new versions', '签名的新版本清单') : t('the updater replaces the bundle', '更新器替换整个应用包')}</text>
+          <text x="185" y="212" text-anchor="middle" class="detail">{phase === 0 ? '' : t('a card then asks for a restart', '然后卡片请用户重启')}</text>
 
           <rect x="370" y="72" width="330" height="170" rx="12" fill="var(--bg)" stroke="var(--line)" />
           <text x="535" y="96" text-anchor="middle" class="label">{t('NO FEED · RELEASE BUILD', '没有更新源 · 发布版')}</text>
-          <rect x="390" y="112" width="290" height="60" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="535" y="138" text-anchor="middle" class="detail">{t('matching DMG', '匹配的 DMG')}</text>
-          <text x="535" y="158" text-anchor="middle" class="detail">{t('download and install', '下载安装')}</text>
-          <text x="535" y="196" text-anchor="middle" class="detail">{t('no match → release page', '没有匹配 → 发布页')}</text>
+          <rect x="390" y="112" width="290" height="60" rx="8" fill={phase < 2 ? 'var(--bg)' : 'var(--accent-soft)'} stroke="var(--accent)" stroke-dasharray={phase < 2 ? '6 4' : 'none'} />
+          <text x="535" y="138" text-anchor="middle" class="detail">{phase < 2 ? t('a DMG for this Mac?', '有匹配的 DMG 吗') : t('matching DMG', '匹配的 DMG')}</text>
+          <text x="535" y="158" text-anchor="middle" class="detail">{phase < 2 ? t('checked first', '先找它') : t('download and install', '下载安装')}</text>
+          <text x="535" y="196" text-anchor="middle" class="detail">{phase < 2 ? '' : t('no match → release page', '没有匹配 → 发布页')}</text>
           <text x="535" y="220" text-anchor="middle" class="detail">{t('development builds have no update', '开发版没有更新')}</text>
 
           <rect x="20" y="256" width="680" height="44" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
@@ -435,10 +436,10 @@
           <text x="328" y="364" text-anchor="middle" class="detail">{t('helper on disk', '磁盘上的 helper')}</text>
           <text x="328" y="382" text-anchor="middle" class="detail">{t('is already the new one', '已经是新的')}</text>
           <line x1="432" y1="367" x2="460" y2="367" stroke="var(--muted)" stroke-width="2" marker-end="url(#ms-arrow)" />
-          <rect x="466" y="340" width="214" height="54" rx="8" fill="var(--eos-soft)" stroke="var(--eos)" />
-          <text x="573" y="364" text-anchor="middle" class="detail">{t("app's helper manager refuses it", '应用的 helper 管理器不启动它')}</text>
-          <text x="573" y="382" text-anchor="middle" class="detail">{t('mismatch with the app', '和应用的版本对不上')}</text>
-          <text x={W / 2} y="432" text-anchor="middle" class="cut">{phase === 0 ? t('THE UPDATER REPLACES THE BUNDLE', '更新器替换整个应用包') : phase === 1 ? t('UNTIL RESTART: HELPER REFUSED', '重启前：helper 被拒') : t('RESTART VOXT → UPDATE DONE', '重启 Voxt → 更新完成')}</text>
+          <rect x="466" y="340" width="214" height="54" rx="8" fill={phase < 3 ? 'var(--bg)' : 'var(--eos-soft)'} stroke="var(--eos)" stroke-dasharray={phase < 3 ? '6 4' : 'none'} />
+          <text x="573" y="364" text-anchor="middle" class="detail">{phase < 3 ? t('does the new helper start?', '新 helper 会启动吗') : t("app's helper manager refuses it", '应用的 helper 管理器不启动它')}</text>
+          <text x="573" y="382" text-anchor="middle" class="detail">{phase < 3 ? t('the app checks its version', '应用核对它的版本') : t('mismatch with the app', '和应用的版本对不上')}</text>
+          <text x={W / 2} y="432" text-anchor="middle" class="cut">{t('RESTART VOXT → UPDATE DONE', '重启 Voxt → 更新完成')}</text>
           <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Sources: Voxt/updates.go, updates_github.go, docs/release.md.', '出处：Voxt/updates.go、updates_github.go、docs/release.md。')}</text>
         {:else}
           <rect x="15" y="64" width="270" height="150" rx="10" fill="var(--bg)" stroke="var(--line)" />
@@ -447,16 +448,17 @@
           <text x="80" y="120" text-anchor="middle" class="detail">{t('Voxt 2.0', 'Voxt 2.0')}</text>
           <text x="80" y="137" text-anchor="middle" class="detail">{t('running', '在运行')}</text>
           <line x1="134" y1="124" x2="156" y2="124" stroke="var(--muted)" stroke-width="2" marker-end="url(#ms-arrow)" />
-          <rect x="162" y="102" width="108" height="44" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="216" y="120" text-anchor="middle" class="detail">{t('Voxt 2.1', 'Voxt 2.1')}</text>
-          <text x="216" y="137" text-anchor="middle" class="detail">{t('on disk', '在磁盘上')}</text>
-          <text x="150" y="172" text-anchor="middle" class="detail">{t('the updater replaces the app', '更新器替换整个应用')}</text>
+          <rect x="162" y="102" width="108" height="44" rx="8" fill={phase === 0 ? 'var(--bg)' : 'var(--accent-soft)'} stroke="var(--accent)" stroke-dasharray={phase === 0 ? '6 4' : 'none'} />
+          <text x="216" y="120" text-anchor="middle" class="detail">{phase === 0 ? t('update list ?', '更新清单？') : t('Voxt 2.1', 'Voxt 2.1')}</text>
+          <text x="216" y="137" text-anchor="middle" class="detail">{phase === 0 ? t('the updater asks', '更新器在查询') : t('on disk', '在磁盘上')}</text>
+          <text x="150" y="172" text-anchor="middle" class="detail">{phase === 0 ? t('a signed list of new versions', '签名的新版本清单') : t('the updater replaces the app', '更新器替换整个应用')}</text>
+          <text x="150" y="192" text-anchor="middle" class="detail">{phase === 0 ? '' : t('a card asks for a restart', '卡片请用户重启')}</text>
 
           <rect x="15" y="234" width="270" height="130" rx="10" fill="var(--bg)" stroke="var(--line)" />
           <text x="150" y="258" text-anchor="middle" class="label">{t('NO FEED · RELEASE BUILD', '没有更新源 · 发布版')}</text>
-          <rect x="30" y="272" width="240" height="42" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="150" y="297" text-anchor="middle" class="detail">{t('matching DMG', '匹配的 DMG')}</text>
-          <text x="150" y="334" text-anchor="middle" class="detail">{t('no match → release page', '没有匹配 → 发布页')}</text>
+          <rect x="30" y="272" width="240" height="42" rx="8" fill={phase < 2 ? 'var(--bg)' : 'var(--accent-soft)'} stroke="var(--accent)" stroke-dasharray={phase < 2 ? '6 4' : 'none'} />
+          <text x="150" y="297" text-anchor="middle" class="detail">{phase < 2 ? t('a matching DMG?', '有匹配的 DMG 吗') : t('matching DMG · install', '匹配的 DMG · 安装')}</text>
+          <text x="150" y="334" text-anchor="middle" class="detail">{phase < 2 ? '' : t('no match → release page', '没有匹配 → 发布页')}</text>
           <text x="150" y="354" text-anchor="middle" class="detail">{t('dev build: no update route', '开发版没有更新')}</text>
 
           <rect x="15" y="378" width="270" height="44" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
@@ -467,10 +469,10 @@
           <text x="150" y="488" text-anchor="middle" class="detail">{t('old version keeps running', '旧版本照常运行')}</text>
           <rect x="15" y="518" width="270" height="46" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="150" y="546" text-anchor="middle" class="detail">{t('helper on disk is new', '磁盘上的 helper 已是新的')}</text>
-          <rect x="15" y="576" width="270" height="46" rx="8" fill="var(--eos-soft)" stroke="var(--eos)" />
-          <text x="150" y="596" text-anchor="middle" class="detail">{t("app's helper manager refuses it", '应用的 helper 管理器不启动它')}</text>
-          <text x="150" y="616" text-anchor="middle" class="detail">{t('version does not match the app', '和应用的版本对不上')}</text>
-          <text x="150" y="652" text-anchor="middle" class="cut">{phase === 0 ? t('UPDATER REPLACES THE BUNDLE', '更新器替换整个应用包') : phase === 1 ? t('UNTIL RESTART: HELPER REFUSED', '重启前：helper 被拒') : t('RESTART → UPDATE DONE', '重启 → 更新完成')}</text>
+          <rect x="15" y="576" width="270" height="46" rx="8" fill={phase < 3 ? 'var(--bg)' : 'var(--eos-soft)'} stroke="var(--eos)" stroke-dasharray={phase < 3 ? '6 4' : 'none'} />
+          <text x="150" y="596" text-anchor="middle" class="detail">{phase < 3 ? t('does the new helper start?', '新 helper 会启动吗') : t("app's helper manager refuses it", '应用的 helper 管理器不启动它')}</text>
+          <text x="150" y="616" text-anchor="middle" class="detail">{phase < 3 ? t('the app checks its version', '应用核对它的版本') : t('version does not match the app', '和应用的版本对不上')}</text>
+          <text x="150" y="652" text-anchor="middle" class="cut">{t('RESTART → UPDATE DONE', '重启 → 更新完成')}</text>
           <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Sources: updates.go, updates_github.go.', '出处：updates.go、updates_github.go。')}</text>
         {/if}
       {:else if step === 5}
