@@ -8,6 +8,7 @@ import { launch, sleep } from '../../scripts/lib/browser.mjs';
 
 const base = (process.env.BASE || 'http://localhost:4467/learning-sglang').replace(/\/$/, '');
 const out = process.env.OUT || '.bot/out/omni14-phase-audit';
+const lang = process.env.LANG === 'zh' ? 'zh' : 'en';
 const expectedCounts = [4, 4, 4, 4, 4, 5, 4, 5];
 const selectedSteps = (process.env.STEPS || expectedCounts.map((_, index) => index + 1).join(','))
   .split(',').map(Number);
@@ -20,6 +21,7 @@ try {
   const page = await browser.tab();
   for (const step of selectedSteps) {
     await page.goto(`${base}/omni/ch/14-slow-reader-backpressure/?step=${step}`);
+    await page.evaluate(`document.documentElement.dataset.lang = '${lang}'; window.dispatchEvent(new CustomEvent('langchange', { detail: '${lang}' }))`);
     await sleep(850);
     const finalPhase = await page.evaluate(`Number(document.querySelector('.viz')?.getAttribute('data-animation-final-phase'))`);
     if (finalPhase !== expectedCounts[step - 1] - 1) {
@@ -140,7 +142,7 @@ const summary = {
   overlaps: states.reduce((sum, state) => sum + state.overlaps.length, 0),
   overflow: states.reduce((sum, state) => sum + state.overflow.length, 0),
 };
-const report = { base, generatedAt: new Date().toISOString(), summary, states };
+const report = { base, lang, generatedAt: new Date().toISOString(), summary, states };
 writeFileSync(join(out, 'report.json'), JSON.stringify(report, null, 2) + '\n');
 console.log(JSON.stringify({ summary, report: join(out, 'report.json') }, null, 2));
 if (states.length !== expectedPhases || transitions.length !== expectedTransitions || mechanismSteps !== selectedSteps.length ||

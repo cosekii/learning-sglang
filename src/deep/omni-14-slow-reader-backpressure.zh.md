@@ -240,13 +240,13 @@ $$
 
 ## 第 7 步 · 响应开始前后，失败输出不同
 
-> **一句话：** 首个声音前，HTTP SSE 和 raw audio 返回 JSON 503；开始后的失败按连接改用 error 事件或响应流提前结束。
+> **一句话：** 首个声音前，HTTP SSE 和 raw audio 返回 JSON 503；发出部分声音后，SSE 的 error 标记 `partial_audio=true, action=discard`，raw 响应流只能提前结束。
 
 ### 图上是什么
 
 - 顶行把首音前的 HTTP 路径限定为 SSE 和 raw audio。两者都在首个声音之前返回 JSON HTTP 503。
 - 事件外壳是包住数据、带有名字的消息。SSE 开始后，左图在声音之外发送 `error`，报告 `The request queue is full.`。语音 WebSocket 也使用 error 事件和自己的完成处理。
-- 错误之前可能已经交付部分声音。
+- 下一相在同一个 SSE error 下补出 `partial_audio=true` 和 `action=discard`。第一个字段说明声音已经发出；第二个字段让这位读者丢掉不完整声音。
 - 右图的 raw 响应已经开始，只有声音样本。没有通用错误外壳，响应流只能提前结束。
 - 橙色只表示失败输出。两幅图都是同一个共享上限失败，不是两次实验。
 
@@ -256,11 +256,11 @@ $$
 |---|---|
 | HTTP SSE，首个声音前 | JSON HTTP 503 |
 | raw HTTP audio，首个声音前 | JSON HTTP 503 |
-| 语音 SSE，响应开始后 | `error` 事件 |
+| 语音 SSE，响应开始后 | `error` 事件；发出声音后带 `partial_audio=true` 和 `action=discard` |
 | 语音 WebSocket | `error` 事件和自己的完成处理 |
 | raw HTTP audio，响应开始后 | 响应流提前结束，没有通用错误外壳 |
 
-SSE 在已经发出声音时还会写入 `partial_audio=true` 和 `action=discard`，提示客户端丢掉不完整声音。WebSocket 的完成路径不在本步展开。实时 session 的输出预算和 close code 是另一套协议，不在本步范围内。这个上限不在 admission 拒绝新请求。
+WebSocket 的完成路径不在本步展开。实时 session 的输出预算和 close code 是另一套协议，不在本步范围内。这个上限不在 admission 拒绝新请求。
 
 ### 边界与出处
 

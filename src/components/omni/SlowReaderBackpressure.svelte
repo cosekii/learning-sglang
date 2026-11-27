@@ -62,8 +62,8 @@
     caption: 'A cap failure ends the whole stream. It aborts generation only if generation is still running.',
     captionZh: '超过上限会结束整条流。只有还在生成时，才中止生成。',
   }, {
-    caption: 'Before first audio, HTTP SSE and raw audio return JSON 503. After SSE starts, an error event reports failure; raw response streams only end early.',
-    captionZh: '首个声音前，HTTP SSE 和 raw audio 返回 JSON 503。SSE 开始后改发 error 事件，raw 响应流只能提前结束。',
+    caption: 'Before first audio, HTTP SSE and raw audio return JSON 503. After audio, SSE sends an error with partial_audio=true, action=discard; raw streams end early.',
+    captionZh: '首个声音前，HTTP SSE 和 raw audio 返回 JSON 503。发出声音后，SSE error 标记 partial_audio=true、action=discard；raw 响应流只能提前结束。',
   }, {
     caption: 'Closing releases the queue and backlog but may keep the stream ID. Two API processes share one URL: which takes the next request?',
     captionZh: '关闭会释放队列和积压，但不保证释放流 ID。两个 API 进程共用网址，谁接收下个请求？',
@@ -352,12 +352,15 @@
               <rect x={panel.x + 16} y={panel.y + 116} width={phone ? 238 : 268} height="88" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
               <text x={panel.x + 28} y={panel.y + 147} class="tag strong">error</text>
               <text x={panel.x + 28} y={panel.y + 177} class="mono">The request queue is full.</text>
-              <text x={panel.x + 20} y={panel.y + 240} class="tag">{t('The error can follow partial audio.', '错误之前可能已经交付部分声音。')}</text>
+            </g>
+            <g opacity={phase >= 2 ? 1 : 0.08} style="transition: opacity 450ms">
+              <text x={panel.x + 20} y={panel.y + 240} class="mono">{t('partial_audio=true · audio sent', 'partial_audio=true · 声音已发')}</text>
+              <text x={panel.x + 20} y={panel.y + 264} class="mono">{t('action=discard · reader drops it', 'action=discard · 读者丢掉')}</text>
             </g>
           {:else}
             <text x={panel.x + 16} y={panel.y + 60} class="tag">{t('audio samples only', '只有声音样本')}</text>
             <text x={panel.x + 16} y={panel.y + 88} class="tag">{t('no event envelope for an error', '没有装错误的事件外壳')}</text>
-            <g opacity={phase >= 2 ? 1 : 0.08} style="transition: opacity 450ms">
+            <g opacity={phase >= 3 ? 1 : 0.08} style="transition: opacity 450ms">
               <rect x={panel.x + 16} y={panel.y + 116} width={phone ? 238 : 268} height="88" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
               <text x={panel.x + 28} y={panel.y + 147} class="tag strong">{t('RESPONSE STREAM ENDS EARLY', '响应流提前结束')}</text>
               <text x={panel.x + 28} y={panel.y + 177} class="tag">{t('no general error envelope', '没有通用错误外壳')}</text>

@@ -240,13 +240,13 @@ The reader now has a failed stream. The next step shows how each connection type
 
 ## Step 7 · Failure output before and after the response starts
 
-> **In one line:** HTTP SSE and raw audio return JSON 503 before first audio; later failures use an error event or an early response-stream ending, depending on the connection.
+> **In one line:** HTTP SSE and raw audio return JSON 503 before first audio; after partial audio, SSE marks its error `partial_audio=true, action=discard`, while a raw response stream ends early.
 
 ### On the stage
 
 - The top line scopes the pre-audio HTTP path to SSE and raw audio. Both return a JSON HTTP 503 before the first audio frame.
 - An event envelope is a named message wrapped around data. After SSE starts, the left connection sends an `error` beside audio and reports `The request queue is full.` Speech WebSocket also uses an error event and its own completion handling.
-- Partial audio may already have gone out before that error.
+- The next reveal adds `partial_audio=true` and `action=discard` below that same SSE error. The first field says audio already went out; the second tells this reader to discard the incomplete audio.
 - The right panel carries only raw audio samples after its response starts. With no general error envelope, the response stream ends early.
 - Orange marks failure output. Both panels show the same shared-cap failure, not two experiments.
 
@@ -256,11 +256,11 @@ The reader now has a failed stream. The next step shows how each connection type
 |---|---|
 | HTTP SSE, before first audio | JSON HTTP 503 |
 | Raw HTTP audio, before first audio | JSON HTTP 503 |
-| Speech SSE, after the response starts | `error` event |
+| Speech SSE, after the response starts | `error` event; after audio, `partial_audio=true` and `action=discard` |
 | Speech WebSocket | `error` event and its own completion handling |
 | Raw HTTP audio, after the response starts | Response stream ends early; no general error envelope |
 
-After emitting audio, SSE also writes `partial_audio=true` and `action=discard`, telling the client to discard the incomplete audio. The WebSocket completion path is deliberately not expanded. Realtime-session output budgets and close codes use a separate protocol and sit outside this step. This cap does not refuse new requests at admission.
+The WebSocket completion path is deliberately not expanded. Realtime-session output budgets and close codes use a separate protocol and sit outside this step. This cap does not refuse new requests at admission.
 
 ### Boundary and sources
 

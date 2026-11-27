@@ -1,3 +1,26 @@
+# lane k1 本轮报告 · Omni 14 Step 7 的 Omni-37
+
+日期：2026-11-27。类型：修旧（单个开放 finding）。本轮开始 HEAD 与 `origin/tutorials` 均为 `a35f06d`，工作树干净。范围只有 Omni 14 Step 7 的组件、双语 deep、生成 transcript、本章评分卡、逐相／deep 验证脚本和本报告；其余七步、Omni 11／13／15、其他书、`.bot/memory/` 和第 1 本受保护英文原文均未改。
+
+## 修复与作者评分边界
+
+- **Omni-37 作者修复完成，待协调固定复审，不自行销项。** Step 7 先在 SSE 面板出现 `error`，下一相在同一个 reader／stream 下补出 `partial_audio=true · audio sent` 和 `action=discard · reader drops it`，随后才出现 raw 响应流提前结束。caption 直接写出两个字段；双语 deep 的「图上是什么」、出口表和一句话与舞台使用同一对象和含义。pinned `sglang-omni@9725235249df851281d4dc62a04b2d34b02ac0fe` 的 `speech_streaming.py` 在同一个 `stream_events()` 中以 `emitted_audio` 决定 `error.update(partial_audio=True, action="discard")`，与图示一致。
+- Step 7 作者复评：R1–R5 **10/10**、机制 R6 **2/2**、原十二项 **24/24**、内容洞 **0**。小学生复述：「首音前 HTTP 返回 JSON 503；发出声音后，SSE error 告诉读者声音已发并让其丢弃，raw 响应流提前结束。」这是作者结果，固定 `968eb98` 的协调 **191/192 NO-GO** 不在本轮自行改写，也不声称全章协调 GO。
+- 其余七步没有教程 diff；Omni 11 的固定复审等待状态不变，本轮未开第 16／17 章。
+
+## 目标硬门与证据
+
+- 最终 `npm run build`：**60 页**通过；八步 `readability`：**0 机械问题**；`BOOK=omni node scripts/deep-check.mjs 14`、`zh-check` 和 `git diff --check` 均通过。
+- 最终 transcript 连续两次逐字一致：**2,306 词**，SHA-256 `0474b93abf85f061903eedd474b37fe0f75ec398d1386c05615c51a7e6b2e4c3`；无 caption、文字出界、重叠或文本规则报告。
+- 英中全章及中文 Step 7 的 360／390／430 px `mobile` 均报 **no layout breaks**，中文 Step 7 字号门也通过。
+- 英中 Step 7 各有 **4 个桌面相位、3/3 个机制转变**，counter 均为 `07 / 08`。英文最低 **10.891 CSS px**、中文最低 **12.207 CSS px**，文字重叠和 SVG 出界均为 **0**。证据：`.bot/out/omni37-step7-audit/report.json`、`.bot/out/omni37-step7-audit-zh/report.json`；代表截图：`.bot/out/omni37-step7-audit/s7-p2.png`。
+- Step 7 英中 deep 在 1440／360／390／430 px 共 **8 个打开抽屉的视图**全部通过 counter、`aria-expanded=true`、字段与白话存在、无页面或抽屉横溢、无 KaTeX／raw-math 错误。证据：`.bot/out/omni37-deep-audit/report.json`。
+- 当前模型不能读取 PNG，以上结论来自构建、transcript、源码、DOM 和几何检查，**未声称看过图片或视觉通过**。未跑全站回归、真实 SSE／WebSocket／raw-PCM 连接、模型、GPU、音频质量、故障注入或 reduced-motion 动态切换。剩余事项是 Omni-37 的协调固定复审、图像能力复审和主人最终视觉验收。
+
+本地查看前运行 `npx astro dev --background --host 127.0.0.1 --port 4321`，地址：`http://localhost:4321/learning-sglang/omni/ch/14-slow-reader-backpressure/?step=7`。本轮 4321 dev server 已关闭；检查脚本均退出，无 PPID 1 的 headless Chrome 残留。
+
+---
+
 # lane k1 本轮报告 · Omni 11／14 按协调要求继续冻结
 
 日期：2026-11-27。类型：等待固定复审。范围只有本报告；未改教程、transcript、评分卡、`.bot/memory/`、其他书、其他 lane 或第 1 本受保护英文原文。
