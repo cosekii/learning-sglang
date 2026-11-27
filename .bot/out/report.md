@@ -1,3 +1,46 @@
+# lane k2 本轮报告 · ML Systems 07 的 ML-41～44
+
+日期：2026-11-27。类型：修旧（direction 在 ML-19 后指定的同章四项）。本轮开始 HEAD 与 `origin/tutorials` 均为 `e153ede`，fetch 后 fast-forward 到 `6d56014`，工作树干净。范围只有 ML 07 Steps 2、4、5、6、7、对应双语 deep、MDX 出处、生成 transcript、本章评分卡与进度记录、定向审计和本报告；未改其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。ML-50／55 与本轮四项分开，未改；未开新章或第 14 章。
+
+## 提交与 finding
+
+- `ffc1bca`：**ML-41 作者修复完成，待协调固定复审，不自行销项。** Step 2 只把 `checkpoint` 作为新技术概念并就地解释为存好的权重；另外两条路线只用「权重数值／权重位置」作地图标签，Steps 3／4 再命名并展开机制。磁盘顺序仍是保存→读取→各 worker 装入自己那份，不再同屏引入 `update channel`、`process group`、`handle`、`local shard`。Step 2 的 `update_weights_from_disk` 同时移入显式图外实现段。
+- `be75f4e`：**ML-43 的 Step 4 部分作者修复完成，待复审。** `MultiprocessingSerializer.serialize`、`gather_object`、`tensor.get(tp_rank)` 和来源另有的 `[512,1024]` 都移入 `Implementation · not drawn`／「图外实现」；图上保留 `FULL_TENSOR()`、可见形状、位置便签和 `load_weights`，并修正 deep 的大小写。
+- `7115a57`：**ML-42 作者修复完成，待复审。** 双语 deep 按相位写明：起初 Bucket 1 在 GPU、后续桶在外等待；Bucket 1 清空后，末相 Bucket 2 在 GPU，临时区仍只有一桶。不再把首相描述当成整步终态。
+- `2174628`：**ML-44 作者修复完成，待复审。** 桌面、手机和双语 deep 统一为 `on failure, discard the partially updated model`／「失败时，弃用部分更新的模型」；英文手机拆成两行，自动回滚边界另句保留。
+- `65f3033`：**ML-43 的 Step 7 部分作者修复完成，待复审。** `torch.cuda.synchronize()` 及 CPU 计时等待 GPU 排队工作的说明移入 `Measurement setup · not drawn`／「图外测量设置」，不再冒充图上对象或算式的一项。
+- Step 2 与 Step 6 首次推送均被拒，均按指示 `git pull --rebase origin tutorials` 后推成功；其余首次推送成功。全程未 force-push。
+
+## 作者评分与独立冷读边界
+
+| 步 | R1–R5 | 机制 R6 | 原十个非视觉项 | R1 小学生复述 | 新内容洞 |
+|---|---:|---:|---:|---|---:|
+| 2 | 10/10 | 2/2 | 20/20 | 三条路线选一条；磁盘路线先保存再读取，每个 worker 装入自己那份。 | 0 |
+| 4 | 10/10 | 2/2 | 20/20 | 四块训练分片拼成一张权重表，只传位置便签，SGLang 重建后留下自己那份。 | 0 |
+| 5 | 10/10 | 2/2 | 20/20 | 临时显存一次只放一桶；第 1 桶清空后，第 2 桶才上 GPU。 | 0 |
+| 6 | 10/10 | 2/2 | 20/20 | 生成等完整 v1 才恢复；更新失败时，弃用部分更新的模型。 | 0 |
+| 7 | 10/10 | 2/2 | 20/20 | 每个张量三次 10 ms 暂停，约 160 次重复，合计少等 4.845 秒。 | 0 |
+
+- 独立 `explore` 冷读对 **ML-41／42／43／44 全部 PASS**，指定范围剩余内容洞 **0**；逐步作者参考值如上。冷读核对了源码、双语 deep、transcript 和 DOM／几何报告，没有读取 PNG。
+- 这些是作者复评与独立冷读，不是协调 verdict。固定 `ef9b2bf` 的协调基线不改写：R1–R5 **78/80**、机制 R6 **16/16**、原十个非视觉项 **158/160**、原 #4/#5 **32/32**、原十二项 **190/192**，整章仍 **NO-GO**。原 #4/#5、整章新总分和销项不由本轮自行改写。
+
+## 硬门与证据
+
+- 最终 `npm run build`：**60 页**通过；八步 `readability`：**0 机械问题**；`BOOK=ml-sys node scripts/deep-check.mjs 07`、`zh-check`、英中全章 360／390／430 px `mobile`、中文 Steps 2／6 字号门和 `git diff --check` 全过。
+- transcript 连续两次逐字一致：**1,988 词**，SHA-256 `bda0a125bd055f703774d63b436d885ce6d4e5b55517ae5e5d7940f2fa93e39a`。无 caption、文字出界、重叠或文本规则报告。
+- `.bot/out/ml07-review-audit/report.json`：**166/166 个状态、134/134 个机制转变、10 个双语 deep 状态**，最低 **10.91015625 CSS px**，重叠、SVG 出界和页面横溢均为 **0**，`failures=[]`。Steps 2／4／5／7 覆盖英中桌面和中文 390 px 的直接／前步入口；Step 6 另覆盖英文 390 px 两条入口。可重跑脚本为 `.bot/out/ml07-review-audit.mjs`。
+- 代表截图：`.bot/out/ml07-review-audit/en-1440-direct-s2-p5.png`、`.bot/out/ml07-review-audit/zh-390-direct-s5-p5.png`、`.bot/out/ml07-review-audit/en-390-direct-s6-p4.png`。**当前模型不能读取 PNG，工具已明确返回无图像输入能力；以上结论来自构建、transcript、源码、独立冷读、DOM 和几何检查，未声称看过图片或视觉通过。**
+- `docs/z2s-map.md` 没有 ML 07 的直接对应课程章，本轮未借其他主题扩写。已重读 pinned `sys-design/readme-1.md:45-209,250-409` 与 `latency-accelerate-for-weight-updates/readme.md:575-614,975-1069`，只移动既有事实的呈现层级，未引入新机制或数字。
+- 未跑全站回归、真实训练、权重传输、SGLang／CUDA、GPU benchmark、故障注入或 reduced-motion 动态切换。最新回归只有 `(exit 13)`，没有可分配布局步骤，未据此返工。
+
+## 剩余与清理
+
+- 剩余事项是 ML-41～44 的协调固定复审、原 #4/#5、整章评分、具备图像能力的复审和主人最终视觉验收。下一修旧单元按 direction 分开处理 ML-50／55；ML 12 留作之后的独立单元，其他开放 finding 未改。
+- 本 clone 的 `node_modules` 原指向协调人 checkout；已只删除本目录内符号链接并在本目录安装依赖，package 文件无 diff，未写协调人的 checkout。
+- 本地查看前运行 `npx astro dev --background --host 127.0.0.1 --port 4502`。地址：`http://localhost:4502/learning-sglang/ml-sys/ch/07-weight-updates/?step=2`；Step 6 为 `?step=6`。本轮 4502 服务已在收尾停止，审计脚本已调用 `browser.close()`，其他 lane 的进程未动。
+
+---
+
 # lane d 本轮报告 · 撤回 Voxt 11 的 144 未决差异记录（按协调记录纠偏定为 143/144）
 
 日期：2026-11-27。类型：修旧（记录补正第四轮）。本轮开始 HEAD 与 `origin/tutorials` 均为 `be75f4e`，工作树干净。范围只有 Voxt 11 评分卡、`memory/progress.md` 第 11 章行与本报告；无教程 diff。
