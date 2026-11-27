@@ -43,15 +43,15 @@ helper 要能看见全局按键，需要 macOS 允许。下一步把权限检查
 
 ### 源码出处
 
-公开基线：`sglang-omni@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`，路径均相对该仓库。
+公开基线：<code>sglang-omni@<wbr>52aab78e85f15da0e85d<wbr>1dbdee3bfe6ffc7cbc84</code>，路径均相对该仓库。
 
-- 默认 Transcribe 快捷键为 `RightOption`、触发方式为 tap：`Voxt/internal/settings/settings.go:357,379`；绑定 ID 的组成：`Voxt/internal/hotkey/hotkey.go:282,304`。
-- helper 识别事件并发出 `hotkey.event`：`Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:240-250,269-274`。
-- 一行一个 JSON、helper 到 app 走 stdout：`Voxt/docs/helper-protocol.md:9-13`；通知没有 `id`：同文件 `18-24`；事件字段：同文件 `88-97`。
-- Go 事件结构：`Voxt/internal/helper/proto/hotkey.go:113-127`；app 接收通知：`Voxt/helperlink.go:140-152`。
-- 空闲状态收到 `trigger` 后返回 `Start`：`Voxt/internal/hotkey/route.go:114-121`；对应测试：`Voxt/internal/hotkey/hotkey_test.go:419`。
-- Transcribe 初始状态为 `Recording`：`Voxt/internal/session/run.go:192-202`；向 helper 发 `capture.start`：`Voxt/internal/session/helperio.go:20-35`。
-- 同类型公开 fixture：`Voxt/helper/Fixtures/hotkey.jsonl:3`。
+- 默认 Transcribe 快捷键为 `RightOption`、触发方式为 tap：<code>Voxt/internal/settings/<wbr>settings.go:357,<wbr>379</code>；绑定 ID 的组成：<code>Voxt/internal/hotkey/<wbr>hotkey.go:282,<wbr>304</code>。
+- helper 识别事件并发出 `hotkey.event`：<code>Voxt/helper/Sources/<wbr>VoxtNewHelper/<wbr>Hotkey.swift:240-250,<wbr>269-274</code>。
+- 一行一个 JSON、helper 到 app 走 stdout：<code>Voxt/docs/<wbr>helper-protocol.md:9-13</code>；通知没有 `id`：同文件 `18-24`；事件字段：同文件 `88-97`。
+- Go 事件结构：<code>Voxt/internal/helper/<wbr>proto/hotkey.go:113-127</code>；app 接收通知：`Voxt/helperlink.go:140-152`。
+- 空闲状态收到 `trigger` 后返回 `Start`：<code>Voxt/internal/hotkey/<wbr>route.go:114-121</code>；对应测试：<code>Voxt/internal/hotkey/<wbr>hotkey_test.go:419</code>。
+- Transcribe 初始状态为 `Recording`：<code>Voxt/internal/session/<wbr>run.go:192-202</code>；向 helper 发 `capture.start`：<code>Voxt/internal/session/<wbr>helperio.go:20-35</code>。
+- 同类型公开 fixture：<code>Voxt/helper/Fixtures/<wbr>hotkey.jsonl:3</code>。
 
 ## 第 2 步 · Accessibility 决定按键路线能否开始
 
@@ -84,7 +84,7 @@ $$
 
 ### 代入图上的数
 
-| Accessibility | 同一个右 Option | $M$：到达 Go 的消息 | $G$：Go 的结果 |
+| Accessibility | 同一个键 | $M$：到达 Go 的消息 | $G$：Go 的结果 |
 |---|---|---:|---|
 | OFF | 按 1 次 | 0 条 | 仍空闲 |
 | ON，且监听成功 | 按 1 次 | 1 条 | 开始 Transcribe |
@@ -103,13 +103,13 @@ helper 用 `AXIsProcessTrusted()` 读取 Accessibility 状态。macOS 把它归�
 
 ### 源码出处
 
-公开基线：`sglang-omni@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`，路径均相对该仓库。
+公开基线：<code>sglang-omni@<wbr>52aab78e85f15da0e85d<wbr>1dbdee3bfe6ffc7cbc84</code>，路径均相对该仓库。
 
-- Accessibility 状态读取及 responsible process 说明：`Voxt/helper/Sources/VoxtNewHelper/Permissions.swift:7-9,40-46`。
-- 没有权限时不安装监听、每 2 秒重试，以及允许后无需重启：`Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:6-19,76-89,155-169`。
-- 创建监听并核对实际收到的键盘事件：`Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:113-151`。
-- 识别后发送 `hotkey.event`：`Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:240-250,269-274`。
-- 空闲状态收到 `trigger` 后返回 `Start`：`Voxt/internal/hotkey/route.go:114-121`。
+- Accessibility 状态读取及 responsible process 说明：<code>Voxt/helper/Sources/<wbr>VoxtNewHelper/<wbr>Permissions.swift:7-9,<wbr>40-46</code>。
+- 没有权限时不安装监听、每 2 秒重试，以及允许后无需重启：<code>Voxt/helper/Sources/<wbr>VoxtNewHelper/<wbr>Hotkey.swift:6-19,<wbr>76-89,<wbr>155-169</code>。
+- 创建监听并核对实际收到的键盘事件：<code>Voxt/helper/Sources/<wbr>VoxtNewHelper/<wbr>Hotkey.swift:113-151</code>。
+- 识别后发送 `hotkey.event`：<code>Voxt/helper/Sources/<wbr>VoxtNewHelper/<wbr>Hotkey.swift:240-250,<wbr>269-274</code>。
+- 空闲状态收到 `trigger` 后返回 `Start`：<code>Voxt/internal/hotkey/<wbr>route.go:114-121</code>。
 
 ## 第 3 步 · 麦克风权限决定声音能否进入
 
@@ -141,10 +141,12 @@ $$
 
 ### 代入图上的两种情况
 
-| 按键后的请求 | $P$：麦克风权限 | $D$：输入设备 | $R$：结果 |
-|---|---|---|---|
-| `capture.start` | 未开启 | 不进入设备启动 | `permission_denied`，录音未开始 |
-| `capture.start` | 已开启 | 正常工作 | 声音送到 Go app，录音开始 |
+两种情况都在按键后发出同一个 `capture.start`。
+
+| $P$：麦克风权限 | $D$：输入设备 | $R$：结果 |
+|---|---|---|
+| 未开启 | 设备不启动 | <code>permission_<wbr>denied</code>，录音未开始 |
+| 已开启 | 正常工作 | 声音送到 Go app，录音开始 |
 
 ### 源码里的检查与省略
 
@@ -158,10 +160,10 @@ helper 用 `AVCaptureDevice.authorizationStatus(for: .audio)` 读取麦克风权
 
 ### 源码出处
 
-公开基线：`sglang-omni@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`，路径均相对该仓库。
+公开基线：<code>sglang-omni@<wbr>52aab78e85f15da0e85d<wbr>1dbdee3bfe6ffc7cbc84</code>，路径均相对该仓库。
 
-- 麦克风权限的四种状态：`Voxt/helper/Sources/VoxtNewHelper/Permissions.swift:11-18`；首次请求权限：同文件 `53-58`。
-- `capture.start` 在创建采集任务前检查权限，拒绝时返回麦克风 `permission_denied`：`Voxt/helper/Sources/VoxtNewHelper/Capture.swift:53-79`。
-- 请求方法、权限错误和未询问时等待回答：`Voxt/docs/helper-protocol.md:32-37,63,107`。
-- 启动失败不会发送 `capture.started`：`Voxt/internal/helper/proto/capture.go:20-25`；首个音频与后续 `capture.pcm`：同文件 `56-72,82-90`。
-- Go session 把麦克风权限错误归类为 `ProblemMicrophone`：`Voxt/internal/session/session.go:464-483`。
+- 麦克风权限的四种状态：<code>Voxt/helper/Sources/<wbr>VoxtNewHelper/<wbr>Permissions.swift:11-18</code>；首次请求权限：同文件 `53-58`。
+- `capture.start` 在创建采集任务前检查权限，拒绝时返回麦克风 `permission_denied`：<code>Voxt/helper/Sources/<wbr>VoxtNewHelper/<wbr>Capture.swift:53-79</code>。
+- 请求方法、权限错误和未询问时等待回答：<code>Voxt/docs/<wbr>helper-protocol.md:32-37,<wbr>63,<wbr>107</code>。
+- 启动失败不会发送 `capture.started`：<code>Voxt/internal/helper/<wbr>proto/capture.go:20-25</code>；首个音频与后续 `capture.pcm`：同文件 `56-72,82-90`。
+- Go session 把麦克风权限错误归类为 `ProblemMicrophone`：<code>Voxt/internal/session/<wbr>session.go:464-483</code>。

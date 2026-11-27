@@ -1,0 +1,620 @@
+[
+  {
+    "width": 360,
+    "lang": "en",
+    "step": 1,
+    "bodyScrollW": 444,
+    "bodyClientW": 359,
+    "docScrollW": 360,
+    "innerW": 360,
+    "drawerOpen": true,
+    "over": [
+      {
+        "tag": "CODE",
+        "text": "sglang-omni@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84",
+        "right": 378.359375,
+        "bodyRight": 360
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/internal/settings/settings.go:357,379",
+        "right": 379.625,
+        "bodyRight": 360
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:240-250,269-274",
+        "right": 444.875,
+        "bodyRight": 360
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/internal/helper/proto/hotkey.go:113-127",
+        "right": 367.34375,
+        "bodyRight": 360
+      }
+    ]
+  },
+  {
+    "width": 360,
+    "lang": "en",
+    "step": 2,
+    "bodyScrollW": 467,
+    "bodyClientW": 359,
+    "docScrollW": 360,
+    "innerW": 360,
+    "drawerOpen": true,
+    "over": [
+      {
+        "tag": "CODE",
+        "text": "sglang-omni@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84",
+        "right": 378.359375,
+        "bodyRight": 360
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Permissions.swift:7-9,40-46",
+        "right": 468.125,
+        "bodyRight": 360
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:6-19,76-89,155-169",
+        "right": 429.359375,
+        "bodyRight": 360
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:113-151",
+        "right": 444.875,
+        "bodyRight": 360
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:240-250,269-274",
+        "right": 444.875,
+        "bodyRight": 360
+      }
+    ]
+  },
+  {
+    "width": 360,
+    "lang": "en",
+    "step": 3,
+    "bodyScrollW": 478,
+    "bodyClientW": 359,
+    "docScrollW": 360,
+    "innerW": 360,
+    "drawerOpen": true,
+    "over": [
+      {
+        "tag": "TH",
+        "text": "RRR: result",
+        "right": 454.734375,
+        "bodyRight": 360
+      },
+      {
+        "tag": "TD",
+        "text": "permission_denied; no recording",
+        "right": 454.734375,
+        "bodyRight": 360
+      },
+      {
+        "tag": "CODE",
+        "text": "permission_denied",
+        "right": 442.484375,
+        "bodyRight": 360
+      },
+      {
+        "tag": "TD",
+        "text": "Sound reaches the Go app; recording starts",
+        "right": 454.734375,
+        "bodyRight": 360
+      },
+      {
+        "tag": "CODE",
+        "text": "sglang-omni@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84",
+        "right": 378.359375,
+        "bodyRight": 360
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Permissions.swift:11-18",
+        "right": 475.875,
+        "bodyRight": 360
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Capture.swift:53-79",
+        "right": 444.875,
+        "bodyRight": 360
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/internal/helper/proto/capture.go:20-25",
+        "right": 367.34375,
+        "bodyRight": 360
+      }
+    ]
+  },
+  {
+    "width": 360,
+    "lang": "zh",
+    "step": 1,
+    "bodyScrollW": 444,
+    "bodyClientW": 359,
+    "docScrollW": 360,
+    "innerW": 360,
+    "drawerOpen": true,
+    "over": [
+      {
+        "tag": "CODE",
+        "text": "sglang-omni@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84",
+        "right": 378.359375,
+        "bodyRight": 360
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/internal/settings/settings.go:357,379",
+        "right": 379.625,
+        "bodyRight": 360
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:240-250,269-274",
+        "right": 444.875,
+        "bodyRight": 360
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/internal/helper/proto/hotkey.go:113-127",
+        "right": 367.34375,
+        "bodyRight": 360
+      }
+    ]
+  },
+  {
+    "width": 360,
+    "lang": "zh",
+    "step": 2,
+    "bodyScrollW": 467,
+    "bodyClientW": 359,
+    "docScrollW": 360,
+    "innerW": 360,
+    "drawerOpen": true,
+    "over": [
+      {
+        "tag": "CODE",
+        "text": "sglang-omni@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84",
+        "right": 378.359375,
+        "bodyRight": 360
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Permissions.swift:7-9,40-46",
+        "right": 468.125,
+        "bodyRight": 360
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:6-19,76-89,155-169",
+        "right": 429.359375,
+        "bodyRight": 360
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:113-151",
+        "right": 444.875,
+        "bodyRight": 360
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:240-250,269-274",
+        "right": 444.875,
+        "bodyRight": 360
+      }
+    ]
+  },
+  {
+    "width": 360,
+    "lang": "zh",
+    "step": 3,
+    "bodyScrollW": 475,
+    "bodyClientW": 359,
+    "docScrollW": 360,
+    "innerW": 360,
+    "drawerOpen": true,
+    "over": [
+      {
+        "tag": "TH",
+        "text": "RRR：结果",
+        "right": 363.328125,
+        "bodyRight": 360
+      },
+      {
+        "tag": "TD",
+        "text": "permission_denied，录音未开始",
+        "right": 363.328125,
+        "bodyRight": 360
+      },
+      {
+        "tag": "TD",
+        "text": "声音送到 Go app，录音开始",
+        "right": 363.328125,
+        "bodyRight": 360
+      },
+      {
+        "tag": "CODE",
+        "text": "sglang-omni@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84",
+        "right": 378.359375,
+        "bodyRight": 360
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Permissions.swift:11-18",
+        "right": 475.875,
+        "bodyRight": 360
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Capture.swift:53-79",
+        "right": 444.875,
+        "bodyRight": 360
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/internal/helper/proto/capture.go:20-25",
+        "right": 367.34375,
+        "bodyRight": 360
+      }
+    ]
+  },
+  {
+    "width": 390,
+    "lang": "en",
+    "step": 1,
+    "bodyScrollW": 444,
+    "bodyClientW": 389,
+    "docScrollW": 390,
+    "innerW": 390,
+    "drawerOpen": true,
+    "over": [
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:240-250,269-274",
+        "right": 444.875,
+        "bodyRight": 390
+      }
+    ]
+  },
+  {
+    "width": 390,
+    "lang": "en",
+    "step": 2,
+    "bodyScrollW": 467,
+    "bodyClientW": 389,
+    "docScrollW": 390,
+    "innerW": 390,
+    "drawerOpen": true,
+    "over": [
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Permissions.swift:7-9,40-46",
+        "right": 468.125,
+        "bodyRight": 390
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:6-19,76-89,155-169",
+        "right": 429.359375,
+        "bodyRight": 390
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:113-151",
+        "right": 444.875,
+        "bodyRight": 390
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:240-250,269-274",
+        "right": 444.875,
+        "bodyRight": 390
+      }
+    ]
+  },
+  {
+    "width": 390,
+    "lang": "en",
+    "step": 3,
+    "bodyScrollW": 478,
+    "bodyClientW": 389,
+    "docScrollW": 390,
+    "innerW": 390,
+    "drawerOpen": true,
+    "over": [
+      {
+        "tag": "TH",
+        "text": "RRR: result",
+        "right": 454.734375,
+        "bodyRight": 390
+      },
+      {
+        "tag": "TD",
+        "text": "permission_denied; no recording",
+        "right": 454.734375,
+        "bodyRight": 390
+      },
+      {
+        "tag": "CODE",
+        "text": "permission_denied",
+        "right": 442.484375,
+        "bodyRight": 390
+      },
+      {
+        "tag": "TD",
+        "text": "Sound reaches the Go app; recording starts",
+        "right": 454.734375,
+        "bodyRight": 390
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Permissions.swift:11-18",
+        "right": 475.875,
+        "bodyRight": 390
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Capture.swift:53-79",
+        "right": 444.875,
+        "bodyRight": 390
+      }
+    ]
+  },
+  {
+    "width": 390,
+    "lang": "zh",
+    "step": 1,
+    "bodyScrollW": 444,
+    "bodyClientW": 389,
+    "docScrollW": 390,
+    "innerW": 390,
+    "drawerOpen": true,
+    "over": [
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:240-250,269-274",
+        "right": 444.875,
+        "bodyRight": 390
+      }
+    ]
+  },
+  {
+    "width": 390,
+    "lang": "zh",
+    "step": 2,
+    "bodyScrollW": 467,
+    "bodyClientW": 389,
+    "docScrollW": 390,
+    "innerW": 390,
+    "drawerOpen": true,
+    "over": [
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Permissions.swift:7-9,40-46",
+        "right": 468.125,
+        "bodyRight": 390
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:6-19,76-89,155-169",
+        "right": 429.359375,
+        "bodyRight": 390
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:113-151",
+        "right": 444.875,
+        "bodyRight": 390
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:240-250,269-274",
+        "right": 444.875,
+        "bodyRight": 390
+      }
+    ]
+  },
+  {
+    "width": 390,
+    "lang": "zh",
+    "step": 3,
+    "bodyScrollW": 475,
+    "bodyClientW": 389,
+    "docScrollW": 390,
+    "innerW": 390,
+    "drawerOpen": true,
+    "over": [
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Permissions.swift:11-18",
+        "right": 475.875,
+        "bodyRight": 390
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Capture.swift:53-79",
+        "right": 444.875,
+        "bodyRight": 390
+      }
+    ]
+  },
+  {
+    "width": 430,
+    "lang": "en",
+    "step": 1,
+    "bodyScrollW": 444,
+    "bodyClientW": 429,
+    "docScrollW": 430,
+    "innerW": 430,
+    "drawerOpen": true,
+    "over": [
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:240-250,269-274",
+        "right": 444.875,
+        "bodyRight": 430
+      }
+    ]
+  },
+  {
+    "width": 430,
+    "lang": "en",
+    "step": 2,
+    "bodyScrollW": 467,
+    "bodyClientW": 429,
+    "docScrollW": 430,
+    "innerW": 430,
+    "drawerOpen": true,
+    "over": [
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Permissions.swift:7-9,40-46",
+        "right": 468.125,
+        "bodyRight": 430
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:113-151",
+        "right": 444.875,
+        "bodyRight": 430
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:240-250,269-274",
+        "right": 444.875,
+        "bodyRight": 430
+      }
+    ]
+  },
+  {
+    "width": 430,
+    "lang": "en",
+    "step": 3,
+    "bodyScrollW": 478,
+    "bodyClientW": 429,
+    "docScrollW": 430,
+    "innerW": 430,
+    "drawerOpen": true,
+    "over": [
+      {
+        "tag": "TH",
+        "text": "RRR: result",
+        "right": 454.734375,
+        "bodyRight": 430
+      },
+      {
+        "tag": "TD",
+        "text": "permission_denied; no recording",
+        "right": 454.734375,
+        "bodyRight": 430
+      },
+      {
+        "tag": "CODE",
+        "text": "permission_denied",
+        "right": 442.484375,
+        "bodyRight": 430
+      },
+      {
+        "tag": "TD",
+        "text": "Sound reaches the Go app; recording starts",
+        "right": 454.734375,
+        "bodyRight": 430
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Permissions.swift:11-18",
+        "right": 475.875,
+        "bodyRight": 430
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Capture.swift:53-79",
+        "right": 444.875,
+        "bodyRight": 430
+      }
+    ]
+  },
+  {
+    "width": 430,
+    "lang": "zh",
+    "step": 1,
+    "bodyScrollW": 444,
+    "bodyClientW": 429,
+    "docScrollW": 430,
+    "innerW": 430,
+    "drawerOpen": true,
+    "over": [
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:240-250,269-274",
+        "right": 444.875,
+        "bodyRight": 430
+      }
+    ]
+  },
+  {
+    "width": 430,
+    "lang": "zh",
+    "step": 2,
+    "bodyScrollW": 467,
+    "bodyClientW": 429,
+    "docScrollW": 430,
+    "innerW": 430,
+    "drawerOpen": true,
+    "over": [
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Permissions.swift:7-9,40-46",
+        "right": 468.125,
+        "bodyRight": 430
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:113-151",
+        "right": 444.875,
+        "bodyRight": 430
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:240-250,269-274",
+        "right": 444.875,
+        "bodyRight": 430
+      }
+    ]
+  },
+  {
+    "width": 430,
+    "lang": "zh",
+    "step": 3,
+    "bodyScrollW": 475,
+    "bodyClientW": 429,
+    "docScrollW": 430,
+    "innerW": 430,
+    "drawerOpen": true,
+    "over": [
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Permissions.swift:11-18",
+        "right": 475.875,
+        "bodyRight": 430
+      },
+      {
+        "tag": "CODE",
+        "text": "Voxt/helper/Sources/VoxtNewHelper/Capture.swift:53-79",
+        "right": 444.875,
+        "bodyRight": 430
+      }
+    ]
+  }
+]

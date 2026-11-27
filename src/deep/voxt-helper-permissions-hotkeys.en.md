@@ -43,15 +43,15 @@ The helper needs macOS permission before it can see global keys. The next step s
 
 ### Source
 
-Public baseline: `sglang-omni@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`. Paths are relative to that repository.
+Public baseline: <code>sglang-omni@<wbr>52aab78e85f15da0e85d<wbr>1dbdee3bfe6ffc7cbc84</code>. Paths are relative to that repository.
 
-- Default Transcribe shortcut `RightOption` with tap behavior: `Voxt/internal/settings/settings.go:357,379`; binding ID construction: `Voxt/internal/hotkey/hotkey.go:282,304`.
-- The helper recognizes events and emits `hotkey.event`: `Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:240-250,269-274`.
-- One JSON message per line, helper to app over stdout: `Voxt/docs/helper-protocol.md:9-13`; notifications have no `id`: lines 18-24; event fields: lines 88-97.
-- Go event structure: `Voxt/internal/helper/proto/hotkey.go:113-127`; app notification receiver: `Voxt/helperlink.go:140-152`.
-- `trigger` while idle returns `Start`: `Voxt/internal/hotkey/route.go:114-121`; its test: `Voxt/internal/hotkey/hotkey_test.go:419`.
-- Transcribe starts in `Recording`: `Voxt/internal/session/run.go:192-202`; `capture.start` goes to the helper: `Voxt/internal/session/helperio.go:20-35`.
-- A public fixture of the same event type: `Voxt/helper/Fixtures/hotkey.jsonl:3`.
+- Default Transcribe shortcut `RightOption` with tap behavior: <code>Voxt/internal/settings/<wbr>settings.go:357,<wbr>379</code>; binding ID construction: <code>Voxt/internal/hotkey/<wbr>hotkey.go:282,<wbr>304</code>.
+- The helper recognizes events and emits `hotkey.event`: <code>Voxt/helper/Sources/<wbr>VoxtNewHelper/<wbr>Hotkey.swift:240-250,<wbr>269-274</code>.
+- One JSON message per line, helper to app over stdout: <code>Voxt/docs/<wbr>helper-protocol.md:9-13</code>; notifications have no `id`: lines 18-24; event fields: lines 88-97.
+- Go event structure: <code>Voxt/internal/helper/<wbr>proto/hotkey.go:113-127</code>; app notification receiver: `Voxt/helperlink.go:140-152`.
+- `trigger` while idle returns `Start`: <code>Voxt/internal/hotkey/<wbr>route.go:114-121</code>; its test: <code>Voxt/internal/hotkey/<wbr>hotkey_test.go:419</code>.
+- Transcribe starts in `Recording`: <code>Voxt/internal/session/<wbr>run.go:192-202</code>; `capture.start` goes to the helper: <code>Voxt/internal/session/<wbr>helperio.go:20-35</code>.
+- A public fixture of the same event type: <code>Voxt/helper/Fixtures/<wbr>hotkey.jsonl:3</code>.
 
 ## Step 2 · Accessibility decides whether the key route can start
 
@@ -84,7 +84,7 @@ $$
 
 ### The numbers on the stage
 
-| Accessibility | Same Right Option | $M$: messages reaching Go | $G$: Go result |
+| Accessibility | Same key | $M$: messages reaching Go | $G$: Go result |
 |---|---|---:|---|
 | OFF | 1 tap | 0 | Stays idle |
 | ON, with key reception working | 1 tap | 1 | Starts Transcribe |
@@ -103,13 +103,13 @@ The hotkey message can now reach the Go app. The next step examines microphone p
 
 ### Source
 
-Public baseline: `sglang-omni@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`. Paths are relative to that repository.
+Public baseline: <code>sglang-omni@<wbr>52aab78e85f15da0e85d<wbr>1dbdee3bfe6ffc7cbc84</code>. Paths are relative to that repository.
 
-- Accessibility status and the responsible-process explanation: `Voxt/helper/Sources/VoxtNewHelper/Permissions.swift:7-9,40-46`.
-- No installed listener without permission, a retry every 2 seconds, and no restart after granting it: `Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:6-19,76-89,155-169`.
-- Listener creation and verification of the keyboard events actually granted: `Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:113-151`.
-- Recognition and `hotkey.event` delivery: `Voxt/helper/Sources/VoxtNewHelper/Hotkey.swift:240-250,269-274`.
-- `trigger` while idle returns `Start`: `Voxt/internal/hotkey/route.go:114-121`.
+- Accessibility status and the responsible-process explanation: <code>Voxt/helper/Sources/<wbr>VoxtNewHelper/<wbr>Permissions.swift:7-9,<wbr>40-46</code>.
+- No installed listener without permission, a retry every 2 seconds, and no restart after granting it: <code>Voxt/helper/Sources/<wbr>VoxtNewHelper/<wbr>Hotkey.swift:6-19,<wbr>76-89,<wbr>155-169</code>.
+- Listener creation and verification of the keyboard events actually granted: <code>Voxt/helper/Sources/<wbr>VoxtNewHelper/<wbr>Hotkey.swift:113-151</code>.
+- Recognition and `hotkey.event` delivery: <code>Voxt/helper/Sources/<wbr>VoxtNewHelper/<wbr>Hotkey.swift:240-250,<wbr>269-274</code>.
+- `trigger` while idle returns `Start`: <code>Voxt/internal/hotkey/<wbr>route.go:114-121</code>.
 
 ## Step 3 · Microphone permission decides whether sound can enter
 
@@ -141,10 +141,12 @@ $$
 
 ### The two cases on the stage
 
-| Request after the hotkey | $P$: Microphone permission | $D$: input device | $R$: result |
-|---|---|---|---|
-| `capture.start` | Off | Device startup is not reached | `permission_denied`; no recording |
-| `capture.start` | On | Working | Sound reaches the Go app; recording starts |
+Both cases send the same `capture.start` after the hotkey.
+
+| $P$: Microphone permission | $D$: input device | $R$: result |
+|---|---|---|
+| Off | Device startup is not reached | <code>permission_<wbr>denied</code>; no recording |
+| On | Working | Sound reaches the Go app; recording starts |
 
 ### The source checks and omissions
 
@@ -158,10 +160,10 @@ The hotkey and sound routes have separate permission gates. The next chapter div
 
 ### Source
 
-Public baseline: `sglang-omni@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`. Paths are relative to that repository.
+Public baseline: <code>sglang-omni@<wbr>52aab78e85f15da0e85d<wbr>1dbdee3bfe6ffc7cbc84</code>. Paths are relative to that repository.
 
-- Four Microphone permission states: `Voxt/helper/Sources/VoxtNewHelper/Permissions.swift:11-18`; the first permission request: lines 53-58.
-- `capture.start` checks permission before creating its capture job and returns Microphone `permission_denied` on refusal: `Voxt/helper/Sources/VoxtNewHelper/Capture.swift:53-79`.
-- The request method, permission error and wait when permission is undetermined: `Voxt/docs/helper-protocol.md:32-37,63,107`.
-- A failed start sends no `capture.started`: `Voxt/internal/helper/proto/capture.go:20-25`; first audio and subsequent `capture.pcm`: lines 56-72 and 82-90.
-- The Go session classifies this permission error as `ProblemMicrophone`: `Voxt/internal/session/session.go:464-483`.
+- Four Microphone permission states: <code>Voxt/helper/Sources/<wbr>VoxtNewHelper/<wbr>Permissions.swift:11-18</code>; the first permission request: lines 53-58.
+- `capture.start` checks permission before creating its capture job and returns Microphone `permission_denied` on refusal: <code>Voxt/helper/Sources/<wbr>VoxtNewHelper/<wbr>Capture.swift:53-79</code>.
+- The request method, permission error and wait when permission is undetermined: <code>Voxt/docs/<wbr>helper-protocol.md:32-37,<wbr>63,<wbr>107</code>.
+- A failed start sends no `capture.started`: <code>Voxt/internal/helper/<wbr>proto/capture.go:20-25</code>; first audio and subsequent `capture.pcm`: lines 56-72 and 82-90.
+- The Go session classifies this permission error as `ProblemMicrophone`: <code>Voxt/internal/session/<wbr>session.go:464-483</code>.

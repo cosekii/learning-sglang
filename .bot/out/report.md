@@ -3222,3 +3222,32 @@ npx astro dev stop
 
 - Step 4 维持 **12/12**：R1「先标已取消；晚到的只是其中一种，两种情形各查各的，都不交付；记录写已取消、结果空」；R2 不新增概念（框架行用的是已建立的「晚到结果」）；R6 一相一变化。Step 3 未动，维持上轮 12/12。冷读洞 **0**。
 - 两条 finding 均已按主人要求修完；Voxt-11 与 Voxt-03 未动。
+
+---
+
+# lane d 本轮报告 · Voxt 02 deep 手机横溢修复（Voxt-11）
+
+日期：2026-11-27。类型：修 review.md 对固定 `5e777c3` 的 P1 finding Voxt-11（02/1 手机 deep 长源码路径横溢）。两个 deep 文件，一个提交。Voxt 01 Steps 3–4 的 `f111ef9`／`05942e3` 已在队列等协调复审，本轮未返工。
+
+## 修复内容
+
+- **长出处全部加断行机会**（既有 `<code>…<wbr>…</code>` 模式，与 omni deep 一致）：`Hotkey.swift:240-250,269-274`（两处重复出处）、`Hotkey.swift:6-19,76-89,155-169`、`Hotkey.swift:113-151`、`Permissions.swift:7-9,40-46`、`Permissions.swift:11-18`、`Capture.swift:53-79`、基线 commit hash（×3）、`settings.go:357,379`、`hotkey.go:282,304`、`route.go:114-121`（×2）、`hotkey_test.go:419`、`run.go:192-202`、`helperio.go:20-35`、`session.go:464-483`、`helper-protocol.md`（×2）、`hotkey.jsonl:3`、`proto/hotkey.go:113-127`、`proto/capture.go:20-25`——两文件所有含 `/` 的路径出处统一处理，英中同步。
+- **复验发现的另两处同章横溢一并修复**（direction 要求复验 `.deep-body` 横溢，不只销原路径）：
+  - Step 2 对照表在 360 px 超 8 px：表头 `Same Right Option／同一个右 Option` 收窄为 `Same key／同一个键`（图上与 bullets 已说明两幅图用同一个 Right Option）。
+  - Step 3 四列表在 360 px 超约 95 px：两行请求列恒为 `capture.start`，改为表前一句「Both cases send the same `capture.start` after the hotkey.／两种情况都在按键后发出同一个 `capture.start`。」并删去该常数列；表内 `permission_denied` 加 `<wbr>`；中文「不进入设备启动」改「设备不启动」。信息无损失。
+- 未改组件、共享 drawer CSS、MDX 或 transcript（deep 不进 transcript）。
+
+## 复验（按 direction，不用通用 mobile 销项）
+
+- 定点探针（抽屉展开，360／390／430 px × 英中 × 3 步 = **18 状态**）：修前 18/18 `.deep-body` 横溢（最大 +248 等，本章最大 +119，`Hotkey.swift:240-250,269-274` 右缘 444.9 与复审一致）；修后 **0 个元素越界、页面横溢 0、`.deep-body` 残余 ≤1 px 亚像素**，PASS。证据：`.bot/out/voxt11-deep/probe-before.json`、`probe-final.json`，代表图 `.bot/out/voxt11-deep/zh-390-step1-deep.png`。
+- 残余 +1 px 为 scrollWidth 取整（359.x→360），无元素或可见行盒越界；KaTeX 隐藏 MathML 几何盒与中行尾标点悬挂属全站浏览器行为，未计入。
+
+## 硬门（全过）
+
+- `npm run build` 60 页；`BOOK=voxt ONLY=2` transcript 无 diff 无报告项；`BOOK=voxt node scripts/deep-check.mjs 02` ok；`BOOK=voxt ONLY=2 zh-check` all clear；readability 0 机械问题；`BOOK=voxt ONLY=2` mobile 英及中文 STEP 1–3 在 360/390/430 均 no layout breaks；`git diff --check` 干净。
+- 本轮开始 `node_modules` 是指向协调 checkout 的符号链接（dev server 起不来）；只删本目录符号链接并 `npm install` 出本目录依赖，未进入或修改协调 checkout。
+
+## 顺带发现（不属本单元，未改）
+
+- Voxt 01 deep 在 360 px 抽屉展开也有长路径横溢（en +23／zh +34 px）；Voxt 03 Step 1 deep 在 360 px 横溢 +248 px。均记此备协调编号；Voxt-03 按 direction 是下一个 P0 单元。
+- Voxt-11 是否核销由协调固定复审决定；本模型无图像输入，视觉 verdict 留协调侧。
