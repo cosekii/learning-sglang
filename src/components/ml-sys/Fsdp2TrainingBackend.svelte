@@ -44,26 +44,28 @@
       { en: '16 bytes = 2 + 2 + 3 × 4 per value', zh: '每个数 16 字节 = 2 + 2 + 3 × 4' },
     ],
   }, {
-    caption: `FSDP2 gives each of the same 8 ranks one shard. One rank per GPU means ${FSDP_SHARD_STATE_PER_GPU_GB} GB each.`,
-    captionZh: `FSDP2 让同样 8 个 rank 各留一个分片。本例每卡一个 rank，每个分片占 ${FSDP_SHARD_STATE_PER_GPU_GB} GB。`,
+    caption: `FSDP2 shards every tensor across the same 8 ranks. One rank per GPU leaves ${FSDP_SHARD_STATE_PER_GPU_GB} GB of saved training state each.`,
+    captionZh: `FSDP2 把每个张量分给 8 个 rank。每卡一个 rank，训练状态共 ${FSDP_SHARD_STATE_PER_GPU_GB} GB。`,
     title: 'FSDP2 keeps one shard per rank', titleZh: 'FSDP2 让每个 rank 各留一个分片',
-    subtitle: 'shard = one rank\'s part · same 8 ranks, one per GPU',
-    subtitleZh: '分片 = 一个 rank 的一份 · 同样 8 个 rank，每卡一个',
+    subtitle: 'DTensor = logical tensor (whole table) + placement (split rule) + local shard (rank\'s part)',
+    subtitleZh: 'DTensor = 逻辑张量（完整数值表）+ placement（拆分规则）+ 本地分片（rank 的部分）',
     foot: 'Equal shards are a teaching simplification; real tensors need not divide evenly.',
     footZh: '等分只是教学简化；真实张量不一定能等分。',
-    mobileTitle: 'Each rank owns 8 GB', mobileTitleZh: '每个 rank 拥有 8 GB',
-    mobileSubtitle: 'shard = one rank\'s part · one rank per GPU', mobileSubtitleZh: '分片 = 一个 rank 的一份 · 每卡一个 rank',
+    mobileTitle: 'DTensor gives each rank a shard', mobileTitleZh: 'DTensor 让每个 rank 各留一片',
+    mobileSubtitle: 'whole table + split rule + rank parts', mobileSubtitleZh: '完整数值表 + 拆分规则 + 各 rank 的部分',
     mobileFoot: 'Equal shards are a teaching simplification.', mobileFootZh: '等分只是教学简化。',
-    mobileLegend: 'Orange = full copy · blue = owned shard', mobileLegendZh: '橙 = 完整副本 · 蓝 = 拥有分片',
+    mobileLegend: 'Orange = logical tensor · blue = local shards', mobileLegendZh: '橙 = 逻辑张量 · 蓝 = 本地分片',
     mobile: [
-      { title: 'BEFORE · FULL COPY', titleZh: '之前 · 完整副本', body: '64 GB per GPU · 8 copies = 512 GB', bodyZh: '每卡 64 GB · 8 份 = 512 GB', tone: 'orange' },
-      { title: 'EACH RANK OWNS', titleZh: '每个 rank 拥有', body: '1 + 1 + 6 = 8 GB', bodyZh: '1 + 1 + 6 = 8 GB', tone: 'blue' },
-      { title: '8 RANKS TOGETHER', titleZh: '8 个 rank 合计', body: '8 × 8 = 64 GB, not 512 GB', bodyZh: '8 × 8 = 64 GB，不是 512 GB', tone: 'blue' },
+      { title: 'LOGICAL TENSOR W', titleZh: '逻辑张量 W', body: 'one parameter · all rows', bodyZh: '一个参数 · 所有行', tone: 'orange' },
+      { title: 'PLACEMENT · SHARD(0)', titleZh: 'PLACEMENT · SHARD(0)', body: 'split dim 0 (rows) across 8 ranks', bodyZh: '把第 0 维（行）分给 8 个 rank', tone: 'plain' },
+      { title: 'LOCAL SHARDS', titleZh: '本地分片', body: 'rank r keeps row r · one rank per GPU', bodyZh: 'rank r 留第 r 行 · 每卡一个 rank', tone: 'blue' },
+      { title: 'ALL SAVED TABLES', titleZh: '所有保存的表', body: '1 + 1 + 6 = 8 GB per rank', bodyZh: '每个 rank：1 + 1 + 6 = 8 GB', tone: 'blue' },
     ],
     formulas: [
-      { en: `${FSDP_FULL_STATE_PER_GPU_GB} GB ÷ ${FSDP_DP_SIZE} = ${FSDP_SHARD_STATE_PER_GPU_GB} GB per rank`, zh: `${FSDP_FULL_STATE_PER_GPU_GB} GB ÷ ${FSDP_DP_SIZE} = 每个 rank ${FSDP_SHARD_STATE_PER_GPU_GB} GB` },
-      { en: `${FSDP_DP_SIZE} × ${FSDP_SHARD_STATE_PER_GPU_GB} GB = ${FSDP_SHARD_CLUSTER_STATE_GB} GB total`, zh: `${FSDP_DP_SIZE} × ${FSDP_SHARD_STATE_PER_GPU_GB} GB = 合计 ${FSDP_SHARD_CLUSTER_STATE_GB} GB` },
-      { en: 'Each GPU keeps one-eighth of its old copy', zh: '每张 GPU 只留原来的八分之一' },
+      { en: `Per rank: ${FSDP_FULL_STATE_PER_GPU_GB} GB ÷ ${FSDP_DP_SIZE} = ${FSDP_SHARD_STATE_PER_GPU_GB} GB`, zh: `每个 rank：${FSDP_FULL_STATE_PER_GPU_GB} GB ÷ ${FSDP_DP_SIZE} = ${FSDP_SHARD_STATE_PER_GPU_GB} GB` },
+      { en: `${FSDP_DP_SIZE} copies: ${FSDP_FULL_CLUSTER_STATE_GB} GB → ${FSDP_DP_SIZE} shards: ${FSDP_SHARD_CLUSTER_STATE_GB} GB`, zh: `${FSDP_DP_SIZE} 份副本：${FSDP_FULL_CLUSTER_STATE_GB} GB → ${FSDP_DP_SIZE} 个分片：${FSDP_SHARD_CLUSTER_STATE_GB} GB` },
+      { en: 'Later: gather parts into full values', zh: '后续：把部分拼成完整数值' },
+      { en: 'Step 3 all-gather · Step 6 Replicate()', zh: '第 3 步 all-gather · 第 6 步 Replicate()' },
     ],
   }, {
     caption: `zero_grad clears the old gradient shard. Forward starts with ${FSDP_FORWARD_RESIDENT_GB} GB, then temporarily adds one full layer.`,
@@ -178,7 +180,7 @@
       motion.removeEventListener('change', updateMotion);
     };
   });
-  const PHASE_COUNTS = [3, 3, 5, 5, 3, 4];
+  const PHASE_COUNTS = [3, 5, 5, 5, 3, 4];
   const PHASE_MS = 1000, REST_MS = 2800;
   let phase = $state(0);
   let lap = $state(0), lapMs = $state(0);
@@ -201,10 +203,10 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [560, 560, 600, 600, 560, 600][step] : [500, 500, 500, 500, 500, 520][step]);
+  const H = $derived(phone ? [560, 620, 600, 600, 560, 600][step] : [500, 500, 500, 500, 500, 520][step]);
 </script>
 
-<figure class="viz" data-animation-step={step} data-animation-phase={phase} data-animation-final-phase={PHASE_COUNTS[step] - 1}>
+<figure class="viz" class:dtensor-step={step === 1} data-animation-step={step} data-animation-phase={phase} data-animation-final-phase={PHASE_COUNTS[step] - 1}>
   <div class="canvas">
     <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={$lang === 'zh' ? cur.captionZh : cur.caption}>
       {#if !reduceMotion}<LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={4} />{/if}
@@ -268,26 +270,44 @@
           <text x="360" y="452" text-anchor="middle" class="small">{t('Orange = saved training tables · blue = repeated full copies', '橙 = 训练保存的表 · 蓝 = 重复的完整副本')}</text>
         </g>
       {:else if step === 1}
-        <rect x="30" y="88" width="315" height="248" rx="13" fill="var(--gen-soft)" stroke="var(--gen)" />
-        <text x="187" y="120" text-anchor="middle" class="section">{t('BEFORE · FULL COPY', '之前 · 完整复制')}</text>
-        <rect x="60" y="140" width="250" height="64" rx="9" fill="var(--bg)" stroke="var(--gen)" />
-        <text x="185" y="180" text-anchor="middle" class="big">{FSDP_FULL_STATE_PER_GPU_GB} GB</text>
-        <text x="187" y="231" text-anchor="middle" class="small">{FSDP_FULL_WEIGHT_GB} + {FSDP_FULL_GRADIENT_GB} + {FSDP_FULL_OPTIMIZER_GB} = {FSDP_FULL_STATE_PER_GPU_GB} GB</text>
-        <text x="187" y="270" text-anchor="middle" class="result">{FSDP_DP_SIZE} {t('copies', '份')} = {FSDP_FULL_CLUSTER_STATE_GB} GB</text>
-        <text x="187" y="305" text-anchor="middle" class="small">{t('every GPU keeps every table', '每张 GPU 都保存所有表')}</text>
+        <rect x="30" y="88" width="260" height="248" rx="13" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x="160" y="118" text-anchor="middle" class="section">{t('LOGICAL TENSOR W', '逻辑张量 W')}</text>
+        <text x="160" y="144" text-anchor="middle" class="small">{t('one parameter · all rows', '一个参数 · 所有行')}</text>
+        {#each Array.from({ length: FSDP_DP_SIZE }, (_, i) => i) as i}
+          <text x="55" y={167 + i * 20} text-anchor="middle" class="small">{i}</text>
+          <rect x="70" y={154 + i * 20} width="180" height="14" rx="3" fill="var(--bg)" stroke="var(--gen)" />
+        {/each}
         <g opacity={phase >= 1 ? 1 : 0}>
-          <rect x="375" y="88" width="315" height="248" rx="13" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="532" y="120" text-anchor="middle" class="section">{t('WITH FSDP2 · ONE RANK', '使用 FSDP2 · 一个 rank')}</text>
-          <rect x="405" y="140" width={250 / FSDP_DP_SIZE} height="64" rx="4" fill="var(--bg)" stroke="var(--accent)" />
-          <text x="450" y="180" class="big">{FSDP_SHARD_STATE_PER_GPU_GB} GB</text>
-          <text x="532" y="231" text-anchor="middle" class="small">{FSDP_SHARD_WEIGHT_GB} + {FSDP_SHARD_GRADIENT_GB} + {FSDP_SHARD_OPTIMIZER_GB} = {FSDP_SHARD_STATE_PER_GPU_GB} GB</text>
-          <text x="532" y="270" text-anchor="middle" class="result">{FSDP_DP_SIZE} {t('ranks', '个 rank')} = {FSDP_SHARD_CLUSTER_STATE_GB} GB</text>
-          <text x="532" y="305" text-anchor="middle" class="small">{t('each rank owns one shard', '每个 rank 拥有一片')}</text>
+          <text x="360" y="151" text-anchor="middle" class="result">Shard(0)</text>
+          <text x="360" y="177" text-anchor="middle" class="small strong">placement</text>
+          <text x="360" y="202" text-anchor="middle" class="small">{t('split dim 0 = rows', '拆分第 0 维 = 行')}</text>
+          <text x="360" y="225" text-anchor="middle" class="small">{t('across 8 ranks', '分给 8 个 rank')}</text>
+          <line x1="305" y1="254" x2="415" y2="254" stroke="var(--line)" stroke-width="2.5" marker-end="url(#fsdp-arrow-plain)" />
         </g>
         <g opacity={phase >= 2 ? 1 : 0}>
-          <text x="360" y="370" text-anchor="middle" class="small strong">{t('The two bars use one scale: 250 px = 64 GB.', '两条柱使用同一比例：250 px = 64 GB。')}</text>
-          <text x="360" y="407" text-anchor="middle" class="result">{FSDP_FULL_STATE_PER_GPU_GB} GB ÷ {FSDP_DP_SIZE} = {FSDP_SHARD_STATE_PER_GPU_GB} GB {t('per rank', '每个 rank')}</text>
-          <text x="360" y="450" text-anchor="middle" class="small">{t('Orange = full copies · blue = owned shards', '橙 = 完整副本 · 蓝 = 拥有的分片')}</text>
+          <rect x="430" y="88" width="260" height="248" rx="13" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="560" y="118" text-anchor="middle" class="section">{t('LOCAL SHARDS', '本地分片')}</text>
+          <text x="560" y="144" text-anchor="middle" class="small">{t('one local shard per rank', '每个 rank 一个本地分片')}</text>
+          {#each Array.from({ length: FSDP_DP_SIZE }, (_, i) => i) as i}
+            <text x="452" y={167 + i * 20} class="small">rank {i}</text>
+            <rect x="510" y={154 + i * 20} width="130" height="14" rx="3" fill="var(--bg)" stroke="var(--accent)" />
+            <text x="575" y={166 + i * 20} text-anchor="middle" class="small">{t('row', '行')} {i}</text>
+          {/each}
+          <text x="560" y="326" text-anchor="middle" class="small">{t('rank r keeps row r · GPU r', 'rank r 留第 r 行 · 第 r 张 GPU')}</text>
+        </g>
+        <g opacity={phase >= 3 ? 1 : 0}>
+          <text x="35" y="348" class="small strong">{t('ALL SAVED TABLES · 250 PX = 512 GB', '所有保存的表 · 250 PX = 512 GB')}</text>
+          <rect x="35" y="361" width="250" height="20" rx="4" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="300" y="376" class="small">{FSDP_DP_SIZE} {t('copies', '份')} · {FSDP_FULL_CLUSTER_STATE_GB} GB</text>
+          <rect x="35" y="392" width={250 * FSDP_SHARD_CLUSTER_STATE_GB / FSDP_FULL_CLUSTER_STATE_GB} height="20" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="82" y="407" class="small">{FSDP_DP_SIZE} {t('shards', '片')} · {FSDP_SHARD_CLUSTER_STATE_GB} GB</text>
+          <text x="550" y="374" text-anchor="middle" class="result">{t(`${FSDP_FULL_STATE_PER_GPU_GB} GB ÷ ${FSDP_DP_SIZE} = ${FSDP_SHARD_STATE_PER_GPU_GB} GB per rank`, `每个 rank：${FSDP_FULL_STATE_PER_GPU_GB} GB ÷ ${FSDP_DP_SIZE} = ${FSDP_SHARD_STATE_PER_GPU_GB} GB`)}</text>
+          <text x="550" y="404" text-anchor="middle" class="result">{t(`${FSDP_SHARD_WEIGHT_GB} + ${FSDP_SHARD_GRADIENT_GB} + ${FSDP_SHARD_OPTIMIZER_GB} = ${FSDP_SHARD_STATE_PER_GPU_GB} GB saved state`, `权重 ${FSDP_SHARD_WEIGHT_GB} + 梯度 ${FSDP_SHARD_GRADIENT_GB} + 优化器 ${FSDP_SHARD_OPTIMIZER_GB} = ${FSDP_SHARD_STATE_PER_GPU_GB} GB`)}</text>
+        </g>
+        <g opacity={phase >= 4 ? 1 : 0}>
+          <rect x="30" y="425" width="660" height="52" rx="10" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />
+          <text x="360" y="446" text-anchor="middle" class="small strong">{t('Later steps gather the parts back when full values are needed.', '后续步骤需要完整数值时，会把这些部分拼回去。')}</text>
+          <text x="360" y="467" text-anchor="middle" class="small strong">{t('Step 3 all-gather → full layer · Step 6 Replicate() → full tensor', '第 3 步 all-gather → 完整一层 · 第 6 步 Replicate() → 完整张量')}</text>
         </g>
       {:else if step === 2}
         {#each [
@@ -409,6 +429,9 @@
   .strong { font-weight: 650; }
   .result { font-family: var(--mono); font-size: 15px; font-weight: 650; fill: var(--fg); }
   .big { font-family: var(--mono); font-size: 25px; font-weight: 700; fill: var(--fg); }
+  @media (min-width: 601px) {
+    .dtensor-step :global(.tag), .dtensor-step :global(.footnote) { font-size: 13px; }
+  }
   @media (max-width: 600px) {
     .title { font-size: 16px; }
     .label, .small { font-size: 12px; }

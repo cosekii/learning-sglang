@@ -41,9 +41,11 @@ Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:16`; `Awesome-ML-SYS
 
 ### On the stage
 
-- On desktop, the left panel repeats Step 1's 64 GB full copy on every GPU, reaching 512 GB across eight copies.
-- The right panel uses the same bar scale for one rank's 8 GB shard: 1 GB of weights, 1 GB of gradients and 6 GB of optimizer-related tables.
-- Mobile shows the same before-and-after quantities as cards instead of bars. Eight ranks own different slices of the same logical tables, so their combined saved state is 64 GB. The equal partition is a teaching simplification, not a promise that real tensors divide evenly.
+- The orange logical tensor `W` is one complete parameter. Its eight numbered rows are a toy shape used to make the split visible.
+- `Shard(0)` is the DTensor placement: it splits dimension 0, the rows in this example, across the eight DP ranks. The blue cards show each rank's local shard. In this toy example, rank `r` keeps row `r` on GPU `r`.
+- `ALL SAVED TABLES` marks the aggregate memory account, separate from the one-row parameter shard above it. The orange and blue bars use one scale, 250 px = 512 GB: eight full copies hold 512 GB, while eight owned shards hold 64 GB. The formulas derive `64 ÷ 8 = 8` GB of saved training state per rank and its `1 + 1 + 6` GB breakdown.
+- The bottom box gives one forward pointer: later steps gather the parts back when they need full values. Step 3's all-gather reconstructs a full layer for computation. Step 6's `Replicate()` redistribution reconstructs one full weight tensor for export.
+- Mobile presents the same logical tensor, placement, local shards and memory arithmetic as cards. Equal rows and equal memory shards are teaching simplifications, not promises that real tensors divide evenly.
 
 ### Formula and symbols
 
@@ -61,17 +63,21 @@ $$M_i=M/R,\qquad C_{\text{shard}}=R M_i$$
 
 $$M_i=64\ \text{GB}/8=8\ \text{GB},\qquad C_{\text{shard}}=8\times8\ \text{GB}=64\ \text{GB}$$
 
-The per-rank breakdown is $8/8=1$ GB of weights, $8/8=1$ GB of gradients and $48/8=6$ GB of optimizer-related tables. On desktop, the 250-pixel and 31.25-pixel bars have an 8:1 width ratio, matching 64:8 GB.
+The per-rank breakdown is $8/8=1$ GB of weights, $8/8=1$ GB of gradients and $48/8=6$ GB of optimizer-related tables. The figure keeps these aggregate memory quantities separate from the toy eight-row parameter above them.
 
 ### FSDP2 and DTensor
 
-FSDP2 represents each parameter as a DTensor: the logical tensor plus its distribution metadata and local shards. FSDP1 could instead join a module's parameters into one flat table called `FlatParameter`. Slime's `world_size` counts all ranks. Context parallelism (CP) splits a sequence across `cp_size` ranks, while `dp_size = world_size // cp_size` counts the ranks in the sharding group. The rank layout is called a mesh, and slime passes the DP mesh to `fully_shard`. With CP enabled, physical GPU count and DP shard count can differ; this example uses CP 1.
+FSDP2 represents each parameter as a DTensor: the logical tensor, its placement on a device mesh and the local shard stored on each rank. On a 1D mesh, `fully_shard` represents sharded parameters as dim-0 DTensors with `Shard(0)` placement. `Shard(0)` follows `torch.chunk(..., dim=0)` semantics, so dimension 0 is split across the DP mesh. The stage uses eight rows and eight ranks so that each local shard is one visible row; real parameters can have other shapes and uneven shards.
+
+FSDP1 could instead join a module's parameters into one flat table called `FlatParameter`. Slime's `world_size` counts all ranks. Context parallelism (CP) splits a sequence across `cp_size` ranks, while `dp_size = world_size // cp_size` counts the ranks in the sharding group. The rank layout is called a mesh, and slime passes the DP mesh to `fully_shard`. With CP enabled, physical GPU count and DP shard count can differ; this example uses CP 1.
+
+The placement also explains the two later paths. Forward all-gathers the current unit's parameter shards for computation. During export, slime calls `redistribute` with `Replicate()` on each parameter DTensor and then uses the resulting local full tensor.
 
 ### Next
 
-Keeping shards saves persistent memory, but a layer still needs its full parameter values for computation. The next step gathers one layer temporarily.
+Keeping shards saves persistent memory, but a layer still needs its full parameter values for computation. The next step gathers one layer temporarily. Step 6 revisits the same DTensor when it exports one full tensor through `Replicate()`.
 
-Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:16-23`; `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:43-47,62-82`; `THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7`, `slime/backends/fsdp_utils/actor.py:94-98,158-186`.
+Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:16-23`; `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:43-47,62-82`; `THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7`, `slime/backends/fsdp_utils/actor.py:94-98,158-186` and `update_weight_utils.py:45-74`; `pytorch/pytorch@v2.8.0`, `torch/distributed/fsdp/_fully_shard/_fully_shard.py`, `fully_shard`, and `torch/distributed/tensor/placement_types.py`, `Shard` and `Replicate`.
 
 ## Step 3 · Borrow a full layer for forward computation
 

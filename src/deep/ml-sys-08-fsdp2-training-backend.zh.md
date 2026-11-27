@@ -41,9 +41,11 @@ $$C=8\times64\ \text{GB}=512\ \text{GB},\qquad f=64/80=0.8=80\%$$
 
 ### 图上是什么
 
-- 桌面左图沿用第 1 步：每张 GPU 都有 64 GB 完整副本，8 张合计 512 GB。
-- 右图用同样的柱子比例画一个 rank 的 8 GB 分片：权重 1 GB、梯度 1 GB、优化器相关表 6 GB。
-- 手机用卡片画出同样的前后数量，不画柱子。8 个 rank 拥有同一套逻辑表的不同部分，所以合计保存状态仍是 64 GB。等分只是教学简化，不保证真实张量都能整除。
+- 橙色逻辑张量 `W` 是一个完整参数。图中用 8 行编号的小例子让拆分过程看得见。
+- `Shard(0)` 是 DTensor 的 placement：把第 0 维，也就是本例的行，分给 8 个 DP rank。蓝格展示每个 rank 保存的本地分片。本例中，rank `r` 在第 `r` 张 GPU 上保存第 `r` 行。
+- `所有保存的表` 标出整体显存账，与上方一个参数的一行分片分开。橙柱和蓝柱用同一比例，250 px = 512 GB：8 份完整副本占 512 GB，8 个拥有分片合计占 64 GB。算式推出每个 rank 的训练状态为 `64 ÷ 8 = 8` GB，并拆成 `1 + 1 + 6` GB。
+- 底框只指向下一步的共同动作：需要完整数值时，把这些部分拼回去。第 3 步的 all-gather 拼出计算用的完整一层。第 6 步通过 `Replicate()` 重新分布，拼出导出的一个完整权重张量。
+- 手机用卡片展示同样的逻辑张量、placement、本地分片和显存算式。行和显存都等分只是教学简化，不保证真实张量都能整除。
 
 ### 公式与符号
 
@@ -61,17 +63,21 @@ $$M_i=M/R,\qquad C_{\text{shard}}=R M_i$$
 
 $$M_i=64\ \text{GB}/8=8\ \text{GB},\qquad C_{\text{shard}}=8\times8\ \text{GB}=64\ \text{GB}$$
 
-每个 rank 的拆分为：权重 $8/8=1$ GB、梯度 $8/8=1$ GB、优化器相关表 $48/8=6$ GB。桌面上的 250 px 与 31.25 px 柱宽比是 8:1，对应 64:8 GB。
+每个 rank 的拆分为：权重 $8/8=1$ GB、梯度 $8/8=1$ GB、优化器相关表 $48/8=6$ GB。图中把这些整体显存数字与上方的 8 行参数小例子分开，不把一行当成整个训练状态。
 
 ### FSDP2 与 DTensor
 
-FSDP2 把每个参数表示为 DTensor：逻辑张量、分布信息和本地分片一起记录。FSDP1 可以把模块的参数拼成一张扁平表，称为 `FlatParameter`。slime 的 `world_size` 是所有 rank 的数量。context parallelism（CP）把序列分给 `cp_size` 个 rank，`dp_size = world_size // cp_size` 则是分片组里的 rank 数。rank 的排列布局称为 mesh，slime 把 DP mesh 传给 `fully_shard`。启用 CP 时，物理 GPU 数和 DP 分片数可以不同；本例取 CP 1。
+FSDP2 把每个参数表示为 DTensor：逻辑张量、它在 device mesh 上的 placement，以及每个 rank 保存的本地分片。在一维 mesh 上，`fully_shard` 用 `Shard(0)` placement 把参数表示为按第 0 维分片的 DTensor。`Shard(0)` 遵循 `torch.chunk(..., dim=0)` 的语义，把第 0 维分到 DP mesh 上。图中取 8 行和 8 个 rank，让每个本地分片都是看得见的一行；真实参数可以有其他形状，分片也可以不等分。
+
+FSDP1 可以把模块的参数拼成一张扁平表，称为 `FlatParameter`。slime 的 `world_size` 是所有 rank 的数量。context parallelism（CP）把序列分给 `cp_size` 个 rank，`dp_size = world_size // cp_size` 则是分片组里的 rank 数。rank 的排列布局称为 mesh，slime 把 DP mesh 传给 `fully_shard`。启用 CP 时，物理 GPU 数和 DP 分片数可以不同；本例取 CP 1。
+
+placement 也解释了后面的两条路径。forward 为计算 all-gather 当前 unit 的参数分片。导出时，slime 对每个参数 DTensor 调用带 `Replicate()` 的 `redistribute`，再使用得到的本地完整张量。
 
 ### 接下来
 
-分片能减少长期保存的显存，但计算一层时仍需要这一层的完整参数。下一步临时聚齐这一层。
+分片能减少长期保存的显存，但计算一层时仍需要这一层的完整参数。下一步临时聚齐这一层。第 6 步会回到同一个 DTensor，通过 `Replicate()` 导出一个完整张量。
 
-来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:16-23`；`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:43-47,62-82`；`THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7` 的 `slime/backends/fsdp_utils/actor.py:94-98,158-186`。
+来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:16-23`；`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:43-47,62-82`；`THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7` 的 `slime/backends/fsdp_utils/actor.py:94-98,158-186` 和 `update_weight_utils.py:45-74`；`pytorch/pytorch@v2.8.0` 的 `torch/distributed/fsdp/_fully_shard/_fully_shard.py` 中 `fully_shard`，以及 `torch/distributed/tensor/placement_types.py` 中 `Shard` 和 `Replicate`。
 
 ## 第 3 步 · 前向计算先借来完整一层
 
