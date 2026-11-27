@@ -4,7 +4,7 @@
 
 ### On the stage
 
-- The picture builds in phases: the tap appears first, then the helper, then the message box, whose three field rows arrive one at a time, and finally the Go app's start.
+- The picture builds in phases: the tap appears first, then the helper, then the message box, whose three field rows arrive one at a time; the Go app then appears `idle`, and the arriving message switches it to `START`. Blue marks only the message and its route.
 - You tap `Right ⌥`: Right Option, the default Transcribe shortcut. Left Option does not match this default binding.
 - Swift helper: the companion program that listens for the key. It recognizes this tap and does not capture audio in this step.
 - One JSON message: JSON gives each fact a name and a matching value. The stage reads three fields on separate rows with plain-language meanings, while the transport still uses one line. The blue box and arrows show the message moving from the helper to the Go app.

@@ -2924,3 +2924,29 @@ npx astro dev stop
 ## 环境备注
 
 - 本 clone 的 `node_modules` 原是指向 `~/code/learning-sglang/node_modules` 的符号链接（build 因此 EPERM）。只删掉了本目录里的符号链接本身并 `npm install` 出本目录自己的依赖；协调 checkout 未进、未改，事后确认其 node_modules 完好。
+
+---
+
+# lane d 本轮报告 · Voxt 02 Step 1 评审修复（idle→START 与蓝色单义）
+
+日期：2026-11-27。类型：主人对 `d487cc2` 的两条内容 finding，均在 Step 1，按一步一提交处理；未改已推送历史。
+
+## 修复 1：Go app 先 `idle` 后 `START`
+
+- Step 1 由 7 相扩为 8 相：第 6 相 Go app 框携 `GO APP`／`main program`／muted 的 `idle`（zh「空闲」，桌面另有 `nothing was recording`）出现；第 7 相同一 action 行由 `idle` 变为 `START`（zh「开始」）并补 `Transcribe = dictation`。手机版删去原来的合并标签 `idle → START`，与桌面同为两相状态切换。
+- 探针同步：p6 断言 `idle` 在、`START` 不在；p7 断言 `START` 在、`idle` 不在，英中桌面／手机全覆盖，不再只查末相 `START`。
+
+## 修复 2：蓝色只表示消息路线（EVAL #5）
+
+- 撤销 Step 1 引入相的 accent 高亮：按键、helper、Go 框在任何相位都是 `var(--bg)`／`var(--line)`；accent-soft／accent 只剩 JSON 消息框（第 2 相起 1 个）与消息箭头，与 deep「蓝色只表示消息和它走的路线」一致。Steps 2–3 本来就没有框高亮，红=阻断、蓝=接通路线不变。
+- 双语 deep 的相位句补「Blue marks only the message and its route」／「蓝色只表示消息和它走的路线」；aria 同步 idle→START 过程。
+- 探针新增逐相颜色断言：每相统计 `fill=var(--accent-soft)` 与 `stroke=var(--accent)` 的 rect 数，Step 1 期望 0,0,1,1,1,1,1,1，防止回归。
+
+## 硬门复跑（全过）
+
+- `npm run build` 60 页；`BOOK=voxt ONLY=2` transcript 3 步无报告项（末相为 START 态，不含 idle，符合预期）；readability 0 机械问题；deep-check ok；zh-check all clear；mobile 英 360/390/430 与中文 STEP 1–3 均 no layout breaks；`git diff --check` 干净。
+- 探针（`/tmp/lsd-voxt02-probe.mjs` 更新版）：**144 个相位状态、1,068 项断言、0 失败，exit=0**；含逐相 idle/START 与逐相颜色断言。
+
+## 修订自评
+
+- Step 1 易读 **12/12**：R1「按一下键，helper 包成一条消息，Go app 原本空闲，消息一到就开始」；R6 一相一变化，Go 的状态在同一个对象上从 idle 变成 START；EVAL #5 蓝色单义由逐相断言守住。Steps 2–3 维持上轮 12/12 不变（本轮未改）。

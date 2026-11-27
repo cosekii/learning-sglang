@@ -21,8 +21,8 @@
     captionZh: '麦克风权限只管声音，不管按键。未开启时，录音不能开始。',
   }];
   const ariaLabels = [{
-    en: 'The picture builds in order: you tap Right Option, the Swift helper recognizes it, one JSON message box appears and its three fields arrive one row at a time, then the Go app switches from idle to START.',
-    zh: '画面按顺序形成：你按右 Option，Swift helper 认出它，一条 JSON 消息框出现，三个字段逐行到达，最后 Go app 从空闲变成开始。',
+    en: 'The picture builds in order: you tap Right Option, the Swift helper recognizes it, one JSON message box appears and its three fields arrive one row at a time, then the Go app appears idle, and the message switches it to START.',
+    zh: '画面按顺序形成：你按右 Option，Swift helper 认出它，一条 JSON 消息框出现，三个字段逐行到达，随后 Go app 以空闲出现，消息到达后把它变成开始。',
   }, {
     en: 'Both panels appear with only their titles first. The OFF panel plays the tap reaching the Mac setting, the red cross, no key seen, zero messages and an idle Go app; then the ON panel plays the same tap passing the setting, one message reaching the Go app, which starts.',
     zh: '两幅图先只出现标题。左图演示按键到达 Mac 设置、红叉拦下、看不见按键、零条消息、Go app 仍空闲；随后右图演示同一个按键通过开启的设置，一条消息到达 Go app，开始听写。',
@@ -66,11 +66,12 @@
     { x: 370, y: 78, allowed: true },
   ]);
   // All three steps build as a process: Step 1 walks the tap into the helper,
-  // the message box and its three field rows, then the Go app's start;
-  // Step 2 plays the OFF panel's blocked route, then the ON panel's delivery;
-  // Step 3 plays the OFF panel's refused request, then the ON panel's sound.
+  // the message box and its three field rows, then the Go app appears idle
+  // and the message switches it to START; Step 2 plays the OFF panel's
+  // blocked route, then the ON panel's delivery; Step 3 plays the OFF
+  // panel's refused request, then the ON panel's sound.
   const ANIMATED = [true, true, true];
-  const PHASE_COUNTS = [7, 9, 5];
+  const PHASE_COUNTS = [8, 9, 5];
   // Phone LoopProgress spot per step, kept clear of titles, panels and footnotes.
   const LP_PHONE: [number, number][] = [[225, 489], [225, 271], [225, 489]];
   const PHASE_MS = 900;
@@ -129,7 +130,7 @@
       {#each boxes as box, i}
         {#if phase >= INTRO[i]}
           <g in:fade={{ duration: 250 }}>
-            <rect x={box.x} y={box.y} width={box.w} height={box.h} rx="12" fill={i === 2 || phase === INTRO[i] ? 'var(--accent-soft)' : 'var(--bg)'} stroke={i === 2 || phase === INTRO[i] ? 'var(--accent)' : 'var(--line)'} stroke-width={i === 2 || phase === INTRO[i] ? 2 : 1} />
+            <rect x={box.x} y={box.y} width={box.w} height={box.h} rx="12" fill={i === 2 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={i === 2 ? 'var(--accent)' : 'var(--line)'} stroke-width={i === 2 ? 2 : 1} />
           </g>
         {/if}
         {#if i < boxes.length - 1 && phase >= INTRO[i + 1]}
@@ -189,10 +190,14 @@
       <g in:fade={{ duration: 250 }}>
       <text x={boxes[3].x + boxes[3].w / 2} y={boxes[3].y + (phone ? 16 : 27)} text-anchor="middle" class="label">GO APP</text>
       <text x={boxes[3].x + boxes[3].w / 2} y={boxes[3].y + (phone ? 33 : 62)} text-anchor="middle" class="detail">{t('main program', '主程序')}</text>
-      <text x={boxes[3].x + boxes[3].w / 2} y={boxes[3].y + (phone ? 50 : 94)} text-anchor="middle" class="action">{t(phone ? 'idle → START' : 'START', phone ? '空闲 → 开始' : '开始')}</text>
-      <text x={boxes[3].x + boxes[3].w / 2} y={boxes[3].y + (phone ? 66 : 122)} text-anchor="middle" class="detail">{t('Transcribe = dictation', 'Transcribe = 听写')}</text>
       {#if !phone}<text x={boxes[3].x + boxes[3].w / 2} y={boxes[3].y + 148} text-anchor="middle" class="detail">{t('nothing was recording', '此前没在听写')}</text>{/if}
       </g>
+      {/if}
+      {#if phase >= 7}
+      <text in:fade={{ duration: 250 }} x={boxes[3].x + boxes[3].w / 2} y={boxes[3].y + (phone ? 50 : 94)} text-anchor="middle" class="action">{t('START', '开始')}</text>
+      <text in:fade={{ duration: 250 }} x={boxes[3].x + boxes[3].w / 2} y={boxes[3].y + (phone ? 66 : 122)} text-anchor="middle" class="detail">{t('Transcribe = dictation', 'Transcribe = 听写')}</text>
+      {:else if phase >= 6}
+      <text in:fade={{ duration: 250 }} x={boxes[3].x + boxes[3].w / 2} y={boxes[3].y + (phone ? 50 : 94)} text-anchor="middle" class="action idle">{t('idle', '空闲')}</text>
       {/if}
 
       <text x={W / 2} y={H - (phone ? 34 : 38)} text-anchor="middle" class="footnote">{t('Permission already granted; key route only', '本步假设权限已通过，只画按键路线')}</text>
@@ -308,6 +313,7 @@
   .mono { font-family: var(--mono); font-size: 10px; fill: var(--fg); }
   .meaning { font-size: 10px; fill: var(--fg); }
   .action { font-size: 14px; font-weight: 700; fill: var(--fg); }
+  .action.idle { font-weight: 600; fill: var(--muted); }
   @media (max-width: 600px) {
     .title { font-size: 14px; }
     .subtitle, .label, .detail, .mono, .meaning, .footnote { font-size: 12px; }
