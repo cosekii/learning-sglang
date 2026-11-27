@@ -383,7 +383,7 @@ TXT 只有两行：`Good morning.` 和 `See you at noon.`。
 
 命令先把结果写进内存里的 `bytes.Buffer`。如果识别在中途失败，`err != nil`，函数在打开输出前返回，所以不会创建新文件，也不会覆盖旧文件（`Voxt/transcribe_cli.go:73-87`）。`-o -` 或没有 `-o` 时，它把缓冲区写到标准输出，也不创建文件（`transcribe_cli.go:94-97`）。`-o FILE` 时，识别成功后命令才调用 `os.WriteFile`（`transcribe_cli.go:98-101`）。这个写入不是原子的：写盘失败可能截断旧文件或留下部分新文件，本章不保证所有失败都不留半个文件。
 
-$$ \text{output} = \begin{cases} \text{none} & \text{任一句失败} \\ \text{buffer 写到标准输出} & \text{全部成功，\texttt{-o -} 或没有 \texttt{-o}} \\ \text{one WriteFile(buffer)} & \text{全部成功，\texttt{-o FILE}} \end{cases} $$
+$$ \text{output} = \begin{cases} \text{none} & \text{任一句失败} \\ \text{写标准输出} & \text{成功，无 \texttt{-o} 或 \texttt{-o -}} \\ \text{WriteFile} & \text{成功，\texttt{-o FILE}} \end{cases} $$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
@@ -392,7 +392,8 @@ $$ \text{output} = \begin{cases} \text{none} & \text{任一句失败} \\ \text{b
 | buffer | 内存里攒下的全部句子文字 | `transcribe_cli.go:92-93` |
 | `-o` | 结果写去哪里；默认是 `-`，即标准输出 | `transcribe_cli.go:43` |
 | WriteFile | 唯一一次非原子写盘，只在 `-o FILE` 时发生 | `transcribe_cli.go:98-101` |
-| output | 标准输出，或那个文件 | `transcribe_cli.go:94-101` |
+| 写标准输出 | `-o` 是 `-` 时，缓冲区写到标准输出 | `transcribe_cli.go:94-97` |
+| output | 无输出、标准输出，或那个文件 | `transcribe_cli.go:73-101` |
 
 ### 代入图上的数
 
@@ -460,14 +461,16 @@ $$ \text{log} = \{\text{audio length},\ \text{segment count},\ \text{error?}\} $
 
 `fileRecognizer` 先读 Transcribe 的功能模型（`transcribe_socket.go:64-67`），再用 `a.local.ASR(ctx, p.id)` 拿到这个模型的 provider（`transcribe_socket.go:80`）。模型可以装在本机，也可以配置成远端服务；`docs/transcribe.md` 的 Privacy 一节写的是：声音去 Transcribe 的音频去的地方，本机模型或远端服务，Voxt 不保留它。
 
-$$ \text{provider} = \text{model}(\text{Transcribe}) \in \{\text{本机},\ \text{远端}\} $$
+$$ \text{provider} = \text{model}(\text{Transcribe}) $$
+
+$$ \text{provider} \in \{\text{本机},\ \text{远端}\} $$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
-| provider | 一句的声音在哪里识别 | `transcribe_socket.go:64-80` |
-| Transcribe | 在设置里选模型的那个功能 | `transcribe_socket.go:64-67` |
+| provider | 一句的声音在哪里识别 | `socket.go:64-80` |
+| Transcribe | 在设置里选模型的那个功能 | `socket.go:64-67` |
 | 本机 | 装在这台 Mac 上、在本机运行的模型 | 本步左边的框 |
-| 远端 | 为 Transcribe 配置的服务 | `docs/transcribe.md` |
+| 远端 | 为 Transcribe 配置的服务 | `transcribe.md` |
 | audio | 每句的 PCM 字节 | 第 2–7 步，构造文件为 256,000 B |
 
 ### 代入图上的数
@@ -476,10 +479,12 @@ $$ \text{provider} = \text{model}(\text{Transcribe}) \in \{\text{本机},\ \text
 |---|---|---|---|
 | 图上这次 | 256,000 B，切成 2 句 | 两个框之一，由 Transcribe 的设置决定 | 什么都不留 |
 
+本步表格里的 `socket.go` 是 `Voxt/transcribe_socket.go`，`transcribe.md` 是 `Voxt/docs/transcribe.md`。
+
 | 问题 | 答案 | 出处 |
 |---|---|---|
-| 声音给谁？ | Transcribe 选定的模型 | `transcribe_socket.go:64-80` |
-| 本机还是远端？ | Transcribe 设置成哪个就用哪个 | `docs/transcribe.md` |
+| 声音给谁？ | Transcribe 选定的模型 | `socket.go:64-80` |
+| 本机还是远端？ | Transcribe 设置成哪个就用哪个 | `transcribe.md` |
 
 ### 下一步的问题
 

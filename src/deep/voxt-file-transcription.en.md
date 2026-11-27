@@ -381,18 +381,19 @@ The cues now have a format. Step 9 covers when the output file is opened.
 
 ### Why recognition failure creates or overwrites no output
 
-The command builds the whole result in an in-memory `bytes.Buffer`. If recognition fails midway, `err != nil` and the function returns before opening the output, so it creates no new file and overwrites no old file (`Voxt/transcribe_cli.go:73-87`). With `-o -` or no `-o`, it writes the buffer to standard output and creates no file (`transcribe_cli.go:94-97`). With `-o FILE`, only after recognition succeeds does the command call `os.WriteFile` (`transcribe_cli.go:98-101`). That write is not atomic: a disk-write failure can truncate an old file or leave a partial new file, so the chapter does not promise that every failure leaves no partial file.
+The command builds the whole result in an in-memory `bytes.Buffer`. If recognition fails midway, `err != nil` and the function returns before opening the output, so it creates no new file and overwrites no old file (`Voxt/transcribe_cli.go:73-87`). With `-o -` or no `-o`, it writes the buffer to standard output and creates no file (`transcribe_cli.go:94-97`). With `-o FILE`, only after recognition succeeds does the command call `os.WriteFile` (`transcribe_cli.go:98-101`). That write is not atomic: a disk-write failure can truncate an old file or leave a partial new file, so the chapter does not promise that every failure leaves no partial file. In this step's tables, `cli.go` is `Voxt/transcribe_cli.go`.
 
-$$ \text{output} = \begin{cases} \text{none} & \text{if any cue fails} \\ \text{buffer to standard output} & \text{if every cue succeeds, with \texttt{-o -} or no \texttt{-o}} \\ \text{one WriteFile(buffer)} & \text{if every cue succeeds, with \texttt{-o FILE}} \end{cases} $$
+$$ \text{output} = \begin{cases} \text{none} & \text{any cue fails} \\ \text{to stdout} & \text{success, no \texttt{-o} or \texttt{-o -}} \\ \text{WriteFile} & \text{success, \texttt{-o FILE}} \end{cases} $$
 
 | Symbol | What it is | Where it comes from |
 |---|---|---|
 | cue | one recognized segment | Steps 7–8 |
 | fail | a recognition error for one cue | `fileasr.go:44-56` |
-| buffer | all cue text held in memory | `transcribe_cli.go:92-93` |
-| `-o` | where the result goes; the default is `-`, standard output | `transcribe_cli.go:43` |
-| WriteFile | the single non-atomic write, only with `-o FILE` | `transcribe_cli.go:98-101` |
-| output | standard output, or the file | `transcribe_cli.go:94-101` |
+| buffer | all cue text held in memory | `cli.go:92-93` |
+| `-o` | where the result goes; the default is `-`, standard output | `cli.go:43` |
+| WriteFile | the single non-atomic write, only with `-o FILE` | `cli.go:98-101` |
+| stdout | standard output; the buffer goes there when `-o` is `-` | `cli.go:94-97` |
+| output | none, standard output, or the file | `cli.go:73-101` |
 
 ### Plugging in the stage's numbers
 
@@ -460,14 +461,16 @@ Step 11 shows where the audio goes.
 
 `fileRecognizer` reads the Transcribe feature model (`transcribe_socket.go:64-67`) and gets that model's provider with `a.local.ASR(ctx, p.id)` (`transcribe_socket.go:80`). The model can be installed on this Mac or configured as a remote service. The Privacy section of `docs/transcribe.md` says the audio goes where Transcribe's audio goes, the on-device model or the remote service, and Voxt keeps nothing of it.
 
-$$ \text{provider} = \text{model}(\text{Transcribe}) \in \{\text{on this Mac},\ \text{remote}\} $$
+$$ \text{provider} = \text{model}(\text{Transcribe}) $$
+
+$$ \text{provider} \in \{\text{on this Mac},\ \text{remote}\} $$
 
 | Symbol | What it is | Where it comes from |
 |---|---|---|
-| provider | where one cue's audio is recognized | `transcribe_socket.go:64-80` |
-| Transcribe | the feature whose model is chosen in Settings | `transcribe_socket.go:64-67` |
+| provider | where one cue's audio is recognized | `socket.go:64-80` |
+| Transcribe | the feature whose model is chosen in Settings | `socket.go:64-67` |
 | on this Mac | the model installed and run locally | this step's left box |
-| remote | the service set for Transcribe | `docs/transcribe.md` |
+| remote | the service set for Transcribe | `transcribe.md` |
 | audio | each cue's PCM bytes | Steps 2–7, 256,000 B for the constructed file |
 
 ### Plugging in the stage's numbers
@@ -476,10 +479,12 @@ $$ \text{provider} = \text{model}(\text{Transcribe}) \in \{\text{on this Mac},\ 
 |---|---|---|---|
 | stage | 256,000 B, cut into 2 cues | one of the two boxes, chosen by Transcribe | nothing |
 
+In this step's tables, `socket.go` is `Voxt/transcribe_socket.go` and `transcribe.md` is `Voxt/docs/transcribe.md`.
+
 | Question | Answer | Source |
 |---|---|---|
-| Where does the audio go? | the model chosen for Transcribe | `transcribe_socket.go:64-80` |
-| On-device or remote? | whichever Transcribe is set to use | `docs/transcribe.md` |
+| Where does the audio go? | the model chosen for Transcribe | `socket.go:64-80` |
+| On-device or remote? | whichever Transcribe is set to use | `transcribe.md` |
 
 ### The next question
 
