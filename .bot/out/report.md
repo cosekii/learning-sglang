@@ -33,7 +33,7 @@
 - 剩余事项是 Step 8 R2 与 ML-19 的协调固定复审、原 #4/#5、图像能力复审和主人最终视觉验收。下一修旧单元按 direction 处理 ML-41～44；ML-50／55 分开核销，ML 12 留作之后的独立单元。
 - 本 clone 的 `node_modules` 原指向协调人 checkout；已只删除本目录内符号链接并在本目录安装依赖，package 文件无 diff，未写协调人的 checkout。
 - 本地查看前运行 `npx astro dev --background --host 127.0.0.1 --port 4498`。地址：`http://localhost:4498/learning-sglang/ml-sys/ch/10-int4-qat-rollout/?step=8` 与 `?step=9`。本轮 4498 服务已停止且端口无监听，两个审计脚本均调用 `browser.close()`。
-- 收尾 `pgrep` 仍列出一台 `cdp-KbTD67` Chrome；`ps` 被系统拒绝，无法核 PPID 或归属，未动它。本轮启动的服务和脚本浏览器已按各自接口关闭，其他 lane 进程未动。
+- 收尾 `pgrep` 列出 `cdp-KbTD67` 及随后两台 Chrome；`lsof` 确认它们的工作目录分别属于后台 regress、另一质量线和协调快照，均非本 lane，未动。`ps` 虽被系统拒绝，但进程归属已由 cwd 核实。本轮启动的服务和脚本浏览器已按各自接口关闭，其他 lane 进程未动。
 
 ---
 
