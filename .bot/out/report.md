@@ -2653,3 +2653,37 @@ npx astro dev stop
 - Voxt-01 剩余：Step 3 晚到 A 命中 `A≠B` 的过程化、Step 4 取消后识别／整理拦截与 `cancelled/empty` 的过程化，等协调下一单元。
 - review.md 给 d 的 Voxt 10 P1（Step 1 同屏新名过多）／P2（115.2 MB 可感比较）未动：按顺序 P0 Voxt-01 在先。
 - 本目录 `node_modules` 又是指向协调 checkout 的符号链接，已删并 `npm ci` 本地实装；未进入也未写入 `~/code/learning-sglang`。dev server 用端口 4325（4321/4322 属既有进程，未动），收尾关闭；探针 Chrome 由 `browser.mjs` 自管关闭。
+
+---
+
+# lane d 本轮报告 · Voxt 01 Steps 1–2 评审修复轮
+
+日期：2026-11-27。类型：协调评审三条必修（Step 2 站名前置、台上 R3 缺口、探针证据不足）加提交号更正。教程提交 `2decf2b`。
+
+## 提交号更正
+
+- 上一节报告写的 `fc3b939` 是本地预推送号；推送时 rebase 带入 k2 两个提交，最终 `origin/tutorials` 上是 **`7b758d6`**（教程）与 **`1d6132b`**（记录）。本节起以 rebase 后号为准。
+
+## 修复 1：Step 2 每步只新增本步对象（`2decf2b`）
+
+- 六站站名不再全部前置：第 i 站（框、站名、产物）在 A 徽章到达该相时才 `in:fade` 出现并保留；连接箭头随下一站出现。相位 0 台上只有「你按一下」一站及其产物，符合 direction「每步只新增本步对象和状态」。
+- Step 2 的 R2 重述：本步的新事是「一句话带一个标签走一条路线」；路线上的站名逐个到达，每站到达时都有图内白话产物（`brings sound in`、`把声音送进来` 等），不再是开头一屏六个新名。
+
+## 修复 2：台上 R3 白话缺口
+
+- 脚注不用 `insertion`／`clean-up`：改为「Text stays in the result window by choice or if it cannot go where you type.」／「This dictation succeeded; tidying and saving are on.」（中文「结果小窗／贴不到打字位置」「整理和保存都开着」），手机另用短句变体（`Result window: your pick or a stuck spot.`），与台上站名 `TIDY WORDS`／`SAVE TEXT`／`result window` 对齐。
+- 英文 deep 补 `ASR (speech recognition)`／`LLM (language model)` 白话，与中文层一致；双语 deep 的 Step 2「图上是什么」同步为「站带名字和产物随徽章到达出现」。aria-label 同步。
+
+## 修复 3：探针证据（`/tmp/lsd-voxt01-probe.mjs`，未提交，`scripts/lib/browser.mjs` 可重跑）
+
+- 逐相断言精确产物：Step 1 每相断言本相新增对象在场（手机版结果文本含 `↓ ` 前缀，第一版探针因此误报 4 条，已按真实 DOM 修正断言）；Step 2 每相断言本相站名＋产物在场、**所有未来站名与未来产物均不在场**、徽章 translate 精确等于该站坐标（桌面 `20+116i+71,127`／手机 `236,90+78i+7`）。中文 `你好` 歧义改用精确串 `嗯，你好 → 你好`。失败时 `process.exitCode=1`（误报阶段已实证 exit=1）。
+- 矩阵：英中 × 1440 桌面／390 手机 × Step 1 direct、Step 2 direct＋前步入口＝ **76 个状态、1,004 项断言、0 失败，exit=0**。文字重叠 0、SVG 出界 0、最低可见字号 ≥10 CSS px、counter／`data-animation-*`／`loops·循环` 每相正确。
+
+## 硬门复跑（`2decf2b`，全过）
+
+- `npm run build` 60 页；transcript 4 步无报告项；readability Step 1／2 各 0 机械问题；zh-check all clear；deep-check 21 章 ok；mobile 英 360/390/430 与中文 STEP 1／2 字号门均 no layout breaks；`git diff --check` 干净。
+
+## 重新自评（只评 Steps 1–2）
+
+- Step 1 易读 **12/12**（同上一轮，评审未异议）。Step 2 易读 **12/12**：R1「按一下键，标签 A 带着这句话一站一站走，走到哪站哪站亮出名字和产物」；R2 一步一件新事——站逐个到达；R3 每个站名旁有白话产物，脚注与 deep 的术语都有台上对照；R6 一次只动徽章、只出现一站。冷读洞 **0**（站名、产物、结果小窗、整理、保存均在本步或第 1 步有图上解释）。
+- 仍不声称整章 GO：Voxt-01 按 direction 要 Steps 1–4 全部覆盖后才核销；Voxt 10 的 P1／P2 未动。图像 verdict 仍需协调侧有图像输入的评审者实看（本模型无图像输入，本轮再次确认）。
