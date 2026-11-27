@@ -1,7 +1,7 @@
 # 第 11 章评分卡 · Model storage and app updates（模型仓库与应用更新站）
 
 日期：2026-11-27（第 10 次：评分卡同步协调 `2760565`，无教程改动）。评分办法：`.bot/EVAL.md` 第 0 节 R1–R6 与第 2 节原 12 项，每项 0 / 1 / 2。
-材料：协调人固定 `fa8d912` 的 Step 1／2 复审及本轮 transcript、双语深入讲解、动画相位 DOM 审计。本轮模型不能读 PNG，不另记自评分，也不把静态视觉分或机械门当成内容通过。
+材料：协调人固定 `fa8d912` 的 Step 1／2 复审、固定 `2760565` 的 Step 3 复审，及本轮 transcript、双语深入讲解、动画相位 DOM 审计。本轮模型不能读 PNG，不另记自评分，也不把静态视觉分或机械门当成内容通过。
 
 > **分数状态：** 协调 `6467ab7` 内容基线 **R1–R5 54/60**、原 10 项非视觉 **119/120**、静态 R6 **12/12**、原 #4／#5 **24/24**，合计 R1–R5＋静态 R6 **66/72**、原十二项 **143/144**。**不通过**；下表按最新协调分重记。
 
@@ -48,7 +48,7 @@
 - `BOOK=voxt ONLY=11 STEP=4 npm run readability`：0 机械问题。`BOOK=voxt node scripts/deep-check.mjs 11`：通过。`BASE=…4473 BOOK=voxt ONLY=11 node scripts/zh-check.mjs`：all clear。
 - `BOOK=voxt ONLY=11` 英、`LANG=zh` 中、`LANG=zh STEP=4` 中 `mobile`（位置参数指向 4473）：360／390／430 px 均 no layout breaks，中文第 4 步字号门通过。
 
-## 本轮修复（第 8 次，只第 3 步，待复审）
+## 本轮修复（第 8 次，只第 3 步，协调 `2760565` 已复审 GO）
 
 - 按 direction 的最小单元只改第 3 步；第 4／5 步留给后续轮，不动第 1／2／6 步、caption、2 GB 空位、Silero VAD、取消语义和字节／百分比算式。本 clone 的 `node_modules` 又是指向主 checkout 的符号链接，已换成本目录真实安装，未再经过主 checkout。
 - 第 3 步 `PHASE_COUNTS` 3→4：取消停在 40%、字节保留 → 从取消点续传到 70% → 续传满格 → `Checks: all 9 files pass; the job is done.` 与 `2.47 GB ✓`。取消标记线在四相都保留，只作已发生取消的记录，不再随相位消失。
@@ -118,6 +118,6 @@
 
 ## 待办与边界
 
-- 协调固定 `2760565` 已复审第 3 步四相证据（`.bot/out/voxt11-step3-audit/`）并记 GO。复审还需读第 4 步四相证据（`.bot/out/voxt11-step4-audit/`，32 张相位身份可核的 PNG 与 `report.json`），确认四相是否每次只改变一个可辨认对象、字节／时间／错误边界是否保留，并重评该步机制分；第 5 步（1/2）的同类返工留给后续轮，之后按 direction 顺序做 Voxt 10、12。在此之前机制 R6 保持协调 `2760565` 的 **10/12**，整章 NO-GO。
+- 协调固定 `2760565` 已复审第 3 步四相证据（`.bot/out/voxt11-step3-audit/`）并记 GO。复审还需读第 4 步四相证据（`.bot/out/voxt11-step4-audit/`，32 张相位身份可核的 PNG 与 `report.json`），确认四相是否每次只改变一个可辨认对象、字节／时间／错误边界是否保留，并重评该步机制分；第 5 步（1/2）的同类返工留给后续轮。Voxt 10 冻结待独立复审；Voxt 12 排在性能公开谱系（`docs/plan-voxt.md`）与本书 P0 清理之后，当前不开。在此之前机制 R6 保持协调 `2760565` 的 **10/12**，整章 NO-GO。
 - 本 lane 模型无图像输入，64 张相位图须由图像能力评审者实际看图；DOM／几何审计已确认相位身份、状态序列、取消标记、✓ 时机、红框位置和字号。
 - 本轮未跑真实 Voxt、模型下载、更新或模型进程；事实按 pinned `sglang-omni origin/main@c2fc0f102c61daee13c73ced280970a7d72ed12d` 核对。模型不能读 PNG，视觉仍待协调人。
