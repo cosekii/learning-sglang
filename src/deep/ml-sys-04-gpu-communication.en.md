@@ -175,11 +175,11 @@ Sources: `Awesome-ML-SYS-Tutorial/torch/nccl/readme.md:99-145`; `zero-to-sglang/
 
 ### On the stage
 
-- GPUs 0 → 1 → 2 → 3 → 0 form a ring. Each round sends one chunk to a neighbor.
-- Each input tensor has $S$ payload bytes, split into chunks A, B, C and D of $S/4$ bytes each.
-- The left panel shows the end of Reduce-Scatter: matching positions have been added, and each GPU keeps one reduced chunk containing 10.
-- The right panel shows the end of All-Gather: the chunks continue around the ring until every GPU holds `[10,10,10,10]`.
-- The animation starts with the four input tensors. It advances Reduce-Scatter through rounds 1–3, with every GPU sending one S/4 chunk to the next GPU. At completion, each left card holds one reduced chunk containing 10. All-Gather then advances through rounds 1–3; at completion, every right card holds `[10,10,10,10]`. Orange marks reduced chunks and their delivery.
+- GPUs 0 → 1 → 2 → 3 → 0 form a ring. Each GPU sends one chunk to its neighbor in every round.
+- Each input tensor has $S$ payload bytes, split into chunks A, B, C and D of $S/4$ bytes each. The transfer rows name the chunk, sender, receiver, updated value and new holder.
+- The 4×4 grid shows every current holder. During Reduce-Scatter, a receiver adds its old value and the incoming partial value. Blue marks this round's arrivals; orange marks fully reduced chunks.
+- After Reduce-Scatter, GPUs 0, 1, 2 and 3 hold reduced chunks B, C, D and A respectively. The other cells retain partial sums, so the final holders do not appear without the intervening additions.
+- All-Gather forwards only those reduced chunks. It does not add them again. Empty cells gain 10 as the chunks circulate, until every GPU holds A, B, C and D.
 
 ### Formula and symbols
 
@@ -195,6 +195,19 @@ $$R=2(N-1),\qquad B_{\mathrm{rank}}=R\times\frac{S}{N}=\frac{2(N-1)S}{N}$$
 ### The numbers on the stage
 
 $$R=2\times(4-1)=6,\qquad B_{\mathrm{rank}}=6\times\frac{S}{4}=1.5S$$
+
+The rows below use `receiver old + incoming = new`. Each round has four concurrent sends.
+
+| Round | Chunk routes and receiver updates |
+|---|---|
+| Reduce-Scatter 1 | A 0→1: $2+1=3$; B 1→2: $3+2=5$; C 2→3: $4+3=7$; D 3→0: $1+4=5$ |
+| Reduce-Scatter 2 | D 0→1: $2+5=7$; A 1→2: $3+3=6$; B 2→3: $4+5=9$; C 3→0: $1+7=8$ |
+| Reduce-Scatter 3 | C 0→1: $2+8=10$; D 1→2: $3+7=10$; A 2→3: $4+6=10$; B 3→0: $1+9=10$ |
+| All-Gather 1 | B 0→1; C 1→2; D 2→3; A 3→0, each carrying 10 |
+| All-Gather 2 | A 0→1; B 1→2; C 2→3; D 3→0, each carrying 10 |
+| All-Gather 3 | D 0→1; A 1→2; B 2→3; C 3→0, each carrying 10 |
+
+Round 2's edge 1→2 carries A. GPU 1 sends the partial value 3 from round 1; GPU 2 adds its own 3 and holds 6. Step 7 slows this same transfer.
 
 By symmetry, each GPU also receives $1.5S$; all four GPUs send $4\times1.5S=6S$ in total. These counts cover tensor payload only, excluding headers, retransmissions and implementation details. They are not elapsed times.
 
@@ -213,7 +226,7 @@ Sources: `Awesome-ML-SYS-Tutorial/torch/nccl/readme.md:55-64`; `Awesome-ML-SYS-T
 ### On the stage
 
 - Topology is the map of links between GPUs. Both Ring cards keep the same four GPUs and the same layout. Only edge 1→2 turns orange in the second card.
-- That edge is the round-2 transfer in the six-round teaching Ring. The baseline takes $t$ per dependent transfer and $6t$ for the chain; no other edge changes.
+- That edge is the round-2 transfer in the six-round teaching Ring. Step 6's same schedule carries chunk A from GPU 1 to GPU 2: the incoming partial 3 plus the receiver's old 3 gives 6. The baseline takes $t$ per dependent transfer and $6t$ for the chain; no other edge changes.
 - Round 2 grows from $t$ to $t+d$ in the lower timeline. Orange shows the added $d$, and rounds 3–6 shift right.
 - This is a simplified dependent chain. It does not serialize every parallel NCCL transfer or claim a fixed slowdown for either topology label.
 

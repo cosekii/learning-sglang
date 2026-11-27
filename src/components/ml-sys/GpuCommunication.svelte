@@ -5,7 +5,7 @@
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
-  import { COMM_EXAMPLE_COMPUTE_BEFORE_MS, COMM_EXAMPLE_COMPUTE_AFTER_MS, COMM_EXAMPLE_WAIT_BEFORE_MS, COMM_EXAMPLE_WAIT_AFTER_MS, COMM_EXAMPLE_TOTAL_BEFORE_MS, COMM_EXAMPLE_TOTAL_AFTER_MS, COMM_EXAMPLE_COMPUTE_SAVED_MS, COMM_EXAMPLE_WAIT_ADDED_MS, COMM_EXAMPLE_TOTAL_ADDED_MS, COMM_WORLD_SIZE, COMM_PARTIAL_TENSORS, COMM_REDUCED_TENSOR, COMM_TENSOR_TEXT, COMM_RING_PHASE_STEPS, COMM_RING_TOTAL_STEPS, COMM_RING_PER_RANK_SEND_TENSORS } from '../../ml-sys/numbers';
+  import { COMM_EXAMPLE_COMPUTE_BEFORE_MS, COMM_EXAMPLE_COMPUTE_AFTER_MS, COMM_EXAMPLE_WAIT_BEFORE_MS, COMM_EXAMPLE_WAIT_AFTER_MS, COMM_EXAMPLE_TOTAL_BEFORE_MS, COMM_EXAMPLE_TOTAL_AFTER_MS, COMM_EXAMPLE_COMPUTE_SAVED_MS, COMM_EXAMPLE_WAIT_ADDED_MS, COMM_EXAMPLE_TOTAL_ADDED_MS, COMM_WORLD_SIZE, COMM_PARTIAL_TENSORS, COMM_REDUCED_TENSOR, COMM_TENSOR_TEXT, COMM_RING_PHASE_STEPS, COMM_RING_TOTAL_STEPS, COMM_RING_PER_RANK_SEND_TENSORS, COMM_CHUNK_IDS, COMM_RING_SCHEDULE } from '../../ml-sys/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
@@ -74,8 +74,21 @@
     return () => timers.forEach(clearTimeout);
   });
   const cur = $derived(steps[step]);
-  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 5 ? 560 : step === 6 ? 640 : 510) : (step === 6 ? 515 : 410));
+  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 5 ? 660 : step === 6 ? 665 : 510) : (step === 5 ? 520 : step === 6 ? 540 : 410));
   const barScale = 22;
+  const ring = $derived(COMM_RING_SCHEDULE[phase]);
+  const ringArrived = (rank: number, chunk: number) => ring.transfers.some((transfer) => transfer.to === rank && transfer.chunk === chunk);
+  const ringCellFill = (rank: number, chunk: number, value: number | null) => {
+    if (value === null) return 'var(--bg)';
+    if (ring.operation === 'complete' || (ring.operation === 'reduce-scatter' && ring.round === COMM_RING_PHASE_STEPS && value === COMM_REDUCED_TENSOR[chunk])) return 'var(--gen-soft)';
+    if (ring.operation === 'all-gather' && !ringArrived(rank, chunk)) return 'var(--gen-soft)';
+    if (ringArrived(rank, chunk)) return 'var(--accent-soft)';
+    return 'var(--panel)';
+  };
+  const ringCellStroke = (rank: number, chunk: number, value: number | null) => {
+    const fill = ringCellFill(rank, chunk, value);
+    return fill === 'var(--gen-soft)' ? 'var(--gen)' : fill === 'var(--accent-soft)' ? 'var(--accent)' : 'var(--line)';
+  };
 </script>
 
 <figure class="viz" data-animation-step={step} data-animation-phase={phase} data-animation-final-phase={PHASE_COUNTS[step] - 1}>
@@ -343,68 +356,64 @@
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Route labels come from nvidia-smi topo -m.', '路径标签来自 nvidia-smi topo -m 的输出示例。')}</text>
       {:else if step === 5}
         <text x={phone ? 18 : 36} y="30" class="title">Ring all-reduce · 4 GPUs · {COMM_RING_TOTAL_STEPS} rounds</text>
-        <text x={phone ? 18 : 36} y="55" class="label">{t('S = input tensor bytes · split into 4 chunks of S/4', 'S = 一份输入张量的字节数 · 分成 4 块，每块 S/4')}</text>
+        <text x={phone ? 18 : 36} y="55" class="label">{t('S = input tensor bytes · A–D are chunks of S/4', 'S = 一份输入张量的字节数 · A–D 是四块，每块 S/4')}</text>
+        <text x={phone ? 282 : 680} y="80" text-anchor="end" class="small">GPU 0 → 1 → 2 → 3 → 0</text>
+        <text x={phone ? 18 : 40} y={phone ? 100 : 105} class="section">{ring.operation === 'inputs' ? t('Inputs · one tensor per GPU', '输入 · 每卡一份张量') : ring.operation === 'reduce-scatter' ? `Reduce-Scatter · ${t('round', '轮')} ${ring.round}/3` : ring.operation === 'all-gather' ? `All-Gather · ${t('round', '轮')} ${ring.round - 3}/3` : t('Complete · all 4 chunks per GPU', '完成 · 每卡集齐 4 块')}</text>
         {#if !phone}
-          <rect x="25" y="82" width="320" height="250" rx="13" fill="var(--bg)" stroke="var(--line)" />
-          <text x="185" y="108" text-anchor="middle" class="section">1 · Reduce-Scatter</text>
-          <text x="185" y="132" text-anchor="middle" class="small">{phase === 0 ? t('inputs · 4 chunks of S/4', '输入 · 4 块，每块 S/4') : phase < 4 ? `Reduce-Scatter · ${t('round', '轮')} ${phase}/3 · GPU → GPU + 1 · S/4` : t('add matching chunks · keep one per GPU', '对应分块求和 · 每卡留下一块')}</text>
-          <path d="M170,177 H207" stroke="var(--gen)" stroke-width="2" /><path d="M212,177 l-10,-6 v12 z" fill="var(--gen)" />
-          <path d="M270,200 V227" stroke="var(--gen)" stroke-width="2" /><path d="M270,232 l-6,-10 h12 z" fill="var(--gen)" />
-          <path d="M215,257 H178" stroke="var(--gen)" stroke-width="2" /><path d="M173,257 l10,-6 v12 z" fill="var(--gen)" />
-          <path d="M115,235 V208" stroke="var(--gen)" stroke-width="2" /><path d="M115,203 l-6,10 h12 z" fill="var(--gen)" />
-          {#each COMM_PARTIAL_TENSORS as tensor, i}
-            <rect x={i === 0 || i === 3 ? 60 : 215} y={i < 2 ? 155 : 235} width="110" height="45" rx="8" fill={phase >= 4 ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={phase >= 4 ? 'var(--gen)' : 'var(--accent)'} />
-            <text x={i === 0 || i === 3 ? 115 : 270} y={i < 2 ? 174 : 254} text-anchor="middle" class="small strong">GPU {i}{phase > 0 ? ` · ${String.fromCharCode(65 + i)}` : ''}</text>
-            <text x={i === 0 || i === 3 ? 115 : 270} y={i < 2 ? 192 : 272} text-anchor="middle" class="small">{phase === 0 ? COMM_TENSOR_TEXT(tensor) : phase < 4 ? `${phase}/3` : '= 10'}</text>
-          {/each}
-          <text x="185" y="311" text-anchor="middle" class="small" opacity={phase >= 4 ? 1 : 0}>{COMM_RING_PHASE_STEPS} {t('rounds · one reduced chunk each', '轮 · 每卡一个归约分块')}</text>
-
-          <g opacity={phase >= 4 ? 1 : 0}>
-            <rect x="375" y="82" width="320" height="250" rx="13" fill="var(--bg)" stroke="var(--line)" />
-            <text x="535" y="108" text-anchor="middle" class="section">2 · All-Gather</text>
-            <text x="535" y="132" text-anchor="middle" class="small">{phase < 7 ? `All-Gather · ${t('round', '轮')} ${phase - 3}/3 · GPU → GPU + 1 · S/4` : t('share the reduced chunks with every GPU', '把归约分块发给每张卡')}</text>
-            <path d="M520,177 H557" stroke="var(--gen)" stroke-width="2" /><path d="M562,177 l-10,-6 v12 z" fill="var(--gen)" />
-            <path d="M620,200 V227" stroke="var(--gen)" stroke-width="2" /><path d="M620,232 l-6,-10 h12 z" fill="var(--gen)" />
-            <path d="M565,257 H528" stroke="var(--gen)" stroke-width="2" /><path d="M523,257 l10,-6 v12 z" fill="var(--gen)" />
-            <path d="M465,235 V208" stroke="var(--gen)" stroke-width="2" /><path d="M465,203 l-6,10 h12 z" fill="var(--gen)" />
-            {#each COMM_PARTIAL_TENSORS as _, i}
-              <rect x={i === 0 || i === 3 ? 400 : 555} y={i < 2 ? 155 : 235} width="130" height="45" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
-              <text x={i === 0 || i === 3 ? 465 : 620} y={i < 2 ? 174 : 254} text-anchor="middle" class="small strong">GPU {i}{phase < 7 ? ` · ${String.fromCharCode(65 + i)}` : ''}</text>
-              <text x={i === 0 || i === 3 ? 465 : 620} y={i < 2 ? 193 : 273} text-anchor="middle" class="ringtensor">{phase >= 7 ? COMM_TENSOR_TEXT(COMM_REDUCED_TENSOR) : `${phase - 3}/3`}</text>
+          <text x="50" y="128" class="small strong">chunk</text>
+          <text x="105" y="128" class="small strong">{t('sender → receiver', '发送方 → 接收方')}</text>
+          <text x="265" y="128" class="small strong">{ring.operation === 'reduce-scatter' ? t('receiver old + incoming = new', '接收方原值 + 来块 = 新值') : t('reduced value', '归约值')}</text>
+          <text x="585" y="128" class="small strong">{t('new holder', '新持有者')}</text>
+          {#if ring.operation === 'inputs'}
+            <text x="360" y="170" text-anchor="middle" class="small">{t('No transfers yet. The grid below shows every initial holder.', '还没有传送。下表显示每块最初在哪些卡上。')}</text>
+          {:else}
+            {#each ring.transfers as transfer, i}
+              <rect x="40" y={139 + i * 26} width="640" height="24" rx="5" fill={i % 2 === 0 ? 'var(--bg)' : 'var(--panel)'} />
+              <text x="52" y={157 + i * 26} class="small strong">{COMM_CHUNK_IDS[transfer.chunk]}</text>
+              <text x="105" y={157 + i * 26} class="small">GPU {transfer.from} → GPU {transfer.to}</text>
+              <text x="265" y={157 + i * 26} class="small">{ring.operation === 'reduce-scatter' ? `${transfer.before} + ${transfer.sent} = ${transfer.after}` : `${transfer.after} · ${t('no addition', '不再相加')}`}</text>
+              <text x="585" y={157 + i * 26} class="small">GPU {transfer.to}</text>
             {/each}
-            <text x="535" y="311" text-anchor="middle" class="small" opacity={phase >= 7 ? 1 : 0}>{COMM_RING_PHASE_STEPS} {t('more rounds · all 4 chunks each', '轮 · 每卡集齐 4 块')}</text>
-          </g>
-          <g opacity={phase >= 7 ? 1 : 0}>
-            <text x="360" y="358" text-anchor="middle" class="result">2 × (4 − 1) = {COMM_RING_TOTAL_STEPS} {t('rounds · each GPU sends S/4 per round', '轮 · 每卡每轮发送 S/4')}</text>
-            <text x="360" y="383" text-anchor="middle" class="result">{t('sent per GPU', '每卡发送')} = {COMM_RING_TOTAL_STEPS} × S/4 = {COMM_RING_PER_RANK_SEND_TENSORS}S</text>
-          </g>
+          {/if}
+          <text x="40" y="265" class="small strong">{t('current holders · rows = GPUs · columns = chunks', '当前持有者 · 行是 GPU · 列是分块')}</text>
+          {#each COMM_CHUNK_IDS as id, chunk}
+            <text x={185 + chunk * 140} y="290" text-anchor="middle" class="small strong">{id}</text>
+          {/each}
+          {#each ring.grid as row, rank}
+            <text x="45" y={321 + rank * 30} class="small strong">GPU {rank}</text>
+            {#each row as value, chunk}
+              <rect x={130 + chunk * 140} y={302 + rank * 30} width="110" height="26" rx="5" fill={ringCellFill(rank, chunk, value)} stroke={ringCellStroke(rank, chunk, value)} />
+              <text x={185 + chunk * 140} y={321 + rank * 30} text-anchor="middle" class="small">{value ?? '·'}</text>
+            {/each}
+          {/each}
+          <text x="360" y="443" text-anchor="middle" class="result">{ring.operation === 'complete' ? `2 × (4 − 1) = ${COMM_RING_TOTAL_STEPS} ${t('rounds · each GPU sends S/4 per round', '轮 · 每卡每轮发送 S/4')}` : ring.operation === 'inputs' ? t('Each row starts as that GPU’s local tensor.', '每一行起初都是那张卡自己的张量。') : ring.operation === 'reduce-scatter' ? t('4 arrivals · each receiver adds its old chunk and the incoming chunk', '每轮到 4 块 · 接收方把原值和来块相加') : t('4 arrivals · each reduced chunk gains a new holder', '每轮到 4 块 · 归约分块有了新持有者')}</text>
+          <text x="360" y="468" text-anchor="middle" class="result">{ring.operation === 'complete' ? `${t('sent per GPU', '每卡发送')} = ${COMM_RING_TOTAL_STEPS} × S/4 = ${COMM_RING_PER_RANK_SEND_TENSORS}S` : ring.operation === 'reduce-scatter' && ring.round === COMM_RING_PHASE_STEPS ? t('B, C, D, A are fully reduced on GPUs 0, 1, 2, 3', 'GPU 0、1、2、3 分别留下归约块 B、C、D、A') : ring.operation === 'all-gather' ? t('Grid tracks reduced chunks only · old partials are not copied', '表格只跟踪归约块 · 旧部分和不复制') : t('Every non-empty cell is a current holder of that chunk.', '每个非空格都是对应分块的一个当前持有者。')}</text>
+          <text x="360" y="493" text-anchor="middle" class="small"><tspan fill="var(--accent)">■</tspan> {t('arrived this round', '本轮新到')}   <tspan fill="var(--gen)">■</tspan> {t('fully reduced', '已完成归约')}</text>
         {:else}
-          <rect x="18" y="70" width="264" height="188" rx="12" fill="var(--bg)" stroke="var(--line)" />
-          <text x="150" y="94" text-anchor="middle" class="section">1 · Reduce-Scatter</text>
-          <text x="150" y="115" text-anchor="middle" class="small">{phase === 0 ? t('inputs · 4 chunks', '输入 · 4 块') : phase < 4 ? `RS · ${t('round', '轮')} ${phase}/3 · GPU → GPU + 1` : t('add · keep one chunk per GPU', '求和 · 每卡留下一块')}</text>
-          {#each COMM_PARTIAL_TENSORS as tensor, i}
-            <rect x={i === 0 || i === 3 ? 28 : 158} y={i < 2 ? 125 : 185} width="114" height="48" rx="8" fill={phase >= 4 ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={phase >= 4 ? 'var(--gen)' : 'var(--accent)'} />
-            <text x={i === 0 || i === 3 ? 85 : 215} y={i < 2 ? 146 : 206} text-anchor="middle" class="small strong">GPU {i}{phase > 0 ? ` · ${String.fromCharCode(65 + i)}` : ''}</text>
-            <text x={i === 0 || i === 3 ? 85 : 215} y={i < 2 ? 165 : 225} text-anchor="middle" class="small">{phase === 0 ? COMM_TENSOR_TEXT(tensor) : phase < 4 ? `${phase}/3` : '= 10'}</text>
-          {/each}
-          <text x="150" y="249" text-anchor="middle" class="small" opacity={phase >= 4 ? 1 : 0}>0→1→2→3→0 · {COMM_RING_PHASE_STEPS} {t('rounds', '轮')}</text>
-
-          <g opacity={phase >= 4 ? 1 : 0}>
-            <rect x="18" y="268" width="264" height="188" rx="12" fill="var(--bg)" stroke="var(--line)" />
-            <text x="150" y="292" text-anchor="middle" class="section">2 · All-Gather</text>
-            <text x="150" y="313" text-anchor="middle" class="small">{phase < 7 ? `AG · ${t('round', '轮')} ${phase - 3}/3 · GPU → GPU + 1` : t('share all 4 chunks', '把 4 块发给每卡')}</text>
-            {#each COMM_PARTIAL_TENSORS as _, i}
-              <rect x={i === 0 || i === 3 ? 28 : 158} y={i < 2 ? 323 : 383} width="114" height="48" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
-              <text x={i === 0 || i === 3 ? 85 : 215} y={i < 2 ? 342 : 402} text-anchor="middle" class="small strong">GPU {i}{phase < 7 ? ` · ${String.fromCharCode(65 + i)}` : ''}</text>
-              <text x={i === 0 || i === 3 ? 85 : 215} y={i < 2 ? 362 : 422} text-anchor="middle" class="ringtensor">{phase >= 7 ? COMM_TENSOR_TEXT(COMM_REDUCED_TENSOR) : `${phase - 3}/3`}</text>
+          {#if ring.operation === 'inputs'}
+            <text x="150" y="132" text-anchor="middle" class="small">{t('No transfers yet.', '还没有传送。')}</text>
+            <text x="150" y="154" text-anchor="middle" class="small">{t('The grid shows the initial holders.', '下表显示最初持有者。')}</text>
+          {:else}
+            {#each ring.transfers as transfer, i}
+              <rect x="18" y={112 + i * 58} width="264" height="50" rx="7" fill={i % 2 === 0 ? 'var(--bg)' : 'var(--panel)'} stroke="var(--line)" />
+              <text x="30" y={132 + i * 58} class="small strong">{COMM_CHUNK_IDS[transfer.chunk]} · GPU {transfer.from} → GPU {transfer.to}</text>
+              <text x="30" y={153 + i * 58} class="small">{ring.operation === 'reduce-scatter' ? `${transfer.before} + ${transfer.sent} = ${transfer.after}` : `${transfer.after} · ${t('no addition', '不再相加')}`} · GPU {transfer.to}</text>
             {/each}
-            <text x="150" y="447" text-anchor="middle" class="small" opacity={phase >= 7 ? 1 : 0}>{t('same ring', '同一个环')} · +{COMM_RING_PHASE_STEPS} {t('rounds', '轮')}</text>
-          </g>
-          <g opacity={phase >= 7 ? 1 : 0}>
-            <text x="150" y="482" text-anchor="middle" class="result">2 × (4 − 1) = {COMM_RING_TOTAL_STEPS} {t('rounds', '轮')}</text>
-            <text x="150" y="507" text-anchor="middle" class="result">{COMM_RING_TOTAL_STEPS} × S/4 = {COMM_RING_PER_RANK_SEND_TENSORS}S</text>
-            <text x="150" y="531" text-anchor="middle" class="small">{t('sent by each GPU in total', '每张卡总共发送的张量字节数')}</text>
-          </g>
+          {/if}
+          <text x="18" y="365" class="small strong">{t('current holders · GPU rows × chunk columns', '当前持有者 · 行是 GPU，列是分块')}</text>
+          {#each COMM_CHUNK_IDS as id, chunk}
+            <text x={85 + chunk * 60} y="390" text-anchor="middle" class="small strong">{id}</text>
+          {/each}
+          {#each ring.grid as row, rank}
+            <text x="20" y={424 + rank * 30} class="small strong">GPU {rank}</text>
+            {#each row as value, chunk}
+              <rect x={60 + chunk * 60} y={405 + rank * 30} width="50" height="26" rx="5" fill={ringCellFill(rank, chunk, value)} stroke={ringCellStroke(rank, chunk, value)} />
+              <text x={85 + chunk * 60} y={424 + rank * 30} text-anchor="middle" class="small">{value ?? '·'}</text>
+            {/each}
+          {/each}
+          <text x="150" y="548" text-anchor="middle" class="result">{ring.operation === 'complete' ? `2 × (4 − 1) = ${COMM_RING_TOTAL_STEPS} ${t('rounds', '轮')}` : ring.operation === 'inputs' ? t('Each row is one local tensor.', '每行是一份本地张量。') : ring.operation === 'reduce-scatter' ? t('4 arrivals · old + incoming = new', '到 4 块 · 原值 + 来块 = 新值') : t('4 arrivals · no addition', '到 4 块 · 不再相加')}</text>
+          <text x="150" y="573" text-anchor="middle" class="result">{ring.operation === 'complete' ? `${COMM_RING_TOTAL_STEPS} × S/4 = ${COMM_RING_PER_RANK_SEND_TENSORS}S ${t('sent per GPU', '每卡发送')}` : ring.operation === 'reduce-scatter' && ring.round === COMM_RING_PHASE_STEPS ? t('GPU 0/1/2/3 hold B/C/D/A = 10', 'GPU 0/1/2/3 留下 B/C/D/A = 10') : ring.operation === 'all-gather' ? t('Only reduced chunks · old partials stay', '只跟踪归约块 · 旧部分和不复制') : t('Non-empty cells are current holders.', '非空格是当前持有者。')}</text>
+          <text x="150" y="603" text-anchor="middle" class="small"><tspan fill="var(--accent)">■</tspan> {t('new holder', '本轮新持有者')}   <tspan fill="var(--gen)">■</tspan> {t('fully reduced', '已完成归约')}</text>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Teaching ring; payload only, not a time forecast.', '教学 Ring；只算张量载荷，不预测耗时。')}</text>
       {:else if step === 6}
@@ -430,7 +439,8 @@
               <text x={x + 240} y="187" text-anchor="middle" class="small">0→1→2→3→0</text>
             </g>
           {/each}
-          <g transform="translate(0,130)">
+          <text x="360" y="211" text-anchor="middle" class="small" opacity={phase >= 1 ? 1 : 0}>Step 6 · Reduce-Scatter round 2 · A · GPU 1 → GPU 2 · 3 + 3 = 6</text>
+          <g transform="translate(0,150)">
           <rect x="35" y="82" width="650" height="120" rx="13" fill="var(--bg)" stroke="var(--line)" />
           <text x="55" y="108" class="small strong">{t('baseline · each dependent round takes t', '对照路径 · 每段相关轮次都花 t')}</text>
           {#each [55, 145, 235, 325, 415, 505] as x, i}
@@ -474,12 +484,13 @@
               <text x={x + 65} y="187" text-anchor="middle" class="small">0→1→2→3→0</text>
             </g>
           {/each}
-          <g transform="translate(0,130)">
+          <text x="150" y="211" text-anchor="middle" class="small" opacity={phase >= 1 ? 1 : 0}>Reduce-Scatter round 2 · A · 1→2 · 3+3=6</text>
+          <g transform="translate(0,150)">
           <rect x="18" y="78" width="264" height="137" rx="12" fill="var(--bg)" stroke="var(--line)" />
           <text x="150" y="102" text-anchor="middle" class="small strong">{t('baseline · every round t', '对照路径 · 每轮都花 t')}</text>
-          {#each [29, 70, 111, 152, 193, 234] as x, i}
-            <rect x={x} y="119" width="34" height="37" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
-            <text x={x + 17} y="142" text-anchor="middle" class="small">{i + 1}</text>
+          {#each [25, 61, 97, 133, 169, 205] as x, i}
+            <rect x={x} y="119" width="30" height="37" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x={x + 15} y="142" text-anchor="middle" class="small">{i + 1}</text>
           {/each}
           <text x="150" y="180" text-anchor="middle" class="small">{t('each block = t', '每一格 = t')}</text>
           <text x="150" y="202" text-anchor="middle" class="result">{t('chain', '相关链')} = 6t</text>
@@ -513,6 +524,7 @@
 </figure>
 
 <style>
+  .viz :global(.tag) { font-size: 11px; }
   .title { font-size: 18px; font-weight: 650; fill: var(--fg); }
   .label { font-size: 13px; fill: var(--fg); }
   .section { font-family: var(--mono); font-size: 17px; font-weight: 700; fill: var(--fg); }
@@ -520,13 +532,11 @@
   .total { font-family: var(--mono); font-size: 18px; font-weight: 700; fill: var(--fg); }
   .tensor { font-family: var(--mono); font-size: 18px; font-weight: 700; fill: var(--fg); }
   .code { font-family: var(--mono); font-size: 15px; fill: var(--fg); }
-  .ringtensor { font-family: var(--mono); font-size: 12px; font-weight: 650; fill: var(--fg); }
   .result { font-family: var(--mono); font-size: 15px; font-weight: 650; fill: var(--fg); }
   @media (max-width: 600px) {
     .title { font-size: 16px; }
     .label, .small { font-size: 12px; }
     .section, .total, .tensor { font-size: 15px; }
-    .ringtensor { font-size: 10.5px; }
     .result { font-size: 13px; }
   }
 </style>

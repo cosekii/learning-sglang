@@ -120,6 +120,59 @@ export const COMM_TENSOR_TEXT = (tensor: number[]) => `[${tensor.join(',')}]`;
 export const COMM_RING_PHASE_STEPS = COMM_WORLD_SIZE - 1;
 export const COMM_RING_TOTAL_STEPS = 2 * COMM_RING_PHASE_STEPS;
 export const COMM_RING_PER_RANK_SEND_TENSORS = COMM_RING_TOTAL_STEPS / COMM_WORLD_SIZE;
+export const COMM_CHUNK_IDS = ['A', 'B', 'C', 'D'];
+
+type CommRingTransfer = {
+  chunk: number;
+  from: number;
+  to: number;
+  sent: number;
+  before: number | null;
+  after: number;
+};
+type CommRingPhase = {
+  operation: 'inputs' | 'reduce-scatter' | 'all-gather' | 'complete';
+  round: number;
+  transfers: CommRingTransfer[];
+  grid: (number | null)[][];
+};
+
+// One teaching schedule: send to GPU + 1, add on receipt, then forward reduced chunks.
+const makeCommRingSchedule = (): CommRingPhase[] => {
+  const initialGrid: (number | null)[][] = COMM_PARTIAL_TENSORS.map((tensor) => [...tensor]);
+  const reduceGrid = initialGrid.map((row) => [...row]);
+  const phases: CommRingPhase[] = [{ operation: 'inputs', round: 0, transfers: [], grid: initialGrid }];
+  for (let round = 0; round < COMM_RING_PHASE_STEPS; round++) {
+    const transfers = COMM_PARTIAL_TENSORS.map((_, from): CommRingTransfer => {
+      const to = (from + 1) % COMM_WORLD_SIZE;
+      const chunk = (from - round + COMM_WORLD_SIZE) % COMM_WORLD_SIZE;
+      const sent = reduceGrid[from][chunk];
+      const before = reduceGrid[to][chunk];
+      if (sent === null || before === null) throw new Error('Reduce-Scatter requires both partial chunks');
+      return { chunk, from, to, sent, before, after: before + sent };
+    });
+    transfers.forEach(({ to, chunk, after }) => { reduceGrid[to][chunk] = after; });
+    phases.push({ operation: 'reduce-scatter', round: round + 1, transfers, grid: reduceGrid.map((row) => [...row]) });
+  }
+
+  const gatherGrid: (number | null)[][] = Array.from({ length: COMM_WORLD_SIZE }, () => Array(COMM_WORLD_SIZE).fill(null));
+  phases[COMM_RING_PHASE_STEPS].transfers.forEach(({ to, chunk, after }) => { gatherGrid[to][chunk] = after; });
+  for (let round = 0; round < COMM_RING_PHASE_STEPS; round++) {
+    const transfers = COMM_PARTIAL_TENSORS.map((_, from): CommRingTransfer => {
+      const to = (from + 1) % COMM_WORLD_SIZE;
+      const chunk = (from + 1 - round + COMM_WORLD_SIZE) % COMM_WORLD_SIZE;
+      const sent = gatherGrid[from][chunk];
+      if (sent === null) throw new Error('All-Gather requires a reduced chunk at the sender');
+      return { chunk, from, to, sent, before: gatherGrid[to][chunk], after: sent };
+    });
+    transfers.forEach(({ to, chunk, after }) => { gatherGrid[to][chunk] = after; });
+    phases.push({ operation: 'all-gather', round: round + COMM_RING_PHASE_STEPS + 1, transfers, grid: gatherGrid.map((row) => [...row]) });
+  }
+  const last = phases[phases.length - 1];
+  phases.push({ operation: 'complete', round: COMM_RING_TOTAL_STEPS, transfers: last.transfers, grid: last.grid });
+  return phases;
+};
+export const COMM_RING_SCHEDULE = makeCommRingSchedule();
 
 // Public Dynamo startup log in Awesome-ML-SYS nvidia-dynamo/dynamo.md:79-83.
 // Microseconds are relative to the first log line; this is a single-node example.

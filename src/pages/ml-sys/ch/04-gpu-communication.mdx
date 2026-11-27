@@ -23,9 +23,9 @@ Step 4 follows the PyTorch NCCL setup and SUM call in `Awesome-ML-SYS-Tutorial/t
 
 Step 5 expands the `NV#` and `SYS` legend from `Awesome-ML-SYS-Tutorial/torch/nccl/readme.md:99-145`. The two route examples come from different reported machines; their labels alone do not establish a speedup.
 
-Step 6 uses the chapter's constructed four-position tensors as four Ring chunks. The two phases and `2(N−1)` rounds follow `torch-distributed/readme.md:926-950` and its local `complete-allreduce.svg`; per-rank payload is derived under the stated one-chunk-per-round teaching schedule, not measured on hardware.
+Step 6 uses the chapter's constructed four-position tensors as four Ring chunks. Every round names each chunk, sender, receiver, partial result and holder. Reduce-Scatter leaves B, C, D and A on GPUs 0, 1, 2 and 3; All-Gather then forwards those reduced chunks without more additions. The two phases and `2(N−1)` rounds follow `torch-distributed/readme.md:926-950` and its local `complete-allreduce.svg`; per-rank payload is derived under the stated one-chunk-per-round teaching schedule, not measured on hardware.
 
-Step 7 is a symbolic dependent-chain model, not a comparison of measured NVLink and SYS speeds. Two identical four-GPU Ring cards change only edge 1→2, the round-2 transfer. Its added delay `d` shifts later dependent work by `d`; real NCCL overlap and algorithm selection are deliberately not modeled.
+Step 7 is a symbolic dependent-chain model, not a comparison of measured NVLink and SYS speeds. Two identical four-GPU Ring cards change only edge 1→2, the round-2 transfer. It reuses Step 6's schedule: chunk A moves from GPU 1 to GPU 2, where partial values 3 and 3 become 6. Its added delay `d` shifts later dependent work by `d`; real NCCL overlap and algorithm selection are deliberately not modeled.
 
 </details>
 
@@ -42,8 +42,8 @@ Step 7 is a symbolic dependent-chain model, not a comparison of measured NVLink 
 
 第 5 步展开 `Awesome-ML-SYS-Tutorial/torch/nccl/readme.md:99-145` 的 `NV#` 和 `SYS` 图例。两条路径来自不同的输出示例，标签本身不能推出加速比。
 
-第 6 步把本章构造的四格张量分成四个 Ring 分块。两个阶段和 `2(N−1)` 轮依据 `torch-distributed/readme.md:926-950` 及其 `complete-allreduce.svg`；每卡发送量按「每轮发送一块」的教学日程推导，不是硬件实测。
+第 6 步把本章构造的四格张量分成四个 Ring 分块。每轮都写出分块、发送方、接收方、部分结果和持有者。Reduce-Scatter 让 GPU 0、1、2、3 分别留下 B、C、D、A，All-Gather 再转发这些归约块，不再相加。两个阶段和 `2(N−1)` 轮依据 `torch-distributed/readme.md:926-950` 及其 `complete-allreduce.svg`；每卡发送量按「每轮发送一块」的教学日程推导，不是硬件实测。
 
-第 7 步是符号化的相关链模型，不是 NVLink 与 SYS 的实测对比。两张相同的 4-GPU Ring 卡只改变第 2 轮的边 1→2。这条边新增延迟 `d`，后续相关工作也推迟 `d`；真实 NCCL 的重叠和算法选择故意不在本式中展开。
+第 7 步是符号化的相关链模型，不是 NVLink 与 SYS 的实测对比。两张相同的 4-GPU Ring 卡只改变第 2 轮的边 1→2。这里沿用第 6 步的日程：分块 A 从 GPU 1 发到 GPU 2，两个部分和 3 相加得到 6。这条边新增延迟 `d`，后续相关工作也推迟 `d`；真实 NCCL 的重叠和算法选择故意不在本式中展开。
 
 </details>
