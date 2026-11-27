@@ -311,27 +311,24 @@ The next step checks a resolved configuration and then measures it with real tra
 
 ## Step 9 · Readiness is not a benchmark
 
-> **In one line:** Readiness proves one small request can finish; a deployment comparison needs controlled traffic and separate benchmark-client and listener clocks.
+> **In one line:** Readiness proves one small request can finish; A/B then changes one choice and records client time and listener stalls separately.
 
 ### On the stage
 
-- The top chain starts with `config resolve`, which checks the parsed settings, then runs readiness, then starts a controlled A/B comparison.
-- Readiness sends a small image, one second of audio and a short instruction. A response means the small request finished. Each token-generating stage is capped at most eight new tokens. For a text-only intuition, eight tokens are roughly six English words. Audio tokens carry sound, not words. This is health evidence, not a speed or quality result.
-- A/B uses the same traffic and changes one deployment choice. The measurement plan holds inputs, sampling, hardware and warmup fixed. `c` means concurrency, the number of requests running together.
-- The example sweep uses concurrency 1 and 16 with five repeats at each level: ten measured runs per choice.
-- The benchmark client records first-audio and total-request wall time. The listener separately records playback stalls. The bottom timeline explains a stall. Ten 80 ms frames make one 800 ms chunk. Chunk 2 is first pending, then ready before chunk 1 ends. If it misses that boundary, the listener hears a gap.
+- The top line gives the order: finish one small request, then compare one choice.
+- Readiness sends a small image, one second of audio and a short instruction. A response means the request finished. Each token-generating stage produces at most eight new tokens. A response shows health, not speed.
+- A/B sends the same requests to both choices and changes one deployment choice. The measurement plan holds inputs, sampling, hardware and warmup fixed. Choice A keeps the first choice; choice B changes one thing.
+- The benchmark client records first-audio and total-request wall time. The listener separately records playback stalls.
+- The bottom timeline explains a stall. Ten 80 ms frames make one 800 ms chunk. Chunk 2 is first pending, then ready before chunk 1 ends. A late chunk 2 would leave a gap in playback.
 
 ### Formula
 
 $$
-J=K\times Q,\qquad D=N\times F
+D=N\times F
 $$
 
 | Symbol | Meaning | Size | Source |
 |---|---|---:|---|
-| $J$ | Measured runs per deployment choice | 10 | This step |
-| $K$ | Concurrency levels | 2: 1 and 16 | Documented sweep |
-| $Q$ | Repeats at each level | 5 | Documented sweep |
 | $D$ | Playback time in one audio chunk | 800 ms | This step |
 | $N$ | Frames in one chunk | 10 | Learning SGLang Ch. 20 Steps 1–3 |
 | $F$ | Playback time per frame | 80 ms | Learning SGLang Ch. 20 Steps 1–3 |
@@ -339,14 +336,20 @@ $$
 ### The numbers on the stage
 
 $$
-J=2\times5=10\ \text{runs per choice},\qquad D=10\times80=800\ \text{ms}
+D=10\times80=800\ \text{ms}
 $$
 
-The ten-run count belongs to the two-level `c = 1,16` example. Warmup runs are separate. Requests inside one run do not become independent experiment repeats, following Ch. 8 Step 8. The 800 ms deadline is playback duration, not a measured code2wav compute budget. The pending and ready states are a constructed timing example. Off the stage, keep throughput, failure, memory and raw per-run records. Ch. 12 Step 8's stop wait `L−S` and response wait `N−R` also remain separate listener clocks. The shipped p99 boundary has 99% of measured requests at or below it. Report p99 only when the measured sample contains results from at least 100 requests; ten runs alone neither establish nor forbid that sample count.
+The 800 ms deadline is playback duration, not a measured code2wav compute budget. The pending and ready states form a constructed timing example.
 
-### Procedure and sources
+### Off-stage procedure and sources
 
-Resolve the configuration with `sgl-omni config resolve --config <config.yaml> --show config` (`docs/basic_usage/process_topology.md:52-53`). Readiness is defined in `docs/cookbook/qwen3_omni.md:202-204` and `sglang_omni/models/qwen3_omni/config.py:328-366`; its limited warm-up coverage is in `docs/basic_usage/omni.md:345-349`. The SeedTTS sweep and percentile guidance are in `benchmarks/README.md:249-288`. The benchmark client records request wall time (`benchmarks/metrics/performance.py:27-31`; `benchmarks/eval/benchmark_omni_seedtts.py:371,398,408`). The implementation counts requests, not runs, for the p99 warning (`benchmarks/eval/benchmark_omni_seedtts.py:504-505,552-561`; `benchmarks/benchmarker/conditions.py:19-20,95-100`).  `--generate-only` saves audio and generation-speed records, including success and failure counts; it does not transcribe audio or compute WER or speaker similarity (`benchmarks/README.md:215-220,659`). Keep those completion records, then run transcription, WER and reference-based voice-match checks separately where applicable.
+Before this slide, resolve the configuration with `sgl-omni config resolve --config <config.yaml> --show config` (`docs/basic_usage/process_topology.md:52-53`). Readiness is defined in `docs/cookbook/qwen3_omni.md:202-204` and `sglang_omni/models/qwen3_omni/config.py:328-366`; its limited warm-up coverage is in `docs/basic_usage/omni.md:345-349`.
+
+The documented SeedTTS sweep is a separate example from the stage. It uses concurrency 1 and 16 with five repeats at each level, giving `2 levels × 5 repeats = 10 runs per choice`. Here `c` means concurrency, the number of requests running together. Warmup runs are separate, and requests inside one run do not become independent experiment repeats, following Ch. 8 Step 8. Keep throughput, failure, memory and raw per-run records (`benchmarks/README.md:249-288`).
+
+The benchmark client records request wall time (`benchmarks/metrics/performance.py:27-31`; `benchmarks/eval/benchmark_omni_seedtts.py:371,398,408`). Ch. 12 Step 8's stop wait `L−S` and response wait `N−R` remain separate listener clocks. The shipped p99 boundary has 99% of measured requests at or below it. Report p99 only when the measured sample contains results from at least 100 requests; ten runs alone neither establish nor forbid that sample count (`benchmarks/eval/benchmark_omni_seedtts.py:504-505,552-561`; `benchmarks/benchmarker/conditions.py:19-20,95-100`).
+
+`--generate-only` saves audio and generation-speed records, including success and failure counts. It does not transcribe audio or compute WER or speaker similarity (`benchmarks/README.md:215-220,659`). Keep those completion records, then run transcription, WER and reference-based voice-match checks separately where applicable.
 
 ### Next
 

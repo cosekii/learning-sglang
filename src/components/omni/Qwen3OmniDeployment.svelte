@@ -38,9 +38,6 @@
     QWEN_REPLICA2_CODEC_STATE_SLOTS,
     QWEN_WARMUP_AUDIO_SECONDS,
     QWEN_WARMUP_MAX_NEW_TOKENS,
-    QWEN_BENCH_CONCURRENCIES,
-    QWEN_BENCH_REPEATS,
-    QWEN_BENCH_RUNS_PER_ARM,
     QWEN_EXAMPLE_UNALLOCATED_TALKER_SLOTS,
     QWEN_VIDEO_TEST_CARD_GB,
     QWEN_VIDEO_TEST_THINKER_PARAMS_B,
@@ -87,8 +84,8 @@
     caption: 'Two talkers make each code2wav process reserve 64 slots. Each process owns a separate pool, not double throughput.',
     captionZh: '两个 talker 让每个 code2wav 进程预留 64 个状态位。两个进程各有独立状态池，不代表吞吐翻倍。',
   }, {
-    caption: 'Readiness checks one small request. A/B changes one choice and keeps client and listener clocks separate.',
-    captionZh: 'readiness 只检查一个小请求能否跑完。A/B 只改一个选择，客户端和听者分开计时。',
+    caption: 'Readiness checks that one small request finishes. A/B then changes one choice and records client time and listener stalls separately.',
+    captionZh: 'readiness 先检查一个小请求能否跑完。A/B 只改一个选择，分别记录客户端耗时和听者卡顿。',
   }, {
     caption: 'Keep the TP1 layout fixed and compare only BF16 with FP8 at c=8. Next: what happens when the client reads too slowly?',
     captionZh: '固定 TP1 摆卡，只比 c=8 的 BF16 和 FP8。接下来，客户端读得太慢会怎样？',
@@ -459,10 +456,10 @@
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{phone ? t('Full pool: stateless left-context fallback', '状态池满：退回左侧上下文的无状态解码') : t('A full pool falls back to stateless left-context decoding; it does not reject the stream.', '状态池满时退回看左侧上下文的无状态解码，不会拒绝这路流。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Capacity covers both; pairing routes to one', '容量覆盖两个 talker；配对只选一路') : t('Capacity covers both talkers; default pairing routes each stream to one codec.', '容量按两个 talker 计算；默认配对把每路流交给一个 codec。')}</text>
       {:else if step === 8}
-        <text x={phone ? 15 : 20} y="24" class="rowlabel">{t(phone ? '5/5 · EVIDENCE · TWO CHECKS' : '5 of 5 · EVIDENCE · TWO CHECKS ANSWER TWO QUESTIONS', phone ? '5/5 · 证据 · 两种检查' : '5/5 · 证据 · 两种检查回答两个问题')}</text>
+        <text x={phone ? 15 : 20} y="24" class="rowlabel">{t(phone ? '5/5 · EVIDENCE · HEALTH BEFORE SPEED' : '5 of 5 · EVIDENCE · HEALTH BEFORE SPEED', phone ? '5/5 · 证据 · 先能跑，再测速' : '5/5 · 证据 · 先确认能跑，再测快慢')}</text>
         <text x={phone ? 15 : 20} y="49" class="tag">readiness = {t('a startup health check, not a speed result', '启动健康检查，不是速度结果')}</text>
         <text x={phone ? 15 : 20} y="72" class="tag">{t('blue = startup request · orange = measurement plan', '蓝 = 启动请求 · 橙 = 测量计划')}</text>
-        <text x={phone ? 15 : 20} y="95" class="tag strong">{phone ? t('resolve config → readiness → controlled A/B', '解析 config → readiness → 受控 A/B') : t('config resolve = check parsed settings → readiness → controlled A/B', 'config resolve = 核对解析后的配置 → readiness → 受控 A/B')}</text>
+        <text x={phone ? 15 : 20} y="95" class="tag strong">{t('First finish one small request; then compare one choice.', '先确认一个小请求能跑完，再比较一个选择。')}</text>
         {#each phone ? [
           { x: 15, y: 105, w: 270, h: 340, measure: false },
           { x: 15, y: 465, w: 270, h: 400, measure: true },
@@ -482,23 +479,18 @@
               <text x={panel.x + panel.w / 2} y={panel.y + 215} text-anchor="middle" class="formula">↓ {t('every required stage', '每个需要的 stage')}</text>
               <rect x={panel.x + 15} y={panel.y + 235} width={panel.w - 30} height="64" rx="8" fill="var(--bg)" stroke="var(--accent)" />
               <text x={panel.x + panel.w / 2} y={panel.y + 273} text-anchor="middle" class="formula">≤ {QWEN_WARMUP_MAX_NEW_TOKENS} tokens / {t('generating stage', '生成 stage')}</text>
-              <text x={panel.x + panel.w / 2} y={panel.y + 315} text-anchor="middle" class="tag">{t('8 text tokens ≈ 6 English words', '8 个文字 token 约 6 个英文单词')}</text>
-              <text x={panel.x + panel.w / 2} y={panel.y + 333} text-anchor="middle" class="tag strong">{t('health only · audio tokens carry sound', '只查健康 · 声音 token 不是单词')}</text>
+              <text x={panel.x + panel.w / 2} y={panel.y + 315} text-anchor="middle" class="tag">{t('a response means healthy, not fast', '收到响应只说明能跑完，不说明快')}</text>
             </g>
           {:else}
             <g opacity={phase >= 2 ? 1 : 0} style="transition: opacity 450ms">
               <text x={panel.x + 15} y={panel.y + 84} class="tag strong">{t('KEEP FIXED', '保持不变')}</text>
               <text x={panel.x + 15} y={panel.y + 109} class="tag">{t('inputs · sampling · hardware · warmup', '输入 · 采样 · 硬件 · 预热')}</text>
               <text x={panel.x + 15} y={panel.y + 134} class="tag">{t('change one deployment choice', '只改一个部署选择')}</text>
-              <rect x={panel.x + 15} y={panel.y + 153} width={panel.w - 30} height="58" rx="8" fill="var(--bg)" stroke="var(--gen)" />
-              <text x={panel.x + panel.w / 2} y={panel.y + 188} text-anchor="middle" class="tag strong">{phone ? t(`example: ${QWEN_BENCH_CONCURRENCIES.length} levels × ${QWEN_BENCH_REPEATS} = ${QWEN_BENCH_RUNS_PER_ARM} runs / choice`, `文档算例：${QWEN_BENCH_CONCURRENCIES.length} 档 × ${QWEN_BENCH_REPEATS} 次 = ${QWEN_BENCH_RUNS_PER_ARM} 次 / 选择`) : t(`documented: ${QWEN_BENCH_CONCURRENCIES.length} levels × ${QWEN_BENCH_REPEATS} repeats = ${QWEN_BENCH_RUNS_PER_ARM} runs / choice`, `文档算例：${QWEN_BENCH_CONCURRENCIES.length} 档 × 每档 ${QWEN_BENCH_REPEATS} 次 = ${QWEN_BENCH_RUNS_PER_ARM} 次 / 选择`)}</text>
-              {#each QWEN_BENCH_CONCURRENCIES as concurrency, level}
-                <text x={panel.x + 25 + level * 120} y={panel.y + 205} class="tag">c={concurrency}</text>
-                {#each Array(QWEN_BENCH_REPEATS) as _, run}
-                  <rect x={panel.x + 55 + level * 130 + run * 12} y={panel.y + 196} width="8" height="8" rx="2" fill="var(--gen)" />
-                {/each}
-              {/each}
-              <text x={panel.x + panel.w / 2} y={panel.y + 233} text-anchor="middle" class="tag">{phone ? t(`c = concurrency: ${QWEN_BENCH_CONCURRENCIES.join(' or ')} · ${QWEN_BENCH_REPEATS} runs each`, `c = 并发请求数：${QWEN_BENCH_CONCURRENCIES.join(' 或 ')} · 各 ${QWEN_BENCH_REPEATS} 次`) : t(`c = concurrency: ${QWEN_BENCH_CONCURRENCIES.join(' or ')} · ${QWEN_BENCH_REPEATS} repeats each`, `c = 并发请求数：${QWEN_BENCH_CONCURRENCIES.join(' 或 ')} · 每档 ${QWEN_BENCH_REPEATS} 次`)}</text>
+              <text x={panel.x + panel.w / 2} y={panel.y + 178} text-anchor="middle" class="tag strong">{t('same requests for A and B', 'A 和 B 收到同样的请求')}</text>
+              <rect x={panel.x + 15} y={panel.y + 193} width={(panel.w - 60) / 2} height="48" rx="8" fill="var(--bg)" stroke="var(--gen)" />
+              <rect x={panel.x + 45 + (panel.w - 60) / 2} y={panel.y + 193} width={(panel.w - 60) / 2} height="48" rx="8" fill="var(--bg)" stroke="var(--gen)" />
+              <text x={panel.x + 15 + (panel.w - 60) / 4} y={panel.y + 224} text-anchor="middle" class="tag strong">{t('A · first choice', 'A · 第一个选择')}</text>
+              <text x={panel.x + 45 + (panel.w - 60) * 3 / 4} y={panel.y + 224} text-anchor="middle" class="tag strong">{t('B · one change', 'B · 只改一项')}</text>
             </g>
             <g opacity={phase >= 3 ? 1 : 0} style="transition: opacity 450ms">
               <rect x={panel.x + 15} y={panel.y + 254} width={panel.w - 30} height="60" rx="8" fill="var(--bg)" stroke="var(--line)" />
@@ -511,7 +503,7 @@
           {/if}
         {/each}
         <g opacity={phase >= 4 ? 1 : 0} style="transition: opacity 450ms">
-          <text x={phone ? 15 : 20} y={phone ? 890 : 535} class="rowlabel">{phone ? t(`${QWEN_STREAM_CHUNK_FRAMES} × ${QWEN_STREAM_FRAME_MS} ms = ${QWEN_STREAM_CHUNK_MS} ms · late chunk = stall`, `${QWEN_STREAM_CHUNK_FRAMES} × ${QWEN_STREAM_FRAME_MS} ms = ${QWEN_STREAM_CHUNK_MS} ms · 迟到就卡顿`) : t(`WHY THE LISTENER RECORDS STALLS · ${QWEN_STREAM_CHUNK_FRAMES} frames × ${QWEN_STREAM_FRAME_MS} ms = ${QWEN_STREAM_CHUNK_MS} ms`, `听者为什么记录卡顿 · ${QWEN_STREAM_CHUNK_FRAMES} 帧 × ${QWEN_STREAM_FRAME_MS} ms = ${QWEN_STREAM_CHUNK_MS} ms`)}</text>
+          <text x={phone ? 15 : 20} y={phone ? 890 : 535} class="rowlabel">{phone ? t(`${QWEN_STREAM_CHUNK_FRAMES} × ${QWEN_STREAM_FRAME_MS} ms = ${QWEN_STREAM_CHUNK_MS} ms · late chunk = stall`, `${QWEN_STREAM_CHUNK_FRAMES} × ${QWEN_STREAM_FRAME_MS} ms = ${QWEN_STREAM_CHUNK_MS} ms · 迟到就卡顿`) : t(`LISTENER CLOCK · ${QWEN_STREAM_CHUNK_FRAMES} frames × ${QWEN_STREAM_FRAME_MS} ms = ${QWEN_STREAM_CHUNK_MS} ms`, `听者时钟 · ${QWEN_STREAM_CHUNK_FRAMES} 帧 × ${QWEN_STREAM_FRAME_MS} ms = ${QWEN_STREAM_CHUNK_MS} ms`)}</text>
           {#if phone}
             <rect x="15" y="915" width="125" height="45" rx="6" fill="var(--gen-soft)" stroke="var(--gen)" />
             <text x="77" y="935" text-anchor="middle" class="tag strong">chunk 1</text>
@@ -520,7 +512,7 @@
             <text x="222" y="935" text-anchor="middle" class="tag strong">chunk 2</text>
             <text x="222" y="954" text-anchor="middle" class="tag">{t(phase >= 5 ? 'ready' : 'pending', phase >= 5 ? '就绪' : '未就绪')}</text>
             <line x1="150" y1="905" x2="150" y2="970" stroke="var(--eos)" stroke-width="1.5" stroke-dasharray="4 3" />
-            <text x="150" y="990" text-anchor="middle" class="tag strong" fill="var(--eos)">{t('chunk 1 ends · chunk 2 must be ready', 'chunk 1 结束 · chunk 2 必须就绪')}</text>
+            <text x="150" y="990" text-anchor="middle" class="tag strong" fill="var(--eos)">{t('chunk 1 ends · late chunk 2 = stall', 'chunk 1 结束 · chunk 2 迟到就卡顿')}</text>
           {:else}
             <rect x="20" y="550" width="250" height="34" rx="6" fill="var(--gen-soft)" stroke="var(--gen)" />
             <text x="145" y="572" text-anchor="middle" class="tag strong">chunk 1 · {QWEN_STREAM_CHUNK_MS} ms {t('playing', '播放')}</text>
@@ -528,7 +520,7 @@
             <text x="385" y="572" text-anchor="middle" class="tag strong">chunk 2 · {t(phase >= 5 ? 'ready' : 'pending', phase >= 5 ? '就绪' : '未就绪')}</text>
             <line x1="510" y1="540" x2="510" y2="594" stroke="var(--eos)" stroke-width="1.5" stroke-dasharray="4 3" />
             <text x="525" y="562" class="tag strong" fill="var(--eos)">{t('chunk 1 ends', 'chunk 1 结束')}</text>
-            <text x="525" y="585" class="tag">{t('chunk 2 must be ready', 'chunk 2 必须就绪')}</text>
+            <text x="525" y="585" class="tag">{t('late chunk 2 = stall', 'chunk 2 迟到就卡顿')}</text>
           {/if}
         </g>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Readiness skips larger inputs and batches.', 'readiness 可能没有预热更大的输入和 batch。') : t('Readiness can leave video, large batches and other input sizes unwarmed.', 'readiness 可能没有预热视频、大 batch 和其他输入大小。')}</text>

@@ -312,27 +312,24 @@ $$
 
 ## 第 9 步 · 就绪不是 benchmark
 
-> **一句话：** readiness 证明一个小请求能跑完；部署比较需要受控流量，以及分开的基准客户端和听者时钟。
+> **一句话：** readiness 证明一个小请求能跑完；A/B 再只改一个选择，分别记录客户端耗时和听者卡顿。
 
 ### 图上是什么
 
-- 顶部链条先用 `config resolve` 核对解析后的配置，再做 readiness，最后开始受控 A/B 比较。
-- readiness 发送一张小图、一秒声音和一条短指令。收到响应表示这个小请求跑完了。每个生成 token 的 stage 最多生成 8 个新 token。单看文字，8 个 token 约为 6 个英文单词。声音 token 承载声音，不是单词。这里只证明健康，不证明速度或质量。
-- A/B 使用同样的流量，只改一个部署选择。测量计划固定输入、采样、硬件和预热。`c` 是 concurrency，即同时运行的请求数。
-- 示例 sweep 在并发 1 和 16 各重复 5 次，每种选择共测量十次。
-- 基准客户端记录首音和整个请求的墙钟时间，听者另记播放卡顿。底部时间线解释卡顿。10 个 80 ms 的帧组成一个 800 ms chunk。chunk 2 先显示未就绪，再赶在 chunk 1 结束前就绪。错过这条边界，听者就会听到空档。
+- 顶行给出顺序：先让一个小请求跑完，再比较一个选择。
+- readiness 发送一张小图、一秒声音和一条短指令。收到响应表示请求跑完了。每个生成 token 的 stage 最多生成 8 个新 token。响应只说明健康，不说明速度。
+- A/B 给两个选择发同样的请求，只改一个部署选择。测量计划固定输入、采样、硬件和预热。A 保留第一个选择，B 只改一项。
+- 基准客户端记录首音和整个请求的墙钟时间，听者另记播放卡顿。
+- 底部时间线解释卡顿。10 个 80 ms 的帧组成一个 800 ms chunk。chunk 2 先显示未就绪，再赶在 chunk 1 结束前就绪。chunk 2 迟到会让播放出现空档。
 
 ### 公式
 
 $$
-J=K\times Q,\qquad D=N\times F
+D=N\times F
 $$
 
 | 符号 | 是什么 | 大小 | 从哪来 |
 |---|---|---:|---|
-| $J$ | 每种部署选择测量的次数 | 10 | 本步 |
-| $K$ | 并发档数 | 2：1 和 16 | 文档中的 sweep |
-| $Q$ | 每档重复次数 | 5 | 文档中的 sweep |
 | $D$ | 一个声音 chunk 的播放时长 | 800 ms | 本步 |
 | $N$ | 一个 chunk 的帧数 | 10 | Learning SGLang 第 20 章第 1–3 步 |
 | $F$ | 每帧的播放时长 | 80 ms | Learning SGLang 第 20 章第 1–3 步 |
@@ -340,14 +337,20 @@ $$
 ### 代入图上的数
 
 $$
-J=2\times5=10\ \text{次测量 / 种选择},\qquad D=10\times80=800\ \text{ms}
+D=10\times80=800\ \text{ms}
 $$
 
-十次只属于 `c = 1,16` 的两档示例。预热另算。按照第 8 章第 8 步，同一次运行里的多个请求不能算作独立的实验重复。800 ms 截止线是播放时长，不是实测的 code2wav 计算预算。未就绪与就绪两个状态是构造的计时例。图外还要保留吞吐、失败、显存和每次运行的原始结果。第 12 章第 8 步的停答 `L−S` 和回应 `N−R` 也仍是独立的听者时钟。随仓库脚本的 p99 表示 99% 的测量请求不超过这条线。只有测量样本包含至少 100 个请求的结果时才报告 p99；十次运行本身既不能保证也不排除这个样本数。
+800 ms 截止线是播放时长，不是实测的 code2wav 计算预算。未就绪与就绪两个状态是构造的计时例。
 
-### 做法与出处
+### 图外做法与出处
 
-先用 `sgl-omni config resolve --config <config.yaml> --show config` 解析配置（`docs/basic_usage/process_topology.md:52-53`）。readiness 的定义见 `docs/cookbook/qwen3_omni.md:202-204` 和 `sglang_omni/models/qwen3_omni/config.py:328-366`；有限的预热覆盖见 `docs/basic_usage/omni.md:345-349`。SeedTTS sweep 和百分位指导见 `benchmarks/README.md:249-288`。基准客户端记录请求墙钟时间（`benchmarks/metrics/performance.py:27-31`；`benchmarks/eval/benchmark_omni_seedtts.py:371,398,408`）。实现按请求数而不是运行次数检查 p99 样本量（`benchmarks/eval/benchmark_omni_seedtts.py:504-505,552-561`；`benchmarks/benchmarker/conditions.py:19-20,95-100`）。 `--generate-only` 保存声音和生成速度记录，包括成功与失败数量，但不转写声音，也不计算 WER 或说话人相似度（`benchmarks/README.md:215-220,659`）。保留这些完成情况记录，再按负载另行检查转写、WER，以及适用时基于参考音频的音色匹配。
+本步之前，先用 `sgl-omni config resolve --config <config.yaml> --show config` 解析配置（`docs/basic_usage/process_topology.md:52-53`）。readiness 的定义见 `docs/cookbook/qwen3_omni.md:202-204` 和 `sglang_omni/models/qwen3_omni/config.py:328-366`；有限的预热覆盖见 `docs/basic_usage/omni.md:345-349`。
+
+文档中的 SeedTTS sweep 是舞台以外的另一个算例。它在并发 1 和 16 各重复 5 次，所以 `2 档 × 每档 5 次 = 每种选择 10 次运行`。`c` 是 concurrency，即同时运行的请求数。预热另算。按照第 8 章第 8 步，同一次运行里的多个请求不能算作独立的实验重复。还要保留吞吐、失败、显存和每次运行的原始结果（`benchmarks/README.md:249-288`）。
+
+基准客户端记录请求墙钟时间（`benchmarks/metrics/performance.py:27-31`；`benchmarks/eval/benchmark_omni_seedtts.py:371,398,408`）。第 12 章第 8 步的停答 `L−S` 和回应 `N−R` 仍是独立的听者时钟。随仓库脚本的 p99 表示 99% 的测量请求不超过这条线。只有测量样本包含至少 100 个请求的结果时才报告 p99；十次运行本身既不能保证也不排除这个样本数（`benchmarks/eval/benchmark_omni_seedtts.py:504-505,552-561`；`benchmarks/benchmarker/conditions.py:19-20,95-100`）。
+
+`--generate-only` 保存声音和生成速度记录，包括成功与失败数量，但不转写声音，也不计算 WER 或说话人相似度（`benchmarks/README.md:215-220,659`）。保留这些完成情况记录，再按负载另行检查转写、WER，以及适用时基于参考音频的音色匹配。
 
 ### 接下来
 
