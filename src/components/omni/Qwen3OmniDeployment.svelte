@@ -439,7 +439,7 @@
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{phone ? t('Readiness skips larger inputs and batches.', 'readiness 可能没有预热更大的输入和 batch。') : t('Readiness can leave video, large batches and other input sizes unwarmed.', 'readiness 可能没有预热视频、大 batch 和其他输入大小。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t(`p99: 99% at/below · ≥${QWEN_P99_MIN_SAMPLES} requests · runs vary`, `p99：99% 请求不超过 · 至少 ${QWEN_P99_MIN_SAMPLES} 个请求 · 运行次数不定`) : t(`p99 = 99% at or below · require ≥${QWEN_P99_MIN_SAMPLES} requests; ten runs may or may not contain them`, `p99 = 99% 请求不超过 · 至少 ${QWEN_P99_MIN_SAMPLES} 个请求；十次运行可能够，也可能不够`)}</text>
       {:else if step === 7}
-        <text x={phone ? 15 : 20} y="24" class="rowlabel">{t('ONE DEPLOYMENT DECISION SHEET', '一张部署决策表')}</text>
+        <text x={phone ? 15 : 20} y="24" class="rowlabel">{t(phone ? '5/5 · EVIDENCE · DECISION SHEET' : '5 of 5 · EVIDENCE · ONE DEPLOYMENT DECISION SHEET', phone ? '5/5 · 证据 · 决策表' : '5/5 · 证据 · 一张部署决策表')}</text>
         <text x={phone ? 15 : 20} y="49" class="tag">{t('blue = starting choice · orange = evidence still required', '蓝 = 起步选择 · 橙 = 还需要的证据')}</text>
         <text x={phone ? 15 : 20} y="72" class="tag strong">{phone ? t('EXAMPLE: 8 requests at once · earlier first audio', '算例：8 路并发 · 首音更早') : t('EXAMPLE: 8 concurrent spoken requests, earlier first audio', '算例：8 路并发语音请求，希望首音更早')}</text>
         {#each [
@@ -451,14 +451,17 @@
           { label: 'EVIDENCE', labelZh: '证据', a: 'A=BF16 · B=FP8 · same TP1 layout · c=8 · median/custom p90', aZh: 'A=BF16 · B=FP8 · 同一 TP1 摆卡 · c=8 · 首音中位数/自定义 p90', b: 'total · failures · memory · stalls · waits · Ch. 8 Step 8 quality · raw results', bZh: '总耗时 · 失败 · 显存 · 卡顿 · 等待 · 第 8 章第 8 步质量检查 · 原始结果', evidence: true },
         ] as row, i}
           {@const y = phone ? 105 + i * 100 : 105 + i * 62}
-          <rect x={phone ? 15 : 20} {y} width={phone ? 270 : 680} height={phone ? (row.evidence ? 106 : 88) : 52} rx="8" fill={row.evidence ? 'var(--gen-soft)' : 'var(--accent-soft)'} fill-opacity="0.25" stroke={row.evidence ? 'var(--gen)' : 'var(--accent)'} />
-          <text x={phone ? 29 : 34} y={y + (phone ? 24 : 22)} class="tag strong" fill={row.evidence ? 'var(--gen)' : 'var(--accent)'}>{t(row.label, row.labelZh)}</text>
-          <text x={phone ? 29 : 170} y={y + (phone ? 49 : 22)} class="tag strong">{phone && row.evidence ? t('A=BF16 · B=FP8 · same TP1 layout · c=8', 'A=BF16 · B=FP8 · 同一 TP1 摆卡 · c=8') : t(row.a, row.aZh)}</text>
-          <text x={phone ? 29 : 170} y={y + (phone ? 73 : 42)} class="tag">{phone && row.label === 'CAPACITY' ? t(`32 − 8 = ${QWEN_EXAMPLE_UNALLOCATED_TALKER_SLOTS} requests of headroom`, `32 − 8 = ${QWEN_EXAMPLE_UNALLOCATED_TALKER_SLOTS} 个请求余量`) : phone && row.evidence ? t('median/custom p90 · total · per-run results', '首音中位数/自定义 p90 · 总耗时 · 逐次原始结果') : t(row.b, row.bZh)}</text>
-          {#if phone && row.evidence}
-            <text x="29" y={y + 97} class="tag">{t('memory · stalls · failures · Ch. 8 Step 8 quality', '显存 · 卡顿 · 失败 · 第 8 章第 8 步质量检查')}</text>
-          {/if}
+          <g opacity={phase >= i ? 1 : 0.12} style="transition: opacity 450ms">
+            <rect x={phone ? 15 : 20} {y} width={phone ? 270 : 680} height={phone ? (row.evidence ? 106 : 88) : 52} rx="8" fill={row.evidence ? 'var(--gen-soft)' : 'var(--accent-soft)'} fill-opacity="0.25" stroke={row.evidence ? 'var(--gen)' : 'var(--accent)'} />
+            <text x={phone ? 29 : 34} y={y + (phone ? 24 : 22)} class="tag strong" fill={row.evidence ? 'var(--gen)' : 'var(--accent)'}>{t(row.label, row.labelZh)}</text>
+            <text x={phone ? 29 : 170} y={y + (phone ? 49 : 22)} class="tag strong">{phone && row.evidence ? t('A=BF16 · B=FP8 · same TP1 layout · c=8', 'A=BF16 · B=FP8 · 同一 TP1 摆卡 · c=8') : t(row.a, row.aZh)}</text>
+            <text x={phone ? 29 : 170} y={y + (phone ? 73 : 42)} class="tag">{phone && row.label === 'CAPACITY' ? t(`32 − 8 = ${QWEN_EXAMPLE_UNALLOCATED_TALKER_SLOTS} requests of headroom`, `32 − 8 = ${QWEN_EXAMPLE_UNALLOCATED_TALKER_SLOTS} 个请求余量`) : phone && row.evidence ? t('median/custom p90 · total · per-run results', '首音中位数/自定义 p90 · 总耗时 · 逐次原始结果') : t(row.b, row.bZh)}</text>
+            {#if phone && row.evidence}
+              <text x="29" y={y + 97} class="tag">{t('memory · stalls · failures · Ch. 8 Step 8 quality', '显存 · 卡顿 · 失败 · 第 8 章第 8 步质量检查')}</text>
+            {/if}
+          </g>
         {/each}
+        <g opacity={phase >= 5 ? 1 : 0.12} style="transition: opacity 450ms">
         <text x={W / 2} y={phone ? 738 : 498} text-anchor="middle" class="rowlabel">{t('CHAPTERS 1–12 REVIEW', '第 1–12 章回顾')}</text>
         {#each [
           { ref: 'Ch. 1–3', refZh: '第 1–3 章', text: 'config · route · binding', textZh: '配置 · 路线 · 绑定' },
@@ -472,12 +475,15 @@
           <text x={x + 12} y={y + 21} class="tag strong">{t(card.ref, card.refZh)}</text>
           <text x={x + 12} y={y + (phone ? 39 : 43)} class="tag">{t(card.text, card.textZh)}</text>
         {/each}
+        </g>
+        <g opacity={phase >= 5 ? 1 : 0.12} style="transition: opacity 450ms">
         {#if phone}
           <text x={W / 2} y="1013" text-anchor="middle" class="tag strong">client ← queued audio (API process)</text>
           <text x={W / 2} y="1038" text-anchor="middle" class="tag strong">{t('What if the client reads too slowly?', '客户端读得太慢会怎样？')}</text>
         {:else}
           <text x={W / 2} y="615" text-anchor="middle" class="tag strong">{t('client ← queued audio (API process) · What happens when the client reads too slowly?', 'client ← queued audio (API process) · 客户端读得太慢会怎样？')}</text>
         {/if}
+        </g>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Constructed TP1 hypothesis · local A/B required', '构造的 TP1 假设 · 仍需本地 A/B') : t('Constructed TP1 hypothesis from H200/TP2 evidence; local A/B required. No local model run.', '由 H200/TP2 证据构造的 TP1 假设，仍需本地 A/B；未运行模型。')}</text>
       {/if}
       {#if PHASE_COUNTS[step] > 0}
