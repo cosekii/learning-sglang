@@ -5,7 +5,7 @@
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
-  import { HYBRID_SYSTEM_TOKENS, HYBRID_NUM_BATCH_DEFAULT, HYBRID_NUM_BATCH_TUNED, HYBRID_SHORT_WAIT_DEFAULT_S, HYBRID_SHORT_WAIT_TUNED_S, HYBRID_WAIT_SAVED_S, HYBRID_WAIT_RATIO, HYBRID_RECOMPUTE_DEFAULT_MIN, HYBRID_RECOMPUTE_DEFAULT_MAX, HYBRID_RECOMPUTE_TUNED_MIN, HYBRID_RECOMPUTE_TUNED_MAX, HYBRID_COLD_DEFAULT_S, HYBRID_COLD_TUNED_S, HYBRID_COLD_EXTRA_S, HYBRID_USER_TOKENS, HYBRID_PROMPT_TOKENS, HYBRID_FULL_ATTENTION_NEW_TOKENS, HYBRID_LOG_MATCH_TOKENS, HYBRID_LOG_END_TOKENS, HYBRID_LOG_CHECKPOINT_TOKENS, HYBRID_LOG_REPLAY_POSITIONS, HYBRID_LOG_RECOMPUTE_APPROX, HYBRID_LOG_NEW_TOKENS, HYBRID_LOG_EXTRA_APPROX } from '../../ml-sys/numbers';
+  import { HYBRID_SYSTEM_TOKENS, HYBRID_NUM_BATCH_DEFAULT, HYBRID_NUM_BATCH_TUNED, HYBRID_SHORT_WAIT_DEFAULT_S, HYBRID_SHORT_WAIT_TUNED_S, HYBRID_WAIT_SAVED_S, HYBRID_WAIT_RATIO, HYBRID_RECOMPUTE_DEFAULT_MIN, HYBRID_RECOMPUTE_DEFAULT_MAX, HYBRID_RECOMPUTE_TUNED_MIN, HYBRID_RECOMPUTE_TUNED_MAX, HYBRID_COLD_DEFAULT_S, HYBRID_COLD_TUNED_S, HYBRID_COLD_EXTRA_S, HYBRID_USER_TOKENS, HYBRID_PROMPT_TOKENS, HYBRID_FULL_ATTENTION_NEW_TOKENS, HYBRID_LOG_MATCH_TOKENS, HYBRID_LOG_END_TOKENS, HYBRID_LOG_CHECKPOINT_TOKENS, HYBRID_LOG_PREFIX_REPLAY_POSITIONS, HYBRID_LOG_REPLAY_POSITIONS, HYBRID_LOG_RECOMPUTE_APPROX, HYBRID_LOG_NEW_TOKENS, HYBRID_LOG_EXTRA_APPROX } from '../../ml-sys/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
@@ -49,7 +49,7 @@
       motion.removeEventListener('change', updateMotion);
     };
   });
-  const PHASE_COUNTS = [3, 4, 4, 5, 4, 5];
+  const PHASE_COUNTS = [3, 4, 4, 6, 4, 5];
   const PHASE_MS = 1100, REST_MS = 2800;
   let phase = $state(0);
   let lap = $state(0), lapMs = $state(0);
@@ -73,9 +73,12 @@
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720), H = $derived(phone ? 460 : 410);
   const waitWidth = (seconds: number, width: number) => seconds / HYBRID_SHORT_WAIT_DEFAULT_S * width;
-  const replayed = $derived(phase >= 4 ? HYBRID_LOG_REPLAY_POSITIONS : phase === 3 ? Math.round(HYBRID_LOG_REPLAY_POSITIONS / 2) : 0);
-  const replayX = $derived(200 + 460 * replayed / HYBRID_LOG_REPLAY_POSITIONS);
-  const replayPhoneX = $derived(70 + 200 * replayed / HYBRID_LOG_REPLAY_POSITIONS);
+  const replayed = $derived(phase >= 4 ? HYBRID_LOG_REPLAY_POSITIONS : phase === 3 ? HYBRID_LOG_PREFIX_REPLAY_POSITIONS : 0);
+  const replayPositionX = (count: number, start: number, match: number, end: number) => count <= HYBRID_LOG_PREFIX_REPLAY_POSITIONS
+    ? start + (match - start) * count / HYBRID_LOG_PREFIX_REPLAY_POSITIONS
+    : match + (end - match) * (count - HYBRID_LOG_PREFIX_REPLAY_POSITIONS) / HYBRID_LOG_NEW_TOKENS;
+  const replayX = $derived(replayPositionX(replayed, 200, 430, 660));
+  const replayPhoneX = $derived(replayPositionX(replayed, 70, 175, 275));
 </script>
 
 <figure class="viz" data-animation-step={step} data-animation-phase={phase} data-animation-final-phase={PHASE_COUNTS[step] - 1}>
@@ -313,9 +316,9 @@
           {#if phase >= 3}
             <line x1="200" y1="215" x2={replayX} y2="215" stroke="var(--gen)" stroke-width="4" style="transition: x2 700ms" />
             <path d={`M${replayX},215 l-13,-8 v16 z`} fill="var(--gen)" style="transition: d 700ms" />
-            <text x="430" y="246" text-anchor="middle" class="result">{phase >= 4 ? `${HYBRID_LOG_END_TOKENS.toLocaleString()} − ${HYBRID_LOG_CHECKPOINT_TOKENS.toLocaleString()} = ${HYBRID_LOG_REPLAY_POSITIONS.toLocaleString()} ${t('positions', '个位置')}` : `${replayed.toLocaleString()} / ${HYBRID_LOG_REPLAY_POSITIONS.toLocaleString()} ${t('positions replayed', '个位置已重算')}`}</text>
+            <text x="430" y="246" text-anchor="middle" class="result">{phase === 3 ? `${HYBRID_LOG_MATCH_TOKENS.toLocaleString()} − ${HYBRID_LOG_CHECKPOINT_TOKENS.toLocaleString()} = ${HYBRID_LOG_PREFIX_REPLAY_POSITIONS.toLocaleString()} ${t('positions · P → M', '个位置 · P → M')}` : `${HYBRID_LOG_PREFIX_REPLAY_POSITIONS.toLocaleString()} + ${HYBRID_LOG_NEW_TOKENS} = ${HYBRID_LOG_REPLAY_POSITIONS.toLocaleString()} ${t('positions · P → M → E', '个位置 · P → M → E')}`}</text>
           {/if}
-          <g opacity={phase >= 4 ? 1 : 0} >
+          <g opacity={phase >= 5 ? 1 : 0} >
             <text x="430" y="274" text-anchor="middle" class="small">{t('log: about', '日志：约')} {HYBRID_LOG_RECOMPUTE_APPROX.toLocaleString()} {t('recomputed tokens', '个重算 token')}</text>
             <text x="430" y="299" text-anchor="middle" class="small">{HYBRID_LOG_NEW_TOKENS} {t('new', '新增')} + ≈{HYBRID_LOG_EXTRA_APPROX} {t('revisited', '个重走')}</text>
             <rect x="90" y="316" width="540" height="43" rx="10" fill="var(--bg)" stroke="var(--line)" />
@@ -348,9 +351,9 @@
           {#if phase >= 3}
             <line x1="70" y1="224" x2={replayPhoneX} y2="224" stroke="var(--gen)" stroke-width="4" />
             <path d={`M${replayPhoneX},224 l-12,-7 v14 z`} fill="var(--gen)" />
-            <text x="150" y="253" text-anchor="middle" class="result">{phase >= 4 ? `${HYBRID_LOG_END_TOKENS.toLocaleString()} − ${HYBRID_LOG_CHECKPOINT_TOKENS.toLocaleString()} = ${HYBRID_LOG_REPLAY_POSITIONS.toLocaleString()}` : `${replayed} / ${HYBRID_LOG_REPLAY_POSITIONS.toLocaleString()}`}</text>
+            <text x="150" y="253" text-anchor="middle" class="result">{phase === 3 ? `${HYBRID_LOG_MATCH_TOKENS.toLocaleString()} − ${HYBRID_LOG_CHECKPOINT_TOKENS.toLocaleString()} = ${HYBRID_LOG_PREFIX_REPLAY_POSITIONS.toLocaleString()}` : `${HYBRID_LOG_PREFIX_REPLAY_POSITIONS.toLocaleString()} + ${HYBRID_LOG_NEW_TOKENS} = ${HYBRID_LOG_REPLAY_POSITIONS.toLocaleString()}`}</text>
           {/if}
-          <g opacity={phase >= 4 ? 1 : 0} >
+          <g opacity={phase >= 5 ? 1 : 0} >
             <text x="150" y="280" text-anchor="middle" class="small">≈{HYBRID_LOG_RECOMPUTE_APPROX.toLocaleString()} {t('recomputed tokens in log', '个重算 token（日志）')}</text>
             <text x="150" y="304" text-anchor="middle" class="small">{HYBRID_LOG_NEW_TOKENS} {t('new', '新增')} + ≈{HYBRID_LOG_EXTRA_APPROX} {t('revisited', '个重走')}</text>
             <text x="150" y="341" text-anchor="middle" class="small strong">{t('restore newest usable copy', '恢复最新可用副本')}</text>

@@ -107,6 +107,7 @@ Sources: `Awesome-ML-SYS-Tutorial/engineer/hybrid-prefix-cache/readme.md:93-165`
 
 - The blue line marks 5,514 matching tokens. Orange marks recomputation to the new prompt end. The red old-tail checkpoint passes the match and cannot be used.
 - Position 5,514 would be the ideal resume point, but no state copy exists there. The newest usable copy is at 4,536, so processing resumes there and continues to 5,558.
+- The replay first stops at M with 978 positions, then covers 44 more positions to E. The arrow follows the P, M and E landmarks rather than treating their schematic gaps as a linear token scale.
 - Distances are schematic. Subtracting positions gives 1,022, while the article's log says about 1,020 recomputed tokens. This step keeps the logged value approximate.
 
 ### Formula and symbols
@@ -123,9 +124,9 @@ $$D=E-M,\qquad C\approx E-P,\qquad P\le M$$
 
 ### The numbers on the stage
 
-$$D=5{,}558-5{,}514=44$$
+$$D=5{,}558-5{,}514=44,\qquad M-P=5{,}514-4{,}536=978$$
 
-$$5{,}558-4{,}536=1{,}022\ \text{positions}\quad\Longrightarrow\quad C\approx1{,}020\ \text{tokens}$$
+$$978+44=1{,}022\ \text{positions}\quad\Longrightarrow\quad C\approx1{,}020\ \text{tokens}$$
 
 Only 44 of the roughly 1,020 recomputed tokens belong to the new tail. About $1{,}020-44=976$ revisit earlier positions. During restore, llama.cpp searches checkpoints in reverse and rejects any with `cur.pos_max > pos_next`, which rules out the old-tail copy.
 

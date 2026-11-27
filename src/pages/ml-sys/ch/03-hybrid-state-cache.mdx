@@ -19,7 +19,7 @@ Step 2 uses the article's simplified 5,500-token system and 40-token user exampl
 
 Step 3 follows `readme.md:93-135`: a recurrent layer keeps a fixed-size state and updates it rather than storing every earlier state. The pinned llama.cpp source says that Mamba-like models do not preserve previous per-token states (`llama-memory-recurrent.cpp:170-172` at `7e4c0a96880dae4fc4268ad441f8a6446bd5460a`). Its optional bounded snapshot ring is a separate exception, not evidence that an arbitrary earlier state is always available.
 
-Step 4 uses the logged request in `readme.md:202-221`: 5,514 of 5,558 tokens match, the usable checkpoint is at 4,536 and the log reports about 1,020 recomputed tokens. The position arithmetic is 5,558 − 4,536 = 1,022. Checkpoint validity follows the pinned `server-context.cpp:3253-3288`: a checkpoint whose `pos_max` passes `pos_next` is rejected. Positions in the diagram are schematic. The article explicitly leaves the exact `num_batch` reconstruction incomplete, so this chapter does not present it as a proven identity.
+Step 4 uses the logged request in `readme.md:202-221`: 5,514 of 5,558 tokens match, the usable checkpoint is at 4,536 and the log reports about 1,020 recomputed tokens. The position arithmetic is 5,514 − 4,536 = 978 and 5,558 − 5,514 = 44, giving 978 + 44 = 1,022. The animation stops at M before reaching E. Checkpoint validity follows the pinned `server-context.cpp:3253-3288`: a checkpoint whose `pos_max` passes `pos_next` is rejected. Positions in the diagram are schematic. The article explicitly leaves the exact `num_batch` reconstruction incomplete, so this chapter does not present it as a proven identity.
 
 Step 5 reuses those positions as a schematic, not as an SGLang trace. In pinned SGLang `385903b0acd69455cb688b5cb5e3afcc0fd91598`, `_match_prefix_helper` records the best length only at nodes whose `mamba_value` is present (`mamba_radix_cache.py:1086-1126`). `_match_post_processor` then returns `value[:best_value_len]` (`:1137-1206`). The diagram shows that common-prefix result; full-attention KV semantics themselves do not change.
 
@@ -36,7 +36,7 @@ Step 6 uses the same pinned source. `evict_mamba` can select an unlocked interna
 
 第 3 步依据原文第 93–135 行：recurrent layer 保存定长 state 并持续更新，不另存每个历史位置的 state。固定版本 `7e4c0a96880dae4fc4268ad441f8a6446bd5460a` 的 `llama-memory-recurrent.cpp:170-172` 也明确说明 Mamba 一类模型没有保存此前的逐 token state。它另有长度受限的快照环；这个例外不表示任意历史 state 总能直接读取。
 
-第 4 步使用原文第 202–221 行的日志例子：5,558 个 token 中前 5,514 个相同，可用 checkpoint 在 4,536，日志报告约重算 1,020 个 token。位置算式为 5,558 − 4,536 = 1,022。checkpoint 是否可用按固定版本 `server-context.cpp:3253-3288`：`pos_max` 越过 `pos_next` 的点会被拒绝。图中位置间距是示意。原文明确说 `num_batch` 的精确机制重建仍不完整，本章不把它写成已证明的等式。
+第 4 步使用原文第 202–221 行的日志例子：5,558 个 token 中前 5,514 个相同，可用 checkpoint 在 4,536，日志报告约重算 1,020 个 token。位置算式为 5,514 − 4,536 = 978 和 5,558 − 5,514 = 44，合计 978 + 44 = 1,022。动画先到 M，再走到 E。checkpoint 是否可用按固定版本 `server-context.cpp:3253-3288`：`pos_max` 越过 `pos_next` 的点会被拒绝。图中位置间距是示意。原文明确说 `num_batch` 的精确机制重建仍不完整，本章不把它写成已证明的等式。
 
 第 5 步沿用这些位置作示意，不把它当成 SGLang 日志。固定版 SGLang `385903b0acd69455cb688b5cb5e3afcc0fd91598` 的 `_match_prefix_helper` 只在节点带有 `mamba_value` 时记录最佳长度（`mamba_radix_cache.py:1086-1126`）；`_match_post_processor` 随后返回 `value[:best_value_len]`（`:1137-1206`）。图画的是这个共同前缀结果，全注意力 KV 本身的语义没有改变。
 
