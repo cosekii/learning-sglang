@@ -156,16 +156,16 @@ zero-to-sglang 的部署章节建议先核对模型、硬件与版本，再检�
 
 来源：`Awesome-ML-SYS-Tutorial/sglang/nvidia-dynamo/dynamo.md:130-132`；`ai-dynamo/dynamo@670661f6` 的 `lib/llm/src/engines/sglang/worker.rs:305-343`、`launch/dynamo-run/src/lib.rs:253-270,407-443`；`zero-to-sglang/course-material/ch/part4/第1章_用Cookbook部署SGLang.md:17-24,48-98`。
 
-## 第 5 步 · 用一个短请求检查回答
+## 第 5 步 · 发一个流式请求
 
-**一句话。** 向 node 0 发一个最多生成 8 个 token 的请求，返回回答文本就说明这条路径能完成一次服务。
+**一句话。** 给短请求加上 `stream:true`，node 0 就会把新增的回答片段按 SSE delta 逐段返回。
 
 ### 图上是什么
 
-- 左侧是另一个终端里的客户端。请求包含模型名、一个用户问题和 `max_completion_tokens 8`；这个参数把生成量限制为最多 8 个新 token。
-- 请求只发给 node 0 的 `HTTP :8080`。它沿用第 2 步的 `in=http out=sglang`，不是另开 node 1 的入口。
-- 橙色返回箭头代表 HTTP 回答。底部检查 `choices[0].message.content` 是否有回答文本。
-- `<model>` 是占位符。8 是本章为短请求选的教学上限，不是 Dynamo 默认值，也不是原文公开回答的 token 数。
+- 客户端发出模型名、一个用户问题、`max_completion_tokens 8` 和 `stream: true`。生成上限仍是最多 8 个新 token。
+- `stream:true` 让同一次 HTTP 回答保持打开。服务器用 SSE（Server-Sent Events）持续发送 `data:` 事件，`choices[0].delta.content` 是每个事件新增的回答片段。
+- 请求只发给 node 0 的 `HTTP :8080`，也就是第 2 步的 `in=http out=sglang` 入口。橙色箭头表示返回客户端的 SSE 流。
+- `data: [DONE]` 是这个对话接口约定的结束标记。一条流不能证明回答质量，也不能证明速度或并发能力。
 
 ### 公式与符号
 
@@ -184,68 +184,69 @@ $$N_{\mathrm{req}}=1,\qquad N_{\mathrm{new}}\le8$$
 适配公开例子的请求如下。把 `<node0-ip>` 和 `<model>` 换成本次实验值；模型名必须与启动时注册的名字一致。
 
 ```bash
-curl --fail-with-body http://<node0-ip>:8080/v1/chat/completions \
+curl --fail-with-body --no-buffer http://<node0-ip>:8080/v1/chat/completions \
   -H 'Content-Type: application/json' \
   -d '{
     "model": "<model>",
     "messages": [{"role": "user", "content": "What is the capital of South Africa?"}],
-    "max_completion_tokens": 8
+    "max_completion_tokens": 8,
+    "stream": true
   }'
 ```
 
-公开指南给出了同一路径的请求和 JSON 回答；zero-to-sglang 建议检查回答字段，并明确一次成功不能证明高并发性能或模型质量。本步另外缩短生成长度，只检查连通性；公开例子的 token 计数不是这次多节点实验结果。
+公开指南展示的是非流式 JSON 回答。本步明确改用构造的流式例子，让请求、内部输出路径和客户端计时使用同一种返回方式。固定 Dynamo HTTP 管线传递 `NvCreateChatCompletionStreamResponse`。zero-to-sglang 定义了 `delta.content` 和 `[DONE]`，并提醒一个 SSE 事件不一定只装一个 token。
 
 ### 接下来
 
-回答已经返回。下一步打开这条路径，看文本怎样变成 token，怎样到达 8 个 worker，再怎样回到客户端。
+回答片段正在逐段返回。下一步跟着同一条流，看 rank 0 怎样把工作交给 8 个 TP worker。
 
-来源：`Awesome-ML-SYS-Tutorial/sglang/nvidia-dynamo/dynamo.md:85-95`；`ai-dynamo/dynamo@670661f6` 的 `launch/dynamo-run/src/input/http.rs:43-47,95-108`；`zero-to-sglang/course-material/ch/part4/第1章_用Cookbook部署SGLang.md:64-83`。
+来源：`Awesome-ML-SYS-Tutorial/sglang/nvidia-dynamo/dynamo.md:85-95`；`ai-dynamo/dynamo@670661f6` 的 `launch/dynamo-run/src/input/http.rs:15-22,85-108`；`zero-to-sglang/course-material/ch/part2/第5章_HTTP服务与并发.md:144-174`；`zero-to-sglang/course-material/ch/part2/第5章_HTTP服务与并发_代码.md:235-299`。
 
-## 第 6 步 · 同一请求的输入与返回
+## 第 6 步 · rank 0 把工作交给 TP 组
 
-**一句话。** node 0 把文本转成 token ID，客户端请求经 rank 0 进入 TP 组，8 个 worker 计算后再把回答送回客户端。
+**一句话。** 本地 ZMQ 把 token ID 交给 rank 0 的 scheduler，再由它交给 8 个 TP worker，最后按 SSE delta 返回答案。
 
 ### 图上是什么
 
-- 上排是蓝色输入路：客户端问题先到 node 0 的 HTTP 入口，再把文本转成 token ID，交给 rank 0 的 scheduler，最后进入 8 个 worker 组成的 TP 组。
-- 下排是橙色输出路：TP 组产生新 token ID，经 rank 0 的输出返回，再组成文本和 HTTP 回答，交还客户端。
-- `rank 0` 是 TP worker 的全局编号，不是 node-rank。第 3 步已把 r0–r3 放在 node 0，把 r4–r7 放在 node 1。
-- 手机图把 node 0 画两次，分别表示同一节点的输入和输出阶段。两排共用同一个客户端入口和同一组 worker。
+- 蓝色输入路接着第 5 步的 `stream:true` 请求。node 0 把文本转成 token ID，本地 ZMQ 再把这些 ID 交给 rank 0 的 scheduler。ZMQ 是本机进程之间传消息的 socket，第 1 本 Ch. 9 Steps 6–9 已画过这种通道。
+- `leader` 指 rank 0 的 scheduler 角色，不是第 9 个 worker。跨 rank 交接把请求带到 node 0 的 r0–r3 和 node 1 的 r4–r7。worker 计算时交换张量，本书第 4 章第 4、6 步已经讲过。
+- 橙色输出路把新 token ID 送回 rank 0。本地 ZMQ 把它交给 node 0 的返回路径，转成文本后再按 SSE delta 发给客户端。
+- 两排画的是同一组节点和 worker 的输入、输出时刻。本图不展开序列化、socket 缓冲、取消和错误路径。
 
 ### 公式与符号
 
-$$r_{\mathrm{in}}=0,\qquad R_{\mathrm{compute}}=R_0\cup R_1=\{0,1,\ldots,7\}$$
+$$r_{\mathrm{leader}}=0,\qquad R_{\mathrm{compute}}=R_0\cup R_1=\{0,1,\ldots,7\}$$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
-| $r_{\mathrm{in}}$ | 接收本次客户端输入的 TP rank | 固定版本配置，0 |
+| $r_{\mathrm{leader}}$ | scheduler 带领本次请求的 TP rank | 固定版本配置，0 |
 | $R_{\mathrm{compute}}$ | 参加本次 TP 计算的 rank 集合 | 第 3 步 |
 | $R_0,R_1$ | 两台节点上的 rank 集合 | 第 3 步，各 4 个 |
 
 ### 代入图上的数
 
-$$r_{\mathrm{in}}=0,\qquad R_{\mathrm{compute}}=\{0,1,2,3\}\cup\{4,5,6,7\}$$
+$$r_{\mathrm{leader}}=0,\qquad R_{\mathrm{compute}}=\{0,1,2,3\}\cup\{4,5,6,7\}$$
 
-固定版本的 HTTP 管线把 preprocessor、backend 和 SGLang engine 串联。engine 的 input loop 取出 token ID，构造请求并通过本地 ZMQ socket 发给 rank 0 scheduler；output loop 读取 rank 0 scheduler 的输出，把新增 token ID 送回响应管线。ZMQ 是进程间传消息的 socket，第 1 本 Ch. 9 Steps 6–9 已画过这种输入和输出通道。
+固定版本的 `zmq_sockets` 创建本机输入、输出 socket。input loop 取出 token ID，把内部 SGLang 请求设为 `stream=true`，再发给 rank 0 的 scheduler。output loop 读取 scheduler 输出，只把新增的 token ID 送回响应管线。HTTP 管线随后返回一串 `NvCreateChatCompletionStreamResponse`。
 
-多节点配置还明确写道：非 0 节点从 leader 的 PyTorch distributed 路径接收工作，不直接从用户接收。8 个 TP worker 共同计算时交换张量，第 4 章第 4、6 步已经解释通信后端和 Ring 教学例。本图不展开序列化、socket 缓冲和 HTTP 流式分块。
+多节点配置明确写道：非 0 节点从 leader 的 PyTorch distributed 路径接收工作，不直接从用户接收。这就是图上的跨 rank 交接。TP worker 还用 torch distributed 和 NCCL 交换张量。本章不给这两条路径分配耗时。
 
 ### 接下来
 
-现在能跟踪请求的位置了。下一步沿同一条路放计时点，核对首 token 前、后续生成和全程各等多久。
+请求和回答流的路径已经展开。下一步就在同一条流上测量 delta 的到达时刻。
 
-来源：`ai-dynamo/dynamo@670661f6` 的 `launch/dynamo-run/src/input/http.rs:85-104`、`launch/dynamo-run/src/lib.rs:235-250`、`lib/llm/src/engines/sglang/worker.rs:425-443,588-758`；第 1 本 Ch. 9 Steps 6–9；本书第 4 章第 4、6 步。
+来源：`ai-dynamo/dynamo@670661f6` 的 `launch/dynamo-run/src/input/http.rs:15-22,85-108`、`launch/dynamo-run/src/lib.rs:235-250`、`lib/llm/src/engines/sglang/worker.rs:305-324,425-443,588-758`；第 1 本 Ch. 9 Steps 6–9；本书第 4 章第 4、6 步。
 
-## 第 7 步 · 在客户端核对各段等待
+## 第 7 步 · 在客户端测量同一条流
 
-**一句话。** 客户端从请求发出计时，到第 1 个 token 得到 TTFT，再加后续 3 段间隔得到 E2E。
+**一句话。** 客户端从请求发出计时，到第 1 个 delta 得到 TTFT，再加后续 3 段 delta 间隔得到 E2E。
 
 ### 图上是什么
 
-- 请求发出时是 0 ms，客户端在 250 ms 收到第 1 个 token，在 325 ms 收到末个 token。橙色标 token 到达，蓝色标测到的时间段。
-- 第一段是 TTFT，为 250 ms。第 1 个 token 后还有 3 段 ITL，分别是 25、20、30 ms，合计 75 ms。
-- 4 个输出 token 没超过第 5 步的上限 8。这里的 4 个 token 和全部时刻都沿用第 1 章的构造教学例，不是 Dynamo 返回这条请求时的实测。
-- 计时点都在客户端。它能核对首 token 前、后续生成和全程各等多久，但不能把 250 ms 再拆成网络、排队、prefill 和 TP 通信的各自耗时。
+- 客户端在 0 ms 发出第 5 步的 `stream:true` 请求，在 250 ms 收到第 1 个 delta，在 325 ms 收到末个内容 delta。橙色标 SSE delta 到达，蓝色标测到的时间段。
+- 第一段是 TTFT，为 250 ms。第 1 个 delta 后还有 3 段 ITL，分别是 25、20、30 ms，合计 75 ms。
+- 这条构造流让每个内容 delta 携带一个 token，所以 4 个 delta 携带 4 个 token，没超过上限 8。真实 SSE 事件携带的文本量会受解码和网络缓冲影响，不一定是一个 token。
+- 计时点都在客户端，不能把 250 ms 再拆成网络、排队、prefill 和 TP 通信的各自耗时。
 
 ### 公式与符号
 
@@ -254,10 +255,10 @@ $$\mathrm{E2E}=t_4-t_0=\mathrm{TTFT}+\sum_{i=2}^{4}\mathrm{ITL}_i$$
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
 | $t_0$ | 客户端发出请求的时刻 | 第 1 章构造例，0 ms |
-| $t_4$ | 客户端收到第 4 个、也是末个 token 的时刻 | 第 1 章构造例，325 ms |
-| $\mathrm{TTFT}$ | 请求发出到收到第 1 个 token 的等待 | 第 1 章第 1 步，250 ms |
-| $\mathrm{ITL}_i$ | 相邻两个输出 token 到达客户端的间隔 | 第 1 章第 2 步，25、20、30 ms |
-| $\mathrm{E2E}$ | 请求发出到收到末个 token 的全程耗时 | 第 1 章第 4 步 |
+| $t_4$ | 客户端收到第 4 个内容 delta 的时刻 | 第 1 章构造例，325 ms |
+| $\mathrm{TTFT}$ | 请求发出到收到第 1 个内容 delta 的等待 | 第 1 章第 1 步，250 ms |
+| $\mathrm{ITL}_i$ | 相邻两个内容 delta 到达客户端的间隔 | 第 1 章第 2 步，25、20、30 ms |
+| $\mathrm{E2E}$ | 请求发出到收到末个内容 delta 的全程耗时 | 第 1 章第 4 步 |
 
 ### 代入图上的数
 
@@ -267,10 +268,10 @@ $$\sum_{i=2}^{4}\mathrm{ITL}_i=25+20+30=75\ \mathrm{ms}$$
 
 $$\mathrm{E2E}=325-0=250+75=325\ \mathrm{ms}$$
 
-若要定位等待落在服务内部的哪一段，需要在相应边界另加时间戳或 tracing；本图没有这些测量，不能从客户端总时长反推各段耗时。本步也不把最后一个 token 之后的处理时间计入 E2E，边界与第 1 章相同。
+每个 delta 携带一个 token 只适用于这条构造流。最后的 `[DONE]` 在末个内容 delta 之后结束 SSE 流；E2E 不计入后续清理，边界与第 1 章相同。若要定位等待落在服务内部的哪一段，需要在相应边界另加时间戳或 tracing。
 
 ### 接下来
 
-这条服务路径已经能启动、回答并计时。下一章在服务旁边加入训练进程，看回答、训练和新权重怎样组成 slime 的一轮循环。
+这条服务路径已经能启动、流式回答并计时。下一章在服务旁边加入训练进程，看回答、训练和新权重怎样组成 slime 的一轮循环。
 
-来源：本书第 1 章第 1、2、4 步；`src/ml-sys/numbers.ts` 的 `DEMO_*` 与 `DYNAMO_SMOKE_MAX_TOKENS`；zero-to-sglang 第 1 部分第 5 章 §3.1 的计时边界；`Awesome-ML-SYS-Tutorial/rlhf/slime/code-walk-through/readme.md:71-81` 的生成、训练和权重更新顺序。
+来源：本书第 1 章第 1、2、4 步；`src/ml-sys/numbers.ts` 的 `DEMO_*` 与 `DYNAMO_SMOKE_MAX_TOKENS`；`zero-to-sglang/course-material/ch/part2/第5章_HTTP服务与并发.md:144-174`；`zero-to-sglang/course-material/ch/part2/第5章_HTTP服务与并发_代码.md:235-299`；`Awesome-ML-SYS-Tutorial/rlhf/slime/code-walk-through/readme.md:71-81` 的生成、训练和权重更新顺序。

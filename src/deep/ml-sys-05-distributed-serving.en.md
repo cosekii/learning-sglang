@@ -156,16 +156,16 @@ After checking processes and readiness logs, send a minimal HTTP request to test
 
 Sources: `Awesome-ML-SYS-Tutorial/sglang/nvidia-dynamo/dynamo.md:130-132`; `lib/llm/src/engines/sglang/worker.rs:305-343` and `launch/dynamo-run/src/lib.rs:253-270,407-443` at `ai-dynamo/dynamo@670661f6`; `zero-to-sglang/course-material/ch/part4/第1章_用Cookbook部署SGLang.md:17-24,48-98`.
 
-## Step 5 · Check one answer with a short request
+## Step 5 · Send one streaming request
 
-**One sentence.** Send node 0 a request capped at eight new tokens; returned answer text shows that the path can complete one service round trip.
+**One sentence.** Set `stream:true` on the short request so node 0 returns new answer pieces as SSE deltas.
 
 ### On the stage
 
-- The client on the left runs in another terminal. Its request contains a model name, one user question and `max_completion_tokens 8`, which limits generation to at most eight new tokens.
-- The request goes only to node 0 at `HTTP :8080`. This is Step 2's `in=http out=sglang` entrance, not another entrance on node 1.
-- The orange return arrow is the HTTP response. The bottom checks `choices[0].message.content` for answer text.
-- `<model>` is a placeholder. Eight is this chapter's teaching cap for a short request, not a Dynamo default or the public example's output length.
+- The client sends a model name, one user question, `max_completion_tokens 8` and `stream: true`. The cap still limits generation to at most eight new tokens.
+- `stream:true` keeps one HTTP response open. Server-Sent Events (SSE) carry `data:` events on that response, and `choices[0].delta.content` holds the new answer piece in each event.
+- The request goes only to node 0 at `HTTP :8080`, Step 2's `in=http out=sglang` entrance. Orange marks the SSE stream returning to the client.
+- `data: [DONE]` is the chat interface's end marker. One stream proves neither answer quality nor speed or concurrency.
 
 ### Formula and symbols
 
@@ -184,68 +184,69 @@ $$N_{\mathrm{req}}=1,\qquad N_{\mathrm{new}}\le8$$
 The following request adapts the public example. Replace `<node0-ip>` and `<model>` with the experiment's values; the model name must match the name registered at startup.
 
 ```bash
-curl --fail-with-body http://<node0-ip>:8080/v1/chat/completions \
+curl --fail-with-body --no-buffer http://<node0-ip>:8080/v1/chat/completions \
   -H 'Content-Type: application/json' \
   -d '{
     "model": "<model>",
     "messages": [{"role": "user", "content": "What is the capital of South Africa?"}],
-    "max_completion_tokens": 8
+    "max_completion_tokens": 8,
+    "stream": true
   }'
 ```
 
-The public guide shows a request and JSON response on this path. Zero-to-sglang recommends checking the answer field and states that one success proves neither high-concurrency performance nor model quality. This step only shortens generation for a connectivity check; the public example's token counts are not results from this multi-node experiment.
+The public guide shows a non-streaming JSON response. This step deliberately switches to a constructed streaming example so the request, internal output path and client timers all use the same return mode. The fixed Dynamo HTTP pipeline carries `NvCreateChatCompletionStreamResponse` values. Zero-to-sglang defines `delta.content` and `[DONE]`, and warns that one SSE event need not contain exactly one token.
 
 ### Next
 
-The answer has returned. The next step opens the path to show how text becomes tokens, reaches all eight workers and returns to the client.
+The stream is returning answer pieces. The next step follows those pieces through rank 0 and all eight TP workers.
 
-Sources: `Awesome-ML-SYS-Tutorial/sglang/nvidia-dynamo/dynamo.md:85-95`; `launch/dynamo-run/src/input/http.rs:43-47,95-108` at `ai-dynamo/dynamo@670661f6`; `zero-to-sglang/course-material/ch/part4/第1章_用Cookbook部署SGLang.md:64-83`.
+Sources: `Awesome-ML-SYS-Tutorial/sglang/nvidia-dynamo/dynamo.md:85-95`; `launch/dynamo-run/src/input/http.rs:15-22,85-108` at `ai-dynamo/dynamo@670661f6`; `zero-to-sglang/course-material/ch/part2/第5章_HTTP服务与并发.md:144-174`; `zero-to-sglang/course-material/ch/part2/第5章_HTTP服务与并发_代码.md:235-299`.
 
-## Step 6 · Input and output for one request
+## Step 6 · Rank 0 hands work to the TP group
 
-**One sentence.** Node 0 turns text into token IDs, the client request enters the TP group through rank 0, and all eight workers compute before the answer returns.
+**One sentence.** Local ZMQ carries token IDs to rank 0's scheduler, which hands work to all eight TP workers before SSE deltas return.
 
 ### On the stage
 
-- The top row is the blue input path: the client question reaches node 0's HTTP entrance, text becomes token IDs, rank 0's scheduler receives them, and the eight-worker TP group computes.
-- The bottom row is the orange output path: the TP group produces new token IDs, rank 0 returns them to the response pipeline, and the client receives text in an HTTP response.
-- `Rank 0` is a global TP worker identifier, not a node-rank. Step 3 placed r0–r3 on node 0 and r4–r7 on node 1.
-- The phone layout draws node 0 twice for its input and output stages. Both rows use the same client entrance and worker group.
+- The blue input path starts with Step 5's `stream:true` request. Node 0 turns text into token IDs, then local ZMQ carries them to rank 0's scheduler. ZMQ is a message socket between local processes; Ch. 9 Steps 6–9 in the first book showed these channels.
+- `Leader` names rank 0's scheduler role, not a ninth worker. The cross-rank handoff reaches node 0's workers r0–r3 and node 1's workers r4–r7. The workers exchange tensors as they compute, as Chapter 4 Steps 4 and 6 showed.
+- The orange output path carries new token IDs back through rank 0. Local ZMQ feeds node 0's response path, which turns token IDs into text and sends SSE deltas to the client.
+- The two rows show the same nodes and workers at input and output time. The figure omits serialization, socket buffering, cancellation and error paths.
 
 ### Formula and symbols
 
-$$r_{\mathrm{in}}=0,\qquad R_{\mathrm{compute}}=R_0\cup R_1=\{0,1,\ldots,7\}$$
+$$r_{\mathrm{leader}}=0,\qquad R_{\mathrm{compute}}=R_0\cup R_1=\{0,1,\ldots,7\}$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
-| $r_{\mathrm{in}}$ | TP rank receiving this client input | Fixed-version configuration: 0 |
+| $r_{\mathrm{leader}}$ | TP rank whose scheduler leads this request | Fixed-version configuration: 0 |
 | $R_{\mathrm{compute}}$ | Ranks participating in this TP computation | Step 3 |
 | $R_0,R_1$ | Rank sets on the two nodes | Step 3: four each |
 
 ### The numbers on the stage
 
-$$r_{\mathrm{in}}=0,\qquad R_{\mathrm{compute}}=\{0,1,2,3\}\cup\{4,5,6,7\}$$
+$$r_{\mathrm{leader}}=0,\qquad R_{\mathrm{compute}}=\{0,1,2,3\}\cup\{4,5,6,7\}$$
 
-At the fixed commit, the HTTP pipeline links the preprocessor, backend and SGLang engine. The engine's input loop takes token IDs, constructs a request and sends it through a local ZMQ socket to rank 0's scheduler. Its output loop reads rank 0's scheduler output and forwards new token IDs to the response pipeline. ZMQ is a socket for messages between processes; Ch. 9 Steps 6–9 in the first book showed these input and output channels.
+At the fixed commit, `zmq_sockets` creates the local input and output sockets. The input loop takes token IDs, sets the internal SGLang request to `stream=true` and sends it to rank 0's scheduler. The output loop reads scheduler output and forwards only the new token IDs to the response pipeline. The HTTP pipeline then returns a stream of `NvCreateChatCompletionStreamResponse` values.
 
-The multi-node configuration also says that nonzero nodes receive work from the leader through PyTorch distributed rather than directly from the user. All eight TP workers exchange tensors as they compute; Chapter 4 Steps 4 and 6 covered the communication backend and a Ring teaching example. This picture omits serialization, socket buffering and HTTP stream chunking.
+The multi-node configuration says that nonzero nodes receive work from the leader through PyTorch distributed rather than directly from the user. That is the figure's cross-rank handoff. The TP workers also use torch distributed and NCCL for tensor communication. This chapter does not assign timings to either path.
 
 ### Next
 
-The request's location can now be followed. The next step places timers on this path to check the wait before token one, later generation and the whole request.
+The request and stream now have a visible path. The next step measures delta arrivals on that same stream.
 
-Sources: `launch/dynamo-run/src/input/http.rs:85-104`, `launch/dynamo-run/src/lib.rs:235-250` and `lib/llm/src/engines/sglang/worker.rs:425-443,588-758` at `ai-dynamo/dynamo@670661f6`; Ch. 9 Steps 6–9 in the first book; Chapter 4 Steps 4 and 6 in this book.
+Sources: `launch/dynamo-run/src/input/http.rs:15-22,85-108`, `launch/dynamo-run/src/lib.rs:235-250` and `lib/llm/src/engines/sglang/worker.rs:305-324,425-443,588-758` at `ai-dynamo/dynamo@670661f6`; Ch. 9 Steps 6–9 in the first book; Chapter 4 Steps 4 and 6 in this book.
 
-## Step 7 · Check the waits at the client
+## Step 7 · Measure the same stream at the client
 
-**One sentence.** The client measures TTFT from request submission to token 1, then adds three later gaps to get E2E.
+**One sentence.** The client measures TTFT from request submission to delta 1, then adds three later delta gaps to get E2E.
 
 ### On the stage
 
-- The client sends the request at 0 ms, receives token 1 at 250 ms and receives the last token at 325 ms. Orange marks token arrivals; blue marks measured time spans.
-- The first span is TTFT: 250 ms. Three ITL gaps follow token 1: 25, 20 and 30 ms, totaling 75 ms.
-- Four output tokens fit Step 5's cap of eight. The token count and every timestamp reuse Chapter 1's constructed teaching example; they are not measurements from Dynamo serving this request.
-- Both timers sit at the client. They check the wait before token 1, later generation and the whole request, but cannot split 250 ms into network, queue, prefill and TP communication time.
+- The client sends Step 5's `stream:true` request at 0 ms, receives delta 1 at 250 ms and receives the last content delta at 325 ms. Orange marks SSE delta arrivals; blue marks measured time spans.
+- The first span is TTFT: 250 ms. Three ITL gaps follow delta 1: 25, 20 and 30 ms, totaling 75 ms.
+- This constructed stream carries one token in each content delta, so four deltas carry four tokens and fit the cap of eight. Real SSE events can carry different amounts of text because decoding and network buffering also affect event boundaries.
+- Both timers sit at the client. They cannot split 250 ms into network, queue, prefill and TP communication time.
 
 ### Formula and symbols
 
@@ -254,10 +255,10 @@ $$\mathrm{E2E}=t_4-t_0=\mathrm{TTFT}+\sum_{i=2}^{4}\mathrm{ITL}_i$$
 | Symbol | Meaning | Source |
 |---|---|---|
 | $t_0$ | Time when the client sends the request | Chapter 1 constructed example: 0 ms |
-| $t_4$ | Time when the client receives token 4, the last token | Chapter 1 constructed example: 325 ms |
-| $\mathrm{TTFT}$ | Wait from request submission to token 1 at the client | Chapter 1 Step 1: 250 ms |
-| $\mathrm{ITL}_i$ | Gap between adjacent output tokens at the client | Chapter 1 Step 2: 25, 20 and 30 ms |
-| $\mathrm{E2E}$ | Whole wait from request submission to the last token | Chapter 1 Step 4 |
+| $t_4$ | Time when the client receives content delta 4 | Chapter 1 constructed example: 325 ms |
+| $\mathrm{TTFT}$ | Wait from request submission to content delta 1 | Chapter 1 Step 1: 250 ms |
+| $\mathrm{ITL}_i$ | Gap between adjacent content delta arrivals | Chapter 1 Step 2: 25, 20 and 30 ms |
+| $\mathrm{E2E}$ | Whole wait from request submission to the last content delta | Chapter 1 Step 4 |
 
 ### The numbers on the stage
 
@@ -267,10 +268,10 @@ $$\sum_{i=2}^{4}\mathrm{ITL}_i=25+20+30=75\ \mathrm{ms}$$
 
 $$\mathrm{E2E}=325-0=250+75=325\ \mathrm{ms}$$
 
-Locating a wait inside the service requires timestamps or tracing at the relevant boundaries. This figure has no such measurements, so the client total cannot reveal each internal span. The E2E boundary also excludes work after the last token, as in Chapter 1.
+The one-token-per-delta assumption applies only to this constructed example. The final `[DONE]` marker ends the SSE stream after the last content delta; this E2E boundary excludes later cleanup, as in Chapter 1. Locating a wait inside the service requires timestamps or tracing at the relevant boundaries.
 
 ### Next
 
-The service can now start, answer and report client-side waits. The next chapter adds a training process beside it to show how answers, training and new weights form one slime loop.
+The service can now start, stream an answer and report client-side waits. The next chapter adds a training process beside it to show how answers, training and new weights form one slime loop.
 
-Sources: Chapter 1 Steps 1, 2 and 4 in this book; `DEMO_*` and `DYNAMO_SMOKE_MAX_TOKENS` in `src/ml-sys/numbers.ts`; the timing boundaries in zero-to-sglang Part I Chapter 5 §3.1; the generation, training and weight-update sequence in `Awesome-ML-SYS-Tutorial/rlhf/slime/code-walk-through/readme.md:71-81`.
+Sources: Chapter 1 Steps 1, 2 and 4 in this book; `DEMO_*` and `DYNAMO_SMOKE_MAX_TOKENS` in `src/ml-sys/numbers.ts`; `zero-to-sglang/course-material/ch/part2/第5章_HTTP服务与并发.md:144-174`; `zero-to-sglang/course-material/ch/part2/第5章_HTTP服务与并发_代码.md:235-299`; the generation, training and weight-update sequence in `Awesome-ML-SYS-Tutorial/rlhf/slime/code-walk-through/readme.md:71-81`.
