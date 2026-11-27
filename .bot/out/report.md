@@ -1,3 +1,39 @@
+# lane k1 本轮报告 · Omni 11／14 固定复审材料二次核对
+
+日期：2026-11-27。类型：修旧证据整理。范围只有两份追加的逐相报告和本报告；未改教程、transcript、评分卡、`.bot/memory/`、其他书或其他 lane 的文件。本轮开始及采集时的 HEAD 与 `origin/tutorials` 均为 `8eea186`。
+
+## 固定范围与结论边界
+
+- Omni 11 固定为 `e71ab01942fd810ce7eb4eff3fc69fd4e8dc766b`，Omni 14 固定为 `5c5f749e707404c2fa7569c4db7e1c2fb29420ea`。当前 HEAD 到两个固定提交的组件、双语 deep、MDX、transcript 和审计脚本均无 diff。
+- **本轮修复的 review finding 为 0，协调分数不变。** Omni 11 仍为 **NO-GO / coordinator-rereview-pending**，协调机制基线 **1/16**。Omni 14 仍为 **呈现 NO-GO / coordinator-rereview-pending**，协调 R1–R5 **80/80**、机制 R6 **16/16** 保持。本轮 DOM 和字号结果不自动关闭 Omni-02、Omni-15 或其他 findings。
+- Omni-22、Omni-33 和 Omni-37 仍开放。下一轮协调顺序保持 **Omni 11 → Omni 14**。Omni 13、15 的既有 GO 不变，不开第 16／17 章。
+
+## 追加材料与复核结果
+
+| 项目 | Omni 11 `e71ab01` | Omni 14 `5c5f749` |
+|---|---|---|
+| 追加逐相报告 | `.bot/out/omni11-fixed-e71ab01-r2/report.json` | `.bot/out/omni14-fixed-5c5f749-r2/report.json` |
+| 报告 SHA-256 | `680962fb6d72ba6f4d2899f6be3294b2c7ecf9d1e41c997f59934d20be3bbc5e` | `bb25f24d85fbe891ddcbf39c24c59d96b7c7c112657855b97ab0974ed36ebb0e` |
+| 相位与机制转变 | **40** 相位，**32/32** 转变 | **34** 相位，**24/26** 转变，八步均有机制 |
+| 桌面最低字号 | **10.506 CSS px** | **10.326 CSS px** |
+| 重叠与出界 | **0 / 0** | **0 / 0** |
+| 本地 PNG | 同目录 **40 张**，40 个不同 SHA-256 | 同目录 **34 张**，34 个不同 SHA-256 |
+
+- 两次追加报告的汇总指标都与原报告一致。Omni 14 的 **34/34** 个状态及机制签名逐项一致。Omni 11 有 **35/40** 个机制签名一致；Step 5 phase 1／2、Step 7 phase 0／1、Step 8 phase 0 不同，因此不声称逐签名复现。全部 40 个状态的 step、phase、counter、可见文本数、最低字号和转变结果保持一致。
+- 原截图、原审计 JSON、改前字号和第一次追加报告均保留。本次写入新目录，没有覆盖既有材料。PNG 被本地 exclude 规则忽略，只提交报告 JSON。
+
+## 硬门与证据边界
+
+- `npm run build`：**60 页**通过。两章默认 transcript 各连续采集两次，都与 pinned 逐字一致。Omni 11 为 **2,144 词**，SHA-256 `fec68ad32da78557d31306fb9664b6a983991cc0a0a59da85a73059bbc28afa1`；Omni 14 为 **2,302 词**，SHA-256 `070b24bc84a94f1c76e362db7d4f3f16e0b49b9ba1f95876f3dc98e897c458ba`。
+- 两章各八步 `readability` 均为 **0 机械问题**。`deep-check` 均识别八步，`zh-check` 为 `all clear`。英中全章三宽度 `mobile` 和每个中文 Step 的三宽度字号门全部通过。
+- 独立 explore 复核为 **GO（仅证据包）**：计数、哈希、固定源码 diff、各步最低字号和协调边界均未发现矛盾。它没有读取图片，也没有给予章节或协调 verdict。pstack-reviewer 因配置模型不存在而未启动，未计为证据。
+- 代表图：`/Users/shuohuang/code/hmz-work/ls-k1-1127-011940/.bot/out/omni11-fixed-e71ab01-r2/s7-p1.png` 和 `/Users/shuohuang/code/hmz-work/ls-k1-1127-011940/.bot/out/omni14-fixed-5c5f749-r2/s2-p3.png`。当前模型读取四张 PNG 均返回 `Cannot read image`，所以本轮只记录 DOM、几何、文件和哈希结果，未声称看过图片或视觉通过。协调实图复审和主人最终视觉验收仍待。
+- 本 clone 的 `node_modules` 原指向协调人 checkout。已只删除本目录内的符号链接并本地 `npm install`，package 文件无 diff，未写协调人的 checkout。
+- 未跑全站回归、真实模型、SGLang-Omni 服务、GPU benchmark、故障注入或 reduced-motion 动态切换。最新回归仍只有不能分配到布局步骤的 `(exit 13)`，本轮不据此改教程。
+- 本地章节地址：`http://localhost:4482/learning-sglang/omni/ch/11-fish-s2-pro/?step=7` 和 `http://localhost:4482/learning-sglang/omni/ch/14-slow-reader-backpressure/?step=2`。查看前在本目录运行 `npx astro dev --background --port 4482`；本轮服务和浏览器在收尾关闭。
+
+---
+
 # lane k1 本轮报告 · Omni 11／14 固定复审材料整理
 
 日期：2026-11-27。类型：修旧证据整理。范围只有本报告和两份追加的逐相审计结果；未改教程、transcript、评分卡、`memory/progress.md`、`.bot/memory/`、其他书或其他 lane 的文件。本轮开始及材料采集时的 HEAD 与 `origin/tutorials` 均为 `9ed971e`。
