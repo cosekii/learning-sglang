@@ -1,5 +1,14 @@
 # 第 12 章评分卡 · 协调内容返工通过
 
+## 2026-11-27 ML-18／ML-34 定点修复
+
+- 教程提交 `f7a492f`：**ML-18 作者修复完成，待协调固定复审，不自行销项。** Step 5 改为五相，新增共享表卡片，逐相形成 embedding 与 LM head 的前向用途、target 主干和共享表各自独立的辅助 CE 梯度边界。MTP 的梯度路径保留，主 RL 仍更新 target 与共享表。
+- 双语公式分别列出 $\theta_{\mathrm{detached}}$、$\theta_{\mathrm{shared}}$ 和 $\theta_{\mathrm{MTP}}$；共享符号只指 embedding／LM head，不再把 target 主干混入。deep 的「蓝线路径」改为图上实际存在的蓝色卡片和 CE 文字行，同 scope 修正 ML-34，亦待复审。
+- Step 5 作者参考值：R1–R5 **10/10**、机制 R6 **2/2**、原十个非视觉项 **20/20**、新内容洞 **0**。R1 复述：draft 的辅助 CE 只训练 draft，前向仍用 target 和共享表的当前数值，主 RL 仍能更新它们。两个独立 `explore` 分别对源码事实和冷读给出 **PASS**。
+- `build`（60 页）、Step 5 `readability`、`deep-check 12`、`zh-check`、英中全章与中文 Step 5 三宽度 `mobile`、`git diff --check` 全过。transcript 两次 SHA-256 均为 `1f08524878dd97214befbab9103fcf51c0e0dca89a88d85cca049afba962a1e5`，**2,189 词**。
+- `.bot/out/ml18-step5-audit/report.json` 覆盖 **40 个状态、32/32 个机制转变、8 个 deep 状态、39 个唯一 PNG 哈希**；普通舞台最低 **10.8425625 CSS px**，重叠、出界和 `failures` 均为 0。桌面 deep 打开后舞台最低 **7.21415625 CSS px**，仍属共享 ML-21，本单元未改。
+- 这些是作者复评与独立源码、transcript、DOM 冷读，不是协调 verdict。既有协调 **80/80、16/16、192/192** 基线不改写；原 #4/#5、整章新总分和销项不由本轮自行决定。当前模型不能读 PNG，视觉和主人最终验收另计。
+
 ## 2026-11-26 ML-12 静态机制返工
 
 - 八步加入 `[3,4,5,5,4,5,4,4]` 个相位，逐步机制变化数为 **2、3、4、4、3、4、3、3**。在线／冻结对照、hidden state、token 左移与 embedding、二移标签、detach、两次 mask 移位与相乘、rollout 吞吐和训练秒数依次形成。

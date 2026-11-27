@@ -35,6 +35,45 @@
 
 ---
 
+# lane k2 本轮报告 · ML Systems 12 Step 5 的 ML-18／34
+
+日期：2026-11-27。类型：修旧。direction 指定的 ML-55 与后续 ML-63／64 已分别由 `622eac2`、`6fcb7d0` 完成，本轮不回改待复审批次；本书没有开放 P0，按 P1 顺序处理 ML-18。范围只有 ML 12 Step 5 的组件、双语 deep、MDX 出处、生成 transcript、本章评分卡与进度记录、定向审计和本报告；同 scope 修正 ML-34 的图外「蓝线路径」措辞。未改其他步、其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文，未开第 14 章。
+
+## 提交与 finding
+
+- `f7a492f`：**ML-18 作者修复完成，待协调固定复审，不自行销项。** Step 5 从四相改为五相，新增共享表卡片，依次形成 draft CE、draft 层、共享表和 target 主干，再展开前向与梯度路线。
+- 舞台明确 `token IDs → embedding → model numbers` 和 `hidden states → LM head → token scores`，前向使用当前参数值。辅助 CE 对 target 主干与共享 embedding／LM head 的梯度分别阻断，MTP 梯度正常计算，主 RL 仍更新 target 和共享表。
+- 双语 deep 分别定义 $\theta_{\mathrm{detached}}$、$\theta_{\mathrm{shared}}$ 和 $\theta_{\mathrm{MTP}}$，共享符号只指 embedding／LM head。图外实现补充 `make_viewless_tensor(..., requires_grad=True, keep_graph=False)`、`functional_call` 和原参数不被修改的边界；三条公式分行，长标识加断行机会。
+- ML-34 的「蓝色路径」改为图上实际存在的蓝色卡片和 CE 文字行，作为本单元唯一顺带 P2 修复，亦待协调复审。首次教程提交 `88cd3ea` 推送被拒后按指示 `git pull --rebase origin tutorials`，最终 `f7a492f` 推送成功；未 force-push。
+
+## 作者评分与独立冷读
+
+| 步 | R1–R5 | 机制 R6 | 原十个非视觉项 | R1 小学生复述 | 新内容洞 |
+|---|---:|---:|---:|---|---:|
+| 5 | 10/10 | 2/2 | 20/20 | draft 的辅助 CE 只训练 draft，前向仍用 target 和共享表的当前数值，主 RL 仍能更新它们。 | 0 |
+
+- 独立源码 `explore` **PASS**：共享表前向、两个零梯度边界、MTP 路径、主 RL 边界和 pinned 实现一致，ML-18 ready for coordinator review。
+- 独立冷读 `explore` **PASS**：一步一个 detach 主题，新词有解释，双语 caption 短，图、deep、MDX 和 transcript 一致；ML-18／34 剩余内容洞均为 0。
+- 这些是作者复评与独立源码、transcript、DOM 冷读，不是协调 verdict。既有协调 **80/80、16/16、192/192** 基线不改写；原 #4/#5、整章新总分和销项不由本轮自行决定。
+
+## 硬门与证据
+
+- 最终 rebase 后 `npm run build`：**60 页**通过；Step 5 `readability`：**0 机械问题**；`BOOK=ml-sys node scripts/deep-check.mjs 12`、`zh-check`、英中全章 360／390／430 px `mobile`、中文 Step 5 字号门和 `git diff --check` 全过。
+- transcript 连续两次 SHA-256 相同：`1f08524878dd97214befbab9103fcf51c0e0dca89a88d85cca049afba962a1e5`，**2,189 词**。无 caption、文字出界、重叠或文本规则报告。
+- `.bot/out/ml18-step5-audit/report.json` 覆盖英中桌面与 390 px 手机 × direct／前步入口，共 **8 组合、40 个状态、32/32 个机制转变**；另有双语 1440／360／390／430 px 共 **8 个 deep 状态**。最终审计有 **39 个唯一 PNG 哈希**，普通舞台最低 **10.8425625 CSS px**，重叠、SVG 出界、页面或抽屉横溢和 `failures` 均为 0。可重跑脚本：`.bot/out/ml18-step5-audit.mjs`。
+- 桌面 deep 打开后舞台最低 **7.21415625 CSS px**，属于既有共享 ML-21，本单元未改，不声称该呈现门通过。手机 drawer 的焦点仍属共享 ML-22。
+- 代表截图：`.bot/out/ml18-shot/en-desktop-final.png`、`.bot/out/ml18-shot/zh-phone-final.png`、`.bot/out/ml18-step5-audit/en-1440-deep.png`。读取 PNG 时工具返回「this model does not support image input」；以上结论来自构建、transcript、源码、独立冷读、DOM 和几何检查，未声称看过图片或视觉通过。
+- 本轮读取 zero-to-sglang Part II Chapter 10 正文和代码走读；它讲 draft–verify、接受和 KV 边界，没有本章共享表训练梯度的直接对应内容。机制事实另由 pinned slime／Megatron 来源复核。未跑全站回归、真实 RL 训练、rollout、GPU benchmark 或 reduced-motion 动态切换。
+
+## 剩余与清理
+
+- 剩余事项是 ML-18／34 的协调固定复审、原 #4/#5、整章评分、共享 ML-21／22、具备图像能力的复审和主人最终视觉验收。下一单元按本书 P1 顺序处理 **ML-20**。
+- 本 clone 的 `node_modules` 开始时指向协调人 checkout。第一次 build 因该符号链接的缓存权限报 EPERM；随后只删除本目录内的符号链接并在本目录 `npm ci`，package 文件无 diff，最终 build 通过。
+- 本地查看地址：`http://127.0.0.1:4512/learning-sglang/ml-sys/ch/12-rl-speculative-decoding/?step=5`。本轮 4512 服务已在收尾停止，端口无监听。
+- 审计脚本调用 `browser.close()`。收尾 `pgrep -P 1 -fl 'headless=new.*cdp-'` 无输出；本轮没有遗留浏览器。
+
+---
+
 # lane k2 本轮报告 · ML Systems 13 Step 8 的 ML-63／64
 
 日期：2026-11-27。类型：修旧（direction 指定的 ML-55 后下一独立单元）。本轮开始 HEAD 与 `origin/tutorials` 均为 `6b63241`，工作树干净；ML-55 已由 `622eac2` 完成并留下完整证据，本轮不回改待复审批次，直接处理 ML 13 Step 8。范围只有该步组件、双语 deep、生成 transcript、本章评分卡与进度记录、定向审计和本报告；未改其他步、其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。ML-52／53 保持关闭，未开第 14 章。
