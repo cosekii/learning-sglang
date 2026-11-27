@@ -1,3 +1,41 @@
+# lane k1 本轮报告 · Omni 06 Step 4 的 Omni-52 同尺修复
+
+日期：2026-11-27。类型：修旧（direction 指定的下一最小单元）。本轮开始 HEAD 与 `origin/tutorials` 均为 `451124b`，工作树干净。范围只有 Omni 06 Step 4 的组件、双语 MDX 与 deep、生成 transcript、本章评分卡与进度记录、定向审计和本报告；未改 Omni 05、Omni 13 Step 9、其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。未开新章。
+
+## 提交与 finding
+
+- `66016e7`：**Omni-52 作者修复完成，待协调固定复审，不自行销项。** accepted 与 rejected 都使用 `scale = AUDIO_ABC_MEL_FRAMES = 27,000`，两幅图的本地原点都为 `panel.x + 16`，24,000 帧 limit 也移出条件分支，按同一公式绘制并各有一个可见标签。accepted 的 A+B+remaining 到 24,000，rejected 的 A+B+C 到 27,000。
+- 桌面 `barW=280`：A、B、C 宽 **155.5556／62.2222／62.2222**，limit offset **248.8889**。手机 `barW=238`：对应宽 **132.2222／52.8889／52.8889**，limit offset **211.5556**。每个 `width/value` 都等于本视口的 `barW/27000`，同一 A、B 不再跨面板变宽或变窄。
+- 双语 MDX 与 deep 明确同一原点、0–27,000 比例尺和同一 limit 位置。accepted 标签缩短为 `3000 frames left`，C 等待的原因仍由 caption、两张算式和 rejected 的 `keep C in pending_messages` 说明。同一 Step 4 deep 的长源码路径补 `<wbr>` 断行点，未改源码引用或公式。
+- 首次提交 `681f563` 推送被拒后按指示 `git pull --rebase origin tutorials`，带入 k2 的 `f7a492f`、`f577514`。只有 `memory/progress.md` 顶部发生记录冲突，保留双方条目后继续；最终 `66016e7` 推送成功，未 force-push。rebase 后再次通过 60 页 build，目标 diff check 通过。
+
+## 作者评分与独立冷读
+
+| 步 | R1–R5 | 新内容洞 | 独立冷读 | R1 小学生复述 |
+|---|---:|---:|---|---|
+| 4 | 10/10 | 0 | PASS | A、B 没超过声音帧上限；再加 C 就越线，所以 C 等下一批。 |
+
+- 独立 `explore` 逐项核对组件、双语 MDX／deep、transcript 和桌面／手机算式，结论为 **PASS**，Omni-52 没有剩余源码或文本阻塞。它只作源码、算术和 transcript 冷读，不替代协调 verdict。
+- R6 属于独立的 Omni-10，本单元不重复申报 Step 4 静态场景；原 #4/#5、整章总分、完成结论和销项均不由本轮改写。
+
+## 硬门与证据
+
+- 最终 rebase 后 `npm run build`：**60 页**通过；Step 4 `readability`：**0 机械问题**；`BOOK=omni node scripts/deep-check.mjs 06`、`zh-check`、英中全章 360／390／430 px `mobile`、中文 Step 4 字号门和 `git diff --check` 全过。
+- transcript 连续两次生成的 SHA-256 均为 `f55b4c0582521ce522f37603450fe58483054f2c05b30e8c5ff06268e2324eba`，**2,281 词**。无 caption、文字出界、重叠或文本规则报告。
+- 可重跑脚本 `.bot/out/omni06-step4-scale-audit.mjs`，结果 `.bot/out/omni06-step4/audit.json`。覆盖英中桌面、英中 360／390／430 px、direct／前步入口，共 **11 个普通状态**。每个状态都实测 `width/value`、相对原点、limit、两个 limit 标签、重叠、SVG 出界和页面横溢，全部通过；最低 **10.760 CSS px**。
+- 同一审计另打开 **11 个双语 deep 视图**，目标同尺说明、`aria-expanded=true` 和页面横溢检查通过。既有 KaTeX 内部滚动保留，本单元没有重写公式。
+- 代表截图：`.bot/out/omni06-step4/en-desktop-direct.png`、`.bot/out/omni06-step4/zh-390-direct.png`，另有英中桌面前步入口共 **6 张 PNG**。读取 PNG 时工具返回「this model does not support image input」；以上结论来自构建、transcript、独立冷读、DOM 和几何检查，未声称看过图片或视觉通过。
+- 未跑全站回归、真实 SGLang-Omni、模型、GPU 或 reduced-motion 动态切换。最新回归只有 `(exit 13)`，没有可分配布局步骤。本章无新增 zero-to-sglang 对照内容，本单元只修指定比例尺。
+
+## 剩余与清理
+
+- 剩余事项是 Omni-52 的协调固定复审、独立的 Omni-10、原 #4/#5、整章评分、具备图像能力的复审和主人最终视觉验收。Omni-51 的既有提交与其他待审或开放 finding 未回改。
+- 本 clone 的 `node_modules` 开始时指向协调人 checkout，第一次 build 因该符号链接的缓存权限报 EPERM。只删除本目录内的符号链接并在本目录 `npm install`，package 文件无 diff，未写协调人的 checkout。
+- 本轮查看地址为 `http://localhost:4325/learning-sglang/omni/ch/06-batching-backpressure/?step=4`。收尾已用 `npx astro dev stop` 停止本轮 pid 2641；随后 4325 显示为 `ls-d-1127-104804` 的进程，未动其他 lane 的服务。
+- 审计脚本均调用 `browser.close()`。收尾 `pgrep -P 1 -fl 'headless=new.*cdp-'` 无输出；未动其他 lane 的浏览器或 Chrome 配置目录。
+
+---
+
 # lane k1 本轮报告 · Omni 05 Steps 4–5 的 Omni-09 动画补完
 
 日期：2026-11-27。类型：修旧（direction 指定的下一最小单元）。本轮开始 HEAD 与 `origin/tutorials` 均为 `6fcb7d0`，工作树干净。范围只有 Omni 05 Steps 4–5 的组件、双语 MDX 与 deep、生成 transcript、本章评分卡、定向审计和本报告；未改 Steps 1–3、其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。Omni-50 已提交文字未重复返工，Omni-34 与 Omni 11／13／14 未改，未开新章。
