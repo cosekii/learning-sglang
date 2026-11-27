@@ -205,18 +205,19 @@ Sources: `sglang_omni_router/src/worker_pool/admission.rs:49-88`; `sglang_omni_r
 - This is a new example with constructed loads, not a continuation of Step 6's final 2, 2, 2 or Step 7's fresh single request.
 - A has the wrong profile, so it is not a candidate. B and C are compatible and healthy with active counts 2 and 1. Least requests selects C and increments C to 2 before dispatch.
 - C then sends `200 OK` and `data: one` before a constructed reset, meaning the connection breaks. B remains healthy, but no path continues this response on B.
+- The reset drops the response-body lease. C's active count visibly falls from 2 to 1; this cleanup does not complete the truncated response.
 - C's selection-time health does not guarantee the whole response. A transport or body error can request an immediate health probe; later eligibility still waits for the configured thresholds.
 - The question points at two separate boundaries: what this client receives, and when later selections can exclude C.
 
 ### The numbers on the stage
 
-| Worker | Profile | Health at selection | Active before | Active after selection |
-|---|---|---|---:|---:|
-| A | Does not match | Not used | Not used | Not selected |
-| B | Matches | HEALTHY | 2 | 2 |
-| C | Matches | HEALTHY | 1 | 2 |
+| Worker | Profile | Health at selection | Active before | Active after selection | Active after RESET |
+|---|---|---|---:|---:|---:|
+| A | Does not match | Not used | Not used | Not selected | Not selected |
+| B | Matches | HEALTHY | 2 | 2 | 2 |
+| C | Matches | HEALTHY | 1 | 2 | 1 |
 
-The upstream HTTP client disables retries, and the relay performs one send to the selected target. There is no alternate-dispatch loop. The response-body lease still terminates and releases its count, but that cleanup does not turn the partial response into a complete one.
+The upstream HTTP client disables retries, and the relay performs one send to the selected target. There is no alternate-dispatch loop. The response-body lease still terminates and releases its count, as the final $2\rightarrow1$ shows, but that cleanup does not turn the partial response into a complete one.
 
 ### Next
 

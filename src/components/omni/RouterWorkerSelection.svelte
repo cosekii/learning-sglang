@@ -88,7 +88,7 @@
   const H = $derived(phone ? [650, 750, 830, 840, 680, 790, 760, 880][step] : [520, 560, 600, 600, 570, 680, 560, 650][step]);
 
   // Each step reveals one routing event at a time, then holds the finished scene before looping.
-  const PHASE_COUNTS = [4, 5, 4, 6, 7, LEAST_FINAL_PHASE + 1, 5, 5];
+  const PHASE_COUNTS = [4, 5, 4, 6, 7, LEAST_FINAL_PHASE + 1, 5, 6];
   const PHASE_MS = 1100, REST_MS = 2500;
   let phase = $state(0);
   let lap = $state(0), lapMs = $state(0);
@@ -374,6 +374,7 @@
           <text x="62" y="334" class="small">worker C · HEALTHY</text>
           <text x="62" y="358" class="small">active = {ROUTER_FINAL_LOADS[1]} · {t('minimum', '最少')}</text>
           <text x="62" y="384" class="small strong" opacity={phase >= 1 ? 1 : 0.12} style="transition: opacity 350ms">{t('select C → active 2', '选择 C → 活跃数 2')}</text>
+          <text x="62" y="430" class="small strong" style="fill:var(--gen);transition: opacity 350ms" opacity={phase >= 5 ? 1 : 0.12}>{t('RESET: lease released · active 2 → 1', 'RESET：凭证收回 · 活跃数 2 → 1')}</text>
           <rect x="375" y="90" width="315" height="365" rx="12" fill={phase >= 3 ? 'var(--gen-soft)' : 'var(--bg)'} stroke={phase >= 3 ? 'var(--gen)' : 'var(--line)'} style="transition: fill 350ms, stroke 350ms" />
           <text x="393" y="120" class="small strong">{t('AFTER SELECTION · WORKER C', '选择之后 · WORKER C')}</text>
           <g opacity={phase >= 2 ? 1 : 0.12} style="transition: opacity 350ms">
@@ -400,6 +401,7 @@
           <text x="46" y="309" class="small" opacity={phase >= 1 ? 1 : 0.12} style="transition: opacity 350ms">{t('minimum → select C', '最少 → 选择 C')}</text>
           <text x="46" y="334" class="small strong" opacity={phase >= 1 ? 1 : 0.12} style="transition: opacity 350ms">{t('active becomes 2', '活跃数变成 2')}</text>
           <text x="32" y="397" class="small strong">{t('C was healthy when selected.', '选择时 C 是 healthy。')}</text>
+          <text x="32" y="423" class="small strong" style="fill:var(--gen);transition: opacity 350ms" opacity={phase >= 5 ? 1 : 0.12}>{t('RESET: lease released · active 2 → 1', 'RESET：凭证收回 · 活跃数 2 → 1')}</text>
           <rect x="18" y="460" width="264" height="230" rx="12" fill={phase >= 3 ? 'var(--gen-soft)' : 'var(--bg)'} stroke={phase >= 3 ? 'var(--gen)' : 'var(--line)'} style="transition: fill 350ms, stroke 350ms" />
           <text x="32" y="490" class="small strong">{t('AFTER SELECTION · C', '选择之后 · C')}</text>
           <text x="32" y="530" class="code" opacity={phase >= 2 ? 1 : 0.12} style="transition: opacity 350ms">200 OK → data: one</text>
