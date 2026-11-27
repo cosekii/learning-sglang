@@ -243,3 +243,36 @@
 - 教程提交：`1334bf5`（Step 1 英文手机标题）、`5b278f7`（Step 6 英文手机标题）、`a4d2fa4`（Step 1 中文手机标题）。两次推送被拒后均按要求 `git pull --rebase origin tutorials` 再推，没有 force-push。
 - 评分卡、progress 和本报告随后续 `[k2] ` 记录提交推送。ML-39／40／30 等协调复审；ML-14 和其余静态机制 P0 尚未开始，不开第 14 章。
 - 未跑全站回归、真实 SGLang／CUDA、allocator trace、GPU benchmark、故障注入、reduced-motion 动态切换或主人最终视觉验收。
+
+---
+
+# lane k2 本轮报告 · ML-14 与 ML 03–07 静态机制返工
+
+日期：2026-11-26。范围只含 ML Systems 的协调记录同步、ML 08 Step 4 的 ML-14 事实小修，以及 ML 03–07 的静态机制 P0；未动 Omni、Voxt、第 1 本受保护英文原文或 `.bot/memory/`。本轮按 50 分钟边界收尾，ML 08–10／12 的静态机制 P0 留作下一轮，未开第 14 章。
+
+## 已修 review 项与提交
+
+- `141aa5f [k2] Sync ML 02 coordinated verdict`：只同步 ML 02 固定 `c7d3d86` 的协调 GO：R1–R5 **60/60**、机制 R6 **12/12**、R1–R6 **72/72**、原十个非视觉项 **120/120**、原 #4/#5 **24/24**、原十二项 **144/144**、0 未决内容洞。ML-03／28／30／39／40 全部关闭，未重做 ML 02。
+- `efcb858 [k2] Correct ML 08 FP32 gradient averaging`：修复 **ML-14**。ML 08 Step 4 现在同时解释 slime 的 `loss = loss × R/B` 预缩放与 FP32 FSDP2 默认 `ReduceOp.AVG`，不再误写为 sum。双语深入讲解记录 `reduce_dtype=torch.float32`、额外 predivide／postdivide 均为 `None`，并用 `R=2`、`B=8` 验证 `(2×2/8 + 6×2/8)÷2 = (2+6)÷8 = 1`。源码依据为 pinned slime `actor.py:687-702,1000-1034` 和 PyTorch v2.8.0 `_fsdp_collectives.py:605-641`。
+- `af6a574 [k2] Animate ML 03 checkpoint recovery`：修复 **ML-04**。六步 `[3,4,4,5,4,5]` 相位演示前缀复用、state 更新、checkpoint 拒绝与重算进度、hybrid 截断和 tombstone 回退。作者 DOM 机制 **12/12**，R1–R5 沿用 **60/60**。
+- `79621bf [k2] Animate ML 04 ring communication`：修复 **ML-05**。七步 `[3,3,5,4,2,8,4]` 相位，Ring 明确播放三轮 Reduce-Scatter 和三轮 All-Gather，输入、S/4 分块、归约结果与完整张量依次变化。作者 DOM 机制 **14/14**，R1–R5 沿用 **70/70**。
+- `8230852 [k2] Animate ML 05 serving request lifecycle`：修复 **ML-06**。七步 `[4,3,3,5,4,6,6]` 相位演示启动、ready、请求进入 rank 0／TP 组、返回及四个 token 的到达时刻。作者 DOM 机制 **14/14**，R1–R5 沿用 **70/70**。
+- `331e391 [k2] Animate ML 06 rollout training loop`：修复 **ML-07**。八步 `[4,3,4,4,3,3,4,4]` 相位贯穿同一 prompt group、rollout record、reward、GRPO、训练和 v1。作者 DOM 机制 **16/16**，R1–R5 沿用 **80/80**。
+- `d56e4a4 [k2] Animate ML 07 weight update lifecycle`：修复 **ML-08**。八步 `[4,4,4,5,6,5,4,5]` 相位演示 handle、bucket 1 清空后 bucket 2 上卡、版本边界和 sleep 账。作者 DOM 机制 **16/16**，R1–R5 沿用 **80/80**。
+
+这些章节的原 #4/#5、原十二项总分和协调 verdict 均待复审，不记 `complete-under-EVAL`。ML-14 修复也待协调复审，未把旧静态满分当作新 verdict。
+
+## 验证
+
+- 每章均运行并通过 `npm run build`（60 页）、目标默认 transcript、全章 `readability`、`deep-check`、`zh-check`、英中全章 360／390／430 px `mobile`、中文逐步字号门和 `git diff --check`。最终记录提交前再次运行 build 与 diff check。
+- ML 03–07 的默认 transcript 均连续两次逐字一致。自定义逐相审计保存 **152 张**桌面 PNG 和对应可见文本签名：ML 03 **26**、ML 04 **29**、ML 05 **31**、ML 06 **29**、ML 07 **37**。每个相位都有本步机制对象或数值变化；文字重叠、SVG 出界均为 **0**，全书本轮最低 **10.390625 CSS px**。
+- 证据目录：`/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-hu5cwwuz/opencode/ml03-phases/`、`ml04-phases/`、`ml05-phases/`、`ml06-phases/`、`ml07-phases/`。代表图：`ml04-phases/s6-p4.png`、`ml07-phases/s5-p4.png`。
+- ML-14 的独立算术脚本通过；双语 Step 4 deep 均为 `aria-expanded=true`，`counter=04 / 06`，无横向溢出、KaTeX 错误或残留 `$$`。截图在同级 `ml14-en/`、`ml14-zh-phone/`、`ml14-deep-en/`、`ml14-deep-zh/`。
+- 当前模型无图像输入。已尝试读取代表 PNG，但工具返回 `Cannot read image`，因此没有声称已看图、视觉通过或主人验收通过。独立 reviewer 因配置的模型不存在而未启动，未计为证据；主线程完成 transcript、源码、双语 deep 和 live DOM 冷读。
+- 未跑全站回归、真实 SGLang／slime／NCCL／CUDA、模型训练、GPU benchmark、故障注入或 reduced-motion 动态切换。本轮 4321 dev server 已停止，本轮浏览器已关闭，匹配本轮的 CDP 目录已清理。
+
+## 剩余
+
+- **ML-09**（ML 08 FSDP2）、**ML-10**（ML 09 FP8）、**ML-11**（ML 10 INT4 QAT）、**ML-12**（ML 12 RL 投机解码）的静态机制 P0 尚未完成。ML 08 目前只有 ML-14 事实修复，不能视为其动画 P0 已关闭。
+- 下一轮从 ML 08 开始，再依次处理 ML 09、10、12；不重做 ML 01／02、ML 13 或本轮已完成的 ML 03–07，不开第 14 章新书。其他 ML 内容 finding 保持原状。
+- 本地章节地址为 `http://localhost:4321/learning-sglang/ml-sys/ch/07-weight-updates/?step=5`。服务器已按要求关闭；查看前在本目录运行 `npx astro dev --background`。
