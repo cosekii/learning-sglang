@@ -405,7 +405,7 @@
             <text x="360" y="475" text-anchor="middle" class="fraction">{t('1024 vs 64: what happens to wait and recomputed tokens?', '1024 与 64：等待和重算 token 数怎样变化？')}</text>
           </g>
         {:else}
-          <text x="20" y="25" class="title">{t('Scoped memory account', '有范围的显存账')}</text>
+          <text x="20" y="25" class="title">{t('Scoped account', '有范围的显存账')}</text>
           <rect x="20" y="45" width="260" height="32" fill="url(#headroom)" stroke="var(--line)" />
           <rect x="20" y="45" width={barWidth(DEMO_MODEL_LOAD_GB, 260)} height="32" fill="var(--gen-soft)" stroke="var(--gen)" />
           <g opacity={phase >= 1 ? 1 : 0} style="transition: opacity 300ms">
