@@ -211,7 +211,7 @@
 
 ## 提交
 
-- 教程源码、评分卡、progress 和本报告：一条 `[d]` 提交，推 `origin/tutorials`。
+- 教程源码、评分卡和 progress：教程提交 `bb70918`，推 `origin/tutorials`；本报告：记录提交 `b233fbe`，两笔分开。
 
 ## 剩余
 
@@ -382,3 +382,14 @@
 - **逐相碰撞审计**：live DOM 对英／中 × 360／390／430 px × 4 相共 24 个视图做 `getBoundingClientRect` 两两相交，全部为 0（相位身份由 `data-animation-phase` 确认）。
 - **progress.md 章节行**：`models-and-app-updates` 行原来还写「6 步 R1–R5 10/10、20/20、0 洞」，与协调基线矛盾；已改为 R1–R5 **54/60**、原十个非视觉项 **119/120**、原十二项 **143/144**、机制 R6 **7/12**（逐步 1、1、1、1、1、2），第 1 步修复标为待复审，不自行提分。
 - 复跑门：`astro build`（60 页）、本章 transcript（重生成仍无 diff）、STEP=1 readability、英中 STEP=1 mobile 三宽度、zh-check 全部通过。桌面布局未变（桌面 y=20 不动）。
+
+---
+
+# lane d 本轮追加二 · Voxt 11 Step 1 红框描边与文字相碰、Voxt 08 记录分开
+
+日期：2026-11-26。按复审回执修两处，仍只动 Step 1 最小单元。
+
+- **红框描边碰字**：第 2 相公式框描边在手机压到脚注（桌面同相也压脚注和上一条 bullet），第 3 相比值框描边压标题，均为 `c3a7773` 以来既有几何。修法：桌面 bullet 三行 360/386/412→352/376/400、公式 438→430，手机公式两行 608/630→600/622；第 2／3 相框改为贴合文字的窄框（桌面 `{191,413,338,28}`／`{239,38,242,15}`，手机 `{15,583,270,44}`／`{29,36,246,14}`），第 1 步手机 LoopProgress 再抬到 `H-94` 避开新框顶边。其余步不动。
+- **形状×文字审计**：live DOM 把 `.motion-focus` 四条描边带（±strokeWidth/2，经 inverse CTM 换算）与全部可见文字 bbox 求交，覆盖英／中 × 桌面／360／390／430 × 4 相共 32 个视图，全部 0 相交；相位身份由 `data-animation-phase` 确认。
+- **Voxt 08 提交记录**：report 第 202 行原写「教程源码、评分卡、progress 和本报告：一条 `[d]` 提交」，已改为教程提交 `bb70918` 与报告提交 `b233fbe` 两笔分开，对齐 review.md:582 和 direction.md:17。
+- 复跑门：`astro build`（60 页）、本章 transcript（重生成仍无 diff，文字内容未变）、STEP=1 readability、英中 STEP=1 mobile 三宽度、zh-check、deep-check 11 全部通过。

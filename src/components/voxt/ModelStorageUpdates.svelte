@@ -99,14 +99,14 @@
     return () => timers.forEach(clearTimeout);
   });
   const motionFrames = (isPhone: boolean, s: number): { x: number; y: number; w: number; h: number }[] => (isPhone ? [
-    [{ x: 15, y: 64, w: 270, h: 112 }, { x: 15, y: 64, w: 270, h: 112 }, { x: 15, y: 596, w: 270, h: 48 }, { x: 15, y: 32, w: 270, h: 26 }],
+    [{ x: 15, y: 64, w: 270, h: 112 }, { x: 15, y: 64, w: 270, h: 112 }, { x: 15, y: 583, w: 270, h: 44 }, { x: 29, y: 36, w: 246, h: 14 }],
     [{ x: 15, y: 64, w: 270, h: 110 }, { x: 15, y: 202, w: 270, h: 240 }, { x: 20, y: 370, w: 270, h: 60 }],
     [{ x: 15, y: 62, w: 270, h: 134 }, { x: 15, y: 62, w: 270, h: 134 }, { x: 15, y: 300, w: 270, h: 76 }],
     [{ x: 15, y: 64, w: 270, h: 170 }, { x: 15, y: 274, w: 270, h: 190 }, { x: 15, y: 274, w: 270, h: 190 }],
     [{ x: 15, y: 64, w: 270, h: 150 }, { x: 15, y: 576, w: 270, h: 46 }, { x: 40, y: 636, w: 220, h: 26 }],
     [{ x: 15, y: 64, w: 270, h: 92 }, { x: 15, y: 166, w: 270, h: 92 }, { x: 15, y: 268, w: 270, h: 92 }],
   ] : [
-    [{ x: 20, y: 72, w: 212, h: 225 }, { x: 20, y: 72, w: 212, h: 225 }, { x: 190, y: 414, w: 340, h: 34 }, { x: 150, y: 30, w: 420, h: 26 }],
+    [{ x: 20, y: 72, w: 212, h: 225 }, { x: 20, y: 72, w: 212, h: 225 }, { x: 191, y: 413, w: 338, h: 28 }, { x: 239, y: 38, w: 242, h: 15 }],
     [{ x: 20, y: 74, w: 250, h: 190 }, { x: 300, y: 74, w: 400, h: 190 }, { x: 36, y: 304, w: 320, h: 60 }],
     [{ x: 30, y: 72, w: 660, h: 124 }, { x: 30, y: 72, w: 660, h: 124 }, { x: 256, y: 208, w: 208, h: 124 }],
     [{ x: 20, y: 72, w: 300, h: 190 }, { x: 356, y: 72, w: 346, h: 190 }, { x: 356, y: 72, w: 346, h: 190 }],
@@ -172,13 +172,13 @@
           <rect x="360" y="316" width="12" height="12" rx="2" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="378" y="326" class="detail">{t('a running program', '运行的程序')}</text>
 
-          <text x="28" y="360" class="pt">·</text>
-          <text x="38" y="360" class="detail">{t('the model arrives later, not inside the app', '模型是后来下载的，不在应用里面')}</text>
-          <text x="28" y="386" class="pt">·</text>
-          <text x="38" y="386" class="detail">{t('Automatic asks an idle server to stop; its files stay', '自动模式会请求空闲服务器停止，文件留着')}</text>
-          <text x="28" y="412" class="pt">·</text>
-          <text x="38" y="412" class="detail">{t('an app update replaces the bundle, not the model folder', '应用更新换的是应用，不是模型文件夹')}</text>
-          <text x={W / 2} y="438" text-anchor="middle" class="formula">{phase < 2 ? '' : `${weightsBytes} B + ${otherBytes} B = ${totalBytes} B`}</text>
+          <text x="28" y="352" class="pt">·</text>
+          <text x="38" y="352" class="detail">{t('the model arrives later, not inside the app', '模型是后来下载的，不在应用里面')}</text>
+          <text x="28" y="376" class="pt">·</text>
+          <text x="38" y="376" class="detail">{t('Automatic asks an idle server to stop; its files stay', '自动模式会请求空闲服务器停止，文件留着')}</text>
+          <text x="28" y="400" class="pt">·</text>
+          <text x="38" y="400" class="detail">{t('an app update replaces the bundle, not the model folder', '应用更新换的是应用，不是模型文件夹')}</text>
+          <text x={W / 2} y="430" text-anchor="middle" class="formula">{phase < 2 ? '' : `${weightsBytes} B + ${otherBytes} B = ${totalBytes} B`}</text>
           <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Sources: catalog.go:205-213, docs/release.md.', '出处：catalog.go:205-213、docs/release.md。')}</text>
         {:else}
           <rect x="15" y="64" width="270" height="112" rx="10" fill="var(--bg)" stroke="var(--accent)" />
@@ -213,8 +213,8 @@
           <text x="20" y="550" class="pt">·</text>
           <text x="30" y="550" class="detail">{t('an app update replaces the app,', '应用更新换的是应用，')}</text>
           <text x="30" y="570" class="detail">{t('not the model folder', '不是模型文件夹')}</text>
-          <text x={W / 2} y="608" text-anchor="middle" class="formula">{phase < 2 ? '' : `${weightsBytes} B + ${otherBytes} B`}</text>
-          <text x={W / 2} y="630" text-anchor="middle" class="formula">{phase < 2 ? '' : `= ${totalBytes} B`}</text>
+          <text x={W / 2} y="600" text-anchor="middle" class="formula">{phase < 2 ? '' : `${weightsBytes} B + ${otherBytes} B`}</text>
+          <text x={W / 2} y="622" text-anchor="middle" class="formula">{phase < 2 ? '' : `= ${totalBytes} B`}</text>
           <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Sources: catalog.go:205-213, docs/release.md.', '出处：catalog.go:205-213、docs/release.md。')}</text>
         {/if}
       {:else if step === 1}
@@ -553,7 +553,7 @@
       {#if focus}
         <rect class="motion-focus" x={focus.x - 4} y={focus.y - 4} width={focus.w + 8} height={focus.h + 8} rx="10" fill="none" stroke="var(--eos)" stroke-width="3" />
       {/if}
-      <LoopProgress ms={lapMs} {lap} x={phone ? 236 : 640} y={phone ? (step === 0 ? H - 80 : H - 44) : 20} />
+      <LoopProgress ms={lapMs} {lap} x={phone ? 236 : 640} y={phone ? (step === 0 ? H - 94 : H - 44) : 20} />
     </svg>
   </div>
   <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh}
