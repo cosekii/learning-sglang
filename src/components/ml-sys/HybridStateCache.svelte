@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import StepControls from '../StepControls.svelte';
+  import LoopProgress from '../LoopProgress.svelte';
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
@@ -33,21 +34,54 @@
     if (q >= 1 && q <= steps.length) step = q - 1;
   });
   let phone = $state(false);
+  let reduceMotion = $state(false);
   onMount(() => {
     const query = window.matchMedia('(max-width: 600px)');
+    const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
     const update = () => (phone = query.matches);
+    const updateMotion = () => (reduceMotion = motion.matches);
     update();
+    updateMotion();
     query.addEventListener('change', update);
-    return () => query.removeEventListener('change', update);
+    motion.addEventListener('change', updateMotion);
+    return () => {
+      query.removeEventListener('change', update);
+      motion.removeEventListener('change', updateMotion);
+    };
+  });
+  const PHASE_COUNTS = [3, 4, 4, 5, 4, 5];
+  const PHASE_MS = 1100, REST_MS = 2800;
+  let phase = $state(0);
+  let lap = $state(0), lapMs = $state(0);
+  const nextLap = (ms: number) => untrack(() => { lapMs = ms; lap++; });
+  $effect(() => {
+    const count = PHASE_COUNTS[step];
+    phase = 0;
+    if (reduceMotion) { phase = count - 1; return; }
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const run = () => {
+      timers.length = 0;
+      phase = 0;
+      for (let i = 1; i < count; i++) timers.push(setTimeout(() => (phase = i), i * PHASE_MS));
+      const ms = count * PHASE_MS + REST_MS;
+      timers.push(setTimeout(run, ms));
+      nextLap(ms);
+    };
+    run();
+    return () => timers.forEach(clearTimeout);
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720), H = $derived(phone ? 460 : 410);
   const waitWidth = (seconds: number, width: number) => seconds / HYBRID_SHORT_WAIT_DEFAULT_S * width;
+  const replayed = $derived(phase >= 4 ? HYBRID_LOG_REPLAY_POSITIONS : phase === 3 ? Math.round(HYBRID_LOG_REPLAY_POSITIONS / 2) : 0);
+  const replayX = $derived(200 + 460 * replayed / HYBRID_LOG_REPLAY_POSITIONS);
+  const replayPhoneX = $derived(70 + 200 * replayed / HYBRID_LOG_REPLAY_POSITIONS);
 </script>
 
-<figure class="viz">
+<figure class="viz" data-animation-step={step} data-animation-phase={phase} data-animation-final-phase={PHASE_COUNTS[step] - 1}>
   <div class="canvas">
     <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={t('Compare per-token attention KV with recurrent-state snapshots, recomputation and hybrid prefix matching.', '对照逐 token 注意力 KV 与 recurrent state 的快照、重算和 hybrid 前缀匹配。')}>
+      {#if !reduceMotion}<LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={4} />{/if}
       {#if step === 0}
       {#if !phone}
         <text x="38" y="30" class="title">{t('num_batch changes the short-request wait', 'num_batch 改变短请求等待')}</text>
@@ -62,17 +96,21 @@
         <text x="320" y="132" text-anchor="middle" class="time">{HYBRID_SHORT_WAIT_DEFAULT_S} s</text>
         <text x="552" y="132" class="tokens">{HYBRID_RECOMPUTE_DEFAULT_MIN.toLocaleString()}–{HYBRID_RECOMPUTE_DEFAULT_MAX.toLocaleString()}</text>
 
-        <text x="40" y="237" class="batch">{HYBRID_NUM_BATCH_TUNED}</text>
-        <rect x="170" y="208" width="300" height="46" rx="7" fill="var(--bg)" stroke="var(--line)" />
-        <rect x="170" y="208" width={waitWidth(HYBRID_SHORT_WAIT_TUNED_S, 300)} height="46" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
-        <text x={180 + waitWidth(HYBRID_SHORT_WAIT_TUNED_S, 300)} y="237" class="time">{HYBRID_SHORT_WAIT_TUNED_S} s</text>
-        <text x="552" y="237" class="tokens">{HYBRID_RECOMPUTE_TUNED_MIN}–{HYBRID_RECOMPUTE_TUNED_MAX}</text>
+        <g opacity={phase >= 1 ? 1 : 0} >
+          <text x="40" y="237" class="batch">{HYBRID_NUM_BATCH_TUNED}</text>
+          <rect x="170" y="208" width="300" height="46" rx="7" fill="var(--bg)" stroke="var(--line)" />
+          <rect x="170" y="208" width={waitWidth(HYBRID_SHORT_WAIT_TUNED_S, 300)} height="46" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x={180 + waitWidth(HYBRID_SHORT_WAIT_TUNED_S, 300)} y="237" class="time">{HYBRID_SHORT_WAIT_TUNED_S} s</text>
+          <text x="552" y="237" class="tokens">{HYBRID_RECOMPUTE_TUNED_MIN}–{HYBRID_RECOMPUTE_TUNED_MAX}</text>
+        </g>
 
-        <rect x="40" y="282" width="640" height="82" rx="12" fill="var(--bg)" stroke="var(--line)" />
-        <text x="360" y="310" text-anchor="middle" class="result">{HYBRID_NUM_BATCH_TUNED}: {HYBRID_WAIT_SAVED_S} s {t('less waiting per short request', '每条短请求少等')} · {HYBRID_SHORT_WAIT_DEFAULT_S} ÷ {HYBRID_SHORT_WAIT_TUNED_S} ≈ {HYBRID_WAIT_RATIO.toFixed(1)}×</text>
-        <text x="360" y="340" text-anchor="middle" class="cold">{t('cold startup', '冷启动')}: {HYBRID_COLD_DEFAULT_S} s → {HYBRID_COLD_TUNED_S} s · +{HYBRID_COLD_EXTRA_S} s</text>
-        <rect x="40" y="366" width="13" height="13" fill="var(--accent-soft)" stroke="var(--accent)" />
-        <text x="61" y="377" class="small">{t('blue = total wait for one short request', '蓝色 = 一条短请求的总耗时')}</text>
+        <g opacity={phase >= 2 ? 1 : 0} >
+          <rect x="40" y="282" width="640" height="82" rx="12" fill="var(--bg)" stroke="var(--line)" />
+          <text x="360" y="310" text-anchor="middle" class="result">{HYBRID_NUM_BATCH_TUNED}: {HYBRID_WAIT_SAVED_S} s {t('less waiting per short request', '每条短请求少等')} · {HYBRID_SHORT_WAIT_DEFAULT_S} ÷ {HYBRID_SHORT_WAIT_TUNED_S} ≈ {HYBRID_WAIT_RATIO.toFixed(1)}×</text>
+          <text x="360" y="340" text-anchor="middle" class="cold">{t('cold startup', '冷启动')}: {HYBRID_COLD_DEFAULT_S} s → {HYBRID_COLD_TUNED_S} s · +{HYBRID_COLD_EXTRA_S} s</text>
+          <rect x="40" y="366" width="13" height="13" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="61" y="377" class="small">{t('blue = total wait for one short request', '蓝色 = 一条短请求的总耗时')}</text>
+        </g>
       {:else}
         <text x="18" y="27" class="title">{t('num_batch changes the wait', 'num_batch 改变等待')}</text>
         <text x="18" y="51" class="small">{t('tokens scheduled per batch · short requests', '每批调度的 token 数 · 短请求')}</text>
@@ -84,17 +122,21 @@
         <rect x="34" y="133" width="232" height="25" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
         <text x="34" y="181" class="small">{t('recompute', '重算')} {HYBRID_RECOMPUTE_DEFAULT_MIN.toLocaleString()}–{HYBRID_RECOMPUTE_DEFAULT_MAX.toLocaleString()} token</text>
 
-        <rect x="20" y="216" width="260" height="111" rx="11" fill="var(--bg)" stroke="var(--line)" />
-        <text x="34" y="242" class="batch">{HYBRID_NUM_BATCH_TUNED}</text>
-        <text x="266" y="242" text-anchor="end" class="time">{HYBRID_SHORT_WAIT_TUNED_S} s</text>
-        <rect x="34" y="258" width="232" height="25" rx="5" fill="var(--bg)" stroke="var(--line)" />
-        <rect x="34" y="258" width={waitWidth(HYBRID_SHORT_WAIT_TUNED_S, 232)} height="25" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
-        <text x="34" y="306" class="small">{t('recompute', '重算')} {HYBRID_RECOMPUTE_TUNED_MIN}–{HYBRID_RECOMPUTE_TUNED_MAX} token</text>
+        <g opacity={phase >= 1 ? 1 : 0} >
+          <rect x="20" y="216" width="260" height="111" rx="11" fill="var(--bg)" stroke="var(--line)" />
+          <text x="34" y="242" class="batch">{HYBRID_NUM_BATCH_TUNED}</text>
+          <text x="266" y="242" text-anchor="end" class="time">{HYBRID_SHORT_WAIT_TUNED_S} s</text>
+          <rect x="34" y="258" width="232" height="25" rx="5" fill="var(--bg)" stroke="var(--line)" />
+          <rect x="34" y="258" width={waitWidth(HYBRID_SHORT_WAIT_TUNED_S, 232)} height="25" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="34" y="306" class="small">{t('recompute', '重算')} {HYBRID_RECOMPUTE_TUNED_MIN}–{HYBRID_RECOMPUTE_TUNED_MAX} token</text>
+        </g>
 
-        <text x="150" y="350" text-anchor="middle" class="result">{HYBRID_NUM_BATCH_TUNED}: {HYBRID_WAIT_SAVED_S} s {t('less waiting', '少等')}</text>
-        <text x="150" y="376" text-anchor="middle" class="result">{HYBRID_SHORT_WAIT_DEFAULT_S} ÷ {HYBRID_SHORT_WAIT_TUNED_S} ≈ {HYBRID_WAIT_RATIO.toFixed(1)}×</text>
-        <text x="150" y="401" text-anchor="middle" class="cold">{t('cold startup', '冷启动')}: {HYBRID_COLD_DEFAULT_S} s → {HYBRID_COLD_TUNED_S} s</text>
-        <text x="150" y="423" text-anchor="middle" class="small">+{HYBRID_COLD_EXTRA_S} s · {t('blue = one short request', '蓝色 = 一条短请求')}</text>
+        <g opacity={phase >= 2 ? 1 : 0} >
+          <text x="150" y="350" text-anchor="middle" class="result">{HYBRID_NUM_BATCH_TUNED}: {HYBRID_WAIT_SAVED_S} s {t('less waiting', '少等')}</text>
+          <text x="150" y="376" text-anchor="middle" class="result">{HYBRID_SHORT_WAIT_DEFAULT_S} ÷ {HYBRID_SHORT_WAIT_TUNED_S} ≈ {HYBRID_WAIT_RATIO.toFixed(1)}×</text>
+          <text x="150" y="401" text-anchor="middle" class="cold">{t('cold startup', '冷启动')}: {HYBRID_COLD_DEFAULT_S} s → {HYBRID_COLD_TUNED_S} s</text>
+          <text x="150" y="423" text-anchor="middle" class="small">+{HYBRID_COLD_EXTRA_S} s · {t('blue = one short request', '蓝色 = 一条短请求')}</text>
+        </g>
       {/if}
       {:else if step === 1}
         <defs>
@@ -114,23 +156,29 @@
           <text x="555" y="93" text-anchor="middle" class="small">{t('old', '旧')} {HYBRID_USER_TOKENS}</text>
           <text x="680" y="96" text-anchor="end" class="small">{HYBRID_PROMPT_TOKENS.toLocaleString()} token</text>
 
-          <text x="40" y="154" class="small strong">{t('new request', '新请求')}</text>
-          <rect x="170" y="130" width="350" height="32" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <rect x="520" y="130" width="70" height="32" rx="5" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="345" y="151" text-anchor="middle" class="small">{t('same system', '相同 system')} · {HYBRID_SYSTEM_TOKENS.toLocaleString()}</text>
-          <text x="555" y="151" text-anchor="middle" class="small">{t('new', '新')} {HYBRID_USER_TOKENS}</text>
-          <text x="680" y="154" text-anchor="end" class="small">{HYBRID_PROMPT_TOKENS.toLocaleString()} token</text>
+          <g opacity={phase >= 1 ? 1 : 0} >
+            <text x="40" y="154" class="small strong">{t('new request', '新请求')}</text>
+            <rect x="170" y="130" width="350" height="32" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <rect x="520" y="130" width="70" height="32" rx="5" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="345" y="151" text-anchor="middle" class="small">{t('same system', '相同 system')} · {HYBRID_SYSTEM_TOKENS.toLocaleString()}</text>
+            <text x="555" y="151" text-anchor="middle" class="small">{t('new', '新')} {HYBRID_USER_TOKENS}</text>
+            <text x="680" y="154" text-anchor="end" class="small">{HYBRID_PROMPT_TOKENS.toLocaleString()} token</text>
+          </g>
 
-          <text x="40" y="210" class="small strong">{t('new request’s KV slots', '新请求的 KV 槽位')}</text>
-          <rect x="170" y="224" width="350" height="36" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <rect x="520" y="224" width="70" height="36" rx="5" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="345" y="247" text-anchor="middle" class="small">{t('reuse', '复用')} {HYBRID_SYSTEM_TOKENS.toLocaleString()} K/V</text>
-          <text x="555" y="247" text-anchor="middle" class="small">{HYBRID_USER_TOKENS} {t('new', '新增')}</text>
-          <rect x="520" y="274" width="70" height="22" rx="4" fill="url(#released-tail)" stroke="var(--muted)" stroke-dasharray="4 3" />
-          <text x="555" y="316" text-anchor="middle" class="small">{t('old 40 released', '旧 40 格释放')}</text>
+          <g opacity={phase >= 2 ? 1 : 0} >
+            <text x="40" y="210" class="small strong">{t('new request’s KV slots', '新请求的 KV 槽位')}</text>
+            <rect x="170" y="224" width="350" height="36" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <rect x="520" y="224" width="70" height="36" rx="5" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="345" y="247" text-anchor="middle" class="small">{t('reuse', '复用')} {HYBRID_SYSTEM_TOKENS.toLocaleString()} K/V</text>
+            <text x="555" y="247" text-anchor="middle" class="small">{HYBRID_USER_TOKENS} {t('new', '新增')}</text>
+            <rect x="520" y="274" width="70" height="22" rx="4" fill="url(#released-tail)" stroke="var(--muted)" stroke-dasharray="4 3" />
+            <text x="555" y="316" text-anchor="middle" class="small">{t('old 40 released', '旧 40 格释放')}</text>
+          </g>
 
-          <text x="360" y="338" text-anchor="middle" class="result">{HYBRID_PROMPT_TOKENS.toLocaleString()} − {HYBRID_SYSTEM_TOKENS.toLocaleString()} = {HYBRID_FULL_ATTENTION_NEW_TOKENS} {t('tokens to prefill', '个 token 要 prefill')}</text>
-          <text x="360" y="364" text-anchor="middle" class="small">{t('blue = reuse · orange = compute · hatch = release', '蓝 = 复用 · 橙 = 计算 · 斜线 = 释放')}</text>
+          <g opacity={phase >= 3 ? 1 : 0} >
+            <text x="360" y="338" text-anchor="middle" class="result">{HYBRID_PROMPT_TOKENS.toLocaleString()} − {HYBRID_SYSTEM_TOKENS.toLocaleString()} = {HYBRID_FULL_ATTENTION_NEW_TOKENS} {t('tokens to prefill', '个 token 要 prefill')}</text>
+            <text x="360" y="364" text-anchor="middle" class="small">{t('blue = reuse · orange = compute · hatch = release', '蓝 = 复用 · 橙 = 计算 · 斜线 = 释放')}</text>
+          </g>
         {:else}
           <text x="18" y="27" class="title">{t('Full attention', '全注意力')}</text>
           <text x="18" y="51" class="small">{t('one K/V slot per token', '每个 token 一格 K/V')}</text>
@@ -141,23 +189,29 @@
           <text x="130" y="113" text-anchor="middle" class="small">system {HYBRID_SYSTEM_TOKENS.toLocaleString()}</text>
           <text x="250" y="113" text-anchor="middle" class="small">{t('old', '旧')}{HYBRID_USER_TOKENS}</text>
 
-          <text x="20" y="154" class="small strong">{t('new request', '新请求')}</text>
-          <rect x="40" y="166" width="180" height="30" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <rect x="220" y="166" width="60" height="30" rx="5" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="130" y="185" text-anchor="middle" class="small">{t('same', '相同')} {HYBRID_SYSTEM_TOKENS.toLocaleString()}</text>
-          <text x="250" y="185" text-anchor="middle" class="small">{t('new', '新')}{HYBRID_USER_TOKENS}</text>
+          <g opacity={phase >= 1 ? 1 : 0} >
+            <text x="20" y="154" class="small strong">{t('new request', '新请求')}</text>
+            <rect x="40" y="166" width="180" height="30" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <rect x="220" y="166" width="60" height="30" rx="5" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="130" y="185" text-anchor="middle" class="small">{t('same', '相同')} {HYBRID_SYSTEM_TOKENS.toLocaleString()}</text>
+            <text x="250" y="185" text-anchor="middle" class="small">{t('new', '新')}{HYBRID_USER_TOKENS}</text>
+          </g>
 
-          <text x="20" y="229" class="small strong">{t('new request’s KV slots', '新请求的 KV 槽位')}</text>
-          <rect x="40" y="242" width="180" height="33" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <rect x="220" y="242" width="60" height="33" rx="5" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="130" y="263" text-anchor="middle" class="small">{t('reuse', '复用')} {HYBRID_SYSTEM_TOKENS.toLocaleString()}</text>
-          <text x="250" y="263" text-anchor="middle" class="small">{HYBRID_USER_TOKENS} {t('new', '新增')}</text>
-          <rect x="220" y="287" width="60" height="19" rx="4" fill="url(#released-tail)" stroke="var(--muted)" stroke-dasharray="4 3" />
-          <text x="150" y="325" text-anchor="middle" class="small">{t('hatched old tail is released', '斜线旧尾部释放')}</text>
+          <g opacity={phase >= 2 ? 1 : 0} >
+            <text x="20" y="229" class="small strong">{t('new request’s KV slots', '新请求的 KV 槽位')}</text>
+            <rect x="40" y="242" width="180" height="33" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <rect x="220" y="242" width="60" height="33" rx="5" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="130" y="263" text-anchor="middle" class="small">{t('reuse', '复用')} {HYBRID_SYSTEM_TOKENS.toLocaleString()}</text>
+            <text x="250" y="263" text-anchor="middle" class="small">{HYBRID_USER_TOKENS} {t('new', '新增')}</text>
+            <rect x="220" y="287" width="60" height="19" rx="4" fill="url(#released-tail)" stroke="var(--muted)" stroke-dasharray="4 3" />
+            <text x="150" y="325" text-anchor="middle" class="small">{t('hatched old tail is released', '斜线旧尾部释放')}</text>
+          </g>
 
-          <text x="150" y="355" text-anchor="middle" class="result">{HYBRID_PROMPT_TOKENS.toLocaleString()} − {HYBRID_SYSTEM_TOKENS.toLocaleString()} = {HYBRID_FULL_ATTENTION_NEW_TOKENS}</text>
-          <text x="150" y="382" text-anchor="middle" class="small">{t('40 tokens to prefill', '40 个 token 要 prefill')}</text>
-          <text x="150" y="409" text-anchor="middle" class="small">{t('blue = reuse · orange = compute', '蓝 = 复用 · 橙 = 计算')}</text>
+          <g opacity={phase >= 3 ? 1 : 0} >
+            <text x="150" y="355" text-anchor="middle" class="result">{HYBRID_PROMPT_TOKENS.toLocaleString()} − {HYBRID_SYSTEM_TOKENS.toLocaleString()} = {HYBRID_FULL_ATTENTION_NEW_TOKENS}</text>
+            <text x="150" y="382" text-anchor="middle" class="small">{t('40 tokens to prefill', '40 个 token 要 prefill')}</text>
+            <text x="150" y="409" text-anchor="middle" class="small">{t('blue = reuse · orange = compute', '蓝 = 复用 · 橙 = 计算')}</text>
+          </g>
         {/if}
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('Block widths are schematic.', '色块宽度是示意。')}</text>
       {:else if step === 2}
@@ -167,54 +221,63 @@
 
           <text x="40" y="84" class="small strong">{t('tokens already processed', '已经处理的 token')}</text>
           <rect x="40" y="95" width="330" height="35" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <rect x="370" y="95" width="90" height="35" rx="5" fill="var(--bg)" stroke="var(--muted)" stroke-dasharray="5 3" />
+          <g opacity={phase >= 1 ? 1 : 0} >
+            <rect x="370" y="95" width="90" height="35" rx="5" fill="var(--bg)" stroke="var(--muted)" stroke-dasharray="5 3" />
+            <text x="415" y="117" text-anchor="middle" class="small">{t('old user', '旧 user')} · {HYBRID_USER_TOKENS}</text>
+            <line x1="468" y1="112" x2="520" y2="112" stroke="var(--gen)" stroke-width="3" />
+            <path d="M520,112 l-11,-7 v14 z" fill="var(--gen)" />
+          </g>
           <text x="205" y="117" text-anchor="middle" class="small">system · {HYBRID_SYSTEM_TOKENS.toLocaleString()}</text>
-          <text x="415" y="117" text-anchor="middle" class="small">{t('old user', '旧 user')} · {HYBRID_USER_TOKENS}</text>
-          <line x1="468" y1="112" x2="520" y2="112" stroke="var(--gen)" stroke-width="3" />
-          <path d="M520,112 l-11,-7 v14 z" fill="var(--gen)" />
           <rect x="530" y="75" width="150" height="95" rx="12" fill="var(--gen-soft)" stroke="var(--gen)" stroke-width="2" />
           <text x="605" y="103" text-anchor="middle" class="small strong">{t('current state', '当前 state')}</text>
-          <text x="605" y="132" text-anchor="middle" class="batch">{t('after', '处理到')} {HYBRID_PROMPT_TOKENS.toLocaleString()}</text>
-          <text x="605" y="154" text-anchor="middle" class="small">system + {t('old', '旧')} {HYBRID_USER_TOKENS}</text>
+          <text x="605" y="132" text-anchor="middle" class="batch">{t('after', '处理到')} {(phase >= 1 ? HYBRID_PROMPT_TOKENS : HYBRID_SYSTEM_TOKENS).toLocaleString()}</text>
+          <text x="605" y="154" text-anchor="middle" class="small">{phase >= 1 ? `system + ${t('old', '旧')} ${HYBRID_USER_TOKENS}` : 'system'}</text>
 
-          <rect x="40" y="210" width="300" height="105" rx="12" fill="var(--bg)" stroke="var(--line)" />
-          <text x="190" y="240" text-anchor="middle" class="small strong">{t('token matching still works', 'token 匹配仍然有效')}</text>
-          <text x="190" y="269" text-anchor="middle" class="small">{t('first 5,500 tokens are identical', '前 5,500 个 token 完全相同')}</text>
-          <text x="190" y="296" text-anchor="middle" class="small">{t('matching content ≠ having its old state', '内容相同 ≠ 留着当时 state')}</text>
+          <g opacity={phase >= 2 ? 1 : 0} >
+            <rect x="40" y="210" width="300" height="105" rx="12" fill="var(--bg)" stroke="var(--line)" />
+            <text x="190" y="240" text-anchor="middle" class="small strong">{t('token matching still works', 'token 匹配仍然有效')}</text>
+            <text x="190" y="269" text-anchor="middle" class="small">{t('first 5,500 tokens are identical', '前 5,500 个 token 完全相同')}</text>
+            <text x="190" y="296" text-anchor="middle" class="small">{t('matching content ≠ having its old state', '内容相同 ≠ 留着当时 state')}</text>
+          </g>
 
-          <line x1="605" y1="171" x2="605" y2="216" stroke="var(--eos)" stroke-width="2" stroke-dasharray="5 4" />
-          <path d="M596,187 l18,18 M614,187 l-18,18" stroke="var(--eos)" stroke-width="3" />
-          <rect x="390" y="220" width="290" height="95" rx="12" fill="var(--eos-soft)" stroke="var(--eos)" stroke-dasharray="6 4" />
-          <text x="535" y="250" text-anchor="middle" class="small strong">{t('needed for the new request', '新请求需要')}</text>
-          <text x="535" y="278" text-anchor="middle" class="batch">{t('state after', '处理到')} {HYBRID_SYSTEM_TOKENS.toLocaleString()}</text>
-          <text x="535" y="301" text-anchor="middle" class="small unavailable">{t('not saved; cannot subtract old 40', '没有另存；不能减去旧 40')}</text>
-
-          <text x="360" y="351" text-anchor="middle" class="small">{t('The current summary includes the old tail; earlier summaries were not saved.', '当前摘要已包含旧尾部；更早的摘要没有另存。')}</text>
+          <g opacity={phase >= 3 ? 1 : 0} >
+            <line x1="605" y1="171" x2="605" y2="216" stroke="var(--eos)" stroke-width="2" stroke-dasharray="5 4" />
+            <path d="M596,187 l18,18 M614,187 l-18,18" stroke="var(--eos)" stroke-width="3" />
+            <rect x="390" y="220" width="290" height="95" rx="12" fill="var(--eos-soft)" stroke="var(--eos)" stroke-dasharray="6 4" />
+            <text x="535" y="250" text-anchor="middle" class="small strong">{t('needed for the new request', '新请求需要')}</text>
+            <text x="535" y="278" text-anchor="middle" class="batch">{t('state after', '处理到')} {HYBRID_SYSTEM_TOKENS.toLocaleString()}</text>
+            <text x="535" y="301" text-anchor="middle" class="small unavailable">{t('not saved; cannot subtract old 40', '没有另存；不能减去旧 40')}</text>
+            <text x="360" y="351" text-anchor="middle" class="small">{t('The current summary includes the old tail; earlier summaries were not saved.', '当前摘要已包含旧尾部；更早的摘要没有另存。')}</text>
+          </g>
         {:else}
           <text x="18" y="27" class="title">{t('Recurrent state', 'recurrent state')}</text>
           <text x="18" y="51" class="small">{t('one fixed-size running summary', '一份定长、不断更新的摘要')}</text>
 
           <text x="20" y="80" class="small strong">{t('tokens already processed', '已经处理的 token')}</text>
           <rect x="20" y="91" width="190" height="32" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <rect x="210" y="91" width="70" height="32" rx="5" fill="var(--bg)" stroke="var(--muted)" stroke-dasharray="5 3" />
+          <g opacity={phase >= 1 ? 1 : 0} >
+            <rect x="210" y="91" width="70" height="32" rx="5" fill="var(--bg)" stroke="var(--muted)" stroke-dasharray="5 3" />
+            <text x="245" y="111" text-anchor="middle" class="small">{t('old', '旧')}{HYBRID_USER_TOKENS}</text>
+            <line x1="150" y1="124" x2="150" y2="143" stroke="var(--gen)" stroke-width="3" />
+            <path d="M150,145 l-7,-11 h14 z" fill="var(--gen)" />
+          </g>
           <text x="115" y="111" text-anchor="middle" class="small">system {HYBRID_SYSTEM_TOKENS.toLocaleString()}</text>
-          <text x="245" y="111" text-anchor="middle" class="small">{t('old', '旧')} {HYBRID_USER_TOKENS}</text>
-          <line x1="150" y1="124" x2="150" y2="143" stroke="var(--gen)" stroke-width="3" />
-          <path d="M150,145 l-7,-11 h14 z" fill="var(--gen)" />
 
           <rect x="45" y="148" width="210" height="72" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" stroke-width="2" />
           <text x="150" y="171" text-anchor="middle" class="small strong">{t('current state', '当前 state')}</text>
-          <text x="150" y="194" text-anchor="middle" class="batch">{t('after', '处理到')} {HYBRID_PROMPT_TOKENS.toLocaleString()}</text>
-          <text x="150" y="212" text-anchor="middle" class="small">system + {t('old', '旧')} {HYBRID_USER_TOKENS}</text>
+          <text x="150" y="194" text-anchor="middle" class="batch">{t('after', '处理到')} {(phase >= 1 ? HYBRID_PROMPT_TOKENS : HYBRID_SYSTEM_TOKENS).toLocaleString()}</text>
+          <text x="150" y="212" text-anchor="middle" class="small">{phase >= 1 ? `system + ${t('old', '旧')} ${HYBRID_USER_TOKENS}` : 'system'}</text>
 
-          <path d="M140,225 l20,20 M160,225 l-20,20" stroke="var(--eos)" stroke-width="3" />
-          <rect x="45" y="249" width="210" height="68" rx="11" fill="var(--eos-soft)" stroke="var(--eos)" stroke-dasharray="6 4" />
-          <text x="150" y="273" text-anchor="middle" class="small strong">{t('new request needs', '新请求需要')}</text>
-          <text x="150" y="296" text-anchor="middle" class="batch">{t('state after', '处理到')} {HYBRID_SYSTEM_TOKENS.toLocaleString()}</text>
-          <text x="150" y="312" text-anchor="middle" class="small unavailable">{t('not saved', '没有另存')}</text>
+          <g opacity={phase >= 3 ? 1 : 0} >
+            <path d="M140,225 l20,20 M160,225 l-20,20" stroke="var(--eos)" stroke-width="3" />
+            <rect x="45" y="249" width="210" height="68" rx="11" fill="var(--eos-soft)" stroke="var(--eos)" stroke-dasharray="6 4" />
+            <text x="150" y="273" text-anchor="middle" class="small strong">{t('new request needs', '新请求需要')}</text>
+            <text x="150" y="296" text-anchor="middle" class="batch">{t('state after', '处理到')} {HYBRID_SYSTEM_TOKENS.toLocaleString()}</text>
+            <text x="150" y="312" text-anchor="middle" class="small unavailable">{t('not saved', '没有另存')}</text>
+          </g>
 
-          <text x="150" y="347" text-anchor="middle" class="small">{t('token match: first 5,500 still same', 'token 匹配：前 5,500 仍相同')}</text>
-          <text x="150" y="374" text-anchor="middle" class="small">{t('current state already includes old 40', '当前 state 已包含旧 40')}</text>
+          <text x="150" y="347" text-anchor="middle" class="small" opacity={phase >= 2 ? 1 : 0}>{t('token match: first 5,500 still same', 'token 匹配：前 5,500 仍相同')}</text>
+          <text x="150" y="374" text-anchor="middle" class="small" opacity={phase >= 1 ? 1 : 0}>{t('current state already includes old 40', '当前 state 已包含旧 40')}</text>
         {/if}
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('Earlier states require separately saved copies.', '更早的 state 需要另外保存副本。')}</text>
       {:else if step === 3}
@@ -230,27 +293,34 @@
           <line x1="200" y1="129" x2="200" y2="151" stroke="var(--fg)" stroke-width="2" />
           <text x="200" y="169" text-anchor="middle" class="batch">{HYBRID_LOG_CHECKPOINT_TOKENS.toLocaleString()}</text>
 
-          <line x1="430" y1="104" x2="430" y2="153" stroke="var(--accent)" stroke-width="3" />
-          <text x="430" y="89" text-anchor="middle" class="small strong">{t('match ends · no copy', '匹配结束 · 没有副本')}</text>
-          <text x="430" y="169" text-anchor="middle" class="batch">{HYBRID_LOG_MATCH_TOKENS.toLocaleString()}</text>
+          <g opacity={phase >= 1 ? 1 : 0} >
+            <line x1="430" y1="104" x2="430" y2="153" stroke="var(--accent)" stroke-width="3" />
+            <text x="430" y="89" text-anchor="middle" class="small strong">{t('match ends · no copy', '匹配结束 · 没有副本')}</text>
+            <text x="430" y="169" text-anchor="middle" class="batch">{HYBRID_LOG_MATCH_TOKENS.toLocaleString()}</text>
+            <line x1="660" y1="119" x2="660" y2="153" stroke="var(--fg)" stroke-width="2" />
+            <text x="660" y="99" text-anchor="middle" class="small strong">{t('new end', '新末尾')}</text>
+            <text x="660" y="169" text-anchor="middle" class="batch">{HYBRID_LOG_END_TOKENS.toLocaleString()}</text>
+          </g>
 
-          <text x="490" y="124" text-anchor="middle" class="small">{HYBRID_LOG_NEW_TOKENS} {t('new', '新增')}</text>
-          <path d="M563 122 l14 14 M577 122 l-14 14" stroke="var(--eos)" stroke-width="3" />
-          <text x="570" y="99" text-anchor="middle" class="small unavailable">{t('old-tail copy', '旧尾部副本')}</text>
-          <text x="570" y="169" text-anchor="middle" class="small unavailable">{t('rejected', '不可用')}</text>
-          <text x="570" y="190" text-anchor="middle" class="small">{t('after match', '越过匹配')}</text>
+          <g opacity={phase >= 2 ? 1 : 0} >
+            <text x="490" y="124" text-anchor="middle" class="small">{HYBRID_LOG_NEW_TOKENS} {t('new', '新增')}</text>
+            <path d="M563 122 l14 14 M577 122 l-14 14" stroke="var(--eos)" stroke-width="3" />
+            <text x="570" y="99" text-anchor="middle" class="small unavailable">{t('old-tail copy', '旧尾部副本')}</text>
+            <text x="570" y="169" text-anchor="middle" class="small unavailable">{t('rejected', '不可用')}</text>
+            <text x="570" y="190" text-anchor="middle" class="small">{t('after match', '越过匹配')}</text>
+          </g>
 
-          <line x1="660" y1="119" x2="660" y2="153" stroke="var(--fg)" stroke-width="2" />
-          <text x="660" y="99" text-anchor="middle" class="small strong">{t('new end', '新末尾')}</text>
-          <text x="660" y="169" text-anchor="middle" class="batch">{HYBRID_LOG_END_TOKENS.toLocaleString()}</text>
-
-          <line x1="200" y1="215" x2="660" y2="215" stroke="var(--gen)" stroke-width="4" />
-          <path d="M660,215 l-13,-8 v16 z" fill="var(--gen)" />
-          <text x="430" y="246" text-anchor="middle" class="result">{HYBRID_LOG_END_TOKENS.toLocaleString()} − {HYBRID_LOG_CHECKPOINT_TOKENS.toLocaleString()} = {HYBRID_LOG_REPLAY_POSITIONS.toLocaleString()} {t('positions', '个位置')}</text>
-          <text x="430" y="274" text-anchor="middle" class="small">{t('log: about', '日志：约')} {HYBRID_LOG_RECOMPUTE_APPROX.toLocaleString()} {t('recomputed tokens', '个重算 token')}</text>
-          <text x="430" y="299" text-anchor="middle" class="small">{HYBRID_LOG_NEW_TOKENS} {t('new', '新增')} + ≈{HYBRID_LOG_EXTRA_APPROX} {t('revisited', '个重走')}</text>
-          <rect x="90" y="316" width="540" height="43" rx="10" fill="var(--bg)" stroke="var(--line)" />
-          <text x="360" y="343" text-anchor="middle" class="small strong">{t('restore at 4,536 · recompute through 5,558', '从 4,536 恢复 · 重算到 5,558')}</text>
+          {#if phase >= 3}
+            <line x1="200" y1="215" x2={replayX} y2="215" stroke="var(--gen)" stroke-width="4" style="transition: x2 700ms" />
+            <path d={`M${replayX},215 l-13,-8 v16 z`} fill="var(--gen)" style="transition: d 700ms" />
+            <text x="430" y="246" text-anchor="middle" class="result">{phase >= 4 ? `${HYBRID_LOG_END_TOKENS.toLocaleString()} − ${HYBRID_LOG_CHECKPOINT_TOKENS.toLocaleString()} = ${HYBRID_LOG_REPLAY_POSITIONS.toLocaleString()} ${t('positions', '个位置')}` : `${replayed.toLocaleString()} / ${HYBRID_LOG_REPLAY_POSITIONS.toLocaleString()} ${t('positions replayed', '个位置已重算')}`}</text>
+          {/if}
+          <g opacity={phase >= 4 ? 1 : 0} >
+            <text x="430" y="274" text-anchor="middle" class="small">{t('log: about', '日志：约')} {HYBRID_LOG_RECOMPUTE_APPROX.toLocaleString()} {t('recomputed tokens', '个重算 token')}</text>
+            <text x="430" y="299" text-anchor="middle" class="small">{HYBRID_LOG_NEW_TOKENS} {t('new', '新增')} + ≈{HYBRID_LOG_EXTRA_APPROX} {t('revisited', '个重走')}</text>
+            <rect x="90" y="316" width="540" height="43" rx="10" fill="var(--bg)" stroke="var(--line)" />
+            <text x="360" y="343" text-anchor="middle" class="small strong">{t('restore at 4,536 · recompute through 5,558', '从 4,536 恢复 · 重算到 5,558')}</text>
+          </g>
         {:else}
           <text x="18" y="27" class="title">{t('Checkpoint', 'checkpoint')}</text>
           <text x="18" y="51" class="small">{t('a copy of the whole state at one position', '某个位置的整份 state 副本')}</text>
@@ -262,22 +332,30 @@
           <path d="M63 104 h14 v22 l-7 -5 -7 5 z" fill="var(--fg)" />
           <text x="70" y="94" text-anchor="middle" class="small">{t('saved', '已存')}</text>
           <text x="70" y="181" text-anchor="middle" class="batch">{HYBRID_LOG_CHECKPOINT_TOKENS.toLocaleString()}</text>
-          <line x1="175" y1="107" x2="175" y2="148" stroke="var(--accent)" stroke-width="3" />
-          <text x="165" y="98" text-anchor="middle" class="small">{t('no copy', '无副本')}</text>
-          <text x="175" y="160" text-anchor="middle" class="batch">{HYBRID_LOG_MATCH_TOKENS.toLocaleString()}</text>
-          <text x="230" y="105" text-anchor="middle" class="small">{HYBRID_LOG_NEW_TOKENS} {t('new', '新增')}</text>
-          <path d="M218 127 l14 14 M232 127 l-14 14" stroke="var(--eos)" stroke-width="3" />
-          <text x="225" y="181" text-anchor="middle" class="small unavailable">{t('old copy ×', '旧副本 ×')}</text>
-          <text x="225" y="202" text-anchor="middle" class="small">{t('after match', '越过匹配')}</text>
-          <text x="275" y="160" text-anchor="middle" class="batch">{HYBRID_LOG_END_TOKENS.toLocaleString()}</text>
+          <g opacity={phase >= 1 ? 1 : 0} >
+            <line x1="175" y1="107" x2="175" y2="148" stroke="var(--accent)" stroke-width="3" />
+            <text x="165" y="98" text-anchor="middle" class="small">{t('no copy', '无副本')}</text>
+            <text x="175" y="160" text-anchor="middle" class="batch">{HYBRID_LOG_MATCH_TOKENS.toLocaleString()}</text>
+            <text x="275" y="160" text-anchor="middle" class="batch">{HYBRID_LOG_END_TOKENS.toLocaleString()}</text>
+          </g>
+          <g opacity={phase >= 2 ? 1 : 0} >
+            <text x="230" y="105" text-anchor="middle" class="small">{HYBRID_LOG_NEW_TOKENS} {t('new', '新增')}</text>
+            <path d="M218 127 l14 14 M232 127 l-14 14" stroke="var(--eos)" stroke-width="3" />
+            <text x="225" y="181" text-anchor="middle" class="small unavailable">{t('old copy ×', '旧副本 ×')}</text>
+            <text x="225" y="202" text-anchor="middle" class="small">{t('after match', '越过匹配')}</text>
+          </g>
 
-          <line x1="70" y1="224" x2="270" y2="224" stroke="var(--gen)" stroke-width="4" />
-          <path d="M270,224 l-12,-7 v14 z" fill="var(--gen)" />
-          <text x="150" y="253" text-anchor="middle" class="result">{HYBRID_LOG_END_TOKENS.toLocaleString()} − {HYBRID_LOG_CHECKPOINT_TOKENS.toLocaleString()} = {HYBRID_LOG_REPLAY_POSITIONS.toLocaleString()}</text>
-          <text x="150" y="280" text-anchor="middle" class="small">≈{HYBRID_LOG_RECOMPUTE_APPROX.toLocaleString()} {t('recomputed tokens in log', '个重算 token（日志）')}</text>
-          <text x="150" y="304" text-anchor="middle" class="small">{HYBRID_LOG_NEW_TOKENS} {t('new', '新增')} + ≈{HYBRID_LOG_EXTRA_APPROX} {t('revisited', '个重走')}</text>
-          <text x="150" y="341" text-anchor="middle" class="small strong">{t('restore newest usable copy', '恢复最新可用副本')}</text>
-          <text x="150" y="366" text-anchor="middle" class="small">{t('then recompute to the new prompt end', '再重算到新 prompt 末尾')}</text>
+          {#if phase >= 3}
+            <line x1="70" y1="224" x2={replayPhoneX} y2="224" stroke="var(--gen)" stroke-width="4" />
+            <path d={`M${replayPhoneX},224 l-12,-7 v14 z`} fill="var(--gen)" />
+            <text x="150" y="253" text-anchor="middle" class="result">{phase >= 4 ? `${HYBRID_LOG_END_TOKENS.toLocaleString()} − ${HYBRID_LOG_CHECKPOINT_TOKENS.toLocaleString()} = ${HYBRID_LOG_REPLAY_POSITIONS.toLocaleString()}` : `${replayed} / ${HYBRID_LOG_REPLAY_POSITIONS.toLocaleString()}`}</text>
+          {/if}
+          <g opacity={phase >= 4 ? 1 : 0} >
+            <text x="150" y="280" text-anchor="middle" class="small">≈{HYBRID_LOG_RECOMPUTE_APPROX.toLocaleString()} {t('recomputed tokens in log', '个重算 token（日志）')}</text>
+            <text x="150" y="304" text-anchor="middle" class="small">{HYBRID_LOG_NEW_TOKENS} {t('new', '新增')} + ≈{HYBRID_LOG_EXTRA_APPROX} {t('revisited', '个重走')}</text>
+            <text x="150" y="341" text-anchor="middle" class="small strong">{t('restore newest usable copy', '恢复最新可用副本')}</text>
+            <text x="150" y="366" text-anchor="middle" class="small">{t('then recompute to the new prompt end', '再重算到新 prompt 末尾')}</text>
+          </g>
         {/if}
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('Positions are schematic; 1,022 is position arithmetic.', '位置间距是示意；1,022 是位置算式。')}</text>
       {:else if step === 4}
@@ -288,28 +366,34 @@
           <text x="480" y="86" text-anchor="middle" class="batch">M · {t('match', '匹配结束')} {HYBRID_LOG_MATCH_TOKENS.toLocaleString()}</text>
           <text x="640" y="86" text-anchor="middle" class="batch">E · {t('end', '新末尾')} {HYBRID_LOG_END_TOKENS.toLocaleString()}</text>
 
-          <text x="40" y="126" class="small strong">{t('full-attention layers', '全注意力 layer')}</text>
-          <rect x="170" y="103" width="310" height="30" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <rect x="480" y="103" width="160" height="30" rx="5" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="325" y="123" text-anchor="middle" class="small">{t('KV can reuse through M', 'KV 可复用到 M')}</text>
-          <text x="560" y="123" text-anchor="middle" class="small">{HYBRID_LOG_NEW_TOKENS} {t('new', '新增')}</text>
-          <text x="360" y="157" text-anchor="middle" class="small">{t('token matching reaches 5,514', 'token 匹配走到 5,514')}</text>
+          <g opacity={phase >= 1 ? 1 : 0} >
+            <text x="40" y="126" class="small strong">{t('full-attention layers', '全注意力 layer')}</text>
+            <rect x="170" y="103" width="310" height="30" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <rect x="480" y="103" width="160" height="30" rx="5" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="325" y="123" text-anchor="middle" class="small">{t('KV can reuse through M', 'KV 可复用到 M')}</text>
+            <text x="560" y="123" text-anchor="middle" class="small">{HYBRID_LOG_NEW_TOKENS} {t('new', '新增')}</text>
+            <text x="360" y="157" text-anchor="middle" class="small">{t('token matching reaches 5,514', 'token 匹配走到 5,514')}</text>
+          </g>
 
-          <text x="40" y="204" class="small strong">{t('recurrent layers', 'recurrent layer')}</text>
-          <line x1="230" y1="190" x2="640" y2="190" stroke="var(--gen)" stroke-width="4" />
-          <path d="M640,190 l-12,-7 v14 z" fill="var(--gen)" />
-          <rect x="194" y="169" width="72" height="42" rx="8" fill="var(--panel)" stroke="var(--fg)" stroke-width="2" />
-          <text x="230" y="195" text-anchor="middle" class="small strong">{t('state P', 'state P')}</text>
-          <rect x="455" y="174" width="50" height="32" rx="6" fill="var(--bg)" stroke="var(--eos)" stroke-dasharray="5 3" />
-          <path d="M466 181 l16 16 M482 181 l-16 16" stroke="var(--eos)" stroke-width="2" />
-          <text x="435" y="234" text-anchor="middle" class="small">{t('newest surviving state at P · none at M', '最新存留 state 在 P · M 没有')}</text>
+          <g opacity={phase >= 2 ? 1 : 0} >
+            <text x="40" y="204" class="small strong">{t('recurrent layers', 'recurrent layer')}</text>
+            <line x1="230" y1="190" x2="640" y2="190" stroke="var(--gen)" stroke-width="4" />
+            <path d="M640,190 l-12,-7 v14 z" fill="var(--gen)" />
+            <rect x="194" y="169" width="72" height="42" rx="8" fill="var(--panel)" stroke="var(--fg)" stroke-width="2" />
+            <text x="230" y="195" text-anchor="middle" class="small strong">{t('state P', 'state P')}</text>
+            <rect x="455" y="174" width="50" height="32" rx="6" fill="var(--bg)" stroke="var(--eos)" stroke-dasharray="5 3" />
+            <path d="M466 181 l16 16 M482 181 l-16 16" stroke="var(--eos)" stroke-width="2" />
+            <text x="435" y="234" text-anchor="middle" class="small">{t('newest surviving state at P · none at M', '最新存留 state 在 P · M 没有')}</text>
+          </g>
 
-          <text x="40" y="287" class="small strong">{t('hybrid match result', 'hybrid 匹配结果')}</text>
-          <rect x="170" y="260" width="60" height="34" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <rect x="230" y="260" width="410" height="34" rx="5" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="435" y="282" text-anchor="middle" class="small strong">{t('resume at P · compute through E', '从 P 恢复 · 计算到 E')}</text>
-          <text x="360" y="328" text-anchor="middle" class="result">value[:best_value_len] → P = {HYBRID_LOG_CHECKPOINT_TOKENS.toLocaleString()}</text>
-          <text x="360" y="355" text-anchor="middle" class="small">E − P = {HYBRID_LOG_REPLAY_POSITIONS.toLocaleString()} {t('positions to prefill', '个位置要 prefill')}</text>
+          <g opacity={phase >= 3 ? 1 : 0} >
+            <text x="40" y="287" class="small strong">{t('hybrid match result', 'hybrid 匹配结果')}</text>
+            <rect x="170" y="260" width="60" height="34" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <rect x="230" y="260" width="410" height="34" rx="5" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="435" y="282" text-anchor="middle" class="small strong">{t('resume at P · compute through E', '从 P 恢复 · 计算到 E')}</text>
+            <text x="360" y="328" text-anchor="middle" class="result">value[:best_value_len] → P = {HYBRID_LOG_CHECKPOINT_TOKENS.toLocaleString()}</text>
+            <text x="360" y="355" text-anchor="middle" class="small">E − P = {HYBRID_LOG_REPLAY_POSITIONS.toLocaleString()} {t('positions to prefill', '个位置要 prefill')}</text>
+          </g>
         {:else}
           <text x="18" y="27" class="title">{t('Hybrid', 'hybrid')}</text>
           <text x="18" y="51" class="small">{t('one resume point for both layer kinds', '两类 layer 共用一个恢复点')}</text>
@@ -320,24 +404,30 @@
           <text x="150" y="95" text-anchor="middle" class="batch">{HYBRID_LOG_MATCH_TOKENS.toLocaleString()}</text>
           <text x="245" y="95" text-anchor="middle" class="batch">{HYBRID_LOG_END_TOKENS.toLocaleString()}</text>
 
-          <text x="20" y="112" class="small strong">{t('full attention', '全注意力')}</text>
-          <rect x="30" y="124" width="150" height="26" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <rect x="180" y="124" width="90" height="26" rx="5" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="150" y="172" text-anchor="middle" class="small">{t('KV can reuse through M', 'KV 可复用到 M')}</text>
+          <g opacity={phase >= 1 ? 1 : 0} >
+            <text x="20" y="112" class="small strong">{t('full attention', '全注意力')}</text>
+            <rect x="30" y="124" width="150" height="26" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <rect x="180" y="124" width="90" height="26" rx="5" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="150" y="172" text-anchor="middle" class="small">{t('KV can reuse through M', 'KV 可复用到 M')}</text>
+          </g>
 
-          <text x="20" y="207" class="small strong">{t('recurrent state', 'recurrent state')}</text>
-          <line x1="70" y1="226" x2="265" y2="226" stroke="var(--gen)" stroke-width="4" />
-          <path d="M265,226 l-11,-7 v14 z" fill="var(--gen)" />
-          <rect x="40" y="207" width="60" height="38" rx="7" fill="var(--panel)" stroke="var(--fg)" stroke-width="2" />
-          <text x="70" y="231" text-anchor="middle" class="small">{t('state P', 'state P')}</text>
-          <text x="150" y="267" text-anchor="middle" class="small">{t('newest state at P · none at M', '最新 state 在 P · M 没有')}</text>
+          <g opacity={phase >= 2 ? 1 : 0} >
+            <text x="20" y="207" class="small strong">{t('recurrent state', 'recurrent state')}</text>
+            <line x1="70" y1="226" x2="265" y2="226" stroke="var(--gen)" stroke-width="4" />
+            <path d="M265,226 l-11,-7 v14 z" fill="var(--gen)" />
+            <rect x="40" y="207" width="60" height="38" rx="7" fill="var(--panel)" stroke="var(--fg)" stroke-width="2" />
+            <text x="70" y="231" text-anchor="middle" class="small">{t('state P', 'state P')}</text>
+            <text x="150" y="267" text-anchor="middle" class="small">{t('newest state at P · none at M', '最新 state 在 P · M 没有')}</text>
+          </g>
 
-          <text x="20" y="301" class="small strong">{t('hybrid result', 'hybrid 结果')}</text>
-          <rect x="30" y="312" width="40" height="29" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <rect x="70" y="312" width="200" height="29" rx="5" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="170" y="332" text-anchor="middle" class="small">{t('resume P → compute E', '恢复 P → 算到 E')}</text>
-          <text x="150" y="374" text-anchor="middle" class="result">{t('reusable KV ends at P', '可复用 KV 截到 P')}</text>
-          <text x="150" y="401" text-anchor="middle" class="small">E − P = {HYBRID_LOG_REPLAY_POSITIONS.toLocaleString()} {t('positions', '个位置')}</text>
+          <g opacity={phase >= 3 ? 1 : 0} >
+            <text x="20" y="301" class="small strong">{t('hybrid result', 'hybrid 结果')}</text>
+            <rect x="30" y="312" width="40" height="29" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <rect x="70" y="312" width="200" height="29" rx="5" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="170" y="332" text-anchor="middle" class="small">{t('resume P → compute E', '恢复 P → 算到 E')}</text>
+            <text x="150" y="374" text-anchor="middle" class="result">{t('reusable KV ends at P', '可复用 KV 截到 P')}</text>
+            <text x="150" y="401" text-anchor="middle" class="small">E − P = {HYBRID_LOG_REPLAY_POSITIONS.toLocaleString()} {t('positions', '个位置')}</text>
+          </g>
         {/if}
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">value = value[:best_value_len]</text>
       {:else}
@@ -354,31 +444,37 @@
           <text x="235" y="127" text-anchor="middle" class="small strong">{t('earlier prefix P', '更早前缀 P')}</text>
           <text x="235" y="151" text-anchor="middle" class="batch">{HYBRID_LOG_CHECKPOINT_TOKENS.toLocaleString()}</text>
           <text x="235" y="172" text-anchor="middle" class="small">{t('state kept ✓', 'state 保留 ✓')}</text>
-          <line x1="305" y1="141" x2="370" y2="141" stroke="var(--accent)" stroke-width="3" />
-          <path d="M370,141 l-11,-7 v14 z" fill="var(--accent)" />
+          <line x1="305" y1="141" x2="370" y2="141" stroke="var(--accent)" stroke-width="3" opacity={phase >= 1 ? 1 : 0} />
+          <path d="M370,141 l-11,-7 v14 z" fill="var(--accent)" opacity={phase >= 1 ? 1 : 0} />
 
-          <rect x="375" y="96" width="170" height="90" rx="11" fill="var(--eos-soft)" stroke="var(--eos)" stroke-width="2" stroke-dasharray="6 4" />
-          <text x="460" y="121" text-anchor="middle" class="small strong">{t('shared prefix M', '共同前缀 M')}</text>
-          <text x="460" y="145" text-anchor="middle" class="batch">{HYBRID_LOG_MATCH_TOKENS.toLocaleString()}</text>
-          <text x="460" y="166" text-anchor="middle" class="small unavailable">mamba_value = None</text>
-          <text x="460" y="204" text-anchor="middle" class="small unavailable">{t('tombstone · path only', '墓碑 · 只留路径')}</text>
+          <g opacity={phase >= 1 ? 1 : 0} >
+            <rect x="375" y="96" width="170" height="90" rx="11" fill={phase >= 2 ? 'var(--eos-soft)' : 'var(--panel)'} stroke={phase >= 2 ? 'var(--eos)' : 'var(--fg)'} stroke-width="2" stroke-dasharray={phase >= 2 ? '6 4' : '0'} />
+            <text x="460" y="121" text-anchor="middle" class="small strong">{t('shared prefix M', '共同前缀 M')}</text>
+            <text x="460" y="145" text-anchor="middle" class="batch">{HYBRID_LOG_MATCH_TOKENS.toLocaleString()}</text>
+            <text x="460" y="166" text-anchor="middle" class={phase >= 2 ? 'small unavailable' : 'small'}>{phase >= 2 ? 'mamba_value = None' : 'mamba_value = state'}</text>
+            <text x="460" y="204" text-anchor="middle" class={phase >= 2 ? 'small unavailable' : 'small'}>{phase >= 2 ? t('tombstone · path only', '墓碑 · 只留路径') : t('state available', 'state 可用')}</text>
+          </g>
 
-          <line x1="545" y1="126" x2="600" y2="88" stroke="var(--muted)" stroke-width="2" />
-          <path d="M600,88 l-11,1 6,9 z" fill="var(--muted)" />
-          <rect x="605" y="55" width="90" height="66" rx="9" fill="var(--panel)" stroke="var(--fg)" />
-          <text x="650" y="81" text-anchor="middle" class="small strong">{t('old user', '旧 user')}</text>
-          <text x="650" y="105" text-anchor="middle" class="small">{t('state kept ✓', 'state 保留 ✓')}</text>
+          <g opacity={phase >= 3 ? 1 : 0} >
+            <line x1="545" y1="126" x2="600" y2="88" stroke="var(--muted)" stroke-width="2" />
+            <path d="M600,88 l-11,1 6,9 z" fill="var(--muted)" />
+            <rect x="605" y="55" width="90" height="66" rx="9" fill="var(--panel)" stroke="var(--fg)" />
+            <text x="650" y="81" text-anchor="middle" class="small strong">{t('old user', '旧 user')}</text>
+            <text x="650" y="105" text-anchor="middle" class="small">{t('state kept ✓', 'state 保留 ✓')}</text>
 
-          <line x1="545" y1="159" x2="600" y2="194" stroke="var(--gen)" stroke-width="2" stroke-dasharray="5 3" />
-          <path d="M600,194 l-6,-10 11,1 z" fill="var(--gen)" />
-          <rect x="605" y="170" width="90" height="66" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" stroke-dasharray="5 3" />
-          <text x="650" y="195" text-anchor="middle" class="small strong">{t('new tail E', '新尾部 E')}</text>
-          <text x="650" y="219" text-anchor="middle" class="small">{t('compute', '待计算')}</text>
+            <line x1="545" y1="159" x2="600" y2="194" stroke="var(--gen)" stroke-width="2" stroke-dasharray="5 3" />
+            <path d="M600,194 l-6,-10 11,1 z" fill="var(--gen)" />
+            <rect x="605" y="170" width="90" height="66" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" stroke-dasharray="5 3" />
+            <text x="650" y="195" text-anchor="middle" class="small strong">{t('new tail E', '新尾部 E')}</text>
+            <text x="650" y="219" text-anchor="middle" class="small">{t('compute', '待计算')}</text>
+          </g>
 
-          <rect x="40" y="254" width="640" height="100" rx="12" fill="var(--bg)" stroke="var(--line)" />
-          <text x="360" y="281" text-anchor="middle" class="small strong">{t('token match still reaches M · state restore stops at P', 'token 匹配仍到 M · state 恢复停在 P')}</text>
-          <text x="360" y="309" text-anchor="middle" class="result">P → M → E · {HYBRID_LOG_REPLAY_POSITIONS.toLocaleString()} {t('positions to recompute', '个位置要重算')}</text>
-          <text x="360" y="336" text-anchor="middle" class="small">{t('old-user state cannot serve a different tail', '旧 user 的 state 不能用于不同尾部')}</text>
+          <g opacity={phase >= 4 ? 1 : 0} >
+            <rect x="40" y="254" width="640" height="100" rx="12" fill="var(--bg)" stroke="var(--line)" />
+            <text x="360" y="281" text-anchor="middle" class="small strong">{t('token match still reaches M · state restore stops at P', 'token 匹配仍到 M · state 恢复停在 P')}</text>
+            <text x="360" y="309" text-anchor="middle" class="result">P → M → E · {HYBRID_LOG_REPLAY_POSITIONS.toLocaleString()} {t('positions to recompute', '个位置要重算')}</text>
+            <text x="360" y="336" text-anchor="middle" class="small">{t('old-user state cannot serve a different tail', '旧 user 的 state 不能用于不同尾部')}</text>
+          </g>
         {:else}
           <text x="18" y="27" class="title">{t('MambaRadixCache', 'MambaRadixCache')}</text>
           <text x="18" y="51" class="small">{t('token paths and states have separate lifetimes', 'token 路径和 state 分开淘汰')}</text>
@@ -387,28 +483,34 @@
           <text x="78" y="104" text-anchor="middle" class="small strong">{t('earlier prefix P', '更早前缀 P')}</text>
           <text x="78" y="128" text-anchor="middle" class="batch">{HYBRID_LOG_CHECKPOINT_TOKENS.toLocaleString()}</text>
           <text x="78" y="149" text-anchor="middle" class="small">{t('state kept ✓', 'state 保留 ✓')}</text>
-          <line x1="140" y1="118" x2="158" y2="118" stroke="var(--accent)" stroke-width="3" />
-          <path d="M158,118 l-9,-6 v12 z" fill="var(--accent)" />
+          <line x1="140" y1="118" x2="158" y2="118" stroke="var(--accent)" stroke-width="3" opacity={phase >= 1 ? 1 : 0} />
+          <path d="M158,118 l-9,-6 v12 z" fill="var(--accent)" opacity={phase >= 1 ? 1 : 0} />
 
-          <rect x="163" y="74" width="122" height="88" rx="10" fill="var(--eos-soft)" stroke="var(--eos)" stroke-width="2" stroke-dasharray="6 4" />
-          <text x="224" y="98" text-anchor="middle" class="small strong">{t('shared prefix M', '共同前缀 M')}</text>
-          <text x="224" y="121" text-anchor="middle" class="batch">{HYBRID_LOG_MATCH_TOKENS.toLocaleString()}</text>
-          <text x="224" y="137" text-anchor="middle" class="small unavailable">state = None</text>
-          <text x="224" y="153" text-anchor="middle" class="small unavailable">{t('path-only tombstone', '墓碑：只留路径')}</text>
+          <g opacity={phase >= 1 ? 1 : 0} >
+            <rect x="163" y="74" width="122" height="88" rx="10" fill={phase >= 2 ? 'var(--eos-soft)' : 'var(--panel)'} stroke={phase >= 2 ? 'var(--eos)' : 'var(--fg)'} stroke-width="2" stroke-dasharray={phase >= 2 ? '6 4' : '0'} />
+            <text x="224" y="98" text-anchor="middle" class="small strong">{t('shared prefix M', '共同前缀 M')}</text>
+            <text x="224" y="121" text-anchor="middle" class="batch">{HYBRID_LOG_MATCH_TOKENS.toLocaleString()}</text>
+            <text x="224" y="137" text-anchor="middle" class={phase >= 2 ? 'small unavailable' : 'small'}>{phase >= 2 ? 'state = None' : 'state = saved'}</text>
+            <text x="224" y="153" text-anchor="middle" class={phase >= 2 ? 'small unavailable' : 'small'}>{phase >= 2 ? t('path-only tombstone', '墓碑：只留路径') : t('state available', 'state 可用')}</text>
+          </g>
 
-          <line x1="210" y1="162" x2="90" y2="190" stroke="var(--muted)" stroke-width="2" />
-          <rect x="30" y="190" width="105" height="57" rx="9" fill="var(--panel)" stroke="var(--fg)" />
-          <text x="83" y="214" text-anchor="middle" class="small strong">{t('old user', '旧 user')}</text>
-          <text x="83" y="236" text-anchor="middle" class="small">{t('state kept ✓', 'state 保留 ✓')}</text>
-          <line x1="238" y1="162" x2="220" y2="190" stroke="var(--gen)" stroke-width="2" stroke-dasharray="5 3" />
-          <rect x="170" y="190" width="105" height="57" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" stroke-dasharray="5 3" />
-          <text x="223" y="214" text-anchor="middle" class="small strong">{t('new tail E', '新尾部 E')}</text>
-          <text x="223" y="236" text-anchor="middle" class="small">{t('compute', '待计算')}</text>
+          <g opacity={phase >= 3 ? 1 : 0} >
+            <line x1="210" y1="162" x2="90" y2="190" stroke="var(--muted)" stroke-width="2" />
+            <rect x="30" y="190" width="105" height="57" rx="9" fill="var(--panel)" stroke="var(--fg)" />
+            <text x="83" y="214" text-anchor="middle" class="small strong">{t('old user', '旧 user')}</text>
+            <text x="83" y="236" text-anchor="middle" class="small">{t('state kept ✓', 'state 保留 ✓')}</text>
+            <line x1="238" y1="162" x2="220" y2="190" stroke="var(--gen)" stroke-width="2" stroke-dasharray="5 3" />
+            <rect x="170" y="190" width="105" height="57" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" stroke-dasharray="5 3" />
+            <text x="223" y="214" text-anchor="middle" class="small strong">{t('new tail E', '新尾部 E')}</text>
+            <text x="223" y="236" text-anchor="middle" class="small">{t('compute', '待计算')}</text>
+          </g>
 
-          <text x="150" y="281" text-anchor="middle" class="small strong">{t('match reaches M · restore stops at P', '匹配到 M · 恢复停在 P')}</text>
-          <text x="150" y="309" text-anchor="middle" class="result">P → M → E</text>
-          <text x="150" y="337" text-anchor="middle" class="small">{HYBRID_LOG_REPLAY_POSITIONS.toLocaleString()} {t('positions to recompute', '个位置要重算')}</text>
-          <text x="150" y="365" text-anchor="middle" class="small">{t('KV and children stay', 'KV 和子节点保留')}</text>
+          <g opacity={phase >= 4 ? 1 : 0} >
+            <text x="150" y="281" text-anchor="middle" class="small strong">{t('match reaches M · restore stops at P', '匹配到 M · 恢复停在 P')}</text>
+            <text x="150" y="309" text-anchor="middle" class="result">P → M → E</text>
+            <text x="150" y="337" text-anchor="middle" class="small">{HYBRID_LOG_REPLAY_POSITIONS.toLocaleString()} {t('positions to recompute', '个位置要重算')}</text>
+            <text x="150" y="365" text-anchor="middle" class="small">{t('KV and children stay', 'KV 和子节点保留')}</text>
+          </g>
         {/if}
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('A branch boundary does not guarantee a saved state.', '分叉边界不保证已经保存 state。')}</text>
       {/if}
