@@ -19,7 +19,7 @@ Step 1 reads `--rollout-batch-size 32`, `--n-samples-per-prompt 8` and `--global
 
 Step 2 follows `slime/ray/rollout_data_source.py:46-81`: the source slices 32 prompt objects, deep-copies each one eight times and assigns a different sample index. `RolloutDataSourceWithBuffer` may supply unfinished earlier groups first (`rollout_data_source.py:133-152`); the picture starts with an empty buffer and the ordinary global-dataset path.
 
-Step 3 follows `slime/rollout/sglang_rollout.py:65-131,178-194,235-310`. The request asks SGLang for token log probabilities. The returned `Sample` appends response tokens, response text, response length and `rollout_log_probs`. The eight requests in a group run asynchronously. This chapter omits partial rollout and filtering because the pictured starting state needs neither.
+Step 3 follows `slime/rollout/sglang_rollout.py:65-131,178-194,235-310`. The request asks SGLang for token log probabilities. The returned `Sample` appends response tokens, response text, response length and `rollout_log_probs`. Those per-token generation scores are not the separate whole-answer reward that the checker assigns in Step 4. The eight requests in a group run asynchronously. This chapter omits partial rollout and filtering because the pictured starting state needs neither.
 
 Step 4 uses `--rm-type deepscaler` from `run-qwen3-4B.sh:44`. `slime/rollout/rm_hub/__init__.py:29-54` dispatches to `deepscaler.py:4-42`, which returns 1 for a verified math-answer match and 0 otherwise, including missing required structure or labels. The eight scores are constructed teaching values, not measured outputs.
 
@@ -40,7 +40,7 @@ Step 8 follows `train.py:49-78`: each loop iteration waits for generation, train
 
 第 2 步依据 `slime/ray/rollout_data_source.py:46-81`：数据源切出 32 个 prompt，各深复制 8 份并分配不同样本编号。`RolloutDataSourceWithBuffer` 也可能先取早前未完成的组（`rollout_data_source.py:133-152`）；图中从空 buffer 和普通全局数据集路径开始。
 
-第 3 步依据 `slime/rollout/sglang_rollout.py:65-131,178-194,235-310`。请求让 SGLang 返回 token log probability。返回的 `Sample` 追加回答 token、文本、长度和 `rollout_log_probs`。同组 8 个请求异步执行。本章从不需要 partial rollout 或过滤的起始状态画起，不展开这两条支路。
+第 3 步依据 `slime/rollout/sglang_rollout.py:65-131,178-194,235-310`。请求让 SGLang 返回 token log probability。返回的 `Sample` 追加回答 token、文本、长度和 `rollout_log_probs`。这些逐 token 生成分数不是第 4 步检查器给整个回答的 reward。同组 8 个请求异步执行。本章从不需要 partial rollout 或过滤的起始状态画起，不展开这两条支路。
 
 第 4 步使用 `run-qwen3-4B.sh:44` 的 `--rm-type deepscaler`。`slime/rollout/rm_hub/__init__.py:29-54` 转到 `deepscaler.py:4-42`；数学答案核对成功返回 1，其余情况返回 0，包括缺少所需结构或标签。8 个分数是构造的教学值，不是实测输出。
 

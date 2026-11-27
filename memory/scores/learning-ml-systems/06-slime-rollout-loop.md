@@ -1,5 +1,14 @@
 # 第 6 章评分卡 · One RL round in slime
 
+## 2026-11-27 ML-37 · Step 3 区分两种分数
+
+- **ML-37 作者修复完成，待协调固定复审，不自行销项。** Step 3 展开一份 rollout record：`rollout_log_probs` 是模型写每个回答 token 时的分数，`reward = ?` 留给第 4 步的回答检查器填写。前者逐 token 记录，后者给整个回答打分；caption、图、双语 deep 和出处说明使用同一区分。
+- Step 3 作者复评：R1–R5 **10/10**、机制 R6 **2/2**、原十个非视觉项 **20/20**、新内容洞 **0**。R1 复述：「模型给每个回答 token 各记一个生成分数；检查器下一步才给整个回答 reward，两种分数不一样。」`log probability` 在图上解释为模型写 token 时的分数，reward 只作下一步的占位，不同时展开两种计算。
+- 四相依次显示 prompt group、SGLang rollout、8 份记录和一份完整记录，最后只在记录卡中补出字段；英中桌面各 **3/3** 个机制转变。其余七步没有教程 diff，既有协调基线和全章 verdict 不因本次作者复评改变。
+- `build`（60 页）、八步 readability、连续两次 transcript、`deep-check 06`、`zh-check`、英中全章及中文 Step 3 三宽度 mobile 均通过。transcript **1,517 词**，SHA-256 `58c569eaa3a84b8619bc12e641c9f228ae2623aad0faecb4020f52bae8c686f6`。
+- 定向审计保存 **16 个状态**：英中桌面各四相、英中 360／390／430 px 末相、双语 deep。counter 和 phase 身份正确，桌面最低 **10.194575 CSS px**，文字重叠、SVG 出界和页面横溢均为 **0**；deep 均展开，KaTeX、raw math 和抽屉横溢失败均为 **0**。证据：`.bot/out/ml37-step3-audit/report.json`，代表图 `.bot/out/ml37-step3-audit/zh-desktop-p3.png`。
+- 主线程按 transcript、组件、双语 deep 和逐相 DOM 冷读，未发现新增内容洞。当前模型不能读取 PNG，原 #4／#5、原十二项总分、图像判断和协调 verdict 留待复审。独立 `pstack-reviewer` 因配置模型不存在而未启动，未计为证据。未跑全站回归、真实 slime 训练、GPU benchmark 或 reduced-motion 动态切换。
+
 ## 2026-11-26 ML-07 静态机制返工
 
 - 八步加入 `[4,3,4,4,3,3,4,4]` 个相位，逐步机制变化数为 **3、2、3、3、2、2、3、3**。同一 prompt group 先复制，再经 rollout 形成记录；reward、居中值和归一化值依次出现；256 份记录经 controller 进入训练并产生 v1；更新完成后才出现使用 v1 的 rollout 1。

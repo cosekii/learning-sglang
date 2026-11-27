@@ -64,13 +64,14 @@ $$N_g=32\times8=256$$
 
 ## 第 3 步 · Rollout 写出回答记录
 
-**一句话。** SGLang 用 `v0` 给同组 8 个 prompt 写回答，并把 token、回答长度和生成分数留在每份记录里。
+**一句话。** SGLang 用 `v0` 给同组 8 个 prompt 写回答，并把 token、回答长度和逐 token 的 log probability 留在每份 rollout 记录里。
 
 ### 图上是什么
 
 - 橙色 `SGLANG ROLLOUT` 表示生成过程；右侧 8 个蓝框是同一 prompt 的 8 份回答记录。
-- `tokens` 依次保存问题 token ID 和新生成的回答 token ID。
-- `response_length` 只数回答 token，不把问题长度算进去。页脚提到的生成分数对应源码的 `rollout_log_probs`。
+- `tokens` 依次保存问题 token ID 和新生成的回答 token ID。`response_length` 只数回答 token，不把问题长度算进去。
+- `rollout_log_probs` 保存模型写每个回答 token 时的 log probability。它给每个 token 各记一个生成分数，不是给整个回答打分。
+- `reward = ?` 表示整个回答的另一种分数还没填写。第 4 步由回答检查器给出 reward；它不是从 `rollout_log_probs` 算出来的。
 - 同组生成任务异步执行；图中不表示它们按编号顺序完成。
 
 ### 公式与符号
@@ -83,7 +84,7 @@ $$T_s=T_{q,s}\mathbin{+\!+}T_{a,s},\qquad \ell_s=|T_{a,s}|,\qquad |P_s|=\ell_s$$
 | $T_{a,s}$ | 样本 $s$ 新生成的回答 token ID 列表 | SGLang 返回 |
 | $T_s$ | 问题与回答拼接后的完整 token 列表 | `Sample.tokens` |
 | $\ell_s$ | 回答 token 数 | `Sample.response_length` |
-| $P_s$ | 每个回答 token 的 log probability 列表 | `Sample.rollout_log_probs` |
+| $P_s$ | 模型的 log probability 列表，每个回答 token 各一项 | `Sample.rollout_log_probs` |
 | $\mathbin{+\!+}$ | 按先后顺序拼接列表 | 本步记号 |
 
 ### 代入图上的数
@@ -92,7 +93,7 @@ $$T_s=T_{q,s}\mathbin{+\!+}T_{a,s},\qquad \ell_s=|T_{a,s}|,\qquad |P_s|=\ell_s$$
 
 ### 接下来
 
-记录里已有回答，还缺用于比较的分数。下一步用 deepscaler 对照标准答案打分。
+记录里已有逐 token 的 log probability，但那不是 reward。下一步用 deepscaler 对照标准答案，另给整个回答一个 reward。
 
 来源：`slime/rollout/sglang_rollout.py:65-131,178-194`；`slime/utils/types.py:8-31`。
 

@@ -18,8 +18,8 @@
     caption: `A prompt is the question text sent to the model. The data source makes ${SLIME_SAMPLES_PER_PROMPT} copies of each prompt.`,
     captionZh: `prompt 是交给模型的问题。数据源把每个 prompt 复制 ${SLIME_SAMPLES_PER_PROMPT} 份。`,
   }, {
-    caption: 'Rollout uses the current weights to write answers. Each answer becomes a record with token IDs and its length.',
-    captionZh: 'Rollout 用当前权重写回答。每个回答都记下 token 和回答长度。',
+    caption: 'Each rollout record stores token IDs, answer length and per-token log probabilities. Reward is a separate answer score added next.',
+    captionZh: '每份 rollout 记录保存 token、长度和每个回答 token 的 log probability。reward 是下一步另加的回答分。',
   }, {
     caption: `A reward checks an answer against the expected answer. This constructed group has four 1s and four 0s.`,
     captionZh: 'Reward 按标准答案给回答打分。这组示例有 4 个 1 分和 4 个 0 分。',
@@ -80,7 +80,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [650, 570, 690, 650, 620, 650, 710, 610][step] : [400, 400, 450, 410, 450, 460, 450, 410][step]);
+  const H = $derived(phone ? [650, 570, 740, 650, 620, 650, 710, 610][step] : [400, 400, 530, 410, 450, 460, 450, 410][step]);
 </script>
 
 <figure class="viz" data-animation-step={step} data-animation-phase={phase} data-animation-final-phase={PHASE_COUNTS[step] - 1}>
@@ -198,9 +198,13 @@
             {/each}
           </g>
           <g opacity={phase >= 3 ? 1 : 0}>
-            <rect x="40" y="309" width="640" height="75" rx="11" fill="var(--accent-soft)" stroke="var(--accent)" />
-            <text x="360" y="338" text-anchor="middle" class="small strong">{t('ONE ANSWER RECORD · tokens = prompt token IDs + answer token IDs', '一份回答记录 · tokens = 问题 token + 回答 token')}</text>
-            <text x="360" y="367" text-anchor="middle" class="code">response_length = {t('number of answer tokens', '回答 token 的数量')}</text>
+            <rect x="40" y="309" width="640" height="154" rx="11" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="60" y="335" class="small strong">{t('ONE ROLLOUT RECORD · answer 0', '一份 ROLLOUT 记录 · 回答 0')}</text>
+            <text x="60" y="362" class="code">tokens = {t('prompt token IDs + answer token IDs', '问题 token ID + 回答 token ID')}</text>
+            <text x="60" y="389" class="code">response_length = {t('answer token count', '回答 token 数量')}</text>
+            <text x="60" y="416" class="code">rollout_log_probs = {t("model's score for each answer token", '模型写每个回答 token 时的分数')}</text>
+            <line x1="60" y1="429" x2="660" y2="429" stroke="var(--line)" />
+            <text x="60" y="451" class="code">reward = ? · {t('answer checker adds it in Step 4', '第 4 步检查回答后填写')}</text>
           </g>
         {:else}
           <rect x="35" y="75" width="230" height="91" rx="11" fill="var(--accent-soft)" stroke="var(--accent)" />
@@ -222,15 +226,18 @@
             {/each}
           </g>
           <g opacity={phase >= 3 ? 1 : 0}>
-            <rect x="20" y="494" width="260" height="124" rx="11" fill="var(--accent-soft)" stroke="var(--accent)" />
-            <text x="150" y="524" text-anchor="middle" class="small strong">{t('ONE ANSWER RECORD', '一份回答记录')}</text>
-            <text x="150" y="554" text-anchor="middle" class="small">tokens = prompt + answer</text>
-            <text x="150" y="582" text-anchor="middle" class="small">response_length</text>
-            <text x="150" y="606" text-anchor="middle" class="small">= {t('answer token count', '回答 token 数量')}</text>
+            <rect x="20" y="486" width="260" height="184" rx="11" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="150" y="510" text-anchor="middle" class="small strong">{t('ONE ROLLOUT RECORD · A0', '一份 ROLLOUT 记录 · A0')}</text>
+            <text x="150" y="536" text-anchor="middle" class="small">tokens = prompt + answer</text>
+            <text x="150" y="562" text-anchor="middle" class="small">response_length = {t('answer tokens', '回答 token 数')}</text>
+            <text x="150" y="588" text-anchor="middle" class="code">rollout_log_probs</text>
+            <text x="150" y="614" text-anchor="middle" class="small">= {t("model's score per answer token", '模型写每个回答 token 时的分数')}</text>
+            <text x="150" y="640" text-anchor="middle" class="small">reward = ? · {t('whole answer, Step 4', '整个回答，第 4 步填写')}</text>
+            <text x="150" y="660" text-anchor="middle" class="small">{t('not the per-token scores above', '不是上面的逐 token 分数')}</text>
           </g>
         {/if}
-        <text x={W / 2} y={phone ? 650 : 409} text-anchor="middle" class="result" opacity={phase >= 3 ? 1 : 0}>32 × 8 = 256 {t('records', '份记录')}</text>
-        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Each answer token keeps its generation score.' : 'The record also saves generation scores for each answer token.', '记录还保存每个回答 token 的生成分数。')}</text>
+        <text x={W / 2} y={phone ? 700 : 493} text-anchor="middle" class="result" opacity={phase >= 3 ? 1 : 0}>32 × 8 = 256 {t('records', '份记录')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Sample fields at slime 261ecee.', 'slime 261ecee 的 Sample 字段。')}</text>
       {:else if step === 3}
         <text x={phone ? 18 : 36} y="30" class="title">{t(phone ? 'Score each answer' : 'The reward gives every answer a raw score', phone ? '给每个回答打分' : 'Reward 给每个回答一个原始分数')}</text>
         <text x={phone ? 18 : 36} y="55" class="label">{t(phone ? 'reward = score from answer checking' : 'reward = score from checking the answer against the expected answer', 'reward = 对照标准答案后得到的分数')}</text>

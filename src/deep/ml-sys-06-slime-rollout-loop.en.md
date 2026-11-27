@@ -64,13 +64,14 @@ Source: `slime/ray/rollout_data_source.py:46-81,133-167`.
 
 ## Step 3 · Rollout writes answer records
 
-**One sentence.** SGLang uses `v0` to answer all eight copies and stores tokens, response length and generation scores in each record.
+**One sentence.** SGLang uses `v0` to answer all eight copies and stores tokens, response length and per-token log probabilities in each rollout record.
 
 ### On the stage
 
 - Orange `SGLANG ROLLOUT` marks generation; the eight blue boxes on the right are answer records for the same prompt.
-- `Tokens` stores prompt token IDs followed by newly generated answer token IDs.
-- `Response_length` counts answer tokens only. The generation scores in the footnote correspond to `rollout_log_probs` in the source.
+- `tokens` stores prompt token IDs followed by newly generated answer token IDs. `response_length` counts answer tokens only.
+- `rollout_log_probs` stores the model's log probability for writing each answer token. It contains generation scores for individual tokens, not a score for the whole answer.
+- `reward = ?` marks the separate whole-answer score that is still unassigned. The answer checker adds that reward in Step 4; SGLang does not derive it from `rollout_log_probs`.
 - The group's generation tasks run asynchronously; the figure does not claim completion in index order.
 
 ### Formula and symbols
@@ -83,7 +84,7 @@ $$T_s=T_{q,s}\mathbin{+\!+}T_{a,s},\qquad \ell_s=|T_{a,s}|,\qquad |P_s|=\ell_s$$
 | $T_{a,s}$ | New answer token IDs for sample $s$ | Returned by SGLang |
 | $T_s$ | Complete token list, prompt then answer | `Sample.tokens` |
 | $\ell_s$ | Number of answer tokens | `Sample.response_length` |
-| $P_s$ | Log probability for each answer token | `Sample.rollout_log_probs` |
+| $P_s$ | List of the model's log probabilities, one per answer token | `Sample.rollout_log_probs` |
 | $\mathbin{+\!+}$ | Concatenate lists in order | Notation introduced here |
 
 ### The numbers on the stage
@@ -92,7 +93,7 @@ Each group has eight records, so 32 groups contain $32\times8=256$ records. The 
 
 ### Next
 
-The records now contain answers but no scores for comparing them. The next step checks answers against expected answers with deepscaler.
+The records already contain per-token log probabilities, but those are not rewards. The next step adds a separate whole-answer reward by checking each answer against its expected answer with deepscaler.
 
 Sources: `slime/rollout/sglang_rollout.py:65-131,178-194`; `slime/utils/types.py:8-31`.
 
