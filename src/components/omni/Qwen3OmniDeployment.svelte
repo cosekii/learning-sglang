@@ -202,7 +202,7 @@
         <text x={phone ? 15 : 20} y="49" class="tag">modalities = {t('the output kinds you ask for', '你要求的输出种类')}</text>
         <text x={phone ? 15 : 20} y="72" class="tag">{phone ? t('blue = route · grey = not loaded or skipped', '蓝 = 路线 · 灰字 = 未加载或跳过') : t('blue = active route · grey text = speech stages not loaded or skipped', '蓝 = 实际路线 · 灰字 = 未加载或跳过的语音 stage')}</text>
         {#if phase < 2}
-          <text x={phone ? 15 : 20} y="95" class="tag strong">{t('The map names five choices; the next steps take them in order.', '先看五个选择的地图，后面按顺序逐项选择。')}</text>
+          <text x={phone ? 15 : 20} y="95" class="tag strong">{phone ? t('Five choices; the next steps follow in order.', '先看五个选择，后面按顺序逐项选择。') : t('The map names five choices; the next steps take them in order.', '先看五个选择的地图，后面按顺序逐项选择。')}</text>
           {#each axes as axis, i}
             {@const x = phone ? 15 : 20}
             {@const y = (phone ? 120 : 120) + i * (phone ? 105 : 75)}
