@@ -101,7 +101,11 @@
     ] : [{ name: stage.name, percent: stage.percent, kind: 'stage' }]),
     { name: 'outside fractions', percent: COLOCATED_FREE_PERCENT, kind: 'outside' },
   ];
-  const budgetX = (index: number, width: number) => budgetSegments.slice(0, index).reduce((sum, segment) => sum + segment.percent, 0) * width / 100;
+  const declaredBudgetSegments = [
+    ...COLOCATED_STAGE_SHARES.map((stage) => ({ name: stage.name, percent: stage.percent, kind: 'stage' })),
+    { name: 'outside fractions', percent: COLOCATED_FREE_PERCENT, kind: 'outside' },
+  ];
+  const budgetX = (index: number, width: number, segments = budgetSegments) => segments.slice(0, index).reduce((sum, segment) => sum + segment.percent, 0) * width / 100;
   const precisionOptions = [
     { name: 'BF16', bits: QWEN_BF16_BITS_PER_WEIGHT, memory: QWEN_BF16_ESTIMATED_MEMORY_GB, ratio: 100, stageA: 'thinker: BF16', stageAZh: 'thinker：BF16', stageB: 'talker AR: BF16 · code2wav: BF16 default', stageBZh: 'talker AR：BF16 · code2wav：默认 BF16' },
     { name: 'FP8', bits: QWEN_FP8_BITS_PER_WEIGHT, memory: QWEN_FP8_ESTIMATED_MEMORY_GB, ratio: QWEN_FP8_MEMORY_OF_BF16_PERCENT, stageA: 'thinker: FP8', stageAZh: 'thinker：FP8', stageB: 'talker AR: FP8 · code2wav: BF16 default', stageBZh: 'talker AR：FP8 · code2wav：默认 BF16' },
@@ -276,31 +280,35 @@
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{phone ? t('PR #1235 · H200 · thinker TP2 · code2wav fixed', 'PR #1235 · H200 · thinker TP2 · code2wav 位置不变') : t('PR #1235 · H200 · thinker TP2 · code2wav stayed on the same thinker GPU.', 'PR #1235 · H200 · thinker TP2 · code2wav 留在同一个 thinker GPU 上。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Public TP2 evidence · final TP1 plan needs A/B', '公开 TP2 证据 · 最终 TP1 方案仍需 A/B') : t('Public TP2 evidence; the final TP1 starting plan needs its own A/B comparison.', '公开 TP2 证据；最后的 TP1 起步方案仍需自己的 A/B 比较。')}</text>
       {:else if step === 3}
-        <text x={phone ? 15 : 20} y="24" class="rowlabel">{t('ONE H100 · THE THINKER SHARE IS SPLIT', '一张 H100 · THINKER 份额还要再分')}</text>
+        <text x={phone ? 15 : 20} y="24" class="rowlabel">{t(phone ? '2/5 · PLACEMENT · SPLIT THE THINKER SHARE' : '2 of 5 · PLACEMENT · ONE H100 SPLITS THE THINKER SHARE', phone ? '2/5 · 摆卡 · 拆分 THINKER 份额' : '2/5 · 摆卡 · 一张 H100 拆分 THINKER 份额')}</text>
         <text x={phone ? 15 : 20} y="49" class="tag">encoder reserve = {phone ? t('encoder headroom outside thinker AR', 'thinker AR 之外的 encoder 余量') : t('headroom for encoder work outside thinker AR', 'thinker AR 之外的 encoder 工作余量')}</text>
         <text x={phone ? 15 : 20} y="72" class="tag">{t('not the separate 2% + 2% encoder stage shares', '不是另外两个 encoder stage 各占的 2%')}</text>
-        <text x={W / 2} y="103" text-anchor="middle" class="formula">{phone ? `78%−5 points=${QWEN_THINKER_EFFECTIVE_AR_PERCENT}% AR · total=${COLOCATED_USED_PERCENT}%` : `78% − 5 percentage points = ${QWEN_THINKER_EFFECTIVE_AR_PERCENT}% AR · 2 + 2 + 78 + 10 + 2 = ${COLOCATED_USED_PERCENT}%`}</text>
+        <text x={W / 2} y="103" text-anchor="middle" class="formula">{phase === 0 ? `2 + 2 + 78 + 10 + 2 = ${COLOCATED_USED_PERCENT}%` : phone ? `78%−5 points=${QWEN_THINKER_EFFECTIVE_AR_PERCENT}% AR · total=${COLOCATED_USED_PERCENT}%` : `78% − 5 percentage points = ${QWEN_THINKER_EFFECTIVE_AR_PERCENT}% AR · 2 + 2 + 78 + 10 + 2 = ${COLOCATED_USED_PERCENT}%`}</text>
         <rect x={phone ? 15 : 20} y="125" width={phone ? 270 : 680} height="65" rx="8" fill="var(--bg)" stroke="var(--line)" />
-        {#each budgetSegments as segment, i}
-          <rect x={(phone ? 15 : 20) + budgetX(i, phone ? 270 : 680)} y="125" width={segment.percent * (phone ? 270 : 680) / 100} height="65" fill={segment.kind === 'reserve' ? 'var(--gen)' : segment.kind === 'outside' ? 'var(--bg)' : 'var(--accent)'} stroke={segment.kind === 'outside' ? 'var(--faint)' : 'none'} stroke-dasharray={segment.kind === 'outside' ? '4 3' : 'none'} />
+        {#each (phase === 0 ? declaredBudgetSegments : budgetSegments) as segment, i}
+          <rect x={(phone ? 15 : 20) + budgetX(i, phone ? 270 : 680, phase === 0 ? declaredBudgetSegments : budgetSegments)} y="125" width={segment.percent * (phone ? 270 : 680) / 100} height="65" fill={segment.kind === 'reserve' ? 'var(--gen)' : segment.kind === 'outside' ? 'var(--bg)' : 'var(--accent)'} stroke={segment.kind === 'outside' ? 'var(--faint)' : 'none'} stroke-dasharray={segment.kind === 'outside' ? '4 3' : 'none'} style="transition: x 700ms, width 700ms, fill 350ms" />
         {/each}
-        <text x={phone ? 15 : 20} y="222" class="tag strong">{t('SEGMENT', '分段')}</text>
-        <text x={phone ? 282 : 700} y="222" text-anchor="end" class="tag strong">{t('CARD SHARE', '整卡比例')}</text>
-        {#each budgetSegments as segment, i}
-          {@const y = 254 + i * (phone ? 42 : 32)}
-          <rect x={phone ? 15 : 20} y={y - 12} width="12" height="12" rx="2" fill={segment.kind === 'reserve' ? 'var(--gen)' : segment.kind === 'outside' ? 'var(--bg)' : 'var(--accent)'} stroke={segment.kind === 'outside' ? 'var(--faint)' : 'none'} />
-          <text x={phone ? 36 : 41} y={y} class={segment.name.includes('thinker') || segment.name.includes('encoder') ? 'mono strong' : 'mono'}>{segment.name}</text>
-          <text x={phone ? 282 : 700} y={y} text-anchor="end" class="formula">{segment.percent}%</text>
-        {/each}
-        <rect x={phone ? 15 : 20} y={phone ? 575 : 480} width={phone ? 270 : 680} height={phone ? 150 : 52} rx="9" fill="var(--bg)" stroke="var(--line)" />
-        {#if phone}
-          <text x="28" y="604" class="tag strong">{t('COLOCATED RULES', '同卡规则')}</text>
-          <text x="28" y="633" class="tag">{t('one common GPU · TP = 1 only', '五个 GPU stage 同卡 · 只能 TP = 1')}</text>
-          <text x="28" y="661" class="tag">{t('no in-worker process replicas', 'worker 内不能复制进程')}</text>
-          <text x="28" y="689" class="tag">{t('every GPU stage declares a budget', '每个 GPU stage 都要申报预算')}</text>
-        {:else}
-          <text x="360" y="512" text-anchor="middle" class="tag strong">{t('one GPU · TP = 1 only · no in-worker process replicas · every GPU stage declares a budget', '五个 GPU stage 同卡 · 只能 TP = 1 · worker 内不能复制进程 · 每个 GPU stage 都要申报预算')}</text>
-        {/if}
+        <g opacity={phase >= 2 ? 1 : 0} style="transition: opacity 450ms">
+          <text x={phone ? 15 : 20} y="222" class="tag strong">{t('SEGMENT', '分段')}</text>
+          <text x={phone ? 282 : 700} y="222" text-anchor="end" class="tag strong">{t('CARD SHARE', '整卡比例')}</text>
+          {#each budgetSegments as segment, i}
+            {@const y = 254 + i * (phone ? 42 : 32)}
+            <rect x={phone ? 15 : 20} y={y - 12} width="12" height="12" rx="2" fill={segment.kind === 'reserve' ? 'var(--gen)' : segment.kind === 'outside' ? 'var(--bg)' : 'var(--accent)'} stroke={segment.kind === 'outside' ? 'var(--faint)' : 'none'} />
+            <text x={phone ? 36 : 41} y={y} class={segment.name.includes('thinker') || segment.name.includes('encoder') ? 'mono strong' : 'mono'}>{segment.name}</text>
+            <text x={phone ? 282 : 700} y={y} text-anchor="end" class="formula">{segment.percent}%</text>
+          {/each}
+        </g>
+        <g opacity={phase >= 3 ? 1 : 0.12} style="transition: opacity 350ms">
+          <rect x={phone ? 15 : 20} y={phone ? 575 : 480} width={phone ? 270 : 680} height={phone ? 150 : 52} rx="9" fill="var(--bg)" stroke="var(--line)" />
+          {#if phone}
+            <text x="28" y="604" class="tag strong">{t('COLOCATED RULES', '同卡规则')}</text>
+            <text x="28" y="633" class="tag">{t('one common GPU · TP = 1 only', '五个 GPU stage 同卡 · 只能 TP = 1')}</text>
+            <text x="28" y="661" class="tag">{t('no in-worker process replicas', 'worker 内不能复制进程')}</text>
+            <text x="28" y="689" class="tag">{t('every GPU stage declares a budget', '每个 GPU stage 都要申报预算')}</text>
+          {:else}
+            <text x="360" y="512" text-anchor="middle" class="tag strong">{t('one GPU · TP = 1 only · no in-worker process replicas · every GPU stage declares a budget', '五个 GPU stage 同卡 · 只能 TP = 1 · worker 内不能复制进程 · 每个 GPU stage 都要申报预算')}</text>
+          {/if}
+        </g>
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{phone ? t('6% is undeclared, not measured free memory.', '灰色 6% 在申报比例之外，不是实测空闲显存。') : t('The 6% grey segment is outside declarations, not measured free memory.', '灰色 6% 在申报比例之外，不是实测空闲显存。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Next: choose how many bits each weight uses.', '下一步：每个权重用多少 bit。')}</text>
       {:else if step === 4}
