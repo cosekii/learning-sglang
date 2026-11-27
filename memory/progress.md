@@ -4,6 +4,9 @@
 
 ## 本轮记录
 
+- 修旧 Learning SGLang Omni 第 11 章的 Omni-48／66／67：Steps 1／4 统一为 Slow sample→reset＋Fast call 0→`sem_id/c0`→Fast calls 1–9，Step 5 先重置 Fast KV 再进入下一次 Slow 输入；Step 1 补 `preprocessing → tts_engine → vocoder` locator，并用 22 个非结束接受帧、45,056 个采样点、约 1.022 秒和 220 次 Fast 调用补回生成规模。教程提交为 `6f53cbc`、`9ae66a2`，均待协调固定复审，不自行销项。Steps 7／8、Ch.12、Omni 13／14／15、其他书和第 1 本受保护英文原文未改。
+- Steps 1／4／5 作者参考值均为 R1–R5 **10/10**、机制 R6 **2/2**、原十个非视觉项 **20/20**；两个独立只读复审均 PASS、0 非视觉洞。固定 `ef82fe9` 的协调 **80/80、16/16、190/192、NO-GO** 基线不变。`build`（60 页）、八步 `readability`、两次哈希一致的 `transcript`（2,313 词，`c92cdd4d…4eed9`）、`deep-check 11`、`zh-check`、英中全章与中文改动步三宽度 `mobile`、`git diff --check` 全过。动画矩阵为 **18 组合、132 状态、114/114 转变**，双语 deep 为 **12 视图**，最低 **10.806 CSS px**，重叠和出界为 0。当前模型不能读 PNG，视觉、原 #4/#5 和整章 verdict 待协调。按 direction 停下，不提前处理 Omni-49～65。
+
 - 修旧 Learning ML Systems 第 7 章的 ML-41～44（direction 在 ML-19 后指定的同章四项）：Step 2 只引入 `checkpoint`，用「权重数值／权重位置」保留三路线地图，磁盘按保存→读取→装入自己那份播放；Steps 2／4／7 的图外实现和测量设置显式移出「图上是什么」；Step 5 deep 对齐 Bucket 1 清空、Bucket 2 上卡的末相；Step 6 桌面、手机和双语 deep 统一弃用部分更新的模型。教程提交为 `ffc1bca`、`be75f4e`、`7115a57`、`2174628`、`65f3033`，均待协调固定复审，不自行销项；ML-50／55 未混入本轮。
 - 独立 `explore` 冷读对四项全部 **PASS**、剩余内容洞 **0**；五个改动步的作者参考值均为 R1–R5 **10/10**、机制 R6 **2/2**、原十个非视觉项 **20/20**。`build`（60 页）、八步 `readability`、两次一致的 `transcript`（1988 词）、`deep-check 07`、`zh-check`、英中本章与中文改动步三宽度 `mobile`、`git diff --check` 全过；定向审计 **166 个状态、134/134 个机制转变、10 个 deep 状态**，最低 **10.91015625 CSS px**，重叠和出界为 0。当前模型不能读 PNG，视觉待协调；协调固定 `ef9b2bf` 的整章 NO-GO 基线不变。本轮类型：**修旧**；下一单元按 direction 分开处理 ML-50／55，不开新章。
 
@@ -213,7 +216,7 @@
 | 08 | 08-measure-streaming | 内容完成：8/8 步易读满分、0 内容洞和机械显示洞；图像人工视觉验收待主人 | 24.00 |
 | 09 | 09-ar-stage-optimization | 内容完成：7/7 步易读满分；原分 22/24 暂定（#4/#5 待目视）；图像人工视觉验收待主人 | 22.00 |
 | 10 | 10-vocoder-optimization | 文本完成：8/8 步 R1–R5 为 10/10、0 内容洞和机械显示洞；R6/#4/#5 与总分待目视 | — |
-| 11 | 11-fish-s2-pro | NO-GO / coordinator-rereview-pending：作者机制返工完成，八步作者 DOM 机制 R6 16/16；桌面字号 P0 已修，40 个桌面相位最低 10.506 CSS px；R1–R5 80/80、原十个非视觉项 160/160 为作者自评，原 #4/#5 和原十二项待固定复审；session 接缝等其他开放项不变 | — |
+| 11 | 11-fish-s2-pro | 固定 `ef82fe9` 协调 NO-GO：R1–R5 80/80、机制 R6 16/16、原十个非视觉项 158/160、原 #4/#5 32/32、原十二项 190/192；`6f53cbc`、`9ae66a2` 已完成 Omni-48／66／67 作者修复，待固定复审，不自行销项；18 组合 132 状态、114/114 转变，12 个 deep 视图，最低 10.806 CSS px | — |
 | 12 | 12-full-duplex-strategies | 自评完成：8/8 步易读 12/12、0 内容洞和机械显示洞；人工视觉验收待主人 | 24.00 |
 | 13 | 13-qwen3-omni-deployment | 固定 `c7d3d86` 协调 EVAL NO-GO：R1–R5 97/100、机制 R6 20/20、R1–R6 117/120、原十个非视觉项 198/200、原 #4/#5 40/40、原十二项 238/240；Step 9 信息密度及 Step 10 决策范围／中文冷读的后续作者返工仍待固定复审，不自行销项，不记 complete-under-EVAL | — |
 | 14 | 14-slow-reader-backpressure | 呈现 NO-GO / coordinator-rereview-pending：旧 R1–R5 80/80、原十个非视觉项 160/160、原十二项 192/192 只作历史；机制 R6 保持 16/16（八步均 2/2）。作者已修八步桌面小字，34 个相位最低 10.326 CSS px、重叠和出界均为 0，待协调实图复审；Omni-37 等其他开放项不变 | — |

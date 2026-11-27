@@ -1,3 +1,43 @@
+# lane k1 本轮报告 · Omni 11 的 Omni-48／66／67
+
+日期：2026-11-27。类型：修旧（direction 08:50 指定的最小单元）。本轮开始 HEAD 与 `origin/tutorials` 均为 `4c4a536`，工作树干净。范围只有 Omni 11 Steps 1、4、5，对应双语 deep、MDX 出处、`src/omni/numbers.ts`、生成 transcript、本章评分卡与进度记录、定向审计和本报告。Steps 7／8、Ch.12、Omni 13／14／15、其他书、`.bot/memory/` 和第 1 本受保护英文原文均未改。完成指定三项后停下，不提前处理 Omni-49～65，不开第 16／17 章。
+
+## 提交与 finding
+
+- `6f53cbc`：**Omni-48 的 Steps 4–5 作者修复完成，待协调固定复审，不自行销项。** Step 4 新增独立 `sem_id/c0` 相位，顺序为 Slow sample→reset＋Fast call 0→`sem_id/c0`→Fast calls 1–9→vocoder。Step 5 先淡出旧 Fast KV 并出现 fresh KV，再进入下一次 Slow 输入。十次 Fast 调用、十一行存储和十行送 vocoder 不变。
+- `9ae66a2`：**Omni-48 的 Step 1、Omni-66、Omni-67 作者修复完成，待复审。** Step 1 使用同样的 pinned 顺序，保留 `c0` 与 `c1–c9` 分相；顶部补 `preprocessing → tts_engine → vocoder`，标明本章在 `tts_engine`。底部用 22 个非结束接受帧给出 `22 × 2,048 = 45,056` 个采样点、约 1.022 秒、22 次 Slow 采样和 220 次 Fast 调用。图上另有 `2 × 4 × 8 × 8 × 4 = 2,048`，脚注排除结束工作并声明不是实测延迟。没有搬入 Step 7 的 40 帧开窗。
+- `9ae66a2` 首次提交为 `6216582`，推送被拒后按指示 `git pull --rebase origin tutorials`，落到 `04be539` 上并推送成功。`6f53cbc` 首次推送成功。全程未 force-push。
+- 移动 deep 首轮发现三处横溢：Step 1 长出处、Step 4 符号表、Step 5 符号表与长出处。通过 `speech/`、`decoder/` 路径缩写和短出处单元格修复后，1440 与 390 px 的 12 个双语视图均通过，未改共享 `StepControls` 或全站 CSS。
+
+## 作者评分与独立冷读边界
+
+| 步 | R1–R5 | 机制 R6 | 原十个非视觉项 | R1 小学生复述 | 新内容洞 |
+|---|---:|---:|---:|---|---:|
+| 1 | 10/10 | 2/2 | 20/20 | Slow 先采样；Fast 第 0 次重置后得到 c0，再选 c1–c9。22 个生成帧约 1.022 秒，要 220 次 Fast 调用。 | 0 |
+| 4 | 10/10 | 2/2 | 20/20 | Slow 先采样，Fast 第 0 次重置并传数，再出现 c0 和另外九个 codes。 | 0 |
+| 5 | 10/10 | 2/2 | 20/20 | Fast 先清空内层 KV，再进入下一次 Slow 输入；Slow 仍保留之前的工作。 | 0 |
+
+- 独立 `explore` 冷读第一轮否决了参考声音 22 帧与生成调用次数混用、`c0` 归属和 2,048 出处三处问题；修正后，Step 1 与 Steps 4–5 两个复审会话均 **PASS、0 非视觉洞**。移动 deep 调整后再次复核，出处和内容未回退。
+- 这些是作者复评与独立源码、transcript、DOM 冷读，不是协调 verdict。固定 `ef82fe9` 的协调基线不改写：R1–R5 **80/80**、机制 R6 **16/16**、原十个非视觉项 **158/160**、原 #4/#5 **32/32**、原十二项 **190/192**，整章仍 **NO-GO**。原 #4/#5、整章新总分和销项不由本轮自行改写。
+
+## 硬门与证据
+
+- 最终 `npm run build`：**60 页**通过；八步 `readability`：**0 机械问题**；`BOOK=omni node scripts/deep-check.mjs 11`、`zh-check`、英中全章 360／390／430 px `mobile`、中文 Steps 1／4／5 字号门和 `git diff --check` 全过。
+- transcript 连续两次 SHA-256 相同：`c92cdd4d4679c2a6314da1845e013ff063f36f7d88c9d67d73374fc4e984eed9`，**2,313 词**。无 caption、文字出界、重叠或文本规则报告。
+- 动画矩阵覆盖 Steps 1／4／5 × 英文桌面／中文桌面／中文 390 px × 直接 URL／前步入口，共 **18 个组合、132 个状态、114/114 个机制转变**。最低 **10.806 CSS px**，重叠和 SVG 出界均为 0。可重跑脚本：`.bot/out/omni11-phase-audit.mjs`；报告在 `.bot/out/omni48-s1-*`、`omni48-s4-*`、`omni48-s5-*`。
+- Steps 1／4／5 的双语 deep 在 1440 和 390 px 共 **12 个打开抽屉视图**全部通过：counter 和 `aria-expanded=true` 正确，页面和抽屉横溢、KaTeX error、raw math、缺失目标文本均为 0。脚本：`.bot/out/omni11-deep-audit.mjs`；报告在 `.bot/out/omni48-deep-1440/` 和 `.bot/out/omni48-deep-390/`。
+- 代表截图：`.bot/out/omni48-s1-en/s1-p3.png`（Fast call 0 后出现 `sem_id = c0`）。**当前模型不能读取 PNG，工具已明确返回无图像输入能力；以上结论来自构建、transcript、源码、独立冷读、DOM 和几何检查，未声称看过图片或视觉通过。**
+- pinned `sglang_model.py:482-508@3a31bd72` 与 `config.py`、`modded_dac_vq.yaml`、`modded_dac.py:885,913`、`audio_vocoder.py:218-223` 已用于核对顺序、locator 和帧几何。未跑全站回归、真实 Fish／SGLang-Omni、模型、GPU、音频质量、故障注入或 reduced-motion 动态切换。最新回归只有 `(exit 13)`，没有可分配布局步骤，未据此返工。
+
+## 剩余与清理
+
+- 剩余事项是 Omni-48／66／67 的协调固定复审、原 #4/#5、整章评分、具备图像能力的复审和主人最终视觉验收。按 direction 停下，再按协调顺序处理 Omni-49～65；其他开放 finding 未改。
+- 本 clone 的 `node_modules` 原指向协调人 checkout；已只删除本目录内符号链接并在本目录安装依赖，package 文件无 diff，未写协调人的 checkout。
+- 本地查看前运行 `npx astro dev --background --host 127.0.0.1 --port 4501`，地址：`http://localhost:4501/learning-sglang/omni/ch/11-fish-s2-pro/?step=1`。本轮 4501 服务已停止且端口无监听。
+- 审计脚本均调用 `browser.close()`。收尾 `pgrep -P 1 -fl 'headless=new.*cdp-'` 无输出；其余 Chrome 的 cwd 属于协调快照、后台 regress 或 lane d，非本轮所起，未动。
+
+---
+
 # lane k2 本轮报告 · ML Systems 07 的 ML-41～44
 
 日期：2026-11-27。类型：修旧（direction 在 ML-19 后指定的同章四项）。本轮开始 HEAD 与 `origin/tutorials` 均为 `e153ede`，fetch 后 fast-forward 到 `6d56014`，工作树干净。范围只有 ML 07 Steps 2、4、5、6、7、对应双语 deep、MDX 出处、生成 transcript、本章评分卡与进度记录、定向审计和本报告；未改其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。ML-50／55 与本轮四项分开，未改；未开新章或第 14 章。
