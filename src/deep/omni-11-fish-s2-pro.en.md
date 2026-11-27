@@ -1,54 +1,39 @@
-## Step 1 · Two loops choose ten entries before the first window
+## Step 1 · Slow AR chooses first, Fast AR fills next
 
-> **In one line:** Slow AR chooses c0 one frame at a time, Fast AR fills c1–c9 inside that frame, and 40 frames open the first non-final window.
+> **In one line:** Slow AR chooses `c0` before Fast AR fills `c1–c9` in the same frame.
 
 ### On the stage
 
-- The title answers Ch. 10 Step 8: Slow AR chooses `c0`, and Fast AR chooses `c1–c9`.
-- The request crosses `preprocessing`, `tts_engine` and `vocoder`.
-- The blue `tts_engine` box is the generation work opened by this chapter.
-- Forty blue boxes stand for 40 frames. The enlarged frame has ten codebook entries, `c0` through `c9`.
-- The arithmetic counts 400 choices before the first window. It does not claim 400 Slow AR calls.
+- Ch. 10 Step 8 supplied the frame's ten codebook entries, `c0` through `c9`.
+- `1 · Slow AR` moves one frame at a time. Phase 1 fills only `c0`; the other nine entries still wait.
+- `2 · Fast AR` works inside that same frame. Phase 2 passes the work to Fast AR without adding a code. Phase 3 fills `c1–c9`.
+- Blue entries are chosen codes. Faded entries still wait. The final count is one Slow choice plus nine Fast choices.
 
 ### Formula
 
 $$
-N_{\text{choices}} = F_{\text{first}} \times C,\qquad
-D = \frac{F_{\text{first}} \times S}{R}
+N_{\text{frame}} = N_{\text{Slow}} + N_{\text{Fast}}
 $$
 
 | Symbol | What it is | Value | Where it comes from |
 |---|---|---:|---|
-| $N_{\text{choices}}$ | Codebook entries needed by the first window | 400 | This step |
-| $F_{\text{first}}$ | Frames required by the first non-final streaming window | 40 | Fish `streaming_vocoder.py` default |
-| $C$ | Vocoder codebook rows per frame | 10 | Ch. 10 Step 8 |
-| $D$ | Sound duration represented by those frames | 1.858 s | This formula |
-| $S$ | Samples represented by one codec frame | 2,048 | DAC hop and quantizer factors |
-| $R$ | Codec sample rate | 44,100 Hz | Shipped DAC configuration |
+| $N_{\text{frame}}$ | Codebook entries in one frame | 10 | Ch. 10 Step 8 |
+| $N_{\text{Slow}}$ | Entries chosen by Slow AR: `c0` | 1 | This step |
+| $N_{\text{Fast}}$ | Entries chosen by Fast AR: `c1–c9` | 9 | This step |
 
 ### The numbers on the stage
 
 $$
-40 \times 10 = 400\ \text{choices}
+1 + 9 = 10\ \text{codes in this frame}
 $$
-
-$$
-40 \times 2{,}048 = 81{,}920\ \text{samples}
-$$
-
-$$
-81{,}920 \div 44{,}100 \approx 1.858\ \text{s}
-$$
-
-The default threshold and frame dimensions are real configuration values. The multiplication is a teaching example, not a latency measurement.
 
 ### Next
 
 The next step creates the same ten-row representation from a reference voice before generation starts.
 
-Source shorthand: `fish/` = `sglang_omni/models/fishaudio_s2_pro/`; other paths start at `sglang_omni/`.
+Source shorthand: `fish/` = `sglang_omni/models/fishaudio_s2_pro/`.
 
-Sources: `fish/config.py:23-67`; `fish/streaming_vocoder.py:43-66`; `scheduling/audio_stream.py:86-148`; `fish/sglang_model.py:418-510`; `fish/fish_speech/models/dac/modded_dac.py:885-913,928-988`.
+Sources: `fish/sglang_model.py:418-510`; `fish/payload_types.py:35-50`.
 
 ## Step 2 · Reference audio becomes ten rows
 
@@ -74,9 +59,9 @@ The ceiling brackets mean “round up”: a partial final codec frame still beco
 | Symbol | What it is | Value | Where it comes from |
 |---|---|---:|---|
 | $F_{\text{ref}}$ | Reference codec frames | 22 | This formula |
-| $R$ | Codec sample rate | 44,100 Hz | Step 1 |
+| $R$ | Codec sample rate | 44,100 Hz | Shipped DAC configuration |
 | $T$ | Constructed reference duration | 1 s | This teaching example |
-| $S$ | Samples per codec frame | 2,048 | Step 1 |
+| $S$ | Samples per codec frame | 2,048 | DAC hop and quantizer factors |
 | $P$ | Samples padded into the last frame | 956 | This formula |
 
 ### The numbers on the stage
@@ -328,7 +313,7 @@ $$
 
 | Symbol | What it is | Value in this example | Where it comes from |
 |---|---|---:|---|
-| $F$ | Audio samples represented by one codec frame | 2,048 | Step 1's shipped DAC geometry |
+| $F$ | Audio samples represented by one codec frame | 2,048 | Step 2's shipped DAC geometry |
 | $N_{\text{in}}$ | Frames read by one window | 40, 65, 25 | Constructed 90-frame stream and shipped window rules |
 | $N_{\text{new}}$ | New frames arriving in that window | 40, 45, 5 | Constructed arrivals under the 45-new maximum |
 | $N_{\text{out}}$ | Samples emitted by that window | $40F-512$, $45F$, $5F+512$ | Emission and crossfade rules |

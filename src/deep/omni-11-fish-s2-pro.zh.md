@@ -1,54 +1,39 @@
-## 第 1 步 · 两个循环选出十个条目，再打开首个窗口
+## 第 1 步 · Slow AR 先选，Fast AR 再补齐
 
-> **一句话：** Slow AR 逐帧选 c0，Fast AR 在这帧内补齐 c1–c9，攒 40 帧打开首个非最后窗口。
+> **一句话：** Slow AR 先选 `c0`，Fast AR 再在同一帧补齐 `c1–c9`。
 
 ### 图上是什么
 
-- 标题回答第 10 章第 8 步的问题：Slow AR 选择 `c0`，Fast AR 选择 `c1–c9`。
-- 请求依次经过 `preprocessing`、`tts_engine` 和 `vocoder`。
-- 蓝色 `tts_engine` 是本章要打开的生成阶段。
-- 40 个蓝框代表 40 帧。放大的一帧有 `c0` 到 `c9` 十个 codebook 条目。
-- 算式数出首个窗口前的 400 个选择，不代表 400 次 Slow AR 调用。
+- 第 10 章第 8 步已经给出这一帧的十个 codebook 条目，即 `c0` 到 `c9`。
+- `1 · Slow AR` 一次走一帧。第 1 相只填 `c0`，另外九个条目还在等待。
+- `2 · Fast AR` 在同一帧内工作。第 2 相把工作交给 Fast AR，不新增 code。第 3 相填满 `c1–c9`。
+- 蓝色条目是选出的 codes，淡色条目还在等待。最后由 Slow 的一个选择和 Fast 的九个选择组成一帧。
 
 ### 公式
 
 $$
-N_{\text{choices}} = F_{\text{first}} \times C,\qquad
-D = \frac{F_{\text{first}} \times S}{R}
+N_{\text{frame}} = N_{\text{Slow}} + N_{\text{Fast}}
 $$
 
 | 符号 | 是什么 | 大小 | 从哪来 |
 |---|---|---:|---|
-| $N_{\text{choices}}$ | 首个窗口需要的 codebook 条目数 | 400 | 本步 |
-| $F_{\text{first}}$ | 首个非最后流式窗口需要的帧数 | 40 | Fish `streaming_vocoder.py` 默认值 |
-| $C$ | 每帧送给 vocoder 的 codebook 行数 | 10 | 第 10 章第 8 步 |
-| $D$ | 这些帧代表的声音时长 | 1.858 秒 | 本步公式 |
-| $S$ | 一个 codec 帧代表的采样点数 | 2,048 | DAC 的 hop 和量化倍率 |
-| $R$ | codec 采样率 | 44,100 Hz | 默认 DAC 配置 |
+| $N_{\text{frame}}$ | 一帧的 codebook 条目数 | 10 | 第 10 章第 8 步 |
+| $N_{\text{Slow}}$ | Slow AR 选出的 `c0` | 1 | 本步 |
+| $N_{\text{Fast}}$ | Fast AR 选出的 `c1–c9` | 9 | 本步 |
 
 ### 代入图上的数
 
 $$
-40 \times 10 = 400\ \text{个选择}
+1 + 9 = 10\ \text{个 codes 组成这一帧}
 $$
-
-$$
-40 \times 2{,}048 = 81{,}920\ \text{个采样点}
-$$
-
-$$
-81{,}920 \div 44{,}100 \approx 1.858\ \text{秒}
-$$
-
-窗口门槛和帧尺寸来自真实配置。乘法只是教学算例，不是延迟测量。
 
 ### 接下来
 
 下一步先把参考声音也变成同样的十行表示，再开始生成。
 
-路径缩写：`fish/` = `sglang_omni/models/fishaudio_s2_pro/`；其他路径从 `sglang_omni/` 开始。
+路径缩写：`fish/` = `sglang_omni/models/fishaudio_s2_pro/`。
 
-出处：`fish/config.py:23-67`；`fish/streaming_vocoder.py:43-66`；`scheduling/audio_stream.py:86-148`；`fish/sglang_model.py:418-510`；`fish/fish_speech/models/dac/modded_dac.py:885-913,928-988`。
+出处：`fish/sglang_model.py:418-510`；`fish/payload_types.py:35-50`。
 
 ## 第 2 步 · 参考声音变成十行
 
@@ -74,9 +59,9 @@ $$
 | 符号 | 是什么 | 大小 | 从哪来 |
 |---|---|---:|---|
 | $F_{\text{ref}}$ | 参考声音的 codec 帧数 | 22 | 本步公式 |
-| $R$ | codec 采样率 | 44,100 Hz | 第 1 步 |
+| $R$ | codec 采样率 | 44,100 Hz | 默认 DAC 配置 |
 | $T$ | 构造参考声音的时长 | 1 秒 | 本步算例 |
-| $S$ | 每个 codec 帧的采样点数 | 2,048 | 第 1 步 |
+| $S$ | 每个 codec 帧的采样点数 | 2,048 | DAC 的 hop 和量化倍率 |
 | $P$ | 最后一帧补入的采样点数 | 956 | 本步公式 |
 
 ### 代入图上的数
@@ -328,7 +313,7 @@ $$
 
 | 符号 | 是什么 | 本例大小 | 从哪来 |
 |---|---|---:|---|
-| $F$ | 一个 codec 帧代表的声音采样点 | 2,048 | 第 1 步的默认 DAC 几何 |
+| $F$ | 一个 codec 帧代表的声音采样点 | 2,048 | 第 2 步的默认 DAC 几何 |
 | $N_{\text{in}}$ | 一个窗口读取的帧数 | 40、65、25 | 构造的 90 帧流和默认窗口规则 |
 | $N_{\text{new}}$ | 该窗口到达的新帧数 | 40、45、5 | 最多 45 新帧规则下的构造到达 |
 | $N_{\text{out}}$ | 该窗口输出的采样点 | $40F-512$、$45F$、$5F+512$ | 输出和交叉混合规则 |

@@ -13,7 +13,7 @@ export const deep = await deepFor('omni-11-fish-s2-pro');
 <details class="i18n-en">
 <summary>Where this chapter's claims come from</summary>
 
-Step 1 follows the shipped three-stage route in `sglang_omni/models/fishaudio_s2_pro/config.py:23-67` and `stages.py:522-552`. It answers Ch. 10 Step 8's entry-choice question first: Slow AR chooses c0 in the outer frame loop, and Fast AR chooses c1–c9 inside that frame (`sglang_model.py:418-510`). The first non-final streaming window opens at 40 frames (`streaming_vocoder.py:43-66`; `scheduling/audio_stream.py:86-102`). A request ending with fewer frames still decodes through the final flush (`scheduling/audio_stream.py:106-148`). Each generated frame carries one semantic code and nine remaining codes for the vocoder, so the constructed product is 40 × 10 = 400 codes chosen from codebooks (`sglang_model.py:418-510`; `payload_types.py:35-50`). One codec frame represents 2,048 samples at 44,100 Hz (`fish_speech/configs/modded_dac_vq.yaml:3-29`; `fish_speech/models/dac/modded_dac.py:885-913,928-988`). The resulting 1.858 seconds describes represented audio, not elapsed latency.
+Step 1 answers Ch. 10 Step 8's entry-choice question first: Slow AR chooses c0 in the outer frame loop, and Fast AR chooses c1–c9 inside that frame (`sglang_model.py:418-510`). Each generated frame carries one semantic code and nine remaining codes for the vocoder, so the ten entries come from 1 + 9 choices (`sglang_model.py:418-510`; `payload_types.py:35-50`).
 
 Step 2 follows `sglang_omni/models/fishaudio_s2_pro/stages.py:249-376,425-490`: reference audio becomes mono, resamples to 44,100 Hz and enters the reference DAC. The constructed one-second clip starts at 16 kHz. The DAC's 2,048-sample codec frame gives `ceil(44,100 ÷ 2,048) = 22` frames and 956 padding samples. The output has ten rows. `scheduling/reference_encoder.py:344-413` caches matching reference codes on CPU and returns copies; this cache is not AR KV. Already supplied `vq_codes` bypass encoding, and a request without references omits this voice prompt.
 
@@ -36,7 +36,7 @@ Code references in this chapter pin to `sglang-omni origin/main@3a31bd72e034db37
 <details class="i18n-zh">
 <summary>本章说法的出处</summary>
 
-第 1 步依据默认的三个 stage 路线，见 `sglang_omni/models/fishaudio_s2_pro/config.py:23-67` 和 `stages.py:522-552`。先回答第 10 章第 8 步的条目选择问题：Slow AR 在外层逐帧循环里选 c0，Fast AR 在这帧内选 c1–c9（`sglang_model.py:418-510`）。首个非最后的流式窗口在 40 帧打开（`streaming_vocoder.py:43-66`；`scheduling/audio_stream.py:86-102`）。不足 40 帧就结束的请求仍会通过最后一次 flush 解码（`scheduling/audio_stream.py:106-148`）。每个生成帧带一个语义 code 和其余九个 codes 给 vocoder，所以构造算式是 40 × 10 = 400 个从 codebook 选出的 code（`sglang_model.py:418-510`；`payload_types.py:35-50`）。一个 codec 帧在 44,100 Hz 下代表 2,048 个采样点（`fish_speech/configs/modded_dac_vq.yaml:3-29`；`fish_speech/models/dac/modded_dac.py:885-913,928-988`）。得到的 1.858 秒是声音时长，不是实际等待。
+第 1 步先回答第 10 章第 8 步的条目选择问题：Slow AR 在外层逐帧循环里选 c0，Fast AR 在这帧内选 c1–c9（`sglang_model.py:418-510`）。每个生成帧带一个语义 code 和其余九个 codes 给 vocoder，所以十个条目来自 1 + 9 个选择（`sglang_model.py:418-510`；`payload_types.py:35-50`）。
 
 第 2 步依据 `sglang_omni/models/fishaudio_s2_pro/stages.py:249-376,425-490`：参考声音先变单声道，重采样到 44,100 Hz，再进入参考 DAC。构造算例从 16 kHz 的 1 秒声音开始。DAC 每帧 2,048 个采样点，所以 `ceil(44,100 ÷ 2,048) = 22` 帧，需要补 956 个采样点，输出共十行。`scheduling/reference_encoder.py:344-413` 在 CPU 缓存相同参考声音的 codes 并返回副本；这不是 AR KV。已有 `vq_codes` 可以跳过编码，没有参考声音的请求会省略这段声音提示。
 

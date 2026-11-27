@@ -7,8 +7,6 @@
   import type { Deep } from '../../deep';
   import {
     FISH_FIRST_WINDOW_FRAMES,
-    FISH_FIRST_WINDOW_CODE_CHOICES,
-    FISH_FIRST_WINDOW_AUDIO_MS,
     FISH_SAMPLES_PER_FRAME,
     FISH_CODEC_SAMPLE_RATE,
     FISH_TEACHING_REFERENCE_SAMPLES,
@@ -44,8 +42,8 @@
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
   const steps = [{
-    caption: 'Slow AR chooses c0 one frame at a time. Fast AR fills c1–c9 inside that frame; 40 frames open the first window.',
-    captionZh: 'Slow AR 逐帧选 c0。Fast AR 在这帧内补齐 c1–c9；攒 40 帧打开首个窗口。',
+    caption: 'Slow AR chooses c0 first. Fast AR then fills c1–c9 in the same frame.',
+    captionZh: 'Slow AR 先选 c0。Fast AR 再在同一帧补齐 c1–c9。',
   }, {
     caption: 'Reference audio becomes ten rows of codes before generation. One second makes 22 frames.',
     captionZh: '参考声音先变成十行 codes。1 秒会得到 22 帧。',
@@ -83,7 +81,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [710, 800, 790, 900, 790, 880, 990, 900][step] : [540, 630, 600, 650, 600, 630, 730, 660][step]);
+  const H = $derived(phone ? [630, 800, 790, 900, 790, 880, 990, 900][step] : [540, 630, 600, 650, 600, 630, 730, 660][step]);
   const fmt = (value: number) => value.toLocaleString('en-US', { maximumFractionDigits: 0 });
   const streamEvents = [
     { title: 'FIRST · total 40', titleZh: '首次 · 累计 40', old: 0, added: FISH_FIRST_WINDOW_FRAMES, input: FISH_FIRST_WINDOW_FRAMES, emitted: `40F−${FISH_STREAM_TAIL_SAMPLES}` },
@@ -92,19 +90,17 @@
   ];
 
   // Each phase changes the mechanism on screen, then holds the finished scene before looping.
-  const PHASE_COUNTS = [6, 4, 3, 11, 5, 4, 3, 4];
+  const PHASE_COUNTS = [4, 4, 3, 11, 5, 4, 3, 4];
   const PHASE_MS = [1000, 1100, 1100, 650, 1100, 1200, 1800, 1100];
   const REST_MS = 1800;
   type Frame = { x: number; y: number; w: number; h: number };
   const motionFrames = (isPhone: boolean, s: number): Frame[] => {
     if (s === 0) return isPhone ? [
-      { x: 18, y: 84, w: 264, h: 67 }, { x: 18, y: 177, w: 264, h: 67 },
-      { x: 18, y: 365, w: 264, h: 264 }, { x: 18, y: 365, w: 264, h: 264 },
-      { x: 18, y: 365, w: 264, h: 264 }, { x: 18, y: 270, w: 264, h: 67 },
+      { x: 18, y: 84, w: 264, h: 67 }, { x: 18, y: 270, w: 264, h: 282 },
+      { x: 18, y: 177, w: 264, h: 67 }, { x: 18, y: 270, w: 264, h: 282 },
     ] : [
-      { x: 30, y: 86, w: 180, h: 76 }, { x: 270, y: 86, w: 180, h: 76 },
-      { x: 30, y: 196, w: 660, h: 262 }, { x: 30, y: 196, w: 660, h: 262 },
-      { x: 30, y: 196, w: 660, h: 262 }, { x: 510, y: 86, w: 180, h: 76 },
+      { x: 30, y: 86, w: 300, h: 76 }, { x: 180, y: 196, w: 360, h: 282 },
+      { x: 390, y: 86, w: 300, h: 76 }, { x: 180, y: 196, w: 360, h: 282 },
     ];
     if (s === 1) return isPhone ? [
       { x: 18, y: 82, w: 264, h: 62 }, { x: 18, y: 166, w: 264, h: 62 },
@@ -190,73 +186,33 @@
         </marker>
       </defs>
       {#if step === 0}
-        <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'Slow AR → c0 · Fast AR → c1–c9' : 'Ch. 10’s entries: Slow AR → c0, Fast AR → c1–c9', phone ? 'Slow AR → c0 · Fast AR → c1–c9' : '第 10 章的条目：Slow AR → c0，Fast AR → c1–c9')}</text>
-        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'window = frames decoded at once · blue = codes' : 'window = frames decoded together · blue = codes chosen during generation', phone ? '窗口 = 一起解码的帧 · 蓝 = codes' : '窗口 = 一起解码的帧 · 蓝 = 生成时选出的 codes')}</text>
-        {@const collected = Math.min(FISH_FIRST_WINDOW_FRAMES, Math.max(0, (phase - 1) * 10))}
-        {#if !phone}
-          {#each [
-            { x: 30, name: 'preprocessing', sub: 'reference + text', nameZh: 'preprocessing', subZh: '参考声音 + 文字' },
-            { x: 270, name: 'tts_engine', sub: 'generation', nameZh: 'tts_engine', subZh: '生成' },
-            { x: 510, name: 'vocoder', sub: 'codes → sound', nameZh: 'vocoder', subZh: 'codes → 声音' },
-          ] as stage, i}
-            {@const active = i === 0 || (i === 1 && phase >= 1) || (i === 2 && phase >= 5)}
-            <g opacity={active ? 1 : 0.18} style="transition: opacity 350ms">
-              <rect x={stage.x} y="86" width="180" height="76" rx="10" fill={i === 1 && active ? 'var(--accent-soft)' : 'var(--bg)'} stroke={i === 1 && active ? 'var(--accent)' : 'var(--line)'} />
-              <text x={stage.x + 90} y="116" text-anchor="middle" class="small strong">{t(stage.name, stage.nameZh)}</text>
-              <text x={stage.x + 90} y="142" text-anchor="middle" class="small">{t(stage.sub, stage.subZh)}</text>
-            </g>
-            {#if i < 2}
-              <line x1={stage.x + 184} y1="124" x2={stage.x + 230} y2="124" stroke="var(--accent)" stroke-width="2" marker-end="url(#fish-arrow)" opacity={phase >= (i === 0 ? 1 : 5) ? 1 : 0.08} style="transition: opacity 350ms" />
-            {/if}
-          {/each}
-          <rect x="30" y="196" width="660" height="262" rx="12" fill="var(--bg)" stroke="var(--line)" />
-          <text x="48" y="224" class="small strong">{t('THE WORK BEFORE THAT WINDOW CAN START', '这个窗口开始前要完成的工作')}</text>
-          {#each Array(FISH_FIRST_WINDOW_FRAMES) as _, i}
-            <rect x={49 + (i % 20) * 22} y={249 + Math.floor(i / 20) * 39} width="15" height="25" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" opacity={i < collected ? 1 : 0.08} style="transition: opacity 300ms" />
-          {/each}
-          <text x="49" y="343" class="small">{collected === FISH_FIRST_WINDOW_FRAMES ? t('40 frames, drawn as 40 boxes', '40 个框 = 40 帧') : t(`${collected} / 40 frames collected`, `已攒 ${collected} / 40 帧`)}</text>
-          <g opacity={phase >= 2 ? 1 : 0.06} style="transition: opacity 350ms">
-            <line x1="494" y1="277" x2="526" y2="277" stroke="var(--accent)" stroke-width="2" marker-end="url(#fish-arrow)" />
-            <rect x="539" y="238" width="127" height="139" rx="9" fill="white" stroke="var(--accent)" />
-            <text x="602" y="260" text-anchor="middle" class="small strong">{t('one frame', '一帧')}</text>
-            {#each Array(VOC_FISH_CODEBOOK_ROWS) as _, i}
-              <rect x="554" y={271 + i * 9} width="48" height="6" rx="2" fill="var(--accent)" />
-            {/each}
-            <text x="602" y="374" text-anchor="middle" class="code">c0 … c9</text>
+        <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'Slow AR → c0 · Fast AR → c1–c9' : 'Ch. 10 Step 8: Slow AR → c0, Fast AR → c1–c9', phone ? 'Slow AR → c0 · Fast AR → c1–c9' : '第 10 章第 8 步：Slow AR → c0，Fast AR → c1–c9')}</text>
+        <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'one frame · blue = codes' : 'one frame = one time position · blue = chosen codes', '一帧 = 一个时间位置 · 蓝 = 选出的 codes')}</text>
+        {#each [
+          { name: '1 · Slow AR', sub: 'one frame at a time', subZh: '一次一帧' },
+          { name: '2 · Fast AR', sub: 'inside that same frame', subZh: '在同一帧内' },
+        ] as loop, i}
+          {@const active = i === 0 ? phase < 2 : phase >= 2}
+          <g opacity={active ? 1 : 0.28} style="transition: opacity 350ms">
+            <rect x={phone ? 18 : 30 + i * 360} y={phone ? 84 + i * 93 : 86} width={phone ? 264 : 300} height={phone ? 67 : 76} rx="10" fill="var(--bg)" stroke="var(--line)" />
+            <text x={phone ? 150 : 180 + i * 360} y={phone ? 111 + i * 93 : 116} text-anchor="middle" class="small strong">{loop.name}</text>
+            <text x={phone ? 150 : 180 + i * 360} y={phone ? 135 + i * 93 : 142} text-anchor="middle" class="small">{t(loop.sub, loop.subZh)}</text>
           </g>
-          <g opacity={phase >= 5 ? 1 : 0.06} style="transition: opacity 350ms">
-            <text x="360" y="407" text-anchor="middle" class="result">{FISH_FIRST_WINDOW_FRAMES} {t('frames', '帧')} × {VOC_FISH_CODEBOOK_ROWS} codes = {FISH_FIRST_WINDOW_CODE_CHOICES} codes</text>
-            <text x="360" y="437" text-anchor="middle" class="small">{FISH_FIRST_WINDOW_FRAMES} × {fmt(FISH_SAMPLES_PER_FRAME)} ÷ {fmt(FISH_CODEC_SAMPLE_RATE)} ≈ {(FISH_FIRST_WINDOW_AUDIO_MS / 1000).toFixed(3)} s {t('of sound', '声音')}</text>
+        {/each}
+        <rect x={phone ? 18 : 180} y={phone ? 270 : 196} width={phone ? 264 : 360} height="282" rx="12" fill="var(--bg)" stroke="var(--line)" />
+        <text x={phone ? 150 : 360} y={phone ? 298 : 224} text-anchor="middle" class="small strong">{t('ONE FRAME · TEN ENTRIES', '一帧 · 十个条目')}</text>
+        {#each Array(VOC_FISH_CODEBOOK_ROWS) as _, i}
+          {@const chosen = i === 0 ? phase >= 1 : phase >= 3}
+          <g opacity={chosen ? 1 : 0.16} style="transition: opacity 350ms">
+            <text x={phone ? 48 : 220} y={phone ? 323 + i * 17 : 250 + i * 17} class="code">c{i}</text>
+            <rect x={phone ? 80 : 250} y={phone ? 314 + i * 17 : 241 + i * 17} width={phone ? 170 : 250} height="10" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" />
           </g>
-        {:else}
-          {#each [
-            { y: 84, name: 'preprocessing', sub: 'reference + text', subZh: '参考声音 + 文字' },
-            { y: 177, name: 'tts_engine', sub: 'generation', subZh: '生成' },
-            { y: 270, name: 'vocoder', sub: 'codes → sound', subZh: 'codes → 声音' },
-          ] as stage, i}
-            {@const active = i === 0 || (i === 1 && phase >= 1) || (i === 2 && phase >= 5)}
-            <g opacity={active ? 1 : 0.18} style="transition: opacity 350ms">
-              <rect x="18" y={stage.y} width="264" height="67" rx="9" fill={i === 1 && active ? 'var(--accent-soft)' : 'var(--bg)'} stroke={i === 1 && active ? 'var(--accent)' : 'var(--line)'} />
-              <text x="150" y={stage.y + 27} text-anchor="middle" class="small strong">{stage.name}</text>
-              <text x="150" y={stage.y + 51} text-anchor="middle" class="small">{t(stage.sub, stage.subZh)}</text>
-            </g>
-            {#if i < 2}
-              <line x1="150" y1={stage.y + 68} x2="150" y2={stage.y + 89} stroke="var(--accent)" stroke-width="2" marker-end="url(#fish-arrow)" opacity={phase >= (i === 0 ? 1 : 5) ? 1 : 0.08} style="transition: opacity 350ms" />
-            {/if}
-          {/each}
-          <rect x="18" y="365" width="264" height="264" rx="11" fill="var(--bg)" stroke="var(--line)" />
-          <text x="32" y="391" class="small strong">{t('WORK BEFORE THE WINDOW', '窗口开始前的工作')}</text>
-          {#each Array(FISH_FIRST_WINDOW_FRAMES) as _, i}
-            <rect x={33 + (i % 10) * 18} y={410 + Math.floor(i / 10) * 28} width="12" height="18" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" opacity={i < collected ? 1 : 0.08} style="transition: opacity 300ms" />
-          {/each}
-          <text x="32" y="535" class="small">{collected === FISH_FIRST_WINDOW_FRAMES ? `40 ${t('frames', '帧')} × ${VOC_FISH_CODEBOOK_ROWS} codes` : t(`${collected} / 40 frames collected`, `已攒 ${collected} / 40 帧`)}</text>
-          <g opacity={phase >= 5 ? 1 : 0.06} style="transition: opacity 350ms">
-            <text x="32" y="566" class="result">= {FISH_FIRST_WINDOW_CODE_CHOICES} codes</text>
-            <text x="32" y="600" class="small">40 × {fmt(FISH_SAMPLES_PER_FRAME)} ÷ {fmt(FISH_CODEC_SAMPLE_RATE)}</text>
-            <text x="32" y="622" class="small">≈ {(FISH_FIRST_WINDOW_AUDIO_MS / 1000).toFixed(3)} s {t('of sound', '声音')}</text>
-          </g>
-        {/if}
-        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Shorter requests use the final flush' : 'Default non-final threshold is 40; shorter requests use the final flush. 1.858 s is sound, not latency.', phone ? '不足 40 帧时，最后直接解码' : '非最后窗口默认攒 40 帧；更短的请求最后直接解码。1.858 秒是声音，不是等待。')}</text>
+        {/each}
+        <text x={phone ? 150 : 360} y={phone ? 505 : 432} text-anchor="middle" class="small strong">{t(
+          ['1 · Slow AR starts this frame', '1 · Slow AR chose c0', '2 · Fast AR goes next', '2 · Fast AR filled c1–c9'][phase],
+          ['1 · Slow AR 开始这一帧', '1 · Slow AR 选出了 c0', '2 · 接着轮到 Fast AR', '2 · Fast AR 补齐了 c1–c9'][phase],
+        )}</text>
+        <text x={phone ? 150 : 360} y={phone ? 531 : 458} text-anchor="middle" class="result" opacity={phase >= 3 ? 1 : 0.06} style="transition: opacity 350ms">1 + 9 = 10 {t('codes in this frame', '个 codes 组成这一帧')}</text>
       {:else if step === 1}
         <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'Reference → ten code rows' : 'Reference voice → ten rows of codes', '参考声音 → 十行 codes')}</text>
         <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'reference = the voice to copy · blue = codes' : 'reference = a recording of the wanted voice · blue = codes', phone ? '参考声音 = 要模仿的录音 · 蓝 = codes' : '参考声音 = 要模仿的录音 · 蓝 = codes')}</text>

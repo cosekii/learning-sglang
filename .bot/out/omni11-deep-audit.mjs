@@ -8,12 +8,14 @@ const base = (process.env.BASE || 'http://localhost:4483/learning-sglang').repla
 const out = process.env.OUT || '.bot/out/omni11-final-deep';
 mkdirSync(out, { recursive: true });
 const cases = [
-  { chapter: 11, slug: '11-fish-s2-pro', steps: [1, 7, 8] },
+  { chapter: 11, slug: '11-fish-s2-pro', steps: [1, 2, 7, 8] },
   { chapter: 12, slug: '12-full-duplex-strategies', steps: [1] },
 ];
 const expected = {
   '11-1-en': ['Ch. 10 Step 8', 'Slow AR chooses'],
-  '11-1-zh': ['第 10 章第 8 步', 'Slow AR 选择'],
+  '11-1-zh': ['第 10 章第 8 步', 'Slow AR 先选'],
+  '11-2-en': ['reference codec', 'Shipped DAC configuration'],
+  '11-2-zh': ['参考 codec', '默认 DAC 配置'],
   '11-7-en': ['grey 512-sample tail', 'final flush releases'],
   '11-7-zh': ['灰色 512', '最后一次释放'],
   '11-8-en': ['queued', 'Chapter 12 Step 1'],

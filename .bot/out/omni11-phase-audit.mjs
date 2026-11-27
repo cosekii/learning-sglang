@@ -12,7 +12,7 @@ const lang = process.env.LANG === 'zh' ? 'zh' : 'en';
 const onlyStep = Number(process.env.STEP) || null;
 const width = Number(process.env.WIDTH) || 1440;
 const height = width <= 900 ? 844 : 900;
-const expectedCounts = [6, 4, 3, 11, 5, 4, 3, 4];
+const expectedCounts = [4, 4, 3, 11, 5, 4, 3, 4];
 const selectedCounts = expectedCounts.filter((_, index) => !onlyStep || onlyStep === index + 1);
 const expectedStates = selectedCounts.reduce((sum, count) => sum + count, 0);
 const expectedTransitions = selectedCounts.reduce((sum, count) => sum + count - 1, 0);
