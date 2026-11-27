@@ -1,3 +1,31 @@
+# lane d 本轮报告 · Voxt 11 Step 1 最小单元核验（无新代码）
+
+日期：2026-11-26。范围只有本报告；未改教程、评分卡、progress、`.bot/memory/`、其他书或其他 lane 的章节，未进入也未写 `~/code/learning-sglang`。
+
+## 单元状态
+
+- direction 的 lane d 单元：从 `ls-d-1126-163623` 旧草稿移植 **Voxt 11 Step 1** 相关 hunks 并跑 `ONLY=11 STEP=1` 门。核对结果：Step 1 的全部旧草稿 hunks 已在 `origin/tutorials` 上——`971535b`（4 相位移植）、`dac183d`（手机 loops 抬起）、`f97c179`（红框窄框避字）。旧草稿与 HEAD 的组件 diff 只剩第 2–5 步的 hunks（`PHASE_COUNTS` 2–5 步、校验打勾、停止／退出拆分、update 流程显形），按 direction 留给后续轮，本轮未移植。
+- 旧草稿 transcript 与 HEAD 的 diff 只涉及第 2–5 步文字；第 1 步逐字相同。HEAD 的评分卡和 progress 已按 direction 只写第 1 步实际结果（机制栏同步协调 `c3a7773` 的 7/12，逐步 1、1、1、1、1、2，不自行提分），不需要旧报告覆盖。旧草稿 5 个未提交文件原树未动，只读 diff。
+- 本轮无教程改动，只有核验和本报告。
+
+## 验证（本 clone，端口 4399）
+
+- `npm run build -- --config .astro/local.config.mjs`：60 页通过。本地配置只把 Vite 缓存放进本 clone 并允许读取符号链接依赖；`node_modules` 是指向协调人 checkout 的只读符号链接，未写。
+- `BOOK=voxt ONLY=11 node scripts/transcript.mjs …:4399`：6 步，无 caption／出界／重叠／脚注告警；重生成与已提交 transcript **无 diff**。
+- `BOOK=voxt ONLY=11 STEP=1 npm run readability`：0 机械问题。`BOOK=voxt node scripts/deep-check.mjs 11`：ok。`BASE=…:4399 BOOK=voxt ONLY=11 node scripts/zh-check.mjs`：all clear。
+- `BOOK=voxt ONLY=11 STEP=1`（英文）和 `LANG=zh`（中文）`mobile`：360／390／430 px 均 no layout breaks。
+- 逐相审计 `.bot/out/voxt11-step1-audit.mjs`（可重跑，证据在 `.bot/out/voxt11-step1-audit/`）：英／中 × 桌面 1440×900／360／390／430 × 4 相共 **32 个视图**，相位身份由 `data-animation-phase` 轮询确认，红框过渡 320 ms 后读数。文字重叠、SVG 出界、红框描边带压字均为 **0**；最低可见字体 **10.76 CSS px**（桌面英文最低 11.50）。32 张 PNG 已保存。
+- 逐相文字 diff 确认每相只变一个对象：p0→p1 只变模型卡两行（`0 B`/`0 files` → `2.47 GB`/`9 files`）；p1→p2 只出现加法式 `2,463,307,541 B + 4,548,962 B = 2,467,856,503 B`；p2→p3 只把副标题换成 `÷ 280,000,000 ≈ 8.8×`。中文视图同构。
+- 当前模型无图像输入，已确认不能读 PNG，未声称已看图或视觉通过；以上为 DOM 与几何证据。
+
+## 剩余
+
+- 等协调复审读 Step 1 四相证据并重评该步机制分；通过后按 direction 以同样方式逐个做第 2–5 步（每步一个最小单元），再 Voxt 10，最后 `12-meeting-capture-modes`。
+- `state/pause-d` 真实文件在 bot 主目录，按路径映射不在本目录操作，本轮未动。
+- 未跑全站回归、真实 Voxt、模型下载、更新或模型进程；主人最终验收另计。本轮 4399 dev server 与浏览器已在收尾关闭。
+
+---
+
 # lane k1 本轮报告 · Omni 13 仍等固定复审
 
 日期：2026-11-26。类型：修旧等待。范围只有本报告；未改教程、评分卡、progress、`.bot/memory/`、其他书或其他 lane 的章节。
