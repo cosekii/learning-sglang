@@ -1,0 +1,642 @@
+{
+  "url": "http://127.0.0.1:4503/learning-sglang/ml-sys/ch/06-slime-rollout-loop/?step=3",
+  "results": [
+    {
+      "name": "en-360",
+      "counter": "03 / 08",
+      "expanded": "true",
+      "client": 359,
+      "scroll": 359,
+      "bodyLeft": 1,
+      "bodyRight": 360,
+      "tableRight": 336,
+      "tableOverflow": 0,
+      "cells": [
+        {
+          "text": "Tq,sT_{q,s}Tq,s​",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>T</mi><mrow><mi>q</mi><mo separator=\"true\">,</mo><mi>s</mi></mrow></msub></mrow><annotation encoding=\"application/x-tex\">T_{q,s}</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.9694em;vertical-align:-0.2861em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.1389em;\">T</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1514em;\"><span style=\"top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\" style=\"margin-right:0.0359em;\">q</span><span class=\"mpunct mtight\">,</span><span class=\"mord mathnormal mtight\">s</span></span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.2861em;\"><span></span></span></span></span></span></span></span></span></span>",
+          "width": 62.515625
+        },
+        {
+          "text": "Prompt token IDs for sample sss",
+          "html": "Prompt token IDs for sample <span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>s</mi></mrow><annotation encoding=\"application/x-tex\">s</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">s</span></span></span></span>",
+          "width": 124.640625
+        },
+        {
+          "text": "Prompt after tokenization",
+          "html": "Prompt after tokenization",
+          "width": 123.84375
+        },
+        {
+          "text": "Ta,sT_{a,s}Ta,s​",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>T</mi><mrow><mi>a</mi><mo separator=\"true\">,</mo><mi>s</mi></mrow></msub></mrow><annotation encoding=\"application/x-tex\">T_{a,s}</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.9694em;vertical-align:-0.2861em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.1389em;\">T</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1514em;\"><span style=\"top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">a</span><span class=\"mpunct mtight\">,</span><span class=\"mord mathnormal mtight\">s</span></span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.2861em;\"><span></span></span></span></span></span></span></span></span></span>",
+          "width": 62.515625
+        },
+        {
+          "text": "New answer token IDs for sample sss",
+          "html": "New answer token IDs for sample <span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>s</mi></mrow><annotation encoding=\"application/x-tex\">s</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">s</span></span></span></span>",
+          "width": 124.640625
+        },
+        {
+          "text": "Returned by SGLang",
+          "html": "Returned by SGLang",
+          "width": 123.84375
+        },
+        {
+          "text": "TsT_sTs​",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>T</mi><mi>s</mi></msub></mrow><annotation encoding=\"application/x-tex\">T_s</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.8333em;vertical-align:-0.15em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.1389em;\">T</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1514em;\"><span style=\"top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\">s</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span></span></span></span>",
+          "width": 62.515625
+        },
+        {
+          "text": "Complete token list, prompt then answer",
+          "html": "Complete token list, prompt then answer",
+          "width": 124.640625
+        },
+        {
+          "text": "Sample.tokens",
+          "html": "<code>Sample.tokens</code>",
+          "width": 123.84375
+        },
+        {
+          "text": "ℓs\\ell_sℓs​",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi mathvariant=\"normal\">ℓ</mi><mi>s</mi></msub></mrow><annotation encoding=\"application/x-tex\">\\ell_s</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.8444em;vertical-align:-0.15em;\"></span><span class=\"mord\"><span class=\"mord\">ℓ</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1514em;\"><span style=\"top:-2.55em;margin-left:0em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\">s</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span></span></span></span>",
+          "width": 62.515625
+        },
+        {
+          "text": "Number of answer tokens",
+          "html": "Number of answer tokens",
+          "width": 124.640625
+        },
+        {
+          "text": "Sample.response_length",
+          "html": "<code>Sample.<wbr>response_<wbr>length</code>",
+          "width": 123.84375
+        },
+        {
+          "text": "PsP_sPs​",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>P</mi><mi>s</mi></msub></mrow><annotation encoding=\"application/x-tex\">P_s</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.8333em;vertical-align:-0.15em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.1389em;\">P</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1514em;\"><span style=\"top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\">s</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span></span></span></span>",
+          "width": 62.515625
+        },
+        {
+          "text": "List of the model’s log probabilities, one per answer token",
+          "html": "List of the model’s log probabilities, one per answer token",
+          "width": 124.640625
+        },
+        {
+          "text": "Sample.rollout_log_probs",
+          "html": "<code>Sample.<wbr>rollout_<wbr>log_<wbr>probs</code>",
+          "width": 123.84375
+        },
+        {
+          "text": "+ ⁣+\\mathbin{+\\!+}++",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mo lspace=\"0.22em\" rspace=\"0.22em\"><mo>+</mo><mtext> ⁣</mtext><mo>+</mo></mo></mrow><annotation encoding=\"application/x-tex\">\\mathbin{+\\!+}</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.6667em;vertical-align:-0.0833em;\"></span><span class=\"mord\"><span class=\"mord\">+</span><span class=\"mspace\" style=\"margin-right:-0.1667em;\"></span><span class=\"mord\">+</span></span></span></span></span>",
+          "width": 62.515625
+        },
+        {
+          "text": "Concatenate lists in order",
+          "html": "Concatenate lists in order",
+          "width": 124.640625
+        },
+        {
+          "text": "Notation introduced here",
+          "html": "Notation introduced here",
+          "width": 123.84375
+        }
+      ],
+      "rawMath": false,
+      "katexError": false,
+      "png": "en-360.png"
+    },
+    {
+      "name": "en-390",
+      "counter": "03 / 08",
+      "expanded": "true",
+      "client": 389,
+      "scroll": 389,
+      "bodyLeft": 1,
+      "bodyRight": 390,
+      "tableRight": 366,
+      "tableOverflow": 0,
+      "cells": [
+        {
+          "text": "Tq,sT_{q,s}Tq,s​",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>T</mi><mrow><mi>q</mi><mo separator=\"true\">,</mo><mi>s</mi></mrow></msub></mrow><annotation encoding=\"application/x-tex\">T_{q,s}</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.9694em;vertical-align:-0.2861em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.1389em;\">T</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1514em;\"><span style=\"top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\" style=\"margin-right:0.0359em;\">q</span><span class=\"mpunct mtight\">,</span><span class=\"mord mathnormal mtight\">s</span></span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.2861em;\"><span></span></span></span></span></span></span></span></span></span>",
+          "width": 62.515625
+        },
+        {
+          "text": "Prompt token IDs for sample sss",
+          "html": "Prompt token IDs for sample <span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>s</mi></mrow><annotation encoding=\"application/x-tex\">s</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">s</span></span></span></span>",
+          "width": 148.34375
+        },
+        {
+          "text": "Prompt after tokenization",
+          "html": "Prompt after tokenization",
+          "width": 130.140625
+        },
+        {
+          "text": "Ta,sT_{a,s}Ta,s​",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>T</mi><mrow><mi>a</mi><mo separator=\"true\">,</mo><mi>s</mi></mrow></msub></mrow><annotation encoding=\"application/x-tex\">T_{a,s}</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.9694em;vertical-align:-0.2861em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.1389em;\">T</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1514em;\"><span style=\"top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">a</span><span class=\"mpunct mtight\">,</span><span class=\"mord mathnormal mtight\">s</span></span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.2861em;\"><span></span></span></span></span></span></span></span></span></span>",
+          "width": 62.515625
+        },
+        {
+          "text": "New answer token IDs for sample sss",
+          "html": "New answer token IDs for sample <span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>s</mi></mrow><annotation encoding=\"application/x-tex\">s</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">s</span></span></span></span>",
+          "width": 148.34375
+        },
+        {
+          "text": "Returned by SGLang",
+          "html": "Returned by SGLang",
+          "width": 130.140625
+        },
+        {
+          "text": "TsT_sTs​",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>T</mi><mi>s</mi></msub></mrow><annotation encoding=\"application/x-tex\">T_s</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.8333em;vertical-align:-0.15em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.1389em;\">T</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1514em;\"><span style=\"top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\">s</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span></span></span></span>",
+          "width": 62.515625
+        },
+        {
+          "text": "Complete token list, prompt then answer",
+          "html": "Complete token list, prompt then answer",
+          "width": 148.34375
+        },
+        {
+          "text": "Sample.tokens",
+          "html": "<code>Sample.tokens</code>",
+          "width": 130.140625
+        },
+        {
+          "text": "ℓs\\ell_sℓs​",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi mathvariant=\"normal\">ℓ</mi><mi>s</mi></msub></mrow><annotation encoding=\"application/x-tex\">\\ell_s</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.8444em;vertical-align:-0.15em;\"></span><span class=\"mord\"><span class=\"mord\">ℓ</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1514em;\"><span style=\"top:-2.55em;margin-left:0em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\">s</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span></span></span></span>",
+          "width": 62.515625
+        },
+        {
+          "text": "Number of answer tokens",
+          "html": "Number of answer tokens",
+          "width": 148.34375
+        },
+        {
+          "text": "Sample.response_length",
+          "html": "<code>Sample.<wbr>response_<wbr>length</code>",
+          "width": 130.140625
+        },
+        {
+          "text": "PsP_sPs​",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>P</mi><mi>s</mi></msub></mrow><annotation encoding=\"application/x-tex\">P_s</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.8333em;vertical-align:-0.15em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.1389em;\">P</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1514em;\"><span style=\"top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\">s</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span></span></span></span>",
+          "width": 62.515625
+        },
+        {
+          "text": "List of the model’s log probabilities, one per answer token",
+          "html": "List of the model’s log probabilities, one per answer token",
+          "width": 148.34375
+        },
+        {
+          "text": "Sample.rollout_log_probs",
+          "html": "<code>Sample.<wbr>rollout_<wbr>log_<wbr>probs</code>",
+          "width": 130.140625
+        },
+        {
+          "text": "+ ⁣+\\mathbin{+\\!+}++",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mo lspace=\"0.22em\" rspace=\"0.22em\"><mo>+</mo><mtext> ⁣</mtext><mo>+</mo></mo></mrow><annotation encoding=\"application/x-tex\">\\mathbin{+\\!+}</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.6667em;vertical-align:-0.0833em;\"></span><span class=\"mord\"><span class=\"mord\">+</span><span class=\"mspace\" style=\"margin-right:-0.1667em;\"></span><span class=\"mord\">+</span></span></span></span></span>",
+          "width": 62.515625
+        },
+        {
+          "text": "Concatenate lists in order",
+          "html": "Concatenate lists in order",
+          "width": 148.34375
+        },
+        {
+          "text": "Notation introduced here",
+          "html": "Notation introduced here",
+          "width": 130.140625
+        }
+      ],
+      "rawMath": false,
+      "katexError": false,
+      "png": "en-390.png"
+    },
+    {
+      "name": "en-430",
+      "counter": "03 / 08",
+      "expanded": "true",
+      "client": 429,
+      "scroll": 429,
+      "bodyLeft": 1,
+      "bodyRight": 430,
+      "tableRight": 406,
+      "tableOverflow": 0,
+      "cells": [
+        {
+          "text": "Tq,sT_{q,s}Tq,s​",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>T</mi><mrow><mi>q</mi><mo separator=\"true\">,</mo><mi>s</mi></mrow></msub></mrow><annotation encoding=\"application/x-tex\">T_{q,s}</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.9694em;vertical-align:-0.2861em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.1389em;\">T</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1514em;\"><span style=\"top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\" style=\"margin-right:0.0359em;\">q</span><span class=\"mpunct mtight\">,</span><span class=\"mord mathnormal mtight\">s</span></span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.2861em;\"><span></span></span></span></span></span></span></span></span></span>",
+          "width": 62.515625
+        },
+        {
+          "text": "Prompt token IDs for sample sss",
+          "html": "Prompt token IDs for sample <span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>s</mi></mrow><annotation encoding=\"application/x-tex\">s</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">s</span></span></span></span>",
+          "width": 179.953125
+        },
+        {
+          "text": "Prompt after tokenization",
+          "html": "Prompt after tokenization",
+          "width": 138.53125
+        },
+        {
+          "text": "Ta,sT_{a,s}Ta,s​",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>T</mi><mrow><mi>a</mi><mo separator=\"true\">,</mo><mi>s</mi></mrow></msub></mrow><annotation encoding=\"application/x-tex\">T_{a,s}</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.9694em;vertical-align:-0.2861em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.1389em;\">T</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1514em;\"><span style=\"top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">a</span><span class=\"mpunct mtight\">,</span><span class=\"mord mathnormal mtight\">s</span></span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.2861em;\"><span></span></span></span></span></span></span></span></span></span>",
+          "width": 62.515625
+        },
+        {
+          "text": "New answer token IDs for sample sss",
+          "html": "New answer token IDs for sample <span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>s</mi></mrow><annotation encoding=\"application/x-tex\">s</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">s</span></span></span></span>",
+          "width": 179.953125
+        },
+        {
+          "text": "Returned by SGLang",
+          "html": "Returned by SGLang",
+          "width": 138.53125
+        },
+        {
+          "text": "TsT_sTs​",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>T</mi><mi>s</mi></msub></mrow><annotation encoding=\"application/x-tex\">T_s</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.8333em;vertical-align:-0.15em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.1389em;\">T</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1514em;\"><span style=\"top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\">s</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span></span></span></span>",
+          "width": 62.515625
+        },
+        {
+          "text": "Complete token list, prompt then answer",
+          "html": "Complete token list, prompt then answer",
+          "width": 179.953125
+        },
+        {
+          "text": "Sample.tokens",
+          "html": "<code>Sample.tokens</code>",
+          "width": 138.53125
+        },
+        {
+          "text": "ℓs\\ell_sℓs​",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi mathvariant=\"normal\">ℓ</mi><mi>s</mi></msub></mrow><annotation encoding=\"application/x-tex\">\\ell_s</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.8444em;vertical-align:-0.15em;\"></span><span class=\"mord\"><span class=\"mord\">ℓ</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1514em;\"><span style=\"top:-2.55em;margin-left:0em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\">s</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span></span></span></span>",
+          "width": 62.515625
+        },
+        {
+          "text": "Number of answer tokens",
+          "html": "Number of answer tokens",
+          "width": 179.953125
+        },
+        {
+          "text": "Sample.response_length",
+          "html": "<code>Sample.<wbr>response_<wbr>length</code>",
+          "width": 138.53125
+        },
+        {
+          "text": "PsP_sPs​",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>P</mi><mi>s</mi></msub></mrow><annotation encoding=\"application/x-tex\">P_s</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.8333em;vertical-align:-0.15em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.1389em;\">P</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1514em;\"><span style=\"top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\">s</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span></span></span></span>",
+          "width": 62.515625
+        },
+        {
+          "text": "List of the model’s log probabilities, one per answer token",
+          "html": "List of the model’s log probabilities, one per answer token",
+          "width": 179.953125
+        },
+        {
+          "text": "Sample.rollout_log_probs",
+          "html": "<code>Sample.<wbr>rollout_<wbr>log_<wbr>probs</code>",
+          "width": 138.53125
+        },
+        {
+          "text": "+ ⁣+\\mathbin{+\\!+}++",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mo lspace=\"0.22em\" rspace=\"0.22em\"><mo>+</mo><mtext> ⁣</mtext><mo>+</mo></mo></mrow><annotation encoding=\"application/x-tex\">\\mathbin{+\\!+}</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.6667em;vertical-align:-0.0833em;\"></span><span class=\"mord\"><span class=\"mord\">+</span><span class=\"mspace\" style=\"margin-right:-0.1667em;\"></span><span class=\"mord\">+</span></span></span></span></span>",
+          "width": 62.515625
+        },
+        {
+          "text": "Concatenate lists in order",
+          "html": "Concatenate lists in order",
+          "width": 179.953125
+        },
+        {
+          "text": "Notation introduced here",
+          "html": "Notation introduced here",
+          "width": 138.53125
+        }
+      ],
+      "rawMath": false,
+      "katexError": false,
+      "png": "en-430.png"
+    },
+    {
+      "name": "zh-360",
+      "counter": "03 / 08",
+      "expanded": "true",
+      "client": 359,
+      "scroll": 359,
+      "bodyLeft": 1,
+      "bodyRight": 360,
+      "tableRight": 336,
+      "tableOverflow": 0,
+      "cells": [
+        {
+          "text": "Tq,sT_{q,s}Tq,s​",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>T</mi><mrow><mi>q</mi><mo separator=\"true\">,</mo><mi>s</mi></mrow></msub></mrow><annotation encoding=\"application/x-tex\">T_{q,s}</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.9694em;vertical-align:-0.2861em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.1389em;\">T</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1514em;\"><span style=\"top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\" style=\"margin-right:0.0359em;\">q</span><span class=\"mpunct mtight\">,</span><span class=\"mord mathnormal mtight\">s</span></span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.2861em;\"><span></span></span></span></span></span></span></span></span></span>",
+          "width": 39.1875
+        },
+        {
+          "text": "样本 sss 的问题 token ID 列表",
+          "html": "样本 <span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>s</mi></mrow><annotation encoding=\"application/x-tex\">s</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">s</span></span></span></span> 的问题 token ID 列表",
+          "width": 138.359375
+        },
+        {
+          "text": "prompt 经 tokenizer 转换",
+          "html": "prompt 经 tokenizer 转换",
+          "width": 133.453125
+        },
+        {
+          "text": "Ta,sT_{a,s}Ta,s​",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>T</mi><mrow><mi>a</mi><mo separator=\"true\">,</mo><mi>s</mi></mrow></msub></mrow><annotation encoding=\"application/x-tex\">T_{a,s}</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.9694em;vertical-align:-0.2861em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.1389em;\">T</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1514em;\"><span style=\"top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">a</span><span class=\"mpunct mtight\">,</span><span class=\"mord mathnormal mtight\">s</span></span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.2861em;\"><span></span></span></span></span></span></span></span></span></span>",
+          "width": 39.1875
+        },
+        {
+          "text": "样本 sss 新生成的回答 token ID 列表",
+          "html": "样本 <span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>s</mi></mrow><annotation encoding=\"application/x-tex\">s</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">s</span></span></span></span> 新生成的回答 token ID 列表",
+          "width": 138.359375
+        },
+        {
+          "text": "SGLang 返回",
+          "html": "SGLang 返回",
+          "width": 133.453125
+        },
+        {
+          "text": "TsT_sTs​",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>T</mi><mi>s</mi></msub></mrow><annotation encoding=\"application/x-tex\">T_s</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.8333em;vertical-align:-0.15em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.1389em;\">T</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1514em;\"><span style=\"top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\">s</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span></span></span></span>",
+          "width": 39.1875
+        },
+        {
+          "text": "问题与回答拼接后的完整 token 列表",
+          "html": "问题与回答拼接后的完整 token 列表",
+          "width": 138.359375
+        },
+        {
+          "text": "Sample.tokens",
+          "html": "<code>Sample.tokens</code>",
+          "width": 133.453125
+        },
+        {
+          "text": "ℓs\\ell_sℓs​",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi mathvariant=\"normal\">ℓ</mi><mi>s</mi></msub></mrow><annotation encoding=\"application/x-tex\">\\ell_s</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.8444em;vertical-align:-0.15em;\"></span><span class=\"mord\"><span class=\"mord\">ℓ</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1514em;\"><span style=\"top:-2.55em;margin-left:0em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\">s</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span></span></span></span>",
+          "width": 39.1875
+        },
+        {
+          "text": "回答 token 数",
+          "html": "回答 token 数",
+          "width": 138.359375
+        },
+        {
+          "text": "Sample.response_length",
+          "html": "<code>Sample.<wbr>response_<wbr>length</code>",
+          "width": 133.453125
+        },
+        {
+          "text": "PsP_sPs​",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>P</mi><mi>s</mi></msub></mrow><annotation encoding=\"application/x-tex\">P_s</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.8333em;vertical-align:-0.15em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.1389em;\">P</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1514em;\"><span style=\"top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\">s</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span></span></span></span>",
+          "width": 39.1875
+        },
+        {
+          "text": "模型的 log probability 列表，每个回答 token 各一项",
+          "html": "模型的 log probability 列表，每个回答 token 各一项",
+          "width": 138.359375
+        },
+        {
+          "text": "Sample.rollout_log_probs",
+          "html": "<code>Sample.<wbr>rollout_<wbr>log_<wbr>probs</code>",
+          "width": 133.453125
+        },
+        {
+          "text": "+ ⁣+\\mathbin{+\\!+}++",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mo lspace=\"0.22em\" rspace=\"0.22em\"><mo>+</mo><mtext> ⁣</mtext><mo>+</mo></mo></mrow><annotation encoding=\"application/x-tex\">\\mathbin{+\\!+}</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.6667em;vertical-align:-0.0833em;\"></span><span class=\"mord\"><span class=\"mord\">+</span><span class=\"mspace\" style=\"margin-right:-0.1667em;\"></span><span class=\"mord\">+</span></span></span></span></span>",
+          "width": 39.1875
+        },
+        {
+          "text": "按先后顺序拼接列表",
+          "html": "按先后顺序拼接列表",
+          "width": 138.359375
+        },
+        {
+          "text": "本步记号",
+          "html": "本步记号",
+          "width": 133.453125
+        }
+      ],
+      "rawMath": false,
+      "katexError": false,
+      "png": "zh-360.png"
+    },
+    {
+      "name": "zh-390",
+      "counter": "03 / 08",
+      "expanded": "true",
+      "client": 389,
+      "scroll": 389,
+      "bodyLeft": 1,
+      "bodyRight": 390,
+      "tableRight": 366,
+      "tableOverflow": 0,
+      "cells": [
+        {
+          "text": "Tq,sT_{q,s}Tq,s​",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>T</mi><mrow><mi>q</mi><mo separator=\"true\">,</mo><mi>s</mi></mrow></msub></mrow><annotation encoding=\"application/x-tex\">T_{q,s}</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.9694em;vertical-align:-0.2861em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.1389em;\">T</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1514em;\"><span style=\"top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\" style=\"margin-right:0.0359em;\">q</span><span class=\"mpunct mtight\">,</span><span class=\"mord mathnormal mtight\">s</span></span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.2861em;\"><span></span></span></span></span></span></span></span></span></span>",
+          "width": 39.453125
+        },
+        {
+          "text": "样本 sss 的问题 token ID 列表",
+          "html": "样本 <span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>s</mi></mrow><annotation encoding=\"application/x-tex\">s</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">s</span></span></span></span> 的问题 token ID 列表",
+          "width": 161.171875
+        },
+        {
+          "text": "prompt 经 tokenizer 转换",
+          "html": "prompt 经 tokenizer 转换",
+          "width": 140.375
+        },
+        {
+          "text": "Ta,sT_{a,s}Ta,s​",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>T</mi><mrow><mi>a</mi><mo separator=\"true\">,</mo><mi>s</mi></mrow></msub></mrow><annotation encoding=\"application/x-tex\">T_{a,s}</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.9694em;vertical-align:-0.2861em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.1389em;\">T</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1514em;\"><span style=\"top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">a</span><span class=\"mpunct mtight\">,</span><span class=\"mord mathnormal mtight\">s</span></span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.2861em;\"><span></span></span></span></span></span></span></span></span></span>",
+          "width": 39.453125
+        },
+        {
+          "text": "样本 sss 新生成的回答 token ID 列表",
+          "html": "样本 <span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>s</mi></mrow><annotation encoding=\"application/x-tex\">s</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">s</span></span></span></span> 新生成的回答 token ID 列表",
+          "width": 161.171875
+        },
+        {
+          "text": "SGLang 返回",
+          "html": "SGLang 返回",
+          "width": 140.375
+        },
+        {
+          "text": "TsT_sTs​",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>T</mi><mi>s</mi></msub></mrow><annotation encoding=\"application/x-tex\">T_s</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.8333em;vertical-align:-0.15em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.1389em;\">T</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1514em;\"><span style=\"top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\">s</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span></span></span></span>",
+          "width": 39.453125
+        },
+        {
+          "text": "问题与回答拼接后的完整 token 列表",
+          "html": "问题与回答拼接后的完整 token 列表",
+          "width": 161.171875
+        },
+        {
+          "text": "Sample.tokens",
+          "html": "<code>Sample.tokens</code>",
+          "width": 140.375
+        },
+        {
+          "text": "ℓs\\ell_sℓs​",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi mathvariant=\"normal\">ℓ</mi><mi>s</mi></msub></mrow><annotation encoding=\"application/x-tex\">\\ell_s</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.8444em;vertical-align:-0.15em;\"></span><span class=\"mord\"><span class=\"mord\">ℓ</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1514em;\"><span style=\"top:-2.55em;margin-left:0em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\">s</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span></span></span></span>",
+          "width": 39.453125
+        },
+        {
+          "text": "回答 token 数",
+          "html": "回答 token 数",
+          "width": 161.171875
+        },
+        {
+          "text": "Sample.response_length",
+          "html": "<code>Sample.<wbr>response_<wbr>length</code>",
+          "width": 140.375
+        },
+        {
+          "text": "PsP_sPs​",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>P</mi><mi>s</mi></msub></mrow><annotation encoding=\"application/x-tex\">P_s</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.8333em;vertical-align:-0.15em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.1389em;\">P</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1514em;\"><span style=\"top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\">s</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span></span></span></span>",
+          "width": 39.453125
+        },
+        {
+          "text": "模型的 log probability 列表，每个回答 token 各一项",
+          "html": "模型的 log probability 列表，每个回答 token 各一项",
+          "width": 161.171875
+        },
+        {
+          "text": "Sample.rollout_log_probs",
+          "html": "<code>Sample.<wbr>rollout_<wbr>log_<wbr>probs</code>",
+          "width": 140.375
+        },
+        {
+          "text": "+ ⁣+\\mathbin{+\\!+}++",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mo lspace=\"0.22em\" rspace=\"0.22em\"><mo>+</mo><mtext> ⁣</mtext><mo>+</mo></mo></mrow><annotation encoding=\"application/x-tex\">\\mathbin{+\\!+}</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.6667em;vertical-align:-0.0833em;\"></span><span class=\"mord\"><span class=\"mord\">+</span><span class=\"mspace\" style=\"margin-right:-0.1667em;\"></span><span class=\"mord\">+</span></span></span></span></span>",
+          "width": 39.453125
+        },
+        {
+          "text": "按先后顺序拼接列表",
+          "html": "按先后顺序拼接列表",
+          "width": 161.171875
+        },
+        {
+          "text": "本步记号",
+          "html": "本步记号",
+          "width": 140.375
+        }
+      ],
+      "rawMath": false,
+      "katexError": false,
+      "png": "zh-390.png"
+    },
+    {
+      "name": "zh-430",
+      "counter": "03 / 08",
+      "expanded": "true",
+      "client": 429,
+      "scroll": 429,
+      "bodyLeft": 1,
+      "bodyRight": 430,
+      "tableRight": 406,
+      "tableOverflow": 0,
+      "cells": [
+        {
+          "text": "Tq,sT_{q,s}Tq,s​",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>T</mi><mrow><mi>q</mi><mo separator=\"true\">,</mo><mi>s</mi></mrow></msub></mrow><annotation encoding=\"application/x-tex\">T_{q,s}</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.9694em;vertical-align:-0.2861em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.1389em;\">T</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1514em;\"><span style=\"top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\" style=\"margin-right:0.0359em;\">q</span><span class=\"mpunct mtight\">,</span><span class=\"mord mathnormal mtight\">s</span></span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.2861em;\"><span></span></span></span></span></span></span></span></span></span>",
+          "width": 39.8125
+        },
+        {
+          "text": "样本 sss 的问题 token ID 列表",
+          "html": "样本 <span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>s</mi></mrow><annotation encoding=\"application/x-tex\">s</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">s</span></span></span></span> 的问题 token ID 列表",
+          "width": 191.59375
+        },
+        {
+          "text": "prompt 经 tokenizer 转换",
+          "html": "prompt 经 tokenizer 转换",
+          "width": 149.59375
+        },
+        {
+          "text": "Ta,sT_{a,s}Ta,s​",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>T</mi><mrow><mi>a</mi><mo separator=\"true\">,</mo><mi>s</mi></mrow></msub></mrow><annotation encoding=\"application/x-tex\">T_{a,s}</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.9694em;vertical-align:-0.2861em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.1389em;\">T</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1514em;\"><span style=\"top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">a</span><span class=\"mpunct mtight\">,</span><span class=\"mord mathnormal mtight\">s</span></span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.2861em;\"><span></span></span></span></span></span></span></span></span></span>",
+          "width": 39.8125
+        },
+        {
+          "text": "样本 sss 新生成的回答 token ID 列表",
+          "html": "样本 <span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>s</mi></mrow><annotation encoding=\"application/x-tex\">s</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">s</span></span></span></span> 新生成的回答 token ID 列表",
+          "width": 191.59375
+        },
+        {
+          "text": "SGLang 返回",
+          "html": "SGLang 返回",
+          "width": 149.59375
+        },
+        {
+          "text": "TsT_sTs​",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>T</mi><mi>s</mi></msub></mrow><annotation encoding=\"application/x-tex\">T_s</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.8333em;vertical-align:-0.15em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.1389em;\">T</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1514em;\"><span style=\"top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\">s</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span></span></span></span>",
+          "width": 39.8125
+        },
+        {
+          "text": "问题与回答拼接后的完整 token 列表",
+          "html": "问题与回答拼接后的完整 token 列表",
+          "width": 191.59375
+        },
+        {
+          "text": "Sample.tokens",
+          "html": "<code>Sample.tokens</code>",
+          "width": 149.59375
+        },
+        {
+          "text": "ℓs\\ell_sℓs​",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi mathvariant=\"normal\">ℓ</mi><mi>s</mi></msub></mrow><annotation encoding=\"application/x-tex\">\\ell_s</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.8444em;vertical-align:-0.15em;\"></span><span class=\"mord\"><span class=\"mord\">ℓ</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1514em;\"><span style=\"top:-2.55em;margin-left:0em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\">s</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span></span></span></span>",
+          "width": 39.8125
+        },
+        {
+          "text": "回答 token 数",
+          "html": "回答 token 数",
+          "width": 191.59375
+        },
+        {
+          "text": "Sample.response_length",
+          "html": "<code>Sample.<wbr>response_<wbr>length</code>",
+          "width": 149.59375
+        },
+        {
+          "text": "PsP_sPs​",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>P</mi><mi>s</mi></msub></mrow><annotation encoding=\"application/x-tex\">P_s</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.8333em;vertical-align:-0.15em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.1389em;\">P</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1514em;\"><span style=\"top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\">s</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span></span></span></span>",
+          "width": 39.8125
+        },
+        {
+          "text": "模型的 log probability 列表，每个回答 token 各一项",
+          "html": "模型的 log probability 列表，每个回答 token 各一项",
+          "width": 191.59375
+        },
+        {
+          "text": "Sample.rollout_log_probs",
+          "html": "<code>Sample.<wbr>rollout_<wbr>log_<wbr>probs</code>",
+          "width": 149.59375
+        },
+        {
+          "text": "+ ⁣+\\mathbin{+\\!+}++",
+          "html": "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mo lspace=\"0.22em\" rspace=\"0.22em\"><mo>+</mo><mtext> ⁣</mtext><mo>+</mo></mo></mrow><annotation encoding=\"application/x-tex\">\\mathbin{+\\!+}</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.6667em;vertical-align:-0.0833em;\"></span><span class=\"mord\"><span class=\"mord\">+</span><span class=\"mspace\" style=\"margin-right:-0.1667em;\"></span><span class=\"mord\">+</span></span></span></span></span>",
+          "width": 39.8125
+        },
+        {
+          "text": "按先后顺序拼接列表",
+          "html": "按先后顺序拼接列表",
+          "width": 191.59375
+        },
+        {
+          "text": "本步记号",
+          "html": "本步记号",
+          "width": 149.59375
+        }
+      ],
+      "rawMath": false,
+      "katexError": false,
+      "png": "zh-430.png"
+    }
+  ],
+  "failures": []
+}

@@ -83,8 +83,8 @@ $$T_s=T_{q,s}\mathbin{+\!+}T_{a,s},\qquad \ell_s=|T_{a,s}|,\qquad |P_s|=\ell_s$$
 | $T_{q,s}$ | Prompt token IDs for sample $s$ | Prompt after tokenization |
 | $T_{a,s}$ | New answer token IDs for sample $s$ | Returned by SGLang |
 | $T_s$ | Complete token list, prompt then answer | `Sample.tokens` |
-| $\ell_s$ | Number of answer tokens | `Sample.response_length` |
-| $P_s$ | List of the model's log probabilities, one per answer token | `Sample.rollout_log_probs` |
+| $\ell_s$ | Number of answer tokens | <code>Sample.<wbr>response_<wbr>length</code> |
+| $P_s$ | List of the model's log probabilities, one per answer token | <code>Sample.<wbr>rollout_<wbr>log_<wbr>probs</code> |
 | $\mathbin{+\!+}$ | Concatenate lists in order | Notation introduced here |
 
 ### The numbers on the stage

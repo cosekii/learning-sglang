@@ -1,3 +1,29 @@
+# lane k2 本轮报告 · ML Systems 06 Step 3 的 ML-62
+
+日期：2026-11-27。类型：修旧（P1 手机 deep 呈现门）。本轮开始 HEAD 与 `origin/tutorials` 均为 `04be539`，工作树干净。ML-45／46 已由协调关闭；ML-19 与 ML-41～44 的作者修复批次保持原样，不重做。范围只有 ML 06 Step 3 的双语 deep、定向审计和本报告；未改组件、caption、MDX、transcript、其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。
+
+## 修复与评分
+
+- **ML-62 作者修复完成，待协调固定复审，不自行销项。** Step 3 符号表保留 `Sample.response_length` 和 `Sample.rollout_log_probs` 的完整字段名，只在 `.` 与 `_` 后加 `<wbr>` 换行机会。中英文含义、公式和其他单元格不变，表格与共享样式未改。
+- 改前实测：英文 360／390 px 的 `.deep-body` 为 `359→409`、`389→409`，中文 360 px 为 `359→370`；三处失败与 review.md 一致。改后英中 360／390／430 px 六个状态均为 `client === scroll`、`tableOverflow: 0`，counter 都是 `03 / 08`，抽屉均展开，无 raw math 或 KaTeX 错误，`failures=[]`。证据：`.bot/out/ml62-deep-audit/report.json`；可重跑脚本：`.bot/out/ml62-deep-overflow.mjs`。
+- Step 3 内容评分不变，作者参考值仍为 R1–R5 **10/10**、机制 R6 **2/2**、原十个非视觉项 **20/20**，新内容洞 **0**。R1 复述：「模型给每个回答 token 各记一个生成分数；检查器下一步才给整个回答 reward，两种分数不一样。」本项只修呈现硬门，不改协调固定 `209c3fa` 的整章基线：**80/80、16/16、190/192，NO-GO**。
+- 独立 `explore` 冷读 **PASS**：渲染后的两个字段名完整，双语含义不变，六个手机状态通过，未引入新冷读洞，范围只含 ML-62。`pstack-reviewer` 因配置模型不存在未启动，不计证据。
+
+## 硬门与边界
+
+- `npm run build`：**60 页**通过。正确指向本轮 4503 服务后，连续两次 transcript 均为 **8 步／1,517 词**，SHA-256 均为 `58c569eaa3a84b8619bc12e641c9f228ae2623aad0faecb4020f52bae8c686f6`，与 pinned 逐字一致。
+- 英中全章 360／390／430 px `mobile`、中文 Step 3 字号门、`deep-check 06`、`zh-check`、Step 3 `readability` 和 `git diff --check` 全过。首次未传 base URL 的 transcript 访问了其他服务并报告 `counter says null`，未采信；随后所有浏览器门均显式使用本轮 4503 地址重跑通过。
+- 代表截图：`.bot/out/ml62-deep-audit/en-360.png`、`.bot/out/ml62-deep-audit/zh-360.png`。**当前模型不能读取 PNG，工具已明确返回无图像输入能力；结论来自构建、transcript、源码、独立冷读、DOM 和几何检查，未声称看过图片或视觉通过。**
+- `docs/z2s-map.md` 没有 ML 06 的直接对应课程章；本轮未引入新事实或数字，无需另读来源扩写。未跑全站回归、真实 slime 训练、GPU benchmark 或 reduced-motion 动态切换。最新回归只有 `(exit 13)`，没有可分配布局步骤。
+
+## 剩余与清理
+
+- ML-61 是独立 P2，本轮未改；ML-50 与其他 P1 保持开放。ML-19、ML-41～44 和其他待复审批次不改分、不销项。主人最终视觉验收另计。
+- 本 clone 的 `node_modules` 原指向协调人 checkout；已只删除本目录内符号链接并在本目录安装依赖，package 文件无 diff，未写协调人的 checkout。
+- 本地查看前运行 `npx astro dev --background --host 127.0.0.1 --port 4503`。地址：`http://localhost:4503/learning-sglang/ml-sys/ch/06-slime-rollout-loop/?step=3`，打开「深入讲解」查看符号表。本轮 4503 服务和审计浏览器已在收尾关闭，其他 lane 的进程未动。
+
+---
+
 # lane d 本轮报告 · Voxt 10 Step 1 的 P1「同屏新名过多」作者修复
 
 日期：2026-11-27。类型：修旧（review.md 对 `bd884d2` 的固定复审里登记给 d 的开放 P1）。按主人 11-27 规则不等复审：先清本书开放 P1，本轮只做这一项，一个 Step 一个提交。本轮开始 HEAD 为 `04be539`，工作树干净；改动只有 `FileTranscription.svelte` 的 Step 1（组件内 step 0）图文、双语 deep 第 1 步的 On the stage 和生成 transcript。其余十步、其他章、其他书、`.bot/memory/` 和第 1 本受保护英文原文均未改；既有 `4526f171…a613` 大机制草稿未混入。
@@ -61,7 +87,6 @@
 - 本 clone 的 `node_modules` 原指向协调人 checkout；已只删除本目录内符号链接并在本目录安装依赖，package 文件无 diff，未写协调人的 checkout。
 - 本地查看前运行 `npx astro dev --background --host 127.0.0.1 --port 4501`，地址：`http://localhost:4501/learning-sglang/omni/ch/11-fish-s2-pro/?step=1`。本轮 4501 服务已停止且端口无监听。
 - 审计脚本均调用 `browser.close()`。收尾 `pgrep -P 1 -fl 'headless=new.*cdp-'` 无输出；其余 Chrome 的 cwd 属于协调快照、后台 regress 或 lane d，非本轮所起，未动。
-
 ---
 
 # lane k2 本轮报告 · ML Systems 07 的 ML-41～44

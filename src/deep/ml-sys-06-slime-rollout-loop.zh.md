@@ -83,8 +83,8 @@ $$T_s=T_{q,s}\mathbin{+\!+}T_{a,s},\qquad \ell_s=|T_{a,s}|,\qquad |P_s|=\ell_s$$
 | $T_{q,s}$ | 样本 $s$ 的问题 token ID 列表 | prompt 经 tokenizer 转换 |
 | $T_{a,s}$ | 样本 $s$ 新生成的回答 token ID 列表 | SGLang 返回 |
 | $T_s$ | 问题与回答拼接后的完整 token 列表 | `Sample.tokens` |
-| $\ell_s$ | 回答 token 数 | `Sample.response_length` |
-| $P_s$ | 模型的 log probability 列表，每个回答 token 各一项 | `Sample.rollout_log_probs` |
+| $\ell_s$ | 回答 token 数 | <code>Sample.<wbr>response_<wbr>length</code> |
+| $P_s$ | 模型的 log probability 列表，每个回答 token 各一项 | <code>Sample.<wbr>rollout_<wbr>log_<wbr>probs</code> |
 | $\mathbin{+\!+}$ | 按先后顺序拼接列表 | 本步记号 |
 
 ### 代入图上的数
