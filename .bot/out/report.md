@@ -3424,3 +3424,15 @@ npx astro dev stop
 
 - 复审指出 Step 1 deep 把切分线写成蓝色，但组件用 `var(--line)`（灰 `#e6e3db`）渲染。已把 `voxt-microphone-to-voice-frames.en.md:10` 改为 Grey dashed lines、`.zh.md:10` 改为灰色虚线；蓝色仅指帧框，与台上一致。
 - 复跑：build 60 页、deep-check 03 ok、zh-check all clear、transcript 无 diff、Step 1 deep 横溢探针（英中 × 桌面/360/390/430）all clear。
+
+## Voxt 03 追加修复（同轮，deep-slide 数字对齐，EVAL 第 92 条）
+
+- 按协调指出的三处并自查全部 8 步英中 deep：把不在本步图上的数字与机制从「图上是什么／代入图上的数」移入新增的 `Derived · not drawn`／`图外推导` 小节，注明来源。
+  - Step 2：`0.5→16,383` 换算、整帧 3,200 字节、十六进制 `FF 3F` 移入图外推导；台上表只留 255／63／`255 → 63`。
+  - Step 3：`offset = 3,200`、`6.25 ms`、空帧反事实移入图外推导；台上保留 `最后一帧 2`（图上有）和 3,300／1,600／100／200 的可见算式。
+  - Step 5：−16.4 dB、0.151、15.1%、200 Hz dB 范围和 80 Hz 转角整表移入图外推导（台上没有任何可代入的数）；台上条目改为只说「按公开响应比例缩小，比例在下方推导」。
+  - Step 6：段起点回退改放图外推导并明确「主图不画段起点，只画连续 60 ms 的等待条件」（未新增舞台对象）；320 样本、100/20=5、两条门槛也一并移入。
+  - Step 7：四项限制（12／15／17 dB 与 min 式）移入图外推导；台上表只留最终增益 7 dB 与 $10^{7/20}$ ≈ 2.24（输入 7 与结果都在图上）。
+  - Step 8：29,205 与 50 ms 恢复常数移入图外推导；台上表留 −1 dBFS 与 0.891。
+  - Steps 1、4 复核无台上数字问题，未改。
+- 复跑：build 60 页、deep-check 03 ok、zh-check all clear、readability 0、英中 × 桌面/360/390/430 抽屉展开横溢探针 64 状态 all clear、transcript 无 diff（deep 不进 transcript）、`git diff --check` 干净。组件未动，mobile 舞台门沿用上一轮通过结果；抽屉内容易被本轮 64 状态探针覆盖。

@@ -96,13 +96,17 @@ $$
 
 | Quantity | Calculation | Result |
 |---|---|---:|
-| Converted integer | $\operatorname{trunc}(0.5\times32{,}767)$ | $16{,}383$ |
-| Low byte | $16{,}383-63\times256$ | $255$, or `FF` in hexadecimal |
-| High byte | $(16{,}383-255)/256$ | $63$, or `3F` in hexadecimal |
-| Storage order | Low byte, then high byte | `FF 3F` |
-| Bytes in one full frame | $1{,}600\times2$ | $3{,}200$ bytes |
+| Low byte | $16{,}383-63\times256$ | $255$ |
+| High byte | $(16{,}383-255)/256$ | $63$ |
+| Storage order | Low byte, then high byte | `255 → 63` |
 
-The public test checks these exact results. After input `0.5`, byte zero is `0xFF`, byte one is `0x3F`, and one full frame contains 3,200 bytes.
+The public test checks these exact results.
+
+### Derived · not drawn
+
+- The stage starts at the already-converted `16,383`. The public test produced it from input `0.5` through the formula above: $\operatorname{trunc}(0.5\times32{,}767)=16{,}383$. Neither `0.5` nor `32,767` is drawn.
+- Step 1's default full frame holds 1,600 samples, so one full frame holds $1{,}600\times2=3{,}200$ bytes. This frame total stays off the stage.
+- In hexadecimal, the test's stored bytes are `0xFF` then `0x3F` (`FF 3F`). The stage shows the decimal values only.
 
 ### Scope
 
@@ -129,8 +133,8 @@ Public baseline: <code>sglang-omni@<wbr>f6827ed1907e392f<wbr>d67d5f13fa315c016e2
 
 - This example uses the public test's 3,300 samples. Each blue box holds 1,600 samples, or the 3,200 bytes derived in Step 2.
 - The narrow amber box is the partial final frame. It uses the same horizontal scale as the full frames: 100 is one sixteenth of 1,600, so its width is one sixteenth of a blue box.
-- Here, `flush` means emitting leftover samples when capture stops before they fill a frame. The final frame still has sequence number `seq = 2` and starts at sample offset `offset = 3200`, after the samples in the two full frames.
-- The final frame holds only the 100 remaining samples. It adds no blank samples, so it occupies 200 bytes and lasts 6.25 ms rather than a full frame's 100 ms.
+- Here, `flush` means emitting leftover samples when capture stops before they fill a frame. The final frame keeps its own sequence number, drawn as `FINAL FRAME 2`. Its sample offset is derived below, not drawn.
+- The final frame holds only the 100 remaining samples. It adds no blank samples, so it occupies the drawn 200 bytes. Its 6.25 ms duration is derived below, not drawn.
 
 ### Formula
 
@@ -153,10 +157,14 @@ $$
 | Full frames | $\lfloor3{,}300/1{,}600\rfloor$ | 2 frames |
 | Remaining samples | $3{,}300-2\times1{,}600$ | 100 samples |
 | Final-frame bytes | $100\times2$ | 200 bytes |
-| Final-frame start | $2\times1{,}600$ | Sample offset 3,200 |
-| Final-frame duration | $100/16{,}000$ seconds | 0.00625 seconds = 6.25 ms |
 
-The public test checks these two full frames and the final 200 bytes. If no samples remain at stop, `flush()` does not invent an empty frame.
+The public test checks these two full frames and the final 200 bytes.
+
+### Derived · not drawn
+
+- Final-frame start: $2\times1{,}600$ gives sample offset $3{,}200$ (public test; not drawn).
+- Final-frame duration: $100/16{,}000$ seconds $=0.00625$ seconds $=6.25$ ms (not drawn).
+- If no samples remain at stop, `flush()` does not invent an empty frame (<code>Voxt/<wbr>helper/<wbr>Sources/<wbr>VoxtNewHelperKit/<wbr>PCMFramer.swift:70-87</code>; not drawn).
 
 ### Next
 
@@ -209,8 +217,8 @@ Public baseline: <code>sglang-omni@<wbr>6d8ed2dcf70da1b0<wbr>21bb14b62239a3add42
 ### On the stage
 
 - `Hz` counts vibrations each second. A 50 Hz wave vibrates slowly and can represent mains hum. A 200 Hz wave vibrates faster.
-- A high-pass does not delete every frequency below a hard boundary. It reduces slower vibrations by a frequency-dependent response. The default corner is 80 Hz, where the response is about −3 dB.
-- Before and after waves share the same time and amplitude scales. The 50 Hz output uses the public response of about −16.4 dB. The 200 Hz response is close to 1, so the stage draws the same wave.
+- A high-pass does not delete every frequency below a hard boundary. It reduces slower vibrations by a frequency-dependent response. The default corner's numbers are derived below, not drawn.
+- Before and after waves share the same time and amplitude scales. The 50 Hz after-wave is drawn smaller by the public test's response ratio, derived below. The 200 Hz response is close to 1, so the stage draws the same wave.
 - Both blue waves belong to Step 4's model copy. The amber history recording does not enter this processing path.
 
 ### Formula
@@ -226,15 +234,18 @@ $$
 | $D$ | Response at one frequency, in decibels | Public <code>Test<wbr>High<wbr>Pass<wbr>Response</code> |
 | $G$ | Output amplitude divided by input amplitude | Decibel conversion; the code's `Response` returns 1 for 0 dB |
 
-### The numbers on the stage
+### Derived · not drawn
+
+The stage draws the result of these numbers but not the numbers themselves; they come from the public <code>Test<wbr>High<wbr>Pass<wbr>Response</code>.
 
 | Quantity | Calculation | Result |
 |---|---|---:|
 | Amplitude ratio at 50 Hz | $10^{-16.4/20}$ | About 0.151 |
 | Relative output height | $1\times0.151$ | About 15.1% of the input |
 | Response at 200 Hz | Public test range −0.05 to 0.01 dB | Close to 1; drawn unchanged |
+| Response at the default 80 Hz corner | $10^{-3/20}$ | About −3 dB, or 0.708 |
 
-At the default 80 Hz corner, the response is about −3 dB, so $10^{-3/20}\approx0.708$. The filter changes gradually rather than deleting everything below 80 Hz.
+The filter changes gradually rather than deleting everything below 80 Hz.
 
 ### Scope
 
@@ -259,10 +270,9 @@ Public baseline: <code>sglang-omni@<wbr>6d8ed2dcf70da1b0<wbr>21bb14b62239a3add42
 
 ### On the stage
 
-- These 20 ms analysis slices differ from the helper's 100 ms audio frames in Step 1. One 100 ms audio frame yields five consecutive 20 ms analysis slices.
+- These 20 ms analysis slices differ from the helper's 100 ms audio frames in Step 1. How many slices one audio frame yields is derived below.
 - The dashed grey line is the room-noise estimate, which follows quiet slices. A blue bar rises above it to represent a sufficiently loud slice. The stage focuses on the time condition; the real onset also requires an absolute minimum level.
 - At left, one louder 20 ms slice does not reach 60 ms in a row, so it says “not yet.” At right, three sufficiently loud slices arrive consecutively, and speech starts when the third arrives.
-- The segment start moves back to the first of those three slices rather than the end of the third. Waiting for confirmation does not cut off the beginning of the speech.
 
 ### Formula
 
@@ -290,11 +300,14 @@ $$
 
 | Quantity | Calculation | Result |
 |---|---|---:|
-| Samples per analysis frame | $16{,}000\times20/1{,}000$ | 320 samples |
 | Consecutive onset frames | $60/20$ | 3 frames |
-| Analysis frames per helper frame | $100/20$ | 5 frames |
 
-By default, every onset frame must satisfy both $L>\text{noise floor}+10\,\mathrm{dB}$ and $L>-60\,\mathrm{dBFS}$. The implementation uses strict comparisons; the documentation summarizes both as “above.”
+### Derived · not drawn
+
+- Samples per analysis frame: $16{,}000\times20/1{,}000=320$ samples. The stage draws only the 20 ms duration.
+- One 100 ms audio frame from Step 1 yields $100/20=5$ consecutive 20 ms analysis slices; Step 1's 100 ms is not redrawn here.
+- The segment start moves back to the first of the three onset slices rather than the end of the third, so waiting for confirmation does not cut off the beginning of the speech (<code>Voxt/<wbr>internal/<wbr>vad/<wbr>vad.go:239-278</code>). The stage does not draw the segment start; it shows only the 60 ms waiting condition.
+- By default, every onset frame must also satisfy both $L>\text{noise floor}+10\,\mathrm{dB}$ and $L>-60\,\mathrm{dBFS}$ (<code>Voxt/<wbr>internal/<wbr>vad/<wbr>vad.go:21-57</code>). The implementation uses strict comparisons; the documentation summarizes both as “above.”
 
 ### Scope
 
@@ -358,12 +371,20 @@ $$
 
 | Quantity | Calculation | Result |
 |---|---|---:|
+| Final gain | Smallest of the four limits derived below | 7 dB |
+| Wave-height ratio | $10^{7/20}$ | About 2.24× |
+
+### Derived · not drawn
+
+The public quiet case supplies speech $S=-30$, noise floor $F=-65$ and speech peak $P=-12$, against the defaults in the formula above. The four limits are not drawn:
+
+| Quantity | Calculation | Result |
+|---|---|---:|
 | Boost needed to reach the target | $-23-(-30)$ | 7 dB |
 | Maximum-boost limit | Default | 12 dB |
 | Boost allowed by the noise floor | $-50-(-65)$ | 15 dB |
 | Boost allowed by limiter headroom | $-1+6-(-12)$ | 17 dB |
 | Final gain | $\min(7,12,15,17)$ | 7 dB |
-| Wave-height ratio | $10^{7/20}$ | About 2.239× |
 
 The four limits respectively protect the target, maximum gain, room noise and peak headroom. The target is strictest in this example, yielding 7 dB; not every recording receives that boost.
 
@@ -425,8 +446,11 @@ $$
 |---|---|---:|
 | Default ceiling | Public default | −1 dBFS |
 | Ceiling as a fraction of full scale | $10^{-1/20}$ | About 0.891× |
-| Ceiling in PCM16 amplitude units | $32{,}768\times10^{-1/20}$ | About 29,205 |
-| Recovery time constant | Public default | 50 ms |
+
+### Derived · not drawn
+
+- Ceiling in PCM16 amplitude units: $32{,}768\times10^{-1/20}\approx29{,}205$ (not drawn).
+- Recovery time constant: 50 ms by default (<code>Voxt/<wbr>internal/<wbr>dsp/<wbr>params.go:30-38,<wbr>41-56</code>). The stage shows only the crossing instant, not the recovery.
 
 The peak heights are illustrative, not measurements from a public audio fixture. The public tests separately verify that file and stream outputs stay within the ceiling for full-scale square waves and gained speech.
 
