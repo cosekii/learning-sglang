@@ -1,5 +1,14 @@
 # 第 5 章评分卡 · A distributed serving experiment
 
+## 2026-11-26 ML-06 静态机制返工
+
+- 七步加入 `[4,3,3,5,4,6,6]` 个相位，逐步机制变化数为 **3、2、2、4、3、5、5**。启动事件和两节点配置依次形成；worker 就绪后才出现 HTTP；请求逐站进入 rank 0 与 TP 组，再逐站返回答复；客户端逐个收到 250、275、295、325 ms 的 token，最后形成 E2E。
+- 本轮作者 DOM 机制分为 **R6 14/14**。R1–R5 沿用既有 **70/70** 文本基线，不重打已关闭内容项；原 #4/#5、原十二项总分和协调 verdict 留待复审，不记 `complete-under-EVAL`。
+- 证据目录 `/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-hu5cwwuz/opencode/ml05-phases/` 保存 **31 个**桌面相位 PNG 和可见文本签名；文字重叠、SVG 出界均为 **0**，最低 **11.7459 CSS px**。当前模型无图像输入，未把 PNG 记为已读图或视觉通过。
+- `build`（60 页）、默认 transcript、7 步 readability、英中全章及中文逐步三宽度 mobile、`deep-check 05`、`zh-check`、`git diff --check` 均通过。未跑全站回归、真实 Dynamo／SGLang 服务、GPU benchmark 或 reduced-motion 动态切换。
+
+## 2026-11-25 历史内容与静态视觉评分
+
 日期：2026-11-25。评分办法：`EVAL.md` 易读性 R1–R6 与原 12 项，每项 0 / 1 / 2。
 材料：最终中英桌面、390×1400 中英手机、双语深入讲解共 42 张图位于 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-mlsys-ch05-20261125-1510/final/`；检查日志在相邻的 `checks/`。360／390／430 px 的中英手机布局另由本章 `mobile` 检查覆盖。
 
