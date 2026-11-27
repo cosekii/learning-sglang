@@ -15,7 +15,7 @@ export const deep = await deepFor('omni-07-shared-gpu-budgets');
 
 Step 1 uses a constructed 80-GiB card, not a memory measurement. It places 60 GiB of weights on the card, leaving 20 GiB for the KV budget. The two fractions are 60 ÷ 80 = 75% and 20 ÷ 80 = 25%, so they account for the whole constructed card. This example isolates the arithmetic; it does not claim that a real model has these sizes or that a live free-memory reading is a KV allocation.
 
-Step 2 uses the paired unit-test cases in `test_placement.py`, not B200 measurements. On a teaching 80-GiB card, a 0.50 fraction plus a 20-GiB total reserve declares 60 GiB and passes. A 0.90 fraction plus the same reserve declares 92 GiB and fails by 12 GiB. The reserve denotes the stage footprint, including its two-GiB KV pool, so that pool is not added to the same reserve again. Placement separately checks that summed KV pools alone fit.
+Step 2 uses the paired unit-test cases in `test_placement.py`, not B200 measurements. The stage first converts each fraction into bytes, then adds the reserve, forms the combined declaration and compares it with the physical limit. On a teaching 80-GiB card, a 0.50 fraction plus a 20-GiB total reserve declares 60 GiB and passes. A 0.90 fraction plus the same reserve declares 92 GiB and fails by 12 GiB. The reserve denotes the stage footprint, including its two-GiB KV pool, so that pool is not added to the same reserve again. Placement separately checks that summed KV pools alone fit.
 
 Step 3 constructs a two-GiB `engine.kv_cache_bytes` scope. The stage factory must construct exactly one SGLang engine that consumes it. Zero consumers leave an unconsumed budget and raise on scope exit; a second consumer raises instead of sizing two full pools from one declaration. The two-GiB value is illustrative.
 
@@ -34,7 +34,7 @@ Source revision for the chapter: `sglang-omni origin/main@db7cbf39ccffde7f95b81c
 
 第 1 步使用构造的 80 GiB 卡，不是显存实测。先放进 60 GiB 权重，剩下 20 GiB 作为 KV 预算。两项比例分别是 60 ÷ 80 = 75% 和 20 ÷ 80 = 25%，合起来正好是这张构造卡。这个例子只展示算术，不声称真实模型具有这些大小，也不把实时空闲显存读数当成已经分配的 KV。
 
-第 2 步使用 `test_placement.py` 的一对单元测试，不是 B200 实测。在教学用 80 GiB 卡上，0.50 比例加 20 GiB 总 reserve 申报 60 GiB，可以通过。0.90 比例加同一 reserve 申报 92 GiB，超出 12 GiB。reserve 表示 stage 整体占用，包括其中 2 GiB KV 池，所以不能再把这个池加到同一份 reserve 上。placement 还单独检查所有 KV 池之和能否装下。
+第 2 步使用 `test_placement.py` 的一对单元测试，不是 B200 实测。舞台先把两个比例换成字节，再加上 reserve、得到合并申报量，最后与物理上限比较。在教学用 80 GiB 卡上，0.50 比例加 20 GiB 总 reserve 申报 60 GiB，可以通过。0.90 比例加同一 reserve 申报 92 GiB，超出 12 GiB。reserve 表示 stage 整体占用，包括其中 2 GiB KV 池，所以不能再把这个池加到同一份 reserve 上。placement 还单独检查所有 KV 池之和能否装下。
 
 第 3 步构造一份 2 GiB 的 `engine.kv_cache_bytes` 作用域。stage 工厂必须构造恰好一个 SGLang engine 来领取它。没有 engine 领取会在退出作用域时报错；第二个 engine 领取也会报错，不能让一份申报变成两份完整 KV 池。2 GiB 是教学值。
 

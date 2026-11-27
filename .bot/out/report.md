@@ -1,3 +1,41 @@
+# lane k1 本轮报告 · Omni 07 Step 2 的 Omni-11 容量校验形成
+
+日期：2026-11-27。类型：修旧。本轮开始 HEAD 与 `origin/tutorials` 均为 `7b1c881`，工作树干净；direction 指定的 Step 1 已在该提交完成并推送，因此不回改待复审批次，按本书 P0 顺序承接同章下一最小单元 Step 2。范围只有本步组件、双语 MDX 与 deep、生成 transcript、本章评分卡与进度记录、定向审计和本报告；Step 1 与 Steps 3–6、其他章、其他书、`.bot/memory/` 和第 1 本受保护英文原文均未改。
+
+## 修复与 finding
+
+- 两幅同尺面板以四个 held phases 形成容量校验：先给 50%／90%、20 GiB reserve、申报公式和 80 GiB 上限，再把比例变成 **40／72 GiB** 蓝色字节段，再加入同一份 **20 GiB** 橙色 reserve 得到 **60／92 GiB**，最后显示 **20 GiB 余量／12 GiB 超出**和通过／拒绝。段宽全部由同一 `capacityScale` 推导，不用结果卡冒充动画。
+- Step 2 有循环、`LoopProgress`、reduced-motion 末相和 `data-animation-step／phase／final-phase`。面板边框到比较相才变色；中性比较长条使用实线描边，虚线只表示 80 GiB 物理上限。
+- 双语 MDX 与 deep 同步逐相对象、同一比例尺、全部算式、KV 不重复计入 reserve 和独立 KV 下限检查。deep 明确中性长条的 0–92 GiB 比较空间不是另一份显存，也列全首相可见输入和公式。
+- **Omni-11 的 Step 2 作者修复完成，待协调固定复审，不自行销项。** Steps 3–6 的 KV 领取、alias、MPS lease 和 offload 仍属开放范围；Omni-21／26／31／64 与其他 finding 未改，未申报整章 GO。下一最小单元是 Step 3 的 KV 领取过程。
+- 首轮中文 390 px deep 审计发现长源码路径、commit inline code 和 inline 公式横溢；只在 Step 2 双语 deep 加断行并拆短段落，复验页面、drawer 与 deep-body 横溢均为 0。
+
+## 作者评分与独立冷读
+
+| 步 | R1–R5 | 机制 R6 | 原十个非视觉项 | 新内容洞 | R1 小学生复述 |
+|---|---:|---:|---:|---:|---|
+| 2 | 10/10 | 2/2（DOM） | 20/20 | 0 | 50% 的 80 GiB 是 40 GiB，加 20 GiB 能装下；改成 90% 后总共 92 GiB，超出 12 GiB。 |
+
+- 独立 `explore` 首轮 **FAIL**：中性比较长条与虚线同义、deep 首相说明漏掉可见输入与公式、transcript 图例陈旧。修复后复审 **PASS**，两个洞均关闭，R1–R5 **10/10**、机制 R6 **2/2**、原十个非视觉项 **20/20**、内容洞 **0**，无新阻塞项。该结论来自源码、transcript 和 DOM，不是协调 verdict。
+- 当前模型不能读取 PNG；已尝试读取英中代表相位图和 deep 图，工具返回不支持图像输入。因此原 #4/#5、视觉验收和整章结论留待协调与主人，不声称看过图片或视觉通过。
+
+## 硬门与证据
+
+- 最终 `npm run build`：**60 页**通过；Step 2 `readability`：**0 机械问题**；`BOOK=omni node scripts/deep-check.mjs 07`、`zh-check`、英中全章 360／390／430 px `mobile`、中文 Step 2 字号门和 `git diff --check` 全过。
+- transcript 连续两次 SHA-256 均为 `e8a07d609d96c5832394293dc069223c28073f6ae9c90bda15cf1679a2959a40`，**1,562 词**。无 caption、文字出界、重叠或文本规则报告。
+- 可重跑脚本 `.bot/out/omni11-step2-audit.mjs`。最终结果 `.bot/out/omni11-step2-audit/report.json`：英中桌面、中文 360／390／430 px × direct／前步入口，共 **10 组合、40 状态、30/30 个机制转变**。逐相验算两块面板的 `width/value`、共同原点、80 GiB limit、申报与结果可见性；另断言比较长条 `trackDash=none`。最低 **10.760 CSS px**，重叠、SVG 出界、页面横溢和 failures 均为 0。
+- 同一审计保存 **40 张相位图＋3 张 deep 图，共 43 张 PNG**。三个双语 deep 视图均 `aria-expanded=true`，各有 **20 组 KaTeX、0 个错误**，页面与 deep 横溢均为 0。代表图：`.bot/out/omni11-step2-audit/en-desktop-direct-p3.png`、`.bot/out/omni11-step2-audit/zh-390-previous-p2.png`。
+- 未跑全站回归、真实 SGLang-Omni、模型、GPU 或 reduced-motion 动态切换。最新回归只有 `(exit 13)`，没有可分配布局步骤。本单元沿用 pinned 单元测试数值，不新增 zero-to-sglang 对照内容。
+
+## 剩余与清理
+
+- 剩余事项是 Omni-11 Steps 3–6、独立 Omni-21／26／31／64、共享 ML-21／22、原 #4/#5、具备图像能力的复审和主人最终视觉验收。没有提前关闭任何 finding。
+- 本 clone 的 `node_modules` 开始时指向协调人 checkout，第一次 build 因该符号链接的缓存权限报 EPERM。只删除本目录内的符号链接并在本目录 `npm install`，package 文件无 diff，未写协调人的 checkout。
+- 本轮检查地址为 `http://localhost:4522/learning-sglang/omni/ch/07-shared-gpu-budgets/?step=2`。收尾已用 `npx astro dev stop` 停止本轮 pid 50275，4522 无监听。
+- 审计脚本均调用 `browser.close()`，每个标签页也逐个 `close()`。收尾 `pgrep -P 1 -fl 'headless=new.*cdp-'` 无输出；未动其他 lane 的服务、浏览器或 Chrome 配置目录。
+
+---
+
 # lane k1 本轮报告 · Omni 07 Step 1 的 Omni-11 显存比例形成
 
 日期：2026-11-27。类型：修旧（direction 指定的下一最小单元）。本轮开始 HEAD 与 `origin/tutorials` 均为 `7624280`，工作树干净。范围只有 Omni 07 Step 1 的组件、构造数字、双语 MDX 与 deep、生成 transcript、本章评分卡与进度记录、定向审计和本报告；未改 Steps 2–6、其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文，未开后续步。

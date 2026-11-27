@@ -60,14 +60,17 @@ $$f_W+f_K=75\%+25\%=100\%$$
 ### 图上是什么
 
 - 两幅面板使用同一张教学卡、同一刻度、同一份 20 GiB `total_reserve_bytes`。这不是 B200 实测，而是源码单元测试里的配对数值。
-- 蓝条是 `total_gpu_memory_fraction × card_bytes`，橙条是 reserve。黑色虚线固定在 80 GiB 物理上限。
-- 左或上面的 50% 对应 40 GiB，再加 20 GiB 得 60 GiB，离物理上限还有 20 GiB。
-- 右或下面的 90% 对应 72 GiB，再加 20 GiB 得 92 GiB，长条越过物理上限 12 GiB，启动前拒绝。
+- 实线描边的中性长条覆盖 0–92 GiB，也就是较大的合并申报量，所以两幅面板共用一把尺。它只是比较空间，不是另一份显存占用。黑色虚线标出 80 GiB 物理上限。
+- 第一相显示比例和 reserve 输入、申报公式以及这条物理上限。第二相把比例换成蓝色字节段：40 和 72 GiB。第三相给两边加上同样的橙色 20 GiB reserve，得到 60 和 92 GiB。最后一相把两个总量与上限比较，再显示通过和拒绝。
+- 蓝条是 `total_gpu_memory_fraction × card_bytes`，橙条是 reserve。面板边框到比较相才变色，不会提前给出结果。
+- 通过例还剩 $80-60=20$ GiB。拒绝例在启动前超过物理上限 $92-80=12$ GiB。
 - 测试里的 stage 同时声明 2 GiB KV 池和 20 GiB 整体 reserve。KV 已属于该 stage 的 footprint，不再与这份 reserve 重复相加；代码另做「所有 KV 池单独也必须装下」的检查。
 
 ### 代入图上的数
 
-设物理卡容量为 $C=80\,\mathrm{GiB}$，总 reserve 为 $R=20\,\mathrm{GiB}$。合并申报量为：
+设物理卡容量为 $C=80\,\mathrm{GiB}$。总 reserve 为 $R=20\,\mathrm{GiB}$。
+
+合并申报量为：
 
 $$D=fC+R$$
 
@@ -104,12 +107,12 @@ $R$ 是 stage 整体预留，不是「在权重和 KV 之外再加一份同名 K
 
 本步只覆盖声明预算的启动前检查，不证明运行时 allocator 永不 OOM，也不测量 stream buffer 的实际峰值。`total_reserve_bytes` 需要部署者真实覆盖 stage footprint；图中没有展开 TP 每 rank 记账和 replica 展开的实现。
 
-- `tests/unit_test/pipeline/test_placement.py:125-177`：80 GiB 卡上 0.90 与 0.50 两例、20 GiB reserve 和 2 GiB KV。
+- <code>tests/unit_test/<wbr>pipeline/<wbr>test_placement.py:125-177</code>：80 GiB 卡上 0.90 与 0.50 两例、20 GiB reserve 和 2 GiB KV。
 - `sglang_omni/config/placement.py:124-174`：合并字节申报、物理超卡错误和 KV 独立下限检查。
 - `sglang_omni/config/placement.py:252-286`：同卡 reserve 与 KV 的求和。
 - `docs/basic_usage/mps_dp.md:62-69`：字节预算在 spawn 前校验，以及 KV bytes 与 token 上限互斥。
 
-行号对应 `origin/main@db7cbf39ccffde7f95b81c2dcc7da1b52a5c0bb6`。
+行号对应 <code>origin/main@<wbr>db7cbf39ccffde7f95b81c2dcc7da1b52a5c0bb6</code>。
 
 ### 接下来
 

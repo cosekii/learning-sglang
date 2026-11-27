@@ -54,7 +54,7 @@
     if (q >= 1 && q <= steps.length) step = q - 1;
   });
   const cur = $derived(steps[step]);
-  const PHASE_COUNTS = [4, 1, 1, 1, 1, 1];
+  const PHASE_COUNTS = [4, 4, 1, 1, 1, 1];
   let phase = $state(0);
   let lap = $state(0), lapMs = $state(0);
   const nextLap = (ms: number) => untrack(() => { lapMs = ms; lap++; });
@@ -100,6 +100,12 @@
     { x: phone ? 15 : 375, y: phone ? 350 : 96, fraction: CAPACITY_FAIL_FRACTION, fractionGib: CAPACITY_FAIL_FRACTION_GIB, declared: CAPACITY_FAIL_DECLARED_GIB, pass: false },
   ]);
   const capacityScale = $derived((phone ? 238 : 293) / CAPACITY_FAIL_DECLARED_GIB);
+  const capacityNow = $derived([
+    t('two fractions of the same 80-GiB card', '先看同一张 80 GiB 卡上的两个比例'),
+    t('turn 50% and 90% into 40 and 72 GiB', '把 50% 和 90% 换成 40 和 72 GiB'),
+    t('add the same 20-GiB reserve to each', '两边都加上同样的 20 GiB reserve'),
+    t('compare 60 and 92 GiB with the 80-GiB limit', '拿 60 和 92 GiB 与 80 GiB 上限比较'),
+  ][phase]);
   const kvPanels = $derived([
     { x: phone ? 15 : 20, y: phone ? 90 : 104, engines: KV_SCOPE_ZERO_ENGINE_COUNT, title: t('NO ENGINE', '没有 ENGINE'), ok: false },
     { x: phone ? 15 : 255, y: phone ? 265 : 104, engines: KV_SCOPE_REQUIRED_ENGINE_COUNT, title: t('ONE ENGINE', '一个 ENGINE'), ok: true },
@@ -153,26 +159,29 @@
         {/if}
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Constructed values · next: check reserves', '构造数值 · 下一步：检查字节预留') : t('Constructed values, not measured memory · next: combine fractions with byte reserves', '构造数值，不是实测显存 · 下一步：比例与字节预留合并校验')}</text>
       {:else if step === 1}
-        <text x="20" y="22" class="tag strong">validate_gpu_capacity · {t('convert every declaration to GiB', '把所有申报换算成 GiB')}</text>
+        <text x="20" y="22" class="tag strong">{phone ? t('validate capacity · GiB', '容量校验 · GiB') : `validate_gpu_capacity · ${t('convert every declaration to GiB', '把所有申报换算成 GiB')}`}</text>
+        <LoopProgress ms={lapMs} {lap} x={phone ? 230 : 640} y={16} />
         <text x="20" y="46" class="tag">{phone ? t('80-GiB teaching card · 20-GiB reserve includes 2-GiB KV', '80 GiB 教学卡 · 20 GiB reserve 含 2 GiB KV') : t('Teaching card: 80 GiB · reserve covers one stage footprint, including its 2-GiB KV pool', '教学卡：80 GiB · reserve 覆盖 stage 整体，包括其中 2 GiB KV 池')}</text>
         <text x="20" y="68" class="tag">{phone ? t('Blue: fraction · orange: reserve · dashed: card limit', '蓝：比例 · 橙：reserve · 虚线：卡上限') : t('Blue: fraction bytes · orange: total_reserve_bytes · dashed: physical limit', '蓝色：比例字节 · 橙色：total_reserve_bytes · 虚线：物理上限')}</text>
         {#each capacityPanels as panel}
-          <rect x={panel.x} y={panel.y} width={phone ? 270 : 325} height="218" rx="12" fill="var(--bg)" stroke={panel.pass ? 'var(--accent)' : 'var(--gen)'} stroke-width={panel.pass ? 2 : 1} />
-          <text x={panel.x + 14} y={panel.y + 26} class="rowlabel">{fractionPct(panel.fraction)}% + {CAPACITY_RESERVE_GIB} GiB · {panel.pass ? t('PASS', '通过') : t('REJECT', '拒绝')}</text>
-          <text x={panel.x + 14} y={panel.y + 50} class="tag">{panel.fraction} × {CAPACITY_CARD_GIB} = {panel.fractionGib} GiB</text>
-          <rect x={panel.x + 16} y={panel.y + 68} width={panel.fractionGib * capacityScale} height="46" fill="var(--accent)" />
-          <rect x={panel.x + 16 + panel.fractionGib * capacityScale} y={panel.y + 68} width={CAPACITY_RESERVE_GIB * capacityScale} height="46" fill="var(--gen)" />
-          <rect x={panel.x + 16 + panel.declared * capacityScale} y={panel.y + 68} width={(CAPACITY_FAIL_DECLARED_GIB - panel.declared) * capacityScale} height="46" fill="white" stroke="var(--faint)" stroke-dasharray="3 3" />
-          <path d="M{panel.x + 16 + CAPACITY_CARD_GIB * capacityScale} {panel.y + 60} V{panel.y + 125}" stroke="var(--text)" stroke-width="2" stroke-dasharray="4 3" />
+          <rect x={panel.x} y={panel.y} width={phone ? 270 : 325} height="218" rx="12" fill="var(--bg)" stroke={phase >= 3 ? (panel.pass ? 'var(--accent)' : 'var(--gen)') : 'var(--line)'} stroke-width={phase >= 3 && panel.pass ? 2 : 1} style="transition: stroke 300ms" />
+          <text x={panel.x + 14} y={panel.y + 26} class="rowlabel">{fractionPct(panel.fraction)}% + {CAPACITY_RESERVE_GIB} GiB{phase >= 3 ? ` · ${panel.pass ? t('PASS', '通过') : t('REJECT', '拒绝')}` : ''}</text>
+          <g opacity={phase >= 1 ? 1 : 0} style="transition: opacity 300ms">
+            <text x={panel.x + 14} y={panel.y + 50} class="tag">{panel.fraction} × {CAPACITY_CARD_GIB} = {panel.fractionGib} GiB</text>
+          </g>
+          <rect data-capacity="track" data-panel={panel.pass ? 'pass' : 'fail'} x={panel.x + 16} y={panel.y + 68} width={CAPACITY_FAIL_DECLARED_GIB * capacityScale} height="46" fill="var(--bg)" stroke="var(--faint)" />
+          <rect data-capacity="fraction" data-panel={panel.pass ? 'pass' : 'fail'} x={panel.x + 16} y={panel.y + 68} width={phase >= 1 ? panel.fractionGib * capacityScale : 0} height="46" fill="var(--accent)" style="transition: width 450ms" />
+          <rect data-capacity="reserve" data-panel={panel.pass ? 'pass' : 'fail'} x={panel.x + 16 + panel.fractionGib * capacityScale} y={panel.y + 68} width={phase >= 2 ? CAPACITY_RESERVE_GIB * capacityScale : 0} height="46" fill="var(--gen)" style="transition: width 450ms" />
+          <path data-capacity="limit" data-panel={panel.pass ? 'pass' : 'fail'} d="M{panel.x + 16 + CAPACITY_CARD_GIB * capacityScale} {panel.y + 60} V{panel.y + 125}" stroke="var(--text)" stroke-width="2" stroke-dasharray="4 3" />
           <text x={panel.x + 16 + CAPACITY_CARD_GIB * capacityScale} y={panel.y + 140} text-anchor="middle" class="tag strong">80 GiB</text>
-          <text x={panel.x + 16 + panel.fractionGib * capacityScale / 2} y={panel.y + 97} text-anchor="middle" class="tag strong" fill="white">{panel.fractionGib}</text>
-          <text x={panel.x + 16 + (panel.fractionGib + CAPACITY_RESERVE_GIB / 2) * capacityScale} y={panel.y + 97} text-anchor="middle" class="tag strong" fill="white">20</text>
-          <text x={panel.x + 16} y={panel.y + 169} class="mono strong">{panel.fractionGib} + {CAPACITY_RESERVE_GIB} = {panel.declared} GiB</text>
-          <text x={panel.x + 16} y={panel.y + 198} class="tag strong">{panel.pass ? `${CAPACITY_CARD_GIB} − ${panel.declared} = ${CAPACITY_PASS_HEADROOM_GIB} GiB ${t('headroom', '余量')}` : `${panel.declared} − ${CAPACITY_CARD_GIB} = ${CAPACITY_FAIL_OVERFLOW_GIB} GiB ${t('too much', '超出')}`}</text>
+          <text x={panel.x + 16 + panel.fractionGib * capacityScale / 2} y={panel.y + 97} text-anchor="middle" class="tag strong" fill="white" opacity={phase >= 1 ? 1 : 0} style="transition: opacity 300ms">{panel.fractionGib}</text>
+          <text x={panel.x + 16 + (panel.fractionGib + CAPACITY_RESERVE_GIB / 2) * capacityScale} y={panel.y + 97} text-anchor="middle" class="tag strong" fill="white" opacity={phase >= 2 ? 1 : 0} style="transition: opacity 300ms">20</text>
+          <text data-capacity="declared" data-panel={panel.pass ? 'pass' : 'fail'} x={panel.x + 16} y={panel.y + 169} class="mono strong" opacity={phase >= 2 ? 1 : 0} style="transition: opacity 300ms">{panel.fractionGib} + {CAPACITY_RESERVE_GIB} = {panel.declared} GiB</text>
+          <text data-capacity="verdict" data-panel={panel.pass ? 'pass' : 'fail'} x={panel.x + 16} y={panel.y + 198} class="tag strong" opacity={phase >= 3 ? 1 : 0} style="transition: opacity 300ms">{panel.pass ? `${CAPACITY_CARD_GIB} − ${panel.declared} = ${CAPACITY_PASS_HEADROOM_GIB} GiB ${t('headroom', '余量')}` : `${panel.declared} − ${CAPACITY_CARD_GIB} = ${CAPACITY_FAIL_OVERFLOW_GIB} GiB ${t('too much', '超出')}`}</text>
         {/each}
-        <text x={W / 2} y={phone ? 596 : 350} text-anchor="middle" class="mono strong">{phone ? 'declared = fraction × card + reserve' : 'declared = total_fraction × card_bytes + total_reserve_bytes'}</text>
-        <text x={W / 2} y={phone ? 624 : 378} text-anchor="middle" class="tag">{CAPACITY_KV_GIB} GiB KV ≤ {CAPACITY_CARD_GIB} GiB · {phone ? t('separate check; already inside reserve', '单独检查；已含在 reserve 里') : t('checked separately; not added to its reserve again', '单独检查；不跟自己的 reserve 重复相加')}</text>
-        <text x={W / 2} y={phone ? 652 : 406} text-anchor="middle" class="tag strong">{phone ? t('Separate sums can pass; their total can fail.', '分别没超，合起来仍可能超卡。') : t('Fractions and bytes can look safe alone, yet fail together.', '比例和字节各自看着安全，合起来仍可能超卡。')}</text>
+        <text x={W / 2} y={phone ? 596 : 350} text-anchor="middle" class="tag strong">now: {capacityNow}</text>
+        <text x={W / 2} y={phone ? 624 : 378} text-anchor="middle" class="mono strong">{phone ? 'declared = fraction × card + reserve' : 'declared = total_fraction × card_bytes + total_reserve_bytes'}</text>
+        <text x={W / 2} y={phone ? 652 : 406} text-anchor="middle" class="tag" opacity={phase >= 3 ? 1 : 0} style="transition: opacity 300ms">{CAPACITY_KV_GIB} GiB KV ≤ {CAPACITY_CARD_GIB} GiB · {phone ? t('separate check; already inside reserve', '单独检查；已含在 reserve 里') : t('checked separately; not added to its reserve again', '单独检查；不跟自己的 reserve 重复相加')}</text>
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Unit-test values · next: one KV consumer', '单元测试数值 · 下一步：一个 KV 领取者') : t('Unit-test values, not a B200 measurement · next: deliver a KV budget once', '数值来自单元测试，不是 B200 实测 · 下一步：KV 预算只能领取一次')}</text>
       {:else if step === 2}
         <text x="20" y="22" class="tag strong">stage_kv_cache_budget · {phone ? t('exactly one consumer', '只能一个 engine 领取') : t('one declaration, exactly one consumer', '一份申报，只能由一个 engine 领取')}</text>

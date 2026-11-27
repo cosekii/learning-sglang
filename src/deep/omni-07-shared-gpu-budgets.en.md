@@ -60,14 +60,17 @@ Step 2 adds `total_reserve_bytes`. Fractions and bytes must meet in the byte dom
 ### What the picture shows
 
 - Both panels use the same teaching card, scale and 20-GiB `total_reserve_bytes`. These are paired unit-test values, not B200 measurements.
-- Blue is `total_gpu_memory_fraction × card_bytes`; orange is reserve. The black dashed line stays at the 80-GiB physical limit.
-- The passing panel converts 50% into 40 GiB. Adding 20 GiB declares 60 GiB and leaves 20 GiB of headroom.
-- The failing panel converts 90% into 72 GiB. Adding the same reserve declares 92 GiB, crossing the physical limit by 12 GiB before startup.
+- A neutral track with a solid outline spans 0–92 GiB, the larger combined declaration, so both panels share one scale. It is comparison space, not another memory allocation. The black dashed line marks the 80-GiB physical limit.
+- The first held phase shows the fraction and reserve inputs, the declaration formula and that physical limit. The second converts the fractions into blue byte segments: 40 and 72 GiB. The third adds the same orange 20-GiB reserve to each panel and forms totals of 60 and 92 GiB. The last compares those totals with the limit and reveals the pass and reject outcomes.
+- Blue is `total_gpu_memory_fraction × card_bytes`; orange is reserve. Panel borders stay neutral until the comparison phase, so they do not reveal the outcome early.
+- The passing panel leaves $80-60=20$ GiB of headroom. The failing panel crosses the physical limit by $92-80=12$ GiB before startup.
 - The test stage also declares a two-GiB KV pool inside its 20-GiB whole-stage reserve. That pool is not added to its own reserve again. A separate check ensures that summed KV pools alone fit.
 
 ### Work through the numbers
 
-Let physical capacity be $C=80\,\mathrm{GiB}$ and total reserve be $R=20\,\mathrm{GiB}$. Combined declared bytes are:
+Let physical capacity be $C=80\,\mathrm{GiB}$. The total reserve is $R=20\,\mathrm{GiB}$.
+
+Combined declared bytes are:
 
 $$D=fC+R$$
 
@@ -104,12 +107,12 @@ It then checks whether `total_kv_cache_bytes` alone exceeds physical memory. Thi
 
 This step validates declared budgets before startup; it does not prove that runtime allocation can never OOM or measure a streaming buffer's peak. A useful `total_reserve_bytes` must cover the stage's real footprint. TP per-rank accounting and replica expansion are outside this figure.
 
-- `tests/unit_test/pipeline/test_placement.py:125-177`: the 80-GiB card, fractions 0.90 and 0.50, 20-GiB reserve and two-GiB KV pool.
+- <code>tests/unit_test/<wbr>pipeline/<wbr>test_placement.py:125-177</code>: the 80-GiB card, fractions 0.90 and 0.50, 20-GiB reserve and two-GiB KV pool.
 - `sglang_omni/config/placement.py:124-174`: combined-byte rejection and the independent KV lower-bound check.
 - `sglang_omni/config/placement.py:252-286`: same-GPU reserve and KV summation.
 - `docs/basic_usage/mps_dp.md:62-69`: pre-spawn byte validation and mutual exclusion of KV bytes and token caps.
 
-Line numbers refer to `origin/main@db7cbf39ccffde7f95b81c2dcc7da1b52a5c0bb6`.
+Line numbers refer to <code>origin/main@<wbr>db7cbf39ccffde7f95b81c2dcc7da1b52a5c0bb6</code>.
 
 ### Next
 
