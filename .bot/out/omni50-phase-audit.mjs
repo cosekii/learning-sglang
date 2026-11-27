@@ -112,14 +112,14 @@ try {
       throw new Error(`phase ${target}: identity mismatch (counter: ${state.counter})`);
     }
     const required = step === 4
-      ? [[], ['ShmGetOperation'], [lang === 'zh' ? '正在复制…' : 'copying…'], [lang === 'zh' ? 'finally：close + unlink' : 'finally: close + unlink'], [lang === 'zh' ? '接收空间返回 ✓' : 'buffer returns ✓'], [lang === 'zh' ? '数据 A' : 'payload A'], ['success = true']][target]
+      ? [[], ['ShmGetOperation', 'SHM block A'], [lang === 'zh' ? '复制完成 ✓' : 'copy ✓'], ['SHM A · unlinked', lang === 'zh' ? 'finally：close + unlink' : 'finally: close + unlink'], [lang === 'zh' ? '接收空间返回 ✓' : 'buffer returns ✓'], [lang === 'zh' ? '数据 A' : 'payload A'], ['success = true']][target]
       : [[], ['pending.ack.set_result'], ['mark_receiver_done'], ['wait_for_completion'], ['finally: sem.release'], ['pending.pop(A) ✓']][target];
     const missing = required.filter((text) => !state.text.some((line) => line.includes(text)));
     if (missing.length) throw new Error(`phase ${target}: missing ${missing.join(', ')}`);
     const forbidden = step === 4
       ? [
           ...(target < 2 ? [lang === 'zh' ? '复制完成 ✓' : 'copy ✓'] : []),
-          ...(target < 3 ? [lang === 'zh' ? '句柄已关' : 'handle closed'] : []),
+          ...(target < 3 ? ['SHM A · unlinked', lang === 'zh' ? '句柄已关' : 'handle closed'] : []),
           ...(target < 4 ? [lang === 'zh' ? '接收空间返回 ✓' : 'buffer returns ✓'] : []),
           ...(target < 6 ? ['success = true', lang === 'zh' ? '读取完成 ✓' : 'read finished ✓'] : []),
         ]

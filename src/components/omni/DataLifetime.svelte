@@ -279,16 +279,17 @@
         <g opacity={phase >= 1 ? 1 : 0.25}>
           <rect x="195" y="80" width="150" height="220" rx="11" fill="var(--bg)" stroke={phase >= 1 && phase <= 4 ? 'var(--accent)' : 'var(--line)'} stroke-width={phase >= 1 && phase <= 4 ? 2 : 1} />
           <text x="207" y="108" class="rowlabel">2 · GET</text>
-          <text x="270" y="130" text-anchor="middle" class="mono strong">get_async</text>
-          <text x="270" y="150" text-anchor="middle" class="mono">→ ShmGetOperation</text>
-          <rect x="215" y="160" width="110" height="42" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="270" y="179" text-anchor="middle" class="mono">uint8[length]</text>
-          <text x="270" y="195" text-anchor="middle" class="tag strong">{phase < 2 ? t('empty', '等待复制') : phase === 2 ? t('copying…', '正在复制…') : t('copy ✓', '复制完成 ✓')}</text>
-          <text x="270" y="221" text-anchor="middle" class="tag" opacity={phase >= 2 ? 1 : 0.25}>await wait_for_completion</text>
-          <text x="270" y="238" text-anchor="middle" class="tag" opacity={phase >= 3 ? 1 : 0.25}>{t('finally: close + unlink', 'finally：close + unlink')}</text>
-          <text x="270" y="258" text-anchor="middle" class="tag strong">{phase >= 3 ? t('handle closed ✓', '句柄已关闭 ✓') : t('handle open', '句柄未关闭')}</text>
-          <text x="270" y="276" text-anchor="middle" class="tag strong">{phase >= 3 ? t('name unlinked ✓', '名字已移除 ✓') : t('name linked', '名字仍在')}</text>
-          <text x="270" y="294" text-anchor="middle" class="tag">{phase >= 4 ? t('buffer returns ✓', '接收空间返回 ✓') : t('buffer not returned', '接收空间未返回')}</text>
+          <text x="270" y="128" text-anchor="middle" class="mono strong">get_async</text>
+          <text x="270" y="147" text-anchor="middle" class="mono">→ ShmGetOperation</text>
+          <rect x="215" y="154" width="110" height="28" rx="6" fill={phase >= 3 ? 'var(--bg)' : 'var(--accent-soft)'} stroke={phase >= 3 ? 'var(--faint)' : 'var(--accent)'} stroke-dasharray={phase >= 3 ? '4 3' : '0'} />
+          <text x="270" y="173" text-anchor="middle" class="mono">{phase >= 3 ? 'SHM A · unlinked' : 'SHM block A'}</text>
+          <rect x="215" y="188" width="110" height="42" rx="6" fill={phase >= 2 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={phase >= 2 ? 'var(--accent)' : 'var(--line)'} />
+          <text x="270" y="205" text-anchor="middle" class="mono">uint8[length]</text>
+          <text x="270" y="223" text-anchor="middle" class="tag strong">{phase < 2 ? t('empty', '等待复制') : t('copy ✓', '复制完成 ✓')}</text>
+          <text x="270" y="241" text-anchor="middle" class="tag" opacity={phase >= 2 ? 1 : 0.25}>await wait_for_completion</text>
+          <text x="270" y="257" text-anchor="middle" class="tag" opacity={phase >= 3 ? 1 : 0.25}>{t('finally: close + unlink', 'finally：close + unlink')}</text>
+          <text x="270" y="274" text-anchor="middle" class="tag strong">{phase >= 3 ? t('handle closed ✓', '句柄已关闭 ✓') : t('handle open', '句柄未关闭')}</text>
+          <text x="270" y="292" text-anchor="middle" class="tag">{phase >= 4 ? t('buffer returns ✓', '接收空间返回 ✓') : t('buffer not returned', '接收空间未返回')}</text>
         </g>
 
         <g opacity={phase >= 5 ? 1 : 0.25}>
@@ -326,13 +327,16 @@
         <g opacity={phase >= 1 ? 1 : 0.25}>
           <rect x="15" y="186" width="270" height="185" rx="10" fill="var(--bg)" stroke={phase >= 1 && phase <= 4 ? 'var(--accent)' : 'var(--line)'} stroke-width={phase >= 1 && phase <= 4 ? 2 : 1} />
           <text x="30" y="210" class="rowlabel">2 · GET · get_async</text>
-          <text x="150" y="233" text-anchor="middle" class="mono">→ ShmGetOperation</text>
-          <rect x="40" y="244" width="220" height="32" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="150" y="265" text-anchor="middle" class="mono">uint8[length]</text>
-          <text x="150" y="294" text-anchor="middle" class="tag strong">{phase < 2 ? t('empty', '等待复制') : phase === 2 ? t('copying…', '正在复制…') : t('copy ✓', '复制完成 ✓')}</text>
-          <text x="150" y="318" text-anchor="middle" class="tag" opacity={phase >= 2 ? 1 : 0.25}>await wait_for_completion</text>
-          <text x="150" y="340" text-anchor="middle" class="tag" opacity={phase >= 3 ? 1 : 0.25}>{t('finally: close + unlink', 'finally：close + unlink')}</text>
-          <text x="150" y="361" text-anchor="middle" class="tag strong">{phase >= 4 ? t('name unlinked · buffer returns ✓', '名字已移除 · 接收空间返回 ✓') : phase >= 3 ? t('handle closed · name unlinked ✓', '句柄已关 · 名字已移除 ✓') : t('handle open · name linked', '句柄未关 · 名字仍在')}</text>
+          <text x="150" y="228" text-anchor="middle" class="mono">→ ShmGetOperation</text>
+          <rect x="40" y="236" width="220" height="24" rx="5" fill={phase >= 3 ? 'var(--bg)' : 'var(--accent-soft)'} stroke={phase >= 3 ? 'var(--faint)' : 'var(--accent)'} stroke-dasharray={phase >= 3 ? '4 3' : '0'} />
+          <text x="150" y="253" text-anchor="middle" class="mono">{phase >= 3 ? 'SHM A · unlinked' : 'SHM block A'}</text>
+          <rect x="40" y="263" width="220" height="34" rx="5" fill={phase >= 2 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={phase >= 2 ? 'var(--accent)' : 'var(--line)'} />
+          <text x="150" y="279" text-anchor="middle" class="mono">uint8[length]</text>
+          <text x="150" y="293" text-anchor="middle" class="tag strong">{phase < 2 ? t('empty', '等待复制') : t('copy ✓', '复制完成 ✓')}</text>
+          <text x="150" y="313" text-anchor="middle" class="tag" opacity={phase >= 2 ? 1 : 0.25}>await wait_for_completion</text>
+          <text x="150" y="329" text-anchor="middle" class="tag" opacity={phase >= 3 ? 1 : 0.25}>{t('finally: close + unlink', 'finally：close + unlink')}</text>
+          <text x="150" y="346" text-anchor="middle" class="tag strong">{phase >= 3 ? t('handle closed ✓', '句柄已关闭 ✓') : t('handle open · name linked', '句柄未关 · 名字仍在')}</text>
+          <text x="150" y="364" text-anchor="middle" class="tag">{phase >= 4 ? t('buffer returns ✓', '接收空间返回 ✓') : t('buffer not returned', '接收空间未返回')}</text>
         </g>
 
         <g opacity={phase >= 5 ? 1 : 0.25}>

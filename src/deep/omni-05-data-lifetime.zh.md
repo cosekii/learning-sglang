@@ -133,7 +133,7 @@ SHM 使用 `put_chunks_async()`，其他 relay 使用 `put_async()`。两种 put
 ### 图上是什么
 
 - 第 1 格解析 DataRef，按 `transport` 选择 relay，并使用 `buffer.info` 找到后端数据。
-- 第 2 格按 `buffer.length` 准备 `uint8` 接收空间，调用 `get_async()` 创建 `ShmGetOperation`。动画随后等待这个 operation 的 `wait_for_completion()`：先把字节复制到接收空间，再关闭接收方句柄、移除共享块名字，最后返回复制后的接收空间。
+- 第 2 格按 `buffer.length` 准备 `uint8` 接收空间，调用 `get_async()` 创建 `ShmGetOperation`。上方是源 SHM 块，下方是接收空间。接收空间先从空变成 `复制完成 ✓`，此时源句柄仍未关闭。下一相源块才变成 `SHM A · unlinked`，句柄关闭，随后返回复制后的接收空间用于还原。这些变化都发生在 `wait_for_completion()` 内。
 - 第 3 格按 `TensorMeta` 的 `path/shape/dtype/device/offset/size` 还原 tensor 和 payload。图中只写出与切片、形状和设备直接相关的几项。
 - 第 4 格是成功 ACK：`object_id = A`、`success = true`。ACK 回发送方，还原的数据则继续交给 input handler，之后才轮到 scheduler。
 - 图的顺序是「复制 → close + unlink → 还原 → ACK → input handler」。ACK 不表示 `talker_ar` 已完成计算，更不表示整个请求已结束。

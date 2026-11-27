@@ -133,7 +133,7 @@ Step 4 starts with DataReady at the receiver: it uses the DataRef to read and re
 ### What the picture shows
 
 - The first box parses the DataRef, selects a relay from `transport`, and uses `buffer.info` to locate backend data.
-- The second box allocates a `uint8` receive buffer using `buffer.length` and calls `get_async()` to create a `ShmGetOperation`. The animation then awaits that operation's `wait_for_completion()`: it copies into the buffer, closes the receiver's handle and unlinks the block's name before returning the copied buffer.
+- The second box allocates a `uint8` receive buffer using `buffer.length` and calls `get_async()` to create a `ShmGetOperation`. Its upper block is the source SHM block, and its lower block is the receive buffer. The receive buffer changes from empty to `copy ✓` while the source handle remains open. The next phase changes the source to `SHM A · unlinked` and closes the handle. Only then does the copied buffer return for reconstruction. These changes happen inside `wait_for_completion()`.
 - The third box uses `TensorMeta`'s `path/shape/dtype/device/offset/size` to reconstruct tensors and the payload. The figure shows the fields related to slicing, shape and device.
 - The fourth box is a successful ACK with `object_id = A` and `success = true`. The ACK returns to the sender, while the rebuilt payload continues to the input handler and then the scheduler.
 - The order is “copy → close + unlink → rebuild → ACK → input handler.” The ACK does not mean that `talker_ar` finished computing or that the whole request finished.
