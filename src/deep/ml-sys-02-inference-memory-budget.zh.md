@@ -247,3 +247,51 @@ SGLang 的参数说明把权重和 KV 与激活和 graph 缓冲区分开。课�
 ### 接下来
 
 最后一步把模型、KV、常驻 graph 缓冲和临时激活放回同一份有明确范围的账里。
+
+## 第 6 步 · 有范围的账，不是保证
+
+**一句话。** 0.85 通过了本例的 KV 尺寸计算，但大小未知的 graph 缓冲、激活和其他动态工作仍可能耗尽运行时显存。
+
+### 图上是什么
+
+- 顶部把启动约数账合上：$M\approx60$ GB、$K=6.3$ GB、$R=11.7$ GB，合计 78 GB。
+- $R$ 内部有常驻 graph 缓冲 $G$、临时激活 $A$ 和其他动态工作 $D$。本例不知道三项大小，所以写 `?`，不是写 0。
+- 运行时要求 $G+A+D\le R$。通过第 1 步的 KV 尺寸计算，并没有测量或保证这个后面的条件。
+- 本章有意停在这份有范围的账，不声称列出了 allocator 的每一笔分配。
+
+### 公式与符号
+
+$$M+K+R=P,\qquad G+A+D\le R=(1-f)P$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $M$ | 模型装入前后减少的可用显存 | 第 1 步；约 60 GB |
+| $K$ | KV pool 分到的空间 | 第 1 步；6.3 GB |
+| $R$ | 动态余量 | 第 1 步；11.7 GB |
+| $G$ | 常驻 graph 缓冲 | 第 2–4 步；字节数未知 |
+| $A$ | 临时激活 | 第 5 步；字节数未知 |
+| $D$ | 本章未逐项展开的其他动态工作 | 范围边界；字节数未知 |
+
+### 代入图上的数
+
+$$60+6.3+11.7=78\ \mathrm{GB}$$
+
+$$G+A+D\le11.7\ \mathrm{GB}$$
+
+本步不给 $G$、$A$、$D$ 编数。因此，本例能证明 KV 空间为正，却不能证明运行时峰值一定装得下。真发生运行时 OOM 时，可能需要调小 `mem_fraction_static` 来增大 $R$，方向与第 1 步修 KV 启动尺寸时相反。
+
+### 源码与边界
+
+SGLang 把激活和 CUDA Graph buffers 列为权重与 KV 静态分配之外的用途。原文区分启动时的 KV 尺寸失败与运行时激活 OOM。多模态预留和其他进程的情况不在本章展开，因为舞台没有给出它们的配置与测量。
+
+来源：
+
+- [静态与动态显存分类：`python/sglang/srt/server_args.py:1227-1238`，`sglang@4fa3482`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/server_args.py#L1227-L1238)。
+- [参数文档的 OOM 建议：`python/sglang/srt/server_args.py:4227-4232`，`sglang@4fa3482`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/server_args.py#L4227-L4232)。
+- 启动与运行时失败的调参方向：`Awesome-ML-SYS-Tutorial/sglang/kvcache-code-walk-through/mem-fraction-static.md:67-100`，固定于 `d1f309b46f81a23e8b6ca0718c05bc897fafacf7`。
+
+本章不展开 KV 字节推导、paging、请求准入、多模态预留、allocator 内部和整个进程的完整显存普查。
+
+### 接下来
+
+两个请求有共同前缀，hybrid 模型能从共同前缀的末尾继续算吗？

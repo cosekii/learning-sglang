@@ -24,6 +24,9 @@
   }, {
     caption: `Activations are temporary results. They join persistent graph buffers, then their live range ends.`,
     captionZh: `激活是计算时的临时结果。它们与常驻 graph 缓冲同时存在，随后结束。`,
+  }, {
+    caption: `In this example, 0.85 passes KV sizing. Runtime memory can still run out.`,
+    captionZh: `本例的 0.85 通过 KV 尺寸计算。运行时仍可能显存不足。`,
   }];
   let step = $state(0);
   $effect(() => {
@@ -46,7 +49,7 @@
       motion.removeEventListener('change', updateMotion);
     };
   });
-  const PHASE_COUNTS = [6, 5, 5, 6, 6];
+  const PHASE_COUNTS = [6, 5, 5, 6, 6, 7];
   const PHASE_MS = 1000, REST_MS = 2600;
   let phase = $state(0);
   let lap = $state(0), lapMs = $state(0);
@@ -68,7 +71,8 @@
     return () => timers.forEach(clearTimeout);
   });
   const cur = $derived(steps[step]);
-  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 0 ? 400 : 540) : (step === 0 ? 410 : 430));
+  const W = $derived(phone ? 300 : 720);
+  const H = $derived(phone ? [400, 540, 540, 540, 540, 650][step] : [410, 430, 430, 430, 430, 500][step]);
   const barWidth = (gb: number, total: number) => gb / DEMO_PRE_MODEL_FREE_GB * total;
   const replayInput = $derived(phase >= 3 ? 'input t+1' : 'input t');
   const replayOutput = $derived(phase >= 4 ? 'output t+1' : phase >= 2 ? 'output t' : '—');
@@ -362,8 +366,76 @@
           <text x="150" y="355" text-anchor="middle" class="formula budget" opacity={phase >= 3 ? 1 : 0}>G + A ≤ {DEMO_DYNAMIC_HIGH_GB} GB</text>
           <text x="150" y="445" text-anchor="middle" class="label" opacity={phase >= 5 ? 1 : 0}>{t('G remains; A ends.', 'G 仍在；A 结束。')}</text>
         {/if}
+      {:else}
+        {#if !phone}
+          <text x="40" y="28" class="title">{t('Scoped account · startup success is not a runtime guarantee', '有范围的账 · 启动成功不保证运行时不爆显存')}</text>
+          <rect x="40" y="55" width="640" height="54" fill="url(#headroom)" stroke="var(--line)" />
+          <rect x="40" y="55" width={barWidth(DEMO_MODEL_LOAD_GB, 640)} height="54" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x={40 + barWidth(DEMO_MODEL_LOAD_GB, 640) / 2} y="88" text-anchor="middle" class="barlabel">{t(`M ≈${DEMO_MODEL_LOAD_GB} GB`, `模型 ≈${DEMO_MODEL_LOAD_GB} GB`)}</text>
+          <g opacity={phase >= 1 ? 1 : 0} style="transition: opacity 300ms">
+            <rect x={40 + barWidth(DEMO_MODEL_LOAD_GB, 640)} y="55" width={barWidth(DEMO_KV_HIGH_GB, 640)} height="54" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x={40 + barWidth(DEMO_MODEL_LOAD_GB + DEMO_KV_HIGH_GB / 2, 640)} y="88" text-anchor="middle" class="barlabel">K {DEMO_KV_HIGH_GB}</text>
+          </g>
+          <text x={40 + barWidth(DEMO_MODEL_LOAD_GB + DEMO_KV_HIGH_GB + DEMO_DYNAMIC_HIGH_GB / 2, 640)} y="88" text-anchor="middle" class="barlabel">R {DEMO_DYNAMIC_HIGH_GB}</text>
+          <text x="40" y="135" class="formula budget">M + K + R ≈ {DEMO_MODEL_LOAD_GB} + {DEMO_KV_HIGH_GB} + {DEMO_DYNAMIC_HIGH_GB} = {DEMO_PRE_MODEL_FREE_GB} GB</text>
+          <rect x="40" y="160" width="640" height="155" rx="11" fill="url(#headroom)" stroke="var(--muted)" />
+          <text x="55" y="185" class="label">R = {DEMO_DYNAMIC_HIGH_GB} GB · {t('shared dynamic work', '动态工作共用')}</text>
+          <g opacity={phase >= 2 ? 1 : 0} style="transition: opacity 300ms">
+            <rect x="60" y="205" width="180" height="75" rx="8" fill="var(--bg)" stroke="var(--fg)" />
+            <text x="150" y="235" text-anchor="middle" class="fraction">G = ? GB</text>
+            <text x="150" y="263" text-anchor="middle" class="label">{t('graph buffers · persistent', 'graph 缓冲 · 常驻')}</text>
+          </g>
+          <g opacity={phase >= 3 ? 1 : 0} style="transition: opacity 300ms">
+            <rect x="270" y="205" width="180" height="75" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="360" y="235" text-anchor="middle" class="fraction">A = ? GB</text>
+            <text x="360" y="263" text-anchor="middle" class="label">{t('activations · temporary', '激活 · 临时')}</text>
+          </g>
+          <g opacity={phase >= 4 ? 1 : 0} style="transition: opacity 300ms">
+            <rect x="480" y="205" width="180" height="75" rx="8" fill="var(--bg)" stroke="var(--muted)" />
+            <text x="570" y="235" text-anchor="middle" class="fraction">D = ? GB</text>
+            <text x="570" y="263" text-anchor="middle" class="label">{t('other dynamic work', '其他动态工作')}</text>
+          </g>
+          <g opacity={phase >= 5 ? 1 : 0} style="transition: opacity 300ms">
+            <text x="360" y="355" text-anchor="middle" class="formula budget">G + A + D ≤ R = {DEMO_DYNAMIC_HIGH_GB} GB</text>
+            <text x="360" y="392" text-anchor="middle" class="short">{t('KV sizing passes · runtime can still run out', 'KV 尺寸通过 · 运行时仍可能不足')}</text>
+          </g>
+          <g opacity={phase >= 6 ? 1 : 0} style="transition: opacity 300ms">
+            <text x="360" y="438" text-anchor="middle" class="label">{t('Next: two requests share a prefix.', '下一章：两个请求有共同前缀。')}</text>
+            <text x="360" y="468" text-anchor="middle" class="fraction">{t('Can a hybrid model resume at its end?', 'hybrid 模型能从共同前缀的末尾继续算吗？')}</text>
+          </g>
+        {:else}
+          <text x="20" y="25" class="title">{t('Scoped memory account', '有范围的显存账')}</text>
+          <rect x="20" y="45" width="260" height="32" fill="url(#headroom)" stroke="var(--line)" />
+          <rect x="20" y="45" width={barWidth(DEMO_MODEL_LOAD_GB, 260)} height="32" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <g opacity={phase >= 1 ? 1 : 0} style="transition: opacity 300ms">
+            <rect x={20 + barWidth(DEMO_MODEL_LOAD_GB, 260)} y="45" width={barWidth(DEMO_KV_HIGH_GB, 260)} height="32" fill="var(--accent-soft)" stroke="var(--accent)" />
+          </g>
+          <text x="150" y="101" text-anchor="middle" class="label">M + K + R = {DEMO_PRE_MODEL_FREE_GB} GB</text>
+          <rect x="20" y="125" width="260" height="300" rx="11" fill="url(#headroom)" stroke="var(--muted)" />
+          <text x="150" y="151" text-anchor="middle" class="label">R = {DEMO_DYNAMIC_HIGH_GB} GB</text>
+          <g opacity={phase >= 2 ? 1 : 0} style="transition: opacity 300ms">
+            <rect x="45" y="170" width="210" height="60" rx="8" fill="var(--bg)" stroke="var(--fg)" />
+            <text x="150" y="195" text-anchor="middle" class="fraction">G = ? GB</text>
+            <text x="150" y="218" text-anchor="middle" class="label">{t('graph buffers · persistent', 'graph 缓冲 · 常驻')}</text>
+          </g>
+          <g opacity={phase >= 3 ? 1 : 0} style="transition: opacity 300ms">
+            <rect x="45" y="250" width="210" height="60" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="150" y="275" text-anchor="middle" class="fraction">A = ? GB</text>
+            <text x="150" y="298" text-anchor="middle" class="label">{t('activations · temporary', '激活 · 临时')}</text>
+          </g>
+          <g opacity={phase >= 4 ? 1 : 0} style="transition: opacity 300ms">
+            <rect x="45" y="330" width="210" height="60" rx="8" fill="var(--bg)" stroke="var(--muted)" />
+            <text x="150" y="355" text-anchor="middle" class="fraction">D = ? GB</text>
+            <text x="150" y="378" text-anchor="middle" class="label">{t('other dynamic work', '其他动态工作')}</text>
+          </g>
+          <text x="150" y="460" text-anchor="middle" class="formula budget" opacity={phase >= 5 ? 1 : 0}>G + A + D ≤ {DEMO_DYNAMIC_HIGH_GB} GB</text>
+          <text x="150" y="495" text-anchor="middle" class="short" opacity={phase >= 5 ? 1 : 0}>{t('runtime can still run out', '运行时仍可能不足')}</text>
+          <text x="150" y="545" text-anchor="middle" class="label" opacity={phase >= 6 ? 1 : 0}>{t('Next: two requests share a prefix.', '下一章：两个请求有共同前缀。')}</text>
+          <text x="150" y="580" text-anchor="middle" class="label" opacity={phase >= 6 ? 1 : 0}>{t('Can a hybrid model resume', 'hybrid 模型能从共同前缀')}</text>
+          <text x="150" y="605" text-anchor="middle" class="label" opacity={phase >= 6 ? 1 : 0}>{t('at the prefix’s end?', '的末尾继续算吗？')}</text>
+        {/if}
       {/if}
-      <text x={W / 2} y={H - 7} text-anchor="middle" class="footnote">{step === 0 ? t('Rounded example; headroom is a reserve.', '约数例子；动态余量只是预留。') : step === 1 ? t('G has no measured GB value in this example.', '本例没有 G 的实测 GB 数。') : step === 2 ? t('One schematic graph; real capture depends on batch shape.', '示意一张 graph；实际 capture 随 batch 形状而变。') : step === 3 ? t('Schematic values; the allocation stays fixed.', '数值仅示意；分配保持不变。') : t('A’s live range ends; this is not an allocator trace.', '这里只画 A 的使用期结束，不是 allocator 轨迹。')}</text>
+      <text x={W / 2} y={H - 7} text-anchor="middle" class="footnote">{step === 0 ? t('Rounded example; headroom is a reserve.', '约数例子；动态余量只是预留。') : step === 1 ? t('G has no measured GB value in this example.', '本例没有 G 的实测 GB 数。') : step === 2 ? t('One schematic graph; real capture depends on batch shape.', '示意一张 graph；实际 capture 随 batch 形状而变。') : step === 3 ? t('Schematic values; the allocation stays fixed.', '数值仅示意；分配保持不变。') : step === 4 ? t('A’s live range ends; this is not an allocator trace.', '这里只画 A 的使用期结束，不是 allocator 轨迹。') : t('? means unknown here, not zero.', '? 表示本例未知，不是 0。')}</text>
     </svg>
   </div>
   <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh}

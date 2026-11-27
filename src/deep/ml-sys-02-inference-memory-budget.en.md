@@ -247,3 +247,51 @@ This step does not measure peak activation bytes, specify reuse addresses or cov
 ### Next
 
 The final step puts model, KV, persistent graph buffers and temporary activations back into one scoped account.
+
+## Step 6 · A scoped account, not a guarantee
+
+**One sentence.** The 0.85 setting passes this KV-sizing example, but unmeasured graph buffers, activations and other dynamic work can still exhaust runtime memory.
+
+### What the diagram shows
+
+- The top bar closes the rounded startup account: $M\approx60$ GB, $K=6.3$ GB and $R=11.7$ GB sum to 78 GB.
+- Inside $R$, the chapter names persistent graph buffers $G$, temporary activations $A$ and other dynamic work $D$. All three have unknown sizes in this example, marked `?`, not zero.
+- The runtime requirement is $G+A+D\le R$. Passing Step 1's KV sizing does not measure or guarantee this later condition.
+- The chapter deliberately stops at this scoped account. It does not claim a complete ledger of every allocator allocation.
+
+### Formula and symbols
+
+$$M+K+R=P,\qquad G+A+D\le R=(1-f)P$$
+
+| Symbol | Meaning | Origin |
+|---|---|---|
+| $M$ | Model-loading reduction | Step 1; about 60 GB |
+| $K$ | KV-pool allowance | Step 1; 6.3 GB |
+| $R$ | Dynamic headroom | Step 1; 11.7 GB |
+| $G$ | Persistent graph buffers | Steps 2–4; unknown bytes |
+| $A$ | Temporary activations | Step 5; unknown bytes |
+| $D$ | Other dynamic work not itemized here | Scope boundary; unknown bytes |
+
+### Substitute the diagram's numbers
+
+$$60+6.3+11.7=78\ \mathrm{GB}$$
+
+$$G+A+D\le11.7\ \mathrm{GB}$$
+
+No values are assigned to $G$, $A$ or $D$. Consequently, this example can prove the positive KV allowance, but it cannot prove a runtime peak fits. A real runtime OOM can require lowering `mem_fraction_static` to enlarge $R$, which trades in the opposite direction from Step 1's KV-sizing repair.
+
+### Source and scope
+
+SGLang lists activations and CUDA Graph buffers among the uses outside static weights and KV. The worked article distinguishes startup KV-sizing failure from runtime activation OOM. Its multimodal reserve and other-process cases remain outside this chapter because the stage does not supply their configurations or measurements.
+
+Sources:
+
+- [Static and dynamic memory categories: `python/sglang/srt/server_args.py:1227-1238`, `sglang@4fa3482`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/server_args.py#L1227-L1238).
+- [The parameter guidance for OOM: `python/sglang/srt/server_args.py:4227-4232`, `sglang@4fa3482`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/server_args.py#L4227-L4232).
+- Startup and runtime failure directions: `Awesome-ML-SYS-Tutorial/sglang/kvcache-code-walk-through/mem-fraction-static.md:67-100`, pinned at `d1f309b46f81a23e8b6ca0718c05bc897fafacf7`.
+
+This chapter excludes KV-byte derivation, paging, request admission, multimodal reserves, allocator internals and a complete process-wide memory census.
+
+### Next
+
+Two requests share a prefix. Can a hybrid model resume from the end of that shared prefix?
