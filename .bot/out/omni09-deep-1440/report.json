@@ -1,0 +1,234 @@
+{
+  "base": "http://127.0.0.1:4501/learning-sglang",
+  "width": 1440,
+  "states": [
+    {
+      "step": 1,
+      "lang": "en",
+      "counter": "01 / 05",
+      "expanded": "true",
+      "title": "Step 1 · Do not reuse space while its reader is active",
+      "pageOverflow": false,
+      "drawerOverflow": false,
+      "drawerClientWidth": 489,
+      "drawerScrollWidth": 489,
+      "wide": [
+        {
+          "tag": "annotation",
+          "className": "",
+          "text": "N=2"
+        },
+        {
+          "tag": "annotation",
+          "className": "",
+          "text": "S=1"
+        },
+        {
+          "tag": "annotation",
+          "className": "",
+          "text": "W=N-S=2-1=1"
+        },
+        {
+          "tag": "annotation",
+          "className": "",
+          "text": "N"
+        },
+        {
+          "tag": "annotation",
+          "className": "",
+          "text": "S"
+        },
+        {
+          "tag": "annotation",
+          "className": "",
+          "text": "W"
+        },
+        {
+          "tag": "annotation",
+          "className": "",
+          "text": "W=1"
+        }
+      ],
+      "katexErrors": 0,
+      "rawMath": false,
+      "minStageFont": 8.00564236111111,
+      "activeElement": "",
+      "missing": []
+    },
+    {
+      "step": 1,
+      "lang": "zh",
+      "counter": "01 / 05",
+      "expanded": "true",
+      "title": "第 1 步 · 读者没读完，空间不能复用",
+      "pageOverflow": false,
+      "drawerOverflow": false,
+      "drawerClientWidth": 489,
+      "drawerScrollWidth": 489,
+      "wide": [
+        {
+          "tag": "annotation",
+          "className": "",
+          "text": "N=2"
+        },
+        {
+          "tag": "annotation",
+          "className": "",
+          "text": "S=1"
+        },
+        {
+          "tag": "annotation",
+          "className": "",
+          "text": "W=N-S=2-1=1"
+        },
+        {
+          "tag": "annotation",
+          "className": "",
+          "text": "N"
+        },
+        {
+          "tag": "annotation",
+          "className": "",
+          "text": "S"
+        },
+        {
+          "tag": "annotation",
+          "className": "",
+          "text": "W"
+        },
+        {
+          "tag": "annotation",
+          "className": "",
+          "text": "W=1"
+        }
+      ],
+      "katexErrors": 0,
+      "rawMath": false,
+      "minStageFont": 8.00564236111111,
+      "activeElement": "",
+      "missing": []
+    },
+    {
+      "step": 2,
+      "lang": "en",
+      "counter": "02 / 05",
+      "expanded": "true",
+      "title": "Step 2 · DataRef is a descriptor for finding data",
+      "pageOverflow": false,
+      "drawerOverflow": false,
+      "drawerClientWidth": 489,
+      "drawerScrollWidth": 489,
+      "wide": [
+        {
+          "tag": "WBR",
+          "className": "",
+          "text": ""
+        }
+      ],
+      "katexErrors": 0,
+      "rawMath": false,
+      "minStageFont": 8.00564236111111,
+      "activeElement": "",
+      "missing": []
+    },
+    {
+      "step": 2,
+      "lang": "zh",
+      "counter": "02 / 05",
+      "expanded": "true",
+      "title": "第 2 步 · DataRef 是找数据的小卡片",
+      "pageOverflow": false,
+      "drawerOverflow": false,
+      "drawerClientWidth": 489,
+      "drawerScrollWidth": 489,
+      "wide": [
+        {
+          "tag": "WBR",
+          "className": "",
+          "text": ""
+        }
+      ],
+      "katexErrors": 0,
+      "rawMath": false,
+      "minStageFont": 8.00564236111111,
+      "activeElement": "",
+      "missing": []
+    },
+    {
+      "step": 3,
+      "lang": "en",
+      "counter": "03 / 05",
+      "expanded": "true",
+      "title": "Step 3 · Publication leaves a record waiting for acknowledgement",
+      "pageOverflow": false,
+      "drawerOverflow": false,
+      "drawerClientWidth": 489,
+      "drawerScrollWidth": 489,
+      "wide": [
+        {
+          "tag": "WBR",
+          "className": "",
+          "text": ""
+        },
+        {
+          "tag": "WBR",
+          "className": "",
+          "text": ""
+        },
+        {
+          "tag": "WBR",
+          "className": "",
+          "text": ""
+        },
+        {
+          "tag": "WBR",
+          "className": "",
+          "text": ""
+        }
+      ],
+      "katexErrors": 0,
+      "rawMath": false,
+      "minStageFont": 8.00564236111111,
+      "activeElement": "",
+      "missing": []
+    },
+    {
+      "step": 3,
+      "lang": "zh",
+      "counter": "03 / 05",
+      "expanded": "true",
+      "title": "第 3 步 · 发布时另留一张等待回执的记录",
+      "pageOverflow": false,
+      "drawerOverflow": false,
+      "drawerClientWidth": 489,
+      "drawerScrollWidth": 489,
+      "wide": [
+        {
+          "tag": "WBR",
+          "className": "",
+          "text": ""
+        },
+        {
+          "tag": "WBR",
+          "className": "",
+          "text": ""
+        },
+        {
+          "tag": "WBR",
+          "className": "",
+          "text": ""
+        },
+        {
+          "tag": "WBR",
+          "className": "",
+          "text": ""
+        }
+      ],
+      "katexErrors": 0,
+      "rawMath": false,
+      "minStageFont": 8.00564236111111,
+      "activeElement": "",
+      "missing": []
+    }
+  ]
+}

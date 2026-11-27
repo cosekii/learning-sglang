@@ -34,7 +34,7 @@ $$W=N-S=2-1=1$$
 
 本步是生命周期问题的教学构造，不声称 SGLang-Omni 只有一个槽位，也不把等待等同于整个 pipeline 停止。实际实现可以用其他空间或队列容纳 B；本例故意只留一格，让提前复用的风险可以直接看见。
 
-第 1 本 Ch.18 Steps 2–8 已介绍数据与通知分开传输、读取后发送 ack，以及不同数据平面。本章不重复传输路线，转而跟踪句柄和生命周期记录。源码核对版本为 `sglang-omni origin/main@0e641996a0c269601d03f1cb29d3f46d7cb345a6`；DataRef 的具体字段与调用链从下一步开始列出。
+第 1 本 Ch.18 Steps 2–8 已介绍数据与通知分开传输、读取后发送 ack，以及不同数据平面。本章不重复传输路线，转而跟踪句柄和生命周期记录。源码核对版本为 `sglang-omni origin/main@0e641996a0c2`；DataRef 的具体字段与调用链从下一步开始列出。
 
 ### 接下来
 
@@ -79,9 +79,9 @@ Router 在创建 DataRef 之前按两端位置和数据设备选路。普通 pay
 
 - `sglang_omni/comm/data_ref.py:117-133`：DataRef 字段；`40-67`：`TensorMeta`；`70-99`：`BackendRef` 和字节长度；`135-216`：传输格式、版本 1 与字段校验。
 - `sglang_omni/comm/router.py:215-252`：普通 payload 选路；`263-299`：relay 创建与 `LOCAL_OBJECT` 无 relay；`301-320`：tensor 设备扫描。
-- `sglang_omni/pipeline/stage/runtime.py:774-790`：直接 PyTorch CUDA IPC 旁路；`1939-1954`：逐 target 发送。
+- <code>sglang_omni/pipeline/stage/<wbr>runtime.py:774-790</code>：直接 PyTorch CUDA IPC 旁路；`1939-1954`：逐 target 发送。
 
-以上行号对应 `origin/main@0e641996a0c269601d03f1cb29d3f46d7cb345a6`。
+以上行号对应 `origin/main@0e641996a0c2`。
 
 ### 接下来
 
@@ -100,13 +100,11 @@ Router 在创建 DataRef 之前按两端位置和数据设备选路。普通 pay
 
 ### 实际调用顺序
 
-| 顺序 | 做什么 | 留下什么 |
-|---|---|---|
-| 1 | `stage_io.write_payload()` 抽取并打包 tensor，调用 relay 的 put | DataRef 和仍存活的 `RelayOperation` |
-| 2 | `publish_data_ready()` 以 `object_id` 为键登记 `PendingTransfer` | operations、ACK future 及 watcher 所需状态 |
-| 3 | 发送 `DataReadyMessage(data_ref=data_ref.to_dict())` | 接收方可解析的 DataRef |
-| 4 | 控制消息发出后启动 `watch_pending()` | 等待 ACK 的后台任务 |
-| 5 | worker 完成 `job.ready` | 等待中的 `send_payload()` 可以返回 |
+1. <code>stage_io.<wbr>write_payload()</code> 抽取并打包 tensor，调用 relay 的 put：DataRef 和仍存活的 `RelayOperation`。
+2. <code>publish_<wbr>data_ready()</code> 以 `object_id` 为键登记 `PendingTransfer`：operations、ACK future 及 watcher 所需状态。
+3. 发送 <code>DataReadyMessage(<wbr>data_ref=<wbr>data_ref.to_dict())</code>：接收方可解析的 DataRef。
+4. 控制消息发出后启动 `watch_pending()`：等待 ACK 的后台任务。
+5. worker 完成 `job.ready`：等待中的 `send_payload()` 可以返回。
 
 SHM 使用 `put_chunks_async()`，其他 relay 使用 `put_async()`。两种 put 都返回异步操作及接收端所需元数据；put 完成不是接收方消费完成。`stage_io.write_payload()` 内部的 tensor 抽取和打包属于图外实现细节，本图没有展开。
 
@@ -122,7 +120,7 @@ SHM 使用 `put_chunks_async()`，其他 relay 使用 `put_async()`。两种 put
 - `sglang_omni/comm/relay/base.py:91-145`：relay 的 put/get 接口和异步操作契约。
 - `sglang_omni/comm/engine.py:68-75`：`PendingTransfer` 字段；`222-270`：`send_payload()` 等待 `ready`；`1011-1038`：worker 写入；`1052-1061`：完成 `job.ready`；`1125-1208`：登记 pending、发送 DataReady、启动 watcher。
 
-行号对应 `origin/main@0e641996a0c269601d03f1cb29d3f46d7cb345a6`。
+行号对应 `origin/main@0e641996a0c2`。
 
 ### 接下来
 

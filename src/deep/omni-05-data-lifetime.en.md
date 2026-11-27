@@ -34,7 +34,7 @@ Two implementation questions remain. The reader must find A's location, and the 
 
 This teaching construction does not claim that SGLang-Omni has one slot. Waiting here does not mean that the entire pipeline stops. An implementation can place B in another space or queue; this example removes that choice to expose unsafe reuse.
 
-Chapter 18 Steps 2–8 of the first book introduced separate data and notification paths, acknowledgement after reading, and several data planes. This chapter follows the handle and lifetime records instead of repeating those routes. The source revision is `sglang-omni origin/main@0e641996a0c269601d03f1cb29d3f46d7cb345a6`; the next step begins the exact DataRef field and call-chain references.
+Chapter 18 Steps 2–8 of the first book introduced separate data and notification paths, acknowledgement after reading, and several data planes. This chapter follows the handle and lifetime records instead of repeating those routes. The source revision is `sglang-omni origin/main@0e641996a0c2`; the next step begins the exact DataRef field and call-chain references.
 
 ### Next
 
@@ -79,9 +79,9 @@ Before creating the DataRef, Router selects a path from the two stages' location
 
 - `sglang_omni/comm/data_ref.py:117-133`: DataRef fields; `40-67`: `TensorMeta`; `70-99`: `BackendRef` and byte length; `135-216`: wire format, version 1 and field validation.
 - `sglang_omni/comm/router.py:215-252`: ordinary payload routing; `263-299`: relay creation and the relay-free `LOCAL_OBJECT` path; `301-320`: tensor-device scan.
-- `sglang_omni/pipeline/stage/runtime.py:774-790`: direct PyTorch CUDA IPC bypass; `1939-1954`: per-target sends.
+- <code>sglang_omni/pipeline/stage/<wbr>runtime.py:774-790</code>: direct PyTorch CUDA IPC bypass; `1939-1954`: per-target sends.
 
-All line numbers refer to `origin/main@0e641996a0c269601d03f1cb29d3f46d7cb345a6`.
+All line numbers refer to `origin/main@0e641996a0c2`.
 
 ### Next
 
@@ -100,13 +100,11 @@ Step 3 publishes this descriptor and creates a `PendingTransfer` record that wai
 
 ### The call sequence
 
-| Order | Action | What remains |
-|---|---|---|
-| 1 | `stage_io.write_payload()` extracts and packs tensors, then calls the relay's put | A DataRef and a live `RelayOperation` |
-| 2 | `publish_data_ready()` registers `PendingTransfer` by `object_id` | Operations, an ACK future and watcher state |
-| 3 | Send `DataReadyMessage(data_ref=data_ref.to_dict())` | A DataRef the receiver can parse |
-| 4 | Start `watch_pending()` after sending the control message | A background task waiting for ACK |
-| 5 | The worker completes `job.ready` | The waiting `send_payload()` can return |
+1. <code>stage_io.<wbr>write_payload()</code> extracts and packs tensors, then calls the relay's put: a DataRef and a live `RelayOperation`.
+2. <code>publish_<wbr>data_ready()</code> registers `PendingTransfer` by `object_id`: operations, an ACK future and watcher state.
+3. Send <code>DataReadyMessage(<wbr>data_ref=<wbr>data_ref.to_dict())</code>: a DataRef the receiver can parse.
+4. Start `watch_pending()` after sending the control message: a background task waiting for ACK.
+5. The worker completes `job.ready`: the waiting `send_payload()` can return.
 
 SHM uses `put_chunks_async()`, while other relays use `put_async()`. Both return an asynchronous operation and receiver metadata. Finishing the put does not mean that the receiver consumed the data. Tensor extraction and packing inside `stage_io.write_payload()` are implementation detail, not drawn on this slide.
 
@@ -122,7 +120,7 @@ Fan-out gives each target its own send and Pending/ACK lifecycle. The figure fol
 - `sglang_omni/comm/relay/base.py:91-145`: relay put/get interface and asynchronous operation contract.
 - `sglang_omni/comm/engine.py:68-75`: `PendingTransfer` fields; `222-270`: `send_payload()` waiting for `ready`; `1011-1038`: worker write; `1052-1061`: `job.ready` completion; `1125-1208`: pending registration, DataReady send and watcher start.
 
-Line numbers refer to `origin/main@0e641996a0c269601d03f1cb29d3f46d7cb345a6`.
+Line numbers refer to `origin/main@0e641996a0c2`.
 
 ### Next
 

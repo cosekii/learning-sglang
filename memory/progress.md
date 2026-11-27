@@ -4,6 +4,9 @@
 
 ## 本轮记录
 
+- 修旧 Learning SGLang Omni 第 5 章 Steps 1–3 的 Omni-09：Step 1 以四相演示覆盖读错、读完 A 和 B 进入；Step 2 以三相构造 DataRef 并预览字段使用，明确尚未发布；Step 3 以六相演示写入返回、pending、DataReady、watch_pending 和 job.ready。教程提交 `b89db6c`、`975362f`、`54777a1`，另附 deep 手机呈现修复和最终证据；Steps 4–5 未重做。Omni-09 待协调固定复审，不自行销项；下一单元按协调顺序处理 Omni-51。
+- Steps 1–3 作者参考值均为 R1–R5 **10/10**、机制 R6 **2/2**、原十个非视觉项 **20/20**、新内容洞 **0**，独立 `explore` 逐步及整单元冷读均 **PASS**。`build`（60 页）、五步 `readability`、transcript（1,249 词，`4d0035fb…8609ea04`）、`deep-check 05`、`zh-check`、英中全章与中文 Steps 1–3 三宽度 `mobile`、`git diff --check` 全过。动画矩阵 **18 组合、78 状态、60/60 转变**，最低 **11.760 CSS px**；双语 deep **18 视图**。桌面抽屉缩舞台与焦点仍属共享 ML-21／22。当前模型不能读 PNG，视觉与整章 verdict 待协调；未跑全站回归或真实 SHM 传输。本轮类型：**修旧**。
+
 - 修旧 Learning ML Systems 第 13 章 Step 8 的 ML-53：桌面、手机和双语 deep 都以 padding 后的 batch 自包含收尾，明确本章不测量模型生成、工具执行和训练的等待，删除指向未 ready 第 14 章的最长等待问题。实际末步没有下一章链接；padding 与两种 mask 的相位机制不变。双语来源长标识和路径加断行机会，手机 deep 横溢归零。教程修复待协调固定复审，不自行销项；共享 ML-21／22 未改，未开第 14 章。
 - Step 8 作者参考值为 R1–R5 **10/10**、机制 R6 **2/2**、原十个非视觉项 **20/20**、0 新内容洞，独立 `explore` 对 ML-53 内容冷读 **PASS**。`build`（60 页）、八步 `readability`、两次哈希一致的 `transcript`（1,831 词，`bbf34686…042d`）、`deep-check 13`、`zh-check`、英中全章与中文 Step 8 三宽度 `mobile`、`git diff --check` 全过；定向审计 **24 个状态、18/18 个机制转变、4 个 deep 状态**，普通舞台最低 **10.175376647834275 CSS px**，重叠和出界为 0。桌面 deep 打开后舞台最低 **5.746527777777778 CSS px**，仍属共享 ML-21；当前模型不能读 PNG，视觉、原 #4/#5 和整章 verdict 待协调。本轮类型：**修旧**。
 

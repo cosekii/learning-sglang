@@ -33,4 +33,22 @@
 - `.bot/out/omni50-phase-audit.mjs` 覆盖 Steps 4／5 × 英文桌面／中文桌面／中文 390 px × 直接 URL／前步入口，共 **12 组合、78 状态、66/66 机制转变**。最低 **11.760 CSS px**，重叠、SVG 出界、页面横溢均为 0；提前完成标签断言也通过。代表图：`.bot/out/omni50-s4-endesktop-direct/s4-p3.png`、`.bot/out/omni50-s5-zh390-direct/s5-p4.png`。
 - `.bot/out/omni50-deep-audit.mjs` 在 360／390／1440 px 覆盖双语 Steps 4／5，共 **12 个打开抽屉视图**；目标文本、`aria-expanded=true`、页面和抽屉横溢、KaTeX 与 raw-math 检查通过。桌面抽屉打开后的舞台最低 **8.006 CSS px**，且焦点记录为空，归既有共享 ML-21／22，本单元未改也不声称这两项通过。
 - 当前模型不能读取 PNG；结论来自构建、transcript、源码、独立冷读、DOM 与几何检查，未声称看过图片或视觉通过。未跑全站回归、真实 SGLang-Omni、SHM 进程间传输、模型、GPU 或 reduced-motion 动态切换。
-- **Omni-09 保持开放。** 本单元只把 Steps 4／5 改为机制动画，Steps 1–3 未改，不能把 Omni-50 的完成当成 Omni-09 全章动画完成。
+- **Omni-50 单元不关闭 Omni-09。** 该单元只把 Steps 4／5 改为机制动画，Steps 1–3 留待后续 Omni-09 单元，见下节。
+
+## 2026-11-27 · Omni-09 作者复评（待协调固定复审）
+
+| 步 | R1–R5 /10 | 机制 R6 /2 | 原十个非视觉项 /20 | R1 小学生复述 | 新内容洞 |
+|---|---:|---:|---:|---|---:|
+| 1 | 10 | 2 | 20 | A 没读完时 B 不能抢这格；A 读完后，B 才能进来。 | 0 |
+| 2 | 10 | 2 | 20 | DataRef 是找数据的小卡片，不带数据本体；接收方用卡片字段找 A，发布发生在下一步。 | 0 |
+| 3 | 10 | 2 | 20 | 先写入并留 pending，再发 DataReady；随后启动 watcher，最后 `send_payload()` 才返回，这不表示读者已读。 | 0 |
+
+- 教程提交：`b89db6c`（Step 1）、`975362f`（Step 2）、`54777a1`（Step 3）。Steps 4–5 沿用上一轮已验证的七相和六相，不重做。
+- Step 1 四相为共同初态、左栏覆盖并读错、右栏读完 A、右栏 B 进入。标题写明 initially，蓝色只表示 A、橙色只表示 B，面板和读者边框保持 neutral。
+- Step 2 三相为只有 payload、构造 DataRef、接收方使用字段。末相明确 `FIELDS IN USE · NOT SENT`，发布和读取都留给 Step 3；SHM 解释为 shared memory。
+- Step 3 六相为写入中、返回 DataRef 和 live operation、登记 pending、发送 DataReady、启动 watch_pending、完成 job.ready 和 `send_payload()`。pending 先于通知，watcher 跟随通知，job.ready 最后完成。
+- 独立 `explore` 对 Step 1 初轮指出标题时态和颜色双义，修正后 **PASS**；Steps 2、3 分别 **PASS**。整单元复核确认 **18 组合、78 状态、60/60 机制转变**，五步均非静态，Steps 4–5 无回归。这些是作者复评和独立源码／transcript／DOM 冷读，不是协调 verdict，Omni-09 不自行销项。
+- 最终 `npm run build`：60 页通过；五步 `readability`：0 机械问题；`deep-check 05`、`zh-check`、英中全章 360／390／430 px `mobile`、中文 Steps 1–3 字号门与 `git diff --check` 全过。transcript 为 **1,249 词**，SHA-256 `4d0035fb99ad5d7f6970a5372d4b9390ae78657bf0d497f5fa7d81836609ea04`。
+- `.bot/out/omni09-phase-audit.mjs` 覆盖 Steps 1–3 × 英文桌面／中文桌面／中文 390 px × 直接 URL／跨步入口，共 **18 组合、78 状态、60/60 机制转变**，最低 **11.760 CSS px**，重叠、SVG 出界、页面横溢均为 0。
+- `.bot/out/omni09-deep-audit.mjs` 在 360／390／1440 px 覆盖双语 Steps 1–3，共 **18 个打开抽屉视图**；目标文本、展开身份、页面和抽屉横溢、KaTeX 与 raw-math 检查通过。桌面抽屉打开后的舞台最低 **8.006 CSS px**，焦点记录为空，仍属共享 ML-21／22。
+- 当前模型不能读取 PNG；结论来自构建、transcript、源码、独立冷读、DOM 与几何检查，未声称看过图片或视觉通过。未跑全站回归、真实 SGLang-Omni、SHM 进程间传输、模型、GPU 或 reduced-motion 动态切换。
