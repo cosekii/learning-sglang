@@ -203,12 +203,13 @@
 
 ## 提交
 
+- `2e11a6c`：**复审发现的协议错误已修。** 原四相末相把 `{"done":true,"count":2}` 和「还在发送」同时留在图上；pinned `Voxt/internal/fileasr/socket.go:98-106,114-123` 确认 `done` 只在上传完成（`body.n == req.Bytes`）后发出。Step 3 改为六相：路线 → 请求行 → PCM「还在发送」→ segment 1 → segment 2（PCM 仍未完）→ PCM「全部送完」＋`done`＋图例行。桌面与手机分支同相序，caption、deep、数字未改。机制矩阵按复审要求加两条断言并六组全过：中间相（phase 3）有 `segment`＋「还在发送」且无 `done`；末相（phase 5）有 `done`＋「全部送完」且无「还在发送」（探针按相位轮询，`/tmp/ls-d-probe7.mjs`）。transcript 重生成，末相为「all sent」＋两行 segment＋done。推送前 rebase 到 k1 `308a9d5` 之上，未 force-push。
 - `e02da4c`：**Voxt 10 displayed Step 3 机制动画完成，待协调固定复审，不自行销项。** Step 3 原为静态图，现按同款模式循环四相：命令＋`transcribe.sock`＋运行中的 Voxt → JSON 请求行（`op`＋字节数）→ PCM 条「还在发送」→ 回复逐段回来（两个 `segment`＋`done`+句数）与图例行。末相同时看到 PCM 还在发送和回复已回来，对应 deep 的「边收边切句、识别」。桌面与手机分支同相序；`STEP_PHASES` 扩到 step 2，reduced motion 停末相。
 
 ## 硬门与证据
 
-- `npm run build` **60 页**通过；`BOOK=voxt ONLY=10 STEP=3 npm run readability` **0 机械问题**；`deep-check 10`、英中全章 360／390／430 px `mobile`、`STEP=3 LANG=zh` 中文字号门、`zh-check`（`all clear`）全过；transcript 重生成，Step 3 新增 `loops` 行、末相内容完整，无 caption／出界／重叠报告。
-- 机制矩阵（DOM，无图像输入）：英文桌面直接 `?step=3`、中文桌面直接、中文 390×844 直接、英文桌面前步经 Next 进入、中文桌面前步进入、中文 390×844 前步进入，共 **6 组 × 2 状态**。六组均为 phase 1（路线＋请求行，无 PCM／回复）与 phase 3（PCM 还在发送＋回复已回）两个不同机制状态，counter 均 `03 / 11`。探针脚本 `/tmp/ls-d-probe6.mjs`。
+- `npm run build` **60 页**通过；`BOOK=voxt ONLY=10 STEP=3 npm run readability` **0 机械问题**；`deep-check 10`、英中全章 360／390／430 px `mobile`、`STEP=3 LANG=zh` 中文字号门、`zh-check`（`all clear`）全过；transcript 重生成，Step 3 新增 `loops` 行、末相内容完整，无 caption／出界／重叠报告。（协议修复后上述门全部重跑，`zh-check` 用 `WAIT=6000` 落在末相窗口内，结果不变。）
+- 机制矩阵（DOM，无图像输入）：英文桌面直接 `?step=3`、中文桌面直接、中文 390×844 直接、英文桌面前步经 Next 进入、中文桌面前步进入、中文 390×844 前步进入，共 **6 组 × 2 状态**；协议修复后按 `/tmp/ls-d-probe7.mjs` 重采，六组均满足两条协议断言（见 `2e11a6c` 条目），counter 均 `03 / 11`。
 - Step 3 作者复评（协调基线不改写）：R1–R5 **10/10**、机制 R6 **2/2**（DOM 证据，未见图）、原十个非视觉项 **20/20**（#4／#5 待视觉复核）。R1 小学生复述：「命令先告诉运行中的 Voxt 要转多少字节，再把声音从本机 socket 送过去；声音还没送完，识别好的句子就一行一行回来了。」冷读洞 **0**（socket 由 subtitle「同一台 Mac 上两个程序之间的一扇门」解释，JSON 字段由图例行解释）。截图存档（未能读取）：`/tmp/ls-d-s3/zh-390.png`。环境同上轮；**未声称看过图片或视觉通过；未跑全站回归、真实 Voxt 或主人最终验收。**
 
 ## 剩余
