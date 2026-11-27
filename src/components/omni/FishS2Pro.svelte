@@ -92,8 +92,8 @@
   ];
 
   // Each phase changes the mechanism on screen, then holds the finished scene before looping.
-  const PHASE_COUNTS = [6, 4, 3, 11, 5, 0, 3, 4];
-  const PHASE_MS = [1000, 1100, 1100, 650, 1100, 0, 1800, 1100];
+  const PHASE_COUNTS = [6, 4, 3, 11, 5, 4, 3, 4];
+  const PHASE_MS = [1000, 1100, 1100, 650, 1100, 1200, 1800, 1100];
   const REST_MS = 1800;
   type Frame = { x: number; y: number; w: number; h: number };
   const motionFrames = (isPhone: boolean, s: number): Frame[] => {
@@ -135,6 +135,13 @@
       { x: 48, y: 106, w: 185, h: 47 }, { x: 435, y: 106, w: 237, h: 47 },
       { x: 48, y: 331, w: 279, h: 59 }, { x: 393, y: 331, w: 112, h: 59 },
       { x: 522, y: 331, w: 150, h: 59 },
+    ];
+    if (s === 5) return isPhone ? [
+      { x: 18, y: 82, w: 264, h: 230 }, { x: 18, y: 82, w: 264, h: 230 },
+      { x: 18, y: 332, w: 264, h: 230 }, { x: 18, y: 582, w: 264, h: 230 },
+    ] : [
+      { x: 30, y: 91, w: 210, h: 467 }, { x: 30, y: 91, w: 210, h: 467 },
+      { x: 255, y: 91, w: 210, h: 467 }, { x: 480, y: 91, w: 210, h: 467 },
     ];
     if (s === 7) return isPhone ? [
       { x: 18, y: 82, w: 264, h: 128 }, { x: 18, y: 249, w: 264, h: 212 },
@@ -565,6 +572,7 @@
             {@const x = 30 + kind * 225}
             <rect x={x} y="91" width="210" height="467" rx="12" fill="var(--bg)" stroke={kind === 0 ? 'var(--gen)' : kind === 1 ? 'var(--gen)' : 'var(--line)'} />
             <text x={x + 16} y="123" class="result" style={kind === 0 ? 'fill:var(--gen)' : kind === 1 ? 'fill:var(--gen)' : ''}>{kind === 0 ? 'EOS' : kind === 1 ? t('LENGTH', '长度用尽') : t('ABORT', '中止')}</text>
+            <g opacity={phase > kind ? 1 : 0.08} style="transition: opacity 350ms">
             {#if kind === 0}
               <rect x={x + 16} y="147" width="178" height="58" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
               <text x={x + 105} y="182" text-anchor="middle" class="small strong">Slow → &lt;|im_end|&gt;</text>
@@ -594,12 +602,14 @@
               <text x={x + 16} y="468" class="small">{t('already delivered chunks', '已经交付的 chunks')}</text>
               <text x={x + 16} y="498" class="small">{t('cannot be recalled', '无法收回')}</text>
             {/if}
+            </g>
           {/each}
         {:else}
           {#each [0, 1, 2] as kind}
             {@const y = 82 + kind * 250}
             <rect x="18" y={y} width="264" height="230" rx="11" fill="var(--bg)" stroke={kind === 0 ? 'var(--gen)' : kind === 1 ? 'var(--gen)' : 'var(--line)'} />
             <text x="32" y={y + 29} class="result" style={kind === 0 ? 'fill:var(--gen)' : kind === 1 ? 'fill:var(--gen)' : ''}>{kind === 0 ? 'EOS' : kind === 1 ? t('LENGTH', '长度用尽') : t('ABORT', '中止')}</text>
+            <g opacity={phase > kind ? 1 : 0.08} style="transition: opacity 350ms">
             {#if kind === 0}
               <text x="32" y={y + 65} class="small strong">{t('EOS = model says “done”', 'EOS = 模型说“结束了”')}</text>
               <text x="32" y={y + 98} class="small">{t('drop terminal frame · keep earlier', '丢结束帧 · 保留之前帧')}</text>
@@ -619,6 +629,7 @@
               <text x="150" y={y + 144} text-anchor="middle" class="small strong">{t('no remaining sound', '不交付剩余声音')}</text>
               <text x="32" y={y + 193} class="small">{t('delivered chunks stay delivered', '已交付 chunks 不会收回')}</text>
             {/if}
+            </g>
           {/each}
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'EOS = <|im_end|> · delivered sound is not recalled' : 'EOS is the <|im_end|> token. Abort cannot recall sound already delivered.', phone ? 'EOS 是 <|im_end|> · 已交付声音不会收回' : 'EOS 是 <|im_end|> token。中止不能收回已经交付的声音。')}</text>
