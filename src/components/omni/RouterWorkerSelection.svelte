@@ -417,7 +417,9 @@
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Next chapter: worker failure and graceful exit.', '下一章：worker 故障与退出。')}</text>
       {/if}
-      <LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={4} label={t('loops', '循环')} />
+      <g class="router-loop">
+        <LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={4} label={t('loops', '循环')} />
+      </g>
     </svg>
   </div>
   <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh}
@@ -430,11 +432,15 @@
   .small { font-size: 13px; fill: var(--fg); }
   .result { font-family: var(--mono); font-size: 15px; font-weight: 650; fill: var(--fg); }
   .code { font-family: var(--mono); font-size: 13px; fill: var(--fg); }
+  .footnote { font-size: 13px; }
+  .router-loop :global(.tag) { font-size: 13px; }
   .strong { font-weight: 650; }
   @media (max-width: 900px) {
     .title { font-size: 16px; }
     .label, .small { font-size: 12px; }
     .result { font-size: 12px; }
     .code { font-size: 12px; }
+    .footnote { font-size: 10.5px; }
+    .router-loop :global(.tag) { font-size: 10px; }
   }
 </style>
