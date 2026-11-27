@@ -87,4 +87,5 @@
 ## 待办与边界
 
 - 复审需读第 1／2 步四相证据，确认每相只形成一个机制状态、红框跟着变化对象，并重评这两步机制分；第 3–5 步（各 1/2）的同类返工留给后续轮。
+- 第 2 步实图门仍开放：28 张相位身份可核的图集（en-desktop、en-phone-360／390／430、zh-phone-360／390／430 各 p0–p3）在 `/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-1ujx7ox4/opencode/d-s2/final/`，本 lane 无图像输入模型，须由图像能力评审者实际看图并把 verdict 记到 `.bot/out/report.md`；在此之前机制 R6 保持 7/12，整章 NO-GO。
 - 本轮未跑真实 Voxt、模型下载、更新或模型进程；事实按 pinned `sglang-omni origin/main@c2fc0f102c61daee13c73ced280970a7d72ed12d` 核对。模型不能读 PNG，视觉仍待协调人。
