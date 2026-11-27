@@ -85,7 +85,7 @@
   const W = $derived(phone ? 300 : 720);
   const H = $derived(phone ? [760, 900, 760, 850, 900, 800, 850, 900][step] : [560, 680, 620, 660, 680, 610, 640, 650][step]);
   const bytes = (n: number) => n.toLocaleString('en-US');
-  const desktopSmall: (number | null)[] = [12, 14, 13, 13.5, null, null, null, null];
+  const desktopSmall: (number | null)[] = [12, 14, 13, 13.5, 14, null, null, null];
   const desktopFont = (base: number) => `${desktopSmall[step] ?? base}px`;
 
   // Each step plays its mechanism in held phases, then rests on the finished scene before looping.
