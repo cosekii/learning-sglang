@@ -77,7 +77,7 @@
   const W = $derived(phone ? 300 : 720);
   const H = $derived((phone ? [660, 610, 700, 820, 730, 640] : [470, 450, 460, 480, 480, 560])[step]);
 
-  const PHASE_COUNTS = [3, 3, 3, 3, 3, 3];
+  const PHASE_COUNTS = [4, 3, 3, 3, 3, 3];
   const PHASE_MS = 900;
   const REST_MS = 2200;
   let phase = $state(0);
@@ -99,14 +99,14 @@
     return () => timers.forEach(clearTimeout);
   });
   const motionFrames = (isPhone: boolean, s: number): { x: number; y: number; w: number; h: number }[] => (isPhone ? [
-    [{ x: 15, y: 64, w: 270, h: 112 }, { x: 30, y: 586, w: 240, h: 56 }, { x: 15, y: 296, w: 270, h: 100 }],
+    [{ x: 15, y: 64, w: 270, h: 112 }, { x: 15, y: 64, w: 270, h: 112 }, { x: 15, y: 596, w: 270, h: 48 }, { x: 15, y: 32, w: 270, h: 26 }],
     [{ x: 15, y: 64, w: 270, h: 110 }, { x: 15, y: 202, w: 270, h: 240 }, { x: 20, y: 370, w: 270, h: 60 }],
     [{ x: 15, y: 62, w: 270, h: 134 }, { x: 15, y: 62, w: 270, h: 134 }, { x: 15, y: 300, w: 270, h: 76 }],
     [{ x: 15, y: 64, w: 270, h: 170 }, { x: 15, y: 274, w: 270, h: 190 }, { x: 15, y: 274, w: 270, h: 190 }],
     [{ x: 15, y: 64, w: 270, h: 150 }, { x: 15, y: 576, w: 270, h: 46 }, { x: 40, y: 636, w: 220, h: 26 }],
     [{ x: 15, y: 64, w: 270, h: 92 }, { x: 15, y: 166, w: 270, h: 92 }, { x: 15, y: 268, w: 270, h: 92 }],
   ] : [
-    [{ x: 20, y: 72, w: 212, h: 225 }, { x: 190, y: 414, w: 340, h: 34 }, { x: 488, y: 72, w: 212, h: 225 }],
+    [{ x: 20, y: 72, w: 212, h: 225 }, { x: 20, y: 72, w: 212, h: 225 }, { x: 190, y: 414, w: 340, h: 34 }, { x: 150, y: 30, w: 420, h: 26 }],
     [{ x: 20, y: 74, w: 250, h: 190 }, { x: 300, y: 74, w: 400, h: 190 }, { x: 36, y: 304, w: 320, h: 60 }],
     [{ x: 30, y: 72, w: 660, h: 124 }, { x: 30, y: 72, w: 660, h: 124 }, { x: 256, y: 208, w: 208, h: 124 }],
     [{ x: 20, y: 72, w: 300, h: 190 }, { x: 356, y: 72, w: 346, h: 190 }, { x: 356, y: 72, w: 346, h: 190 }],
@@ -133,7 +133,7 @@
   const jobBytes = VOXT_MODEL_JOB_BYTES.toLocaleString('en-US');
 </script>
 
-<figure class="viz">
+<figure class="viz" data-animation-step={step} data-animation-phase={phase} data-animation-final-phase={PHASE_COUNTS[step] - 1}>
   <div class="canvas">
     <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={t(ariaLabels[step].en, ariaLabels[step].zh)}>
       <defs>
@@ -144,7 +144,7 @@
 
       {#if step === 0}
         <text x={W / 2} y={phone ? 25 : 27} text-anchor="middle" class="title">{t(`THE MODEL IS ABOUT ${ratio}× THE APP`, `模型约是应用的 ${ratio} 倍`)}</text>
-        <text x={W / 2} y={phone ? 47 : 50} text-anchor="middle" class="subtitle">{phase === 0 ? t('the model is not downloaded yet', '模型还没下载') : phase === 1 ? `${totalBytes} B` : `${totalBytes} ÷ ${appBytes} ≈ ${ratioExact}×`}</text>
+        <text x={W / 2} y={phone ? 47 : 50} text-anchor="middle" class="subtitle">{phase < 3 ? t('the model arrives separately from the app', '模型和应用分开下载') : `${totalBytes} ÷ ${appBytes} ≈ ${ratioExact}×`}</text>
         {#if !phone}
           <rect x="20" y="72" width="212" height="225" rx="12" fill="var(--bg)" stroke="var(--accent)" />
           <text x="126" y="98" text-anchor="middle" class="label blue">{t('MODEL FILES', '模型文件')}</text>
@@ -178,7 +178,7 @@
           <text x="38" y="386" class="detail">{t('Automatic asks an idle server to stop; its files stay', '自动模式会请求空闲服务器停止，文件留着')}</text>
           <text x="28" y="412" class="pt">·</text>
           <text x="38" y="412" class="detail">{t('an app update replaces the bundle, not the model folder', '应用更新换的是应用，不是模型文件夹')}</text>
-          <text x={W / 2} y="438" text-anchor="middle" class="formula">{phase === 0 ? t('waiting for the download', '等待下载') : `${weightsBytes} B + ${otherBytes} B = ${totalBytes} B`}</text>
+          <text x={W / 2} y="438" text-anchor="middle" class="formula">{phase < 2 ? '' : `${weightsBytes} B + ${otherBytes} B = ${totalBytes} B`}</text>
           <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Sources: catalog.go:205-213, docs/release.md.', '出处：catalog.go:205-213、docs/release.md。')}</text>
         {:else}
           <rect x="15" y="64" width="270" height="112" rx="10" fill="var(--bg)" stroke="var(--accent)" />
@@ -213,8 +213,8 @@
           <text x="20" y="550" class="pt">·</text>
           <text x="30" y="550" class="detail">{t('an app update replaces the app,', '应用更新换的是应用，')}</text>
           <text x="30" y="570" class="detail">{t('not the model folder', '不是模型文件夹')}</text>
-          <text x={W / 2} y="608" text-anchor="middle" class="formula">{phase === 0 ? t('waiting for the download', '等待下载') : `${weightsBytes} B + ${otherBytes} B`}</text>
-          <text x={W / 2} y="630" text-anchor="middle" class="formula">= {totalBytes} B</text>
+          <text x={W / 2} y="608" text-anchor="middle" class="formula">{phase < 2 ? '' : `${weightsBytes} B + ${otherBytes} B`}</text>
+          <text x={W / 2} y="630" text-anchor="middle" class="formula">{phase < 2 ? '' : `= ${totalBytes} B`}</text>
           <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Sources: catalog.go:205-213, docs/release.md.', '出处：catalog.go:205-213、docs/release.md。')}</text>
         {/if}
       {:else if step === 1}

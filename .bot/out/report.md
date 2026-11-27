@@ -319,3 +319,31 @@
 - **ML-09**（ML 08 FSDP2）、**ML-10**（ML 09 FP8）、**ML-11**（ML 10 INT4 QAT）、**ML-12**（ML 12 RL 投机解码）的静态机制 P0 尚未完成。ML 08 目前只有 ML-14 事实修复，不能视为其动画 P0 已关闭。
 - 下一轮从 ML 08 开始，再依次处理 ML 09、10、12；不重做 ML 01／02、ML 13 或本轮已完成的 ML 03–07，不开第 14 章新书。其他 ML 内容 finding 保持原状。
 - 本地章节地址为 `http://localhost:4321/learning-sglang/ml-sys/ch/07-weight-updates/?step=5`。服务器已按要求关闭；查看前在本目录运行 `npx astro dev --background`。
+
+---
+
+# lane d 本轮报告 · Voxt 11 Step 1 逐相机制（最小单元）
+
+日期：2026-11-26。范围只含 Inside Voxt 第 11 章 `models-and-app-updates` 第 1 步的组件相位、评分卡机制栏同步、progress 和本报告；未动 Omni、ML Systems、第 1 本受保护英文原文、其他 Voxt 章、`.bot/memory/` 或 `~/code/learning-sglang`。actor 已正常启动（DeepSeek 登录恢复）；本 clone 的 `.bot/state/` 下没有 `pause-d` 可删，真实暂停文件在 bot 主目录，按路径映射不在本目录操作。
+
+## 处理的 review 项
+
+- `c3a7773` 复审第 1 步机制 1/2 的两条扣分：「第二相同时改变模型卡、顶部数字和底部公式」「第三相比值变化时红框却移到应用卡」。按 direction，从 `ls-d-1126-163623` 旧草稿只移植第 1 步相关 hunks（第 2–5 步留给后续轮，旧草稿 5 个未提交文件原树未动）。
+- 改法：`PHASE_COUNTS` 第 1 步 3→4。四相各只变一个对象，红框始终停在它上面：模型卡 `0 B / 0 files` → `2.47 GB / 9 files`（红框留模型卡）→ 底部加法式出现（红框移到公式）→ 副标题出现 `2,467,856,503 ÷ 280,000,000 ≈ 8.8×`（红框移到副标题）。副标题前三相为 `the model arrives separately from the app`，公式前两相留空；末相舞台文字与旧末相逐字相同。
+- 组件根节点补 `data-animation-step` / `data-animation-phase` / `data-animation-final-phase`，transcript 的末相位采集不再依赖固定等待。
+- 评分卡机制栏同步为协调 `c3a7773` 的 **7/12**（逐步 1、1、1、1、1、2），关闭 review.md 的评分卡同步项；本轮不自行把第 1 步记为 2/2，内容分保持协调 `6467ab7` 基线，完整 EVAL 仍 **NO-GO**。
+
+## 验证
+
+- node_modules 是指向主 checkout 的符号链接，不能写；本轮照旧草稿做法用 `.astro/local.config.mjs` 把 Vite 缓存放进本 clone，dev server 用独立端口 **4399**，未连协调人的 4321。
+- `npx astro build --config .astro/local.config.mjs`：60 页通过。
+- `BOOK=voxt ONLY=11 node scripts/transcript.mjs http://localhost:4399/learning-sglang`：6 步，无出界、重叠、脚注告警；重生成与已提交 transcript **无 diff**（末相文字不变）。
+- `BOOK=voxt ONLY=11 STEP=1 npm run readability`：0 机械问题；`BOOK=voxt node scripts/deep-check.mjs 11`：通过；`BASE=...4399 BOOK=voxt ONLY=11 node scripts/zh-check.mjs`：all clear。
+- `BOOK=voxt ONLY=11 STEP=1` 英文与 `LANG=zh` 中文 `mobile`：360／390／430 px 均 no layout breaks。
+- 桌面 1440×900 `getScreenCTM()` 字号：英文最低 **11.50 CSS px**（loops）、中文最低 **12.31 CSS px**，过 ≥10 门。
+- 逐相 DOM 审计（英桌面＋英手机，相位身份由 `data-animation-phase` 确认、红框过渡 320 ms 后读数）：p0→p1 只变模型卡两行、红框留模型卡；p1→p2 只出现公式、红框在公式；p2→p3 只变副标题比值、红框在副标题。四相 PNG 存 `.bot/out/voxt11-step1-phases/`。当前模型不能读 PNG，未记成已读视觉证据。
+
+## 剩余
+
+- 等复审读第 1 步四相证据并重评该步机制分；通过后按 direction 依次做第 2–5 步同类返工（每步一个最小单元），再 Voxt 10，最后 `12-meeting-capture-modes`。
+- 未跑全站回归、真实 Voxt、模型下载、更新或模型进程；主人最终验收另计。本轮 4399 dev server 与浏览器已在收尾关闭。

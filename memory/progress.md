@@ -4,6 +4,9 @@
 
 ## 本轮记录
 
+- 修旧 Inside Voxt 第 11 章第 1 步逐相机制（direction 的最小单元）：从 `ls-d-1126-163623` 旧草稿只移植第 1 步 hunks，`PHASE_COUNTS` 3→4，模型卡、加法式、顶部比值各占一相，红框每相都停在正在变化的对象上；修掉协调 `c3a7773` 的第 1 步机制扣分（同相改三个对象、红框移到没变化的应用卡）。基线采用协调分：R1–R5 **54/60**、原十个非视觉项 **119/120**、静态 R6 **12/12**、原 #4/#5 **24/24**、原十二项 **143/144**、机制 R6 **7/12**（逐步 1、1、1、1、1、2）；评分卡机制栏已同步该 verdict，本轮不自行把第 1 步记为 2/2。第 2–5 步返工留给后续轮。
+- `npx astro build --config .astro/local.config.mjs`（60 页，Vite 缓存走本 clone，dev 端口 4399）、本章 `transcript`（重生成无 diff）、第 1 步 `readability`、`deep-check 11`、`zh-check`、英中第 1 步 360/390/430 px `mobile` 均通过；桌面 1440×900 字号最低英 **11.50**／中 **12.31 CSS px**；逐相 DOM 审计确认每相只变一个对象且红框跟随，截图在 `.bot/out/voxt11-step1-phases/`，当前模型不能读 PNG。本轮只跑本章第 1 步检查，未跑全站回归、真实 Voxt、模型下载或更新。本轮类型：**修旧**；下一单元按 direction 做 Voxt 11 第 2 步。
+
 - 修旧 Learning SGLang Omni 第 13 章全部遗留项：英文 Step 2 手机短标题通过三宽度末相审计；Step 1 移除输出限制；旧 Step 4 拆成份额拆分与视频溢出两步；旧 Step 5 只保留精度和显存估计；旧 Step 6 拆成副本拓扑与独立 codec 状态池两步；当前 Step 9／10 保留已补的 `c`、8 token、配置衔接、证据范围和 queued audio 解释。独立 reviewer 检出的默认 code2wav 拓扑冲突、视频算式来源误述及容量／路由歧义均已修复并复核关闭。协调固定 `03cb6cb` 基线为 R1–R5 **70/80**、机制 **16/16**、R1–R6 **86/96**、原十个非视觉项 **157/160**、原 #4/#5 **32/32**、原十二项 **189/192**；当前十步树不沿用旧分母，不记 `complete-under-EVAL`。
 - 本轮固定当前树复跑 `build`（60 页）、两次一致的十步 `transcript`（**3484 词**，SHA-256 `09c6cd90…ad77c8`）、全章 `readability`、英中全章 `mobile`、中文十步字号门、`deep-check 13`、`zh-check` 和 `git diff --check`，均通过。新的独立 source reviewer 判 assigned findings 全关闭，source-derived R1–R5 **100/100**、机制 R6 **20/20**；这不是协调新增分数。自定义审计覆盖 **42 个桌面相位、60 个英中手机末相、20 个双语 deep**：普通状态出界／重叠／小字均为 0，deep 的展开、横向溢出和 KaTeX 检查均为 0；桌面最低 **10.3295 CSS px**，手机最低 **10.7603 CSS px**。证据在 `.bot/out/omni13-rereview/`，当前模型不能读 PNG，视觉与协调 verdict 仍待。既有教程提交为 `b39b544`、`b3c48ab`、`192be1c`、`f328860`、`c1f7636`、`e5aba00`、`61e82fc`，本轮未重复改教程。本轮类型：**修旧**；协调通过后再按 direction 修 Omni 11 和 Omni 14，不开新章。
 
