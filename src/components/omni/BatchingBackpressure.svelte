@@ -175,7 +175,7 @@
 <figure class="viz" data-animation-step={step} data-animation-phase={phase} data-animation-final-phase={PHASE_COUNTS[step] - 1}>
   <div class="canvas">
     <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={t('The same queued requests start immediately with zero collection delay, or five milliseconds later with a five-millisecond batching budget.', '同一批已排队请求，在零收集等待时立即开始，在 5 毫秒凑批预算下晚 5 毫秒开始。')}>
-      <LoopProgress ms={lapMs} {lap} x={phone ? 221 : 640} y={phone ? 70 : 20} />
+      <LoopProgress ms={lapMs} {lap} x={phone ? 221 : 640} y={phone ? 76 : 20} />
       <defs>
         <marker id="batch-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
           <path d="M0,0 L8,4 L0,8 Z" fill="var(--accent)" />
@@ -245,12 +245,12 @@
         {#if !later && phase < 2}
           <rect x={panel.x + 16} y={panel.y + 152} width={phone ? 107 : 128} height="42" rx="7" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x={panel.x + (phone ? 69 : 80)} y={panel.y + 179} text-anchor="middle" class="mono strong">C · {t('waits', '等待')}</text>
-          <text x={panel.x + (phone ? 139 : 163)} y={panel.y + 179} class="tag">{AR_ROUND_ONE_WAITING_COUNT} {t('request · no free row', '条请求 · 没有空行')}</text>
+          <text x={panel.x + (phone ? 139 : 163)} y={panel.y + 179} class="tag">{AR_ROUND_ONE_WAITING_COUNT} {finished ? t('request · free row ready', '条请求 · 已有空行') : t('request · no free row', '条请求 · 没有空行')}</text>
         {:else}
           <rect x={panel.x + 16} y={panel.y + 152} width={phone ? 238 : 293} height="42" rx="7" fill="white" stroke="var(--faint)" stroke-dasharray="4 3" />
-          <text x={panel.x + (phone ? 135 : 162)} y={panel.y + 179} text-anchor="middle" class="tag">{later && !joined ? t('waiting for round 1', '等待第 1 轮结束') : t('empty · C has joined the running batch', '空了 · C 已补进 running batch')}</text>
+          <text x={panel.x + (phone ? 135 : 162)} y={panel.y + 179} text-anchor="middle" class="tag">{later && !joined ? (phase >= 1 ? t('C ready to refill', 'C 等待补位') : t('waiting for round 1', '等待第 1 轮结束')) : t('empty · C has joined the running batch', '空了 · C 已补进 running batch')}</text>
         {/if}
-        <text x={panel.x + (phone ? 135 : 162)} y={panel.y + 216} text-anchor="middle" class="tag strong">{later ? (phase >= 3 ? t('B and C each advance one token', 'B、C 各自前进一个 token') : joined ? t("C takes A's old row", 'C 补进 A 空出的行') : t('no free row yet', '还没有空行')) : (finished ? t('A finished · one row free', 'A 结束 · 空出一行') : t('A and B each advance one token', 'A、B 各自前进一个 token'))}</text>
+        <text x={panel.x + (phone ? 135 : 162)} y={panel.y + 216} text-anchor="middle" class="tag strong">{later ? (phase >= 3 ? t('B and C each advance one token', 'B、C 各自前进一个 token') : joined ? t("C takes A's old row", 'C 补进 A 空出的行') : phase >= 1 ? t('row free · refill next', '已有空行 · 等待补位') : t('no free row yet', '还没有空行')) : (finished ? t('A finished · one row free', 'A 结束 · 空出一行') : t('A and B each advance one token', 'A、B 各自前进一个 token'))}</text>
       {/each}
       {#if !phone}
         <path d="M348 200 H371" stroke="var(--accent)" stroke-width="2" marker-end="url(#batch-arrow)" opacity={phase >= 2 ? 1 : 0.15} />

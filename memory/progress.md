@@ -4,6 +4,9 @@
 
 ## 本轮记录
 
+- 修旧 Learning SGLang Omni 第 6 章全部 8 步的 Omni-10：direction 指定的 Omni-52 已在开始前由 `66016e7` 完成，本轮不返工待复审批次，按 owner rule 接着做本书开放 P0。逐步动画覆盖收集等待、AR 补位、encoder 收集、帧预算拒绝、两条 vocoder 合算路径、历史吞吐、两类准入拒绝和直接响应 poll；Step 2 同时补上 Omni-63 的灰色 finished A。八个教程提交 `ff6bf9a`…`5fa7ca3` 已推 origin，均待协调固定复审，不自行销项；未改其他章或其他书。
+- 八步作者与独立 `explore` 非视觉复评为 R1–R5 **80/80**、机制 DOM **16/16**、原十个非视觉项 **160/160**、0 新内容洞；reviewer 首轮指出的 Step 2 空行标签矛盾已修复并复验 **PASS**。最终 `build`（60 页）、八步 `readability`、`deep-check 06`、`zh-check`、英中全章与中文改动步三宽度 `mobile`、`git diff --check` 全过；transcript 两次哈希一致（2,437 词，`8f4f6e9b…b94d`）。全矩阵 **48 组合、222 状态、174/174 转变**，Step 2 修复另复验 **6 组合、24 状态、18/18 转变**；最低 **10.806 CSS px**，重叠、出界和几何失败为 0。双语 deep **32 视图**无横溢；桌面抽屉缩舞台和手机焦点仍归共享 ML-21／22。当前模型不能读 PNG，视觉、原 #4/#5、整章 verdict 与 Omni-10／63 销项待协调；未跑全站回归、真实 SGLang-Omni、模型或 GPU。本轮类型：**修旧**。
+
 - 修旧 Learning ML Systems 第 8 章 Step 3 的 ML-48 第一段：在 forward 前新增统一 `train` 与动态 packing，分清 first-fit 包数和均衡成员，展示 `flat_tokens → tokens` 与 `cu_seqlens`。构造 cap 4 的例子和生产 cap 9,216 分开。Step 3 作者参考值为 R1–R5 **10/10**、机制 R6 **2/2**、非视觉原项 **20/20**、0 新内容洞，独立 `explore` 复审 **PASS**。`build`、目标静态门、英中三宽度 mobile 和 **48 状态／40 转变／8 deep** 审计通过，最低 **10.390625 CSS px**。ML-48 尚未完成，待后续 Step 4–6 与 Ch.6 Step 7。
 
 - 修旧 Learning ML Systems 第 6 章 Step 7 的 ML-60（direction 指定最小单元）：舞台与 caption 保持 `tokens · lengths · rewards`，双语 deep 把 `raw_reward` 等额外字段移入显式「图外字段 · 未画出」，并准确保留首份样本 metadata 含 `raw_reward` 时才替换后处理原始分列表的条件。双语 MDX 出处同步；符号表长标识补断行机会，清掉本步 360／390 px deep 横溢。组件无需改动，ML 13 Step 8 的 `6fcb7d0` 未回改，未重开 ML 07，未开第 14 章。教程修复待协调固定复审，不自行销项。

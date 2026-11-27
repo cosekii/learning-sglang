@@ -1,3 +1,43 @@
+# lane k1 本轮报告 · Omni 06 八步机制动画（Omni-10／63）
+
+日期：2026-11-27。类型：修旧。本轮开始 HEAD 与 `origin/tutorials` 均为 `da72e29`，工作树干净。direction 指定的 Omni-52 已由开始前的 `66016e7` 完成并推送，因此不返工待复审批次，按 owner rule 接着处理本书开放 P0 **Omni-10**。范围只有 Omni 06 的八步组件、双语 MDX 与 deep、生成 transcript、本章评分卡与进度记录、定向审计和本报告；Step 2 顺带补上 **Omni-63** 要求的灰色 finished 对象。未改其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文，未开新章。
+
+## 提交与 finding
+
+- 八个逐步教程提交均已推送：`ff6bf9a` 收集等待、`98a4d31` AR 补位、`4fe08fb` encoder 收集、`caa7d7f` 帧预算拒绝、`b1f0078` 两条 vocoder 合算路径、`e452358` 历史吞吐、`b6a303b` 准入失败、`5fa7ca3` 直接响应 poll。**Omni-10／63 作者修复完成，待协调固定复审，不自行销项。** Omni-52 保持待协调复审，本轮不重做其比例尺。
+- 每步都有循环、可复位的 phase driver 和 `data-animation-step／phase／final-phase`。Phase 依次改变本步对象、字段、位置或计数；双语和手机保留同一因果顺序。Step 4 的 `scale = AUDIO_ABC_MEL_FRAMES = 27,000`、相对原点 16 和 24,000 limit 公式未改。
+- Step 2 的灰色 A 从 phase 1 起可见，C 从 waiting_queue 补进空行。独立 reviewer 首轮发现同相仍写「没有空行」，已改成「已有空行、等待补位」，六组合复验后 **PASS**。
+- Step 8 依次播放 client poll、inner poll、frame 2 返回与交付，末态为 **D=2、U=1、3=2+1**，adapter queue 始终为 0。Step 5 的 plan construction 明确没有单独舞台卡片；Step 6 的柱只重现历史平均值，不冒充新请求轨迹。
+- 手机 LoopProgress 从 y=70 移到 y=76，消掉与第三行图例的五处重叠。双语 deep 的长源码路径和 commit hash 加 `<wbr>`，清掉手机抽屉横溢；未改源码引用或公式。
+
+## 作者评分与独立冷读
+
+| 步 | R1–R5 | 机制 DOM | 原十个非视觉项 | 新内容洞 |
+|---|---:|---:|---:|---:|
+| 1–8 | 80/80 | 16/16 | 160/160 | 0 |
+
+- 八步 R1 复述和逐项分数已写入本章评分卡。独立 `explore` 最终 **PASS**，覆盖各相机制、数字、双语 deep、transcript、Step 4 比例尺和 Step 8 计数；该结论来自源码与 DOM，不是协调 verdict。
+- 原 #4/#5、整章总分、完成结论和 finding 销项均不由本轮改写。共享 ML-21／22、其他开放 finding 和其他待复审批次未回改。
+
+## 硬门与证据
+
+- 最终 `npm run build`：**60 页**通过；八步 `readability`：**0 机械问题**；`BOOK=omni node scripts/deep-check.mjs 06`、`zh-check`、英中全章 360／390／430 px `mobile`、中文改动步字号门和 `git diff --check` 全过。
+- transcript 连续两次 SHA-256 均为 `8f4f6e9b97a9f0a1a34e3722bc7a06572b7134c468e31ac46e4c31f87cfeb94d`，**2,437 词**。无 caption、文字出界、重叠或文本规则报告。
+- 可重跑脚本 `.bot/out/omni10-phase-audit.mjs`。完整矩阵结果 `.bot/out/omni10-matrix-final/report.json`：八步 × 英中桌面＋中文 390 px × direct／前步入口，共 **48 组合、222 状态、174/174 个机制转变、222 张 PNG**。最低 **10.806 CSS px**，重叠、SVG 出界、页面横溢和几何失败均为 0。Step 1 时间游标与 Step 4 的 A/B `width/value`、原点和 limit 在每相验算。
+- Step 2 修复复跑 `.bot/out/omni10-step2-recheck/report.json`：**6 组合、24 状态、18/18 个机制转变、24 张 PNG**，最低 **11.760 CSS px**，上述失败均为 0。
+- 可重跑脚本 `.bot/out/omni10-deep-audit.mjs` 在 1440／390 px 覆盖双语八步，共 **32 个打开抽屉视图**。目标动画说明、`aria-expanded=true`、页面与抽屉横溢、KaTeX 和 raw-math 检查通过。桌面抽屉缩舞台最低 **8.006 CSS px**，手机焦点记录为空，分别仍属共享 ML-21／22；本单元未改也不声称这两项通过。
+- 代表截图：`.bot/out/omni10-matrix-final/s4-zh390-direct/s4-p2.png`、`.bot/out/omni10-step2-recheck/s2-endesktop-direct/s2-p1.png`。读取 PNG 时工具返回「this model does not support image input」；以上结论来自构建、transcript、独立冷读、DOM 和几何检查，未声称看过图片或视觉通过。
+- 未跑全站回归、真实 SGLang-Omni、模型、GPU、全双工服务或 reduced-motion 动态切换。本章无新增 zero-to-sglang 对照内容，本单元只补指定动画与同一 deep 呈现。
+
+## 剩余与清理
+
+- 剩余事项是 Omni-10／52／63 的协调固定复审、独立 Omni-21、原 #4/#5、整章评分、共享 ML-21／22、具备图像能力的复审和主人最终视觉验收。其他待审或开放 finding 未回改。
+- 本 clone 的 `node_modules` 开始时指向协调人 checkout。只删除本目录内的符号链接并在本目录 `npm install`，package 文件无 diff，未写协调人的 checkout。
+- 本轮检查地址为 `http://127.0.0.1:4521/learning-sglang/omni/ch/06-batching-backpressure/?step=4`。收尾已用 `npx astro dev stop` 停止本轮 pid 63048，4521 无监听。
+- 审计脚本均调用 `browser.close()`。收尾发现并清理一个父进程为 1 的本轮 Chrome（pid 89343）及其 `cdp-muH98M` 配置目录；随后 `pgrep -P 1 -fl 'headless=new.*cdp-'` 无输出。未动其他 lane 的服务或浏览器。
+
+---
+
 # lane k1 本轮报告 · Omni 06 Step 4 的 Omni-52 同尺修复
 
 日期：2026-11-27。类型：修旧（direction 指定的下一最小单元）。本轮开始 HEAD 与 `origin/tutorials` 均为 `451124b`，工作树干净。范围只有 Omni 06 Step 4 的组件、双语 MDX 与 deep、生成 transcript、本章评分卡与进度记录、定向审计和本报告；未改 Omni 05、Omni 13 Step 9、其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。未开新章。

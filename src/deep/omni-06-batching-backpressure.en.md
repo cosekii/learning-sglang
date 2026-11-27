@@ -42,11 +42,11 @@ With `batch_wait_when_idle=true`, the first message establishes a collection dea
 
 This step covers one-shot `new_request` collection in `SimpleScheduler`; it does not describe an AR running batch. With `batch_wait_when_idle=false`, the first message does not establish an idle deadline. Collection can start a deadline after a second message arrives. The figure also omits the `max_batch_cost` path, which leaves a message for later when its cost would exceed the budget.
 
-- `sglang_omni/scheduling/simple_scheduler.py:45-80`: constructor arguments for `batch_compute_fn`, `max_batch_size`, `max_batch_wait_ms` and `batch_wait_when_idle`.
-- `sglang_omni/scheduling/simple_scheduler.py:148-197`: first-item collection, the size cap, remaining-budget waits and zero-delay exit.
-- `sglang_omni/scheduling/simple_scheduler.py:248-280`: one call to `batch_fn`, followed by per-message results in collection order.
+- <code>sglang_omni/scheduling/<wbr>simple_scheduler.py:45-80</code>: constructor arguments for `batch_compute_fn`, `max_batch_size`, `max_batch_wait_ms` and `batch_wait_when_idle`.
+- <code>sglang_omni/scheduling/<wbr>simple_scheduler.py:148-197</code>: first-item collection, the size cap, remaining-budget waits and zero-delay exit.
+- <code>sglang_omni/scheduling/<wbr>simple_scheduler.py:248-280</code>: one call to `batch_fn`, followed by per-message results in collection order.
 
-Line numbers refer to `origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`.
+Line numbers refer to <code>origin/main@<wbr>21a6d229c3d2075da5e97848f94e0d2ac8a2781a</code>.
 
 ### Next
 
@@ -101,12 +101,12 @@ These helpers create and validate `ServerArgs`. They contain no `waiting_queue.a
 
 This step covers normal completion and refill. It omits priority, preemption, session row reuse, chunked prefill and optional prefill coalescing. The current `OmniScheduler` has configurable prefill waiting windows, so this figure does not claim that AR never waits deliberately.
 
-- `sglang_omni/scheduling/omni_scheduler.py:566-617`: read the running cap from the model runner and initialize `waiting_queue` and `running_batch`.
-- `sglang_omni/scheduling/omni_scheduler.py:2764-2805`: test whether the running batch admits prefill and whether requests remain allocatable.
-- `sglang_omni/scheduling/generation_batch_policy.py:229-290`: construct running, CUDA Graph and torch.compile batch settings; `363-461`: validate those limits.
-- `sglang_omni/models/minicpm_o/stages.py:251-307`: MiniCPM-o talker's default running cap of 32 and policy validation.
+- <code>sglang_omni/scheduling/<wbr>omni_scheduler.py:566-617</code>: read the running cap from the model runner and initialize `waiting_queue` and `running_batch`.
+- <code>sglang_omni/scheduling/<wbr>omni_scheduler.py:2764-2805</code>: test whether the running batch admits prefill and whether requests remain allocatable.
+- <code>sglang_omni/scheduling/<wbr>generation_batch_policy.py:229-290</code>: construct running, CUDA Graph and torch.compile batch settings; `363-461`: validate those limits.
+- <code>sglang_omni/models/minicpm_o/<wbr>stages.py:251-307</code>: MiniCPM-o talker's default running cap of 32 and policy validation.
 
-Line numbers refer to `origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`.
+Line numbers refer to <code>origin/main@<wbr>21a6d229c3d2075da5e97848f94e0d2ac8a2781a</code>.
 
 ### Next
 
@@ -156,11 +156,11 @@ The compute call returns `list[ArtifactT | BaseException]`. The worker writes ea
 
 This step does not claim that a MiniCPM-o model enables reference-encoding batches by default, and four is not a recommendation. It explains the optional mechanism in the current service. Cancellation, hook-level concurrency and operator padding are outside the figure.
 
-- `sglang_omni/scheduling/reference_encoder.py:139-196`: default cap, zero delay, hook capability check and batch queue/worker creation.
-- `sglang_omni/scheduling/reference_encoder.py:231-290`: first-item wait, non-blocking collection, optional remaining-time wait, one batch call and per-request `Future` results.
-- `sglang_omni/scheduling/reference_encoder.py:317-342`: call the batch hook and fall back to per-item encoding after an ordinary exception.
+- <code>sglang_omni/scheduling/<wbr>reference_encoder.py:139-196</code>: default cap, zero delay, hook capability check and batch queue/worker creation.
+- <code>sglang_omni/scheduling/<wbr>reference_encoder.py:231-290</code>: first-item wait, non-blocking collection, optional remaining-time wait, one batch call and per-request `Future` results.
+- <code>sglang_omni/scheduling/<wbr>reference_encoder.py:317-342</code>: call the batch hook and fall back to per-item encoding after an ordinary exception.
 
-Line numbers refer to `origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`.
+Line numbers refer to <code>origin/main@<wbr>21a6d229c3d2075da5e97848f94e0d2ac8a2781a</code>.
 
 ### Next
 
@@ -220,12 +220,12 @@ The collection loop checks both `len(batch) < max_batch_size` and `batch_cost + 
 
 The first message enters the batch before later messages undergo the overflow check. A single request whose own cost exceeds the budget can therefore run alone rather than becoming stuck forever. The figure omits that branch, and the cost budget is not an exact memory or FLOP measurement.
 
-- `sglang_omni/models/minicpm_o/config.py:57-70`: current audio-encoder cap of eight, zero delay and 24,000-frame budget.
-- `sglang_omni/models/minicpm_o/stages.py:166-202`: full-window cost function and its connection to `SimpleScheduler`.
-- `sglang_omni/scheduling/simple_scheduler.py:148-197`: count and cost caps, with `appendleft()` and collection exit on overflow.
+- <code>sglang_omni/models/minicpm_o/<wbr>config.py:57-70</code>: current audio-encoder cap of eight, zero delay and 24,000-frame budget.
+- <code>sglang_omni/models/minicpm_o/<wbr>stages.py:166-202</code>: full-window cost function and its connection to `SimpleScheduler`.
+- <code>sglang_omni/scheduling/<wbr>simple_scheduler.py:148-197</code>: count and cost caps, with `appendleft()` and collection exit on overflow.
 - <code>sglang_omni/models/minicpm_o/<wbr>audio_encoder_batching.py:85-112</code>: cross-request padding and one batched encoder call.
 
-Line numbers refer to `origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`.
+Line numbers refer to <code>origin/main@<wbr>21a6d229c3d2075da5e97848f94e0d2ac8a2781a</code>.
 
 ### Next
 
@@ -281,13 +281,13 @@ This example assumes A and B are ready together. A real system may have only A r
 
 If a shared step raises, the default `on_step_failure()` emits an error and clears state for every participant; external abort cleanup runs after the lock is released. The left path's batch result and error handling cannot be copied onto this streaming path.
 
-- `sglang_omni/models/minicpm_o/config.py:144-176`: MiniCPM-o Code2Wav's cap of 16, zero delay and idle=false.
-- `sglang_omni/models/minicpm_o/stages.py:397-465`: Code2Wav's `SimpleScheduler`, batch call and per-request reference release.
-- `sglang_omni/scheduling/streaming_vocoder.py:347-369`: ingest all chunks, pump under the lock and run abort cleanup outside it.
-- `sglang_omni/scheduling/streaming_vocoder.py:776-796`: select participants, run one step and emit waveforms by request id.
-- `sglang_omni/models/dots_tts/vocoder.py:166-222`: an actual subclass that enables cross-request streaming coalescing.
+- <code>sglang_omni/models/minicpm_o/<wbr>config.py:144-176</code>: MiniCPM-o Code2Wav's cap of 16, zero delay and idle=false.
+- <code>sglang_omni/models/minicpm_o/<wbr>stages.py:397-465</code>: Code2Wav's `SimpleScheduler`, batch call and per-request reference release.
+- <code>sglang_omni/scheduling/<wbr>streaming_vocoder.py:347-369</code>: ingest all chunks, pump under the lock and run abort cleanup outside it.
+- <code>sglang_omni/scheduling/<wbr>streaming_vocoder.py:776-796</code>: select participants, run one step and emit waveforms by request id.
+- <code>sglang_omni/models/dots_tts/<wbr>vocoder.py:166-222</code>: an actual subclass that enables cross-request streaming coalescing.
 
-Line numbers refer to `origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`.
+Line numbers refer to <code>origin/main@<wbr>21a6d229c3d2075da5e97848f94e0d2ac8a2781a</code>.
 
 ### Next
 
@@ -337,14 +337,14 @@ The historical record also describes a different A800 observation. The article s
 
 This step does not rerun the experiment or evaluate historical reference-aware and early-emit alternatives. Current-main `code2wav` already has a cap of 16; the old reference grouping and return paths cannot be conflated with current code. A current configuration decision needs current code, the target workload and a controlled environment.
 
-- `Awesome-ML-SYS-Tutorial/sglang/sglang-omni/batch.md:5-16`: opening FIFO B1/B8 values and the H200, request-count, concurrency, delay, warmup and repeat conditions.
-- `Awesome-ML-SYS-Tutorial/sglang/sglang-omni/batch.md:27-35`: distinctions among client concurrency, scheduling batch, internal compute batch and zero delay.
-- `Awesome-ML-SYS-Tutorial/sglang/sglang-omni/batch.md:119-139`: samples, CPU controls, log interpretation and call-count boundary.
-- `Awesome-ML-SYS-Tutorial/sglang/sglang-omni/batch.md:143-164`: independent conditions for another batch-size round and why no universal optimum follows.
+- <code>Awesome-ML-SYS-Tutorial/sglang/<wbr>sglang-omni/batch.md:5-16</code>: opening FIFO B1/B8 values and the H200, request-count, concurrency, delay, warmup and repeat conditions.
+- <code>Awesome-ML-SYS-Tutorial/sglang/<wbr>sglang-omni/batch.md:27-35</code>: distinctions among client concurrency, scheduling batch, internal compute batch and zero delay.
+- <code>Awesome-ML-SYS-Tutorial/sglang/<wbr>sglang-omni/batch.md:119-139</code>: samples, CPU controls, log interpretation and call-count boundary.
+- <code>Awesome-ML-SYS-Tutorial/sglang/<wbr>sglang-omni/batch.md:143-164</code>: independent conditions for another batch-size round and why no universal optimum follows.
 - Historical experiment code: `89e60d0bf216bacd0e072d79f969550469614662`; discussion: PR #2271.
-- Current-main contrast: `sglang_omni/models/minicpm_o/config.py:144-176`, with cap 16.
+- Current-main contrast: <code>sglang_omni/models/minicpm_o/<wbr>config.py:144-176</code>, with cap 16.
 
-Current-main line numbers refer to `origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`.
+Current-main line numbers refer to <code>origin/main@<wbr>21a6d229c3d2075da5e97848f94e0d2ac8a2781a</code>.
 
 ### Next
 
@@ -401,15 +401,15 @@ The teaching caps are not configuration recommendations or measured capacities. 
 
 The coordinator has a separate, easily confused rule for its optional `stream_queue`: a supplied queue must be unbounded so one full request queue cannot stall the shared completion loop. Request-count admission still applies, and this rule does not give every response path an unbounded application queue. Step 8 concerns only the Rust router's direct response body.
 
-- `docs/basic_usage/omni_router.md:240-251`: fail-fast admission, permits held through response termination and worker ownership of execution and queue capacity.
-- `sglang_omni_router/src/worker_pool/admission.rs:143-188`: non-blocking global and class permit acquisition and `Overloaded` when none remain.
-- `sglang_omni_router/src/worker_pool/admission.rs:49-103`: the worker-load guard and `RequestLease` ownership.
-- `sglang_omni_router/src/error.rs:181-199`: `RouterOverloaded` to HTTP 429.
-- `sglang_omni/pipeline/coordinator.py:560-601`: the pre-submit `max_in_flight` check and `QueueFullError`.
-- `sglang_omni/serve/openai_errors.py:104-111`: `QueueFullError` to HTTP 503.
-- `sglang_omni/admission.py:9-32`: the queue-full error and its text matching across IPC.
+- <code>docs/basic_usage/<wbr>omni_router.md:240-251</code>: fail-fast admission, permits held through response termination and worker ownership of execution and queue capacity.
+- <code>sglang_omni_router/src/worker_pool/<wbr>admission.rs:143-188</code>: non-blocking global and class permit acquisition and `Overloaded` when none remain.
+- <code>sglang_omni_router/src/worker_pool/<wbr>admission.rs:49-103</code>: the worker-load guard and `RequestLease` ownership.
+- <code>sglang_omni_router/src/<wbr>error.rs:181-199</code>: `RouterOverloaded` to HTTP 429.
+- <code>sglang_omni/pipeline/<wbr>coordinator.py:560-601</code>: the pre-submit `max_in_flight` check and `QueueFullError`.
+- <code>sglang_omni/serve/<wbr>openai_errors.py:104-111</code>: `QueueFullError` to HTTP 503.
+- <code>sglang_omni/<wbr>admission.py:9-32</code>: the queue-full error and its text matching across IPC.
 
-Line numbers refer to `origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`.
+Line numbers refer to <code>origin/main@<wbr>21a6d229c3d2075da5e97848f94e0d2ac8a2781a</code>.
 
 ### Next
 
@@ -475,13 +475,13 @@ This path also does not describe classified uploads. Requests requiring body-own
 
 Three frames illustrate call flow; they are not throughput measurements. A poll need not return data: `Pending` is normal when upstream is not ready. This adapter treats trailers as an upstream protocol error. HTTP runtime and network behavior determine the actual waiting and propagation granularity.
 
-- `docs/basic_usage/omni_router.md:240-251`: permit lifetime and direct request/response backpressure without a body pump, application queue or extra relay task.
-- `sglang_omni_router/src/http_relay/mod.rs:219-233`: wrap the upstream body in `DirectResponseBody` and construct the downstream response.
-- `sglang_omni_router/src/http_relay/response_body.rs:16-35`: inner body, request lease and terminal state owned by the adapter.
-- `sglang_omni_router/src/http_relay/response_body.rs:38-72`: release the inner body and lease during termination and drop.
-- `sglang_omni_router/src/http_relay/response_body.rs:75-101`: one inner poll per downstream poll, with data, `Pending`, EOF and error branches.
+- <code>docs/basic_usage/<wbr>omni_router.md:240-251</code>: permit lifetime and direct request/response backpressure without a body pump, application queue or extra relay task.
+- <code>sglang_omni_router/src/http_relay/<wbr>mod.rs:219-233</code>: wrap the upstream body in `DirectResponseBody` and construct the downstream response.
+- <code>sglang_omni_router/src/http_relay/<wbr>response_body.rs:16-35</code>: inner body, request lease and terminal state owned by the adapter.
+- <code>sglang_omni_router/src/http_relay/<wbr>response_body.rs:38-72</code>: release the inner body and lease during termination and drop.
+- <code>sglang_omni_router/src/http_relay/<wbr>response_body.rs:75-101</code>: one inner poll per downstream poll, with data, `Pending`, EOF and error branches.
 
-Line numbers refer to `origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`.
+Line numbers refer to <code>origin/main@<wbr>21a6d229c3d2075da5e97848f94e0d2ac8a2781a</code>.
 
 ### Next
 

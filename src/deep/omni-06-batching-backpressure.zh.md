@@ -42,11 +42,11 @@ $$E=B-N=4-2=2$$
 
 本步只讲 `SimpleScheduler` 的一次性 `new_request` 收集，不把它套到 AR 的持续运行 batch。`batch_wait_when_idle=false` 时，第一条消息不会建立空闲等待截止；收到第二条后才可能开始等待。图中没有展开这个分支，也没有展开按 `max_batch_cost` 拒绝超预算消息的逻辑。
 
-- `sglang_omni/scheduling/simple_scheduler.py:45-80`：`batch_compute_fn`、`max_batch_size`、`max_batch_wait_ms` 和 `batch_wait_when_idle` 的构造参数。
-- `sglang_omni/scheduling/simple_scheduler.py:148-197`：先取首项、按上限收集、空闲时按剩余预算等待，以及零等待退出。
-- `sglang_omni/scheduling/simple_scheduler.py:248-280`：批量调用 `batch_fn`，再按消息顺序逐项返回结果。
+- <code>sglang_omni/scheduling/<wbr>simple_scheduler.py:45-80</code>：`batch_compute_fn`、`max_batch_size`、`max_batch_wait_ms` 和 `batch_wait_when_idle` 的构造参数。
+- <code>sglang_omni/scheduling/<wbr>simple_scheduler.py:148-197</code>：先取首项、按上限收集、空闲时按剩余预算等待，以及零等待退出。
+- <code>sglang_omni/scheduling/<wbr>simple_scheduler.py:248-280</code>：批量调用 `batch_fn`，再按消息顺序逐项返回结果。
 
-行号对应 `origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`。
+行号对应 <code>origin/main@<wbr>21a6d229c3d2075da5e97848f94e0d2ac8a2781a</code>。
 
 ### 接下来
 
@@ -101,12 +101,12 @@ $F_2=1$ 只说明请求行数不再挡住 C。实际准入还要检查 token/KV 
 
 本步只画正常的完成与补位，不展开 priority、preemption、session 行复用、chunked prefill 或可选 prefill coalescing。当前 `OmniScheduler` 确实还有按配置启用的 prefill 等待窗口，不能从本图推出「AR 永远不会主动等待」。
 
-- `sglang_omni/scheduling/omni_scheduler.py:566-617`：从 model runner 读取运行上限，初始化 `waiting_queue` 和 `running_batch`。
-- `sglang_omni/scheduling/omni_scheduler.py:2764-2805`：判断 running batch 是否接受 prefill，并同时检查可分配请求数。
-- `sglang_omni/scheduling/generation_batch_policy.py:229-290`：构造运行、CUDA Graph 和 torch.compile 的 batch 配置；`363-461`：校验这些限制。
-- `sglang_omni/models/minicpm_o/stages.py:251-307`：MiniCPM-o talker 使用 32 的默认运行上限并调用配置校验。
+- <code>sglang_omni/scheduling/<wbr>omni_scheduler.py:566-617</code>：从 model runner 读取运行上限，初始化 `waiting_queue` 和 `running_batch`。
+- <code>sglang_omni/scheduling/<wbr>omni_scheduler.py:2764-2805</code>：判断 running batch 是否接受 prefill，并同时检查可分配请求数。
+- <code>sglang_omni/scheduling/<wbr>generation_batch_policy.py:229-290</code>：构造运行、CUDA Graph 和 torch.compile 的 batch 配置；`363-461`：校验这些限制。
+- <code>sglang_omni/models/minicpm_o/<wbr>stages.py:251-307</code>：MiniCPM-o talker 使用 32 的默认运行上限并调用配置校验。
 
-行号对应 `origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`。
+行号对应 <code>origin/main@<wbr>21a6d229c3d2075da5e97848f94e0d2ac8a2781a</code>。
 
 ### 接下来
 
@@ -156,11 +156,11 @@ $$E=B-K=4-3=1$$
 
 本步不声称某个 MiniCPM-o 模型已默认启用这个参考编码 batch，也不把 4 当成推荐值。它只解释当前服务提供的可选机制。请求取消、底层 hook 的具体并发实现和算子内部怎样 padding 都不在图中。
 
-- `sglang_omni/scheduling/reference_encoder.py:139-196`：默认上限、零等待、hook 能力检查，以及批量队列和 worker 的创建条件。
-- `sglang_omni/scheduling/reference_encoder.py:231-290`：首条获取、非阻塞收集、可选剩余时间等待、单批计算和逐项写回 `Future`。
-- `sglang_omni/scheduling/reference_encoder.py:317-342`：调用批量 hook，并在普通异常时退回逐条编码。
+- <code>sglang_omni/scheduling/<wbr>reference_encoder.py:139-196</code>：默认上限、零等待、hook 能力检查，以及批量队列和 worker 的创建条件。
+- <code>sglang_omni/scheduling/<wbr>reference_encoder.py:231-290</code>：首条获取、非阻塞收集、可选剩余时间等待、单批计算和逐项写回 `Future`。
+- <code>sglang_omni/scheduling/<wbr>reference_encoder.py:317-342</code>：调用批量 hook，并在普通异常时退回逐条编码。
 
-行号对应 `origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`。
+行号对应 <code>origin/main@<wbr>21a6d229c3d2075da5e97848f94e0d2ac8a2781a</code>。
 
 ### 接下来
 
@@ -220,12 +220,12 @@ $$O=C_{ABC}-24000=27000-24000=3000$$
 
 首条消息先进入 batch，后续消息才做超预算检查。因此一条自身就超过预算的请求仍可单独执行，不会被成本检查永久卡住。本步没有展开这个分支，也不把成本预算说成精确的显存或 FLOP 测量。
 
-- `sglang_omni/models/minicpm_o/config.py:57-70`：当前 audio encoder 的 8 条、零等待和 24000 帧配置。
-- `sglang_omni/models/minicpm_o/stages.py:166-202`：完整窗口成本函数，以及它与 `SimpleScheduler` 的接线。
-- `sglang_omni/scheduling/simple_scheduler.py:148-197`：条数与成本双上限、超预算时 `appendleft()` 并停止收集。
+- <code>sglang_omni/models/minicpm_o/<wbr>config.py:57-70</code>：当前 audio encoder 的 8 条、零等待和 24000 帧配置。
+- <code>sglang_omni/models/minicpm_o/<wbr>stages.py:166-202</code>：完整窗口成本函数，以及它与 `SimpleScheduler` 的接线。
+- <code>sglang_omni/scheduling/<wbr>simple_scheduler.py:148-197</code>：条数与成本双上限、超预算时 `appendleft()` 并停止收集。
 - <code>sglang_omni/models/minicpm_o/<wbr>audio_encoder_batching.py:85-112</code>：跨请求 padding 和一次批量 encoder 调用。
 
-行号对应 `origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`。
+行号对应 <code>origin/main@<wbr>21a6d229c3d2075da5e97848f94e0d2ac8a2781a</code>。
 
 ### 接下来
 
@@ -281,13 +281,13 @@ $N-S=1$ 只数调用次数，不等于延迟降低一半，也不证明吞吐翻
 
 右侧某次共享计算抛出异常时，默认 `on_step_failure()` 会向所有参与者发错并清理它们的状态，外部 abort 清理由锁外代码执行。左侧批量结果与错误的处理不能直接套到这条流式路径上。
 
-- `sglang_omni/models/minicpm_o/config.py:144-176`：MiniCPM-o Code2Wav 的 16 条、零等待和 idle=false 配置。
-- `sglang_omni/models/minicpm_o/stages.py:397-465`：Code2Wav 工厂返回 `SimpleScheduler`，批量调用并逐条释放 reference。
-- `sglang_omni/scheduling/streaming_vocoder.py:347-369`：先 ingest 所有 chunk，再在锁内 pump，锁外执行 abort 清理。
-- `sglang_omni/scheduling/streaming_vocoder.py:776-796`：选择参与者、执行一次 `run_step`，再按 request id 发 waveform。
-- `sglang_omni/models/dots_tts/vocoder.py:166-222`：一个实际启用跨请求流式合步的子类。
+- <code>sglang_omni/models/minicpm_o/<wbr>config.py:144-176</code>：MiniCPM-o Code2Wav 的 16 条、零等待和 idle=false 配置。
+- <code>sglang_omni/models/minicpm_o/<wbr>stages.py:397-465</code>：Code2Wav 工厂返回 `SimpleScheduler`，批量调用并逐条释放 reference。
+- <code>sglang_omni/scheduling/<wbr>streaming_vocoder.py:347-369</code>：先 ingest 所有 chunk，再在锁内 pump，锁外执行 abort 清理。
+- <code>sglang_omni/scheduling/<wbr>streaming_vocoder.py:776-796</code>：选择参与者、执行一次 `run_step`，再按 request id 发 waveform。
+- <code>sglang_omni/models/dots_tts/<wbr>vocoder.py:166-222</code>：一个实际启用跨请求流式合步的子类。
 
-行号对应 `origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`。
+行号对应 <code>origin/main@<wbr>21a6d229c3d2075da5e97848f94e0d2ac8a2781a</code>。
 
 ### 接下来
 
@@ -337,14 +337,14 @@ $$G=\frac{T_8-T_1}{T_1}\times100\%=\frac{5.652-4.100}{4.100}\times100\%\approx37
 
 本步没有重跑实验，也不评价历史 reference-aware 或 early-emit 方案。当前主线 `code2wav` 的上限已是 16；旧实现的参考分组、返回路径与当前代码不能混为一谈。要做当前配置决策，必须用当前代码、目标负载和受控环境重新测量。
 
-- `Awesome-ML-SYS-Tutorial/sglang/sglang-omni/batch.md:5-16`：开篇 FIFO B1/B8 数字与 H200、200 条、并发 16、零等待、预热和重复条件。
-- `Awesome-ML-SYS-Tutorial/sglang/sglang-omni/batch.md:27-35`：客户端并发、调度 batch、模型内部计算 batch 与零等待的区别。
-- `Awesome-ML-SYS-Tutorial/sglang/sglang-omni/batch.md:119-139`：样本、CPU 控制、日志解释和调用数边界。
-- `Awesome-ML-SYS-Tutorial/sglang/sglang-omni/batch.md:143-164`：另一轮 batch-size 实验的独立条件，以及不能宣布普遍最优的限制。
+- <code>Awesome-ML-SYS-Tutorial/sglang/<wbr>sglang-omni/batch.md:5-16</code>：开篇 FIFO B1/B8 数字与 H200、200 条、并发 16、零等待、预热和重复条件。
+- <code>Awesome-ML-SYS-Tutorial/sglang/<wbr>sglang-omni/batch.md:27-35</code>：客户端并发、调度 batch、模型内部计算 batch 与零等待的区别。
+- <code>Awesome-ML-SYS-Tutorial/sglang/<wbr>sglang-omni/batch.md:119-139</code>：样本、CPU 控制、日志解释和调用数边界。
+- <code>Awesome-ML-SYS-Tutorial/sglang/<wbr>sglang-omni/batch.md:143-164</code>：另一轮 batch-size 实验的独立条件，以及不能宣布普遍最优的限制。
 - 历史实验代码参考：`89e60d0bf216bacd0e072d79f969550469614662`；讨论记录：PR #2271。
-- 当前主线对照：`sglang_omni/models/minicpm_o/config.py:144-176` 的上限 16。
+- 当前主线对照：<code>sglang_omni/models/minicpm_o/<wbr>config.py:144-176</code> 的上限 16。
 
-当前主线行号对应 `origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`。
+当前主线行号对应 <code>origin/main@<wbr>21a6d229c3d2075da5e97848f94e0d2ac8a2781a</code>。
 
 ### 接下来
 
@@ -401,15 +401,15 @@ $F=0$ 解释本例为什么拒绝，不表示真实部署应把上限设为 2。
 
 coordinator 对可选 `stream_queue` 另有一条容易混淆的要求：若调用方传入该队列，它必须是无界队列，避免一条请求塞满队列后卡住共享 completion loop。这不取消前面的请求数准入，也不表示所有响应路径都有无界应用队列。第 8 步只讲 Rust router 的直接响应 body。
 
-- `docs/basic_usage/omni_router.md:240-251`：fail-fast、许可持有到响应终止，以及 worker 仍负责自己的执行与队列容量。
-- `sglang_omni_router/src/worker_pool/admission.rs:143-188`：全局和分类许可的非阻塞获取，以及无许可时的 `Overloaded`。
-- `sglang_omni_router/src/worker_pool/admission.rs:49-103`：worker load guard 与 `RequestLease` 的持有关系。
-- `sglang_omni_router/src/error.rs:181-199`：`RouterOverloaded` 到 HTTP 429 的映射。
-- `sglang_omni/pipeline/coordinator.py:560-601`：pipeline submit 前的 `max_in_flight` 检查与 `QueueFullError`。
-- `sglang_omni/serve/openai_errors.py:104-111`：`QueueFullError` 到 HTTP 503 的映射。
-- `sglang_omni/admission.py:9-32`：队列满错误及其跨 IPC 文本匹配。
+- <code>docs/basic_usage/<wbr>omni_router.md:240-251</code>：fail-fast、许可持有到响应终止，以及 worker 仍负责自己的执行与队列容量。
+- <code>sglang_omni_router/src/worker_pool/<wbr>admission.rs:143-188</code>：全局和分类许可的非阻塞获取，以及无许可时的 `Overloaded`。
+- <code>sglang_omni_router/src/worker_pool/<wbr>admission.rs:49-103</code>：worker load guard 与 `RequestLease` 的持有关系。
+- <code>sglang_omni_router/src/<wbr>error.rs:181-199</code>：`RouterOverloaded` 映射为 HTTP 429。
+- <code>sglang_omni/pipeline/<wbr>coordinator.py:560-601</code>：pipeline submit 前的 `max_in_flight` 检查与 `QueueFullError`。
+- <code>sglang_omni/serve/<wbr>openai_errors.py:104-111</code>：`QueueFullError` 映射为 HTTP 503。
+- <code>sglang_omni/<wbr>admission.py:9-32</code>：队列满错误及其跨 IPC 文本匹配。
 
-行号对应 `origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`。
+行号对应 <code>origin/main@<wbr>21a6d229c3d2075da5e97848f94e0d2ac8a2781a</code>。
 
 ### 接下来
 
@@ -475,13 +475,13 @@ HTTP 框架、TCP socket、操作系统和 worker 内部仍可能缓冲数据。
 
 本步用三帧解释调用关系，不是实测吞吐，也不承诺每次 poll 都有数据。上游尚未就绪时，`Pending` 是正常结果；出现 trailers 时，这个 adapter 按上游协议错误处理。backpressure 的传播粒度和实际等待还取决于 HTTP 运行时与网络。
 
-- `docs/basic_usage/omni_router.md:240-251`：许可生命周期，以及 request/response body 不使用 body pump、应用队列或额外 relay task 的直接背压。
-- `sglang_omni_router/src/http_relay/mod.rs:219-233`：把上游 body 包装成 `DirectResponseBody`，再构造下游响应。
-- `sglang_omni_router/src/http_relay/response_body.rs:16-35`：adapter 持有内部 body、request lease 和终止状态。
-- `sglang_omni_router/src/http_relay/response_body.rs:38-72`：终止时释放内部 body 与 lease，以及 drop 时的处理。
-- `sglang_omni_router/src/http_relay/response_body.rs:75-101`：一次下游 poll 对应一次内部 poll，以及数据、`Pending`、EOF 和错误分支。
+- <code>docs/basic_usage/<wbr>omni_router.md:240-251</code>：许可生命周期，以及 request/response body 不使用 body pump、应用队列或额外 relay task 的直接背压。
+- <code>sglang_omni_router/src/http_relay/<wbr>mod.rs:219-233</code>：把上游 body 包装成 `DirectResponseBody`，再构造下游响应。
+- <code>sglang_omni_router/src/http_relay/<wbr>response_body.rs:16-35</code>：adapter 持有内部 body、request lease 和终止状态。
+- <code>sglang_omni_router/src/http_relay/<wbr>response_body.rs:38-72</code>：终止时释放内部 body 与 lease，以及 drop 时的处理。
+- <code>sglang_omni_router/src/http_relay/<wbr>response_body.rs:75-101</code>：一次下游 poll 对应一次内部 poll，以及数据、`Pending`、EOF 和错误分支。
 
-行号对应 `origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`。
+行号对应 <code>origin/main@<wbr>21a6d229c3d2075da5e97848f94e0d2ac8a2781a</code>。
 
 ### 接下来
 
