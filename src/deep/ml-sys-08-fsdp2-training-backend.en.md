@@ -109,47 +109,50 @@ Backward also needs parameter values, but its new output is a gradient. The next
 
 Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:18`; `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:53-56,101-105`; `THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7`, `slime/backends/fsdp_utils/actor.py:522-535`.
 
-## Step 4 · Pre-scale loss, then reduce gradients
+## Step 4 · Pre-scale by R/B, then average gradients
 
-**One sentence.** Slime scales each rank's loss before backward, then FSDP sums the pre-scaled gradients and keeps matching shards.
+**One sentence.** Slime scales each rank's loss by $R/B$, then FP32 FSDP2 averages the pre-scaled gradients and keeps matching shards.
 
 ### On the stage
 
-- Each rank used different training records. Before backward, slime evaluates `loss = loss * dp_size / global_batch_size`. This pre-scaling accounts for DP summation and gradient accumulation.
-- The blue temporary gradient belongs to one layer and comes from that pre-scaled loss. Reduce-scatter sums matching values; it does not switch to an average.
-- The sum does not make the update eight times larger because every input gradient already carries the loss scale.
-- The orange box is the rank's reduced shard for this layer. The label shows the all-layers gradient total: 8 GB ÷ 8 = 1 GB per rank, not this layer's temporary size.
+- Each rank used different training records. Before backward, slime evaluates `loss = loss * dp_size / global_batch_size`, so each rank's loss carries the scale $R/B$.
+- The blue temporary gradient belongs to one layer and comes from that pre-scaled loss. On this FP32 reduction path, FSDP2's default reduce-scatter operation is AVG: it sums matching values, divides by $R$, and keeps one shard per rank.
+- AVG supplies the remaining $1/R$. Together, $R/B$ pre-scaling and AVG produce the mean over the global batch, not an update eight times too large.
+- The orange box is the rank's averaged shard for this layer. The label shows the all-layers gradient total: 8 GB ÷ 8 = 1 GB per rank, not this layer's temporary size.
 - The optimizer updates the owned weight shards after all layers finish, not once for each box in this flow.
 
 ### Formula and symbols
 
-$$\mathcal L'_r=\mathcal L_r\frac{R}{B},\qquad g_{\ell,i}=S_{\ell,i}\!\left(\sum_{r=1}^{R}g_\ell^{(r)}\right)$$
+$$\mathcal L'_r=\mathcal L_r\frac{R}{B},\qquad g_\ell^{(r)}=\frac{R}{B}\tilde g_\ell^{(r)}$$
+
+$$g_{\ell,i}=S_{\ell,i}\!\left(\frac1R\sum_{r=1}^{R}g_\ell^{(r)}\right)=S_{\ell,i}\!\left(\frac1B\sum_{r=1}^{R}\tilde g_\ell^{(r)}\right)$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
 | $R$ | Number of ranks in the DP sharding group, `dp_size` | Step 2, eight ranks |
-| $B$ | Global batch size for the optimizer update | `global_batch_size` in the run configuration; no value assigned here |
+| $B$ | Global batch size for the optimizer update | `global_batch_size` in the run configuration; no value assigned in the memory example |
 | $\mathcal L_r$ | Rank $r$'s loss before DP scaling | The current microbatch |
 | $\mathcal L'_r$ | Pre-scaled loss passed to backward | $\mathcal L_rR/B$ |
 | $\ell$ | Index of the layer being reduced | The current layer on the stage |
 | $r$ | Rank contributing a gradient | One member of the DP group |
-| $g_\ell^{(r)}$ | Rank $r$'s **pre-scaled** gradient for layer $\ell$ | Backward from $\mathcal L'_r$, not from the unscaled $\mathcal L_r$ |
+| $\tilde g_\ell^{(r)}$ | Rank $r$'s gradient before DP scaling | Backward from $\mathcal L_r$ |
+| $g_\ell^{(r)}$ | Rank $r$'s **pre-scaled** gradient for layer $\ell$ | Backward from $\mathcal L'_r$, equal to $\tilde g_\ell^{(r)}R/B$ |
 | $S_{\ell,i}$ | Select rank $i$'s shard of layer $\ell$'s gradient | FSDP placement |
-| $g_{\ell,i}$ | Reduced gradient shard for layer $\ell$ retained by rank $i$ | Reduce-scatter result; size not supplied |
+| $g_{\ell,i}$ | Averaged gradient shard for layer $\ell$ retained by rank $i$ | FP32 FSDP2 reduce-scatter with AVG; size not supplied |
 
 ### The numbers on the stage
 
-This example has $R=8$. The source does not assign $B$ in this constructed memory example, so the stage keeps the symbolic scale $R/B$. The important order is scale first, sum second. Averaging the already pre-scaled gradients would apply different normalization.
+This example has $R=8$ and leaves $B$ symbolic. A separate two-rank arithmetic check uses $R=2$, $B=8$, and unscaled scalar gradients $\tilde g^{(1)}=2$ and $\tilde g^{(2)}=6$. Pre-scaling gives $g^{(1)}=2\times2/8=0.5$ and $g^{(2)}=6\times2/8=1.5$. AVG gives $(0.5+1.5)\div2=1$, which matches the global-batch mean $(2+6)\div8=1$.
 
-The stage labels the all-layers gradient total: 8 GB ÷ 8 = 1 GB per rank across all layers. This is only the gradient table's shard; the rank's complete training-state bill is 8 GB from Step 2. Neither the temporary layer gradient nor the reduced layer shard has a supplied size.
+On this default FP32 path, FSDP2 sets both extra predivide and postdivide factors to `None`; NCCL's AVG supplies the $1/R$ division. The stage labels the all-layers gradient total: 8 GB ÷ 8 = 1 GB per rank across all layers. This is only the gradient table's shard; the rank's complete training-state bill is 8 GB from Step 2. Neither the temporary layer gradient nor the averaged layer shard has a supplied size.
 
-Slime executes the loss scale on the line before `loss.backward()` and later calls `optimizer.step()`. The FSDP wrapper handles parameter gathers and per-layer gradient reduce-scatter; the actor does not write separate collective calls beside those methods.
+Slime sets `reduce_dtype=torch.float32`, scales the loss on the line before `loss.backward()`, and later calls `optimizer.step()`. The FSDP wrapper handles parameter gathers and per-layer gradient reduce-scatter; the actor does not write separate collective calls beside those methods.
 
 ### Next
 
 The training-state bill is smaller, but full units and other temporary results still need space. The next step separates that bill from peak memory.
 
-Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:19`; `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:47-58`; `THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7`, `slime/backends/fsdp_utils/actor.py:687-702`.
+Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:19`; `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:47-58`; `THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7`, `slime/backends/fsdp_utils/actor.py:687-702,1000-1034`; `pytorch/pytorch@v2.8.0`, `_fsdp_collectives.py:605-641`.
 
 ## Step 5 · The training-state bill is only one part of peak memory
 

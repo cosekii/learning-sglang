@@ -109,47 +109,50 @@ $$M_0=W_i+O_i,\qquad M_{\text{forward}}\approx M_0+U,\qquad M_{\text{after}}=M_0
 
 来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:18`；`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:53-56,101-105`；`THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7` 的 `slime/backends/fsdp_utils/actor.py:522-535`。
 
-## 第 4 步 · 先预缩放 loss，再归约梯度
+## 第 4 步 · 先乘 R/B，再平均梯度
 
-**一句话。** slime 在 backward 前缩放每个 rank 的 loss，FSDP 再汇总预缩放梯度并各留对应分片。
+**一句话。** slime 先把每个 rank 的 loss 乘以 $R/B$，FP32 FSDP2 再平均预缩放梯度，并各留对应分片。
 
 ### 图上是什么
 
-- 每个 rank 使用不同的训练样本。backward 前，slime 执行 `loss = loss * dp_size / global_batch_size`，用这次预缩放配合 DP 求和与梯度累积。
-- 蓝色临时梯度属于当前一层，由预缩放后的 loss 算出。reduce-scatter 仍对对应值求和，不改求平均。
-- 每个输入梯度已经带上 loss 缩放，所以八个 rank 求和不会把更新放大八倍。
-- 橙格是这个 rank 为本层留下的汇总分片。标签写的是所有层的梯度合计：8 GB ÷ 8 = 每个 rank 1 GB，不是本层临时梯度的大小。
+- 每个 rank 使用不同的训练样本。backward 前，slime 执行 `loss = loss * dp_size / global_batch_size`，让每个 rank 的 loss 带上 $R/B$ 缩放。
+- 蓝色临时梯度属于当前一层，由预缩放后的 loss 算出。这条 FP32 归约路径上，FSDP2 的 reduce-scatter 默认用 AVG：对应值先求和，再除以 $R$，最后每个 rank 留一个分片。
+- AVG 补上剩下的 $1/R$。$R/B$ 预缩放和 AVG 合起来得到全批均值，不会把更新放大八倍。
+- 橙格是这个 rank 为本层留下的平均分片。标签写的是所有层的梯度合计：8 GB ÷ 8 = 每个 rank 1 GB，不是本层临时梯度的大小。
 - 所有层算完后，优化器才更新拥有的权重分片，不是图中每流过一个框就更新一次。
 
 ### 公式与符号
 
-$$\mathcal L'_r=\mathcal L_r\frac{R}{B},\qquad g_{\ell,i}=S_{\ell,i}\!\left(\sum_{r=1}^{R}g_\ell^{(r)}\right)$$
+$$\mathcal L'_r=\mathcal L_r\frac{R}{B},\qquad g_\ell^{(r)}=\frac{R}{B}\tilde g_\ell^{(r)}$$
+
+$$g_{\ell,i}=S_{\ell,i}\!\left(\frac1R\sum_{r=1}^{R}g_\ell^{(r)}\right)=S_{\ell,i}\!\left(\frac1B\sum_{r=1}^{R}\tilde g_\ell^{(r)}\right)$$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
 | $R$ | DP 分片组的 rank 数，即 `dp_size` | 第 2 步，8 个 rank |
-| $B$ | 一次优化器更新使用的 global batch size | 运行配置的 `global_batch_size`；本例未填数值 |
+| $B$ | 一次优化器更新使用的 global batch size | 运行配置的 `global_batch_size`；显存算例未填数值 |
 | $\mathcal L_r$ | rank $r$ 未经 DP 缩放的 loss | 当前 microbatch |
 | $\mathcal L'_r$ | 交给 backward 的预缩放 loss | $\mathcal L_rR/B$ |
 | $\ell$ | 正在汇总的层编号 | 图上当前一层 |
 | $r$ | 提供梯度的 rank | DP 组的一个成员 |
-| $g_\ell^{(r)}$ | rank $r$ 为第 $\ell$ 层算出的**预缩放梯度** | 对 $\mathcal L'_r$ 做 backward，不是对未缩放的 $\mathcal L_r$ |
+| $\tilde g_\ell^{(r)}$ | rank $r$ 未经 DP 缩放的梯度 | 对 $\mathcal L_r$ 做 backward |
+| $g_\ell^{(r)}$ | rank $r$ 为第 $\ell$ 层算出的**预缩放梯度** | 对 $\mathcal L'_r$ 做 backward，等于 $\tilde g_\ell^{(r)}R/B$ |
 | $S_{\ell,i}$ | 选出第 $\ell$ 层梯度中 rank $i$ 拥有的一片 | FSDP 分片位置 |
-| $g_{\ell,i}$ | rank $i$ 为第 $\ell$ 层留下的汇总梯度片 | reduce-scatter 的结果；大小未给出 |
+| $g_{\ell,i}$ | rank $i$ 为第 $\ell$ 层留下的平均梯度片 | FP32 FSDP2 的 AVG reduce-scatter；大小未给出 |
 
 ### 代入图上的数
 
-本例有 $R=8$ 个 rank。构造显存例没有给 $B$ 填值，所以图中保留符号缩放 $R/B$。顺序是先缩放、再求和。如果对预缩放梯度再求平均，归一化就会改变。
+本例有 $R=8$ 个 rank，$B$ 保留符号。另用两个 rank 验算：取 $R=2$、$B=8$，未缩放的标量梯度为 $\tilde g^{(1)}=2$ 和 $\tilde g^{(2)}=6$。预缩放后得到 $g^{(1)}=2\times2/8=0.5$ 和 $g^{(2)}=6\times2/8=1.5$。AVG 算出 $(0.5+1.5)\div2=1$，与全批均值 $(2+6)\div8=1$ 相同。
 
-图上写的是所有层的梯度合计：8 GB ÷ 8 = 每个 rank 1 GB。这里只算梯度表的分片；第 2 步中每个 rank 的完整训练状态账是 8 GB。临时本层梯度和汇总后的本层分片都没有给定大小。
+这条默认 FP32 路径上，FSDP2 把额外的归约前、归约后除数都设为 `None`，由 NCCL 的 AVG 完成 $1/R$ 除法。图上写的是所有层的梯度合计：8 GB ÷ 8 = 每个 rank 1 GB。这里只算梯度表的分片；第 2 步中每个 rank 的完整训练状态账是 8 GB。临时本层梯度和平均后的本层分片都没有给定大小。
 
-slime 在 `loss.backward()` 的上一行执行 loss 缩放，之后调用 `optimizer.step()`。参数聚合和逐层梯度 reduce-scatter 由 FSDP 包装层处理，actor 没有在这些方法旁另写集合通信调用。
+slime 设置 `reduce_dtype=torch.float32`，在 `loss.backward()` 的上一行缩放 loss，之后调用 `optimizer.step()`。参数聚合和逐层梯度 reduce-scatter 由 FSDP 包装层处理，actor 没有在这些方法旁另写集合通信调用。
 
 ### 接下来
 
 训练状态账变小了，完整 unit 和其他临时结果仍要占空间。下一步区分训练状态账与峰值显存。
 
-来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:19`；`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:47-58`；`THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7` 的 `slime/backends/fsdp_utils/actor.py:687-702`。
+来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:19`；`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:47-58`；`THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7` 的 `slime/backends/fsdp_utils/actor.py:687-702,1000-1034`；`pytorch/pytorch@v2.8.0` 的 `_fsdp_collectives.py:605-641`。
 
 ## 第 5 步 · 训练状态账只是峰值的一部分
 
