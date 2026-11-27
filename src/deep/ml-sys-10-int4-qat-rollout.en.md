@@ -238,8 +238,7 @@ Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:101-114`; `THUDM/sli
 ### On the stage
 
 - The pause card prevents generation from reading a mixture of old and new weights. The resize card only calls `resize_` to restore the reusable memory's cached original shape.
-- The load card overwrites that memory with this round's packed weights and scales.
-- The Marlin card changes Step 6's generic four-bit packing into the order required by this multiplication routine and arranges the corresponding scales.
+- The combined `LOAD + REORDER` card overwrites that memory with this round's packed weights and scales, then changes Step 6's generic four-bit packing into the order required by the Marlin multiplication routine and arranges the corresponding scales.
 - The continue card resumes generation with the new weights. The `is_marlin_converted` flag moves from true to false and back to true.
 - A concrete 64-scale mapping appears below the cards. The reordered output starts with `s0, s8, …, s56`, then `s1, s9, …, s57`, and ends with `s7, s15, …, s63`.
 
