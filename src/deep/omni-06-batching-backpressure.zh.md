@@ -359,6 +359,7 @@ $$G=\frac{T_8-T_1}{T_1}\times100\%=\frac{5.652-4.100}{4.100}\times100\%\approx37
 - 背压在这里表示：容量边界把「已经满了」明确告诉调用方，而不是继续接受无限多的新请求。两幅图是独立例子，不表示同一个 C 会先收 429 再收 503。
 - 左图把 router 的全局与每服务许可都设成教学值 2。A、B 仍在处理，许可没有空余；C 的非阻塞获取失败，直接返回 `RouterOverloaded` 对应的 HTTP 429，不发给 worker。
 - 右图把 coordinator 的 `max_in_flight` 设为教学值 2。A、B 都计入准入，C 调用 `submit_request()` 时在 pipeline submit 之前触发 `QueueFullError`，OpenAI 错误映射为 HTTP 503。
+- 动画按顺序播放两个独立例子：router 的 C 获取许可失败并返回 429，再由 coordinator 的 C 触发 `QueueFullError` 并返回 503。两个 C 都没有越过各自边界。
 - 蓝色表示处理中的请求，橙色表示被边界拒绝的 C。两处颜色含义相同，但错误来源不同，不能把 429 和 503 当成可互换的同义词。
 - router 的许可与 worker load guard 会持有到响应 EOF、上游错误或下游取消。响应头发出并不代表可以提早释放；coordinator 只累加 `counts_toward_admission` 为真的请求。
 

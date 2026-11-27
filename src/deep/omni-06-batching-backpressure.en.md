@@ -359,6 +359,7 @@ Step 7 moves from computing more to rejecting when full. Router, worker and coor
 - Backpressure here means a capacity boundary tells its caller that it is full instead of accepting unlimited new requests. The panels are independent examples; one C does not receive 429 and then 503.
 - The left panel sets both router global and per-service permits to the teaching value two. A and B remain active, leaving no permit. C's non-blocking acquisition fails, producing `RouterOverloaded` and HTTP 429 without worker dispatch.
 - The right panel sets coordinator `max_in_flight` to two. A and B count toward admission. C's `submit_request()` raises `QueueFullError` before pipeline submit, and the OpenAI error mapping returns HTTP 503.
+- The animation plays the independent examples in order: router C fails acquisition and returns 429, then coordinator C raises `QueueFullError` and returns 503. Neither C crosses its boundary.
 - Blue marks active requests and orange marks rejected C in both panels. The errors come from different boundaries, so 429 and 503 are not interchangeable labels.
 - Router permits and the worker-load guard remain held until response EOF, upstream error or downstream cancellation. Sending response headers does not release them early. The coordinator sums only requests whose `counts_toward_admission` is true.
 

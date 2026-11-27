@@ -397,6 +397,8 @@
       <text x={phone ? 15 : 20} y="44" class="tag">{phone ? t(`Two examples · cap ${ADMISSION_TEACHING_LIMIT} · ${ADMISSION_ACTIVE_IDS.join(' + ')} active`, `两个独立例子 · 教学上限 = ${ADMISSION_TEACHING_LIMIT} · ${ADMISSION_ACTIVE_IDS.join(' + ')} 仍在处理`) : t(`Two independent examples · teaching cap = ${ADMISSION_TEACHING_LIMIT} · ${ADMISSION_ACTIVE_IDS.join(' + ')} still active`, `两个独立例子 · 教学上限 = ${ADMISSION_TEACHING_LIMIT} · ${ADMISSION_ACTIVE_IDS.join(' + ')} 仍在处理`)}</text>
       <text x={phone ? 15 : 20} y="66" class="tag">{t('Blue: active request · orange: rejected request C', '蓝色：处理中的请求 · 橙色：被拒绝的 C')}</text>
       {#each admissionPanels as panel}
+        {@const attempted = panel.kind === 'router' ? phase >= 1 : phase >= 3}
+        {@const responded = panel.kind === 'router' ? phase >= 2 : phase >= 4}
         <rect x={panel.x} y={panel.y} width={phone ? 270 : 325} height="290" rx="12" fill="var(--bg)" stroke="var(--line)" />
         <text x={panel.x + 14} y={panel.y + 25} class="rowlabel">{panel.title}</text>
         <text x={panel.x + 14} y={panel.y + 49} class="tag">{panel.kind === 'router' ? 'global + per-service permits' : 'max_in_flight'} = {ADMISSION_TEACHING_LIMIT}</text>
@@ -404,11 +406,11 @@
           <rect x={panel.x + 16 + i * (phone ? 121 : 148)} y={panel.y + 64} width={phone ? 110 : 134} height="40" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x={panel.x + (phone ? 71 : 83) + i * (phone ? 121 : 148)} y={panel.y + 90} text-anchor="middle" class="mono strong">{id} · {t('active', '处理中')}</text>
         {/each}
-        <text x={panel.x + 16} y={panel.y + 128} class="mono strong">{ADMISSION_NEW_ID} → {panel.kind === 'router' ? 'try_acquire_owned()' : 'submit_request()'}</text>
-        <path d="M{panel.x + 20} {panel.y + 142} H{panel.x + (phone ? 248 : 303)}" stroke="var(--gen)" stroke-width="2" marker-end="url(#batch-arrow-gen)" />
-        <text x={panel.x + 16} y={panel.y + 166} class="tag">{panel.kind === 'router' ? t(`${ADMISSION_FREE_PERMITS} permits → AdmissionError::Overloaded`, `${ADMISSION_FREE_PERMITS} 个许可 → AdmissionError::Overloaded`) : `${ADMISSION_ACTIVE_COUNT} >= ${ADMISSION_TEACHING_LIMIT} → QueueFullError`}</text>
-        <rect x={panel.x + 16} y={panel.y + 184} width={phone ? 238 : 293} height="50" rx="7" fill="var(--gen-soft)" stroke="var(--gen)" stroke-width="2" />
-        <text x={panel.x + (phone ? 135 : 162)} y={panel.y + 215} text-anchor="middle" class="mono strong">HTTP {panel.kind === 'router' ? ADMISSION_ROUTER_STATUS : ADMISSION_COORDINATOR_STATUS} · {panel.kind === 'router' ? t('not sent upstream', '不发给 worker') : t('no pipeline submit', '不交给 pipeline')}</text>
+        <text x={panel.x + 16} y={panel.y + 128} class="mono strong">{attempted ? `${ADMISSION_NEW_ID} → ${panel.kind === 'router' ? 'try_acquire_owned()' : 'submit_request()'}` : t('C · not submitted', 'C · 尚未提交')}</text>
+        <path d="M{panel.x + 20} {panel.y + 142} H{panel.x + (phone ? 248 : 303)}" stroke="var(--gen)" stroke-width="2" marker-end="url(#batch-arrow-gen)" opacity={attempted ? 1 : 0.15} />
+        <text x={panel.x + 16} y={panel.y + 166} class="tag">{attempted ? (panel.kind === 'router' ? t(`${ADMISSION_FREE_PERMITS} permits → AdmissionError::Overloaded`, `${ADMISSION_FREE_PERMITS} 个许可 → AdmissionError::Overloaded`) : `${ADMISSION_ACTIVE_COUNT} >= ${ADMISSION_TEACHING_LIMIT} → QueueFullError`) : t('waiting for C', '等待 C')}</text>
+        <rect x={panel.x + 16} y={panel.y + 184} width={phone ? 238 : 293} height="50" rx="7" fill={responded ? 'var(--gen-soft)' : 'white'} stroke={responded ? 'var(--gen)' : 'var(--faint)'} stroke-width={responded ? 2 : 1} stroke-dasharray={responded ? '0' : '4 3'} />
+        <text x={panel.x + (phone ? 135 : 162)} y={panel.y + 215} text-anchor="middle" class="mono strong">{responded ? `HTTP ${panel.kind === 'router' ? ADMISSION_ROUTER_STATUS : ADMISSION_COORDINATOR_STATUS} · ${panel.kind === 'router' ? t('not sent upstream', '不发给 worker') : t('no pipeline submit', '不交给 pipeline')}` : t('no error response yet', '尚未返回错误')}</text>
         <text x={panel.x + (phone ? 135 : 162)} y={panel.y + 264} text-anchor="middle" class="tag">{panel.kind === 'router' ? t('released on response end / error / cancel', '响应结束 / 错误 / 取消才还许可') : t('counts only admission-counting requests', '只数计入准入的请求')}</text>
       {/each}
       <text x={W / 2} y={phone ? 724 : 420} text-anchor="middle" class="mono strong">{ADMISSION_ACTIVE_COUNT} {t('active', '条处理中')} + {ADMISSION_NEW_COUNT} {t('new', '条新到')} &gt; {ADMISSION_TEACHING_LIMIT} {t('cap', '条上限')} → {ADMISSION_FREE_PERMITS} {t('free', '个空位')}</text>
