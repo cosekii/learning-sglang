@@ -639,43 +639,51 @@
         {#if !phone}
           {#each streamEvents as event, i}
             {@const y = 91 + i * 140}
-            <rect x="30" y={y} width="660" height="121" rx="11" fill="var(--bg)" stroke="var(--line)" />
-            <text x="48" y={y + 29} class="small strong">{t(event.title, event.titleZh)}</text>
-            <text x="48" y={y + 65} class="small">input = {event.input}</text>
-            <text x="48" y={y + 94} class="small">new = {event.added}</text>
-            {#if event.old > 0}
-              <rect x="190" y={y + 48} width={event.old * 4.5} height="47" rx="6" fill="var(--gen-soft)" stroke="var(--gen)" />
-            {/if}
-            <rect x={190 + event.old * 4.5} y={y + 48} width={event.added * 4.5} height="47" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
-            <text x="500" y={y + 60} class="small">{t('samples out', '输出采样点')}</text>
-            <text x="500" y={y + 91} class="result">{event.emitted}</text>
+            <g opacity={i <= phase ? 1 : 0.10} style="transition: opacity 400ms">
+              <rect x="30" y={y} width="660" height="121" rx="11" fill="var(--bg)" stroke="var(--line)" />
+              <text x="48" y={y + 29} class="small strong">{t(event.title, event.titleZh)}</text>
+              <text x="48" y={y + 65} class="small">input = {event.input}</text>
+              <text x="48" y={y + 94} class="small">new = {event.added}</text>
+              {#if event.old > 0}
+                <rect x="190" y={y + 48} width={event.old * 4.5} height="47" rx="6" fill="var(--gen-soft)" stroke="var(--gen)" />
+              {/if}
+              <rect x={190 + event.old * 4.5} y={y + 48} width={event.added * 4.5} height="47" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
+              <text x="500" y={y + 60} class="small">{t('samples out', '输出采样点')}</text>
+              <text x="500" y={y + 91} class="result">{event.emitted}</text>
+            </g>
           {/each}
-          <text x="360" y="544" text-anchor="middle" class="result">{FISH_FIRST_WINDOW_FRAMES} + {FISH_STREAM_NEXT_INPUT_FRAMES} + {FISH_STREAM_FINAL_INPUT_FRAMES} = {FISH_STREAM_TOTAL_INPUT_FRAMES} {t('input frames', '帧输入')}</text>
-          <text x="360" y="579" text-anchor="middle" class="small">20 + 20 = {FISH_STREAM_REDECODED_FRAMES} {t('old frames decoded again', '帧旧内容被再次解码')}</text>
-          <text x="360" y="616" text-anchor="middle" class="result">(40F−512) + 45F + (5F+512) = 90F</text>
-          <text x="360" y="650" text-anchor="middle" class="small">F = {fmt(FISH_SAMPLES_PER_FRAME)} {t('samples · 512 ÷ 44,100 ≈ 11.6 ms', '个采样点 · 512 ÷ 44,100 ≈ 11.6 ms')}</text>
-          <text x="360" y="680" text-anchor="middle" class="small">{t('each non-final window holds a fresh tail; the next window uses the old one', '每个未结束窗口留下新尾巴；下个窗口用掉旧尾巴')}</text>
-          <text x="360" y="700" text-anchor="middle" class="small">{t('the final flush releases the last tail', '最后一次释放最后的尾巴')}</text>
+          <g opacity={phase >= 2 ? 1 : 0.06} style="transition: opacity 400ms">
+            <text x="360" y="544" text-anchor="middle" class="result">{FISH_FIRST_WINDOW_FRAMES} + {FISH_STREAM_NEXT_INPUT_FRAMES} + {FISH_STREAM_FINAL_INPUT_FRAMES} = {FISH_STREAM_TOTAL_INPUT_FRAMES} {t('input frames', '帧输入')}</text>
+            <text x="360" y="579" text-anchor="middle" class="small">20 + 20 = {FISH_STREAM_REDECODED_FRAMES} {t('old frames decoded again', '帧旧内容被再次解码')}</text>
+            <text x="360" y="616" text-anchor="middle" class="result">(40F−512) + 45F + (5F+512) = 90F</text>
+            <text x="360" y="650" text-anchor="middle" class="small">F = {fmt(FISH_SAMPLES_PER_FRAME)} {t('samples · 512 ÷ 44,100 ≈ 11.6 ms', '个采样点 · 512 ÷ 44,100 ≈ 11.6 ms')}</text>
+            <text x="360" y="680" text-anchor="middle" class="small">{t('each non-final window holds a fresh tail; the next window uses the old one', '每个未结束窗口留下新尾巴；下个窗口用掉旧尾巴')}</text>
+            <text x="360" y="700" text-anchor="middle" class="small">{t('the final flush releases the last tail', '最后一次释放最后的尾巴')}</text>
+          </g>
         {:else}
           {#each streamEvents as event, i}
             {@const y = 82 + i * 220}
-            <rect x="18" y={y} width="264" height="200" rx="11" fill="var(--bg)" stroke="var(--line)" />
-            <text x="32" y={y + 29} class="small strong">{t(event.title, event.titleZh)}</text>
-            <text x="32" y={y + 57} class="small">input = {event.input} · new = {event.added}</text>
-            {#if event.old > 0}
-              <rect x="32" y={y + 77} width={event.old * 3.2} height="44" rx="6" fill="var(--gen-soft)" stroke="var(--gen)" />
-            {/if}
-            <rect x={32 + event.old * 3.2} y={y + 77} width={event.added * 3.2} height="44" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
-            <text x="32" y={y + 151} class="small">{t('samples out', '输出采样点')}</text>
-            <text x="32" y={y + 181} class="result">{event.emitted}</text>
+            <g opacity={i <= phase ? 1 : 0.10} style="transition: opacity 400ms">
+              <rect x="18" y={y} width="264" height="200" rx="11" fill="var(--bg)" stroke="var(--line)" />
+              <text x="32" y={y + 29} class="small strong">{t(event.title, event.titleZh)}</text>
+              <text x="32" y={y + 57} class="small">input = {event.input} · new = {event.added}</text>
+              {#if event.old > 0}
+                <rect x="32" y={y + 77} width={event.old * 3.2} height="44" rx="6" fill="var(--gen-soft)" stroke="var(--gen)" />
+              {/if}
+              <rect x={32 + event.old * 3.2} y={y + 77} width={event.added * 3.2} height="44" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
+              <text x="32" y={y + 151} class="small">{t('samples out', '输出采样点')}</text>
+              <text x="32" y={y + 181} class="result">{event.emitted}</text>
+            </g>
           {/each}
-          <text x="150" y="766" text-anchor="middle" class="result">40 + 65 + 25 = {FISH_STREAM_TOTAL_INPUT_FRAMES} {t('inputs', '帧输入')}</text>
-          <text x="150" y="801" text-anchor="middle" class="small">20 + 20 = {FISH_STREAM_REDECODED_FRAMES} {t('old frames repeated', '帧旧内容重算')}</text>
-          <text x="150" y="839" text-anchor="middle" class="result">(40F−512)+45F+(5F+512)=90F</text>
-          <text x="150" y="875" text-anchor="middle" class="small">F = {fmt(FISH_SAMPLES_PER_FRAME)} {t('samples', '个采样点')}</text>
-          <text x="150" y="905" text-anchor="middle" class="small">512 ÷ 44,100 ≈ 11.6 ms</text>
-          <text x="150" y="935" text-anchor="middle" class="small">{t('each non-final window holds a fresh tail', '每个未结束窗口留下新尾巴')}</text>
-          <text x="150" y="962" text-anchor="middle" class="small">{t('next uses the old tail · final releases it', '下个用旧尾巴 · 最后释放它')}</text>
+          <g opacity={phase >= 2 ? 1 : 0.06} style="transition: opacity 400ms">
+            <text x="150" y="766" text-anchor="middle" class="result">40 + 65 + 25 = {FISH_STREAM_TOTAL_INPUT_FRAMES} {t('inputs', '帧输入')}</text>
+            <text x="150" y="801" text-anchor="middle" class="small">20 + 20 = {FISH_STREAM_REDECODED_FRAMES} {t('old frames repeated', '帧旧内容重算')}</text>
+            <text x="150" y="839" text-anchor="middle" class="result">(40F−512)+45F+(5F+512)=90F</text>
+            <text x="150" y="875" text-anchor="middle" class="small">F = {fmt(FISH_SAMPLES_PER_FRAME)} {t('samples', '个采样点')}</text>
+            <text x="150" y="905" text-anchor="middle" class="small">512 ÷ 44,100 ≈ 11.6 ms</text>
+            <text x="150" y="935" text-anchor="middle" class="small">{t('each non-final window holds a fresh tail', '每个未结束窗口留下新尾巴')}</text>
+            <text x="150" y="962" text-anchor="middle" class="small">{t('next uses the old tail · final releases it', '下个用旧尾巴 · 最后释放它')}</text>
+          </g>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Constructed 90 frames · shipped window defaults' : 'Constructed 90-frame stream; 40/45/20/512 are the shipped window defaults.', phone ? '构造 90 帧 · 默认窗口规则' : '90 帧是构造流；40/45/20/512 是默认窗口规则。')}</text>
       {:else if step === 7}
