@@ -333,7 +333,11 @@
             {/if}
           </g>
         {/each}
-        <text x={W / 2} y={phone ? 758 : 514} text-anchor="middle" class="formula" opacity={phase >= 2 ? 1 : 0.12} style="transition: opacity 350ms">{phone ? t('60→40→30 GB · estimates', '60→40→30 GB · 仅估计') : t('60 → 40 → 30 GB · documentation estimates only', '60 → 40 → 30 GB · 仅为文档估计')}</text>
+        <g opacity={phase >= 2 ? 1 : 0.12} style="transition: opacity 350ms">
+          <text x={W / 2} y={phone ? 735 : 480} text-anchor="middle" class="formula">40 ÷ 60 ≈ 67% · 30 ÷ 60 = 50%</text>
+          <text x={W / 2} y={phone ? 760 : 505} text-anchor="middle" class="tag">{phone ? t('bits ≠ GB: other data also uses memory', 'bit 数不等于 GB：其他数据也占显存') : t('bits do not make GB: other data and unquantized parts also use memory', 'bit 数不能直接算出 GB：其他数据和未量化部分也占显存')}</text>
+          <text x={W / 2} y={phone ? 790 : 535} text-anchor="middle" class="formula">{phone ? t('60→40→30 GB · estimates', '60→40→30 GB · 仅估计') : t('60 → 40 → 30 GB · documentation estimates only', '60 → 40 → 30 GB · 仅为文档估计')}</text>
+        </g>
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{phone ? t('BF16 default · INT4 code2wav stays BF16', 'BF16 是默认 · INT4 的 code2wav 仍用 BF16') : t('BF16 is the default. INT4 also keeps code2wav BF16.', 'BF16 是默认值。INT4 的 code2wav 也仍是 BF16。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Not a per-card budget or quality measurement', '不是单卡预算或质量实测') : t('The source does not make these values a per-card budget; no local quality measurement.', '来源没有把这些数值定义为单卡预算；本地也没有质量实测。')}</text>
       {:else if step === 5}
@@ -378,7 +382,10 @@
                 <text x={panel.x + 14 + replica * (poolW + 7) + poolW / 2} y={panel.y + 342} text-anchor="middle" class="formula">{QWEN_TALKER_MAX_RUNNING_REQUESTS} × {QWEN_SPEECH_REPLICA2_COUNT} = {QWEN_REPLICA2_CODEC_STATE_SLOTS}</text>
               </g>
             {/each}
-            <text x={panel.x + 14} y={panel.y + 374} class="tag" opacity={phase >= 3 ? 1 : 0.12} style="transition: opacity 350ms">{t(`per GPU: ${QWEN_REPLICA2_TALKER_GPU_PERCENT}% talker + ${QWEN_REPLICA2_CODE2WAV_GPU_PERCENT}% code2wav = ${QWEN_REPLICA2_GPU_PERCENT.toFixed(1)}%`, `每卡：talker ${QWEN_REPLICA2_TALKER_GPU_PERCENT}% + code2wav ${QWEN_REPLICA2_CODE2WAV_GPU_PERCENT}% = ${QWEN_REPLICA2_GPU_PERCENT.toFixed(1)}%`)}</text>
+            <g opacity={phase >= 3 ? 1 : 0.12} style="transition: opacity 350ms">
+              <text x={panel.x + 14} y={panel.y + (phone ? 367 : 368)} class="tag">{t('declared GPU memory per replica', '每个副本 GPU 申报显存')}</text>
+              <text x={panel.x + 14} y={panel.y + (phone ? 387 : 392)} class="tag">{`${QWEN_REPLICA2_TALKER_GPU_PERCENT}% talker + ${QWEN_REPLICA2_CODE2WAV_GPU_PERCENT}% code2wav = ${QWEN_REPLICA2_GPU_PERCENT.toFixed(1)}%`}</text>
+            </g>
           {/if}
         {/each}
         {#if !phone}

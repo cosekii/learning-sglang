@@ -156,6 +156,7 @@ Memory also depends on the checkpoint's precision, so the next step compares BF1
 
 - Precision is the number of bits used to store a weight. A weight is one saved number in the model; a bit is one 0-or-1 digit.
 - The three blue bars use one scale for approximate 60, 40 and 30 GB values in a single-GPU H100/H20 section. The source does not define whether the quantity is weights alone, loaded stages, runtime peak or whole-server footprint, so these are not measured per-card budgets.
+- The bottom arithmetic shows `40 ÷ 60 ≈ 67%` and `30 ÷ 60 = 50%`. A separate line warns that other data and unquantized parts also use memory, so bit counts alone do not produce the GB estimates.
 - BF16 loads thinker and talker AR as BF16. The FP8 checkpoint loads those two AR stages as FP8. The INT4 checkpoint quantizes the thinker transformer layers to 4 bits; talker AR and code2wav remain BF16.
 - The cookbook explicitly names code2wav's BF16 precision for INT4. The implementation also defaults omitted code2wav `dtype` to BF16, so all three precision panels show that default.
 
@@ -176,7 +177,7 @@ $$
 - FP8: `40 ÷ 60 × 100% ≈ 67%` of BF16, about one third less.
 - INT4: `30 ÷ 60 × 100% = 50%` of BF16, about one half less.
 
-These ratios come from approximate values. Bit counts alone cannot produce them because other data and unquantized parts also occupy storage and memory.
+These ratios come from approximate values.
 
 ### Boundaries and sources
 
@@ -264,11 +265,11 @@ $$
 J=2\times5=10\ \text{runs per arm}
 $$
 
-The ten-run count belongs to the two-level `c = 1,16` example. Warmup runs are separate. Requests inside one run do not become independent experiment repeats, following Ch. 8 Step 8. The p99 boundary has 99% of measured requests at or below it. Report p99 only when the measured sample contains results from at least 100 requests; ten runs alone neither establish nor forbid that sample count. The shipped summary provides first-audio median, p95 and p99. For a custom p90, apply `numpy.percentile(..., 90)` to non-null `per_request.audio_ttfp_s` values from successful streaming requests, separately for each arm and concurrency level.
+The ten-run count belongs to the two-level `c = 1,16` example. Warmup runs are separate. Requests inside one run do not become independent experiment repeats, following Ch. 8 Step 8. The p99 boundary has 99% of measured requests at or below it. Report p99 only when the measured sample contains results from at least 100 requests; ten runs alone neither establish nor forbid that sample count.
 
 ### Procedure and sources
 
-Resolve the configuration with `sgl-omni config resolve --config <config.yaml> --show config` (`docs/basic_usage/process_topology.md:52-53`). Readiness is defined in `docs/cookbook/qwen3_omni.md:202-204` and `sglang_omni/models/qwen3_omni/config.py:328-366`; its limited warm-up coverage is in `docs/basic_usage/omni.md:345-349`. The SeedTTS sweep and percentile guidance are in `benchmarks/README.md:249-288`. The benchmark client records request wall time (`benchmarks/metrics/performance.py:27-31`; `benchmarks/eval/benchmark_omni_seedtts.py:371,398,408`). The implementation counts requests, not runs, for the p99 warning (`benchmarks/eval/benchmark_omni_seedtts.py:504-505,552-561`; `benchmarks/benchmarker/conditions.py:19-20,95-100`). The shipped summary fields and raw first-audio values are in `benchmarks/metrics/performance.py:219-223,480`. `--generate-only` saves audio and generation-speed records, including success and failure counts; it does not transcribe audio or compute WER or speaker similarity (`benchmarks/README.md:215-220,659`). Keep those completion records, then run transcription, WER and reference-based voice-match checks separately where applicable.
+Resolve the configuration with `sgl-omni config resolve --config <config.yaml> --show config` (`docs/basic_usage/process_topology.md:52-53`). Readiness is defined in `docs/cookbook/qwen3_omni.md:202-204` and `sglang_omni/models/qwen3_omni/config.py:328-366`; its limited warm-up coverage is in `docs/basic_usage/omni.md:345-349`. The SeedTTS sweep and percentile guidance are in `benchmarks/README.md:249-288`. The benchmark client records request wall time (`benchmarks/metrics/performance.py:27-31`; `benchmarks/eval/benchmark_omni_seedtts.py:371,398,408`). The implementation counts requests, not runs, for the p99 warning (`benchmarks/eval/benchmark_omni_seedtts.py:504-505,552-561`; `benchmarks/benchmarker/conditions.py:19-20,95-100`).  `--generate-only` saves audio and generation-speed records, including success and failure counts; it does not transcribe audio or compute WER or speaker similarity (`benchmarks/README.md:215-220,659`). Keep those completion records, then run transcription, WER and reference-based voice-match checks separately where applicable.
 
 ### Next
 
@@ -284,7 +285,7 @@ The final step puts configuration, waiting, data and memory on one decision shee
 - The starting route requests text and audio from the default speech graph. BF16 is the initial checkpoint because it is the default, not because this chapter measured it as best.
 - GPU 0 holds the input encoders, thinker and code2wav; GPU 1 holds the talker. This TP1 starting hypothesis is motivated by Step 3's different H200/TP2 experiment and requires a local precision A/B with this layout fixed.
 - The talker cap has 24 requests of headroom after subtracting the example's eight requests. No second pair is added before a queue is measured.
-- Both evidence arms keep the same two-GPU TP1 hardware, request route, code2wav placement and isolated talker. Arm A uses the default BF16 checkpoint; arm B uses the native FP8 checkpoint, changing only checkpoint precision. At `c = 8`, compare first-audio median and custom p90, total time, failures, memory and listener metrics, and retain per-run raw results. Ch. 8 Step 8 supplies the output-quality checks: completion, word errors and voice match where applicable. Those checks sit outside the generate-only sweep. For an odd number of results, the median is the middle first-audio value; for an even number, it is the mean of the two middle values. Step 3 defined the p90 boundary, and Step 7 defined the custom reduction.
+- Both evidence arms keep the same two-GPU TP1 hardware, request route, code2wav placement and isolated talker. Arm A uses the default BF16 checkpoint; arm B uses the native FP8 checkpoint, changing only checkpoint precision. At `c = 8`, compare first-audio median and custom p90, total time, failures, memory and listener metrics, and retain per-run raw results. Ch. 8 Step 8 supplies the output-quality checks: completion, word errors and voice match where applicable. Those checks sit outside the generate-only sweep. For an odd number of results, the median is the middle first-audio value; for an even number, it is the mean of the two middle values. Step 3 defined the p90 boundary. The decision boundary below gives the custom reduction as an off-stage procedure.
 - The bottom map reviews Chapters 1–12: Chapters 1–3 cover configuration, routes and binding; 4–6 waiting rules, data and queues; 7–8 memory and measurement; 9–12 optimization and model strategies.
 
 ### Formula
@@ -309,7 +310,7 @@ This headroom sits below the configured cap. It is not measured spare throughput
 
 ### Decision boundary
 
-This is a constructed TP1 starting hypothesis from H200/TP2 evidence, not a benchmark winner. First resolve the configuration and run readiness. Then compare BF16 with native FP8 while holding the starting layout and Step 7's other controls fixed at target concurrency 8. With only `c = 8`, five repeats give five runs per arm. Keep separate first-audio, total-time and listener results, and run the output-quality checks outside the generate-only sweep. Change a choice only after the records identify a problem to solve, which may be memory or quality rather than waiting.
+This is a constructed TP1 starting hypothesis from H200/TP2 evidence, not a benchmark winner. First resolve the configuration and run readiness. Then compare BF16 with native FP8 while holding the starting layout and Step 7's other controls fixed at target concurrency 8. With only `c = 8`, five repeats give five runs per arm. Off the stage, the shipped summary provides first-audio median, p95 and p99. For the custom p90 named on this slide, apply `numpy.percentile(..., 90)` to non-null `per_request.audio_ttfp_s` values from successful streaming requests, separately for each arm at `c = 8` (`benchmarks/metrics/performance.py:219-223,480`). Keep separate first-audio, total-time and listener results, and run the output-quality checks outside the generate-only sweep. Change a choice only after the records identify a problem to solve, which may be memory or quality rather than waiting.
 
 ### Next
 
