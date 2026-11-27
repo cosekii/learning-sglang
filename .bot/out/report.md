@@ -1,3 +1,18 @@
+# lane k2 跟进复核 · ML Systems 08 Step 2 的 ML-17
+
+日期：2026-11-27。类型：修旧复核。范围只有本报告和 Step 2 审计结果；未改教程、其他 ML 章、Omni、Voxt、第 1 本受保护英文原文或 `.bot/memory/`。
+
+- 本轮开始时 HEAD 与 `origin/tutorials` 都是 `20e87b1`。既有 `cebc7bd` 已补 logical tensor `W` → `Shard(0)` placement → local shard，并连接第 3 步 all-gather 与第 6 步 `Replicate()`；`75bb176` 已把分片范围收窄为参数张量。本轮不重复改写教程，Step 4 的 FP32 `ReduceOp.AVG` 和其他相位保持不变。
+- **ML-17 的作者返工复核通过，仍待协调固定复审。** 本轮没有新关闭 review finding，也不自行提高协调总分。作者评分保持 R1–R5 **10/10**、机制 R6 **2/2**、非视觉原项 **20/20**、剩余内容洞 **0**。小学生复述：「八张 GPU 把一张权重表按行分成八份，每张只留一份，所以每卡保存的训练表从 64 GB 减到 8 GB；需要完整数值时，再把各份拼回来。」
+- `npm run build`：**60 页**通过。Step 2 readability、`deep-check 08`、`zh-check`、英中全章三宽度 mobile、中文 Step 2 字号门均通过。transcript 连续两次与 pinned 逐字一致：**1,884 词**，SHA-256 `9cbc88c326308bb17fa6fc6c7cffe0a6bffbddae8c348e15fe2e9d010e8faf36`。
+- 重跑 `.bot/out/ml08-step2-audit.mjs`：**40 个普通状态、32/32 个机制转变**，最低可见字体 **10.407 CSS px**，文字重叠和 SVG 出界均为 **0**。双语 deep 均确认展开，并包含 `Shard(0)` 与 `Replicate()`；KaTeX、残留公式和横向溢出检查通过。报告为 `.bot/out/ml08-step2-audit/report.json`。
+- 代表截图：`/Users/shuohuang/code/hmz-work/ls-k2-1127-004146/.bot/out/ml08-step2-audit/en-1440-s2-p4.png`。当前模型不能读取 PNG，工具返回 `Cannot read image`；本轮只报告 DOM、文本和几何结果，未声称看过图片或视觉通过，原 #4／#5 与协调视觉 verdict 留待复审。
+- 本 clone 的 `node_modules` 初始为指向协调人 checkout 的符号链接。已只删除本目录内的符号链接并执行本地 `npm install`，后续依赖、cache、dev server 和构建均在本 clone，未写协调人的 checkout。
+- 剩余边界不变：ML-17 等协调核销，其他 ML 开放 findings 不自动关闭，不开第 14 章。未跑全站回归、真实 FSDP2 训练、SGLang／CUDA、GPU benchmark、故障注入或 reduced-motion 动态切换。主人与协调人的最终视觉和产品验收另计。
+- 本地章节地址：`http://localhost:4469/learning-sglang/ml-sys/ch/08-fsdp2-training-backend/?step=2`。本轮 4469 dev server 和脚本启动的浏览器均在收尾关闭；查看前在本目录运行 `npx astro dev --background --port 4469`。
+
+---
+
 # lane k2 本轮报告 · ML Systems 08 Step 2 的 ML-17 收尾
 
 日期：2026-11-27。类型：修旧。范围只有 ML Systems 第 8 章第 2 步、生成 transcript、本章评分与进度记录、验证材料和本报告；未改其他 ML 章、Omni、Voxt、第 1 本受保护英文原文或 `.bot/memory/`。
