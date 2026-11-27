@@ -184,10 +184,12 @@ Step 4 replicates a serving process on one GPU. Weights can be aliased through C
 
 ### What the picture shows
 
-- Both panels show the same two replicas with identical symbolic boxes. W is one checkpoint copy; KV is one replica-private token pool.
-- The `weight_share=off` comparison has two W boxes and two KV pools. It is a counting baseline, not a claim that this is the only alternative deployment.
-- The `weight_share=on` panel follows the shipped MOSS same-GPU DP2 example. Replica 0 leads and replica 1 follows, so both alias one W through CUDA IPC.
-- Two orange KV pools remain, each labeled 30,000. CUDA graphs and request state also remain private, but are not drawn as additional budget boxes.
+- Both panels show the same two replicas with identical symbolic boxes. W means saved model weights from one checkpoint; KV is one replica-private token pool. The left `weight_share=off` panel stays as the two-W, two-KV counting baseline.
+- On the right, the first held phase assigns replica 0 as leader and replica 1 as follower. Dashed slots mean that neither has loaded W yet. The shipped MOSS config uses `max_total_tokens=30000`, not Step 3's `engine.kv_cache_bytes`; the two settings are mutually exclusive. The first `now` line compares 30,000 with 30 × 1,000-token prompts only to give the number a size. It does not promise 30 concurrent prompts.
+- The second phase fills the leader's slot with one blue W. The third draws the blue CUDA IPC arrow: handles let the follower open the leader's GPU storage. The fourth replaces the follower's dashed slot with `alias · follower`, meaning the same W without a second copy.
+- The fifth phase builds two separate orange KV pools, each labeled 30,000. It does not reveal the arithmetic yet. These pools are not aliased.
+- The sixth phase only reveals the counts and arithmetic: `1 W + 2 KV`, `2 W → 1 W` and the combined 60,000-token cap.
+- The blue swatch means weights and their CUDA IPC handoff, the orange swatch means private KV, and a dashed slot means no W has appeared there yet. CUDA graphs and request state also remain private, but are named only in the footnote rather than drawn as extra budget boxes.
 - W is symbolic and has no claimed GB value. The figure therefore shows one fewer checkpoint copy, not a fixed byte or percentage saving.
 
 ### Work through the numbers
@@ -215,11 +217,13 @@ $$T_{all}=NT=2\times30000=60000\ \mathrm{tokens}$$
 
 The combined 60,000-token cap is arithmetic across independent pools, not one shared pool that gives a single request 60,000 consecutive tokens.
 
-### What leader and follower share
+### Implementation details · not drawn
 
-The planner groups replicas of one logical Process that resolve to one physical GPU. The lowest replica index leads, the others follow, and TP processes are skipped.
+The planner groups replicas of one logical Process that resolve to one physical GPU. The lowest replica index leads, the others follow, and TP processes are skipped. These planning rules are not separate stage objects.
 
-The leader loads the checkpoint and publishes CUDA IPC handles for every parameter and buffer. A follower builds the same module tree with dummy weights, then aliases those parameters and buffers onto leader storage rather than copying them. KV caches, CUDA graphs and sampler state remain private. Tensors classified as replica-private are also excluded from aliasing.
+The leader publishes CUDA IPC handles for every parameter and buffer. The follower aliases those parameters and buffers onto leader storage by assignment, not by copying them. KV caches, CUDA graphs and sampler state remain private. Tensors classified as replica-private are also excluded from aliasing. The figure uses one symbolic W instead of drawing individual tensors.
+
+The follower builds the same module tree with dummy weights before attachment, and assignment releases that dummy storage. These operations are not separate objects or phases on the stage.
 
 Weight sharing requires exactly one SGLang engine stage in the process and an explicit positive `max_total_tokens`. A follower frees dummy weights before KV profiling, so deriving its pool cap from available memory would be unstable. The planner rejects a missing cap before the leader loads a full checkpoint.
 
@@ -227,13 +231,15 @@ Weight sharing requires exactly one SGLang engine stage in the process and an ex
 
 This step does not claim higher throughput or better scheduling; the documentation says weight sharing saves memory and does not itself improve scheduling. The leader must outlive its followers, and replicas should restart together. Architecture allowlists, private-tensor auditing, handle lifetime and graph-capture verification are outside the figure.
 
-- `docs/basic_usage/process_topology.md:234-276`: MOSS same-GPU DP2, the 30,000-token cap, `--weight-share on` and private follower state.
-- `sglang_omni/pipeline/weight_share.py:93-133`: same-GPU groups and leader/follower assignment.
-- `sglang_omni/pipeline/weight_share.py:182-230`: candidate-group collection and TP exclusion.
-- `sglang_omni/pipeline/weight_share.py:233-287`: exactly-one-engine and explicit-positive-token-cap validation.
-- `sglang_omni/utils/ipc_weights.py:1-35`: CUDA IPC aliases, private KV/graphs/sampler state and lifetime constraints.
+- <code>docs/basic_usage/<wbr>process_topology.md:234-276</code>: MOSS same-GPU DP2, the 30,000-token cap, `--weight-share on` and private follower state.
+- <code>sglang_omni/pipeline/<wbr>weight_share.py:93-133</code>: same-GPU groups and leader/follower assignment.
+- <code>sglang_omni/pipeline/<wbr>weight_share.py:182-230</code>: candidate-group collection and TP exclusion.
+- <code>sglang_omni/pipeline/<wbr>weight_share.py:233-287</code>: exactly-one-engine and explicit-positive-token-cap validation.
+- <code>sglang_omni/utils/<wbr>ipc_weights.py:1-35</code>: CUDA IPC aliases, private KV/graphs/sampler state and lifetime constraints.
+- <code>sglang_omni/utils/<wbr>ipc_weights.py:658-746</code>: the leader's per-tensor handle publication and atomic export.
+- <code>sglang_omni/utils/<wbr>ipc_weights.py:939-997,1079-1265</code>: follower attachment, assignment instead of copy and private-tensor handling.
 
-Line numbers refer to `origin/main@db7cbf39ccffde7f95b81c2dcc7da1b52a5c0bb6`.
+Line numbers refer to <code>origin/main@<wbr>db7cbf39ccffde7f95b81c2dcc7da1b52a5c0bb6</code>.
 
 ### Next
 

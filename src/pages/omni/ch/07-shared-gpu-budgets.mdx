@@ -19,7 +19,7 @@ Step 2 uses the paired unit-test cases in `test_placement.py`, not B200 measurem
 
 Step 3 compares three independent cases, each with its own two-GiB `engine.kv_cache_bytes` declaration. The stage plays the first claim, the empty-case cleanup check and the second claim before showing the outcomes. The stage factory must construct exactly one SGLang engine that consumes the declaration. Zero consumers leave it unclaimed and raise during cleanup; a second consumer raises instead of sizing two full pools from one declaration. The two-GiB value is illustrative.
 
-Step 4 compares two symbolic checkpoint copies with the shipped MOSS same-GPU DP2 weight-sharing example. With `weight_share=on`, the leader exports weights over CUDA IPC and one follower aliases them, while both replicas retain private KV pools, graphs and request state. Each engine declares `max_total_tokens=30000`, so the two private pools have a combined token cap of 60,000. The W boxes are symbolic and make no byte-saving claim.
+Step 4 keeps `weight_share=off` as a two-copy baseline and plays the shipped MOSS same-GPU DP2 example on the right. Replica 0 loads one symbolic W as leader and publishes CUDA IPC handles that let the follower open that GPU storage. Replica 1 then aliases the same W instead of copying it. Only after that attachment do two orange KV pools appear, one per replica. The shipped config declares `max_total_tokens=30000` instead of Step 3's `engine.kv_cache_bytes`; the two settings are mutually exclusive. A separate final phase counts one W and adds the two caps to 60,000 tokens. For scale only, 30,000 equals 30 × 1,000 tokens; this does not promise 30 concurrent prompts. Graphs and request state also stay private. The W boxes are symbolic and make no byte-saving claim.
 
 Step 5 constructs two eligible, single-GPU, non-TP processes on one physical GPU. `mps=auto` enables one pipeline-owned MPS lease for their physical UUID and verifies both named clients. TP processes are ineligible; multi-physical-GPU placements are rejected. A lease is an ownership record, not a memory allocation, and MPS does not change the earlier budget arithmetic.
 
@@ -38,7 +38,7 @@ Source revision for the chapter: `sglang-omni origin/main@db7cbf39ccffde7f95b81c
 
 第 3 步比较三种独立情况，每幅都有自己的 2 GiB `engine.kv_cache_bytes` 申报。舞台先播放第一次领取，再检查没有 engine 时的清理和第二次领取，最后显示结果。stage 工厂必须构造恰好一个 SGLang engine 来领取它。没有 engine 领取会在清理时报错；第二个 engine 领取也会报错，不能让一份申报变成两份完整 KV 池。2 GiB 是教学值。
 
-第 4 步把两份符号化 checkpoint 与 MOSS 同卡 DP2 权重共享例作对照。`weight_share=on` 时，leader 通过 CUDA IPC 发布权重，一个 follower 映射同一份存储；两个副本仍各有私有 KV 池、graph 和请求状态。每个 engine 申报 `max_total_tokens=30000`，两个私有池合计上限为 60000 token。W 方框只是符号，不声称节省多少字节。
+第 4 步左侧保留 `weight_share=off` 的两份权重对照，右侧播放 MOSS 同卡 DP2 示例。replica 0 作为 leader 加载一份符号化 W，发布 CUDA IPC handle，让 follower 能打开这份 GPU 存储。replica 1 随后指向同一个 W，不再复制。附着完成后才出现两个橙色 KV 池，每个副本一个。示例配置申报 `max_total_tokens=30000`，不用第 3 步的 `engine.kv_cache_bytes`，两种设置互斥。最后一相再数出一份 W，把两个池的上限加成 60000 token。只作大小比较，30000 等于 30 × 1000 token，不保证能同时放下 30 份 prompt。graph 和请求状态也保持私有。W 方框只是符号，不声称节省多少字节。
 
 第 5 步构造同一物理 GPU 上两个合格的单卡、非 TP 进程。`mps=auto` 为其物理 UUID 启用一份 pipeline 持有的 MPS 租约，并核对两个 client 名单。TP 进程不合格，跨多物理卡的放置会被拒绝。租约是所有权记录，不是显存分配；MPS 不改变前面的预算加法。
 

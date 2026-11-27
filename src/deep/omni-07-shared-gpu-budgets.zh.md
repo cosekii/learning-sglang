@@ -184,10 +184,12 @@ $$n=2\Rightarrow\text{second consumption error}$$
 
 ### 图上是什么
 
-- 两个面板都画同样的两个 replica 和同样大小的符号方框。W 表示一份 checkpoint 权重，KV 表示一个 replica 私有的 token 池。
-- 左侧 `weight_share=off` 作为对照，有两份 W 和两个 KV。它不是本例声称的唯一可选部署，只用于数清共享减少的对象。
-- 右侧 `weight_share=on` 使用 MOSS 同卡 DP2 示例：replica 0 是 leader，replica 1 是 follower。二者通过 CUDA IPC 映射同一 W，所以只画一份 W。
-- 右侧仍有两个橙色 KV，各写 30000。CUDA Graph 和请求状态也保持私有，但没有另画成新的预算方块。
+- 两个面板都画同样的两个 replica 和同样大小的符号方框。W 表示 checkpoint 里已保存的模型权重，KV 表示一个 replica 私有的 token 池。左侧 `weight_share=off` 始终保持两份 W、两个 KV，作为计数对照。
+- 右侧第一相指定 replica 0 为 leader、replica 1 为 follower。虚线槽表示两边都还没有加载 W。MOSS 示例配置用 `max_total_tokens=30000`，不用第 3 步的 `engine.kv_cache_bytes`，两种设置互斥。第一行 `now` 把 30000 与 30 份 1000-token prompt 作大小比较，不保证能同时放下 30 份 prompt。
+- 第二相在 leader 槽里放入一份蓝色 W。第三相画出蓝色 CUDA IPC 箭头：handle 让 follower 能打开 leader 的 GPU 存储。第四相把 follower 的虚线槽换成 `alias · follower`，表示同一个 W，不再复制。
+- 第五相只建立两个独立的橙色 KV 池，各写 30000，还不显示算式。两个 KV 池不做 alias。
+- 第六相只显示计数和算式：`1 W + 2 KV`、`2 W → 1 W` 和合计 60000 token 上限。
+- 蓝色色块表示权重及其 CUDA IPC 交接，橙色色块表示私有 KV，虚线槽表示这里还没有 W。CUDA Graph 和请求状态也保持私有，但只在脚注说明，没有另画成新的预算方块。
 - W 是符号，不对应某个声称的 GB 数。因此图只得出「少一份 checkpoint 副本」，不声称节省固定字节或百分比。
 
 ### 代入图上的数
@@ -215,11 +217,13 @@ $$T_{all}=NT=2\times30000=60000\ \mathrm{tokens}$$
 
 $T_{all}=60000$ 是两个独立池上限的算术和，不是一个可让单请求连续使用 60000 token 的共享池。
 
-### leader 与 follower 共享什么
+### 实现细节 · 未画出
 
-规划器只把同一 logical Process、同一物理 GPU 上的多个 replica 组成 sharing group。最低 replica index 成为 leader，其余成为 follower；TP process 被跳过。
+规划器只把同一 logical Process、同一物理 GPU 上的多个 replica 组成 sharing group。最低 replica index 成为 leader，其余成为 follower；TP process 被跳过。这些规划规则没有画成额外对象。
 
-leader 加载 checkpoint 并发布每个 parameter 和 buffer 的 CUDA IPC handle。follower 先构造 dummy module tree，再把这些 parameter 和 buffer 赋值为 leader 的存储，而不是复制一份。KV cache、CUDA Graph 和 sampler state 保持私有；按策略标记为 replica-private 的 tensor 也不能共享。
+leader 发布每个 parameter 和 buffer 的 CUDA IPC handle。follower 通过赋值把这些 parameter 和 buffer 指向 leader 的存储，而不是复制一份。KV cache、CUDA Graph 和 sampler state 保持私有；按策略标记为 replica-private 的 tensor 也不能共享。图中用一份符号化 W 代表权重，没有逐个画出 tensor。
+
+follower 在附着前构造带 dummy 权重的同类 module tree，赋值时释放这些 dummy 存储。这两个操作没有画成额外对象或相位。
 
 weight sharing 要求 process 中恰好一个 SGLang engine stage，并要求显式正整数 `max_total_tokens`。follower 在 KV profiling 前释放 dummy 权重，若再靠 profiler 推导 KV 上限，会把预算算得不稳定，所以启动前就拒绝缺少该上限的配置。
 
@@ -227,13 +231,15 @@ weight sharing 要求 process 中恰好一个 SGLang engine stage，并要求显
 
 本步不声称权重共享提高吞吐或改善调度；官方文档明确它节省显存，本身不改进调度。leader 必须比 follower 活得久，重启应成组进行。架构 allowlist、私有 tensor 审计、handle 生命周期和 graph capture 验证不在图中展开。
 
-- `docs/basic_usage/process_topology.md:234-276`：MOSS 同卡 DP2、30000 token、`--weight-share on` 和 leader/follower 的私有状态。
-- `sglang_omni/pipeline/weight_share.py:93-133`：同卡组、最低 index leader 和 follower 角色分配。
-- `sglang_omni/pipeline/weight_share.py:182-230`：candidate group 的收集与 TP 跳过。
-- `sglang_omni/pipeline/weight_share.py:233-287`：恰好一个 engine stage 和显式正 token 上限校验。
-- `sglang_omni/utils/ipc_weights.py:1-35`：CUDA IPC alias、私有 KV/graph/sampler 和生命周期约束。
+- <code>docs/basic_usage/<wbr>process_topology.md:234-276</code>：MOSS 同卡 DP2、30000 token、`--weight-share on` 和 leader/follower 的私有状态。
+- <code>sglang_omni/pipeline/<wbr>weight_share.py:93-133</code>：同卡组、最低 index leader 和 follower 角色分配。
+- <code>sglang_omni/pipeline/<wbr>weight_share.py:182-230</code>：candidate group 的收集与 TP 跳过。
+- <code>sglang_omni/pipeline/<wbr>weight_share.py:233-287</code>：恰好一个 engine stage 和显式正 token 上限校验。
+- <code>sglang_omni/utils/<wbr>ipc_weights.py:1-35</code>：CUDA IPC alias、私有 KV/graph/sampler 和生命周期约束。
+- <code>sglang_omni/utils/<wbr>ipc_weights.py:658-746</code>：leader 逐 tensor 发布 handle 并原子导出。
+- <code>sglang_omni/utils/<wbr>ipc_weights.py:939-997,1079-1265</code>：follower 附着、赋值代替复制和私有 tensor 处理。
 
-行号对应 `origin/main@db7cbf39ccffde7f95b81c2dcc7da1b52a5c0bb6`。
+行号对应 <code>origin/main@<wbr>db7cbf39ccffde7f95b81c2dcc7da1b52a5c0bb6</code>。
 
 ### 接下来
 
