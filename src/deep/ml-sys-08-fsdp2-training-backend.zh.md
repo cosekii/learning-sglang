@@ -44,7 +44,7 @@ $$C=8\times64\ \text{GB}=512\ \text{GB},\qquad f=64/80=0.8=80\%$$
 - 橙色逻辑张量 `W` 是一个完整参数。图中用 8 行编号的小例子让拆分过程看得见。
 - `Shard(0)` 是 DTensor 的 placement：把第 0 维，也就是本例的行，分给 8 个 DP rank。蓝格展示每个 rank 保存的本地分片。本例中，rank `r` 在第 `r` 张 GPU 上保存第 `r` 行。
 - `所有保存的表` 标出整体显存账，与上方一个参数的一行分片分开。橙柱和蓝柱用同一比例，250 px = 512 GB：8 份完整副本占 512 GB，8 个拥有分片合计占 64 GB。算式推出每个 rank 的训练状态为 `64 ÷ 8 = 8` GB，并拆成 `1 + 1 + 6` GB。
-- 底框只指向下一步的共同动作：需要完整数值时，把这些部分拼回去。第 3 步的 all-gather 拼出计算用的完整一层。第 6 步通过 `Replicate()` 重新分布，拼出导出的一个完整权重张量。
+- 底框只指向下一步的共同动作：需要完整数值时，把这些部分拼回去。第 4 步的 all-gather 拼出计算用的完整一层。第 7 步通过 `Replicate()` 重新分布，拼出导出的一个完整权重张量。
 - 手机用卡片展示同样的逻辑张量、placement、本地分片和显存算式。行和显存都等分只是教学简化，不保证真实张量都能整除。
 
 ### 公式与符号
@@ -75,11 +75,47 @@ placement 也解释了后面的两条路径。forward 为计算 all-gather 当�
 
 ### 接下来
 
-分片能减少长期保存的显存，但计算一层时仍需要这一层的完整参数。下一步临时聚齐这一层。第 6 步会回到同一个 DTensor，通过 `Replicate()` 导出一个完整张量。
+分片能减少长期保存的显存，但计算一层时仍需要这一层的完整参数。下一步先准备打包记录。第 4 步临时聚齐这一层，第 7 步回到同一个 DTensor，通过 `Replicate()` 导出一个完整张量。
 
 来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:16-23`；`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:43-47,62-82`；`THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7` 的 `slime/backends/fsdp_utils/actor.py:94-98,158-186` 和 `update_weight_utils.py:45-74`；`pytorch/pytorch@v2.8.0` 的 `torch/distributed/fsdp/_fully_shard/_fully_shard.py` 中 `fully_shard`，以及 `torch/distributed/tensor/placement_types.py` 中 `Shard` 和 `Replicate`。
 
-## 第 3 步 · 前向计算先借来完整一层
+## 第 3 步 · 按总 token 数打包
+
+**一句话。** 一次统一的 `train` 调用先把归一化分数复制到回答 token，再用构造的 4 token 上限形成两包，并记下总 token 边界。
+
+### 图上是什么
+
+- 定位行进入 `train`，由 `process_rollout_data` 选出这个 rank 的记录，再按 `response_lengths[i]` 重复归一化 `rewards[i]`，形成该记录的 `advantages`。`Returns` 重复同样的值，但不放进这张紧凑舞台。
+- A、B、C 的总长度是 2、2、4，回答长度是 1、1、2。归一化分数用 $+u$、$-u$、$+u$ 表示，其中 $u=0.9354$ 来自第 6 章第 6 步。这些是构造记录，不是第 6 章的前三条记录。
+- `FIRST FIT · 只决定包数` 把 A、B 放进一个容量桶，C 需要另一桶，所以包数为 2。本例 DP1 的 `MAX` 仍为 2。first fit 只提供包数，不决定最终成员。
+- `pack_sequences(num_packs=2)` 给出均衡成员 A+B 和 C。每包把局部 `flat_tokens` 拼接结果存为 `tokens`。`cu_seqlens` 从 0 开始，依次加上每条完整记录的总 token 数。
+- 第 1 包保存 `[pA,a1,pB,b1]`，`cu_seqlens=[0,2,4]`；第 2 包保存 `[pC,c1,c2,c3]`，`cu_seqlens=[0,4]`。`grad_accum=[2]` 把唯一的优化器边界放在第 2 包后。
+
+### 公式与符号
+
+$$a_{i,j}=r_i\quad(1\leq j\leq L_i),\qquad c_0=0,\qquad c_{k+1}=c_k+\ell_k$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $r_i$ | 第 $i$ 条记录的归一化分数 | 第 6 章第 6 步；这里用符号表示 |
+| $L_i$ | 第 $i$ 条记录的回答 token 数 | 构造的回答长度 1、1、2 |
+| $a_{i,j}$ | 第 $i$ 条记录第 $j$ 个回答位置的 advantage | `_train_core` 重复 $r_i$ |
+| $\ell_k$ | 本包第 $k$ 条记录的总 token 数 | `tokens.length`，包括 prompt 和回答 |
+| $c_k$ | `cu_seqlens` 中的总 token 边界 | `pack_sequences` 累加得到 |
+
+### 代入图上的数
+
+构造 cap 为 4。first fit 得到 `A+B=4`，C 需要另一桶，所以本地包数和 DP1 的 `MAX` 都是 2。均衡打包分配 A+B 和 C。第 1 包有 `2+2=4` 个 token，边界为 `[0,2,4]`；第 2 包有 4 个 token，边界为 `[0,4]`。包数累计得到 `grad_accum=[2]`。
+
+本例使用 DP1 和 CP1，不涉及 DP 包数变化、CP 容量倍乘或 CP padding。自带 Qwen3-4B FSDP 脚本使用 `--max-tokens-per-gpu 9216`；cap 4 只属于教学例子。这里的预算用于决定包数，不表示每个均衡分区都有硬上限断言。
+
+### 接下来
+
+第 4 步让第 1 包进入带梯度的 forward，保留已有的 7 GB、all-gather、临时完整层和释放过程。
+
+来源：`THUDM/slime@55e41ffe` 的 <code>slime/backends/<wbr>fsdp_utils/<wbr>actor.py</code>（`train`、`_train_core`、`_packed_data`）、<code>slime/utils/<wbr>data.py</code>（`process_rollout_data`、<code>get_minimum_<wbr>num_<wbr>micro_<wbr>batch_<wbr>size</code>）、<code>slime/backends/<wbr>fsdp_utils/<wbr>data_packing.py</code>（`pack_sequences`），以及 <code>scripts/<wbr>run-qwen3-4B-fsdp.sh</code>（`--use-dynamic-batch-size`、`--max-tokens-per-gpu 9216`）。
+
+## 第 4 步 · 前向计算先借来完整一层
 
 **一句话。** `zero_grad` 清掉旧梯度分片后，初始 forward 保留 7 GB，再临时聚齐完整一层。
 
@@ -115,7 +151,7 @@ $$M_0=W_i+O_i,\qquad M_{\text{forward}}\approx M_0+U,\qquad M_{\text{after}}=M_0
 
 来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:18`；`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:53-56,101-105`；`THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7` 的 `slime/backends/fsdp_utils/actor.py:522-535`。
 
-## 第 4 步 · 先乘 R/B，再平均梯度
+## 第 5 步 · 先乘 R/B，再平均梯度
 
 **一句话。** slime 先把每个 rank 的 loss 乘以 $R/B$，FP32 FSDP2 再平均预缩放梯度，并各留对应分片。
 
@@ -160,14 +196,14 @@ slime 设置 `reduce_dtype=torch.float32`，在 `loss.backward()` 的上一行�
 
 来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:19`；`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:47-58`；`THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7` 的 `slime/backends/fsdp_utils/actor.py:687-702,1000-1034`；`pytorch/pytorch@v2.8.0` 的 `_fsdp_collectives.py:605-641`。
 
-## 第 5 步 · 训练状态账只是峰值的一部分
+## 第 6 步 · 训练状态账只是峰值的一部分
 
 **一句话。** 完整训练状态账是 8 GB，最大聚合 unit、激活和其他临时结果还会把峰值推高。
 
 ### 图上是什么
 
-- 橙色底格是第 2 步的完整 8 GB 训练状态账。它包括梯度分片，是逻辑账和峰值状态账，不是 forward 的永久常驻下限。第 3 步中，`zero_grad` 清掉梯度分片后，forward 从 7 GB 开始。
-- 蓝格是第 3 步借来的最大完整层，来源没有给出它的大小。
+- 橙色底格是第 2 步的完整 8 GB 训练状态账。它包括梯度分片，是逻辑账和峰值状态账，不是 forward 的永久常驻下限。第 4 步中，`zero_grad` 清掉梯度分片后，forward 从 7 GB 开始。
+- 蓝格是第 4 步借来的最大完整层，来源没有给出它的大小。
 - 灰格包含训练中间结果和其他临时结果。激活是训练需要的中间值，随 batch 大小变化。来源没有给出总量，所以图中不填精确总显存。
 
 ### 公式与符号
@@ -194,7 +230,7 @@ $$M_{\text{state}}=W_i+G_i+O_i,\qquad M_{\text{peak}}>M_{\text{state}}$$
 
 来源：`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:31,93-107`；`Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:18-19`；`THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7` 的 `slime/backends/fsdp_utils/actor.py:522-535`。
 
-## 第 6 步 · 把完整权重张量装桶导出
+## 第 7 步 · 把完整权重张量装桶导出
 
 **一句话。** slime 把每个权重分片重新分布成完整张量，再将完整张量装桶；梯度和优化器状态留在训练端。
 

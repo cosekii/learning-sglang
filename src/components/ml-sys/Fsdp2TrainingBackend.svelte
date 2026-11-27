@@ -7,20 +7,60 @@
   import type { Deep } from '../../deep';
   import { HBM_GB } from '../../numbers';
   import { FSDP_EXAMPLE_PARAMS_B, FSDP_DP_SIZE, FSDP_FULL_WEIGHT_GB, FSDP_FULL_GRADIENT_GB, FSDP_FULL_OPTIMIZER_GB, FSDP_FULL_STATE_PER_GPU_GB, FSDP_FULL_CLUSTER_STATE_GB, FSDP_FULL_CARD_SHARE, FSDP_SHARD_WEIGHT_GB, FSDP_SHARD_GRADIENT_GB, FSDP_SHARD_OPTIMIZER_GB, FSDP_SHARD_STATE_PER_GPU_GB, FSDP_FORWARD_RESIDENT_GB, FSDP_SHARD_CLUSTER_STATE_GB } from '../../ml-sys/numbers';
+  import { FSDP_PACK_TOKEN_CAP, FSDP_PRODUCTION_MAX_TOKENS_PER_GPU, FSDP_PACK_DP_SIZE, FSDP_PACK_CP_SIZE, FSDP_PACK_RECORDS, FSDP_PACK_MEMBERS } from '../../ml-sys/numbers';
 
   type Tone = 'plain' | 'blue' | 'orange';
-  type MobileItem = { title: string; titleZh: string; body: string; bodyZh: string; tone: Tone };
+  type MobileItem = { title: string; titleZh: string; body: string; bodyZh: string; tone: Tone; phase?: number };
   type Step = {
     caption: string; captionZh: string; title: string; titleZh: string; subtitle: string; subtitleZh: string;
     foot: string; footZh: string; mobileTitle: string; mobileTitleZh: string; mobileSubtitle: string; mobileSubtitleZh: string;
     mobileFoot: string; mobileFootZh: string; mobileLegend: string; mobileLegendZh: string; mobile: MobileItem[]; formulas: { en: string; zh: string }[];
+    phases: number; desktopH: number; mobileH: number;
   };
+  type PackingRecord = (typeof FSDP_PACK_RECORDS)[number];
+  type Pack = {
+    memberIds: string[]; tokens: string[]; cuSeqlens: number[]; responseLengths: number[]; advantages: number[];
+  };
+  const firstFitCount = (records: PackingRecord[], cap: number) => {
+    const bins: number[] = [];
+    for (const record of records) {
+      const length = record.tokens.length;
+      const index = bins.findIndex((bin) => bin + length <= cap);
+      if (index < 0) bins.push(length);
+      else bins[index] += length;
+    }
+    return bins.length;
+  };
+  const buildPackingScene = () => {
+    const byId = new Map(FSDP_PACK_RECORDS.map((record) => [record.id, record]));
+    const packs = FSDP_PACK_MEMBERS.map((memberIds): Pack => {
+      const members = memberIds.map((id) => {
+        const record = byId.get(id);
+        if (!record) throw new Error(`Unknown packing record ${id}`);
+        return record;
+      });
+      const cuSeqlens = [0];
+      for (const record of members) cuSeqlens.push(cuSeqlens[cuSeqlens.length - 1] + record.tokens.length);
+      return {
+        memberIds: [...memberIds],
+        tokens: members.flatMap((record) => record.tokens),
+        cuSeqlens,
+        responseLengths: members.map((record) => record.responseLength),
+        advantages: members.flatMap((record) => Array.from({ length: record.responseLength }, () => record.reward)),
+      };
+    });
+    const count = firstFitCount([...FSDP_PACK_RECORDS], FSDP_PACK_TOKEN_CAP);
+    return { firstFitCount: count, dpMaxCount: count, packs, gradAccum: [packs.length] };
+  };
+  const packingScene = buildPackingScene();
+  const rewardText = (reward: number) => `${reward > 0 ? '+' : ''}${reward.toFixed(4)}`;
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
   const fill = (tone: Tone) => tone === 'blue' ? 'var(--accent-soft)' : tone === 'orange' ? 'var(--gen-soft)' : 'var(--bg)';
   const stroke = (tone: Tone) => tone === 'blue' ? 'var(--accent)' : tone === 'orange' ? 'var(--gen)' : 'var(--line)';
   const steps: Step[] = [{
+    phases: 3, desktopH: 500, mobileH: 560,
     caption: `This full training copy costs ${FSDP_FULL_STATE_PER_GPU_GB} GB per GPU. Eight replicated GPUs hold ${FSDP_FULL_CLUSTER_STATE_GB} GB.`,
     captionZh: `本例每张 GPU 保存完整训练表，共 ${FSDP_FULL_STATE_PER_GPU_GB} GB。8 张卡重复保存，总计 ${FSDP_FULL_CLUSTER_STATE_GB} GB。`,
     title: 'Full replication turns 64 GB into 512 GB', titleZh: '完整复制把 64 GB 变成 512 GB',
@@ -44,6 +84,7 @@
       { en: '16 bytes = 2 + 2 + 3 × 4 per value', zh: '每个数 16 字节 = 2 + 2 + 3 × 4' },
     ],
   }, {
+    phases: 5, desktopH: 500, mobileH: 620,
     caption: `FSDP2 shards every parameter tensor across the same 8 ranks. One rank per GPU leaves ${FSDP_SHARD_STATE_PER_GPU_GB} GB of saved training state each.`,
     captionZh: `FSDP2 把每个参数张量分给 8 个 rank。每卡一个 rank，训练状态共 ${FSDP_SHARD_STATE_PER_GPU_GB} GB。`,
     title: 'FSDP2 keeps one shard per rank', titleZh: 'FSDP2 让每个 rank 各留一个分片',
@@ -65,9 +106,37 @@
       { en: `Per rank: ${FSDP_FULL_STATE_PER_GPU_GB} GB ÷ ${FSDP_DP_SIZE} = ${FSDP_SHARD_STATE_PER_GPU_GB} GB`, zh: `每个 rank：${FSDP_FULL_STATE_PER_GPU_GB} GB ÷ ${FSDP_DP_SIZE} = ${FSDP_SHARD_STATE_PER_GPU_GB} GB` },
       { en: `${FSDP_DP_SIZE} copies: ${FSDP_FULL_CLUSTER_STATE_GB} GB → ${FSDP_DP_SIZE} shards: ${FSDP_SHARD_CLUSTER_STATE_GB} GB`, zh: `${FSDP_DP_SIZE} 份副本：${FSDP_FULL_CLUSTER_STATE_GB} GB → ${FSDP_DP_SIZE} 个分片：${FSDP_SHARD_CLUSTER_STATE_GB} GB` },
       { en: 'Later: gather parts into full values', zh: '后续：把部分拼成完整数值' },
-      { en: 'Step 3 all-gather · Step 6 Replicate()', zh: '第 3 步 all-gather · 第 6 步 Replicate()' },
+      { en: 'Step 4 all-gather · Step 7 Replicate()', zh: '第 4 步 all-gather · 第 7 步 Replicate()' },
     ],
   }, {
+    phases: 6, desktopH: 520, mobileH: 900,
+    caption: 'One train call repeats each normalized reward over its response tokens. Constructed cap 4 makes two packs, each with total-token boundaries.',
+    captionZh: '一次训练调用把归一化分数复制到回答 token。构造 cap 4 形成两包，并记下总 token 边界。',
+    title: 'Dynamic packs keep total-token boundaries', titleZh: '动态打包记下总 token 边界',
+    subtitle: 'pack = one micro-batch of whole records · cu_seqlens = their total-token boundaries',
+    subtitleZh: 'pack = 由完整记录组成的一个小批次 · cu_seqlens = 记录的总 token 边界',
+    foot: `Constructed DP${FSDP_PACK_DP_SIZE}/CP${FSDP_PACK_CP_SIZE} and cap ${FSDP_PACK_TOKEN_CAP}; shipped Qwen3-4B FSDP script: ${FSDP_PRODUCTION_MAX_TOKENS_PER_GPU.toLocaleString('en-US')} tokens per GPU.`,
+    footZh: `构造 DP${FSDP_PACK_DP_SIZE}/CP${FSDP_PACK_CP_SIZE} 与 cap ${FSDP_PACK_TOKEN_CAP}；自带 Qwen3-4B FSDP 脚本：每 GPU ${FSDP_PRODUCTION_MAX_TOKENS_PER_GPU.toLocaleString('en-US')} token。`,
+    mobileTitle: `Cap ${FSDP_PACK_TOKEN_CAP} makes two packs`, mobileTitleZh: `构造 cap ${FSDP_PACK_TOKEN_CAP} 形成两包`,
+    mobileSubtitle: 'cu_seqlens marks total-token boundaries', mobileSubtitleZh: 'cu_seqlens 记录总 token 边界',
+    mobileFoot: `Constructed cap ${FSDP_PACK_TOKEN_CAP}; production cap ${FSDP_PRODUCTION_MAX_TOKENS_PER_GPU.toLocaleString('en-US')}.`, mobileFootZh: `构造 cap ${FSDP_PACK_TOKEN_CAP}；生产配置 cap ${FSDP_PRODUCTION_MAX_TOKENS_PER_GPU.toLocaleString('en-US')}。`,
+    mobileLegend: 'Blue = data · orange = train', mobileLegendZh: '蓝 = 数据 · 橙 = 训练',
+    mobile: [
+      { title: 'TRAIN → ADVANTAGES', titleZh: 'TRAIN → ADVANTAGES', body: 'rewards repeat per response token', bodyZh: '归一化分数按回答 token 重复', tone: 'orange', phase: 0 },
+      { title: 'A, B, C · 2, 2, 4 TOKENS', titleZh: 'A、B、C · 2、2、4 个 token', body: 'response lengths 1, 1, 2', bodyZh: '回答长度 1、1、2', tone: 'blue', phase: 0 },
+      { title: 'FIRST FIT · COUNT ONLY', titleZh: 'FIRST FIT · 只决定包数', body: 'A+B fills 4 · C needs another', bodyZh: 'A+B 凑满 4 · C 需要另一包', tone: 'orange', phase: 1 },
+      { title: 'DP MAX · [2]', titleZh: 'DP MAX · [2]', body: 'one rank keeps the same count', bodyZh: '一个 rank，包数仍为 2', tone: 'orange', phase: 2 },
+      { title: 'PACK_SEQUENCES · A+B | C', titleZh: 'PACK_SEQUENCES · A+B | C', body: 'balanced membership, not first-fit bins', bodyZh: '均衡分组成员，不是 first-fit 分桶', tone: 'orange', phase: 3 },
+      { title: `PACK 1 · ${packingScene.packs[0].memberIds.join('+')}`, titleZh: `第 1 包 · ${packingScene.packs[0].memberIds.join('+')}`, body: `${packingScene.packs[0].tokens.join(' ')} · cu [${packingScene.packs[0].cuSeqlens.join(',')}]`, bodyZh: `${packingScene.packs[0].tokens.join(' ')} · cu [${packingScene.packs[0].cuSeqlens.join(',')}]`, tone: 'blue', phase: 4 },
+      { title: `PACK 2 · ${packingScene.packs[1].memberIds.join('+')}`, titleZh: `第 2 包 · ${packingScene.packs[1].memberIds.join('+')}`, body: `${packingScene.packs[1].tokens.join(' ')} · cu [${packingScene.packs[1].cuSeqlens.join(',')}]`, bodyZh: `${packingScene.packs[1].tokens.join(' ')} · cu [${packingScene.packs[1].cuSeqlens.join(',')}]`, tone: 'blue', phase: 5 },
+    ],
+    formulas: [
+      { en: `first fit = ${packingScene.firstFitCount} packs · DP MAX = ${packingScene.dpMaxCount}`, zh: `first fit = ${packingScene.firstFitCount} 包 · DP MAX = ${packingScene.dpMaxCount}` },
+      { en: `grad_accum = [${packingScene.gradAccum.join(',')}] → optimizer after pack ${packingScene.gradAccum[0]}`, zh: `grad_accum = [${packingScene.gradAccum.join(',')}] → 第 ${packingScene.gradAccum[0]} 包后才更新` },
+      { en: `u = ${rewardText(FSDP_PACK_RECORDS[0].reward)} from Ch. 6 Step 6`, zh: `u = ${rewardText(FSDP_PACK_RECORDS[0].reward)}，来自第 6 章第 6 步` },
+    ],
+  }, {
+    phases: 5, desktopH: 500, mobileH: 600,
     caption: `zero_grad clears the old gradient shard. Forward starts with ${FSDP_FORWARD_RESIDENT_GB} GB, then temporarily adds one full layer.`,
     captionZh: `zero_grad 清掉旧梯度分片。Forward 先保留 ${FSDP_FORWARD_RESIDENT_GB} GB，再临时加入完整一层。`,
     title: `Forward starts with ${FSDP_FORWARD_RESIDENT_GB} GB, then borrows a layer`, titleZh: `Forward 先保留 ${FSDP_FORWARD_RESIDENT_GB} GB，再借来一层`,
@@ -91,6 +160,7 @@
       { en: `Training bill: ${FSDP_FORWARD_RESIDENT_GB} + ${FSDP_SHARD_GRADIENT_GB} = ${FSDP_SHARD_STATE_PER_GPU_GB} GB`, zh: `训练账：${FSDP_FORWARD_RESIDENT_GB} + ${FSDP_SHARD_GRADIENT_GB} = ${FSDP_SHARD_STATE_PER_GPU_GB} GB` },
     ],
   }, {
+    phases: 5, desktopH: 500, mobileH: 600,
     caption: 'Each rank scales loss by R/B. FP32 FSDP2 then averages the gradients to finish the global-batch mean.',
     captionZh: '每个 rank 先把 loss 乘以 R/B。FP32 FSDP2 再取平均，得到全批梯度均值。',
     title: 'Scale by R/B, then average gradients', titleZh: '先乘 R/B，再平均梯度',
@@ -115,6 +185,7 @@
       { en: 'all layers\' gradients: 8 GB ÷ 8 = 1 GB per rank', zh: '所有层的梯度：8 GB ÷ 8 = 每个 rank 1 GB' },
     ],
   }, {
+    phases: 3, desktopH: 500, mobileH: 560,
     caption: `The full training-state bill is ${FSDP_SHARD_STATE_PER_GPU_GB} GB. Temporary layers and intermediates raise the peak above it.`,
     captionZh: `完整训练状态账是 ${FSDP_SHARD_STATE_PER_GPU_GB} GB。临时层和中间结果还会抬高峰值。`,
     title: `The ${FSDP_SHARD_STATE_PER_GPU_GB} GB training bill is below the peak`, titleZh: `${FSDP_SHARD_STATE_PER_GPU_GB} GB 训练账不是峰值`,
@@ -136,6 +207,7 @@
       { en: 'No exact total is claimed', zh: '不填精确总量' },
     ],
   }, {
+    phases: 4, desktopH: 520, mobileH: 600,
     caption: 'After training, export gathers full weight tensors into buckets. Gradients and optimizer state stay in training.',
     captionZh: '训练结束后，导出把完整权重张量装进桶。梯度和优化器状态留在训练端。',
     title: 'Rollout receives full weights bucket by bucket', titleZh: 'Rollout 按桶收到完整权重',
@@ -180,7 +252,7 @@
       motion.removeEventListener('change', updateMotion);
     };
   });
-  const PHASE_COUNTS = [3, 5, 5, 5, 3, 4];
+  const PHASE_COUNTS = steps.map((item) => item.phases);
   const PHASE_MS = 1000, REST_MS = 2800;
   let phase = $state(0);
   let lap = $state(0), lapMs = $state(0);
@@ -203,7 +275,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [560, 620, 600, 600, 560, 600][step] : [500, 500, 500, 500, 500, 520][step]);
+  const H = $derived(phone ? cur.mobileH : cur.desktopH);
 </script>
 
 <figure class="viz" class:dtensor-step={step === 1} data-animation-step={step} data-animation-phase={phase} data-animation-final-phase={PHASE_COUNTS[step] - 1}>
@@ -226,18 +298,18 @@
       {#if phone}
         {#each cur.mobile as item, i}
           {@const y = 80 + i * 91}
-          <g opacity={phase >= Math.min(i, PHASE_COUNTS[step] - 2) ? 1 : 0}>
+          <g opacity={phase >= (item.phase ?? Math.min(i, PHASE_COUNTS[step] - 2)) ? 1 : 0}>
             <rect x="25" y={y} width="250" height="70" rx="11" fill={fill(item.tone)} stroke={stroke(item.tone)} />
             <text x="150" y={y + 25} text-anchor="middle" class="small strong">{t(item.title, item.titleZh)}</text>
             <text x="150" y={y + 50} text-anchor="middle" class="small">{t(item.body, item.bodyZh)}</text>
-            {#if i < cur.mobile.length - 1 && step !== 4}
+            {#if i < cur.mobile.length - 1 && step !== 5}
               <line x1="150" y1={y + 70} x2="150" y2={y + 86} stroke={step >= 2 ? 'var(--line)' : stroke(item.tone)} stroke-width="2.5" marker-end={step >= 2 ? 'url(#fsdp-arrow-plain)' : item.tone === 'orange' ? 'url(#fsdp-arrow-orange)' : 'url(#fsdp-arrow-blue)'} />
             {/if}
           </g>
         {/each}
         <g opacity={phase >= PHASE_COUNTS[step] - 1 ? 1 : 0}>
           {#each cur.formulas as line, i}
-            <text x="150" y={80 + cur.mobile.length * 91 + 12 + i * 27} text-anchor="middle" class={i === 0 ? 'result' : 'small'} style={step === 3 && i === 3 ? 'font-size: 11px' : undefined}>{t(line.en, line.zh)}</text>
+            <text x="150" y={80 + cur.mobile.length * 91 + 12 + i * 27} text-anchor="middle" class={i === 0 ? 'result' : 'small'} style={step === 4 && i === 3 ? 'font-size: 11px' : undefined}>{t(line.en, line.zh)}</text>
           {/each}
           <text x="150" y={80 + cur.mobile.length * 91 + 12 + cur.formulas.length * 27} text-anchor="middle" class="small">{t(cur.mobileLegend, cur.mobileLegendZh)}</text>
         </g>
@@ -307,9 +379,47 @@
         <g opacity={phase >= 4 ? 1 : 0}>
           <rect x="30" y="425" width="660" height="52" rx="10" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />
           <text x="360" y="446" text-anchor="middle" class="small strong">{t('Later steps gather the parts back when full values are needed.', '后续步骤需要完整数值时，会把这些部分拼回去。')}</text>
-          <text x="360" y="467" text-anchor="middle" class="small strong">{t('Step 3 all-gather → full layer · Step 6 Replicate() → full tensor', '第 3 步 all-gather → 完整一层 · 第 6 步 Replicate() → 完整张量')}</text>
+          <text x="360" y="467" text-anchor="middle" class="small strong">{t('Step 4 all-gather → full layer · Step 7 Replicate() → full tensor', '第 4 步 all-gather → 完整一层 · 第 7 步 Replicate() → 完整张量')}</text>
         </g>
       {:else if step === 2}
+        <text x="36" y="75" class="small">{t("train = one awaited call · process_rollout_data selects this rank's records", 'train = 一次等待完成的调用 · process_rollout_data 选出这个 rank 的记录')}</text>
+        <text x="36" y="96" class="small">{t('normalized rewards repeat by response_lengths → advantages', '归一化 rewards 按 response_lengths 重复 → advantages')}</text>
+        {#each FSDP_PACK_RECORDS as record, i}
+          <g>
+            <rect x={25 + i * 235} y="110" width="210" height="78" rx="11" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x={130 + i * 235} y="132" text-anchor="middle" class="small strong">{record.id} · {record.tokens.length} TOKENS</text>
+            <text x={130 + i * 235} y="154" text-anchor="middle" class="small">{record.tokens.join(' ')} · {t('response', '回答')} {record.responseLength}</text>
+            <text x={130 + i * 235} y="176" text-anchor="middle" class="small">advantage [{Array.from({ length: record.responseLength }, () => rewardText(record.reward)).join(', ')}]</text>
+          </g>
+        {/each}
+        <g opacity={phase >= 1 ? 1 : 0}>
+          <rect x="30" y="205" width="315" height="75" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="187" y="228" text-anchor="middle" class="small strong">{t('FIRST FIT · COUNT ONLY', 'FIRST FIT · 只决定包数')}</text>
+          <text x="187" y="250" text-anchor="middle" class="small">A+B = 4 · C {t('needs another bin', '需要另一桶')}</text>
+          <text x="187" y="270" text-anchor="middle" class="result">count = {packingScene.firstFitCount}</text>
+        </g>
+        <g opacity={phase >= 2 ? 1 : 0}>
+          <rect x="375" y="205" width="315" height="75" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="532" y="228" text-anchor="middle" class="small strong">DP MAX</text>
+          <text x="532" y="250" text-anchor="middle" class="small">{t('one rank keeps the same count', '一个 rank，包数不变')}</text>
+          <text x="532" y="270" text-anchor="middle" class="result">MAX([{packingScene.firstFitCount}]) = [{packingScene.dpMaxCount}]</text>
+        </g>
+        <g opacity={phase >= 3 ? 1 : 0}>
+          <rect x="30" y="298" width="660" height="62" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" />
+          <text x="360" y="323" text-anchor="middle" class="small strong">pack_sequences(num_packs={packingScene.dpMaxCount})</text>
+          <text x="360" y="348" text-anchor="middle" class="small">{t('balanced members: A+B | C · first fit did not choose them', '均衡成员：A+B | C · 不是 first fit 决定的成员')}</text>
+        </g>
+        {#each packingScene.packs as pack, i}
+          <g opacity={phase >= 4 + i ? 1 : 0}>
+            <rect x={30 + i * 350} y="380" width={i === 0 ? 320 : 310} height="96" rx="11" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x={190 + i * 350} y="403" text-anchor="middle" class="small strong">PACK {i + 1} · {pack.memberIds.join('+')}</text>
+            <text x={190 + i * 350} y="425" text-anchor="middle" class="small">flat_tokens → tokens</text>
+            <text x={190 + i * 350} y="447" text-anchor="middle" class="small">[{pack.tokens.join(', ')}]</text>
+            <text x={190 + i * 350} y="469" text-anchor="middle" class="result">cu_seqlens = [{pack.cuSeqlens.join(', ')}]</text>
+          </g>
+        {/each}
+        <text x="360" y="493" text-anchor="middle" class="result" opacity={phase >= 5 ? 1 : 0}>grad_accum = [{packingScene.gradAccum.join(', ')}] → {t('one optimizer step after pack 2', '第 2 包后只有一次优化器更新')}</text>
+      {:else if step === 3}
         {#each [
           { x: 25, title: 'WEIGHTS + OPT', titleZh: '权重 + 优化器', result: `${FSDP_FORWARD_RESIDENT_GB} GB`, resultZh: `${FSDP_FORWARD_RESIDENT_GB} GB`, body: 'after zero_grad', bodyZh: 'zero_grad 之后', tone: 'orange' },
           { x: 205, title: 'ALL-GATHER', titleZh: 'ALL-GATHER', result: 'one layer', resultZh: '一层', body: 'from every rank', bodyZh: '来自每个 rank', tone: 'plain' },
@@ -333,7 +443,7 @@
           <text x="360" y="409" text-anchor="middle" class="small">{t('Backward adds the', 'Backward 加入')} {FSDP_SHARD_GRADIENT_GB} GB {t('gradient shard', '梯度分片')}：{FSDP_FORWARD_RESIDENT_GB} + {FSDP_SHARD_GRADIENT_GB} = {FSDP_SHARD_STATE_PER_GPU_GB} GB</text>
           <text x="360" y="449" text-anchor="middle" class="small">{t('Orange = weights + optimizer · blue = temporary full values', '橙 = 权重 + 优化器 · 蓝 = 临时完整数值')}</text>
         </g>
-      {:else if step === 3}
+      {:else if step === 4}
         {#each [
           { x: 40, title: 'LAYER GRADIENT', titleZh: '本层梯度', result: 'temporary', resultZh: '临时', body: 'after forward', bodyZh: '前向之后算出', tone: 'blue' },
           { x: 275, title: 'REDUCE-SCATTER', titleZh: 'REDUCE-SCATTER', result: 'AVG + split', resultZh: '平均 + 分片', body: 'FP32 default', bodyZh: 'FP32 默认', tone: 'plain' },
@@ -361,7 +471,7 @@
         </g>
         <text x="217" y="406" text-anchor="middle" class="small" opacity={phase >= 4 ? 1 : 0}>{t('all layers\' gradients: 8 GB ÷ 8 = 1 GB per rank', '所有层的梯度：8 GB ÷ 8 = 每个 rank 1 GB')}</text>
         <text x="360" y="455" text-anchor="middle" class="small" opacity={phase >= 4 ? 1 : 0}>{t('Orange = owned shard · blue = temporary layer gradient', '橙 = 拥有分片 · 蓝 = 临时的本层梯度')}</text>
-      {:else if step === 4}
+      {:else if step === 5}
         <g opacity={phase >= 2 ? 1 : 0}>
           <rect x="70" y="88" width="300" height="79" rx="10" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />
           <text x="220" y="119" text-anchor="middle" class="result">{t('training intermediates', '训练中间结果')}</text>
@@ -384,7 +494,7 @@
           <text x="360" y="411" text-anchor="middle" class="result">{t('PEAK', '峰值')} &gt; {FSDP_SHARD_STATE_PER_GPU_GB} GB · {t('exact total unknown', '精确总量未知')}</text>
           <text x="360" y="458" text-anchor="middle" class="small">{t('Orange = training-state bill · blue = borrowed layer · grey = intermediates + other', '橙 = 训练状态账 · 蓝 = 临时完整层 · 灰 = 中间结果和其他临时显存')}</text>
         </g>
-      {:else if step === 5}
+      {:else if step === 6}
         {#each [
           { x: 25, title: 'WEIGHT SHARDS', titleZh: '权重分片', result: 'weights only', resultZh: '仅权重', body: 'grad + opt stay', bodyZh: '梯度和优化器留下', tone: 'orange' },
           { x: 205, title: 'REPLICATE()', titleZh: 'REPLICATE()', result: 'full tensor', resultZh: '完整张量', body: 'one parameter', bodyZh: '一个参数', tone: 'plain' },

@@ -44,7 +44,7 @@ Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:16`; `Awesome-ML-SYS
 - The orange logical tensor `W` is one complete parameter. Its eight numbered rows are a toy shape used to make the split visible.
 - `Shard(0)` is the DTensor placement: it splits dimension 0, the rows in this example, across the eight DP ranks. The blue cards show each rank's local shard. In this toy example, rank `r` keeps row `r` on GPU `r`.
 - `ALL SAVED TABLES` marks the aggregate memory account, separate from the one-row parameter shard above it. The orange and blue bars use one scale, 250 px = 512 GB: eight full copies hold 512 GB, while eight owned shards hold 64 GB. The formulas derive `64 ÷ 8 = 8` GB of saved training state per rank and its `1 + 1 + 6` GB breakdown.
-- The bottom box gives one forward pointer: later steps gather the parts back when they need full values. Step 3's all-gather reconstructs a full layer for computation. Step 6's `Replicate()` redistribution reconstructs one full weight tensor for export.
+- The bottom box gives one forward pointer: later steps gather the parts back when they need full values. Step 4's all-gather reconstructs a full layer for computation. Step 7's `Replicate()` redistribution reconstructs one full weight tensor for export.
 - Mobile presents the same logical tensor, placement, local shards and memory arithmetic as cards. Equal rows and equal memory shards are teaching simplifications, not promises that real tensors divide evenly.
 
 ### Formula and symbols
@@ -75,11 +75,47 @@ The placement also explains the two later paths. Forward all-gathers the current
 
 ### Next
 
-Keeping shards saves persistent memory, but a layer still needs its full parameter values for computation. The next step gathers one layer temporarily. Step 6 revisits the same DTensor when it exports one full tensor through `Replicate()`.
+Keeping shards saves persistent memory, but a layer still needs its full parameter values for computation. The next step prepares packed records. Step 4 gathers one layer temporarily, and Step 7 revisits the same DTensor when it exports one full tensor through `Replicate()`.
 
 Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:16-23`; `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:43-47,62-82`; `THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7`, `slime/backends/fsdp_utils/actor.py:94-98,158-186` and `update_weight_utils.py:45-74`; `pytorch/pytorch@v2.8.0`, `torch/distributed/fsdp/_fully_shard/_fully_shard.py`, `fully_shard`, and `torch/distributed/tensor/placement_types.py`, `Shard` and `Replicate`.
 
-## Step 3 · Borrow a full layer for forward computation
+## Step 3 · Pack records by total tokens
+
+**One sentence.** One unified `train` call repeats normalized rewards over response tokens, then uses a constructed token cap of 4 to form two packs with explicit total-token boundaries.
+
+### On the stage
+
+- The locator enters `train`, calls `process_rollout_data` for this rank's records, and repeats each normalized `rewards[i]` by `response_lengths[i]` to form that record's `advantages`. `Returns` repeats the same values but stays off this compact stage.
+- Records A, B and C have total lengths 2, 2, 4 and response lengths 1, 1, 2. Their symbolic normalized rewards are $+u$, $-u$ and $+u$, where $u=0.9354$ comes from Ch. 6 Step 6. These are constructed records, not Chapter 6's first three records.
+- `FIRST FIT · COUNT ONLY` places A and B in one capacity bin and C in another, yielding count 2. DP `MAX` leaves that count unchanged in this DP1 example. First fit supplies the count, not the final membership.
+- `pack_sequences(num_packs=2)` supplies the balanced membership A+B and C. Each pack stores its local `flat_tokens` concatenation under the key `tokens`. `cu_seqlens` starts at 0 and adds each whole record's total tokens.
+- Pack 1 stores `[pA,a1,pB,b1]` with `cu_seqlens=[0,2,4]`; Pack 2 stores `[pC,c1,c2,c3]` with `cu_seqlens=[0,4]`. `grad_accum=[2]` puts the sole optimizer boundary after Pack 2.
+
+### Formula and symbols
+
+$$a_{i,j}=r_i\quad(1\leq j\leq L_i),\qquad c_0=0,\qquad c_{k+1}=c_k+\ell_k$$
+
+| Symbol | Meaning | Source |
+|---|---|---|
+| $r_i$ | Normalized reward for record $i$ | Ch. 6 Step 6; symbolic here |
+| $L_i$ | Response-token count for record $i$ | Constructed response lengths 1, 1, 2 |
+| $a_{i,j}$ | Advantage at response position $j$ of record $i$ | `_train_core` repeats $r_i$ |
+| $\ell_k$ | Total token count of record $k$ in this pack | `tokens.length`, including prompt and response |
+| $c_k$ | Total-token boundary in `cu_seqlens` | Cumulative sum in `pack_sequences` |
+
+### The numbers on the stage
+
+The constructed cap is 4. First fit gives `A+B=4`, then C needs another bin, so the local count and DP1 `MAX` are both 2. Balanced packing assigns A+B and C. Thus Pack 1 has `2+2=4` tokens and boundaries `[0,2,4]`; Pack 2 has 4 tokens and `[0,4]`. Accumulating the pack counts gives `grad_accum=[2]`.
+
+The example uses DP1 and CP1, so it needs no DP count change, CP capacity multiplier or CP padding. The shipped Qwen3-4B FSDP script uses `--max-tokens-per-gpu 9216`; cap 4 belongs only to this teaching example. The budget chooses the count here. It is not a claim that every balanced partition has a hard-cap assertion.
+
+### Next
+
+Step 4 follows Pack 1 into the grad-enabled forward. It preserves the existing 7 GB, all-gather, temporary layer and release account.
+
+Sources: `THUDM/slime@55e41ffe`, <code>slime/backends/<wbr>fsdp_utils/<wbr>actor.py</code> (`train`, `_train_core`, `_packed_data`), <code>slime/utils/<wbr>data.py</code> (`process_rollout_data`, <code>get_minimum_<wbr>num_<wbr>micro_<wbr>batch_<wbr>size</code>), <code>slime/backends/<wbr>fsdp_utils/<wbr>data_packing.py</code> (`pack_sequences`), and <code>scripts/<wbr>run-qwen3-4B-fsdp.sh</code> (`--use-dynamic-batch-size`, `--max-tokens-per-gpu 9216`).
+
+## Step 4 · Borrow a full layer for forward computation
 
 **One sentence.** After `zero_grad` clears the old gradient shard, forward starts with 7 GB and temporarily gathers one full layer.
 
@@ -115,7 +151,7 @@ Backward also needs parameter values, but its new output is a gradient. The next
 
 Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:18`; `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:53-56,101-105`; `THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7`, `slime/backends/fsdp_utils/actor.py:522-535`.
 
-## Step 4 · Pre-scale by R/B, then average gradients
+## Step 5 · Pre-scale by R/B, then average gradients
 
 **One sentence.** Slime scales each rank's loss by $R/B$, then FP32 FSDP2 averages the pre-scaled gradients and keeps matching shards.
 
@@ -160,14 +196,14 @@ The training-state bill is smaller, but full units and other temporary results s
 
 Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:19`; `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:47-58`; `THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7`, `slime/backends/fsdp_utils/actor.py:687-702,1000-1034`; `pytorch/pytorch@v2.8.0`, `_fsdp_collectives.py:605-641`.
 
-## Step 5 · The training-state bill is only one part of peak memory
+## Step 6 · The training-state bill is only one part of peak memory
 
 **One sentence.** The complete training-state bill is 8 GB, and the largest gathered unit, activations and other temporary results raise the peak above it.
 
 ### On the stage
 
-- The orange bottom band is the complete 8 GB training-state bill from Step 2. It includes the gradient shard, so it is a logical and peak-state account, not a permanent forward residency floor. Step 3 starts forward with 7 GB after `zero_grad` clears that shard.
-- The blue band is the largest borrowed full layer from Step 3. Its size is not supplied.
+- The orange bottom band is the complete 8 GB training-state bill from Step 2. It includes the gradient shard, so it is a logical and peak-state account, not a permanent forward residency floor. Step 4 starts forward with 7 GB after `zero_grad` clears that shard.
+- The blue band is the largest borrowed full layer from Step 4. Its size is not supplied.
 - The grey band contains training intermediates and other temporary results. Activations are intermediate values needed for training and change with batch size. No exact total is drawn because the source does not provide one.
 
 ### Formula and symbols
@@ -194,7 +230,7 @@ After training, rollout needs complete new parameter values, not gradients or op
 
 Sources: `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:31,93-107`; `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:18-19`; `THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7`, `slime/backends/fsdp_utils/actor.py:522-535`.
 
-## Step 6 · Export full weight tensors in buckets
+## Step 7 · Export full weight tensors in buckets
 
 **One sentence.** Slime redistributes each sharded weight tensor to a full tensor, groups full tensors into buckets and leaves gradients and optimizer state in training.
 

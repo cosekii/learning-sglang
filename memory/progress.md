@@ -4,6 +4,8 @@
 
 ## 本轮记录
 
+- 修旧 Learning ML Systems 第 8 章 Step 3 的 ML-48 第一段：在 forward 前新增统一 `train` 与动态 packing，分清 first-fit 包数和均衡成员，展示 `flat_tokens → tokens` 与 `cu_seqlens`。构造 cap 4 的例子和生产 cap 9,216 分开。Step 3 作者参考值为 R1–R5 **10/10**、机制 R6 **2/2**、非视觉原项 **20/20**、0 新内容洞，独立 `explore` 复审 **PASS**。`build`、目标静态门、英中三宽度 mobile 和 **48 状态／40 转变／8 deep** 审计通过，最低 **10.390625 CSS px**。ML-48 尚未完成，待后续 Step 4–6 与 Ch.6 Step 7。
+
 - 修旧 Learning ML Systems 第 6 章 Step 7 的 ML-60（direction 指定最小单元）：舞台与 caption 保持 `tokens · lengths · rewards`，双语 deep 把 `raw_reward` 等额外字段移入显式「图外字段 · 未画出」，并准确保留首份样本 metadata 含 `raw_reward` 时才替换后处理原始分列表的条件。双语 MDX 出处同步；符号表长标识补断行机会，清掉本步 360／390 px deep 横溢。组件无需改动，ML 13 Step 8 的 `6fcb7d0` 未回改，未重开 ML 07，未开第 14 章。教程修复待协调固定复审，不自行销项。
 - Step 7 作者参考值为 R1–R5 **10/10**、机制 R6 **2/2**、原十个非视觉项 **20/20**、0 新内容洞；独立 `explore` 首轮 FAIL 后修正首份样本条件，复审 **PASS**。`build`（60 页）、Step 7 `readability`、`deep-check 06`、`zh-check`、英中 Step 7 三宽度 `mobile`、`git diff --check` 全过；两次 transcript 均为 **1,551 词**、SHA-256 `f203326b…d13cf7`。定向审计 **24 状态、18/18 个机制转变、8 个 deep 状态**，普通舞台最低 **11.760416666666666 CSS px**，重叠、出界、deep 横溢和 `failures` 为 0。固定协调 **80/80、16/16、191/192** 基线不改写；共享 ML-21／22、视觉与整章 verdict 待协调，当前模型不能读 PNG。本轮类型：**修旧**。
 

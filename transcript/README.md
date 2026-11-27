@@ -49,7 +49,7 @@ Read it to check wording and numbers across chapters without opening the compone
 | ml-sys | 05 | [A distributed serving experiment](ml-sys/05-distributed-serving.md) | 7 |
 | ml-sys | 06 | [One RL round in slime](ml-sys/06-slime-rollout-loop.md) | 8 |
 | ml-sys | 07 | [The weight-update path](ml-sys/07-weight-updates.md) | 8 |
-| ml-sys | 08 | [The FSDP2 training backend](ml-sys/08-fsdp2-training-backend.md) | 6 |
+| ml-sys | 08 | [The FSDP2 training backend](ml-sys/08-fsdp2-training-backend.md) | 7 |
 | ml-sys | 09 | [FP8 rollout and training](ml-sys/09-fp8-rollout-training.md) | 8 |
 | ml-sys | 10 | [INT4 QAT and rollout](ml-sys/10-int4-qat-rollout.md) | 9 |
 | ml-sys | 12 | [Speculative decoding in RL](ml-sys/12-rl-speculative-decoding.md) | 8 |

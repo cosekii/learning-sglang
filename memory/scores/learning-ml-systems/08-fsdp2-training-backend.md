@@ -1,5 +1,13 @@
 # 第 8 章评分卡 · FSDP2 training backend
 
+## 2026-11-27 ML-48 · Step 3 统一 train 与动态 packing
+
+- **ML-48 的第一段作者修复完成，待协调固定复审，不自行销项。** 新增 Step 3 在 forward 前展示统一 `train`、`process_rollout_data`、按 `response_lengths` 重复归一化 rewards、first-fit 包数、DP `MAX`、均衡 `pack_sequences`、`flat_tokens → tokens` 和总 token 边界的 `cu_seqlens`。构造 DP1/CP1、cap 4 的例子得到 A+B 与 C、`[0,2,4]`、`[0,4]` 和 `grad_accum=[2]`；生产 cap 9,216 单独标注。
+- Step 3 作者参考值：R1–R5 **10/10**、机制 R6 **2/2**、原十个非视觉项 **20/20**、新内容洞 **0**。R1 复述：「训练把每条记录的分数复制给它的回答 token，再按总 token 数分成两包，并用边界数记住每条记录的位置。」独立 `explore` 首轮发现手机文字出界，返工后复审 **PASS**；这不是协调 verdict。
+- 最终 `build`（60 页）、Step 3 `readability`、`deep-check 08`、`zh-check`、英中 Step 3 三宽度 `mobile` 和 `git diff --check` 全过。transcript **2,228 词**，SHA-256 `9dd1068015b42a2b28b24e41a86c20250c4b9ace2617dd5b3938c5fb4a7f9542`。
+- `.bot/out/ml48-step3-audit.mjs` 覆盖英中桌面与手机 × direct／前步入口，共 **48 状态、40/40 个机制转变**，另有 **8 个双语 deep 状态**。普通舞台最低 **10.390625 CSS px**，重叠、SVG 或卡片出界、页面或 deep 横溢和 `failures` 均为 **0**。证据：`.bot/out/ml48-step3-audit/report.json`。
+- 桌面 deep 打开后的舞台字号仍属共享 ML-21，手机焦点属 ML-22，本单元未改。当前模型不能读 PNG，视觉与整章 verdict 留待协调。未跑全站回归、真实 FSDP2 训练、GPU benchmark 或 reduced-motion 动态切换。
+
 ## 2026-11-27 ML-17 · Step 2 DTensor 舞台返工
 
 - 教程提交 `cebc7bd`。只改第 2 步及其双语深入讲解、出处说明和生成 transcript；第 4 步 FP32 AVG 与其他步未改。固定 `f358bbf` 的协调 GO 仍是既有基线，本项作者返工待协调核销，不自行改成协调关闭。

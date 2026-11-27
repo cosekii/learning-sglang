@@ -266,6 +266,20 @@ export const FSDP_SHARD_RATIO = FSDP_FULL_STATE_PER_GPU_GB / FSDP_SHARD_STATE_PE
 export const FSDP_UPDATE_BUFFER_BYTES = 536_870_912;
 export const FSDP_UPDATE_BUFFER_MIB = FSDP_UPDATE_BUFFER_BYTES / 1024 / 1024;
 
+// Constructed DP1/CP1 packing example for the pinned FSDP2 train path.
+// The shipped script uses 9,216 tokens per GPU; cap 4 belongs only to this example.
+export const FSDP_PACK_TOKEN_CAP = 4;
+export const FSDP_PRODUCTION_MAX_TOKENS_PER_GPU = 9216;
+export const FSDP_PACK_DP_SIZE = 1;
+export const FSDP_PACK_CP_SIZE = 1;
+export const FSDP_PACK_RECORDS = [
+  { id: 'A', tokens: ['pA', 'a1'], responseLength: 1, reward: SLIME_EXAMPLE_NORMALIZED_REWARDS[0] },
+  { id: 'B', tokens: ['pB', 'b1'], responseLength: 1, reward: SLIME_EXAMPLE_NORMALIZED_REWARDS[4] },
+  { id: 'C', tokens: ['pC', 'c1', 'c2', 'c3'], responseLength: 2, reward: SLIME_EXAMPLE_NORMALIZED_REWARDS[0] },
+];
+// Balanced membership supplied by pack_sequences for this input; first fit only supplies the count.
+export const FSDP_PACK_MEMBERS = [['A', 'B'], ['C']];
+
 // FP8 rollout and training. Source measurements keep their original configurations;
 // the 4B-value byte and scale examples are constructed, not RL measurements.
 export const FP8_BYTES = 1;
