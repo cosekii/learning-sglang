@@ -611,3 +611,11 @@
 - 采集身份：每张在 `data-animation-step=1` 且 `data-animation-phase` 等于目标相位后等 450 ms（focus 过渡 240 ms 已稳定）截图，打印回读相位号全部一致；zh 经 `localStorage.lang=zh`。
 - 应看点：p0 红框在仓库卡；p1 只新增 SHA-256 ✓ 且红框在这两行；p2 只新增 git blob ✓ 且红框在这三行；p3 只变 `all checks pass`／`校验全部通过` 且红框在这一行；任何相位的红框描边不压邻近文字，手机三宽度无裁切或重叠。
 - 状态：机制 R6 保持协调 `c3a7773` 的 **7/12**，整章 NO-GO，Step 3–5 未动；本节结论待图像评审者填写。
+
+---
+
+# lane d 追加三 · Voxt 11 Step 2 图集补齐 en-phone-390
+
+日期：2026-11-26。补采 `en-phone-390-p0..p3` 四张，采集方式同前（`data-animation-step=1`、目标相位稳定 450 ms 后截图，回读相位一致）。图集现为 **28 张**：en-desktop、en-phone-360／390／430、zh-phone-360／390／430，各 p0–p3，目录 `/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-1ujx7ox4/opencode/d-s2/final/`。
+
+**视觉门仍开放。** 本 lane 没有图像输入能力的评审者可用（主线程与可用子代理均为同一无图像输入模型），无法产出真实图像 verdict；DOM／几何审计不能代替看图。按复审要求：只有图像能力评审者实际检查这套英中图集并把结论写进本节，才关闭此门。在那之前机制 R6 保持协调 `c3a7773` 的 **7/12**，整章 NO-GO，Step 3–5 不动。
