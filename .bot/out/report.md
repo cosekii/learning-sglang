@@ -163,12 +163,14 @@
 
 ## 提交
 
+- 后续（同日）：手机分支补回「手机照片」名词（「约 256 KB，比一张手机照片小」「每张 4 MB 的手机照片，≈29 张」），硬门与中文 390 px 末相冷读重跑全过；报告补录两个机制矩阵组合与 Step 2 作者评分。
 - `17f43dc`：**Voxt 10 displayed Step 2 机制动画完成，待协调固定复审，不自行销项。** Step 2 原为静态图，现按 Step 1 同款模式循环四相：构造的 `talk.m4a`（8 s）→ Mac 声音工具（16 kHz · 单声道 · 16 位）→ `audio.wav` 与字节算式（8 × 16,000 × 2 = 256,000 B，+44 B 头 = 256,044 B）→ 大小比较（约 256 KB 小于一张手机照片；一小时 115.2 MB ≈ 29 张）。桌面与手机分支同相序；`phase` 效果由只跑 Step 1 改为按 `STEP_PHASES` 驱动 Step 1／2，`data-animation-step/phase/final-phase` 同步；reduced motion 停在末相。推送前 rebase 到 k2 `4bae53e` 之上，未 force-push。
 
 ## 硬门与证据
 
 - `npm run build` **60 页**通过；`BOOK=voxt ONLY=10 STEP=2 npm run readability` **0 机械问题**；`deep-check 10`、英中全章 360／390／430 px `mobile`、`STEP=2 LANG=zh` 中文字号门、`zh-check`（`all clear`）全过；transcript 重生成，Step 2 新增 `loops` 行、末相内容完整，无 caption／出界／重叠报告。
-- 机制矩阵（DOM，无图像输入）：英文桌面直接 `?step=2`、中文桌面直接、中文 390×844 直接、英文桌面前步经 Next 进入，共 **4 组 × 2 状态**。四组均为 phase 1（只有文件＋转换器）与 phase 3（`audio.wav`＋字节算式＋照片比较）两个不同机制状态，counter 均 `02 / 11`。探针脚本 `/tmp/ls-d-probe4.mjs`。
+- 机制矩阵（DOM，无图像输入）：英文桌面直接 `?step=2`、中文桌面直接、中文 390×844 直接、英文桌面前步经 Next 进入（`/tmp/ls-d-probe4.mjs`），补录的中文桌面前步进入与中文 390×844 前步进入（`/tmp/ls-d-probe5.mjs`），共 **6 组 × 2 状态**。六组均为 phase 1（只有文件＋转换器）与 phase 3（`audio.wav`＋字节算式＋照片比较）两个不同机制状态，counter 均 `02 / 11`。
+- Step 2 作者复评（协调基线不改写：整章仍 NO-GO）：R1–R5 **10/10**、机制 R6 **2/2**（DOM 两状态证据，无图像输入未做视觉复核）、原十个非视觉项 **20/20**（#4／#5 待视觉复核后由协调裁定）。R1 小学生复述：「Mac 自带的工具把录音文件转成模型能读的原始声音；8 秒是 256,000 个字节，一小时有 115.2 MB，大约 29 张手机照片。」冷读洞：复审发现手机分支「≈29 张」没有说清是 29 张什么（洞 1），已在本轮补回「手机照片」名词，中文 390 px 末相实测显示「约 256 KB，比一张手机照片小」与「每张 4 MB 的手机照片，≈29 张」，洞 **0**。
 - 截图存档（未能读取）：`/tmp/ls-d-s2/en-early.png`、`en-final.png`、`zh-final.png`、`zh-390.png`。环境同上轮（临时 `vite.cacheDir`＋preview 4489，提交前已还原 `astro.config.mjs`）。**未声称看过图片或视觉通过；未跑全站回归、真实 Voxt 或主人最终验收。**
 
 ## 剩余
