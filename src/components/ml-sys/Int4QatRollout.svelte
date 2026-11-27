@@ -253,10 +253,10 @@
       { title: 'CONTINUE', titleZh: '继续生成', result: 'new weights ready', resultZh: '新权重可用', body: 'generation resumes', bodyZh: '恢复生成', tone: 'blue', compact: true },
     ],
     formulas: [
-      { en: 'weight storage = reusable memory holding weight tables', zh: '权重存储 = 可重复装权重表的内存' },
       { en: 'resize changes shape only · new values overwrite it', zh: '调整形状只改外形 · 新值随后覆盖它' },
       { en: 'Step 6 packs 4-bit fields · Step 7 reorders them for Marlin', zh: '第 6 步打包 4 位字段 · 第 7 步按 Marlin 重排' },
-      { en: 'pausing prevents reads of half-old, half-new weights', zh: '暂停可避免读到半旧半新的权重' },
+      { en: '64 scales before: [s0, s1, …, s63]', zh: '64 个 scale 重排前：[s0, s1, …, s63]' },
+      { en: 'Marlin after: [s0,s8,…,s56 | s1,s9,…,s57 | … | s7,s15,…,s63]', zh: 'Marlin 重排后：[s0,s8,…,s56 | s1,s9,…,s57 | … | s7,s15,…,s63]' },
       { en: 'Next: Marlin recovers signed codes before BF16 math', zh: '下一步：Marlin 先取回有符号编码，再做 BF16 计算' },
     ],
     mobile: {
@@ -265,10 +265,11 @@
       foot: 'Resize changes shape only; old values stay gone.', footZh: '调整形状只改外形，旧值不会回来。',
       legend: 'Orange = update · blue = Marlin-ready', legendZh: '橙 = 更新 · 蓝 = Marlin 可用',
       formulas: [
-        { en: 'Weight storage = reusable memory', zh: '权重存储 = 可复用内存' },
         { en: 'Resize changes shape · new values overwrite it', zh: '调整形状只改外形 · 新值覆盖它' },
         { en: 'Step 6 packs fields · Step 7 reorders for Marlin', zh: '第 6 步打包字段 · 第 7 步按 Marlin 重排' },
-        { en: 'Pause prevents reads of mixed old and new weights', zh: '暂停可避免读到新旧混合的权重' },
+        { en: '64 scales before: s0, s1, …, s63', zh: '64 个 scale 重排前：s0, s1, …, s63' },
+        { en: 'after: s0,s8,…,s56 | s1,s9,…,s57', zh: '重排后：s0,s8,…,s56 | s1,s9,…,s57' },
+        { en: '… | s7,s15,…,s63', zh: '… | s7,s15,…,s63' },
         { en: 'Next: recover signed codes before BF16 math', zh: '下一步：取回有符号编码再做 BF16 计算' },
       ],
     },

@@ -241,10 +241,15 @@ $$(64-18)/64=71.875\%$$
 - 装入卡用本轮的新打包权重和 scale 覆盖这份内存。
 - Marlin 重排卡把第 6 步的通用 4 位打包改为这个乘法程序需要的顺序，并排列对应 scale。
 - 继续卡表示新权重可用后恢复生成。`is_marlin_converted` 标记从 true 变 false，重排完成后再变 true。
+- 图下用 64 个 scale 给出具体映射：重排后先取 `s0, s8, …, s56`，再取 `s1, s9, …, s57`，最后一段是 `s7, s15, …, s63`。
 
 ### 公式与符号
 
 $$B_{\mathrm{old}}\xrightarrow{\operatorname{resize}}B_{\mathrm{shape}}\xrightarrow{\operatorname{load}}B_{\mathrm{new}}\xrightarrow{\operatorname{repack}}B_{\mathrm{Marlin}}$$
+
+分组 scale 的排列规则是：
+
+$$s'_{8i+j}=s_{i+8j},\qquad 0\le i,j\le7$$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
@@ -253,10 +258,15 @@ $$B_{\mathrm{old}}\xrightarrow{\operatorname{resize}}B_{\mathrm{shape}}\xrightar
 | $B_{\mathrm{new}}$ | 写入本轮标准打包权重和 scale 的 buffer | 训练端更新通道 |
 | $B_{\mathrm{Marlin}}$ | 重排后供 kernel 使用的新 buffer | `gptq_marlin_moe_repack` 和 scale permutation |
 | $\operatorname{resize}$ | 只调整存储形状，不计算旧值的逆变换 | `restore_weights_before_loading` |
+| $s_j$ | 重排前第 $j$ 个 scale | 本步构造的 64 个 scale |
+| $s'_j$ | 重排后第 $j$ 个 scale | `marlin_permute_scales` |
+| $i,j$ | 排列规则中的下标，均取 0 到 7 | `get_scale_perms` |
 
 ### 代入图上的数
 
-本步没有新增数值算例。buffer 是一份可复用内存，kernel 是在 GPU 上完成一项操作的程序，layout 是数据在内存里的排列顺序。这个 recipe 开启 `--colocate`，所以选择 `UpdateWeightFromTensor`。固定顺序是 `pause_generation`、`flush_cache`、恢复形状、传输新 tensor、post-process 和 `continue_generation`。暂停可避免生成读取新旧混合的权重。
+本步用 64 个 scale 构造排列算例。输出前 8 个位置依次是 `s0, s8, s16, s24, s32, s40, s48, s56`；最后 8 个位置依次是 `s7, s15, s23, s31, s39, s47, s55, s63`。固定代码先 reshape 成每行 64 个，再按 `scale_perm` 取列，与图上的顺序一致。
+
+buffer 是一份可复用内存，kernel 是在 GPU 上完成一项操作的程序，layout 是数据在内存里的排列顺序。这个 recipe 开启 `--colocate`，所以选择 `UpdateWeightFromTensor`。固定顺序是 `pause_generation`、`flush_cache`、恢复形状、传输新 tensor、post-process 和 `continue_generation`。暂停可避免生成读取新旧混合的权重。
 
 “Restore”容易误读。代码只按 `_original_shapes` 调整 `param.resize_(orig_shape)` 并清除 converted 标记；它不做 inverse permutation，不反量化，也不恢复上一轮权重。随后写入的新值覆盖这个 buffer，post-process 再做 `gptq_marlin_moe_repack` 和 `marlin_moe_permute_scales`。converted 标记表示当前内存是否已是 Marlin 顺序，并防止重复 repack。第 6 步解决“怎样省位”，本步解决“乘法程序按什么顺序读”。
 
@@ -264,7 +274,7 @@ $$B_{\mathrm{old}}\xrightarrow{\operatorname{resize}}B_{\mathrm{shape}}\xrightar
 
 新布局已经可供 Marlin 使用。下一步打开计算路径，看 INT4 存储怎样变成 BF16 矩阵乘法，并在哪里使用 FP32 累加。
 
-来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:80-103`；`THUDM/slime@58525eb986c66a271aa31077e17b8afebe704b4f` 的 `actor.py:126-133`、`update_weight_from_tensor.py:106-143` 和 `docker/patch/latest/sglang.patch:732-823`。
+来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:80-103`；`THUDM/slime@58525eb986c66a271aa31077e17b8afebe704b4f` 的 `actor.py:126-133`、`update_weight_from_tensor.py:106-143` 和 `docker/patch/latest/sglang.patch:732-823`；`sgl-project/sglang@dce8b0606c06d3a191a24c7b8cbe8e238ab316c9` 的 `python/sglang/srt/layers/quantization/marlin_utils.py:301-347`。
 
 ## 第 8 步 · W4A16 保存 INT4，计算用 BF16
 

@@ -241,10 +241,15 @@ Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:101-114`; `THUDM/sli
 - The load card overwrites that memory with this round's packed weights and scales.
 - The Marlin card changes Step 6's generic four-bit packing into the order required by this multiplication routine and arranges the corresponding scales.
 - The continue card resumes generation with the new weights. The `is_marlin_converted` flag moves from true to false and back to true.
+- A concrete 64-scale mapping appears below the cards. The reordered output starts with `s0, s8, …, s56`, then `s1, s9, …, s57`, and ends with `s7, s15, …, s63`.
 
 ### Formula and symbols
 
 $$B_{\mathrm{old}}\xrightarrow{\operatorname{resize}}B_{\mathrm{shape}}\xrightarrow{\operatorname{load}}B_{\mathrm{new}}\xrightarrow{\operatorname{repack}}B_{\mathrm{Marlin}}$$
+
+The grouped-scale permutation is:
+
+$$s'_{8i+j}=s_{i+8j},\qquad 0\le i,j\le7$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
@@ -253,10 +258,15 @@ $$B_{\mathrm{old}}\xrightarrow{\operatorname{resize}}B_{\mathrm{shape}}\xrightar
 | $B_{\mathrm{new}}$ | Buffer after writing the new standard packed weights and scales | Training update path |
 | $B_{\mathrm{Marlin}}$ | Repacked buffer ready for the kernel | `gptq_marlin_moe_repack` and scale permutation |
 | $\operatorname{resize}$ | Shape change without an inverse transform of old values | `restore_weights_before_loading` |
+| $s_j$ | Scale at input position $j$ | This step's constructed 64 scales |
+| $s'_j$ | Scale at output position $j$ | `marlin_permute_scales` |
+| $i,j$ | Permutation indices, each from 0 through 7 | `get_scale_perms` |
 
 ### The numbers on the stage
 
-This step adds no numerical example. A buffer is reusable memory, a kernel is a GPU routine that performs one operation, and a layout is the order of data in memory. This recipe enables `--colocate`, so it selects `UpdateWeightFromTensor`. The pinned order is `pause_generation`, `flush_cache`, shape restoration, new-tensor transfer, post-processing and `continue_generation`. Pausing prevents reads of mixed old and new weights.
+This step constructs a 64-scale permutation example. The first eight output positions hold `s0, s8, s16, s24, s32, s40, s48, s56`. The last eight hold `s7, s15, s23, s31, s39, s47, s55, s63`. The pinned code reshapes to rows of 64 and selects columns with `scale_perm`, giving the same order as the stage.
+
+A buffer is reusable memory, a kernel is a GPU routine that performs one operation, and a layout is the order of data in memory. This recipe enables `--colocate`, so it selects `UpdateWeightFromTensor`. The pinned order is `pause_generation`, `flush_cache`, shape restoration, new-tensor transfer, post-processing and `continue_generation`. Pausing prevents reads of mixed old and new weights.
 
 “Restore” does not mean inverse permutation. The code only calls `param.resize_(orig_shape)` using `_original_shapes` and clears the converted flag. It does not dequantize or recover the previous weights. New values then overwrite the buffer, and post-processing calls `gptq_marlin_moe_repack` and `marlin_moe_permute_scales`. The converted flag records whether memory already has Marlin's order and prevents double repacking. Step 6 saves bits; this step chooses the multiplication routine's reading order.
 
@@ -264,7 +274,7 @@ This step adds no numerical example. A buffer is reusable memory, a kernel is a 
 
 The new layout is ready for Marlin. The next step opens its compute path: INT4 storage becomes BF16 matrix multiplication with FP32 accumulation.
 
-Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:80-103`; `THUDM/slime@58525eb986c66a271aa31077e17b8afebe704b4f`, `actor.py:126-133`, `update_weight_from_tensor.py:106-143` and `docker/patch/latest/sglang.patch:732-823`.
+Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:80-103`; `THUDM/slime@58525eb986c66a271aa31077e17b8afebe704b4f`, `actor.py:126-133`, `update_weight_from_tensor.py:106-143` and `docker/patch/latest/sglang.patch:732-823`; `sgl-project/sglang@dce8b0606c06d3a191a24c7b8cbe8e238ab316c9`, `python/sglang/srt/layers/quantization/marlin_utils.py:301-347`.
 
 ## Step 8 · Store INT4 and compute in BF16 with W4A16
 
