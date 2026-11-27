@@ -1,16 +1,16 @@
 ## Step 1 · Two routes
 
-> **In one line:** A dictation puts text at the cursor; a file transcription writes SRT or TXT. Both use Voxt and a speech model, but the file route does not open a dictation session.
+> **In one line:** A dictation puts text at the cursor; on the stage, a recording becomes a text file kept on disk. Both use Voxt and a speech model, but the file route does not open a dictation session.
 
 ### On the stage
 
 - The left column is **dictation**: the microphone and helper send sound, one dictation session handles it, and the result appears at the cursor and may also be written to history.
-- The right column is **file**: `meeting.m4a` on disk, marked "1-hour meeting · a recording you have", goes through `Voxt transcribe` and becomes text in a file kept on disk; Step 8 shows that file's two formats, SRT and TXT.
+- The right column is **file**: a meeting you recorded, marked "1 hour of sound · on disk", goes through `Voxt transcribe` and becomes text in a file kept on disk; Step 8 shows that file's two formats, SRT and TXT.
 - The lines below say: a one-hour meeting is 3,600 s of sound already in a file; decoded, that is 115.2 MB before recognition; both routes use Voxt and a speech model; the file route has no dictation session or history row.
 
 ### Why this needs its own route
 
-The difference is where the result goes and what starts it. A dictation captures sound for the cursor; a recording already exists as a file, and the wanted result is SRT or TXT on disk. That file is then archived, played as subtitles, or fed to a script, so the file route writes no history entry and opens no dictation session.
+The difference is where the result goes and what starts it. A dictation captures sound for the cursor; a recording already exists as a file, and the wanted result is text kept somewhere durable. The stage's example writes it as a file on disk; Step 9 shows the same text can go to standard output instead, creating no file. That file is then archived, played as subtitles, or fed to a script, so the file route writes no history entry and opens no dictation session.
 
 Length does not force the split. The changelog removed the recording length limit (`Voxt/CHANGELOG.md:531`), and `audio.maxSeconds = 0` means no limit (`Voxt/docs/settings.md:150`). The stage's one-hour meeting (3,600 s) is a scale example, not a limit that dictation cannot reach.
 

@@ -38,8 +38,8 @@
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
   const steps = [{
-    caption: 'A dictation ends at a cursor. A file ends as a new file.',
-    captionZh: '听写的结果落在光标处。文件转写的结果是一个新文件。',
+    caption: 'A dictation ends at a cursor. This one ends as a file.',
+    captionZh: '听写的结果落在光标处。这次转写的结果是一个文件。',
   }, {
     caption: 'The command uses a Mac tool to turn the file into 16 kHz mono PCM.',
     captionZh: '命令用 Mac 工具把文件转成 16 kHz 单声道 PCM。',
@@ -72,8 +72,8 @@
     captionZh: '音频交给 Transcribe 模型，本机或远程。模型文件怎么来到这台 Mac？',
   }];
   const ariaLabels = [{
-    en: 'Two routes. A dictation goes from the microphone through a dictation session and cleanup to the cursor, with a history row when history is enabled. A file goes from disk through Voxt transcribe to text in a new file; it reuses the model set for Transcribe but opens no session and runs no cleanup. A one-hour meeting is 3600 seconds of sound; Step 2 turns that into bytes.',
-    zh: '两条路线。听写从麦克风经过听写 session 和整理，到光标处的文字；历史开启时还会写一条历史记录。文件从磁盘经过 Voxt transcribe 变成新文件里的文字；它复用 Transcribe 选定的模型，但不打开 session，也不做整理。一小时的会议是 3600 秒的声音；第 2 步把它算成字节。',
+    en: 'Two routes. A dictation goes from the microphone through a dictation session and cleanup to the cursor, with a history row when history is enabled. The example recording goes from disk through Voxt transcribe to text in a file kept on disk; it reuses the model set for Transcribe but opens no session and runs no cleanup. A one-hour meeting is 3600 seconds of sound; Step 2 turns that into bytes.',
+    zh: '两条路线。听写从麦克风经过听写 session 和整理，到光标处的文字；历史开启时还会写一条历史记录。图里这段录音从磁盘经过 Voxt transcribe，变成存在磁盘上的文件文字；它复用 Transcribe 选定的模型，但不打开 session，也不做整理。一小时的会议是 3600 秒的声音；第 2 步把它算成字节。',
   }, {
     en: 'A constructed eight-second file is decoded by a Mac sound tool to 16 kHz mono PCM, held as a temporary file. Eight seconds times 32000 bytes a second is 256000 PCM bytes, plus a 44-byte header.',
     zh: '构造的八秒文件由 Mac 的声音工具转成 16 kHz 单声道 PCM，放进一个临时文件。八秒乘每秒 32000 字节是 256000 字节 PCM，再加 44 字节文件头。',
@@ -199,7 +199,7 @@
 
       {#if step === 0}
         <text x={W / 2} y="27" text-anchor="middle" class="title">{t('TWO ROUTES TO TEXT', '两条得到文字的路')}</text>
-        <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t('dictation ends at a cursor · a file ends as a file', '听写落到光标 · 文件写成文件')}</text>
+        <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t(phone ? 'dictation → cursor · recording → a file' : 'dictation ends at a cursor · a recording’s text can end in a file', phone ? '听写到光标 · 录音落成文件' : '听写落到光标 · 录音的文字可以落成文件')}</text>
 
         {#if !phone}
           <rect x="20" y="70" width="330" height="280" rx="12" fill="var(--bg)" stroke="var(--accent)" />
@@ -220,8 +220,8 @@
           <text x="535" y="94" text-anchor="middle" class="label amber">{t('FILE · TO A FILE', '文件 · 到文件')}</text>
           {#if phase >= 1}
             <rect x="395" y="110" width="280" height="50" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
-            <text x="535" y="131" text-anchor="middle" class="detail">{t('meeting.m4a on disk', '磁盘上的 meeting.m4a')}</text>
-            <text x="535" y="149" text-anchor="middle" class="detail">{t('1-hour meeting · a recording you have', '1 小时会议 · 现成的录音')}</text>
+            <text x="535" y="131" text-anchor="middle" class="detail">{t('a meeting you recorded', '你录好的一场会议')}</text>
+            <text x="535" y="149" text-anchor="middle" class="detail">{t('1 hour of sound · on disk', '1 小时的声音 · 在磁盘上')}</text>
             <line x1="535" y1="160" x2="535" y2="185" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
             <rect x="395" y="193" width="280" height="60" rx="9" fill="var(--bg)" stroke="var(--line)" />
             <text x="535" y="215" text-anchor="middle" class="label">{t('Voxt transcribe', 'Voxt transcribe')}</text>
