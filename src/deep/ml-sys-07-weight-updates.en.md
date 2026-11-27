@@ -37,29 +37,32 @@ The controller knows that rollout must receive `v1`, but not which route carries
 
 Sources: `Awesome-ML-SYS-Tutorial/sglang/latency-accelerate-for-weight-updates/readme.md:556-558,980-1007`; Chapter 6 Step 8.
 
-## Step 2 · Map the three update channels
+## Step 2 · Map the channels and follow the disk route
 
-**One sentence.** A checkpoint file, a process group and a GPU location note are three alternative routes for delivering the same `v1` weights.
+**One sentence.** Three routes can deliver the same `v1` weights; the disk route saves and reads a checkpoint before each inference worker loads its local shard.
 
 ### On the stage
 
-- The disk card defines a `checkpoint` as saved weights: write the file, then read it. `update_weights_from_disk` uses this route.
-- The distributed card defines a `process group` as cooperating members: one sender hands values to many receivers.
-- The tensor card defines a `handle` as a GPU location note: send the note, then find the tensor. Step 4 opens this mechanism.
+- The three cards map alternative update channels. A `checkpoint` is a file of saved weights, a `process group` is a set of cooperating members, and a `handle` is a GPU location note.
+- The disk card plays three actions in order: save `v1` as a checkpoint, read that checkpoint through `update_weights_from_disk`, then call the model's weight loader. Each inference worker loads its local shard, meaning its own part of the saved weights.
+- The distributed card summarizes one sender and many receivers. The tensor card summarizes the location-note handoff that Step 4 opens.
 - All three cards are blue because all are alternative weight handoffs. One update chooses one route.
 
 ### Formula and symbols
 
-$$c\in\{\text{disk},\text{distributed},\text{tensor}\}$$
+$$c\in\{\text{disk},\text{distributed},\text{tensor}\},\qquad d:\;v1\rightarrow C\rightarrow S_{\text{local}}$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
 | $c$ | Update channel selected for one handoff | One of the three cards |
+| $d$ | Disk route's save, read and local-load chain | Disk card |
 | $v1$ | Weight version carried by that channel | Chapter 6 Step 8 |
+| $C$ | Checkpoint file containing saved weights | Disk card |
+| $S_{\text{local}}$ | Local shard loaded by one inference worker | Its own part of the saved weights |
 
 ### The numbers on the stage
 
-The map has three alternatives from the interface comparison. It adds no engine count, byte total or timing. In particular, the source supplies no disk timing.
+The map has three alternatives, and the disk card has three ordered actions. It adds no engine count, byte total or timing. In particular, the source supplies no disk timing.
 
 ### Next
 

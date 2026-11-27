@@ -44,22 +44,22 @@
       { en: '0.033 ÷ 0.001 ≈ 33×, rounded', zh: '0.033 ÷ 0.001 ≈ 33 倍，均为舍入值' },
     ],
   }, {
-    caption: 'Three update channels carry v1 into rollout. Choose a checkpoint file, a process group, or a GPU location note.',
-    captionZh: '有三条通道把 v1 送进 rollout。可以选 checkpoint、process group 或 GPU 位置便签。',
-    title: 'A map of three update channels', titleZh: '三条更新通道的地图',
-    subtitle: 'update channel = the route that carries v1 into rollout', subtitleZh: '更新通道 = 把 v1 送进 rollout 的路线',
+    caption: "Three channels carry v1 into rollout. Disk saves and reads a checkpoint, then loads each worker's local shard.",
+    captionZh: '三条通道把 v1 送进 rollout。磁盘路线存取 checkpoint，再装入各 worker 的本地分片。',
+    title: 'Three channels · 1 of 3: save, read, load', titleZh: '三条通道 · 第 1 条：保存、读取、装入',
+    subtitle: "update channel = a route for v1 · local shard = one inference worker's own part", subtitleZh: '更新通道 = v1 走的路线 · 本地分片 = 每个推理 worker 自己那片',
     foot: 'The three routes are alternatives; disk timing is not supplied.', footZh: '三条路线是三选一；来源没有给出磁盘计时。',
-    mobileTitle: 'Three update channels', mobileTitleZh: '三条更新通道',
+    mobileTitle: '1 of 3 · save, read, load', mobileTitleZh: '第 1 条 · 保存、读取、装入',
     mobileArrows: false,
-    mobileSubtitle: 'channel = a route for v1', mobileSubtitleZh: '通道 = v1 走的路线',
+    mobileSubtitle: 'checkpoint = saved weights', mobileSubtitleZh: 'checkpoint = 存好的权重',
     mobileFoot: 'Choose one route; no disk time is claimed.', mobileFootZh: '三条选一条；不虚构磁盘时间。',
     mobile: [
-      { title: 'DISK · CHECKPOINT', titleZh: '磁盘 · CHECKPOINT', body: 'checkpoint = saved weights', bodyZh: 'checkpoint = 存好的权重', tone: 'blue' },
+      { title: 'DISK · CHECKPOINT', titleZh: '磁盘 · CHECKPOINT', body: 'save → read → load local shard', bodyZh: '保存 → 读取 → 装入本地分片', tone: 'blue' },
       { title: 'DISTRIBUTED · GROUP', titleZh: 'DISTRIBUTED · 通信组', body: 'one sender → many receivers', bodyZh: '一个发送方 → 多个接收方', tone: 'blue' },
       { title: 'TENSOR · HANDLE', titleZh: 'TENSOR · 位置便签', body: 'handle = GPU location note', bodyZh: 'handle = GPU 位置便签', tone: 'blue' },
     ],
     formulas: [
-      { en: 'disk: write file → read file', zh: '磁盘：写文件 → 读文件' },
+      { en: "local shard = one worker's own part", zh: '本地分片 = 每个推理 worker 自己那片' },
       { en: 'distributed: send values → receive', zh: 'distributed：发数值 → 收数值' },
       { en: 'tensor: location note → find tensor', zh: 'tensor：位置便签 → 找到张量' },
     ],
@@ -207,7 +207,7 @@
       motion.removeEventListener('change', updateMotion);
     };
   });
-  const PHASE_COUNTS = [4, 4, 4, 5, 6, 5, 4, 5];
+  const PHASE_COUNTS = [4, 6, 4, 5, 6, 5, 4, 5];
   const PHASE_MS = 1000, REST_MS = 2800;
   let phase = $state(0);
   let lap = $state(0), lapMs = $state(0);
@@ -253,10 +253,10 @@
       {#if phone}
         {#each cur.mobile as item, i}
           {@const y = 80 + i * 91}
-          <g opacity={phase >= Math.min(i, PHASE_COUNTS[step] - 2) ? 1 : 0}>
+          <g opacity={phase >= (step === 1 ? [0, 3, 4][i] : Math.min(i, PHASE_COUNTS[step] - 2)) ? 1 : 0}>
             <rect x="25" y={y} width="250" height="70" rx="11" fill={fill(item.tone)} stroke={stroke(item.tone)} />
             <text x="150" y={y + 25} text-anchor="middle" class="small strong">{t(item.title, item.titleZh)}</text>
-            <text x="150" y={y + 50} text-anchor="middle" class="small">{step === 4 && i === 1 && phase >= 4 ? t('bucket 1 cleared', '第 1 桶已清空') : step === 4 && i === 3 && phase >= 5 ? t('bucket 2 is on the GPU', '第 2 桶在 GPU 上') : t(item.body, item.bodyZh)}</text>
+            <text x="150" y={y + 50} text-anchor="middle" class="small">{step === 1 && i === 0 && phase === 0 ? t('save v1 checkpoint', '保存 v1 checkpoint') : step === 1 && i === 0 && phase === 1 ? t('save → read checkpoint', '保存 → 读取 checkpoint') : step === 4 && i === 1 && phase >= 4 ? t('bucket 1 cleared', '第 1 桶已清空') : step === 4 && i === 3 && phase >= 5 ? t('bucket 2 is on the GPU', '第 2 桶在 GPU 上') : t(item.body, item.bodyZh)}</text>
             {#if cur.mobileArrows !== false && i < cur.mobile.length - 1}
               <line x1="150" y1={y + 70} x2="150" y2={y + 86} stroke={item.tone === 'plain' ? 'var(--accent)' : stroke(item.tone)} stroke-width="2.5" marker-end={item.tone === 'orange' ? 'url(#update-arrow-orange)' : 'url(#update-arrow-blue)'} />
             {/if}
@@ -304,22 +304,30 @@
         </g>
       {:else if step === 1}
         {#each [
-          { x: 30, title: '1 · DISK', titleZh: '1 · 磁盘', name: 'checkpoint', detail: 'saved weights', detailZh: '存好的整套权重', flow: 'write file', flowZh: '写入文件', end: 'read file', endZh: '读取文件' },
-          { x: 265, title: '2 · DISTRIBUTED', titleZh: '2 · DISTRIBUTED', name: 'process group', detail: 'cooperating members', detailZh: '一起传权的成员', flow: 'one sender', flowZh: '一个发送方', end: 'many receivers', endZh: '多个接收方' },
-          { x: 500, title: '3 · TENSOR', titleZh: '3 · TENSOR', name: 'handle', detail: 'GPU location note', detailZh: 'GPU 位置便签', flow: 'send note', flowZh: '发送便签', end: 'find tensor', endZh: '找到张量' },
+          { x: 30, at: 0, title: '1 · DISK', titleZh: '1 · 磁盘', name: 'checkpoint', detail: 'saved weights', detailZh: '存好的整套权重', flow: 'save v1 checkpoint', flowZh: '保存 v1 checkpoint', end: 'read checkpoint', endZh: '读取 checkpoint', end2: 'load local shard', end2Zh: '装入本地分片' },
+          { x: 265, at: 3, title: '2 · DISTRIBUTED', titleZh: '2 · DISTRIBUTED', name: 'process group', detail: 'cooperating members', detailZh: '一起传权的成员', flow: 'one sender', flowZh: '一个发送方', end: 'many receivers', endZh: '多个接收方', end2: '', end2Zh: '' },
+          { x: 500, at: 4, title: '3 · TENSOR', titleZh: '3 · TENSOR', name: 'handle', detail: 'GPU location note', detailZh: 'GPU 位置便签', flow: 'send note', flowZh: '发送便签', end: 'find tensor', endZh: '找到张量', end2: '', end2Zh: '' },
         ] as route, i}
-          <g opacity={phase >= i ? 1 : 0}>
+          <g opacity={phase >= route.at ? 1 : 0}>
             <rect x={route.x} y="88" width="190" height="282" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" />
             <text x={route.x + 95} y="124" text-anchor="middle" class="small strong">{t(route.title, route.titleZh)}</text>
             <text x={route.x + 95} y="166" text-anchor="middle" class="code">{route.name}</text>
             <text x={route.x + 95} y="195" text-anchor="middle" class="small">{t(route.detail, route.detailZh)}</text>
-            <text x={route.x + 95} y="250" text-anchor="middle" class="small">{t(route.flow, route.flowZh)}</text>
-            <text x={route.x + 95} y="280" text-anchor="middle" class="small">↓</text>
-            <text x={route.x + 95} y="310" text-anchor="middle" class="small">{t(route.end, route.endZh)}</text>
+            <text x={route.x + 95} y={i === 0 ? 225 : 250} text-anchor="middle" class="small">{t(route.flow, route.flowZh)}</text>
+            <g opacity={i !== 0 || phase >= 1 ? 1 : 0}>
+              <text x={route.x + 95} y={i === 0 ? 249 : 280} text-anchor="middle" class="small">↓</text>
+              <text x={route.x + 95} y={i === 0 ? 273 : 310} text-anchor="middle" class="small">{t(route.end, route.endZh)}</text>
+            </g>
+            {#if route.end2}
+              <g opacity={phase >= 2 ? 1 : 0}>
+                <text x={route.x + 95} y="297" text-anchor="middle" class="small">↓</text>
+                <text x={route.x + 95} y="321" text-anchor="middle" class="small">{t(route.end2, route.end2Zh)}</text>
+              </g>
+            {/if}
           </g>
         {/each}
-        <g opacity={phase >= 3 ? 1 : 0}>
-          <text x="360" y="405" text-anchor="middle" class="small strong">{t('One update chooses one of these three routes.', '一次更新从三条路线中选一条。')}</text>
+        <g opacity={phase >= 5 ? 1 : 0}>
+          <text x="360" y="405" text-anchor="middle" class="small strong">{t("Disk: save checkpoint → read it → load each worker's local shard", '磁盘：保存 checkpoint → 读取 → 装入各 worker 的本地分片')}</text>
           <text x="360" y="434" text-anchor="middle" class="small">{t('Blue = the three alternative weight handoffs', '蓝 = 三条备选权重交接路线')}</text>
         </g>
       {:else if step === 2}
