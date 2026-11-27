@@ -2,7 +2,7 @@
 
 **One sentence.** TTFT tells you how long a user waits before any answer token appears.
 
-**What the picture shows.** The left clock reads 0 ms when the request leaves. The right clock reads 250 ms when its first token appears. Blue marks only the wait between those two events. The example includes queueing and prefill in that wait, but does not claim how many milliseconds each part costs.
+**What the picture shows.** The animation first shows the request leaving at 0 ms, then the first token at 250 ms, then the subtraction. Blue marks only the wait between those two events. Here `stream: true` turns streaming on: the server sends deltas instead of one whole answer. Each SSE delta carries exactly one output token in this constructed example, and 250 ms is when the client reads the first delta. The example includes queueing and prefill in that wait, but does not claim how many milliseconds each part costs.
 
 **Formula and symbols.**
 
@@ -25,7 +25,7 @@ The 250 ms is a constructed teaching value from zero-to-sglang Part I Chapter 5 
 
 **One sentence.** ITL is the difference between the times when two neighboring output tokens appear, measured separately for each gap.
 
-**What the picture shows.** Measured from when the request was sent, output tokens 1 through 4 of the same request appear at 250, 275, 295 and 325 ms. Three blue arrows mark gaps of 25, 20 and 30 ms. Blue represents only ITL, not the TTFT before the first token.
+**What the picture shows.** The animation reveals tokens 2, 3 and 4 one at a time, with the gap before each token. Measured from when the request was sent, the four tokens appear at 250, 275, 295 and 325 ms. Each timestamp records when the client reads that token's SSE delta. Three blue arrows mark gaps of 25, 20 and 30 ms. Blue represents only ITL, not the TTFT before the first token.
 
 **Formula and symbols.**
 
@@ -52,7 +52,7 @@ Zero-to-sglang Part I Chapter 5 §3.1 and *Inference Engineering* §1.4 both def
 
 **One sentence.** TPOT combines the ITL gaps after the first token into one average.
 
-**What the picture shows.** The same request keeps its four token times of 250, 275, 295 and 325 ms, and its three blue ITL gaps of 25, 20 and 30 ms. This step averages all three gaps; the first and last token times give the same result. TPOT excludes Step 1's TTFT, and averaging does not make the three gaps equal.
+**What the picture shows.** The same clock again reveals the four token times of 250, 275, 295 and 325 ms, and the three blue ITL gaps of 25, 20 and 30 ms. The average appears after all three gaps are present. The first and last token times give the same result. TPOT excludes Step 1's TTFT, and averaging does not make the three gaps equal.
 
 **Formula and symbols.**
 
@@ -78,7 +78,7 @@ Zero-to-sglang Part I Chapter 5 §3.1 uses the same boundary: with 200 output to
 
 **One sentence.** E2E latency runs from request sent to request complete, including the time before and after the first token.
 
-**What the picture shows.** The request is sent at 0 ms, token 1 appears at 250 ms, and token 4, the last token, appears at 325 ms. The request then completes. The upper blue line measures the whole route; the lower two spans show 250 ms of TTFT and 75 ms after token 1. That 75 ms is still the sum of Step 2's three ITL gaps, not one gap or one average TPOT added once.
+**What the picture shows.** The upper blue line advances through 250, 275, 295 and 325 ms on the same clock. The request starts at 0 ms, token 1 appears at 250 ms, and the client reads the final SSE delta, carrying token 4, at 325 ms. The lower spans show 250 ms of TTFT and 75 ms after token 1. Card spacing is schematic rather than a second time scale. The full E2E calculation appears only after completion. That 75 ms is still the sum of Step 2's three ITL gaps, not one gap or one average TPOT added once.
 
 **Formula and symbols.**
 
@@ -86,7 +86,7 @@ $$\mathrm{E2E}=t_{\mathrm{complete}}-t_{\mathrm{request\ sent}}=\mathrm{TTFT}+\s
 
 - $\mathrm{E2E}$: end-to-end latency, the total delay from sending a request until it completes.
 - $t_{\mathrm{request\ sent}}$: the request-sent time, 0 ms in the picture.
-- $t_{\mathrm{complete}}$: the completion time; this example treats the last token's arrival at 325 ms as completion.
+- $t_{\mathrm{complete}}$: the completion time; this example treats the arrival of the SSE delta carrying the last token at 325 ms as completion.
 - $\mathrm{TTFT}$: the wait before token 1 measured in Step 1, 250 ms here.
 - $\sum_{i=2}^{N}\mathrm{ITL}_i$: add every neighboring-token gap from token 2 through token $N$; here $N=4$.
 
@@ -100,75 +100,86 @@ Zero-to-sglang Part I Chapter 5 §3.1 defines E2E as the total time from request
 
 **Next.** One request's whole time is now measured. The next step puts several requests together to find the slower ones.
 
-## Step 5 · Sort requests to find P50 and the slowest
+## Step 5 · Sort two batches and compare P50
 
-**One sentence.** Sort 100 requests by E2E latency to read P50 at the middle position while keeping the slowest request visible.
+**One sentence.** Sort two 100-request batches on the same latency scale, then compare the E2E latency at each batch's middle position.
 
-**What the picture shows.** Each blue bar is one request's E2E latency: the first 51 bars are 200 ms, the next 48 are 300 ms, and the last is 2000 ms. The cards below identify requests 50 and 100. The slowest request's 2000 ms is ten times P50.
+**What the picture shows.** Each blue bar is one request's E2E latency. Both panels start unsorted; A sorts first, then B. A has 51 requests at 200 ms, 48 at 300 ms and one at 2000 ms. B has 50 at 250 ms, 49 at 400 ms and one at 2000 ms. The P50 labels then appear at request 50: 200 ms for A and 250 ms for B. Both panels use the same 0–2000 ms axis, and the last line calculates B − A = 50 ms.
 
-**Formula and symbols.** This step calls the latency at the 50% position P50:
+**Formula and symbols.** For either batch $b\in\{A,B\}$, this step calls the latency at the 50% position P50:
 
-$$L_{(1)}\le L_{(2)}\le\cdots\le L_{(N)},\qquad r=\lceil0.50N\rceil,\qquad \mathrm{P50}=L_{(r)}$$
+$$L^b_{(1)}\le L^b_{(2)}\le\cdots\le L^b_{(N)},\qquad r=\lceil0.50N\rceil,\qquad \mathrm{P50}^b=L^b_{(r)}$$
 
-- $L_{(i)}$: the E2E latency of request $i$ after sorting; Step 4 defines each request's measurement.
-- $N$: the number of requests, $51+48+1=100$ here.
+- $b$: the batch label, A or B.
+- $L^b_{(i)}$: the E2E latency of request $i$ in batch $b$ after sorting; Step 4 defines the measurement.
+- $N$: the number of requests in each batch, 100.
 - $r$: the position halfway through the queue; $\lceil\ \rceil$ rounds up to an integer.
-- $\mathrm{P50}$: the latency at position $r$, not an average across the requests.
+- $\mathrm{P50}^b$: the latency at position $r$ in batch $b$, not an average across its requests.
 
 **Substitute the picture's numbers.**
 
-$$\mathrm{P50}=L_{(\lceil0.50\times100\rceil)}=L_{(50)}=200\ \mathrm{ms}$$
+$$\mathrm{P50}^A=L^A_{(\lceil0.50\times100\rceil)}=L^A_{(50)}=200\ \mathrm{ms}$$
 
-$$L_{(100)}=2000\ \mathrm{ms}=10\times200\ \mathrm{ms}=10\times\mathrm{P50}$$
+$$\mathrm{P50}^B=L^B_{(50)}=250\ \mathrm{ms},\qquad \mathrm{P50}^B-\mathrm{P50}^A=250-200=50\ \mathrm{ms}$$
 
-Another common method averages the waits at positions 50 and 51. Both are 200 ms here, so that method also gives 200 ms. The groups of 51, 48 and 1 form a constructed distribution based on the scenario in zero-to-sglang Part I Chapter 5 §5.2: 99 requests within 100–300 ms and one request taking 2 s. These are not local measurements. Course §5.1 and *Inference Engineering* §1.4.1 both place P50 halfway through sorted requests. Other datasets and tools may interpolate P50; this step does not cover those methods.
+$$L^A_{(100)}=2000=10\times200\ \mathrm{ms},\qquad L^B_{(100)}=2000=8\times250\ \mathrm{ms}$$
 
-**Next.** The middle position is now visible. The next step inspects request 99 to examine a longer wait.
+Batch A follows the constructed scenario in zero-to-sglang Part I Chapter 5 §5.2: 99 faster requests and one 2 s request. Batch B is another constructed distribution for a same-scale comparison. Neither is a local measurement. Course §5.1 and *Inference Engineering* §1.4.1 both place P50 halfway through sorted requests. As an off-stage comparison, averaging positions 50 and 51 gives 200 ms for A but $(250+400)\div2=325$ ms for B. The stage uses the stated rank method for both batches. Other datasets and tools may interpolate P50, which this step does not cover.
 
-## Step 6 · Sort requests to find P99
+**Next.** The two middle positions are visible. The next step compares request 99 in the same two sorted batches.
 
-**One sentence.** P99 takes the E2E latency at the 99% position: 300 ms at request 99 here, not the slowest request's 2000 ms.
+## Step 6 · Compare P99 in the same two batches
 
-**What the picture shows.** The 100 blue bars are unchanged: the first 51 are 200 ms, the next 48 are 300 ms, and the last is 2000 ms. The cards now identify requests 99 and 100. Request 99 takes 300 ms, so 99 of the 100 requests take at most 300 ms. The slowest request, number 100, waits $2000-300=1700$ ms longer than P99.
+**One sentence.** P99 takes the E2E latency at request 99: 300 ms in A and 400 ms in B, while each batch's slowest request is 2000 ms.
 
-**Formula and symbols.** Using the same rank method as Step 5, this step calls the latency at the 99% position P99:
+**What the picture shows.** The sorted A and B panels keep the same bars and 0–2000 ms axis from Step 5. The animation first marks request 99 in A and its 300 ms P99, then the 1700 ms gap to A's slowest request. It repeats those measurements for B: P99 is 400 ms and the gap is 1600 ms. In each panel, 99 requests take at most the marked P99 value.
 
-$$L_{(1)}\le L_{(2)}\le\cdots\le L_{(N)},\qquad r=\lceil0.99N\rceil,\qquad \mathrm{P99}=L_{(r)}$$
+**Formula and symbols.** Using Step 5's rank method for batch $b\in\{A,B\}$:
 
-- $L_{(i)}$: the E2E latency of request $i$ after sorting, as in Step 5.
-- $N$: the number of requests, 100 here.
+$$L^b_{(1)}\le L^b_{(2)}\le\cdots\le L^b_{(N)},\qquad r=\lceil0.99N\rceil,\qquad \mathrm{P99}^b=L^b_{(r)}$$
+
+- $b$: the batch label, A or B.
+- $L^b_{(i)}$: the E2E latency of request $i$ in batch $b$ after sorting.
+- $N$: the number of requests in each batch, 100.
 - $r$: the position at 99% of the queue; $\lceil\ \rceil$ rounds up to an integer.
-- $\mathrm{P99}$: the latency at position $r$, not an average and not necessarily the slowest request.
+- $\mathrm{P99}^b$: the latency at position $r$, not an average and not necessarily the slowest request.
 
 **Substitute the picture's numbers.**
 
-$$\mathrm{P99}=L_{(\lceil0.99\times100\rceil)}=L_{(99)}=300\ \mathrm{ms}$$
+$$\mathrm{P99}^A=L^A_{(\lceil0.99\times100\rceil)}=L^A_{(99)}=300\ \mathrm{ms}$$
 
-$$L_{(100)}-\mathrm{P99}=2000-300=1700\ \mathrm{ms}$$
+$$\mathrm{P99}^B=L^B_{(99)}=400\ \mathrm{ms}$$
 
-Zero-to-sglang Part I Chapter 5 §5.1 asks readers to observe P50 and P99 together, using P99 to examine the slower requests. Section 5.2 uses 99 faster requests and one 2 s request to show how an average can hide that single slow request. This picture's groups of 51, 48 and 1 form a constructed teaching distribution based on that scenario, not local measurements. The course does not prescribe this picture's rank formula; this step explicitly rounds up as in Step 5. Other tools may interpolate, which this step does not cover.
+$$L^A_{(100)}-\mathrm{P99}^A=2000-300=1700\ \mathrm{ms}$$
 
-**Next.** The middle and slower waits are now measured. The next step changes the question to how many requests finish in a given period.
+$$L^B_{(100)}-\mathrm{P99}^B=2000-400=1600\ \mathrm{ms}$$
 
-## Step 7 · Calculate throughput from completed work
+Zero-to-sglang Part I Chapter 5 §5.1 asks readers to observe P50 and P99 together, using P99 to examine slower requests. Section 5.2 uses 99 faster requests and one 2 s request to show how an average can hide that single slow request. Both distributions are constructed teaching examples, not local measurements. The course does not prescribe this rank formula; both panels round up as in Step 5. Other tools may interpolate, which this step does not cover.
 
-**One sentence.** Throughput is the number of requests completed per unit time; this example uses requests/s to show the average completions each second.
+**Next.** Both batches now show their middle and slower waits. The next step counts how many requests each batch completes during its whole test.
 
-**What the picture shows.** The 100 cells are the same 100 requests from Steps 5 and 6, now all complete. The timer's 20 s runs from the start of the whole test until the last request finishes; it is not any one request's E2E latency, and requests can start at different times. Dividing completed work by the whole test duration gives 5 requests/s. This is an average over the full window, not a claim that exactly one request finishes every 0.2 s, and it does not replace P50 or P99.
+## Step 7 · Compare throughput from completed work
 
-**Formula and symbols.**
+**One sentence.** Throughput divides completed requests by the whole-test duration, so A reaches 5 requests/s and B reaches 4 requests/s.
 
-$$Q=\frac{N_{\mathrm{done}}}{T}$$
+**What the picture shows.** Each panel has 100 request cells and a whole-test clock on the same 0–25 s axis. The client starts each test window at 0 s. A's cells turn blue in groups of 25 as its clock advances through 5, 10, 15 and 20 s. B then fills in groups of 20 through 5, 10, 15, 20 and 25 s. The shared axis leaves A's endpoint at 20 s and B's at 25 s. Even fills are a drawing simplification, not fixed completion gaps. A request completes when the client reads its final SSE delta. Requests overlap, so their E2E values from Steps 5 and 6 do not add up to either window. At 20 s, A has 100 completions and a throughput of $100\div20=5$ requests/s. At 25 s, B has 100 completions and $100\div25=4$ requests/s. Neither test window is one request's E2E latency.
 
-- $Q$: request throughput, the number of requests completed per unit time.
-- $N_{\mathrm{done}}$: completed requests during the whole test, 100 here and the same $N$ as Steps 5 and 6.
-- $T$: total duration of the whole test, 20 s here.
-- $\mathrm{requests/s}$: completed requests per second; a `request` is one request sent by the reader in the earlier steps.
+**Formula and symbols.** For batch $b\in\{A,B\}$:
+
+$$Q_b=\frac{N_{\mathrm{done},b}}{T_b}$$
+
+- $b$: the batch label, A or B.
+- $Q_b$: request throughput for batch $b$, the number of requests completed per unit time.
+- $N_{\mathrm{done},b}$: completed requests during batch $b$'s whole test, 100 in both panels.
+- $T_b$: whole-test duration from the client's test start to the last completion, 20 s for A and 25 s for B.
+- $\mathrm{requests/s}$: completed requests per second; a `request` is one request from Steps 5 and 6.
 
 **Substitute the picture's numbers.**
 
-$$Q=\frac{100\ \mathrm{requests}}{20\ \mathrm{s}}=5\ \mathrm{requests/s}$$
+$$Q_A=\frac{100\ \mathrm{requests}}{20\ \mathrm{s}}=5\ \mathrm{requests/s}$$
 
-Zero-to-sglang Part I Chapter 5 §3.2 defines Throughput as output per unit time, allows `request/s` as its unit, and asks readers to observe it alongside latency. The 20 s in `src/ml-sys/numbers.ts` is a constructed teaching value added for this step. The 100 requests come from Steps 5 and 6, and the same file derives the result as $100\div20$. These are not local measurements and make no claim about actual SGLang performance. This step covers request throughput only; `token/s`, Goodput and changing concurrency are deliberately left out.
+$$Q_B=\frac{100\ \mathrm{requests}}{25\ \mathrm{s}}=4\ \mathrm{requests/s}$$
 
-**Next.** The chapter has measured both individual waits and completed work across a batch. The next chapter returns to the time before requests start to inspect what already occupies the GPU and how much space each part uses.
+Zero-to-sglang Part I Chapter 5 §3.2 defines Throughput as output per unit time, allows `request/s` as its unit, and asks readers to observe it alongside latency. The 20 s and 25 s windows in `src/ml-sys/numbers.ts` are constructed teaching values. The same file derives both results from 100 completed requests. These are not local measurements and make no claim about actual SGLang performance. Each throughput is an average over its full window. This step covers request throughput only; `token/s`, Goodput, SLA, workload selection, warm-up and changing concurrency are left out. Chapter 14 addresses controlled profiling.
+
+**Next.** The chapter has measured individual waits and completed work in two batches. The next chapter returns to the time before requests start to inspect what already occupies the GPU and how much space each part uses.

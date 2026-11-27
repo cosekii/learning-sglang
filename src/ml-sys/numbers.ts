@@ -38,6 +38,26 @@ export const DEMO_SLOWEST_OVER_P99_MS = DEMO_SLOWEST_E2E_MS - DEMO_P99_MS;
 export const DEMO_MEASUREMENT_WINDOW_SECONDS = 20;
 export const DEMO_REQUEST_THROUGHPUT_PER_SECOND = DEMO_PERCENTILE_REQUEST_COUNT / DEMO_MEASUREMENT_WINDOW_SECONDS;
 
+// A second constructed 100-request batch uses the same latency scale for an A/B comparison.
+export const DEMO_COMPARISON_E2E_GROUPS = [
+  { requests: 50, latencyMs: 250 },
+  { requests: 49, latencyMs: 400 },
+  { requests: 1, latencyMs: 2000 },
+];
+export const DEMO_COMPARISON_SORTED_E2E_MS = DEMO_COMPARISON_E2E_GROUPS.flatMap(({ requests, latencyMs }) => Array(requests).fill(latencyMs));
+export const DEMO_COMPARISON_P50_MS = DEMO_COMPARISON_SORTED_E2E_MS[DEMO_P50_RANK - 1];
+export const DEMO_AT_MOST_COMPARISON_P50_COUNT = DEMO_COMPARISON_SORTED_E2E_MS.filter((latency) => latency <= DEMO_COMPARISON_P50_MS).length;
+export const DEMO_COMPARISON_P99_MS = DEMO_COMPARISON_SORTED_E2E_MS[DEMO_P99_RANK - 1];
+export const DEMO_AT_MOST_COMPARISON_P99_COUNT = DEMO_COMPARISON_SORTED_E2E_MS.filter((latency) => latency <= DEMO_COMPARISON_P99_MS).length;
+export const DEMO_COMPARISON_SLOWEST_OVER_P50 = DEMO_SLOWEST_E2E_MS / DEMO_COMPARISON_P50_MS;
+export const DEMO_COMPARISON_SLOWEST_OVER_P99_MS = DEMO_SLOWEST_E2E_MS - DEMO_COMPARISON_P99_MS;
+export const DEMO_COMPARISON_WINDOW_SECONDS = 25;
+export const DEMO_COMPARISON_THROUGHPUT_PER_SECOND = DEMO_PERCENTILE_REQUEST_COUNT / DEMO_COMPARISON_WINDOW_SECONDS;
+export const DEMO_THROUGHPUT_CLOCK_TICK_SECONDS = 5;
+
+// This permutation starts both distributions unsorted; request ids retain their sorted-rank identity.
+export const DEMO_UNSORTED_ORDER = Array.from({ length: DEMO_PERCENTILE_REQUEST_COUNT }, (_, i) => (i * 37) % DEMO_PERCENTILE_REQUEST_COUNT);
+
 // Rounded worked example from Awesome-ML-SYS mem-fraction-static.md, not a local measurement.
 export const DEMO_PRE_MODEL_FREE_GB = 78;
 export const DEMO_POST_MODEL_FREE_GB = 18;
