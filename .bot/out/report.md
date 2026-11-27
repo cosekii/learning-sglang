@@ -631,3 +631,13 @@
 日期：2026-11-26。补采 `en-phone-390-p0..p3` 四张，采集方式同前（`data-animation-step=1`、目标相位稳定 450 ms 后截图，回读相位一致）。图集现为 **28 张**：en-desktop、en-phone-360／390／430、zh-phone-360／390／430，各 p0–p3，目录 `/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-1ujx7ox4/opencode/d-s2/final/`。
 
 **视觉门仍开放。** 本 lane 没有图像输入能力的评审者可用（主线程与可用子代理均为同一无图像输入模型），无法产出真实图像 verdict；DOM／几何审计不能代替看图。按复审要求：只有图像能力评审者实际检查这套英中图集并把结论写进本节，才关闭此门。在那之前机制 R6 保持协调 `c3a7773` 的 **7/12**，整章 NO-GO，Step 3–5 不动。
+
+---
+
+# lane d 追加四 · Step 2 视觉门阻塞声明（无法再推进）
+
+日期：2026-11-26。复审要求由图像能力评审者检查 28 张相位图并回填 verdict。本 lane 环境内**不存在**这样的评审者：主线程模型读 PNG 返回「this model does not support image input」，可派生的子代理是同一模型，同样无图像输入；除 DOM／几何审计外没有其他看图通道。因此本 lane 无法产出真实图像 verdict，也不会再交 DOM 报告顶替。
+
+- 阻塞项只有一个：图像能力评审者实看 `/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-1ujx7ox4/opencode/d-s2/final/` 的 28 张图（en-desktop、en-phone-360／390／430、zh-phone-360／390／430 各 p0–p3，相位身份已由 `data-animation-phase` 在采集时确认），核对每相焦点与状态变化、各宽度裁切／重叠／红框描边。
+- 该评审只能由协调侧用有图像输入的模型执行；执行后把 verdict 写进本节和 `memory/scores/inside-voxt/models-and-app-updates.md`，再重评 Step 2 机制分。
+- 在此之前：机制 R6 保持协调 `c3a7773` 的 **7/12**，整章 NO-GO，Step 3–5 不动；其余机械门（build、transcript、readability、deep-check、zh-check、英中 mobile 三宽度）均已在 `2b1ccb4` 通过，无未结代码改动。
