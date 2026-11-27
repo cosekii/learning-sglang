@@ -5,7 +5,7 @@
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
-  import { UPDATE_DEBUG_BF16_BYTES, UPDATE_DEBUG_WEIGHT_GB, UPDATE_DEBUG_INITIAL_S, UPDATE_DEBUG_INNER_S, UPDATE_DEBUG_OUTER_S, UPDATE_GROUP_SIZE_TP_ONE, UPDATE_GROUP_SIZE_TP_TWO, UPDATE_EXAMPLE_FULL_ROWS, UPDATE_EXAMPLE_FULL_COLS, UPDATE_EXAMPLE_FSDP_TP, UPDATE_EXAMPLE_FSDP_ROWS, UPDATE_EXAMPLE_FULL_ELEMENTS, UPDATE_DEBUG_SLEEP_COUNT, UPDATE_DEBUG_SLEEP_MS, UPDATE_DEBUG_SLEEP_TOTAL_MS, UPDATE_DEBUG_OUTER_MS, UPDATE_DEBUG_INNER_MS, UPDATE_DEBUG_OTHER_MS, UPDATE_DEBUG_NO_SLEEP_S, UPDATE_DEBUG_SAVED_S, UPDATE_DEBUG_SPEEDUP, UPDATE_DEBUG_YARDSTICK_MS, UPDATE_DEBUG_FULL_YARDSTICK_RATIO, UPDATE_DEBUG_SLEEP_CALLS } from '../../ml-sys/numbers';
+  import { UPDATE_DEBUG_BF16_BYTES, UPDATE_DEBUG_WEIGHT_GB, UPDATE_DEBUG_INITIAL_S, UPDATE_DEBUG_INNER_S, UPDATE_DEBUG_OUTER_S, UPDATE_GROUP_SIZE_TP_ONE, UPDATE_GROUP_SIZE_TP_TWO, UPDATE_EXAMPLE_FULL_ROWS, UPDATE_EXAMPLE_FULL_COLS, UPDATE_EXAMPLE_FSDP_TP, UPDATE_EXAMPLE_FSDP_ROWS, UPDATE_EXAMPLE_FULL_ELEMENTS, UPDATE_DEBUG_SLEEP_COUNT, UPDATE_DEBUG_SLEEP_MS, UPDATE_DEBUG_SLEEP_TOTAL_MS, UPDATE_DEBUG_OUTER_MS, UPDATE_DEBUG_INNER_MS, UPDATE_DEBUG_OTHER_MS, UPDATE_DEBUG_NO_SLEEP_S, UPDATE_DEBUG_WARMUP_1B_S, UPDATE_DEBUG_WARMUP_8B_S, UPDATE_DEBUG_SAVED_S, UPDATE_DEBUG_SPEEDUP, UPDATE_DEBUG_YARDSTICK_MS, UPDATE_DEBUG_FULL_YARDSTICK_RATIO, UPDATE_DEBUG_SLEEP_CALLS } from '../../ml-sys/numbers';
 
   type Tone = 'plain' | 'blue' | 'orange';
   type MobileItem = { title: string; titleZh: string; body: string; bodyZh: string; body2?: string; body2Zh?: string; tone: Tone };
@@ -144,25 +144,27 @@
       { en: 'automatic rollback is not shown', zh: '图中没有自动回滚或崩溃安全保证' },
     ],
   }, {
-    caption: `Three ${UPDATE_DEBUG_SLEEP_MS} ms sleeps ran once per tensor. About 160 repetitions explain the ${UPDATE_DEBUG_SAVED_S}-second saving.`,
-    captionZh: `每个张量都有 3 次 ${UPDATE_DEBUG_SLEEP_MS} ms 的 sleep。约 160 次调用合计少等 ${UPDATE_DEBUG_SAVED_S} 秒。`,
-    title: 'Measure the whole call, not only ModelRunner', titleZh: '测量整个调用，不能只测 ModelRunner',
-    subtitle: 'ModelRunner = model-owning code on each inference rank · outer timer = whole call', subtitleZh: 'ModelRunner = 每个推理 rank 上持有模型的代码 · 外部计时 = 整个调用',
-    foot: 'Successive measurements in one debug note; not a general speedup.', footZh: '同一调试记录里的前后测量，不是普遍加速结论。',
-    mobileTitle: 'Time the whole call', mobileTitleZh: '测量整个调用',
-    mobileSubtitle: 'ModelRunner = model-owning code', mobileSubtitleZh: 'ModelRunner = 持有模型的代码',
-    mobileFoot: 'about 160 calls · not an exact tensor count', mobileFootZh: '约 160 次调用，不是精确张量数。',
+    caption: 'Removing sleeps leaves a slow first communication. A warm‑up runs it before the measured updates.',
+    captionZh: '去掉 sleep 后，首次通信仍然很慢。warm‑up 先做一次通信，再计时更新。',
+    title: 'Sleeps, then the first communication', titleZh: '重复 sleep 之后，还有首次通信',
+    subtitle: 'warm-up = one small communication right after the group starts', subtitleZh: 'warm-up = 建组后先做一次小通信',
+    foot: 'Successive debug-note results; not a universal speedup.', footZh: '同一调试记录的连续结果，不是普遍加速结论。',
+    foot2: 'CI = automated tests · barrier needs device_ids=[0]', foot2Zh: 'CI = 自动测试 · barrier 要传 device_ids=[0]',
+    mobileTitle: 'Sleep, then warm up', mobileTitleZh: 'sleep 后，先 warm-up',
+    mobileSubtitle: 'warm-up = a small first communication', mobileSubtitleZh: 'warm-up = 先做一次小通信',
+    mobileFoot: 'Debug results; not a general speedup.', mobileFootZh: '调试结果，不是普遍加速结论。',
     mobile: [
-      { title: 'OUTER CALL · 33 ms', titleZh: '外部调用 · 33 ms', body: 'ModelRunner reports only 1 ms', bodyZh: 'ModelRunner 只报告 1 ms', tone: 'orange' },
-      { title: '3 SLEEPS · 30 ms', titleZh: '3 次 SLEEP · 30 ms', body: 'fixed waits outside ModelRunner', bodyZh: 'ModelRunner 外面的固定等待', tone: 'orange' },
-      { title: 'REMOVE THE SLEEPS', titleZh: '去掉这些 SLEEP', body: 'full update becomes 2.202 s', bodyZh: '完整更新变成 2.202 秒', tone: 'blue' },
+      { title: 'REPEATED SLEEPS', titleZh: '重复的 SLEEP', body: `${UPDATE_DEBUG_INITIAL_S} s → ${UPDATE_DEBUG_NO_SLEEP_S} s`, bodyZh: `${UPDATE_DEBUG_INITIAL_S} 秒 → ${UPDATE_DEBUG_NO_SLEEP_S} 秒`, tone: 'orange' },
+      { title: '33 ms PER TENSOR', titleZh: '每个张量 33 ms', body: `${UPDATE_DEBUG_INNER_MS} + ${UPDATE_DEBUG_SLEEP_TOTAL_MS} + ${UPDATE_DEBUG_OTHER_MS} ms`, bodyZh: `${UPDATE_DEBUG_INNER_MS} + ${UPDATE_DEBUG_SLEEP_TOTAL_MS} + ${UPDATE_DEBUG_OTHER_MS} ms`, tone: 'orange' },
+      { title: 'FIRST COMMUNICATION', titleZh: '首次通信', body: 'a separate one-time cost', bodyZh: '另一笔一次性的成本', tone: 'orange' },
+      { title: 'WARM UP AFTER GROUP SETUP', titleZh: '建组后先 WARM UP', body: 'small communication before timing', bodyZh: '计时前先做小通信', tone: 'orange' },
+      { title: 'LATER FULL UPDATES', titleZh: '之后的完整更新', body: `1B ≈ ${UPDATE_DEBUG_WARMUP_1B_S} s · 8B ≈ ${UPDATE_DEBUG_WARMUP_8B_S} s`, bodyZh: `1B ≈ ${UPDATE_DEBUG_WARMUP_1B_S} 秒 · 8B ≈ ${UPDATE_DEBUG_WARMUP_8B_S} 秒`, tone: 'blue' },
     ],
     formulas: [
-      { en: '3 × 10 ms = 30 ms', zh: '3 × 10 ms = 30 ms' },
-      { en: '1 + 30 + 2 = 33 ms, rounded', zh: '1 + 30 + 2 = 33 ms，均为舍入值' },
-      { en: '7.047 − 2.202 = 4.845 s saved', zh: '7.047 − 2.202 = 少等 4.845 秒' },
-      { en: '7.047 ÷ 2.202 ≈ 3.20×', zh: '7.047 ÷ 2.202 ≈ 3.20 倍' },
-      { en: `4.845 s ÷ 0.030 s ≈ ${UPDATE_DEBUG_SLEEP_CALLS.toFixed(1)} calls`, zh: `4.845 秒 ÷ 0.030 秒 ≈ ${UPDATE_DEBUG_SLEEP_CALLS.toFixed(1)} 次调用` },
+      { en: `${UPDATE_DEBUG_INNER_MS} + ${UPDATE_DEBUG_SLEEP_TOTAL_MS} + ${UPDATE_DEBUG_OTHER_MS} = ${UPDATE_DEBUG_OUTER_MS} ms, rounded`, zh: `${UPDATE_DEBUG_INNER_MS} + ${UPDATE_DEBUG_SLEEP_TOTAL_MS} + ${UPDATE_DEBUG_OTHER_MS} = ${UPDATE_DEBUG_OUTER_MS} ms，均为舍入值` },
+      { en: `${UPDATE_DEBUG_INITIAL_S} − ${UPDATE_DEBUG_NO_SLEEP_S} = ${UPDATE_DEBUG_SAVED_S} s saved`, zh: `${UPDATE_DEBUG_INITIAL_S} − ${UPDATE_DEBUG_NO_SLEEP_S} = 少等 ${UPDATE_DEBUG_SAVED_S} 秒` },
+      { en: `${UPDATE_DEBUG_SAVED_S} s ÷ 0.030 s ≈ ${UPDATE_DEBUG_SLEEP_CALLS.toFixed(1)} calls`, zh: `${UPDATE_DEBUG_SAVED_S} 秒 ÷ 0.030 秒 ≈ ${UPDATE_DEBUG_SLEEP_CALLS.toFixed(1)} 次调用` },
+      { en: `after warm-up: 1B ≈ ${UPDATE_DEBUG_WARMUP_1B_S} s · 8B ≈ ${UPDATE_DEBUG_WARMUP_8B_S} s`, zh: `warm-up 后：1B ≈ ${UPDATE_DEBUG_WARMUP_1B_S} 秒 · 8B ≈ ${UPDATE_DEBUG_WARMUP_8B_S} 秒` },
     ],
   }, {
     caption: 'Training also keeps gradients and optimizer records. If these tables do not fit, what should each GPU keep?',
@@ -207,7 +209,7 @@
       motion.removeEventListener('change', updateMotion);
     };
   });
-  const PHASE_COUNTS = [4, 6, 4, 5, 6, 5, 4, 5];
+  const PHASE_COUNTS = [4, 6, 4, 5, 6, 5, 6, 5];
   const PHASE_MS = 1000, REST_MS = 2800;
   let phase = $state(0);
   let lap = $state(0), lapMs = $state(0);
@@ -230,7 +232,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [560, 500, 510, 620, 620, 640, 520, 640][step] : [440, 460, 460, 500, 490, 490, 520, 500][step]);
+  const H = $derived(phone ? [560, 500, 510, 620, 620, 640, 720, 640][step] : [440, 460, 460, 500, 490, 490, 650, 500][step]);
 </script>
 
 <figure class="viz" data-animation-step={step} data-animation-phase={phase} data-animation-final-phase={PHASE_COUNTS[step] - 1}>
@@ -460,33 +462,54 @@
           <text x="360" y="447" text-anchor="middle" class="small">{t('Blue = complete versions · orange = update work · red outline = unsafe mixture', '蓝 = 完整版本 · 橙 = 更新工作 · 红框 = 危险的新旧混合')}</text>
         </g>
       {:else if step === 6}
-        <text x="35" y="104" class="small strong">{t('WITH SLEEPS', '保留 SLEEP')}</text>
-        <rect x="160" y="82" width="500" height="38" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
-        <text x="645" y="107" text-anchor="end" class="result">{UPDATE_DEBUG_INITIAL_S} s</text>
+        <text x="35" y="105" class="small strong">{t('WITH SLEEPS · 1B', '保留 SLEEP · 1B')}</text>
+        <rect x="180" y="82" width="480" height="32" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x="645" y="105" text-anchor="end" class="result">{UPDATE_DEBUG_INITIAL_S} s</text>
         <g opacity={phase >= 1 ? 1 : 0}>
-          <text x="35" y="172" class="small strong">{t('WITHOUT SLEEPS', '去掉 SLEEP')}</text>
-          <rect x="160" y="150" width={500 * UPDATE_DEBUG_NO_SLEEP_S / UPDATE_DEBUG_INITIAL_S} height="38" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x={175 + 500 * UPDATE_DEBUG_NO_SLEEP_S / UPDATE_DEBUG_INITIAL_S} y="175" class="result">{UPDATE_DEBUG_NO_SLEEP_S} s</text>
-          <text x="360" y="224" text-anchor="middle" class="result">{UPDATE_DEBUG_INITIAL_S} − {UPDATE_DEBUG_NO_SLEEP_S} = {UPDATE_DEBUG_SAVED_S} s {t('saved', '少等')} · ≈ {UPDATE_DEBUG_SPEEDUP.toFixed(2)}×</text>
-          <text x="360" y="250" text-anchor="middle" class="result">{UPDATE_DEBUG_SAVED_S} s ÷ 0.030 s ≈ {UPDATE_DEBUG_SLEEP_CALLS.toFixed(1)} {t('calls · about 160', '次调用 · 约 160 次')}</text>
+          <text x="35" y="153" class="small strong">{t('NO SLEEPS · 1B', '去掉 SLEEP · 1B')}</text>
+          <rect x="180" y="130" width={480 * UPDATE_DEBUG_NO_SLEEP_S / UPDATE_DEBUG_INITIAL_S} height="32" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x={195 + 480 * UPDATE_DEBUG_NO_SLEEP_S / UPDATE_DEBUG_INITIAL_S} y="153" class="result">{UPDATE_DEBUG_NO_SLEEP_S} s</text>
+          <text x="360" y="278" text-anchor="middle" class="result">{UPDATE_DEBUG_INITIAL_S} − {UPDATE_DEBUG_NO_SLEEP_S} = {UPDATE_DEBUG_SAVED_S} s {t('saved', '少等')} · ≈ {UPDATE_DEBUG_SPEEDUP.toFixed(2)}×</text>
+          <text x="360" y="302" text-anchor="middle" class="result">{UPDATE_DEBUG_SAVED_S} s ÷ 0.030 s ≈ {UPDATE_DEBUG_SLEEP_CALLS.toFixed(1)} {t('calls · about 160', '次调用 · 约 160 次')}</text>
         </g>
         <g opacity={phase >= 2 ? 1 : 0}>
-          <text x="360" y="278" text-anchor="middle" class="small strong">{t('ONE PARAMETER · OUTER CALL = 33 ms, ROUNDED', '一个参数 · 外部调用 = 33 ms，均为舍入值')}</text>
-          <rect x="200" y="302" width="10" height="48" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="360" y="330" text-anchor="middle" class="small strong">{t('ONE PARAMETER · OUTER CALL = 33 ms, ROUNDED', '一个参数 · 外部调用 = 33 ms，均为舍入值')}</text>
+          <rect x="200" y="346" width="10" height="38" fill="var(--accent-soft)" stroke="var(--accent)" />
           {#each [0, 1, 2] as i}
-            <rect x={210 + i * 100} y="302" width="100" height="48" fill="var(--gen-soft)" stroke="var(--gen)" />
-            <text x={260 + i * 100} y="331" text-anchor="middle" class="small">{UPDATE_DEBUG_SLEEP_MS} ms</text>
+            <rect x={210 + i * 100} y="346" width="100" height="38" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x={260 + i * 100} y="371" text-anchor="middle" class="small">{UPDATE_DEBUG_SLEEP_MS} ms</text>
           {/each}
-          <rect x="510" y="302" width="20" height="48" fill="var(--bg)" stroke="var(--line)" />
-          <text x="205" y="374" text-anchor="middle" class="small">{UPDATE_DEBUG_INNER_MS} ms</text>
-          <text x="205" y="394" text-anchor="middle" class="small">{t('inside', '内部')}</text>
-          <text x="520" y="374" text-anchor="middle" class="small">{UPDATE_DEBUG_OTHER_MS} ms</text>
-          <text x="520" y="394" text-anchor="middle" class="small">{t('other', '其他')}</text>
+          <rect x="510" y="346" width="20" height="38" fill="var(--bg)" stroke="var(--line)" />
+          <text x="205" y="408" text-anchor="middle" class="small">{UPDATE_DEBUG_INNER_MS} ms · {t('inside', '内部')}</text>
+          <text x="360" y="408" text-anchor="middle" class="small">3 × {UPDATE_DEBUG_SLEEP_MS} ms · {t('sleeps', '暂停')}</text>
+          <text x="520" y="408" text-anchor="middle" class="small">{UPDATE_DEBUG_OTHER_MS} ms · {t('other', '其他')}</text>
+          <text x="360" y="438" text-anchor="middle" class="result">{UPDATE_DEBUG_INNER_MS} + {UPDATE_DEBUG_SLEEP_TOTAL_MS} + {UPDATE_DEBUG_OTHER_MS} = {UPDATE_DEBUG_OUTER_MS} ms</text>
         </g>
         <g opacity={phase >= 3 ? 1 : 0}>
-          <text x="360" y="427" text-anchor="middle" class="result">{UPDATE_DEBUG_INNER_MS} + {UPDATE_DEBUG_SLEEP_TOTAL_MS} + {UPDATE_DEBUG_OTHER_MS} = {UPDATE_DEBUG_OUTER_MS} ms</text>
-          <text x="360" y="462" text-anchor="middle" class="small">{t('Each tensor pays three 10 ms pauses; 161.5 is not an exact tensor count.', '每个张量都有 3 次 10 ms 暂停；161.5 不是精确张量数。')}</text>
-          <text x="360" y="490" text-anchor="middle" class="small">{t('Both full-update bars use the same seconds scale.', '两条完整更新柱使用相同的秒数比例。')}</text>
+          <rect x="35" y="460" width="315" height="140" rx="12" fill="var(--bg)" stroke="var(--gen)" />
+          <text x="192" y="484" text-anchor="middle" class="small strong">{t('WITHOUT WARM-UP', '不做 WARM-UP')}</text>
+          <text x="192" y="512" text-anchor="middle" class="small">{t('process group ready', '通信组已建好')}</text>
+          <line x1="192" y1="521" x2="192" y2="532" stroke="var(--gen)" stroke-width="2" marker-end="url(#update-arrow-orange)" />
+          <text x="192" y="550" text-anchor="middle" class="small strong">{t('first update pays first communication', '第一次更新支付首次通信成本')}</text>
+          <line x1="192" y1="559" x2="192" y2="570" stroke="var(--gen)" stroke-width="2" marker-end="url(#update-arrow-orange)" />
+          <text x="192" y="588" text-anchor="middle" class="small">{t('later updates', '之后的更新')}</text>
+        </g>
+        <g opacity={phase >= 4 ? 1 : 0}>
+          <rect x="375" y="460" width="315" height="140" rx="12" fill="var(--bg)" stroke="var(--accent)" />
+          <text x="532" y="484" text-anchor="middle" class="small strong">{t('WITH WARM-UP', '先做 WARM-UP')}</text>
+          <text x="532" y="512" text-anchor="middle" class="small">{t('process group ready', '通信组已建好')}</text>
+          <line x1="532" y1="521" x2="532" y2="532" stroke="var(--gen)" stroke-width="2" marker-end="url(#update-arrow-orange)" />
+          <text x="532" y="550" text-anchor="middle" class="small strong">{t('warm-up pays that cost first', 'warm-up 先付这笔成本')}</text>
+          <line x1="532" y1="559" x2="532" y2="570" stroke="var(--accent)" stroke-width="2" marker-end="url(#update-arrow-blue)" />
+          <text x="532" y="588" text-anchor="middle" class="small">{t('timed updates come after', '之后才开始计时更新')}</text>
+        </g>
+        <g opacity={phase >= 5 ? 1 : 0}>
+          <text x="35" y="201" class="small strong">{t('1B · AFTER WARM-UP', '1B · WARM-UP 后')}</text>
+          <rect x="180" y="178" width={480 * UPDATE_DEBUG_WARMUP_1B_S / UPDATE_DEBUG_INITIAL_S} height="32" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x={195 + 480 * UPDATE_DEBUG_WARMUP_1B_S / UPDATE_DEBUG_INITIAL_S} y="201" class="result">≈ {UPDATE_DEBUG_WARMUP_1B_S} s</text>
+          <text x="35" y="249" class="small strong">{t('8B · AFTER WARM-UP', '8B · WARM-UP 后')}</text>
+          <rect x="180" y="226" width={480 * UPDATE_DEBUG_WARMUP_8B_S / UPDATE_DEBUG_INITIAL_S} height="32" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x={195 + 480 * UPDATE_DEBUG_WARMUP_8B_S / UPDATE_DEBUG_INITIAL_S} y="249" class="result">≈ {UPDATE_DEBUG_WARMUP_8B_S} s</text>
         </g>
       {:else if step === 7}
         <rect x="25" y="82" width="670" height="195" rx="13" fill="var(--bg)" stroke="var(--gen)" />
@@ -514,9 +537,9 @@
         <text x="360" y="470" text-anchor="middle" class="small" opacity={phase >= 4 ? 1 : 0}>{t('Orange = saved training tables · blue outline = unanswered per-GPU shares', '橙 = 训练保存的表 · 蓝框 = 尚未回答的每张 GPU 份额')}</text>
       {/if}
       {#if cur.foot2}
-        <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t(cur.foot2, cur.foot2Zh ?? cur.foot2)}</text>
+        <text x={W / 2} y={H - 26} text-anchor="middle" class={step === 6 ? 'footnote step7-footnote' : 'footnote'}>{t(cur.foot2, cur.foot2Zh ?? cur.foot2)}</text>
       {/if}
-      <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t(cur.mobileFoot ?? cur.foot, cur.mobileFootZh ?? cur.footZh) : t(cur.foot, cur.footZh)}</text>
+      <text x={W / 2} y={H - 10} text-anchor="middle" class={step === 6 ? 'footnote step7-footnote' : 'footnote'}>{phone ? t(cur.mobileFoot ?? cur.foot, cur.mobileFootZh ?? cur.footZh) : t(cur.foot, cur.footZh)}</text>
     </svg>
   </div>
   <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh}
@@ -532,6 +555,9 @@
   .strong { font-weight: 650; }
   .result { font-family: var(--mono); font-size: 15px; font-weight: 650; fill: var(--fg); }
   .big { font-family: var(--mono); font-size: 26px; font-weight: 700; fill: var(--fg); }
+  @media (min-width: 601px) {
+    .step7-footnote { font-size: 12.2px; }
+  }
   @media (max-width: 600px) {
     .title { font-size: 16px; }
     .label, .small { font-size: 12px; }

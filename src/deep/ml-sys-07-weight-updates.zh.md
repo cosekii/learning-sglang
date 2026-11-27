@@ -208,16 +208,18 @@ $$U=\bigwedge_{i=1}^{n}u_i,\qquad \text{开始 rollout}\Rightarrow U$$
 
 来源：`Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-1.md:268-287`；`verl/workers/sharding_manager/fsdp_sglang.py:98-135,164-188`；`Awesome-ML-SYS-Tutorial/sglang/latency-accelerate-for-weight-updates/readme.md:451-458,1011-1058`。
 
-## 第 7 步 · 找出 ModelRunner 外面的固定等待
+## 第 7 步 · 去掉重复 sleep，再做通信 warm-up
 
-**一句话。** 每个张量都有三次 10 ms sleep，约 160 次调用合计少等 4.845 秒，完整更新从 7.047 秒降到 2.202 秒。
+**一句话。** 每个张量都有三次 10 ms sleep；去掉它们后，首次通信仍有一笔单独成本，所以调试记录先 warm-up，再计时后续更新。
 
 ### 图上是什么
 
-- 两条完整更新柱使用同一比例。去掉 sleep 后的 2.202 秒柱与原来的 7.047 秒柱并排。
-- 下方长条把舍入后的 33 ms 外部调用拆成：`ModelRunner` 内部 1 ms、三次 10 ms sleep、其他舍入时间 2 ms。源码循环让每个张量都支付一次这 30 ms。
+- 四条完整更新柱使用同一秒数比例：保留 sleep 为 7.047 秒，去掉 sleep 为 2.202 秒，warm-up 后 1B 约为 0.5 秒、8B 约为 0.6 秒。
+- 中间长条把舍入后的 33 ms 外部调用拆成：`ModelRunner` 内部 1 ms、三次 10 ms sleep、其他舍入时间 2 ms。源码循环让每个张量都支付一次这 30 ms。
 - 完整更新少等的 4.845 秒除以 0.030 秒，得到约 161.5 次调用，也就是约 160 次。这是由舍入时间反推的重复次数，不是精确张量数。
+- 不做 warm-up 时，第一次更新要支付单独的首次通信成本。做 warm-up 时，通信组建好后先做一次小通信，再开始计时更新。
 - `ModelRunner` 是每个推理 rank 上持有模型的代码，`sleep` 是编程设定的暂停。只测内部会漏掉这些暂停。
+- 脚注把 CI 解释为自动测试，并保留来源对 barrier 的 `device_ids=[0]` 要求。
 
 ### 公式与符号
 
@@ -232,24 +234,28 @@ $$T_{\text{outer}}\approx T_{\text{inner}}+n\,t_s+T_{\text{other}},\qquad S=T_0-
 | $T_0,T_1$ | 去掉 sleep 前后的完整更新耗时 | 7.047 和 2.202 秒 |
 | $S,Q$ | 少等秒数与前后时间比 | 本步计算 |
 | $N$ | 大约的更新调用次数 | $S/(3\times0.010\ \text{s})\approx161.5$，约 160 次 |
+| $T_{1B},T_{8B}$ | warm-up 后的完整更新 | 调试记录里约为 0.5 和 0.6 秒 |
 
 ### 代入图上的数
 
 $$1+3\times10+2=33\ \text{ms}$$
 $$S=7.047-2.202=4.845\ \text{s},\qquad Q=7.047/2.202\approx3.20$$
 $$N=4.845\ \text{s}/0.030\ \text{s}=161.5\ \text{次调用}\approx160\ \text{次调用}$$
+$$T_{1B}\approx0.5\ \text{s},\qquad T_{8B}\approx0.6\ \text{s}$$
 
-这些数字是一位作者在同一调试过程中的舍入测量，161.5 不是精确张量数，不能据此宣称普遍有 3.20 倍改善。
+这些数字是一位作者在同一调试过程中的舍入测量，161.5 不是精确张量数。来源没有给出精确的 warm-up 时长，也没有给出最后两次测量的普遍加速比。
 
 ### 图外测量设置
 
 调试记录在 GPU 计时区域前后调用 `torch.cuda.synchronize()`，让 CPU 计时器等待已排队的工作。这个设置没有画上舞台，也不给图上的 `1 + 30 + 2` 算式增加一项。
 
+舞台写了 warm-up，但没有写它的确切调用。来源在通信组初始化后立即执行 `dist.barrier(device_ids=[0], group=pg)`。barrier 让组内成员等到彼此都到齐，这里用它先做小通信。`device_ids=[0]` 指定使用哪张 GPU，`group=pg` 指定刚建好的通信组。在 CI 自动测试中，省略 `device_ids` 会因设备错误挂住；本地运行没有这个问题。这些是实现细节，不给计时公式增加一项。
+
 ### 接下来
 
-去掉固定等待并不会缩小训练保存的表。最后一步留下显存问题：这些表装不下时，怎样让每个训练进程只保存一部分？
+去掉重复等待并做好通信 warm-up，并不会缩小训练保存的表。最后一步留下显存问题：这些表装不下时，怎样让每个训练进程只保存一部分？
 
-来源：`Awesome-ML-SYS-Tutorial/sglang/latency-accelerate-for-weight-updates/readme.md:584-605,980-1007,1023-1030,1061-1065`。
+来源：`Awesome-ML-SYS-Tutorial/sglang/latency-accelerate-for-weight-updates/readme.md:584-605,980-1007,1023-1030,1061-1093`。
 
 ## 第 8 步 · 把训练保存的表留给下一章
 

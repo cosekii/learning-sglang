@@ -204,7 +204,7 @@ export const SLIME_EXAMPLE_REWARD_STD = Math.sqrt(SLIME_EXAMPLE_CENTERED_REWARDS
 export const SLIME_GRPO_STD_EPSILON = 1e-6;
 export const SLIME_EXAMPLE_NORMALIZED_REWARDS = SLIME_EXAMPLE_CENTERED_REWARDS.map((reward) => reward / (SLIME_EXAMPLE_REWARD_STD + SLIME_GRPO_STD_EPSILON));
 
-// One author's Llama-3.2-1B weight-update debug log, not a transport benchmark.
+// One author's weight-update debug notes, not transport benchmarks.
 export const UPDATE_DEBUG_PARAMS = 1_000_000_000;
 export const UPDATE_DEBUG_BF16_BYTES = 2;
 export const UPDATE_DEBUG_WEIGHT_GB = UPDATE_DEBUG_PARAMS * UPDATE_DEBUG_BF16_BYTES / 1_000_000_000;
@@ -230,6 +230,8 @@ export const UPDATE_DEBUG_OUTER_MS = 33;
 export const UPDATE_DEBUG_INNER_MS = 1;
 export const UPDATE_DEBUG_OTHER_MS = UPDATE_DEBUG_OUTER_MS - UPDATE_DEBUG_SLEEP_TOTAL_MS - UPDATE_DEBUG_INNER_MS;
 export const UPDATE_DEBUG_NO_SLEEP_S = 2.202;
+export const UPDATE_DEBUG_WARMUP_1B_S = 0.5;
+export const UPDATE_DEBUG_WARMUP_8B_S = 0.6;
 export const UPDATE_DEBUG_SAVED_S = Number((UPDATE_DEBUG_INITIAL_S - UPDATE_DEBUG_NO_SLEEP_S).toFixed(3));
 export const UPDATE_DEBUG_SPEEDUP = UPDATE_DEBUG_INITIAL_S / UPDATE_DEBUG_NO_SLEEP_S;
 // Decimal GB ÷ TB/s gives milliseconds; this HBM yardstick is not a transport prediction.

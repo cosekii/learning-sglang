@@ -208,16 +208,18 @@ This boundary makes replacement safe to read, but it says nothing about where th
 
 Sources: `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-1.md:268-287`; `verl/workers/sharding_manager/fsdp_sglang.py:98-135,164-188`; `Awesome-ML-SYS-Tutorial/sglang/latency-accelerate-for-weight-updates/readme.md:451-458,1011-1058`.
 
-## Step 7 · Find the fixed wait outside ModelRunner
+## Step 7 · Remove repeated sleeps and warm up communication
 
-**One sentence.** Three 10 ms sleeps run once per tensor, and about 160 repetitions explain the 4.845-second saving from 7.047 to 2.202 seconds.
+**One sentence.** Three 10 ms sleeps repeat per tensor, and a separate first-communication cost remains after their removal, so the debug note warms up once before timing later updates.
 
 ### On the stage
 
-- The two full-update bars use one scale. Removing the sleeps leaves a 2.202-second bar beside the original 7.047-second bar.
-- The lower strip decomposes one rounded 33 ms outer call into 1 ms inside `ModelRunner`, three 10 ms sleeps and 2 ms of other rounded time. The source loop pays that 30 ms block once per tensor.
+- Four full-update bars use one seconds scale: 7.047 seconds with sleeps, 2.202 seconds without sleeps, then approximately 0.5 seconds for 1B and 0.6 seconds for 8B after warm-up.
+- The middle strip decomposes one rounded 33 ms outer call into 1 ms inside `ModelRunner`, three 10 ms sleeps and 2 ms of other rounded time. The source loop pays that 30 ms block once per tensor.
 - The full-model saving divided by 0.030 s gives 161.5 repetitions, about 160. This is an approximate repetition count inferred from rounded times, not an exact tensor count.
+- Without warm-up, the first update pays the separate first-communication cost. With warm-up, one small communication runs right after the process group starts, before the measured updates.
 - `ModelRunner` is the model-owning code on each inference rank, and a `sleep` is a programmed pause. Timing only the inner operation misses those pauses.
+- The footnote defines CI as automated tests and retains the source's `device_ids=[0]` boundary for the barrier.
 
 ### Formula and symbols
 
@@ -232,24 +234,28 @@ $$T_{\text{outer}}\approx T_{\text{inner}}+n\,t_s+T_{\text{other}},\qquad S=T_0-
 | $T_0,T_1$ | Full update before and after sleep removal | 7.047 and 2.202 s |
 | $S,Q$ | Saved seconds and time ratio | Derived here |
 | $N$ | Approximate update-call count | $S/(3\times0.010\ \text{s})\approx161.5$, about 160 |
+| $T_{1B},T_{8B}$ | Full updates after warm-up | Approximately 0.5 and 0.6 s in the debug note |
 
 ### The numbers on the stage
 
 $$1+3\times10+2=33\ \text{ms}$$
 $$S=7.047-2.202=4.845\ \text{s},\qquad Q=7.047/2.202\approx3.20$$
 $$N=4.845\ \text{s}/0.030\ \text{s}=161.5\ \text{calls}\approx160\ \text{calls}$$
+$$T_{1B}\approx0.5\ \text{s},\qquad T_{8B}\approx0.6\ \text{s}$$
 
-The values are rounded successive measurements from one author's setup. The 161.5 quotient is not an exact tensor count. They do not establish a general 3.20× improvement.
+The values are rounded successive measurements from one author's setup. The 161.5 quotient is not an exact tensor count. The source gives no exact warm-up duration and no general speedup ratio for the final two measurements.
 
 ### Measurement setup · not drawn
 
 The debug note calls `torch.cuda.synchronize()` around the measured GPU region so its CPU timer waits for queued work. This setup does not appear on the slide and adds no term to the visible `1 + 30 + 2` calculation.
 
+The stage names the warm-up but not its exact call. The source places `dist.barrier(device_ids=[0], group=pg)` immediately after process-group initialization. A barrier makes group members wait together; here it supplies the small warm-up communication. `device_ids=[0]` selects the GPU, and `group=pg` selects the new process group. In CI, omitting `device_ids` hung because of device errors; the local run did not hang. These are implementation details, not extra terms in the timing formula.
+
 ### Next
 
-Removing a fixed wait does not shrink training's saved tables. The final step asks how each GPU can keep only a slice when those tables do not fit.
+Removing repeated waits and warming communication does not shrink training's saved tables. The final step asks how each GPU can keep only a slice when those tables do not fit.
 
-Source: `Awesome-ML-SYS-Tutorial/sglang/latency-accelerate-for-weight-updates/readme.md:584-605,980-1007,1023-1030,1061-1065`.
+Source: `Awesome-ML-SYS-Tutorial/sglang/latency-accelerate-for-weight-updates/readme.md:584-605,980-1007,1023-1030,1061-1093`.
 
 ## Step 8 · Leave training's saved tables as the next problem
 
