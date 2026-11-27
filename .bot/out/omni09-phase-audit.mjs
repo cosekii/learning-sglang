@@ -24,6 +24,10 @@ const config = {
     final: 2,
     required: [[], ['object_id = A'], [lang === 'zh' ? '使用字段 · 尚未发布' : 'FIELDS IN USE · NOT SENT']],
   },
+  3: {
+    final: 5,
+    required: [[], ['DataRef(A)'], ['pending[A]'], [lang === 'zh' ? '通知已发' : 'notice sent'], ['watch_pending = background ACK wait'], ['job.ready = publication done ✓']],
+  },
 };
 if (!config[step]) throw new Error(`Step ${step} audit rules are not defined yet`);
 const expectedFinal = config[step].final;
@@ -137,6 +141,12 @@ try {
       ...(target < 1 ? ['version = 1', 'object_id = A'] : []),
       ...(target < 2 ? [lang === 'zh' ? '尚未发布' : 'NOT SENT'] : []),
       'DataReady',
+    ] : step === 3 ? [
+      ...(target < 1 ? ['RelayOperation', lang === 'zh' ? '数据 A 已写入' : 'payload A written'] : []),
+      ...(target < 2 ? ['pending[A]'] : []),
+      ...(target < 3 ? [lang === 'zh' ? '通知已发' : 'notice sent'] : []),
+      ...(target < 4 ? ['watch_pending = background ACK wait'] : []),
+      ...(target < 5 ? ['job.ready = publication done ✓'] : []),
     ] : [];
     const premature = forbidden.filter((text) => state.text.some((line) => line.includes(text)));
     if (premature.length) throw new Error(`phase ${target}: premature completion ${premature.join(', ')}`);

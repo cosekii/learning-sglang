@@ -31,7 +31,7 @@
     if (q >= 1 && q <= steps.length) step = q - 1;
   });
   const cur = $derived(steps[step]);
-  const PHASE_COUNTS = [4, 3, 1, 7, 6];
+  const PHASE_COUNTS = [4, 3, 6, 7, 6];
   let phase = $state(0);
   let lap = $state(0), lapMs = $state(0);
   const nextLap = (ms: number) => untrack(() => { lapMs = ms; lap++; });
@@ -60,7 +60,7 @@
     query.addEventListener('change', update);
     return () => query.removeEventListener('change', update);
   });
-  const W = $derived(phone ? 300 : 720), H = $derived(phone ? 700 : 390);
+  const W = $derived(phone ? 300 : 720), H = $derived(phone ? 700 : (step === 2 ? 430 : 390));
   const panels = $derived([
     { title: t('REUSE NOW · WRONG READ', '现在覆盖 · 读错'), x: phone ? 15 : 20, y: phone ? 105 : 105, w: phone ? 270 : 325 },
     { title: t('WAIT FOR THE READER', '等读者读完'), x: phone ? 15 : 375, y: phone ? 365 : 105, w: phone ? 270 : 325 },
@@ -182,60 +182,83 @@
       <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{phone ? t('No reader count or ACK state; other fields rebuild data.', 'DataRef 没有读者计数或 ACK 状态；别的字段还原 tensor。') : t('DataRef has no reader count or ACK state; other fields reconstruct tensors.', 'DataRef 没有读者计数或 ACK 状态；其他字段用于还原 tensor。')}</text>
       <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Next: publishing adds a sender pending record.', '下一步：发布时，发送方另加一张等待回执的记录。') : t('Next: publishing adds a separate pending record on the sender.', '下一步：发布时，发送方另加一张等待回执的记录。')}</text>
       {:else if step === 2}
-      <text x={phone ? 15 : 20} y="20" class="tag strong">pending = {t("sender's record waiting for an ACK", '发送方等待 ACK 的记录')}</text>
+      <text x={phone ? 15 : 20} y="20" class="tag strong">pending = {phone ? t("sender's record waiting for a read receipt", '发送方等待读取回执的记录') : t("sender's record waiting for an ACK · ACK = read receipt", '发送方等待 ACK 的记录 · ACK = 读取回执')}</text>
       <text x={phone ? 15 : 20} y="45" class="tag">{t('Object A: write first, register pending, then send DataReady', '数据 A：先写入，再登记 pending，最后发 DataReady')}</text>
       {#if !phone}
-        <path d="M225 180 H252" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
-        <path d="M462 180 H490" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
-        <rect x="20" y="80" width="205" height="210" rx="12" fill="var(--bg)" stroke="var(--line)" />
+        <path d="M225 180 H252" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" opacity={phase >= 2 ? 1 : 0.15} />
+        <path d="M462 180 H490" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" opacity={phase >= 3 ? 1 : 0.15} />
+        <rect x="20" y="80" width="205" height="210" rx="12" fill="var(--bg)" stroke={phase === 0 || phase === 1 ? 'var(--accent)' : 'var(--line)'} />
         <text x="35" y="108" class="rowlabel">1 · {t('WRITE', '写入')}</text>
-        <text x="122" y="142" text-anchor="middle" class="mono strong">RelayOperation</text>
-        <rect x="43" y="162" width="159" height="52" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
-        <text x="122" y="194" text-anchor="middle" class="mono">{t('payload A written', '数据 A 已写入')}</text>
-        <text x="122" y="246" text-anchor="middle" class="tag">{t('operation still open', '操作仍未收尾')}</text>
+        {#if phase >= 1}
+          <text x="122" y="132" text-anchor="middle" class="mono strong">DataRef(A)</text>
+          <text x="122" y="154" text-anchor="middle" class="mono strong">RelayOperation</text>
+        {:else}
+          <text x="122" y="142" text-anchor="middle" class="mono strong">write_payload()</text>
+        {/if}
+        <rect x="43" y="162" width="159" height="52" rx="7" fill={phase >= 1 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={phase >= 1 ? 'var(--accent)' : 'var(--line)'} />
+        <text x="122" y="194" text-anchor="middle" class="mono">{phase >= 1 ? t('payload A written', '数据 A 已写入') : t('payload A · writing…', '数据 A · 正在写入…')}</text>
+        <text x="122" y="246" text-anchor="middle" class="tag">{phase >= 1 ? t('operation still open', '操作仍未收尾') : t('DataRef + operation not returned', 'DataRef 和 operation 未返回')}</text>
 
-        <rect x="257" y="80" width="205" height="210" rx="12" fill="white" stroke="var(--accent)" stroke-width="2" />
+        <rect x="257" y="80" width="205" height="210" rx="12" fill="white" stroke={phase >= 2 ? 'var(--accent)' : 'var(--line)'} stroke-width={phase >= 2 ? 2 : 1} />
         <text x="272" y="108" class="rowlabel">2 · {t('REMEMBER', '登记')}</text>
-        <text x="360" y="142" text-anchor="middle" class="mono strong">pending[A]</text>
-        <text x="282" y="178" class="mono">ops = [operation]</text>
-        <text x="282" y="208" class="mono">ack = waiting</text>
-        <text x="282" y="238" class="mono">key = object_id A</text>
-        <text x="360" y="268" text-anchor="middle" class="tag">{t('sender keeps this record', '发送方保存这张记录')}</text>
+        {#if phase >= 2}
+          <text x="360" y="142" text-anchor="middle" class="mono strong">pending[A]</text>
+          <text x="282" y="178" class="mono">ops = [operation]</text>
+          <text x="282" y="208" class="mono">ack = waiting</text>
+          <text x="282" y="238" class="mono">key = object_id A</text>
+          <text x="360" y="268" text-anchor="middle" class="tag">{t('sender keeps this record', '发送方保存这张记录')}</text>
+        {:else}
+          <text x="360" y="142" text-anchor="middle" class="mono strong">pending: no A</text>
+          <text x="360" y="178" text-anchor="middle" class="tag">{t('not registered', '尚未登记')}</text>
+          <text x="360" y="208" text-anchor="middle" class="tag">{t('ack · no future yet', 'ack · 还没有 future')}</text>
+          <text x="360" y="238" text-anchor="middle" class="tag">{phase >= 1 ? t('waiting for registration', '等待登记') : t('DataRef not returned', 'DataRef 未返回')}</text>
+        {/if}
 
-        <rect x="495" y="80" width="205" height="210" rx="12" fill="var(--bg)" stroke="var(--line)" />
+        <rect x="495" y="80" width="205" height="210" rx="12" fill="var(--bg)" stroke={phase >= 3 ? 'var(--accent)' : 'var(--line)'} />
         <text x="510" y="108" class="rowlabel">3 · {t('NOTIFY', '通知')}</text>
-        <rect x="518" y="127" width="159" height="64" rx="7" fill="white" stroke="var(--accent)" />
-        <text x="597" y="153" text-anchor="middle" class="mono strong">DataReady</text>
-        <text x="597" y="178" text-anchor="middle" class="mono">DataRef(A)</text>
-        <text x="597" y="224" text-anchor="middle" class="tag">→ talker_ar</text>
-        <text x="597" y="258" text-anchor="middle" class="tag">{t('notice sent', '通知已发出')}</text>
+        <rect x="518" y="127" width="159" height="64" rx="7" fill="white" stroke={phase >= 3 ? 'var(--accent)' : 'var(--line)'} />
+        <text x="597" y="153" text-anchor="middle" class="mono strong">{phase >= 3 ? 'DataReady' : 'DataReady · not sent'}</text>
+        <text x="597" y="178" text-anchor="middle" class="mono">{phase >= 3 ? 'DataRef(A)' : t('notice not sent', '通知未发送')}</text>
+        <text x="597" y="224" text-anchor="middle" class="tag">{phase >= 3 ? '→ talker_ar' : phase >= 2 ? t('ready to notify', '可以通知') : t('waiting for pending', '等待 pending')}</text>
+        <text x="597" y="258" text-anchor="middle" class="tag">{phase >= 3 ? t('notice sent', '通知已发出') : t('no receiver read or ACK', '接收方未读取或回 ACK')}</text>
 
-        <rect x="20" y="312" width="680" height="34" rx="7" fill="white" stroke="var(--line)" />
-        <text x="360" y="334" text-anchor="middle" class="tag strong">send_payload(): {t('write + notice complete · no read implied', '写入 + 通知完成 · 不表示已读取')}</text>
+        <rect x="20" y="312" width="680" height="76" rx="7" fill="white" stroke="var(--line)" />
+        <text x="360" y="333" text-anchor="middle" class="tag strong">{phase >= 4 ? 'watch_pending = background ACK wait' : 'watch_pending · not started'}</text>
+        <text x="360" y="356" text-anchor="middle" class="tag">{phase >= 5 ? 'job.ready = publication done ✓' : 'job.ready · waiting'}</text>
+        <text x="360" y="379" text-anchor="middle" class="tag strong">send_payload(): {phase >= 5 ? t('write + notice complete · no read implied', '写入 + 通知完成 · 不表示已读取') : t('waiting', '等待中')}</text>
       {:else}
-        <path d="M150 190 V215" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
-        <path d="M150 340 V365" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
-        <rect x="15" y="70" width="270" height="120" rx="10" fill="var(--bg)" stroke="var(--line)" />
+        <path d="M150 190 V215" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" opacity={phase >= 2 ? 1 : 0.15} />
+        <path d="M150 340 V365" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" opacity={phase >= 3 ? 1 : 0.15} />
+        <rect x="15" y="70" width="270" height="120" rx="10" fill="var(--bg)" stroke={phase === 0 || phase === 1 ? 'var(--accent)' : 'var(--line)'} />
         <text x="30" y="94" class="rowlabel">1 · {t('WRITE', '写入')}</text>
-        <text x="150" y="124" text-anchor="middle" class="mono strong">RelayOperation · {t('open', '未收尾')}</text>
-        <rect x="40" y="139" width="220" height="32" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
-        <text x="150" y="160" text-anchor="middle" class="mono">{t('payload A written', '数据 A 已写入')}</text>
+        <text x="150" y="121" text-anchor="middle" class="mono strong">{phase >= 1 ? 'DataRef(A) + RelayOperation' : 'write_payload()'}</text>
+        <rect x="40" y="132" width="220" height="30" rx="6" fill={phase >= 1 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={phase >= 1 ? 'var(--accent)' : 'var(--line)'} />
+        <text x="150" y="152" text-anchor="middle" class="mono">{phase >= 1 ? t('payload A written', '数据 A 已写入') : t('payload A · writing…', '数据 A · 正在写入…')}</text>
+        <text x="150" y="181" text-anchor="middle" class="tag">{phase >= 1 ? t('operation still open', '操作仍未收尾') : t('DataRef + op not returned', 'DataRef 和 operation 未返回')}</text>
 
-        <rect x="15" y="220" width="270" height="120" rx="10" fill="white" stroke="var(--accent)" stroke-width="2" />
+        <rect x="15" y="220" width="270" height="120" rx="10" fill="white" stroke={phase >= 2 ? 'var(--accent)' : 'var(--line)'} stroke-width={phase >= 2 ? 2 : 1} />
         <text x="30" y="244" class="rowlabel">2 · {t('REMEMBER', '登记')}</text>
-        <text x="150" y="273" text-anchor="middle" class="mono strong">pending[A]</text>
-        <text x="42" y="302" class="mono">ops = [operation]</text>
-        <text x="42" y="326" class="mono">ack = waiting · key = A</text>
+        {#if phase >= 2}
+          <text x="150" y="273" text-anchor="middle" class="mono strong">pending[A]</text>
+          <text x="42" y="302" class="mono">ops = [operation]</text>
+          <text x="42" y="326" class="mono">ack = waiting · key = A</text>
+        {:else}
+          <text x="150" y="273" text-anchor="middle" class="mono strong">pending: no A</text>
+          <text x="150" y="302" text-anchor="middle" class="tag">{t('not registered · no ACK future', '尚未登记 · 没有 ACK future')}</text>
+          <text x="150" y="328" text-anchor="middle" class="tag">{phase >= 1 ? t('waiting for registration', '等待登记') : t('DataRef not returned', 'DataRef 未返回')}</text>
+        {/if}
 
-        <rect x="15" y="370" width="270" height="120" rx="10" fill="var(--bg)" stroke="var(--line)" />
+        <rect x="15" y="370" width="270" height="120" rx="10" fill="var(--bg)" stroke={phase >= 3 ? 'var(--accent)' : 'var(--line)'} />
         <text x="30" y="394" class="rowlabel">3 · {t('NOTIFY', '通知')}</text>
-        <rect x="40" y="408" width="220" height="55" rx="6" fill="white" stroke="var(--accent)" />
-        <text x="150" y="431" text-anchor="middle" class="mono strong">DataReady · DataRef(A)</text>
-        <text x="150" y="453" text-anchor="middle" class="tag">→ talker_ar</text>
+        <rect x="40" y="408" width="220" height="55" rx="6" fill="white" stroke={phase >= 3 ? 'var(--accent)' : 'var(--line)'} />
+        <text x="150" y="431" text-anchor="middle" class="mono strong">{phase >= 3 ? 'DataReady · DataRef(A)' : 'DataReady · not sent'}</text>
+        <text x="150" y="453" text-anchor="middle" class="tag">{phase >= 3 ? '→ talker_ar' : phase >= 2 ? t('ready to notify', '可以通知') : t('waiting for pending', '等待 pending')}</text>
+        <text x="150" y="479" text-anchor="middle" class="tag">{phase >= 3 ? t('notice sent · no read implied', '通知已发 · 不表示已读取') : t('no receiver read or ACK', '接收方未读取或回 ACK')}</text>
 
-        <rect x="15" y="515" width="270" height="57" rx="7" fill="white" stroke="var(--line)" />
-        <text x="150" y="539" text-anchor="middle" class="tag strong">send_payload(): {t('write + notice done', '写入 + 通知完成')}</text>
-        <text x="150" y="560" text-anchor="middle" class="tag">{t('receiver read is not implied', '不表示接收方已读取')}</text>
+        <rect x="15" y="515" width="270" height="100" rx="7" fill="white" stroke="var(--line)" />
+        <text x="150" y="540" text-anchor="middle" class="tag strong">{phase >= 4 ? 'watch_pending = background ACK wait' : 'watch_pending · not started'}</text>
+        <text x="150" y="568" text-anchor="middle" class="tag">{phase >= 5 ? 'job.ready = publication done ✓' : 'job.ready · waiting'}</text>
+        <text x="150" y="596" text-anchor="middle" class="tag strong">send_payload(): {phase >= 5 ? t('returns · no read implied', '返回 · 不表示已读取') : t('waiting', '等待中')}</text>
       {/if}
       <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{phone ? t('pending uses object_id; DataRef has no ACK state.', 'pending 用 object_id 对应数据；DataRef 里仍没有 ACK 状态。') : t('The pending key is object_id; the DataRef still has no ACK state.', 'pending 用 object_id 对应数据；DataRef 里仍没有 ACK 状态。')}</text>
       <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Next: read, rebuild and acknowledge.', '下一步：接收方取字节、还原数据，再回 ACK。') : t('Next: the receiver gets the bytes, rebuilds the payload and acknowledges.', '下一步：接收方取字节、还原数据，再回 ACK。')}</text>

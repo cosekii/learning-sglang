@@ -93,10 +93,10 @@ Step 3 publishes this descriptor and creates a `PendingTransfer` record that wai
 
 ### What the picture shows
 
-- The first box contains the `RelayOperation` that wrote payload A. A completed write does not mean a completed operation because the transfer still uses the blue data.
-- The second box is the sender's `pending[A]`. It shows `ops` and a waiting `ack`; key A matches the DataRef's `object_id`.
-- The third box is the `DataReady` control message sent to `talker_ar`, carrying the serialized DataRef. Its arrow means that the notice was sent, not that the data was read.
-- The bottom status separates “write + notice complete” from “receiver read.” The figure does not show a scheduler or application computation.
+- The first box starts with payload A still writing. The relay write then returns DataRef(A) and a live `RelayOperation`; a completed write does not mean a completed operation because the transfer still uses the blue data.
+- The second box starts with `pending: no A`. Only after the write returns does the sender create `pending[A]` with `ops`, a waiting `ack`, and key A matching the DataRef's `object_id`.
+- The third box starts with `DataReady · not sent`. After pending registration, the `DataReady` control message goes to `talker_ar` with the serialized DataRef. Its arrow means that the notice was sent, not that the data was read or acknowledged.
+- The bottom status then starts `watch_pending`, a background task waiting for the ACK. Only in the last phase does the worker complete `job.ready`, so `send_payload()` can return. The figure separates “write + notice complete” from “receiver read” and does not show a scheduler or application computation.
 
 ### The call sequence
 
@@ -108,11 +108,11 @@ Step 3 publishes this descriptor and creates a `PendingTransfer` record that wai
 | 4 | Start `watch_pending()` after sending the control message | A background task waiting for ACK |
 | 5 | The worker completes `job.ready` | The waiting `send_payload()` can return |
 
-SHM uses `put_chunks_async()`, while other relays use `put_async()`. Both return an asynchronous operation and receiver metadata. Finishing the put does not mean that the receiver consumed the data.
+SHM uses `put_chunks_async()`, while other relays use `put_async()`. Both return an asynchronous operation and receiver metadata. Finishing the put does not mean that the receiver consumed the data. Tensor extraction and packing inside `stage_io.write_payload()` are implementation detail, not drawn on this slide.
 
 ### What PendingTransfer stores
 
-The generic record holds `ops`, an `ack` future, an optional KV lease, a watcher task and terminal-state flags. The sender's record owns the ACK state; DataRef does not. On the normal path, the watcher advances cleanup after the ACK, as Step 5 explains.
+The generic record holds `ops`, an `ack` future and a watcher task, all visible on this slide. It can also hold an optional KV lease and terminal-state flags, which are not drawn. The sender's record owns the ACK state; DataRef does not. On the normal path, the watcher advances cleanup after the ACK, as Step 5 explains.
 
 Fan-out gives each target its own send and Pending/ACK lifecycle. The figure follows one send from A to one `talker_ar`.
 

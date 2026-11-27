@@ -93,10 +93,10 @@ Router 在创建 DataRef 之前按两端位置和数据设备选路。普通 pay
 
 ### 图上是什么
 
-- 第 1 格是已经写入数据 A 的 `RelayOperation`。写入完成不等于操作已经收尾，蓝色数据仍由这次传输使用。
-- 第 2 格是发送方的 `pending[A]`。本图列出 `ops` 和仍在等待的 `ack`，键 `A` 对应 DataRef 的 `object_id`。
-- 第 3 格是发给 `talker_ar` 的 `DataReady` 控制消息，里面带序列化后的 DataRef。箭头只表示通知发出，不表示数据已被读取。
-- 最下面的 `send_payload()` 状态把「写入 + 通知完成」与「接收方已读取」分开。图中没有画 scheduler 或业务计算。
+- 第 1 格起初还在写入数据 A，随后 relay 写入返回 DataRef(A) 和仍存活的 `RelayOperation`。写入完成不等于操作已经收尾，蓝色数据仍由这次传输使用。
+- 第 2 格起初是 `pending: no A`。写入返回后，发送方才建立 `pending[A]`，列出 `ops`、等待中的 `ack`，以及与 DataRef 的 `object_id` 对应的键 A。
+- 第 3 格起初是 `DataReady · not sent`。登记 pending 后，`DataReady` 控制消息才带着序列化后的 DataRef 发给 `talker_ar`。箭头只表示通知发出，不表示数据已被读取或收到 ACK。
+- 最下面随后启动 `watch_pending`，在后台等待 ACK。最后一相 worker 才完成 `job.ready`，让 `send_payload()` 返回。本图把「写入 + 通知完成」与「接收方已读取」分开，没有画 scheduler 或业务计算。
 
 ### 实际调用顺序
 
@@ -108,11 +108,11 @@ Router 在创建 DataRef 之前按两端位置和数据设备选路。普通 pay
 | 4 | 控制消息发出后启动 `watch_pending()` | 等待 ACK 的后台任务 |
 | 5 | worker 完成 `job.ready` | 等待中的 `send_payload()` 可以返回 |
 
-SHM 使用 `put_chunks_async()`，其他 relay 使用 `put_async()`。两种 put 都返回异步操作及接收端所需元数据；put 完成不是接收方消费完成。
+SHM 使用 `put_chunks_async()`，其他 relay 使用 `put_async()`。两种 put 都返回异步操作及接收端所需元数据；put 完成不是接收方消费完成。`stage_io.write_payload()` 内部的 tensor 抽取和打包属于图外实现细节，本图没有展开。
 
 ### PendingTransfer 记什么
 
-通用记录保存 `ops`、`ack` future、可选的 KV lease、watcher task 和终态标志。ACK 状态在这张发送方记录里，不在 DataRef 里。正常路径的后续清理由 watcher 等待 ACK 后推动，第 5 步展开。
+通用记录保存 `ops`、`ack` future 和 watcher task，这三项都在图上。它还可以保存可选 KV lease 和终态标志，这些不在图上。ACK 状态在这张发送方记录里，不在 DataRef 里。正常路径的后续清理由 watcher 等待 ACK 后推动，第 5 步展开。
 
 如果同一数据发给多个 target，每个 target 走自己的发送与 Pending/ACK 生命周期。本图只画 A 发给一个 `talker_ar` 的路径。
 
