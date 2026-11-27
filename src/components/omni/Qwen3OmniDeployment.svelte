@@ -312,7 +312,7 @@
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{phone ? t('6% is undeclared, not measured free memory.', '灰色 6% 在申报比例之外，不是实测空闲显存。') : t('The 6% grey segment is outside declarations, not measured free memory.', '灰色 6% 在申报比例之外，不是实测空闲显存。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Next: choose how many bits each weight uses.', '下一步：每个权重用多少 bit。')}</text>
       {:else if step === 4}
-        <text x={phone ? 15 : 20} y="24" class="rowlabel">{t('PRECISION AND MEMORY', '精度与显存估计')}</text>
+        <text x={phone ? 15 : 20} y="24" class="rowlabel">{t(phone ? '3/5 · PRECISION AND MEMORY' : '3 of 5 · PRECISION AND MEMORY', '3/5 · 精度与显存估计')}</text>
         <text x={phone ? 15 : 20} y="49" class="tag">precision = {t('bits used to store each weight', '保存每个权重所用的 bit 数')}</text>
         <text x={phone ? 15 : 20} y="72" class="tag">{phone ? t('weight = saved model number · bit = 0 or 1', '权重 = 模型保存的数 · bit = 0 或 1') : t('weight = one saved model number · bit = one 0-or-1 digit', '权重 = 模型保存的一个数 · bit = 一个 0 或 1')}</text>
         <text x={phone ? 15 : 20} y="95" class="tag">{phone ? t('blue = single-GPU-section estimate · quantity unstated', '蓝柱 = 单卡章节估计 · 数量范围未说明') : t('blue bars = estimates in a single-GPU H100/H20 section · exact quantity unstated · same scale', '蓝柱 = 单卡 H100/H20 章节估计 · 具体数量范围未说明 · 同一比例')}</text>
@@ -320,18 +320,20 @@
           {@const x = phone ? 15 : 20 + i * 235}
           {@const y = phone ? 120 + i * 205 : 130}
           {@const w = phone ? 270 : 210}
-          <rect {x} {y} width={w} height={phone ? 180 : 320} rx="11" fill="var(--bg)" stroke="var(--line)" />
-          <text x={x + 15} y={y + 30} class="rowlabel">{option.name}</text>
-          <text x={x + 15} y={y + (phone ? 51 : 58)} class="tag">{option.bits} bits / weight</text>
-          <rect x={x + 15} y={y + (phone ? 67 : 85)} width={option.memory / QWEN_BF16_ESTIMATED_MEMORY_GB * (w - 30)} height={phone ? 32 : 42} rx="5" fill="var(--accent)" />
-          <text x={x + 15} y={y + (phone ? 123 : 157)} class="formula">≈ {option.memory} GB</text>
-          <text x={x + 15} y={y + (phone ? 148 : 207)} class="tag strong">{t(option.stageA, option.stageAZh)}</text>
-          <text x={x + 15} y={y + (phone ? 171 : 233)} class="tag">{t(option.stageB, option.stageBZh)}</text>
-          {#if !phone}
-            <text x={x + 15} y={y + 282} class="formula">{option.ratio.toFixed(0)}% {t('of BF16', 'BF16 的比例')}</text>
-          {/if}
+          <g opacity={phase >= i ? 1 : 0.12} style="transition: opacity 450ms">
+            <rect {x} {y} width={w} height={phone ? 180 : 320} rx="11" fill="var(--bg)" stroke="var(--line)" />
+            <text x={x + 15} y={y + 30} class="rowlabel">{option.name}</text>
+            <text x={x + 15} y={y + (phone ? 51 : 58)} class="tag">{option.bits} bits / weight</text>
+            <rect x={x + 15} y={y + (phone ? 67 : 85)} width={phase >= i ? option.memory / QWEN_BF16_ESTIMATED_MEMORY_GB * (w - 30) : 0} height={phone ? 32 : 42} rx="5" fill="var(--accent)" style="transition: width 700ms" />
+            <text x={x + 15} y={y + (phone ? 123 : 157)} class="formula">≈ {option.memory} GB</text>
+            <text x={x + 15} y={y + (phone ? 148 : 207)} class="tag strong">{t(option.stageA, option.stageAZh)}</text>
+            <text x={x + 15} y={y + (phone ? 171 : 233)} class="tag">{t(option.stageB, option.stageBZh)}</text>
+            {#if !phone}
+              <text x={x + 15} y={y + 282} class="formula">{option.ratio.toFixed(0)}% {t('of BF16', 'BF16 的比例')}</text>
+            {/if}
+          </g>
         {/each}
-        <text x={W / 2} y={phone ? 758 : 514} text-anchor="middle" class="formula">{phone ? t('60→40→30 GB · estimates', '60→40→30 GB · 仅估计') : t('60 → 40 → 30 GB · documentation estimates only', '60 → 40 → 30 GB · 仅为文档估计')}</text>
+        <text x={W / 2} y={phone ? 758 : 514} text-anchor="middle" class="formula" opacity={phase >= 2 ? 1 : 0.12} style="transition: opacity 350ms">{phone ? t('60→40→30 GB · estimates', '60→40→30 GB · 仅估计') : t('60 → 40 → 30 GB · documentation estimates only', '60 → 40 → 30 GB · 仅为文档估计')}</text>
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{phone ? t('BF16 default · INT4 code2wav stays BF16', 'BF16 是默认 · INT4 的 code2wav 仍用 BF16') : t('BF16 is the default. INT4 also keeps code2wav BF16.', 'BF16 是默认值。INT4 的 code2wav 也仍是 BF16。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Not a per-card budget or quality measurement', '不是单卡预算或质量实测') : t('The source does not make these values a per-card budget; no local quality measurement.', '来源没有把这些数值定义为单卡预算；本地也没有质量实测。')}</text>
       {:else if step === 5}

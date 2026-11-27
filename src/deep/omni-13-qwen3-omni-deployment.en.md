@@ -156,7 +156,7 @@ Memory also depends on the checkpoint's precision, so the next step compares BF1
 
 - Precision is the number of bits used to store a weight. A weight is one saved number in the model; a bit is one 0-or-1 digit.
 - The three blue bars use one scale for approximate 60, 40 and 30 GB values in a single-GPU H100/H20 section. The source does not define whether the quantity is weights alone, loaded stages, runtime peak or whole-server footprint, so these are not measured per-card budgets.
-- BF16 loads thinker and talker AR as BF16. The FP8 checkpoint loads those two AR stages as FP8. The INT4 checkpoint quantizes the thinker transformer layers with 4-bit quantization and group size 128, so each group contains 128 weights; talker AR and code2wav remain BF16.
+- BF16 loads thinker and talker AR as BF16. The FP8 checkpoint loads those two AR stages as FP8. The INT4 checkpoint quantizes the thinker transformer layers to 4 bits; talker AR and code2wav remain BF16.
 - The cookbook explicitly names code2wav's BF16 precision for INT4. The implementation also defaults omitted code2wav `dtype` to BF16, so all three precision panels show that default.
 
 ### Formula
@@ -175,11 +175,12 @@ $$
 
 - FP8: `40 ÷ 60 × 100% ≈ 67%` of BF16, about one third less.
 - INT4: `30 ÷ 60 × 100% = 50%` of BF16, about one half less.
-- Against FP8, INT4 is `30 ÷ 40 × 100% = 75%`, or 25% less.
 
 These ratios come from approximate values. Bit counts alone cannot produce them because other data and unquantized parts also occupy storage and memory.
 
 ### Boundaries and sources
+
+Off the stage, INT4 uses groups of 128 weights. Its approximate estimate is `30 ÷ 40 × 100% = 75%` of FP8, or 25% less. These details are not drawn on this slide.
 
 BF16 is the default. The FP8 checkpoint supplies its own precision config; `--dtype fp8` is not the selection mechanism (`docs/cookbook/qwen3_omni.md:153-169`; `sglang_omni/models/weight_loader.py:19-42`). The INT4 stage boundary and estimates are in `docs/cookbook/qwen3_omni.md:181-200`. Code2wav's default dtype is resolved in `components/code2wav_scheduler.py:146-154,1230-1260` and `sglang_omni/models/weight_loader.py:19-26`. Here and in Step 6, `components/` abbreviates sglang_omni/models/qwen3_omni/components/. The compatibility matrix permits each precision for text-only output, separate thinker/talker cards at TP1 or TP2, or one shared card at TP1 (`docs/cookbook/qwen3_omni.md:25-44`). The chapter does not claim a local memory, speed or accuracy measurement.
 
