@@ -34,14 +34,8 @@
     QWEN_FP8_MEMORY_OF_BF16_PERCENT,
     QWEN_INT4_MEMORY_OF_BF16_PERCENT,
     QWEN_SPEECH_REPLICA2_COUNT,
-    QWEN_SPEECH_REPLICA2_COPY_COUNT,
-    QWEN_SPEECH_REPLICA2_GPU_COUNT,
-    QWEN_THINKER_MAX_RUNNING_REQUESTS,
     QWEN_TALKER_MAX_RUNNING_REQUESTS,
     QWEN_REPLICA2_CODEC_STATE_SLOTS,
-    QWEN_REPLICA2_TALKER_GPU_PERCENT,
-    QWEN_REPLICA2_CODE2WAV_GPU_PERCENT,
-    QWEN_REPLICA2_GPU_PERCENT,
     QWEN_WARMUP_AUDIO_SECONDS,
     QWEN_WARMUP_MAX_NEW_TOKENS,
     QWEN_BENCH_CONCURRENCIES,
@@ -88,8 +82,11 @@
     caption: "Precision is the bits used to store each weight. INT4's estimate is half BF16's: 30 versus 60 GB.",
     captionZh: '精度是保存每个权重所用的 bit 数。INT4 的估计是 30 GB，约为 BF16 60 GB 的一半。',
   }, {
-    caption: 'Both panels keep 2 encoders + thinker on GPU 0; default adds code2wav there. Each code2wav process gets 32 slots by default, 64 with Replica2, not double throughput.',
-    captionZh: '两图的 GPU 0 都有 2 encoders + thinker；默认还有 code2wav。code2wav 每进程默认 32 个状态位，replica2 每进程 64，吞吐未必翻倍。',
+    caption: 'Replica2 adds a second talker and code2wav pair. Each talker keeps its 32-request running cap.',
+    captionZh: 'replica2 增加第二对 talker 和 code2wav。每个 talker 仍最多同时处理 32 个请求。',
+  }, {
+    caption: 'Two talkers make each code2wav process reserve 64 slots. Each process owns a separate pool, not double throughput.',
+    captionZh: '两个 talker 让每个 code2wav 进程预留 64 个状态位。两个进程各有独立状态池，不代表吞吐翻倍。',
   }, {
     caption: 'Readiness uses small inputs and at most eight tokens per generating stage. Measure real traffic with fixed settings and separate clocks.',
     captionZh: '就绪检查用小输入，每个生成 stage 最多 8 token。再用真实流量测量，基准客户端和听者分别计时。',
@@ -112,7 +109,7 @@
     return () => query.removeEventListener('change', update);
   });
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [870, 820, 900, 560, 650, 850, 930, 1050, 1130][step] : [560, 600, 650, 480, 560, 600, 630, 650, 680][step]);
+  const H = $derived(phone ? [870, 820, 900, 560, 650, 850, 850, 980, 1050, 1130][step] : [560, 600, 650, 480, 560, 600, 580, 650, 650, 680][step]);
   const budgetSegments = [
     ...COLOCATED_STAGE_SHARES.flatMap((stage) => stage.name === 'thinker' ? [
       { name: 'thinker AR', percent: QWEN_THINKER_EFFECTIVE_AR_PERCENT, kind: 'stage' },
@@ -138,12 +135,12 @@
     { label: '1 of 5 · route', labelZh: '1/5 · 输出路线', steps: 'Step 2', stepsZh: '第 2 步', detail: 'text or text + sound', detailZh: '文字，或文字 + 声音' },
     { label: '2 of 5 · placement', labelZh: '2/5 · 摆卡', steps: 'Steps 3–5', stepsZh: '第 3–5 步', detail: 'talker GPU · one-card shares', detailZh: 'talker 摆卡 · 单卡份额' },
     { label: '3 of 5 · precision', labelZh: '3/5 · 精度', steps: 'Step 6', stepsZh: '第 6 步', detail: 'BF16 · FP8 · INT4', detailZh: 'BF16 · FP8 · INT4' },
-    { label: '4 of 5 · capacity', labelZh: '4/5 · 容量', steps: 'Step 7', stepsZh: '第 7 步', detail: 'running caps · codec slots', detailZh: '运行上限 · codec 状态位' },
-    { label: '5 of 5 · evidence', labelZh: '5/5 · 证据', steps: 'Steps 8–9', stepsZh: '第 8–9 步', detail: 'readiness · A/B records', detailZh: 'readiness · A/B 记录' },
+    { label: '4 of 5 · capacity', labelZh: '4/5 · 容量', steps: 'Steps 7–8', stepsZh: '第 7–8 步', detail: 'running caps · codec slots', detailZh: '运行上限 · codec 状态位' },
+    { label: '5 of 5 · evidence', labelZh: '5/5 · 证据', steps: 'Steps 9–10', stepsZh: '第 9–10 步', detail: 'readiness · A/B records', detailZh: 'readiness · A/B 记录' },
   ];
 
   // Each scene builds its own objects and numbers, then holds the finished state.
-  const PHASE_COUNTS = [3, 5, 6, 3, 3, 3, 4, 6, 6];
+  const PHASE_COUNTS = [3, 5, 6, 3, 3, 3, 3, 4, 6, 6];
   const PHASE_MS = 1100, REST_MS = 2500;
   let phase = $state(0);
   let lap = $state(0), lapMs = $state(0);
@@ -385,31 +382,26 @@
 
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Not a per-card budget or quality measurement', '不是单卡预算或质量实测') : t('The source does not make these values a per-card budget; no local quality measurement.', '来源没有把这些数值定义为单卡预算；本地也没有质量实测。')}</text>
       {:else if step === 6}
-        <text x={phone ? 15 : 20} y="24" class="rowlabel">{t(phone ? '4/5 · CAPACITY · MORE SPEECH COPIES' : '4 of 5 · CAPACITY · MORE SPEECH COPIES, EXPLICIT CAPACITY', phone ? '4/5 · 容量 · 更多语音副本' : '4/5 · 容量 · 更多语音副本，明确算容量')}</text>
+        <text x={phone ? 15 : 20} y="24" class="rowlabel">{t(phone ? '4/5 · CAPACITY · ADD ONE SPEECH PAIR' : '4 of 5 · CAPACITY · ADD ONE TALKER + CODE2WAV PAIR', phone ? '4/5 · 容量 · 增加一对语音副本' : '4/5 · 容量 · 增加一对 TALKER + CODE2WAV')}</text>
         <text x={phone ? 15 : 20} y="49" class="tag">running cap = {t('most requests one stage works on at once', '一个 stage 同时最多处理的请求数')}</text>
-        <text x={phone ? 15 : 20} y="72" class="tag">codec state slot = {t('saved decoder state for one stream', '一路声音保存的 decoder 状态')}</text>
-        <text x={phone ? 15 : 20} y="95" class="tag">{phone ? t('blue=talker · orange=codec · white=GPU 0', '蓝=talker · 橙=codec · 白=GPU 0') : t('blue = talker · orange = codec capacity · white box = GPU 0 stages', '蓝 = talker · 橙 = codec 容量 · 白框 = GPU 0 stages')}</text>
+        <text x={phone ? 15 : 20} y="72" class="tag">replica = {t('another talker + code2wav pair', '另一对 talker + code2wav')}</text>
+        <text x={phone ? 15 : 20} y="95" class="tag">{t('blue = speech pair · white box = GPU 0 stages', '蓝 = 语音副本对 · 白框 = GPU 0 stages')}</text>
         {#each phone ? [
-          { x: 15, y: 125, w: 270, h: 340, replica2: false },
-          { x: 15, y: 485, w: 270, h: 390, replica2: true },
+          { x: 15, y: 125, w: 270, h: 270, replica2: false },
+          { x: 15, y: 415, w: 270, h: 360, replica2: true },
         ] : [
-          { x: 20, y: 125, w: 320, h: 420, replica2: false },
-          { x: 380, y: 125, w: 320, h: 420, replica2: true },
+          { x: 20, y: 125, w: 320, h: 340, replica2: false },
+          { x: 380, y: 125, w: 320, h: 340, replica2: true },
         ] as panel}
           <rect x={panel.x} y={panel.y} width={panel.w} height={panel.h} rx="11" fill="var(--bg)" stroke="var(--line)" />
           <text x={panel.x + 14} y={panel.y + 27} class="rowlabel">{panel.replica2 ? 'REPLICA2' : 'DEFAULT SPEECH'}</text>
-          <text x={panel.x + 14} y={panel.y + 51} class="tag strong" opacity={!panel.replica2 || phase >= 1 ? 1 : 0.12} style="transition: opacity 350ms">{panel.replica2 ? `5 + 2 + 2 = ${QWEN_SPEECH_REPLICA2_COPY_COUNT} processes · ${QWEN_SPEECH_REPLICA2_GPU_COUNT} GPUs` : `${QWEN_SPEECH_DEFAULT_COPY_COUNT} processes · ${QWEN_SPEECH_DEFAULT_GPU_COUNT} GPUs`}</text>
           <rect x={panel.x + 14} y={panel.y + 72} width={panel.w - 28} height="65" rx="7" fill="var(--bg)" stroke="var(--faint)" />
           <text x={panel.x + 25} y={panel.y + 98} class="tag strong">{panel.replica2 ? 'GPU 0 · 2 encoders + thinker' : 'GPU 0 · 2 encoders + thinker + code2wav'}</text>
-          <text x={panel.x + 25} y={panel.y + 123} class="formula">thinker cap = {QWEN_THINKER_MAX_RUNNING_REQUESTS}</text>
+          <text x={panel.x + 25} y={panel.y + 123} class="tag">{t('unchanged in both panels', '两图保持不变')}</text>
           {#if !panel.replica2}
             <rect x={panel.x + 14} y={panel.y + 155} width={panel.w - 28} height="70" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
-            <text x={panel.x + 25} y={panel.y + 181} class="tag strong">GPU 1 · talker_ar × 1</text>
+            <text x={panel.x + 25} y={panel.y + 181} class="tag strong">GPU 1 · talker_ar + code2wav</text>
             <text x={panel.x + 25} y={panel.y + 207} class="formula">talker cap = {QWEN_TALKER_MAX_RUNNING_REQUESTS}</text>
-            <rect x={panel.x + 14} y={panel.y + 244} width={panel.w - 28} height="62" rx="7" fill="var(--gen-soft)" stroke="var(--gen)" />
-            <text x={panel.x + panel.w / 2} y={panel.y + 264} text-anchor="middle" class="tag strong">{t('EACH CODE2WAV PROCESS · ITS OWN SLOTS', '每个 CODE2WAV 进程 · 自己的状态位')}</text>
-            <text x={panel.x + panel.w / 2} y={panel.y + 290} text-anchor="middle" class="formula">codec_state_slots = {QWEN_TALKER_MAX_RUNNING_REQUESTS} × 1 = {QWEN_TALKER_MAX_RUNNING_REQUESTS}</text>
-            <text x={panel.x + panel.w / 2} y={panel.y + 326} text-anchor="middle" class="tag">{t('one talker and one code2wav process', '一个 talker 和一个 code2wav 进程')}</text>
           {:else}
             {#each [0, 1] as replica}
               <g opacity={phase >= 1 ? 1 : 0} style="transition: opacity 450ms">
@@ -418,26 +410,56 @@
                 <text x={panel.x + 25} y={panel.y + 198 + replica * 68} class="formula">talker cap = {QWEN_TALKER_MAX_RUNNING_REQUESTS}</text>
               </g>
             {/each}
-            {@const poolW = (panel.w - 35) / 2}
-            {#each [0, 1] as replica}
-              <g opacity={phase >= 2 ? 1 : 0} style="transition: opacity 450ms">
-                <rect x={panel.x + 14 + replica * (poolW + 7)} y={panel.y + 292} width={poolW} height="62" rx="7" fill="var(--gen-soft)" stroke="var(--gen)" />
-                <text x={panel.x + 14 + replica * (poolW + 7) + poolW / 2} y={panel.y + 316} text-anchor="middle" class="tag strong">r{replica} · {phone ? t(`own ${QWEN_REPLICA2_CODEC_STATE_SLOTS} slots`, `独立 ${QWEN_REPLICA2_CODEC_STATE_SLOTS} 位`) : t('own codec slots', '独立 codec 状态位')}</text>
-                <text x={panel.x + 14 + replica * (poolW + 7) + poolW / 2} y={panel.y + 342} text-anchor="middle" class="formula">{phone ? `${QWEN_SPEECH_REPLICA2_COUNT} × ${QWEN_TALKER_MAX_RUNNING_REQUESTS}/talker` : `${QWEN_TALKER_MAX_RUNNING_REQUESTS} × ${QWEN_SPEECH_REPLICA2_COUNT} talkers = ${QWEN_REPLICA2_CODEC_STATE_SLOTS}`}</text>
-              </g>
-            {/each}
-            <g opacity={phase >= 3 ? 1 : 0.12} style="transition: opacity 350ms">
-              <text x={panel.x + 14} y={panel.y + (phone ? 367 : 368)} class="tag">{t('declared GPU memory per replica', '每个副本 GPU 申报显存')}</text>
-              <text x={panel.x + 14} y={panel.y + (phone ? 387 : 392)} class="tag">{`${QWEN_REPLICA2_TALKER_GPU_PERCENT}% talker + ${QWEN_REPLICA2_CODE2WAV_GPU_PERCENT}% code2wav = ${QWEN_REPLICA2_GPU_PERCENT.toFixed(1)}%`}</text>
-            </g>
           {/if}
+          <text x={panel.x + 25} y={panel.y + (phone ? (panel.replica2 ? 320 : 250) : 315)} class="tag strong" opacity={!panel.replica2 || phase >= 2 ? 1 : 0} style="transition: opacity 350ms">{panel.replica2 ? t('two pairs · same cap per talker', '两对副本 · 每个 talker 上限相同') : t('one pair', '一对副本')}</text>
         {/each}
-        {#if !phone}
-          <text x="360" y="579" text-anchor="middle" class="tag strong" opacity={phase >= 3 ? 1 : 0.12} style="transition: opacity 350ms">{t('Caps configure room; they do not measure completed requests per second.', '上限配置容量，不测量每秒完成多少请求。')}</text>
-        {/if}
+        <text x={W / 2} y={phone ? 790 : 520} text-anchor="middle" class="tag strong" opacity={phase >= 2 ? 1 : 0.12} style="transition: opacity 350ms">{phone ? t('caps = room, not requests / second', '上限 = 容量，不是每秒请求数') : t('Caps configure room; they do not measure completed requests per second.', '上限配置容量，不测量每秒完成多少请求。')}</text>
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{phone ? t('unchanged: preprocessing · 2 encoders · thinker · decode', '不变：preprocessing · 2 encoders · thinker · decode') : t('Unchanged: preprocessing · image_encoder · audio_encoder · thinker · decode', '不变：preprocessing · image_encoder · audio_encoder · thinker · decode')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Pairing keeps codec on one GPU; custom policies differ', '配对让 codec 留在一卡；自定义策略可能不同') : t('Default pairing keeps each codec stream on one GPU; a custom policy need not preserve it.', '默认配对让每路 codec 留在一卡；自定义策略不保证这种配对。')}</text>
       {:else if step === 7}
+        <text x={phone ? 15 : 20} y="24" class="rowlabel">{t(phone ? '4/5 · CAPACITY · TWO CODEC POOLS' : '4 of 5 · CAPACITY · EACH CODE2WAV PROCESS OWNS A POOL', phone ? '4/5 · 容量 · 两个 CODEC 状态池' : '4/5 · 容量 · 每个 CODE2WAV 进程各有状态池')}</text>
+        <text x={phone ? 15 : 20} y="49" class="tag">codec state slot = {t('saved decoder state for one stream', '一路声音保存的 decoder 状态')}</text>
+        <text x={phone ? 15 : 20} y="72" class="tag">{t('Step 7: each talker can run at most 32 requests', '第 7 步：每个 talker 最多同时处理 32 个请求')}</text>
+        <text x={phone ? 15 : 20} y="95" class="tag">{t('blue = talker inputs · orange = codec state slots', '蓝 = talker 输入 · 橙 = codec 状态位')}</text>
+        {#each phone ? [
+          { x: 15, y: 125, w: 270, h: 295, replica2: false },
+          { x: 15, y: 445, w: 270, h: 475, replica2: true },
+        ] : [
+          { x: 20, y: 125, w: 320, h: 420, replica2: false },
+          { x: 380, y: 125, w: 320, h: 420, replica2: true },
+        ] as panel}
+          <rect x={panel.x} y={panel.y} width={panel.w} height={panel.h} rx="11" fill="var(--bg)" stroke="var(--line)" />
+          <text x={panel.x + 14} y={panel.y + 27} class="rowlabel">{panel.replica2 ? 'REPLICA2' : 'DEFAULT SPEECH'}</text>
+          {#if !panel.replica2}
+            <rect x={panel.x + 14} y={panel.y + 55} width={panel.w - 28} height="58" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x={panel.x + 25} y={panel.y + 80} class="tag strong">talker_ar × 1</text>
+            <text x={panel.x + 25} y={panel.y + 103} class="formula">running cap = {QWEN_TALKER_MAX_RUNNING_REQUESTS}</text>
+            <text x={panel.x + panel.w / 2} y={panel.y + 133} text-anchor="middle" class="tag">↓ {t('reserve for every talker', '为所有 talker 预留')}</text>
+            <g opacity={phase >= 1 ? 1 : 0} style="transition: opacity 450ms">
+              <rect x={panel.x + 14} y={panel.y + 150} width={panel.w - 28} height="62" rx="7" fill="var(--gen-soft)" stroke="var(--gen)" />
+              <text x={panel.x + 25} y={panel.y + 174} class="tag strong">code2wav · {t('own pool', '独立状态池')}</text>
+              <text x={panel.x + 25} y={panel.y + 200} class="formula">codec_state_slots = 32 × 1 = {QWEN_TALKER_MAX_RUNNING_REQUESTS}</text>
+            </g>
+            <text x={panel.x + 25} y={panel.y + 255} class="tag">{t('one process · one pool', '一个进程 · 一个状态池')}</text>
+          {:else}
+            {#each [0, 1] as replica}
+              <rect x={panel.x + 14} y={panel.y + 55 + replica * 170} width={panel.w - 28} height="58" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
+              <text x={panel.x + 25} y={panel.y + 80 + replica * 170} class="tag strong">talker_ar@r0 + talker_ar@r1</text>
+              <text x={panel.x + 25} y={panel.y + 103 + replica * 170} class="formula">{QWEN_SPEECH_REPLICA2_COUNT} {t('talkers', '个 talker')} × {QWEN_TALKER_MAX_RUNNING_REQUESTS} {t('cap', '上限')} = {QWEN_REPLICA2_CODEC_STATE_SLOTS}</text>
+              <text x={panel.x + panel.w / 2} y={panel.y + 133 + replica * 170} text-anchor="middle" class="tag">↓ {t('same input for this codec', '这个 codec 覆盖同样的输入')}</text>
+              <g opacity={phase >= 2 + replica ? 1 : 0} style="transition: opacity 450ms">
+                <rect x={panel.x + 14} y={panel.y + 150 + replica * 170} width={panel.w - 28} height="62" rx="7" fill="var(--gen-soft)" stroke="var(--gen)" />
+                <text x={panel.x + 25} y={panel.y + 174 + replica * 170} class="tag strong">code2wav@r{replica} · {t('own pool', '独立状态池')}</text>
+                <text x={panel.x + 25} y={panel.y + 200 + replica * 170} class="formula">32 × {QWEN_SPEECH_REPLICA2_COUNT} talkers = {QWEN_REPLICA2_CODEC_STATE_SLOTS} slots</text>
+              </g>
+            {/each}
+            <text x={panel.x + 25} y={panel.y + (phone ? 420 : 410)} class="tag strong" opacity={phase >= 3 ? 1 : 0} style="transition: opacity 350ms">{t('two processes · two separate 64-slot pools', '两个进程 · 两个独立的 64 位状态池')}</text>
+          {/if}
+        {/each}
+        <text x={W / 2} y={phone ? 900 : 580} text-anchor="middle" class="tag strong" opacity={phase >= 3 ? 1 : 0.12} style="transition: opacity 350ms">{phone ? t('slots = room, not throughput', '状态位 = 容量，不是吞吐') : t('Slots configure room; they do not double throughput.', '状态位配置容量，不代表吞吐翻倍。')}</text>
+        <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{phone ? t('Full pool: stateless left-context fallback', '状态池满：退回左侧上下文的无状态解码') : t('A full pool falls back to stateless left-context decoding; it does not reject the stream.', '状态池满时退回看左侧上下文的无状态解码，不会拒绝这路流。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Two 64-slot pools ≠ one 128-slot pool', '两个 64 位状态池 ≠ 一个 128 位状态池') : t('Two pools of 64 are not one deployment-wide pool of 128.', '两个 64 位状态池不是全部署共享的一个 128 位状态池。')}</text>
+      {:else if step === 8}
         <text x={phone ? 15 : 20} y="24" class="rowlabel">{t(phone ? '5/5 · EVIDENCE · TWO CHECKS' : '5 of 5 · EVIDENCE · TWO CHECKS ANSWER TWO QUESTIONS', phone ? '5/5 · 证据 · 两种检查' : '5/5 · 证据 · 两种检查回答两个问题')}</text>
         <text x={phone ? 15 : 20} y="49" class="tag">readiness = {t('a startup health check, not a speed result', '启动健康检查，不是速度结果')}</text>
         <text x={phone ? 15 : 20} y="72" class="tag">{t('blue = startup request · orange = measurement plan', '蓝 = 启动请求 · 橙 = 测量计划')}</text>
@@ -512,7 +534,7 @@
         </g>
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{phone ? t('Readiness skips larger inputs and batches.', 'readiness 可能没有预热更大的输入和 batch。') : t('Readiness can leave video, large batches and other input sizes unwarmed.', 'readiness 可能没有预热视频、大 batch 和其他输入大小。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t(`p99: 99% at/below · ≥${QWEN_P99_MIN_SAMPLES} requests · runs vary`, `p99：99% 请求不超过 · 至少 ${QWEN_P99_MIN_SAMPLES} 个请求 · 运行次数不定`) : t(`p99 = 99% at or below · require ≥${QWEN_P99_MIN_SAMPLES} requests; ten runs may or may not contain them`, `p99 = 99% 请求不超过 · 至少 ${QWEN_P99_MIN_SAMPLES} 个请求；十次运行可能够，也可能不够`)}</text>
-      {:else if step === 8}
+      {:else if step === 9}
         <text x={phone ? 15 : 20} y="24" class="rowlabel">{t(phone ? '5/5 · EVIDENCE · DECISION SHEET' : '5 of 5 · EVIDENCE · ONE DEPLOYMENT DECISION SHEET', phone ? '5/5 · 证据 · 决策表' : '5/5 · 证据 · 一张部署决策表')}</text>
         <text x={phone ? 15 : 20} y="49" class="tag">{t('blue = starting choice · orange = evidence still required', '蓝 = 起步选择 · 橙 = 还需要的证据')}</text>
         <text x={phone ? 15 : 20} y="72" class="tag strong">{phone ? t('EXAMPLE: 8 requests at once · earlier first audio', '算例：8 路并发 · 首音更早') : t('EXAMPLE: 8 concurrent spoken requests, earlier first audio', '算例：8 路并发语音请求，希望首音更早')}</text>

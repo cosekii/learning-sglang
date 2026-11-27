@@ -33,7 +33,7 @@
 
 ### 图上是什么
 
-- 开场地图把本步标为 `1/5 · 输出路线`。后面依次是第 3–5 步的摆卡、第 6 步的精度、第 7 步的容量，以及第 8–9 步的证据。
+- 开场地图把本步标为 `1/5 · 输出路线`。后面依次是第 3–5 步的摆卡、第 6 步的精度、第 7–8 步的容量，以及第 9–10 步的证据。
 - `modalities` 写客户端要哪些输出种类，公开请求的默认值是 `["text"]`。
 - 纯文字服务器在 `mm_aggregate` 汇合 preprocessing 和实际用到的 encoders，再运行 thinker 和 decode。
 - 语音服务器处理纯文字请求时，由 thinker 汇合这些输入，再运行 decode；talker 和 code2wav 不参与。
@@ -103,7 +103,7 @@ $$
 
 ### 边界与出处
 
-四个精确原始值来自第 8 章第 1 步的 PR #1235 数据。固定版本 tuning 指南给出共用范围 2.66–2.70 秒、独占范围 1.42–1.46 秒，以及单请求比较（`docs/cookbook/qwen3_omni/tuning.md:52-69`）。这些是 H200、thinker TP2 的公开实验。第 9 步的 TP1 方案拓扑不同，需要自己的 A/B 比较。
+四个精确原始值来自第 8 章第 1 步的 PR #1235 数据。固定版本 tuning 指南给出共用范围 2.66–2.70 秒、独占范围 1.42–1.46 秒，以及单请求比较（`docs/cookbook/qwen3_omni/tuning.md:52-69`）。这些是 H200、thinker TP2 的公开实验。第 10 步的 TP1 方案拓扑不同，需要自己的 A/B 比较。
 
 ### 接下来
 
@@ -237,60 +237,80 @@ $$
 
 图外的 stage 边界：BF16 把 thinker 和 talker AR 加载为 BF16。FP8 checkpoint 把这两个 AR stage 加载为 FP8。INT4 checkpoint 对 thinker 的 transformer 层做 4 bit 量化；talker AR 和 code2wav 仍用 BF16。教程文档在 INT4 行明确写出 code2wav 使用 BF16；实现也在省略 code2wav `dtype` 时默认使用 BF16。
 
-BF16 是默认值。FP8 checkpoint 自带精度配置，`--dtype fp8` 不是选择机制（`docs/cookbook/qwen3_omni.md:153-169`；`sglang_omni/models/weight_loader.py:19-42`）。INT4 的 stage 边界与估计见 `docs/cookbook/qwen3_omni.md:181-200`。code2wav 的默认 dtype 见 `components/code2wav_scheduler.py:146-154,1230-1260` 和 `sglang_omni/models/weight_loader.py:19-26`。本步和第 7 步用 `components/` 缩写 sglang_omni/models/qwen3_omni/components/。兼容矩阵允许三种精度用于纯文字输出、thinker/talker 分卡的 TP1 或 TP2，以及同卡 TP1（`docs/cookbook/qwen3_omni.md:25-44`）。本章不声称本地显存、速度或准确率测量。
+BF16 是默认值。FP8 checkpoint 自带精度配置，`--dtype fp8` 不是选择机制（`docs/cookbook/qwen3_omni.md:153-169`；`sglang_omni/models/weight_loader.py:19-42`）。INT4 的 stage 边界与估计见 `docs/cookbook/qwen3_omni.md:181-200`。code2wav 的默认 dtype 见 `components/code2wav_scheduler.py:146-154,1230-1260` 和 `sglang_omni/models/weight_loader.py:19-26`。本步和第 7、8 步用 `components/` 缩写 sglang_omni/models/qwen3_omni/components/。兼容矩阵允许三种精度用于纯文字输出、thinker/talker 分卡的 TP1 或 TP2，以及同卡 TP1（`docs/cookbook/qwen3_omni.md:25-44`）。本章不声称本地显存、速度或准确率测量。
 
 ### 接下来
 
 选好 checkpoint 和布局后，更多同时到来的语音请求可能需要另一对 talker 和 code2wav，而不是换精度。
 
-## 第 7 步 · 两个 talker，64 个 codec 状态位
+## 第 7 步 · 增加一对语音副本
 
-> **一句话：** replica2 保留一个 64 请求 thinker，增加第二个 32 请求 talker，并给每个 code2wav 进程配置 64 个 codec 状态位。
+> **一句话：** replica2 增加第二对 talker 和 code2wav，每个 talker 仍最多同时处理 32 个请求。
 
 ### 图上是什么
 
 - 运行上限是一个 stage 同时最多处理多少请求。它是 scheduler 限制，不是实测完成速度。
-- 默认语音把 `image_encoder`、`audio_encoder`、上限 64 的 thinker 和 code2wav 留在 GPU 0。它的一个 talker 上限为 32。
-- replica2 把两个 encoder 和 thinker 留在 GPU 0，再增加第二对 talker 和 code2wav。GPU 1 放 `r0`，GPU 2 放 `r1`。
-- 一个 codec 状态位保存一路声音的 decoder 状态。每个 code2wav 进程都用 talker 上限乘副本数得到 64 个状态位，并各有一个独立状态池。
-- 每个副本 GPU 给 talker 申报 12.3%，给 code2wav 申报 1.4%。
+- 默认语音把 `image_encoder`、`audio_encoder`、thinker 和 code2wav 留在 GPU 0。仅有的一对 talker 和 code2wav 使用 GPU 1，talker 上限为 32。
+- replica2 把两个 encoder 和 thinker 留在 GPU 0，再增加第二对副本。GPU 1 放 `r0`，GPU 2 放 `r1`，每个 talker 的上限仍是 32。
+- 一个 replica 是另一对 talker 和 code2wav。两对副本配置的是请求容量，不是每秒完成多少请求。
+
+### 代入图上的数
+
+| 部署 | talker/code2wav 副本对数 | 每个 talker 的运行上限 |
+|---|---:|---:|
+| 默认语音 | 1 | 32 |
+| replica2 | 2 | 32 |
+
+### 边界与出处
+
+图外事实：thinker 默认最多运行 64 个请求。进程总数是 `5 个不变 + 2 个 talker_ar + 2 个 code2wav = 9`，不变的五个是 preprocessing、image encoder、audio encoder、thinker 和 decode。每个副本 GPU 给 talker 和 code2wav 申报 `12.3% + 1.4% = 13.7%`。这些事实没有画在本步舞台上。
+
+上限来自 `sglang_omni/models/qwen3_omni/stages.py:1276-1286` 和 `sglang_omni/models/qwen3_omni/config.py:37,454-496`。位置、进程数和比例来自 `examples/configs/qwen3_omni_speech_replica2.yaml:1-42`。默认配对让每路 codec 留在一卡，自定义策略不保证 `r0/r0` 和 `r1/r1` 配对。
+
+### 接下来
+
+下一步用这两个 talker 推导每个 code2wav 进程自己的 codec 状态池。
+
+## 第 8 步 · 两个独立的 codec 状态池
+
+> **一句话：** 两个 talker 让每个 code2wav 进程配置 64 个状态位，每个进程各有独立状态池。
+
+### 图上是什么
+
+- 一个 codec 状态位保存一路声音的 decoder 状态。第 7 步已经给出每个 talker 的 32 请求上限。
+- 默认语音只有一个 talker，所以它的 code2wav 进程配置 `32 × 1 = 32` 个状态位，自己独占这个状态池。
+- replica2 里，每个 code2wav 进程都按两个 talker 计算容量。`r0` 进程配置 `32 × 2 = 64` 个状态位，`r1` 进程也在另一个状态池里配置 64 位。
+- 两个状态池不是全部署共享的 128 位大池。它们配置的是容量，不代表吞吐翻倍。
 
 ### 公式
 
 $$
-Z=X\times Y,\qquad B=P_T+P_C
+Z=X\times Y
 $$
 
 | 符号 | 是什么 | 大小 | 从哪来 |
 |---|---|---:|---|
-| $Z$ | 配置的 codec 状态位 | 64 | 本步 |
-| $X$ | 每个 talker 的运行请求上限 | 32 | Qwen 语音默认值 |
-| $Y$ | talker 进程副本数 | 2 | replica2 配置 |
-| $B$ | 每个副本 GPU 的申报比例 | 13.7% | 本步 |
-| $P_T$ | talker 比例 | 12.3% | replica2 配置 |
-| $P_C$ | code2wav 比例 | 1.4% | replica2 配置 |
+| $Z$ | 每个 code2wav 进程配置的 codec 状态位 | 64 | 本步 |
+| $X$ | 每个 talker 的运行请求上限 | 32 | 第 7 步 |
+| $Y$ | talker 进程副本数 | 2 | 第 7 步 |
 
 ### 代入图上的数
 
 $$
-Z=32\times2=64\ \text{个状态位}
+Z=32\times2=64\ \text{个状态位 / code2wav 进程}
 $$
 
-$$
-B=12.3\%+1.4\%=13.7\%
-$$
-
-进程总数是 `5 个不变 + 2 个 talker_ar + 2 个 code2wav = 9`。不变的五个是 preprocessing、image encoder、audio encoder、thinker 和 decode。64 个状态位是每个 code2wav 进程的工厂配置，用来覆盖 talker 副本可运行的流。每个 codec 副本各有一个包含 64 个状态位的独立状态池；这个算式不是全部署共享一个池，也不证明有 128 路可持续流。状态池满了不会拒绝请求，而会退回看左侧上下文的无状态解码（`components/code2wav_scheduler.py:296-314`）。状态位不证明 64 路可持续运行或吞吐翻倍。
+状态池满了不会拒绝请求，而会退回看左侧上下文的无状态解码（`components/code2wav_scheduler.py:296-314`）。状态位不证明 64 路可持续运行或吞吐翻倍。
 
 ### 边界与出处
 
-上限和状态位计算：`sglang_omni/models/qwen3_omni/stages.py:1276-1286`；`sglang_omni/models/qwen3_omni/config.py:37,454-496`；`tests/unit_test/qwen3_omni/test_colocation_config.py:177-203`。每个展开后的 stage 实例独立解析工厂参数（`sglang_omni/pipeline/mp_runner.py:160-177`；`sglang_omni/config/runtime.py:44-61`），每个 scheduler 各建一个状态池（`code2wav_scheduler.py:1284-1299`）。位置和比例：`examples/configs/qwen3_omni_speech_replica2.yaml:1-42`。默认配对让每路 codec 留在一卡，自定义策略不保证 `r0/r0` 和 `r1/r1` 配对。
+状态位计算：`sglang_omni/models/qwen3_omni/config.py:468-476`；`tests/unit_test/qwen3_omni/test_colocation_config.py:177-203`。每个展开后的 stage 实例独立解析工厂参数（`sglang_omni/pipeline/mp_runner.py:160-177`；`sglang_omni/config/runtime.py:44-61`），每个 scheduler 各建一个状态池（`components/code2wav_scheduler.py:1284-1299`）。默认配对让每路 codec 留在一卡，自定义策略不保证 `r0/r0` 和 `r1/r1` 配对。
 
 ### 接下来
 
 下一步核对解析后的配置，再用真实流量测量，不把这些上限当成结果。
 
-## 第 8 步 · 就绪不是 benchmark
+## 第 9 步 · 就绪不是 benchmark
 
 > **一句话：** readiness 证明一个小请求能跑完；部署比较需要受控流量，以及分开的基准客户端和听者时钟。
 
@@ -334,7 +354,7 @@ $$
 
 最后一步把配置、等待、数据和显存放进回顾第 1–12 章的一张决策表。
 
-## 第 9 步 · 一张部署决策表
+## 第 10 步 · 一张部署决策表
 
 > **一句话：** 8 请求算例从默认 BF16 语音和 talker 独占用卡开始，再根据记录的证据保留或修改选择。
 
@@ -370,7 +390,7 @@ $$
 
 ### 决策边界
 
-这是由 H200/TP2 证据构造的 TP1 起步假设，不是实测得出的最优方案。INT4 不在首轮 A/B 里，本章既没有否定它，也没有声称测过它。先解析配置并运行 readiness，再固定起步摆卡和第 8 步的其他控制条件，以目标并发 8 比较 BF16 与原生 FP8。只测 `c = 8` 时，重复五次就是每组五次运行。图外做法：随仓库脚本汇总首音中位数、p95 和 p99。本步图上另列了自定义 p90，分别在每组的 `c = 8` 结果里，对成功流式请求中非空的 `per_request.audio_ttfp_s` 调用 `numpy.percentile(..., 90)`（`benchmarks/metrics/performance.py:219-223,480`）。首音、总耗时和听者结果分别保留；输出质量检查在 generate-only sweep 之外另做。只有记录指出要解决的问题才改选择，这个问题也可能是显存或质量，而不只是等待。
+这是由 H200/TP2 证据构造的 TP1 起步假设，不是实测得出的最优方案。INT4 不在首轮 A/B 里，本章既没有否定它，也没有声称测过它。先解析配置并运行 readiness，再固定起步摆卡和第 9 步的其他控制条件，以目标并发 8 比较 BF16 与原生 FP8。只测 `c = 8` 时，重复五次就是每组五次运行。图外做法：随仓库脚本汇总首音中位数、p95 和 p99。本步图上另列了自定义 p90，分别在每组的 `c = 8` 结果里，对成功流式请求中非空的 `per_request.audio_ttfp_s` 调用 `numpy.percentile(..., 90)`（`benchmarks/metrics/performance.py:219-223,480`）。首音、总耗时和听者结果分别保留；输出质量检查在 generate-only sweep 之外另做。只有记录指出要解决的问题才改选择，这个问题也可能是显存或质量，而不只是等待。
 
 ### 接下来
 
