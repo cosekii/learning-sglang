@@ -21,7 +21,7 @@
   type Step = {
     caption: string; captionZh: string; title: string; titleZh: string; subtitle: string; subtitleZh: string;
     foot: string; footZh: string; legend: string; legendZh: string; map?: { en: string; zh: string };
-    nodes: Node[]; formulas: { en: string; zh: string }[]; flow?: boolean; measure?: boolean; desktopH?: number;
+    nodes: Node[]; formulas: { en: string; zh: string }[]; flow?: boolean; measure?: boolean; costs?: boolean; desktopH?: number;
     mobile?: MobileText;
   };
 
@@ -193,7 +193,7 @@
     foot: 'InfiR2 public non-RL row; exact configuration is in the deep dive.',
     footZh: 'InfiR2 公开非 RL 一行；精确配置见深入讲解。',
     legend: 'Orange = BF16 · blue = FP8 · time and memory each use one shared scale', legendZh: '橙 = BF16 · 蓝 = FP8 · 时间和显存各自使用同一比例',
-    measure: true, desktopH: 540,
+    measure: true, costs: true, desktopH: 540,
     nodes: [
       { title: 'TIME · BF16', titleZh: '时间 · BF16', result: `${N.FP8_PUBLIC_TOTAL_BF16_MS.toLocaleString('en-US')} ms`, resultZh: `${N.FP8_PUBLIC_TOTAL_BF16_MS.toLocaleString('en-US')} ms`, body: `${N.FP8_PUBLIC_FORWARD_BF16_MS} + ${N.FP8_PUBLIC_BACKWARD_BF16_MS.toLocaleString('en-US')} ms`, bodyZh: `${N.FP8_PUBLIC_FORWARD_BF16_MS} + ${N.FP8_PUBLIC_BACKWARD_BF16_MS.toLocaleString('en-US')} ms`, tone: 'orange', bar: 1 },
       { title: 'TIME · FP8', titleZh: '时间 · FP8', result: `${N.FP8_PUBLIC_TOTAL_FP8_MS.toLocaleString('en-US')} ms`, resultZh: `${N.FP8_PUBLIC_TOTAL_FP8_MS.toLocaleString('en-US')} ms`, body: `${N.FP8_PUBLIC_FORWARD_FP8_MS} + ${N.FP8_PUBLIC_BACKWARD_FP8_MS.toLocaleString('en-US')} ms`, bodyZh: `${N.FP8_PUBLIC_FORWARD_FP8_MS} + ${N.FP8_PUBLIC_BACKWARD_FP8_MS.toLocaleString('en-US')} ms`, tone: 'blue', bar: N.FP8_PUBLIC_TOTAL_FP8_MS / N.FP8_PUBLIC_TOTAL_BF16_MS },
@@ -336,7 +336,9 @@
   const W = $derived(phone ? 300 : 720);
   const start = $derived(cur.map ? 100 : 80);
   const formulas = $derived(phone && cur.mobile?.formulas ? cur.mobile.formulas : cur.formulas);
-  const legendY = $derived(start + cur.nodes.length * 96 + 15 + formulas.length * 27);
+  const costY = $derived(start + cur.nodes.length * 96 + 5);
+  const costH = $derived(cur.costs ? 120 : 0);
+  const legendY = $derived(start + cur.nodes.length * 96 + 15 + costH + formulas.length * 27);
   const H = $derived(phone ? legendY + 55 : (cur.desktopH ?? 500));
   const nodeW = (count: number) => count === 2 ? 260 : count === 3 ? 200 : 155;
   const nodeX = (i: number, count: number) => count === 2 ? 65 + i * 330 : count === 3 ? 35 + i * 225 : 25 + i * 175;
@@ -372,8 +374,16 @@
           </g>
         {/each}
         <g opacity={phase >= PHASE_COUNTS[step] - 1 ? 1 : 0}>
+          {#if cur.costs}
+            <rect x="25" y={costY} width="250" height="102" rx="10" fill="var(--bg)" stroke="var(--line)" />
+            <text x="150" y={costY + 17} text-anchor="middle" class="small strong">{t('CONVERSION COSTS', '转换成本')}</text>
+            <text x="150" y={costY + 35} text-anchor="middle" class="small">{t('quantize BF16 inputs → FP8', 'BF16 输入还要量化成 FP8')}</text>
+            <text x="150" y={costY + 53} text-anchor="middle" class="small">{t('extra transposed FP8 output', '额外的转置 FP8 输出')}</text>
+            <text x="150" y={costY + 71} text-anchor="middle" class="small">{t('rows become columns', '行变成列')}</text>
+            <text x="150" y={costY + 89} text-anchor="middle" class="small">{t('precise activation copies · for backward', '高精度激活副本 · 反向时还要用')}</text>
+          {/if}
           {#each formulas as line, i}
-            <text x="150" y={start + cur.nodes.length * 96 + 15 + i * 27} text-anchor="middle" class={i === 0 ? 'result' : 'small'}>{t(line.en, line.zh)}</text>
+            <text x="150" y={start + cur.nodes.length * 96 + 15 + costH + i * 27} text-anchor="middle" class={i === 0 ? 'result' : 'small'}>{t(line.en, line.zh)}</text>
           {/each}
           <text x="150" y={legendY} text-anchor="middle" class={step === 1 && $lang === 'en' ? 'small tight-legend' : 'small'}>{t(cur.mobile?.legend ?? cur.legend, cur.mobile?.legendZh ?? cur.legendZh)}</text>
         </g>
@@ -393,11 +403,27 @@
                 <text x={x + 155} y={y + 32} text-anchor="middle" class="result">{t(node.result, node.resultZh)}</text>
               </g>
             {/each}
+            {#if cur.costs}
+              <g opacity={phase >= PHASE_COUNTS[step] - 1 ? 1 : 0}>
+                {#if group === 0}
+                  <rect x={x + 20} y="285" width="270" height="36" rx="7" fill="var(--bg)" stroke="var(--line)" />
+                  <text x={x + 155} y="301" text-anchor="middle" class="cost strong">{t('QUANTIZE INPUTS', '量化输入')}</text>
+                  <text x={x + 155} y="317" text-anchor="middle" class="cost">{t('BF16 → FP8 · extra forward work', 'BF16 → FP8 · 前向增加转换工作')}</text>
+                {:else}
+                  <rect x={x + 20} y="285" width="130" height="36" rx="7" fill="var(--bg)" stroke="var(--line)" />
+                  <text x={x + 85} y="301" text-anchor="middle" class="cost strong">{t('TRANSPOSED FP8', '转置 FP8')}</text>
+                  <text x={x + 85} y="317" text-anchor="middle" class="cost">{t('extra output · rows → columns', '额外输出 · 行变成列')}</text>
+                  <rect x={x + 160} y="285" width="130" height="36" rx="7" fill="var(--bg)" stroke="var(--line)" />
+                  <text x={x + 225} y="301" text-anchor="middle" class="cost strong">{t('PRECISE ACTIVATIONS', '高精度激活值')}</text>
+                  <text x={x + 225} y="317" text-anchor="middle" class="cost">{t('copies for backward', '反向时还保留副本')}</text>
+                {/if}
+              </g>
+            {/if}
           </g>
         {/each}
         <g opacity={phase >= PHASE_COUNTS[step] - 1 ? 1 : 0}>
           {#each cur.formulas as line, i}
-            <text x="360" y={320 + i * 29} text-anchor="middle" class={i === 0 ? 'result' : 'small'}>{t(line.en, line.zh)}</text>
+            <text x="360" y={(cur.costs ? 350 : 320) + i * (cur.costs ? 23 : 29)} text-anchor="middle" class={i === 0 ? 'result' : 'small'}>{t(line.en, line.zh)}</text>
           {/each}
           <text x="360" y={H - 55} text-anchor="middle" class="small">{t(cur.legend, cur.legendZh)}</text>
         </g>
@@ -438,6 +464,7 @@
   .label { font-size: 13px; fill: var(--fg); }
   .small { font-size: 13px; fill: var(--fg); }
   .section { font-family: var(--mono); font-size: 15px; font-weight: 700; fill: var(--fg); }
+  .cost { font-size: 11px; fill: var(--fg); }
   .strong { font-weight: 650; }
   .result { font-family: var(--mono); font-size: 15px; font-weight: 650; fill: var(--fg); }
   .tight-legend { letter-spacing: -0.2px; }

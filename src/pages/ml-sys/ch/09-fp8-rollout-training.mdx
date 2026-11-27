@@ -25,7 +25,7 @@ Step 4 follows `examples/low_precision/run-qwen3-4b-fp8.sh:117-143` and `example
 
 Step 5 follows `examples/low_precision/README.md:42-64`. The common update handoff quantizes BF16 weights to FP8 for SGLang rollout. When stored training weights are FP8, Megatron first dequantizes them to BF16; without `--fp8-param-gather`, they are already BF16. The implementation accepts this BF16 handoff and produces rollout's own FP8 values and scales, rather than documenting a direct copy of training-side FP8. Checkpoints also use BF16 `torch_dist`. P counts supported weight values, and raw payload means weight bytes before scales and exclusions; no transfer latency is claimed.
 
-Step 6 uses `InfiR2 arXiv:2509.22536v4`, §5.4 Table 6. The Qwen2.5-1.5B non-RL row gives per-pass totals of 2,030 versus 1,590 ms and peak memory of 68.1 versus 58.3 GB, producing 21.7% and 14.4% savings. The 440 ms difference belongs to one forward-plus-backward comparison, not an entire training run. Its UE8M0 recipe and unspecified efficiency-test GPU make this a public example of uneven gains, not a slime FP32-scale RL benchmark.
+Step 6 uses `InfiR2 arXiv:2509.22536v4`, §5.4 Table 6. The Qwen2.5-1.5B non-RL row gives per-pass totals of 2,030 versus 1,590 ms and peak memory of 68.1 versus 58.3 GB, producing 21.7% and 14.4% savings. The 440 ms difference belongs to one forward-plus-backward comparison, not an entire training run. Its UE8M0 recipe and unspecified efficiency-test GPU make this a public example of uneven gains, not a slime FP32-scale RL benchmark. The stage also names BF16 → FP8 input quantization, an extra transposed FP8 output, and higher-precision activation copies kept for backward. The paper and conversion code provide no separate cost breakdown, so the step does not attribute the forward regression to CPU execution or another single cause.
 
 Step 7 follows `readme.md:204-261`. Real FP8 versus fake FP8 leaves a residual FP8 compute-path difference, including arithmetic and accumulation-path differences; it does not isolate only a kernel implementation. BF16 baseline versus fake FP8 isolates quantization round-trip loss. The experiment uses Qwen3-4B on one H800 during RL Steps 0 and 1. The article's Diff is a matrix-output difference with no stated norm or unit, so the chapter does not label it as a percentage, log probability, or KL value.
 
@@ -50,7 +50,7 @@ Further reading: [zero-to-sglang Part III Chapter 2: Quantization and Low-Precis
 
 第 5 步依据 `examples/low_precision/README.md:42-64`。共同交接把 BF16 权重量化为 SGLang rollout 的 FP8。若训练端存储权重是 FP8，Megatron 先将其反量化为 BF16；不开 `--fp8-param-gather` 时，权重本来已经是 BF16。实现接收这份 BF16 交接并生成 rollout 自己的 FP8 数值和 scale，文档没有直接复制训练端 FP8 的路径。checkpoint 也使用 BF16 `torch_dist`。P 是支持权重的数值个数，原始负载指不含 scale 和排除项的权重字节；不据此声称传输加速。
 
-第 6 步使用 `InfiR2 arXiv:2509.22536v4` §5.4 表 6。Qwen2.5-1.5B 非 RL 一行给出每趟前向加反向总计 2,030 对 1,590 ms、峰值显存 68.1 对 58.3 GB，得到 21.7% 和 14.4% 的收益。440 ms 是一趟前向加反向的对照差，不是整次训练省下的时间。其 UE8M0 方案和未注明的效率测试 GPU 表明，这只是收益不一致的公开例子，不是 slime FP32-scale RL 基准。
+第 6 步使用 `InfiR2 arXiv:2509.22536v4` §5.4 表 6。Qwen2.5-1.5B 非 RL 一行给出每趟前向加反向总计 2,030 对 1,590 ms、峰值显存 68.1 对 58.3 GB，得到 21.7% 和 14.4% 的收益。440 ms 是一趟前向加反向的对照差，不是整次训练省下的时间。其 UE8M0 方案和未注明的效率测试 GPU 表明，这只是收益不一致的公开例子，不是 slime FP32-scale RL 基准。舞台还标出 BF16 → FP8 的输入量化、额外的转置 FP8 输出，以及反向时保留的高精度激活副本。论文和转换代码没有给出各项成本拆分，所以本步不把前向变慢归因于 CPU 或另一个单一原因。
 
 第 7 步依据 `readme.md:204-261`。真实 FP8 对模拟 FP8 留下 FP8 计算路径的剩余差异，包括运算和累加路径差异，并非只隔离 kernel 实现。BF16 基准对模拟 FP8 隔离量化往返损失。实验使用 Qwen3-4B、一张 H800，统计 RL 第 0、1 步。文章的 Diff 是矩阵输出差异，未给范数或单位，本章不把它称为百分比、log probability 或 KL。
 

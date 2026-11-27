@@ -191,6 +191,8 @@ Sources: `THUDM/slime@15fbd2ef82c765fe22f78e288db2bb79ebf582bd`, `examples/low_p
 - The time panel adds forward and backward on each side. BF16 takes 463 + 1,567 = 2,030 ms; FP8 takes 529 + 1,061 = 1,590 ms. Both time bars use the 2,030 ms BF16 bar as full width.
 - The memory panel compares 68.1 GB with 58.3 GB. Both memory bars use the 68.1 GB BF16 bar as full width.
 - The bottom line separates the total: forward rises from 463 to 529 ms, while backward falls from 1,567 to 1,061 ms. The net saving is smaller than the backward saving alone.
+- The stage marks BF16 → FP8 input quantization as extra forward work.
+- The stage also adds an extra transposed FP8 output, whose rows become columns, and higher-precision activation copies kept for backward. On phones, one CONVERSION COSTS box lists these costs together. The source does not report their separate sizes, so these objects do not decompose the 9.8 GB measurement.
 
 ### Formula and symbols
 
@@ -214,7 +216,7 @@ $$9.8/68.1=14.4\%$$
 
 Throughput rises from 340 to 376 TFLOP/s, a 376 / 340 − 1 = 10.6% increase. This is Qwen2.5-1.5B with 8k context, TP 1, CP 1, and micro-batch 2 in InfiR2's non-RL experiment. A micro-batch is a smaller slice of a training batch processed before the next slice. The paper's efficiency section does not identify the GPU. Its recipe uses UE8M0 scales, which store only an exponent and therefore represent powers of two. This row is not a measurement of slime's FP32-scale RL configuration.
 
-Extra transposed FP8 outputs and higher-precision saved tensors prevent memory from halving. Quantization work can also make forward slower even while backward matrix multiplications accelerate.
+The conversion code can write an additional transposed FP8 output, while higher-precision activation copies remain live for backward. Quantization also adds work to forward. The paper does not report separate bytes or milliseconds for these objects, so this step does not attribute the forward regression to CPU execution or any other single cause.
 
 ### Next
 
