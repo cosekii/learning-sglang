@@ -1,3 +1,41 @@
+# lane k2 本轮报告 · ML Systems 07 Step 5 的 ML-55
+
+日期：2026-11-27。类型：修旧（direction 指定的下一最小单元）。本轮开始 HEAD 与 `origin/tutorials` 均为 `975362f`，工作树干净。范围只有 ML 07 Step 5 的组件、双语 deep、MDX 出处、生成 transcript、本章评分卡与进度记录、定向审计和本报告；未改其他步、其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。ML-41～44 与 ML-50 的关闭结论保持不变，Step 7 的 warm-up 链未改；`3a106be 0547d98` 的 ML 13 Step 5 记录保持独立，本单元不关闭 ML-52，也未开第 14 章。
+
+## 提交与 finding
+
+- `622eac2`：**ML-55 作者修复完成，待协调固定复审，不自行销项。** 同一桶卡片按 `restored → pp-ep → tp → unpad → hf → handles → loaded → cleared` 改变标题和详情，有序记录严格按 `PP/EP broadcast → TP gather → unpad → HF layout → handles → ray.get → clear` 形成，不再用 assemble／arrange 代替转换过程。
+- PP/EP 广播填满空接收副本，TP 收集形成完整张量，unpad 去掉可能存在的 padding，HF 转换配上 Hugging Face 名称和布局。handles 出现后张量仍保留，`ray.get` 返回后转换副本仍保留，`clear` 才释放它；Bucket 1 在第 8 相清空，Bucket 2 在第 9 相上卡。
+- 桌面与手机都有同桶对象变化及 `SGLANG + KV` 驻留对照。双语 MDX、deep 和生成 transcript 使用同一顺序与条件措辞，保留无桶大小、无字节节省量的来源边界。
+- 首次教程提交为 `486b9ab`，推送被拒后按指示 `git pull --rebase origin tutorials`，带入 k1 的 `54777a1`、`9c91985`。最终 `622eac2` 推送成功；未 force-push。评分卡、进度、审计和本报告随下一记录提交推送。
+
+## 作者评分与独立冷读
+
+| 步 | R1–R5 | 机制 R6 | 原十个非视觉项 | R1 小学生复述 | 新内容洞 |
+|---|---:|---:|---:|---|---:|
+| 5 | 10/10 | 2/2 | 20/20 | 同一桶先补齐各 rank 的 TP 分片，再拼成完整张量、去 padding、转 HF 布局；`ray.get` 等装入结束才清空，然后下一桶上卡。 | 0 |
+
+- 独立 `explore` 首轮 **FAIL**：只揭示操作清单、手机缺 `SGLANG + KV`、padding 被写成恒有。补齐同桶对象逐相变化、手机标签、条件措辞与英文手机相位后，第二轮 **PASS**，剩余 ML-55 内容洞 **0**。它另确认 handles／`ray.get` 不会让人读成提前释放张量，Step 7 与其他步内容未改。
+- 这些是作者复评与独立源码、transcript、DOM 冷读，不是协调 verdict。协调固定 `88fc4d1` 的 **80/80、16/16、192/192、因 ML-55 NO-GO** 基线不改写；原 #4/#5、整章新总分和销项不由本轮自行决定。
+
+## 硬门与证据
+
+- 最终 rebase 后 `npm run build`：**60 页**通过；Step 5 `readability`：**0 机械问题**；`BOOK=ml-sys node scripts/deep-check.mjs 07`、`zh-check`、英中全章 360／390／430 px `mobile`、中文 Step 5 字号门和 `git diff --check` 全过。
+- transcript 连续两次 SHA-256 相同，rebase 后仍为 `8aab5d0297fb937d7a51dc7cd40d2e3c147a6d8a40be8b9af23fccf3eb5a7059`，**2,161 词**。无 caption、文字出界、重叠或文本规则报告。
+- `.bot/out/ml55-step5-audit/report.json` 覆盖英中桌面与 390 px 手机 × direct／前步入口，共 **8 组合、80 个状态、72/72 个机制转变、64 个同桶状态变化**；另有双语 1440／390 px 共 **4 个 deep 状态**。审计逐相检查 bucket id、可见标题与详情、七个操作的首次出现顺序、Bucket 1 清空和 Bucket 2 上卡时点。
+- 最终审计有 **77 个唯一 PNG 哈希**，最低 **10.233191287878787 CSS px**，重叠、SVG 出界、页面或抽屉横溢和 `failures` 均为 **0**。可重跑脚本：`.bot/out/ml55-step5-audit.mjs`。首轮桌面脚注小字已改为 Step 5 专用 12.5 px 桌面脚注后复验通过。
+- 代表截图：`.bot/out/ml55-step5-audit/en-1440-direct-s5-p6.png`、`.bot/out/ml55-step5-audit/zh-390-direct-s5-p9.png`。读取 PNG 时工具返回「this model does not support image input」；以上结论来自构建、transcript、源码、独立冷读、DOM 和几何检查，未声称看过图片或视觉通过。
+- 本章没有直接 zero-to-sglang 对照章。本单元核对公开 `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-1.md:254-272,280-296,329-395` 的桶循环与转换调用，未引入新测量数字；未跑全站回归、真实训练、权重传输、SGLang／CUDA、GPU benchmark 或 reduced-motion 动态切换。最新回归只有 `(exit 13)`，没有可分配布局步骤。
+
+## 剩余与清理
+
+- 剩余事项是 ML-55 的协调固定复审、原 #4/#5、整章评分、具备图像能力的复审和主人最终视觉验收。共享 ML-21／22、ML-52 和其他待审或开放 finding 未改。
+- 本 clone 的 `node_modules` 开始时指向协调人 checkout；只删除本目录内的符号链接并在本目录安装依赖，package 文件无 diff，未写协调人的 checkout。
+- 本地查看地址：`http://127.0.0.1:4510/learning-sglang/ml-sys/ch/07-weight-updates/?step=5`。本轮 4510 服务已停止，端口无监听。
+- 审计脚本调用 `browser.close()`。收尾 `pgrep -P 1 -fl 'headless=new.*cdp-'` 无输出；本轮没有遗留浏览器。
+
+---
+
 # lane k2 本轮报告 · ML Systems 13 Step 8 的 ML-53
 
 日期：2026-11-27。类型：修旧（ML-52 后按 owner rule 处理本书开放 P1）。本轮开始 HEAD 与 `origin/tutorials` 均为 `3a106be`，工作树干净。范围只有 ML 13 Step 8 的组件、双语 deep、生成 transcript、本章评分卡与进度记录、定向审计和本报告；未改其他步、其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。共享 ML-21／22 保持独立，未开第 14 章。

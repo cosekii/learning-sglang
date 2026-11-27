@@ -4,6 +4,9 @@
 
 ## 本轮记录
 
+- 修旧 Learning ML Systems 第 7 章 Step 5 的 ML-55：同一桶卡片按 `restored → pp-ep → tp → unpad → hf → handles → loaded → cleared` 改变对象状态，有序记录严格上演 `PP/EP broadcast → TP gather → unpad → HF layout → handles → ray.get → clear`。句柄和 `ray.get` 返回后的转换副本都保持存活，`clear` 后才释放，Bucket 2 随后上卡；桌面、手机、MDX 与双语 deep 同序，padding 改为条件措辞。教程提交 `622eac2` 待协调固定复审，不自行销项；ML-41～44 与 ML-50 的关闭结论不变，Step 7 未改，ML-52 保持独立，未开第 14 章。
+- Step 5 作者参考值为 R1–R5 **10/10**、机制 R6 **2/2**、原十个非视觉项 **20/20**、0 新内容洞。独立 `explore` 首轮 FAIL 后逐项返工，第二轮 **PASS**。`build`（60 页）、Step 5 `readability`、两次哈希一致的 `transcript`（2,161 词，`8aab5d02…7059`）、`deep-check 07`、`zh-check`、英中全章与中文 Step 5 三宽度 `mobile`、`git diff --check` 全过；定向审计 **80 个状态、72/72 个机制转变、64 个同桶状态变化、4 个 deep 状态、77 个唯一 PNG 哈希**，最低 **10.233 CSS px**，重叠、出界和 `failures` 为 0。当前模型不能读 PNG，视觉、原 #4/#5 和整章 verdict 待协调；固定 `88fc4d1` 的整章 NO-GO 基线不变。本轮类型：**修旧**。
+
 - 修旧 Learning SGLang Omni 第 5 章 Steps 1–3 的 Omni-09：Step 1 以四相演示覆盖读错、读完 A 和 B 进入；Step 2 以三相构造 DataRef 并预览字段使用，明确尚未发布；Step 3 以六相演示写入返回、pending、DataReady、watch_pending 和 job.ready。教程提交 `b89db6c`、`975362f`、`54777a1`，另附 deep 手机呈现修复和最终证据；Steps 4–5 未重做。Omni-09 待协调固定复审，不自行销项；下一单元按协调顺序处理 Omni-51。
 - Steps 1–3 作者参考值均为 R1–R5 **10/10**、机制 R6 **2/2**、原十个非视觉项 **20/20**、新内容洞 **0**，独立 `explore` 逐步及整单元冷读均 **PASS**。`build`（60 页）、五步 `readability`、transcript（1,249 词，`4d0035fb…8609ea04`）、`deep-check 05`、`zh-check`、英中全章与中文 Steps 1–3 三宽度 `mobile`、`git diff --check` 全过。动画矩阵 **18 组合、78 状态、60/60 转变**，最低 **11.760 CSS px**；双语 deep **18 视图**。桌面抽屉缩舞台与焦点仍属共享 ML-21／22。当前模型不能读 PNG，视觉与整章 verdict 待协调；未跑全站回归或真实 SHM 传输。本轮类型：**修旧**。
 

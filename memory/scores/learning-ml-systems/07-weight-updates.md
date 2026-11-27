@@ -1,5 +1,20 @@
 # 第 7 章评分卡 · Weight update channels
 
+## 2026-11-27 ML-55 作者返工
+
+- 教程提交：`622eac2`（Step 5）。ML-55 的作者修复待协调固定复审，不自行销项；ML-41～44 与 ML-50 的关闭结论保持不变，Step 7 的 warm-up 链未改，ML-52 与第 14 章不在本单元内。
+- 协调固定 `88fc4d1` 的既有基线不改写：R1–R5 **80/80**、机制 R6 **16/16**、原十二项 **192/192**，完整 EVAL 仍因 ML-55 **NO-GO**。下表只是本轮作者与独立冷读的修复范围评分。
+
+| 步 | R1–R5 /10 | 机制 R6 /2 | 原十个非视觉项 /20 | R1 小学生复述 | 新内容洞 |
+|---|---:|---:|---:|---:|---:|
+| 5 | 10 | 2 | 20 | 同一桶先补齐各 rank 的 TP 分片，再拼成完整张量、去 padding、转 HF 布局；`ray.get` 等装入结束才清空，然后下一桶上卡。 | 0 |
+
+- 同一桶卡片按 `restored → pp-ep → tp → unpad → hf → handles → loaded → cleared` 改变标题和详情，有序记录严格按 `PP/EP broadcast → TP gather → unpad → HF layout → handles → ray.get → clear` 形成。句柄出现后张量仍保留，`ray.get` 返回后转换副本仍保留，`clear` 后才释放；Bucket 2 在下一相上卡。
+- 独立 `explore` 首轮 **FAIL**，指出只揭示清单、手机缺 `SGLANG + KV` 和 padding 被写成恒有。补齐同桶对象逐相变化、手机标签、条件措辞与英文手机相位后，第二轮 **PASS**，剩余 ML-55 内容洞 **0**。
+- `build`（60 页）、Step 5 `readability`、`deep-check 07`、`zh-check`、英中全章及中文 Step 5 三宽度 `mobile`、`git diff --check` 全过。transcript 连续两次逐字一致：**2,161 词**，SHA-256 `8aab5d0297fb937d7a51dc7cd40d2e3c147a6d8a40be8b9af23fccf3eb5a7059`。
+- `.bot/out/ml55-step5-audit/report.json`：英中桌面与手机 × direct／前步入口共 **80/80 个状态、72/72 个机制转变、64 个同桶状态变化、4 个双语 deep 状态、77 个唯一 PNG 哈希**，最低 **10.233191287878787 CSS px**，重叠、SVG 出界、页面或抽屉横溢及 `failures` 均为 **0**。
+- 代表 PNG：`.bot/out/ml55-step5-audit/en-1440-direct-s5-p6.png`、`.bot/out/ml55-step5-audit/zh-390-direct-s5-p9.png`。当前模型不能读取 PNG；以上结论来自构建、transcript、源码、独立冷读、DOM 和几何检查，未声称看过图片或视觉通过。原 #4/#5、整章协调 verdict 和主人最终视觉验收仍待。
+
 ## 2026-11-27 ML-50 作者返工
 
 - 教程提交：`e8a69d1`（Step 7）。ML-50 的作者修复待协调固定复审，不自行销项；ML-55 和其他开放项未改。
