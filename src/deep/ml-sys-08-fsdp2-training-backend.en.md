@@ -115,41 +115,71 @@ Step 4 follows Pack 1 into the grad-enabled forward. It preserves the existing 7
 
 Sources: `THUDM/slime@55e41ffe`, <code>slime/backends/<wbr>fsdp_utils/<wbr>actor.py</code> (`train`, `_train_core`, `_packed_data`), <code>slime/utils/<wbr>data.py</code> (`process_rollout_data`, <code>get_minimum_<wbr>num_<wbr>micro_<wbr>batch_<wbr>size</code>), <code>slime/backends/<wbr>fsdp_utils/<wbr>data_packing.py</code> (`pack_sequences`), and <code>scripts/<wbr>run-qwen3-4B-fsdp.sh</code> (`--use-dynamic-batch-size`, `--max-tokens-per-gpu 9216`).
 
-## Step 4 · Borrow a full layer for forward computation
+## Step 4 · Turn two packs into one actor update
 
-**One sentence.** After `zero_grad` clears the old gradient shard, forward starts with 7 GB and temporarily gathers one full layer.
+**One sentence.** Pack 1 produces a clipped, masked actor loss, Pack 2 completes backward, and one optimizer update precedes the conditional training offload.
 
 ### On the stage
 
-- The orange box holds the 1 GB weight shard and 6 GB of optimizer-related tables from Step 2. The 1 GB gradient shard is absent because slime calls `optimizer.zero_grad(set_to_none=True)` before this initial forward.
-- `All-gather` means every rank contributes its shard so the group can reconstruct one full layer. The implementation calls the layer or parameter group gathered together a unit.
-- The blue full layer has temporary size `U`. Computation uses that full layer, then `RELEASE` removes the temporary copy. The 7 GB of weights and optimizer tables remains.
-- The last line restores the full training-state bill from Step 2: backward adds the 1 GB gradient shard, giving `7 + 1 = 8 GB`.
+- `FORWARD` keeps two constructed views separate: DP1 for the packing arithmetic and DP8 for the memory account. After `zero_grad(set_to_none=True)` clears the old gradient shard, the DP8 example holds 7 GB of weight and optimizer shards. `All-gather` rebuilds a temporary full layer of unknown size $U$, and `release` removes it. The 7 GB figure covers parameter tables only, not all training memory or the peak.
+- `UNPACK` uses Pack 1's `cu_seqlens=[0,2,4]` to recover records A and B. Each has one response token and a response mask of `[1]`. Mask 1 includes that token in its record's mean.
+- `RATIO` is the current token probability divided by the old token probability. A ratio above 1 means the current model gives that token more chance. The old scoring pass and current training pass produce the two log probabilities. The constructed gaps are $+0.3365$ for A and $-0.3567$ for B, giving ratios 1.40 and 0.70.
+- `ADVANTAGE + CLIP` reuses Step 3's advantages, $+u$ for A and $-u$ for B. Clipping keeps the ratio inside the shipped bounds 0.80 and 1.28, so the ratios become 1.28 and 0.80.
+- `LOSS AFTER CLIP` negates the unclipped and clipped products, then takes the larger value. A yields $-1.1973$ and B yields $+0.7483$.
+- `MASKED MEAN` averages each record's included response tokens, then sums those per-record means. Both denominators are 1 here, giving `pg_loss = -1.1973 + 0.7483 = -0.4490`.
+- `BACKWARD` turns the loss into weight-change directions. It processes Pack 1 and Pack 2 before the sole `optimizer.step()` allowed by `grad_accum=[2]`. The orange `SLEEP` row then moves the model and optimizer to CPU on the `offload_train` path. The later `update_weights` handoff belongs to Ch. 7.
 
 ### Formula and symbols
 
-$$M_0=W_i+O_i,\qquad M_{\text{forward}}\approx M_0+U,\qquad M_{\text{after}}=M_0$$
+$$\rho_i=\exp(\operatorname{log\_probs}_i-\operatorname{old\_log\_probs}_i)$$
+
+$$\hat\rho_i=\operatorname{clip}(\rho_i,0.80,1.28)$$
+
+$$\ell_i=\max(-\rho_i a_i,-\hat\rho_i a_i)$$
+
+$$\bar\ell_i=\frac{\sum_j\ell_{i,j}m_{i,j}}{\max(\sum_jm_{i,j},1)}$$
+
+$$L_{pg}=\sum_i\bar\ell_i$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
-| $W_i$ | Weight shard owned by this rank | Step 2, 1 GB |
-| $O_i$ | Optimizer-related tables owned by this rank | Step 2, 6 GB |
-| $M_0$ | Residency at initial forward after `zero_grad` | $W_i+O_i=7$ GB |
-| $U$ | Temporary bytes for the full unit being computed | Unit size; no source value |
-| $M_{\text{forward}}$ | Residency while this unit is computed | Starting tables plus the temporary unit |
-| $M_{\text{after}}$ | Residency after the unit is released | Back to $M_0$ before backward stores gradients |
+| $\rho_i$ | Current token probability divided by old token probability for record $i$ | Current and old log probabilities; constructed gaps here |
+| $\hat\rho_i$ | Clipped ratio | Shipped `eps_clip=0.2`, `eps_clip_high=0.28` |
+| $a_i$ | Advantage for record $i$ | Step 3: $+u$ for A, $-u$ for B |
+| $\ell_{i,j}$ | Negated PPO policy loss at response position $j$ | <code>compute_<wbr>policy_<wbr>loss</code>: larger of the two negative products |
+| $m_{i,j}$ | Response mask | 1 includes the token, 0 excludes it; both shown masks are 1 |
+| $\bar\ell_i$ | Masked mean within record $i$ | <code>sum_of_<wbr>sample_<wbr>mean</code>; denominator is clamped to at least 1 |
+| $L_{pg}$ | Sum of per-record policy-loss means | This Pack 1 worked example |
 
 ### The numbers on the stage
 
-The initial forward boundary is $1+6=7$ GB, so the figure shows $7\ \text{GB}+U\rightarrow7\ \text{GB}$. It does not assign a value to $U$ or claim a measured peak. The complete training-state bill is $7+1=8$ GB only when the gradient shard is also stored.
+The calculations use the unrounded $u$ from Step 3. The stage displays it as 0.9354. For A, $\exp(0.3365)\approx1.40$ is clipped to 1.28:
 
-This all-gather reconstructs parameters; forward computation does not all-gather gradients.
+$$\ell_A=\max(-1.40u,-1.28u)$$
+
+$$\ell_A=\max(-1.3096,-1.1973)=-1.1973$$
+
+For B, $\exp(-0.3567)\approx0.70$ is clipped to 0.80. Its advantage is $-u$:
+
+$$\ell_B=\max(-0.70(-u),-0.80(-u))$$
+
+$$\ell_B=\max(+0.6548,+0.7483)=+0.7483$$
+
+Each response mask is `[1]`, so each one-token mean divides by 1. The Pack 1 sum is $-1.1973+0.7483=-0.4490$. For an all-zero or empty response mask, the numerator is 0 and the clamped denominator is 1, so that record contributes 0. The shipped script sets both `entropy_coef` and `kl_loss_coef` to 0, so those optional terms do not change this worked loss. The gaps and masks are constructed teaching values, not measurements from a training run.
+
+### Implementation boundaries
+
+The implementation stores `ppo_kl = old_log_probs - log_probs`. Thus `(-ppo_kl).exp()` is the stage's $\exp(\operatorname{log\_probs}-\operatorname{old\_log\_probs})$. This example leaves `use_rollout_logprobs` off: the earlier no-grad, scoring-only actor pass writes `log_probs`, which becomes `old_log_probs`, and the grad-enabled training pass writes `cur_log_probs` so backward can find weight-change directions. Enabling that flag instead selects `rollout_log_probs` as the old scores; the stage does not draw that alternative. <code>compute_<wbr>policy_<wbr>loss</code> negates both products and uses `maximum`. This matches the usual PPO minimum after the signs are restored.
+
+<code>sum_of_<wbr>sample_<wbr>mean</code> computes a masked mean inside each record and then sums the records. It is not one mean over all response tokens in the pack. Step 5 supplies the later $R/B$ scaling and FP32 gradient averaging. TIS, GSPO sequence ratios and nonzero entropy or KL coefficients are optional paths outside this worked example.
+
+`train.py` waits for training, calls the conditional training offload, restores rollout, and only then calls `update_weights`. The stage names the later handoff without claiming that it is immediate. Without `offload_train`, the training group clears memory instead of moving the model and optimizer to CPU. Reference-model offload and the separate `fsdp_cpu_offload` policy are not expanded here.
 
 ### Next
 
-Backward also needs parameter values, but its new output is a gradient. The next step shows why gradients use reduce-scatter and return to owned slices.
+The actor loss now has a concrete value. The next step follows its $R/B$ scale through backward and FP32 reduce-scatter to the owned gradient shard.
 
-Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:18`; `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:53-56,101-105`; `THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7`, `slime/backends/fsdp_utils/actor.py:522-535`.
+Sources: <code>THUDM/<wbr>slime@<wbr>55e41ffef7193fdd4c8bc14720233e446446b1d7</code>, <code>slime/backends/<wbr>fsdp_utils/<wbr>actor.py</code> (`_train_step`, <code>sum_of_<wbr>sample_<wbr>mean</code>, `sleep`), <code>slime/utils/<wbr>ppo_utils.py</code> (<code>compute_<wbr>policy_<wbr>loss</code>), <code>slime/backends/<wbr>fsdp_utils/<wbr>data_packing.py</code> (`unpack_sequences`), `train.py:73-79,92-94`, and `scripts/run-qwen3-4B-fsdp.sh` (GRPO arguments).
 
 ## Step 5 · Pre-scale by R/B, then average gradients
 

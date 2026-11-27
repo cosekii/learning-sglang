@@ -1,5 +1,14 @@
 # 第 8 章评分卡 · FSDP2 training backend
 
+## 2026-11-27 ML-48 · Step 4 actor loss、backward 与 offload
+
+- **ML-48 的第二段作者修复完成，待协调固定复审，不自行销项。** Step 4 以八相展示 forward／拆包、ratio、advantage＋clip、裁剪后的 loss、逐记录 masked mean、两包 backward、一次 `optimizer.step()` 和条件 `sleep/offload`。DP1 打包与 DP8 显存例明确分开，旧评分与当前训练两次计算分开；保留 Step 3 packing 和 DP8 的 7 GB 参数表账。TIS 不在本构造例展开，未开第 14 章。
+- 构造例取 A／B 的 log-probability 差值 +0.3365／−0.3567，ratio 为 1.40／0.70，clip 到 1.28／0.80。负乘积取大值后 A 为 −1.1973、B 为 +0.7483；两条 response mask 都是 `[1]`，逐记录均值求和得 `pg_loss=-0.4490`。双语 deep 另验全零或空 mask 的贡献为 0，并保留 `offload → rollout onload → update_weights` 的源码顺序，rollout 恢复标为未画出。
+- 独立 `explore` 最终冷读 **GO**：R1–R5 **10/10**、机制 R6 **2/2**、原十二项 **24/24**、剩余硬阻塞 **0**。R1 复述：「模型用两包回答决定怎样改变权重，但直到第 2 包结束才更新一次。」这不是协调 verdict 或整章 GO。
+- 最终 `build`（60 页）、Step 4 `readability`、`deep-check 08`、`zh-check`、英中全章与中文 Step 4 三宽度 `mobile`、`git diff --check` 全过。transcript 连续两次逐字一致，**2,511 词**，SHA-256 `e6e76f60acc1bcf4a28c7b217adfbb2d208bf57f73054acc06adcf56fb939056`。
+- `.bot/out/ml48-step4-audit.mjs` 覆盖英中桌面与 390 px × direct／前步入口，共 **64 状态、56/56 个机制转变、8 个双语 deep 状态**。普通舞台最低 **10.806249999999999 CSS px**，重叠、SVG 或卡片出界、页面或 deep 横溢和 `failures` 均为 **0**。证据：`.bot/out/ml48-step4-audit/report.json`；代表图：`.bot/out/ml48-step4-audit/zh-390-direct-p7.png`。
+- 桌面 deep 打开后的舞台字号仍属共享 ML-21，手机焦点属 ML-22，本单元未改。当前模型不能读 PNG，视觉与整章 verdict 留待协调。ML-48 的 Ch.6 Step 7 和其余范围仍未闭合。未跑全站回归、真实 FSDP2 训练、GPU benchmark 或 reduced-motion 动态切换。
+
 ## 2026-11-27 ML-48 · Step 3 统一 train 与动态 packing
 
 - **ML-48 的第一段作者修复完成，待协调固定复审，不自行销项。** 新增 Step 3 在 forward 前展示统一 `train`、`process_rollout_data`、按 `response_lengths` 重复归一化 rewards、first-fit 包数、DP `MAX`、均衡 `pack_sequences`、`flat_tokens → tokens` 和总 token 边界的 `cu_seqlens`。构造 DP1/CP1、cap 4 的例子得到 A+B 与 C、`[0,2,4]`、`[0,4]` 和 `grad_accum=[2]`；生产 cap 9,216 单独标注。

@@ -3109,3 +3109,29 @@ npx astro dev stop
 - ML-20 的作者修复已完成，协调固定复审后才可正式核销。ML-36、共享 ML-21／22 和其他既有开放项未动；ML-63／64 的既有修复也未返工。未跑全站回归、真实模型、训练、rollout、GPU benchmark 或故障注入。
 - 代表图：`.bot/out/ml20-seam-audit/ml12-zh-390-direct-s8-p3.png` 与 `ml13-zh-390-direct-s1-p2.png`。本地地址：`http://localhost:4328/learning-sglang/ml-sys/ch/12-rl-speculative-decoding/?step=8`；收尾会停止本轮服务，查看前在本目录运行 `npx astro dev --background`。
 - 本 clone 的 `node_modules` 符号链接曾指向协调 checkout，导致 Vite cache EPERM。只删除本目录中的符号链接并 `npm install` 出本目录依赖，未进入或修改协调 checkout。
+
+---
+
+# lane k2 本轮报告 · ML 08 Step 4 actor-loss 路径（ML-48）
+
+日期：2026-11-27。类型：修旧。范围只有 ML Systems 第 8 章 Step 4 的组件、构造数字、双语 deep、双语 MDX 出处、生成 transcript、目标审计和评分记录。`6168324` 已完成 ML-20 接缝，本轮未返工；保留固定 `25025b4` 已通过的 Step 3 packing，未改其他书、共享 drawer、`.bot/memory/`，未开第 14 章。
+
+## 修复内容
+
+- Step 4 改为八相机制路径：forward 与拆包 → `ratio = exp(log_probs − old_log_probs)` → advantage 与 clip → 裁剪后的负乘积取大值 → 逐记录 masked mean 再求和 → 两包 backward → 一次 `optimizer.step()` → 条件 `sleep/offload` 与后续 `update_weights`。舞台用白话解释 actor loss、ratio 和 backward，旧评分与当前训练两次计算分开，DP1 打包与 DP8 显存例分开，7 GB 只表示参数表而非峰值。
+- 构造例沿用 Pack 1 的 A／B advantage。差值 +0.3365／−0.3567 得 ratio 1.40／0.70，按自带脚本 clip 到 1.28／0.80；A／B loss 分别为 −1.1973／+0.7483，response mask 都是 `[1]`，逐记录均值求和得 `pg_loss=-0.4490`。所有结果由 `src/ml-sys/numbers.ts` 推导。双语 deep 补全零或空 mask 的 0 贡献反例、两种 old-score 来源和 `offload → rollout onload → update_weights` 顺序；rollout 恢复明确不画出，TIS 只列为本构造例不展开的可选路径。
+- 独立 `explore` 冷读经 DP 边界、`U`、score producer、`R/B` 提前出现、零 mask、白话定义和 deep 行名等返工后，最终 **GO**：R1–R5 **10/10**、机制 R6 **2/2**、原十二项 **24/24**、剩余硬阻塞 **0**。R1：「模型用两包回答决定怎样改变权重，但直到第 2 包结束才更新一次。」这不是协调 verdict 或整章 GO。
+
+## 硬门与审计
+
+- 最终 `npm run build`：**60 页**通过。`BOOK=ml-sys ONLY=8 STEP=4 npm run readability`：0 机械问题；`BOOK=ml-sys node scripts/deep-check.mjs 08`：ok；`zh-check`：all clear；`git diff --check`：干净。
+- 英中全章 `mobile` 与中文 Step 4 字号门在 360／390／430 px 均 **no layout breaks**。首轮审计发现的桌面小字、手机图例出界和 deep 表格横溢已返工，最终复跑通过。
+- transcript 连续两次逐字一致：**2,511 词**，SHA-256 `e6e76f60acc1bcf4a28c7b217adfbb2d208bf57f73054acc06adcf56fb939056`。
+- `.bot/out/ml48-step4-audit.mjs` 覆盖英中桌面与 390 px × direct／前步入口：**64 状态、56/56 个机制转变、8 个双语 deep 状态**，普通舞台最低 **10.806249999999999 CSS px**。文字重叠、SVG／卡片出界、页面／deep 横溢和 `failures` 均为 **0**。证据：`.bot/out/ml48-step4-audit/report.json`。
+- 代表图：`.bot/out/ml48-step4-audit/zh-390-direct-p7.png`；另有 `npm run shot` 的 `.bot/out/ml48-step4-shot/ml08-en-step4.png` 与 `.bot/out/ml48-step4-shot-mobile/ml08-zh-step4.png`。本地地址：`http://localhost:4325/learning-sglang/ml-sys/ch/08-fsdp2-training-backend/?step=4`，本轮服务于收尾停止。
+- 本轮开始时 `node_modules` 仍是指向协调 checkout 的符号链接，导致 Vite cache EPERM。只删除本目录中的符号链接并在本目录 `npm install`，未进入或修改协调 checkout。
+
+## 剩余
+
+- ML-48 的 Step 4 作者修复待协调固定复审，不自行销项。Ch.6 Step 7、其余 ML 08 范围和共享 ML-21／22 未改，整章不申报 GO。当前模型无图像输入，PNG 未获视觉批准；上述通过指文本、DOM、几何和独立冷读。
+- 未跑全站回归、真实 FSDP2 训练、rollout、GPU benchmark、故障注入或 reduced-motion 动态切换。主人最终视觉与产品验收另计。

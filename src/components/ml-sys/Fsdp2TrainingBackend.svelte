@@ -7,7 +7,7 @@
   import type { Deep } from '../../deep';
   import { HBM_GB } from '../../numbers';
   import { FSDP_EXAMPLE_PARAMS_B, FSDP_DP_SIZE, FSDP_FULL_WEIGHT_GB, FSDP_FULL_GRADIENT_GB, FSDP_FULL_OPTIMIZER_GB, FSDP_FULL_STATE_PER_GPU_GB, FSDP_FULL_CLUSTER_STATE_GB, FSDP_FULL_CARD_SHARE, FSDP_SHARD_WEIGHT_GB, FSDP_SHARD_GRADIENT_GB, FSDP_SHARD_OPTIMIZER_GB, FSDP_SHARD_STATE_PER_GPU_GB, FSDP_FORWARD_RESIDENT_GB, FSDP_SHARD_CLUSTER_STATE_GB } from '../../ml-sys/numbers';
-  import { FSDP_PACK_TOKEN_CAP, FSDP_PRODUCTION_MAX_TOKENS_PER_GPU, FSDP_PACK_DP_SIZE, FSDP_PACK_CP_SIZE, FSDP_PACK_RECORDS, FSDP_PACK_MEMBERS } from '../../ml-sys/numbers';
+  import { FSDP_PACK_TOKEN_CAP, FSDP_PRODUCTION_MAX_TOKENS_PER_GPU, FSDP_PACK_DP_SIZE, FSDP_PACK_CP_SIZE, FSDP_PACK_RECORDS, FSDP_PACK_MEMBERS, FSDP_ACTOR_EXAMPLE } from '../../ml-sys/numbers';
 
   type Tone = 'plain' | 'blue' | 'orange';
   type MobileItem = { title: string; titleZh: string; body: string; bodyZh: string; tone: Tone; phase?: number };
@@ -54,6 +54,9 @@
   };
   const packingScene = buildPackingScene();
   const rewardText = (reward: number) => `${reward > 0 ? '+' : ''}${reward.toFixed(4)}`;
+  const actor = FSDP_ACTOR_EXAMPLE;
+  const ratioText = (ratio: number) => ratio.toFixed(2);
+  const boundText = (bound: number) => bound.toFixed(2);
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
@@ -136,28 +139,33 @@
       { en: `u = ${rewardText(FSDP_PACK_RECORDS[0].reward)} from Ch. 6 Step 6`, zh: `u = ${rewardText(FSDP_PACK_RECORDS[0].reward)}，来自第 6 章第 6 步` },
     ],
   }, {
-    phases: 5, desktopH: 500, mobileH: 600,
-    caption: `zero_grad clears the old gradient shard. Forward starts with ${FSDP_FORWARD_RESIDENT_GB} GB, then temporarily adds one full layer.`,
-    captionZh: `zero_grad 清掉旧梯度分片。Forward 先保留 ${FSDP_FORWARD_RESIDENT_GB} GB，再临时加入完整一层。`,
-    title: `Forward starts with ${FSDP_FORWARD_RESIDENT_GB} GB, then borrows a layer`, titleZh: `Forward 先保留 ${FSDP_FORWARD_RESIDENT_GB} GB，再借来一层`,
-    subtitle: 'all-gather = rebuild one full layer from every rank\'s shard',
-    subtitleZh: 'all-gather = 从各 rank 的分片拼出完整一层',
-    foot: 'Initial forward after zero_grad(set_to_none=True); U has no supplied value.',
-    footZh: '本步是 zero_grad(set_to_none=True) 后的初始 forward；U 大小未知。',
-    mobileTitle: `Forward starts with ${FSDP_FORWARD_RESIDENT_GB} GB`, mobileTitleZh: `Forward 先保留 ${FSDP_FORWARD_RESIDENT_GB} GB`,
-    mobileSubtitle: 'all-gather = rebuild a full layer', mobileSubtitleZh: 'all-gather = 拼出完整一层',
-    mobileFoot: 'Initial forward after zero_grad; U is unknown.', mobileFootZh: 'zero_grad 后的初始 forward；U 大小未知。',
-    mobileLegend: 'Orange = weights + optimizer · blue = layer', mobileLegendZh: '橙 = 权重 + 优化器 · 蓝 = 临时完整层',
+    phases: 8, desktopH: 500, mobileH: 1000,
+    caption: 'Pack 1 forms a clipped actor loss. Pack 2 completes backward before one optimizer update.',
+    captionZh: '第 1 包算出裁剪后的 actor loss。第 2 包完成 backward 后，才更新一次权重。',
+    title: 'One actor update: packed answers → weight changes', titleZh: '一次 actor 更新：打包回答 → 权重变化',
+    subtitle: 'actor loss = number that guides weight changes · mask 1 = include token',
+    subtitleZh: 'actor loss = 指导权重变化的数值 · mask 1 = 计入 token',
+    foot: 'DP1 packs · DP8 tables, not peak · constructed gaps · U unknown · entropy/KL=0 · offload_train.',
+    footZh: 'DP1 打包 · DP8 参数表，非峰值 · 构造差值 · U 未知 · entropy/KL=0 · offload_train。',
+    mobileTitle: 'Two packs, one optimizer update', mobileTitleZh: '两包数据，一次优化器更新',
+    mobileSubtitle: 'actor loss guides weight changes', mobileSubtitleZh: 'actor loss 指导权重变化',
+    mobileFoot: 'DP1 packs · DP8 tables · U unknown · constructed', mobileFootZh: 'DP1 打包 · DP8 参数表 · U 未知 · 构造例',
+    mobileLegend: 'Blue = loss · orange = update/offload', mobileLegendZh: '蓝 = loss · 橙 = 更新/offload',
     mobile: [
-      { title: 'WEIGHTS + OPTIMIZER', titleZh: '权重 + 优化器', body: `${FSDP_SHARD_WEIGHT_GB} GB + ${FSDP_SHARD_OPTIMIZER_GB} GB = ${FSDP_FORWARD_RESIDENT_GB} GB`, bodyZh: `${FSDP_SHARD_WEIGHT_GB} GB + ${FSDP_SHARD_OPTIMIZER_GB} GB = ${FSDP_FORWARD_RESIDENT_GB} GB`, tone: 'orange' },
-      { title: 'ALL-GATHER · ONE LAYER', titleZh: 'ALL-GATHER · 完整一层', body: 'every rank contributes its shard', bodyZh: '每个 rank 都拿出自己的一片', tone: 'plain' },
-      { title: 'FULL LAYER · U', titleZh: '完整一层 · U', body: 'temporary memory, size unknown', bodyZh: '临时显存，大小未知', tone: 'blue' },
-      { title: 'RELEASE', titleZh: '释放', body: `${FSDP_FORWARD_RESIDENT_GB} GB remains`, bodyZh: `仍留 ${FSDP_FORWARD_RESIDENT_GB} GB`, tone: 'plain' },
+      { title: `FORWARD · zero_grad → ${FSDP_FORWARD_RESIDENT_GB} GB + U`, titleZh: `FORWARD · zero_grad → ${FSDP_FORWARD_RESIDENT_GB} GB + U`, body: 'all-gather full layer U → release', bodyZh: 'all-gather 完整层 U → 释放', tone: 'blue', phase: 0 },
+      { title: 'UNPACK · A[a1] · B[b1]', titleZh: '拆包 · A[a1] · B[b1]', body: 'cu [0,2,4] · mask 1 = count token', bodyZh: 'cu [0,2,4] · mask 1 = 计入 token', tone: 'blue', phase: 1 },
+      { title: 'RATIO · chance now ÷ before', titleZh: 'RATIO · 当前概率 ÷ 旧概率', body: `A 1.40 B 0.70 · exp(+0.3365,−0.3567)`, bodyZh: `A 1.40 B 0.70 · exp(+0.3365,−0.3567)`, tone: 'blue', phase: 2 },
+      { title: 'ADVANTAGE + CLIP', titleZh: 'ADVANTAGE + 裁剪', body: `+u: 1.40→1.28 · −u: 0.70→0.80`, bodyZh: `+u：1.40→1.28 · −u：0.70→0.80`, tone: 'blue', phase: 3 },
+      { title: 'LOSS AFTER CLIP · MAX', titleZh: '裁剪后的 LOSS · 取大值', body: `A ${rewardText(actor.policyLosses[0][0])} · B ${rewardText(actor.policyLosses[1][0])}`, bodyZh: `A ${rewardText(actor.policyLosses[0][0])} · B ${rewardText(actor.policyLosses[1][0])}`, tone: 'blue', phase: 4 },
+      { title: `MASKED MEAN · ${rewardText(actor.pgLoss)}`, titleZh: `MASKED MEAN · ${rewardText(actor.pgLoss)}`, body: `A ${rewardText(actor.maskedMeans[0])} + B ${rewardText(actor.maskedMeans[1])}`, bodyZh: `A ${rewardText(actor.maskedMeans[0])} + B ${rewardText(actor.maskedMeans[1])}`, tone: 'blue', phase: 5 },
+      { title: 'BACKWARD · loss → weight changes', titleZh: 'BACKWARD · loss → 权重变化方向', body: 'P1→P2 · grad_accum=[2] → 1 update', bodyZh: 'P1→P2 · grad_accum=[2] → 更新 1 次', tone: 'orange', phase: 6 },
+      { title: 'SLEEP · LATER UPDATE WEIGHTS', titleZh: 'SLEEP · 随后更新权重', body: 'model + optimizer to CPU · export later', bodyZh: '模型和优化器移到 CPU · 随后导出', tone: 'orange', phase: 7 },
     ],
     formulas: [
-      { en: `During compute: ${FSDP_FORWARD_RESIDENT_GB} GB + U`, zh: `计算时：${FSDP_FORWARD_RESIDENT_GB} GB + U` },
-      { en: `After release: ${FSDP_FORWARD_RESIDENT_GB} GB`, zh: `释放后：${FSDP_FORWARD_RESIDENT_GB} GB` },
-      { en: `Training bill: ${FSDP_FORWARD_RESIDENT_GB} + ${FSDP_SHARD_GRADIENT_GB} = ${FSDP_SHARD_STATE_PER_GPU_GB} GB`, zh: `训练账：${FSDP_FORWARD_RESIDENT_GB} + ${FSDP_SHARD_GRADIENT_GB} = ${FSDP_SHARD_STATE_PER_GPU_GB} GB` },
+      { en: 'ratio = exp(log_probs − old_log_probs)', zh: 'ratio = exp(log_probs − old_log_probs)' },
+      { en: `clip = [${boundText(actor.clipLow)}, ${boundText(actor.clipHigh)}] · u = ${rewardText(actor.advantages[0])}`, zh: `clip = [${boundText(actor.clipLow)}, ${boundText(actor.clipHigh)}] · u = ${rewardText(actor.advantages[0])}` },
+      { en: `pg_loss = ${rewardText(actor.maskedMeans[0])} + ${rewardText(actor.maskedMeans[1])} = ${rewardText(actor.pgLoss)}`, zh: `pg_loss = ${rewardText(actor.maskedMeans[0])} + ${rewardText(actor.maskedMeans[1])} = ${rewardText(actor.pgLoss)}` },
+      { en: 'optimizer.step → sleep → update_weights', zh: 'optimizer.step → sleep → update_weights' },
     ],
   }, {
     phases: 5, desktopH: 500, mobileH: 600,
@@ -421,28 +429,23 @@
         <text x="360" y="493" text-anchor="middle" class="result" opacity={phase >= 5 ? 1 : 0}>grad_accum = [{packingScene.gradAccum.join(', ')}] → {t('one optimizer step after pack 2', '第 2 包后只有一次优化器更新')}</text>
       {:else if step === 3}
         {#each [
-          { x: 25, title: 'WEIGHTS + OPT', titleZh: '权重 + 优化器', result: `${FSDP_FORWARD_RESIDENT_GB} GB`, resultZh: `${FSDP_FORWARD_RESIDENT_GB} GB`, body: 'after zero_grad', bodyZh: 'zero_grad 之后', tone: 'orange' },
-          { x: 205, title: 'ALL-GATHER', titleZh: 'ALL-GATHER', result: 'one layer', resultZh: '一层', body: 'from every rank', bodyZh: '来自每个 rank', tone: 'plain' },
-          { x: 385, title: 'FULL LAYER', titleZh: '完整一层', result: 'U', resultZh: 'U', body: 'compute', bodyZh: '计算', tone: 'blue' },
-          { x: 565, title: 'RELEASE', titleZh: '释放', result: 'U gone', resultZh: 'U 已释放', body: `${FSDP_FORWARD_RESIDENT_GB} GB remains`, bodyZh: `仍留 ${FSDP_FORWARD_RESIDENT_GB} GB`, tone: 'plain' },
+          { title: 'FORWARD · zero_grad clears old gradient · all-gather rebuilds full layer U', titleZh: 'FORWARD · zero_grad 清旧梯度 · all-gather 拼出完整层 U', a: `DP8: ${FSDP_FORWARD_RESIDENT_GB} GB + U during compute`, aZh: `DP8：计算时 ${FSDP_FORWARD_RESIDENT_GB} GB + U`, b: `release U → ${FSDP_FORWARD_RESIDENT_GB} GB · old scoring + current training`, bZh: `释放 U → ${FSDP_FORWARD_RESIDENT_GB} GB · 旧评分 + 当前训练`, tone: 'blue' },
+          { title: 'UNPACK · cu_seqlens = [0,2,4]', titleZh: '拆包 · cu_seqlens = [0,2,4]', a: 'A response[a1] · mask[1]', aZh: 'A 回答[a1] · mask[1]', b: 'B response[b1] · mask[1]', bZh: 'B 回答[b1] · mask[1]', tone: 'blue' },
+          { title: 'RATIO = current chance ÷ old chance = exp(log_probs − old_log_probs)', titleZh: 'RATIO = 当前概率 ÷ 旧概率 = exp(log_probs − old_log_probs)', a: `A exp(${rewardText(actor.logGaps[0])}) = ${ratioText(actor.ratios[0])}`, aZh: `A exp(${rewardText(actor.logGaps[0])}) = ${ratioText(actor.ratios[0])}`, b: `B exp(${rewardText(actor.logGaps[1])}) = ${ratioText(actor.ratios[1])}`, bZh: `B exp(${rewardText(actor.logGaps[1])}) = ${ratioText(actor.ratios[1])}`, tone: 'blue' },
+          { title: `ADVANTAGE + CLIP [${boundText(actor.clipLow)}, ${boundText(actor.clipHigh)}]`, titleZh: `ADVANTAGE + 裁剪 [${boundText(actor.clipLow)}, ${boundText(actor.clipHigh)}]`, a: `A ${rewardText(actor.advantages[0])} · 1.40 → 1.28`, aZh: `A ${rewardText(actor.advantages[0])} · 1.40 → 1.28`, b: `B ${rewardText(actor.advantages[1])} · 0.70 → 0.80`, bZh: `B ${rewardText(actor.advantages[1])} · 0.70 → 0.80`, tone: 'blue' },
+          { title: 'LOSS AFTER CLIP = max(−r·adv, −clip(r)·adv)', titleZh: '裁剪后的 LOSS = max(−r·adv, −clip(r)·adv)', a: `A max(${rewardText(actor.unclippedLosses[0][0])}, ${rewardText(actor.clippedLosses[0][0])}) = ${rewardText(actor.policyLosses[0][0])}`, aZh: `A max(${rewardText(actor.unclippedLosses[0][0])}, ${rewardText(actor.clippedLosses[0][0])}) = ${rewardText(actor.policyLosses[0][0])}`, b: `B max(${rewardText(actor.unclippedLosses[1][0])}, ${rewardText(actor.clippedLosses[1][0])}) = ${rewardText(actor.policyLosses[1][0])}`, bZh: `B max(${rewardText(actor.unclippedLosses[1][0])}, ${rewardText(actor.clippedLosses[1][0])}) = ${rewardText(actor.policyLosses[1][0])}`, tone: 'blue' },
+          { title: 'MASKED MEAN · sum the per-record means', titleZh: 'MASKED MEAN · 每条记录取均值，再求和', a: `A ${rewardText(actor.maskedMeans[0])} × 1 ÷ 1`, aZh: `A ${rewardText(actor.maskedMeans[0])} × 1 ÷ 1`, b: `B ${rewardText(actor.maskedMeans[1])} × 1 ÷ 1 · Σ = ${rewardText(actor.pgLoss)}`, bZh: `B ${rewardText(actor.maskedMeans[1])} × 1 ÷ 1 · Σ = ${rewardText(actor.pgLoss)}`, tone: 'blue' },
+          { title: 'BACKWARD = loss → weight-change directions · Pack 1 → Pack 2', titleZh: 'BACKWARD = loss → 权重变化方向 · 第 1 包 → 第 2 包', a: 'grad_accum = [2]', aZh: 'grad_accum = [2]', b: 'then one optimizer.step()', bZh: '然后一次 optimizer.step()', tone: 'orange' },
+          { title: 'SLEEP · train returns → offload', titleZh: 'SLEEP · train 返回 → offload', a: 'model + optimizer GPU → CPU', aZh: '模型和优化器 GPU → CPU', b: 'later update_weights → Ch. 7', bZh: '随后 update_weights → 第 7 章', tone: 'orange' },
         ] as node, i}
           <g opacity={phase >= i ? 1 : 0}>
-            <rect x={node.x} y="105" width="130" height="151" rx="12" fill={fill(node.tone)} stroke={stroke(node.tone)} stroke-dasharray={node.tone === 'plain' ? '5 4' : '0'} />
-            <text x={node.x + 65} y="137" text-anchor="middle" class="small strong">{t(node.title, node.titleZh)}</text>
-            <text x={node.x + 65} y="180" text-anchor="middle" class="result">{t(node.result, node.resultZh)}</text>
-            <text x={node.x + 65} y="222" text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
-            {#if i < 3}
-              <line x1={node.x + 130} y1="181" x2={node.x + 170} y2="181" stroke="var(--line)" stroke-width="2.5" marker-end="url(#fsdp-arrow-plain)" opacity={phase > i ? 1 : 0} />
-            {/if}
+            <rect x="35" y={74 + i * 48} width="650" height="42" rx="10" fill={fill(node.tone)} stroke={stroke(node.tone)} />
+            <text x="52" y={89 + i * 48} class="small strong">{t(node.title, node.titleZh)}</text>
+            <text x="52" y={107 + i * 48} class="small">{t(node.a, node.aZh)}</text>
+            <text x="668" y={107 + i * 48} text-anchor="end" class="small">{t(node.b, node.bZh)}</text>
           </g>
         {/each}
-        <text x="360" y="304" text-anchor="middle" class="result" opacity={phase >= 2 ? 1 : 0}>{t('DURING COMPUTE', '计算时')} · {FSDP_FORWARD_RESIDENT_GB} GB + U</text>
-        <text x="360" y="342" text-anchor="middle" class="result" opacity={phase >= 3 ? 1 : 0}>{t('AFTER RELEASE', '释放后')} · {FSDP_FORWARD_RESIDENT_GB} GB</text>
-        <text x="360" y="383" text-anchor="middle" class="small">{FSDP_SHARD_WEIGHT_GB} GB {t('weights', '权重')} + {FSDP_SHARD_OPTIMIZER_GB} GB {t('optimizer', '优化器')} = {FSDP_FORWARD_RESIDENT_GB} GB</text>
-        <g opacity={phase >= 4 ? 1 : 0}>
-          <text x="360" y="409" text-anchor="middle" class="small">{t('Backward adds the', 'Backward 加入')} {FSDP_SHARD_GRADIENT_GB} GB {t('gradient shard', '梯度分片')}：{FSDP_FORWARD_RESIDENT_GB} + {FSDP_SHARD_GRADIENT_GB} = {FSDP_SHARD_STATE_PER_GPU_GB} GB</text>
-          <text x="360" y="449" text-anchor="middle" class="small">{t('Orange = weights + optimizer · blue = temporary full values', '橙 = 权重 + 优化器 · 蓝 = 临时完整数值')}</text>
-        </g>
+        <text x="360" y="472" text-anchor="middle" class="small" opacity={phase >= 7 ? 1 : 0}>{t('Blue = token values and loss · orange = weight update and offload', '蓝 = token 数值和 loss · 橙 = 权重更新和 offload')}</text>
       {:else if step === 4}
         {#each [
           { x: 40, title: 'LAYER GRADIENT', titleZh: '本层梯度', result: 'temporary', resultZh: '临时', body: 'after forward', bodyZh: '前向之后算出', tone: 'blue' },

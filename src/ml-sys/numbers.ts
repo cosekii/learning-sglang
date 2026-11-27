@@ -273,12 +273,45 @@ export const FSDP_PRODUCTION_MAX_TOKENS_PER_GPU = 9216;
 export const FSDP_PACK_DP_SIZE = 1;
 export const FSDP_PACK_CP_SIZE = 1;
 export const FSDP_PACK_RECORDS = [
-  { id: 'A', tokens: ['pA', 'a1'], responseLength: 1, reward: SLIME_EXAMPLE_NORMALIZED_REWARDS[0] },
-  { id: 'B', tokens: ['pB', 'b1'], responseLength: 1, reward: SLIME_EXAMPLE_NORMALIZED_REWARDS[4] },
-  { id: 'C', tokens: ['pC', 'c1', 'c2', 'c3'], responseLength: 2, reward: SLIME_EXAMPLE_NORMALIZED_REWARDS[0] },
+  { id: 'A', tokens: ['pA', 'a1'], responseLength: 1, lossMask: [1], reward: SLIME_EXAMPLE_NORMALIZED_REWARDS[0] },
+  { id: 'B', tokens: ['pB', 'b1'], responseLength: 1, lossMask: [1], reward: SLIME_EXAMPLE_NORMALIZED_REWARDS[4] },
+  { id: 'C', tokens: ['pC', 'c1', 'c2', 'c3'], responseLength: 2, lossMask: [1, 1], reward: SLIME_EXAMPLE_NORMALIZED_REWARDS[0] },
 ];
 // Balanced membership supplied by pack_sequences for this input; first fit only supplies the count.
 export const FSDP_PACK_MEMBERS = [['A', 'B'], ['C']];
+
+// Constructed actor-loss arithmetic for Pack 1. Clip bounds and zero optional-loss
+// coefficients come from scripts/run-qwen3-4B-fsdp.sh at the pinned revision.
+export const FSDP_PPO_EPS_CLIP = 0.2;
+export const FSDP_PPO_EPS_CLIP_HIGH = 0.28;
+const actorRatios = [1.4, 0.7];
+const actorAdvantages = FSDP_PACK_RECORDS.slice(0, 2).map((record) => record.reward);
+const actorMasks = FSDP_PACK_RECORDS.slice(0, 2).map((record) => record.lossMask);
+const actorClipLow = 1 - FSDP_PPO_EPS_CLIP;
+const actorClipHigh = 1 + FSDP_PPO_EPS_CLIP_HIGH;
+const actorClippedRatios = actorRatios.map((ratio) => Math.min(Math.max(ratio, actorClipLow), actorClipHigh));
+const actorUnclippedLosses = actorRatios.map((ratio, i) => [-ratio * actorAdvantages[i]]);
+const actorClippedLosses = actorClippedRatios.map((ratio, i) => [-ratio * actorAdvantages[i]]);
+const actorPolicyLosses = actorUnclippedLosses.map((values, i) => values.map((value, j) => Math.max(value, actorClippedLosses[i][j])));
+const actorMaskedMeans = actorPolicyLosses.map((values, i) => {
+  const numerator = values.reduce((sum, value, j) => sum + value * actorMasks[i][j], 0);
+  const denominator = Math.max(actorMasks[i].reduce((sum, value) => sum + value, 0), 1);
+  return numerator / denominator;
+});
+export const FSDP_ACTOR_EXAMPLE = {
+  logGaps: actorRatios.map((ratio) => Math.log(ratio)),
+  ratios: actorRatios,
+  clippedRatios: actorClippedRatios,
+  clipLow: actorClipLow,
+  clipHigh: actorClipHigh,
+  advantages: actorAdvantages,
+  masks: actorMasks,
+  unclippedLosses: actorUnclippedLosses,
+  clippedLosses: actorClippedLosses,
+  policyLosses: actorPolicyLosses,
+  maskedMeans: actorMaskedMeans,
+  pgLoss: actorMaskedMeans.reduce((sum, value) => sum + value, 0),
+};
 
 // FP8 rollout and training. Source measurements keep their original configurations;
 // the 4B-value byte and scale examples are constructed, not RL measurements.
