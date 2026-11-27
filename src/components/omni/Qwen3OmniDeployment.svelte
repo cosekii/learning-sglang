@@ -540,7 +540,7 @@
           { label: 'FIXED ROUTE', labelZh: '固定路线', a: 'modalities=["text", "audio"]', aZh: 'modalities=["text", "audio"]', b: 'default speech graph · text + sound', bZh: '默认语音图 · 文字 + 声音', evidence: false },
           { label: 'FIXED PLACEMENT', labelZh: '固定摆卡', a: 'GPU 0: encoders + thinker + code2wav', aZh: 'GPU 0：encoders + thinker + code2wav', b: 'GPU 1: talker · TP1 · 2 GPUs · 7 processes', bZh: 'GPU 1：talker · TP1 · 2 张卡 · 7 个进程', evidence: false },
           { label: 'FIXED CAPACITY', labelZh: '固定容量', a: `8 ≤ ${QWEN_TALKER_MAX_RUNNING_REQUESTS} talker running cap`, aZh: `8 ≤ talker 运行上限 ${QWEN_TALKER_MAX_RUNNING_REQUESTS}`, b: `32 − 8 = ${QWEN_EXAMPLE_UNALLOCATED_TALKER_SLOTS} requests of headroom · no replica yet`, bZh: `32 − 8 = ${QWEN_EXAMPLE_UNALLOCATED_TALKER_SLOTS} 个请求余量 · 先不加副本`, evidence: false },
-          { label: 'A/B · PRECISION', labelZh: 'A/B · 精度', a: 'A BF16 ↔ B native FP8 · c=8', aZh: 'A：BF16 ↔ B：原生 FP8 · c=8', b: 'same TP1 layout · 5 repeats = 5 runs / choice', bZh: '同一 TP1 摆卡 · 重复 5 次 = 每种选择 5 次', evidence: true },
+          { label: 'A/B · PRECISION', labelZh: 'A/B · 精度', a: 'A BF16 ↔ B FP8 checkpoint · c=8', aZh: 'A：BF16 ↔ B：FP8 checkpoint · c=8', b: 'same TP1 layout · 5 repeats = 5 runs / choice', bZh: '同一 TP1 摆卡 · 重复 5 次 = 每种选择 5 次', evidence: true },
           { label: 'FIRST AUDIO', labelZh: '首音记录', a: 'median = middle first-audio result', aZh: '中位数 = 正中间的首音结果', b: 'custom p90 = my 90% cutoff', bZh: '自定义 p90 = 我们另算的 90% 上限', evidence: true },
           { label: 'OTHER RECORDS', labelZh: '其他记录', a: 'total time · stalls · failures · memory · raw results', aZh: '总耗时 · 卡顿 · 失败 · 显存 · 原始结果', b: 'quality checks run separately · Ch. 8 Step 8', bZh: '质量检查另做 · 第 8 章第 8 步', evidence: true },
         ] as row, i}
