@@ -11,7 +11,11 @@
 
 ### 公式与符号
 
-$$C_2=p+a+o,\qquad N_{\text{response}}=a+o+b,\qquad N_{\text{missing}}=a+o$$
+$$C_2=p+a+o$$
+
+$$N_{\text{response}}=a+o+b$$
+
+$$N_{\text{missing}}=a+o$$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
@@ -23,15 +27,23 @@ $$C_2=p+a+o,\qquad N_{\text{response}}=a+o+b,\qquad N_{\text{missing}}=a+o$$
 
 ### 代入图上的数
 
-$$C_2=2+4+3=9,\qquad N_{\text{response}}=4+3+5=12,\qquad N_{\text{missing}}=4+3=7$$
+$$C_2=2+4+3=9$$
 
-第二次调用的 9 个输入包含 2 个 prompt token。丢失的 7 个只计算响应上下文，不含 prompt。12 个响应 token 也不含 prompt，所以这个构造例的 `Sample.tokens` 共有 $2+12=14$ 个 token。
+$$N_{\text{response}}=4+3+5=12$$
+
+$$N_{\text{missing}}=4+3=7$$
+
+第二次调用的 9 个输入包含 2 个 prompt token。丢失的 7 个只计算响应上下文，不含 prompt。12 个响应 token 也不含 prompt。
+
+### 图外推导
+
+`Sample.tokens` 还保存 2 个 prompt token，所以这个构造记录共有 $2+12=14$ 个 token。图上没有画出这个总数。
 
 ### 接下来
 
 记录已经保住先后顺序。下一步标出哪些响应 token 是模型写的、应该用于学习。
 
-来源：`THUDM/slime@cd4a8efc6f8e33364a474cfa70875779ed0a673f` 的 `examples/search-r1/generate_with_search.py:145-158,180-200,209-232`；`THUDM/slime@f68dc4a25f362fc0335165a17ff976f5b6f675e1` 的 `examples/geo3k_vlm_multi_turn/rollout.py:309-350`。
+来源：<code>THUDM/<wbr>slime@<wbr>cd4a8efc6f8e33364a474cfa70875779ed0a673f</code> 的 `examples/search-r1/generate_with_search.py:145-158,180-200,209-232`；<code>THUDM/<wbr>slime@<wbr>f68dc4a25f362fc0335165a17ff976f5b6f675e1</code> 的 `examples/geo3k_vlm_multi_turn/rollout.py:309-350`。
 
 ## 第 2 步 · 给响应 token 标 loss mask
 

@@ -250,11 +250,13 @@ $$g_{online:frozen}=1667/1464-1=13.9\%,\qquad g_{online:no}=1667/1219-1=36.8\%$$
 
 - 灰柱不用投机，训练时间 141 秒；橙柱冻结 draft 为 143 秒；蓝柱在线训练为 148 秒。三柱仍用同一比例。
 - 两个差值分别是 $148-141=7$ 秒和 $148-143=5$ 秒。
-- 最后两行离开这张已报告的 rollout 汇总表，画出 `模型回答 → 程序回复 → 模型回答`，引出下一章的多轮序列和 mask 问题。
+- 最后两行离开这张已报告的 rollout 汇总表，画出 `模型回答 → 程序回复 → 模型回答`，引出下一章的多轮上下文问题。
 
 ### 公式与符号
 
-$$\Delta T_{a:b}=T^{train}_a-T^{train}_b,\qquad c_{a:b}=\frac{T^{train}_a}{T^{train}_b}-1$$
+$$\Delta T_{a:b}=T^{train}_a-T^{train}_b$$
+
+$$c_{a:b}=\frac{T^{train}_a}{T^{train}_b}-1$$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
@@ -264,13 +266,22 @@ $$\Delta T_{a:b}=T^{train}_a-T^{train}_b,\qquad c_{a:b}=\frac{T^{train}_a}{T^{tr
 
 ### 代入图上的数
 
-$$\Delta T_{online:no}=148-141=7\ \text{s},\qquad c_{online:no}=148/141-1=5.0\%$$
-$$\Delta T_{online:frozen}=148-143=5\ \text{s},\qquad c_{online:frozen}=148/143-1=3.5\%$$
+$$\Delta T_{online:no}=148-141=7\ \text{s}$$
+
+$$c_{online:no}=148/141-1=5.0\%$$
+
+$$\Delta T_{online:frozen}=148-143=5\ \text{s}$$
 
 第 7 步给的是 token/s，本步给的是以秒表示的训练指标。原文没有说明 141、143、148 秒各自覆盖哪些训练步，也没有统一的 rollout token 数和完整轮次时间线，因此不能把二者合成端到端收益。这里的 5.0% 是这个报告指标的增幅，不是整轮变慢 5.0%。
 
+### 图外推导
+
+$$c_{online:frozen}=148/143-1=3.5\%$$
+
+这个相对增幅使用同一组报告数值，但图上没有画出。
+
 ### 接下来
 
-固定版本的 ReTool 示例把 assistant 生成的 token 标为训练有效，又把解释器返回的观察追加到同一 response，并使用不同 mask。下一章沿着这条可见序列问：哪些 token 进入策略训练，哪些相邻位置还能教 draft？
+固定版本的 ReTool 示例把解释器返回的观察追加到同一 response。下一章先展示第二次模型调用收到哪些 token，再在第 2 步标出 policy loss mask。多轮 draft-pair 的选择不在本章范围内。
 
-来源：`Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7`, `rlhf/slime/spec/readme.md:66-104`；`THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a` 的 `examples/retool/generate_with_retool.py:267-303`。
+来源：<code>Awesome-ML-SYS-Tutorial@<wbr>d1f309b46f81a23e8b6ca0718c05bc897fafacf7</code>, `rlhf/slime/spec/readme.md:66-104`；<code>THUDM/<wbr>slime@<wbr>1278475ef4757ac8b03b1836dc1dc20fcc2dd56a</code> 的 `examples/retool/generate_with_retool.py:267-303`。

@@ -11,7 +11,11 @@
 
 ### Formula and symbols
 
-$$C_2=p+a+o,\qquad N_{\text{response}}=a+o+b,\qquad N_{\text{missing}}=a+o$$
+$$C_2=p+a+o$$
+
+$$N_{\text{response}}=a+o+b$$
+
+$$N_{\text{missing}}=a+o$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
@@ -23,15 +27,23 @@ $$C_2=p+a+o,\qquad N_{\text{response}}=a+o+b,\qquad N_{\text{missing}}=a+o$$
 
 ### The numbers on the stage
 
-$$C_2=2+4+3=9,\qquad N_{\text{response}}=4+3+5=12,\qquad N_{\text{missing}}=4+3=7$$
+$$C_2=2+4+3=9$$
 
-The nine second-call inputs include the two prompt tokens. The seven missing tokens count response context only, so they exclude the prompt. The twelve response tokens also exclude the prompt; `Sample.tokens` contains $2+12=14$ tokens in this constructed example.
+$$N_{\text{response}}=4+3+5=12$$
+
+$$N_{\text{missing}}=4+3=7$$
+
+The nine second-call inputs include the two prompt tokens. The seven missing tokens count response context only, so they exclude the prompt. The twelve response tokens also exclude the prompt.
+
+### Derived · not drawn
+
+`Sample.tokens` also holds the two prompt tokens, so this constructed record has $2+12=14$ tokens. This total is not drawn on the stage.
 
 ### Next
 
 The record now preserves order. The next step marks which response tokens the model wrote and should learn from.
 
-Sources: `THUDM/slime@cd4a8efc6f8e33364a474cfa70875779ed0a673f`, `examples/search-r1/generate_with_search.py:145-158,180-200,209-232`; `THUDM/slime@f68dc4a25f362fc0335165a17ff976f5b6f675e1`, `examples/geo3k_vlm_multi_turn/rollout.py:309-350`.
+Sources: <code>THUDM/<wbr>slime@<wbr>cd4a8efc6f8e33364a474cfa70875779ed0a673f</code>, `examples/search-r1/generate_with_search.py:145-158,180-200,209-232`; <code>THUDM/<wbr>slime@<wbr>f68dc4a25f362fc0335165a17ff976f5b6f675e1</code>, `examples/geo3k_vlm_multi_turn/rollout.py:309-350`.
 
 ## Step 2 · Mark response tokens with a loss mask
 

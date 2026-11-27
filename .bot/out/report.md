@@ -3008,3 +3008,28 @@ npx astro dev stop
 ## 自评
 
 - Step 1 维持 **12/12**：相位顺序现在是「Go 空闲（无消息）→ 消息到达 → START」，机制与 deep 字面一致；Steps 2–3 未动。
+
+---
+
+# lane k2 本轮报告 · ML 12 Step 8 → ML 13 Step 1 接缝（ML-20）
+
+日期：2026-11-27。类型：修旧。范围只有 ML Systems 第 12 章 Step 8、第 13 章 Step 1 的双语组件／deep、ML 12 MDX、生成 transcript、目标审计和本报告；未改 ML 08、第 14 章、其他书、共享 drawer 或 `.bot/memory/`。
+
+## 修复内容
+
+- **ML-20 收窄章末问题。** ML 12 Step 8 的桌面和手机英中问题统一改为「第二次模型调用需要哪些 token？」；下一章 Step 1 用同一交互顺序直接回答 `P+A+O=2+4+3=9`，并显示只给 `P` 会少 `A+O=7` 个响应上下文 token。ML 12 的 MDX 与双语 deep 明确多轮 draft-pair 选择不在本章范围内，不再留下下一章未回答的问题。ML 13 Step 2 的 policy loss mask 保持原样，没有用重复 mask 解释代替接缝。
+- 双语 deep 保留 shared-table 边界和既有数值。Step 8 的 3.5% 与 Step 1 的 `Sample.tokens=14` 移入 `Derived · not drawn／图外推导`，不再冒充图上数字。长公式按等式拆行，长 commit 引用加入既有 `<wbr>` 断行方式，修掉目标 deep 在 390 px 的横向溢出。
+- 独立冷读首轮据此给 ML-20 **NO-GO**，指出上述两个图外推导未标记；修改后同一 reviewer 给 **GO**，剩余内容洞 **0**。两步定点自评均为易读 **12/12**、R1–R5 **10/10**、机制 R6 **2/2**、原十二项 **24/24**。这是 ML-20 定点结果，不重评或宣称两章完整 GO。
+
+## 硬门与审计
+
+- `npm run build`：**60 页**通过。ML 12 Step 8、ML 13 Step 1 `readability` 各 **0** 机械问题；两章 `deep-check` ok、`zh-check` all clear。两章英中 `mobile` 在 360／390／430 px 均 no layout breaks，中文目标步字号门同样通过。`git diff --check` 干净。
+- 两章 transcript 连续两次生成逐字一致：ML 12 **2,204 词**，SHA-256 `3f974b1ca7d2053ef734ae9c12e4b127cec84ea93743ea018213e35a4822a20e`；ML 13 **1,833 词**，SHA-256 `b39adf25ee01ac079cb5140cc685b15e46404a897ac7d1cdbdbb43fe05e6cb0e`。首轮 transcript／zh-check 各有一次 Node 26 unsettled-await `exit 13`，独立重跑通过，与既有 flaky 记录一致。
+- `.bot/out/ml20-seam-audit.mjs` 覆盖英中桌面、中文 390 px、direct／前步或前章入口：**42 状态、30/30 机制转变、8 个 deep、14 张 PNG**。普通舞台最低 **10.175 CSS px**，文字重叠、SVG 出界、页面横溢、deep 横溢和 failures 均为 **0**；实际 Next 链接、收窄问题、`P+A+O=9` 回答及双语 deep 均逐步断言。证据在 `.bot/out/ml20-seam-audit/`。
+- 开抽屉后的舞台最低 **5.747 CSS px**，属于既有共享 **ML-21／22** 范围，本单元未改共享组件，也不据此关闭这些项或宣称整章 GO。当前模型无图像输入；PNG 未获视觉批准，以上通过仅指文本、DOM、几何和独立冷读。主人最终视觉验收另计。
+
+## 剩余与环境
+
+- ML-20 的作者修复已完成，协调固定复审后才可正式核销。ML-36、共享 ML-21／22 和其他既有开放项未动；ML-63／64 的既有修复也未返工。未跑全站回归、真实模型、训练、rollout、GPU benchmark 或故障注入。
+- 代表图：`.bot/out/ml20-seam-audit/ml12-zh-390-direct-s8-p3.png` 与 `ml13-zh-390-direct-s1-p2.png`。本地地址：`http://localhost:4328/learning-sglang/ml-sys/ch/12-rl-speculative-decoding/?step=8`；收尾会停止本轮服务，查看前在本目录运行 `npx astro dev --background`。
+- 本 clone 的 `node_modules` 符号链接曾指向协调 checkout，导致 Vite cache EPERM。只删除本目录中的符号链接并 `npm install` 出本目录依赖，未进入或修改协调 checkout。

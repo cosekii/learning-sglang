@@ -250,11 +250,13 @@ Source: `Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7`, `rlh
 
 - The grey no-speculation bar reports 141 seconds, the orange frozen bar 143 and the blue online bar 148. All three bars share one scale.
 - The two differences are $148-141=7$ seconds and $148-143=5$ seconds.
-- The final two lines leave the reported rollout table and draw `model answer → program reply → model answer`, introducing the next chapter's multi-turn mask question.
+- The final two lines leave the reported rollout table and draw `model answer → program reply → model answer`, introducing the next chapter's multi-turn context question.
 
 ### Formula and symbols
 
-$$\Delta T_{a:b}=T^{train}_a-T^{train}_b,\qquad c_{a:b}=\frac{T^{train}_a}{T^{train}_b}-1$$
+$$\Delta T_{a:b}=T^{train}_a-T^{train}_b$$
+
+$$c_{a:b}=\frac{T^{train}_a}{T^{train}_b}-1$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
@@ -264,13 +266,22 @@ $$\Delta T_{a:b}=T^{train}_a-T^{train}_b,\qquad c_{a:b}=\frac{T^{train}_a}{T^{tr
 
 ### The numbers on the stage
 
-$$\Delta T_{online:no}=148-141=7\ \text{s},\qquad c_{online:no}=148/141-1=5.0\%$$
-$$\Delta T_{online:frozen}=148-143=5\ \text{s},\qquad c_{online:frozen}=148/143-1=3.5\%$$
+$$\Delta T_{online:no}=148-141=7\ \text{s}$$
+
+$$c_{online:no}=148/141-1=5.0\%$$
+
+$$\Delta T_{online:frozen}=148-143=5\ \text{s}$$
 
 Step 7 reports tokens/s, while this step reports a training metric in seconds. The article does not say which training steps the 141, 143 and 148 seconds cover. It also omits a common rollout token count and complete round timeline, so these values cannot produce an end-to-end gain. The 5.0% figure is an increase in this reported metric, not a claim that the whole round becomes 5.0% slower.
 
+### Derived · not drawn
+
+$$c_{online:frozen}=148/143-1=3.5\%$$
+
+This relative increase uses the same reported values, but the stage does not draw it.
+
 ### Next
 
-The pinned ReTool example marks generated assistant tokens as training-valid, appends interpreter observations to the same response and uses different masks. The next chapter follows that visible sequence to ask which tokens enter policy training and which adjacent positions may teach the draft.
+The pinned ReTool example appends interpreter observations to the same response. The next chapter first shows which tokens the second model call receives, then assigns the policy loss mask in Step 2. Multi-turn draft-pair selection is outside this chapter's scope.
 
-Sources: `Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7`, `rlhf/slime/spec/readme.md:66-104`; `THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a`, `examples/retool/generate_with_retool.py:267-303`.
+Sources: <code>Awesome-ML-SYS-Tutorial@<wbr>d1f309b46f81a23e8b6ca0718c05bc897fafacf7</code>, `rlhf/slime/spec/readme.md:66-104`; <code>THUDM/<wbr>slime@<wbr>1278475ef4757ac8b03b1836dc1dc20fcc2dd56a</code>, `examples/retool/generate_with_retool.py:267-303`.

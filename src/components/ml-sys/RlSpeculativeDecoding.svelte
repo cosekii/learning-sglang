@@ -281,7 +281,7 @@
       { en: `training increase: ${N.SPEC_ONLINE_TRAIN_S} ÷ ${N.SPEC_NO_SPEC_TRAIN_S} − 1 = ${(N.SPEC_ONLINE_TRAIN_OVER_NO_SPEC * 100).toFixed(1)}%`, zh: `训练增加：${N.SPEC_ONLINE_TRAIN_S} ÷ ${N.SPEC_NO_SPEC_TRAIN_S} − 1 = ${(N.SPEC_ONLINE_TRAIN_OVER_NO_SPEC * 100).toFixed(1)}%` },
       { en: 'tokens/s and training seconds measure different parts', zh: 'token/s 与训练秒数衡量不同部分' },
       { en: 'Next: model answer → program reply → model answer', zh: '下一章：模型回答 → 程序回复 → 模型回答' },
-      { en: 'Which tokens get mask 1, and which pairs teach the draft?', zh: '哪些 token 的 mask 是 1，哪些相邻位置能教 draft？' },
+      { en: 'Which tokens does the second model call need?', zh: '第二次模型调用需要哪些 token？' },
     ],
     mobile: {
       title: 'Reported metric is 7 seconds higher', titleZh: '报告指标高 7 秒',
@@ -294,7 +294,7 @@
         { en: 'Training increase: 5.0%', zh: '训练增加：5.0%' },
         { en: 'Throughput is not whole-round speed', zh: '吞吐不等于整轮速度' },
         { en: 'Next: answer → program reply → answer', zh: '下一章：回答 → 程序回复 → 回答' },
-        { en: 'Mask 1 for which tokens? Which pairs teach draft?', zh: '哪些 token 的 mask 是 1？哪些位置教 draft？' },
+        { en: 'Which tokens does the second call need?', zh: '第二次调用需要哪些 token？' },
       ],
     },
   }];
