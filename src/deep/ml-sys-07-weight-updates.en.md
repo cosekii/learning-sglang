@@ -112,9 +112,9 @@ Sources: `Awesome-ML-SYS-Tutorial/sglang/latency-accelerate-for-weight-updates/r
 
 ### On the stage
 
-- A parameter is one weight table. Four orange training pieces each have 256 rows and 1024 columns, written `[256,1024]`. `full_tensor()` gathers them into one `[1024,1024]` tensor.
-- `MultiprocessingSerializer.serialize` bundles location notes into a handle tuple: shape, size and storage location, with no weight payload. How the receiver gets access to that GPU memory is outside this step.
-- The grey arrow is the note handoff. `gather_object` collects the notes at inference TP rank 0, not training rank 0 from Step 3. On each SGLang rank, `tensor.get(tp_rank)` selects that rank's handle and rebuilds the full tensor; `load_weights` then keeps the part owned by that rank. Blue marks this inference-side work.
+- A parameter is one weight table. Four orange training pieces each have 256 rows and 1024 columns, written `[256,1024]`. `FULL_TENSOR()` gathers them into one `[1024,1024]` tensor.
+- `serialize` bundles the location notes: shape, size and storage location, with no weight payload. How the receiver gets access to that GPU memory is outside this step.
+- The grey arrow is the note handoff. SGLang rebuilds the full tensor, and `load_weights` keeps the part owned by that rank. Blue marks this inference-side work.
 
 ### Formula and symbols
 
@@ -131,7 +131,13 @@ $$E=r\times c,\qquad E=T\times r_s\times c$$
 
 $$E=4\times256\times1024=1024\times1024=1{,}048{,}576$$
 
-That is about 1.05 million numbers. A 1024×1024 photo has the same pixel count, so the comparison is one weight number per pixel. The source's SGLang TP 2 layout has `[512,1024]` per inference rank after the loader selects local parts. This example specifies no dtype, so the figure counts elements rather than inventing bytes.
+That is about 1.05 million numbers. A 1024×1024 photo has the same pixel count, so the comparison is one weight number per pixel. This example specifies no dtype, so the figure counts elements rather than inventing bytes.
+
+### Implementation · not drawn
+
+The pinned implementation calls `MultiprocessingSerializer.serialize` to produce a handle tuple and `gather_object` to collect those tuples at inference TP rank 0. Each SGLang rank uses `tensor.get(tp_rank)` to select its entry before rebuilding. These API names do not appear on the slide.
+
+The source's separate SGLang TP 2 layout has `[512,1024]` per inference rank after local selection. That shape is not drawn either.
 
 ### Next
 

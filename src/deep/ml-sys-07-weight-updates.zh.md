@@ -112,9 +112,9 @@ $$T=1\Rightarrow W=1+1=2,\qquad T=2\Rightarrow W=1+2=3$$
 
 ### 图上是什么
 
-- 一个 parameter 就是一张权重表。四个橙色训练分片各有 256 行、1024 列，记作 `[256,1024]`。`full_tensor()` 把它们拼成一个 `[1024,1024]` 张量。
-- `MultiprocessingSerializer.serialize` 把位置便签打包成 handle tuple，里面有形状、大小和存储位置，没有权重数据本体。接收方怎样获得那块 GPU 内存的访问权限，本步不展开。
-- 灰色箭头表示便签交接。`gather_object` 把便签收拢到推理 TP rank 0，不是第 3 步的训练 rank 0。每个 SGLang rank 用 `tensor.get(tp_rank)` 选自己的句柄并重建完整张量，`load_weights` 再留下该 rank 负责的部分。蓝色表示这些推理端工作。
+- 一个 parameter 就是一张权重表。四个橙色训练分片各有 256 行、1024 列，记作 `[256,1024]`。`FULL_TENSOR()` 把它们拼成一个 `[1024,1024]` 张量。
+- `serialize` 把位置便签打包，里面有形状、大小和存储位置，没有权重数据本体。接收方怎样获得那块 GPU 内存的访问权限，本步不展开。
+- 灰色箭头表示便签交接。SGLang 重建完整张量，`load_weights` 再留下该 rank 负责的部分。蓝色表示这些推理端工作。
 
 ### 公式与符号
 
@@ -131,7 +131,13 @@ $$E=r\times c,\qquad E=T\times r_s\times c$$
 
 $$E=4\times256\times1024=1024\times1024=1{,}048{,}576$$
 
-也就是约 105 万个数。一张 1024×1024 照片有同样多的像素，可以把它想成每个像素对应一个权重数值。加载器选出本地部分后，来源中的 SGLang TP 2 布局让每个推理 rank 持有 `[512,1024]`。这个例子没有指定数据类型，所以图中只数元素，不编字节数。
+也就是约 105 万个数。一张 1024×1024 照片有同样多的像素，可以把它想成每个像素对应一个权重数值。这个例子没有指定数据类型，所以图中只数元素，不编字节数。
+
+### 图外实现
+
+固定实现调用 `MultiprocessingSerializer.serialize` 生成 handle tuple，再用 `gather_object` 把这些 tuple 收拢到推理 TP rank 0。每个 SGLang rank 用 `tensor.get(tp_rank)` 选择自己的那一项，然后重建张量。这些 API 名都没有画上舞台。
+
+来源另有一个 SGLang TP 2 布局，选出本地部分后，每个推理 rank 持有 `[512,1024]`。这个形状也没有画上舞台。
 
 ### 接下来
 
