@@ -147,13 +147,15 @@ Sources: `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-1.md:51-60,132-204`; `v
 
 ## Step 5 · Bound temporary residency with a bucket
 
-**One sentence.** After training moves its weights off the GPU, slime restores one bucket, arranges it for SGLang's loader, transfers it, waits, clears it and reuses the space.
+**One sentence.** After training moves its weights off the GPU, slime restores one bucket and changes it through PP/EP broadcast, TP gather, unpad, HF layout, handles, `ray.get` and clear before the next bucket.
 
 ### On the stage
 
 - The two panels compare the same SGLang and KV allocation with either the whole training model or one bucket beside it. The shapes are schematic, not a byte-scale drawing.
-- At first, `Bucket 1` is on the GPU and later buckets wait off the GPU. After SGLang finishes loading, `Bucket 1` is cleared. In the final phase, `Bucket 2` is on the GPU, so only one bucket occupies the temporary training-weight space.
-- The bottom order arranges the bucket for SGLang's loader before sending handles, then ends with `ray.get`, the call that waits for SGLang to finish loading, and `clear`. The sender releases the converted bucket copy only after that wait.
+- The orange `Bucket 1` card starts with source values and empty receiving copies. `PP/EP broadcast` runs where needed. PP puts different layers on different pipeline-parallel GPUs, and EP puts different experts on different expert-parallel GPUs. The broadcasts fill the empty copies, changing the card to each rank's TP piece.
+- `TP gather` joins those pieces, changing the same card to one full tensor that can still contain padding, meaning unused extra positions. `unpad` removes any padding. `HF layout` then changes the card to converted tensors with Hugging Face names and weight-table layout; HF means Hugging Face.
+- `handles` adds GPU location notes for the converted tensors, which stay alive. `ray.get` waits until SGLang finishes loading, and the loaded state still says that the converted copy is alive. Only then does `clear` release that copy.
+- In the final phase, `Bucket 1` is cleared and `Bucket 2` is on the GPU. Only one bucket occupies the temporary training-weight space.
 
 ### Formula and symbols
 
@@ -169,7 +171,7 @@ $$R_{\text{all}}=S+M,\qquad R_{\text{bucket}}=S+b,\qquad b<M$$
 
 ### The numbers on the stage
 
-No numeric $S$, $M$ or $b$ is available in the source. The valid conclusion is that fewer parameters are restored at once, not a claimed percentage or byte saving. The panel shapes carry no scale.
+The conversion chain has seven ordered operations, all applied to `Bucket 1` before `Bucket 2` enters. No numeric $S$, $M$ or $b$ is available in the source. The valid conclusion is that fewer parameters are restored at once, not a claimed percentage or byte saving. The panel shapes carry no scale.
 
 ### Next
 

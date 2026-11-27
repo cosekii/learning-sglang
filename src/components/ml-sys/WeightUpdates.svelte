@@ -114,13 +114,13 @@
     mobile: [
       { title: 'TRAINING WEIGHTS WAIT', titleZh: '训练权重先等待', body: 'moved off the GPU after training', bodyZh: '训练后已移出 GPU', tone: 'plain' },
       { title: 'UPLOAD BUCKET 1', titleZh: '拿回第 1 桶', body: 'only this small group', bodyZh: '只拿这一小组', tone: 'orange' },
-      { title: 'ASSEMBLE + SEND HANDLES', titleZh: '拼好并发送句柄', body: 'arrange weights for SGLang', bodyZh: '排成 SGLang 要的样子', tone: 'orange' },
-      { title: 'WAIT RESULT → CLEAR → NEXT', titleZh: '等结果 → 清空 → 下一桶', body: 'ray.get = wait for SGLang', bodyZh: 'ray.get = 等 SGLang 装入', tone: 'blue' },
+      { title: 'CONVERT BUCKET 1 IN ORDER', titleZh: '按顺序转换第 1 桶', body: 'PP/EP broadcast → TP gather → unpad → HF layout', bodyZh: 'PP/EP broadcast → TP gather → unpad → HF layout', tone: 'orange' },
+      { title: 'HANDLES → ray.get → CLEAR', titleZh: 'HANDLES → ray.get → CLEAR', body: 'wait for SGLang before clearing', bodyZh: '等 SGLang 装入后才清空', tone: 'blue' },
     ],
     formulas: [
       { en: 'GPU holds SGLang + one bucket', zh: 'GPU 上是 SGLang + 一桶' },
       { en: 'not SGLang + the whole training model', zh: '不是 SGLang + 整套训练模型' },
-      { en: 'arrange → wait for SGLang → clear', zh: '排好权重 → 等 SGLang 装入 → 清空' },
+      { en: 'PP/EP broadcast → TP gather → unpad → HF layout → handles → ray.get → clear', zh: 'PP/EP broadcast → TP gather → unpad → HF layout → handles → ray.get → clear' },
     ],
   }, {
     caption: 'Generation must not read a half-updated model. The next rollout waits for every parameter and cannot reuse old KV.',
@@ -188,6 +188,25 @@
       { en: 'next: which slice per GPU?', zh: '下一章：每张 GPU 各留哪一片？' },
     ],
   }];
+  const BUCKET_STAGES = [
+    { op: 'PP/EP broadcast', result: "empty copies → each rank's TP piece", resultZh: '空副本 → 每个 rank 的 TP 分片' },
+    { op: 'TP gather', result: 'TP pieces → full tensor', resultZh: 'TP 分片 → 完整张量' },
+    { op: 'unpad', result: 'full tensor → any padding removed', resultZh: '完整张量 → 去掉可能的 padding' },
+    { op: 'HF layout', result: 'Hugging Face names + weight-table layout', resultZh: 'Hugging Face 名称和权重表布局' },
+    { op: 'handles', result: 'converted tensors stay + GPU notes', resultZh: '张量仍保留 + GPU 位置便签' },
+    { op: 'ray.get', result: 'wait until SGLang finishes loading', resultZh: '等 SGLang 装入完成' },
+    { op: 'clear', result: 'converted copy → cleared', resultZh: '转换后的副本 → 清空' },
+  ];
+  const BUCKET_STATES = [
+    { id: 'restored', title: 'BUCKET 1 · ON GPU', titleZh: '第 1 桶 · 在 GPU 上', detail: 'source values + empty receivers', detailZh: '源数值 + 空接收副本' },
+    { id: 'pp-ep', title: 'BUCKET 1 · TP PIECES', titleZh: '第 1 桶 · TP 分片', detail: 'every rank has its piece', detailZh: '每个 rank 都有 TP 分片' },
+    { id: 'tp', title: 'BUCKET 1 · FULL TENSOR', titleZh: '第 1 桶 · 完整张量', detail: 'padding if present', detailZh: '可能有 padding' },
+    { id: 'unpad', title: 'BUCKET 1 · UNPADDED', titleZh: '第 1 桶 · 已去 PADDING', detail: 'any padding removed', detailZh: '可能的 padding 已去掉' },
+    { id: 'hf', title: 'BUCKET 1 · HF TENSORS', titleZh: '第 1 桶 · HF 张量', detail: 'Hugging Face names + layout', detailZh: 'Hugging Face 名称 + 布局' },
+    { id: 'handles', title: 'BUCKET 1 · HANDLES', titleZh: '第 1 桶 · 句柄', detail: 'GPU notes · converted tensors stay', detailZh: 'GPU 位置便签 · 张量仍保留' },
+    { id: 'loaded', title: 'SGLANG · LOADED', titleZh: 'SGLANG · 已装入', detail: 'ray.get returned · copy still alive', detailZh: 'ray.get 已返回 · 副本仍保留' },
+    { id: 'cleared', title: 'BUCKET 1 · CLEARED', titleZh: 'BUCKET 1 · 已清空', detail: 'converted copy released', detailZh: '转换后的副本已释放' },
+  ];
   let step = $state(0);
   $effect(() => {
     const q = Number(new URLSearchParams(window.location.search).get('step'));
@@ -209,7 +228,7 @@
       motion.removeEventListener('change', updateMotion);
     };
   });
-  const PHASE_COUNTS = [4, 6, 4, 5, 6, 5, 6, 5];
+  const PHASE_COUNTS = [4, 6, 4, 5, 10, 5, 6, 5];
   const PHASE_MS = 1000, REST_MS = 2800;
   let phase = $state(0);
   let lap = $state(0), lapMs = $state(0);
@@ -231,8 +250,9 @@
     return () => timers.forEach(clearTimeout);
   });
   const cur = $derived(steps[step]);
+  const bucketState = $derived(BUCKET_STATES[Math.min(Math.max(phase - 1, 0), BUCKET_STATES.length - 1)]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [560, 500, 510, 620, 620, 640, 720, 640][step] : [440, 460, 460, 500, 490, 490, 650, 500][step]);
+  const H = $derived(phone ? [560, 500, 510, 620, 850, 640, 720, 640][step] : [440, 460, 460, 500, 660, 490, 650, 500][step]);
 </script>
 
 <figure class="viz" data-animation-step={step} data-animation-phase={phase} data-animation-final-phase={PHASE_COUNTS[step] - 1}>
@@ -252,7 +272,31 @@
       </defs>
       <text x={phone ? 18 : 36} y="30" class="title">{phone ? t(cur.mobileTitle ?? cur.title, cur.mobileTitleZh ?? cur.titleZh) : t(cur.title, cur.titleZh)}</text>
       <text x={phone ? 18 : 36} y="55" class="label">{phone ? t(cur.mobileSubtitle ?? cur.subtitle, cur.mobileSubtitleZh ?? cur.subtitleZh) : t(cur.subtitle, cur.subtitleZh)}</text>
-      {#if phone}
+      {#if phone && step === 4}
+        <rect x="25" y="80" width="250" height="70" rx="11" fill="var(--bg)" stroke="var(--line)" />
+        <text x="150" y="100" text-anchor="middle" class="small strong">{t('WITHOUT BUCKETS', '不分桶')}</text>
+        <text x="150" y="121" text-anchor="middle" class="small">{t('SGLang + KV + all training weights', 'SGLang + KV + 整套训练权重')}</text>
+        <text x="150" y="140" text-anchor="middle" class="small">{t('can exceed the card', '可能超出显卡容量')}</text>
+        <g opacity={phase >= 1 ? 1 : 0}>
+          <rect x="25" y="165" width="250" height="130" rx="11" fill="var(--bg)" stroke="var(--line)" />
+          <text x="150" y="185" text-anchor="middle" class="small strong">{t('WITH BUCKETS · SGLANG + KV', '分桶 · SGLANG + KV')}</text>
+          <rect data-bucket-state={bucketState.id} x="35" y="194" width="230" height="56" rx="7" fill={phase >= 8 ? 'var(--bg)' : 'var(--gen-soft)'} stroke={phase >= 8 ? 'var(--line)' : 'var(--gen)'} stroke-dasharray={phase >= 8 ? '5 4' : '0'} />
+          <text x="150" y="215" text-anchor="middle" class="small strong">{t(bucketState.title, bucketState.titleZh)}</text>
+          <text x="150" y="238" text-anchor="middle" class="small">{t(bucketState.detail, bucketState.detailZh)}</text>
+          <rect x="35" y="258" width="230" height="25" rx="7" fill={phase >= 9 ? 'var(--gen-soft)' : 'var(--bg)'} stroke={phase >= 9 ? 'var(--gen)' : 'var(--line)'} stroke-dasharray={phase >= 9 ? '0' : '5 4'} />
+          <text x="150" y="276" text-anchor="middle" class="small">{phase >= 9 ? `BUCKET 2 · ${t('ON GPU', '在 GPU 上')}` : t('LATER BUCKETS · WAIT OFF GPU', '后面的桶 · 在 GPU 外等待')}</text>
+        </g>
+        <text x="150" y="318" text-anchor="middle" class="small strong" opacity={phase >= 1 ? 1 : 0}>{t('BUCKET 1 · CONVERSION ORDER', '第 1 桶 · 按顺序转换')}</text>
+        <text x="150" y="339" text-anchor="middle" class="small" opacity={phase >= 1 ? 1 : 0}>{t('PP/EP = GPU groups for layers or expert submodels', 'PP/EP = 按层或专家子模型分组的 GPU')}</text>
+        {#each BUCKET_STAGES as row, i}
+          <g opacity={phase >= i + 2 ? 1 : 0}>
+            <rect x="25" y={355 + i * 64} width="250" height="55" rx="9" fill="var(--bg)" stroke="var(--line)" />
+            <text x="40" y={375 + i * 64} class="small strong">{row.op}</text>
+            <text x="40" y={397 + i * 64} class="small">{t(row.result, row.resultZh)}</text>
+          </g>
+        {/each}
+        <text x="150" y="822" text-anchor="middle" class="small">{t('Blue = rollout state · orange = training weights', '蓝 = rollout 状态 · 橙 = 训练权重')}</text>
+      {:else if phone}
         {#each cur.mobile as item, i}
           {@const y = 80 + i * 91}
           <g opacity={phase >= (step === 1 ? [0, 3, 4][i] : Math.min(i, PHASE_COUNTS[step] - 2)) ? 1 : 0}>
@@ -403,27 +447,35 @@
           <text x="360" y="458" text-anchor="middle" class="small">{t('Orange = training work · grey arrow = note handoff · blue = inference work', '橙 = 训练工作 · 灰箭头 = 便签交接 · 蓝 = 推理工作')}</text>
         </g>
       {:else if step === 4}
-        <rect x="30" y="85" width="315" height="259" rx="12" fill="var(--bg)" stroke="var(--line)" />
-        <text x="187" y="115" text-anchor="middle" class="section">{t('WITHOUT BUCKETS', '不分桶')}</text>
-        <rect x="50" y="136" width="275" height="55" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
-        <text x="187" y="169" text-anchor="middle" class="small strong">SGLANG + KV</text>
-        <rect x="50" y="207" width="275" height="104" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
-        <text x="187" y="237" text-anchor="middle" class="small strong">{t('ALL TRAINING WEIGHTS', '整套训练权重')}</text>
-        <text x="187" y="267" text-anchor="middle" class="small">{t('restored beside SGLang', '全部恢复到 SGLang 旁边')}</text>
-        <text x="187" y="295" text-anchor="middle" class="small">{t('can exceed the card', '可能超出显卡容量')}</text>
+        <rect x="30" y="82" width="315" height="190" rx="12" fill="var(--bg)" stroke="var(--line)" />
+        <text x="187" y="110" text-anchor="middle" class="section">{t('WITHOUT BUCKETS', '不分桶')}</text>
+        <rect x="50" y="126" width="275" height="42" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="187" y="153" text-anchor="middle" class="small strong">SGLANG + KV</text>
+        <rect x="50" y="180" width="275" height="78" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x="187" y="207" text-anchor="middle" class="small strong">{t('ALL TRAINING WEIGHTS', '整套训练权重')}</text>
+        <text x="187" y="232" text-anchor="middle" class="small">{t('restored beside SGLang', '全部恢复到 SGLang 旁边')}</text>
+        <text x="187" y="251" text-anchor="middle" class="small">{t('can exceed the card', '可能超出显卡容量')}</text>
         <g opacity={phase >= 1 ? 1 : 0}>
-          <rect x="375" y="85" width="315" height="259" rx="12" fill="var(--bg)" stroke="var(--line)" />
-          <text x="532" y="115" text-anchor="middle" class="section">{t('WITH BUCKETS', '分桶')}</text>
-          <rect x="395" y="136" width="275" height="55" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="532" y="169" text-anchor="middle" class="small strong">SGLANG + KV</text>
-          <rect x="395" y="207" width="275" height="52" rx="9" fill={phase >= 4 ? 'var(--bg)' : 'var(--gen-soft)'} stroke={phase >= 4 ? 'var(--line)' : 'var(--gen)'} stroke-dasharray={phase >= 4 ? '5 4' : '0'} />
-          <text x="532" y="239" text-anchor="middle" class="small strong">BUCKET 1 · {phase >= 4 ? t('CLEARED', '已清空') : t('ON GPU', '在 GPU 上')}</text>
-          <rect x="395" y="275" width="275" height="43" rx="9" fill={phase >= 5 ? 'var(--gen-soft)' : 'var(--bg)'} stroke={phase >= 5 ? 'var(--gen)' : 'var(--line)'} stroke-dasharray={phase >= 5 ? '0' : '5 4'} />
-          <text x="532" y="302" text-anchor="middle" class="small">{phase >= 5 ? `BUCKET 2 · ${t('ON GPU', '在 GPU 上')}` : `${t('LATER BUCKETS', '后面的桶')} · ${t('WAIT OFF GPU', '在 GPU 外等待')}`}</text>
+          <rect x="375" y="82" width="315" height="190" rx="12" fill="var(--bg)" stroke="var(--line)" />
+          <text x="532" y="110" text-anchor="middle" class="section">{t('WITH BUCKETS', '分桶')}</text>
+          <rect x="395" y="126" width="275" height="42" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="532" y="153" text-anchor="middle" class="small strong">SGLANG + KV</text>
+          <rect data-bucket-state={bucketState.id} x="395" y="180" width="275" height="56" rx="9" fill={phase >= 8 ? 'var(--bg)' : 'var(--gen-soft)'} stroke={phase >= 8 ? 'var(--line)' : 'var(--gen)'} stroke-dasharray={phase >= 8 ? '5 4' : '0'} />
+          <text x="532" y="202" text-anchor="middle" class="small strong">{t(bucketState.title, bucketState.titleZh)}</text>
+          <text x="532" y="225" text-anchor="middle" class="small">{t(bucketState.detail, bucketState.detailZh)}</text>
+          <rect x="395" y="242" width="275" height="22" rx="7" fill={phase >= 9 ? 'var(--gen-soft)' : 'var(--bg)'} stroke={phase >= 9 ? 'var(--gen)' : 'var(--line)'} stroke-dasharray={phase >= 9 ? '0' : '5 4'} />
+          <text x="532" y="259" text-anchor="middle" class="small">{phase >= 9 ? `BUCKET 2 · ${t('ON GPU', '在 GPU 上')}` : t('LATER BUCKETS · WAIT OFF GPU', '后面的桶 · 在 GPU 外等待')}</text>
         </g>
-        <text x="360" y="378" text-anchor="middle" class="code" opacity={phase >= 2 ? 1 : 0}>{t('upload → assemble → arrange for SGLang → send handles → wait for SGLang → clear', '拿回 → 拼好 → 排成 SGLang 要的样子 → 发句柄 → 等 SGLang 装入 → 清空')}</text>
-        <text x="360" y="413" text-anchor="middle" class="small strong" opacity={phase >= 3 ? 1 : 0}>{t('SGLang finishes loading before the converted bucket copy is cleared.', 'SGLang 装入完成后，才清空这一桶转换后的副本。')}</text>
-        <text x="360" y="447" text-anchor="middle" class="small" opacity={phase >= 5 ? 1 : 0}>{t('Blue = rollout state · orange = training weights being updated', '蓝 = rollout 状态 · 橙 = 正在更新的训练权重')}</text>
+        <text x="360" y="302" text-anchor="middle" class="small strong" opacity={phase >= 1 ? 1 : 0}>{t('BUCKET 1 · CONVERSION ORDER', '第 1 桶 · 按顺序转换')}</text>
+        <text x="360" y="321" text-anchor="middle" class="small" opacity={phase >= 1 ? 1 : 0}>{t('PP/EP = GPU groups for layers or expert submodels', 'PP/EP = 按层或专家子模型分组的 GPU')}</text>
+        {#each BUCKET_STAGES as row, i}
+          <g opacity={phase >= i + 2 ? 1 : 0}>
+            <rect x="30" y={335 + i * 40} width="660" height="32" rx="8" fill="var(--bg)" stroke="var(--line)" />
+            <text x="50" y={356 + i * 40} class="small strong">{row.op}</text>
+            <text x="235" y={356 + i * 40} class="small">{t(row.result, row.resultZh)}</text>
+          </g>
+        {/each}
+        <text x="360" y="632" text-anchor="middle" class="small">{t('Blue = rollout state · orange = training weights being updated', '蓝 = rollout 状态 · 橙 = 正在更新的训练权重')}</text>
       {:else if step === 5}
         <rect x="35" y="90" width="190" height="121" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" />
         <text x="130" y="124" text-anchor="middle" class="section">{t('BEFORE', '更新前')}</text>
@@ -539,7 +591,7 @@
       {#if cur.foot2}
         <text x={W / 2} y={H - 26} text-anchor="middle" class={step === 6 ? 'footnote step7-footnote' : 'footnote'}>{t(cur.foot2, cur.foot2Zh ?? cur.foot2)}</text>
       {/if}
-      <text x={W / 2} y={H - 10} text-anchor="middle" class={step === 6 ? 'footnote step7-footnote' : 'footnote'}>{phone ? t(cur.mobileFoot ?? cur.foot, cur.mobileFootZh ?? cur.footZh) : t(cur.foot, cur.footZh)}</text>
+      <text x={W / 2} y={H - 10} text-anchor="middle" class={step === 6 ? 'footnote step7-footnote' : step === 4 ? 'footnote step5-footnote' : 'footnote'}>{phone ? t(cur.mobileFoot ?? cur.foot, cur.mobileFootZh ?? cur.footZh) : t(cur.foot, cur.footZh)}</text>
     </svg>
   </div>
   <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh}
@@ -556,6 +608,7 @@
   .result { font-family: var(--mono); font-size: 15px; font-weight: 650; fill: var(--fg); }
   .big { font-family: var(--mono); font-size: 26px; font-weight: 700; fill: var(--fg); }
   @media (min-width: 601px) {
+    .step5-footnote { font-size: 12.5px; }
     .step7-footnote { font-size: 12.2px; }
   }
   @media (max-width: 600px) {
