@@ -118,8 +118,9 @@ $$
 - 堆叠条把一张 H100 分成各 stage 的申报比例、thinker 的 encoder 预留，以及比例之外的 6%。
 - `encoder_mem_reserve` 是 thinker AR engine 之外的 encoder 工作余量，不是 image 和 audio encoder stage 自己申报的 2% + 2%。
 - thinker 原来的 78% 拆成两段：73% 是有效 AR 预算，整卡的 5 个百分点是预留。
+- 显式 AR 比例是直接指定 AR 占整卡的份额。这份配置没有指定，所以由工厂推导。5 个百分点是整卡 100 等份中的 5 份，不是 78% 的 5%。
 - 其他 stage 份额仍是 2%、2%、10% 和 2%。
-- 这套同卡布局只能 TP 1，worker 内不能复制进程，每个 GPU stage 都要申报预算。router 后面的独立 workers 不在这条规则里。
+- 底部面板把视频测试最低需求逐项相加：61.0 GB thinker 权重、4.0 GB 视频预留、3.1 GB KV cache、4.8 GB encoder 和 code2wav、4.8 GB 预留，以及 8.0 GB talker。合计 85.7 GB，比 80 GB 显卡多 5.7 GB。去掉 talker 的 8.0 GB 后只剩 77.7 GB，所以 talker 移到 GPU 1。
 
 ### 公式
 
@@ -141,9 +142,23 @@ $$
 
 这里减去的是整卡的 5 个百分点，不是 78% 的 5%。申报的 stage 总和仍是 `2 + 2 + 78 + 10 + 2 = 94%`。把 78% 拆成 73% 和 5%，不会给整卡多加 5%。其余 `100 − 94 = 6%` 在申报比例之外，不是实测空闲显存。
 
+### 图上的视频测试算式
+
+| 部分 | 算式 | GB |
+|---|---|---:|
+| thinker 权重 | `30.5B × 2 B` | 61.0 |
+| 视频 encoder 预留 | `5% × 80 GB` | 4.0 |
+| 构造最长请求的 KV cache | `32,768 × 96 KB` | 约 3.1 |
+| 两个 encoder 和 code2wav | `(2% + 2% + 2%) × 80 GB` | 4.8 |
+| 申报比例之外的预留 | `6% × 80 GB` | 4.8 |
+| talker | `10% × 80 GB` | 8.0 |
+| 合计 | 六行相加 | 约 85.7 |
+
+溢出量是 `85.7 − 80 = 5.7 GB`。只去掉 talker 后是 `85.7 − 8.0 = 77.7 GB`，放得下。数值由 `src/omni/numbers.ts` 推导，复现 Learning SGLang 第 19 章第 4 步的构造下限。其中 32,768 token 的 KV 项使用旧上限。checkpoint 当前的 65,536 token 默认值会让这一项更大，所以这不是当前峰值显存实测，溢出结论仍然成立。
+
 ### 边界与出处
 
-配置数值来自 `examples/configs/qwen3_omni_colocated_h100_bf16.yaml:7-20`。预留机制见 `sglang_omni/models/qwen3_omni/stages.py:155-215,1230-1243,1358-1373`；encoder 余量说明见 `backend/server_args_builder.py:176-210`，其中 `backend/` 是 sglang_omni/scheduling/sglang_backend/ 的缩写。没有显式 `thinker.engine.mem_fraction_static` 时，工厂推导 73%；显式匹配时跳过预留，冲突时拒绝（`tests/unit_test/qwen3_omni/test_sglang_ar_budget.py:491-511,540-562`）。按字节申报 KV 会跳过比例调整（`stages.py:1384-1402`）。同卡校验见 `sglang_omni/models/qwen3_omni/placement.py:55-60,84-108,122-187`。
+配置数值来自 `examples/configs/qwen3_omni_colocated_h100_bf16.yaml:7-20`。预留机制见 `sglang_omni/models/qwen3_omni/stages.py:155-215,1230-1243,1358-1373`；encoder 余量说明见 `backend/server_args_builder.py:176-210`，其中 `backend/` 是 sglang_omni/scheduling/sglang_backend/ 的缩写。没有显式 `thinker.engine.mem_fraction_static` 时，工厂推导 73%；显式匹配时跳过预留，冲突时拒绝（`tests/unit_test/qwen3_omni/test_sglang_ar_budget.py:491-511,540-562`）。按字节申报 KV 会跳过比例调整（`stages.py:1384-1402`）。图外规则：这套同卡布局只能 TP 1。worker 是运行这套部署的一组进程，一个同卡 worker 不能给 stage 增加进程副本；更多副本要作为 router 后面的独立 workers 运行。每个 GPU stage 都要申报预算（`sglang_omni/models/qwen3_omni/placement.py:55-60,84-108,122-187`）。
 
 ### 接下来
 

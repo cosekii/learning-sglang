@@ -118,8 +118,9 @@ The next step packs all five GPU stages onto one card and accounts for their dec
 - The stacked bar splits one H100 into declared stage fractions, the thinker's encoder reserve and the 6% outside these fractions.
 - `encoder_mem_reserve` is headroom for encoder work outside the thinker AR engine. It is separate from the image and audio encoder stages' own 2% + 2% declarations.
 - The thinker's original 78% appears as two segments: 73% for its effective AR budget and five whole-card percentage points for the reserve.
+- `Explicit AR fraction` means setting AR's whole-card share directly. This config leaves it unset, so the factory derives it. Five percentage points means five of the card's 100 equal shares, not 5% of 78%.
 - The other stage shares stay at 2%, 2%, 10% and 2%.
-- This colocated layout permits only TP 1 and no process replicas inside the worker. Every GPU stage must declare a budget. Separate workers behind a router are outside this rule.
+- The bottom panel adds the constructed video-test minimum: 61.0 GB of thinker weights, 4.0 GB of video reserve, 3.1 GB of KV cache, 4.8 GB for encoders and code2wav, 4.8 GB held back and 8.0 GB for the talker. The 85.7 GB total exceeds the 80 GB card by 5.7 GB. Removing the talker's 8.0 GB leaves 77.7 GB, so the talker moves to GPU 1.
 
 ### Formula
 
@@ -141,9 +142,23 @@ $$
 
 The subtraction uses fractions of the whole card, so it removes five percentage points rather than 5% of 78%. The declared stage total remains `2 + 2 + 78 + 10 + 2 = 94%`. Splitting 78% into 73% and 5% does not add another 5% to the card. The remaining `100 − 94 = 6%` is outside these declarations, not a measured free-memory reading.
 
+### The video-test arithmetic on the stage
+
+| Part | Arithmetic | GB |
+|---|---|---:|
+| Thinker weights | `30.5B × 2 B` | 61.0 |
+| Video encoder reserve | `5% × 80 GB` | 4.0 |
+| KV cache for the constructed longest request | `32,768 × 96 KB` | about 3.1 |
+| Two encoders and code2wav | `(2% + 2% + 2%) × 80 GB` | 4.8 |
+| Held back outside declarations | `6% × 80 GB` | 4.8 |
+| Talker | `10% × 80 GB` | 8.0 |
+| Total | sum of the six rows | about 85.7 |
+
+The overflow is `85.7 − 80 = 5.7 GB`. Removing only the talker gives `85.7 − 8.0 = 77.7 GB`, which fits. These values come from `src/omni/numbers.ts` and reproduce Learning SGLang Ch. 19 Step 4's constructed lower bound. Its 32,768-token KV entry uses the previous limit. The checkpoint's current 65,536-token default raises that entry, so this is not a current peak-memory measurement and the overflow conclusion still holds.
+
 ### Boundaries and sources
 
-The config values come from `examples/configs/qwen3_omni_colocated_h100_bf16.yaml:7-20`. The reserve mechanism is in `sglang_omni/models/qwen3_omni/stages.py:155-215,1230-1243,1358-1373`; encoder headroom is described in `backend/server_args_builder.py:176-210`, where `backend/` abbreviates sglang_omni/scheduling/sglang_backend/. With no explicit `thinker.engine.mem_fraction_static`, the factory derives 73%. A matching explicit fraction skips the reserve; a conflicting fraction is rejected (`tests/unit_test/qwen3_omni/test_sglang_ar_budget.py:491-511,540-562`). A byte-sized KV declaration skips the fraction adjustment (`stages.py:1384-1402`). Colocated validation is in `sglang_omni/models/qwen3_omni/placement.py:55-60,84-108,122-187`.
+The config values come from `examples/configs/qwen3_omni_colocated_h100_bf16.yaml:7-20`. The reserve mechanism is in `sglang_omni/models/qwen3_omni/stages.py:155-215,1230-1243,1358-1373`; encoder headroom is described in `backend/server_args_builder.py:176-210`, where `backend/` abbreviates sglang_omni/scheduling/sglang_backend/. With no explicit `thinker.engine.mem_fraction_static`, the factory derives 73%. A matching explicit fraction skips the reserve; a conflicting fraction is rejected (`tests/unit_test/qwen3_omni/test_sglang_ar_budget.py:491-511,540-562`). A byte-sized KV declaration skips the fraction adjustment (`stages.py:1384-1402`). Off the stage, this colocated layout permits only TP 1. A worker is the group of processes running this deployment. One colocated worker cannot add process replicas for a stage; extra copies must run as separate workers behind a router. Every GPU stage declares a budget (`sglang_omni/models/qwen3_omni/placement.py:55-60,84-108,122-187`).
 
 ### Next
 

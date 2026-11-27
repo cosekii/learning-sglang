@@ -49,6 +49,19 @@
     QWEN_BENCH_RUNS_PER_ARM,
     QWEN_P99_MIN_SAMPLES,
     QWEN_EXAMPLE_UNALLOCATED_TALKER_SLOTS,
+    QWEN_VIDEO_TEST_CARD_GB,
+    QWEN_VIDEO_TEST_THINKER_PARAMS_B,
+    QWEN_VIDEO_TEST_THINKER_WEIGHT_GB,
+    QWEN_VIDEO_TEST_MAX_TOKENS,
+    QWEN_VIDEO_TEST_KV_KB_PER_TOKEN,
+    QWEN_VIDEO_TEST_KV_GB,
+    QWEN_VIDEO_TEST_ENCODER_RESERVE_GB,
+    QWEN_VIDEO_TEST_OTHER_STAGES_GB,
+    QWEN_VIDEO_TEST_HELD_BACK_GB,
+    QWEN_VIDEO_TEST_TALKER_GB,
+    QWEN_VIDEO_TEST_TOTAL_GB,
+    QWEN_VIDEO_TEST_OVERFLOW_GB,
+    QWEN_VIDEO_TEST_WITHOUT_TALKER_GB,
   } from '../../omni/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -93,7 +106,7 @@
     return () => query.removeEventListener('change', update);
   });
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [870, 820, 900, 850, 850, 930, 910, 1080][step] : [560, 600, 650, 580, 600, 630, 600, 650][step]);
+  const H = $derived(phone ? [870, 820, 900, 930, 850, 930, 910, 1080][step] : [560, 600, 650, 680, 600, 630, 600, 650][step]);
   const budgetSegments = [
     ...COLOCATED_STAGE_SHARES.flatMap((stage) => stage.name === 'thinker' ? [
       { name: 'thinker AR', percent: QWEN_THINKER_EFFECTIVE_AR_PERCENT, kind: 'stage' },
@@ -288,35 +301,45 @@
       {:else if step === 3}
         <text x={phone ? 15 : 20} y="24" class="rowlabel">{t(phone ? '2/5 · PLACEMENT · SPLIT THE THINKER SHARE' : '2 of 5 · PLACEMENT · ONE H100 SPLITS THE THINKER SHARE', phone ? '2/5 · 摆卡 · 拆分 THINKER 份额' : '2/5 · 摆卡 · 一张 H100 拆分 THINKER 份额')}</text>
         <text x={phone ? 15 : 20} y="49" class="tag">encoder reserve = {phone ? t('encoder headroom outside thinker AR', 'thinker AR 之外的 encoder 余量') : t('headroom for encoder work outside thinker AR', 'thinker AR 之外的 encoder 工作余量')}</text>
-        <text x={phone ? 15 : 20} y="72" class="tag">{t('not the separate 2% + 2% encoder stage shares', '不是另外两个 encoder stage 各占的 2%')}</text>
-        <text x={W / 2} y="103" text-anchor="middle" class="formula">{phase === 0 ? `2 + 2 + 78 + 10 + 2 = ${COLOCATED_USED_PERCENT}%` : phone ? `78%−5 points=${QWEN_THINKER_EFFECTIVE_AR_PERCENT}% AR · total=${COLOCATED_USED_PERCENT}%` : `78% − 5 percentage points = ${QWEN_THINKER_EFFECTIVE_AR_PERCENT}% AR · 2 + 2 + 78 + 10 + 2 = ${COLOCATED_USED_PERCENT}%`}</text>
-        <rect x={phone ? 15 : 20} y="125" width={phone ? 270 : 680} height="65" rx="8" fill="var(--bg)" stroke="var(--line)" />
-        {#each (phase === 0 ? declaredBudgetSegments : budgetSegments) as segment, i}
-          <rect x={(phone ? 15 : 20) + budgetX(i, phone ? 270 : 680, phase === 0 ? declaredBudgetSegments : budgetSegments)} y="125" width={segment.percent * (phone ? 270 : 680) / 100} height="65" fill={segment.kind === 'reserve' ? 'var(--gen)' : segment.kind === 'outside' ? 'var(--bg)' : 'var(--accent)'} stroke={segment.kind === 'outside' ? 'var(--faint)' : 'none'} stroke-dasharray={segment.kind === 'outside' ? '4 3' : 'none'} style="transition: x 700ms, width 700ms, fill 350ms" />
+        <text x={phone ? 15 : 20} y="72" class="tag">{phone ? t('explicit AR fraction = direct share · unset', '显式 AR 比例 = 直接份额 · 未指定') : t('explicit AR fraction = direct AR card share · unset in this config', '显式 AR 比例 = 直接指定 AR 整卡份额 · 这份配置未指定')}</text>
+        <text x={phone ? 15 : 20} y="95" class="tag">{t('5 percentage points = 5 whole-card points, not 5% of 78%', '5 个百分点 = 整卡 100 份中的 5 份，不是 78% 的 5%')}</text>
+        <text x={W / 2} y="126" text-anchor="middle" class="formula">{phase === 0 ? `2 + 2 + 78 + 10 + 2 = ${COLOCATED_USED_PERCENT}%` : phone ? `78%−5 points=${QWEN_THINKER_EFFECTIVE_AR_PERCENT}% AR · total=${COLOCATED_USED_PERCENT}%` : `78% − 5 percentage points = ${QWEN_THINKER_EFFECTIVE_AR_PERCENT}% AR · 2 + 2 + 78 + 10 + 2 = ${COLOCATED_USED_PERCENT}%`}</text>
+        <rect x={phone ? 15 : 20} y="148" width={phone ? 270 : 680} height="65" rx="8" fill="var(--bg)" stroke="var(--line)" />
+        {#each (phase === 0 ? declaredBudgetSegments : budgetSegments) as segment, i (segment.name)}
+          <rect x={(phone ? 15 : 20) + budgetX(i, phone ? 270 : 680, phase === 0 ? declaredBudgetSegments : budgetSegments)} y="148" width={segment.percent * (phone ? 270 : 680) / 100} height="65" fill={segment.kind === 'reserve' ? 'var(--gen)' : segment.kind === 'outside' ? 'var(--bg)' : 'var(--accent)'} stroke={segment.kind === 'outside' ? 'var(--faint)' : 'none'} stroke-dasharray={segment.kind === 'outside' ? '4 3' : 'none'} style="transition: x 700ms, width 700ms, fill 350ms" />
         {/each}
         <g opacity={phase >= 2 ? 1 : 0} style="transition: opacity 450ms">
-          <text x={phone ? 15 : 20} y="222" class="tag strong">{t('SEGMENT', '分段')}</text>
-          <text x={phone ? 282 : 700} y="222" text-anchor="end" class="tag strong">{t('CARD SHARE', '整卡比例')}</text>
+          <text x={phone ? 15 : 20} y="245" class="tag strong">{t('SEGMENT', '分段')}</text>
+          <text x={phone ? 282 : 700} y="245" text-anchor="end" class="tag strong">{t('CARD SHARE', '整卡比例')}</text>
           {#each budgetSegments as segment, i}
-            {@const y = 254 + i * (phone ? 42 : 32)}
+            {@const y = 275 + i * (phone ? 42 : 28)}
             <rect x={phone ? 15 : 20} y={y - 12} width="12" height="12" rx="2" fill={segment.kind === 'reserve' ? 'var(--gen)' : segment.kind === 'outside' ? 'var(--bg)' : 'var(--accent)'} stroke={segment.kind === 'outside' ? 'var(--faint)' : 'none'} />
             <text x={phone ? 36 : 41} y={y} class={segment.name.includes('thinker') || segment.name.includes('encoder') ? 'mono strong' : 'mono'}>{segment.name}</text>
             <text x={phone ? 282 : 700} y={y} text-anchor="end" class="formula">{segment.percent}%</text>
           {/each}
         </g>
-        <g opacity={phase >= 3 ? 1 : 0.12} style="transition: opacity 350ms">
-          <rect x={phone ? 15 : 20} y={phone ? 575 : 480} width={phone ? 270 : 680} height={phone ? 150 : 52} rx="9" fill="var(--bg)" stroke="var(--line)" />
+        <g opacity={phase >= 3 ? 1 : 0} style="transition: opacity 450ms">
+          <rect x={phone ? 15 : 20} y={phone ? 550 : 465} width={phone ? 270 : 680} height={phone ? 320 : 150} rx="9" fill="var(--bg)" stroke="var(--eos)" />
+          <text x={phone ? 28 : 34} y={phone ? 577 : 492} class="tag strong">{t('WHY THE TALKER MOVES · VIDEO-TEST MINIMUM', '为什么 talker 要移卡 · 视频测试最低需求')}</text>
           {#if phone}
-            <text x="28" y="604" class="tag strong">{t('COLOCATED RULES', '同卡规则')}</text>
-            <text x="28" y="633" class="tag">{t('one common GPU · TP = 1 only', '五个 GPU stage 同卡 · 只能 TP = 1')}</text>
-            <text x="28" y="661" class="tag">{t('no in-worker process replicas', 'worker 内不能复制进程')}</text>
-            <text x="28" y="689" class="tag">{t('every GPU stage declares a budget', '每个 GPU stage 都要申报预算')}</text>
+            <text x="28" y="610" class="tag">{QWEN_VIDEO_TEST_THINKER_WEIGHT_GB.toFixed(1)} = {QWEN_VIDEO_TEST_THINKER_PARAMS_B}B × 2 B · {t('thinker weights', 'thinker 权重')}</text>
+            <text x="28" y="637" class="tag">{QWEN_VIDEO_TEST_ENCODER_RESERVE_GB.toFixed(1)} = 5% × {QWEN_VIDEO_TEST_CARD_GB} · {t('video reserve', '视频预留')}</text>
+            <text x="28" y="664" class="tag">{QWEN_VIDEO_TEST_KV_GB.toFixed(1)} ≈ {QWEN_VIDEO_TEST_MAX_TOKENS.toLocaleString('en-US')} × {QWEN_VIDEO_TEST_KV_KB_PER_TOKEN} KB · KV</text>
+            <text x="28" y="691" class="tag">{QWEN_VIDEO_TEST_OTHER_STAGES_GB.toFixed(1)} = 6% × {QWEN_VIDEO_TEST_CARD_GB} · {t('encoders + code2wav', 'encoders + code2wav')}</text>
+            <text x="28" y="718" class="tag">{QWEN_VIDEO_TEST_HELD_BACK_GB.toFixed(1)} = 6% × {QWEN_VIDEO_TEST_CARD_GB} · {t('held back', '预留')}</text>
+            <text x="28" y="745" class="tag">{QWEN_VIDEO_TEST_TALKER_GB.toFixed(1)} = 10% × {QWEN_VIDEO_TEST_CARD_GB} · talker</text>
+            <text x="28" y="779" class="formula">{t('total', '合计')} = {QWEN_VIDEO_TEST_TOTAL_GB.toFixed(1)} GB · {t('card', '显卡')} = {QWEN_VIDEO_TEST_CARD_GB} GB</text>
+            <text x="28" y="806" class="formula" fill="var(--eos)">{QWEN_VIDEO_TEST_TOTAL_GB.toFixed(1)} − {QWEN_VIDEO_TEST_CARD_GB} = {QWEN_VIDEO_TEST_OVERFLOW_GB.toFixed(1)} GB {t('too much', '超出')}</text>
+            <text x="28" y="833" class="tag strong">{t('without talker', '去掉 talker')}: {QWEN_VIDEO_TEST_TOTAL_GB.toFixed(1)} − {QWEN_VIDEO_TEST_TALKER_GB.toFixed(1)} = {QWEN_VIDEO_TEST_WITHOUT_TALKER_GB.toFixed(1)} GB {t('fits', '放得下')}</text>
           {:else}
-            <text x="360" y="512" text-anchor="middle" class="tag strong">{t('one GPU · TP = 1 only · no in-worker process replicas · every GPU stage declares a budget', '五个 GPU stage 同卡 · 只能 TP = 1 · worker 内不能复制进程 · 每个 GPU stage 都要申报预算')}</text>
+            <text x="34" y="519" class="tag">{QWEN_VIDEO_TEST_THINKER_WEIGHT_GB.toFixed(1)} {t('weights', '权重')} ({QWEN_VIDEO_TEST_THINKER_PARAMS_B}B × 2 B) + {QWEN_VIDEO_TEST_ENCODER_RESERVE_GB.toFixed(1)} {t('video reserve', '视频预留')} (5% × {QWEN_VIDEO_TEST_CARD_GB}) + {QWEN_VIDEO_TEST_KV_GB.toFixed(1)} KV ({QWEN_VIDEO_TEST_MAX_TOKENS.toLocaleString('en-US')} × {QWEN_VIDEO_TEST_KV_KB_PER_TOKEN} KB)</text>
+            <text x="34" y="544" class="tag">+ {QWEN_VIDEO_TEST_OTHER_STAGES_GB.toFixed(1)} {t('encoders + code2wav', 'encoders + code2wav')} (6% × {QWEN_VIDEO_TEST_CARD_GB}) + {QWEN_VIDEO_TEST_HELD_BACK_GB.toFixed(1)} {t('held back', '预留')} (6% × {QWEN_VIDEO_TEST_CARD_GB}) + {QWEN_VIDEO_TEST_TALKER_GB.toFixed(1)} talker (10% × {QWEN_VIDEO_TEST_CARD_GB})</text>
+            <text x="34" y="569" class="formula">{t('total', '合计')} = {QWEN_VIDEO_TEST_TOTAL_GB.toFixed(1)} GB · {t('card', '显卡')} = {QWEN_VIDEO_TEST_CARD_GB} GB · {QWEN_VIDEO_TEST_TOTAL_GB.toFixed(1)} − {QWEN_VIDEO_TEST_CARD_GB} = {QWEN_VIDEO_TEST_OVERFLOW_GB.toFixed(1)} GB {t('too much', '超出')}</text>
+            <text x="34" y="594" class="tag strong">{t('without talker', '去掉 talker')}: {QWEN_VIDEO_TEST_TOTAL_GB.toFixed(1)} − {QWEN_VIDEO_TEST_TALKER_GB.toFixed(1)} = {QWEN_VIDEO_TEST_WITHOUT_TALKER_GB.toFixed(1)} GB {t('fits, so talker moves to GPU 1', '放得下，所以 talker 移到 GPU 1')}</text>
           {/if}
         </g>
-        <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{phone ? t('6% is undeclared, not measured free memory.', '灰色 6% 在申报比例之外，不是实测空闲显存。') : t('The 6% grey segment is outside declarations, not measured free memory.', '灰色 6% 在申报比例之外，不是实测空闲显存。')}</text>
-        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Next: choose how many bits each weight uses.', '下一步：每个权重用多少 bit。')}</text>
+        <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{phone ? t('6% is undeclared, not measured free memory.', '6% 在申报比例之外，不是实测空闲显存。') : t('The 6% grey segment is outside declarations, not measured free memory.', '灰色 6% 在申报比例之外，不是实测空闲显存。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Ch. 19 Step 4: old 32,768 · new 65,536 needs more.', '第 19 章第 4 步：旧 32,768；新 65,536 默认需要更多。') : t('Ch. 19 Step 4: old 32,768-token bound · current 65,536 needs more.', '第 19 章第 4 步：旧 32,768 token 下限；当前 65,536 默认值需要更多。')}</text>
       {:else if step === 4}
         <text x={phone ? 15 : 20} y="24" class="rowlabel">{t(phone ? '3/5 · PRECISION AND MEMORY' : '3 of 5 · PRECISION AND MEMORY', '3/5 · 精度与显存估计')}</text>
         <text x={phone ? 15 : 20} y="49" class="tag">precision = {t('bits used to store each weight', '保存每个权重所用的 bit 数')}</text>
