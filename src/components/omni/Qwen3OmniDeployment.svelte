@@ -87,8 +87,8 @@
     caption: 'Readiness checks that one small request finishes. A/B then changes one choice and records client time and listener stalls separately.',
     captionZh: 'readiness 先检查一个小请求能否跑完。A/B 只改一个选择，分别记录客户端耗时和听者卡顿。',
   }, {
-    caption: 'Keep the TP1 layout fixed and compare only BF16 with FP8 at c=8. Next: what happens when the client reads too slowly?',
-    captionZh: '固定 TP1 摆卡，只比 c=8 的 BF16 和 FP8。接下来，客户端读得太慢会怎样？',
+    caption: 'Keep the same two-GPU layout and compare only BF16 with FP8 at c=8. Next: what happens when the client reads too slowly?',
+    captionZh: '固定两卡摆法，只比 c=8 的 BF16 和 FP8。接下来，客户端读得太慢会怎样？',
   }];
   let step = $state(0);
   $effect(() => {
@@ -527,13 +527,13 @@
       {:else if step === 9}
         <text x={phone ? 15 : 20} y="24" class="rowlabel">{t(phone ? '5/5 · EVIDENCE · PRECISION A/B' : '5 of 5 · EVIDENCE · FIRST A/B CHANGES PRECISION ONLY', phone ? '5/5 · 证据 · 只比精度' : '5/5 · 证据 · 首轮 A/B 只改精度')}</text>
         <text x={phone ? 15 : 20} y="49" class="tag">{t('blue = fixed for this A/B · orange = evidence to collect', '蓝 = 本次 A/B 固定 · 橙 = 要收集的证据')}</text>
-        <text x={phone ? 15 : 20} y="72" class="tag strong">{phone ? t('EXAMPLE: 8 requests at once · earlier first audio', '算例：8 路并发 · 首音更早') : t('EXAMPLE: 8 concurrent spoken requests, earlier first audio', '算例：8 路并发语音请求，希望首音更早')}</text>
+        <text x={phone ? 15 : 20} y="72" class="tag strong">{phone ? t('EXAMPLE: c = 8 requests at once · earlier first audio', '算例：c = 8 路同时请求 · 首音更早') : t('EXAMPLE: c = 8 spoken requests at once · earlier first audio', '算例：c = 8 路语音请求同时运行 · 首音更早')}</text>
         {#each [
           { label: 'FIXED ROUTE', labelZh: '固定路线', a: 'modalities=["text", "audio"]', aZh: 'modalities=["text", "audio"]', b: 'default speech graph · text + sound', bZh: '默认语音图 · 文字 + 声音', evidence: false },
-          { label: 'FIXED PLACEMENT', labelZh: '固定摆卡', a: 'GPU 0: encoders + thinker + code2wav', aZh: 'GPU 0：encoders + thinker + code2wav', b: 'GPU 1: talker · TP1 · 2 GPUs · 7 processes', bZh: 'GPU 1：talker · TP1 · 2 张卡 · 7 个进程', evidence: false },
+          { label: 'FIXED PLACEMENT', labelZh: '固定摆卡', a: 'GPU 0: encoders + thinker + code2wav', aZh: 'GPU 0：encoders + thinker + code2wav', b: 'GPU 1: talker · TP1 = one thinker process', bZh: 'GPU 1：talker · TP1 = 一个 thinker 进程', evidence: false },
           { label: 'FIXED CAPACITY', labelZh: '固定容量', a: `8 ≤ ${QWEN_TALKER_MAX_RUNNING_REQUESTS} talker running cap`, aZh: `8 ≤ talker 运行上限 ${QWEN_TALKER_MAX_RUNNING_REQUESTS}`, b: `32 − 8 = ${QWEN_EXAMPLE_UNALLOCATED_TALKER_SLOTS} requests of headroom · no replica yet`, bZh: `32 − 8 = ${QWEN_EXAMPLE_UNALLOCATED_TALKER_SLOTS} 个请求余量 · 先不加副本`, evidence: false },
-          { label: 'A/B · PRECISION', labelZh: 'A/B · 精度', a: 'A BF16 ↔ B FP8 checkpoint · c=8', aZh: 'A：BF16 ↔ B：FP8 checkpoint · c=8', b: 'same TP1 layout · 5 repeats = 5 runs / choice', bZh: '同一 TP1 摆卡 · 重复 5 次 = 每种选择 5 次', evidence: true },
-          { label: 'FIRST AUDIO', labelZh: '首音记录', a: 'median = middle first-audio result', aZh: '中位数 = 正中间的首音结果', b: 'custom p90 = my 90% cutoff', bZh: '自定义 p90 = 我们另算的 90% 上限', evidence: true },
+          { label: 'A/B · PRECISION', labelZh: 'A/B · 精度', a: 'A BF16 ↔ B FP8 weights · same 8 requests', aZh: 'A：BF16 ↔ B：FP8 权重 · 同样 8 路请求', b: 'same cards · 5 repeats = 5 runs / choice', bZh: '同样摆卡 · 重复 5 次 = 每种选择 5 次', evidence: true },
+          { label: 'FIRST AUDIO', labelZh: '首音记录', a: 'median = middle wait · p90 from Step 3', aZh: '中位数 = 正中间的等待 · p90 见第 3 步', b: 'two summaries of the same first-audio waits', bZh: '两个数总结同一批首音等待', evidence: true },
           { label: 'OTHER RECORDS', labelZh: '其他记录', a: 'total time · stalls · failures · memory · raw results', aZh: '总耗时 · 卡顿 · 失败 · 显存 · 原始结果', b: 'quality checks run separately · Ch. 8 Step 8', bZh: '质量检查另做 · 第 8 章第 8 步', evidence: true },
         ] as row, i}
           {@const y = phone ? 105 + i * 100 : 105 + i * 62}
@@ -558,7 +558,7 @@
           {/if}
         </g>
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{phone ? t('BF16 starts · INT4 needs separate evidence', '先比 BF16/FP8 · INT4 另需证据') : t('BF16 is the default start; INT4 needs separate memory and quality evidence.', '先用默认 BF16；INT4 另需显存和质量证据。')}</text>
-        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Constructed TP1 hypothesis · local A/B required', '构造的 TP1 假设 · 仍需本地 A/B') : t('Constructed TP1 hypothesis from H200/TP2 evidence; local A/B required.', '由 H200/TP2 证据构造的 TP1 假设，仍需本地 A/B。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Constructed starting plan · local A/B required', '构造的起步方案 · 仍需本地 A/B') : t('Constructed starting plan from Step 3; local A/B required.', '由第 3 步构造的起步方案，仍需本地 A/B。')}</text>
       {/if}
       {#if PHASE_COUNTS[step] > 0}
         <LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={4} label="loops" />

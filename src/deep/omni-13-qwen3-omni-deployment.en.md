@@ -357,15 +357,15 @@ The final step applies this method to one eight-request BF16/FP8 comparison.
 
 ## Step 10 · The first A/B changes precision only
 
-> **In one line:** An eight-request example holds the default BF16 speech layout fixed, compares only BF16 with native FP8, and decides from the recorded evidence.
+> **In one line:** An eight-request example holds the two-GPU layout fixed, compares only BF16 with FP8 weight precision, and decides from the recorded evidence.
 
 ### On the stage
 
-- The goal is eight concurrent spoken requests with earlier first audio. The fixed route requests text and audio from the default speech graph.
-- The fixed placement keeps input encoders, thinker and code2wav on GPU 0 and the talker on GPU 1. This two-GPU TP1 starting hypothesis is motivated by Step 3's different H200/TP2 experiment.
+- The goal is `c = 8`, meaning eight spoken requests running together, with earlier first audio. The fixed route requests text and audio from the default speech graph.
+- The fixed placement keeps input encoders, thinker and code2wav on GPU 0 and the talker on GPU 1. `TP1 = one thinker process` means the thinker is not split across GPUs. This two-GPU starting hypothesis is motivated by Step 3's different H200/TP2 experiment.
 - The fixed capacity leaves `32 − 8 = 24` requests of talker-cap headroom. No second pair is added before a queue is measured.
-- The first A/B changes only checkpoint precision. Choice A uses the default BF16 checkpoint; choice B uses the native FP8 checkpoint. Both use the same TP1 layout at `c = 8`. Five repeats make five runs per choice. INT4 needs separate memory and quality evidence and is not part of this A/B.
-- The first-audio record uses the median and a custom p90. For an odd number of results, the median is the middle first-audio value; for an even number, it is the mean of the two middle values. The stage calls it the middle result. Custom p90 means our own 90% cutoff, calculated by the off-stage procedure below rather than the shipped summary.
+- The first A/B changes only the precision used to store weights, using Step 6's BF16 and FP8 labels. Both choices use the same cards and the same eight requests. Five repeats make five runs per choice. INT4 needs separate memory and quality evidence and is not part of this A/B.
+- The first-audio record keeps two summaries of the same waits. The median is the middle wait, and p90 uses Step 3's definition. For an odd number of results, the median is the middle value; for an even number, it is the mean of the two middle values. The off-stage procedure below calculates p90 because the shipped summary does not provide it.
 - The other records are total time, playback stalls, failures, memory and raw per-run results. Output-quality checks run separately, following Ch. 8 Step 8; they sit outside generate-only.
 - The decision rule compares all records before keeping BF16 or switching to FP8. Any later change needs another comparison. No local model run has produced a measured winner. The closing line defines `queued audio` as sound waiting in the API process for the client to read, then asks what happens when that reader is too slow.
 
@@ -391,7 +391,7 @@ This headroom sits below the configured cap. It is not measured spare throughput
 
 ### Decision boundary
 
-This is a constructed TP1 starting hypothesis from H200/TP2 evidence, not a benchmark winner. INT4 is outside this first A/B; the chapter neither rejects it nor claims to have measured it. First resolve the configuration and run readiness. Then compare BF16 with native FP8 while holding the starting layout and Step 9's other controls fixed at target concurrency 8. With only `c = 8`, five repeats give five runs per arm. Off the stage, the shipped summary provides first-audio median, p95 and p99. For the custom p90 named on this slide, apply `numpy.percentile(..., 90)` to non-null `per_request.audio_ttfp_s` values from successful streaming requests, separately for each arm at `c = 8` (`benchmarks/metrics/performance.py:219-223,480`). Keep separate first-audio, total-time and listener results, and run the output-quality checks outside the generate-only sweep. Compare all records before keeping BF16 or switching to FP8; memory or quality can outweigh a first-audio gain. Retest after any later change.
+This is a constructed TP1 starting hypothesis from H200/TP2 evidence, not a benchmark winner. INT4 is outside this first A/B; the chapter neither rejects it nor claims to have measured it. First resolve the configuration and run readiness. The stage's BF16 and FP8 labels name weight precision. The actual choice A uses the default BF16 checkpoint, and choice B uses the native FP8 checkpoint. Hold the starting layout and Step 9's other controls fixed at target concurrency 8. With only `c = 8`, five repeats give five runs per arm. Off the stage, the shipped summary provides first-audio median, p95 and p99. For the p90 shown on this slide, apply `numpy.percentile(..., 90)` to non-null `per_request.audio_ttfp_s` values from successful streaming requests, separately for each arm at `c = 8` (`benchmarks/metrics/performance.py:219-223,480`). Keep separate first-audio, total-time and listener results, and run the output-quality checks outside the generate-only sweep. Compare all records before keeping BF16 or switching to FP8; memory or quality can outweigh a first-audio gain. Retest after any later change.
 
 ### Next
 
