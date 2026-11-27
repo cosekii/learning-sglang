@@ -699,35 +699,43 @@
           <text x="110" y="290" text-anchor="middle" class="small strong">B · [11,{FISH_NONSTREAM_B_FRAMES}]</text>
           <text x="110" y="318" text-anchor="middle" class="small">{FISH_NONSTREAM_B_FRAMES} {t('frames', '帧')}</text>
           <text x="110" y="387" text-anchor="middle" class="small">{t('Dual-AR is done', 'Dual-AR 已完成')}</text>
-          <line x1="194" y1="249" x2="216" y2="249" stroke="var(--accent)" stroke-width="2" marker-end="url(#fish-arrow)" />
-          <rect x="228" y="90" width="224" height="365" rx="12" fill="var(--bg)" stroke="var(--accent)" />
-          <text x="244" y="119" class="small strong">{t('PAD INTO ONE BATCH', '补位成一个 batch')}</text>
-          <text x="244" y="151" class="result">[{FISH_NONSTREAM_BATCH_SIZE},10,{FISH_NONSTREAM_PADDED_FRAMES}]</text>
-          <text x="244" y="195" class="small">A · 90 {t('real frames', '帧真实内容')}</text>
-          <rect x="244" y="208" width="135" height="30" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="244" y="267" class="small">B · 40 + 50</text>
-          <rect x="244" y="280" width="60" height="30" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <rect x="304" y="280" width="75" height="30" rx="5" fill="var(--bg)" stroke="var(--faint)" stroke-dasharray="5 4" />
-          <text x="244" y="340" class="small">90 − 40 = {FISH_NONSTREAM_B_PADDING_FRAMES} {t('padding frames', '帧补位')}</text>
-          <rect x="244" y="373" width="192" height="55" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="340" y="407" text-anchor="middle" class="small strong">1 vocoder {t('call', '次调用')}</text>
-          <line x1="456" y1="249" x2="476" y2="249" stroke="var(--accent)" stroke-width="2" marker-end="url(#fish-arrow)" />
-          <rect x="488" y="90" width="202" height="365" rx="12" fill="var(--bg)" stroke="var(--line)" />
-          <text x="504" y="119" class="small strong">{t('TRIM EACH OUTPUT', '裁切每份输出')}</text>
-          <rect x="504" y="145" width="170" height="108" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="589" y="175" text-anchor="middle" class="small strong">A · 90F</text>
-          <text x="589" y="203" text-anchor="middle" class="small">90 × 2,048</text>
-          <text x="589" y="231" text-anchor="middle" class="small">= {fmt(FISH_NONSTREAM_A_SAMPLES)} · ≈4.18 s</text>
-          <rect x="504" y="278" width="170" height="108" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="589" y="308" text-anchor="middle" class="small strong">B · 40F</text>
-          <text x="589" y="336" text-anchor="middle" class="small">40 × 2,048</text>
-          <text x="589" y="364" text-anchor="middle" class="small">= {fmt(FISH_NONSTREAM_B_SAMPLES)} · ≈1.86 s</text>
-          <text x="589" y="422" text-anchor="middle" class="small">{t('samples, after trimming', '裁切后的采样点')}</text>
-          <text x="360" y="477" text-anchor="middle" class="small">11→10: {t('drop raw token', '去掉原始 token')} · [requests, code rows, frames]</text>
-          <rect x="30" y="491" width="660" height="100" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="360" y="520" text-anchor="middle" class="small strong">{t('THIS ONE-WAY REQUEST IS DONE', '这条单向请求已完成')}</text>
-          <text x="360" y="543" text-anchor="middle" class="small">{t('audio input is still arriving · sound output is playing', '输入声音仍在到达 · 输出声音正在播放')}</text>
-          <text x="360" y="570" text-anchor="middle" class="result">{t('If audio keeps arriving, what must a session keep?', '如果声音持续到达，session 要保留什么？')}</text>
+          <g opacity={phase >= 1 ? 1 : 0.08} style="transition: opacity 350ms">
+            <line x1="194" y1="249" x2="216" y2="249" stroke="var(--accent)" stroke-width="2" marker-end="url(#fish-arrow)" />
+            <rect x="228" y="90" width="224" height="365" rx="12" fill="var(--bg)" stroke="var(--accent)" />
+            <text x="244" y="119" class="small strong">{t('PAD INTO ONE BATCH', '补位成一个 batch')}</text>
+            <text x="244" y="151" class="result">[{FISH_NONSTREAM_BATCH_SIZE},10,{FISH_NONSTREAM_PADDED_FRAMES}]</text>
+            <text x="244" y="195" class="small">A · 90 {t('real frames', '帧真实内容')}</text>
+            <rect x="244" y="208" width="135" height="30" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="244" y="267" class="small">B · 40 + 50</text>
+            <rect x="244" y="280" width="60" height="30" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <rect x="304" y="280" width="75" height="30" rx="5" fill="var(--bg)" stroke="var(--faint)" stroke-dasharray="5 4" />
+            <text x="244" y="340" class="small">90 − 40 = {FISH_NONSTREAM_B_PADDING_FRAMES} {t('padding frames', '帧补位')}</text>
+          </g>
+          <g opacity={phase >= 2 ? 1 : 0.06} style="transition: opacity 350ms">
+            <rect x="244" y="373" width="192" height="55" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="340" y="407" text-anchor="middle" class="small strong">1 vocoder {t('call', '次调用')}</text>
+          </g>
+          <g opacity={phase >= 3 ? 1 : 0.06} style="transition: opacity 350ms">
+            <line x1="456" y1="249" x2="476" y2="249" stroke="var(--accent)" stroke-width="2" marker-end="url(#fish-arrow)" />
+            <rect x="488" y="90" width="202" height="365" rx="12" fill="var(--bg)" stroke="var(--line)" />
+            <text x="504" y="119" class="small strong">{t('TRIM EACH OUTPUT', '裁切每份输出')}</text>
+            <rect x="504" y="145" width="170" height="108" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="589" y="175" text-anchor="middle" class="small strong">A · 90F</text>
+            <text x="589" y="203" text-anchor="middle" class="small">90 × 2,048</text>
+            <text x="589" y="231" text-anchor="middle" class="small">= {fmt(FISH_NONSTREAM_A_SAMPLES)} · ≈4.18 s</text>
+            <rect x="504" y="278" width="170" height="108" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="589" y="308" text-anchor="middle" class="small strong">B · 40F</text>
+            <text x="589" y="336" text-anchor="middle" class="small">40 × 2,048</text>
+            <text x="589" y="364" text-anchor="middle" class="small">= {fmt(FISH_NONSTREAM_B_SAMPLES)} · ≈1.86 s</text>
+            <text x="589" y="422" text-anchor="middle" class="small">{t('samples, after trimming', '裁切后的采样点')}</text>
+          </g>
+          <text x="360" y="477" text-anchor="middle" class="small" opacity={phase >= 1 ? 1 : 0.06} style="transition: opacity 350ms">11→10: {t('drop raw token', '去掉原始 token')} · [requests, code rows, frames]</text>
+          <g opacity={phase >= 3 ? 1 : 0.06} style="transition: opacity 350ms">
+            <rect x="30" y="491" width="660" height="100" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="360" y="520" text-anchor="middle" class="small strong">{t('THIS ONE-WAY REQUEST IS DONE', '这条单向请求已完成')}</text>
+            <text x="360" y="543" text-anchor="middle" class="small">{t('audio input is still arriving · sound output is playing', '输入声音仍在到达 · 输出声音正在播放')}</text>
+            <text x="360" y="570" text-anchor="middle" class="result">{t('If audio keeps arriving, what must a session keep?', '如果声音持续到达，session 要保留什么？')}</text>
+          </g>
         {:else}
           <rect x="18" y="82" width="264" height="128" rx="11" fill="var(--bg)" stroke="var(--line)" />
           <text x="32" y="109" class="small strong">{t('CONSTRUCTED · COMPLETED', '构造 · 已完成')}</text>
@@ -737,28 +745,36 @@
           <rect x="158" y="126" width="110" height="62" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="213" y="152" text-anchor="middle" class="small strong">B · [11,{FISH_NONSTREAM_B_FRAMES}]</text>
           <text x="213" y="176" text-anchor="middle" class="small">{FISH_NONSTREAM_B_FRAMES} {t('frames', '帧')}</text>
-          <line x1="150" y1="214" x2="150" y2="237" stroke="var(--accent)" stroke-width="2" marker-end="url(#fish-arrow)" />
-          <rect x="18" y="249" width="264" height="212" rx="11" fill="var(--bg)" stroke="var(--accent)" />
-          <text x="32" y="277" class="small strong">{t('PAD INTO ONE BATCH', '补位成一个 batch')}</text>
-          <text x="32" y="309" class="result">[{FISH_NONSTREAM_BATCH_SIZE},10,{FISH_NONSTREAM_PADDED_FRAMES}]</text>
-          <text x="32" y="343" class="small">A · 90 {t('real frames', '帧真实内容')}</text>
-          <rect x="32" y="356" width="216" height="25" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="32" y="410" class="small">B · 40 + 50 = 90</text>
-          <rect x="32" y="422" width="96" height="25" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <rect x="128" y="422" width="120" height="25" rx="5" fill="var(--bg)" stroke="var(--faint)" stroke-dasharray="5 4" />
-          <line x1="150" y1="465" x2="150" y2="488" stroke="var(--accent)" stroke-width="2" marker-end="url(#fish-arrow)" />
-          <rect x="18" y="500" width="264" height="58" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="150" y="536" text-anchor="middle" class="small strong">1 vocoder {t('call', '次调用')}</text>
-          <rect x="18" y="585" width="264" height="147" rx="11" fill="var(--bg)" stroke="var(--line)" />
-          <text x="32" y="613" class="small strong">{t('TRIM EACH OUTPUT', '裁切每份输出')}</text>
-          <text x="32" y="649" class="small">A · 90F = {fmt(FISH_NONSTREAM_A_SAMPLES)} · ≈4.18 s</text>
-          <text x="32" y="681" class="small">B · 40F = {fmt(FISH_NONSTREAM_B_SAMPLES)} · ≈1.86 s</text>
-          <text x="32" y="713" class="small">{t('samples · B loses 50 pad frames', '采样点 · B 裁掉 50 帧补位')}</text>
-          <text x="150" y="750" text-anchor="middle" class="small">11→10: {t('drop raw', '去原始行')} · [requests, rows, frames]</text>
-          <rect x="18" y="763" width="264" height="108" rx="11" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="150" y="790" text-anchor="middle" class="small strong">{t('ONE-WAY REQUEST DONE', '单向请求已完成')}</text>
-          <text x="150" y="817" text-anchor="middle" class="small">{t('audio in: arriving · sound out: playing', '输入声音仍到达 · 输出声音正播放')}</text>
-          <text x="150" y="848" text-anchor="middle" class="result">{t('What must a session remember?', '声音持续到达：session 保留什么？')}</text>
+          <g opacity={phase >= 1 ? 1 : 0.08} style="transition: opacity 350ms">
+            <line x1="150" y1="214" x2="150" y2="237" stroke="var(--accent)" stroke-width="2" marker-end="url(#fish-arrow)" />
+            <rect x="18" y="249" width="264" height="212" rx="11" fill="var(--bg)" stroke="var(--accent)" />
+            <text x="32" y="277" class="small strong">{t('PAD INTO ONE BATCH', '补位成一个 batch')}</text>
+            <text x="32" y="309" class="result">[{FISH_NONSTREAM_BATCH_SIZE},10,{FISH_NONSTREAM_PADDED_FRAMES}]</text>
+            <text x="32" y="343" class="small">A · 90 {t('real frames', '帧真实内容')}</text>
+            <rect x="32" y="356" width="216" height="25" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="32" y="410" class="small">B · 40 + 50 = 90</text>
+            <rect x="32" y="422" width="96" height="25" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <rect x="128" y="422" width="120" height="25" rx="5" fill="var(--bg)" stroke="var(--faint)" stroke-dasharray="5 4" />
+          </g>
+          <g opacity={phase >= 2 ? 1 : 0.06} style="transition: opacity 350ms">
+            <line x1="150" y1="465" x2="150" y2="488" stroke="var(--accent)" stroke-width="2" marker-end="url(#fish-arrow)" />
+            <rect x="18" y="500" width="264" height="58" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="150" y="536" text-anchor="middle" class="small strong">1 vocoder {t('call', '次调用')}</text>
+          </g>
+          <g opacity={phase >= 3 ? 1 : 0.06} style="transition: opacity 350ms">
+            <rect x="18" y="585" width="264" height="147" rx="11" fill="var(--bg)" stroke="var(--line)" />
+            <text x="32" y="613" class="small strong">{t('TRIM EACH OUTPUT', '裁切每份输出')}</text>
+            <text x="32" y="649" class="small">A · 90F = {fmt(FISH_NONSTREAM_A_SAMPLES)} · ≈4.18 s</text>
+            <text x="32" y="681" class="small">B · 40F = {fmt(FISH_NONSTREAM_B_SAMPLES)} · ≈1.86 s</text>
+            <text x="32" y="713" class="small">{t('samples · B loses 50 pad frames', '采样点 · B 裁掉 50 帧补位')}</text>
+          </g>
+          <text x="150" y="750" text-anchor="middle" class="small" opacity={phase >= 1 ? 1 : 0.06} style="transition: opacity 350ms">11→10: {t('drop raw', '去原始行')} · [requests, rows, frames]</text>
+          <g opacity={phase >= 3 ? 1 : 0.06} style="transition: opacity 350ms">
+            <rect x="18" y="763" width="264" height="108" rx="11" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="150" y="790" text-anchor="middle" class="small strong">{t('ONE-WAY REQUEST DONE', '单向请求已完成')}</text>
+            <text x="150" y="817" text-anchor="middle" class="small">{t('audio in: arriving · sound out: playing', '输入声音仍到达 · 输出声音正播放')}</text>
+            <text x="150" y="848" text-anchor="middle" class="result">{t('What must a session remember?', '声音持续到达：session 保留什么？')}</text>
+          </g>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t(`Completed: max ${FISH_NONSTREAM_MAX_BATCH} · wait up to ${FISH_NONSTREAM_WAIT_MS} ms`, `已完成：最多 ${FISH_NONSTREAM_MAX_BATCH} 个 · 最多等 ${FISH_NONSTREAM_WAIT_MS} ms`) : t(`Completed defaults: max ${FISH_NONSTREAM_MAX_BATCH}, wait up to ${FISH_NONSTREAM_WAIT_MS} ms for more. Streaming stays per request.`, `已完成请求默认最多 ${FISH_NONSTREAM_MAX_BATCH} 个，额外请求最多等 ${FISH_NONSTREAM_WAIT_MS} ms；流式 chunks 仍逐请求运行。`)}</text>
       {/if}
