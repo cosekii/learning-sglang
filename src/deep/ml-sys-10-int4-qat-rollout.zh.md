@@ -364,6 +364,6 @@ $K<C$ 只说明这些张量字节小于八卡总容量。KV cache 是保存旧 k
 
 ### 接下来
 
-本章在两条可见路径处收尾：训练使用 fake BF16 往返，rollout 使用真实 INT4 Marlin。后续第 13 章第 1 步把 rollout 扩展到一次工具调用：第二次模型调用需要 prompt、第一个动作和工具观察，共 $2+4+3=9$ 个上下文 token。
+本章在两条可见路径处收尾：训练使用 fake BF16 往返，rollout 使用真实 INT4 Marlin。按 ready 章节顺序，下一章是第 12 章。它的第 1 步回答舞台上的问题：target 每轮 RL 都会更新，在线训练的 draft 跟着变化中的 target 学习。
 
 来源：`Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:19-23,160-182`；Kimi-K2-Thinking `model.safetensors.index.json`（revision `a51ccc050d73dab088bf7b0e2dd9b30ae85a4e55`）的 `metadata.total_size`；`THUDM/slime@58525eb986c66a271aa31077e17b8afebe704b4f` 的 `run-kimi-k2-Thinking-int4.sh:119-139`。

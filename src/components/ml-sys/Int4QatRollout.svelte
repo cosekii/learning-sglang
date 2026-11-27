@@ -329,6 +329,7 @@
       { en: '594.206 < 1,128: checkpoint tensor bytes fit in total', zh: '594.206 < 1,128：checkpoint 张量总字节能放下' },
       { en: 'other runtime data still needs memory', zh: '其他运行数据仍需显存' },
       { en: 'TRAINING: fake BF16 round trip · ROLLOUT: real INT4 Marlin', zh: '训练：fake BF16 往返 · ROLLOUT：真实 INT4 Marlin' },
+      { en: 'Next: the target changes each RL round. How can a draft learn with it?', zh: '下一章：target 每轮 RL 都会更新，draft 怎样跟着它学习？' },
     ],
     mobile: {
       title: '8 GPUs hold tensor bytes', titleZh: '八卡装得下 checkpoint 张量字节',
@@ -347,6 +348,8 @@
         { en: '594.206 < 1,128: tensor bytes fit', zh: '594.206 < 1,128：张量字节能放下' },
         { en: 'Other runtime data still needs memory', zh: '其他运行数据仍需显存' },
         { en: 'TRAIN: fake BF16 · ROLLOUT: real INT4 Marlin', zh: '训练：fake BF16 · ROLLOUT：真实 INT4 Marlin' },
+        { en: 'Next: the target changes each RL round', zh: '下一章：target 每轮 RL 都会更新' },
+        { en: 'How can a draft learn with it?', zh: 'draft 怎样跟着它学习？' },
       ],
     },
   }];

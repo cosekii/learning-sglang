@@ -364,6 +364,6 @@ The article says “one node,” not one H200 card. The pinned recipe also assig
 
 ### Next
 
-The chapter closes on its two visible paths: training uses a fake BF16 round trip and rollout uses real INT4 Marlin. Later, Chapter 13 Step 1 extends rollout to one tool call: the second model call needs the prompt, first action and tool observation, totaling $2+4+3=9$ context tokens.
+The chapter closes on its two visible paths: training uses a fake BF16 round trip and rollout uses real INT4 Marlin. The ready next chapter is Chapter 12. Its Step 1 answers the stage question: the target changes between RL rounds, and online draft training learns alongside that changing target.
 
 Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:19-23,160-182`; Kimi-K2-Thinking `model.safetensors.index.json`, revision `a51ccc050d73dab088bf7b0e2dd9b30ae85a4e55`, `metadata.total_size`; `THUDM/slime@58525eb986c66a271aa31077e17b8afebe704b4f`, `run-kimi-k2-Thinking-int4.sh:119-139`.
