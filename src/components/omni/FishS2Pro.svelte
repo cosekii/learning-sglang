@@ -396,25 +396,31 @@
           <text x="84" y="336" class="small">{t('chooses no code', '不选择 code')}</text>
           <text x="70" y="381" class="small strong">calls 1–9 · {t('one new code each', '每次选一个新 code')}</text>
           {#each Array(FISH_FAST_REMAINING_ROWS) as _, i}
-            <rect x={70 + i * 29} y="400" width="24" height="47" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
-            <text x={82 + i * 29} y="429" text-anchor="middle" class="code">c{i + 1}</text>
+            <g opacity={phase > i ? 1 : 0.08} style="transition: opacity 250ms">
+              <rect x={70 + i * 29} y="400" width="24" height="47" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+              <text x={82 + i * 29} y="429" text-anchor="middle" class="code">c{i + 1}</text>
+            </g>
           {/each}
-          <text x="205" y="493" text-anchor="middle" class="result">{FISH_FAST_INITIAL_CALLS} + {FISH_FAST_REMAINING_ROWS} = {FISH_FAST_CALLS_PER_FRAME} Fast {t('calls', '次调用')}</text>
-          <text x="205" y="523" text-anchor="middle" class="small">{t('no call after code 9', 'code 9 之后没有调用')}</text>
+          <text x="205" y="493" text-anchor="middle" class="result">{FISH_FAST_INITIAL_CALLS} + {Math.min(phase, FISH_FAST_REMAINING_ROWS)} = {FISH_FAST_INITIAL_CALLS + Math.min(phase, FISH_FAST_REMAINING_ROWS)} Fast {t('calls', '次调用')}</text>
+          <text x="205" y="523" text-anchor="middle" class="small" opacity={phase >= FISH_FAST_REMAINING_ROWS ? 1 : 0.08} style="transition: opacity 250ms">{t('no call after code 9', 'code 9 之后没有调用')}</text>
           <rect x="410" y="88" width="280" height="508" rx="12" fill="var(--bg)" stroke="var(--line)" />
           <text x="428" y="117" class="small strong">{t('ONE FRAME IN THE ENGINE', 'ENGINE 里的一帧')}</text>
           <rect x="428" y="138" width="244" height="52" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="550" y="170" text-anchor="middle" class="small strong">row 0 · {t('raw token for next Slow', 'raw token 留给下次 Slow')}</text>
           <rect x="428" y="207" width="244" height="52" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="550" y="239" text-anchor="middle" class="small strong">row 1 · code 0</text>
-          <rect x="428" y="276" width="244" height="82" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="550" y="310" text-anchor="middle" class="small strong">rows 2–10</text>
-          <text x="550" y="339" text-anchor="middle" class="small">codes 1–9 · Fast AR</text>
-          <text x="550" y="399" text-anchor="middle" class="result">1 + 1 + 9 = {FISH_ENGINE_ROWS_PER_FRAME} {t('rows', '行')}</text>
-          <line x1="550" y1="416" x2="550" y2="450" stroke="var(--accent)" stroke-width="2" marker-end="url(#fish-arrow)" />
-          <rect x="428" y="462" width="244" height="93" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="550" y="491" text-anchor="middle" class="small strong">{t('vocoder skips that raw row', 'vocoder 不读这个原始行')}</text>
-          <text x="550" y="529" text-anchor="middle" class="result">1 + 9 = {VOC_FISH_CODEBOOK_ROWS} → vocoder</text>
+          <g opacity={phase >= FISH_FAST_REMAINING_ROWS ? 1 : 0.08} style="transition: opacity 300ms">
+            <rect x="428" y="276" width="244" height="82" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="550" y="310" text-anchor="middle" class="small strong">rows 2–10</text>
+            <text x="550" y="339" text-anchor="middle" class="small">codes 1–9 · Fast AR</text>
+            <text x="550" y="399" text-anchor="middle" class="result">1 + 1 + 9 = {FISH_ENGINE_ROWS_PER_FRAME} {t('rows', '行')}</text>
+          </g>
+          <g opacity={phase >= FISH_FAST_CALLS_PER_FRAME ? 1 : 0.06} style="transition: opacity 300ms">
+            <line x1="550" y1="416" x2="550" y2="450" stroke="var(--accent)" stroke-width="2" marker-end="url(#fish-arrow)" />
+            <rect x="428" y="462" width="244" height="93" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="550" y="491" text-anchor="middle" class="small strong">{t('vocoder skips that raw row', 'vocoder 不读这个原始行')}</text>
+            <text x="550" y="529" text-anchor="middle" class="result">1 + 9 = {VOC_FISH_CODEBOOK_ROWS} → vocoder</text>
+          </g>
         {:else}
           <rect x="18" y="82" width="264" height="73" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="150" y="112" text-anchor="middle" class="result" style="fill:var(--gen)">Slow AR · {t('one choice', '一个选择')}</text>
@@ -427,22 +433,28 @@
           <text x="44" y="293" class="small">{t('chooses no code', '不选择 code')}</text>
           <text x="32" y="337" class="small strong">calls 1–9 · {t('one code each', '每次一个 code')}</text>
           {#each Array(FISH_FAST_REMAINING_ROWS) as _, i}
-            <rect x={32 + i * 26} y="355" width="21" height="44" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
-            <text x={42.5 + i * 26} y="383" text-anchor="middle" class="code">c{i + 1}</text>
+            <g opacity={phase > i ? 1 : 0.08} style="transition: opacity 250ms">
+              <rect x={32 + i * 26} y="355" width="21" height="44" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+              <text x={42.5 + i * 26} y="383" text-anchor="middle" class="code">c{i + 1}</text>
+            </g>
           {/each}
-          <text x="150" y="438" text-anchor="middle" class="result">1 + 9 = {FISH_FAST_CALLS_PER_FRAME} Fast {t('calls', '次调用')}</text>
-          <text x="150" y="463" text-anchor="middle" class="small">{t('no call after code 9', 'code 9 后无调用')}</text>
+          <text x="150" y="438" text-anchor="middle" class="result">{FISH_FAST_INITIAL_CALLS} + {Math.min(phase, FISH_FAST_REMAINING_ROWS)} = {FISH_FAST_INITIAL_CALLS + Math.min(phase, FISH_FAST_REMAINING_ROWS)} Fast {t('calls', '次调用')}</text>
+          <text x="150" y="463" text-anchor="middle" class="small" opacity={phase >= FISH_FAST_REMAINING_ROWS ? 1 : 0.08} style="transition: opacity 250ms">{t('no call after code 9', 'code 9 后无调用')}</text>
           <rect x="18" y="510" width="264" height="331" rx="11" fill="var(--bg)" stroke="var(--line)" />
           <text x="32" y="537" class="small strong">{t('ENGINE · ONE FRAME', 'ENGINE · 一帧')}</text>
           <rect x="32" y="555" width="236" height="45" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="150" y="583" text-anchor="middle" class="small strong">row 0 · {t('raw token for next Slow', 'raw token 留给下次 Slow')}</text>
           <rect x="32" y="615" width="236" height="45" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="150" y="643" text-anchor="middle" class="small strong">row 1 · code 0</text>
-          <rect x="32" y="675" width="236" height="52" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="150" y="707" text-anchor="middle" class="small strong">rows 2–10 · codes 1–9</text>
-          <text x="150" y="763" text-anchor="middle" class="result">1 + 1 + 9 = {FISH_ENGINE_ROWS_PER_FRAME} {t('rows', '行')}</text>
-          <text x="150" y="798" text-anchor="middle" class="small strong">{t('vocoder skips raw row', 'vocoder 不读原始行')}</text>
-          <text x="150" y="826" text-anchor="middle" class="result">1 + 9 = {VOC_FISH_CODEBOOK_ROWS} → vocoder</text>
+          <g opacity={phase >= FISH_FAST_REMAINING_ROWS ? 1 : 0.08} style="transition: opacity 300ms">
+            <rect x="32" y="675" width="236" height="52" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="150" y="707" text-anchor="middle" class="small strong">rows 2–10 · codes 1–9</text>
+            <text x="150" y="763" text-anchor="middle" class="result">1 + 1 + 9 = {FISH_ENGINE_ROWS_PER_FRAME} {t('rows', '行')}</text>
+          </g>
+          <g opacity={phase >= FISH_FAST_CALLS_PER_FRAME ? 1 : 0.06} style="transition: opacity 300ms">
+            <text x="150" y="798" text-anchor="middle" class="small strong">{t('vocoder skips raw row', 'vocoder 不读原始行')}</text>
+            <text x="150" y="826" text-anchor="middle" class="result">1 + 9 = {VOC_FISH_CODEBOOK_ROWS} → vocoder</text>
+          </g>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Call 0 passes numbers; it chooses no code' : 'Fast call 0 passes Slow’s numbers into Fast AR. It does not choose a vocoder code.', phone ? '第 0 次调用只传数，不选 code' : 'Fast 第 0 次调用把 Slow 的数交给 Fast AR，不选择 vocoder code。')}</text>
       {:else if step === 4}
