@@ -71,7 +71,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived((phone ? [640, 720, 640, 700, 900, 620, 620] : [470, 520, 430, 450, 660, 430, 560])[step]);
+  const H = $derived((phone ? [640, 720, 640, 700, 900, 620, 620] : [470, 520, 430, 450, 520, 430, 520])[step]);
 
   const PHASE_COUNTS = [3, 5, 3, 5, 3, 3, 4];
   const PHASE_MS = 800;
@@ -89,9 +89,9 @@
     [{ x: 20, y: 78, w: 220, h: 300 }, { x: 300, y: 66, w: 400, h: 72 }, { x: 300, y: 156, w: 400, h: 72 }, { x: 300, y: 246, w: 400, h: 72 }, { x: 300, y: 336, w: 400, h: 72 }],
     [{ x: 20, y: 72, w: 300, h: 190 }, { x: 384, y: 96, w: 316, h: 140 }, { x: 384, y: 96, w: 316, h: 140 }],
     [{ x: 20, y: 76, w: 150, h: 66 }, { x: 204, y: 76, w: 176, h: 66 }, { x: 414, y: 76, w: 286, h: 66 }, { x: 20, y: 164, w: 370, h: 176 }, { x: 410, y: 164, w: 290, h: 150 }],
-    [{ x: 334, y: 170, w: 352, h: 64 }, { x: 334, y: 214, w: 352, h: 22 }, { x: 334, y: 242, w: 352, h: 110 }],
+    [{ x: 334, y: 158, w: 352, h: 60 }, { x: 334, y: 205, w: 352, h: 16 }, { x: 334, y: 224, w: 352, h: 94 }],
     [{ x: 20, y: 72, w: 240, h: 140 }, { x: 324, y: 72, w: 376, h: 140 }, { x: 20, y: 240, w: 680, h: 90 }],
-    [{ x: 20, y: 82, w: 510, h: 58 }, { x: 20, y: 154, w: 510, h: 58 }, { x: 20, y: 226, w: 510, h: 58 }, { x: 20, y: 298, w: 510, h: 58 }],
+    [{ x: 20, y: 80, w: 510, h: 52 }, { x: 20, y: 146, w: 510, h: 52 }, { x: 20, y: 212, w: 510, h: 52 }, { x: 20, y: 278, w: 510, h: 52 }],
   ])[s];
 
   let phase = $state(0);
@@ -397,54 +397,54 @@
           <text x="20" y="822" class="tag">{t('→ that term becomes a candidate', '→ 那个词条成为候选')}</text>
           <text x="20" y="844" class="tag">{t('only lines that fit the budget stay', '只留放得下的行')}</text>
         {:else}
-          <rect x="20" y="72" width="300" height="250" rx="10" fill="var(--bg)" stroke="var(--line)" />
-          <text x="34" y="96" class="rowlabel">≤ {VOXT_DICT_GLOSSARY_ALL_UP_TO} · {t('GLOSSARY IN SYSTEM', '术语表在 SYSTEM')}</text>
-          <rect x="34" y="108" width="272" height="104" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="48" y="128" class="detail">system</text>
-          <text x="48" y="150" class="detail">{t('general rules', '通用规则')}</text>
-          <text x="48" y="174" class="mono">- {VOXT_DICT_TERM} ({t('heard as', '可能被听成')}: {VOXT_DICT_ALIAS})</text>
-          <text x="48" y="196" class="mono">- {VOXT_DICT_SECOND_TERM}</text>
-          <rect x="34" y="224" width="272" height="70" rx="7" fill="var(--bg)" stroke="var(--line)" />
-          <text x="48" y="246" class="detail">user</text>
-          <text x="48" y="274" class="tag">call {VOXT_DICT_TERM}.</text>
+          <rect x="20" y="66" width="300" height="234" rx="10" fill="var(--bg)" stroke="var(--line)" />
+          <text x="34" y="88" class="rowlabel">≤ {VOXT_DICT_GLOSSARY_ALL_UP_TO} · {t('GLOSSARY IN SYSTEM', '术语表在 SYSTEM')}</text>
+          <rect x="34" y="98" width="272" height="100" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="48" y="116" class="detail">system</text>
+          <text x="48" y="136" class="detail">{t('general rules', '通用规则')}</text>
+          <text x="48" y="160" class="mono">- {VOXT_DICT_TERM} ({t('heard as', '可能被听成')}: {VOXT_DICT_ALIAS})</text>
+          <text x="48" y="182" class="mono">- {VOXT_DICT_SECOND_TERM}</text>
+          <rect x="34" y="206" width="272" height="82" rx="7" fill="var(--bg)" stroke="var(--line)" />
+          <text x="48" y="224" class="detail">user</text>
+          <text x="48" y="252" class="tag">call {VOXT_DICT_TERM}.</text>
 
-          <rect x="320" y="72" width="380" height="500" rx="10" fill="var(--bg)" stroke="var(--line)" />
-          <text x="334" y="96" class="rowlabel">&gt; {VOXT_DICT_GLOSSARY_ALL_UP_TO} · {t('GLOSSARY IN USER', '术语表在 USER')}</text>
-          <rect x="334" y="108" width="352" height="40" rx="7" fill="var(--bg)" stroke="var(--line)" />
-          <text x="348" y="126" class="detail">system</text>
-          <text x="348" y="144" class="detail">{t('generic rules only', '只有通用规则')}</text>
+          <rect x="320" y="66" width="380" height="400" rx="10" fill="var(--bg)" stroke="var(--line)" />
+          <text x="334" y="88" class="rowlabel">&gt; {VOXT_DICT_GLOSSARY_ALL_UP_TO} · {t('GLOSSARY IN USER', '术语表在 USER')}</text>
+          <rect x="334" y="98" width="352" height="38" rx="7" fill="var(--bg)" stroke="var(--line)" />
+          <text x="348" y="116" class="detail">system</text>
+          <text x="348" y="134" class="detail">{t('generic rules only', '只有通用规则')}</text>
 
-          <text x="334" y="162" class="tag strong">{t('A · input: call Priya.', 'A · 输入：call Priya.')}</text>
-          <rect x="334" y="170" width="352" height="64" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="348" y="188" class="detail">{t('compose', '组装')}</text>
-          <text x="348" y="208" class="tag">{t('input: ', '输入：')}<tspan class="mono">call {VOXT_DICT_TERM}.</tspan></text>
-          <text x="348" y="228" class="tag">{t('candidates: ', '候选：')}<tspan class="mono">{phase >= 1 ? VOXT_DICT_TERM : '—'}</tspan></text>
+          <text x="334" y="152" class="tag strong">{t('A · input: call Priya.', 'A · 输入：call Priya.')}</text>
+          <rect x="334" y="158" width="352" height="60" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="348" y="176" class="detail">{t('compose', '组装')}</text>
+          <text x="348" y="196" class="tag">{t('input: ', '输入：')}<tspan class="mono">call {VOXT_DICT_TERM}.</tspan></text>
+          <text x="348" y="214" class="tag">{t('candidates: ', '候选：')}<tspan class="mono">{phase >= 1 ? VOXT_DICT_TERM : '—'}</tspan></text>
 
-          <rect x="334" y="242" width="352" height="110" rx="7" fill="var(--bg)" stroke="var(--line)" />
-          <text x="348" y="260" class="detail">{t('user · message', 'user · 消息')}</text>
+          <rect x="334" y="224" width="352" height="94" rx="7" fill="var(--bg)" stroke="var(--line)" />
+          <text x="348" y="242" class="detail">{t('user · message', 'user · 消息')}</text>
           {#if phase >= 2}
-            <text x="348" y="282" class="mono">&lt;glossary&gt;</text>
-            <text x="348" y="302" class="detail">- {VOXT_DICT_TERM} ({t('heard as', '可能被听成')}: {VOXT_DICT_ALIAS})</text>
-            <text x="348" y="322" class="mono">&lt;/glossary&gt;</text>
-            <text x="348" y="348" class="tag">call {VOXT_DICT_TERM}.</text>
+            <text x="348" y="260" class="mono">&lt;glossary&gt;</text>
+            <text x="348" y="278" class="detail">- {VOXT_DICT_TERM} ({t('heard as', '可能被听成')}: {VOXT_DICT_ALIAS})</text>
+            <text x="348" y="296" class="mono">&lt;/glossary&gt;</text>
+            <text x="348" y="314" class="tag">call {VOXT_DICT_TERM}.</text>
           {:else}
-            <text x="348" y="288" class="tag">call {VOXT_DICT_TERM}.</text>
-            <text x="348" y="310" class="detail">{t('no glossary line yet', '还没有术语表行')}</text>
+            <text x="348" y="266" class="tag">call {VOXT_DICT_TERM}.</text>
+            <text x="348" y="288" class="detail">{t('no glossary line yet', '还没有术语表行')}</text>
           {/if}
 
-          <text x="334" y="370" class="tag strong">{t('B · input: call Sam.', 'B · 输入：call Sam.')}</text>
-          <rect x="334" y="378" width="352" height="64" rx="7" fill="var(--bg)" stroke="var(--line)" />
-          <text x="348" y="396" class="detail">{t('compose', '组装')}</text>
-          <text x="348" y="416" class="tag">{t('input: ', '输入：')}<tspan class="mono">call Sam.</tspan></text>
-          <text x="348" y="436" class="tag">{t('candidates: none', '候选：无')}</text>
+          <text x="334" y="332" class="tag strong">{t('B · input: call Sam.', 'B · 输入：call Sam.')}</text>
+          <rect x="334" y="338" width="352" height="60" rx="7" fill="var(--bg)" stroke="var(--line)" />
+          <text x="348" y="355" class="detail">{t('compose', '组装')}</text>
+          <text x="348" y="375" class="tag">{t('input: ', '输入：')}<tspan class="mono">call Sam.</tspan></text>
+          <text x="348" y="393" class="tag">{t('candidates: none', '候选：无')}</text>
 
-          <rect x="334" y="450" width="352" height="80" rx="7" fill="var(--bg)" stroke="var(--line)" />
-          <text x="348" y="468" class="detail">{t('user · message', 'user · 消息')}</text>
-          <text x="348" y="490" class="tag">call Sam.</text>
-          <text x="348" y="512" class="detail">{t('no glossary: no term named', '没有术语表：没点到词条')}</text>
+          <rect x="334" y="404" width="352" height="62" rx="7" fill="var(--bg)" stroke="var(--line)" />
+          <text x="348" y="422" class="detail">{t('user · message', 'user · 消息')}</text>
+          <text x="348" y="442" class="tag">call Sam.</text>
+          <text x="348" y="460" class="detail">{t('no glossary: no term named', '没有术语表：没点到词条')}</text>
 
-          <text x="20" y="600" class="tag">{t('≤30: all terms · >30: the text names a term or its alias', '≤30：全部词条 · >30：点名词条或它的别名')}</text>
-          <text x="20" y="622" class="tag">{t('→ that term becomes a candidate; only lines that fit stay', '→ 那个词条成为候选；只留放得下的行')}</text>
+          <text x="20" y="476" class="tag">{t('≤30: all terms · >30: the text names a term or its alias', '≤30：全部词条 · >30：点名词条或它的别名')}</text>
+          <text x="20" y="492" class="tag">{t('→ that term becomes a candidate; only lines that fit stay', '→ 那个词条成为候选；只留放得下的行')}</text>
         {/if}
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('compose.Build · GlossaryAllUpTo 30', 'compose.Build · GlossaryAllUpTo 30') : t('Source: compose.Build · GlossaryAllUpTo 30', '出处：compose.Build · GlossaryAllUpTo 30')}</text>
 
@@ -518,25 +518,25 @@
           <text x="34" y="496" class="rowlabel">{t('the recording → history', '录音 → 历史')}</text>
           <text x="34" y="526" class="tag strong">{t('kept for how long?', '留多久？')}</text>
         {:else}
-          <text x="624" y="72" text-anchor="middle" class="detail">{t('model off', '模型关掉')}</text>
+          <text x="624" y="70" text-anchor="middle" class="detail">{t('model off', '模型关掉')}</text>
           {#each [
-            { y: 82, name: t('speech hints', '语音提示'), without: true, note: t('from the term', '来自词条') },
-            { y: 154, name: t('alias → term', '别名 → 词条'), without: true, note: t('before cleanup', '清理之前') },
-            { y: 226, name: t('glossary', '术语表'), without: false, note: t('inside the prompt', '在提示里') },
-            { y: 298, name: t('dictionary notes', '全词典备注'), without: false, note: t('inside the prompt', '在提示里') },
+            { y: 80, name: t('speech hints', '语音提示'), without: true, note: t('from the term', '来自词条') },
+            { y: 146, name: t('alias → term', '别名 → 词条'), without: true, note: t('before cleanup', '清理之前') },
+            { y: 212, name: t('glossary', '术语表'), without: false, note: t('inside the prompt', '在提示里') },
+            { y: 278, name: t('dictionary notes', '全词典备注'), without: false, note: t('inside the prompt', '在提示里') },
           ] as r, i}
             {@const solved = phase >= i}
-            <rect x="20" y={r.y} width="510" height="58" rx="8" fill="var(--bg)" stroke="var(--line)" />
-            <text x="34" y={r.y + 24} class="tag strong">{r.name}</text>
-            <text x="34" y={r.y + 45} class="detail">{r.note}</text>
-            <rect x="548" y={r.y} width="152" height="58" rx="8" fill={solved ? (r.without ? 'var(--gen-soft)' : 'var(--faint)') : 'var(--bg)'} stroke={solved ? (r.without ? 'var(--gen)' : 'var(--line)') : 'var(--line)'} />
-            <text x="624" y={r.y + 36} text-anchor="middle" class="tag strong" fill={solved ? (r.without ? 'var(--gen)' : 'var(--muted)') : 'var(--line)'}>{solved ? (r.without ? '✓' : '✗') : '·'}</text>
+            <rect x="20" y={r.y} width="510" height="52" rx="8" fill="var(--bg)" stroke="var(--line)" />
+            <text x="34" y={r.y + 21} class="tag strong">{r.name}</text>
+            <text x="34" y={r.y + 43} class="detail">{r.note}</text>
+            <rect x="548" y={r.y} width="152" height="52" rx="8" fill={solved ? (r.without ? 'var(--gen-soft)' : 'var(--faint)') : 'var(--bg)'} stroke={solved ? (r.without ? 'var(--gen)' : 'var(--line)') : 'var(--line)'} />
+            <text x="624" y={r.y + 33} text-anchor="middle" class="tag strong" fill={solved ? (r.without ? 'var(--gen)' : 'var(--muted)') : 'var(--line)'}>{solved ? (r.without ? '✓' : '✗') : '·'}</text>
           {/each}
-          <text x="20" y="390" class="tag">{t('Hints and alias replacement run outside the language model, so they survive its failure.', '提示和别名替换在语言模型之外运行，所以模型失败也还在。')}</text>
-          <text x="20" y="414" class="tag">{t('The master dictionary switch turns all four off.', '词典总开关一关，四个都不走。')}</text>
-          <rect x="20" y="436" width="680" height="86" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-dasharray="5 4" />
-          <text x="34" y="462" class="rowlabel">{t('the recording → history', '录音 → 历史')}</text>
-          <text x="34" y="492" class="tag strong">{t('kept for how long?', '留多久？')}</text>
+          <text x="20" y="356" class="tag">{t('Hints and alias replacement run outside the language model, so they survive its failure.', '提示和别名替换在语言模型之外运行，所以模型失败也还在。')}</text>
+          <text x="20" y="380" class="tag">{t('The master dictionary switch turns all four off.', '词典总开关一关，四个都不走。')}</text>
+          <rect x="20" y="402" width="680" height="86" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-dasharray="5 4" />
+          <text x="34" y="428" class="rowlabel">{t('the recording → history', '录音 → 历史')}</text>
+          <text x="34" y="458" class="tag strong">{t('kept for how long?', '留多久？')}</text>
         {/if}
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('recording → history: next chapter', '录音 → 历史：下一章') : t('The recording and its history are next. Source: session/cleanup.go spoken()', '接下来看录音和历史。出处：session/cleanup.go spoken()')}</text>
       {/if}
