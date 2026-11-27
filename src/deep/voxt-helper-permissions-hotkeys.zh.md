@@ -4,6 +4,7 @@
 
 ### 图上是什么
 
+- 画面分相形成：先出现按键，再是 helper，再是消息框；三个字段逐行到达，最后 Go app 开始。
 - 你按一下 `Right ⌥`：右 Option，默认的 Transcribe 快捷键。左 Option 不匹配这个默认绑定。
 - Swift helper：听按键的辅助程序。它认出这次点击，不在这步采集声音。
 - 一条 JSON 消息：JSON 给每项信息附上名字和对应内容。图里分三行读出三个字段，右边配上大白话，实际传输仍是一行；蓝色框和箭头表示消息从 helper 到 Go app。
@@ -58,6 +59,7 @@ helper 要能看见全局按键，需要 macOS 允许。下一步把权限检查
 
 ### 图上是什么
 
+- 两幅图先只出现标题；左图再分相演示被拦下的路线：按键、Mac 设置、红叉、零条消息，随后右图演示消息送达的路线。
 - 两幅图使用同一个 `Right ⌥ Option`，Go app 起初都空闲；只改变 Accessibility。
 - Accessibility：Mac 的「辅助功能」权限。它允许 helper 看见你在其他 app 里按的键，不是麦克风权限。
 - 左图 `OFF`：没有这项权限，helper 的全局按键监听没有装上，所以它看不见这次按键，发出 **0 条** `hotkey.event`，Go app 仍空闲。红色叉号表示这条路线断开。
@@ -115,6 +117,7 @@ helper 用 `AXIsProcessTrusted()` 读取 Accessibility 状态。macOS 把它归�
 
 ### 图上是什么
 
+- 两幅图先只出现标题；左图再分相演示被拒绝的请求，随后右图演示声音送回 Go app。
 - 两幅图都保持 Accessibility 开启，所以 helper 能看见按键；这一步只改变麦克风权限。
 - `capture.start`：Go app 发给 helper 的请求，意思是「请开始录音」。蓝色箭头表示请求从 Go app 到 helper。
 - 左图麦克风权限未开启：Mac 挡住声音，helper 返回 `permission_denied`，意思是「权限被拒绝」；录音没有开始。

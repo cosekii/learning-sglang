@@ -4,6 +4,7 @@
 
 ### On the stage
 
+- The picture builds in phases: the tap appears first, then the helper, then the message box, whose three field rows arrive one at a time, and finally the Go app's start.
 - You tap `Right ⌥`: Right Option, the default Transcribe shortcut. Left Option does not match this default binding.
 - Swift helper: the companion program that listens for the key. It recognizes this tap and does not capture audio in this step.
 - One JSON message: JSON gives each fact a name and a matching value. The stage reads three fields on separate rows with plain-language meanings, while the transport still uses one line. The blue box and arrows show the message moving from the helper to the Go app.
@@ -58,6 +59,7 @@ Public baseline: `sglang-omni@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`. Paths a
 
 ### On the stage
 
+- Both panels appear with their titles first. The OFF panel then plays the blocked route in phases: tap, Mac setting, red cross, zero messages. The ON panel plays the delivered route after it.
 - Both panels use the same `Right ⌥ Option` tap, and both Go apps start idle. Only Accessibility changes.
 - Accessibility: the Mac permission that lets the helper see keys you press in other apps. It is not microphone permission.
 - Left, `OFF`: without this permission, the helper's global key listener is not installed. It cannot see this tap, emits **0** `hotkey.event` messages, and leaves the Go app idle. The red cross marks the broken route.
@@ -115,6 +117,7 @@ Public baseline: `sglang-omni@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`. Paths a
 
 ### On the stage
 
+- Both panels appear with their titles first. The OFF panel then plays the refused request, and the ON panel plays the sound returning to the Go app.
 - Accessibility stays on in both panels, so the helper can see keys. Only Microphone permission changes here.
 - `capture.start`: the request from the Go app to the helper, meaning "please start recording." The blue arrow shows that request.
 - Left, Microphone permission is off: macOS blocks sound, the helper returns `permission_denied`, meaning "permission was refused," and recording does not start.

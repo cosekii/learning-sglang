@@ -2854,3 +2854,33 @@ npx astro dev stop
 
 - Step 3 易读 **12/12**：R1「晚到的 A 想写进 B，检查一看 A 不等于 B，就把 A 挡回它自己的小窗；B 自己就能写进去」；R2 只新增「同一 session 检查」一件事（A/B/session/结果小窗均在 Steps 1–2 建立）；R6 一次只出现一组框、当前相高亮。Step 4 易读 **12/12**：R1「你按取消，A 就被标记成已取消，晚到的结果到不了屏幕，保存记录写着已取消、结果是空的」；R2 只新增「取消」一件事；R3 `cancelled/empty` 在保存记录框里直写中文「已取消／结果文字：空」。冷读洞 **0**。
 - **Voxt-01 的 Steps 1–4 现已全部过程化并通过上述检查**，按协调要求报备覆盖完成，是否核销 Voxt-01 由协调固定复审决定。Voxt 10 的 P1／P2 仍未动。
+
+---
+
+# lane d 本轮报告 · Voxt 02 Steps 1–3 过程化（Voxt-02 覆盖完成）
+
+日期：2026-11-27。类型：下一个 P0（direction 的 Voxt 01 单元在 `057e633` 已提交并推送，本轮按次序取 Voxt 书的下一个开放 P0 Voxt-02：02/1–3 按键消息与权限结果静态）。
+
+## 改动（教程 4 文件，同一提交）
+
+- `HelperPermissionsHotkeys.svelte`：三步全部由静态终态改为相位过程，与 OneDictation 同一机制（ANIMATED／PHASE_COUNTS=[7,9,5]、900 ms/相、循环、LoopProgress、reduced-motion 落末相、`data-animation-step/phase/final-phase`）。Step 1 七相：按键 → helper → 消息框 → `method=hotkey.event` → `binding=transcribe/0`＋`/0` 白话 → `phase=trigger` → Go app `idle → START`（框随 `INTRO=[0,1,2,6]` 出现，箭头随目标框同相出现）。Step 2 九相：两面板先只出标题 → 左面板按键→MAC OFF→红叉＋看不见→0 条消息＋仍空闲 → 右面板按键→MAC ON→看见按键→1 条消息＋开始（阻断与通过分别上演）。Step 3 五相：两面板先只出标题 → 左 `capture.start`→麦克风被挡＋`permission_denied` → 右同一请求→声音经 helper→录音开始。Steps 2–3 不加 accent 当前相高亮：红／蓝已承担阻断／接通的语义。
+- 修一处既有手机重叠（探针实证）：en 390 px 的 `binding=transcribe/0` 与右侧 `default dictation key` 同行相撞（静态版已存在，旧检查未覆盖到）；手机版该字段释义改为独占一行居中，`phase=trigger` 行下移 7 px，桌面不变。
+- 双语 deep：三步的 On the stage／图上是什么各补一句相位顺序；aria-label 由静态描述改为双语过程描述。MDX 出处段无需改。
+
+## 硬门（全过）
+
+- `npm run build` 60 页；`BOOK=voxt ONLY=2` transcript 3 步无报告项；readability 3 步 0 机械问题；`BOOK=voxt` deep-check ok、zh-check all clear；mobile 英 360/390/430 与中文 STEP 1–3 字号门均 no layout breaks；`git diff --check` 干净。
+
+## 逐相机制审计（探针 `/tmp/lsd-voxt02-probe.mjs`，未提交，`scripts/lib/browser.mjs` 可重跑）
+
+- 矩阵：英中 × 1440 桌面／390 手机 × Step 1 direct、Steps 2–3 direct＋前步入口 ＝ **140 个相位状态、968 项断言、0 失败，exit=0**。每相断言本相新增文本在场、未来文本缺席（精确 `<text>` 计数）、最低可见字号 ≥10 CSS px、文字出 SVG 0、文字重叠 0、`data-animation-phase` 与读到的一致（相位与 DOM 原子读取，规避圈边竞态）。
+- 探针先实证 exit=1：抓出上面的手机重叠和探针自身的圈边竞态（修后全过）。截图在 `/tmp/lsd-voxt02-shots/`（每状态末相 PNG）；本模型无图像输入，视觉 verdict 留协调侧。
+
+## 自评（Steps 1–3）
+
+- Step 1 易读 **12/12**：R1「按一下键，helper 把它包成一条消息，Go app 读了就开始」；R2 只新增「消息」一件事（session、路线在第 1 章建立）；R6 一相只多一个框或一行字段。Step 2 **12/12**：R1「没开 Accessibility，helper 看不见键，什么消息也没有；开了，同一个键就到了」；两面板同布局同尺，只改设置。Step 3 **12/12**：R1「麦克风权限管声音不管键：拒绝就回 permission_denied，允许声音才回去」；左拒绝右通过分别上演。冷读洞 **0**（Accessibility、麦克风权限、capture.start、permission_denied 均在本步图上有白话）。
+- **Voxt-02 的 Steps 1–3 现已全部过程化并通过上述检查**，是否核销由协调固定复审决定。Voxt-03 及以后 P0、Voxt 10 的 P1／P2 未动。
+
+## 环境备注
+
+- 本 clone 的 `node_modules` 原是指向 `~/code/learning-sglang/node_modules` 的符号链接（build 因此 EPERM）。只删掉了本目录里的符号链接本身并 `npm install` 出本目录自己的依赖；协调 checkout 未进、未改，事后确认其 node_modules 完好。
