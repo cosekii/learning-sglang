@@ -214,7 +214,7 @@
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{phone ? t('speech: 7 boxes/processes · text: 6 boxes, 1 process', '语音：七框七进程 · 文字：六框一进程') : t('Each speech box is one process. Text-only keeps all six stages in one process.', '语音部署每个 stage 框是一个进程；纯文字部署的六个 stage 同住一个进程。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Stage processes only; no HTTP server or coordinator.', '只数 stage 进程，不数 HTTP server 和 coordinator。') : t('Stage processes only; the HTTP server and coordinator are not counted.', '只数 stage 进程，不数 HTTP server 和 coordinator。')}</text>
       {:else if step === 1}
-        <text x={phone ? 15 : 20} y="24" class="rowlabel">{t(phase < 2 ? '1 of 5 · MAP THE FIVE DEPLOYMENT CHOICES' : '1 of 5 · ROUTE · THE REQUEST CHOOSES ITS OUTPUT ROUTE', phase < 2 ? '1/5 · 五个部署选择' : '1/5 · 输出路线 · 请求选择自己的输出路线')}</text>
+        <text x={phone ? 15 : 20} y="24" class="rowlabel">{t(phase < 2 ? '1 of 5 · MAP THE FIVE DEPLOYMENT CHOICES' : phone ? '1/5 · ROUTE · REQUEST OUTPUT' : '1 of 5 · ROUTE · THE REQUEST CHOOSES ITS OUTPUT ROUTE', phase < 2 ? '1/5 · 五个部署选择' : phone ? '1/5 · 输出路线 · 请求的输出' : '1/5 · 输出路线 · 请求选择自己的输出路线')}</text>
         <text x={phone ? 15 : 20} y="49" class="tag">modalities = {t('the output kinds you ask for', '你要求的输出种类')}</text>
         <text x={phone ? 15 : 20} y="72" class="tag">{phone ? t('blue = route · grey = not loaded or skipped', '蓝 = 路线 · 灰字 = 未加载或跳过') : t('blue = active route · grey text = speech stages not loaded or skipped', '蓝 = 实际路线 · 灰字 = 未加载或跳过的语音 stage')}</text>
         {#if phase < 2}
