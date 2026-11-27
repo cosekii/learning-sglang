@@ -113,8 +113,8 @@ $$w=0.35\rightarrow q=4\rightarrow\hat{w}=0.40$$
 
 ### 图上是什么
 
-- 左卡是后续计算传回的 `grad_output`。
-- 中间蓝色虚线卡是 STE 捷径，输出同一个 `grad_output`，不经过舍入的真实导数。
+- 标题下先解释：梯度就是权重该往哪个方向改、改多少。左卡的 `grad_output` 是后续计算传回的这份更新方向。
+- 中间蓝色虚线卡是 STE 捷径，输出同一个 `grad_output`，不经过舍入的真实导数。STE 全称 straight-through estimator。
 - 右卡是收到梯度的 BF16 模型参数，因此仍能更新。前向的 $0.35\rightarrow0.40$ 误差保持不变。
 
 ### 公式与符号

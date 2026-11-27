@@ -113,8 +113,8 @@ Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:37-49,63-78`; `THUDM
 
 ### On the stage
 
-- The left card receives `grad_output` from later computation.
-- The dashed blue STE card returns the same `grad_output` without using rounding's ordinary derivative.
+- The subtitle defines a gradient as the direction and amount for changing a weight. The left card receives that update direction as `grad_output` from later computation.
+- The dashed blue STE card returns the same `grad_output` without using rounding's ordinary derivative. STE means straight-through estimator.
 - The right BF16 model-weight card receives that gradient and can update. The forward error from 0.35 to 0.40 remains.
 
 ### Formula and symbols
