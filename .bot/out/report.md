@@ -3384,3 +3384,8 @@ npx astro dev stop
 
 - 自评 R6：8/8 步机制动画（每步 ≥2 个机制状态，矩阵逐相核对）；R1–R5 内容未动，维持原分。是否核销 Voxt-03 由协调固定复审决定；本模型无图像输入，视觉 verdict 留协调侧。
 - 遗留：Voxt 01 deep 的 360 px 长路径横溢（en +23／zh +34 px）仍未修，已在上轮记录备协调编号。`node_modules` 本轮又是指向协调 checkout 的符号链接，仍只删本目录符号链接并本地 `npm install`，未进入或修改协调 checkout。
+
+## Voxt 03 追加修复（同轮，deep-slide 对齐）
+
+- 复审指出 Step 1 deep 把切分线写成蓝色，但组件用 `var(--line)`（灰 `#e6e3db`）渲染。已把 `voxt-microphone-to-voice-frames.en.md:10` 改为 Grey dashed lines、`.zh.md:10` 改为灰色虚线；蓝色仅指帧框，与台上一致。
+- 复跑：build 60 页、deep-check 03 ok、zh-check all clear、transcript 无 diff、Step 1 deep 横溢探针（英中 × 桌面/360/390/430）all clear。

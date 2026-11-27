@@ -7,7 +7,7 @@
 - The microphone supplies continuous sound. The helper, introduced in Ch. 2, is the actor doing the cutting.
 - The blue waveform shows sound strength changing over time. The horizontal axis is time; movement away from the quiet centre line represents a stronger positive or negative measurement, not steadily increasing loudness.
 - `ms` means milliseconds: 1,000 ms = 1 second, so 100 ms = 0.1 seconds.
-- An audio frame is one short time slice of sound. Blue dashed lines mark the cuts; blue boxes show the ten resulting frames in order.
+- An audio frame is one short time slice of sound. Grey dashed lines mark the cuts; blue boxes show the ten resulting frames in order.
 - `frame 0` through `frame 9` are sequence numbers, starting at zero. Frame 0 holds 0–100 ms, frame 1 holds 100–200 ms, and the last holds 900–1000 ms.
 - The equation divides total duration by frame duration: one second contains ten 0.1-second slices, so it produces ten frames.
 
