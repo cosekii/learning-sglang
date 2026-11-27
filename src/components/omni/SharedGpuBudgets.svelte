@@ -42,8 +42,8 @@
     caption: 'Two replicas alias one checkpoint, but keep two private KV pools. Each pool has an explicit 30,000-token cap.',
     captionZh: '两个副本共用一份权重，各留一个 KV 池。每个池明确申报 30000 token 上限。',
   }, {
-    caption: 'Two eligible processes join one MPS lease on this GPU. A tensor-parallel process does not join.',
-    captionZh: '两个合格进程加入同一份 MPS 租约。TP 进程不能加入。',
+    caption: 'Two eligible processes join the MPS service; their pipeline holds one lease on this GPU. A tensor-parallel process does not join.',
+    captionZh: '两个合格进程加入 MPS 服务，pipeline 持有本卡一份租约。TP 进程不能加入。',
   }, {
     caption: 'One request owns the GPU while one component stays resident. The other two sleep until their turn.',
     captionZh: '一个请求占用 GPU，一件组件常驻。另外两件休眠，轮到自己再唤醒。',

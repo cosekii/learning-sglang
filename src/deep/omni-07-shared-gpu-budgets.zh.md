@@ -247,7 +247,7 @@ weight sharing 要求 process 中恰好一个 SGLang engine stage，并要求显
 
 ## 第 5 步 · MPS 管进程执行，不改显存加法
 
-> **一句话：** 两个合格的单卡非 TP 进程在同一物理 GPU 上可加入一份 pipeline MPS 租约，TP 进程不加入。
+> **一句话：** 两个合格的单卡非 TP 进程加入同一物理 GPU 的 MPS 服务，所在 pipeline 持有一份租约；TP 进程不加入。
 
 ### 图上是什么
 

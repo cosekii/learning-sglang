@@ -247,7 +247,7 @@ Step 5 enables MPS. It manages process attachment for execution and leaves the e
 
 ## Step 5 · MPS manages process execution, not memory arithmetic
 
-> **In one sentence:** Two eligible single-GPU, non-TP processes can join one pipeline MPS lease on a physical GPU; a TP process does not join.
+> **In one sentence:** Two eligible single-GPU, non-TP processes join the MPS service on one physical GPU; their pipeline holds one lease; a TP process does not join.
 
 ### What the picture shows
 

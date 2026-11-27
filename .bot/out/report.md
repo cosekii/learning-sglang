@@ -28,6 +28,41 @@
 
 ---
 
+# lane k1 本轮报告 · Omni 07 Step 5 的 MPS 租约归属纠正
+
+日期：2026-11-27。类型：修旧。本轮开始 HEAD 与 `origin/tutorials` 均为 `a033e92`，工作树干净；该提交已有 direction 指定的七相 MPS lease 动画。本轮只修正独立冷读发现的归属错误，不重写待复审批次，不开 Step 6。范围为 Step 5 双语 caption、双语 deep 一句话摘要、生成 transcript、定向审计和本报告；MDX、动画相位、其他章、其他书、`.bot/memory/` 和第 1 本受保护英文原文均未改。
+
+## 修复与 finding
+
+- 原 caption 和 deep 摘要把两个 client 写成加入 pipeline 的 lease，归属对象错误。现改为两个合格进程加入 **MPS 服务**，所在 **pipeline 持有一份租约**；TP 进程不加入。中英文同步，deep 仍各为一句话。
+- 舞台既有顺序不变：两个合格进程解析到同一物理 UUID 的教学值 `GPU-A`，TP 与跨卡进程在租约前排除，pipeline 取得一份租约，client 带 `t0`／`t1` 加入服务并核对，最后 `2 GiB → 2 GiB` 证明 KV 申报不变。租约仍只表示执行共享，不表示共享显存、私有 KV 或整卡所有权。
+- **Omni-11 的 Step 5 作者定点修正完成，待协调固定复审，不自行销项。** Step 6、Omni-21／26／31／64、共享 ML-21／22 与其他 finding 未改，不申报整章 GO。
+
+## 作者评分与独立冷读
+
+| 步 | R1–R5 | 机制 R6 | 原十个非视觉项 | 新内容洞 | R1 小学生复述 |
+|---|---:|---:|---:|---:|---|
+| 5 | 10/10 | 2/2（DOM） | 20/20 | 0 | 两个合格进程加入 MPS 服务，所在 pipeline 持有一份租约；TP 和跨卡进程被排除，KV 申报不变。 |
+
+- 独立 `general` 冷读首轮 **FAIL**，指出 client 的加入对象写错；修正后复审指出双语「一句话」摘要变成两句。再把句末改为分号，终审 **PASS**。该结论只覆盖本步归属、格式和易读性，不是协调 verdict。
+- 当前模型不能读取 PNG，工具明确返回不支持图像输入。因此原 #4/#5、视觉验收和整章结论留待协调与主人，不声称看过图片或视觉通过。
+
+## 硬门与证据
+
+- 最终 `npm run build`：**60 页**通过；Step 5 `readability`：**0 机械问题**；`BOOK=omni node scripts/deep-check.mjs 07`、4522 上的 `zh-check`、英中全章 360／390／430 px `mobile`、中文 Step 5 字号门和 `git diff --check` 全过。
+- transcript 连续两次 SHA-256 均为 `b4e40aa85432f1b230f56341b8bc2ec0da3cd2f1989819fa5a3cdb3483619e00`，**1,823 词**。无 caption、文字出界、重叠或文本规则报告。
+- 可重跑脚本 `.bot/out/omni11-step5-audit.mjs`。最终结果 `.bot/out/omni11-step5-audit/report.json`：英中桌面、英中 360／390／430 px × direct／前步入口，共 **16 组合、112 状态、96/96 个机制转变、8 个 deep**。逐相核对 UUID 教学值、TP／跨卡排除、GPU 组、一份 pipeline lease、加入箭头、名牌匹配和 KV 对照。普通舞台最低 **10.760 CSS px**，重叠、SVG 出界、页面横溢和 `failures` 均为 0。
+- 同一审计保存 **112 张相位图＋8 张 deep 图，共 120 张 PNG**。八个双语 deep 视图均 `aria-expanded=true`，无 KaTeX 错误、raw math、页面或 deep 横溢。drawer 打开后的缩舞台最低 **6.857 CSS px**，仍归共享 ML-21／22，本单元未改共享组件。代表图：`.bot/out/omni11-step5-audit/en-1440-direct-p6.png`、`.bot/out/omni11-step5-audit/zh-390-previous-p6.png`。
+- 首轮探针的数字正则和末相断言写错，导致等待超时及误报；修正探针后完整重跑，最终运行零失败。未把探针问题记成教程缺陷。
+
+## 剩余与清理
+
+- 剩余事项是 Omni-11 Step 6、独立 Omni-21／26／31／64、共享 ML-21／22、原 #4/#5、具备图像能力的复审和主人最终视觉验收。没有提前关闭任何 finding。
+- 未跑全站回归、真实 SGLang-Omni、模型、GPU 或 reduced-motion 动态切换。最新回归只有 `(exit 13)`，没有可分配布局步骤。
+- 本 clone 的 `node_modules` 开始时再次指向协调人 checkout；只删除本目录内的符号链接并在本目录 `npm install`，package 文件无 diff，未写协调人的 checkout。
+- 本轮检查地址为 `http://localhost:4522/learning-sglang/omni/ch/07-shared-gpu-budgets/?step=5`。收尾已停止本轮 pid 56524，4522 无监听；`pgrep -P 1 -fl 'headless=new.*cdp-'` 无输出，未动其他 lane 的服务或浏览器。
+---
+
 # lane k1 本轮报告 · Omni 07 Step 5 的 Omni-11 MPS lease 形成
 
 日期：2026-11-27。类型：修旧。本轮开始 HEAD 与 `origin/tutorials` 均为 `7c98efc`，工作树干净；direction 指定的 Step 4 已在该提交完成并推送，因此不返工待复审批次，按 direction 承接下一最小单元 Step 5。范围只有本步组件、双语 MDX 与 deep、生成 transcript、本章评分卡、定向审计和本报告；Steps 1–4 与 Step 6、其他章、其他书、`.bot/memory/` 和第 1 本受保护英文原文均未改。
