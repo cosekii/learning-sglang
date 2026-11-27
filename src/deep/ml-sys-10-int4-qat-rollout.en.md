@@ -278,14 +278,15 @@ Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:80-103`; `THUDM/slim
 
 ## Step 8 · Store INT4 and compute in BF16 with W4A16
 
-**One sentence.** Marlin undoes the packing offset to recover signed codes, dequantizes weights to BF16 for matrix multiplication, and accumulates products in FP32 inside that instruction.
+**One sentence.** Marlin undoes the packing offset to recover signed codes and dequantizes weights to BF16 for matrix multiplication; separately, FP32 accumulates products inside that instruction.
 
 ### On the stage
 
 - The unpack card computes `field − 8`, undoing Step 6's offset to recover the signed code.
 - The BF16 weight card multiplies the signed code by its scale. It does not multiply the nonnegative packed field directly by that scale.
 - The BF16 multiplication card receives BF16 activations as its other input. Activations are values produced during computation.
-- The FP32 inner-total card covers only this matrix instruction's product sum. It does not imply FP32 for every later reduction or the final output.
+- The FP32 running-sum card appears separately. It keeps a running product sum in 32-bit values only inside this matrix instruction, not for every later reduction or the final output.
+- The first three lines below the cards follow W4A16. The last two introduce FP32 accumulation and its boundary as a separate detail.
 
 ### Formula and symbols
 
