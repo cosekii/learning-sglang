@@ -425,6 +425,7 @@ Step 8 follows an accepted response. The router's `DirectResponseBody` lets down
 - The teaching example has three frames. Frame one has reached the client, while two remain upstream. These are HTTP body data frames, not the mel audio frames from Step 4.
 - `DirectResponseBody` wraps the worker's `reqwest::Body` inside the downstream `axum::Body`. It retains the request lease from Step 7 but starts no extra body pump, application queue or relay task.
 - When downstream polls the router, the adapter directly polls its inner body. The result can be `Pending`, one data frame, EOF or an error; this loop does not gather several frames per invocation.
+- The animation sends one client poll, then one inner poll, returns frame two to the router, then delivers it to the client. The counts change from one delivered plus two upstream to two delivered plus one upstream; the adapter queue stays zero throughout.
 - If downstream is not polling, this adapter does not poll its inner body by itself. Read demand travels back toward the upstream producer, providing response backpressure.
 
 ### Work through the numbers
@@ -441,14 +442,18 @@ The teaching example has total frame count $T=3$ and delivered count $D=1$, leav
 
 $$U=T-D=3-1=2$$
 
+After the animation's poll delivers frame two, $D'=2$ and the remaining upstream count is:
+
+$$U'=T-D'=3-2=1$$
+
 | Symbol | Meaning | Source |
 |---|---|---|
 | $P$ | One downstream poll in this example | One constructed invocation |
 | $F$ | Data frames returned by that poll | Zero for `Pending`, one for a ready data frame |
 | $Q$ | Application queues added by this response adapter | Zero in the direct-body structure |
 | $T$ | Total data frames in the teaching example | Three constructed frames |
-| $D$ | Frames delivered downstream | Frame one in the figure |
-| $U$ | Frames still upstream | Three minus one gives two |
+| $D$ | Frames delivered downstream before the poll | Frame one in the initial figure; $D'=2$ afterward |
+| $U$ | Frames still upstream before the poll | Three minus one gives two; $U'=1$ afterward |
 
 $Q=0$ describes this adapter's structure. It is not a latency measurement or a claim that the whole network stack has no buffering. $0\leq F\leq1$ constrains one `poll_frame()` invocation, not the full response length.
 

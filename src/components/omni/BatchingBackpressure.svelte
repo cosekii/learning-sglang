@@ -162,9 +162,9 @@
     { x: phone ? 15 : 375, y: phone ? 400 : 92, kind: 'coordinator', title: t('COORDINATOR · before pipeline submit', 'COORDINATOR · 交给 pipeline 之前') },
   ]);
   const relayNodes = $derived([
-    { title: 'WORKER', subtitle: 'reqwest::Body', detail: t(`${RELAY_UPSTREAM_FRAME_COUNT} frames still upstream`, `${RELAY_UPSTREAM_FRAME_COUNT} 帧仍在上游`) },
+    { title: 'WORKER', subtitle: 'reqwest::Body', detail: t(`${phase >= 4 ? RELAY_UPSTREAM_FRAME_COUNT - 1 : RELAY_UPSTREAM_FRAME_COUNT} frames still upstream`, `${phase >= 4 ? RELAY_UPSTREAM_FRAME_COUNT - 1 : RELAY_UPSTREAM_FRAME_COUNT} 帧仍在上游`) },
     { title: 'ROUTER', subtitle: 'DirectResponseBody', detail: t(`own app queue = ${RELAY_ADAPTER_QUEUE_COUNT}`, `自己的应用队列 = ${RELAY_ADAPTER_QUEUE_COUNT}`) },
-    { title: 'CLIENT', subtitle: t('downstream consumer', '下游消费者'), detail: t(`frame ${RELAY_DELIVERED_FRAME_COUNT} delivered`, `已收到第 ${RELAY_DELIVERED_FRAME_COUNT} 帧`) },
+    { title: 'CLIENT', subtitle: t('downstream consumer', '下游消费者'), detail: t(`frame ${phase >= 4 ? RELAY_DELIVERED_FRAME_COUNT + 1 : RELAY_DELIVERED_FRAME_COUNT} delivered`, `已收到第 ${phase >= 4 ? RELAY_DELIVERED_FRAME_COUNT + 1 : RELAY_DELIVERED_FRAME_COUNT} 帧`) },
   ].map((node, index) => ({
     ...node,
     x: phone ? 30 : 20 + index * 245,
@@ -427,22 +427,26 @@
         <text x={node.x + 14} y={node.y + 54} class="mono strong">{node.subtitle}</text>
         <text x={node.x + 14} y={node.y + 82} class="tag">{node.detail}</text>
         {#if node.title === 'ROUTER'}
-          <text x={node.x + 14} y={node.y + 103} class="tag">poll_frame() → inner.poll_frame()</text>
+          <text x={node.x + 14} y={node.y + 103} class="tag">{phase >= 2 ? 'poll_frame() → inner.poll_frame()' : phase >= 1 ? 'poll_frame() · received' : 'poll_frame() · waiting'}</text>
+        {:else if node.title === 'WORKER'}
+          <text x={node.x + 14} y={node.y + 103} class="tag">{phase >= 3 ? 'frame 2 → router' : phase >= 2 ? 'inner.poll_frame() called' : 'waiting for inner poll'}</text>
+        {:else}
+          <text x={node.x + 14} y={node.y + 103} class="tag">{phase >= 4 ? 'frame 2 delivered' : phase >= 1 ? 'poll_frame() sent' : 'waiting to poll'}</text>
         {/if}
       {/each}
       {#if phone}
-        <path d="M85 224 V252" stroke="var(--accent)" stroke-width="2" marker-end="url(#batch-arrow)" />
-        <path d="M85 384 V412" stroke="var(--accent)" stroke-width="2" marker-end="url(#batch-arrow)" />
-        <path d="M215 256 V228" stroke="var(--gen)" stroke-width="2" marker-end="url(#batch-arrow-gen)" />
-        <path d="M215 416 V388" stroke="var(--gen)" stroke-width="2" marker-end="url(#batch-arrow-gen)" />
+        <path d="M85 224 V252" stroke="var(--accent)" stroke-width="2" marker-end="url(#batch-arrow)" opacity={phase >= 3 ? 1 : 0.15} />
+        <path d="M85 384 V412" stroke="var(--accent)" stroke-width="2" marker-end="url(#batch-arrow)" opacity={phase >= 4 ? 1 : 0.15} />
+        <path d="M215 256 V228" stroke="var(--gen)" stroke-width="2" marker-end="url(#batch-arrow-gen)" opacity={phase >= 2 ? 1 : 0.15} />
+        <path d="M215 416 V388" stroke="var(--gen)" stroke-width="2" marker-end="url(#batch-arrow-gen)" opacity={phase >= 1 ? 1 : 0.15} />
       {:else}
-        <path d="M214 170 H257" stroke="var(--accent)" stroke-width="2" marker-end="url(#batch-arrow)" />
-        <path d="M459 170 H502" stroke="var(--accent)" stroke-width="2" marker-end="url(#batch-arrow)" />
-        <path d="M261 220 H218" stroke="var(--gen)" stroke-width="2" marker-end="url(#batch-arrow-gen)" />
-        <path d="M506 220 H463" stroke="var(--gen)" stroke-width="2" marker-end="url(#batch-arrow-gen)" />
+        <path d="M214 170 H257" stroke="var(--accent)" stroke-width="2" marker-end="url(#batch-arrow)" opacity={phase >= 3 ? 1 : 0.15} />
+        <path d="M459 170 H502" stroke="var(--accent)" stroke-width="2" marker-end="url(#batch-arrow)" opacity={phase >= 4 ? 1 : 0.15} />
+        <path d="M261 220 H218" stroke="var(--gen)" stroke-width="2" marker-end="url(#batch-arrow-gen)" opacity={phase >= 2 ? 1 : 0.15} />
+        <path d="M506 220 H463" stroke="var(--gen)" stroke-width="2" marker-end="url(#batch-arrow-gen)" opacity={phase >= 1 ? 1 : 0.15} />
       {/if}
       <text x={W / 2} y={phone ? 570 : 316} text-anchor="middle" class="mono strong">{RELAY_POLL_COUNT} {t('downstream poll', '次下游 poll')} → {RELAY_POLL_COUNT} {t('upstream poll', '次上游 poll')} → ≤ {RELAY_MAX_FRAMES_PER_POLL} {phone ? t('frame', '帧数据') : t('data frame', '帧数据')}</text>
-      <text x={W / 2} y={phone ? 596 : 344} text-anchor="middle" class="tag">{RELAY_TEACHING_FRAME_COUNT} {t('frames', '帧')} = {RELAY_DELIVERED_FRAME_COUNT} {t('delivered', '帧已交付')} + {RELAY_UPSTREAM_FRAME_COUNT} {t('upstream', '帧在上游')}</text>
+      <text x={W / 2} y={phone ? 596 : 344} text-anchor="middle" class="tag">{RELAY_TEACHING_FRAME_COUNT} {t('frames', '帧')} = {phase >= 4 ? RELAY_DELIVERED_FRAME_COUNT + 1 : RELAY_DELIVERED_FRAME_COUNT} {t('delivered', '帧已交付')} + {phase >= 4 ? RELAY_UPSTREAM_FRAME_COUNT - 1 : RELAY_UPSTREAM_FRAME_COUNT} {t('upstream', '帧在上游')}</text>
       <text x={W / 2} y={phone ? 624 : 374} text-anchor="middle" class="tag strong">{t('No body pump · no application queue · no extra relay task', '不加 body pump · 不加应用队列 · 不加转发任务')}</text>
       <text x={W / 2} y={phone ? 650 : 402} text-anchor="middle" class="tag">{phone ? t('Adapter queue = 0 · socket and worker buffers remain', '队列是 0 只指这个转接框；socket 和 worker 仍可缓冲。') : t('Queue zero covers this adapter; socket and worker buffers can remain.', '队列是 0 只指这个转接框；socket 和 worker 仍可缓冲。')}</text>
       <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{phone ? t('Response relay only · upload/worker queues are separate', '这里只讲响应转发，不讲分类上传缓冲或 worker 内部队列。') : t('This is response relay, not classified-upload buffering or a worker-stage queue.', '这里只讲响应转发，不讲分类上传缓冲或 worker 内部队列。')}</text>
