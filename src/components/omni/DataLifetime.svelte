@@ -22,8 +22,8 @@
     caption: "The SHM receiver copies the bytes, then closes its handle and unlinks the block's name. It rebuilds from the copy and acknowledges before scheduling.",
     captionZh: '接收方复制 SHM 字节，再关闭句柄、移除共享块名字。随后用副本还原、回 ACK，再交给 scheduler。',
   }, {
-    caption: 'The sender finishes the SHM operation after the ACK. It returns a write permit, then removes pending.',
-    captionZh: 'ACK 到了，发送方才让 SHM 操作收尾。先归还一个写入名额，再删除 pending。',
+    caption: 'The sender finishes the SHM put after the ACK. Its wait returns a write permit in finally, then the watcher removes pending.',
+    captionZh: 'ACK 到了，发送方才让 SHM put 收尾。等待在 finally 归还写入名额，watcher 再删除 pending。',
   }];
   let step = $state(0);
   $effect(() => {

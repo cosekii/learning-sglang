@@ -4,6 +4,9 @@
 
 ## 本轮记录
 
+- 修旧 Learning SGLang Omni 第 5 章 Steps 4–5 的 Omni-50：Step 4 以七相上演 `get_async → ShmGetOperation`、等待内复制、close/unlink、接收空间返回、副本还原和成功 ACK；Step 5 以六相上演 `pending.ack.set_result`、receiver done、等待内 `finally: sem.release` 和最后的 pending 删除。教程提交 `ac65a00`，Step 5 caption 与证据另随本单元收尾；Omni-50 待协调固定复审，不自行销项。Steps 1–3 未改，Omni-09 保持开放。
+- Steps 4／5 作者参考值均为 R1–R5 **10/10**、机制 R6 **2/2**、原十个非视觉项 **20/20**、新内容洞 **0**，独立 `explore` 冷读最终 **PASS**。`build`（60 页）、五步 `readability`、transcript（1,213 词，`95f15493…bd78`）、`deep-check 05`、`zh-check`、英中全章与中文 Steps 4／5 三宽度 `mobile`、`git diff --check` 全过。动画矩阵 **12 组合、78 状态、66/66 转变**，最低 **11.760 CSS px**；双语 deep **12 视图**。桌面抽屉缩舞台与焦点仍属共享 ML-21／22。当前模型不能读 PNG，视觉与整章 verdict 待协调；未跑全站回归或真实 SHM 传输。本轮类型：**修旧**；下一单元先处理同章 P0 Omni-09（Steps 1–3），再按协调顺序处理 Omni-51。
+
 - 修旧 Learning ML Systems 第 7 章 Step 7 的 ML-50：保留 7.047→2.202 秒和 33 ms 拆解，新增首次通信与 warm-up 的先后对照，并在同一秒数比例上补 1B 约 0.5 秒、8B 约 0.6 秒；双语 deep 与 MDX 补齐 barrier 调用、CI 设备边界和 `readme.md:1061-1093`。教程提交 `e8a69d1` 待协调固定复审，不自行销项；ML-55 和其他开放项未改，未开第 14 章。
 - Step 7 作者参考值为 R1–R5 **10/10**、机制 R6 **2/2**、原十个非视觉项 **20/20**、0 新内容洞，独立 `explore` 冷读 **PASS**。`build`（60 页）、Step 7 `readability`、两次哈希一致的 `transcript`（2,072 词，`1086e264…e021`）、`deep-check 07`、`zh-check`、英中全章与中文 Step 7 三宽度 `mobile`、`git diff --check` 全过；定向审计 **36 个状态、30/30 个机制转变、4 个 deep 状态**，最低 **10.14125 CSS px**，四条时间柱同尺验算通过，重叠和出界为 0。当前模型不能读 PNG，视觉、原 #4/#5 和整章 verdict 待协调；固定 `4c4a536` 的整章 NO-GO 基线不变。本轮类型：**修旧**。
 

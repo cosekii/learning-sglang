@@ -11,7 +11,7 @@
 | 4 | 12 | 接收方照小卡片取回并还原 A，读完先回一张 ACK，再把 A 交给后面计算。 | 24 | 0 | — | 2026-11-25 |
 | 5 | 12 | 发送方用 A 的名字找到等待记录，等操作收尾后删掉记录，后端才可以回收资源。 | 24 | 0 | — | 2026-11-25 |
 
-**当前平均：24.00 / 24；最低：24；已制作步总洞数：0；5/5 步易读满分。** 本章依次讲清安全复用、DataRef、发布时的 pending、读取后的 ACK 和发送方收尾；ACK 只表示数据平面读取结束，资源释放只承诺到「后端可回收」。
+**2026-11-25 旧评分卡平均：24.00 / 24；最低：24；当时制作步总洞数：0；5/5 步易读满分。** 本章依次讲清安全复用、DataRef、发布时的 pending、读取后的 ACK 和发送方收尾。后续独立复核新增 Omni-09／50，旧分不关闭这些 finding，也不作为当前整章 GO。
 
 ## 冷读与整改记录
 
@@ -19,3 +19,18 @@
 - 中文冷读把含混的「主人」统一为「发送方」，补上 `version = 1` 的「格式」含义，并把「线格式」「删除 sender 数据」改成自然中文。最终主线程换视角逐洞复读：每步的动机、名词、数字来源、图上因果、前后衔接和省略边界都能在本步、前序章或深入讲解中找到答案；中英内容洞与最终显示洞均为 **0**，遮住 caption 后仍可复述。
 - 两次独立 subagent 冷读均因 `Invalid or unauthorized API key` 未运行，未产生独立报告；最终冷读按 `EVAL.md` 的换视角自检由主线程完成，不声称通过独立冷读。
 - 最终检查：`build`、本章 `transcript`、全章 `readability`、`deep-check 05`、本章 `zh-check`、中英三种手机宽度 `mobile`、上述 SVG 溢出审计、双语抽屉 `aria-expanded=true` 及 `git diff --check` 均通过。只跑本章检查，未跑全站回归。
+
+## 2026-11-27 · Omni-50 作者复评（待协调固定复审）
+
+| 步 | R1–R5 /10 | 机制 R6 /2 | 原十个非视觉项 /20 | R1 小学生复述 | 新内容洞 |
+|---|---:|---:|---:|---|---:|
+| 4 | 10 | 2 | 20 | 接收方先把 SHM 字节复制到自己的空间，再关句柄、去掉共享块名字；还原用副本，不再读旧名字。 | 0 |
+| 5 | 10 | 2 | 20 | 回执到了，发送方才让 SHM put 收尾；等待内部归还一个写入名额，watcher 再删等待记录。 | 0 |
+
+- Step 4 用七相依次形成解析、`get_async → ShmGetOperation`、等待内复制、等待内 close/unlink、接收空间返回、用副本还原、成功 ACK。Step 5 用六相形成 ACK 匹配、`pending.ack.set_result`、`mark_receiver_done`、`wait_for_completion`、其 `finally: sem.release`、`pending.pop(A)`。未完成阶段显示等待状态，不提前显示完成标签。
+- 独立 `explore` 冷读首轮提出五项机制问题，随后提出 ACK 提前完成一项；修正后最终 **PASS**。这是作者复评和独立源码／transcript／DOM 冷读，不是协调 verdict；Omni-50 不自行销项。
+- 最终 `npm run build`：60 页通过；五步 `readability`：0 机械问题；`BOOK=omni node scripts/deep-check.mjs 05`、`zh-check`、英中全章 360／390／430 px `mobile`、中文 Steps 4／5 字号门与 `git diff --check` 全过。transcript 为 **1,213 词**，SHA-256 `95f15493306158f1eb7f6ecbf5674e4d6fb306435eb61d0b1a147002e183bd78`。
+- `.bot/out/omni50-phase-audit.mjs` 覆盖 Steps 4／5 × 英文桌面／中文桌面／中文 390 px × 直接 URL／前步入口，共 **12 组合、78 状态、66/66 机制转变**。最低 **11.760 CSS px**，重叠、SVG 出界、页面横溢均为 0；提前完成标签断言也通过。代表图：`.bot/out/omni50-s4-endesktop-direct/s4-p3.png`、`.bot/out/omni50-s5-zh390-direct/s5-p4.png`。
+- `.bot/out/omni50-deep-audit.mjs` 在 360／390／1440 px 覆盖双语 Steps 4／5，共 **12 个打开抽屉视图**；目标文本、`aria-expanded=true`、页面和抽屉横溢、KaTeX 与 raw-math 检查通过。桌面抽屉打开后的舞台最低 **8.006 CSS px**，且焦点记录为空，归既有共享 ML-21／22，本单元未改也不声称这两项通过。
+- 当前模型不能读取 PNG；结论来自构建、transcript、源码、独立冷读、DOM 与几何检查，未声称看过图片或视觉通过。未跑全站回归、真实 SGLang-Omni、SHM 进程间传输、模型、GPU 或 reduced-motion 动态切换。
+- **Omni-09 保持开放。** 本单元只把 Steps 4／5 改为机制动画，Steps 1–3 未改，不能把 Omni-50 的完成当成 Omni-09 全章动画完成。
