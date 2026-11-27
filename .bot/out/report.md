@@ -157,6 +157,24 @@
 
 ---
 
+# lane d 本轮报告 · Voxt 10 displayed Step 3 机制动画
+
+日期：2026-11-27。类型：新步（一个 Step 一个提交；Step 1 的 P2 继续押后）。改动只有 `FileTranscription.svelte` 的 Step 3（组件内 step 2）动画与生成 transcript；caption、deep、MDX、数字均未改。
+
+## 提交
+
+- `e02da4c`：**Voxt 10 displayed Step 3 机制动画完成，待协调固定复审，不自行销项。** Step 3 原为静态图，现按同款模式循环四相：命令＋`transcribe.sock`＋运行中的 Voxt → JSON 请求行（`op`＋字节数）→ PCM 条「还在发送」→ 回复逐段回来（两个 `segment`＋`done`+句数）与图例行。末相同时看到 PCM 还在发送和回复已回来，对应 deep 的「边收边切句、识别」。桌面与手机分支同相序；`STEP_PHASES` 扩到 step 2，reduced motion 停末相。
+
+## 硬门与证据
+
+- `npm run build` **60 页**通过；`BOOK=voxt ONLY=10 STEP=3 npm run readability` **0 机械问题**；`deep-check 10`、英中全章 360／390／430 px `mobile`、`STEP=3 LANG=zh` 中文字号门、`zh-check`（`all clear`）全过；transcript 重生成，Step 3 新增 `loops` 行、末相内容完整，无 caption／出界／重叠报告。
+- 机制矩阵（DOM，无图像输入）：英文桌面直接 `?step=3`、中文桌面直接、中文 390×844 直接、英文桌面前步经 Next 进入、中文桌面前步进入、中文 390×844 前步进入，共 **6 组 × 2 状态**。六组均为 phase 1（路线＋请求行，无 PCM／回复）与 phase 3（PCM 还在发送＋回复已回）两个不同机制状态，counter 均 `03 / 11`。探针脚本 `/tmp/ls-d-probe6.mjs`。
+- Step 3 作者复评（协调基线不改写）：R1–R5 **10/10**、机制 R6 **2/2**（DOM 证据，未见图）、原十个非视觉项 **20/20**（#4／#5 待视觉复核）。R1 小学生复述：「命令先告诉运行中的 Voxt 要转多少字节，再把声音从本机 socket 送过去；声音还没送完，识别好的句子就一行一行回来了。」冷读洞 **0**（socket 由 subtitle「同一台 Mac 上两个程序之间的一扇门」解释，JSON 字段由图例行解释）。截图存档（未能读取）：`/tmp/ls-d-s3/zh-390.png`。环境同上轮；**未声称看过图片或视觉通过；未跑全站回归、真实 Voxt 或主人最终验收。**
+
+## 剩余
+
+- Step 1 的 P2（115.2 MB 可感比较、decoded 白话）按 TASK 顺序排在新步之后；下一单元为 Voxt 10 displayed Step 4。
+
 # lane d 本轮报告 · Voxt 10 displayed Step 2 机制动画
 
 日期：2026-11-27。类型：新步（复审指定的下一最小单元，一个 Step 一个提交；Step 1 的 P2 按 TASK 顺序继续押后）。改动只有 `FileTranscription.svelte` 的 Step 2（组件内 step 1）动画与生成 transcript；caption、deep、MDX、数字均未改，其余步、章、书、`.bot/memory/` 和第 1 本受保护英文原文未动。
