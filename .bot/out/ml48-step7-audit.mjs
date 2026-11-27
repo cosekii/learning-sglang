@@ -1,0 +1,201 @@
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { launch, sleep } from '../../scripts/lib/browser.mjs';
+
+const base = (process.env.BASE || 'http://localhost:4527/learning-sglang').replace(/\/$/, '');
+const out = process.env.OUT || '.bot/out/ml48-step7-audit';
+const states = [];
+const deepStates = [];
+const failures = [];
+let mechanismTransitions = 0;
+mkdirSync(out, { recursive: true });
+const check = (condition, message) => { if (!condition) failures.push(message); };
+const has = (state, text) => state.texts.some((line) => line.includes(text));
+
+const inspect = `(() => {
+  const root = document.querySelector('.viz');
+  const svg = root?.querySelector('svg');
+  if (!root || !svg) return { missing: true };
+  const visible = (el) => {
+    const rect = el.getBoundingClientRect();
+    if (!rect.width || !rect.height) return false;
+    for (let node = el; node instanceof SVGElement; node = node.parentElement) {
+      const style = getComputedStyle(node);
+      if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) return false;
+    }
+    return true;
+  };
+  const texts = [...svg.querySelectorAll('text')].filter(visible).map((el) => {
+    const rect = el.getBoundingClientRect();
+    const ctm = el.getScreenCTM();
+    return {
+      text: el.textContent.trim().replace(/\\s+/g, ' '),
+      left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom,
+      size: ctm ? parseFloat(getComputedStyle(el).fontSize) * Math.hypot(ctm.b, ctm.d) : 0,
+    };
+  });
+  const svgRect = svg.getBoundingClientRect();
+  const overflow = texts.filter((t) => t.left < svgRect.left - 1 || t.right > svgRect.right + 1).map((t) => t.text);
+  const overlaps = [];
+  for (let i = 0; i < texts.length; i++) for (let j = i + 1; j < texts.length; j++) {
+    const a = texts[i], b = texts[j];
+    if (Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1) overlaps.push([a.text, b.text]);
+  }
+  return {
+    step: root.getAttribute('data-animation-step'),
+    phase: root.getAttribute('data-animation-phase'),
+    finalPhase: root.getAttribute('data-animation-final-phase'),
+    counter: document.querySelector('.counter')?.textContent.trim().replace(/\\s+/g, ' '),
+    deepExpanded: document.querySelector('button.deep')?.getAttribute('aria-expanded'),
+    texts: texts.map((t) => t.text),
+    minFont: texts.length ? Math.min(...texts.map((t) => t.size)) : 0,
+    overflow, overlaps,
+    pageOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+  };
+})()`;
+
+async function openStep(page, lang, entry) {
+  const url = `${base}/ml-sys/ch/06-slime-rollout-loop/?step=${entry === 'direct' ? 7 : 6}`;
+  await page.goto(url);
+  await page.evaluate(`localStorage.setItem('lang', '${lang}'); localStorage.setItem('deep', '0')`);
+  await page.goto(url);
+  await sleep(400);
+  if (entry === 'previous') { await page.press('ArrowRight'); await sleep(250); }
+}
+
+async function capture(page, combo, phase) {
+  const name = `${combo.lang}-${combo.width}-${combo.entry}-p${phase}`;
+  let state;
+  for (let i = 0; i < 240; i++) {
+    state = await page.evaluate(inspect);
+    if (state.step === '6' && state.phase === String(phase) && state.counter === '07 / 08') break;
+    await sleep(50);
+  }
+  await sleep(120);
+  state = await page.evaluate(inspect);
+  check(state.step === '6' && state.phase === String(phase) && state.finalPhase === '7' && state.counter === '07 / 08', `${name}: wrong identity`);
+  check(state.deepExpanded === 'false', `${name}: deep drawer is open`);
+  check(state.minFont >= 10, `${name}: minimum font ${state.minFont}`);
+  check(!state.overflow.length && !state.overlaps.length && !state.pageOverflow, `${name}: geometry failed`);
+  check(!has(state, 'raw_reward'), `${name}: raw_reward appeared on stage`);
+  check(has(state, '32 GROUPS') || has(state, '32 组'), `${name}: input groups missing`);
+  if (phase >= 1) check(has(state, 'CONTROLLER') || has(state, '控制器'), `${name}: controller missing`);
+  if (phase >= 2) {
+    check(has(state, 'TRAIN_DATA') || has(state, '训练数据'), `${name}: train_data missing`);
+    check(has(state, 'tokens · lengths · rewards') || has(state, 'token · 长度 · 分数'), `${name}: field summary missing`);
+    check(has(state, 'global batch'), `${name}: global batch missing`);
+  }
+  if (phase === 3) {
+    check(has(state, 'FIVE JOBS') || has(state, '五项工作'), `${name}: five-job map missing`);
+    check(has(state, 'main loop waits') || has(state, '主循环等待'), `${name}: main-loop wait missing`);
+    check(has(state, 'MEGATRON'), `${name}: Megatron backend missing`);
+    check(has(state, 'PACK'), `${name}: pack missing`);
+    check(!has(state, 'ACTOR LOSS') && !has(state, 'weights v0 →'), `${name}: later training results appeared early`);
+  }
+  if (phase === 4) {
+    check(has(state, 'ACTOR LOSS'), `${name}: actor loss missing`);
+    check(!has(state, 'BACKWARD'), `${name}: backward appeared with actor loss`);
+  }
+  if (phase === 5) {
+    check(has(state, 'BACKWARD'), `${name}: backward missing`);
+    check(!has(state, 'OPTIMIZER UPDATE') && !has(state, '优化器更新'), `${name}: optimizer result appeared early`);
+  }
+  if (phase === 6) {
+    check(has(state, 'OPTIMIZER UPDATE') || has(state, '优化器更新'), `${name}: optimizer update missing`);
+    check(has(state, 'weights v0 →'), `${name}: v1 result missing`);
+    check(!has(state, 'OFFLOAD') && !has(state, '训练模型 GPU'), `${name}: offload appeared before train returned`);
+  }
+  if (phase === 7) {
+    check(has(state, 'OFFLOAD') || has(state, 'training model GPU') || has(state, '训练模型 GPU'), `${name}: offload missing`);
+    check(has(state, 'copies v1 to rollout') || has(state, '把 v1 复制到 rollout'), `${name}: rollout handoff missing`);
+    check(has(state, 'Ch. 8 Steps 3 and 4') || has(state, '第 8 章第 3、4 步'), `${name}: FSDP2 locator missing`);
+    check(has(state, 'global batch') || has(state, '全局批次'), `${name}: global-batch qualification missing`);
+  }
+  states.push({ name, ...state });
+  writeFileSync(join(out, `${name}.png`), await page.screenshot());
+  return state.texts.join('|');
+}
+
+async function captureDeep(page, lang, width) {
+  await openStep(page, lang, 'direct');
+  for (let i = 0; i < 240; i++) {
+    if (await page.evaluate(`document.querySelector('.viz')?.getAttribute('data-animation-phase')`) === '7') break;
+    await sleep(50);
+  }
+  await page.evaluate(`(() => { const b = document.querySelector('button.deep'); if (b?.getAttribute('aria-expanded') !== 'true') b.click(); })()`);
+  await sleep(450);
+  const state = await page.evaluate(`(() => {
+    const body = document.querySelector('.deep-body');
+    return {
+      expanded: document.querySelector('button.deep')?.getAttribute('aria-expanded'),
+      counter: document.querySelector('.counter')?.textContent.trim().replace(/\\s+/g, ' '),
+      text: body?.textContent.replace(/\\s+/g, ' ').trim() || '',
+      overflow: body ? body.scrollWidth - body.clientWidth : null,
+      pageOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+      katexErrors: document.querySelectorAll('.deep-body .katex-error').length,
+      rawMath: body?.textContent.includes('$$') || false,
+      overflowNodes: body ? [...body.querySelectorAll('*')].filter((el) => {
+        const rect = el.getBoundingClientRect();
+        const bounds = body.getBoundingClientRect();
+        return rect.width && (rect.right > bounds.right + 1 || rect.left < bounds.left - 1);
+      }).slice(0, 12).map((el) => ({ tag: el.tagName, class: String(el.className), text: el.textContent.trim().replace(/\\s+/g, ' ').slice(0, 120), left: el.getBoundingClientRect().left, right: el.getBoundingClientRect().right })) : [],
+    };
+  })()`);
+  const name = `${lang}-${width}-deep`;
+  const required = lang === 'en'
+    ? ['Off-stage fields · not drawn', 'first sample', 'metadata', 'conditional replacement', 'Backend and offload boundary', 'Ch. 8 Steps 3 and 4', 'MegatronTrainRayActor', 'args.offload = True']
+    : ['图外字段 · 未画出', '首份样本的 metadata', '条件替换', '后端与 offload 边界', '第 8 章第 3、4 步', 'MegatronTrainRayActor', 'args.offload', 'True'];
+  check(state.expanded === 'true' && state.counter === '07 / 08', `${name}: wrong open state`);
+  check(!state.katexErrors && !state.rawMath && state.overflow <= 1 && !state.pageOverflow, `${name}: rendering failed`);
+  for (const text of required) check(state.text.includes(text), `${name}: missing ${text}`);
+  const stage = await page.evaluate(inspect);
+  deepStates.push({ name, ...state, stageMinFont: stage.minFont });
+  writeFileSync(join(out, `${name}.png`), await page.screenshot());
+}
+
+const browser = await launch({ width: 1440, height: 900 });
+try {
+  for (const combo of [{ lang: 'en', width: 1440 }, { lang: 'zh', width: 1440 }, { lang: 'zh', width: 390 }]) {
+    for (const entry of ['direct', 'previous']) {
+      const page = await browser.tab({ width: combo.width, height: combo.width === 390 ? 1400 : 900, mobile: combo.width === 390 });
+      await openStep(page, combo.lang, entry);
+      let previous;
+      for (let phase = 0; phase < 8; phase++) {
+        const signature = await capture(page, { ...combo, entry }, phase);
+        if (previous !== undefined) {
+          check(signature !== previous, `${combo.lang}-${combo.width}-${entry}-p${phase}: static transition`);
+          mechanismTransitions++;
+        }
+        previous = signature;
+      }
+      await page.close();
+    }
+  }
+  for (const lang of ['en', 'zh']) for (const width of [360, 390, 430]) {
+    const page = await browser.tab({ width, height: 1400, mobile: true });
+    await openStep(page, lang, 'direct');
+    await capture(page, { lang, width, entry: 'direct' }, 7);
+    await page.close();
+  }
+  for (const lang of ['en', 'zh']) for (const width of [1440, 360, 390, 430]) {
+    const page = await browser.tab({ width, height: width === 1440 ? 900 : 1400, mobile: width !== 1440 });
+    await captureDeep(page, lang, width);
+    await page.close();
+  }
+} finally {
+  browser.close();
+}
+
+const report = {
+  url: `${base}/ml-sys/ch/06-slime-rollout-loop/?step=7`,
+  states: states.length,
+  mechanismTransitions,
+  deepStates: deepStates.length,
+  minStageFont: Math.min(...states.map((state) => state.minFont)),
+  failures,
+  statesDetail: states,
+  deepDetail: deepStates,
+};
+writeFileSync(join(out, 'report.json'), JSON.stringify(report, null, 2) + '\n');
+console.log(JSON.stringify({ states: report.states, mechanismTransitions, deepStates: report.deepStates, minStageFont: report.minStageFont, failures }, null, 2));
+if (failures.length) process.exit(1);

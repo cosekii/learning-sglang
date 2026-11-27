@@ -203,18 +203,20 @@ $$u(0)=-u(1)\approx-0.9354$$
 
 ## 第 7 步 · 展开成训练数据并训练
 
-**一句话。** 控制器把 32 组展开为 256 份记录，组成 `train_data`，训练调用据此把 `v0` 更新为 `v1`。
+**一句话。** 控制器把 32 组展开成含 256 条记录的全局批次，主循环等 Megatron 训练完成并更新权重，随后这份共用 GPU 的配置 offload 训练模型。
 
 ### 图上是什么
 
-- 左侧仍按 32 组排列，中间 `CONTROLLER` 负责展开和转换，右侧成为 256 份训练记录。
-- 舞台上的 `train_data` 只概括了 token、回答长度和归一化 `rewards`。
-- `global batch size 256` 与本轮记录数相等。橙色训练框表示一次 `actor_model.async_train(0, data)` 调用。
-- 训练后端可以把这次调用拆成更小批次，也可能多次更新权重；这些内部步骤不在图中。
+- 左侧仍按 32 组排列，中间 `CONTROLLER` 展开各组并组成 `train_data`，右侧成为 256 条训练记录。
+- 舞台上的 `train_data` 只概括了 token、回答长度和归一化 `rewards`。`global batch` 是交给这次训练调用的 256 条记录，不是包数或优化器更新次数。
+- 橙框表示一次 `actor_model.async_train(0, data)` 调用，主循环会等它完成。`MEGATRON` 是本章训练代码的名字，脚注再解释 `backend = 训练代码`。五项工作是调用内的四个操作和返回后的 offload。
+- 调用内部每次只出现一个操作：`PACK` 把完整记录分成更小批次，`ACTOR LOSS` 是指导被训练模型的数值，`BACKWARD` 求出权重变化方向，`OPTIMIZER UPDATE(S)` 应用这些变化并得到 `v1`。这里的 `actor` 指被训练的模型。
+- `训练返回后` 展示这份共用 GPU 的配置把训练模型从 GPU offload 到 CPU。最后写明第 8 步把 `v1` 复制到 rollout，与前面的优化器更新分开。
+- 脚注指向第 8 章第 3、4 步，由它们展开这次调用的 FSDP2 版本。那章使用另一个构造例，所以它的两包和一次优化器更新不是本轮 256 条记录的包数或更新次数。
 
 ### 图外字段 · 未画出
 
-源码还打包 `raw_reward`、截断标记、样本编号、loss mask 与已有的 rollout log probability。如果首份样本的 metadata 含有 `raw_reward`，源码就用各样本 metadata 中的值替换后处理得到的原始分列表。舞台没有画这些额外字段或这次条件替换。
+源码还组装 `raw_reward`、截断标记、样本编号、loss mask 与已有的 rollout log probability。如果首份样本的 metadata 含有 `raw_reward`，源码就用各样本 metadata 中的值替换后处理得到的原始分列表。舞台没有画这些额外字段或这次条件替换。
 
 ### 公式与符号
 
@@ -228,7 +230,7 @@ $$N=g\times n_s=B,\qquad W_1=\operatorname{Train}(W_0,D)$$
 | $B$ | 配置的全局批大小 | <code>global-<wbr>batch-<wbr>size</code>，256 |
 | $D$ | 控制器生成的 `train_data` | <code>buffer.py:<wbr>118-154</code> |
 | $W_0,W_1$ | 训练前、后的模型权重 | 本步训练调用 |
-| $\operatorname{Train}$ | 等待完成的训练调用 | <code>actor_model.<wbr>async_<wbr>train</code> |
+| $\operatorname{Train}$ | 主循环等待训练完成 | <code>actor_model.<wbr>async_<wbr>train</code> |
 
 ### 代入图上的数
 
@@ -236,11 +238,17 @@ $$N=32\times8=256=B$$
 
 `train.py` 用 `ray.get` 等待这次训练结束，然后才进入权重更新。loss mask 默认在每个回答 token 上填 1，已有自定义 mask 则必须与实际回答长度一致。
 
+### 后端与 offload 边界
+
+在 `261ecee` 中，`actor_group.py:9,77-80` 创建 `MegatronTrainRayActor`。它的 `get_data_iterator` 形成 micro-batch（`megatron_utils/data.py:68-150`），`policy_loss_function` 计算 actor loss（`megatron_utils/loss.py:228-330`），`train_one_step` 先运行 forward-backward 日程，再调用 `optimizer.step()`（`megatron_utils/model.py:258-345`）。因此，舞台上的链条就是本章的 Megatron 路径。第 8 章第 3、4 步随后用另一个构造例展开 `55e41ffe` 的 FSDP2 版本。
+
+自带脚本设置 `--colocate`，所以 `arguments.py:968-970` 把 `args.offload` 设为 `True`。训练后，`actor_model.async_offload()` 调用 `sleep(("model"))`（`actor_group.py:64-80,135-136`；`megatron_utils/actor.py:134-153`），并启用 CPU 备份。舞台因此写明这份共用 GPU 的配置会 offload 训练模型。第 8 章 FSDP2 的 `sleep` 明确移动模型和优化器，本章不沿用那句更具体的范围说明。主循环随后恢复 rollout 权重并调用 `async_update_weights()`；rollout 恢复不画进舞台。
+
 ### 接下来
 
-新权重还在训练侧。下一步等待更新完成，让下一轮 SGLang 也使用 `v1`。
+优化器已在调用内部改变训练权重。第 8 步的 `async_update_weights()` 随后把 `v1` 传给 rollout，不是再做一次优化器更新。
 
-来源：`slime/ray/buffer.py:42-72,105-154`；`train.py:51-75`；`run-qwen3-4B.sh:51,75-78`。
+来源：`slime/ray/buffer.py:42-72,105-154`；`261ecee` 的 `train.py:51-75`、<code>slime/ray/<wbr>actor_group.py:<wbr>9,64-80,135-136</code>、<code>slime/backends/<wbr>megatron_utils/<wbr>{actor,data,loss,model}.py</code> 和 `slime/utils/arguments.py:968-970`；`run-qwen3-4B.sh:51,75-78,141`；第 8 章第 3、4 步及 `55e41ffe` 的 `train.py:73-94`。
 
 ## 第 8 步 · 更新完成后才进入下一轮
 

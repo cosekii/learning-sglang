@@ -35,6 +35,41 @@
 
 ---
 
+# lane k2 本轮报告 · ML 06 Step 7 的 ML-48 跨章接缝
+
+日期：2026-11-27。类型：修旧。本轮开始 HEAD 与 `origin/tutorials` 均为 `882c71c`，其中 ML 08 Step 4 已完成并推送，因此不回改待复审批次，承接 direction 指定的下一最小单元。范围只有 ML Systems 第 6 章 Step 7 的组件、双语 MDX 与 deep、生成 transcript、本章评分卡与进度记录、定向审计和本报告；未改 ML 08、其他章、其他书、共享 drawer、`.bot/memory/` 或第 1 本受保护英文原文，未开第 14 章。
+
+## 修复与 finding
+
+- Step 7 改为八相的「一次训练调用 · 五项工作」地图：32 组 → 控制器 → 256 条全局记录 → 统一 `train` 与 pack → actor loss → backward → optimizer update／`v1` → 返回后的 offload。actor loss、backward 和 optimizer update 各占一相，不再从记录直接跳到新权重。
+- 舞台明确本章 pinned `261ecee` 的 **Megatron** 路径。双语出处分别核对 `megatron_utils/data.py:68-150` 的 micro-batch 形成、`loss.py:228-330` 的 actor loss、`model.py:258-345` 的 forward-backward 与 `optimizer.step()`。Ch.8 Steps 3 and 4 只指向另一后端 FSDP2 的构造例，不把两包或一次更新搬成本轮计数。
+- 自带 `--colocate` 在 `arguments.py:968-970` 启用 `args.offload`。舞台写训练模型 GPU → CPU，不套用 FSDP2 的模型加优化器具体范围；CPU 备份出处补全为 `actor_group.py:64-80,135-136`。末相明确 Step 8 把 `v1` 复制到 rollout，与优化器更新分开。
+- `PACK` 与控制器的 `flatten + build train_data` 分开。`tokens · lengths · rewards`、`raw_reward` 的图外归属和首份样本 metadata 条件全部保留，ML-60 未返工。
+- **ML-48 的 Ch.6 Step 7 作者修复完成，待协调固定复审，不自行销项。** 不申报整章或整个 finding GO；共享 ML-21／22 与其他开放项未改。
+
+## 冷读与评分
+
+- 独立 `explore` 首轮指出后端归属、offload 实际配置、两种 update、图例、逐相节奏、actor 白话和出处范围问题，逐项返工后最终 **PASS**：R1–R5 **10/10**、机制 R6 **2/2**、原十二项 **24/24**、剩余内容洞 **0**。
+- R1 复述：「一次训练调用把 256 条回答记录分成小批次，算出怎样修改模型并修改它，再把训练模型从 GPU 移到 CPU。」五项工作按 EVAL 的 enumeration map 处理，offload 明确在调用返回后。
+- 当前模型不能读取 PNG。已尝试读取英中桌面、手机和 deep 代表图，工具返回不支持图像输入；因此不声称看过图片或视觉通过。以上结论来自固定源码、transcript、pinned 实现、独立冷读、DOM 和几何检查。
+
+## 硬门与证据
+
+- 最终 `npm run build`：**60 页**通过；Step 7 `readability`：**0 机械问题**；`BOOK=ml-sys node scripts/deep-check.mjs 06`、`zh-check`、英中全章 360／390／430 px `mobile`、中文 Step 7 字号门和 `git diff --check` 全过。
+- transcript 连续两次逐字一致，**1,730 词**，SHA-256 `c1b6a8806754da3c8a8f49d10b9c3d15e8c8031a5574ae2ec289acd8864af040`。无 caption、文字出界、重叠或文本规则报告。
+- 可重跑脚本 `.bot/out/ml48-step7-audit.mjs`。最终结果 `.bot/out/ml48-step7-audit/report.json`：英中桌面与中文 390 px × direct／前步入口，加英中三宽度末相，共 **54 状态、42/42 个机制转变、8 个双语 deep 状态**。普通舞台最低 **10.390625 CSS px**，重叠、SVG 出界、页面或 deep 横溢和 `failures` 均为 **0**。
+- 同一审计保存 **54 张相位图＋8 张 deep 图，共 62 张 PNG**。代表图：`.bot/out/ml48-step7-audit/zh-390-direct-p7.png`。最终 `npm run shot` 另存 `.bot/out/ml48-step7-shot-final/ml06-en-step7.png` 与 `.bot/out/ml48-step7-shot-final-mobile/ml06-zh-step7.png`。
+- 桌面 deep 打开后的舞台字号和手机 drawer 焦点仍归共享 ML-21／22，本单元未改。未跑全站回归、真实 Megatron／FSDP2 训练、rollout、GPU benchmark 或 reduced-motion 动态切换。最新回归只有 `(exit 13)`，没有可分配布局步骤。
+
+## 剩余与环境
+
+- 剩余事项是 ML-48 的协调固定复审、其他未改开放项、共享 ML-21／22、具备图像能力的复审和主人最终视觉验收。没有提前关闭任何 finding。
+- 本 clone 的 `node_modules` 开始时指向协调人 checkout。只删除本目录内的符号链接并在本目录 `npm ci`，package 文件无 diff，未写协调人的 checkout。
+- 本轮检查地址为 `http://localhost:4527/learning-sglang/ml-sys/ch/06-slime-rollout-loop/?step=7`。收尾将停止本轮服务；查看前在本目录运行 `npx astro dev --background`。
+- 审计脚本均调用 `browser.close()`，每个标签页也逐个 `close()`。收尾只清理本轮服务和 PPID 1 的本轮 headless Chrome，不动其他 lane 的服务或浏览器。
+
+---
+
 # lane k1 本轮报告 · Omni 07 Step 3 的 Omni-11 单次领取形成
 
 日期：2026-11-27。类型：修旧。本轮开始 HEAD 与 `origin/tutorials` 均为 `b875a3d`，工作树干净。按本书 P0 顺序承接 Omni 07 Step 3，不回改 Steps 1–2 的待复审批次。范围只有本步组件、双语 MDX 与 deep、生成 transcript、本章评分卡与进度记录、定向审计和本报告；Steps 1–2 与 Steps 4–6、其他章、其他书、`.bot/memory/` 和第 1 本受保护英文原文均未改。

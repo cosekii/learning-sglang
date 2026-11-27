@@ -30,8 +30,8 @@
     caption: `The config also divides by the group's reward spread. The results are about +0.9354 and −0.9354.`,
     captionZh: '配置再除以同组分数的离散程度。结果约为 +0.9354 和 −0.9354。',
   }, {
-    caption: `The controller flattens ${SLIME_ROLLOUT_BATCH_SIZE} groups into ${SLIME_SAMPLES_PER_ROUND} training records. One training call produces the next weights.`,
-    captionZh: `控制器把 ${SLIME_ROLLOUT_BATCH_SIZE} 组展开成 ${SLIME_SAMPLES_PER_ROUND} 条训练数据。一次训练调用算出新权重。`,
+    caption: `One train call turns ${SLIME_SAMPLES_PER_ROUND} records into weight updates. This shared-GPU config then offloads the training model.`,
+    captionZh: `一次训练调用把 ${SLIME_SAMPLES_PER_ROUND} 条记录变成权重更新。随后，这份共用 GPU 的配置 offload 训练模型。`,
   }, {
     caption: 'slime waits for the weight update before rollout 1. Rollout 1 then uses weights v1.',
     captionZh: 'slime 等权重更新完，再开始第 1 轮。第 1 轮的 SGLang 使用 v1。',
@@ -57,7 +57,7 @@
       motion.removeEventListener('change', updateMotion);
     };
   });
-  const PHASE_COUNTS = [4, 3, 4, 4, 3, 3, 4, 4];
+  const PHASE_COUNTS = [4, 3, 4, 4, 3, 3, 8, 4];
   const PHASE_MS = 1000, REST_MS = 2800;
   let phase = $state(0);
   let lap = $state(0), lapMs = $state(0);
@@ -80,7 +80,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [650, 570, 740, 650, 620, 650, 710, 610][step] : [400, 400, 530, 410, 450, 460, 450, 410][step]);
+  const H = $derived(phone ? [650, 570, 740, 650, 620, 650, 960, 610][step] : [400, 400, 530, 410, 450, 460, 520, 410][step]);
 </script>
 
 <figure class="viz" data-animation-step={step} data-animation-phase={phase} data-animation-final-phase={PHASE_COUNTS[step] - 1}>
@@ -371,12 +371,12 @@
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">torch.std: 8 − 1 = 7 · ε = {SLIME_GRPO_STD_EPSILON.toFixed(6)}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Values are rounded to four decimals on the cards.', '卡片上的结果四舍五入到 4 位小数。')}</text>
       {:else if step === 6}
-        <text x={phone ? 18 : 36} y="30" class="title">{t(phone ? 'Pack 256 records for training' : 'Pack 256 records, then call training', '把 256 份记录打包，再调用训练')}</text>
-        <text x={phone ? 18 : 36} y="55" class="label">{t(phone ? 'controller = packs answers for training' : 'RolloutController = converts answer records into training data', 'RolloutController = 把回答记录转成训练数据')}</text>
+        <text x={phone ? 18 : 36} y="30" class="title">{t(phone ? 'One call, then weight updates' : 'One train call turns records into weight updates', '一次训练调用把记录变成权重更新')}</text>
+        <text x={phone ? 18 : 36} y="55" class="label">{t(phone ? '256 records = the global batch' : 'RolloutController = converts answer records into training data', phone ? '256 条记录 = 全局批次' : 'RolloutController = 把回答记录转成训练数据')}</text>
         {#if !phone}
           {#each [
             { x: 30, title: '32 GROUPS', titleZh: '32 组', body: '8 records each', bodyZh: '每组 8 份记录', tone: 'blue' },
-            { x: 270, title: 'CONTROLLER', titleZh: '控制器', body: 'flatten + pack', bodyZh: '展开并打包', tone: 'orange' },
+            { x: 270, title: 'CONTROLLER', titleZh: '控制器', body: 'flatten + build data', bodyZh: '展开并组成数据', tone: 'orange' },
             { x: 510, title: 'TRAIN_DATA', titleZh: '训练数据', body: '256 records', bodyZh: '256 份记录', tone: 'blue' },
           ] as node, i}
             <g opacity={phase >= i ? 1 : 0}>
@@ -387,12 +387,30 @@
               {#if i < 2}<line x1={node.x + 180} y1="157" x2={node.x + 230} y2="157" stroke={i === 0 ? 'var(--gen)' : 'var(--accent)'} stroke-width="3" marker-end={i === 0 ? 'url(#slime-arrow-orange)' : 'url(#slime-arrow-blue)'} opacity={phase > i ? 1 : 0} />{/if}
             </g>
           {/each}
-          <text x="360" y="262" text-anchor="middle" class="result" opacity={phase >= 2 ? 1 : 0}>256 records = global batch size {SLIME_GLOBAL_BATCH_SIZE}</text>
+          <text x="360" y="254" text-anchor="middle" class="result" opacity={phase >= 2 ? 1 : 0}>256 records = global batch for this call</text>
           <g opacity={phase >= 3 ? 1 : 0}>
-            <line x1="550" y1="227" x2="550" y2="280" stroke="var(--gen)" stroke-width="3" marker-end="url(#slime-arrow-orange)" />
-            <rect x="150" y="291" width="420" height="101" rx="12" fill="var(--gen-soft)" stroke="var(--gen)" />
-            <text x="360" y="326" text-anchor="middle" class="section">ACTOR_MODEL.ASYNC_TRAIN(0, DATA)</text>
-            <text x="360" y="365" text-anchor="middle" class="result">weights v0 → weights v1</text>
+            <line x1="550" y1="227" x2="550" y2="270" stroke="var(--gen)" stroke-width="3" marker-end="url(#slime-arrow-orange)" />
+            <rect x="35" y="278" width="650" height="130" rx="12" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="360" y="296" text-anchor="middle" class="section">{t('ONE TRAIN CALL · FIVE JOBS · MEGATRON', '一次训练调用的五项工作 · MEGATRON')}</text>
+            <text x="360" y="315" text-anchor="middle" class="code">{t('main loop waits for actor_model.async_train(0, data)', '主循环等待 actor_model.async_train(0, data)')}</text>
+            <text x="60" y="337" class="small strong">PACK</text>
+            <text x="140" y="337" class="small">{t('smaller batches of whole records', '把完整记录分成更小批次')}</text>
+          </g>
+          <g opacity={phase >= 4 ? 1 : 0}>
+            <text x="60" y="360" class="small strong">→ ACTOR LOSS</text>
+            <text x="190" y="360" class="small">{t('number guiding the model being trained', '指导被训练模型的数值')}</text>
+          </g>
+          <g opacity={phase >= 5 ? 1 : 0}>
+            <text x="60" y="380" class="small strong">→ BACKWARD</text>
+            <text x="175" y="380" class="small">{t('finds weight-change directions', '求出权重变化方向')}</text>
+          </g>
+          <g opacity={phase >= 6 ? 1 : 0}>
+            <text x="60" y="400" class="small strong">→ {t('OPTIMIZER UPDATE(S) = applies changes', '优化器更新 = 应用变化')}</text>
+            <text x="430" y="400" class="result">weights v0 → weights v1</text>
+          </g>
+          <g opacity={phase >= 7 ? 1 : 0}>
+            <rect x="35" y="422" width="650" height="44" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="60" y="449" class="small">{t('AFTER RETURN · training model GPU → CPU (shared-GPU config) → Step 8 copies v1 to rollout', '训练返回后 · 训练模型 GPU → CPU（共用 GPU 的配置）→ 第 8 步把 v1 复制到 rollout')}</text>
           </g>
         {:else}
           <rect x="35" y="75" width="230" height="81" rx="11" fill="var(--accent-soft)" stroke="var(--accent)" />
@@ -402,25 +420,50 @@
             <line x1="150" y1="156" x2="150" y2="186" stroke="var(--gen)" stroke-width="3" marker-end="url(#slime-arrow-orange)" />
             <rect x="35" y="196" width="230" height="81" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" />
             <text x="150" y="227" text-anchor="middle" class="section">CONTROLLER</text>
-            <text x="150" y="258" text-anchor="middle" class="small">{t('flatten + pack', '展开并打包')}</text>
+            <text x="150" y="258" text-anchor="middle" class="small">{t('flatten + build train_data', '展开并组成 train_data')}</text>
           </g>
           <g opacity={phase >= 2 ? 1 : 0}>
             <line x1="150" y1="277" x2="150" y2="307" stroke="var(--accent)" stroke-width="3" marker-end="url(#slime-arrow-blue)" />
             <rect x="35" y="317" width="230" height="111" rx="11" fill="var(--accent-soft)" stroke="var(--accent)" />
             <text x="150" y="348" text-anchor="middle" class="section">TRAIN_DATA · 256</text>
             <text x="150" y="379" text-anchor="middle" class="small">tokens · lengths · rewards</text>
-            <text x="150" y="407" text-anchor="middle" class="small">global batch = {SLIME_GLOBAL_BATCH_SIZE}</text>
+            <text x="150" y="407" text-anchor="middle" class="small">global batch = {SLIME_GLOBAL_BATCH_SIZE} {t('for this call', '用于这次调用')}</text>
           </g>
           <g opacity={phase >= 3 ? 1 : 0}>
-            <line x1="150" y1="428" x2="150" y2="458" stroke="var(--gen)" stroke-width="3" marker-end="url(#slime-arrow-orange)" />
-            <rect x="20" y="468" width="260" height="131" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" />
-            <text x="150" y="500" text-anchor="middle" class="small strong">ACTOR_MODEL.ASYNC_TRAIN</text>
-            <text x="150" y="532" text-anchor="middle" class="code">rollout 0 + train_data</text>
-            <text x="150" y="572" text-anchor="middle" class="result">weights v0 → v1</text>
+            <line x1="150" y1="428" x2="150" y2="446" stroke="var(--gen)" stroke-width="3" marker-end="url(#slime-arrow-orange)" />
+            <rect x="20" y="452" width="260" height="300" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="150" y="478" text-anchor="middle" class="small strong">{t('MEGATRON · FIVE JOBS', 'MEGATRON · 五项工作')}</text>
+            <text x="150" y="502" text-anchor="middle" class="code">actor_model.async_train</text>
+            <text x="150" y="524" text-anchor="middle" class="small">{t('main loop waits · rollout 0 data', '主循环等待 · 第 0 轮数据')}</text>
+            <text x="40" y="556" class="small strong">PACK</text>
+            <text x="40" y="578" class="small">{t('smaller batches of whole records', '把完整记录分成更小批次')}</text>
+          </g>
+          <g opacity={phase >= 4 ? 1 : 0}>
+            <text x="40" y="610" class="small strong">→ ACTOR LOSS</text>
+            <text x="40" y="632" class="small">{t('guides the model being trained', '指导被训练的模型')}</text>
+          </g>
+          <g opacity={phase >= 5 ? 1 : 0}>
+            <text x="40" y="660" class="small strong">→ BACKWARD</text>
+            <text x="40" y="682" class="small">{t('finds weight-change directions', '求出权重变化方向')}</text>
+          </g>
+          <g opacity={phase >= 6 ? 1 : 0}>
+            <text x="40" y="714" class="small strong">→ {t('OPTIMIZER UPDATE(S)', '优化器更新')}</text>
+            <text x="40" y="736" class="small">{t('applies changes · weights v0 → v1', '应用变化 · weights v0 → v1')}</text>
+          </g>
+          <g opacity={phase >= 7 ? 1 : 0}>
+            <rect x="20" y="772" width="260" height="96" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="150" y="798" text-anchor="middle" class="small strong">{t('SHARED-GPU CONFIG · OFFLOAD', '共用 GPU 的配置 · OFFLOAD')}</text>
+            <text x="150" y="824" text-anchor="middle" class="small">{t('training model GPU → CPU', '训练模型 GPU → CPU')}</text>
+            <text x="150" y="850" text-anchor="middle" class="small">{t('Step 8 copies v1 to rollout', '第 8 步把 v1 复制到 rollout')}</text>
           </g>
         {/if}
-        <text x={W / 2} y={phone ? 635 : 420} text-anchor="middle" class="small" opacity={phase >= 3 ? 1 : 0}>{t(phone ? 'blue = data · orange = train' : 'blue = training data · orange = conversion and training', '蓝 = 训练数据 · 橙 = 转换与训练')}</text>
-        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('One call can process records in smaller batches.', '一次调用可以分成更小的批次处理。')}</text>
+        <text x={W / 2} y={phone ? 896 : 486} text-anchor="middle" class="small" opacity={phase >= 7 ? 1 : 0}>{t(phone ? 'Blue = data · orange = prep, train, offload' : 'Blue = records · orange = data prep, training and offload', '蓝 = 记录 · 橙 = 数据准备、训练和 offload')}</text>
+        {#if phone}
+          <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('Backend = training code · Ch. 8 Steps 3 and 4 show FSDP2.', 'backend = 训练代码 · 第 8 章第 3、4 步展示 FSDP2。')}</text>
+          <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('256 is the global batch, not a pack or update count.', '256 是全局批次，不是包数或更新次数。')}</text>
+        {:else}
+          <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Backend = training code · Ch. 8 Steps 3 and 4 show FSDP2 · 256 is the global batch.', 'backend = 训练代码 · 第 8 章第 3、4 步展示 FSDP2 · 256 是全局批次。')}</text>
+        {/if}
       {:else if step === 7}
         <text x={phone ? 18 : 36} y="30" class="title">{t(phone ? 'Update weights before rollout 1' : 'Finish the weight update before rollout 1', '先完成权重更新，再开始第 1 轮')}</text>
         <text x={phone ? 18 : 36} y="55" class="label">{t(phone ? 'ray.get waits for the update to finish' : 'ray.get(actor_model.async_update_weights()) waits for completion', 'ray.get 会等 async_update_weights 完成')}</text>

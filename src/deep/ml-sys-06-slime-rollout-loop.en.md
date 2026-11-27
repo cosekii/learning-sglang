@@ -203,18 +203,20 @@ Sources: `slime/ray/buffer.py:86-103`; `run-qwen3-4B.sh:80-88`; `slime/utils/arg
 
 ## Step 7 · Flatten the groups and train
 
-**One sentence.** The controller flattens 32 groups into 256 records, builds `train_data`, and the training call updates `v0` to `v1`.
+**One sentence.** The controller flattens 32 groups into a 256-record global batch, the main loop waits for one Megatron training call to turn those records into weight updates, and this shared-GPU configuration then offloads the training model.
 
 ### On the stage
 
-- The left side retains the 32 groups, the middle `CONTROLLER` flattens and converts them, and the right side holds 256 training records.
-- `Train_data` is summarized on the slide as tokens, response lengths and normalized `rewards`.
-- `Global batch size 256` matches this round's record count. The orange training box represents one `actor_model.async_train(0, data)` call.
-- The training backend can divide that call into smaller batches and may update the weights more than once; the figure leaves those internal steps out.
+- The left side retains the 32 groups, the middle `CONTROLLER` flattens them and builds `train_data`, and the right side holds 256 training records.
+- `Train_data` is summarized on the slide as tokens, response lengths and normalized `rewards`. The `global batch` is the 256 records supplied to this training call, not a pack count or an optimizer-update count.
+- The orange box represents one `actor_model.async_train(0, data)` call while the main loop waits. `MEGATRON` names this chapter's training code; `backend = training code` appears in the footnote. Its five jobs are the four operations inside the call and the offload that follows it.
+- The call reveals its path one operation at a time: `PACK` forms smaller batches of whole records, `ACTOR LOSS` is the number guiding the model being trained, `BACKWARD` finds the weight-change directions, and `OPTIMIZER UPDATE(S)` applies those changes to produce `v1`. Here `actor` means the model being trained.
+- `AFTER RETURN` shows this shared-GPU configuration offloading the training model from GPU to CPU. The last words say Step 8 copies `v1` to rollout, distinguishing that transfer from the optimizer update.
+- The footnote points to Ch. 8 Steps 3 and 4 for the FSDP2 version of this call. That chapter uses a separate constructed example, so its two packs and one optimizer update are not counts for this 256-record round.
 
 ### Off-stage fields · not drawn
 
-The source also packs `raw_reward`, truncation flags, sample indices, loss masks and available rollout log probabilities. If the first sample's metadata contains `raw_reward`, the source replaces the post-processed list with the samples' metadata values. The slide omits these additional fields and the conditional replacement.
+The source also assembles `raw_reward`, truncation flags, sample indices, loss masks and available rollout log probabilities. If the first sample's metadata contains `raw_reward`, the source replaces the post-processed list with the samples' metadata values. The slide omits these additional fields and the conditional replacement.
 
 ### Formula and symbols
 
@@ -236,11 +238,17 @@ $$N=32\times8=256=B$$
 
 `Train.py` waits for this call with `ray.get` before starting the weight update. The default loss mask assigns 1 to every answer token; a supplied mask must match the actual response length.
 
+### Backend and offload boundary
+
+At `261ecee`, `actor_group.py:9,77-80` instantiates `MegatronTrainRayActor`. Its `get_data_iterator` forms micro-batches (`megatron_utils/data.py:68-150`), `policy_loss_function` computes the actor loss (`megatron_utils/loss.py:228-330`), and `train_one_step` runs the forward-backward schedule before `optimizer.step()` (`megatron_utils/model.py:258-345`). The stage's chain is therefore this chapter's Megatron path. Ch. 8 Steps 3 and 4 later open the FSDP2 version at `55e41ffe` with separate constructed packing and actor-loss arithmetic.
+
+The shipped script sets `--colocate`, so `arguments.py:968-970` sets `args.offload = True`. After training, `actor_model.async_offload()` calls `sleep(("model"))` (`actor_group.py:64-80,135-136`; `megatron_utils/actor.py:134-153`) with CPU backup enabled. The stage therefore says this shared-GPU configuration offloads the training model. Ch. 8's FSDP2 `sleep` explicitly moves the model and optimizer to CPU, so this chapter does not reuse that narrower wording. The main loop then restores rollout weights and calls `async_update_weights()`; rollout restoration stays off the stage.
+
 ### Next
 
-The new weights still belong to training. The next step waits for the update so the next SGLang round also uses `v1`.
+The optimizer changed the training weights inside the call. Step 8's `async_update_weights()` is the later transfer of `v1` to rollout, not another optimizer update.
 
-Sources: `slime/ray/buffer.py:42-72,105-154`; `train.py:51-75`; `run-qwen3-4B.sh:51,75-78`.
+Sources: `slime/ray/buffer.py:42-72,105-154`; `train.py:51-75`, <code>slime/ray/<wbr>actor_group.py:<wbr>9,64-80,135-136</code>, <code>slime/backends/<wbr>megatron_utils/<wbr>{actor,data,loss,model}.py</code>, and `slime/utils/arguments.py:968-970` at `261ecee`; `run-qwen3-4B.sh:51,75-78,141`; Ch. 8 Steps 3 and 4 and `train.py:73-94` at `55e41ffe`.
 
 ## Step 8 · Finish updating before the next rollout
 

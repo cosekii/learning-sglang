@@ -1,5 +1,14 @@
 # 第 6 章评分卡 · One RL round in slime
 
+## 2026-11-27 ML-48 · Step 7 统一 train 的跨章接缝
+
+- **ML-48 的 Ch.6 Step 7 作者修复完成，待协调固定复审，不自行销项。** 八相把 32 组、控制器、256 条全局记录、统一 `train` 调用的五项工作依次展开：pack、actor loss、backward、optimizer update 和返回后的 offload。舞台明确本章使用 Megatron，Ch.8 Steps 3 and 4 只提供另一后端 FSDP2 的详细构造例，不导入其两包和一次更新计数。
+- 本章自带 `--colocate` 在 pinned `arguments.py:968-970` 启用 `args.offload`，训练模型在调用返回后 offload 到 CPU，随后 Step 8 把 `v1` 复制到 rollout。舞台与双语 deep 分开优化器更新和 rollout 传输，并保留 ML-60 的图外字段与首份样本 metadata 条件。
+- 独立 `explore` 经后端归属、offload 范围、两种 update、图例、逐相节奏、actor 白话和出处范围返工后，最终 **PASS**：R1–R5 **10/10**、机制 R6 **2/2**、原十二项 **24/24**、剩余内容洞 **0**。R1 复述：「一次训练调用把 256 条回答记录分成小批次，算出怎样修改模型并修改它，再把训练模型从 GPU 移到 CPU。」这不是协调 verdict 或整章 GO。
+- 最终 `build`（60 页）、Step 7 `readability`、`deep-check 06`、`zh-check`、英中全章与中文 Step 7 三宽度 `mobile`、`git diff --check` 全过。transcript 连续两次逐字一致，**1,730 词**，SHA-256 `c1b6a8806754da3c8a8f49d10b9c3d15e8c8031a5574ae2ec289acd8864af040`。
+- `.bot/out/ml48-step7-audit.mjs` 覆盖英中桌面与中文 390 px × direct／前步入口，以及英中 360／390／430 px 末相，共 **54 状态、42/42 个机制转变、8 个双语 deep 状态**。普通舞台最低 **10.390625 CSS px**，重叠、SVG 出界、页面或 deep 横溢和 `failures` 均为 **0**。证据：`.bot/out/ml48-step7-audit/report.json`；代表图：`.bot/out/ml48-step7-audit/zh-390-direct-p7.png`。
+- 桌面 deep 打开后的舞台字号仍属共享 ML-21，手机焦点属 ML-22，本单元未改。当前模型不能读 PNG，未声称视觉通过。未跑全站回归、真实 Megatron/FSDP2 训练、rollout、GPU benchmark 或 reduced-motion 动态切换。
+
 ## 2026-11-27 ML-60 · Step 7 分清图上字段与图外条件
 
 - **ML-60 作者修复完成，待协调固定复审，不自行销项。** 舞台与 caption 保持 `tokens · lengths · rewards`，双语 deep 的「图上是什么」只描述这些可见字段；新增的「图外字段 · 未画出」说明 `raw_reward` 等额外字段。只有首份样本的 metadata 含有 `raw_reward` 时，源码才用各样本 metadata 中的值替换后处理得到的原始分列表；双语 MDX 出处说明保持一致。

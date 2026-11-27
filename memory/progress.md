@@ -4,6 +4,9 @@
 
 ## 本轮记录
 
+- 修旧 Learning ML Systems 第 6 章 Step 7 的 ML-48 跨章接缝：八相把 256 条全局记录接回统一 `train` 的五项工作，依次形成 pack、actor loss、backward、optimizer update 和返回后的 offload。舞台明确本章 Megatron 路径，Ch.8 Steps 3 and 4 仅指向 FSDP2 的另一构造例；自带 `--colocate` 启用 offload，Step 8 复制 `v1` 到 rollout 与优化器更新分开。双语组件、MDX、deep 与生成 transcript 已同步，ML-60 的图外字段边界保持不变；未改 ML 08、其他书、共享 drawer、`.bot/memory/`，未开第 14 章。作者修复待协调固定复审，不自行销项。
+- Step 7 独立 `explore` 最终冷读 **PASS**：R1–R5 **10/10**、机制 R6 **2/2**、原十二项 **24/24**、0 剩余内容洞。`build`（60 页）、Step 7 `readability`、`deep-check 06`、`zh-check`、英中全章与中文 Step 7 三宽度 `mobile`、`git diff --check` 全过；两次 transcript 均为 **1,730 词**、SHA-256 `c1b6a880…64af040`。定向审计 **54 状态、42/42 转变、8 deep**，最低 **10.390625 CSS px**，重叠、出界、页面与 deep 横溢和 `failures` 均为 0。当前模型不能读 PNG，视觉与整章 verdict 待协调；未跑全站回归、真实训练或 GPU。本轮类型：**修旧**。
+
 - 修旧 Learning SGLang Omni 第 7 章 Step 3 的 Omni-11 第三部分：三幅独立面板各持有一份 2 GiB 申报，依次上演 `consumed=false`、第一次领取、空情况清理检查与第二次领取、零／一／二次领取结果。双语组件、MDX、deep 与生成 transcript 已同步；Steps 1–2 和 Steps 4–6 未改。Step 3 作者修复完成，待协调固定复审，不自行关闭 Omni-11；下一最小单元是 Step 4 的权重 alias 与私有 KV 形成过程。
 - Step 3 作者参考值为 R1–R5 **10/10**、机制 R6 **2/2（DOM）**、原十个非视觉项 **20/20**、0 新内容洞；独立 `explore` 首轮指出三处内容问题，修复后复审 **PASS**。`build`（60 页）、Step 3 `readability`、`deep-check 07`、`zh-check`、英中全章与中文 Step 3 三宽度 `mobile`、`git diff --check` 全过；两次 transcript 均为 SHA-256 `51b0cca9…b918cc8b`。定向矩阵 **10 组合、40 状态、30/30 转变、43 张 PNG、3 个双语 deep 视图**，最低 **10.760 CSS px**，重叠、出界、页面与 deep 横溢均为 0。当前模型不能读取 PNG，原 #4/#5、视觉与整章 verdict 待协调；未跑全站回归、真实 SGLang-Omni、模型或 GPU。本轮类型：**修旧**。
 
