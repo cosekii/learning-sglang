@@ -251,32 +251,36 @@
             { x: 360, top: 'reference codec', bottom: `pad to ${fmt(FISH_REFERENCE_PADDED_SAMPLES)}`, topZh: '参考 codec', bottomZh: `补到 ${fmt(FISH_REFERENCE_PADDED_SAMPLES)}` },
             { x: 525, top: '[10,22]', bottom: 'code matrix', topZh: '[10,22]', bottomZh: 'code 矩阵' },
           ] as box, i}
-            <rect x={box.x} y="91" width="135" height="86" rx="10" fill={i === 3 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={i === 3 ? 'var(--accent)' : 'var(--line)'} />
-            <text x={box.x + 67.5} y="124" text-anchor="middle" class="small strong">{t(box.top, box.topZh)}</text>
-            <text x={box.x + 67.5} y="151" text-anchor="middle" class="small">{t(box.bottom, box.bottomZh)}</text>
-            {#if i === 1}
-              <text x={box.x + 67.5} y="170" text-anchor="middle" class="small">{t('still 1 second', '仍是 1 秒')}</text>
-            {/if}
+            <g opacity={phase >= i ? 1 : 0.14} style="transition: opacity 350ms">
+              <rect x={box.x} y="91" width="135" height="86" rx="10" fill={i === 3 && phase >= 3 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={i === 3 && phase >= 3 ? 'var(--accent)' : 'var(--line)'} />
+              <text x={box.x + 67.5} y="124" text-anchor="middle" class="small strong">{t(box.top, box.topZh)}</text>
+              <text x={box.x + 67.5} y="151" text-anchor="middle" class="small">{t(box.bottom, box.bottomZh)}</text>
+              {#if i === 1}
+                <text x={box.x + 67.5} y="170" text-anchor="middle" class="small">{t('still 1 second', '仍是 1 秒')}</text>
+              {/if}
+            </g>
             {#if i < 3}
-              <line x1={box.x + 137} y1="134" x2={box.x + 158} y2="134" stroke="var(--accent)" stroke-width="2" marker-end="url(#fish-arrow)" />
+              <line x1={box.x + 137} y1="134" x2={box.x + 158} y2="134" stroke="var(--accent)" stroke-width="2" marker-end="url(#fish-arrow)" opacity={phase > i ? 1 : 0.08} style="transition: opacity 350ms" />
             {/if}
           {/each}
           <rect x="30" y="214" width="660" height="342" rx="12" fill="var(--bg)" stroke="var(--line)" />
-          <text x="48" y="242" class="small strong">{t('OUTPUT · 10 ROWS × 22 FRAMES', '输出 · 10 行 × 22 帧')}</text>
-          {#each Array(VOC_FISH_CODEBOOK_ROWS) as _, row}
-            <text x="48" y={286 + row * 19} class="code">c{row}</text>
-            {#each Array(FISH_REFERENCE_FRAMES) as _, col}
-              <rect x={82 + col * 10} y={274 + row * 19} width="8" height="12" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <g opacity={phase >= 3 ? 1 : 0.06} style="transition: opacity 350ms">
+            <text x="48" y="242" class="small strong">{t('OUTPUT · 10 ROWS × 22 FRAMES', '输出 · 10 行 × 22 帧')}</text>
+            {#each Array(VOC_FISH_CODEBOOK_ROWS) as _, row}
+              <text x="48" y={286 + row * 19} class="code">c{row}</text>
+              {#each Array(FISH_REFERENCE_FRAMES) as _, col}
+                <rect x={82 + col * 10} y={274 + row * 19} width="8" height="12" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
+              {/each}
             {/each}
-          {/each}
-          <text x="82" y="481" class="small">22 {t('frames', '帧')}</text>
-          <text x="350" y="303" class="result">round up({fmt(FISH_CODEC_SAMPLE_RATE)} ÷ {fmt(FISH_SAMPLES_PER_FRAME)})</text>
-          <text x="350" y="337" class="result">= {FISH_REFERENCE_FRAMES} {t('frames', '帧')}</text>
-          <text x="350" y="394" class="small">{FISH_REFERENCE_FRAMES} × {fmt(FISH_SAMPLES_PER_FRAME)} = {fmt(FISH_REFERENCE_PADDED_SAMPLES)}</text>
-          <text x="350" y="427" class="small">{fmt(FISH_REFERENCE_PADDED_SAMPLES)} − {fmt(FISH_CODEC_SAMPLE_RATE)}</text>
-          <text x="350" y="459" class="result">= {FISH_REFERENCE_PADDING_SAMPLES} {t('padding samples', '个补位采样点')}</text>
-          <text x="350" y="493" class="small">{t('pad the partial last frame', '最后一帧不满也补满')}</text>
-          <text x="350" y="527" class="small">{t('22 columns, 10 rows = [10,22]', '22 列、10 行 = [10,22]')}</text>
+            <text x="82" y="481" class="small">22 {t('frames', '帧')}</text>
+            <text x="350" y="303" class="result">round up({fmt(FISH_CODEC_SAMPLE_RATE)} ÷ {fmt(FISH_SAMPLES_PER_FRAME)})</text>
+            <text x="350" y="337" class="result">= {FISH_REFERENCE_FRAMES} {t('frames', '帧')}</text>
+            <text x="350" y="394" class="small">{FISH_REFERENCE_FRAMES} × {fmt(FISH_SAMPLES_PER_FRAME)} = {fmt(FISH_REFERENCE_PADDED_SAMPLES)}</text>
+            <text x="350" y="427" class="small">{fmt(FISH_REFERENCE_PADDED_SAMPLES)} − {fmt(FISH_CODEC_SAMPLE_RATE)}</text>
+            <text x="350" y="459" class="result">= {FISH_REFERENCE_PADDING_SAMPLES} {t('padding samples', '个补位采样点')}</text>
+            <text x="350" y="493" class="small">{t('pad the partial last frame', '最后一帧不满也补满')}</text>
+            <text x="350" y="527" class="small">{t('22 columns, 10 rows = [10,22]', '22 列、10 行 = [10,22]')}</text>
+          </g>
         {:else}
           {#each [
             { y: 82, top: '1 s reference', bottom: `${fmt(FISH_TEACHING_REFERENCE_SAMPLES)} samples`, topZh: '1 秒参考声音', bottomZh: `${fmt(FISH_TEACHING_REFERENCE_SAMPLES)} 个采样点` },
@@ -284,24 +288,28 @@
             { y: 250, top: 'reference codec', bottom: `pad to ${fmt(FISH_REFERENCE_PADDED_SAMPLES)}`, topZh: '参考 codec', bottomZh: `补到 ${fmt(FISH_REFERENCE_PADDED_SAMPLES)}` },
             { y: 334, top: '[10,22]', bottom: 'code matrix', topZh: '[10,22]', bottomZh: 'code 矩阵' },
           ] as box, i}
-            <rect x="18" y={box.y} width="264" height="62" rx="9" fill={i === 3 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={i === 3 ? 'var(--accent)' : 'var(--line)'} />
-            <text x="150" y={box.y + 25} text-anchor="middle" class="small strong">{t(box.top, box.topZh)}</text>
-            <text x="150" y={box.y + 48} text-anchor="middle" class="small">{t(box.bottom, box.bottomZh)}</text>
+            <g opacity={phase >= i ? 1 : 0.14} style="transition: opacity 350ms">
+              <rect x="18" y={box.y} width="264" height="62" rx="9" fill={i === 3 && phase >= 3 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={i === 3 && phase >= 3 ? 'var(--accent)' : 'var(--line)'} />
+              <text x="150" y={box.y + 25} text-anchor="middle" class="small strong">{t(box.top, box.topZh)}</text>
+              <text x="150" y={box.y + 48} text-anchor="middle" class="small">{t(box.bottom, box.bottomZh)}</text>
+            </g>
             {#if i < 3}
-              <line x1="150" y1={box.y + 63} x2="150" y2={box.y + 80} stroke="var(--accent)" stroke-width="2" marker-end="url(#fish-arrow)" />
+              <line x1="150" y1={box.y + 63} x2="150" y2={box.y + 80} stroke="var(--accent)" stroke-width="2" marker-end="url(#fish-arrow)" opacity={phase > i ? 1 : 0.08} style="transition: opacity 350ms" />
             {/if}
           {/each}
           <rect x="18" y="425" width="264" height="302" rx="11" fill="var(--bg)" stroke="var(--line)" />
-          <text x="32" y="451" class="small strong">10 {t('rows', '行')} × 22 {t('frames', '帧')}</text>
-          {#each Array(VOC_FISH_CODEBOOK_ROWS) as _, row}
-            {#each Array(FISH_REFERENCE_FRAMES) as _, col}
-              <rect x={48 + col * 9} y={465 + row * 15} width="7" height="10" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <g opacity={phase >= 3 ? 1 : 0.06} style="transition: opacity 350ms">
+            <text x="32" y="451" class="small strong">10 {t('rows', '行')} × 22 {t('frames', '帧')}</text>
+            {#each Array(VOC_FISH_CODEBOOK_ROWS) as _, row}
+              {#each Array(FISH_REFERENCE_FRAMES) as _, col}
+                <rect x={48 + col * 9} y={465 + row * 15} width="7" height="10" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
+              {/each}
             {/each}
-          {/each}
-          <text x="32" y="638" class="small">round up({fmt(FISH_CODEC_SAMPLE_RATE)} ÷ {fmt(FISH_SAMPLES_PER_FRAME)}) = {FISH_REFERENCE_FRAMES}</text>
-          <text x="32" y="670" class="small">{fmt(FISH_REFERENCE_PADDED_SAMPLES)} − {fmt(FISH_CODEC_SAMPLE_RATE)}</text>
-          <text x="32" y="701" class="result">= {FISH_REFERENCE_PADDING_SAMPLES} {t('padding samples', '个补位采样点')}</text>
-          <text x="32" y="722" class="small">{t('pad the partial last frame', '最后一帧不满也补满')}</text>
+            <text x="32" y="638" class="small">round up({fmt(FISH_CODEC_SAMPLE_RATE)} ÷ {fmt(FISH_SAMPLES_PER_FRAME)}) = {FISH_REFERENCE_FRAMES}</text>
+            <text x="32" y="670" class="small">{fmt(FISH_REFERENCE_PADDED_SAMPLES)} − {fmt(FISH_CODEC_SAMPLE_RATE)}</text>
+            <text x="32" y="701" class="result">= {FISH_REFERENCE_PADDING_SAMPLES} {t('padding samples', '个补位采样点')}</text>
+            <text x="32" y="722" class="small">{t('pad the partial last frame', '最后一帧不满也补满')}</text>
+          </g>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Constructed 16,000 samples/s input' : 'Constructed 16,000 samples/s input; resampling and 2,048-sample frames follow the shipped DAC.', phone ? '构造每秒 16,000 点的输入' : '每秒 16,000 点的输入是构造算例；重采样和 2,048 采样点帧来自默认 DAC。')}</text>
       {:else if step === 2}
