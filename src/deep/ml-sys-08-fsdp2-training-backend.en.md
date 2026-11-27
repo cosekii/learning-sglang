@@ -115,71 +115,70 @@ Step 4 follows Pack 1 into the grad-enabled forward. It preserves the existing 7
 
 Sources: `THUDM/slime@55e41ffe`, <code>slime/backends/<wbr>fsdp_utils/<wbr>actor.py</code> (`train`, `_train_core`, `_packed_data`), <code>slime/utils/<wbr>data.py</code> (`process_rollout_data`, <code>get_minimum_<wbr>num_<wbr>micro_<wbr>batch_<wbr>size</code>), <code>slime/backends/<wbr>fsdp_utils/<wbr>data_packing.py</code> (`pack_sequences`), and <code>scripts/<wbr>run-qwen3-4B-fsdp.sh</code> (`--use-dynamic-batch-size`, `--max-tokens-per-gpu 9216`).
 
-## Step 4 · Turn two packs into one actor update
+## Step 4 · Give each pack its own actor loss
 
-**One sentence.** Pack 1 produces a clipped, masked actor loss, Pack 2 completes backward, and one optimizer update precedes the conditional training offload.
+**One sentence.** Each pack compares current and old token probabilities, clips the change, and averages the included response-token losses.
 
 ### On the stage
 
-- `FORWARD` keeps two constructed views separate: DP1 for the packing arithmetic and DP8 for the memory account. After `zero_grad(set_to_none=True)` clears the old gradient shard, the DP8 example holds 7 GB of weight and optimizer shards. `All-gather` rebuilds a temporary full layer of unknown size $U$, and `release` removes it. The 7 GB figure covers parameter tables only, not all training memory or the peak.
-- `UNPACK` uses Pack 1's `cu_seqlens=[0,2,4]` to recover records A and B. Each has one response token and a response mask of `[1]`. Mask 1 includes that token in its record's mean.
+- Blue marks the forward values and actor-loss arithmetic. The actor loss is a training score to make smaller, and a negative value is allowed. `FORWARD` keeps two constructed views separate: DP1 for the packing arithmetic and DP8 for the memory account. After `zero_grad(set_to_none=True)` clears the old gradient shard, the DP8 example holds 7 GB of weight and optimizer shards. `All-gather` rebuilds a temporary full layer of unknown size $U$, and `release` removes it. The 7 GB figure covers parameter tables only, not all training memory or the peak.
+- `UNPACK` uses Pack 1's `cu_seqlens=[0,2,4]` to recover records A and B. Each has one response token and a response mask of `[1]`. Mask 1 includes that token in its record's mean; mask 0 would exclude it.
 - `RATIO` is the current token probability divided by the old token probability. A ratio above 1 means the current model gives that token more chance. The old scoring pass and current training pass produce the two log probabilities. The constructed gaps are $+0.3365$ for A and $-0.3567$ for B, giving ratios 1.40 and 0.70.
-- `ADVANTAGE + CLIP` reuses Step 3's advantages, $+u$ for A and $-u$ for B. Clipping keeps the ratio inside the shipped bounds 0.80 and 1.28, so the ratios become 1.28 and 0.80.
-- `LOSS AFTER CLIP` negates the unclipped and clipped products, then takes the larger value. A yields $-1.1973$ and B yields $+0.7483$.
-- `MASKED MEAN` averages each record's included response tokens, then sums those per-record means. Both denominators are 1 here, giving `pg_loss = -1.1973 + 0.7483 = -0.4490`.
-- `BACKWARD` turns the loss into weight-change directions. It processes Pack 1 and Pack 2 before the sole `optimizer.step()` allowed by `grad_accum=[2]`. The orange `SLEEP` row then moves the model and optimizer to CPU on the `offload_train` path. The later `update_weights` handoff belongs to Ch. 7.
+- `CLIP` keeps the ratio inside the shipped bounds 0.80 and 1.28. Step 3 supplies advantages $+u$ for A and $-u$ for B. Their clipped ratios are 1.28 and 0.80.
+- `LOSS` negates the unclipped and clipped products, then takes the larger value. A yields $-1.1973$ and B yields $+0.7483$. Pack 1's per-record means sum to $L_1=-0.4490$.
+- Pack 2 contains record C with response tokens `c2` and `c3`. Its constructed ratios are `[1.00,1.00]`, so clipping changes neither one. Both advantages are $+u$, giving losses `[-0.9354,-0.9354]`. Its mask `[1,1]` includes both tokens, so the two-token mean is $L_2=-0.9354$.
 
 ### Formula and symbols
 
-$$\rho_i=\exp(\operatorname{log\_probs}_i-\operatorname{old\_log\_probs}_i)$$
+$$\rho_{i,j}=\exp(\operatorname{log\_probs}_{i,j}-\operatorname{old\_log\_probs}_{i,j})$$
 
-$$\hat\rho_i=\operatorname{clip}(\rho_i,0.80,1.28)$$
+$$\hat\rho_{i,j}=\operatorname{clip}(\rho_{i,j},0.80,1.28)$$
 
-$$\ell_i=\max(-\rho_i a_i,-\hat\rho_i a_i)$$
+$$\ell_{i,j}=\max(-\rho_{i,j}a_i,-\hat\rho_{i,j}a_i)$$
 
-$$\bar\ell_i=\frac{\sum_j\ell_{i,j}m_{i,j}}{\max(\sum_jm_{i,j},1)}$$
-
-$$L_{pg}=\sum_i\bar\ell_i$$
+$$\bar\ell_i=\frac{\sum_j\ell_{i,j}m_{i,j}}{\max(\sum_jm_{i,j},1)},\qquad L_p=\sum_{i\in p}\bar\ell_i$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
-| $\rho_i$ | Current token probability divided by old token probability for record $i$ | Current and old log probabilities; constructed gaps here |
-| $\hat\rho_i$ | Clipped ratio | Shipped `eps_clip=0.2`, `eps_clip_high=0.28` |
-| $a_i$ | Advantage for record $i$ | Step 3: $+u$ for A, $-u$ for B |
+| $\rho_{i,j}$ | Current probability divided by old probability at response position $j$ of record $i$ | Current and old log probabilities; constructed gaps here |
+| $\hat\rho_{i,j}$ | Clipped ratio | Shipped `eps_clip=0.2`, `eps_clip_high=0.28` |
+| $a_i$ | Advantage for record $i$ | Step 3: $+u$ for A and C, $-u$ for B |
 | $\ell_{i,j}$ | Negated PPO policy loss at response position $j$ | <code>compute_<wbr>policy_<wbr>loss</code>: larger of the two negative products |
-| $m_{i,j}$ | Response mask | 1 includes the token, 0 excludes it; both shown masks are 1 |
+| $m_{i,j}$ | Response mask | 1 includes the token, 0 excludes it; Pack 1 uses `[1]`, Pack 2 uses `[1,1]` |
 | $\bar\ell_i$ | Masked mean within record $i$ | <code>sum_of_<wbr>sample_<wbr>mean</code>; denominator is clamped to at least 1 |
-| $L_{pg}$ | Sum of per-record policy-loss means | This Pack 1 worked example |
+| $L_p$ | Sum of per-record means in pack $p$ | $L_1$ for A+B, $L_2$ for C |
 
 ### The numbers on the stage
 
 The calculations use the unrounded $u$ from Step 3. The stage displays it as 0.9354. For A, $\exp(0.3365)\approx1.40$ is clipped to 1.28:
 
-$$\ell_A=\max(-1.40u,-1.28u)$$
-
-$$\ell_A=\max(-1.3096,-1.1973)=-1.1973$$
+$$\ell_A=\max(-1.40u,-1.28u)=\max(-1.3096,-1.1973)=-1.1973$$
 
 For B, $\exp(-0.3567)\approx0.70$ is clipped to 0.80. Its advantage is $-u$:
 
-$$\ell_B=\max(-0.70(-u),-0.80(-u))$$
+$$\ell_B=\max(-0.70(-u),-0.80(-u))=\max(+0.6548,+0.7483)=+0.7483$$
 
-$$\ell_B=\max(+0.6548,+0.7483)=+0.7483$$
+Both Pack 1 masks are `[1]`, so $L_1=-1.1973+0.7483=-0.4490$. For C, both ratios are 1 and both mask entries are 1:
 
-Each response mask is `[1]`, so each one-token mean divides by 1. The Pack 1 sum is $-1.1973+0.7483=-0.4490$. For an all-zero or empty response mask, the numerator is 0 and the clamped denominator is 1, so that record contributes 0. The shipped script sets both `entropy_coef` and `kl_loss_coef` to 0, so those optional terms do not change this worked loss. The gaps and masks are constructed teaching values, not measurements from a training run.
+$$L_2=\frac{-u+(-u)}{1+1}=-u=-0.9354$$
+
+The shipped script sets both `entropy_coef` and `kl_loss_coef` to 0, so those optional terms do not change either worked loss. The gaps and masks are constructed teaching values, not measurements from a training run.
+
+### Derived · not drawn
+
+For an all-zero or empty response mask, the numerator is 0 and the clamped denominator is 1, so that record contributes 0. The stage draws only masks containing 1.
 
 ### Implementation boundaries
 
-The implementation stores `ppo_kl = old_log_probs - log_probs`. Thus `(-ppo_kl).exp()` is the stage's $\exp(\operatorname{log\_probs}-\operatorname{old\_log\_probs})$. This example leaves `use_rollout_logprobs` off: the earlier no-grad, scoring-only actor pass writes `log_probs`, which becomes `old_log_probs`, and the grad-enabled training pass writes `cur_log_probs` so backward can find weight-change directions. Enabling that flag instead selects `rollout_log_probs` as the old scores; the stage does not draw that alternative. <code>compute_<wbr>policy_<wbr>loss</code> negates both products and uses `maximum`. This matches the usual PPO minimum after the signs are restored.
+The implementation stores `ppo_kl = old_log_probs - log_probs`. Thus `(-ppo_kl).exp()` is the stage's $\exp(\operatorname{log\_probs}-\operatorname{old\_log\_probs})$. This example leaves `use_rollout_logprobs` off: the earlier no-grad, scoring-only actor pass writes `log_probs`, which becomes `old_log_probs`, and the grad-enabled training pass writes `cur_log_probs`. Enabling that flag instead selects `rollout_log_probs` as the old scores; the stage does not draw that alternative. <code>compute_<wbr>policy_<wbr>loss</code> negates both products and uses `maximum`. This matches the usual PPO minimum after the signs are restored.
 
-<code>sum_of_<wbr>sample_<wbr>mean</code> computes a masked mean inside each record and then sums the records. It is not one mean over all response tokens in the pack. Step 5 supplies the later $R/B$ scaling and FP32 gradient averaging. TIS, GSPO sequence ratios and nonzero entropy or KL coefficients are optional paths outside this worked example.
-
-`train.py` waits for training, calls the conditional training offload, restores rollout, and only then calls `update_weights`. The stage names the later handoff without claiming that it is immediate. Without `offload_train`, the training group clears memory instead of moving the model and optimizer to CPU. Reference-model offload and the separate `fsdp_cpu_offload` policy are not expanded here.
+<code>sum_of_<wbr>sample_<wbr>mean</code> computes a masked mean inside each record and then sums the records. It is not one mean over all response tokens in the pack. TIS, GSPO sequence ratios and nonzero entropy or KL coefficients are optional paths outside this worked example. This actor-loss step does not expand backward, gradient accumulation, the optimizer update or offload.
 
 ### Next
 
-The actor loss now has a concrete value. The next step follows its $R/B$ scale through backward and FP32 reduce-scatter to the owned gradient shard.
+The next step pre-scales actor loss and follows the resulting gradients.
 
-Sources: <code>THUDM/<wbr>slime@<wbr>55e41ffef7193fdd4c8bc14720233e446446b1d7</code>, <code>slime/backends/<wbr>fsdp_utils/<wbr>actor.py</code> (`_train_step`, <code>sum_of_<wbr>sample_<wbr>mean</code>, `sleep`), <code>slime/utils/<wbr>ppo_utils.py</code> (<code>compute_<wbr>policy_<wbr>loss</code>), <code>slime/backends/<wbr>fsdp_utils/<wbr>data_packing.py</code> (`unpack_sequences`), `train.py:73-79,92-94`, and `scripts/run-qwen3-4B-fsdp.sh` (GRPO arguments).
+Sources: <code>THUDM/<wbr>slime@<wbr>55e41ffef7193fdd4c8bc14720233e446446b1d7</code>, <code>slime/backends/<wbr>fsdp_utils/<wbr>actor.py</code> (`_train_step`, <code>sum_of_<wbr>sample_<wbr>mean</code>), <code>slime/utils/<wbr>ppo_utils.py</code> (<code>compute_<wbr>policy_<wbr>loss</code>), <code>slime/backends/<wbr>fsdp_utils/<wbr>data_packing.py</code> (`unpack_sequences`), and `scripts/run-qwen3-4B-fsdp.sh` (GRPO arguments).
 
 ## Step 5 · Pre-scale by R/B, then average gradients
 

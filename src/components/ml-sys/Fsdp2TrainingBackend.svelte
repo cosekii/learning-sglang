@@ -140,32 +140,32 @@
     ],
   }, {
     phases: 8, desktopH: 500, mobileH: 1000,
-    caption: 'Pack 1 forms a clipped actor loss. Pack 2 completes backward before one optimizer update.',
-    captionZh: '第 1 包算出裁剪后的 actor loss。第 2 包完成 backward 后，才更新一次权重。',
-    title: 'One actor update: packed answers → weight changes', titleZh: '一次 actor 更新：打包回答 → 权重变化',
-    subtitle: 'actor loss = number that guides weight changes · mask 1 = include token',
-    subtitleZh: 'actor loss = 指导权重变化的数值 · mask 1 = 计入 token',
-    foot: 'DP1 packs · DP8 tables, not peak · constructed gaps · U unknown · entropy/KL=0 · offload_train.',
-    footZh: 'DP1 打包 · DP8 参数表，非峰值 · 构造差值 · U 未知 · entropy/KL=0 · offload_train。',
-    mobileTitle: 'Two packs, one optimizer update', mobileTitleZh: '两包数据，一次优化器更新',
-    mobileSubtitle: 'actor loss guides weight changes', mobileSubtitleZh: 'actor loss 指导权重变化',
+    caption: 'Each pack forms its own actor loss. Their gradients come next.',
+    captionZh: '两包各自算出 actor loss。下一步求它们的梯度。',
+    title: 'Two packs, two actor losses', titleZh: '两包各自算出 actor loss',
+    subtitle: 'actor loss = training score to make smaller · negative is allowed',
+    subtitleZh: 'actor loss = 训练要调低的分数 · 可以是负数',
+    foot: 'DP1 packs · DP8 tables, not peak · constructed gaps · U unknown · entropy/KL=0.',
+    footZh: 'DP1 打包 · DP8 参数表，非峰值 · 构造差值 · U 未知 · entropy/KL=0。',
+    mobileTitle: 'Two packs, two actor losses', mobileTitleZh: '两包各自算出 actor loss',
+    mobileSubtitle: 'actor loss = lower is better · negatives allowed', mobileSubtitleZh: 'actor loss = 训练要调低的分数 · 可以是负数',
     mobileFoot: 'DP1 packs · DP8 tables · U unknown · constructed', mobileFootZh: 'DP1 打包 · DP8 参数表 · U 未知 · 构造例',
-    mobileLegend: 'Blue = loss · orange = update/offload', mobileLegendZh: '蓝 = loss · 橙 = 更新/offload',
+    mobileLegend: 'Blue = forward values and actor loss', mobileLegendZh: '蓝 = forward 数值和 actor loss',
     mobile: [
       { title: `FORWARD · zero_grad → ${FSDP_FORWARD_RESIDENT_GB} GB + U`, titleZh: `FORWARD · zero_grad → ${FSDP_FORWARD_RESIDENT_GB} GB + U`, body: 'all-gather full layer U → release', bodyZh: 'all-gather 完整层 U → 释放', tone: 'blue', phase: 0 },
       { title: 'UNPACK · A[a1] · B[b1]', titleZh: '拆包 · A[a1] · B[b1]', body: 'cu [0,2,4] · mask 1 = count token', bodyZh: 'cu [0,2,4] · mask 1 = 计入 token', tone: 'blue', phase: 1 },
-      { title: 'RATIO · chance now ÷ before', titleZh: 'RATIO · 当前概率 ÷ 旧概率', body: `A 1.40 B 0.70 · exp(+0.3365,−0.3567)`, bodyZh: `A 1.40 B 0.70 · exp(+0.3365,−0.3567)`, tone: 'blue', phase: 2 },
-      { title: 'ADVANTAGE + CLIP', titleZh: 'ADVANTAGE + 裁剪', body: `+u: 1.40→1.28 · −u: 0.70→0.80`, bodyZh: `+u：1.40→1.28 · −u：0.70→0.80`, tone: 'blue', phase: 3 },
-      { title: 'LOSS AFTER CLIP · MAX', titleZh: '裁剪后的 LOSS · 取大值', body: `A ${rewardText(actor.policyLosses[0][0])} · B ${rewardText(actor.policyLosses[1][0])}`, bodyZh: `A ${rewardText(actor.policyLosses[0][0])} · B ${rewardText(actor.policyLosses[1][0])}`, tone: 'blue', phase: 4 },
-      { title: `MASKED MEAN · ${rewardText(actor.pgLoss)}`, titleZh: `MASKED MEAN · ${rewardText(actor.pgLoss)}`, body: `A ${rewardText(actor.maskedMeans[0])} + B ${rewardText(actor.maskedMeans[1])}`, bodyZh: `A ${rewardText(actor.maskedMeans[0])} + B ${rewardText(actor.maskedMeans[1])}`, tone: 'blue', phase: 5 },
-      { title: 'BACKWARD · loss → weight changes', titleZh: 'BACKWARD · loss → 权重变化方向', body: 'P1→P2 · grad_accum=[2] → 1 update', bodyZh: 'P1→P2 · grad_accum=[2] → 更新 1 次', tone: 'orange', phase: 6 },
-      { title: 'SLEEP · LATER UPDATE WEIGHTS', titleZh: 'SLEEP · 随后更新权重', body: 'model + optimizer to CPU · export later', bodyZh: '模型和优化器移到 CPU · 随后导出', tone: 'orange', phase: 7 },
+      { title: 'RATIO · chance now ÷ before', titleZh: 'RATIO · 当前概率 ÷ 旧概率', body: `A ${ratioText(actor.ratios[0][0])} B ${ratioText(actor.ratios[1][0])} · exp(${rewardText(actor.logGaps[0][0])},${rewardText(actor.logGaps[1][0])})`, bodyZh: `A ${ratioText(actor.ratios[0][0])} B ${ratioText(actor.ratios[1][0])} · exp(${rewardText(actor.logGaps[0][0])},${rewardText(actor.logGaps[1][0])})`, tone: 'blue', phase: 2 },
+      { title: `CLIP · advantages A ${rewardText(actor.advantages[0])} · B ${rewardText(actor.advantages[1])}`, titleZh: `CLIP · advantage A ${rewardText(actor.advantages[0])} · B ${rewardText(actor.advantages[1])}`, body: `keep in bounds · A ${ratioText(actor.ratios[0][0])}→${ratioText(actor.clippedRatios[0][0])} · B ${ratioText(actor.ratios[1][0])}→${ratioText(actor.clippedRatios[1][0])}`, bodyZh: `限制在边界内 · A ${ratioText(actor.ratios[0][0])}→${ratioText(actor.clippedRatios[0][0])} · B ${ratioText(actor.ratios[1][0])}→${ratioText(actor.clippedRatios[1][0])}`, tone: 'blue', phase: 3 },
+      { title: `A LOSS max(${rewardText(actor.unclippedLosses[0][0])},${rewardText(actor.clippedLosses[0][0])})=${rewardText(actor.policyLosses[0][0])}`, titleZh: `A LOSS max(${rewardText(actor.unclippedLosses[0][0])},${rewardText(actor.clippedLosses[0][0])})=${rewardText(actor.policyLosses[0][0])}`, body: `B LOSS max(${rewardText(actor.unclippedLosses[1][0])},${rewardText(actor.clippedLosses[1][0])})=${rewardText(actor.policyLosses[1][0])}`, bodyZh: `B LOSS max(${rewardText(actor.unclippedLosses[1][0])},${rewardText(actor.clippedLosses[1][0])})=${rewardText(actor.policyLosses[1][0])}`, tone: 'blue', phase: 4 },
+      { title: `PACK 1 LOSS · ${rewardText(actor.pgLoss)}`, titleZh: `第 1 包 LOSS · ${rewardText(actor.pgLoss)}`, body: `mask [1] → A ${rewardText(actor.maskedMeans[0])} + B ${rewardText(actor.maskedMeans[1])}`, bodyZh: `mask [1] → A ${rewardText(actor.maskedMeans[0])} + B ${rewardText(actor.maskedMeans[1])}`, tone: 'blue', phase: 5 },
+      { title: 'PACK 2 · C[c2,c3] · RATIOS [1.00,1.00]', titleZh: '第 2 包 · C[c2,c3] · RATIO [1.00,1.00]', body: `advantage ${rewardText(actor.pack2.advantages[0])} twice · clip unchanged`, bodyZh: `advantage ${rewardText(actor.pack2.advantages[0])} 两次 · clip 不变`, tone: 'blue', phase: 6 },
+      { title: `PACK 2 · losses [${rewardText(actor.pack2.policyLosses[0][0])},${rewardText(actor.pack2.policyLosses[0][1])}]`, titleZh: `第 2 包 · loss [${rewardText(actor.pack2.policyLosses[0][0])},${rewardText(actor.pack2.policyLosses[0][1])}]`, body: `mask [1,1] → L2 = ${rewardText(actor.pack2.pgLoss)}`, bodyZh: `mask [1,1] → L2 = ${rewardText(actor.pack2.pgLoss)}`, tone: 'blue', phase: 7 },
     ],
     formulas: [
       { en: 'ratio = exp(log_probs − old_log_probs)', zh: 'ratio = exp(log_probs − old_log_probs)' },
-      { en: `clip = [${boundText(actor.clipLow)}, ${boundText(actor.clipHigh)}] · u = ${rewardText(actor.advantages[0])}`, zh: `clip = [${boundText(actor.clipLow)}, ${boundText(actor.clipHigh)}] · u = ${rewardText(actor.advantages[0])}` },
-      { en: `pg_loss = ${rewardText(actor.maskedMeans[0])} + ${rewardText(actor.maskedMeans[1])} = ${rewardText(actor.pgLoss)}`, zh: `pg_loss = ${rewardText(actor.maskedMeans[0])} + ${rewardText(actor.maskedMeans[1])} = ${rewardText(actor.pgLoss)}` },
-      { en: 'optimizer.step → sleep → update_weights', zh: 'optimizer.step → sleep → update_weights' },
+      { en: `clip = [${boundText(actor.clipLow)}, ${boundText(actor.clipHigh)}]`, zh: `clip = [${boundText(actor.clipLow)}, ${boundText(actor.clipHigh)}]` },
+      { en: `L1 = ${rewardText(actor.maskedMeans[0])} + ${rewardText(actor.maskedMeans[1])} = ${rewardText(actor.pgLoss)}`, zh: `L1 = ${rewardText(actor.maskedMeans[0])} + ${rewardText(actor.maskedMeans[1])} = ${rewardText(actor.pgLoss)}` },
+      { en: `L2 = (2 × ${rewardText(actor.pack2.maskedMeans[0])}) ÷ 2 = ${rewardText(actor.pack2.pgLoss)}`, zh: `L2 = (2 × ${rewardText(actor.pack2.maskedMeans[0])}) ÷ 2 = ${rewardText(actor.pack2.pgLoss)}` },
     ],
   }, {
     phases: 5, desktopH: 500, mobileH: 600,
@@ -430,13 +430,13 @@
       {:else if step === 3}
         {#each [
           { title: 'FORWARD · zero_grad clears old gradient · all-gather rebuilds full layer U', titleZh: 'FORWARD · zero_grad 清旧梯度 · all-gather 拼出完整层 U', a: `DP8: ${FSDP_FORWARD_RESIDENT_GB} GB + U during compute`, aZh: `DP8：计算时 ${FSDP_FORWARD_RESIDENT_GB} GB + U`, b: `release U → ${FSDP_FORWARD_RESIDENT_GB} GB · old scoring + current training`, bZh: `释放 U → ${FSDP_FORWARD_RESIDENT_GB} GB · 旧评分 + 当前训练`, tone: 'blue' },
-          { title: 'UNPACK · cu_seqlens = [0,2,4]', titleZh: '拆包 · cu_seqlens = [0,2,4]', a: 'A response[a1] · mask[1]', aZh: 'A 回答[a1] · mask[1]', b: 'B response[b1] · mask[1]', bZh: 'B 回答[b1] · mask[1]', tone: 'blue' },
-          { title: 'RATIO = current chance ÷ old chance = exp(log_probs − old_log_probs)', titleZh: 'RATIO = 当前概率 ÷ 旧概率 = exp(log_probs − old_log_probs)', a: `A exp(${rewardText(actor.logGaps[0])}) = ${ratioText(actor.ratios[0])}`, aZh: `A exp(${rewardText(actor.logGaps[0])}) = ${ratioText(actor.ratios[0])}`, b: `B exp(${rewardText(actor.logGaps[1])}) = ${ratioText(actor.ratios[1])}`, bZh: `B exp(${rewardText(actor.logGaps[1])}) = ${ratioText(actor.ratios[1])}`, tone: 'blue' },
-          { title: `ADVANTAGE + CLIP [${boundText(actor.clipLow)}, ${boundText(actor.clipHigh)}]`, titleZh: `ADVANTAGE + 裁剪 [${boundText(actor.clipLow)}, ${boundText(actor.clipHigh)}]`, a: `A ${rewardText(actor.advantages[0])} · 1.40 → 1.28`, aZh: `A ${rewardText(actor.advantages[0])} · 1.40 → 1.28`, b: `B ${rewardText(actor.advantages[1])} · 0.70 → 0.80`, bZh: `B ${rewardText(actor.advantages[1])} · 0.70 → 0.80`, tone: 'blue' },
-          { title: 'LOSS AFTER CLIP = max(−r·adv, −clip(r)·adv)', titleZh: '裁剪后的 LOSS = max(−r·adv, −clip(r)·adv)', a: `A max(${rewardText(actor.unclippedLosses[0][0])}, ${rewardText(actor.clippedLosses[0][0])}) = ${rewardText(actor.policyLosses[0][0])}`, aZh: `A max(${rewardText(actor.unclippedLosses[0][0])}, ${rewardText(actor.clippedLosses[0][0])}) = ${rewardText(actor.policyLosses[0][0])}`, b: `B max(${rewardText(actor.unclippedLosses[1][0])}, ${rewardText(actor.clippedLosses[1][0])}) = ${rewardText(actor.policyLosses[1][0])}`, bZh: `B max(${rewardText(actor.unclippedLosses[1][0])}, ${rewardText(actor.clippedLosses[1][0])}) = ${rewardText(actor.policyLosses[1][0])}`, tone: 'blue' },
-          { title: 'MASKED MEAN · sum the per-record means', titleZh: 'MASKED MEAN · 每条记录取均值，再求和', a: `A ${rewardText(actor.maskedMeans[0])} × 1 ÷ 1`, aZh: `A ${rewardText(actor.maskedMeans[0])} × 1 ÷ 1`, b: `B ${rewardText(actor.maskedMeans[1])} × 1 ÷ 1 · Σ = ${rewardText(actor.pgLoss)}`, bZh: `B ${rewardText(actor.maskedMeans[1])} × 1 ÷ 1 · Σ = ${rewardText(actor.pgLoss)}`, tone: 'blue' },
-          { title: 'BACKWARD = loss → weight-change directions · Pack 1 → Pack 2', titleZh: 'BACKWARD = loss → 权重变化方向 · 第 1 包 → 第 2 包', a: 'grad_accum = [2]', aZh: 'grad_accum = [2]', b: 'then one optimizer.step()', bZh: '然后一次 optimizer.step()', tone: 'orange' },
-          { title: 'SLEEP · train returns → offload', titleZh: 'SLEEP · train 返回 → offload', a: 'model + optimizer GPU → CPU', aZh: '模型和优化器 GPU → CPU', b: 'later update_weights → Ch. 7', bZh: '随后 update_weights → 第 7 章', tone: 'orange' },
+          { title: 'UNPACK · cu_seqlens = [0,2,4] · mask 1 = count', titleZh: '拆包 · cu_seqlens = [0,2,4] · mask 1 = 计入', a: 'A response[a1] · mask[1]', aZh: 'A 回答[a1] · mask[1]', b: 'B response[b1] · mask[1]', bZh: 'B 回答[b1] · mask[1]', tone: 'blue' },
+          { title: 'RATIO = current chance ÷ old chance = exp(log_probs − old_log_probs)', titleZh: 'RATIO = 当前概率 ÷ 旧概率 = exp(log_probs − old_log_probs)', a: `A exp(${rewardText(actor.logGaps[0][0])}) = ${ratioText(actor.ratios[0][0])}`, aZh: `A exp(${rewardText(actor.logGaps[0][0])}) = ${ratioText(actor.ratios[0][0])}`, b: `B exp(${rewardText(actor.logGaps[1][0])}) = ${ratioText(actor.ratios[1][0])}`, bZh: `B exp(${rewardText(actor.logGaps[1][0])}) = ${ratioText(actor.ratios[1][0])}`, tone: 'blue' },
+          { title: `CLIP = keep ratio inside [${boundText(actor.clipLow)}, ${boundText(actor.clipHigh)}]`, titleZh: `CLIP = 把 ratio 限在 [${boundText(actor.clipLow)}, ${boundText(actor.clipHigh)}] 内`, a: `A ${rewardText(actor.advantages[0])} · ${ratioText(actor.ratios[0][0])} → ${ratioText(actor.clippedRatios[0][0])}`, aZh: `A ${rewardText(actor.advantages[0])} · ${ratioText(actor.ratios[0][0])} → ${ratioText(actor.clippedRatios[0][0])}`, b: `B ${rewardText(actor.advantages[1])} · ${ratioText(actor.ratios[1][0])} → ${ratioText(actor.clippedRatios[1][0])}`, bZh: `B ${rewardText(actor.advantages[1])} · ${ratioText(actor.ratios[1][0])} → ${ratioText(actor.clippedRatios[1][0])}`, tone: 'blue' },
+          { title: 'LOSS = larger of −ratio×advantage and −clipped ratio×advantage', titleZh: 'LOSS = −ratio×advantage 与 −裁剪后 ratio×advantage 取大值', a: `A max(${rewardText(actor.unclippedLosses[0][0])}, ${rewardText(actor.clippedLosses[0][0])}) = ${rewardText(actor.policyLosses[0][0])}`, aZh: `A max(${rewardText(actor.unclippedLosses[0][0])}, ${rewardText(actor.clippedLosses[0][0])}) = ${rewardText(actor.policyLosses[0][0])}`, b: `B max(${rewardText(actor.unclippedLosses[1][0])}, ${rewardText(actor.clippedLosses[1][0])}) = ${rewardText(actor.policyLosses[1][0])}`, bZh: `B max(${rewardText(actor.unclippedLosses[1][0])}, ${rewardText(actor.clippedLosses[1][0])}) = ${rewardText(actor.policyLosses[1][0])}`, tone: 'blue' },
+          { title: 'MASK 1 = count · 0 = skip · average each record', titleZh: 'MASK 1 = 计入 · 0 = 跳过 · 每条记录取均值', a: `A ${rewardText(actor.maskedMeans[0])} × 1 ÷ 1`, aZh: `A ${rewardText(actor.maskedMeans[0])} × 1 ÷ 1`, b: `B ${rewardText(actor.maskedMeans[1])} × 1 ÷ 1 · L1 = ${rewardText(actor.pgLoss)}`, bZh: `B ${rewardText(actor.maskedMeans[1])} × 1 ÷ 1 · L1 = ${rewardText(actor.pgLoss)}`, tone: 'blue' },
+          { title: 'PACK 2 · C[c2,c3] · ratios [1.00,1.00]', titleZh: '第 2 包 · C[c2,c3] · ratio [1.00,1.00]', a: `clip unchanged · advantages [${rewardText(actor.pack2.advantages[0])},${rewardText(actor.pack2.advantages[0])}]`, aZh: `clip 不变 · advantage [${rewardText(actor.pack2.advantages[0])},${rewardText(actor.pack2.advantages[0])}]`, b: `losses [${rewardText(actor.pack2.policyLosses[0][0])},${rewardText(actor.pack2.policyLosses[0][1])}]`, bZh: `loss [${rewardText(actor.pack2.policyLosses[0][0])},${rewardText(actor.pack2.policyLosses[0][1])}]`, tone: 'blue' },
+          { title: 'PACK 2 · mask [1,1] → two-token mean', titleZh: '第 2 包 · mask [1,1] → 两个 token 取均值', a: `(${rewardText(actor.pack2.policyLosses[0][0])} × 1 ${rewardText(actor.pack2.policyLosses[0][1])} × 1) ÷ (1 + 1) = ${rewardText(actor.pack2.pgLoss)}`, aZh: `(${rewardText(actor.pack2.policyLosses[0][0])} × 1 ${rewardText(actor.pack2.policyLosses[0][1])} × 1) ÷ (1 + 1) = ${rewardText(actor.pack2.pgLoss)}`, b: 'L1 and L2 ready for gradients', bZh: 'L1 和 L2 接着求梯度', tone: 'blue' },
         ] as node, i}
           <g opacity={phase >= i ? 1 : 0}>
             <rect x="35" y={74 + i * 48} width="650" height="42" rx="10" fill={fill(node.tone)} stroke={stroke(node.tone)} />
@@ -445,7 +445,7 @@
             <text x="668" y={107 + i * 48} text-anchor="end" class="small">{t(node.b, node.bZh)}</text>
           </g>
         {/each}
-        <text x="360" y="472" text-anchor="middle" class="small" opacity={phase >= 7 ? 1 : 0}>{t('Blue = token values and loss · orange = weight update and offload', '蓝 = token 数值和 loss · 橙 = 权重更新和 offload')}</text>
+        <text x="360" y="472" text-anchor="middle" class="small" opacity={phase >= 7 ? 1 : 0}>{t('Blue = forward values and actor loss', '蓝 = forward 数值和 actor loss')}</text>
       {:else if step === 4}
         {#each [
           { x: 40, title: 'LAYER GRADIENT', titleZh: '本层梯度', result: 'temporary', resultZh: '临时', body: 'after forward', bodyZh: '前向之后算出', tone: 'blue' },

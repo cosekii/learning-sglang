@@ -1,3 +1,33 @@
+# lane k2 本轮报告 · ML 08 Step 4 只讲 actor loss（ML-48）
+
+日期：2026-11-27。类型：修旧。按 direction 返工 ML-48 的 Steps 4–5，本提交只完成 Step 4；Step 3 packing 未动，Step 5 的顺序返工是下一提交。范围只有本步组件与构造数字、双语 deep 和 MDX、生成 transcript、定向审计和本报告；未改其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。
+
+## 修复内容
+
+- Step 4 删除 backward、optimizer、offload 和 `update_weights` 的舞台内容，只讲 actor loss。图上用「当前概率 ÷ 旧概率」解释 ratio，用「限制在边界内」解释 clip，用「1 计入、0 跳过」解释 mask，并说明 actor loss 是要调低的训练分数、可以为负数。
+- Pack 1 保留 A／B 的 ratio、clip、完整 `max` 输入与输出，得到 `L1=-0.4490`。Pack 2 使用 C 的实际回答 token `c2,c3`，构造 ratio `[1.00,1.00]`、两个 `+0.9354` advantage、两个 `-0.9354` token loss 和 mask `[1,1]`，得到 `L2=-0.9354`。手机也展示 advantage、clip、两条完整 `max` 算式和 Pack 2 的输入，不再只给结果。
+- 蓝色图例改为「forward 数值和 actor loss」，覆盖同色的 7 GB、完整层 U、release、token 数值和 loss。空 mask 反例移到 `Derived · not drawn／图外推导`；Step 5 的详细顺序不在本提交提前声称。
+- **ML-48 的 Step 4 作者修复完成，待协调固定复审，不自行销项。** Step 5 与整章仍不申报 GO。
+
+## 作者评分与独立冷读
+
+| 步 | R1–R5 | 机制 R6 | 原十个非视觉项 | 新内容洞 | R1 小学生复述 |
+|---|---:|---:|---:|---:|---|
+| 4 | 10/10 | 2/2（DOM） | 20/20 | 0 | 两包各自比较新旧 token 概率，限制变化后算出一个训练分数。 |
+
+- 独立 `explore` 冷读先后指出 C 的回答 token 映射、未解释的 `r/adv` 与 `+u`、负数 loss、手机缺 advantage 输入和 `max` 操作。逐项修复后最终复审无剩余文本／DOM 阻塞，R1–R5 **10/10**、机制 R6 **2/2**、原十个非视觉项 **20/20**、内容洞 **0**。这不是协调 verdict。
+- 当前模型不能读取 PNG；已尝试读取代表图，工具明确返回不支持图像输入。因此原 #4/#5、视觉验收和整章结论留待协调与主人，不声称看过图片或视觉通过。
+
+## 硬门与证据
+
+- `npm run build`：**60 页**通过；Step 4 `readability`：**0 机械问题**；`deep-check 08`：ok；`zh-check`：all clear；英中全章 360／390／430 px `mobile` 与中文 Step 4 字号门均 **no layout breaks**；`git diff --check` 干净。
+- transcript 连续两次逐字一致：**2,522 词**，SHA-256 `f953730262c6efee34ba55f0c29e94a553feacf873b260da73ddfc5c2fbda4f3`。
+- `.bot/out/ml48-step4-audit.mjs` 覆盖英中桌面与 390 px × direct／前步入口：**64 状态、56/56 个机制转变、8 个 deep 状态**，普通舞台最低 **10.806249999999999 CSS px**。文字重叠、SVG／卡片出界、页面／deep 横溢和 `failures` 均为 **0**。Step 4 末相另断言没有 backward／offload／`update_weights`／`optimizer.step`，Pack 2 有 `c2,c3`、advantage、token loss 和 mask mean。
+- deep 打开后的桌面舞台最低 **8.0056 CSS px**，属于既有共享 ML-21／22 范围，本提交未改也不声称该共享项通过。代表图：`.bot/out/ml48-step4-audit/zh-390-direct-p7.png`。本地地址：`http://localhost:4325/learning-sglang/ml-sys/ch/08-fsdp2-training-backend/?step=4`；收尾停止服务后，在本目录运行 `npx astro dev --background` 再查看。
+- 未跑全站回归、真实 FSDP2 训练、rollout、GPU benchmark、故障注入或 reduced-motion 动态切换。`node_modules` 原是指向协调 checkout 的符号链接；只删除本目录中的符号链接并在本目录 `npm install`，未进入或修改协调 checkout。
+
+---
+
 # lane k1 本轮报告 · Omni 07 Step 5 的 Omni-11 MPS lease 形成
 
 日期：2026-11-27。类型：修旧。本轮开始 HEAD 与 `origin/tutorials` 均为 `7c98efc`，工作树干净；direction 指定的 Step 4 已在该提交完成并推送，因此不返工待复审批次，按 direction 承接下一最小单元 Step 5。范围只有本步组件、双语 MDX 与 deep、生成 transcript、本章评分卡、定向审计和本报告；Steps 1–4 与 Step 6、其他章、其他书、`.bot/memory/` 和第 1 本受保护英文原文均未改。

@@ -82,13 +82,17 @@ async function capture(page, combo, phase) {
     ['forward', '7gb+u', 'all-gather'],
     ['cu', '[0,2,4]', 'mask'],
     ['ratio', '+0.3365', '0.70'],
-    ['advantage', '1.28', '0.80'],
+    ['clip', '1.28', '0.80'],
     ['loss', '-1.1973', '+0.7483'],
-    ['maskedmean', '-0.4490'],
-    ['backward', 'grad_accum'],
-    ['sleep', 'cpu', 'update_weights'],
+    ['mask', '-0.4490'],
+    ['ratio', 'c2,c3', '1.00', 'advantage'],
+    ['mask', '-0.9354'],
   ][phase];
   for (const text of required) check(compact.includes(text), `${name}: missing ${text}`);
+  if (phase === 7) {
+    for (const text of ['backward', 'offload', 'update_weights', 'optimizer.step']) check(!compact.includes(text), `${name}: Step 4 still shows ${text}`);
+    check(compact.includes('blue=forwardvaluesandactorloss') || compact.includes('蓝=forward数值和actorloss'), `${name}: wrong blue legend`);
+  }
   states.push({ name, ...state });
   writeFileSync(join(out, `${name}.png`), await page.screenshot());
   return compact;
@@ -115,7 +119,7 @@ async function captureDeep(page, lang, width) {
     };
   })()`);
   const name = `${lang}-${width}-deep`;
-  const required = lang === 'en' ? ['compute_policy_loss', 'cu_seqlens', '0.7483', 'train.py:73-79,92-94'] : ['compute_policy_loss', 'cu_seqlens', '0.7483', 'train.py:73-79,92-94'];
+  const required = ['compute_policy_loss', 'cu_seqlens', '0.7483', '0.9354'];
   check(state.expanded === 'true' && state.counter === '04 / 07', `${name}: wrong open state`);
   check(!state.katexErrors && !state.rawMath && state.overflow <= 1 && !state.pageOverflow, `${name}: rendering failed ${state.overflow}`);
   for (const text of required) check(state.text.includes(text), `${name}: missing ${text}`);

@@ -115,71 +115,70 @@ $$a_{i,j}=r_i\quad(1\leq j\leq L_i),\qquad c_0=0,\qquad c_{k+1}=c_k+\ell_k$$
 
 来源：`THUDM/slime@55e41ffe` 的 <code>slime/backends/<wbr>fsdp_utils/<wbr>actor.py</code>（`train`、`_train_core`、`_packed_data`）、<code>slime/utils/<wbr>data.py</code>（`process_rollout_data`、<code>get_minimum_<wbr>num_<wbr>micro_<wbr>batch_<wbr>size</code>）、<code>slime/backends/<wbr>fsdp_utils/<wbr>data_packing.py</code>（`pack_sequences`），以及 <code>scripts/<wbr>run-qwen3-4B-fsdp.sh</code>（`--use-dynamic-batch-size`、`--max-tokens-per-gpu 9216`）。
 
-## 第 4 步 · 把两包数据变成一次 actor 更新
+## 第 4 步 · 两包各自算出 actor loss
 
-**一句话。** 第 1 包算出裁剪并加 mask 的 actor loss，第 2 包完成 backward，随后进行一次优化器更新，并按配置 offload 训练端。
+**一句话。** 每包比较当前和旧的 token 概率，限制变化幅度，再对计入的回答 token loss 取均值。
 
 ### 图上是什么
 
-- `FORWARD` 把两个构造视角分开：打包算式用 DP1，显存账用 DP8。`zero_grad(set_to_none=True)` 清掉旧梯度分片后，DP8 例子保存 7 GB 权重和优化器分片。`All-gather` 拼出大小未知的临时完整层 $U$，再由 `release` 释放。7 GB 只算参数表，不是全部训练显存或峰值。
-- `拆包` 用第 1 包的 `cu_seqlens=[0,2,4]` 还原 A、B 两条记录。每条有一个回答 token，response mask 都是 `[1]`。mask 1 表示这个 token 计入该记录的均值。
+- 蓝色表示 forward 数值和 actor loss 算式。actor loss 是训练要调低的分数，可以是负数。`FORWARD` 把两个构造视角分开：打包算式用 DP1，显存账用 DP8。`zero_grad(set_to_none=True)` 清掉旧梯度分片后，DP8 例子保存 7 GB 权重和优化器分片。`All-gather` 拼出大小未知的临时完整层 $U$，再由 `release` 释放。7 GB 只算参数表，不是全部训练显存或峰值。
+- `拆包` 用第 1 包的 `cu_seqlens=[0,2,4]` 还原 A、B 两条记录。每条有一个回答 token，response mask 都是 `[1]`。mask 1 表示这个 token 计入该记录的均值，mask 0 表示不计入。
 - `RATIO` 是当前 token 概率除以旧概率。ratio 大于 1，表示当前模型给这个 token 的概率更高。旧评分和当前训练两次计算分别产生两个 log probability。构造差值为 A 的 $+0.3365$ 和 B 的 $-0.3567$，得到 ratio 1.40 和 0.70。
-- `ADVANTAGE + 裁剪` 沿用第 3 步的 advantage：A 为 $+u$，B 为 $-u$。裁剪把 ratio 限制在自带脚本的 0.80 到 1.28 之间，所以两个 ratio 分别变成 1.28 和 0.80。
-- `裁剪后的 LOSS` 把未裁剪和裁剪后的乘积都取负，再取较大的值。A 得到 $-1.1973$，B 得到 $+0.7483$。
-- `MASKED MEAN` 先在每条记录内对计入的回答 token 取均值，再把各记录的均值相加。这里两个分母都是 1，所以 `pg_loss = -1.1973 + 0.7483 = -0.4490`。
-- `BACKWARD` 把 loss 变成权重变化方向。它依次处理第 1、2 包，才执行 `grad_accum=[2]` 允许的唯一一次 `optimizer.step()`。橙色 `SLEEP` 行随后在 `offload_train` 路径把模型和优化器移到 CPU。之后的 `update_weights` 交接属于第 7 章。
+- `CLIP` 把 ratio 限制在自带脚本的 0.80 到 1.28 之间。第 3 步提供 advantage：A 为 $+u$，B 为 $-u$。裁剪后的 ratio 分别是 1.28 和 0.80。
+- `LOSS` 把未裁剪和裁剪后的乘积都取负，再取较大的值。A 得到 $-1.1973$，B 得到 $+0.7483$。第 1 包把两条记录的均值相加，得到 $L_1=-0.4490$。
+- 第 2 包是记录 C，两个回答 token 是 `c2` 和 `c3`。构造 ratio 为 `[1.00,1.00]`，clip 不改变它们。两个 advantage 都是 $+u$，所以 loss 是 `[-0.9354,-0.9354]`。mask `[1,1]` 计入两个 token，均值为 $L_2=-0.9354$。
 
 ### 公式与符号
 
-$$\rho_i=\exp(\operatorname{log\_probs}_i-\operatorname{old\_log\_probs}_i)$$
+$$\rho_{i,j}=\exp(\operatorname{log\_probs}_{i,j}-\operatorname{old\_log\_probs}_{i,j})$$
 
-$$\hat\rho_i=\operatorname{clip}(\rho_i,0.80,1.28)$$
+$$\hat\rho_{i,j}=\operatorname{clip}(\rho_{i,j},0.80,1.28)$$
 
-$$\ell_i=\max(-\rho_i a_i,-\hat\rho_i a_i)$$
+$$\ell_{i,j}=\max(-\rho_{i,j}a_i,-\hat\rho_{i,j}a_i)$$
 
-$$\bar\ell_i=\frac{\sum_j\ell_{i,j}m_{i,j}}{\max(\sum_jm_{i,j},1)}$$
-
-$$L_{pg}=\sum_i\bar\ell_i$$
+$$\bar\ell_i=\frac{\sum_j\ell_{i,j}m_{i,j}}{\max(\sum_jm_{i,j},1)},\qquad L_p=\sum_{i\in p}\bar\ell_i$$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
-| $\rho_i$ | 记录 $i$ 的当前 token 概率除以旧概率 | 当前和旧 log probability；这里用构造差值 |
-| $\hat\rho_i$ | 裁剪后的 ratio | 自带脚本 `eps_clip=0.2`、`eps_clip_high=0.28` |
-| $a_i$ | 记录 $i$ 的 advantage | 第 3 步：A 为 $+u$，B 为 $-u$ |
+| $\rho_{i,j}$ | 记录 $i$ 第 $j$ 个回答位置的当前概率除以旧概率 | 当前和旧 log probability；这里用构造差值 |
+| $\hat\rho_{i,j}$ | 裁剪后的 ratio | 自带脚本 `eps_clip=0.2`、`eps_clip_high=0.28` |
+| $a_i$ | 记录 $i$ 的 advantage | 第 3 步：A、C 为 $+u$，B 为 $-u$ |
 | $\ell_{i,j}$ | 回答位置 $j$ 取负后的 PPO policy loss | <code>compute_<wbr>policy_<wbr>loss</code> 取两个负乘积中的较大值 |
-| $m_{i,j}$ | response mask | 1 计入，0 排除；图中两个 mask 都是 1 |
+| $m_{i,j}$ | response mask | 1 计入，0 排除；第 1 包用 `[1]`，第 2 包用 `[1,1]` |
 | $\bar\ell_i$ | 记录 $i$ 内的 masked mean | <code>sum_of_<wbr>sample_<wbr>mean</code>；分母至少为 1 |
-| $L_{pg}$ | 各记录 policy loss 均值之和 | 本步第 1 包的构造例 |
+| $L_p$ | 第 $p$ 包内各记录均值之和 | A+B 得到 $L_1$，C 得到 $L_2$ |
 
 ### 代入图上的数
 
 计算沿用第 3 步未四舍五入的 $u$，图上显示为 0.9354。A 的 $\exp(0.3365)\approx1.40$ 被裁剪为 1.28：
 
-$$\ell_A=\max(-1.40u,-1.28u)$$
-
-$$\ell_A=\max(-1.3096,-1.1973)=-1.1973$$
+$$\ell_A=\max(-1.40u,-1.28u)=\max(-1.3096,-1.1973)=-1.1973$$
 
 B 的 $\exp(-0.3567)\approx0.70$ 被裁剪为 0.80，advantage 是 $-u$：
 
-$$\ell_B=\max(-0.70(-u),-0.80(-u))$$
+$$\ell_B=\max(-0.70(-u),-0.80(-u))=\max(+0.6548,+0.7483)=+0.7483$$
 
-$$\ell_B=\max(+0.6548,+0.7483)=+0.7483$$
+第 1 包的两个 mask 都是 `[1]`，所以 $L_1=-1.1973+0.7483=-0.4490$。C 的两个 ratio 都是 1，两个 mask 也都是 1：
 
-两条 response mask 都是 `[1]`，所以每个单 token 均值的分母都是 1。第 1 包的合计为 $-1.1973+0.7483=-0.4490$。如果一条记录的 response mask 全为 0 或为空，分子是 0，分母被钳为 1，所以这条记录贡献 0。自带脚本把 `entropy_coef` 和 `kl_loss_coef` 都设为 0，所以这些可选项不改变本例的 loss。分数差和 mask 是教学构造值，不是训练实测。
+$$L_2=\frac{-u+(-u)}{1+1}=-u=-0.9354$$
+
+自带脚本把 `entropy_coef` 和 `kl_loss_coef` 都设为 0，所以这些可选项不改变两包的构造 loss。分数差和 mask 是教学构造值，不是训练实测。
+
+### 图外推导
+
+如果一条记录的 response mask 全为 0 或为空，分子是 0，分母被钳为 1，所以这条记录贡献 0。图上只画了包含 1 的 mask。
 
 ### 实现边界
 
-实现保存 `ppo_kl = old_log_probs - log_probs`，所以 `(-ppo_kl).exp()` 就是图上的 $\exp(\operatorname{log\_probs}-\operatorname{old\_log\_probs})$。本例关闭 `use_rollout_logprobs`：较早的 no-grad actor 计算只评分并写入 `log_probs`，随后作为 `old_log_probs`；带梯度的训练计算写入 `cur_log_probs`，让 backward 能求出权重变化方向。启用这个 flag 时，旧分数改用 `rollout_log_probs`，图上没有画这条替代路径。<code>compute_<wbr>policy_<wbr>loss</code> 把两个乘积取负后用 `maximum` 取大值；恢复符号后，与常见 PPO 公式取小值相同。
+实现保存 `ppo_kl = old_log_probs - log_probs`，所以 `(-ppo_kl).exp()` 就是图上的 $\exp(\operatorname{log\_probs}-\operatorname{old\_log\_probs})$。本例关闭 `use_rollout_logprobs`：较早的 no-grad actor 计算只评分并写入 `log_probs`，随后作为 `old_log_probs`；带梯度的训练计算写入 `cur_log_probs`。启用这个 flag 时，旧分数改用 `rollout_log_probs`，图上没有画这条替代路径。<code>compute_<wbr>policy_<wbr>loss</code> 把两个乘积取负后用 `maximum` 取大值；恢复符号后，与常见 PPO 公式取小值相同。
 
-<code>sum_of_<wbr>sample_<wbr>mean</code> 先在每条记录内计算 masked mean，再把记录相加，不是对整包所有回答 token 只取一个均值。第 5 步再讲 $R/B$ 缩放和 FP32 梯度平均。TIS、GSPO 序列 ratio 和非零 entropy／KL 系数都是本构造例不展开的可选路径。
-
-`train.py` 等待训练结束，按配置 offload 训练端，恢复 rollout，然后才调用 `update_weights`。图上写「随后交接」，不表示紧接着发生。未启用 `offload_train` 时，训练组清理显存，而不是把模型和优化器移到 CPU。reference model 的 offload 和另一种 `fsdp_cpu_offload` 策略不在此展开。
+<code>sum_of_<wbr>sample_<wbr>mean</code> 先在每条记录内计算 masked mean，再把记录相加，不是对整包所有回答 token 只取一个均值。TIS、GSPO 序列 ratio 和非零 entropy／KL 系数都是本构造例不展开的可选路径。这张 actor loss 图不展开 backward、梯度累加、优化器更新和 offload。
 
 ### 接下来
 
-actor loss 已有具体数值。下一步跟随它的 $R/B$ 缩放，经过 backward 和 FP32 reduce-scatter，得到这个 rank 拥有的梯度分片。
+下一步预缩放 actor loss，并跟随由此得到的梯度。
 
-来源：<code>THUDM/<wbr>slime@<wbr>55e41ffef7193fdd4c8bc14720233e446446b1d7</code> 的 <code>slime/backends/<wbr>fsdp_utils/<wbr>actor.py</code>（`_train_step`、<code>sum_of_<wbr>sample_<wbr>mean</code>、`sleep`）、<code>slime/utils/<wbr>ppo_utils.py</code>（<code>compute_<wbr>policy_<wbr>loss</code>）、<code>slime/backends/<wbr>fsdp_utils/<wbr>data_packing.py</code>（`unpack_sequences`）、`train.py:73-79,92-94`，以及 `scripts/run-qwen3-4B-fsdp.sh` 的 GRPO 参数。
+来源：<code>THUDM/<wbr>slime@<wbr>55e41ffef7193fdd4c8bc14720233e446446b1d7</code> 的 <code>slime/backends/<wbr>fsdp_utils/<wbr>actor.py</code>（`_train_step`、<code>sum_of_<wbr>sample_<wbr>mean</code>）、<code>slime/utils/<wbr>ppo_utils.py</code>（<code>compute_<wbr>policy_<wbr>loss</code>）、<code>slime/backends/<wbr>fsdp_utils/<wbr>data_packing.py</code>（`unpack_sequences`），以及 `scripts/run-qwen3-4B-fsdp.sh` 的 GRPO 参数。
 
 ## 第 5 步 · 先乘 R/B，再平均梯度
 
