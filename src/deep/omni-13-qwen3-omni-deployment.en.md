@@ -147,7 +147,7 @@ The config values come from `examples/configs/qwen3_omni_colocated_h100_bf16.yam
 
 ### Next
 
-The next step turns these shares into GB and tests whether the video example fits on one card.
+The next step tests a separate video example in GB and asks whether it fits on one card.
 
 ## Step 5 · The video test overflows one H100
 
@@ -155,7 +155,7 @@ The next step turns these shares into GB and tests whether the video example fit
 
 ### On the stage
 
-- The six input rows reproduce Step 4's shares in GB: 61.0 GB of thinker weights, 4.0 GB of video reserve, 3.1 GB of KV cache, 4.8 GB for encoders and code2wav, 4.8 GB held back and 8.0 GB for the talker.
+- The six input rows form a separate constructed video-test lower bound. The video-reserve, other-stage, held-back and talker rows use Step 4's shares; weights and KV use their own byte arithmetic. The rows are 61.0 GB of thinker weights, 4.0 GB of video reserve, 3.1 GB of KV cache, 4.8 GB for encoders and code2wav, 4.8 GB held back and 8.0 GB for the talker.
 - Both bars use the same 0–90 GB scale. The dashed line marks the 80 GB card.
 - In the before bar, blue covers the 77.7 GB that can stay on GPU 0 and orange covers the 8.0 GB talker. The red part beyond the dashed line is the 5.7 GB overflow.
 - In the after bar, removing the orange talker leaves 77.7 GB on GPU 0. The talker moves to GPU 1.
@@ -191,7 +191,7 @@ $$
 | Talker | `10% × 80 GB` | 8.0 |
 | Total | sum of the six rows | about 85.7 |
 
-The overflow is `85.7 − 80 = 5.7 GB`. Removing only the talker gives `85.7 − 8.0 = 77.7 GB`, which fits.
+Here `30.5B` means 30.5 billion saved values and `2 B` means 2 bytes per value. The overflow is `85.7 − 80 = 5.7 GB`. Removing only the talker gives `85.7 − 8.0 = 77.7 GB`, which fits.
 
 ### Boundaries and sources
 
