@@ -1727,3 +1727,44 @@ npx astro dev stop
 - 阻塞项只有一个：图像能力评审者实看 `/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-1ujx7ox4/opencode/d-s2/final/` 的 28 张图（en-desktop、en-phone-360／390／430、zh-phone-360／390／430 各 p0–p3，相位身份已由 `data-animation-phase` 在采集时确认），核对每相焦点与状态变化、各宽度裁切／重叠／红框描边。
 - 该评审只能由协调侧用有图像输入的模型执行；执行后把 verdict 写进本节和 `memory/scores/inside-voxt/models-and-app-updates.md`，再重评 Step 2 机制分。
 - 在此之前：机制 R6 保持协调 `c3a7773` 的 **7/12**，整章 NO-GO，Step 3–5 不动；其余机械门（build、transcript、readability、deep-check、zh-check、英中 mobile 三宽度）均已在 `2b1ccb4` 通过，无未结代码改动。
+
+---
+
+# lane d 本轮报告 · Voxt 10 displayed Step 1 相位动画
+
+日期：2026-11-27。类型：direction.md（05:32）指定的 lane d 最小单元——只承接 Voxt 10 `FileTranscription.svelte` displayed Step 1，一个 Step 一个提交，不移植其余九步大 diff。本轮开始 HEAD 与 `origin/tutorials` 均为 `ef82fe9`，工作树干净。范围只有该组件、再生成 transcript 和本报告；未改其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。
+
+## 来源与边界
+
+- 提交的是失败目录 `ls-d-1127-045747` 保留的 Step-1-only 草稿，文件 SHA-256 `0f636b30213c1bf0a891b641bdbc470d46cd69a7648b05767a3178d4a3501ead`，相对 HEAD **+66/-36**，与 review.md 记录逐项一致。草稿父版本与本目录 HEAD 的文件哈希相同（`47fa4d08…0145`），补丁原样套用、未改一行。
+- 另一份草稿（`ls-d-1127-051322`／`ls-d-1127-031109`，SHA-256 `4526f171…a613`）含 11 步 `PHASE_COUNTS`／`motionFrames` 大机制，按 direction 不移植；两份草稿目录均未动，互不覆盖。
+- 改动内容：Step 1（step index 0）从静态图改为三相循环——先两条路线的外框，再文件路线的输入与 `Voxt transcribe`，再输出与三条要点；带 `LoopProgress`（一圈 4.9 s）、reduced-motion 直接落末相、`data-animation-step/phase/final-phase` 身份属性。桌面和手机两套布局同机制。文字、caption、数字零改动。
+- 这正面对应 EVAL 第 6 节「每一步都有动画」对本章首步的要求；其余十步的动画不在本轮范围，继续冻结待协调排期。
+
+## 目标硬门（全过）
+
+- `npm run build`：60 页通过（本 lane 的 `node_modules` 原是指向协调 checkout 的符号链接，已改为本地实目录重装，build／vite 缓存不再写入 `~/code/learning-sglang`）。
+- `BOOK=voxt ONLY=10 node scripts/transcript.mjs`：11 步无 caption、出界、重叠或文本规则报告；再生成 diff 只有一行 `- loops`（LoopProgress 标签），已随提交。
+- `BOOK=voxt ONLY=10 node scripts/mobile.mjs`：360/390/430 px **no layout breaks**；`BOOK=voxt ONLY=10 STEP=1 LANG=zh` 中文字号门通过。
+- `BOOK=voxt ONLY=10 STEP=1 npm run readability`：0 机械问题。`BOOK=voxt ONLY=10 node scripts/zh-check.mjs`、`node scripts/deep-check.mjs` 均 ok（11 步）。
+
+## 机制与几何证据（无图像输入，只报 DOM／几何）
+
+按 EVAL 执行门，不写「已看图」；证据为 DOM 探针（1440×900，英中各三个采样点，相位以 `data-animation-phase` 锚定 lap 起点）：
+
+- 身份：`data-animation-step=0`、counter `1 / 11`、hydration 正常；中英一致。
+- 两个以上机制状态：可见 `<text>` 数相位 0/1/2 分别为 **12/16/24**；`Voxt transcribe` 框在相位 ≥1 出现，`meeting.srt / talk.txt` 输出框与三条要点在相位 2 出现，顺序与 caption「文件转写的结果是 SRT 或 TXT」一致。
+- 六个采样点文字重叠 **0**、SVG 出界 **0**、最低可见字号 **11.50 CSS px**（≥10）；`loops`／`循环` 标签在场。探针脚本 `/tmp/lsd-probe.mjs`（未提交），可用 `scripts/lib/browser.mjs` 重跑。
+- 截图 6 张（桌面英/中分相、手机英/中末相）在 `/tmp/lsd-shots/`；本 lane 无图像输入能力（同上一轮记录），未逐张读图，图像 verdict 仍需协调侧有图像输入的评审者实看。
+
+## 评分（只评本轮改动的 Step 1）
+
+- 易读 **12/12**。R1 小学生复述：「听写是把字打到光标那里；把一个录音文件交给 Voxt，它变成字幕文件或纯文字文件。」R2：本步只引「文件路线」一件新事（听写路线是第 1–9 章走过的）。R3：SRT／TXT 图上有大白话（「SRT = subtitle · TXT = plain text」），M4A 注「compressed sound」。R4：caption 两句短句。R5：一小时会议 3,600 秒、解码 115.2 MB 在图上，推导在第 2 步（既有安排，未改）。R6：三相循环一次只长出一组框，末相停留 2.2 s，reduced-motion 落末相。
+- 冷读洞 **0**（只按本步与已过步检查：dictation、session、history 均在第 1–9 章讲过；115.2 MB 的「怎么算的」由第 2 步回答，aria-label 也这样说）。
+- 不声称整章 GO：Voxt 10 既有冻结与待审状态不变，本轮不继承、不改写任何既有 verdict。
+
+## 遗留
+
+- Voxt 10 Steps 2–11 仍无相位动画（`4526f171` 草稿的其余机制未移植），等协调排期。
+- Voxt 11 Step 5 `99ed414`／`26941bb` 继续冻结待固定复审；review.md 的三条 reviewer 线索（p3→p0 回绕、评分卡第 32 行、Step 5 审计证据）未动。
+- 本轮开的 dev server（端口 4323）与无头 Chrome 已在收尾关闭。

@@ -124,6 +124,26 @@
     return () => cancelAnimationFrame(raf);
   });
   const quietNow = $derived(clock >= 2900 && clock <= 3350);
+  // Step 0 loops three phases: the two routes, then the file's input and transcribe, then its output.
+  const STEP0_PHASES = 3, PHASE_MS = 900, REST_MS = 2200;
+  const STEP0_LAP_MS = STEP0_PHASES * PHASE_MS + REST_MS;
+  let phase = $state(0);
+  $effect(() => {
+    if (step !== 0) { phase = 0; return; }
+    reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) { phase = STEP0_PHASES - 1; return; }
+    let timers: ReturnType<typeof setTimeout>[] = [];
+    const run = () => {
+      phase = 0;
+      timers = [
+        ...Array.from({ length: STEP0_PHASES - 1 }, (_, i) => setTimeout(() => (phase = i + 1), (i + 1) * PHASE_MS)),
+        setTimeout(run, STEP0_LAP_MS),
+      ];
+      nextLap(STEP0_LAP_MS);
+    };
+    run();
+    return () => timers.forEach(clearTimeout);
+  });
   $effect(() => {
     const q = Number(new URLSearchParams(window.location.search).get('step'));
     if (q >= 1 && q <= steps.length) step = q - 1;
@@ -162,7 +182,7 @@
   const quietToMs = VOXT_TRANSCRIBE_INPUT_QUIET_MS + VOXT_CUTTER_QUIET_WINDOW_MS / 2;
 </script>
 
-<figure class="viz">
+<figure class="viz" data-animation-step={step === 0 ? 0 : undefined} data-animation-phase={step === 0 ? phase : undefined} data-animation-final-phase={step === 0 ? STEP0_PHASES - 1 : undefined}>
   <div class="canvas">
     <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={t(ariaLabels[step].en, ariaLabels[step].zh)}>
       <defs>
@@ -198,25 +218,30 @@
 
           <rect x="370" y="70" width="330" height="280" rx="12" fill="var(--bg)" stroke="var(--gen)" />
           <text x="535" y="94" text-anchor="middle" class="label amber">{t('FILE · TO SRT OR TXT', '文件 · 到 SRT 或 TXT')}</text>
-          <rect x="395" y="110" width="280" height="50" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="535" y="131" text-anchor="middle" class="detail">{t('meeting.m4a on disk', '磁盘上的 meeting.m4a')}</text>
-          <text x="535" y="149" text-anchor="middle" class="detail">{t('1-hour meeting · compressed sound (M4A)', '1 小时会议 · 压缩声音（M4A）')}</text>
-          <line x1="535" y1="160" x2="535" y2="185" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
-          <rect x="395" y="193" width="280" height="60" rx="9" fill="var(--bg)" stroke="var(--line)" />
-          <text x="535" y="215" text-anchor="middle" class="label">{t('Voxt transcribe', 'Voxt transcribe')}</text>
-          <text x="535" y="237" text-anchor="middle" class="detail">{t('reuses Transcribe\'s model, no session', '复用 Transcribe 的模型，不开 session')}</text>
-          <line x1="535" y1="253" x2="535" y2="278" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
-          <rect x="395" y="286" width="280" height="52" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="535" y="309" text-anchor="middle" class="label amber">{t('meeting.srt / talk.txt', 'meeting.srt / talk.txt')}</text>
-          <text x="535" y="328" text-anchor="middle" class="detail">{t('SRT = subtitle · TXT = plain text', 'SRT = 字幕 · TXT = 纯文本')}</text>
+          {#if phase >= 1}
+            <rect x="395" y="110" width="280" height="50" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="535" y="131" text-anchor="middle" class="detail">{t('meeting.m4a on disk', '磁盘上的 meeting.m4a')}</text>
+            <text x="535" y="149" text-anchor="middle" class="detail">{t('1-hour meeting · compressed sound (M4A)', '1 小时会议 · 压缩声音（M4A）')}</text>
+            <line x1="535" y1="160" x2="535" y2="185" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
+            <rect x="395" y="193" width="280" height="60" rx="9" fill="var(--bg)" stroke="var(--line)" />
+            <text x="535" y="215" text-anchor="middle" class="label">{t('Voxt transcribe', 'Voxt transcribe')}</text>
+            <text x="535" y="237" text-anchor="middle" class="detail">{t('reuses Transcribe\'s model, no session', '复用 Transcribe 的模型，不开 session')}</text>
+          {/if}
+          {#if phase >= 2}
+            <line x1="535" y1="253" x2="535" y2="278" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
+            <rect x="395" y="286" width="280" height="52" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="535" y="309" text-anchor="middle" class="label amber">{t('meeting.srt / talk.txt', 'meeting.srt / talk.txt')}</text>
+            <text x="535" y="328" text-anchor="middle" class="detail">{t('SRT = subtitle · TXT = plain text', 'SRT = 字幕 · TXT = 纯文本')}</text>
 
-          <text x="28" y="370" class="pt">·</text>
-          <text x="38" y="370" class="detail">{t(`a one-hour meeting is ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} s of sound; decoded, 115.2 MB before recognition`, `一小时的会议是 ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} 秒的声音；解码后、识别前有 115.2 MB`)}</text>
-          <text x="28" y="392" class="pt">·</text>
-          <text x="38" y="392" class="detail">{t('both use Voxt and a speech model', '两条都用 Voxt 和语音模型')}</text>
-          <text x="28" y="414" class="pt">·</text>
-          <text x="38" y="414" class="detail">{t('the file route skips the session, cleanup and history row', '文件路线不经过 session、整理和历史记录')}</text>
+            <text x="28" y="370" class="pt">·</text>
+            <text x="38" y="370" class="detail">{t(`a one-hour meeting is ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} s of sound; decoded, 115.2 MB before recognition`, `一小时的会议是 ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} 秒的声音；解码后、识别前有 115.2 MB`)}</text>
+            <text x="28" y="392" class="pt">·</text>
+            <text x="38" y="392" class="detail">{t('both use Voxt and a speech model', '两条都用 Voxt 和语音模型')}</text>
+            <text x="28" y="414" class="pt">·</text>
+            <text x="38" y="414" class="detail">{t('the file route skips the session, cleanup and history row', '文件路线不经过 session、整理和历史记录')}</text>
+          {/if}
           <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Orange marks the route this chapter follows.', '橙色是本章要走的路线。')}</text>
+          {#if !reduced}<LoopProgress ms={lapMs} {lap} />{/if}
         {:else}
           <rect x="15" y="68" width="270" height="250" rx="12" fill="var(--bg)" stroke="var(--accent)" />
           <text x="150" y="92" text-anchor="middle" class="label">{t('DICTATION · TO THE CURSOR', '听写 · 到光标')}</text>
@@ -233,26 +258,31 @@
 
           <rect x="15" y="330" width="270" height="250" rx="12" fill="var(--bg)" stroke="var(--gen)" />
           <text x="150" y="354" text-anchor="middle" class="label amber">{t('FILE · TO SRT OR TXT', '文件 · 到 SRT 或 TXT')}</text>
-          <rect x="30" y="368" width="240" height="44" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="150" y="395" text-anchor="middle" class="detail">{t('1-hour meeting · sound (M4A)', '1 小时会议 · 声音（M4A）')}</text>
-          <line x1="150" y1="412" x2="150" y2="432" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
-          <rect x="30" y="440" width="240" height="52" rx="8" fill="var(--bg)" stroke="var(--line)" />
-          <text x="150" y="462" text-anchor="middle" class="label">{t('Voxt transcribe', 'Voxt transcribe')}</text>
-          <text x="150" y="481" text-anchor="middle" class="detail">{t('Transcribe\'s model, no session', 'Transcribe 的模型，不开 session')}</text>
-          <line x1="150" y1="492" x2="150" y2="512" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
-          <rect x="30" y="520" width="240" height="48" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="150" y="542" text-anchor="middle" class="label amber">{t('meeting.srt / talk.txt', 'meeting.srt / talk.txt')}</text>
-          <text x="150" y="559" text-anchor="middle" class="detail">{t('SRT = subtitle · TXT = plain text', 'SRT = 字幕 · TXT = 纯文本')}</text>
+          {#if phase >= 1}
+            <rect x="30" y="368" width="240" height="44" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="150" y="395" text-anchor="middle" class="detail">{t('1-hour meeting · sound (M4A)', '1 小时会议 · 声音（M4A）')}</text>
+            <line x1="150" y1="412" x2="150" y2="432" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
+            <rect x="30" y="440" width="240" height="52" rx="8" fill="var(--bg)" stroke="var(--line)" />
+            <text x="150" y="462" text-anchor="middle" class="label">{t('Voxt transcribe', 'Voxt transcribe')}</text>
+            <text x="150" y="481" text-anchor="middle" class="detail">{t('Transcribe\'s model, no session', 'Transcribe 的模型，不开 session')}</text>
+          {/if}
+          {#if phase >= 2}
+            <line x1="150" y1="492" x2="150" y2="512" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
+            <rect x="30" y="520" width="240" height="48" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="150" y="542" text-anchor="middle" class="label amber">{t('meeting.srt / talk.txt', 'meeting.srt / talk.txt')}</text>
+            <text x="150" y="559" text-anchor="middle" class="detail">{t('SRT = subtitle · TXT = plain text', 'SRT = 字幕 · TXT = 纯文本')}</text>
 
-          <text x="20" y="606" class="pt">·</text>
-          <text x="30" y="606" class="detail">{t(`a one-hour meeting is ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} s of sound`, `一小时的会议是 ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} 秒的声音`)}</text>
-          <text x="30" y="628" class="detail">{t('decoded: 115.2 MB before recognition', '解码后有 115.2 MB 才识别')}</text>
-          <text x="20" y="650" class="pt">·</text>
-          <text x="30" y="650" class="detail">{t('both use Voxt and a speech model', '两条都用 Voxt 和语音模型')}</text>
-          <text x="20" y="672" class="pt">·</text>
-          <text x="30" y="672" class="detail">{t('the file route skips the session,', '文件路线不经过 session、')}</text>
-          <text x="30" y="694" class="detail">{t('cleanup and history row', '整理和历史记录')}</text>
+            <text x="20" y="606" class="pt">·</text>
+            <text x="30" y="606" class="detail">{t(`a one-hour meeting is ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} s of sound`, `一小时的会议是 ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} 秒的声音`)}</text>
+            <text x="30" y="628" class="detail">{t('decoded: 115.2 MB before recognition', '解码后有 115.2 MB 才识别')}</text>
+            <text x="20" y="650" class="pt">·</text>
+            <text x="30" y="650" class="detail">{t('both use Voxt and a speech model', '两条都用 Voxt 和语音模型')}</text>
+            <text x="20" y="672" class="pt">·</text>
+            <text x="30" y="672" class="detail">{t('the file route skips the session,', '文件路线不经过 session、')}</text>
+            <text x="30" y="694" class="detail">{t('cleanup and history row', '整理和历史记录')}</text>
+          {/if}
           <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Orange marks the route this chapter follows.', '橙色是本章要走的路线。')}</text>
+          {#if !reduced}<LoopProgress ms={lapMs} {lap} x={236} y={H - 44} />{/if}
         {/if}
       {:else if step === 1}
         <text x={W / 2} y="27" text-anchor="middle" class="title">{t('DECODE THE FILE TO PCM', '把文件转成 PCM')}</text>
