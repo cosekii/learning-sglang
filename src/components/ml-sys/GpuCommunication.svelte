@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import StepControls from '../StepControls.svelte';
+  import LoopProgress from '../LoopProgress.svelte';
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
@@ -36,51 +37,89 @@
     if (q >= 1 && q <= steps.length) step = q - 1;
   });
   let phone = $state(false);
+  let reduceMotion = $state(false);
   onMount(() => {
     const query = window.matchMedia('(max-width: 600px)');
+    const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
     const update = () => (phone = query.matches);
+    const updateMotion = () => (reduceMotion = motion.matches);
     update();
+    updateMotion();
     query.addEventListener('change', update);
-    return () => query.removeEventListener('change', update);
+    motion.addEventListener('change', updateMotion);
+    return () => {
+      query.removeEventListener('change', update);
+      motion.removeEventListener('change', updateMotion);
+    };
+  });
+  const PHASE_COUNTS = [3, 3, 5, 4, 2, 8, 4];
+  const PHASE_MS = 1000, REST_MS = 2800;
+  let phase = $state(0);
+  let lap = $state(0), lapMs = $state(0);
+  const nextLap = (ms: number) => untrack(() => { lapMs = ms; lap++; });
+  $effect(() => {
+    const count = PHASE_COUNTS[step];
+    phase = 0;
+    if (reduceMotion) { phase = count - 1; return; }
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const run = () => {
+      timers.length = 0;
+      phase = 0;
+      for (let i = 1; i < count; i++) timers.push(setTimeout(() => (phase = i), i * PHASE_MS));
+      const ms = count * PHASE_MS + REST_MS;
+      timers.push(setTimeout(run, ms));
+      nextLap(ms);
+    };
+    run();
+    return () => timers.forEach(clearTimeout);
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 5 ? 560 : 510) : 410);
   const barScale = 22;
 </script>
 
-<figure class="viz">
+<figure class="viz" data-animation-step={step} data-animation-phase={phase} data-animation-final-phase={PHASE_COUNTS[step] - 1}>
   <div class="canvas">
     <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={$lang === 'zh' ? cur.captionZh : cur.caption}>
+      {#if !reduceMotion}<LoopProgress ms={lapMs} {lap} x={phone ? 214 : 640} y={4} />{/if}
       {#if step === 0}
         <text x={phone ? 18 : 36} y="30" class="title">{t('More GPUs can still finish later', 'GPU 更多，总时间也可能更长')}</text>
         <text x={phone ? 18 : 36} y="55" class="label">{t('constructed example · same work · same scale', '构造示例 · 同一份计算 · 同一把毫秒标尺')}</text>
         {#if !phone}
-          {#each [{ x: 40, gpus: 4, compute: COMM_EXAMPLE_COMPUTE_BEFORE_MS, wait: COMM_EXAMPLE_WAIT_BEFORE_MS, total: COMM_EXAMPLE_TOTAL_BEFORE_MS }, { x: 380, gpus: 8, compute: COMM_EXAMPLE_COMPUTE_AFTER_MS, wait: COMM_EXAMPLE_WAIT_AFTER_MS, total: COMM_EXAMPLE_TOTAL_AFTER_MS }] as row}
-            <rect x={row.x} y="82" width="300" height="196" rx="13" fill="var(--bg)" stroke="var(--line)" />
-            <text x={row.x + 20} y="113" class="section">{row.gpus} GPUs</text>
-            <text x={row.x + 20} y="145" class="small">{t('compute', '计算')} · {row.compute} ms</text>
-            <rect x={row.x + 20} y="158" width={row.compute * barScale} height="32" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
-            <text x={row.x + 20} y="215" class="small">{t('communication', '通信')} · {row.wait} ms</text>
-            <rect x={row.x + 20} y="228" width={row.wait * barScale} height="32" rx="5" fill="var(--gen-soft)" stroke="var(--gen)" />
-            <text x={row.x + 280} y="113" text-anchor="end" class="total">{row.total} ms</text>
+          {#each [{ x: 40, gpus: 4, compute: COMM_EXAMPLE_COMPUTE_BEFORE_MS, wait: COMM_EXAMPLE_WAIT_BEFORE_MS, total: COMM_EXAMPLE_TOTAL_BEFORE_MS }, { x: 380, gpus: 8, compute: COMM_EXAMPLE_COMPUTE_AFTER_MS, wait: COMM_EXAMPLE_WAIT_AFTER_MS, total: COMM_EXAMPLE_TOTAL_AFTER_MS }] as row, i}
+            <g opacity={phase > i ? 1 : 0}>
+              <rect x={row.x} y="82" width="300" height="196" rx="13" fill="var(--bg)" stroke="var(--line)" />
+              <text x={row.x + 20} y="113" class="section">{row.gpus} GPUs</text>
+              <text x={row.x + 20} y="145" class="small">{t('compute', '计算')} · {row.compute} ms</text>
+              <rect x={row.x + 20} y="158" width={row.compute * barScale} height="32" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+              <text x={row.x + 20} y="215" class="small">{t('communication', '通信')} · {row.wait} ms</text>
+              <rect x={row.x + 20} y="228" width={row.wait * barScale} height="32" rx="5" fill="var(--gen-soft)" stroke="var(--gen)" />
+              <text x={row.x + 280} y="113" text-anchor="end" class="total">{row.total} ms</text>
+            </g>
           {/each}
-          <rect x="40" y="300" width="640" height="62" rx="11" fill="var(--panel)" stroke="var(--line)" />
-          <text x="360" y="326" text-anchor="middle" class="result">4 → 8 GPUs: −{COMM_EXAMPLE_COMPUTE_SAVED_MS} ms {t('compute', '计算')} · +{COMM_EXAMPLE_WAIT_ADDED_MS} ms {t('communication', '通信')} · +{COMM_EXAMPLE_TOTAL_ADDED_MS} ms {t('total', '总时间')}</text>
-          <text x="360" y="350" text-anchor="middle" class="small">{t('communication = moving tensors between GPUs and waiting', '通信 = 在 GPU 之间搬张量，并等它到齐')}</text>
-          <text x="60" y="385" class="small"><tspan fill="var(--accent)">■</tspan> {t('compute', '计算')}   <tspan fill="var(--gen)">■</tspan> {t('communication', '通信')}</text>
+          <g opacity={phase >= 2 ? 1 : 0}>
+            <rect x="40" y="300" width="640" height="62" rx="11" fill="var(--panel)" stroke="var(--line)" />
+            <text x="360" y="326" text-anchor="middle" class="result">4 → 8 GPUs: −{COMM_EXAMPLE_COMPUTE_SAVED_MS} ms {t('compute', '计算')} · +{COMM_EXAMPLE_WAIT_ADDED_MS} ms {t('communication', '通信')} · +{COMM_EXAMPLE_TOTAL_ADDED_MS} ms {t('total', '总时间')}</text>
+            <text x="360" y="350" text-anchor="middle" class="small">{t('communication = moving tensors between GPUs and waiting', '通信 = 在 GPU 之间搬张量，并等它到齐')}</text>
+            <text x="60" y="385" class="small"><tspan fill="var(--accent)">■</tspan> {t('compute', '计算')}   <tspan fill="var(--gen)">■</tspan> {t('communication', '通信')}</text>
+          </g>
         {:else}
-          {#each [{ y: 76, gpus: 4, compute: COMM_EXAMPLE_COMPUTE_BEFORE_MS, wait: COMM_EXAMPLE_WAIT_BEFORE_MS, total: COMM_EXAMPLE_TOTAL_BEFORE_MS }, { y: 246, gpus: 8, compute: COMM_EXAMPLE_COMPUTE_AFTER_MS, wait: COMM_EXAMPLE_WAIT_AFTER_MS, total: COMM_EXAMPLE_TOTAL_AFTER_MS }] as row}
-            <rect x="18" y={row.y} width="264" height="154" rx="12" fill="var(--bg)" stroke="var(--line)" />
-            <text x="32" y={row.y + 27} class="section">{row.gpus} GPUs</text>
-            <text x="266" y={row.y + 27} text-anchor="end" class="total">{row.total} ms</text>
-            <text x="32" y={row.y + 55} class="small">{t('compute', '计算')} {row.compute} ms</text>
-            <rect x="32" y={row.y + 65} width={row.compute * 13} height="22" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" />
-            <text x="32" y={row.y + 111} class="small">{t('communication', '通信')} {row.wait} ms</text>
-            <rect x="32" y={row.y + 121} width={row.wait * 13} height="22" rx="4" fill="var(--gen-soft)" stroke="var(--gen)" />
+          {#each [{ y: 76, gpus: 4, compute: COMM_EXAMPLE_COMPUTE_BEFORE_MS, wait: COMM_EXAMPLE_WAIT_BEFORE_MS, total: COMM_EXAMPLE_TOTAL_BEFORE_MS }, { y: 246, gpus: 8, compute: COMM_EXAMPLE_COMPUTE_AFTER_MS, wait: COMM_EXAMPLE_WAIT_AFTER_MS, total: COMM_EXAMPLE_TOTAL_AFTER_MS }] as row, i}
+            <g opacity={phase > i ? 1 : 0}>
+              <rect x="18" y={row.y} width="264" height="154" rx="12" fill="var(--bg)" stroke="var(--line)" />
+              <text x="32" y={row.y + 27} class="section">{row.gpus} GPUs</text>
+              <text x="266" y={row.y + 27} text-anchor="end" class="total">{row.total} ms</text>
+              <text x="32" y={row.y + 55} class="small">{t('compute', '计算')} {row.compute} ms</text>
+              <rect x="32" y={row.y + 65} width={row.compute * 13} height="22" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" />
+              <text x="32" y={row.y + 111} class="small">{t('communication', '通信')} {row.wait} ms</text>
+              <rect x="32" y={row.y + 121} width={row.wait * 13} height="22" rx="4" fill="var(--gen-soft)" stroke="var(--gen)" />
+            </g>
           {/each}
-          <text x="150" y="427" text-anchor="middle" class="result">−{COMM_EXAMPLE_COMPUTE_SAVED_MS} ms {t('compute', '计算')} · +{COMM_EXAMPLE_WAIT_ADDED_MS} ms {t('communication', '通信')}</text>
-          <text x="150" y="453" text-anchor="middle" class="result">{t('total', '总时间')} +{COMM_EXAMPLE_TOTAL_ADDED_MS} ms</text>
-          <text x="150" y="479" text-anchor="middle" class="small">{t('communication moves tensors and waits', '通信要搬张量，也要等待')}</text>
+          <g opacity={phase >= 2 ? 1 : 0}>
+            <text x="150" y="427" text-anchor="middle" class="result">−{COMM_EXAMPLE_COMPUTE_SAVED_MS} ms {t('compute', '计算')} · +{COMM_EXAMPLE_WAIT_ADDED_MS} ms {t('communication', '通信')}</text>
+            <text x="150" y="453" text-anchor="middle" class="result">{t('total', '总时间')} +{COMM_EXAMPLE_TOTAL_ADDED_MS} ms</text>
+            <text x="150" y="479" text-anchor="middle" class="small">{t('communication moves tensors and waits', '通信要搬张量，也要等待')}</text>
+          </g>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Teaching values, not a local benchmark.', '构造的教学数值，不是本机实测。')}</text>
       {:else if step === 1}
@@ -92,28 +131,36 @@
             <text x={100 + i * 172} y="115" text-anchor="middle" class="small strong">GPU {i}</text>
             <text x={100 + i * 172} y="148" text-anchor="middle" class="tensor">{COMM_TENSOR_TEXT(tensor)}</text>
           {/each}
-          <text x="360" y="198" text-anchor="middle" class="result">{t('1 + 2 + 3 + 4 = 10 · the same sum in all 4 positions', '每一格都是 1 + 2 + 3 + 4 = 10，共 4 格')}</text>
-          <line x1="360" y1="214" x2="360" y2="245" stroke="var(--gen)" stroke-width="3" />
-          <path d="M360,249 l-8,-13 h16 z" fill="var(--gen)" />
-          <rect x="40" y="260" width="640" height="91" rx="13" fill="var(--gen-soft)" stroke="var(--gen)" />
-          {#each COMM_PARTIAL_TENSORS as _, i}
-            <text x={110 + i * 165} y="293" text-anchor="middle" class="small strong">GPU {i}</text>
-            <text x={110 + i * 165} y="328" text-anchor="middle" class="tensor">{COMM_TENSOR_TEXT(COMM_REDUCED_TENSOR)}</text>
-          {/each}
-          <text x="360" y="378" text-anchor="middle" class="small">{t('blue = local part · orange = same reduced result on every GPU', '蓝 = 各卡自己的部分 · 橙 = 每卡相同的求和结果')}</text>
+          <g opacity={phase >= 1 ? 1 : 0}>
+            <text x="360" y="198" text-anchor="middle" class="result">{t('1 + 2 + 3 + 4 = 10 · the same sum in all 4 positions', '每一格都是 1 + 2 + 3 + 4 = 10，共 4 格')}</text>
+            <line x1="360" y1="214" x2="360" y2="245" stroke="var(--gen)" stroke-width="3" />
+            <path d="M360,249 l-8,-13 h16 z" fill="var(--gen)" />
+          </g>
+          <g opacity={phase >= 2 ? 1 : 0}>
+            <rect x="40" y="260" width="640" height="91" rx="13" fill="var(--gen-soft)" stroke="var(--gen)" />
+            {#each COMM_PARTIAL_TENSORS as _, i}
+              <text x={110 + i * 165} y="293" text-anchor="middle" class="small strong">GPU {i}</text>
+              <text x={110 + i * 165} y="328" text-anchor="middle" class="tensor">{COMM_TENSOR_TEXT(COMM_REDUCED_TENSOR)}</text>
+            {/each}
+            <text x="360" y="378" text-anchor="middle" class="small">{t('blue = local part · orange = same reduced result on every GPU', '蓝 = 各卡自己的部分 · 橙 = 每卡相同的求和结果')}</text>
+          </g>
         {:else}
           {#each COMM_PARTIAL_TENSORS as tensor, i}
             <rect x={18 + (i % 2) * 137} y={78 + Math.floor(i / 2) * 85} width="127" height="72" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
             <text x={81 + (i % 2) * 137} y={103 + Math.floor(i / 2) * 85} text-anchor="middle" class="small strong">GPU {i}</text>
             <text x={81 + (i % 2) * 137} y={132 + Math.floor(i / 2) * 85} text-anchor="middle" class="tensor">{COMM_TENSOR_TEXT(tensor)}</text>
           {/each}
-          <text x="150" y="267" text-anchor="middle" class="result">1 + 2 + 3 + 4 = 10</text>
-          <text x="150" y="291" text-anchor="middle" class="result">{t('all 4 positions sum to 10', '4 格求和都是 10')}</text>
-          <rect x="18" y="312" width="264" height="121" rx="12" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="150" y="339" text-anchor="middle" class="small strong">{t('every GPU receives', '每张 GPU 都得到')}</text>
-          <text x="150" y="374" text-anchor="middle" class="tensor">{COMM_TENSOR_TEXT(COMM_REDUCED_TENSOR)}</text>
-          <text x="150" y="407" text-anchor="middle" class="small">GPU 0 · GPU 1 · GPU 2 · GPU 3</text>
-          <text x="150" y="462" text-anchor="middle" class="small">{t('blue = local part · orange = shared total', '蓝 = 自己的部分 · 橙 = 共同结果')}</text>
+          <g opacity={phase >= 1 ? 1 : 0}>
+            <text x="150" y="267" text-anchor="middle" class="result">1 + 2 + 3 + 4 = 10</text>
+            <text x="150" y="291" text-anchor="middle" class="result">{t('all 4 positions sum to 10', '4 格求和都是 10')}</text>
+          </g>
+          <g opacity={phase >= 2 ? 1 : 0}>
+            <rect x="18" y="312" width="264" height="121" rx="12" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="150" y="339" text-anchor="middle" class="small strong">{t('every GPU receives', '每张 GPU 都得到')}</text>
+            <text x="150" y="374" text-anchor="middle" class="tensor">{COMM_TENSOR_TEXT(COMM_REDUCED_TENSOR)}</text>
+            <text x="150" y="407" text-anchor="middle" class="small">GPU 0 · GPU 1 · GPU 2 · GPU 3</text>
+            <text x="150" y="462" text-anchor="middle" class="small">{t('blue = local part · orange = shared total', '蓝 = 自己的部分 · 橙 = 共同结果')}</text>
+          </g>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Constructed values; the operation is SUM.', '构造数值；这里的归约操作是求和。')}</text>
       {:else if step === 2}
@@ -123,31 +170,39 @@
           <rect x="40" y="72" width="640" height="264" rx="15" fill="var(--bg)" stroke="var(--accent)" stroke-dasharray="7 5" />
           <text x="58" y="96" class="small strong">{t('process group', '进程组')}</text>
           {#each COMM_PARTIAL_TENSORS as tensor, i}
-            <rect x="70" y={108 + i * 53} width="210" height="42" rx="8" fill="var(--panel)" stroke="var(--line)" />
-            <text x="88" y={135 + i * 53} class="small strong">{t('process', '进程')} {i} · rank {i}</text>
-            <line x1="280" y1={129 + i * 53} x2="425" y2={129 + i * 53} stroke="var(--accent)" stroke-width="2" />
-            <path d={`M425,${129 + i * 53} l-10,-6 v12 z`} fill="var(--accent)" />
-            <rect x="435" y={108 + i * 53} width="210" height="42" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
-            <text x="453" y={135 + i * 53} class="small strong">GPU {i} · {COMM_TENSOR_TEXT(tensor)}</text>
+            <g opacity={phase > i ? 1 : 0}>
+              <rect x="70" y={108 + i * 53} width="210" height="42" rx="8" fill="var(--panel)" stroke="var(--line)" />
+              <text x="88" y={135 + i * 53} class="small strong">{t('process', '进程')} {i} · rank {i}</text>
+              <line x1="280" y1={129 + i * 53} x2="425" y2={129 + i * 53} stroke="var(--accent)" stroke-width="2" />
+              <path d={`M425,${129 + i * 53} l-10,-6 v12 z`} fill="var(--accent)" />
+              <rect x="435" y={108 + i * 53} width="210" height="42" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+              <text x="453" y={135 + i * 53} class="small strong">GPU {i} · {COMM_TENSOR_TEXT(tensor)}</text>
+            </g>
           {/each}
-          <rect x="200" y="351" width="320" height="37" rx="18" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="360" y="375" text-anchor="middle" class="result">world size = {COMM_WORLD_SIZE}</text>
+          <g opacity={phase >= 4 ? 1 : 0}>
+            <rect x="200" y="351" width="320" height="37" rx="18" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="360" y="375" text-anchor="middle" class="result">world size = {COMM_WORLD_SIZE}</text>
+          </g>
         {:else}
           <rect x="12" y="70" width="276" height="326" rx="14" fill="var(--bg)" stroke="var(--accent)" stroke-dasharray="7 5" />
           <text x="26" y="93" class="small strong">{t('process group', '进程组')}</text>
           {#each COMM_PARTIAL_TENSORS as tensor, i}
-            <rect x="25" y={105 + i * 67} width="108" height="49" rx="8" fill="var(--panel)" stroke="var(--line)" />
-            <text x="79" y={125 + i * 67} text-anchor="middle" class="small strong">{t('process', '进程')} {i}</text>
-            <text x="79" y={145 + i * 67} text-anchor="middle" class="small">rank {i}</text>
-            <line x1="133" y1={129 + i * 67} x2="162" y2={129 + i * 67} stroke="var(--accent)" stroke-width="2" />
-            <path d={`M162,${129 + i * 67} l-8,-5 v10 z`} fill="var(--accent)" />
-            <rect x="170" y={105 + i * 67} width="103" height="49" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
-            <text x="221" y={125 + i * 67} text-anchor="middle" class="small strong">GPU {i}</text>
-            <text x="221" y={145 + i * 67} text-anchor="middle" class="small">{COMM_TENSOR_TEXT(tensor)}</text>
+            <g opacity={phase > i ? 1 : 0}>
+              <rect x="25" y={105 + i * 67} width="108" height="49" rx="8" fill="var(--panel)" stroke="var(--line)" />
+              <text x="79" y={125 + i * 67} text-anchor="middle" class="small strong">{t('process', '进程')} {i}</text>
+              <text x="79" y={145 + i * 67} text-anchor="middle" class="small">rank {i}</text>
+              <line x1="133" y1={129 + i * 67} x2="162" y2={129 + i * 67} stroke="var(--accent)" stroke-width="2" />
+              <path d={`M162,${129 + i * 67} l-8,-5 v10 z`} fill="var(--accent)" />
+              <rect x="170" y={105 + i * 67} width="103" height="49" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+              <text x="221" y={125 + i * 67} text-anchor="middle" class="small strong">GPU {i}</text>
+              <text x="221" y={145 + i * 67} text-anchor="middle" class="small">{COMM_TENSOR_TEXT(tensor)}</text>
+            </g>
           {/each}
-          <rect x="45" y="415" width="210" height="39" rx="19" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="150" y="440" text-anchor="middle" class="result">world size = {COMM_WORLD_SIZE}</text>
-          <text x="150" y="477" text-anchor="middle" class="small">{t('one process per GPU in this example', '本例：一个进程对应一张 GPU')}</text>
+          <g opacity={phase >= 4 ? 1 : 0}>
+            <rect x="45" y="415" width="210" height="39" rx="19" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="150" y="440" text-anchor="middle" class="result">world size = {COMM_WORLD_SIZE}</text>
+            <text x="150" y="477" text-anchor="middle" class="small">{t('one process per GPU in this example', '本例：一个进程对应一张 GPU')}</text>
+          </g>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('One process per GPU is an example, not a rule.', '一进程一卡是本例安排，不是唯一做法。')}</text>
       {:else if step === 3}
@@ -160,44 +215,57 @@
             <rect x="66" y={130 + i * 42} width="108" height="31" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
             <text x="120" y={151 + i * 42} text-anchor="middle" class="small">rank {i}</text>
           {/each}
-          <line x1="197" y1="199" x2="238" y2="199" stroke="var(--accent)" stroke-width="3" />
-          <path d="M238,199 l-11,-7 v14 z" fill="var(--accent)" />
-          <rect x="248" y="86" width="422" height="65" rx="11" fill="var(--panel)" stroke="var(--line)" />
-          <text x="459" y="113" text-anchor="middle" class="code">dist.all_reduce(tensor,</text>
-          <text x="459" y="137" text-anchor="middle" class="code">op=dist.ReduceOp.SUM)</text>
-          <line x1="459" y1="151" x2="459" y2="174" stroke="var(--gen)" stroke-width="3" />
-          <path d="M459,180 l-8,-13 h16 z" fill="var(--gen)" />
-          <rect x="248" y="187" width="422" height="51" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="459" y="219" text-anchor="middle" class="section">torch.distributed</text>
-          <line x1="459" y1="238" x2="459" y2="261" stroke="var(--gen)" stroke-width="3" />
-          <path d="M459,267 l-8,-13 h16 z" fill="var(--gen)" />
-          <rect x="248" y="274" width="422" height="55" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="459" y="308" text-anchor="middle" class="section">NCCL backend</text>
-          <text x="459" y="360" text-anchor="middle" class="small">{t('collective call → GPU communication backend', '集合通信调用 → GPU 通信后端')}</text>
+          <g opacity={phase >= 1 ? 1 : 0}>
+            <line x1="197" y1="199" x2="238" y2="199" stroke="var(--accent)" stroke-width="3" />
+            <path d="M238,199 l-11,-7 v14 z" fill="var(--accent)" />
+            <rect x="248" y="86" width="422" height="65" rx="11" fill="var(--panel)" stroke="var(--line)" />
+            <text x="459" y="113" text-anchor="middle" class="code">dist.all_reduce(tensor,</text>
+            <text x="459" y="137" text-anchor="middle" class="code">op=dist.ReduceOp.SUM)</text>
+            <line x1="459" y1="151" x2="459" y2="174" stroke="var(--gen)" stroke-width="3" />
+            <path d="M459,180 l-8,-13 h16 z" fill="var(--gen)" />
+          </g>
+          <g opacity={phase >= 2 ? 1 : 0}>
+            <rect x="248" y="187" width="422" height="51" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="459" y="219" text-anchor="middle" class="section">torch.distributed</text>
+            <line x1="459" y1="238" x2="459" y2="261" stroke="var(--gen)" stroke-width="3" />
+            <path d="M459,267 l-8,-13 h16 z" fill="var(--gen)" />
+          </g>
+          <g opacity={phase >= 3 ? 1 : 0}>
+            <rect x="248" y="274" width="422" height="55" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="459" y="308" text-anchor="middle" class="section">NCCL backend</text>
+            <text x="459" y="360" text-anchor="middle" class="small">{t('collective call → GPU communication backend', '集合通信调用 → GPU 通信后端')}</text>
+          </g>
         {:else}
           <rect x="45" y="76" width="210" height="39" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="150" y="101" text-anchor="middle" class="small strong">rank 0–3 · {t('same call', '同一个调用')}</text>
           <line x1="150" y1="115" x2="150" y2="132" stroke="var(--gen)" stroke-width="3" />
           <path d="M150,137 l-7,-11 h14 z" fill="var(--gen)" />
-          <rect x="22" y="143" width="256" height="76" rx="10" fill="var(--panel)" stroke="var(--line)" />
-          <text x="150" y="174" text-anchor="middle" class="code">dist.all_reduce(tensor,</text>
-          <text x="150" y="201" text-anchor="middle" class="code">op=SUM)</text>
-          <line x1="150" y1="219" x2="150" y2="239" stroke="var(--gen)" stroke-width="3" />
-          <path d="M150,245 l-7,-11 h14 z" fill="var(--gen)" />
-          <rect x="22" y="251" width="256" height="57" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="150" y="286" text-anchor="middle" class="section">torch.distributed</text>
-          <line x1="150" y1="308" x2="150" y2="328" stroke="var(--gen)" stroke-width="3" />
-          <path d="M150,334 l-7,-11 h14 z" fill="var(--gen)" />
-          <rect x="22" y="340" width="256" height="59" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="150" y="376" text-anchor="middle" class="section">NCCL backend</text>
-          <text x="150" y="434" text-anchor="middle" class="small">{t('interface above', '上面：程序调用的接口')}</text>
-          <text x="150" y="460" text-anchor="middle" class="small">{t('GPU communication below', '下面：GPU 通信后端')}</text>
+          <g opacity={phase >= 1 ? 1 : 0}>
+            <rect x="22" y="143" width="256" height="76" rx="10" fill="var(--panel)" stroke="var(--line)" />
+            <text x="150" y="174" text-anchor="middle" class="code">dist.all_reduce(tensor,</text>
+            <text x="150" y="201" text-anchor="middle" class="code">op=SUM)</text>
+            <line x1="150" y1="219" x2="150" y2="239" stroke="var(--gen)" stroke-width="3" />
+            <path d="M150,245 l-7,-11 h14 z" fill="var(--gen)" />
+          </g>
+          <g opacity={phase >= 2 ? 1 : 0}>
+            <rect x="22" y="251" width="256" height="57" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="150" y="286" text-anchor="middle" class="section">torch.distributed</text>
+            <line x1="150" y1="308" x2="150" y2="328" stroke="var(--gen)" stroke-width="3" />
+            <path d="M150,334 l-7,-11 h14 z" fill="var(--gen)" />
+          </g>
+          <g opacity={phase >= 3 ? 1 : 0}>
+            <rect x="22" y="340" width="256" height="59" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="150" y="376" text-anchor="middle" class="section">NCCL backend</text>
+            <text x="150" y="434" text-anchor="middle" class="small">{t('interface above', '上面：程序调用的接口')}</text>
+            <text x="150" y="460" text-anchor="middle" class="small">{t('GPU communication below', '下面：GPU 通信后端')}</text>
+          </g>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('PyTorch selects the NCCL backend with backend="nccl".', 'PyTorch 用 backend="nccl" 选择 NCCL 后端。')}</text>
       {:else if step === 4}
         <text x={phone ? 18 : 36} y="30" class="title">{t('The tensor crosses physical links', '张量要走实际的硬件链路')}</text>
         <text x={phone ? 18 : 36} y="55" class="label">{t('two reported examples · different machines', '两份实际输出示例 · 不是同一台机器的两个选项')}</text>
         {#if !phone}
+          <g opacity={phase >= 0 ? 1 : 0}>
           <rect x="35" y="82" width="310" height="254" rx="13" fill="var(--bg)" stroke="var(--line)" />
           <text x="190" y="112" text-anchor="middle" class="section">NV18</text>
           <rect x="58" y="148" width="82" height="48" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
@@ -209,6 +277,8 @@
           <text x="190" y="263" text-anchor="middle" class="small">{t('NVLink = a link between GPUs', 'NVLink = GPU 之间的链路')}</text>
           <text x="190" y="301" text-anchor="middle" class="small">{t('18 links form this reported connection', '这份输出里，18 条链路组成该连接')}</text>
 
+          </g>
+          <g opacity={phase >= 1 ? 1 : 0}>
           <rect x="375" y="82" width="310" height="254" rx="13" fill="var(--bg)" stroke="var(--line)" />
           <text x="530" y="112" text-anchor="middle" class="section">SYS</text>
           <rect x="394" y="140" width="70" height="40" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
@@ -231,7 +301,9 @@
           <text x="429" y="249" text-anchor="middle" class="small strong">GPU 1</text>
           <text x="530" y="291" text-anchor="middle" class="small">{t('PCIe = GPU-to-host channel', 'PCIe = GPU 与主机之间的通道')}</text>
           <text x="530" y="316" text-anchor="middle" class="small">{t('NUMA nodes = host CPU/memory partitions', 'NUMA 节点 = 主机里的 CPU／内存分区')}</text>
+          </g>
         {:else}
+          <g>
           <rect x="18" y="72" width="264" height="118" rx="12" fill="var(--bg)" stroke="var(--line)" />
           <text x="150" y="96" text-anchor="middle" class="section">NV18 = 18 × NVLink</text>
           <rect x="35" y="112" width="70" height="36" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
@@ -241,6 +313,8 @@
           <text x="230" y="135" text-anchor="middle" class="small strong">GPU 1</text>
           <text x="150" y="173" text-anchor="middle" class="small">{t('NVLink connects GPUs', 'NVLink 连接 GPU')}</text>
 
+          </g>
+          <g opacity={phase >= 1 ? 1 : 0}>
           <rect x="18" y="205" width="264" height="255" rx="12" fill="var(--bg)" stroke="var(--line)" />
           <text x="150" y="231" text-anchor="middle" class="section">SYS</text>
           <rect x="31" y="249" width="65" height="36" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
@@ -264,6 +338,7 @@
           <text x="150" y="387" text-anchor="middle" class="small">{t('PCIe connects a GPU to the host', 'PCIe 连接 GPU 与主机')}</text>
           <text x="150" y="414" text-anchor="middle" class="small">{t('NUMA nodes partition', 'NUMA 节点划分')}</text>
           <text x="150" y="437" text-anchor="middle" class="small">{t('host CPUs and memory', '主机里的 CPU 和内存')}</text>
+          </g>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Route labels come from nvidia-smi topo -m.', '路径标签来自 nvidia-smi topo -m 的输出示例。')}</text>
       {:else if step === 5}
@@ -272,56 +347,64 @@
         {#if !phone}
           <rect x="25" y="82" width="320" height="250" rx="13" fill="var(--bg)" stroke="var(--line)" />
           <text x="185" y="108" text-anchor="middle" class="section">1 · Reduce-Scatter</text>
-          <text x="185" y="132" text-anchor="middle" class="small">{t('add matching chunks · keep one per GPU', '对应分块求和 · 每卡留下一块')}</text>
+          <text x="185" y="132" text-anchor="middle" class="small">{phase === 0 ? t('inputs · 4 chunks of S/4', '输入 · 4 块，每块 S/4') : phase < 4 ? `Reduce-Scatter · ${t('round', '轮')} ${phase}/3 · GPU → GPU + 1 · S/4` : t('add matching chunks · keep one per GPU', '对应分块求和 · 每卡留下一块')}</text>
           <path d="M170,177 H207" stroke="var(--gen)" stroke-width="2" /><path d="M212,177 l-10,-6 v12 z" fill="var(--gen)" />
           <path d="M270,200 V227" stroke="var(--gen)" stroke-width="2" /><path d="M270,232 l-6,-10 h12 z" fill="var(--gen)" />
           <path d="M215,257 H178" stroke="var(--gen)" stroke-width="2" /><path d="M173,257 l10,-6 v12 z" fill="var(--gen)" />
           <path d="M115,235 V208" stroke="var(--gen)" stroke-width="2" /><path d="M115,203 l-6,10 h12 z" fill="var(--gen)" />
-          {#each COMM_PARTIAL_TENSORS as _, i}
-            <rect x={i === 0 || i === 3 ? 60 : 215} y={i < 2 ? 155 : 235} width="110" height="45" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
-            <text x={i === 0 || i === 3 ? 115 : 270} y={i < 2 ? 174 : 254} text-anchor="middle" class="small strong">GPU {i} · {String.fromCharCode(65 + i)}</text>
-            <text x={i === 0 || i === 3 ? 115 : 270} y={i < 2 ? 192 : 272} text-anchor="middle" class="small">= 10</text>
+          {#each COMM_PARTIAL_TENSORS as tensor, i}
+            <rect x={i === 0 || i === 3 ? 60 : 215} y={i < 2 ? 155 : 235} width="110" height="45" rx="8" fill={phase >= 4 ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={phase >= 4 ? 'var(--gen)' : 'var(--accent)'} />
+            <text x={i === 0 || i === 3 ? 115 : 270} y={i < 2 ? 174 : 254} text-anchor="middle" class="small strong">GPU {i}{phase > 0 ? ` · ${String.fromCharCode(65 + i)}` : ''}</text>
+            <text x={i === 0 || i === 3 ? 115 : 270} y={i < 2 ? 192 : 272} text-anchor="middle" class="small">{phase === 0 ? COMM_TENSOR_TEXT(tensor) : phase < 4 ? `${phase}/3` : '= 10'}</text>
           {/each}
-          <text x="185" y="311" text-anchor="middle" class="small">{COMM_RING_PHASE_STEPS} {t('rounds · one reduced chunk each', '轮 · 每卡一个归约分块')}</text>
+          <text x="185" y="311" text-anchor="middle" class="small" opacity={phase >= 4 ? 1 : 0}>{COMM_RING_PHASE_STEPS} {t('rounds · one reduced chunk each', '轮 · 每卡一个归约分块')}</text>
 
-          <rect x="375" y="82" width="320" height="250" rx="13" fill="var(--bg)" stroke="var(--line)" />
-          <text x="535" y="108" text-anchor="middle" class="section">2 · All-Gather</text>
-          <text x="535" y="132" text-anchor="middle" class="small">{t('share the reduced chunks with every GPU', '把归约分块发给每张卡')}</text>
-          <path d="M520,177 H557" stroke="var(--gen)" stroke-width="2" /><path d="M562,177 l-10,-6 v12 z" fill="var(--gen)" />
-          <path d="M620,200 V227" stroke="var(--gen)" stroke-width="2" /><path d="M620,232 l-6,-10 h12 z" fill="var(--gen)" />
-          <path d="M565,257 H528" stroke="var(--gen)" stroke-width="2" /><path d="M523,257 l10,-6 v12 z" fill="var(--gen)" />
-          <path d="M465,235 V208" stroke="var(--gen)" stroke-width="2" /><path d="M465,203 l-6,10 h12 z" fill="var(--gen)" />
-          {#each COMM_PARTIAL_TENSORS as _, i}
-            <rect x={i === 0 || i === 3 ? 400 : 555} y={i < 2 ? 155 : 235} width="130" height="45" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
-            <text x={i === 0 || i === 3 ? 465 : 620} y={i < 2 ? 174 : 254} text-anchor="middle" class="small strong">GPU {i}</text>
-            <text x={i === 0 || i === 3 ? 465 : 620} y={i < 2 ? 193 : 273} text-anchor="middle" class="ringtensor">{COMM_TENSOR_TEXT(COMM_REDUCED_TENSOR)}</text>
-          {/each}
-          <text x="535" y="311" text-anchor="middle" class="small">{COMM_RING_PHASE_STEPS} {t('more rounds · all 4 chunks each', '轮 · 每卡集齐 4 块')}</text>
-          <text x="360" y="358" text-anchor="middle" class="result">2 × (4 − 1) = {COMM_RING_TOTAL_STEPS} {t('rounds · each GPU sends S/4 per round', '轮 · 每卡每轮发送 S/4')}</text>
-          <text x="360" y="383" text-anchor="middle" class="result">{t('sent per GPU', '每卡发送')} = {COMM_RING_TOTAL_STEPS} × S/4 = {COMM_RING_PER_RANK_SEND_TENSORS}S</text>
+          <g opacity={phase >= 4 ? 1 : 0}>
+            <rect x="375" y="82" width="320" height="250" rx="13" fill="var(--bg)" stroke="var(--line)" />
+            <text x="535" y="108" text-anchor="middle" class="section">2 · All-Gather</text>
+            <text x="535" y="132" text-anchor="middle" class="small">{phase < 7 ? `All-Gather · ${t('round', '轮')} ${phase - 3}/3 · GPU → GPU + 1 · S/4` : t('share the reduced chunks with every GPU', '把归约分块发给每张卡')}</text>
+            <path d="M520,177 H557" stroke="var(--gen)" stroke-width="2" /><path d="M562,177 l-10,-6 v12 z" fill="var(--gen)" />
+            <path d="M620,200 V227" stroke="var(--gen)" stroke-width="2" /><path d="M620,232 l-6,-10 h12 z" fill="var(--gen)" />
+            <path d="M565,257 H528" stroke="var(--gen)" stroke-width="2" /><path d="M523,257 l10,-6 v12 z" fill="var(--gen)" />
+            <path d="M465,235 V208" stroke="var(--gen)" stroke-width="2" /><path d="M465,203 l-6,10 h12 z" fill="var(--gen)" />
+            {#each COMM_PARTIAL_TENSORS as _, i}
+              <rect x={i === 0 || i === 3 ? 400 : 555} y={i < 2 ? 155 : 235} width="130" height="45" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+              <text x={i === 0 || i === 3 ? 465 : 620} y={i < 2 ? 174 : 254} text-anchor="middle" class="small strong">GPU {i}{phase < 7 ? ` · ${String.fromCharCode(65 + i)}` : ''}</text>
+              <text x={i === 0 || i === 3 ? 465 : 620} y={i < 2 ? 193 : 273} text-anchor="middle" class="ringtensor">{phase >= 7 ? COMM_TENSOR_TEXT(COMM_REDUCED_TENSOR) : `${phase - 3}/3`}</text>
+            {/each}
+            <text x="535" y="311" text-anchor="middle" class="small" opacity={phase >= 7 ? 1 : 0}>{COMM_RING_PHASE_STEPS} {t('more rounds · all 4 chunks each', '轮 · 每卡集齐 4 块')}</text>
+          </g>
+          <g opacity={phase >= 7 ? 1 : 0}>
+            <text x="360" y="358" text-anchor="middle" class="result">2 × (4 − 1) = {COMM_RING_TOTAL_STEPS} {t('rounds · each GPU sends S/4 per round', '轮 · 每卡每轮发送 S/4')}</text>
+            <text x="360" y="383" text-anchor="middle" class="result">{t('sent per GPU', '每卡发送')} = {COMM_RING_TOTAL_STEPS} × S/4 = {COMM_RING_PER_RANK_SEND_TENSORS}S</text>
+          </g>
         {:else}
           <rect x="18" y="70" width="264" height="188" rx="12" fill="var(--bg)" stroke="var(--line)" />
           <text x="150" y="94" text-anchor="middle" class="section">1 · Reduce-Scatter</text>
-          <text x="150" y="115" text-anchor="middle" class="small">{t('add · keep one chunk per GPU', '求和 · 每卡留下一块')}</text>
-          {#each COMM_PARTIAL_TENSORS as _, i}
-            <rect x={i === 0 || i === 3 ? 28 : 158} y={i < 2 ? 125 : 185} width="114" height="48" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
-            <text x={i === 0 || i === 3 ? 85 : 215} y={i < 2 ? 146 : 206} text-anchor="middle" class="small strong">GPU {i} · {String.fromCharCode(65 + i)}</text>
-            <text x={i === 0 || i === 3 ? 85 : 215} y={i < 2 ? 165 : 225} text-anchor="middle" class="small">= 10</text>
+          <text x="150" y="115" text-anchor="middle" class="small">{phase === 0 ? t('inputs · 4 chunks', '输入 · 4 块') : phase < 4 ? `RS · ${t('round', '轮')} ${phase}/3 · GPU → GPU + 1` : t('add · keep one chunk per GPU', '求和 · 每卡留下一块')}</text>
+          {#each COMM_PARTIAL_TENSORS as tensor, i}
+            <rect x={i === 0 || i === 3 ? 28 : 158} y={i < 2 ? 125 : 185} width="114" height="48" rx="8" fill={phase >= 4 ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={phase >= 4 ? 'var(--gen)' : 'var(--accent)'} />
+            <text x={i === 0 || i === 3 ? 85 : 215} y={i < 2 ? 146 : 206} text-anchor="middle" class="small strong">GPU {i}{phase > 0 ? ` · ${String.fromCharCode(65 + i)}` : ''}</text>
+            <text x={i === 0 || i === 3 ? 85 : 215} y={i < 2 ? 165 : 225} text-anchor="middle" class="small">{phase === 0 ? COMM_TENSOR_TEXT(tensor) : phase < 4 ? `${phase}/3` : '= 10'}</text>
           {/each}
-          <text x="150" y="249" text-anchor="middle" class="small">0→1→2→3→0 · {COMM_RING_PHASE_STEPS} {t('rounds', '轮')}</text>
+          <text x="150" y="249" text-anchor="middle" class="small" opacity={phase >= 4 ? 1 : 0}>0→1→2→3→0 · {COMM_RING_PHASE_STEPS} {t('rounds', '轮')}</text>
 
-          <rect x="18" y="268" width="264" height="188" rx="12" fill="var(--bg)" stroke="var(--line)" />
-          <text x="150" y="292" text-anchor="middle" class="section">2 · All-Gather</text>
-          <text x="150" y="313" text-anchor="middle" class="small">{t('share all 4 chunks', '把 4 块发给每卡')}</text>
-          {#each COMM_PARTIAL_TENSORS as _, i}
-            <rect x={i === 0 || i === 3 ? 28 : 158} y={i < 2 ? 323 : 383} width="114" height="48" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
-            <text x={i === 0 || i === 3 ? 85 : 215} y={i < 2 ? 342 : 402} text-anchor="middle" class="small strong">GPU {i}</text>
-            <text x={i === 0 || i === 3 ? 85 : 215} y={i < 2 ? 362 : 422} text-anchor="middle" class="ringtensor">{COMM_TENSOR_TEXT(COMM_REDUCED_TENSOR)}</text>
-          {/each}
-          <text x="150" y="447" text-anchor="middle" class="small">{t('same ring', '同一个环')} · +{COMM_RING_PHASE_STEPS} {t('rounds', '轮')}</text>
-          <text x="150" y="482" text-anchor="middle" class="result">2 × (4 − 1) = {COMM_RING_TOTAL_STEPS} {t('rounds', '轮')}</text>
-          <text x="150" y="507" text-anchor="middle" class="result">{COMM_RING_TOTAL_STEPS} × S/4 = {COMM_RING_PER_RANK_SEND_TENSORS}S</text>
-          <text x="150" y="531" text-anchor="middle" class="small">{t('sent by each GPU in total', '每张卡总共发送的张量字节数')}</text>
+          <g opacity={phase >= 4 ? 1 : 0}>
+            <rect x="18" y="268" width="264" height="188" rx="12" fill="var(--bg)" stroke="var(--line)" />
+            <text x="150" y="292" text-anchor="middle" class="section">2 · All-Gather</text>
+            <text x="150" y="313" text-anchor="middle" class="small">{phase < 7 ? `AG · ${t('round', '轮')} ${phase - 3}/3 · GPU → GPU + 1` : t('share all 4 chunks', '把 4 块发给每卡')}</text>
+            {#each COMM_PARTIAL_TENSORS as _, i}
+              <rect x={i === 0 || i === 3 ? 28 : 158} y={i < 2 ? 323 : 383} width="114" height="48" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+              <text x={i === 0 || i === 3 ? 85 : 215} y={i < 2 ? 342 : 402} text-anchor="middle" class="small strong">GPU {i}{phase < 7 ? ` · ${String.fromCharCode(65 + i)}` : ''}</text>
+              <text x={i === 0 || i === 3 ? 85 : 215} y={i < 2 ? 362 : 422} text-anchor="middle" class="ringtensor">{phase >= 7 ? COMM_TENSOR_TEXT(COMM_REDUCED_TENSOR) : `${phase - 3}/3`}</text>
+            {/each}
+            <text x="150" y="447" text-anchor="middle" class="small" opacity={phase >= 7 ? 1 : 0}>{t('same ring', '同一个环')} · +{COMM_RING_PHASE_STEPS} {t('rounds', '轮')}</text>
+          </g>
+          <g opacity={phase >= 7 ? 1 : 0}>
+            <text x="150" y="482" text-anchor="middle" class="result">2 × (4 − 1) = {COMM_RING_TOTAL_STEPS} {t('rounds', '轮')}</text>
+            <text x="150" y="507" text-anchor="middle" class="result">{COMM_RING_TOTAL_STEPS} × S/4 = {COMM_RING_PER_RANK_SEND_TENSORS}S</text>
+            <text x="150" y="531" text-anchor="middle" class="small">{t('sent by each GPU in total', '每张卡总共发送的张量字节数')}</text>
+          </g>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Teaching ring; payload only, not a time forecast.', '教学 Ring；只算张量载荷，不预测耗时。')}</text>
       {:else if step === 6}
@@ -336,14 +419,20 @@
           {/each}
           <text x="360" y="185" text-anchor="middle" class="result">{t('dependent chain', '这条相关链')} = 6t</text>
 
-          <rect x="35" y="218" width="650" height="132" rx="13" fill="var(--bg)" stroke="var(--line)" />
-          <text x="55" y="244" class="small strong">{t('change one link · round 2 takes t + d', '只改变一条链路 · 第 2 轮花 t + d')}</text>
+          <g opacity={phase >= 1 ? 1 : 0}>
+            <rect x="35" y="218" width="650" height="132" rx="13" fill="var(--bg)" stroke="var(--line)" />
+            <text x="55" y="244" class="small strong">{t('change one link · round 2 takes t + d', '只改变一条链路 · 第 2 轮花 t + d')}</text>
+          </g>
           {#each [{ x: 55, w: 80, time: 't' }, { x: 145, w: 140, time: 't+d' }, { x: 295, w: 80, time: 't' }, { x: 385, w: 80, time: 't' }, { x: 475, w: 80, time: 't' }, { x: 565, w: 80, time: 't' }] as round, i}
-            <rect x={round.x} y="260" width={round.w} height="36" rx="7" fill={i === 1 ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={i === 1 ? 'var(--gen)' : 'var(--accent)'} />
-            <text x={round.x + round.w / 2} y="284" text-anchor="middle" class="small">{i + 1} · {round.time}</text>
+            <g opacity={phase >= (i === 0 ? 1 : i === 1 ? 2 : 3) ? 1 : 0}>
+              <rect x={round.x} y="260" width={round.w} height="36" rx="7" fill={i === 1 ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={i === 1 ? 'var(--gen)' : 'var(--accent)'} />
+              <text x={round.x + round.w / 2} y="284" text-anchor="middle" class="small">{i + 1} · {round.time}</text>
+            </g>
           {/each}
-          <text x="360" y="323" text-anchor="middle" class="result">5t + (t+d) = 6t+d · {t('extra wait', '多等')} = d</text>
-          <text x="360" y="364" text-anchor="middle" class="small"><tspan fill="var(--accent)">■</tspan> {t('unchanged rounds', '未改变的轮次')}   <tspan fill="var(--gen)">■</tspan> {t('slower transfer; later rounds shift right', '变慢的传送；后续轮次向右推迟')}</text>
+          <g opacity={phase >= 3 ? 1 : 0}>
+            <text x="360" y="323" text-anchor="middle" class="result">5t + (t+d) = 6t+d · {t('extra wait', '多等')} = d</text>
+            <text x="360" y="364" text-anchor="middle" class="small"><tspan fill="var(--accent)">■</tspan> {t('unchanged rounds', '未改变的轮次')}   <tspan fill="var(--gen)">■</tspan> {t('slower transfer; later rounds shift right', '变慢的传送；后续轮次向右推迟')}</text>
+          </g>
         {:else}
           <rect x="18" y="78" width="264" height="137" rx="12" fill="var(--bg)" stroke="var(--line)" />
           <text x="150" y="102" text-anchor="middle" class="small strong">{t('baseline · every round t', '对照路径 · 每轮都花 t')}</text>
@@ -354,17 +443,23 @@
           <text x="150" y="180" text-anchor="middle" class="small">{t('each block = t', '每一格 = t')}</text>
           <text x="150" y="202" text-anchor="middle" class="result">{t('chain', '相关链')} = 6t</text>
 
-          <rect x="18" y="229" width="264" height="157" rx="12" fill="var(--bg)" stroke="var(--line)" />
-          <text x="150" y="253" text-anchor="middle" class="small strong">{t('round 2 now takes t + d', '第 2 轮现在花 t + d')}</text>
+          <g opacity={phase >= 1 ? 1 : 0}>
+            <rect x="18" y="229" width="264" height="157" rx="12" fill="var(--bg)" stroke="var(--line)" />
+            <text x="150" y="253" text-anchor="middle" class="small strong">{t('round 2 now takes t + d', '第 2 轮现在花 t + d')}</text>
+          </g>
           {#each [{ x: 25, w: 30 }, { x: 61, w: 75 }, { x: 142, w: 30 }, { x: 178, w: 30 }, { x: 214, w: 30 }, { x: 250, w: 30 }] as round, i}
-            <rect x={round.x} y="270" width={round.w} height="38" rx="6" fill={i === 1 ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={i === 1 ? 'var(--gen)' : 'var(--accent)'} />
-            <text x={round.x + round.w / 2} y="294" text-anchor="middle" class="small">{i + 1}</text>
+            <g opacity={phase >= (i === 0 ? 1 : i === 1 ? 2 : 3) ? 1 : 0}>
+              <rect x={round.x} y="270" width={round.w} height="38" rx="6" fill={i === 1 ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={i === 1 ? 'var(--gen)' : 'var(--accent)'} />
+              <text x={round.x + round.w / 2} y="294" text-anchor="middle" class="small">{i + 1}</text>
+            </g>
           {/each}
-          <text x="150" y="331" text-anchor="middle" class="small">{t('orange adds d; later rounds shift', '橙色多花 d；后续轮次推迟')}</text>
-          <text x="150" y="357" text-anchor="middle" class="result">5t + (t+d) = 6t+d</text>
-          <text x="150" y="379" text-anchor="middle" class="small">{t('extra wait = d', '多等的时间 = d')}</text>
-          <text x="150" y="420" text-anchor="middle" class="small">{t('same 6 rounds and tensor S', '两边都是同样的 6 轮和张量 S')}</text>
-          <text x="150" y="448" text-anchor="middle" class="small">{t('only the transfer path changes', '只改变传输路径')}</text>
+          <g opacity={phase >= 3 ? 1 : 0}>
+            <text x="150" y="331" text-anchor="middle" class="small">{t('orange adds d; later rounds shift', '橙色多花 d；后续轮次推迟')}</text>
+            <text x="150" y="357" text-anchor="middle" class="result">5t + (t+d) = 6t+d</text>
+            <text x="150" y="379" text-anchor="middle" class="small">{t('extra wait = d', '多等的时间 = d')}</text>
+            <text x="150" y="420" text-anchor="middle" class="small">{t('same 6 rounds and tensor S', '两边都是同样的 6 轮和张量 S')}</text>
+            <text x="150" y="448" text-anchor="middle" class="small">{t('only the transfer path changes', '只改变传输路径')}</text>
+          </g>
         {/if}
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t("Next: how do requests reach this Ring's GPUs?", '下一章：服务怎样把请求分给 Ring 上的 GPU？')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Simplified dependency model, not an NCCL timing forecast.', '简化的相关链模型，不是 NCCL 耗时预测。')}</text>

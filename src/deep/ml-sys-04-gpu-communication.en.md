@@ -179,7 +179,7 @@ Sources: `Awesome-ML-SYS-Tutorial/torch/nccl/readme.md:99-145`; `zero-to-sglang/
 - Each input tensor has $S$ payload bytes, split into chunks A, B, C and D of $S/4$ bytes each.
 - The left panel shows the end of Reduce-Scatter: matching positions have been added, and each GPU keeps one reduced chunk containing 10.
 - The right panel shows the end of All-Gather: the chunks continue around the ring until every GPU holds `[10,10,10,10]`.
-- Both panels show end states rather than replaying every round. Orange marks reduced chunks and their delivery.
+- The animation starts with the four input tensors. It advances Reduce-Scatter through rounds 1–3, with every GPU sending one S/4 chunk to the next GPU. At completion, each left card holds one reduced chunk containing 10. All-Gather then advances through rounds 1–3; at completion, every right card holds `[10,10,10,10]`. Orange marks reduced chunks and their delivery.
 
 ### Formula and symbols
 
