@@ -1,3 +1,15 @@
+# lane d 本轮报告 · 按 direction 继续冻结等待固定复审
+
+日期：2026-11-27。类型：等待固定复审。范围只有本报告；未改教程、transcript、评分卡、`memory/`、`.bot/memory/`、其他书、其他 lane 或第 1 本受保护英文原文。
+
+- 本轮开始 HEAD 与 `origin/tutorials` 均为 `fee7264`，fetch 后仍一致，工作树干净。direction（06:52）lane d：Voxt 11 Step 5 的 `99ed414`／`26941bb` 与 Voxt 10 displayed Step 1 的 `bd884d2` 均冻结待固定复审；d 暂停新写作，下一最小单元是复审后指定的 Voxt 10 displayed Step 2（一个 Step 一个提交）；p3→p0 回绕、评分卡第 32 行、Step 5 审计证据三条 reviewer 线索留待固定复审。本轮没有授权的新教程单元。
+- 定向核对：`bd884d2..HEAD` 对 `src/`、`docs/`、`memory/`、`transcript/` 无 diff（只有 `fee7264` 的报告提交）；`26941bb..HEAD` 对 Voxt 组件、双语 deep、MDX、Voxt transcript、评分卡和 progress 无教程 diff。`git diff --check` 通过。
+- **本轮修复的 review finding 为 0。** 逐条核对 review.md 中 [d] 开放项：Voxt 08 已协调 GO（`bb70918`），其报告句记录项已在此前一轮改毕（本文件旧条目：「已改为教程提交 `bb70918` 与报告提交 `b233fbe` 两笔分开」）；Voxt 11 的 caption 15 词、stop request、第 2 步近似号与双语换算、第 3 步手机分行均已被协调在 `6467ab7` 复审中确认「未回退」（review.md:1019）；评分卡头部已同步 54/60、119/120、143/144、机制 11/12（Step 4 `3aa0d2d` GO、Step 5 冻结待审），第 32 行口径属留待固定复审的三条线索之一，不动；Voxt 10 全章与 Voxt 11 Step 5 按 direction 冻结。Voxt 11 整章保持协调基线 **R1–R5 54/60、机制 R6 11/12、原十二项 143/144，NO-GO**；Voxt 10 不因作者自评改分。
+- 按 direction，本轮不运行 EVAL 硬门、逐相审计或实图采集，不重跑无教程 diff 的检查。未启动 dev server 或浏览器，没有新截图。`pgrep` 列出的 `cdp-zutH77`／`cdp-t05Xt4` 两台 headless Chrome 和 4329 端口的 `astro preview` 均属后台 regress 工作树（`.orca/.../state/regress/wt`），非本轮所起；`ps` 被系统拒绝无法核 PPID，未动它们。
+- 剩余事项：`bd884d2` 与 `99ed414`／`26941bb` 的协调固定复审；复审后指定的 Voxt 10 displayed Step 2；Voxt 12 排在性能谱系与 P0 清理之后；主人最终视觉验收。
+
+---
+
 # lane k1 本轮报告 · Omni 11 Step 1 的 Omni-46
 
 日期：2026-11-27。类型：修旧（direction 04:56 指定的单个 P0）。本轮开始 HEAD 与 `origin/tutorials` 均为 `209c3fa`，工作树干净。范围只有 Omni 11 Step 1 的组件、caption、双语 deep、必要的 DAC 出处回指、MDX 出处、生成 transcript、定向审计和本报告；未改其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。Step 7／8 的舞台和 Ch.12 交接没有源码 diff。
