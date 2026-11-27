@@ -1,5 +1,6 @@
 // Reproduce the ML 08 Step 2 mechanism, layout, font, and deep-dive audit.
 // Start the dev server on port 4321, then run `node .bot/out/ml08-step2-audit.mjs`.
+import { createHash } from 'node:crypto';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { launch, sleep } from '../../scripts/lib/browser.mjs';
@@ -8,12 +9,14 @@ const base = (process.env.BASE || 'http://localhost:4321/learning-sglang').repla
 const out = process.env.OUT || '.bot/out/ml08-step2-audit';
 const url = `${base}/ml-sys/ch/08-fsdp2-training-backend/?step=2`;
 const states = [];
+let previousPhasePng = null;
 mkdirSync(out, { recursive: true });
 
-const browser = await launch({ width: 1440, height: 900 });
+let browser = await launch({ width: 1440, height: 900 });
 const keepAlive = setInterval(() => {}, 1000);
 
 async function open(page, lang) {
+  previousPhasePng = null;
   await page.goto(url);
   await page.evaluate(`localStorage.setItem('lang', '${lang}')`);
   await page.goto(url);
@@ -106,9 +109,18 @@ async function capture(page, lang, width, phase) {
   const previous = states.find((state) => state.lang === lang && state.width === width && state.phase === phase - 1);
   const changed = previous ? JSON.stringify(previous.mechanism) !== JSON.stringify(state.mechanism) : null;
   if (changed === false) throw new Error(`${lang} ${width} phase ${phase}: mechanism did not change`);
-  const record = { lang, width, ...state, changed };
+  const png = await page.screenshot();
+  if (previousPhasePng?.equals(png)) {
+    throw new Error(`${lang} ${width} phase ${phase}: PNG is byte-identical to the previous phase`);
+  }
+  const record = {
+    lang, width, ...state, changed,
+    pngBytes: png.length,
+    pngMd5: createHash('md5').update(png).digest('hex'),
+  };
   states.push(record);
-  writeFileSync(join(out, `${lang}-${width}-s2-p${phase}.png`), await page.screenshot());
+  writeFileSync(join(out, `${lang}-${width}-s2-p${phase}.png`), png);
+  previousPhasePng = png;
   return record;
 }
 
@@ -137,15 +149,21 @@ try {
     await page.close();
   }
 
+  browser.close();
+  browser = null;
   for (const lang of ['en', 'zh']) for (const width of [360, 390, 430]) {
+    // A fresh browser keeps each phone group's compositor active instead of reusing a frozen background target.
+    browser = await launch({ width, height: 844 });
     const page = await browser.tab({ width, height: 844, mobile: true });
     await open(page, lang);
     for (let phase = 0; phase <= 4; phase++) await capture(page, lang, width, phase);
     await page.close();
+    browser.close();
+    browser = null;
   }
 } finally {
   clearInterval(keepAlive);
-  browser.close();
+  browser?.close();
 }
 
 const desktop = states.filter((state) => state.width === 1440);
@@ -158,6 +176,7 @@ const summary = {
   phoneStates: states.length - desktop.length,
   transitions: transitions.length,
   changedTransitions,
+  uniquePngHashes: new Set(states.map((state) => state.pngMd5)).size,
   minFont: smallest.minFont,
   minFontLocation: `${smallest.lang}-${smallest.width}-s2-p${smallest.phase}`,
   minFontText: smallest.minFontText,
@@ -167,6 +186,6 @@ const summary = {
 writeFileSync(join(out, 'report.json'), JSON.stringify({ base, generatedAt: new Date().toISOString(), summary, states }, null, 2) + '\n');
 console.log(JSON.stringify({ summary, report: join(out, 'report.json') }, null, 2));
 if (states.length !== 40 || desktop.length !== 10 || transitions.length !== 32 || changedTransitions !== 32 ||
-    summary.minFont < 10 || summary.overlaps || summary.overflow) {
+    summary.uniquePngHashes !== states.length || summary.minFont < 10 || summary.overlaps || summary.overflow) {
   throw new Error(`audit failed: ${JSON.stringify(summary)}`);
 }

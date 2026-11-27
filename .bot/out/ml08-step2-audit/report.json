@@ -1,12 +1,13 @@
 {
   "base": "http://localhost:4470/learning-sglang",
-  "generatedAt": "2026-11-27T08:55:57.846Z",
+  "generatedAt": "2026-11-27T09:07:36.615Z",
   "summary": {
     "states": 40,
     "desktopStates": 10,
     "phoneStates": 30,
     "transitions": 32,
     "changedTransitions": 32,
+    "uniquePngHashes": 40,
     "minFont": 10.407,
     "minFontLocation": "zh-1440-s2-p4",
     "minFontText": "循环",
@@ -53,7 +54,9 @@
           "<rect x=\"70\" width=\"180\" height=\"14\" rx=\"3\" fill=\"var(--bg)\" stroke=\"var(--gen)\" class=\"svelte-1xh13wt\" y=\"294\"></rect>"
         ]
       },
-      "changed": null
+      "changed": null,
+      "pngBytes": 151293,
+      "pngMd5": "fb263439099139cbd2fbff0056a68c31"
     },
     {
       "lang": "en",
@@ -99,7 +102,9 @@
           "<line x1=\"305\" y1=\"254\" x2=\"415\" y2=\"254\" stroke=\"var(--line)\" stroke-width=\"2.5\" marker-end=\"url(#fsdp-arrow-plain)\" class=\"svelte-1xh13wt\"></line>"
         ]
       },
-      "changed": true
+      "changed": true,
+      "pngBytes": 158476,
+      "pngMd5": "b477a12cc2474229b5f5705cad21d997"
     },
     {
       "lang": "en",
@@ -173,7 +178,9 @@
           "<rect x=\"510\" width=\"130\" height=\"14\" rx=\"3\" fill=\"var(--bg)\" stroke=\"var(--accent)\" class=\"svelte-1xh13wt\" y=\"294\"></rect>"
         ]
       },
-      "changed": true
+      "changed": true,
+      "pngBytes": 180308,
+      "pngMd5": "cf041aa68768ea558ceba8e1d5a2ef13"
     },
     {
       "lang": "en",
@@ -254,7 +261,9 @@
           "<rect x=\"35\" y=\"392\" height=\"20\" rx=\"4\" fill=\"var(--accent-soft)\" stroke=\"var(--accent)\" class=\"svelte-1xh13wt\" width=\"31.25\"></rect>"
         ]
       },
-      "changed": true
+      "changed": true,
+      "pngBytes": 195974,
+      "pngMd5": "964fc17f211e158968fe4e2f6016278a"
     },
     {
       "lang": "en",
@@ -338,7 +347,9 @@
           "<rect x=\"30\" y=\"425\" width=\"660\" height=\"52\" rx=\"10\" fill=\"var(--bg)\" stroke=\"var(--line)\" stroke-dasharray=\"5 4\" class=\"svelte-1xh13wt\"></rect>"
         ]
       },
-      "changed": true
+      "changed": true,
+      "pngBytes": 209495,
+      "pngMd5": "527092331e2908d8604e9460d9be917c"
     },
     {
       "lang": "zh",
@@ -379,7 +390,9 @@
           "<rect x=\"70\" width=\"180\" height=\"14\" rx=\"3\" fill=\"var(--bg)\" stroke=\"var(--gen)\" class=\"svelte-1xh13wt\" y=\"294\"></rect>"
         ]
       },
-      "changed": null
+      "changed": null,
+      "pngBytes": 294617,
+      "pngMd5": "8b919f526f78578a6e28b805fc07b26d"
     },
     {
       "lang": "zh",
@@ -425,7 +438,9 @@
           "<line x1=\"305\" y1=\"254\" x2=\"415\" y2=\"254\" stroke=\"var(--line)\" stroke-width=\"2.5\" marker-end=\"url(#fsdp-arrow-plain)\" class=\"svelte-1xh13wt\"></line>"
         ]
       },
-      "changed": true
+      "changed": true,
+      "pngBytes": 299582,
+      "pngMd5": "b80886e2a730db7fce376078dd2c6538"
     },
     {
       "lang": "zh",
@@ -499,7 +514,9 @@
           "<rect x=\"510\" width=\"130\" height=\"14\" rx=\"3\" fill=\"var(--bg)\" stroke=\"var(--accent)\" class=\"svelte-1xh13wt\" y=\"294\"></rect>"
         ]
       },
-      "changed": true
+      "changed": true,
+      "pngBytes": 313927,
+      "pngMd5": "445ce4b2817f1be830cfe94df2fd78cc"
     },
     {
       "lang": "zh",
@@ -580,7 +597,9 @@
           "<rect x=\"35\" y=\"392\" height=\"20\" rx=\"4\" fill=\"var(--accent-soft)\" stroke=\"var(--accent)\" class=\"svelte-1xh13wt\" width=\"31.25\"></rect>"
         ]
       },
-      "changed": true
+      "changed": true,
+      "pngBytes": 324988,
+      "pngMd5": "e168c575332f6a2bd88bfdf178f0a4e7"
     },
     {
       "lang": "zh",
@@ -664,7 +683,9 @@
           "<rect x=\"30\" y=\"425\" width=\"660\" height=\"52\" rx=\"10\" fill=\"var(--bg)\" stroke=\"var(--line)\" stroke-dasharray=\"5 4\" class=\"svelte-1xh13wt\"></rect>"
         ]
       },
-      "changed": true
+      "changed": true,
+      "pngBytes": 338265,
+      "pngMd5": "50d1cd43776d2b779605ad53a607a0aa"
     },
     {
       "lang": "en",
@@ -690,7 +711,9 @@
           "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"150\" y2=\"166\" stroke=\"var(--gen)\" marker-end=\"url(#fsdp-arrow-orange)\"></line>"
         ]
       },
-      "changed": null
+      "changed": null,
+      "pngBytes": 40201,
+      "pngMd5": "8eeeb40507d9cd107bd068361a87505e"
     },
     {
       "lang": "en",
@@ -720,7 +743,9 @@
           "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"241\" y2=\"257\" stroke=\"var(--line)\" marker-end=\"url(#fsdp-arrow-blue)\"></line>"
         ]
       },
-      "changed": true
+      "changed": true,
+      "pngBytes": 46600,
+      "pngMd5": "dd124edfb0f6933a032e02b07056e2d2"
     },
     {
       "lang": "en",
@@ -754,7 +779,9 @@
           "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"332\" y2=\"348\" stroke=\"var(--accent)\" marker-end=\"url(#fsdp-arrow-blue)\"></line>"
         ]
       },
-      "changed": true
+      "changed": true,
+      "pngBytes": 52231,
+      "pngMd5": "d533e065504b0b5c4d1c3f948719b79a"
     },
     {
       "lang": "en",
@@ -791,7 +818,9 @@
           "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"353\" fill=\"var(--accent-soft)\" stroke=\"var(--accent)\"></rect>"
         ]
       },
-      "changed": true
+      "changed": true,
+      "pngBytes": 56928,
+      "pngMd5": "7d14f1893c0a55501cfd1b2f89a618d2"
     },
     {
       "lang": "en",
@@ -833,7 +862,9 @@
           "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"353\" fill=\"var(--accent-soft)\" stroke=\"var(--accent)\"></rect>"
         ]
       },
-      "changed": true
+      "changed": true,
+      "pngBytes": 68159,
+      "pngMd5": "6b6126888be2520bd3b96cf89d3e22d4"
     },
     {
       "lang": "en",
@@ -859,7 +890,9 @@
           "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"150\" y2=\"166\" stroke=\"var(--gen)\" marker-end=\"url(#fsdp-arrow-orange)\"></line>"
         ]
       },
-      "changed": null
+      "changed": null,
+      "pngBytes": 42005,
+      "pngMd5": "2dd7c9f7a5aea1704d13b1f40f390e50"
     },
     {
       "lang": "en",
@@ -889,7 +922,9 @@
           "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"241\" y2=\"257\" stroke=\"var(--line)\" marker-end=\"url(#fsdp-arrow-blue)\"></line>"
         ]
       },
-      "changed": true
+      "changed": true,
+      "pngBytes": 49450,
+      "pngMd5": "5245de38e343c97652dabc07890015fb"
     },
     {
       "lang": "en",
@@ -923,7 +958,9 @@
           "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"332\" y2=\"348\" stroke=\"var(--accent)\" marker-end=\"url(#fsdp-arrow-blue)\"></line>"
         ]
       },
-      "changed": true
+      "changed": true,
+      "pngBytes": 55866,
+      "pngMd5": "7a3b63a7f436d80678af25575c1c51b8"
     },
     {
       "lang": "en",
@@ -960,7 +997,9 @@
           "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"353\" fill=\"var(--accent-soft)\" stroke=\"var(--accent)\"></rect>"
         ]
       },
-      "changed": true
+      "changed": true,
+      "pngBytes": 61190,
+      "pngMd5": "eac48cca01c5157be029db267935af23"
     },
     {
       "lang": "en",
@@ -970,175 +1009,6 @@
       "finalPhase": 4,
       "counter": "02 / 06",
       "minFont": 11.76,
-      "minFontText": "loops",
-      "overlaps": [],
-      "overflow": [],
-      "mechanism": {
-        "texts": [
-          "DTensor gives each rank a shard",
-          "whole table + split rule + rank parts",
-          "LOGICAL TENSOR W",
-          "one parameter · all rows",
-          "PLACEMENT · SHARD(0)",
-          "split dim 0 (rows) across 8 ranks",
-          "LOCAL SHARDS",
-          "rank r keeps row r · one rank per GPU",
-          "ALL SAVED TABLES",
-          "1 + 1 + 6 = 8 GB per rank",
-          "Per rank: 64 GB ÷ 8 = 8 GB",
-          "8 copies: 512 GB → 8 shards: 64 GB",
-          "Later: gather parts into full values",
-          "Step 3 all-gather · Step 6 Replicate()",
-          "Orange = logical tensor · blue = local shards",
-          "Equal shards are a teaching simplification."
-        ],
-        "shapes": [
-          "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"80\" fill=\"var(--gen-soft)\" stroke=\"var(--gen)\"></rect>",
-          "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"150\" y2=\"166\" stroke=\"var(--gen)\" marker-end=\"url(#fsdp-arrow-orange)\"></line>",
-          "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"171\" fill=\"var(--bg)\" stroke=\"var(--line)\"></rect>",
-          "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"241\" y2=\"257\" stroke=\"var(--line)\" marker-end=\"url(#fsdp-arrow-blue)\"></line>",
-          "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"262\" fill=\"var(--accent-soft)\" stroke=\"var(--accent)\"></rect>",
-          "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"332\" y2=\"348\" stroke=\"var(--accent)\" marker-end=\"url(#fsdp-arrow-blue)\"></line>",
-          "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"353\" fill=\"var(--accent-soft)\" stroke=\"var(--accent)\"></rect>"
-        ]
-      },
-      "changed": true
-    },
-    {
-      "lang": "en",
-      "width": 430,
-      "step": 2,
-      "phase": 0,
-      "finalPhase": 4,
-      "counter": "02 / 06",
-      "minFont": 13.094,
-      "minFontText": "loops",
-      "overlaps": [],
-      "overflow": [],
-      "mechanism": {
-        "texts": [
-          "DTensor gives each rank a shard",
-          "whole table + split rule + rank parts",
-          "LOGICAL TENSOR W",
-          "one parameter · all rows",
-          "Equal shards are a teaching simplification."
-        ],
-        "shapes": [
-          "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"80\" fill=\"var(--gen-soft)\" stroke=\"var(--gen)\"></rect>",
-          "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"150\" y2=\"166\" stroke=\"var(--gen)\" marker-end=\"url(#fsdp-arrow-orange)\"></line>"
-        ]
-      },
-      "changed": null
-    },
-    {
-      "lang": "en",
-      "width": 430,
-      "step": 2,
-      "phase": 1,
-      "finalPhase": 4,
-      "counter": "02 / 06",
-      "minFont": 13.094,
-      "minFontText": "loops",
-      "overlaps": [],
-      "overflow": [],
-      "mechanism": {
-        "texts": [
-          "DTensor gives each rank a shard",
-          "whole table + split rule + rank parts",
-          "LOGICAL TENSOR W",
-          "one parameter · all rows",
-          "PLACEMENT · SHARD(0)",
-          "split dim 0 (rows) across 8 ranks",
-          "Equal shards are a teaching simplification."
-        ],
-        "shapes": [
-          "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"80\" fill=\"var(--gen-soft)\" stroke=\"var(--gen)\"></rect>",
-          "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"150\" y2=\"166\" stroke=\"var(--gen)\" marker-end=\"url(#fsdp-arrow-orange)\"></line>",
-          "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"171\" fill=\"var(--bg)\" stroke=\"var(--line)\"></rect>",
-          "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"241\" y2=\"257\" stroke=\"var(--line)\" marker-end=\"url(#fsdp-arrow-blue)\"></line>"
-        ]
-      },
-      "changed": true
-    },
-    {
-      "lang": "en",
-      "width": 430,
-      "step": 2,
-      "phase": 2,
-      "finalPhase": 4,
-      "counter": "02 / 06",
-      "minFont": 13.094,
-      "minFontText": "loops",
-      "overlaps": [],
-      "overflow": [],
-      "mechanism": {
-        "texts": [
-          "DTensor gives each rank a shard",
-          "whole table + split rule + rank parts",
-          "LOGICAL TENSOR W",
-          "one parameter · all rows",
-          "PLACEMENT · SHARD(0)",
-          "split dim 0 (rows) across 8 ranks",
-          "LOCAL SHARDS",
-          "rank r keeps row r · one rank per GPU",
-          "Equal shards are a teaching simplification."
-        ],
-        "shapes": [
-          "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"80\" fill=\"var(--gen-soft)\" stroke=\"var(--gen)\"></rect>",
-          "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"150\" y2=\"166\" stroke=\"var(--gen)\" marker-end=\"url(#fsdp-arrow-orange)\"></line>",
-          "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"171\" fill=\"var(--bg)\" stroke=\"var(--line)\"></rect>",
-          "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"241\" y2=\"257\" stroke=\"var(--line)\" marker-end=\"url(#fsdp-arrow-blue)\"></line>",
-          "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"262\" fill=\"var(--accent-soft)\" stroke=\"var(--accent)\"></rect>",
-          "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"332\" y2=\"348\" stroke=\"var(--accent)\" marker-end=\"url(#fsdp-arrow-blue)\"></line>"
-        ]
-      },
-      "changed": true
-    },
-    {
-      "lang": "en",
-      "width": 430,
-      "step": 2,
-      "phase": 3,
-      "finalPhase": 4,
-      "counter": "02 / 06",
-      "minFont": 13.094,
-      "minFontText": "loops",
-      "overlaps": [],
-      "overflow": [],
-      "mechanism": {
-        "texts": [
-          "DTensor gives each rank a shard",
-          "whole table + split rule + rank parts",
-          "LOGICAL TENSOR W",
-          "one parameter · all rows",
-          "PLACEMENT · SHARD(0)",
-          "split dim 0 (rows) across 8 ranks",
-          "LOCAL SHARDS",
-          "rank r keeps row r · one rank per GPU",
-          "ALL SAVED TABLES",
-          "1 + 1 + 6 = 8 GB per rank",
-          "Equal shards are a teaching simplification."
-        ],
-        "shapes": [
-          "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"80\" fill=\"var(--gen-soft)\" stroke=\"var(--gen)\"></rect>",
-          "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"150\" y2=\"166\" stroke=\"var(--gen)\" marker-end=\"url(#fsdp-arrow-orange)\"></line>",
-          "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"171\" fill=\"var(--bg)\" stroke=\"var(--line)\"></rect>",
-          "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"241\" y2=\"257\" stroke=\"var(--line)\" marker-end=\"url(#fsdp-arrow-blue)\"></line>",
-          "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"262\" fill=\"var(--accent-soft)\" stroke=\"var(--accent)\"></rect>",
-          "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"332\" y2=\"348\" stroke=\"var(--accent)\" marker-end=\"url(#fsdp-arrow-blue)\"></line>",
-          "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"353\" fill=\"var(--accent-soft)\" stroke=\"var(--accent)\"></rect>"
-        ]
-      },
-      "changed": true
-    },
-    {
-      "lang": "en",
-      "width": 430,
-      "step": 2,
-      "phase": 4,
-      "finalPhase": 4,
-      "counter": "02 / 06",
-      "minFont": 13.094,
       "minFontText": "loops",
       "overlaps": [],
       "overflow": [],
@@ -1171,7 +1041,188 @@
           "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"353\" fill=\"var(--accent-soft)\" stroke=\"var(--accent)\"></rect>"
         ]
       },
-      "changed": true
+      "changed": true,
+      "pngBytes": 70762,
+      "pngMd5": "7fba466929806e43ca6604d9d80cdfde"
+    },
+    {
+      "lang": "en",
+      "width": 430,
+      "step": 2,
+      "phase": 0,
+      "finalPhase": 4,
+      "counter": "02 / 06",
+      "minFont": 13.094,
+      "minFontText": "loops",
+      "overlaps": [],
+      "overflow": [],
+      "mechanism": {
+        "texts": [
+          "DTensor gives each rank a shard",
+          "whole table + split rule + rank parts",
+          "LOGICAL TENSOR W",
+          "one parameter · all rows",
+          "Equal shards are a teaching simplification."
+        ],
+        "shapes": [
+          "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"80\" fill=\"var(--gen-soft)\" stroke=\"var(--gen)\"></rect>",
+          "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"150\" y2=\"166\" stroke=\"var(--gen)\" marker-end=\"url(#fsdp-arrow-orange)\"></line>"
+        ]
+      },
+      "changed": null,
+      "pngBytes": 43449,
+      "pngMd5": "2c92c02ee39873b1a1e1e8534b7b684d"
+    },
+    {
+      "lang": "en",
+      "width": 430,
+      "step": 2,
+      "phase": 1,
+      "finalPhase": 4,
+      "counter": "02 / 06",
+      "minFont": 13.094,
+      "minFontText": "loops",
+      "overlaps": [],
+      "overflow": [],
+      "mechanism": {
+        "texts": [
+          "DTensor gives each rank a shard",
+          "whole table + split rule + rank parts",
+          "LOGICAL TENSOR W",
+          "one parameter · all rows",
+          "PLACEMENT · SHARD(0)",
+          "split dim 0 (rows) across 8 ranks",
+          "Equal shards are a teaching simplification."
+        ],
+        "shapes": [
+          "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"80\" fill=\"var(--gen-soft)\" stroke=\"var(--gen)\"></rect>",
+          "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"150\" y2=\"166\" stroke=\"var(--gen)\" marker-end=\"url(#fsdp-arrow-orange)\"></line>",
+          "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"171\" fill=\"var(--bg)\" stroke=\"var(--line)\"></rect>",
+          "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"241\" y2=\"257\" stroke=\"var(--line)\" marker-end=\"url(#fsdp-arrow-blue)\"></line>"
+        ]
+      },
+      "changed": true,
+      "pngBytes": 51660,
+      "pngMd5": "60fddfa9d015bbfde10ad56116158531"
+    },
+    {
+      "lang": "en",
+      "width": 430,
+      "step": 2,
+      "phase": 2,
+      "finalPhase": 4,
+      "counter": "02 / 06",
+      "minFont": 13.094,
+      "minFontText": "loops",
+      "overlaps": [],
+      "overflow": [],
+      "mechanism": {
+        "texts": [
+          "DTensor gives each rank a shard",
+          "whole table + split rule + rank parts",
+          "LOGICAL TENSOR W",
+          "one parameter · all rows",
+          "PLACEMENT · SHARD(0)",
+          "split dim 0 (rows) across 8 ranks",
+          "LOCAL SHARDS",
+          "rank r keeps row r · one rank per GPU",
+          "Equal shards are a teaching simplification."
+        ],
+        "shapes": [
+          "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"80\" fill=\"var(--gen-soft)\" stroke=\"var(--gen)\"></rect>",
+          "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"150\" y2=\"166\" stroke=\"var(--gen)\" marker-end=\"url(#fsdp-arrow-orange)\"></line>",
+          "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"171\" fill=\"var(--bg)\" stroke=\"var(--line)\"></rect>",
+          "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"241\" y2=\"257\" stroke=\"var(--line)\" marker-end=\"url(#fsdp-arrow-blue)\"></line>",
+          "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"262\" fill=\"var(--accent-soft)\" stroke=\"var(--accent)\"></rect>",
+          "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"332\" y2=\"348\" stroke=\"var(--accent)\" marker-end=\"url(#fsdp-arrow-blue)\"></line>"
+        ]
+      },
+      "changed": true,
+      "pngBytes": 58828,
+      "pngMd5": "da1b6a7448bd321a25ea31a407cc56eb"
+    },
+    {
+      "lang": "en",
+      "width": 430,
+      "step": 2,
+      "phase": 3,
+      "finalPhase": 4,
+      "counter": "02 / 06",
+      "minFont": 13.094,
+      "minFontText": "loops",
+      "overlaps": [],
+      "overflow": [],
+      "mechanism": {
+        "texts": [
+          "DTensor gives each rank a shard",
+          "whole table + split rule + rank parts",
+          "LOGICAL TENSOR W",
+          "one parameter · all rows",
+          "PLACEMENT · SHARD(0)",
+          "split dim 0 (rows) across 8 ranks",
+          "LOCAL SHARDS",
+          "rank r keeps row r · one rank per GPU",
+          "ALL SAVED TABLES",
+          "1 + 1 + 6 = 8 GB per rank",
+          "Equal shards are a teaching simplification."
+        ],
+        "shapes": [
+          "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"80\" fill=\"var(--gen-soft)\" stroke=\"var(--gen)\"></rect>",
+          "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"150\" y2=\"166\" stroke=\"var(--gen)\" marker-end=\"url(#fsdp-arrow-orange)\"></line>",
+          "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"171\" fill=\"var(--bg)\" stroke=\"var(--line)\"></rect>",
+          "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"241\" y2=\"257\" stroke=\"var(--line)\" marker-end=\"url(#fsdp-arrow-blue)\"></line>",
+          "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"262\" fill=\"var(--accent-soft)\" stroke=\"var(--accent)\"></rect>",
+          "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"332\" y2=\"348\" stroke=\"var(--accent)\" marker-end=\"url(#fsdp-arrow-blue)\"></line>",
+          "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"353\" fill=\"var(--accent-soft)\" stroke=\"var(--accent)\"></rect>"
+        ]
+      },
+      "changed": true,
+      "pngBytes": 65111,
+      "pngMd5": "5491ebabd0c1224340177378d82cd907"
+    },
+    {
+      "lang": "en",
+      "width": 430,
+      "step": 2,
+      "phase": 4,
+      "finalPhase": 4,
+      "counter": "02 / 06",
+      "minFont": 13.094,
+      "minFontText": "loops",
+      "overlaps": [],
+      "overflow": [],
+      "mechanism": {
+        "texts": [
+          "DTensor gives each rank a shard",
+          "whole table + split rule + rank parts",
+          "LOGICAL TENSOR W",
+          "one parameter · all rows",
+          "PLACEMENT · SHARD(0)",
+          "split dim 0 (rows) across 8 ranks",
+          "LOCAL SHARDS",
+          "rank r keeps row r · one rank per GPU",
+          "ALL SAVED TABLES",
+          "1 + 1 + 6 = 8 GB per rank",
+          "Per rank: 64 GB ÷ 8 = 8 GB",
+          "8 copies: 512 GB → 8 shards: 64 GB",
+          "Later: gather parts into full values",
+          "Step 3 all-gather · Step 6 Replicate()",
+          "Orange = logical tensor · blue = local shards",
+          "Equal shards are a teaching simplification."
+        ],
+        "shapes": [
+          "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"80\" fill=\"var(--gen-soft)\" stroke=\"var(--gen)\"></rect>",
+          "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"150\" y2=\"166\" stroke=\"var(--gen)\" marker-end=\"url(#fsdp-arrow-orange)\"></line>",
+          "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"171\" fill=\"var(--bg)\" stroke=\"var(--line)\"></rect>",
+          "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"241\" y2=\"257\" stroke=\"var(--line)\" marker-end=\"url(#fsdp-arrow-blue)\"></line>",
+          "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"262\" fill=\"var(--accent-soft)\" stroke=\"var(--accent)\"></rect>",
+          "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"332\" y2=\"348\" stroke=\"var(--accent)\" marker-end=\"url(#fsdp-arrow-blue)\"></line>",
+          "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"353\" fill=\"var(--accent-soft)\" stroke=\"var(--accent)\"></rect>"
+        ]
+      },
+      "changed": true,
+      "pngBytes": 71669,
+      "pngMd5": "c379579071642e3f228a217709e62917"
     },
     {
       "lang": "zh",
@@ -1197,7 +1248,9 @@
           "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"150\" y2=\"166\" stroke=\"var(--gen)\" marker-end=\"url(#fsdp-arrow-orange)\"></line>"
         ]
       },
-      "changed": null
+      "changed": null,
+      "pngBytes": 40865,
+      "pngMd5": "65808f0dd99285de26d0617ee6ea7b90"
     },
     {
       "lang": "zh",
@@ -1227,7 +1280,9 @@
           "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"241\" y2=\"257\" stroke=\"var(--line)\" marker-end=\"url(#fsdp-arrow-blue)\"></line>"
         ]
       },
-      "changed": true
+      "changed": true,
+      "pngBytes": 47614,
+      "pngMd5": "6946da3077c5461885744ad401af3de7"
     },
     {
       "lang": "zh",
@@ -1261,7 +1316,9 @@
           "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"332\" y2=\"348\" stroke=\"var(--accent)\" marker-end=\"url(#fsdp-arrow-blue)\"></line>"
         ]
       },
-      "changed": true
+      "changed": true,
+      "pngBytes": 52352,
+      "pngMd5": "df6462425671a6791841620579227291"
     },
     {
       "lang": "zh",
@@ -1298,7 +1355,9 @@
           "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"353\" fill=\"var(--accent-soft)\" stroke=\"var(--accent)\"></rect>"
         ]
       },
-      "changed": true
+      "changed": true,
+      "pngBytes": 57159,
+      "pngMd5": "c1ee6c4524261d80d77f2725202ebec3"
     },
     {
       "lang": "zh",
@@ -1340,7 +1399,9 @@
           "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"353\" fill=\"var(--accent-soft)\" stroke=\"var(--accent)\"></rect>"
         ]
       },
-      "changed": true
+      "changed": true,
+      "pngBytes": 73683,
+      "pngMd5": "cb6d2f8f0dfee891e983e73331e4be86"
     },
     {
       "lang": "zh",
@@ -1366,7 +1427,9 @@
           "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"150\" y2=\"166\" stroke=\"var(--gen)\" marker-end=\"url(#fsdp-arrow-orange)\"></line>"
         ]
       },
-      "changed": null
+      "changed": null,
+      "pngBytes": 42517,
+      "pngMd5": "b6c338c5e2bb452fb7da772eef20a786"
     },
     {
       "lang": "zh",
@@ -1396,7 +1459,9 @@
           "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"241\" y2=\"257\" stroke=\"var(--line)\" marker-end=\"url(#fsdp-arrow-blue)\"></line>"
         ]
       },
-      "changed": true
+      "changed": true,
+      "pngBytes": 50136,
+      "pngMd5": "38dd16b6592a4e6fc30da3d368fc06ea"
     },
     {
       "lang": "zh",
@@ -1430,7 +1495,9 @@
           "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"332\" y2=\"348\" stroke=\"var(--accent)\" marker-end=\"url(#fsdp-arrow-blue)\"></line>"
         ]
       },
-      "changed": true
+      "changed": true,
+      "pngBytes": 55329,
+      "pngMd5": "6199f3bb59a831956319f2516534850c"
     },
     {
       "lang": "zh",
@@ -1467,7 +1534,9 @@
           "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"353\" fill=\"var(--accent-soft)\" stroke=\"var(--accent)\"></rect>"
         ]
       },
-      "changed": true
+      "changed": true,
+      "pngBytes": 61065,
+      "pngMd5": "2f4c29145f0c4f0f9f5d41e39c3e3602"
     },
     {
       "lang": "zh",
@@ -1509,7 +1578,9 @@
           "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"353\" fill=\"var(--accent-soft)\" stroke=\"var(--accent)\"></rect>"
         ]
       },
-      "changed": true
+      "changed": true,
+      "pngBytes": 75486,
+      "pngMd5": "2175806385aa94cb41483f3d0bc6d4c9"
     },
     {
       "lang": "zh",
@@ -1535,7 +1606,9 @@
           "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"150\" y2=\"166\" stroke=\"var(--gen)\" marker-end=\"url(#fsdp-arrow-orange)\"></line>"
         ]
       },
-      "changed": null
+      "changed": null,
+      "pngBytes": 44226,
+      "pngMd5": "4ddc73a4d8d5160d9a0386d68c2f0f95"
     },
     {
       "lang": "zh",
@@ -1565,7 +1638,9 @@
           "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"241\" y2=\"257\" stroke=\"var(--line)\" marker-end=\"url(#fsdp-arrow-blue)\"></line>"
         ]
       },
-      "changed": true
+      "changed": true,
+      "pngBytes": 52667,
+      "pngMd5": "edbfd0bcd19dd8c7e5c300a8929af2de"
     },
     {
       "lang": "zh",
@@ -1599,7 +1674,9 @@
           "<line x1=\"150\" x2=\"150\" stroke-width=\"2.5\" class=\"svelte-1xh13wt\" y1=\"332\" y2=\"348\" stroke=\"var(--accent)\" marker-end=\"url(#fsdp-arrow-blue)\"></line>"
         ]
       },
-      "changed": true
+      "changed": true,
+      "pngBytes": 58658,
+      "pngMd5": "b926dec4df0822db0cd5896b1901edf2"
     },
     {
       "lang": "zh",
@@ -1636,7 +1713,9 @@
           "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"353\" fill=\"var(--accent-soft)\" stroke=\"var(--accent)\"></rect>"
         ]
       },
-      "changed": true
+      "changed": true,
+      "pngBytes": 65283,
+      "pngMd5": "7b5a6de42d458889acfce0f368f4517d"
     },
     {
       "lang": "zh",
@@ -1678,7 +1757,9 @@
           "<rect x=\"25\" width=\"250\" height=\"70\" rx=\"11\" class=\"svelte-1xh13wt\" y=\"353\" fill=\"var(--accent-soft)\" stroke=\"var(--accent)\"></rect>"
         ]
       },
-      "changed": true
+      "changed": true,
+      "pngBytes": 72472,
+      "pngMd5": "15138fa7f8432d392b7dfe045d6aff73"
     }
   ]
 }

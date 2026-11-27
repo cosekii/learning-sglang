@@ -24,6 +24,19 @@
 
 ---
 
+# lane k2 本轮报告 · ML Systems 08 Step 2 手机相位证据修复
+
+日期：2026-11-27。类型：修旧证据返工。范围只有 ML 08 Step 2 的审计脚本、重新生成的证据和本报告；未改教程、其他 ML 章、Omni、Voxt、第 1 本受保护英文原文或 `.bot/memory/`。
+
+- **HEAD 记录更正。** 本轮写作起点是 `439b4ce`（其前为 `934a4f3`、`6140cb9`），不是下一段第 5 行误写的 `20e87b1`；后者只是协调台账的 origin 快照。本次证据修复从已推送的 `4593a99` 继续。
+- **上一轮的 30 张手机相位 PNG 全部作废。** 六组 lang×width 各自的五张图逐字节相同，不能作为五相视觉证据。桌面 1440 的 10 张 PNG 逐相不同，不受这项作废影响。带身份断言的实时 DOM 结果仍然成立；本轮不重评教程分数，也不自行核销 ML-17。
+- `.bot/out/ml08-step2-audit.mjs` 现在先取 screenshot buffer，相邻相位 PNG 完全相同就 throw，不写该图；每个状态另记 `pngBytes` 和 `pngMd5`，汇总要求 **40/40 个 hash 不同**。首次启用断言时在 `en 360 phase 1` 按预期失败，复现了冻结帧。
+- 每组手机捕获改用独立浏览器，避免复用冻结的后台 compositor。完整重跑后，六组手机均为 **5/5 张不同 PNG**，桌面两组也为 **5/5**；独立读取磁盘文件重算 MD5 和字节数，全部与 report.json 一致。最终仍为 **40 个状态、32/32 个机制转变、40 个不同 PNG hash**，最低可见字体 **10.407 CSS px**，文字重叠和 SVG 出界均为 **0**。
+- 代表手机图：`/Users/shuohuang/code/hmz-work/ls-k2-1127-004934/.bot/out/ml08-step2-audit/en-360-s2-p4.png`。当前模型不能读取 PNG，未声称视觉通过；ML-17 与其他 findings 的协调 verdict 不变，主人最终视觉验收另计。
+- 未跑全站回归、真实 FSDP2 训练、SGLang／CUDA、GPU benchmark、故障注入或 reduced-motion 动态切换。不开第 14 章。本轮 4470 dev server 和脚本启动的浏览器均在收尾关闭；本地地址为 `http://localhost:4470/learning-sglang/ml-sys/ch/08-fsdp2-training-backend/?step=2`。
+
+---
+
 # lane k2 跟进复核 · ML Systems 08 Step 2 的 ML-17
 
 日期：2026-11-27。类型：修旧复核。范围只有本报告和 Step 2 审计结果；未改教程、其他 ML 章、Omni、Voxt、第 1 本受保护英文原文或 `.bot/memory/`。
