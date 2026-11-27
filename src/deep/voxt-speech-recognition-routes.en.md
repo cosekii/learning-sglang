@@ -324,7 +324,7 @@ Public baseline: same as Step 1.
 
 Public performance evidence (kept with its PR, measurement head, setup and boundary; not part of the pinned code baseline):
 
-- [PR #2549](https://github.com/sgl-project/sglang-omni/pull/2549), landed on main by [PR #2576](https://github.com/sgl-project/sglang-omni/pull/2576): Apple M5/24 GB, Qwen3-ASR 0.6B 4bit, 392 clips. Final short p50/p95 194/279 → 111/145 ms, throughput 21.0 → 49.8 audio-s/s; first-preview p95 regressed 1207 → 2518 ms. The main table's measurement head is not recorded; the path is the real native service, not the full real app.
+- [PR #2549](https://github.com/sgl-project/sglang-omni/pull/2549), landed on main by [PR #2576](https://github.com/sgl-project/sglang-omni/pull/2576): Apple M5/24 GB, Qwen3-ASR 0.6B 4bit, 392 clips. Final short p50/p95 194/279 → 111/145 ms, throughput 21.0 → 49.8 audio-s/s; first-preview p95 regressed 1207 → 2518 ms. The two rows are different comparisons: Final is the median of A0/C/C/A0 interleaved runs, while first preview compares live C round 1 against A0 rounds 14–16. The main table's measurement head is not recorded; the path is the real native service, not the full real app.
 - [PR #3285](https://github.com/sgl-project/sglang-omni/pull/3285): DFlash speculative decoding on the native runtime, Apple M5/16 GiB, 392 clips (5,225 s), ABBA. Decode 57 → 189 tok/s for 1.7B 8bit and 244 → 402 tok/s for 0.6B 4bit. The benchmark tables are not bound to an exact measurement SHA; the path is the native CLI/server protocol, not the full Voxt app.
 
 ## Step 7 · Recognition hands over raw text
