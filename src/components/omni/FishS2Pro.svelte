@@ -92,8 +92,8 @@
   ];
 
   // Each phase changes the mechanism on screen, then holds the finished scene before looping.
-  const PHASE_COUNTS = [6, 4, 3, 11, 0, 0, 3, 4];
-  const PHASE_MS = [1000, 1100, 1100, 650, 0, 0, 1800, 1100];
+  const PHASE_COUNTS = [6, 4, 3, 11, 5, 0, 3, 4];
+  const PHASE_MS = [1000, 1100, 1100, 650, 1100, 0, 1800, 1100];
   const REST_MS = 1800;
   type Frame = { x: number; y: number; w: number; h: number };
   const motionFrames = (isPhone: boolean, s: number): Frame[] => {
@@ -126,6 +126,15 @@
       { x: 70, y: 287, w: 270, h: 61 },
       ...Array.from({ length: FISH_FAST_REMAINING_ROWS }, (_, i) => ({ x: 70 + i * 29, y: 400, w: 24, h: 47 })),
       { x: 428, y: 462, w: 244, h: 93 },
+    ];
+    if (s === 4) return isPhone ? [
+      { x: 32, y: 102, w: 101, h: 58 }, { x: 171, y: 102, w: 97, h: 58 },
+      { x: 32, y: 287, w: 236, h: 48 }, { x: 32, y: 569, w: 110, h: 48 },
+      { x: 158, y: 569, w: 110, h: 48 },
+    ] : [
+      { x: 48, y: 106, w: 185, h: 47 }, { x: 435, y: 106, w: 237, h: 47 },
+      { x: 48, y: 331, w: 279, h: 59 }, { x: 393, y: 331, w: 112, h: 59 },
+      { x: 522, y: 331, w: 150, h: 59 },
     ];
     if (s === 7) return isPhone ? [
       { x: 18, y: 82, w: 264, h: 128 }, { x: 18, y: 249, w: 264, h: 212 },
@@ -464,62 +473,88 @@
           <rect x="30" y="86" width="660" height="86" rx="11" fill="var(--bg)" stroke="var(--line)" />
           <rect x="48" y="106" width="185" height="47" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="140" y="135" text-anchor="middle" class="small strong">frame f · raw + {VOC_FISH_CODEBOOK_ROWS} codes</text>
-          <line x1="240" y1="129" x2="421" y2="129" stroke="var(--accent)" stroke-width="2" marker-end="url(#fish-arrow)" />
-          <text x="330" y="116" text-anchor="middle" class="small">{t('feedback', '反馈')}</text>
-          <rect x="435" y="106" width="237" height="47" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="553" y="135" text-anchor="middle" class="small strong">frame f+1 · Slow input</text>
+          <g opacity={phase >= 1 ? 1 : 0.08} style="transition: opacity 350ms">
+            <line x1="240" y1="129" x2="421" y2="129" stroke="var(--accent)" stroke-width="2" marker-end="url(#fish-arrow)" />
+            <text x="330" y="116" text-anchor="middle" class="small">{t('feedback', '反馈')}</text>
+            <rect x="435" y="106" width="237" height="47" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="553" y="135" text-anchor="middle" class="small strong">frame f+1 · Slow input</text>
+          </g>
           <rect x="30" y="198" width="315" height="329" rx="12" fill="var(--bg)" stroke="var(--line)" />
           <text x="48" y="227" class="result" style="fill:var(--gen)">Slow AR · {t('outer KV', '外层 KV')}</text>
           <rect x="48" y="250" width="112" height="58" rx="8" fill="white" stroke="var(--line)" />
           <text x="104" y="285" text-anchor="middle" class="small">frame f</text>
-          <rect x="177" y="250" width="150" height="58" rx="8" fill="white" stroke="var(--line)" />
-          <text x="252" y="285" text-anchor="middle" class="small">frame f+1</text>
-          <rect x="48" y="331" width="279" height="59" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="187" y="367" text-anchor="middle" class="small strong">{t('KV kept across both frames', 'KV 横跨两帧保留')}</text>
-          <text x="48" y="425" class="small strong">{t('keeps prompt + earlier frames', '保留 prompt + 之前的帧')}</text>
-          <text x="48" y="455" class="small">{t('same cached prefix → can share KV', '相同缓存前缀 → 可以共享 KV')}</text>
-          <text x="48" y="489" class="small">{t(phone ? 'extra_key: all 10 reference rows' : 'extra_key fingerprints all 10 reference rows', phone ? 'extra_key：十行参考 codes 的指纹' : 'extra_key 对全部十行参考 codes 做指纹')}</text>
-          <text x="48" y="517" class="small">{t('cached KV may be gone', 'KV cache 可能已清除')}</text>
+          <g opacity={phase >= 1 ? 1 : 0.10} style="transition: opacity 350ms">
+            <rect x="177" y="250" width="150" height="58" rx="8" fill="white" stroke="var(--line)" />
+            <text x="252" y="285" text-anchor="middle" class="small">frame f+1</text>
+          </g>
+          <g opacity={phase >= 2 ? 1 : 0.06} style="transition: opacity 350ms">
+            <rect x="48" y="331" width="279" height="59" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="187" y="367" text-anchor="middle" class="small strong">{t('KV kept across both frames', 'KV 横跨两帧保留')}</text>
+            <text x="48" y="425" class="small strong">{t('keeps prompt + earlier frames', '保留 prompt + 之前的帧')}</text>
+            <text x="48" y="455" class="small">{t('same cached prefix → can share KV', '相同缓存前缀 → 可以共享 KV')}</text>
+            <text x="48" y="489" class="small">{t(phone ? 'extra_key: all 10 reference rows' : 'extra_key fingerprints all 10 reference rows', phone ? 'extra_key：十行参考 codes 的指纹' : 'extra_key 对全部十行参考 codes 做指纹')}</text>
+            <text x="48" y="517" class="small">{t('cached KV may be gone', 'KV cache 可能已清除')}</text>
+          </g>
           <rect x="375" y="198" width="315" height="329" rx="12" fill="var(--bg)" stroke="var(--line)" />
           <text x="393" y="227" class="result">Fast AR · {t('inner KV', '内层 KV')}</text>
           <rect x="393" y="250" width="112" height="58" rx="8" fill="white" stroke="var(--line)" />
           <text x="449" y="285" text-anchor="middle" class="small">frame f</text>
-          <rect x="522" y="250" width="150" height="58" rx="8" fill="white" stroke="var(--line)" />
-          <text x="597" y="285" text-anchor="middle" class="small">frame f+1</text>
-          <rect x="393" y="331" width="112" height="59" rx="8" fill="var(--bg)" stroke="var(--faint)" stroke-dasharray="5 4" />
-          <text x="449" y="367" text-anchor="middle" class="small">KV 0–9</text>
-          <line x1="512" y1="360" x2="515" y2="360" stroke="var(--muted)" stroke-width="2" />
-          <rect x="522" y="331" width="150" height="59" rx="8" fill="var(--bg)" stroke="var(--faint)" stroke-dasharray="5 4" />
-          <text x="597" y="367" text-anchor="middle" class="small">{t('fresh KV 0–9', '新的 KV 0–9')}</text>
-          <text x="393" y="425" class="small strong">{t('reset before every Slow frame', '每个 Slow 帧前都重置')}</text>
-          <text x="393" y="455" class="small">{t('no previous Fast positions', '不读之前的 Fast 位置')}</text>
-          <text x="393" y="493" class="small">10 {t('positions inside this frame', '个位置只在本帧内')}</text>
+          <g opacity={phase >= 1 ? 1 : 0.10} style="transition: opacity 350ms">
+            <rect x="522" y="250" width="150" height="58" rx="8" fill="white" stroke="var(--line)" />
+            <text x="597" y="285" text-anchor="middle" class="small">frame f+1</text>
+          </g>
+          <g opacity={phase >= 3 ? 0.25 : 1} style="transition: opacity 350ms">
+            <rect x="393" y="331" width="112" height="59" rx="8" fill="var(--bg)" stroke={phase >= 3 ? 'var(--faint)' : 'var(--muted)'} stroke-dasharray={phase >= 3 ? '5 4' : undefined} />
+            <text x="449" y="367" text-anchor="middle" class="small">KV 0–9</text>
+          </g>
+          <g opacity={phase >= 4 ? 1 : 0.08} style="transition: opacity 350ms">
+            <line x1="512" y1="360" x2="515" y2="360" stroke="var(--muted)" stroke-width="2" />
+            <rect x="522" y="331" width="150" height="59" rx="8" fill="var(--bg)" stroke="var(--muted)" stroke-dasharray={phase >= 4 ? undefined : '5 4'} />
+            <text x="597" y="367" text-anchor="middle" class="small">{t('fresh KV 0–9', '新的 KV 0–9')}</text>
+          </g>
+          <g opacity={phase >= 4 ? 1 : 0.06} style="transition: opacity 350ms">
+            <text x="393" y="425" class="small strong">{t('reset before every Slow frame', '每个 Slow 帧前都重置')}</text>
+            <text x="393" y="455" class="small">{t('no previous Fast positions', '不读之前的 Fast 位置')}</text>
+            <text x="393" y="493" class="small">10 {t('positions inside this frame', '个位置只在本帧内')}</text>
+          </g>
         {:else}
           <rect x="18" y="82" width="264" height="101" rx="10" fill="var(--bg)" stroke="var(--line)" />
           <rect x="32" y="102" width="101" height="58" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="82" y="127" text-anchor="middle" class="small strong">frame f</text>
           <text x="82" y="150" text-anchor="middle" class="small">raw + {VOC_FISH_CODEBOOK_ROWS} codes</text>
-          <line x1="140" y1="131" x2="159" y2="131" stroke="var(--accent)" stroke-width="2" marker-end="url(#fish-arrow)" />
-          <rect x="171" y="102" width="97" height="58" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="219" y="127" text-anchor="middle" class="small strong">frame f+1</text>
-          <text x="219" y="150" text-anchor="middle" class="small">Slow input</text>
+          <g opacity={phase >= 1 ? 1 : 0.08} style="transition: opacity 350ms">
+            <line x1="140" y1="131" x2="159" y2="131" stroke="var(--accent)" stroke-width="2" marker-end="url(#fish-arrow)" />
+            <rect x="171" y="102" width="97" height="58" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="219" y="127" text-anchor="middle" class="small strong">frame f+1</text>
+            <text x="219" y="150" text-anchor="middle" class="small">Slow input</text>
+          </g>
           <rect x="18" y="205" width="264" height="260" rx="11" fill="var(--bg)" stroke="var(--line)" />
           <text x="32" y="234" class="result" style="fill:var(--gen)">Slow AR · {t('outer KV', '外层 KV')}</text>
           <text x="32" y="267" class="small">frame f → frame f+1</text>
-          <rect x="32" y="287" width="236" height="48" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="150" y="317" text-anchor="middle" class="small strong">{t('KV kept across frames', 'KV 跨帧保留')}</text>
-          <text x="32" y="369" class="small strong">{t('prompt + earlier frames', 'prompt + 之前的帧')}</text>
-          <text x="32" y="400" class="small">{t('same cached prefix → can share KV', '相同缓存前缀 → 可以共享 KV')}</text>
-          <text x="32" y="425" class="small">{t(phone ? 'extra_key: all 10 reference rows' : 'extra_key fingerprints all 10 reference rows', phone ? 'extra_key：十行参考 codes 的指纹' : 'extra_key 对全部十行参考 codes 做指纹')}</text>
-          <text x="32" y="450" class="small">{t('cached KV may be gone', 'KV cache 可能已清除')}</text>
+          <g opacity={phase >= 2 ? 1 : 0.06} style="transition: opacity 350ms">
+            <rect x="32" y="287" width="236" height="48" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="150" y="317" text-anchor="middle" class="small strong">{t('KV kept across frames', 'KV 跨帧保留')}</text>
+            <text x="32" y="369" class="small strong">{t('prompt + earlier frames', 'prompt + 之前的帧')}</text>
+            <text x="32" y="400" class="small">{t('same cached prefix → can share KV', '相同缓存前缀 → 可以共享 KV')}</text>
+            <text x="32" y="425" class="small">{t(phone ? 'extra_key: all 10 reference rows' : 'extra_key fingerprints all 10 reference rows', phone ? 'extra_key：十行参考 codes 的指纹' : 'extra_key 对全部十行参考 codes 做指纹')}</text>
+            <text x="32" y="450" class="small">{t('cached KV may be gone', 'KV cache 可能已清除')}</text>
+          </g>
           <rect x="18" y="487" width="264" height="246" rx="11" fill="var(--bg)" stroke="var(--line)" />
           <text x="32" y="516" class="result">Fast AR · {t('inner KV', '内层 KV')}</text>
           <text x="32" y="549" class="small">frame f → frame f+1</text>
-          <rect x="32" y="569" width="236" height="48" rx="8" fill="var(--bg)" stroke="var(--faint)" stroke-dasharray="5 4" />
-          <text x="150" y="599" text-anchor="middle" class="small strong">{t('old KV cleared · fresh 0–9', '旧 KV 清空 · 新的 0–9')}</text>
-          <text x="32" y="651" class="small strong">{t('reset before every frame', '每帧前都重置')}</text>
-          <text x="32" y="682" class="small">{t('no previous Fast positions', '不读之前的 Fast 位置')}</text>
-          <text x="32" y="712" class="small">10 {t('positions only', '个位置仅限本帧')}</text>
+          <g opacity={phase >= 3 ? 0.25 : 1} style="transition: opacity 350ms">
+            <rect x="32" y="569" width="110" height="48" rx="8" fill="var(--bg)" stroke={phase >= 3 ? 'var(--faint)' : 'var(--muted)'} stroke-dasharray={phase >= 3 ? '5 4' : undefined} />
+            <text x="87" y="599" text-anchor="middle" class="small strong">{t('old KV 0–9', '旧 KV 0–9')}</text>
+          </g>
+          <g opacity={phase >= 4 ? 1 : 0.08} style="transition: opacity 350ms">
+            <rect x="158" y="569" width="110" height="48" rx="8" fill="var(--bg)" stroke="var(--muted)" stroke-dasharray={phase >= 4 ? undefined : '5 4'} />
+            <text x="213" y="599" text-anchor="middle" class="small strong">{t('fresh 0–9', '新 0–9')}</text>
+          </g>
+          <g opacity={phase >= 4 ? 1 : 0.06} style="transition: opacity 350ms">
+            <text x="32" y="651" class="small strong">{t('reset before every frame', '每帧前都重置')}</text>
+            <text x="32" y="682" class="small">{t('no previous Fast positions', '不读之前的 Fast 位置')}</text>
+            <text x="32" y="712" class="small">10 {t('positions only', '个位置仅限本帧')}</text>
+          </g>
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Fast reset keeps other frames out' : 'Fast KV resets so one frame cannot read another frame’s inner positions.', phone ? 'Fast 重置，避免读到别帧的位置' : 'Fast KV 每帧重置，避免读到其他帧的内层位置。')}</text>
       {:else if step === 5}
