@@ -1,3 +1,29 @@
+# lane k2 本轮报告 · ML Systems 10、12 静态机制返工
+
+日期：2026-11-26。类型：修旧。范围只含 ML Systems 第 10、12 章的组件、生成 transcript、评分卡、仓库 progress 和本报告；未动 Omni、Voxt、第 1 本受保护英文原文、其他 ML 章或 `.bot/memory/`。
+
+## 处理的 open review 项
+
+- **ML-11 · 10/1–9 静态 INT4 QAT**：`637c544 [k2] Animate ML 10 INT4 QAT lifecycle`。九步 `[3,5,4,4,5,5,5,5,3]` 个相位依次展示原始字节与 INT4、scale 与还原、fake round trip、STE、真实编码、4-bit 打包、Marlin 更新、W4A16 和单卡／八卡对照。作者 DOM 机制 **18/18**，协调内容 R1–R5 **90/90** 保持不变。
+- **ML-12 · 12/1–8 静态 RL 投机解码**：`9a08662 [k2] Animate ML 12 draft training lifecycle`。八步 `[3,4,5,5,4,5,4,4]` 个相位依次展示 hidden state、token 左移与 embedding、二移标签、detach、mask 两次移位与相乘，以及公开吞吐和训练秒数。作者 DOM 机制 **16/16**，协调内容 R1–R5 **80/80** 保持不变。
+- 两章 caption、双语深入讲解和既有数字未改；桌面只压缩纵向间距，保证逐相字号。ML-33、ML-18、ML-20 等独立内容项保持开放，章末 draft-pair 问题原样保留。本轮不重做 ML 01／02／13，不开第 14 章。
+
+## 验证
+
+- 两章 `build` 均为 **60 页**通过；全章 `readability`、`deep-check`、`zh-check`、英中三宽度 `mobile`、中文逐步字号门和 `git diff --check` 全过。默认 transcript 连续两次逐字一致：ML 10 **2,300 词**，SHA-256 `469b5da93999529e00e24ceb61c621e085da186680c303d118fe2b53112cdd62`；ML 12 **2,115 词**，SHA-256 `9b1ef58701ad68630fa39a4e8bedb10248d1b4595de8af939ee1f5f073ff9141`。
+- 自定义逐相审计覆盖 **73 个桌面相位**：ML 10 **39**，ML 12 **34**。每步至少两个机制状态，逐相可见文本签名均变化，counter／step／phase 身份正确；文字重叠、SVG 出界均为 **0**，最低可见字体均为 **10.8425625 CSS px**。
+- 证据目录：`/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/hmz-fence-w32gl41i/opencode/ml10-phases/` 与 `ml12-phases/`。代表图：`ml10-phases/s6-p4.png`、`ml12-phases/s6-p4.png`。当前模型无图像输入，未声称已读 PNG 或视觉通过。
+- 独立 explore 冷读核对两章 transcript、组件、深入讲解对应机制和 73 条相位记录，未发现新阻塞；只覆盖文本、源码和 DOM 证据。配置的 pstack-reviewer 因模型不存在未启动，未计为证据。
+- 首次 `npm run build` 因符号链接依赖的共享 Vite cache 报 EPERM；随后使用忽略的 `.astro/k2.config.mjs` 把缓存放入本 clone，并只读允许符号链接依赖，未写协调人的 checkout。两次推送被拒后均按要求 `git pull --rebase origin tutorials` 再推，未 force-push。
+
+## 剩余
+
+- ML-11／12 的作者返工和硬门已完成，完整 EVAL、原十二项总分和协调 verdict 仍待固定复审，不记 `complete-under-EVAL`。ML 08／09 等前轮返工同样待复审。
+- 全部既有静态机制 P0 与 ML-14 经协调通过后才开第 14 章。未跑全站回归、真实训练、rollout、Marlin GPU、GPU benchmark、故障注入或 reduced-motion 动态切换；主人最终视觉与产品验收另计。
+- 本地检查地址为 `http://localhost:4321/learning-sglang/ml-sys/ch/12-rl-speculative-decoding/?step=6`。本轮 4321 dev server 和浏览器已关闭，无父进程为 1 的本轮 Chrome 残留；查看前在本目录运行 `npx astro dev --background`。
+
+---
+
 # lane d 本轮报告 · Voxt 11 Step 1 最小单元核验（无新代码）
 
 日期：2026-11-26。范围只有本报告；未改教程、评分卡、progress、`.bot/memory/`、其他书或其他 lane 的章节，未进入也未写 `~/code/learning-sglang`。
