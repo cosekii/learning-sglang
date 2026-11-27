@@ -85,6 +85,8 @@
   const W = $derived(phone ? 300 : 720);
   const H = $derived(phone ? [760, 900, 760, 850, 900, 800, 850, 900][step] : [560, 680, 620, 650, 680, 610, 640, 650][step]);
   const bytes = (n: number) => n.toLocaleString('en-US');
+  const desktopSmall: (number | null)[] = [12, 14, null, null, null, null, null, null];
+  const desktopFont = (base: number) => `${desktopSmall[step] ?? base}px`;
 
   // Each step plays its mechanism in held phases, then rests on the finished scene before looping.
   const PHASE_COUNTS = [4, 4, 4, 4, 4, 5, 4, 5];
@@ -110,7 +112,7 @@
 
 <figure class="viz" data-animation-step={step} data-animation-phase={phase} data-animation-final-phase={PHASE_COUNTS[step] - 1}>
   <div class="canvas">
-    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={$lang === 'zh' ? cur.captionZh : cur.caption} style:--reader-tag={step === 1 ? '14px' : '10px'} style:--reader-rowlabel={step === 1 ? '14px' : '11px'} style:--reader-footnote={step === 1 ? '14px' : '10.5px'}>
+    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={$lang === 'zh' ? cur.captionZh : cur.caption} style:--reader-tag={desktopFont(10)} style:--reader-rowlabel={desktopFont(11)} style:--reader-footnote={desktopFont(10.5)}>
       {#if step === 0}
         <text x={phone ? 15 : 20} y="26" class="rowlabel">{t('GENERATION FINISHED. DELIVERY DID NOT.', '生成结束了，交付还没结束。')}</text>
         <text x={phone ? 15 : 20} y="52" class="tag">{t('delivery backlog = audio made, but not taken by the reader', '交付积压 = 已生成、读者还没取走的声音')}</text>
