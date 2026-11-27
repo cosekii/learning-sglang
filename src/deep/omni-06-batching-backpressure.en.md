@@ -301,6 +301,7 @@ Step 6 adds historical H200 measurements. Batching can improve throughput, but t
 
 - This step quotes the historical article and PR #2271; it does not rerun the model locally. Throughput means completed requests per second, so a taller bar completes more work in the same second.
 - The two bars change only FIFO's Code2Wav collection cap: B1 reaches 4.100 requests/s and B8 reaches 5.652. Here B names a batch cap, not request B from earlier steps.
+- The animation reveals B1, then B8 on the same 0–6 axis, then derives the difference and percentage. It replays two quoted averages; it is not a new request trace or benchmark run.
 - The experiment used one H200, the first 200 SeedTTS EN requests, client concurrency 16 and zero deliberate delay. It excluded 50 warmup requests per launch, repeated mixed-reference configurations three times, pinned CPU cores and checked contention.
 - The scope card limits the result to this old code and workload. It does not call B8 optimal for every GPU, request distribution or current main.
 - Historical Code2Wav used a cap of eight; the chapter's pinned current-main configuration uses 16 and a changed implementation. These values cannot form a new performance comparison.

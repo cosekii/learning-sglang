@@ -373,8 +373,9 @@
       <text x={phone ? 31 : 56} y={phone ? 144 : 144} text-anchor="end" class="tag">{H200_FIFO_BAR_MAX}</text>
       <text x={phone ? 31 : 56} y={phone ? 324 : 334} text-anchor="end" class="tag">0</text>
       {#each h200Bars as bar}
-        <rect x={bar.x} y={bar.y} width={phone ? 80 : 110} height={bar.height} rx="7" fill={bar.batch === H200_FIFO_BATCH_LARGE ? 'var(--accent)' : 'var(--accent-soft)'} stroke="var(--accent)" stroke-width="2" />
-        <text x={bar.x + (phone ? 40 : 55)} y={bar.y - 13} text-anchor="middle" class="mono strong">{bar.value.toFixed(3)}</text>
+        {@const shown = bar.batch === H200_FIFO_BATCH_SMALL ? phase >= 1 : phase >= 2}
+        <rect x={bar.x} y={shown ? bar.y : phone ? 320 : 330} width={phone ? 80 : 110} height={shown ? bar.height : 0} rx="7" fill={bar.batch === H200_FIFO_BATCH_LARGE ? 'var(--accent)' : 'var(--accent-soft)'} stroke="var(--accent)" stroke-width="2" />
+        {#if shown}<text x={bar.x + (phone ? 40 : 55)} y={bar.y - 13} text-anchor="middle" class="mono strong">{bar.value.toFixed(3)}</text>{/if}
         <text x={bar.x + (phone ? 40 : 55)} y={(phone ? 320 : 330) + 30} text-anchor="middle" class="rowlabel">B{bar.batch} · {t('cap', '上限')} {bar.batch}</text>
       {/each}
       <rect x={phone ? 20 : 500} y={phone ? 392 : 105} width={phone ? 260 : 180} height={phone ? 128 : 225} rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
@@ -386,8 +387,8 @@
       {#if !phone}
         <text x="514" y="303" class="tag">× {t('not a universal optimum', '不是普遍最优配置')}</text>
       {/if}
-      <text x={W / 2} y={phone ? 552 : 382} text-anchor="middle" class="mono strong">({H200_FIFO_LARGE_REQUESTS_PER_S} − {H200_FIFO_SMALL_REQUESTS_PER_S}) ÷ {H200_FIFO_SMALL_REQUESTS_PER_S} = {H200_FIFO_SPEEDUP_PERCENT}%</text>
-      <text x={W / 2} y={phone ? 578 : 408} text-anchor="middle" class="tag">{t('About', '约')} {H200_FIFO_EXTRA_REQUESTS_PER_S.toFixed(2)} {t('more completed requests each second', '条请求每秒多完成')}</text>
+      <text x={W / 2} y={phone ? 552 : 382} text-anchor="middle" class="mono strong">{phase >= 3 ? `(${H200_FIFO_LARGE_REQUESTS_PER_S} − ${H200_FIFO_SMALL_REQUESTS_PER_S}) ÷ ${H200_FIFO_SMALL_REQUESTS_PER_S} = ${H200_FIFO_SPEEDUP_PERCENT}%` : t(phone ? 'quoted averages replayed' : 'the two quoted averages are replayed', '依次重现两个历史平均值')}</text>
+      <text x={W / 2} y={phone ? 578 : 408} text-anchor="middle" class="tag">{phase >= 3 ? `${t('About', '约')} ${H200_FIFO_EXTRA_REQUESTS_PER_S.toFixed(2)} ${t('more completed requests each second', '条请求每秒多完成')}` : t('not a new request trace', '不是新的请求轨迹')}</text>
       <text x={W / 2} y={phone ? 604 : 434} text-anchor="middle" class="tag strong">{phone ? t('Old cap 8 · current cap 16 · implementation changed', '历史代码：上限 8 · 当前主线：上限 16，实现也已变化') : t('Historical code: cap 8 · current main: cap 16 and changed implementation', '历史代码：上限 8 · 当前主线：上限 16，实现也已变化')}</text>
       <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{phone ? t('Source: batch.md / PR #2271 · old code 89e60d0', '出处：batch.md / PR #2271 · 旧版 89e60d0') : t('Historical reference: batch.md and PR #2271; old code 89e60d0, not current main.', '历史出处：batch.md 与 PR #2271；旧代码 89e60d0，不是当前主线。')}</text>
       <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Next: full capacity triggers backpressure.', '下一步：容量满时，背压拒绝新工作，而不是藏起无限队列。') : t('Next: when capacity is full, backpressure rejects work instead of hiding an unbounded queue.', '下一步：容量满时，背压拒绝新工作，而不是藏起无限队列。')}</text>
