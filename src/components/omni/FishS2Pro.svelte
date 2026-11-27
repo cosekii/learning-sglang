@@ -44,8 +44,8 @@
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
   const steps = [{
-    caption: 'The first sound window opens at 40 frames, or earlier at the end. Each frame needs ten codes from codebooks.',
-    captionZh: '首个窗口攒 40 帧打开，提前结束则直接解码。每帧要从 codebook 选出十个 code。',
+    caption: 'Slow AR chooses c0 one frame at a time. Fast AR fills c1–c9 inside that frame; 40 frames open the first window.',
+    captionZh: 'Slow AR 逐帧选 c0。Fast AR 在这帧内补齐 c1–c9；攒 40 帧打开首个窗口。',
   }, {
     caption: 'Reference audio becomes ten rows of codes before generation. One second makes 22 frames.',
     captionZh: '参考声音先变成十行 codes。1 秒会得到 22 帧。',
@@ -190,7 +190,7 @@
         </marker>
       </defs>
       {#if step === 0}
-        <text x={phone ? 18 : 30} y="30" class="title">{t('Before the first sound window', '首个声音窗口之前')}</text>
+        <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'Slow AR → c0 · Fast AR → c1–c9' : 'Ch. 10’s entries: Slow AR → c0, Fast AR → c1–c9', phone ? 'Slow AR → c0 · Fast AR → c1–c9' : '第 10 章的条目：Slow AR → c0，Fast AR → c1–c9')}</text>
         <text x={phone ? 18 : 30} y="55" class="label">{t(phone ? 'window = frames decoded at once · blue = codes' : 'window = frames decoded together · blue = codes chosen during generation', phone ? '窗口 = 一起解码的帧 · 蓝 = codes' : '窗口 = 一起解码的帧 · 蓝 = 生成时选出的 codes')}</text>
         {@const collected = Math.min(FISH_FIRST_WINDOW_FRAMES, Math.max(0, (phase - 1) * 10))}
         {#if !phone}

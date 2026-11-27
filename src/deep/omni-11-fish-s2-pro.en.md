@@ -1,9 +1,10 @@
-## Step 1 · Forty frames before the first non-final window
+## Step 1 · Two loops choose ten entries before the first window
 
-> **In one line:** The default first non-final window opens at 40 frames; a shorter request decodes in the final flush.
+> **In one line:** Slow AR chooses c0 one frame at a time, Fast AR fills c1–c9 inside that frame, and 40 frames open the first non-final window.
 
 ### On the stage
 
+- The title answers Ch. 10 Step 8: Slow AR chooses `c0`, and Fast AR chooses `c1–c9`.
 - The request crosses `preprocessing`, `tts_engine` and `vocoder`.
 - The blue `tts_engine` box is the generation work opened by this chapter.
 - Forty blue boxes stand for 40 frames. The enlarged frame has ten codebook entries, `c0` through `c9`.
