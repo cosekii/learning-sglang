@@ -1,3 +1,36 @@
+# lane k1 本轮报告 · Omni 13 Step 5 的 Omni-49
+
+日期：2026-11-27。类型：修旧（完成 Omni-48／66／67 后的下一协调顺序项；按 11-27 owner rule 不等复审）。本轮开始 HEAD 与 `origin/tutorials` 均为 `45a9c2a`，工作树干净。范围只有 Omni 13 Step 5 的组件、数字常量、双语 deep、MDX 出处、生成 transcript、本章评分卡与进度记录、定向审计和本报告；未改其他步、其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。Omni-48／66／67 的待复审批次保持原样。
+
+## 提交与 finding
+
+- `5f8d372`：**Omni-49 作者修复完成，待协调固定复审，不自行销项。** Step 5 现在并排列出 `PREVIOUS · 32,768 tokens` 与 `CURRENT DEFAULT · 65,536 tokens`，四根柱共用 0–90 GB 刻度与同一条 80 GB 虚线。旧例仍为 85.745728 GB、移卡后 77.745728 GB；当前例为 KV **6.291456 GB**、移卡前 **88.891456 GB**、移走 8 GB talker 后 **80.891456 GB**，仍超 **0.891456 GB**。当前默认不再被写成 fits。
+- 五相依次展示共用输入、旧例移卡前、旧例移卡后、当前移卡前、当前移卡后。双语 deep 和 MDX 同步旧教程快照与 PR #2735 的版本桥、精确算式和「构造下限而非实测显存」边界。
+- 首次推送被拒后按指示 `git pull --rebase origin tutorials`，带入 d／k2 的 `257acfd`、`fe86d8f` 等提交，无冲突，随后推送成功；未 force-push。
+
+## 作者评分与独立冷读
+
+- Step 5 作者参考值：R1–R5 **10/10**、机制 R6 **2/2**、原十个非视觉项 **20/20**、新内容洞 **0**。R1 复述：「旧例移走 talker 后放得下；当前默认仍比 80 GB 卡多 0.891456 GB。」
+- 独立 `explore` 冷读 **PASS**：复算两组数值、核对舞台／双语 deep／MDX、同尺 DOM 几何和相位顺序后，指定范围无剩余内容洞，没有当前默认移卡后 fits 的残留说法。
+- 这些是作者复评与独立源码、transcript、DOM 冷读，不是协调 verdict。固定 `bd4aa5d` 的整章 **GO** 基线保持 R1–R5 **100/100**、机制 R6 **20/20**、原十个非视觉项 **200/200**、原 #4/#5 **40/40**、原十二项 **240/240**，不由本轮改写。
+
+## 硬门与证据
+
+- `npm run build`：**60 页**通过；十步 `readability`：**0 机械问题**；`BOOK=omni node scripts/deep-check.mjs 13`、`zh-check`、英中全章 360／390／430 px `mobile`、中文 Step 5 字号门和 `git diff --check` 全过。
+- transcript 连续两次 SHA-256 相同：`d0349f418a0aeda2160dc6bdd61fbc33a98aa0bc35f5463e408ae1465a4beaf9`，**3,519 词**。无 caption、文字出界、重叠或文本规则报告。
+- `.bot/out/omni49-step5-audit.mjs` 覆盖英文桌面、中文桌面、中文 390 px × 直接 URL／前步入口，共 **6 组合、30 状态、24/24 机制转变**。最低 **11.578 CSS px**，重叠、SVG 出界和 `geometryFailures` 均为 0；当前移卡后的红柱也按 `0.891456 ÷ 90 × barWidth` 验算。
+- 双语 deep 在 360／390／1440 px 共 **6 个打开抽屉视图**通过目标文本、展开身份、页面与抽屉横溢、KaTeX 和 raw-math 检查。初轮公式和宽表在手机溢出，已改为分行公式、两列符号表和逐行代入后复跑通过。桌面抽屉打开后的舞台最小字为 **5.202 CSS px**，属于既有共享 ML-21，本单元未改也不声称该项通过。
+- 代表截图：`.bot/out/omni49-step5-endesktop-direct/s5-p4.png`；中文手机：`.bot/out/omni49-step5-zh390-direct/s5-p4.png`。**当前模型不能读取 PNG，工具已明确返回无图像输入能力；结论来自构建、transcript、源码、独立冷读、DOM 和几何检查，未声称看过图片或视觉通过。** 未跑全站回归、真实 SGLang-Omni、模型、GPU、显存实测或 reduced-motion 动态切换。
+
+## 剩余与清理
+
+- 剩余事项是 Omni-48／66／67 与 Omni-49 的协调固定复审、共享 ML-21、具备图像能力的复审和主人最终视觉验收。下一单元按协调顺序处理 **Omni-50**，不重做待审内容。
+- 本 clone 的 `node_modules` 再次成为指向协调人 checkout 的符号链接；已只删除本目录内符号链接并在本目录安装依赖，package 文件无 diff，未写协调人的 checkout。
+- 本地查看前运行 `npx astro dev --background --host 127.0.0.1 --port 4501`，地址：`http://localhost:4501/learning-sglang/omni/ch/13-qwen3-omni-deployment/?step=5`。本轮 4501 服务已停止且端口无监听。
+- 审计脚本均调用 `browser.close()`；收尾 `pgrep -P 1 -fl 'headless=new.*cdp-'` 无输出，未动其他 lane 的进程。
+
+---
+
 # lane k2 本轮报告 · ML Systems 06 Step 3 的 ML-61
 
 日期：2026-11-27。类型：修旧（direction 在 ML-62 后的同一项手机措辞修复）。本轮开始 HEAD 与 `origin/tutorials` 均为 `bcccdb0`，工作树干净。范围只有 ML 06 Step 3 的手机图内文字、定向审计和本报告；未改其他步、其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。ML-19 与 ML-41～44 的作者批次保持冻结，未开新写作。
