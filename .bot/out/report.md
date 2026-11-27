@@ -1,3 +1,51 @@
+# lane k2 本轮报告 · ML Systems 10 Steps 4–9 收尾
+
+日期：2026-11-27。类型：修旧收尾。范围只有 ML Systems 第 10 章 Steps 4–9 的作者复审、三处双语 deep 对齐、验证材料和本报告。未改 ML 03–09、ML 12、其他书、第 1 本受保护英文原文或 `.bot/memory/`。按 direction，本章随后冻结，等待协调固定复审。
+
+## 提交与 review 修复
+
+- Steps 4–9 的既有教程提交为 `8eea186`、`7f3ac2a`、`59b4469`、`7858d67`、`9f277e9`、`372903e`、`4a6f275`、`297e168`，分别处理 STE 白话、真实量化信息密度、打包中文、Marlin 映射、W4A16 与 FP32 分工、checkpoint index 与导航、手机换行和 deep 卡名。
+- 本轮主线程复读发现三处 deep 与舞台不完全对齐：英文 Step 4 把图上没有写的“改多少”归给 subtitle，Step 6 在 `On the stage` 解释未画出的 INT32，Step 7 在同一节写下未画出的 `is_marlin_converted` 相位。`dbe8268 [k2] Align ML 10 deep notes with visible stage` 已修正并推送到 `origin/tutorials`。首次推送被拒后执行 `git pull --rebase origin tutorials`，再推成功；未 force-push。
+- **ML-19 的作者修复完成，待协调核销。** Step 9 以训练 fake BF16 与 rollout real INT4 Marlin 两条可见路径自包含收尾，不再向未发布的第 11 章提问。浏览器实测 Step 1 的上一章为 09，Step 9 的下一章为最近的 ready 章 12；deep 只把第 13 章标为后续扩展。
+- **ML-33 的作者修复完成，待协调核销。** 舞台与双语 deep 都使用组合卡 `LOAD + REORDER`／`装入 + 重排`，不再拆成两张卡。
+- 固定 `5c7c12b` 的协调结果仍是历史基线：R1–R5 **81/90**、机制 R6 **18/18**、原十二项 **213/216**，NO-GO。当前树不继承这个 verdict，也不自行把 ML-19、ML-33 或整章记为协调 GO。
+
+## 当前树的作者评分卡
+
+主线程按 transcript、组件、双语 deep 和逐相 DOM 冷读。下表只覆盖本轮指定的 Steps 4–9；Steps 1–3 没有内容改动，保留协调已给的满分。原 #4／#5 需要实图判断，本轮模型无图像输入，因此不自行给原十二项总分。
+
+| 步 | R1–R5 | 机制 R6 | 原十个非视觉项 | R1 小学生复述 | 新内容洞 |
+|---|---:|---:|---:|---|---:|
+| 4 | 10/10 | 2/2 | 20/20 | 梯度告诉权重往哪改；STE 把它原样绕过舍入传给 BF16 权重，前向误差仍在。 | 0 |
+| 5 | 10/10 | 2/2 | 20/20 | 每轮更新都把 BF16 权重重新变成整数编码和 BF16 scale，交给 rollout 保存。 | 0 |
+| 6 | 10/10 | 2/2 | 20/20 | 编码加 8 变成非负字段，八个 4 位字段装满 32 位；32 个权重加 scale 共 18 字节。 | 0 |
+| 7 | 10/10 | 2/2 | 20/20 | 先停生成，再装新权重，把 64 个 scale 按 `s0,s8,…` 的 Marlin 顺序排好，最后继续生成。 | 0 |
+| 8 | 10/10 | 2/2 | 20/20 | 字段减 8 取回编码，乘 scale 变 BF16 做乘法；这条指令内部另用 FP32 累加。 | 0 |
+| 9 | 10/10 | 2/2 | 20/20 | 索引里的 594.206 GB 张量一张卡装不下，八张卡总容量够，但其他运行数据还要显存。 | 0 |
+
+- Steps 4–9 作者合计：R1–R5 **60/60**、机制 R6 **12/12**、原十个非视觉项 **120/120**、新内容洞 **0**。
+- 加上未改的 Steps 1–3，当前作者参考值为 R1–R5 **90/90**、机制 R6 **18/18**、原十个非视觉项 **180/180**。原 #4／#5 和原十二项 **/216** 留待协调实图复审；这里没有把旧 **213/216** 改成 **216/216**。
+- 独立 `pstack-explorer` 因配置模型 `qweneval/qwen-latest-series-invite-1102#high` 不存在而未启动，未计为证据。上述冷读由主线程完成。
+
+## 硬门与实图证据
+
+- 最终 rebase 后的 `npm run build`：**60 页**通过。`BOOK=ml-sys node scripts/deep-check.mjs 10` 识别九步，`zh-check` 为 **all clear**，`git diff --check` 通过。
+- `BOOK=ml-sys ONLY=10` transcript 连续两次生成逐字一致，并与 pinned 文件无 diff：**2,283 词**，SHA-256 `66efd73055241b926904ad8c47089f7774741010e3b81e9c857dbda9b9b4d24e`。九步 `readability` 为 **0 机械问题**。
+- 英中全章 `mobile` 均在 360／390／430 px 报 **no layout breaks**。中文 Steps 4／5／6／7／8／9 分别运行 selected-step 字号门，全部通过。
+- 可重跑脚本 `.bot/out/ml10-final-audit.mjs` 对每种语言采集 **39 个桌面相位**，共 **78 个状态、60/60 个机制转变、9/9 个机制步**。采集逐一核对 counter、`data-animation-step`、`data-animation-final-phase` 和当前 phase；每相记录可见文字、出现与消失对象、截图字节数和哈希。
+- `.bot/out/ml10-final-audit/report.json`：**78/78 个 PNG 哈希不同**，文字重叠 **0**，SVG 出界 **0**，最低可见字号 **10.843 CSS px**（`en-s9-p2` 的 tensor-byte 脚注）。报告 SHA-256 为 `d0738783d514e4403c6f848eebcf99c037dd86c7b5276af11d1c04d4da11051e`。
+- Steps 4–9 的英中 **12 个 deep 视图**均为 `aria-expanded=true`，counter 正确；KaTeX 错误、残留 `$$` 和抽屉横向溢出均为 **0**。审计同时断言 Step 7 的具体排列、Step 8 的 FP32 边界、Step 9 的 index／metadata 与第 13 章后续接缝都在对应 deep 中。
+- 代表 PNG：`/Users/shuohuang/code/hmz-work/ls-k2-1127-020240/.bot/out/ml10-final-audit/zh-s7-p4.png`、`en-s9-p2.png`、`zh-s9-deep.png`。PNG 保留在本地，未提交。Read 工具返回 **Cannot read image (this model does not support image input)**，所以这里只报告 DOM、几何、文件和哈希证据，未声称看过图片或视觉通过。
+
+## 剩余与本地查看
+
+- 当前状态：**作者检查收尾完成，整章冻结，coordinator-rereview-pending**。剩余事项是协调固定复审、原 #4／#5 与原十二项评分，以及主人最终视觉验收。ML 12 留作复审后的独立单元，不开第 14 章。
+- 未跑全站回归、真实 INT4 训练、Marlin GPU、rollout 显存测量、故障注入或 reduced-motion 动态切换。最新回归只有不可分配布局步骤的 `(exit 13)`，按 direction 不据此返工。
+- 本 clone 的 `node_modules` 原指向协调人 checkout。已只删除本目录内的符号链接，并用本目录缓存执行 `npm install`；后续构建与检查未写协调人的 checkout，package 文件无 diff。
+- 本地章节地址：`http://localhost:4484/learning-sglang/ml-sys/ch/10-int4-qat-rollout/?step=7`。本轮 4484 dev server 与脚本浏览器在收尾关闭；查看前在本目录运行 `npx astro dev --background --port 4484`。
+
+---
+
 # lane k1 本轮报告 · Omni 11／14 冻结待审
 
 日期：2026-11-27。类型：等待固定复审。范围只有本报告；未改教程、transcript、评分卡、`.bot/memory/`、其他书、其他 lane 或第 1 本受保护英文原文。
