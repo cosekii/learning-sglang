@@ -1,6 +1,6 @@
 # 第 14 章评分卡 · When the client reads too slowly
 
-日期：2026-11-26。
+日期：2026-11-27。
 
 ## 协调基线与本轮边界
 
@@ -10,7 +10,9 @@
 
 协调人复审 `bfc6517…0f4cba0`，确认第 6 步失败框已从 `12 B queued audio` 改为 `12 B → 0 B`，并保留两种条件中止路径。机制 R6 保持 **16/16**，八步均 **2/2**；R1–R5 **80/80**、原十个非视觉项 **160/160**、静态原 #4/#5 **32/32**、原十二项 **192/192** 只作历史基线。
 
-**当前协调 verdict：呈现 NO-GO。** 1440×900 下 Step 2 实测最低 **7.59 CSS px**，报告还列 Step 4、5、8 低于 8 px。旧 `complete-under-EVAL` 和静态视觉满分撤回，已经通过的机制动画不回滚。
+**当前协调 verdict：呈现 NO-GO / coordinator-rereview-pending。** 送审前 1440×900 下 Step 2 实测最低 **7.59 CSS px**，报告还列 Step 4、5、8 低于 8 px。旧 `complete-under-EVAL` 和静态视觉满分撤回，已经通过的机制动画不回滚。
+
+本轮作者已逐步完成桌面字号返工。34 个 1440×900 相位最低 **10.326 CSS px**，文字重叠和 SVG 出界均为 **0**；各步最低值依次为 **11.064、10.630、10.826、10.561、10.630、10.580、10.891、10.326**。相位身份、文本数量和转变模式与返工前逐项一致，caption、事实、机制相位和手机布局未改。这是作者 DOM 结果，不自行关闭 Omni-02 的本章部分或改写协调总分。
 
 ## 逐步评分
 
@@ -54,6 +56,9 @@
 - 独立只读冷读：第 1／6 步没有剩余文本或 DOM 事实阻塞。协调人随后在 `bfc6517…0f4cba0` 的相位实图中确认两项修复，机制 R6 为 **16/16**。
 - 协调人在固定 `0f4cba0` 快照完成 60 页 `build`、8 步 `readability`、`deep-check 14`、pinned-identical `transcript`、英中全章 360/390/430 px `mobile`、中文第 1／6 步字号门和 `zh-check`，全部通过；另读取英文第 6 步五个相位及中文手机第 1／2／4 相位，共 8 张新 PNG。
 - `git diff --check`：通过。
+- 本轮最终 `npm run build`：60 页通过；八步 `readability` 为 0 机械问题；英中全章 360／390／430 px `mobile`、中文逐步字号门、`deep-check 14`、`zh-check` 和 `git diff --check` 均通过。
+- 默认 transcript 连续两次逐字一致并与 pinned 无差异：**2,302 词**，SHA-256 `070b24bc84a94f1c76e362db7d4f3f16e0b49b9ba1f95876f3dc98e897c458ba`。
+- 可重跑脚本 `.bot/out/omni14-phase-audit.mjs` 覆盖 **34 个桌面相位**，报告为 `.bot/out/omni14-phase-audit/report.json`，代表图为 `.bot/out/omni14-phase-audit/s2-p3.png`。当前模型不能读取 PNG，未声称已看图或视觉通过；协调实图复审和主人最终验收另计。
 
 本地截图在 `.bot/out/omni14-review/`。协调评审证据目录为 `/private/var/folders/f0/y3512xfn3vn334b7kcc6_hzw0000gn/T/opencode/ls-coord-20261126-omni14-0f4.WHQpnJ/`。本卡采用协调人已读实图的评分，不代替主人最终验收。
 

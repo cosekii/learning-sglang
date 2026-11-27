@@ -1,3 +1,31 @@
+# lane k1 本轮报告 · Omni 14 八步桌面小字返工
+
+日期：2026-11-27。类型：修旧。范围只含 Learning SGLang Omni 第 14 章 `SlowReaderBackpressure.svelte`、本章评分记录、验证产物和本报告；未改 Omni 11／13／15、其他书、其他 lane 的章节、第 1 本受保护英文原文或 `.bot/memory/`。
+
+## open review 项与逐提交结果
+
+- 处理 **Omni-02 的第 14 章桌面小字部分**。按 direction 先修 Step 2，再逐步实测其余步。返工前八步最低字号为 **9.220、7.593、8.328、7.943、7.593、8.464、8.067、7.943 CSS px**；返工后为 **11.064、10.630、10.826、10.561、10.630、10.580、10.891、10.326 CSS px**。
+- 教程提交依次为 `584f99d`（Step 2）、`b6b8f6f`（Step 1）、`728802d`（Step 3）、`5187280`（Step 4）、`68ef3b7`（Step 5）、`a086e57`（Step 6）、`dce37ea`（Step 7）、`25553d6`（Step 8），均已推 `origin/tutorials`。两次推送被拒后均执行 `git pull --rebase origin tutorials` 再推，没有 force-push。
+- 只调整桌面字号和两处几何：Step 4 的桌面 viewBox 高度 **650→660**，避免放大后的收尾问题与脚注重叠；Step 8 使用 **13 px** 并把长失败说明左移 8 个 SVG 单位，消除右侧出界。caption、事实、相位数量、机制对象、数字和手机布局未改。
+- **本轮没有自行关闭协调 finding。** Omni-02 本章部分的作者返工已完成，仍待协调固定复审。Omni-37 的 Step 7 SSE 字段和其他书内开放项保持不动。协调历史分保持 R1–R5 **80/80**、原十个非视觉项 **160/160**、原十二项 **192/192**、机制 R6 **16/16**；完整 verdict 仍记 **呈现 NO-GO / coordinator-rereview-pending**，不写 `complete-under-EVAL`。
+
+## 冷读与验证
+
+- 文本和内容没有变化，八步沿用已审的小学生复述，新增内容洞 **0**。返工前后 34 个相位的 step／phase 身份、可见文本数量和转变模式逐项一致；26 个步内相邻转变中有 **24** 个机制签名变化，既有 Step 4／7 末相停留不变。
+- `npm run build`：**60 页**通过。全章八步 `readability` 为 **0 机械问题**；`deep-check 14`、`zh-check`、英中全章 360／390／430 px `mobile`、中文逐步字号门和 `git diff --check` 全过。
+- 默认 transcript 连续两次逐字一致并与 pinned 无差异：**2,302 词**，SHA-256 `070b24bc84a94f1c76e362db7d4f3f16e0b49b9ba1f95876f3dc98e897c458ba`。
+- 可重跑脚本 `.bot/out/omni14-phase-audit.mjs` 覆盖 **34 个 1440×900 桌面相位**。最终报告 `.bot/out/omni14-phase-audit/report.json`：八步都有机制状态，最低 **10.326 CSS px**，文字重叠 **0**、SVG 出界 **0**。34 张 PNG 在同目录，代表图为 `s2-p3.png`。
+- 当前模型不能读取 PNG，未声称已看图或视觉通过。独立 pstack-synthesizer 因配置模型不存在而未启动，未计为证据。协调实图复审与主人最终视觉验收仍待。
+- 本 clone 的 `node_modules` 初始为指向协调人 checkout 的符号链接。已只删除本目录内的符号链接并执行本地 `npm install`，后续依赖、cache、dev server 和构建均在本 clone，未写协调人的 checkout。
+
+## 剩余与本地查看
+
+- 未跑全站回归、真实 SSE／WebSocket／raw-PCM 连接、SGLang-Omni 服务、模型、GPU benchmark、故障注入或 reduced-motion 动态切换。Omni-02 其他章和 Omni-37 不在本单元，不开第 16／17 章。
+- 本地章节地址：`http://localhost:4467/learning-sglang/omni/ch/14-slow-reader-backpressure/?step=2`。代表截图绝对路径：`/Users/shuohuang/code/hmz-work/ls-k1-1127-001142/.bot/out/omni14-phase-audit/s2-p3.png`。
+- 本轮 4467 dev server 和脚本启动的浏览器均在收尾关闭。查看前在本目录运行 `npx astro dev --background --port 4467`。
+
+---
+
 # lane k1 本轮报告 · Omni 11 Step 7／8 固定树复核
 
 日期：2026-11-26。类型：修旧复核。范围只含 Learning SGLang Omni 第 11 章和本报告；未改其他步、其他书、其他 lane、第 1 本受保护英文原文或 `.bot/memory/`。
