@@ -144,7 +144,7 @@
           <text x="360" y="373" text-anchor="middle" class="label">{t('KV cache saves token history; spare space is for other work.', 'KV cache 保存 token 历史；其他工作余量留给其他工作。')}</text>
         </g>
       {:else}
-        <text x="20" y="23" class="title">{t('model + KV share of 78 GB', '模型 + KV 的 78 GB 份额')}</text>
+        <text x="20" y="23" class="title">{t('model + KV · 78 GB', '模型 + KV 的 78 GB 份额')}</text>
         <g opacity={phase >= 1 ? 1 : 0} style="transition: opacity 300ms">
           <text x="20" y="45" class="label">{t('before', '装入前')} ≈{DEMO_PRE_MODEL_FREE_GB} GB → {t('after', '装入后')} ≈{DEMO_POST_MODEL_FREE_GB} GB</text>
           <text x="20" y="68" class="load">{t('model', '模型')}: {DEMO_PRE_MODEL_FREE_GB} − {DEMO_POST_MODEL_FREE_GB} ≈ {DEMO_MODEL_LOAD_GB} GB</text>
