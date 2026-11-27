@@ -49,13 +49,34 @@
 
 ---
 
+# lane d 本轮报告 · Voxt 10 Step 1 P1 修复补完（hook、输入扩展名、输出措辞）
+
+日期：2026-11-27。类型：修旧（复审指出 `da08045` 审计面过窄后的补完）。改动只有 `src/voxt/chapters.ts` 的 hook、`FileTranscription.svelte` 的 Step 1、双语 deep 第 1 步、生成 transcript 和本报告；其余步、章、书、`.bot/memory/` 和第 1 本受保护英文原文未改。
+
+## 提交与 finding
+
+- `257acfd`：**P1 补完作者修复完成，待协调固定复审，不自行销项。** 两处遗留修掉：①舞台上方的可见 hook（`chapters.ts`）原来写「into SRT or TXT」，改为沿用第 9 章建立的通用任务「an audio file you already have」；桌面输入的 `meeting.m4a` 扩展名去掉，改为「a meeting you recorded · 1 hour of sound · on disk」。②caption「a new file」的绝对化承诺改掉：命令默认 `-o -` 写 stdout 不生成文件，`-o FILE` 还可能覆盖旧文件；caption 改「This one ends as a file」（这次转写的结果是一个文件），subtitle 改「a recording’s text can end in a file」（可以落成文件），ARIA 改「the example recording」，双语 deep 第 1 步的一句话、On the stage、路线动机三处同步，并指向第 9 步 stdout 的既有说明。英文 subtitle 新增手机短版（`dictation → cursor · recording → a file`），430 px 出界 15 px 的问题随之消除。
+- 首次推送被拒（k2 `749347d` 先到），`git stash` 报告后 `git pull --rebase` 推送成功，再恢复报告，未 force-push。
+- 已按复审更正本报告上一轮的「Step 8 首次命名 SRT/TXT」说法：第 9 章末步接缝已命名，本章 Step 8 详细解释两种格式。
+
+## 硬门与证据
+
+- `npm run build` **60 页**通过；`BOOK=voxt ONLY=10 STEP=1 npm run readability` **0 机械问题**；`deep-check 10`、英中全章 360／390／430 px `mobile`、`STEP=1 LANG=zh` 中文字号门、`zh-check`（`all clear`）全过；transcript 重生成，diff 含 hook 行与本步改动，无 caption／出界／重叠报告。
+- 全页 DOM 审计（不只 `.viz`）：英文与中文（localStorage 切 zh）各取 phase 1／phase 2 两个机制状态，抓取 `.hook`、`.caption` 和全部 SVG 文本；两种语言两个相位对 `SRT|TXT|M4A|m4a` 全部 **clean**，phase 1 只有输入＋`Voxt transcribe`，phase 2 才出现 `TEXT IN A FILE` 与三行结论，机制 build-up 不变。探针脚本 `/tmp/ls-d-probe2.mjs`、`/tmp/ls-d-probe3.mjs`。
+- 环境同上轮：`node_modules` 是指向主 checkout 的只读符号链接，临时 `vite.cacheDir`＋`astro preview --port 4489` 跑门，提交前已 `git checkout astro.config.mjs` 还原。**当前模型无图像输入能力，结论来自构建、transcript、源码、DOM 与几何检查，未声称看过图片或视觉通过。** 未跑全站回归、真实 Voxt 或主人最终验收。
+
+## 剩余
+
+- 同步 P2 保持开放：Step 1 末相的 `115.2 MB` 缺可感比较和可见算式，「decoded」舞台上没有白话。
+- 下一单元：复审后指定的 **Voxt 10 displayed Step 2**（机制动画），一个 Step 一个提交。
+
 # lane d 本轮报告 · Voxt 10 Step 1 的 P1「同屏新名过多」作者修复
 
 日期：2026-11-27。类型：修旧（review.md 对 `bd884d2` 的固定复审里登记给 d 的开放 P1）。按主人 11-27 规则不等复审：先清本书开放 P1，本轮只做这一项，一个 Step 一个提交。本轮开始 HEAD 为 `04be539`，工作树干净；改动只有 `FileTranscription.svelte` 的 Step 1（组件内 step 0）图文、双语 deep 第 1 步的 On the stage 和生成 transcript。其余十步、其他章、其他书、`.bot/memory/` 和第 1 本受保护英文原文均未改；既有 `4526f171…a613` 大机制草稿未混入。
 
 ## 提交与 finding
 
-- `da08045`：**Voxt 10 Step 1 的 P1 作者修复完成，待协调固定复审，不自行销项。** 按复审给的方向：沿用前九章建立的文件任务（第 9 章「现成的音频文件」、第 4 章文件型识别），首步不再命名格式。首步新名只剩 `Voxt transcribe` 一个：`FILE · TO SRT OR TXT` 改 `FILE · TO A FILE`（中：文件 · 到文件）；输入的「compressed sound (M4A)」改「a recording you have」（中：现成的录音）；输出的 `meeting.srt / talk.txt` 与「SRT = subtitle · TXT = plain text」改 `TEXT IN A FILE`＋「kept on disk」；caption 改为「文件转写的结果是一个新文件」。SRT／TXT 仍由 Step 8 首次命名并解释，双语 deep 第 1 步 On the stage 同步并指向第 8 步。三相 build-up 机制（routes → 输入＋命令 → 输出＋三行）不变。
+- `da08045`：**Voxt 10 Step 1 的 P1 作者修复完成，待协调固定复审，不自行销项。** 按复审给的方向：沿用前九章建立的文件任务（第 9 章「现成的音频文件」、第 4 章文件型识别），首步不再命名格式。首步新名只剩 `Voxt transcribe` 一个：`FILE · TO SRT OR TXT` 改 `FILE · TO A FILE`（中：文件 · 到文件）；输入的「compressed sound (M4A)」改「a recording you have」（中：现成的录音）；输出的 `meeting.srt / talk.txt` 与「SRT = subtitle · TXT = plain text」改 `TEXT IN A FILE`＋「kept on disk」；caption 改为「文件转写的结果是一个新文件」。SRT／TXT 在第 9 章末步的接缝已命名，本章 Step 8 才详细解释两种格式，双语 deep 第 1 步 On the stage 同步并指向第 8 步。三相 build-up 机制（routes → 输入＋命令 → 输出＋三行）不变。
 - 首次推送被拒（k1 `45a9c2a` 先到），按指示 `git pull --rebase origin tutorials` 后推送成功，未 force-push。提交落在 k1 之上。
 
 ## 作者评分与冷读边界
