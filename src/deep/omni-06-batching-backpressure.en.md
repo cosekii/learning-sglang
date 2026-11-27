@@ -121,6 +121,7 @@ Step 3 returns to one-shot work. `ReferenceEncodeService` drains only requests a
 - The shipped defaults are `max_batch_size=1` and `max_batch_wait_ms=0`, so the default service encodes one request at a time. The teaching view raises the cap to four and assumes `hook.can_encode_batch()` is true.
 - Before collection, `batch_queue` contains A, B and C. The orange queue box is the arrival side; the blue box is the actual encoding call.
 - `get_nowait()` takes the three available requests. The queue is then empty, and the zero-delay budget ends collection with the fourth slot unused.
+- The animation drains the queue into the three slots, invokes the single call, returns the three results, then lets D arrive for the next collection.
 - One `encode_batch([A, B, C])` call produces three outcomes, which the service returns to their respective requests. D arrives after collection and belongs to the next one.
 - There is no running batch. Each reference encoding receives its complete result from this call rather than remaining in a scheduling set across AR decode rounds.
 

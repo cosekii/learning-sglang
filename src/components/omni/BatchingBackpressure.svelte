@@ -265,33 +265,38 @@
       <text x={phone ? 15 : 20} y="66" class="tag">{t('Teaching view: cap 4 + batch-capable hook + wait 0 ms', '教学视角：上限 4 + 支持批处理的 hook + 等待 0 ms')}</text>
 
       <rect x={phone ? 15 : 20} y={phone ? 88 : 94} width={phone ? 270 : 680} height="76" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
-      <text x={phone ? 29 : 34} y={phone ? 112 : 118} class="rowlabel">batch_queue · {t('before collection', '收集前')}</text>
-      {#each REFERENCE_ENCODER_READY_IDS as id, i}
-        <rect x={(phone ? 29 : 260) + i * 58} y={phone ? 124 : 108} width="46" height="32" rx="5" fill="white" stroke="var(--accent)" />
-        <text x={(phone ? 52 : 283) + i * 58} y={phone ? 145 : 129} text-anchor="middle" class="mono strong">{id}</text>
-      {/each}
-      <text x={phone ? 222 : 480} y={phone ? 145 : 129} class="tag">{t('3 ready now', '现有 3 条')}</text>
-      <text x={phone ? 29 : 590} y={phone ? 145 : 129} class="tag">{phone ? '' : t('D is not here yet', 'D 尚未到达')}</text>
+      <text x={phone ? 29 : 34} y={phone ? 112 : 118} class="rowlabel">batch_queue · {phase >= 1 ? t('after collection', '收集后') : t('before collection', '收集前')}</text>
+      {#if phase < 1}
+        {#each REFERENCE_ENCODER_READY_IDS as id, i}
+          <rect x={(phone ? 29 : 260) + i * 58} y={phone ? 124 : 108} width="46" height="32" rx="5" fill="white" stroke="var(--accent)" />
+          <text x={(phone ? 52 : 283) + i * 58} y={phone ? 145 : 129} text-anchor="middle" class="mono strong">{id}</text>
+        {/each}
+        <text x={phone ? 222 : 480} y={phone ? 145 : 129} class="tag">{t('3 ready now', '现有 3 条')}</text>
+      {:else}
+        <text x={phone ? 150 : 360} y={phone ? 145 : 139} text-anchor="middle" class="tag strong">{t('empty · A, B and C taken', '空了 · A、B、C 已取走')}</text>
+      {/if}
+      <text x={phone ? 29 : 590} y={phone ? 145 : 129} class="tag">{phone || phase >= 4 ? '' : t('D is not here yet', 'D 尚未到达')}</text>
 
-      <path d={phone ? 'M150 172 V196' : 'M360 178 V204'} stroke="var(--accent)" stroke-width="2" marker-end="url(#batch-arrow)" />
+      <path d={phone ? 'M150 172 V196' : 'M360 178 V204'} stroke="var(--accent)" stroke-width="2" marker-end="url(#batch-arrow)" opacity={phase >= 1 ? 1 : 0.15} />
       <text x={phone ? 162 : 374} y={phone ? 188 : 196} class="tag strong">get_nowait() · {phone ? t('no slot wait', '不为空位等待') : t('no empty-slot wait', '不为空位等待')}</text>
 
-      <rect x={phone ? 15 : 20} y={phone ? 204 : 214} width={phone ? 270 : 680} height="90" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2" />
-      <text x={phone ? 29 : 34} y={phone ? 228 : 238} class="rowlabel">encode_batch([A, B, C]) · {t('one call', '一次调用')}</text>
+      <rect x={phone ? 15 : 20} y={phone ? 204 : 214} width={phone ? 270 : 680} height="90" rx="10" fill={phase >= 1 ? 'var(--accent-soft)' : 'white'} stroke={phase >= 1 ? 'var(--accent)' : 'var(--faint)'} stroke-width={phase >= 2 ? 2 : 1} stroke-dasharray={phase >= 1 ? '0' : '4 3'} />
+      <text x={phone ? 29 : 34} y={phone ? 228 : 238} class="rowlabel">{phase >= 2 ? `encode_batch([A, B, C]) · ${t('one call', '一次调用')}` : phase >= 1 ? t('collected [A, B, C] · call not run', '已收集 [A、B、C] · 尚未调用') : t('encode_batch · waiting for collection', 'encode_batch · 等待收集')}</text>
       {#each Array(REFERENCE_ENCODER_TEACHING_MAX_BATCH) as _, i}
-        <rect x={(phone ? 29 : 300) + i * (phone ? 58 : 68)} y={phone ? 241 : 231} width={phone ? 46 : 56} height="38" rx="6" fill={i < REFERENCE_ENCODER_FIRST_BATCH_COUNT ? 'white' : 'var(--bg)'} stroke={i < REFERENCE_ENCODER_FIRST_BATCH_COUNT ? 'var(--accent)' : 'var(--faint)'} stroke-dasharray={i < REFERENCE_ENCODER_FIRST_BATCH_COUNT ? '0' : '4 3'} />
-        <text x={(phone ? 52 : 328) + i * (phone ? 58 : 68)} y={phone ? 265 : 255} text-anchor="middle" class="mono strong">{REFERENCE_ENCODER_READY_IDS[i] ?? '·'}</text>
+        {@const filled = phase >= 1 && i < REFERENCE_ENCODER_FIRST_BATCH_COUNT}
+        <rect x={(phone ? 29 : 300) + i * (phone ? 58 : 68)} y={phone ? 241 : 231} width={phone ? 46 : 56} height="38" rx="6" fill={filled ? 'white' : 'var(--bg)'} stroke={filled ? 'var(--accent)' : 'var(--faint)'} stroke-dasharray={filled ? '0' : '4 3'} />
+        <text x={(phone ? 52 : 328) + i * (phone ? 58 : 68)} y={phone ? 265 : 255} text-anchor="middle" class="mono strong">{filled ? REFERENCE_ENCODER_READY_IDS[i] : '·'}</text>
       {/each}
-      <text x={phone ? 150 : 510} y={phone ? 288 : 278} text-anchor="middle" class="tag">{REFERENCE_ENCODER_FIRST_BATCH_COUNT} {t('taken', '条入批')} · {REFERENCE_ENCODER_EMPTY_SLOTS} {t('left empty', '格留空')}</text>
+      <text x={phone ? 150 : 510} y={phone ? 288 : 278} text-anchor="middle" class="tag">{phase >= 1 ? `${REFERENCE_ENCODER_FIRST_BATCH_COUNT} ${t('taken', '条入批')} · ${REFERENCE_ENCODER_EMPTY_SLOTS} ${t('left empty', '格留空')}` : `0 ${t('taken', '条入批')} · ${REFERENCE_ENCODER_TEACHING_MAX_BATCH} ${t('left empty', '格留空')}`}</text>
 
-      <rect x={phone ? 15 : 20} y={phone ? 316 : 326} width={phone ? 270 : 325} height={phone ? 90 : 52} rx="8" fill="var(--bg)" stroke="var(--line)" />
-      <text x={phone ? 29 : 34} y={phone ? 340 : 347} class="tag strong">{t('same three results return', '同三条结果逐项返回')}</text>
-      <text x={phone ? 29 : 34} y={phone ? 364 : 368} class="tag">A.result · B.result · C.result</text>
+      <rect x={phone ? 15 : 20} y={phone ? 316 : 326} width={phone ? 270 : 325} height={phone ? 90 : 52} rx="8" fill={phase >= 3 ? 'var(--bg)' : 'white'} stroke={phase >= 3 ? 'var(--line)' : 'var(--faint)'} stroke-dasharray={phase >= 3 ? '0' : '4 3'} />
+      <text x={phone ? 29 : 34} y={phone ? 340 : 347} class="tag strong">{phase >= 3 ? t('same three results return', '同三条结果逐项返回') : t('results not returned', '结果尚未返回')}</text>
+      <text x={phone ? 29 : 34} y={phone ? 364 : 368} class="tag">{phase >= 3 ? 'A.result · B.result · C.result' : t('waiting for the encode call', '等待 encode 调用')}</text>
       <text x={phone ? 29 : 34} y={phone ? 390 : 368} class="tag">{phone ? t('cap > 1 alone is not enough', '只调大上限还不够') : ''}</text>
 
-      <rect x={phone ? 15 : 375} y={phone ? 424 : 326} width={phone ? 270 : 325} height={phone ? 90 : 52} rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
-      <text x={phone ? 29 : 389} y={phone ? 448 : 347} class="tag strong">{t('D arrives after collection', 'D 在收集结束后才到')}</text>
-      <text x={phone ? 29 : 389} y={phone ? 472 : 368} class="tag">{REFERENCE_ENCODER_LATE_ID} → {t('next collection, not this batch', '下一次收集，不进这一批')}</text>
+      <rect x={phone ? 15 : 375} y={phone ? 424 : 326} width={phone ? 270 : 325} height={phone ? 90 : 52} rx="8" fill={phase >= 4 ? 'var(--gen-soft)' : 'white'} stroke={phase >= 4 ? 'var(--gen)' : 'var(--faint)'} stroke-dasharray={phase >= 4 ? '0' : '4 3'} />
+      <text x={phone ? 29 : 389} y={phone ? 448 : 347} class="tag strong">{phase >= 4 ? t('D arrives after collection', 'D 在收集结束后才到') : t('D has not arrived', 'D 尚未到达')}</text>
+      <text x={phone ? 29 : 389} y={phone ? 472 : 368} class="tag">{phase >= 4 ? `${REFERENCE_ENCODER_LATE_ID} → ${t('next collection, not this batch', '下一次收集，不进这一批')}` : t('not in this collection', '不在本次收集里')}</text>
       <text x={phone ? 29 : 389} y={phone ? 498 : 368} class="tag">{phone ? t('hook.can_encode_batch() must also pass', 'hook.can_encode_batch() 也必须通过') : ''}</text>
 
       <text x={W / 2} y={phone ? 544 : 404} text-anchor="middle" class="tag strong">{phone ? t('Default: one per call · batching needs hook support', '默认一次一条；batch 还需要 hook 支持') : t('Three results need three encode calls with the shipped cap of one; batching also requires hook support.', '出厂上限为 1 时，三条结果要三次 encode；启用 batch 还需要 hook 支持。')}</text>
