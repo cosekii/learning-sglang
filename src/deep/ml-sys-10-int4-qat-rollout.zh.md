@@ -151,10 +151,10 @@ slime 在 `set_default_megatron_args` 中用 `args.bf16 = not args.fp16` 选择 
 
 ### 图上是什么
 
-- BF16 更新卡沿用 0.35，组 scale 仍是 $0.70/7=0.10$。
-- 有符号编码卡得到 4，代码的字面截断范围是 $[-8,7]$。第 2 步 fake QAT 的代码范围是 $[-7,7]$。
+- 标题下先解释：编码是用一个整数表示舍入后的权重。BF16 更新卡沿用训练传来的 0.35，组 scale 仍是 $0.70/7=0.10$。
+- 有符号编码卡得到 4，范围是 $[-8,7]$；负数、零和正数都可以作为编码。
 - scale 卡与编码一起导出，并在本配置中转成源权重的 BF16 类型。
-- 转换器处理未被忽略、至少二维且最后一维 K 受支持的 `.weight` 张量。高于二维时，`view(-1, param.shape[-1])` 把前面的维度全部展平成行。被忽略或不支持的张量保持未量化。每轮更新都会再次转换，不是只做一次离线导出。
+- 图下只保留一个算式：$0.35/0.10=3.5$，舍入成编码 4。每轮 RL 更新都重新转换，不是只做一次离线导出。
 
 ### 公式与符号
 
@@ -172,7 +172,11 @@ $$s=\max(\max_i|x_i|/7,10^{-5}),\qquad q_i=\operatorname{clip}(\operatorname{rou
 
 $$0.35/0.10=3.5\rightarrow q=4$$
 
+### 转换范围与导出细节
+
 虽然 scale 用最大绝对值除以 7，真实导出代码的字面 clamp 下界是 −8，而 fake QAT 是 −7。本章保留这个代码差异，不把两条路写成逐位相同。导出时 scale 转回源权重类型，本例是 BF16；fake QAT 计算时使用 FP32 scale，因此两边也不保证 scale 的每个位相同。
+
+转换器处理未被忽略、至少二维且最后一维 K 受支持的 `.weight` 张量。高于二维时，`view(-1, param.shape[-1])` 把前面的维度全部展平成行。被忽略或不支持的张量保持未量化。
 
 要区分公开 checkpoint 和 slime 更新转换器。公开 Kimi-K2-Thinking checkpoint 的打包权重都在 routed experts 中；其配置排除 `lm_head`、self-attention、shared experts 和 dense MLP projections。slime 转换器则只检查 `ignore`、`.weight` 后缀、维度和 K 维大小，并不读取 `targets`，所以 embedding 和 router 等未被忽略且形状支持的权重也可能进入转换。不能据此写成“更新转换器只量化专家权重”。
 

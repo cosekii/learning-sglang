@@ -151,10 +151,10 @@ Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/int4/readme.md:37-39`; `THUDM/slime
 
 ### On the stage
 
-- The BF16 update reuses 0.35, and the group scale remains $0.70/7=0.10$.
-- The signed-code card produces 4. The code's literal clamp is $[-8,7]$, unlike fake QAT's $[-7,7]$ in Step 2.
+- The subtitle defines a code as one integer standing for a rounded weight. The BF16 update reuses 0.35 from training, and the group scale remains $0.70/7=0.10$.
+- The signed-code card produces 4 in $[-8,7]$. Codes can be negative, zero or positive.
 - The scale travels with the codes and is cast to the source weight's BF16 type in this recipe.
-- The converter handles non-ignored `.weight` tensors with at least two dimensions and a supported last dimension K. For higher-rank tensors, `view(-1, param.shape[-1])` folds every earlier dimension into rows. Ignored and unsupported tensors stay unquantized. Each update repeats the conversion; this is not only an offline export.
+- One formula below the cards calculates $0.35/0.10=3.5$ and rounds to code 4. Every RL update repeats the conversion rather than exporting only once.
 
 ### Formula and symbols
 
@@ -172,7 +172,11 @@ $$s=\max(\max_i|x_i|/7,10^{-5}),\qquad q_i=\operatorname{clip}(\operatorname{rou
 
 $$0.35/0.10=3.5\rightarrow q=4$$
 
+### Conversion scope and export details
+
 The scale divides the largest magnitude by 7, but the real export's literal clamp has a −8 lower bound while fake QAT uses −7. The chapter preserves that code difference instead of claiming bitwise identity. Export casts scales back to the source weight dtype, BF16 here; fake QAT computes with an FP32 scale. The two sides do not guarantee identical scale bits either.
+
+The converter handles non-ignored `.weight` tensors with at least two dimensions and a supported last dimension K. For higher-rank tensors, `view(-1, param.shape[-1])` folds every earlier dimension into rows. Ignored and unsupported tensors stay unquantized.
 
 The public checkpoint and slime's update converter have different scopes. In the public Kimi-K2-Thinking checkpoint, packed weights appear in routed experts; its config excludes `lm_head`, self-attention, shared experts and dense MLP projections. Slime's converter checks `ignore`, the `.weight` suffix, rank and K-dimension, but not `targets`. Embedding and router weights can therefore enter conversion when they are not ignored and have supported shapes. The update converter must not be described as experts-only.
 
