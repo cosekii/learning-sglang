@@ -4,6 +4,9 @@
 
 ## 本轮记录
 
+- 17:52 修旧 Learning SGLang Omni 第 13 章全部 8 步：删除红框导读，逐步播放启动分组、五轴地图与输出路线、talker 移卡与均值柱、78→73 预算、精度柱、独立 codec 池、readiness／测量和决策表；第 2 步前置五轴地图并给后续步标 `k/5`，第 5 步补比值算式和 bit≠GB，第 6 步标明申报显存，第 7／8 步分开通用协议与 `c=8` 自定义 p90。协调历史机制 **0/16**；本轮作者源码、live DOM 与独立冷读自检机制 **16/16（待协调读图）**，桌面 33 相最低 **10.806 CSS px**，不记 `complete-under-EVAL`。
+- `build`（60 页）、与 pinned 一致的本章 `transcript`（2909 词）、8 步 `readability`、英中全章 `mobile`、中文逐步字号门、`deep-check 13`、`zh-check`、66 个相位 DOM、10 个深入讲解 DOM 和 `git diff --check` 通过。66 张相位图与报告在 `.bot/out/omni13-phase-audit/`，当前模型不能读 PNG，视觉和协调 verdict 仍待。教程提交为 `e0cb46c…ebe36c0`。本轮类型：**修旧**；下一单元按 direction 修 Omni 11 除 Step 7 tail 外的机制，之后 Omni 14 小字，不开新章。
+
 - 16:40 修旧 Learning SGLang Omni 第 15 章四组遗留项：原第 8 步新增 RESET 后 C active `2→1` 的 lease 释放；九步桌面末相可见 SVG 文字最低 **10.3295 CSS px**；新增第 8 步 ServiceClass／固定 owner／session capacity 路由地图；规划和 roster 收束到第 15 章，收尾不再指向未实现的第 16、17 章。协调原八步基线保持 R1–R5 **80/80**、原十个非视觉项 **160/160**、原十二项 **192/192**、机制 **16/16**；新增第 8 步和修订后的第 9 步只完成非视觉自查，不记当前九步协调总分或 `complete-under-EVAL`。
 - `build`（60 页）、两次一致的九步 `transcript`、九步 `readability`、英中全章 `mobile`、中文第 8／9 步字号门、`deep-check 15`、`zh-check`、桌面九步字号审计、深入讲解 DOM 审计和 `git diff --check` 通过。相位截图在 `.bot/out/omni15-service-map/`、`.bot/out/omni15-final/`；当前模型不能读 PNG，视觉冷读和协调 verdict 仍待。教程提交为 `26ef8df`、`6eb85dc`、`cc75c74`、`ce5224f`。本轮类型：**修旧**；下一单元依次回修 Omni 13、11、14，不开新章。
 
@@ -189,7 +192,7 @@
 | 10 | 10-vocoder-optimization | 文本完成：8/8 步 R1–R5 为 10/10、0 内容洞和机械显示洞；R6/#4/#5 与总分待目视 | — |
 | 11 | 11-fish-s2-pro | NO-GO：旧 R1–R5 80/80、原十个非视觉项 160/160、原十二项 192/192 只作历史；当前机制 R6 1/16（仅 Step 7 tail 部分），其余步骤待补机制动画，桌面小字和 session 接缝仍开放 | — |
 | 12 | 12-full-duplex-strategies | 自评完成：8/8 步易读 12/12、0 内容洞和机械显示洞；人工视觉验收待主人 | 24.00 |
-| 13 | 13-qwen3-omni-deployment | NO-GO：旧 R1–R5 80/80、原十个非视觉项 160/160、原十二项 192/192 只作内容与已读静态视图历史；当前机制 R6 0/16（timer 只移动导读框），桌面 Step 8 最低 7.30 CSS px，五轴地图仍待前置 | — |
+| 13 | 13-qwen3-omni-deployment | 待协调复审：旧 R1–R5 80/80、原十个非视觉项 160/160、原十二项 192/192 只作历史；本轮八步机制动画与五轴地图已改，作者自检机制 R6 16/16（66 个相位 DOM，待协调读图），桌面最低 10.806 CSS px；不记 complete-under-EVAL | — |
 | 14 | 14-slow-reader-backpressure | 呈现 NO-GO：旧 R1–R5 80/80、原十个非视觉项 160/160、原十二项 192/192 只作历史；机制 R6 保持 16/16（八步均 2/2），桌面 Step 2 实测最低 7.59 CSS px，待修小字 | — |
 | 15 | 15-router-worker-selection | 原八步协调内容／已读静态视图 GO：R1–R5 80/80、原十个非视觉项 160/160、静态 R6 16/16、原 #4/#5 32/32、原十二项 192/192；原八步协调机制 16/16；本轮 RESET 释放、桌面字号、新增第 8 步路由地图和第 15 章收尾完成非视觉复核，待图像冷读与协调 verdict，不记当前九步协调总分或 complete-under-EVAL | 24.00 |
 

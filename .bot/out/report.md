@@ -1,38 +1,49 @@
-# lane k1 本轮报告 · Omni 15 遗留项返工
+# lane k1 本轮报告 · Omni 13 机制与呈现返工
 
-日期：2026-11-26。范围只含 Learning SGLang Omni 第 15 章、Omni 规划与书目、本章评分卡、仓库 progress 和本报告。未碰其他书、其他 lane 的章节、第 1 本受保护英文原文或 `.bot/memory/`。
+日期：2026-11-26。范围只含 Learning SGLang Omni 第 13 章的组件、双语深入讲解、MDX、生成 transcript、评分卡、仓库 progress 和本报告。未碰其他书、其他 lane 的章节、第 1 本受保护英文原文或 `.bot/memory/`。
 
 ## 修掉的 open review 项
 
-- **Omni-19 · RESET 后 lease 释放**：原第 8 步改为当前第 9 步，新增第六相，显示 `RESET: lease released · active 2 → 1`。phase 2 的释放文字 opacity 为 0.12，phase 5 为 1；双语深入讲解和 MDX 同步列出选择后 2、RESET 后 1。
-- **Omni-02 · 本章桌面小字**：`loops` 与脚注桌面字号提高到 13px，手机保持原字号。1440×900 下当前九步末相所有可见 SVG 文字均 ≥10 CSS px，最小值是第 6 步 **10.3295 CSS px**。Omni-02 在其他章的部分仍开放。
-- **Omni-29 · ServiceClass／固定 owner／session capacity**：新增第 8 步路由地图，覆盖四种普通 HTTP、两种 WebSocket session、uploaded-voice owner 和 pinned follow-up。构造例中 A 为 active 0、session 1/1，B 为 active 3、session 1/2；A 已满而跳过，B 被选中后变为 active 4、session 2/2，RequestLease 持有新增槽位。
-- **Omni-04 · 15→16／17 断链**：按协调允许的缩 plan 路径，`docs/plan-omni.md` 和 Omni roster 收束到第 15 章，未实现的第 16、17 章不再出现在规划或书目描述中。第 9 步删除下一章问题，直接区分 RESET 清理和后续 health 资格。
-- 保留协调已关闭的第 1／6 步机制、英文手机 handoff 和其余内容项，没有重做。原八步协调基线仍为 R1–R5 **80/80**、原十个非视觉项 **160/160**、静态 R6 **16/16**、原十二项 **192/192**、机制 **16/16**。新增第 8 步与修订后的第 9 步只作非视觉自查，不记当前九步协调总分或 `complete-under-EVAL`。
-- progress 与 Omni 11／13／14 评分卡同步撤回旧整章满分：分别保留机制 **1/16、0/16、16/16** 及各自 NO-GO 项；这些章留待后续单元，不在本轮改教程。
+- **Omni-01 · 八步只动红框**：删除 `motionFrames` 和聚焦框。33 个相位分别演示本步机制：第 1 步组建两种启动形态；第 2 步先给五轴地图，再逐条形成输出路线；第 3 步只移动 talker，再形成两组均值柱；第 4 步把 thinker 78% 拆成 73% AR + 5% reserve；第 5 步形成 60／40／30 GB 柱；第 6 步增加 replica 并显示两个独立 64 位 codec 池；第 7 步先完成 readiness，再形成十次测量和两类记录；第 8 步逐行形成决策表。
+- **Omni-02 · 本章桌面小字**：桌面小字按画布高度使用 12／13px，Step 8 高度由 740 缩至 650。1440×900 的 33 个英文桌面相位最低 **10.806 CSS px**，中文 390 px 手机相位最低 **11.760 CSS px**；66 个相位均无文字出界或重叠。其他章的 Omni-02 不在本轮范围。
+- **Omni-30 · 五轴地图过晚**：第 2 步开场显示路线、摆卡、精度、容量、证据五轴及对应步号。第 2–8 步依次标 `1/5`、两个 `2/5`、`3/5`、`4/5` 和两个 `5/5`。
+- **Omni-36 · Step 7 使用下一步 c=8**：第 7 步只保留通用 `c=1,16`、十次运行和 p99 规则；`c=8` 的五次运行及自定义 p90 移到第 8 步明确标注的图外决策边界。
+- **Omni-39 · Step 5 图外细节混入**：group size 128 和 INT4 相对 FP8 的 75%／25% 移入双语 boundaries/sources。舞台新增实际使用的 `40 ÷ 60 ≈ 67%`、`30 ÷ 60 = 50%`，并说明其他数据和未量化部分也占显存。
+- 独立冷读另修复三项：Step 5 比值与 bit≠GB 解释、Step 6 `12.3% + 1.4% = 13.7%` 的“每个副本 GPU 申报显存”分母、Step 7 custom-p90 错放。手机 Step 6 第二行面板越界也已修正；冷读复核未发现新内容洞。
+
+## 分数边界
+
+- 协调历史基线保留：R1–R5 **80/80**、原十个非视觉项 **160/160**、静态原 #4/#5 **32/32**、原十二项 **192/192**；全书核销时的机制 **0/16** 和桌面 **7.30px** 是旧快照 verdict。
+- 本轮作者机制自检 **16/16（八步各 2/2）**，依据源码、66 个 live DOM 相位和独立只读冷读；**待协调读图，不覆盖协调 verdict，不记 `complete-under-EVAL`**。
+- 第 5 步实测柱宽 `[180,0,0] → [180,120,0] → [180,120,90]`；第 8 步六行依次从 opacity 0.12 淡入到 1。当前模型和独立冷读者均不能读 PNG，未声称视觉通过或主人验收通过。
 
 ## 验证
 
-- `npx astro --config .astro/local.config.mjs build`：60 页通过。忽略的本地配置只隔离 Vite cache，并允许当前目录和 shared `node_modules` 符号链接。
-- 本章默认 `transcript` 连续两次生成一致：9 步，无 caption、出界、重叠或脚注问题；9 步 `readability` 为 0 机械问题；`deep-check 15`、`zh-check` 和 `git diff --check` 通过。
-- 英中全章 `mobile` 在 360／390／430 px 均通过；中文第 8、9 步字号门通过。首次新步英文手机脚注和中文 ServiceClass 定义出界已修，最终全章为零溢出。
-- 第 8 步 phase 2 显示 B 为 active 3、session 1/2；phase 4 显示 active 3→4、session 1/2→2/2。第 9 步 RESET 释放文字从 phase 2 的 opacity 0.12 变为 phase 5 的 1。
-- 第 8、9 步英中深入讲解均实际打开，`aria-expanded=true`，预期文字存在，横向溢出为 0，KaTeX 错误为 0，无残留 `$$`。
-- 相位截图在 `.bot/out/omni15-service-map/` 和 `.bot/out/omni15-final/`，深入讲解图在 `.bot/out/omni15-deep/`。当前模型不能读取 PNG，未声称已看图、视觉通过或主人验收通过。
+- `npx astro --config .astro/local.config.mjs build`：60 页通过。本地配置只隔离 Vite cache 并允许读取共享依赖。
+- 本章默认 `transcript` 最终与 pinned 逐字一致，8 步无 caption、出界、重叠或脚注告警，全文 **2909 词**；全章 `readability` 为 0 机械问题。
+- 英中全章 `mobile` 在 360／390／430 px 均通过；中文逐步字号门通过。`deep-check 13`、`zh-check` 和 `git diff --check` 通过。
+- `.bot/out/omni13-phase-audit/report.json` 记录 **66 个 DOM 状态**，英文桌面和中文手机各 33 个；对应 **66 张 PNG** 在同目录。代表图 `.bot/out/omni13-phase-audit/en-desktop/s8-p5.png`。
+- 英中第 2、3、5、7、8 步深入讲解共 10 个视图均 `aria-expanded=true`，横向溢出 0、KaTeX 错误 0、无残留 `$$`；证据在 `.bot/out/omni13-deep-audit/`。
 
 ## 提交
 
-- `26ef8df [k1] Release Omni 15 lease after reset`：RESET 后 C active 2→1。
-- `6eb85dc [k1] Raise Omni 15 desktop label fonts`：桌面 `loops` 与脚注字号。
-- `cc75c74 [k1] Map Omni 15 service and session routing`：新增第 8 步路由地图；一次拒推后 `git pull --rebase origin tutorials` 再推，没有 force-push。
-- `ce5224f [k1] Close the Omni book at chapter 15`：缩 plan、同步 roster 和收尾。
-- 评分卡、progress 和本报告随最后一条 `[k1] ` 记录提交推送。
+- `e0cb46c`：第 1 步启动分组及共享动画框架。
+- `87544a4`：第 2 步五轴地图与输出路线。
+- `895bfc0`：第 3 步 talker 移卡和计时柱。
+- `5648904`：第 4 步 thinker 预算拆分。
+- `1b166d8`：第 5 步精度比较及图外边界。
+- `7f0c0f6`：第 6 步 replicas 与独立 codec 池。
+- `76d7342`：第 7 步 readiness 与测量。
+- `47a3223`：第 8 步决策表。
+- `b07bf63`：英文手机地图短标签。
+- `ebe36c0`：三个冷读洞及手机面板边界。
+- 评分卡、progress 和本报告随本轮最后 `[k1] ` 记录提交推送；所有教程提交均已推 `origin/tutorials`，没有 force-push。
 
 ## 剩余
 
-- 等协调复审新增第 8 步、修订后的第 9 步和四组 P0 修复，并由具备图像输入的评审读取相位图。复审前不记当前九步的协调总分或 `complete-under-EVAL`。
-- 下一单元按 direction 回修 Omni 13 的红框导读，之后处理 Omni 11 除 Step 7 tail 外的机制和 Omni 14 小字；不开新章。
-- 未跑全站回归、真实 router、模型、GPU benchmark、故障注入或 reduced-motion 动态切换。代码出处固定到 `sglang-omni origin/main@3a31bd72e034db37ce5115a03dd4827b449683be`。
+- 等协调人读取当前固定提交的相位图并复审机制、视觉和分数；复审前保持 **NO-GO / coordinator-rereview-pending**。
+- 下一单元按 direction 修 Omni 11 除 Step 7 tail 外的机制，之后处理 Omni 14 小字；不开新章。
+- 未跑全站回归、真实模型、服务、GPU benchmark、音频质量评测、故障注入或 reduced-motion 动态切换。代码出处固定到 `sglang-omni origin/main@9725235249df851281d4dc62a04b2d34b02ac0fe`。
 
 ---
 
