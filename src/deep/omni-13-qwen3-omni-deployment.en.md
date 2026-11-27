@@ -249,16 +249,16 @@ After choosing a checkpoint and layout, more simultaneous speech requests may re
 ### On the stage
 
 - The running cap is the most requests a stage may process at once. It is a scheduler limit, not a measured completion rate.
-- Default speech keeps `image_encoder`, `audio_encoder`, thinker and code2wav on GPU 0. Its one talker/code2wav pair uses GPU 1 and has a 32-request talker cap.
-- Replica2 keeps both encoders and the thinker on GPU 0, then adds a second pair. GPU 1 holds pair `r0`; GPU 2 holds pair `r1`. Each talker still has a 32-request cap.
+- Default speech keeps `image_encoder`, `audio_encoder`, thinker and code2wav on GPU 0. Its one talker uses GPU 1 and has a 32-request cap. Code2wav does not move to GPU 1 in this panel.
+- Replica2 keeps both encoders and the thinker on GPU 0, then runs a talker/code2wav pair on each of GPU 1 and GPU 2. GPU 1 holds pair `r0`; GPU 2 holds pair `r1`. Each talker still has a 32-request cap.
 - A replica means another talker/code2wav pair. The two pairs configure room for requests; they do not measure completed requests per second.
 
 ### The numbers on the stage
 
-| Deployment | Talker/code2wav pairs | Running cap per talker |
+| Deployment | Talker + code2wav processes | Running cap per talker |
 |---|---:|---:|
-| Default speech | 1 | 32 |
-| Replica2 | 2 | 32 |
+| Default speech | 1 + 1 | 32 |
+| Replica2 | 2 + 2 | 32 |
 
 ### Boundaries and sources
 
@@ -278,7 +278,7 @@ The next step uses these two talkers to derive each code2wav process's own codec
 
 - A codec-state slot holds decoder state for one stream. Step 7 supplied the 32-request cap per talker.
 - Default speech has one talker, so its code2wav process configures `32 × 1 = 32` slots in its own pool.
-- In Replica2, both talkers feed each code2wav process's capacity calculation. Process `r0` configures `32 × 2 = 64` slots in its own pool. Process `r1` does the same in a separate pool.
+- In Replica2, both talkers feed each code2wav process's capacity calculation. Process `r0` configures `32 × 2 = 64` slots in its own pool. Process `r1` does the same in a separate pool. This sizes capacity; default pairing still routes each stream to only one codec.
 - The two pools are not one deployment-wide pool of 128. They configure room, not twice the throughput.
 
 ### Formula

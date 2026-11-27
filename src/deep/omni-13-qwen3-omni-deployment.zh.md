@@ -250,16 +250,16 @@ BF16 是默认值。FP8 checkpoint 自带精度配置，`--dtype fp8` 不是选�
 ### 图上是什么
 
 - 运行上限是一个 stage 同时最多处理多少请求。它是 scheduler 限制，不是实测完成速度。
-- 默认语音把 `image_encoder`、`audio_encoder`、thinker 和 code2wav 留在 GPU 0。仅有的一对 talker 和 code2wav 使用 GPU 1，talker 上限为 32。
-- replica2 把两个 encoder 和 thinker 留在 GPU 0，再增加第二对副本。GPU 1 放 `r0`，GPU 2 放 `r1`，每个 talker 的上限仍是 32。
+- 默认语音把 `image_encoder`、`audio_encoder`、thinker 和 code2wav 留在 GPU 0。唯一的一个 talker 使用 GPU 1，上限为 32。这幅图里的 code2wav 没有移到 GPU 1。
+- replica2 把两个 encoder 和 thinker 留在 GPU 0，并在 GPU 1 和 GPU 2 各运行一对 talker 和 code2wav。GPU 1 放 `r0`，GPU 2 放 `r1`，每个 talker 的上限仍是 32。
 - 一个 replica 是另一对 talker 和 code2wav。两对副本配置的是请求容量，不是每秒完成多少请求。
 
 ### 代入图上的数
 
-| 部署 | talker/code2wav 副本对数 | 每个 talker 的运行上限 |
+| 部署 | talker + code2wav 进程数 | 每个 talker 的运行上限 |
 |---|---:|---:|
-| 默认语音 | 1 | 32 |
-| replica2 | 2 | 32 |
+| 默认语音 | 1 + 1 | 32 |
+| replica2 | 2 + 2 | 32 |
 
 ### 边界与出处
 
@@ -279,7 +279,7 @@ BF16 是默认值。FP8 checkpoint 自带精度配置，`--dtype fp8` 不是选�
 
 - 一个 codec 状态位保存一路声音的 decoder 状态。第 7 步已经给出每个 talker 的 32 请求上限。
 - 默认语音只有一个 talker，所以它的 code2wav 进程配置 `32 × 1 = 32` 个状态位，自己独占这个状态池。
-- replica2 里，每个 code2wav 进程都按两个 talker 计算容量。`r0` 进程配置 `32 × 2 = 64` 个状态位，`r1` 进程也在另一个状态池里配置 64 位。
+- replica2 里，每个 code2wav 进程都按两个 talker 计算容量。`r0` 进程配置 `32 × 2 = 64` 个状态位，`r1` 进程也在另一个状态池里配置 64 位。这里说的是容量计算；默认配对仍把每路流交给一个 codec。
 - 两个状态池不是全部署共享的 128 位大池。它们配置的是容量，不代表吞吐翻倍。
 
 ### 公式
