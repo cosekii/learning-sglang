@@ -78,6 +78,8 @@ async function capture(page, lang, phase) {
       finalPhase: Number(root.getAttribute('data-animation-final-phase')),
       counter: document.querySelector('.counter')?.textContent.trim().replace(/\\s+/g, ' '),
       texts: texts.map((el) => el.textContent.trim().replace(/\\s+/g, ' ')),
+      ringEdges: [...svg.querySelectorAll('line')].filter((el) => opacity(el) >= 0.90 && el.getAttribute('y1') === '138' && el.getAttribute('y2') === '155')
+        .map((el) => ({ stroke: el.getAttribute('stroke'), width: el.getAttribute('stroke-width') })),
       minFont: Math.round(Math.min(...sizes) * 1000) / 1000,
       overlaps: overlaps.length,
       overflow,
@@ -86,6 +88,11 @@ async function capture(page, lang, phase) {
   assert(state.phase === phase && state.finalPhase === 3 && state.counter === '07 / 07', `${lang} phase ${phase}: identity failed`);
   const expected = lang === 'en' ? 'before GPUs can serve together' : 'GPU 怎样启动 worker';
   assert(state.texts.some((text) => text.includes(expected)), `${lang} phase ${phase}: closing question missing`);
+  if (phase === 0) assert(state.ringEdges.length === 1 && state.ringEdges[0].stroke === 'var(--accent)', `${lang}: baseline Ring edge mismatch`);
+  if (phase > 0) assert(state.ringEdges.length === 2, `${lang} phase ${phase}: second Ring edge missing`);
+  if (phase === 1) assert(state.ringEdges.every((edge) => edge.stroke === 'var(--accent)'), `${lang}: edge changed before phase 2`);
+  if (phase >= 2) assert(state.ringEdges[0].stroke === 'var(--accent)' && state.ringEdges[1].stroke === 'var(--gen)' && state.ringEdges[1].width === '5',
+    `${lang} phase ${phase}: round-2 edge is not the only changed edge`);
   const png = await page.screenshot();
   const record = { lang, ...state, pngMd5: createHash('md5').update(png).digest('hex') };
   states.push(record);
@@ -98,10 +105,14 @@ try {
     browser = await launch({ width: 1440, height: 900 });
     const page = await browser.tab();
     await open(page, lang, 4, 7);
-    const first = await capture(page, lang, 0);
-    const last = await capture(page, lang, 3);
-    assert(JSON.stringify(first.texts) !== JSON.stringify(last.texts) && first.pngMd5 !== last.pngMd5,
-      `${lang}: mechanism states did not change`);
+    const phaseStates = [];
+    for (let phase = 0; phase <= 3; phase++) phaseStates.push(await capture(page, lang, phase));
+    const first = phaseStates[0], last = phaseStates[phaseStates.length - 1];
+    for (let i = 1; i < phaseStates.length; i++) {
+      const previous = phaseStates[i - 1], current = phaseStates[i];
+      assert((JSON.stringify(previous.texts) !== JSON.stringify(current.texts) || JSON.stringify(previous.ringEdges) !== JSON.stringify(current.ringEdges)) &&
+        previous.pngMd5 !== current.pngMd5, `${lang} phase ${i}: mechanism did not change`);
+    }
     await page.evaluate(`document.querySelector('button.deep').click()`);
     await sleep(450);
     const deep = await page.evaluate(`(() => {
@@ -142,6 +153,7 @@ try {
 
 const summary = {
   states: states.length,
+  changedTransitions: states.length - 2,
   mechanismSteps: 1,
   deepStates: deepStates.length,
   minFont: Math.min(...states.map((state) => state.minFont)),
@@ -151,5 +163,5 @@ const summary = {
 };
 writeFileSync(join(out, 'report.json'), JSON.stringify({ base, generatedAt: new Date().toISOString(), summary, states, deepStates, seams }, null, 2) + '\n');
 console.log(JSON.stringify({ summary, report: join(out, 'report.json') }, null, 2));
-assert(states.length === 4 && deepStates.length === 2 && seams.length === 2 && summary.minFont >= 10 && !summary.overlaps && !summary.overflow,
+assert(states.length === 8 && summary.changedTransitions === 6 && deepStates.length === 2 && seams.length === 2 && summary.minFont >= 10 && !summary.overlaps && !summary.overflow,
   `audit failed: ${JSON.stringify(summary)}`);

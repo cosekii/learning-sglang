@@ -1,11 +1,12 @@
 {
-  "base": "http://127.0.0.1:4494/learning-sglang",
-  "generatedAt": "2026-11-27T12:13:00.673Z",
+  "base": "http://127.0.0.1:4497/learning-sglang",
+  "generatedAt": "2026-11-27T12:39:18.782Z",
   "summary": {
-    "states": 4,
+    "states": 8,
+    "changedTransitions": 6,
     "mechanismSteps": 1,
     "deepStates": 2,
-    "minFont": 12.593,
+    "minFont": 10.025,
     "overlaps": 0,
     "overflow": 0,
     "seams": 2
@@ -20,6 +21,12 @@
         "loops",
         "A slower link delays later rounds",
         "topology = GPU link map · same Ring and S",
+        "BASELINE RING",
+        "0",
+        "1",
+        "2",
+        "3",
+        "0→1→2→3→0",
         "baseline · each dependent round takes t",
         "1 · t",
         "2 · t",
@@ -31,10 +38,115 @@
         "Next: before GPUs can serve together, how do their workers start?",
         "Simplified dependency model, not an NCCL timing forecast."
       ],
-      "minFont": 12.593,
+      "ringEdges": [
+        {
+          "stroke": "var(--accent)",
+          "width": "3"
+        }
+      ],
+      "minFont": 10.025,
       "overlaps": 0,
       "overflow": 0,
-      "pngMd5": "262c2595d06705ee79c56722f67baac4"
+      "pngMd5": "aaf201cfd5d1e6cdc8337b6c267e9372"
+    },
+    {
+      "lang": "en",
+      "phase": 1,
+      "finalPhase": 3,
+      "counter": "07 / 07",
+      "texts": [
+        "loops",
+        "A slower link delays later rounds",
+        "topology = GPU link map · same Ring and S",
+        "BASELINE RING",
+        "0",
+        "1",
+        "2",
+        "3",
+        "0→1→2→3→0",
+        "ROUND 2 · EDGE 1→2 +d",
+        "0",
+        "1",
+        "2",
+        "3",
+        "0→1→2→3→0",
+        "baseline · each dependent round takes t",
+        "1 · t",
+        "2 · t",
+        "3 · t",
+        "4 · t",
+        "5 · t",
+        "6 · t",
+        "dependent chain = 6t",
+        "change one link · round 2 takes t + d",
+        "1 · t",
+        "Next: before GPUs can serve together, how do their workers start?",
+        "Simplified dependency model, not an NCCL timing forecast."
+      ],
+      "ringEdges": [
+        {
+          "stroke": "var(--accent)",
+          "width": "3"
+        },
+        {
+          "stroke": "var(--accent)",
+          "width": "3"
+        }
+      ],
+      "minFont": 10.025,
+      "overlaps": 0,
+      "overflow": 0,
+      "pngMd5": "5efef9c218c0b166f45c76291d96a216"
+    },
+    {
+      "lang": "en",
+      "phase": 2,
+      "finalPhase": 3,
+      "counter": "07 / 07",
+      "texts": [
+        "loops",
+        "A slower link delays later rounds",
+        "topology = GPU link map · same Ring and S",
+        "BASELINE RING",
+        "0",
+        "1",
+        "2",
+        "3",
+        "0→1→2→3→0",
+        "ROUND 2 · EDGE 1→2 +d",
+        "0",
+        "1",
+        "2",
+        "3",
+        "0→1→2→3→0",
+        "baseline · each dependent round takes t",
+        "1 · t",
+        "2 · t",
+        "3 · t",
+        "4 · t",
+        "5 · t",
+        "6 · t",
+        "dependent chain = 6t",
+        "change one link · round 2 takes t + d",
+        "1 · t",
+        "2 · t+d",
+        "Next: before GPUs can serve together, how do their workers start?",
+        "Simplified dependency model, not an NCCL timing forecast."
+      ],
+      "ringEdges": [
+        {
+          "stroke": "var(--accent)",
+          "width": "3"
+        },
+        {
+          "stroke": "var(--gen)",
+          "width": "5"
+        }
+      ],
+      "minFont": 10.025,
+      "overlaps": 0,
+      "overflow": 0,
+      "pngMd5": "1c2bac5b52f4ab9db2149272bd3b9705"
     },
     {
       "lang": "en",
@@ -45,6 +157,18 @@
         "loops",
         "A slower link delays later rounds",
         "topology = GPU link map · same Ring and S",
+        "BASELINE RING",
+        "0",
+        "1",
+        "2",
+        "3",
+        "0→1→2→3→0",
+        "ROUND 2 · EDGE 1→2 +d",
+        "0",
+        "1",
+        "2",
+        "3",
+        "0→1→2→3→0",
         "baseline · each dependent round takes t",
         "1 · t",
         "2 · t",
@@ -65,10 +189,20 @@
         "Next: before GPUs can serve together, how do their workers start?",
         "Simplified dependency model, not an NCCL timing forecast."
       ],
-      "minFont": 12.593,
+      "ringEdges": [
+        {
+          "stroke": "var(--accent)",
+          "width": "3"
+        },
+        {
+          "stroke": "var(--gen)",
+          "width": "5"
+        }
+      ],
+      "minFont": 10.025,
       "overlaps": 0,
       "overflow": 0,
-      "pngMd5": "403f11bfa1deae91439dc0c7ba3355cc"
+      "pngMd5": "abc87e9b442088f8eb205ce9a077c813"
     },
     {
       "lang": "zh",
@@ -79,6 +213,12 @@
         "循环",
         "一条链路变慢，后面的轮次就要等",
         "拓扑 = GPU 链路图 · 两边的 Ring、S 和 6 轮相同",
+        "对照 Ring",
+        "0",
+        "1",
+        "2",
+        "3",
+        "0→1→2→3→0",
         "对照路径 · 每段相关轮次都花 t",
         "1 · t",
         "2 · t",
@@ -90,10 +230,115 @@
         "下一章：GPU 怎样启动 worker，组成一个服务？",
         "简化的相关链模型，不是 NCCL 耗时预测。"
       ],
-      "minFont": 14.115,
+      "ringEdges": [
+        {
+          "stroke": "var(--accent)",
+          "width": "3"
+        }
+      ],
+      "minFont": 11.237,
       "overlaps": 0,
       "overflow": 0,
-      "pngMd5": "471d8838249b013a0f9200f22c95c86d"
+      "pngMd5": "86147b308060dd0d41aeb3a18e703353"
+    },
+    {
+      "lang": "zh",
+      "phase": 1,
+      "finalPhase": 3,
+      "counter": "07 / 07",
+      "texts": [
+        "循环",
+        "一条链路变慢，后面的轮次就要等",
+        "拓扑 = GPU 链路图 · 两边的 Ring、S 和 6 轮相同",
+        "对照 Ring",
+        "0",
+        "1",
+        "2",
+        "3",
+        "0→1→2→3→0",
+        "第 2 轮 · 边 1→2 +d",
+        "0",
+        "1",
+        "2",
+        "3",
+        "0→1→2→3→0",
+        "对照路径 · 每段相关轮次都花 t",
+        "1 · t",
+        "2 · t",
+        "3 · t",
+        "4 · t",
+        "5 · t",
+        "6 · t",
+        "这条相关链 = 6t",
+        "只改变一条链路 · 第 2 轮花 t + d",
+        "1 · t",
+        "下一章：GPU 怎样启动 worker，组成一个服务？",
+        "简化的相关链模型，不是 NCCL 耗时预测。"
+      ],
+      "ringEdges": [
+        {
+          "stroke": "var(--accent)",
+          "width": "3"
+        },
+        {
+          "stroke": "var(--accent)",
+          "width": "3"
+        }
+      ],
+      "minFont": 11.237,
+      "overlaps": 0,
+      "overflow": 0,
+      "pngMd5": "4cb3ce3c9d9602afcae604ae099cb505"
+    },
+    {
+      "lang": "zh",
+      "phase": 2,
+      "finalPhase": 3,
+      "counter": "07 / 07",
+      "texts": [
+        "循环",
+        "一条链路变慢，后面的轮次就要等",
+        "拓扑 = GPU 链路图 · 两边的 Ring、S 和 6 轮相同",
+        "对照 Ring",
+        "0",
+        "1",
+        "2",
+        "3",
+        "0→1→2→3→0",
+        "第 2 轮 · 边 1→2 +d",
+        "0",
+        "1",
+        "2",
+        "3",
+        "0→1→2→3→0",
+        "对照路径 · 每段相关轮次都花 t",
+        "1 · t",
+        "2 · t",
+        "3 · t",
+        "4 · t",
+        "5 · t",
+        "6 · t",
+        "这条相关链 = 6t",
+        "只改变一条链路 · 第 2 轮花 t + d",
+        "1 · t",
+        "2 · t+d",
+        "下一章：GPU 怎样启动 worker，组成一个服务？",
+        "简化的相关链模型，不是 NCCL 耗时预测。"
+      ],
+      "ringEdges": [
+        {
+          "stroke": "var(--accent)",
+          "width": "3"
+        },
+        {
+          "stroke": "var(--gen)",
+          "width": "5"
+        }
+      ],
+      "minFont": 11.237,
+      "overlaps": 0,
+      "overflow": 0,
+      "pngMd5": "8f63ee0c98be26cab22354f1be4e5c95"
     },
     {
       "lang": "zh",
@@ -104,6 +349,18 @@
         "循环",
         "一条链路变慢，后面的轮次就要等",
         "拓扑 = GPU 链路图 · 两边的 Ring、S 和 6 轮相同",
+        "对照 Ring",
+        "0",
+        "1",
+        "2",
+        "3",
+        "0→1→2→3→0",
+        "第 2 轮 · 边 1→2 +d",
+        "0",
+        "1",
+        "2",
+        "3",
+        "0→1→2→3→0",
         "对照路径 · 每段相关轮次都花 t",
         "1 · t",
         "2 · t",
@@ -124,10 +381,20 @@
         "下一章：GPU 怎样启动 worker，组成一个服务？",
         "简化的相关链模型，不是 NCCL 耗时预测。"
       ],
-      "minFont": 14.115,
+      "ringEdges": [
+        {
+          "stroke": "var(--accent)",
+          "width": "3"
+        },
+        {
+          "stroke": "var(--gen)",
+          "width": "5"
+        }
+      ],
+      "minFont": 11.237,
       "overlaps": 0,
       "overflow": 0,
-      "pngMd5": "d412d686aa67e0f41113e1bc0561e64f"
+      "pngMd5": "7452b04c46d62d7607581c627b1aa2c5"
     }
   ],
   "deepStates": [
@@ -135,13 +402,13 @@
       "lang": "en",
       "expanded": "true",
       "overflow": 0,
-      "pngMd5": "900448dff135b8d60f45ab2a3fe364cf"
+      "pngMd5": "a74e9d1a87b8d33d2c9bc43461d8a5b5"
     },
     {
       "lang": "zh",
       "expanded": "true",
       "overflow": 0,
-      "pngMd5": "da60b915f9bf8b6ba7620c3ba1b91e8e"
+      "pngMd5": "c6956fba68bd558c112842a57a87280e"
     }
   ],
   "seams": [

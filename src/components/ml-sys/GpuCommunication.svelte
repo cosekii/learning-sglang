@@ -74,7 +74,7 @@
     return () => timers.forEach(clearTimeout);
   });
   const cur = $derived(steps[step]);
-  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 5 ? 560 : 510) : 410);
+  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 5 ? 560 : step === 6 ? 640 : 510) : (step === 6 ? 515 : 410));
   const barScale = 22;
 </script>
 
@@ -411,6 +411,26 @@
         <text x={phone ? 18 : 36} y="30" class="title">{t('A slower link delays later rounds', '一条链路变慢，后面的轮次就要等')}</text>
         <text x={phone ? 18 : 36} y="55" class="label">{t('topology = GPU link map · same Ring and S', '拓扑 = GPU 链路图 · 两边的 Ring、S 和 6 轮相同')}</text>
         {#if !phone}
+          {#each [35, 375] as x, i}
+            <g opacity={i === 0 ? 1 : phase >= 1 ? 1 : 0}>
+              <rect x={x} y="78" width="310" height="112" rx="12" fill="var(--bg)" stroke="var(--line)" />
+              <text x={x + 18} y="99" class="small strong">{i === 0 ? t('BASELINE RING', '对照 Ring') : t('ROUND 2 · EDGE 1→2 +d', '第 2 轮 · 边 1→2 +d')}</text>
+              <line x1={x + 79} y1="124" x2={x + 145} y2="124" stroke="var(--accent)" stroke-width="3" />
+              <line x1={x + 167} y1="138" x2={x + 167} y2="155" stroke={i === 1 && phase >= 2 ? 'var(--gen)' : 'var(--accent)'} stroke-width={i === 1 && phase >= 2 ? 5 : 3} />
+              <line x1={x + 145} y1="169" x2={x + 79} y2="169" stroke="var(--accent)" stroke-width="3" />
+              <line x1={x + 35} y1="155" x2={x + 35} y2="138" stroke="var(--accent)" stroke-width="3" />
+              <rect x={x + 35} y="110" width="44" height="28" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
+              <rect x={x + 145} y="110" width="44" height="28" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
+              <rect x={x + 145} y="155" width="44" height="28" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
+              <rect x={x + 35} y="155" width="44" height="28" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
+              <text x={x + 57} y="129" text-anchor="middle" class="small">0</text>
+              <text x={x + 167} y="129" text-anchor="middle" class="small">1</text>
+              <text x={x + 167} y="174" text-anchor="middle" class="small">2</text>
+              <text x={x + 57} y="174" text-anchor="middle" class="small">3</text>
+              <text x={x + 240} y="187" text-anchor="middle" class="small">0→1→2→3→0</text>
+            </g>
+          {/each}
+          <g transform="translate(0,130)">
           <rect x="35" y="82" width="650" height="120" rx="13" fill="var(--bg)" stroke="var(--line)" />
           <text x="55" y="108" class="small strong">{t('baseline · each dependent round takes t', '对照路径 · 每段相关轮次都花 t')}</text>
           {#each [55, 145, 235, 325, 415, 505] as x, i}
@@ -430,10 +450,31 @@
             </g>
           {/each}
           <g opacity={phase >= 3 ? 1 : 0}>
-            <text x="360" y="323" text-anchor="middle" class="result">5t + (t+d) = 6t+d · {t('extra wait', '多等')} = d</text>
-            <text x="360" y="364" text-anchor="middle" class="small"><tspan fill="var(--accent)">■</tspan> {t('unchanged rounds', '未改变的轮次')}   <tspan fill="var(--gen)">■</tspan> {t('slower transfer; later rounds shift right', '变慢的传送；后续轮次向右推迟')}</text>
+            <text x="360" y="310" text-anchor="middle" class="result">5t + (t+d) = 6t+d · {t('extra wait', '多等')} = d</text>
+            <text x="360" y="340" text-anchor="middle" class="small"><tspan fill="var(--accent)">■</tspan> {t('unchanged rounds', '未改变的轮次')}   <tspan fill="var(--gen)">■</tspan> {t('slower transfer; later rounds shift right', '变慢的传送；后续轮次向右推迟')}</text>
+          </g>
           </g>
         {:else}
+          {#each [15, 155] as x, i}
+            <g opacity={i === 0 ? 1 : phase >= 1 ? 1 : 0}>
+              <rect x={x} y="78" width="130" height="112" rx="11" fill="var(--bg)" stroke="var(--line)" />
+              <text x={x + 10} y="96" class="small strong">{i === 0 ? t('SAME RING', '相同 Ring') : t('edge 1→2 +d', '边 1→2 +d')}</text>
+              <line x1={x + 44} y1="121" x2={x + 75} y2="121" stroke="var(--accent)" stroke-width="2" />
+              <line x1={x + 99} y1="132" x2={x + 99} y2="150" stroke={i === 1 && phase >= 2 ? 'var(--gen)' : 'var(--accent)'} stroke-width={i === 1 && phase >= 2 ? 4 : 2} />
+              <line x1={x + 75} y1="172" x2={x + 44} y2="172" stroke="var(--accent)" stroke-width="2" />
+              <line x1={x + 20} y1="150" x2={x + 20} y2="132" stroke="var(--accent)" stroke-width="2" />
+              <rect x={x + 20} y="110" width="24" height="22" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+              <rect x={x + 75} y="110" width="24" height="22" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+              <rect x={x + 75} y="150" width="24" height="22" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+              <rect x={x + 20} y="150" width="24" height="22" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+              <text x={x + 32} y="125" text-anchor="middle" class="small">0</text>
+              <text x={x + 87} y="125" text-anchor="middle" class="small">1</text>
+              <text x={x + 87} y="165" text-anchor="middle" class="small">2</text>
+              <text x={x + 32} y="165" text-anchor="middle" class="small">3</text>
+              <text x={x + 65} y="187" text-anchor="middle" class="small">0→1→2→3→0</text>
+            </g>
+          {/each}
+          <g transform="translate(0,130)">
           <rect x="18" y="78" width="264" height="137" rx="12" fill="var(--bg)" stroke="var(--line)" />
           <text x="150" y="102" text-anchor="middle" class="small strong">{t('baseline · every round t', '对照路径 · 每轮都花 t')}</text>
           {#each [29, 70, 111, 152, 193, 234] as x, i}
@@ -459,6 +500,7 @@
             <text x="150" y="379" text-anchor="middle" class="small">{t('extra wait = d', '多等的时间 = d')}</text>
             <text x="150" y="420" text-anchor="middle" class="small">{t('same 6 rounds and tensor S', '两边都是同样的 6 轮和张量 S')}</text>
             <text x="150" y="448" text-anchor="middle" class="small">{t('only the transfer path changes', '只改变传输路径')}</text>
+          </g>
           </g>
         {/if}
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t(phone ? 'Next: how do service workers start?' : 'Next: before GPUs can serve together, how do their workers start?', phone ? '下一章：服务 worker 怎样启动？' : '下一章：GPU 怎样启动 worker，组成一个服务？')}</text>

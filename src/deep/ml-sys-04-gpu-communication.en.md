@@ -212,9 +212,9 @@ Sources: `Awesome-ML-SYS-Tutorial/torch/nccl/readme.md:55-64`; `Awesome-ML-SYS-T
 
 ### On the stage
 
-- Topology is the map of links between GPUs. Both rows keep Step 6's Ring, tensor $S$ and six rounds unchanged.
-- Each block is one dependent transfer; the next block waits for the previous arrival. The baseline takes $t$ per block and $6t$ for the chain.
-- Below, only one link changes. Round 2 grows from $t$ to $t+d$. Orange shows the added $d$, and rounds 3–6 shift right.
+- Topology is the map of links between GPUs. Both Ring cards keep the same four GPUs and the same layout. Only edge 1→2 turns orange in the second card.
+- That edge is the round-2 transfer in the six-round teaching Ring. The baseline takes $t$ per dependent transfer and $6t$ for the chain; no other edge changes.
+- Round 2 grows from $t$ to $t+d$ in the lower timeline. Orange shows the added $d$, and rounds 3–6 shift right.
 - This is a simplified dependent chain. It does not serialize every parallel NCCL transfer or claim a fixed slowdown for either topology label.
 
 ### Formula and symbols
