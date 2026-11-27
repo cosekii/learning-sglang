@@ -15,7 +15,7 @@ export const deep = await deepFor('ml-sys-02-inference-memory-budget');
 
 Step 1 reproduces the rounded worked example in `Awesome-ML-SYS-Tutorial/sglang/kvcache-code-walk-through/mem-fraction-static.md:73-85`: available memory is about 78 GB before model loading and 18 GB afterward. At `mem_fraction_static = 0.70`, KV room is −5.4 GB; at 0.85, it is 6.3 GB. These are the article's teaching values, not measurements from this computer. The formula and startup behavior were checked against SGLang source at `4fa3482`; exact files and lines are in the deep dive. Dynamic headroom is an allowance, not memory already fully occupied.
 
-Step 2 uses the same rounded budget to distinguish CUDA Graph buffers from activations. Their shares are schematic, not measured or separately enforced quotas. SGLang `4fa3482` supplies the initialization order and memory categories cited in the deep dive.
+This chapter covers startup sizing and the lifetimes of graph buffers and runtime activations. It does not derive KV bytes, paging, multimodal reserves, or every allocator allocation; those need separate sources and examples.
 
 </details>
 
@@ -24,6 +24,6 @@ Step 2 uses the same rounded budget to distinguish CUDA Graph buffers from activ
 
 第 1 步沿用 `Awesome-ML-SYS-Tutorial/sglang/kvcache-code-walk-through/mem-fraction-static.md:73-85` 的约数例子：装入模型前可用显存约 78 GB，装入后约 18 GB。`mem_fraction_static = 0.70` 时 KV 空间为 −5.4 GB，调到 0.85 后为 6.3 GB。这些是原文的教学值，不是本机实测。公式和启动行为已对照 SGLang `4fa3482` 源码，具体文件和行号见深入讲解。动态余量是预留，不是已经全部占用。
 
-第 2 步沿用同一份约数预算，区分 CUDA Graph 缓冲和激活。两项份额是示意，不是实测，也不是分别强制执行的配额。初始化顺序和显存分类来自深入讲解列出的 SGLang `4fa3482` 源码。
+本章只讲启动尺寸、graph 缓冲和运行时激活的生命周期。KV 字节推导、paging、多模态预留和 allocator 的每笔分配不在本章展开，因为它们需要另外的源码与例子。
 
 </details>

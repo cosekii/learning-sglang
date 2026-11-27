@@ -19,7 +19,7 @@
 | 章 | part | slug | 标题 | 一句 hook | 回答的问题 | 前置 | 事实来源 | 章末引出 |
 |---|---|---|---|---|---|---|---|---|
 | 01 | `inference` | `measure-inference` | 测量一次推理 | 把同一批请求画成首 token 等待、后续 token 间隔、延迟百分位和吞吐量。 | 怎样比较两次推理实验，而不让一个平均数遮住慢请求？ | 第 1 本 Ch. 4 Steps 1–4、Ch. 9 Steps 2–4 | `Awesome/sglang/sglang-omni/batch.md`；`Awesome/sglang/sglang-omni/cpu-first-class-citizen-zh.md`；`IE §1.4, §4.5` | 延迟可以测量了，请求还没开始时，显存先被谁占走？ |
-| 02 | `inference` | `inference-memory-budget` | 一张卡的完整显存账 | 把权重、KV pool、激活、CUDA Graph 和临时分配逐项放进同一张卡。 | `mem-fraction-static` 改变哪几格，为什么剩下的显存仍可能不够？ | 第 1 章；第 1 本 Ch. 7 Step 1、Ch. 11 Steps 2–4 | `Awesome/sglang/kvcache-code-walk-through/mem-fraction-static.md` | KV 可以按 token 取页，hybrid 模型的 state 也能从任意位置恢复吗？ |
+| 02 | `inference` | `inference-memory-budget` | 启动与运行时显存账 | 跟着模型装入、KV 尺寸、graph 缓冲和激活走完一张卡的预算。 | `mem-fraction-static` 改变哪几格，为什么剩下的显存仍可能不够？ | 第 1 章；第 1 本 Ch. 7 Step 1、Ch. 11 Steps 2–4 | `Awesome/sglang/kvcache-code-walk-through/mem-fraction-static.md` | 共同前缀相同，hybrid 模型能从共同前缀的末尾继续算吗？ |
 | 03 | `inference` | `hybrid-state-cache` | Hybrid 模型的前缀状态 | 对照全注意力的逐 token KV 与 recurrent state 的快照、重放。 | 为什么共同前缀相同，不等于能从共同前缀的末尾继续算？ | 第 2 章；第 1 本 Ch. 3 Steps 1–3、Ch. 8 Steps 1–5 | `Awesome/engineer/hybrid-prefix-cache/readme.md`；文内链接的固定版本源码 | 状态分到多张卡以后，卡与卡怎样交换张量？ |
 | 04 | `inference` | `gpu-communication` | GPU 之间的张量路 | 沿着一份张量看进程、通信库、链路和 all-reduce。 | 多张 GPU 怎样集齐同一份结果，拓扑为什么会改变等待？ | 第 1 章 | `Awesome/torch/nccl/readme.md`；`Awesome/torch/torch-distributed/readme.md`；`IE §3.3, §5.4` | 能交换张量以后，服务怎样把请求分给不同 worker？ |
 | 05 | `inference` | `distributed-serving` | 多节点推理服务实验 | 按公开配置启动 worker，跟着一个请求走过提交、计算和返回路径。 | 多节点服务怎样启动、接收请求并核对各段等待？ | 第 1、4 章；第 1 本 Ch. 4 Steps 1–4 | `Awesome/sglang/nvidia-dynamo/dynamo.md`；`IE §4.4, §5.5, §7.2, §7.5` | 推理服务旁边再加训练进程，权重怎样形成一轮循环？ |
