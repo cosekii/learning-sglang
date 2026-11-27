@@ -10,6 +10,48 @@
 
 ---
 
+# lane k2 本轮报告 · ML Systems 07 的 ML-16／23／35
+
+日期：2026-11-27。类型：修旧（一个章节的三个开放 finding）。范围只有 ML Systems 第 7 章的组件、双语 deep、MDX、生成 transcript 和本报告；未改其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。ML 10 继续冻结，ML 12 继续延期，第 14 章未开启。
+
+## 提交与修复
+
+- 本轮开始 HEAD 为 `4be48ad`。按 direction 先处理 review.md 中本书的开放项，不重做 ML 03–09 的既有机制。三个教程提交为 `c5448d8`（ML-35）、`3086bd0`（ML-23）、`f526da2`（ML-16）。两次推送被拒后均执行 `git pull --rebase origin tutorials` 再推，未 force-push。
+- **ML-35 作者修复完成，待协调核销。** Step 1 的桌面和手机标题收窄为一个 `q_proj` 张量的模型代码与整个调用；右卡和移动公式同步点名 `q_proj`。双语 deep 与 MDX 说明它是这个调试示例的张量名。7.047 秒、0.001 秒、0.033 秒、33 倍和全部相位不变。
+- **ML-23 作者修复完成，待协调核销。** 移动渲染新增可选 `mobileArrows: false`，只用于 Step 2 的三条备选路线和 Step 8 的一组训练保存表。真实顺序流程仍保留箭头，桌面不变。
+- **ML-16 作者修复完成，待协调核销。** Step 2 直接标为 `1 of 3`，仍是八步，不重排 URL 或 Ch. 7 引用。六相依次形成保存 v1 checkpoint、读取 checkpoint、装入本地分片、distributed 地图、tensor 地图和总结。`local shard` 在图上解释为每个推理 worker 自己那片。双语 deep 补同一顺序、公式和符号表；MDX 保留固定源码与「没有磁盘计时」边界。
+
+## 作者冷读与评分边界
+
+主线程按当前 transcript、组件和双语 deep 冷读。下表只重评改动的 Step 1／2／8；其余五步不改既有基线。原十个非视觉项不含需要实图的 #4／#5。
+
+| 步 | R1–R5 | 机制 R6 | 原十个非视觉项 | R1 小学生复述 | 新内容洞 |
+|---|---:|---:|---:|---|---:|
+| 1 | 10/10 | 2/2 | 20/20 | 一个 `q_proj` 张量的整个调用约是模型代码本身的 33 倍；完整 1B 更新的 7.047 秒是另一组测量。 | 0 |
+| 2 | 10/10 | 2/2 | 20/20 | 新权重有三条路；磁盘路线先保存再读文件，每个推理 worker 最后装入自己那片。 | 0 |
+| 8 | 10/10 | 2/2 | 20/20 | 训练还保存梯度和优化器状态；装不下时，下一章把这些表分给多张 GPU。 | 0 |
+
+三步作者参考值合计为 R1–R5 **30/30**、机制 R6 **6/6**、原十个非视觉项 **60/60**。`rank` 和 `worker` 已在第 4／5 章解释，`local shard` 在本步就地解释，未发现新增冷读洞。当前模型不能读取图片，因此原 #4／#5、原十二项总分和整章协调 verdict 不自行给分；既有协调分数不因本报告改变。
+
+## 硬门与机制证据
+
+- 最终 rebase 后教程 HEAD 为 `f526da2`。`npm run build`：**60 页**通过；八步 `readability`：**0 机械问题**；`BOOK=ml-sys node scripts/deep-check.mjs 07`：八步接线正确；`zh-check`：**all clear**；`git diff --check` 通过。
+- `BOOK=ml-sys ONLY=7 JOBS=1 node scripts/transcript.mjs http://127.0.0.1:4493/learning-sglang` 连续采集稳定：**1,990 词**，SHA-256 `cdabb856e8dead78eef4934f0ae342c9e6a1c602278dc1f76bd42c72d484f5a0`。
+- 英中全章 `mobile` 均在 360／390／430 px 报 **no layout breaks**；中文 Steps 1／2／8 的逐步字号门也通过。所有浏览器检查都显式连接本 clone 的 4493 服务。
+- Step 2 桌面逐相断言先核对 `data-animation-step=1` 和 `data-animation-final-phase=5`，再核对六相各自的对象与文字。保存→读取→本地装入按相出现，distributed／tensor 不会提前出现；文字重叠与 SVG 横向出界均为 **0**，最低可见字号 **11.746 CSS px**。英文和中文 390 px 手机各有 **6 个不同机制相位**，箭头均为 **0**。
+- 逐页末相复核确认英中 Step 1／2／8 的 phase 分别为 3／5／4，移动箭头分别为 2／0／0；Step 3 的顺序箭头仍为 2。一次并发多标签采集出现未决相位，未计为证据；上述有效结果来自逐页采集。
+- 英中 Step 2 deep 均为 `aria-expanded=true`，本地分片符号与说明存在，KaTeX 错误、残留 `$$`、页面或抽屉横向溢出均为 **0**。
+- PNG 采集位于 `.bot/out/ml07-before/`、`.bot/out/ml07-ml35/`、`.bot/out/ml07-ml23-phone/`、`.bot/out/ml07-disk-phases/`（六相）、`.bot/out/ml07-disk-phone/` 和 `.bot/out/ml07-deep/`。代表文件：`.bot/out/ml07-disk-phases/p5.png`。当前模型不能读取这些 PNG；上述结论来自构建、transcript、DOM 和几何检查，**未声称看过图片或视觉通过**。
+
+## 剩余与清理
+
+- 剩余事项是 ML-16／23／35 的协调固定复审、原 #4／#5 与整章评分，以及主人最终视觉验收。其他开放 finding 未改，ML 09 的 ML-25 也继续等协调核销。
+- 未跑全站回归、真实权重更新、SGLang／CUDA、GPU benchmark 或 reduced-motion 动态切换。最新回归只有未列出布局步骤的错误，不据此返工。
+- 本 clone 的 `node_modules` 原指向协调人 checkout；已只删除本目录内符号链接并在本目录安装依赖，package 文件无 diff，未写协调人的 checkout。
+- 本地查看前运行 `npx astro dev --background --host 127.0.0.1 --port 4493`。地址：`http://localhost:4493/learning-sglang/ml-sys/ch/07-weight-updates/?step=2`。本轮 4493 dev server 已关闭，检查脚本启动的浏览器均已关闭，无 PPID 1 的 headless Chrome 残留。
+
+---
+
 # lane k1 本轮报告 · Omni 11／14 继续冻结等待复审
 
 日期：2026-11-27。类型：等待固定复审。范围只有本报告；未改教程、transcript、评分卡、`.bot/memory/`、其他书、其他 lane 或第 1 本受保护英文原文。
