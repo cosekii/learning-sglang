@@ -1,3 +1,35 @@
+# lane k1 本轮报告 · Omni 11 Step 1 的 Omni-46
+
+日期：2026-11-27。类型：修旧（direction 04:56 指定的单个 P0）。本轮开始 HEAD 与 `origin/tutorials` 均为 `209c3fa`，工作树干净。范围只有 Omni 11 Step 1 的组件、caption、双语 deep、必要的 DAC 出处回指、MDX 出处、生成 transcript、定向审计和本报告；未改其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。Step 7／8 的舞台和 Ch.12 交接没有源码 diff。
+
+## 修复与评分边界
+
+- 教程提交 `4820eb3` 已推到 `origin/tutorials`，首次推送成功，未 force-push。**Omni-46 作者修复完成，待协调固定复审，不自行销项。** 固定 `f68e067` 的协调 **79/80、15/16、192/192 NO-GO** 仍是既有基线，本报告不改写它。
+- Step 1 改为四个可辨认相位：十个条目都等待 → Slow AR 只选出 `c0` → 工作交给 Fast AR，`c0` 仍单独存在 → Fast AR 补齐 `c1–c9`，最后得到 `1 + 9 = 10`。caption、舞台、双语 deep 和 MDX 使用同一顺序。
+- 首步删除 40 帧开窗、400 codes、1.858 秒和 final flush 的同入内容。40 帧开窗仍由 Step 7 讲解。Step 2 的 DAC 符号来源改为本步配置，Step 7 的 DAC 几何回指改为 Step 2；两处只改来源回指，没有改机制或数字。
+- 小学生复述：「Slow AR 先选第一个 code，Fast AR 再在同一帧补另外九个。」独立 `explore` 冷读先指出蓝色同时表示当前 loop 和 codes；随后把 loop 卡改为中性色并删除蓝色交接箭头，复审确认该洞关闭，未留下源码、transcript 或双语 deep 冷读洞。
+- 独立冷读最终给出 Step 1 R1–R5 **10/10**、机制 R6 **2/2（源码与 DOM）**、原十个非视觉项 **20/20**、原 #5 **2/2**。原 #4 因无图像输入未评分，因此不声称原十二项满分或视觉 GO。
+
+## 目标硬门与证据
+
+- 最终 `npm run build`：**60 页**通过；八步 `readability`：**0 机械问题**；`BOOK=omni node scripts/deep-check.mjs 11`、`zh-check` 和 `git diff --check` 均通过。
+- transcript 连续两次逐字一致：**2,147 词**，SHA-256 `3596af63a07cfacf15a614592df9407d54a79d257d64cdd3ec701abe285e6a6a`；无 caption、文字出界、重叠或文本规则报告。
+- 英中全章 360／390／430 px `mobile` 均报 **no layout breaks**，中文 Step 1 字号门通过。首轮英文手机图例出界 **18／20／22 px**，缩短手机图例后重跑通过；这不是遗留问题。
+- `.bot/out/omni46-full-en/report.json` 与 `omni46-full-zh/report.json`：每种语言 **8 步、38 相位、30/30 机制转变**，最低可见字号分别 **10.506／11.253 CSS px**，文字重叠、SVG 出界和灰尾溢出均为 **0**。Step 1 英中各四相 PNG 与报告已随教程提交；全章其他 PNG 保留在本 lane 的对应目录，可用已提交脚本重采。
+- 英文全章首轮采集在 180 秒超时，停在 Step 8 phase 2；随后用 300 秒时限完整重跑并通过，未把超时轮计为证据。中文全章和 Step 1 英中复采均完整通过。
+- `.bot/out/omni46-final-deep/report.json`：Omni 11 Steps 1／2／7／8 与 Ch.12 Step 1 的英中 deep 共 **10 个打开抽屉视图**，counter 和 `aria-expanded=true` 正确，`missing=[]`，页面／抽屉横溢、KaTeX error、raw math 均为 **0**。Step 1 双语 deep PNG 已提交。
+- 主线程和独立冷读者都不能读取 PNG，工具明确返回“不支持图像输入”。以上结论来自构建、transcript、源码、DOM 和几何检查，**未声称看过图片或视觉通过**。逐相 PNG 已生成并保存，仍需具备图像能力的复审和主人最终视觉验收。
+
+## 剩余与清理
+
+- 剩余事项是 Omni-46 的协调固定复审、原 #4 的图像评审和主人最终验收。其他开放 finding 未改；Omni 14、Voxt、ML Systems 的队列不因本报告改变。
+- 未跑全站回归、真实 Fish／SGLang-Omni、模型、GPU、音频质量、故障注入或 reduced-motion 动态切换。最新回归只有未列出布局步骤的 `(exit 13)`，不据此返工。
+- 本 clone 的 `node_modules` 原指向协调人 checkout；首次 build 因该链接报 EPERM 后，只删除本目录内符号链接并在本目录安装依赖。package 文件无 diff，未写协调人的 checkout。
+- 代表截图：`.bot/out/omni46-after-en/s1-p1.png`（只有 `c0`）和 `.bot/out/omni46-after-en/s1-p3.png`（Fast 补齐）。本地查看前运行 `npx astro dev --background --host 127.0.0.1 --port 4496`，地址：`http://localhost:4496/learning-sglang/omni/ch/11-fish-s2-pro/?step=1`。
+- 本轮 4496 dev server 已停止，端口无监听，检查脚本均退出。最终 `pgrep` 只列 `cdp-bbyuf6`／`cdp-xOLgfX` 两个 Chrome；`ps` 被系统拒绝，无法核其 PPID 或归属，故未动它们。
+
+---
+
 # lane k2 本轮报告 · ML Systems 06 Step 3 的 ML-37
 
 日期：2026-11-27。类型：修旧（direction 指定的单个开放 finding）。本轮开始 HEAD 与 `origin/tutorials` 均为 `862d505`，工作树干净。范围只有 ML 06 Step 3 的组件、双语 deep、出处说明、生成 transcript、本章评分卡与进度记录、定向审计和本报告；其余七步、其他章、其他书、`.bot/memory/` 和第 1 本受保护英文原文均未改。ML 10 继续冻结，ML 12 未重开，第 14 章未开启。
