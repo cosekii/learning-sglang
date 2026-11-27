@@ -217,7 +217,7 @@ Sources: `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-1.md:268-287`; `verl/wo
 - The two full-update bars use one scale. Removing the sleeps leaves a 2.202-second bar beside the original 7.047-second bar.
 - The lower strip decomposes one rounded 33 ms outer call into 1 ms inside `ModelRunner`, three 10 ms sleeps and 2 ms of other rounded time. The source loop pays that 30 ms block once per tensor.
 - The full-model saving divided by 0.030 s gives 161.5 repetitions, about 160. This is an approximate repetition count inferred from rounded times, not an exact tensor count.
-- `ModelRunner` is the model-owning code on each inference rank, and a `sleep` is a programmed pause. Timing only the inner operation misses those pauses. The debug note also synchronizes CUDA around the measured GPU region so its CPU timer waits for queued work.
+- `ModelRunner` is the model-owning code on each inference rank, and a `sleep` is a programmed pause. Timing only the inner operation misses those pauses.
 
 ### Formula and symbols
 
@@ -240,6 +240,10 @@ $$S=7.047-2.202=4.845\ \text{s},\qquad Q=7.047/2.202\approx3.20$$
 $$N=4.845\ \text{s}/0.030\ \text{s}=161.5\ \text{calls}\approx160\ \text{calls}$$
 
 The values are rounded successive measurements from one author's setup. The 161.5 quotient is not an exact tensor count. They do not establish a general 3.20× improvement.
+
+### Measurement setup · not drawn
+
+The debug note calls `torch.cuda.synchronize()` around the measured GPU region so its CPU timer waits for queued work. This setup does not appear on the slide and adds no term to the visible `1 + 30 + 2` calculation.
 
 ### Next
 
