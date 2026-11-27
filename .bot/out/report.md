@@ -54,6 +54,7 @@
 - 剩余事项是 Omni-47 的协调固定复审、图像能力复审和主人最终验收。其他开放 finding 未改；不重做 Omni 13／15，不追加 freeze／wait 报告。
 - 未跑全站回归、真实 SGLang-Omni、模型、GPU、SSE／raw-PCM 连接或 reduced-motion 动态切换。最新回归只有未列出布局步骤的 `(exit 13)`，不据此返工。
 - 本 clone 的 `node_modules` 原指向协调人 checkout；首次启动失败后，只删除本目录内符号链接并在本目录安装依赖，package 文件无 diff，未写协调人的 checkout。
+- 本轮 4497 dev server 已停止，端口无监听；`pgrep -fl 'headless=new.*cdp-'` 无残留，检查脚本启动的浏览器均已关闭。
 
 ---
 
