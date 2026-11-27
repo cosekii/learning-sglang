@@ -25,7 +25,7 @@ These counts come from `sglang_omni/models/qwen3_omni/config.py:136-147,257-318,
 
 ### Next
 
-The next step follows requests through these two server modes and shows when the speech stages actually run.
+The next step opens with a five-axis map: route, placement, precision, capacity and evidence. It then follows requests through these two server modes and shows when the speech stages actually run.
 
 ## Step 2 · The requested output picks the route
 
@@ -33,6 +33,7 @@ The next step follows requests through these two server modes and shows when the
 
 ### On the stage
 
+- The opening map puts this step at `1 of 5 · route`. The later axes are placement in Steps 3–4, precision in Step 5, capacity in Step 6, and evidence in Steps 7–8.
 - `modalities` lists the output kinds the client wants. Its public default is `["text"]`.
 - A text-only server joins preprocessing and active encoders at `mm_aggregate`, then runs thinker and decode.
 - A speech server running a text-output request lets its thinker join those inputs, then runs decode. Talker and code2wav stay unused.

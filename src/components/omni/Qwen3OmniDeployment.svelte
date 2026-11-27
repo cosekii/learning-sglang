@@ -192,10 +192,24 @@
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{phone ? t('speech: 7 boxes/processes · text: 6 boxes, 1 process', '语音：七框七进程 · 文字：六框一进程') : t('Each speech box is one process. Text-only keeps all six stages in one process.', '语音部署每个 stage 框是一个进程；纯文字部署的六个 stage 同住一个进程。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Stage processes only; no HTTP server or coordinator.', '只数 stage 进程，不数 HTTP server 和 coordinator。') : t('Stage processes only; the HTTP server and coordinator are not counted.', '只数 stage 进程，不数 HTTP server 和 coordinator。')}</text>
       {:else if step === 1}
-        <text x={phone ? 15 : 20} y="24" class="rowlabel">{t('THE REQUEST CHOOSES ITS OUTPUT ROUTE', '请求选择自己的输出路线')}</text>
+        <text x={phone ? 15 : 20} y="24" class="rowlabel">{t(phase < 2 ? '1 of 5 · MAP THE FIVE DEPLOYMENT CHOICES' : '1 of 5 · ROUTE · THE REQUEST CHOOSES ITS OUTPUT ROUTE', phase < 2 ? '1/5 · 五个部署选择' : '1/5 · 输出路线 · 请求选择自己的输出路线')}</text>
         <text x={phone ? 15 : 20} y="49" class="tag">modalities = {t('the output kinds you ask for', '你要求的输出种类')}</text>
         <text x={phone ? 15 : 20} y="72" class="tag">{phone ? t('blue = route · grey = not loaded or skipped', '蓝 = 路线 · 灰字 = 未加载或跳过') : t('blue = active route · grey text = speech stages not loaded or skipped', '蓝 = 实际路线 · 灰字 = 未加载或跳过的语音 stage')}</text>
-        <text x={phone ? 15 : 20} y="95" class="tag">{phone ? t('text-only: mm_aggregate joins · speech: thinker joins', '纯文字由 mm_aggregate 汇合 · 语音由 thinker 汇合') : t('text-only: mm_aggregate joins inputs · speech: the thinker joins them', '纯文字由 mm_aggregate 汇合输入 · 语音由 thinker 汇合输入')}</text>
+        {#if phase < 2}
+          <text x={phone ? 15 : 20} y="95" class="tag strong">{t('The map names five choices; the next steps take them in order.', '先看五个选择的地图，后面按顺序逐项选择。')}</text>
+          {#each axes as axis, i}
+            {@const x = phone ? 15 : 20}
+            {@const y = (phone ? 120 : 120) + i * (phone ? 105 : 75)}
+            {@const w = phone ? 270 : 680}
+            <rect {x} {y} width={w} height={phone ? 90 : 62} rx="9" fill={i === 0 && phase >= 1 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={i === 0 && phase >= 1 ? 'var(--accent)' : 'var(--line)'} opacity={phase === 0 || i === 0 ? 1 : 0.25} style="transition: opacity 350ms, fill 350ms" />
+            <text x={x + 14} y={y + 26} class="tag strong" opacity={phase === 0 || i === 0 ? 1 : 0.25}>{t(axis.label, axis.labelZh)}</text>
+            <text x={x + w - 14} y={y + 26} text-anchor="end" class="tag" opacity={phase === 0 || i === 0 ? 1 : 0.25}>{t(axis.steps, axis.stepsZh)}</text>
+            <text x={x + 14} y={y + (phone ? 61 : 49)} class="tag" opacity={phase === 0 || i === 0 ? 1 : 0.25}>{t(axis.detail, axis.detailZh)}</text>
+          {/each}
+        {:else}
+          <text x={phone ? 15 : 20} y="95" class="tag">{phone ? t('text-only: mm_aggregate joins · speech: thinker joins', '纯文字由 mm_aggregate 汇合 · 语音由 thinker 汇合') : t('text-only: mm_aggregate joins inputs · speech: the thinker joins them', '纯文字由 mm_aggregate 汇合输入 · 语音由 thinker 汇合输入')}</text>
+        {/if}
+        {#if phase >= 2}
         {#each phone ? [
           { y: 120, h: 190, title: 'TEXT-ONLY SERVER · ["text"]', titleZh: '纯文字服务器 · ["text"]', lines: ['preprocessing + active encoders', '→ mm_aggregate → thinker → decode → text', 'talker_ar and code2wav are not loaded'], linesZh: ['preprocessing + 实际用到的 encoders', '→ mm_aggregate → thinker → decode → 文字', '不加载 talker_ar 和 code2wav'], speech: false },
           { y: 325, h: 190, title: 'SPEECH SERVER · ["text"]', titleZh: '语音服务器 · ["text"]', lines: ['preprocessing + active encoders', '→ thinker → decode → text', 'SKIP talker_ar and code2wav'], linesZh: ['preprocessing + 实际用到的 encoders', '→ thinker → decode → 文字', '跳过 talker_ar 和 code2wav'], speech: false },
@@ -204,13 +218,16 @@
           { y: 122, h: 125, title: 'TEXT-ONLY SERVER · modalities=["text"]', titleZh: '纯文字服务器 · modalities=["text"]', lines: ['preprocessing + active encoders → mm_aggregate → thinker → decode → text', 'talker_ar and code2wav are not loaded'], linesZh: ['preprocessing + 实际用到的 encoders → mm_aggregate → thinker → decode → 文字', '不加载 talker_ar 和 code2wav'], speech: false },
           { y: 262, h: 125, title: 'SPEECH SERVER · modalities=["text"]', titleZh: '语音服务器 · modalities=["text"]', lines: ['preprocessing + active encoders → thinker → decode → text', 'SKIP talker_ar and code2wav'], linesZh: ['preprocessing + 实际用到的 encoders → thinker → decode → 文字', '跳过 talker_ar 和 code2wav'], speech: false },
           { y: 402, h: 145, title: 'SPEECH SERVER · modalities=["text", "audio"]', titleZh: '语音服务器 · modalities=["text", "audio"]', lines: ['preprocessing + active encoders → thinker', 'thinker → decode → text  ·  thinker → talker_ar → code2wav → sound'], linesZh: ['preprocessing + 实际用到的 encoders → thinker', 'thinker → decode → 文字 · thinker → talker_ar → code2wav → 声音'], speech: true },
-        ] as panel}
-          <rect x={phone ? 15 : 20} y={panel.y} width={phone ? 270 : 680} height={panel.h} rx="11" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x={phone ? 28 : 34} y={panel.y + 27} class="tag strong">{t(panel.title, panel.titleZh)}</text>
-          {#each panel.lines as line, i}
-            <text x={phone ? 28 : 34} y={panel.y + 62 + i * (phone ? 36 : 34)} class={i === panel.lines.length - 1 && !panel.speech ? 'tag' : 'mono'} fill={i === panel.lines.length - 1 && !panel.speech ? 'var(--muted)' : 'var(--text)'}>{t(line, panel.linesZh[i])}</text>
-          {/each}
+        ] as panel, panelIndex}
+          <g opacity={phase >= panelIndex + 2 ? 1 : 0} style="transition: opacity 450ms">
+            <rect x={phone ? 15 : 20} y={panel.y} width={phone ? 270 : 680} height={panel.h} rx="11" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x={phone ? 28 : 34} y={panel.y + 27} class="tag strong">{t(panel.title, panel.titleZh)}</text>
+            {#each panel.lines as line, i}
+              <text x={phone ? 28 : 34} y={panel.y + 62 + i * (phone ? 36 : 34)} class={i === panel.lines.length - 1 && !panel.speech ? 'tag' : 'mono'} fill={i === panel.lines.length - 1 && !panel.speech ? 'var(--muted)' : 'var(--text)'}>{t(line, panel.linesZh[i])}</text>
+            {/each}
+          </g>
         {/each}
+        {/if}
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{phone ? t('Default: ["text"] · text-only audio request: no audio', '默认 ["text"] · 纯文字服务器不返回声音') : t('The public request default is ["text"]. A text-only server returns no audio for an audio request.', '公开请求默认 ["text"]；向纯文字服务器请求声音，也不会返回声音。')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Both accept text, image, audio and video input.', '两种服务器都能输入文字、图像、声音和视频。') : t('Both server modes accept text, image, audio and video input.', '两种服务器都能输入文字、图像、声音和视频。')}</text>
       {:else if step === 2}
