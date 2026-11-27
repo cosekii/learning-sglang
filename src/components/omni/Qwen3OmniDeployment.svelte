@@ -343,7 +343,7 @@
           <rect x={(phone ? 30 : 60) + QWEN_VIDEO_TEST_WITHOUT_TALKER_GB / 90 * (phone ? 230 : 600)} y={phone ? 325 : 215} width={QWEN_VIDEO_TEST_TALKER_GB / 90 * (phone ? 230 : 600)} height={phone ? 32 : 36} rx="5" fill="var(--gen)" />
           <rect x={(phone ? 30 : 60) + QWEN_VIDEO_TEST_CARD_GB / 90 * (phone ? 230 : 600)} y={phone ? 325 : 215} width={QWEN_VIDEO_TEST_OVERFLOW_GB / 90 * (phone ? 230 : 600)} height={phone ? 32 : 36} fill="var(--eos)" fill-opacity="0.65" />
           <line x1={(phone ? 30 : 60) + QWEN_VIDEO_TEST_CARD_GB / 90 * (phone ? 230 : 600)} y1={phone ? 315 : 205} x2={(phone ? 30 : 60) + QWEN_VIDEO_TEST_CARD_GB / 90 * (phone ? 230 : 600)} y2={phone ? 390 : 290} stroke="var(--text)" stroke-dasharray="4 3" />
-          <text x={phone ? 30 : 60} y={phone ? 380 : 275} class="formula">{QWEN_VIDEO_TEST_TOTAL_GB.toFixed(1)} GB · {QWEN_VIDEO_TEST_TOTAL_GB.toFixed(1)} − {QWEN_VIDEO_TEST_CARD_GB} = {QWEN_VIDEO_TEST_OVERFLOW_GB.toFixed(1)} GB {t('too much', '超出')}</text>
+          <text x={phone ? 30 : 60} y={phone ? 380 : 275} class="formula">{phone ? `${QWEN_VIDEO_TEST_TOTAL_GB.toFixed(1)} − ${QWEN_VIDEO_TEST_CARD_GB} = ${QWEN_VIDEO_TEST_OVERFLOW_GB.toFixed(1)} GB ${t('over', '超出')}` : `${QWEN_VIDEO_TEST_TOTAL_GB.toFixed(1)} GB · ${QWEN_VIDEO_TEST_TOTAL_GB.toFixed(1)} − ${QWEN_VIDEO_TEST_CARD_GB} = ${QWEN_VIDEO_TEST_OVERFLOW_GB.toFixed(1)} GB ${t('too much', '超出')}`}</text>
           <text x={(phone ? 30 : 60) + QWEN_VIDEO_TEST_CARD_GB / 90 * (phone ? 230 : 600)} y={phone ? 407 : 307} text-anchor="middle" class="tag">{QWEN_VIDEO_TEST_CARD_GB} GB {t('card', '显卡')}</text>
         </g>
         <g opacity={phase >= 2 ? 1 : 0} style="transition: opacity 450ms">
