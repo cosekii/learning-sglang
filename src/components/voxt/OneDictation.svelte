@@ -27,8 +27,8 @@
     en: 'The picture builds in order: dictation 1 appears, then its new session ID A, then its results; dictation 2, session ID B and results 2 follow; A and B are different, so the two results stay apart.',
     zh: '画面按顺序形成：先出现第 1 次听写，再出现它的新 session ID A，再出现它的结果；随后是第 2 次听写、session ID B 和第 2 次的结果；A 和 B 不同，两次结果因此分开。',
   }, {
-    en: 'One key press starts session A, and the blue A tag walks the six stops in order: key press, helper, sound to words, tidy words, you see text, save text. Each stop’s product appears as the tag arrives and stays; no stop gets a new tag.',
-    zh: '按一下键启动 session A，蓝色的 A 标签按顺序走过六站：按键、helper、声音变文字、整理文字、看到文字、保存文字。标签走到哪一站，那一站的产物就出现并留下；没有一站换新标签。',
+    en: 'One key press starts session A, and the blue A tag walks the six stops in order: key press, helper, sound to words, tidy words, you see text, save text. Each stop, with its name and product, appears as the tag arrives and stays; no stop gets a new tag.',
+    zh: '按一下键启动 session A，蓝色的 A 标签按顺序走过六站：按键、helper、声音变文字、整理文字、看到文字、保存文字。标签走到哪一站，哪一站才带着名字和产物出现并留下；没有一站换新标签。',
   }, {
     en: "Late session A goes to its own result window and saved results, while B goes where you type or to B's result window",
     zh: '晚到的 session A 进入自己的结果小窗和保存记录，B 进入打字位置或 B 的结果小窗',
@@ -195,15 +195,17 @@
           {@const w = phone ? 230 : 100}
           {@const h = phone ? 64 : 126}
           {@const cx = x + w / 2}
-          <rect {x} {y} width={w} height={h} rx="12" fill={phase === i ? 'var(--accent-soft)' : 'var(--bg)'} stroke={phase === i ? 'var(--accent)' : 'var(--line)'} stroke-width={phase === i ? 2.5 : 1} />
-          <text x={cx} y={y + (phone ? 22 : 52)} text-anchor="middle" class="route-name">{t(stop.name, stop.nameZh)}</text>
           {#if phase >= i}
-            <text x={cx} y={y + (phone ? 42 : 72)} text-anchor="middle" class="route-detail" in:fade={{ duration: 250 }}>{t(stop.detail, stop.detailZh)}</text>
-            {#if i === 4}
-              <text x={cx} y={y + (phone ? 58 : 94)} text-anchor="middle" class="route-detail" in:fade={{ duration: 250 }}>{t('or result window', '或结果小窗')}</text>
-            {/if}
+            <g in:fade={{ duration: 250 }}>
+              <rect {x} {y} width={w} height={h} rx="12" fill={phase === i ? 'var(--accent-soft)' : 'var(--bg)'} stroke={phase === i ? 'var(--accent)' : 'var(--line)'} stroke-width={phase === i ? 2.5 : 1} />
+              <text x={cx} y={y + (phone ? 22 : 52)} text-anchor="middle" class="route-name">{t(stop.name, stop.nameZh)}</text>
+              <text x={cx} y={y + (phone ? 42 : 72)} text-anchor="middle" class="route-detail">{t(stop.detail, stop.detailZh)}</text>
+              {#if i === 4}
+                <text x={cx} y={y + (phone ? 58 : 94)} text-anchor="middle" class="route-detail">{t('or result window', '或结果小窗')}</text>
+              {/if}
+            </g>
           {/if}
-          {#if i < route.length - 1}
+          {#if i < route.length - 1 && phase > i}
             {#if phone}
               <line x1={cx} y1={y + h} x2={cx} y2={y + h + 12} stroke="var(--muted)" stroke-width="2" marker-end="url(#session-arrow)" />
             {:else}
@@ -218,8 +220,8 @@
         <rect x={phone ? 37 : 176} y={phone ? 562 : 291} width="22" height="22" rx="6" fill="var(--accent-soft)" />
         <text x={phone ? 48 : 187} y={phone ? 578 : 307} text-anchor="middle" class="route-tag">A</text>
         <text x={phone ? 70 : 207} y={phone ? 578 : 307} class="route-detail">{t("= this sentence's session ID", '= 这句话的 session ID')}</text>
-        <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t('Text stays here by choice or if insertion fails.', '你选小窗，或贴不进去时，文字留在这里。')}</text>
-        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('This succeeded; clean-up and history are on.', '这次听写成功，并开启了整理和历史。')}</text>
+        <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t(phone ? 'Result window: your pick or a stuck spot.' : 'Text stays in the result window by choice or if it cannot go where you type.', phone ? '结果小窗：你选的，或文字贴不进去时的去处。' : '你选结果小窗，或贴不到打字位置时，文字留在结果小窗。')}</text>
+        <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'It succeeded; tidying and saving are on.' : 'This dictation succeeded; tidying and saving are on.', '这次听写成功；整理和保存都开着。')}</text>
       {:else if step === 2}
         <text x={W / 2} y={phone ? 24 : 28} text-anchor="middle" class="title">{t(phone ? 'LATE A STAYS WITH A' : 'LATE A STAYS WITH A, NOT B', phone ? '晚到的 A 留在 A' : '晚到的 A 留在 A，不写进 B')}</text>
         {#if phone}

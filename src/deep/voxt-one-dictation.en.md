@@ -33,7 +33,7 @@ Two dictations map to two different session IDs. The picture therefore has two t
 The teaching picture draws identity as a tag. The source uses two routing mechanisms:
 
 - Recording jobs use the session ID.
-- ASR and LLM streaming callbacks bind to their own `run`, the object for one dictation. `Manager.update` checks that this run is still current or registered in the background, and has not ended. It does not merely compare a string attached to a result.
+- ASR (speech recognition) and LLM (language model) streaming callbacks bind to their own `run`, the object for one dictation. `Manager.update` checks that this run is still current or registered in the background, and has not ended. It does not merely compare a string attached to a result.
 
 An old session that is composing can register in the background and keep writing its own card and history, not the new session's current card. “Every old result is discarded” would therefore be wrong. Later steps will draw the late-result gate; this step only establishes that each successful start gets a new tag.
 
@@ -56,7 +56,7 @@ Public baseline: `sglang-omni@34961b7df8fbd050d8e1e1bc9d82fbd165eb8566`. Paths a
 
 ### On the stage
 
-- The blue A tag walks the six stops in order; each stop's product appears as the tag arrives and stays. No stop gets a new tag.
+- The blue A tag walks the six stops in order; each stop, with its name and product, appears as the tag arrives and stays. No stop gets a new tag.
 - You press: one key press starts this dictation through the hotkey route.
 - Helper: the program that brings the key event and microphone sound into the app, so it comes before sound becomes words.
 - Sound → words: recognition produces the original words, such as “um, hi”.
