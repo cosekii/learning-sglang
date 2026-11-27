@@ -359,3 +359,14 @@
 
 - 等复审读第 1 步四相证据并重评该步机制分；通过后按 direction 依次做第 2–5 步同类返工（每步一个最小单元），再 Voxt 10，最后 `12-meeting-capture-modes`。
 - 未跑全站回归、真实 Voxt、模型下载、更新或模型进程；主人最终验收另计。本轮 4399 dev server 与浏览器已在收尾关闭。
+
+---
+
+# lane d 本轮追加 · Voxt 11 Step 1 手机 loops 碰撞与 progress 记录
+
+日期：2026-11-26。按复审回执修两处，仍只动 Step 1 最小单元。
+
+- **手机公式行与 loops 标签碰撞**：英文手机第 2／3 相 `= 2,467,856,503 B`（y=630）与 LoopProgress 的 `loops`（y=621）在 360／390／430 px 实叠 2.03×5.32／2.22×5.42／2.49×6.22 CSS px。`mobile` 不查 SVG 文字互撞、transcript 只查桌面，所以上轮门没拦住。修法：本组件第 1 步手机 LoopProgress 从 `H-44` 抬到 `H-80`（其余步不动），label／bar 与公式两行和相位 2 红框边都留出 ≥5 px。
+- **逐相碰撞审计**：live DOM 对英／中 × 360／390／430 px × 4 相共 24 个视图做 `getBoundingClientRect` 两两相交，全部为 0（相位身份由 `data-animation-phase` 确认）。
+- **progress.md 章节行**：`models-and-app-updates` 行原来还写「6 步 R1–R5 10/10、20/20、0 洞」，与协调基线矛盾；已改为 R1–R5 **54/60**、原十个非视觉项 **119/120**、原十二项 **143/144**、机制 R6 **7/12**（逐步 1、1、1、1、1、2），第 1 步修复标为待复审，不自行提分。
+- 复跑门：`astro build`（60 页）、本章 transcript（重生成仍无 diff）、STEP=1 readability、英中 STEP=1 mobile 三宽度、zh-check 全部通过。桌面布局未变（桌面 y=20 不动）。

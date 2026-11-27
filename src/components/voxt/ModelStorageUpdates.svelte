@@ -553,7 +553,7 @@
       {#if focus}
         <rect class="motion-focus" x={focus.x - 4} y={focus.y - 4} width={focus.w + 8} height={focus.h + 8} rx="10" fill="none" stroke="var(--eos)" stroke-width="3" />
       {/if}
-      <LoopProgress ms={lapMs} {lap} x={phone ? 236 : 640} y={phone ? H - 44 : 20} />
+      <LoopProgress ms={lapMs} {lap} x={phone ? 236 : 640} y={phone ? (step === 0 ? H - 80 : H - 44) : 20} />
     </svg>
   </div>
   <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh}
