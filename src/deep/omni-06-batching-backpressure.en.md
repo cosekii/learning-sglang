@@ -7,6 +7,7 @@
 - Both panels use the same input: four scheduling-batch slots, A and B queued at 0 ms, and C arriving at 6 ms.
 - The left or upper panel sets `max_batch_wait_ms=0`. The scheduler takes the available A and B, leaves two slots empty, and starts compute at 0 ms.
 - The right or lower panel uses a teaching budget of five ms. The scheduler waits for more work, still has only A and B at the deadline, and starts compute at 5 ms.
+- The animation starts A and B in the zero-delay panel, moves the other cursor to its five-ms deadline, starts that batch, then lets C arrive at six ms and miss both collections.
 - Blue marks queued work that can run. Orange marks the extra collection wait. C's mark at six ms misses both collections.
 - The timelines omit GPU compute, an earlier running batch, network transfer and other queues. Only the collection budget changes.
 

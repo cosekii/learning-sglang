@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import StepControls from '../StepControls.svelte';
+  import LoopProgress from '../LoopProgress.svelte';
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
@@ -104,6 +105,26 @@
     if (q >= 1 && q <= steps.length) step = q - 1;
   });
   const cur = $derived(steps[step]);
+  const PHASE_COUNTS = [5, 4, 5, 3, 6, 4, 5, 5];
+  let phase = $state(0);
+  let lap = $state(0), lapMs = $state(0);
+  const nextLap = (ms: number) => untrack(() => { lapMs = ms; lap++; });
+  $effect(() => {
+    const s = step;
+    phase = 0;
+    const count = PHASE_COUNTS[s];
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { phase = count - 1; return; }
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const run = () => {
+      phase = 0;
+      for (let i = 1; i < count; i++) timers.push(setTimeout(() => (phase = i), i * 1400));
+      const ms = count * 1400 + 1800;
+      timers.push(setTimeout(run, ms));
+      nextLap(ms);
+    };
+    run();
+    return () => timers.forEach(clearTimeout);
+  });
   let phone = $state(false);
   onMount(() => {
     const query = window.matchMedia('(max-width: 900px)');
@@ -151,9 +172,10 @@
   })));
 </script>
 
-<figure class="viz">
+<figure class="viz" data-animation-step={step} data-animation-phase={phase} data-animation-final-phase={PHASE_COUNTS[step] - 1}>
   <div class="canvas">
     <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={t('The same queued requests start immediately with zero collection delay, or five milliseconds later with a five-millisecond batching budget.', '同一批已排队请求，在零收集等待时立即开始，在 5 毫秒凑批预算下晚 5 毫秒开始。')}>
+      <LoopProgress ms={lapMs} {lap} x={phone ? 221 : 640} y={phone ? 70 : 20} />
       <defs>
         <marker id="batch-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
           <path d="M0,0 L8,4 L0,8 Z" fill="var(--accent)" />
@@ -169,32 +191,31 @@
 
       {#each panels as panel}
         {@const delayed = panel.wait > 0}
+        {@const started = delayed ? phase >= 3 : phase >= 1}
+        {@const cursorMs = delayed && phase >= 2 ? BATCH_WAIT_ACTIVE_MS : 0}
         <rect x={panel.x} y={panel.y} width={phone ? 270 : 325} height="222" rx="12" fill="var(--bg)" stroke={delayed ? 'var(--gen)' : 'var(--accent)'} stroke-width={delayed ? 1 : 2} />
         <text x={panel.x + 14} y={panel.y + 25} class="rowlabel">max_batch_wait_ms = {panel.wait}</text>
-        <text x={panel.x + 14} y={panel.y + 48} class="tag">{t('batch slots when collection starts', '开始收集时的 batch 空位')}</text>
+        <text x={panel.x + 14} y={panel.y + 48} class="tag">{started ? t('collected batch slots', '已经收集的 batch 位置') : t('batch slots when collection starts', '开始收集时的 batch 空位')}</text>
         {#each Array(BATCH_WAIT_MAX_SIZE) as _, i}
-          <rect x={panel.x + 16 + i * (phone ? 58 : 68)} y={panel.y + 61} width={phone ? 48 : 56} height="36" rx="6" fill={i < BATCH_WAIT_READY_IDS.length ? 'var(--accent-soft)' : 'white'} stroke={i < BATCH_WAIT_READY_IDS.length ? 'var(--accent)' : 'var(--faint)'} stroke-dasharray={i < BATCH_WAIT_READY_IDS.length ? '0' : '4 3'} />
-          <text x={panel.x + (phone ? 40 : 44) + i * (phone ? 58 : 68)} y={panel.y + 84} text-anchor="middle" class="mono strong">{BATCH_WAIT_READY_IDS[i] ?? '·'}</text>
+          <rect x={panel.x + 16 + i * (phone ? 58 : 68)} y={panel.y + 61} width={phone ? 48 : 56} height="36" rx="6" fill={i < BATCH_WAIT_READY_IDS.length ? 'var(--accent-soft)' : 'white'} stroke={i < BATCH_WAIT_READY_IDS.length ? 'var(--accent)' : 'var(--faint)'} stroke-dasharray={i < BATCH_WAIT_READY_IDS.length ? '0' : '4 3'} opacity={started || delayed ? 1 : 0.55} />
+          <text x={panel.x + (phone ? 40 : 44) + i * (phone ? 58 : 68)} y={panel.y + 84} text-anchor="middle" class="mono strong" opacity={started || delayed ? 1 : 0.55}>{BATCH_WAIT_READY_IDS[i] ?? '·'}</text>
         {/each}
         <text x={panel.x + 14} y={panel.y + 120} class="tag">{BATCH_WAIT_READY_IDS.length} {t('ready', '份现成工作')} + {BATCH_WAIT_EMPTY_SLOTS} {t('empty slots', '个空位')}</text>
-        {#if delayed}
-          <rect x={panel.x + 16} y={panel.y + 133} width={phone ? 238 : 293} height="32" rx="6" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x={panel.x + (phone ? 135 : 162)} y={panel.y + 154} text-anchor="middle" class="tag strong">{t('wait for more work: 0 → 5 ms', '继续等更多工作：0 → 5 ms')}</text>
-        {:else}
-          <rect x={panel.x + 16} y={panel.y + 133} width={phone ? 238 : 293} height="32" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x={panel.x + (phone ? 135 : 162)} y={panel.y + 154} text-anchor="middle" class="tag strong">{t('take A + B now · no empty-slot wait', '现在拿走 A + B · 不为空位等待')}</text>
-        {/if}
+        <rect x={panel.x + 16} y={panel.y + 133} width={phone ? 238 : 293} height="32" rx="6" fill={started || delayed ? (delayed && !started ? 'var(--gen-soft)' : 'var(--accent-soft)') : 'white'} stroke={started || !delayed ? 'var(--accent)' : 'var(--gen)'} stroke-dasharray={started || delayed ? '0' : '4 3'} />
+        <text x={panel.x + (phone ? 135 : 162)} y={panel.y + 154} text-anchor="middle" class="tag strong">{started ? (delayed ? t('deadline: take A + B at 5 ms', '到 5 ms：拿走 A + B') : t('take A + B now · no empty-slot wait', '现在拿走 A + B · 不为空位等待')) : (delayed ? t(`waiting for more work: ${cursorMs} / 5 ms`, `继续等更多工作：${cursorMs} / 5 ms`) : t('A + B ready · collection not run', 'A + B 已就绪 · 尚未收集'))}</text>
         <path d="M{panel.x + 18} {panel.y + 187} H{panel.x + (phone ? 250 : 305)}" stroke="var(--line)" stroke-width="2" />
-        <path d="M{panel.x + 18 + (BATCH_WAIT_LATE_MS / 10) * (phone ? 232 : 287)} {panel.y + 176} V{panel.y + 197}" stroke="var(--gen)" stroke-width="2" />
+        {#if phase >= 4}
+          <path d="M{panel.x + 18 + (BATCH_WAIT_LATE_MS / 10) * (phone ? 232 : 287)} {panel.y + 176} V{panel.y + 197}" stroke="var(--gen)" stroke-width="2" />
+          <text x={panel.x + 18 + (BATCH_WAIT_LATE_MS / 10) * (phone ? 232 : 287)} y={panel.y + 176} text-anchor="middle" class="tag">{BATCH_WAIT_LATE_ID}</text>
+        {/if}
         <text x={panel.x + 18} y={panel.y + 207} class="tag">0 ms</text>
         <text x={panel.x + (phone ? 250 : 305)} y={panel.y + 207} text-anchor="end" class="tag">10 ms</text>
-        <text x={panel.x + 18 + (BATCH_WAIT_LATE_MS / 10) * (phone ? 232 : 287)} y={panel.y + 176} text-anchor="middle" class="tag">{BATCH_WAIT_LATE_ID}</text>
-        <circle cx={panel.x + 18 + (panel.wait / 10) * (phone ? 232 : 287)} cy={panel.y + 187} r="6" fill="var(--accent)" />
-        <text x={panel.x + (phone ? 135 : 162)} y={panel.y + 219} text-anchor="middle" class="tag strong">{t('compute starts at', '开始计算')} {panel.wait} ms</text>
+        <circle cx={panel.x + 18 + (cursorMs / 10) * (phone ? 232 : 287)} cy={panel.y + 187} r="6" fill={started ? 'var(--accent)' : delayed ? 'var(--gen)' : 'var(--faint)'} />
+        <text x={panel.x + (phone ? 135 : 162)} y={panel.y + 219} text-anchor="middle" class="tag strong">{started ? `${t('compute starts at', '开始计算')} ${panel.wait} ms` : t('compute not started', '尚未开始计算')}</text>
       {/each}
 
       <text x={W / 2} y={phone ? 586 : 340} text-anchor="middle" class="mono strong">{BATCH_WAIT_ACTIVE_MS} ms − 0 ms = {BATCH_WAIT_ADDED_MS} ms {t('later for A and B', 'A、B 更晚开始')}</text>
-      <text x={W / 2} y={phone ? 612 : 362} text-anchor="middle" class="tag">{phone ? t('C arrives at 6 ms and misses both; compute time omitted.', 'C 在 6 ms 才到，两次收集都没赶上；图中不画计算耗时。') : t('C arrives at 6 ms, so it misses both collections; compute time is omitted.', 'C 在 6 ms 才到，两次收集都没赶上；图中不画计算耗时。')}</text>
+      <text x={W / 2} y={phone ? 612 : 362} text-anchor="middle" class="tag">{phase >= 4 ? (phone ? t('C arrives at 6 ms and misses both; compute time omitted.', 'C 在 6 ms 才到，两次收集都没赶上；图中不画计算耗时。') : t('C arrives at 6 ms, so it misses both collections; compute time is omitted.', 'C 在 6 ms 才到，两次收集都没赶上；图中不画计算耗时。')) : t('C has not arrived yet', 'C 尚未到达')}</text>
       <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{phone ? t('5 ms is a teaching comparison, not a recommendation.', '5 ms 只是教学对照，不是推荐配置。') : t('The five-ms budget is a teaching counterfactual, not a recommended setting.', '5 ms 只是教学对照，不是推荐配置。')}</text>
       <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Next: AR batches keep running as requests join and leave.', '下一步：AR batch 怎样在请求加入和退出时继续运行。') : t('Next: an AR batch can keep running while requests join and leave.', '下一步：AR batch 怎样在请求加入和退出时继续运行。')}</text>
       {:else if step === 1}
