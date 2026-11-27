@@ -38,8 +38,8 @@
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
   const t = (en: string, zh: string) => ($lang === 'zh' ? zh : en);
   const steps = [{
-    caption: 'A dictation ends at a cursor. A file ends as SRT or TXT.',
-    captionZh: '听写的结果落在光标处。文件转写的结果是 SRT 或 TXT。',
+    caption: 'A dictation ends at a cursor. A file ends as a new file.',
+    captionZh: '听写的结果落在光标处。文件转写的结果是一个新文件。',
   }, {
     caption: 'The command uses a Mac tool to turn the file into 16 kHz mono PCM.',
     captionZh: '命令用 Mac 工具把文件转成 16 kHz 单声道 PCM。',
@@ -72,8 +72,8 @@
     captionZh: '音频交给 Transcribe 模型，本机或远程。模型文件怎么来到这台 Mac？',
   }];
   const ariaLabels = [{
-    en: 'Two routes. A dictation goes from the microphone through a dictation session and cleanup to the cursor, with a history row when history is enabled. A file goes from disk through Voxt transcribe to SRT or TXT; it reuses the model set for Transcribe but opens no session and runs no cleanup. A one-hour meeting is 3600 seconds of sound; Step 2 turns that into bytes.',
-    zh: '两条路线。听写从麦克风经过听写 session 和整理，到光标处的文字；历史开启时还会写一条历史记录。文件从磁盘经过 Voxt transcribe 到 SRT 或 TXT；它复用 Transcribe 选定的模型，但不打开 session，也不做整理。一小时的会议是 3600 秒的声音；第 2 步把它算成字节。',
+    en: 'Two routes. A dictation goes from the microphone through a dictation session and cleanup to the cursor, with a history row when history is enabled. A file goes from disk through Voxt transcribe to text in a new file; it reuses the model set for Transcribe but opens no session and runs no cleanup. A one-hour meeting is 3600 seconds of sound; Step 2 turns that into bytes.',
+    zh: '两条路线。听写从麦克风经过听写 session 和整理，到光标处的文字；历史开启时还会写一条历史记录。文件从磁盘经过 Voxt transcribe 变成新文件里的文字；它复用 Transcribe 选定的模型，但不打开 session，也不做整理。一小时的会议是 3600 秒的声音；第 2 步把它算成字节。',
   }, {
     en: 'A constructed eight-second file is decoded by a Mac sound tool to 16 kHz mono PCM, held as a temporary file. Eight seconds times 32000 bytes a second is 256000 PCM bytes, plus a 44-byte header.',
     zh: '构造的八秒文件由 Mac 的声音工具转成 16 kHz 单声道 PCM，放进一个临时文件。八秒乘每秒 32000 字节是 256000 字节 PCM，再加 44 字节文件头。',
@@ -217,11 +217,11 @@
           <text x="185" y="328" text-anchor="middle" class="detail">{t('history row if enabled', '历史开启时写一条')}</text>
 
           <rect x="370" y="70" width="330" height="280" rx="12" fill="var(--bg)" stroke="var(--gen)" />
-          <text x="535" y="94" text-anchor="middle" class="label amber">{t('FILE · TO SRT OR TXT', '文件 · 到 SRT 或 TXT')}</text>
+          <text x="535" y="94" text-anchor="middle" class="label amber">{t('FILE · TO A FILE', '文件 · 到文件')}</text>
           {#if phase >= 1}
             <rect x="395" y="110" width="280" height="50" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
             <text x="535" y="131" text-anchor="middle" class="detail">{t('meeting.m4a on disk', '磁盘上的 meeting.m4a')}</text>
-            <text x="535" y="149" text-anchor="middle" class="detail">{t('1-hour meeting · compressed sound (M4A)', '1 小时会议 · 压缩声音（M4A）')}</text>
+            <text x="535" y="149" text-anchor="middle" class="detail">{t('1-hour meeting · a recording you have', '1 小时会议 · 现成的录音')}</text>
             <line x1="535" y1="160" x2="535" y2="185" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
             <rect x="395" y="193" width="280" height="60" rx="9" fill="var(--bg)" stroke="var(--line)" />
             <text x="535" y="215" text-anchor="middle" class="label">{t('Voxt transcribe', 'Voxt transcribe')}</text>
@@ -230,8 +230,8 @@
           {#if phase >= 2}
             <line x1="535" y1="253" x2="535" y2="278" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
             <rect x="395" y="286" width="280" height="52" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
-            <text x="535" y="309" text-anchor="middle" class="label amber">{t('meeting.srt / talk.txt', 'meeting.srt / talk.txt')}</text>
-            <text x="535" y="328" text-anchor="middle" class="detail">{t('SRT = subtitle · TXT = plain text', 'SRT = 字幕 · TXT = 纯文本')}</text>
+            <text x="535" y="309" text-anchor="middle" class="label amber">{t('TEXT IN A FILE', '文件里的文字')}</text>
+            <text x="535" y="328" text-anchor="middle" class="detail">{t('kept on disk', '存在磁盘上')}</text>
 
             <text x="28" y="370" class="pt">·</text>
             <text x="38" y="370" class="detail">{t(`a one-hour meeting is ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} s of sound; decoded, 115.2 MB before recognition`, `一小时的会议是 ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} 秒的声音；解码后、识别前有 115.2 MB`)}</text>
@@ -257,10 +257,10 @@
           <text x="150" y="297" text-anchor="middle" class="detail">{t('history row if enabled', '历史开启时写一条')}</text>
 
           <rect x="15" y="330" width="270" height="250" rx="12" fill="var(--bg)" stroke="var(--gen)" />
-          <text x="150" y="354" text-anchor="middle" class="label amber">{t('FILE · TO SRT OR TXT', '文件 · 到 SRT 或 TXT')}</text>
+          <text x="150" y="354" text-anchor="middle" class="label amber">{t('FILE · TO A FILE', '文件 · 到文件')}</text>
           {#if phase >= 1}
             <rect x="30" y="368" width="240" height="44" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
-            <text x="150" y="395" text-anchor="middle" class="detail">{t('1-hour meeting · sound (M4A)', '1 小时会议 · 声音（M4A）')}</text>
+            <text x="150" y="395" text-anchor="middle" class="detail">{t('1-hour meeting · a recording', '1 小时会议的录音')}</text>
             <line x1="150" y1="412" x2="150" y2="432" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
             <rect x="30" y="440" width="240" height="52" rx="8" fill="var(--bg)" stroke="var(--line)" />
             <text x="150" y="462" text-anchor="middle" class="label">{t('Voxt transcribe', 'Voxt transcribe')}</text>
@@ -269,8 +269,8 @@
           {#if phase >= 2}
             <line x1="150" y1="492" x2="150" y2="512" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
             <rect x="30" y="520" width="240" height="48" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
-            <text x="150" y="542" text-anchor="middle" class="label amber">{t('meeting.srt / talk.txt', 'meeting.srt / talk.txt')}</text>
-            <text x="150" y="559" text-anchor="middle" class="detail">{t('SRT = subtitle · TXT = plain text', 'SRT = 字幕 · TXT = 纯文本')}</text>
+            <text x="150" y="542" text-anchor="middle" class="label amber">{t('TEXT IN A FILE', '文件里的文字')}</text>
+            <text x="150" y="559" text-anchor="middle" class="detail">{t('kept on disk', '存在磁盘上')}</text>
 
             <text x="20" y="606" class="pt">·</text>
             <text x="30" y="606" class="detail">{t(`a one-hour meeting is ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} s of sound`, `一小时的会议是 ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} 秒的声音`)}</text>
