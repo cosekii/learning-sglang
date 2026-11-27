@@ -180,6 +180,13 @@ $$ \text{启动 180 秒仍不能接受识别} \Rightarrow \text{启动失败并�
 
 第 5 步转到第三样东西：应用包和它的更新器。
 
+### 源码出处
+
+公开性能证据（保留 PR、测量 head、setup 与边界；不来自 pinned 代码基线）：
+
+- [PR #4407](https://github.com/sgl-project/sglang-omni/pull/4407)：预热 Silero 的 Metal kernel，8 GB Apple silicon Mac、95.394 秒公开音频、ABABAB、每组 3 次取中位数。server ready 0.099 → 0.882 s，暖就绪请求 1.928 → 1.203 s，冷启动合计 2.027 → 2.085 s：首个请求变快，合计没有变快。PR 没有给每组单独的测量 commit。
+- [PR #2261](https://github.com/sgl-project/sglang-omni/pull/2261)（已合入；head `4091cb549196`，merge `fa0149a18e80`）：修复 Unload ASR 让 speech server 变成孤儿进程。
+
 ## 第 5 步 · 应用更新走另一条路
 
 > **一句话：** 有 Voxt 签名更新源时，更新器替换应用，重启后完成；没有更新源的发布版本提供外部安装包，两条路都不动模型文件夹。

@@ -113,6 +113,12 @@ $$\text{提示} = [\text{启用的词条，按 } UpdatedAt \text{ 从新到旧}]
 
 下一步看识别完的文字怎样把别名换回来。
 
+### 源码出处
+
+公开性能证据（保留 PR、测量 head、setup 与边界；不来自 pinned 代码基线）：
+
+- [PR #4589](https://github.com/sgl-project/sglang-omni/pull/4589)：跨 realtime 刷新复用 ASR Final，无风扇 M4 MacBook Air、Qwen3-ASR 1.7B 8-bit + DFlash、greedy、93 段 2–38 秒、每段一次 Final、取平均。无词典 535 → 290 ms；30 个词条 643 → 304 ms；463 个词条 2769 → 382 ms。测量 head 未单列且混合两轮；另有 10 段 31.5–59.5 秒的独立样本，不能合并进这些数字。
+
 ## 第 4 步 · 别名在清理之前换回词条
 
 > **一句话：** 识别出文字后，启用的别名在任意清理之前就被换回词条，所以不依赖语言模型。
@@ -148,6 +154,12 @@ $$\text{替换}(\text{Preeya}) = \text{Priya}\quad\text{当词典和词条都启
 ### 接下来
 
 替换只改别名。若识别器写出了一个既不是词条、也不在任何别名里的错法，就得靠下一步的术语表提醒语言模型。
+
+### 源码出处
+
+公开性能证据（保留 PR 与边界；不来自 pinned 代码基线）：
+
+- [PR #3795](https://github.com/sgl-project/sglang-omni/pull/3795)（已关闭；经 [PR #3826](https://github.com/sgl-project/sglang-omni/pull/3826) 落地）：建立 alias 索引，大词典听写不再等待别名替换。这是一条没有公开计时数字的事实。
 
 ## 第 5 步 · 术语表放在哪条消息里
 

@@ -315,6 +315,10 @@ Public baseline: `sglang-omni@6d8ed2dcf70da1b021bb14b62239a3add428636c`; paths a
 - Level formula and conservative detection rationale: `Voxt/internal/vad/doc.go:1-31`.
 - Speech found in either original or filtered audio is kept: `Voxt/internal/vad/doc.go:54-62`; streaming wiring: `Voxt/internal/session/run_audio.go:128-145`; file merge: `Voxt/internal/dsp/level.go:144-148`.
 
+Public performance evidence (kept with its PR, measurement head, setup and boundary; not part of the pinned code baseline):
+
+- [PR #2833](https://github.com/sgl-project/sglang-omni/pull/2833) (merged; verification head `fd29e6607a6b`, Apple Silicon, macOS 27.0): fixes native VAD session leaks that stalled live ASR — before the fix the 65th activation failed, after it 70 of 70 pass. This is a native VAD lifecycle regression check, not a model-inference benchmark, and it does not by itself give a Stop-to-insert gain.
+
 ## Step 7 · Gain raises quiet speech
 
 > **In one line:** The public test's −30 dBFS quiet voice receives 7 dB of gain toward the −23 dBFS target, making the constructed wave about 2.24 times taller.

@@ -113,6 +113,12 @@ Some recognition services accept a limited number of hints; the `dict.Hints` com
 
 The next step takes the recognized text and swaps the alias back to the term.
 
+### Sources
+
+Public performance evidence (kept with its PR, measurement head, setup and boundary; not part of the pinned code baseline):
+
+- [PR #4589](https://github.com/sgl-project/sglang-omni/pull/4589): reusing ASR Final across realtime refreshes, fanless M4 MacBook Air, Qwen3-ASR 1.7B 8-bit + DFlash, greedy, 93 clips of 2–38 s, one Final per clip, mean. Without a dictionary 535 → 290 ms; with 30 terms 643 → 304 ms; with 463 terms 2769 → 382 ms. The measurement head is not listed and mixes two rounds; a separate 10-clip 31.5–59.5 s sample cannot be merged into these numbers.
+
 ## Step 4 · Aliases become the term before cleanup
 
 > **In one line:** After recognition, enabled aliases are replaced by their term before any cleanup, so this path does not need the language model.
@@ -148,6 +154,12 @@ This replacement still works when the language model is missing or errors. `spok
 ### Next
 
 Replacement only fixes aliases. If recognition writes a wrong form that is neither the term nor any alias, the next step's glossary reminds the language model.
+
+### Sources
+
+Public performance evidence (kept with its PR and boundary; not part of the pinned code baseline):
+
+- [PR #3795](https://github.com/sgl-project/sglang-omni/pull/3795) (closed; landed through [PR #3826](https://github.com/sgl-project/sglang-omni/pull/3826)): builds an alias index so dictation with a large dictionary no longer waits on alias replacement. A fact without published timing numbers.
 
 ## Step 5 · Which message holds the glossary
 

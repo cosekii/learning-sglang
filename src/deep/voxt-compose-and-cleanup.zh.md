@@ -230,6 +230,10 @@ $$
 - 远端最多四片并行、草稿按序发布：`Voxt/internal/session/cleanup_together.go:14-21,42-103`。
 - 流式发布间隔：`Voxt/internal/session/write.go:17-18`；`Voxt/internal/session/cleanup_together.go:67-74`。
 
+公开性能证据（保留 PR、测量 head、setup 与边界；不来自 pinned 代码基线）：
+
+- [PR #4295](https://github.com/sgl-project/sglang-omni/pull/4295)（已关闭；经 [PR #4324](https://github.com/sgl-project/sglang-omni/pull/4324) 集成）：长听写在录音继续时就开始清理。Apple M5 Max、Qwen3-ASR 0.6B 4bit、脚本假 LLM 每答 3 秒、4 分 13 秒英文输入：停止前清理 19 次、停止后 1 次，结果栏显示 Clean-up 4.0 s。评论对真实 App 测量 head 说法不一，不能无争议绑定；这只证明提前调度，不是 remote provider 收益。
+
 ## 第 6 步 · 一片失败时保留原话
 
 > **一句话：** 整理听写的一片清理失败时，这片保留识别原话，其他片仍可清理，整段以降级状态完成。

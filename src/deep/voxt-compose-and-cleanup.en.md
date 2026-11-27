@@ -230,6 +230,10 @@ Public baseline: same as Step 1.
 - Up to four concurrent remote pieces and ordered drafts: `Voxt/internal/session/cleanup_together.go:14-21,42-103`.
 - Streaming publication interval: `Voxt/internal/session/write.go:17-18`; `Voxt/internal/session/cleanup_together.go:67-74`.
 
+Public performance evidence (kept with its PR, measurement head, setup and boundary; not part of the pinned code baseline):
+
+- [PR #4295](https://github.com/sgl-project/sglang-omni/pull/4295) (closed; integrated through [PR #4324](https://github.com/sgl-project/sglang-omni/pull/4324)): long dictations are cleaned up while recording continues. Apple M5 Max, Qwen3-ASR 0.6B 4bit, a scripted fake LLM answering in 3 s, a 4 min 13 s English input: 19 cleanups before the stop and 1 after, with the result bar showing Clean-up 4.0 s. The comments disagree about the real-app measurement head, so it cannot be bound without dispute; this proves early scheduling only, not a remote-provider gain.
+
 ## Step 6 · Keep recognized words when one piece fails
 
 > **In one line:** If cleanup fails for one Transcribe piece, that piece keeps its recognized words while the other pieces can still be cleaned, and the dictation finishes degraded.

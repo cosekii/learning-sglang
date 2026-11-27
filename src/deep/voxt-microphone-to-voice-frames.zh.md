@@ -315,6 +315,10 @@ $$
 - 20 ms 音量公式和保守检测动机：`Voxt/internal/vad/doc.go:1-31`。
 - 原始与滤波版本任一听到就保留：`Voxt/internal/vad/doc.go:54-62`；流式接入：`Voxt/internal/session/run_audio.go:128-145`；文件合并：`Voxt/internal/dsp/level.go:144-148`。
 
+公开性能证据（保留 PR、测量 head、setup 与边界；不来自 pinned 代码基线）：
+
+- [PR #2833](https://github.com/sgl-project/sglang-omni/pull/2833)（已合入；验证 head `fd29e6607a6b`、Apple Silicon、macOS 27.0）：修复 native VAD session 泄漏导致的 live ASR 卡死——修复前第 65 次激活失败，修复后 70 次全部通过。这是 native VAD 生命周期的功能回归检查，不是模型推理 benchmark，也不直接提供 Stop-to-insert 收益。
+
 ## 第 7 步 · 增益提高轻声
 
 > **一句话：** 公开测试中的 −30 dBFS 轻声获得 7 dB 增益，向 −23 dBFS 目标靠近，构造波形的高度约变成 2.24 倍。

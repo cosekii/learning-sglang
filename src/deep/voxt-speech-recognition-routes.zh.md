@@ -322,6 +322,11 @@ $$
 - Final 的 tail、合并与最终事件：`Voxt/internal/omni/live_final.go:11-18,39-56,80-82`。
 - `LiveResult` 开关含义：`Voxt/internal/settings/settings.go:163-167`。
 
+公开性能证据（保留 PR、测量 head、setup 与边界；不来自 pinned 代码基线）：
+
+- [PR #2549](https://github.com/sgl-project/sglang-omni/pull/2549)（由 [PR #2576](https://github.com/sgl-project/sglang-omni/pull/2576) 落地 main）：Apple M5/24 GB、Qwen3-ASR 0.6B 4bit、392 clips。短录音 Final p50/p95 194/279 → 111/145 ms，吞吐 21.0 → 49.8 audio-s/s；first-preview p95 从 1207 退化到 2518 ms。主表测量 head 未记录；这是真实 native 服务路径，不是完整真实 App。
+- [PR #3285](https://github.com/sgl-project/sglang-omni/pull/3285)：native runtime 上的 DFlash 推测解码，Apple M5/16 GiB、392 clips（5,225 秒）、ABBA。1.7B 8bit decode 57 → 189 tok/s，0.6B 4bit 244 → 402 tok/s。benchmark 表未绑定精确测量 SHA，路径为 native CLI/server protocol，不是完整 Voxt App。
+
 ## 第 7 步 · 识别交出原话，下一章再问语言模型
 
 > **一句话：** 选中的 ASR 路线返回一份识别原话，session 把它放入 `Snapshot.Raw`；语言模型怎样连接和取钥匙是下一章的问题。

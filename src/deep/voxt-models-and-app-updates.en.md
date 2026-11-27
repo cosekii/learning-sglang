@@ -180,6 +180,13 @@ Deleting a model is not only a disk operation. `Library.Delete` calls `Unload`, 
 
 Step 5 turns to the third thing: the app bundle and its updater.
 
+### Sources
+
+Public performance evidence (kept with its PR, measurement head, setup and boundary; not part of the pinned code baseline):
+
+- [PR #4407](https://github.com/sgl-project/sglang-omni/pull/4407): preheating Silero's Metal kernels, 8 GB Apple silicon Mac, 95.394 s public clip, ABABAB, median of 3 per group. Server ready 0.099 → 0.882 s, warm-ready request 1.928 → 1.203 s, cold total 2.027 → 2.085 s: the first request gets faster, the total does not. The PR does not give each group its own measurement commit.
+- [PR #2261](https://github.com/sgl-project/sglang-omni/pull/2261) (merged; head `4091cb549196`, merge `fa0149a18e80`): stops Unload ASR leaving the speech server orphaned.
+
 ## Step 5 · The app updates on its own track
 
 > **In one line:** With Voxt's signed update feed, the updater replaces the app and a restart finishes; feedless releases offer an external installer, and neither path touches the model folder.
