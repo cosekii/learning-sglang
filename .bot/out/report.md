@@ -131,6 +131,21 @@
 
 ---
 
+# lane k2 本轮报告 · ML Systems 08 Step 2 的 ML-17 固定树复核
+
+日期：2026-11-27。类型：修旧复核。范围只有 ML Systems 第 8 章第 2 步的既有修复、验证材料和本报告；未改教程、其他 ML 章、Omni、Voxt、第 1 本受保护英文原文或 `.bot/memory/`。
+
+- 本轮 HEAD 与 `origin/tutorials` 均为 `934a4f3`。既有 `cebc7bd` 和 `75bb176` 已完成 logical tensor `W` → `Shard(0)` placement → local shard，并连接第 3 步 all-gather 与第 6 步 `Replicate()`；本轮不重复改写教程，Step 4 的 FP32 `ReduceOp.AVG` 和其他相位保持不变。
+- **ML-17 作者返工复核通过，仍待协调固定复审。** 独立 explore 冷读为 **PASS**：R1–R5 **10/10**、机制 R6 **2/2**、非视觉原项 **20/20**、剩余内容洞 **0**。小学生复述：「八张显卡把每张数表按行分成八份，各留一份，所以每张显卡要存的东西从 64 GB 减到 8 GB；需要完整数表时，再把这些份拼回来。」pstack-reviewer 因配置模型不存在而未启动，未计为证据。
+- `npm run build`：**60 页**通过。Step 2 readability、`deep-check 08`、`zh-check`、英文全章三宽度 mobile、中文 Step 2 字号门和 `git diff --check` 均通过。transcript 连续两次与 pinned 逐字一致：**1,884 词**，SHA-256 `9cbc88c326308bb17fa6fc6c7cffe0a6bffbddae8c348e15fe2e9d010e8faf36`。
+- 第一次逐相审计被 120 秒工具预算截断，未计通过；延长预算后完整重跑 `.bot/out/ml08-step2-audit.mjs`：**40 个普通状态、32/32 个机制转变**，最低可见字体 **10.407 CSS px**，文字重叠和 SVG 出界均为 **0**。双语 deep 均确认展开，并包含 `Shard(0)` 与 `Replicate()`；KaTeX、残留公式和横向溢出检查通过。报告为 `.bot/out/ml08-step2-audit/report.json`。
+- 当前模型不能读取 PNG，工具返回 `Cannot read image`；本轮只报告源码、transcript、DOM 和几何结果，未声称看过图片或视觉通过。原 #4／#5、协调视觉 verdict 和主人最终视觉验收仍待。
+- 本轮没有新关闭协调 finding，也不自行提高协调总分。ML-17 等协调核销，其他 ML 开放 findings 不自动关闭，不开第 14 章。未跑全站回归、真实 FSDP2 训练、SGLang／CUDA、GPU benchmark、故障注入或 reduced-motion 动态切换。
+- 本 clone 的 `node_modules` 初始指向协调人 checkout。已只删除本目录内的符号链接并执行本地 `npm install`，后续依赖、cache、dev server 和构建均在本 clone。
+- 代表截图：`/Users/shuohuang/code/hmz-work/ls-k2-1127-004934/.bot/out/ml08-step2-audit/en-1440-s2-p4.png`。本地章节地址：`http://localhost:4470/learning-sglang/ml-sys/ch/08-fsdp2-training-backend/?step=2`。本轮 4470 dev server 和脚本启动的浏览器均在收尾关闭；查看前在本目录运行 `npx astro dev --background --port 4470`。
+
+---
+
 # lane k2 跟进复核 · ML Systems 08 Step 2 的 ML-17
 
 日期：2026-11-27。类型：修旧复核。范围只有 ML Systems 第 8 章第 2 步的既有修复、验证材料和本报告；未改其他 ML 章、Omni、Voxt、第 1 本受保护英文原文或 `.bot/memory/`。
