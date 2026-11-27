@@ -1,6 +1,6 @@
-# lane k1 本轮报告 · Omni 13 冷读与手机返工
+# lane k1 本轮报告 · Omni 13 固定树复审
 
-日期：2026-11-26。范围只含 Learning SGLang Omni 第 13 章的组件、双语深入讲解、MDX、生成 transcript、评分卡、仓库 progress 和本报告。未碰其他书、其他 lane 的章节、第 1 本受保护英文原文或 `.bot/memory/`。
+日期：2026-11-26。范围只含 Learning SGLang Omni 第 13 章的现有修复、生成 transcript、评分卡、仓库 progress 和本报告。本轮对齐 `origin/tutorials=a4d2fa4` 后固定复核当前十步树，没有重复改已修教程；未碰其他书、其他 lane 的章节、第 1 本受保护英文原文或 `.bot/memory/`。
 
 ## 修掉的 open review 项
 
@@ -15,17 +15,17 @@
 
 ## 分数边界
 
-- 协调固定八步基线保持：R1–R5 **68/80**、机制 R6 **16/16**、R1–R6 **84/96**、原十个非视觉项 **156/160**、原 #4/#5 **32/32**、原十二项 **188/192**。
-- 当前树扩为 **10 步**，不沿用旧分母。作者机制复核 **20/20**，独立只读 reviewer 的未决事实洞 **0**；当前 R1–R5 总分、原 #4/#5 和协调 verdict 留待复审，不记 `complete-under-EVAL`。
+- 协调固定 `03cb6cb` 八步基线同步为：R1–R5 **70/80**、机制 R6 **16/16**、R1–R6 **86/96**、原十个非视觉项 **157/160**、原 #4/#5 **32/32**、原十二项 **189/192**。
+- 当前树扩为 **10 步**，不沿用旧分母。本轮新的独立 source reviewer 判 assigned findings 全关闭、无开放 source finding，source-derived R1–R5 **100/100**、机制 R6 **20/20**；这些不是协调新增分数。当前协调总分、原 #4/#5 和协调 verdict 留待复审，不记 `complete-under-EVAL`。
 - 小学生逐步复述已写入 `memory/scores/learning-sglang-omni/13-qwen3-omni-deployment.md`。当前模型不能读取 PNG，未声称视觉通过或主人验收通过。
 
 ## 验证
 
-- `npm run build`：60 页通过。全章 10 步 `readability` 为 0 机械问题；`deep-check 13`、`zh-check`、英中全章 `mobile`、改动中文步字号门和 `git diff --check` 通过。
-- 默认 `transcript` 连续两次逐字一致：**3484 词**，SHA-256 `09c6cd90035f1fae25600f4261e80adfa6ffdb9e600a0bb944c1e48969ad77c8`；10 步无 caption、出界、重叠或脚注告警。
-- `.bot/out/omni13-final/report.json` 覆盖 **42 个桌面相位 + 60 个英中手机末相 + 20 个双语 deep = 122 个状态**。身份、计数器和末相编号一致；SVG 出界、文字重叠、小字、页面横溢、deep 失败、KaTeX 错误均为 **0**。桌面最低 **10.329503676470589 CSS px**，手机最低 **10.760289634146341 CSS px**。
-- 同目录保存 PNG 和可重跑的 `audit.mjs`。代表图：`.bot/out/omni13-final/phone-en-390-s02-final.png`、`.bot/out/omni13-final/desktop-en-s05-p2.png`、`.bot/out/omni13-final/deep-zh-s08.png`。未把这些文件记为模型已读图证据。
-- 独立 cold-read／alignment reviewer 先发现两处事实问题，修复后同一 reviewer 复核关闭。另一个 reviewer 因配置模型不可用失败、一个空调用无报告，均未计为证据。
+- 本轮固定当前树重跑 `npm run build`：60 页通过。全章 10 步 `readability` 为 0 机械问题；`deep-check 13`、`zh-check`、英中全章 `mobile`、中文十步字号门和 `git diff --check` 通过。
+- 默认 `transcript` 本轮连续两次逐字一致：**3484 词**，SHA-256 `09c6cd90035f1fae25600f4261e80adfa6ffdb9e600a0bb944c1e48969ad77c8`；10 步无 caption、出界、重叠或脚注告警。
+- `.bot/out/omni13-rereview/report.json` 覆盖 **42 个桌面相位 + 60 个英中手机末相 + 20 个双语 deep = 122 个状态**。身份、计数器和末相编号一致；102 个普通状态的 SVG 出界、文字重叠、小字和页面横溢均为 **0**，20 个 deep 的 `aria-expanded`、横向溢出、KaTeX 错误和残留 `$$` 检查均为 **0**。桌面最低 **10.329503676470589 CSS px**，手机最低 **10.760289634146341 CSS px**。
+- 同目录保存 PNG、28 张接触表和可重跑的 `audit.mjs`。代表图：`.bot/out/omni13-rereview/phone-en-390-s02-final.png`、`.bot/out/omni13-rereview/desktop-en-s05-p2.png`、`.bot/out/omni13-rereview/deep-zh-s08.png`。当前模型无图像输入，未把这些文件记为已读图或视觉通过证据。
+- 本轮独立 source reviewer 给出 GO；专用 reviewer 调用因配置模型不存在而失败，未计为证据。第 13 章末尾的慢客户端问题与第 14 章 Step 1 的 `delivery backlog` 和 576,000 B 未读声音直接相接。
 
 ## 提交
 
@@ -36,7 +36,7 @@
 - `c1f7636`：缩短新溢出步的手机算式。
 - `e5aba00`：修正默认 code2wav 拓扑及容量／路由说明。
 - `61e82fc`：修正视频算式的来源说明。
-- 评分卡、progress 和本报告随后续 `[k1] ` 记录提交推送；所有教程提交均已推 `origin/tutorials`，没有 force-push。
+- 评分卡、progress 和本报告随后续 `[k1] ` 记录提交推送；所有教程提交均已推 `origin/tutorials`，没有 force-push。本轮固定复审未新增教程提交，只同步协调基线和复验证据。
 
 ## 剩余
 
