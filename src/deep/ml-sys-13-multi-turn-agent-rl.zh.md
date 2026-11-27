@@ -286,6 +286,6 @@ S2 的原始 response mask 为 `[1,1,1,1,0,0,0,0,0,0,0,0]`，响应 attention ma
 
 ### 接下来
 
-一个 batch 现在能装下不同长度的轨迹。下一章把模型生成、工具执行和训练放上同一条时间线，找出最长等待。
+一个 batch 现在能装下不同长度的轨迹。本章不测量模型生成、工具执行和训练的等待。
 
-来源：`verl-project/verl@c5b189a1af496d0bc68320cd1d5bd7a1f1e3638a` 的 `verl/experimental/agent_loop/agent_loop.py:321-385` 和 `tool_agent_loop.py:124-131`。
+来源：<code>verl-project/<wbr>verl@<wbr>c5b189a1af496d0bc68320cd1d5bd7a1f1e3638a</code> 的 <code>verl/<wbr>experimental/<wbr>agent_loop/<wbr>agent_loop.py:321-385</code> 和 `tool_agent_loop.py:124-131`。

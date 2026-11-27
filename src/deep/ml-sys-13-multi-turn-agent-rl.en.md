@@ -286,6 +286,6 @@ Sample S2's width comes from the configuration: $7+5=12$. A longer response cann
 
 ### Next
 
-One batch can now hold different-length trajectories. The next chapter places model generation, tool execution and training on one timeline to find the longest wait.
+One batch can now hold different-length trajectories. This chapter does not measure the waits for model generation, tool execution, or training.
 
-Sources: `verl-project/verl@c5b189a1af496d0bc68320cd1d5bd7a1f1e3638a`, `verl/experimental/agent_loop/agent_loop.py:321-385` and `tool_agent_loop.py:124-131`.
+Sources: <code>verl-project/<wbr>verl@<wbr>c5b189a1af496d0bc68320cd1d5bd7a1f1e3638a</code>, <code>verl/<wbr>experimental/<wbr>agent_loop/<wbr>agent_loop.py:321-385</code> and `tool_agent_loop.py:124-131`.

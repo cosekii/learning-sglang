@@ -278,7 +278,7 @@
       { en: 'S2 response_mask: 1×4 → 0×3 → 0×5', zh: 'S2 response_mask：1×4 → 0×3 → 0×5' },
       { en: 'S2 attention_mask: 1×7 → 0×5', zh: 'S2 attention_mask：1×7 → 0×5' },
       { en: 'response_mask = raw mask × response attention mask', zh: 'response_mask = 原始 mask × 响应 attention mask' },
-      { en: 'Next: which takes longest: making A, getting O, or training this batch?', zh: '下一章：生成 A、得到 O 和训练这个 batch，哪段等待最长？' },
+      { en: 'This chapter does not time making A, getting O, or training this batch.', zh: '本章不测量生成 A、得到 O 和训练这个 batch 的等待。' },
     ],
     mobile: {
       title: 'Pad responses for training', titleZh: '把响应 padding 成训练 batch',
@@ -290,7 +290,7 @@
         { en: 'response_mask: 1×4 → 0×3 → 0×5', zh: 'response_mask：1×4 → 0×3 → 0×5' },
         { en: 'attention_mask: 1×7 → 0×5', zh: 'attention_mask：1×7 → 0×5' },
         { en: 'response_mask = raw mask × attention', zh: 'response_mask = 原始 mask × attention' },
-        { en: 'Next: which wait is longest: A, O, or training?', zh: '下一章：A、O 和训练，哪段等待最长？' },
+        { en: 'A, O, and training waits are not measured here.', zh: '本章不测量 A、O 和训练的等待。' },
       ],
     },
   }];
