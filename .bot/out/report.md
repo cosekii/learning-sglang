@@ -1,3 +1,60 @@
+# lane k1 本轮报告 · Omni 11／14 固定复审材料整理
+
+日期：2026-11-27。类型：修旧证据整理。范围只有本报告和两份追加的逐相审计结果；未改教程、transcript、评分卡、`memory/progress.md`、`.bot/memory/`、其他书或其他 lane 的文件。本轮开始及材料采集时的 HEAD 与 `origin/tutorials` 均为 `9ed971e`。
+
+## 固定快照与 review 边界
+
+- Omni 11 固定为 `e71ab01942fd810ce7eb4eff3fc69fd4e8dc766b`，Omni 14 固定为 `5c5f749e707404c2fa7569c4db7e1c2fb29420ea`。当前 HEAD 到两个固定提交的指定组件、双语 deep、MDX、transcript 和原审计脚本均无 diff；Omni 11 从 `e71ab01` 到当前 HEAD 也没有共享布局或样式改动。追加材料因此在当前 HEAD 重放，不改动固定树。
+- **本轮修复的 review finding 为 0，协调分数不变。** Omni 11 仍为 **NO-GO / coordinator-rereview-pending**，协调机制基线 **1/16**；作者 DOM 结果 **16/16** 不自动关闭 Omni-15 或 Omni-02 的本章部分。Omni-22 的 Slow AR→c0、Fast AR→c1–c9 接缝和 Omni-33 的 session 状态接缝仍开放。
+- Omni 14 仍为 **呈现 NO-GO / coordinator-rereview-pending**。协调 R1–R5 **80/80**、机制 R6 **16/16** 保持；作者字号和 DOM 结果不自动关闭 Omni-02 或恢复原整章满分。Omni-37 的 Step 7 SSE 字段仍开放。
+- Omni 13 固定 `bd4aa5d` 的 GO 和 Omni 15 最新九步树的 GO 不变，本轮未碰。下一轮协调顺序保持 **Omni 11 → Omni 14**，不开第 16／17 章。
+
+## 固定材料索引
+
+| 项目 | Omni 11 `e71ab01` | Omni 14 `5c5f749` |
+|---|---|---|
+| transcript | `transcript/omni/11-fish-s2-pro.md` | `transcript/omni/14-slow-reader-backpressure.md` |
+| 词数与 SHA-256 | **2,144 词**；`fec68ad32da78557d31306fb9664b6a983991cc0a0a59da85a73059bbc28afa1` | **2,302 词**；`070b24bc84a94f1c76e362db7d4f3f16e0b49b9ba1f95876f3dc98e897c458ba` |
+| 原逐相报告 | `.bot/out/omni11-phase-audit/report.json` | `.bot/out/omni14-phase-audit/report.json` |
+| 原报告 SHA-256 | `41eb436c3daf09b3623646eff9d691390c90e80ab2ce0359a1a59f17ec940be8` | `f404b244a8c7cec3803bf58ecd84fb4a57c01681a683b03ca42395b1e6760023` |
+| 原报告结果 | **40** 相位，**32/32** 机制转变，最低 **10.506 CSS px**，重叠／出界 **0/0** | **34** 相位，**24/26** 机制转变，八步均有机制，最低 **10.326 CSS px**，重叠／出界 **0/0** |
+| 本轮追加报告 | `.bot/out/omni11-fixed-e71ab01/report.json` | `.bot/out/omni14-fixed-5c5f749/report.json` |
+| 追加报告 SHA-256 | `dd19a3807b7fccee96ea8550b4d8e2367c8e3d5ac449e5f6ee790b56db0bad51` | `5f7215b4d4e85b9404489dd22e382ace974e983f35803adbcd16cba9610f449d` |
+| 本地 PNG | 同目录 **40 张**，40 个不同 SHA-256 | 同目录 **34 张**，34 个不同 SHA-256 |
+
+两个 transcript 哈希均直接从固定提交的 Git 对象重算。两个原审计报告与固定提交逐字节一致。追加重放的汇总指标全部与原报告一致；Omni 14 的 34 条 state 也逐项一致。Omni 11 有 34／40 条机制签名一致，Step 5 phase 1／2、Step 7 phase 0／1／2、Step 8 phase 0 的签名不同，因此不声称逐签名一致；这些状态的 step、phase、counter、最低字号、转变结果、重叠和出界结果仍一致。
+
+### 各步桌面最低字号（1440×900，CSS px）
+
+| Step | Omni 11 固定值 | Omni 14 基线 → 固定值 |
+|---|---:|---:|
+| 1 | 10.506 | 9.220 → 11.064 |
+| 2 | 10.720 | 7.593 → 10.630 |
+| 3 | 10.806 | 8.328 → 10.826 |
+| 4 | 10.806 | 7.943 → 10.561 |
+| 5 | 10.806 | 7.593 → 10.630 |
+| 6 | 10.720 | 8.464 → 10.580 |
+| 7 | 11.102 | 8.067 → 10.891 |
+| 8 | 10.643 | 7.943 → 10.326 |
+
+Omni 14 的改前记录保留在 `.bot/out/omni14-font-baseline/report.json`，未覆盖。Step 4／7 的末相停留也保留，不能把 24/26 写成 26/26。
+
+## 复现、视觉边界与清理
+
+```sh
+npx astro dev --background --port 4481
+BASE=http://localhost:4481/learning-sglang OUT=.bot/out/omni11-fixed-e71ab01 node .bot/out/omni11-phase-audit.mjs
+BASE=http://localhost:4481/learning-sglang OUT=.bot/out/omni14-fixed-5c5f749 node .bot/out/omni14-phase-audit.mjs
+npx astro dev stop
+```
+
+- 代表图：`/Users/shuohuang/code/hmz-work/ls-k1-1127-010947/.bot/out/omni11-fixed-e71ab01/s7-p1.png` 和 `/Users/shuohuang/code/hmz-work/ls-k1-1127-010947/.bot/out/omni14-fixed-5c5f749/s2-p3.png`。PNG 被 gitignore，只保留本地；报告 JSON 和可重跑脚本纳入提交。
+- 当前模型读取两张代表 PNG 均返回 `Cannot read image`。本轮只提供 DOM、截图文件、哈希和几何证据，未声称看过图片、视觉通过或完成协调验收。没有新增 explore PASS，也没有重跑全站回归或真实模型、服务、GPU benchmark、故障注入和 reduced-motion 动态切换。
+- 本 clone 的 `node_modules` 原指向协调人 checkout。已只删除本目录内的符号链接并本地 `npm install`，未写协调人的 checkout，package 文件无 diff。
+- 本轮 4481 dev server（PID 11334）已停止，端口无监听；两个审计浏览器均已关闭。`pgrep -P 1` 未发现父进程为 1 的 Chrome，其他浏览器未触碰。查看章节前在本目录运行上面的 dev server 命令；地址为 `http://localhost:4481/learning-sglang/omni/ch/11-fish-s2-pro/?step=7` 和 `http://localhost:4481/learning-sglang/omni/ch/14-slow-reader-backpressure/?step=2`。
+
+---
+
 # lane k1 本轮报告 · Omni 14 桌面小字固定树复核
 
 日期：2026-11-27。类型：修旧复核。范围只有 Learning SGLang Omni 第 14 章的既有字号修复、逐相审计和本报告；未改 Omni 11／13／15、其他书、其他 lane、第 1 本受保护英文原文或 `.bot/memory/`。
