@@ -159,3 +159,46 @@ capture 时，`CudaGraphRunner` 使用已经分配的输入缓冲，记录模型
 ### 接下来
 
 下一步把同一张 graph 重放两次，用新输入输出覆盖同一组缓冲。
+
+## 第 4 步 · replay 覆盖固定缓冲
+
+**一句话。** 每次 replay 都把新输入复制进同一个缓冲，运行同一张记录好的 graph，再覆盖同一个输出缓冲。
+
+### 图上是什么
+
+- 三个对象沿用第 3 步的身份：`G.input`、记录好的 graph $\Gamma$ 和 `G.output`。
+- replay $t$ 时，输入卡是 `input t`，输出卡从空变为 `output t`。
+- replay $t+1$ 时，`input t+1` 替换旧输入。第二次 replay 再把 `output t` 替换成 `output t+1`。
+- graph 没有重新记录。一次 capture 服务两次 replay，`G` 始终是同一份分配。
+
+### 公式与符号
+
+对 replay $r\in\{t,t+1\}$：
+
+$$I\leftarrow\operatorname{copy}(\operatorname{input}_r),\qquad O\leftarrow\Gamma(I)=\operatorname{output}_r$$
+
+| 符号 | 是什么 | 从哪来 |
+|---|---|---|
+| $I$ | 同一个 `G.input` 分配 | 第 3 步 |
+| $O$ | 同一个 `G.output` 分配 | 第 3 步 |
+| $\Gamma$ | 只记录一次的 graph | 第 3 步 |
+| $r$ | replay 序号 | 图上构造的两次 replay |
+
+### 代入图上的数
+
+图上先演示 $\Gamma(I_t)=O_t$，再演示 $\Gamma(I_{t+1})=O_{t+1}$。capture 次数保持 1，replay 次数变为 2。这些是构造例的操作次数，不是 benchmark 结果或字节数。
+
+### 源码与边界
+
+replay 路径把当前输入复制进 runner 的输入缓冲，再调用已经 capture 的 graph。它不会为每个 token 新建一张 graph。与同一张 graph 关联的输出也由这套 replay 机制复用。
+
+以下来源位于 `sglang@4fa3482`：
+
+- [输入缓冲准备与复制：`python/sglang/srt/model_executor/cuda_graph_runner.py:262-298,520-521`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L262-L298)。
+- [调用 capture 后的 graph：`python/sglang/srt/model_executor/cuda_graph_runner.py:1112-1222`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L1112-L1222)。
+
+本例固定一个 batch 形状，不展开 padding、形状选择和输出处理。
+
+### 接下来
+
+下一步加入运行时与这些常驻 graph 缓冲同时存在的临时激活。

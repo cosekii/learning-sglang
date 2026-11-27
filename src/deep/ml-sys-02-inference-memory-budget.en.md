@@ -159,3 +159,46 @@ The chapter does not enumerate every captured operation or every batch-shape run
 ### Next
 
 The next step replays the same graph twice and overwrites the same buffers with new input and output.
+
+## Step 4 · Replay overwrites fixed buffers
+
+**One sentence.** Each replay copies new input into the same buffer, runs the same recorded graph and overwrites the same output buffer.
+
+### What the diagram shows
+
+- The three objects keep their Step 3 identities: `G.input`, the recorded graph $\Gamma$ and `G.output`.
+- At replay $t$, the input card holds `input t` and the output card changes from empty to `output t`.
+- At replay $t+1$, `input t+1` replaces the old input. The second replay then replaces `output t` with `output t+1`.
+- The graph is not recorded again. One capture serves both replays, and `G` remains the same allocation throughout.
+
+### Formula and symbols
+
+For replay $r\in\{t,t+1\}$:
+
+$$I\leftarrow\operatorname{copy}(\operatorname{input}_r),\qquad O\leftarrow\Gamma(I)=\operatorname{output}_r$$
+
+| Symbol | Meaning | Origin |
+|---|---|---|
+| $I$ | The same `G.input` allocation | Step 3 |
+| $O$ | The same `G.output` allocation | Step 3 |
+| $\Gamma$ | The graph recorded once | Step 3 |
+| $r$ | Replay index | The two constructed replays on stage |
+
+### Substitute the diagram's numbers
+
+The stage shows $\Gamma(I_t)=O_t$, then $\Gamma(I_{t+1})=O_{t+1}$. Capture count stays 1 while replay count becomes 2. These are operation counts in the constructed example, not benchmark results or byte counts.
+
+### Source and scope
+
+The replay path copies the current input into the runner's input buffers and invokes the captured graph. It does not allocate a fresh graph for each token. Output tensors associated with the graph are reused by the same replay machinery.
+
+Sources use `sglang@4fa3482`:
+
+- [Input-buffer preparation and copy: `python/sglang/srt/model_executor/cuda_graph_runner.py:262-298,520-521`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L262-L298).
+- [Captured graph replay: `python/sglang/srt/model_executor/cuda_graph_runner.py:1112-1222`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L1112-L1222).
+
+The example fixes one batch shape. Padding, shape selection and output processing are outside this step.
+
+### Next
+
+The next step adds the temporary activations that coexist with these persistent graph buffers during runtime.

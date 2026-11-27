@@ -18,6 +18,9 @@
   }, {
     caption: `Capture records GPU steps once. It uses fixed input and output buffers that remain allocated.`,
     captionZh: `capture 把 GPU 步骤记录一次。它使用固定的输入输出缓冲，缓冲一直保留。`,
+  }, {
+    caption: `Replay reuses the same graph and buffers. New input and output overwrite the old values.`,
+    captionZh: `replay 复用同一张 graph 和同一组缓冲。新输入输出覆盖旧值。`,
   }];
   let step = $state(0);
   $effect(() => {
@@ -40,7 +43,7 @@
       motion.removeEventListener('change', updateMotion);
     };
   });
-  const PHASE_COUNTS = [6, 5, 5];
+  const PHASE_COUNTS = [6, 5, 5, 6];
   const PHASE_MS = 1000, REST_MS = 2600;
   let phase = $state(0);
   let lap = $state(0), lapMs = $state(0);
@@ -64,6 +67,9 @@
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 0 ? 400 : 540) : (step === 0 ? 410 : 430));
   const barWidth = (gb: number, total: number) => gb / DEMO_PRE_MODEL_FREE_GB * total;
+  const replayInput = $derived(phase >= 3 ? 'input t+1' : 'input t');
+  const replayOutput = $derived(phase >= 4 ? 'output t+1' : phase >= 2 ? 'output t' : '—');
+  const replayCount = $derived(phase >= 4 ? 2 : phase >= 2 ? 1 : 0);
 </script>
 
 <figure class="viz" data-animation-step={step} data-animation-phase={phase} data-animation-final-phase={PHASE_COUNTS[step] - 1}>
@@ -270,8 +276,48 @@
           <text x="150" y="405" text-anchor="middle" class="label" opacity={phase >= 2 ? 1 : 0}>GPU step 1 → GPU step 2 → …</text>
           <text x="150" y="480" text-anchor="middle" class="formula budget" opacity={phase >= 4 ? 1 : 0}>capture = 1 · G {t('stays allocated', '保留分配')}</text>
         {/if}
+      {:else if step === 3}
+        {#if !phone}
+          <text x="40" y="28" class="title">{t('Replay twice · same graph, same buffers', '重放两次 · 同一张 graph，同一组缓冲')}</text>
+          <rect x="40" y="75" width="170" height="100" rx="10" fill="var(--bg)" stroke="var(--fg)" stroke-width={phase === 1 || phase === 3 ? 4 : 1} />
+          <text x="125" y="107" text-anchor="middle" class="fraction">G.input</text>
+          <text x="125" y="145" text-anchor="middle" class="label">{replayInput}</text>
+          <path d="M215 125 h50" stroke="var(--fg)" stroke-width="3" /><path d="M270 125 l-10 -6 v12 z" fill="var(--fg)" />
+          <rect x="275" y="75" width="170" height="100" rx="10" fill="var(--panel)" stroke="var(--fg)" stroke-width={phase === 2 || phase === 4 ? 4 : 1} />
+          <text x="360" y="107" text-anchor="middle" class="fraction">Γ · recorded once</text>
+          <text x="360" y="145" text-anchor="middle" class="label">GPU step 1 → 2 → …</text>
+          <path d="M450 125 h50" stroke="var(--fg)" stroke-width="3" /><path d="M505 125 l-10 -6 v12 z" fill="var(--fg)" />
+          <rect x="510" y="75" width="170" height="100" rx="10" fill="var(--bg)" stroke="var(--fg)" stroke-width={phase === 2 || phase === 4 ? 4 : 1} />
+          <text x="595" y="107" text-anchor="middle" class="fraction">G.output</text>
+          <text x="595" y="145" text-anchor="middle" class="label">{replayOutput}</text>
+          <g opacity={phase >= 2 ? 1 : 0} style="transition: opacity 300ms">
+            <text x="70" y="235" class="fraction">t</text>
+            <text x="125" y="235" class="label">copy input t → Γ.replay() → output t</text>
+          </g>
+          <g opacity={phase >= 4 ? 1 : 0} style="transition: opacity 300ms">
+            <text x="70" y="280" class="fraction">t+1</text>
+            <text x="125" y="280" class="label">copy input t+1 → Γ.replay() → output t+1</text>
+          </g>
+          <text x="360" y="350" text-anchor="middle" class="formula budget" opacity={phase >= 5 ? 1 : 0}>capture = 1 · replay = {replayCount} · same G</text>
+        {:else}
+          <text x="20" y="25" class="title">{t('Replay twice', '重放两次')}</text>
+          <rect x="20" y="50" width="260" height="70" rx="10" fill="var(--bg)" stroke="var(--fg)" stroke-width={phase === 1 || phase === 3 ? 4 : 1} />
+          <text x="150" y="78" text-anchor="middle" class="fraction">G.input</text>
+          <text x="150" y="106" text-anchor="middle" class="label">{replayInput}</text>
+          <path d="M150 125 v25" stroke="var(--fg)" stroke-width="3" /><path d="M150 155 l-6 -10 h12 z" fill="var(--fg)" />
+          <rect x="20" y="160" width="260" height="70" rx="10" fill="var(--panel)" stroke="var(--fg)" stroke-width={phase === 2 || phase === 4 ? 4 : 1} />
+          <text x="150" y="188" text-anchor="middle" class="fraction">Γ · recorded once</text>
+          <text x="150" y="216" text-anchor="middle" class="label">GPU step 1 → 2 → …</text>
+          <path d="M150 235 v25" stroke="var(--fg)" stroke-width="3" /><path d="M150 265 l-6 -10 h12 z" fill="var(--fg)" />
+          <rect x="20" y="270" width="260" height="70" rx="10" fill="var(--bg)" stroke="var(--fg)" stroke-width={phase === 2 || phase === 4 ? 4 : 1} />
+          <text x="150" y="298" text-anchor="middle" class="fraction">G.output</text>
+          <text x="150" y="326" text-anchor="middle" class="label">{replayOutput}</text>
+          <text x="150" y="385" text-anchor="middle" class="label" opacity={phase >= 2 ? 1 : 0}>t: input t → output t</text>
+          <text x="150" y="420" text-anchor="middle" class="label" opacity={phase >= 4 ? 1 : 0}>t+1: input t+1 → output t+1</text>
+          <text x="150" y="480" text-anchor="middle" class="formula budget" opacity={phase >= 5 ? 1 : 0}>capture = 1 · replay = {replayCount}</text>
+        {/if}
       {/if}
-      <text x={W / 2} y={H - 7} text-anchor="middle" class="footnote">{step === 0 ? t('Rounded example; headroom is a reserve.', '约数例子；动态余量只是预留。') : step === 1 ? t('G has no measured GB value in this example.', '本例没有 G 的实测 GB 数。') : t('One schematic graph; real capture depends on batch shape.', '示意一张 graph；实际 capture 随 batch 形状而变。')}</text>
+      <text x={W / 2} y={H - 7} text-anchor="middle" class="footnote">{step === 0 ? t('Rounded example; headroom is a reserve.', '约数例子；动态余量只是预留。') : step === 1 ? t('G has no measured GB value in this example.', '本例没有 G 的实测 GB 数。') : step === 2 ? t('One schematic graph; real capture depends on batch shape.', '示意一张 graph；实际 capture 随 batch 形状而变。') : t('Schematic values; the allocation stays fixed.', '数值仅示意；分配保持不变。')}</text>
     </svg>
   </div>
   <StepControls {step} total={steps.length} caption={cur.caption} captionZh={cur.captionZh}
