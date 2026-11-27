@@ -124,15 +124,17 @@ Step 3 follows one KV byte declaration into the stage factory. Exactly one engin
 
 ### What the picture shows
 
-- All three panels begin with the same teaching stage: `engine.kv_cache_bytes=2 GiB`. A KV cache stores previously computed token keys and values.
-- In the first panel, no engine consumes the budget. It remains unconsumed when the scope exits, so startup raises.
-- In the second, exactly one engine consumes two GiB. The blue box marks successful consumption and startup.
-- In the third, two engines each attempt to take two GiB. The second consumption raises because one stage declaration covers exactly one engine's full KV pool.
+- The three panels are independent alternatives, not three moments in one run and not three engines sharing one scope. Each has its own scope with the same teaching declaration: `engine.kv_cache_bytes=2 GiB`. A KV cache stores previously computed token keys and values.
+- The first held phase shows `consumed=false` and dashed unconsumed boxes. The second phase lets the first engine in the one-engine and two-engine panels claim the blue two-GiB pool, changing their flags to `consumed=true`. The zero-engine panel stays unclaimed.
+- The third phase tests the two failure branches: the empty case reaches its cleanup check, and a second orange engine attempts to claim the same declaration in the two-engine panel. The last phase shows the zero-consumer error, the one-consumer startup and the second-consumer error.
+- The orange second card is a rejected attempt, not another funded pool. In the two-engine panel, `consumed=true` records the first claim even though the second call raises.
 - This is startup configuration delivery, not request-time sharing of one KV pool among engines.
 
 ### Work through the numbers
 
-Let declared bytes be $B=2\,\mathrm{GiB}$ and the number of consuming engines be $n$. The valid condition is:
+Let declared bytes be $B=2\,\mathrm{GiB}$. The number of consuming engines is $n$.
+
+The valid condition is:
 
 $$n=1$$
 
@@ -165,12 +167,12 @@ Rejecting $n=2$ does not wait to compute $2B=4\,\mathrm{GiB}$ and compare it wit
 
 This step does not expand byte-to-token conversion. It also does not combine `max_total_tokens` with `kv_cache_bytes`: the documentation makes them mutually exclusive on one stage. Scopes cannot nest, an additional error branch not drawn here.
 
-- `sglang_omni/scheduling/stage_kv_budget.py:20-31`: the budget record, consumed flag and thread-local storage.
-- `sglang_omni/scheduling/stage_kv_budget.py:34-64`: one factory scope, nesting rejection, cleanup and zero-consumer failure.
-- `sglang_omni/scheduling/stage_kv_budget.py:67-88`: first consumption and second-consumer failure.
+- <code>sglang_omni/scheduling/<wbr>stage_kv_budget.py:20-31</code>: the budget record, consumed flag and thread-local storage.
+- <code>sglang_omni/scheduling/<wbr>stage_kv_budget.py:34-64</code>: one factory scope, nesting rejection, cleanup and zero-consumer failure.
+- <code>sglang_omni/scheduling/<wbr>stage_kv_budget.py:67-88</code>: first consumption and second-consumer failure.
 - `docs/basic_usage/mps_dp.md:62-69`: per-stage KV bytes and mutual exclusion with `max_total_tokens`.
 
-Line numbers refer to `origin/main@db7cbf39ccffde7f95b81c2dcc7da1b52a5c0bb6`.
+Line numbers refer to <code>origin/main@<wbr>db7cbf39ccffde7f95b81c2dcc7da1b52a5c0bb6</code>.
 
 ### Next
 

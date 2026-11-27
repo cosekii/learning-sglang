@@ -4,6 +4,9 @@
 
 ## 本轮记录
 
+- 修旧 Learning SGLang Omni 第 7 章 Step 3 的 Omni-11 第三部分：三幅独立面板各持有一份 2 GiB 申报，依次上演 `consumed=false`、第一次领取、空情况清理检查与第二次领取、零／一／二次领取结果。双语组件、MDX、deep 与生成 transcript 已同步；Steps 1–2 和 Steps 4–6 未改。Step 3 作者修复完成，待协调固定复审，不自行关闭 Omni-11；下一最小单元是 Step 4 的权重 alias 与私有 KV 形成过程。
+- Step 3 作者参考值为 R1–R5 **10/10**、机制 R6 **2/2（DOM）**、原十个非视觉项 **20/20**、0 新内容洞；独立 `explore` 首轮指出三处内容问题，修复后复审 **PASS**。`build`（60 页）、Step 3 `readability`、`deep-check 07`、`zh-check`、英中全章与中文 Step 3 三宽度 `mobile`、`git diff --check` 全过；两次 transcript 均为 SHA-256 `51b0cca9…b918cc8b`。定向矩阵 **10 组合、40 状态、30/30 转变、43 张 PNG、3 个双语 deep 视图**，最低 **10.760 CSS px**，重叠、出界、页面与 deep 横溢均为 0。当前模型不能读取 PNG，原 #4/#5、视觉与整章 verdict 待协调；未跑全站回归、真实 SGLang-Omni、模型或 GPU。本轮类型：**修旧**。
+
 - 修旧 Learning SGLang Omni 第 7 章 Step 2 的 Omni-11 第二部分：direction 指定的 Step 1 已在开始 HEAD `7b1c881` 完成并推送，本轮不回改待审批次，承接同章下一 P0 最小单元。两幅同尺面板依次上演比例与上限输入、40／72 GiB 比例字节、加 20 GiB reserve 后的 60／92 GiB 总量和容量结果；双语组件、MDX、deep 与生成 transcript 已同步，Step 1 和 Steps 3–6 未改。Step 2 作者修复完成，待协调固定复审，不自行关闭 Omni-11；下一最小单元是 Step 3 的 KV 领取过程。
 - Step 2 作者参考值为 R1–R5 **10/10**、机制 R6 **2/2（DOM）**、原十个非视觉项 **20/20**、0 新内容洞；独立 `explore` 首轮指出两处呈现／说明问题，修复后复审 **PASS**。`build`（60 页）、Step 2 `readability`、`deep-check 07`、`zh-check`、英中全章与中文 Step 2 三宽度 `mobile`、`git diff --check` 全过；两次 transcript 均为 SHA-256 `e8a07d60…2959a40`。定向矩阵 **10 组合、40 状态、30/30 转变、43 张 PNG、3 个双语 deep 视图**，最低 **10.760 CSS px**，重叠、出界、页面与 deep 横溢均为 0。当前模型不能读取 PNG，原 #4/#5、视觉与整章 verdict 待协调；未跑全站回归、真实 SGLang-Omni、模型或 GPU。本轮类型：**修旧**。
 

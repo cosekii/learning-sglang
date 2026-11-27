@@ -124,15 +124,17 @@ $R$ 是 stage 整体预留，不是「在权重和 KV 之外再加一份同名 K
 
 ### 图上是什么
 
-- 三幅面板都从同一个教学 stage 开始：`engine.kv_cache_bytes=2 GiB`。KV cache 是保存已算 token 的 key 和 value 的池。
-- 第一幅没有 engine 消费。预算在作用域退出时仍未被标记为 consumed，因此报错。
-- 第二幅恰好一个 engine 消费 2 GiB，标记成功后启动。蓝框表示预算已被正确领取。
-- 第三幅尝试让两个 engine 各拿 2 GiB。第二次消费会报错，因为一份 stage 预算只覆盖一个 engine 的完整 KV 池。
+- 三幅面板是三种独立情况，不是同一次执行的三步，也不是共用一个作用域。每幅都有自己的作用域和同样的教学声明：`engine.kv_cache_bytes=2 GiB`。KV cache 是保存已算 token 的 key 和 value 的池。
+- 第一相显示 `consumed=false` 和虚线未领取框。第二相让一个-engine 和两个-engine 面板里的第一个 engine 领取蓝色 2 GiB 池，标记变为 `consumed=true`。零-engine 面板仍未领取。
+- 第三相检查两条失败分支：没有 engine 的情况走到清理检查，两个-engine 面板里的第二个橙色 engine 尝试领取同一份预算。最后一相显示零领取报错、一次领取启动和第二次领取报错。
+- 橙色第二张卡是被拒绝的尝试，不是又一份真正分配的 KV 池。在两个-engine 面板里，`consumed=true` 记录第一次领取，第二次调用仍会报错。
 - 三幅图讲的是启动配置传递，不是请求运行时把同一份 KV 给多个 engine 共用。
 
 ### 代入图上的数
 
-设声明字节数为 $B=2\,\mathrm{GiB}$，实际消费的 engine 数为 $n$。合法条件是：
+设声明字节数为 $B=2\,\mathrm{GiB}$。实际消费的 engine 数为 $n$。
+
+合法条件是：
 
 $$n=1$$
 
@@ -163,14 +165,14 @@ $$n=2\Rightarrow\text{second consumption error}$$
 
 ### 边界与出处
 
-本步不展开 engine 怎样把字节数换算为 token 数，也不把第 1 步的 `max_total_tokens` 与 `kv_cache_bytes` 同时设置；文档明确二者在同一 stage 互斥。作用域不可嵌套，图中也未画这个额外错误分支。
+本步不展开 engine 怎样把字节数换算为 token 数，也不同时设置 `max_total_tokens` 与 `kv_cache_bytes`；文档明确二者在同一 stage 互斥。作用域不可嵌套，图中也未画这个额外错误分支。
 
-- `sglang_omni/scheduling/stage_kv_budget.py:20-31`：预算记录、consumed 标记和 thread-local。
-- `sglang_omni/scheduling/stage_kv_budget.py:34-64`：单次工厂作用域、禁止嵌套、finally 清理和零消费错误。
-- `sglang_omni/scheduling/stage_kv_budget.py:67-88`：首次消费与第二次消费错误。
+- <code>sglang_omni/scheduling/<wbr>stage_kv_budget.py:20-31</code>：预算记录、consumed 标记和 thread-local。
+- <code>sglang_omni/scheduling/<wbr>stage_kv_budget.py:34-64</code>：单次工厂作用域、禁止嵌套、finally 清理和零消费错误。
+- <code>sglang_omni/scheduling/<wbr>stage_kv_budget.py:67-88</code>：首次消费与第二次消费错误。
 - `docs/basic_usage/mps_dp.md:62-69`：每 stage KV 字节预算与 `max_total_tokens` 的互斥规则。
 
-行号对应 `origin/main@db7cbf39ccffde7f95b81c2dcc7da1b52a5c0bb6`。
+行号对应 <code>origin/main@<wbr>db7cbf39ccffde7f95b81c2dcc7da1b52a5c0bb6</code>。
 
 ### 接下来
 

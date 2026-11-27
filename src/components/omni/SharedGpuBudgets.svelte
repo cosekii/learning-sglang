@@ -54,7 +54,7 @@
     if (q >= 1 && q <= steps.length) step = q - 1;
   });
   const cur = $derived(steps[step]);
-  const PHASE_COUNTS = [4, 4, 1, 1, 1, 1];
+  const PHASE_COUNTS = [4, 4, 4, 1, 1, 1];
   let phase = $state(0);
   let lap = $state(0), lapMs = $state(0);
   const nextLap = (ms: number) => untrack(() => { lapMs = ms; lap++; });
@@ -83,7 +83,7 @@
     return () => query.removeEventListener('change', update);
   });
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [480, 690, 700, 650, 650, 790][step] : [440, 470, 460, 480, 450, 500][step]);
+  const H = $derived(phone ? [480, 690, 730, 650, 650, 790][step] : [440, 470, 460, 480, 450, 500][step]);
   const fractionPct = (value: number) => (value * 100).toFixed(2);
   const budgetX = $derived(phone ? 20 : 60);
   const budgetWidth = $derived(phone ? 260 : 600);
@@ -111,6 +111,12 @@
     { x: phone ? 15 : 255, y: phone ? 265 : 104, engines: KV_SCOPE_REQUIRED_ENGINE_COUNT, title: t('ONE ENGINE', '一个 ENGINE'), ok: true },
     { x: phone ? 15 : 490, y: phone ? 440 : 104, engines: KV_SCOPE_EXCESS_ENGINE_COUNT, title: t('TWO ENGINES', '两个 ENGINE'), ok: false },
   ]);
+  const kvNow = $derived([
+    t('compare three separate cases, each with 2 GiB', '比较三种独立情况，各自有 2 GiB 预算'),
+    t('the first engine marks the declaration consumed', '第一个 engine 把这份预算标为已领取'),
+    t('check the empty case and the second consumer', '检查没有 engine 的情况和第二个领取者'),
+    t('only exactly one consumer can start', '只有恰好一个领取者才能启动'),
+  ][phase]);
   const weightPanels = $derived([
     { x: phone ? 15 : 20, y: phone ? 90 : 96, shared: false },
     { x: phone ? 15 : 375, y: phone ? 335 : 96, shared: true },
@@ -184,25 +190,37 @@
         <text x={W / 2} y={phone ? 652 : 406} text-anchor="middle" class="tag" opacity={phase >= 3 ? 1 : 0} style="transition: opacity 300ms">{CAPACITY_KV_GIB} GiB KV ≤ {CAPACITY_CARD_GIB} GiB · {phone ? t('separate check; already inside reserve', '单独检查；已含在 reserve 里') : t('checked separately; not added to its reserve again', '单独检查；不跟自己的 reserve 重复相加')}</text>
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Unit-test values · next: one KV consumer', '单元测试数值 · 下一步：一个 KV 领取者') : t('Unit-test values, not a B200 measurement · next: deliver a KV budget once', '数值来自单元测试，不是 B200 实测 · 下一步：KV 预算只能领取一次')}</text>
       {:else if step === 2}
-        <text x="20" y="22" class="tag strong">stage_kv_cache_budget · {phone ? t('exactly one consumer', '只能一个 engine 领取') : t('one declaration, exactly one consumer', '一份申报，只能由一个 engine 领取')}</text>
+        <text x="20" y="22" class="tag strong">{phone ? t('KV budget · one consumer', 'KV 预算 · 一个领取者') : `stage_kv_cache_budget · ${t('one declaration, exactly one consumer', '一份申报，只能由一个 engine 领取')}`}</text>
+        <LoopProgress ms={lapMs} {lap} x={phone ? 230 : 640} y={16} />
         <text x="20" y="46" class="tag">{phone ? t(`${KV_SCOPE_TEACHING_GIB} GiB · KV = saved token keys + values`, `${KV_SCOPE_TEACHING_GIB} GiB · KV = token 的 key + value`) : t(`engine.kv_cache_bytes = ${KV_SCOPE_TEACHING_GIB} GiB · KV = saved token keys and values`, `engine.kv_cache_bytes = ${KV_SCOPE_TEACHING_GIB} GiB · KV = 已算 token 的 key 和 value`)}</text>
-        <text x="20" y="68" class="tag">{t('Blue: consumed budget · orange: startup error', '蓝色：预算已领取 · 橙色：启动报错')}</text>
+        <text x="20" y="68" class="tag">{phone ? t('Blue: claimed · orange: error · dashed: unclaimed', '蓝：已领取 · 橙：报错 · 虚线：未领取') : t('Blue: consumed budget · orange: startup error · dashed: unconsumed', '蓝色：预算已领取 · 橙色：启动报错 · 虚线：未领取')}</text>
         {#each kvPanels as panel}
-          <rect x={panel.x} y={panel.y} width={phone ? 270 : 210} height="142" rx="10" fill={panel.ok ? 'var(--accent-soft)' : 'var(--gen-soft)'} stroke={panel.ok ? 'var(--accent)' : 'var(--gen)'} stroke-width={panel.ok ? 2 : 1} />
+          <rect data-kv="panel" data-case={panel.engines} x={panel.x} y={panel.y} width={phone ? 270 : 210} height="142" rx="10" fill={phase >= 3 ? (panel.ok ? 'var(--accent-soft)' : 'var(--gen-soft)') : 'var(--bg)'} stroke={phase >= 3 ? (panel.ok ? 'var(--accent)' : 'var(--gen)') : 'var(--line)'} stroke-width={phase >= 3 && panel.ok ? 2 : 1} style="transition: fill 300ms, stroke 300ms" />
           <text x={panel.x + 13} y={panel.y + 25} class="rowlabel">{panel.title}</text>
-          <text x={panel.x + 13} y={panel.y + 49} class="tag">stage → {panel.engines} × engine</text>
-          {#each Array(panel.engines) as _, i}
-            <rect x={panel.x + 14 + i * 92} y={panel.y + 62} width="82" height="34" rx="5" fill="white" stroke={panel.ok ? 'var(--accent)' : 'var(--gen)'} />
-            <text x={panel.x + 55 + i * 92} y={panel.y + 84} text-anchor="middle" class="tag strong">KV {KV_SCOPE_TEACHING_GIB} GiB</text>
-          {/each}
-          {#if panel.engines === 0}
-            <rect x={panel.x + 14} y={panel.y + 62} width={phone ? 238 : 180} height="34" rx="5" fill="white" stroke="var(--faint)" stroke-dasharray="4 3" />
-            <text x={panel.x + (phone ? 133 : 104)} y={panel.y + 84} text-anchor="middle" class="tag">{t('nobody consumed it', '没人领取')}</text>
+          <text data-kv="consumed" data-case={panel.engines} x={panel.x + 13} y={panel.y + 49} class="tag">stage → {panel.engines} × engine · consumed={panel.engines > 0 && phase >= 1}</text>
+          {#if panel.engines === 0 || phase === 0}
+            <g data-kv="waiting" data-case={panel.engines}>
+              <rect x={panel.x + 14} y={panel.y + 62} width={panel.engines === 0 ? (phone ? 238 : 180) : 82} height="34" rx="5" fill="white" stroke="var(--faint)" stroke-dasharray="4 3" />
+              <text x={panel.x + (panel.engines === 0 ? (phone ? 133 : 104) : 55)} y={panel.y + 84} text-anchor="middle" class="tag">{panel.engines === 0 ? t('nobody consumed it', '没人领取') : t('unconsumed', '未领取')}</text>
+            </g>
           {/if}
-          <text x={panel.x + 13} y={panel.y + 122} class="tag strong">{panel.ok ? t('✓ consume once → start', '✓ 领取一次 → 启动') : panel.engines === 0 ? t('× unconsumed → error', '× 没领取 → 报错') : t('× second consume → error', '× 第二次领取 → 报错')}</text>
+          {#if panel.engines > 0}
+            <g data-kv="first" data-case={panel.engines} opacity={phase >= 1 ? 1 : 0} style="transition: opacity 300ms">
+              <rect x={panel.x + 14} y={panel.y + 62} width="82" height="34" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
+              <text x={panel.x + 55} y={panel.y + 84} text-anchor="middle" class="tag strong">KV {KV_SCOPE_TEACHING_GIB} GiB</text>
+            </g>
+          {/if}
+          {#if panel.engines === KV_SCOPE_EXCESS_ENGINE_COUNT}
+            <g data-kv="second" data-case={panel.engines} opacity={phase >= 2 ? 1 : 0} style="transition: opacity 300ms">
+              <rect x={panel.x + 106} y={panel.y + 62} width="82" height="34" rx="5" fill="var(--gen-soft)" stroke="var(--gen)" />
+              <text x={panel.x + 147} y={panel.y + 84} text-anchor="middle" class="tag strong">KV {KV_SCOPE_TEACHING_GIB} GiB</text>
+            </g>
+          {/if}
+          <text data-kv="outcome" data-case={panel.engines} x={panel.x + 13} y={panel.y + 122} class="tag strong" opacity={phase >= 3 ? 1 : 0} style="transition: opacity 300ms">{panel.ok ? t('✓ consume once → start', '✓ 领取一次 → 启动') : panel.engines === 0 ? t('× unconsumed → error', '× 没领取 → 报错') : t('× second consume → error', '× 第二次领取 → 报错')}</text>
         {/each}
-        <text x={W / 2} y={phone ? 616 : 296} text-anchor="middle" class="mono strong">{KV_SCOPE_TEACHING_GIB} GiB × {KV_SCOPE_REQUIRED_ENGINE_COUNT} = {KV_SCOPE_TEACHING_GIB} GiB · {t('not', '不是')} {KV_SCOPE_TEACHING_GIB} × {KV_SCOPE_EXCESS_ENGINE_COUNT}</text>
-        <text x={W / 2} y={phone ? 646 : 330} text-anchor="middle" class="tag">{t('The scope wraps one stage factory call, then clears in finally.', '预算只包住一次 stage 工厂调用，finally 随后清除。')}</text>
+        <text x={W / 2} y={phone ? 606 : 296} text-anchor="middle" class="tag strong">now: {kvNow}</text>
+        <text data-kv="total" x={W / 2} y={phone ? 638 : 330} text-anchor="middle" class="mono strong" opacity={phase >= 3 ? 1 : 0} style="transition: opacity 300ms">{KV_SCOPE_TEACHING_GIB} GiB × {KV_SCOPE_REQUIRED_ENGINE_COUNT} = {KV_SCOPE_TEACHING_GIB} GiB · {t('not', '不是')} {KV_SCOPE_TEACHING_GIB} × {KV_SCOPE_EXCESS_ENGINE_COUNT}</text>
+        <text x={W / 2} y={phone ? 666 : 364} text-anchor="middle" class="tag">{phone ? t('Cleanup checks the budget was claimed once.', '清理时检查预算是否被领取一次。') : t('After one stage build, cleanup checks that an engine claimed the budget.', '创建一个 stage 后，清理时检查有没有 engine 领取预算。')}</text>
         <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{phone ? t('Teaching value · one declaration cannot fund two pools', '教学值 · 一份申报不能变成两份 KV 池') : t('Two GiB is a teaching value · one stage cannot silently fund two full pools', '2 GiB 是教学值 · 一份 stage 预算不能暗中变成两份完整 KV 池')}</text>
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Next: share weights, not KV', '下一步：共享权重，不共享 KV') : t('Next: replicas share weights, never this KV pool', '下一步：副本共享权重，但不共享这个 KV 池')}</text>
       {:else if step === 3}

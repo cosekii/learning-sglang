@@ -17,7 +17,7 @@ Step 1 uses a constructed 80-GiB card, not a memory measurement. It places 60 Gi
 
 Step 2 uses the paired unit-test cases in `test_placement.py`, not B200 measurements. The stage first converts each fraction into bytes, then adds the reserve, forms the combined declaration and compares it with the physical limit. On a teaching 80-GiB card, a 0.50 fraction plus a 20-GiB total reserve declares 60 GiB and passes. A 0.90 fraction plus the same reserve declares 92 GiB and fails by 12 GiB. The reserve denotes the stage footprint, including its two-GiB KV pool, so that pool is not added to the same reserve again. Placement separately checks that summed KV pools alone fit.
 
-Step 3 constructs a two-GiB `engine.kv_cache_bytes` scope. The stage factory must construct exactly one SGLang engine that consumes it. Zero consumers leave an unconsumed budget and raise on scope exit; a second consumer raises instead of sizing two full pools from one declaration. The two-GiB value is illustrative.
+Step 3 compares three independent cases, each with its own two-GiB `engine.kv_cache_bytes` declaration. The stage plays the first claim, the empty-case cleanup check and the second claim before showing the outcomes. The stage factory must construct exactly one SGLang engine that consumes the declaration. Zero consumers leave it unclaimed and raise during cleanup; a second consumer raises instead of sizing two full pools from one declaration. The two-GiB value is illustrative.
 
 Step 4 compares two symbolic checkpoint copies with the shipped MOSS same-GPU DP2 weight-sharing example. With `weight_share=on`, the leader exports weights over CUDA IPC and one follower aliases them, while both replicas retain private KV pools, graphs and request state. Each engine declares `max_total_tokens=30000`, so the two private pools have a combined token cap of 60,000. The W boxes are symbolic and make no byte-saving claim.
 
@@ -36,7 +36,7 @@ Source revision for the chapter: `sglang-omni origin/main@db7cbf39ccffde7f95b81c
 
 第 2 步使用 `test_placement.py` 的一对单元测试，不是 B200 实测。舞台先把两个比例换成字节，再加上 reserve、得到合并申报量，最后与物理上限比较。在教学用 80 GiB 卡上，0.50 比例加 20 GiB 总 reserve 申报 60 GiB，可以通过。0.90 比例加同一 reserve 申报 92 GiB，超出 12 GiB。reserve 表示 stage 整体占用，包括其中 2 GiB KV 池，所以不能再把这个池加到同一份 reserve 上。placement 还单独检查所有 KV 池之和能否装下。
 
-第 3 步构造一份 2 GiB 的 `engine.kv_cache_bytes` 作用域。stage 工厂必须构造恰好一个 SGLang engine 来领取它。没有 engine 领取会在退出作用域时报错；第二个 engine 领取也会报错，不能让一份申报变成两份完整 KV 池。2 GiB 是教学值。
+第 3 步比较三种独立情况，每幅都有自己的 2 GiB `engine.kv_cache_bytes` 申报。舞台先播放第一次领取，再检查没有 engine 时的清理和第二次领取，最后显示结果。stage 工厂必须构造恰好一个 SGLang engine 来领取它。没有 engine 领取会在清理时报错；第二个 engine 领取也会报错，不能让一份申报变成两份完整 KV 池。2 GiB 是教学值。
 
 第 4 步把两份符号化 checkpoint 与 MOSS 同卡 DP2 权重共享例作对照。`weight_share=on` 时，leader 通过 CUDA IPC 发布权重，一个 follower 映射同一份存储；两个副本仍各有私有 KV 池、graph 和请求状态。每个 engine 申报 `max_total_tokens=30000`，两个私有池合计上限为 60000 token。W 方框只是符号，不声称节省多少字节。
 
