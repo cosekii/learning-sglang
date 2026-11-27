@@ -4,6 +4,7 @@
 
 ### On the stage
 
+- The picture builds in order: dictation 1 appears, then its tag `session ID = A`, then its results; dictation 2, `session ID = B` and results 2 follow, and `A ≠ B` closes the lap.
 - Two dictations: the first and the second.
 - Two blue tags: `session ID = A` and `session ID = B`.
 - Two result boxes: results 1 follow A, and results 2 follow B.
@@ -55,6 +56,7 @@ Public baseline: `sglang-omni@34961b7df8fbd050d8e1e1bc9d82fbd165eb8566`. Paths a
 
 ### On the stage
 
+- The blue A tag walks the six stops in order; each stop's product appears as the tag arrives and stays. No stop gets a new tag.
 - You press: one key press starts this dictation through the hotkey route.
 - Helper: the program that brings the key event and microphone sound into the app, so it comes before sound becomes words.
 - Sound → words: recognition produces the original words, such as “um, hi”.

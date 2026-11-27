@@ -1,6 +1,8 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
+  import { fade } from 'svelte/transition';
   import StepControls from '../StepControls.svelte';
+  import LoopProgress from '../LoopProgress.svelte';
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
@@ -12,14 +14,27 @@
     caption: 'Each dictation gets a new session ID, a tag for its results.',
     captionZh: '每次听写都有新的 session ID，也就是结果的标签。',
   }, {
-    caption: 'One key press starts session A; its sentence becomes text on screen and in history.',
-    captionZh: '按一下键启动 session A，这句话变成文字，显示并保存。',
+    caption: 'One key press starts session A. A travels with the sentence to text and history.',
+    captionZh: '按一下键启动 session A。A 跟着这句话，一路到屏幕文字和保存记录。',
   }, {
     caption: "Late A appears in A's result window and is saved. B appears where you type or in B's result window.",
     captionZh: '晚到的 A 显示在自己的结果小窗，也保存下来。B 显示在打字位置或自己的结果小窗。',
   }, {
     caption: 'Cancel A while it recognizes or tidies. Late results stay off screen; its saved result is empty.',
     captionZh: '取消 A，晚到结果不显示。保存记录写着已取消，结果为空。',
+  }];
+  const ariaLabels = [{
+    en: 'The picture builds in order: dictation 1 appears, then its new session ID A, then its results; dictation 2, session ID B and results 2 follow; A and B are different, so the two results stay apart.',
+    zh: '画面按顺序形成：先出现第 1 次听写，再出现它的新 session ID A，再出现它的结果；随后是第 2 次听写、session ID B 和第 2 次的结果；A 和 B 不同，两次结果因此分开。',
+  }, {
+    en: 'One key press starts session A, and the blue A tag walks the six stops in order: key press, helper, sound to words, tidy words, you see text, save text. Each stop’s product appears as the tag arrives and stays; no stop gets a new tag.',
+    zh: '按一下键启动 session A，蓝色的 A 标签按顺序走过六站：按键、helper、声音变文字、整理文字、看到文字、保存文字。标签走到哪一站，那一站的产物就出现并留下；没有一站换新标签。',
+  }, {
+    en: "Late session A goes to its own result window and saved results, while B goes where you type or to B's result window",
+    zh: '晚到的 session A 进入自己的结果小窗和保存记录，B 进入打字位置或 B 的结果小窗',
+  }, {
+    en: 'Cancelling session A stops late text, and its saved record has no result text',
+    zh: '取消 session A 后晚到的文字停下，它的保存记录没有结果文字',
   }];
   const route = [
     { name: 'YOU PRESS', nameZh: '你按一下', detail: 'one key', detailZh: '一个键' },
@@ -50,11 +65,43 @@
     { name: 'TIDY WORDS', nameZh: '整理文字', detail: 'late “Hi!”', detailZh: '晚到的“你好！”' },
   ];
   const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step === 0 ? 440 : step === 3 ? 560 : 640) : 390);
+
+  // Steps 1 and 2 build as a process: Step 1 phases add dictation → tag → results
+  // for A then B, then A ≠ B; Step 2 phases walk one A tag through the six stops,
+  // each stop's product appearing as the tag arrives.
+  const ANIMATED = [true, true, false, false];
+  const PHASE_COUNTS = [7, 6, 1, 1];
+  const PHASE_MS = 900;
+  const REST_MS = 2200;
+  let phase = $state(0);
+  let lap = $state(0), lapMs = $state(0), reduced = $state(false);
+  const nextLap = (ms: number) => untrack(() => { lapMs = ms; lap++; });
+  $effect(() => {
+    const s = step;
+    reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!ANIMATED[s] || reduced) { phase = PHASE_COUNTS[s] - 1; return; }
+    phase = 0;
+    const count = PHASE_COUNTS[s];
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const run = () => {
+      phase = 0;
+      for (let i = 1; i < count; i++) timers.push(setTimeout(() => (phase = i), i * PHASE_MS));
+      const ms = count * PHASE_MS + REST_MS;
+      timers.push(setTimeout(run, ms));
+      nextLap(ms);
+    };
+    run();
+    return () => timers.forEach(clearTimeout);
+  });
+  // The travelling A badge's top-left corner on the current stop.
+  const badgePos = $derived(phone
+    ? { x: 35 + 230 - 29, y: 90 + phase * 78 + 7 }
+    : { x: 20 + phase * 116 + 71, y: 127 });
 </script>
 
-<figure class="viz">
+<figure class="viz" data-animation-step={ANIMATED[step] ? step : undefined} data-animation-phase={ANIMATED[step] ? phase : undefined} data-animation-final-phase={ANIMATED[step] ? PHASE_COUNTS[step] - 1 : undefined}>
   <div class="canvas">
-    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={step === 0 ? 'Two dictations get two different session IDs so their results stay with the right dictation' : step === 1 ? 'A hotkey starts session A, then the sentence passes through helper, recognition, cleanup, delivery and history' : step === 2 ? "Late session A goes to its own result window and saved results, while B goes where you type or to B's result window" : 'Cancelling session A stops late text, and its saved record has no result text'}>
+    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={t(ariaLabels[step].en, ariaLabels[step].zh)}>
       <defs>
         <marker id="session-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
           <path d="M0,0 L8,4 L0,8 z" fill="var(--muted)" />
@@ -66,6 +113,9 @@
           <path d="M0,0 L8,4 L0,8 z" fill="var(--eos)" />
         </marker>
       </defs>
+      {#if ANIMATED[step] && !reduced}
+        {#if phone}<LoopProgress ms={lapMs} {lap} x={step === 0 ? 227 : 220} y={step === 0 ? 14 : 46} />{:else}<LoopProgress ms={lapMs} {lap} />{/if}
+      {/if}
       {#if step === 0}
         {#if !phone}
           <text x="360" y="34" text-anchor="middle" class="title">{t(`How do ${DEMO_DICTATION_COUNT} dictations keep their results apart?`, `${DEMO_DICTATION_COUNT} 次听写怎样分开各自的结果？`)}</text>
@@ -75,32 +125,64 @@
           {#each demoDictations as n, i}
             {@const y = 105 + i * 115}
             {@const tag = i === 0 ? 'A' : 'B'}
-            <rect x="35" y={y} width="170" height="72" rx="12" fill="var(--bg)" stroke="var(--line)" />
-            <text x="120" y={y + 43} text-anchor="middle" class="label">{t(`dictation ${n}`, `第 ${n} 次听写`)}</text>
-            <line x1="205" y1={y + 36} x2="272" y2={y + 36} stroke="var(--muted)" stroke-width="2" marker-end="url(#session-arrow)" />
-            <rect x="282" y={y} width="156" height="72" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2" />
-            <text x="360" y={y + 29} text-anchor="middle" class="tag session">session ID</text>
-            <text x="360" y={y + 53} text-anchor="middle" class="session-id">{tag}</text>
-            <line x1="438" y1={y + 36} x2="505" y2={y + 36} stroke="var(--muted)" stroke-width="2" marker-end="url(#session-arrow)" />
-            <rect x="515" y={y} width="170" height="72" rx="12" fill="var(--bg)" stroke="var(--line)" />
-            <text x="600" y={y + 43} text-anchor="middle" class="label">{t(`results ${n}`, `第 ${n} 次的结果`)}</text>
+            {@const base = i * 3}
+            {#if phase >= base}
+              <g in:fade={{ duration: 250 }}>
+                <rect x="35" y={y} width="170" height="72" rx="12" fill="var(--bg)" stroke={phase === base ? 'var(--accent)' : 'var(--line)'} stroke-width={phase === base ? 2.5 : 1} />
+                <text x="120" y={y + 43} text-anchor="middle" class="label">{t(`dictation ${n}`, `第 ${n} 次听写`)}</text>
+              </g>
+            {/if}
+            {#if phase >= base + 1}
+              <g in:fade={{ duration: 250 }}>
+                <line x1="205" y1={y + 36} x2="272" y2={y + 36} stroke="var(--muted)" stroke-width="2" marker-end="url(#session-arrow)" />
+                <rect x="282" y={y} width="156" height="72" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width={phase === base + 1 ? 2.5 : 2} />
+                <text x="360" y={y + 29} text-anchor="middle" class="tag session">session ID</text>
+                <text x="360" y={y + 53} text-anchor="middle" class="session-id">{tag}</text>
+              </g>
+            {/if}
+            {#if phase >= base + 2}
+              <g in:fade={{ duration: 250 }}>
+                <line x1="438" y1={y + 36} x2="505" y2={y + 36} stroke="var(--muted)" stroke-width="2" marker-end="url(#session-arrow)" />
+                <rect x="515" y={y} width="170" height="72" rx="12" fill="var(--bg)" stroke={phase === base + 2 ? 'var(--accent)' : 'var(--line)'} stroke-width={phase === base + 2 ? 2.5 : 1} />
+                <text x="600" y={y + 43} text-anchor="middle" class="label">{t(`results ${n}`, `第 ${n} 次的结果`)}</text>
+              </g>
+            {/if}
           {/each}
-          <rect x="265" y="324" width="190" height="38" rx="19" fill="var(--accent-soft)" />
-          <text x="360" y="349" text-anchor="middle" class="formula">A ≠ B</text>
+          {#if phase >= 6}
+            <g in:fade={{ duration: 250 }}>
+              <rect x="265" y="324" width="190" height="38" rx="19" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width={phase === 6 ? 2 : 0} />
+              <text x="360" y="349" text-anchor="middle" class="formula">A ≠ B</text>
+            </g>
+          {/if}
         {:else}
           <text x="150" y="28" text-anchor="middle" class="title">{t(`${DEMO_DICTATION_COUNT} dictations`, `${DEMO_DICTATION_COUNT} 次听写`)}</text>
           <text x="150" y="50" text-anchor="middle" class="title">{t('keep their results apart', '怎样分开结果？')}</text>
           {#each demoDictations as n, i}
             {@const y = 72 + i * 145}
             {@const tag = i === 0 ? 'A' : 'B'}
-            <rect x="20" y={y} width="260" height="112" rx="12" fill="var(--bg)" stroke="var(--line)" />
-            <text x="150" y={y + 26} text-anchor="middle" class="label">{t(`dictation ${n}`, `第 ${n} 次听写`)}</text>
-            <rect x="64" y={y + 38} width="172" height="38" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2" />
-            <text x="150" y={y + 63} text-anchor="middle" class="session">session ID = {tag}</text>
-            <text x="150" y={y + 98} text-anchor="middle" class="label">↓ {t(`results ${n}`, `第 ${n} 次的结果`)}</text>
+            {@const base = i * 3}
+            {#if phase >= base}
+              <g in:fade={{ duration: 250 }}>
+                <rect x="20" y={y} width="260" height="112" rx="12" fill="var(--bg)" stroke={phase === base ? 'var(--accent)' : 'var(--line)'} stroke-width={phase === base ? 2.5 : 1} />
+                <text x="150" y={y + 26} text-anchor="middle" class="label">{t(`dictation ${n}`, `第 ${n} 次听写`)}</text>
+              </g>
+            {/if}
+            {#if phase >= base + 1}
+              <g in:fade={{ duration: 250 }}>
+                <rect x="64" y={y + 38} width="172" height="38" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2" />
+                <text x="150" y={y + 63} text-anchor="middle" class="session">session ID = {tag}</text>
+              </g>
+            {/if}
+            {#if phase >= base + 2}
+              <text x="150" y={y + 98} text-anchor="middle" class="label" in:fade={{ duration: 250 }}>↓ {t(`results ${n}`, `第 ${n} 次的结果`)}</text>
+            {/if}
           {/each}
-          <rect x="75" y="366" width="150" height="38" rx="19" fill="var(--accent-soft)" />
-          <text x="150" y="391" text-anchor="middle" class="formula">A ≠ B</text>
+          {#if phase >= 6}
+            <g in:fade={{ duration: 250 }}>
+              <rect x="75" y="366" width="150" height="38" rx="19" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width={phase === 6 ? 2 : 0} />
+              <text x="150" y="391" text-anchor="middle" class="formula">A ≠ B</text>
+            </g>
+          {/if}
         {/if}
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('A and B stand for two different real session IDs.', 'A、B 代表两个不同的真实 session ID。')}</text>
       {:else if step === 1}
@@ -113,15 +195,13 @@
           {@const w = phone ? 230 : 100}
           {@const h = phone ? 64 : 126}
           {@const cx = x + w / 2}
-          <rect {x} {y} width={w} height={h} rx="12" fill="var(--bg)" stroke="var(--line)" />
+          <rect {x} {y} width={w} height={h} rx="12" fill={phase === i ? 'var(--accent-soft)' : 'var(--bg)'} stroke={phase === i ? 'var(--accent)' : 'var(--line)'} stroke-width={phase === i ? 2.5 : 1} />
           <text x={cx} y={y + (phone ? 22 : 52)} text-anchor="middle" class="route-name">{t(stop.name, stop.nameZh)}</text>
-          <text x={cx} y={y + (phone ? 42 : 72)} text-anchor="middle" class="route-detail">{t(stop.detail, stop.detailZh)}</text>
-          {#if i === 4}
-            <text x={cx} y={y + (phone ? 58 : 94)} text-anchor="middle" class="route-detail">{t('or result window', '或结果小窗')}</text>
-          {/if}
-          {#if i > 0}
-            <rect x={x + w - 29} y={y + 7} width="22" height="22" rx="6" fill="var(--accent-soft)" />
-            <text x={x + w - 18} y={y + 23} text-anchor="middle" class="route-tag">A</text>
+          {#if phase >= i}
+            <text x={cx} y={y + (phone ? 42 : 72)} text-anchor="middle" class="route-detail" in:fade={{ duration: 250 }}>{t(stop.detail, stop.detailZh)}</text>
+            {#if i === 4}
+              <text x={cx} y={y + (phone ? 58 : 94)} text-anchor="middle" class="route-detail" in:fade={{ duration: 250 }}>{t('or result window', '或结果小窗')}</text>
+            {/if}
           {/if}
           {#if i < route.length - 1}
             {#if phone}
@@ -131,6 +211,10 @@
             {/if}
           {/if}
         {/each}
+        <g style="transform: translate({badgePos.x}px, {badgePos.y}px); transition: transform 0.45s ease;">
+          <rect width="22" height="22" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2" />
+          <text x="11" y="16" text-anchor="middle" class="route-tag">A</text>
+        </g>
         <rect x={phone ? 37 : 176} y={phone ? 562 : 291} width="22" height="22" rx="6" fill="var(--accent-soft)" />
         <text x={phone ? 48 : 187} y={phone ? 578 : 307} text-anchor="middle" class="route-tag">A</text>
         <text x={phone ? 70 : 207} y={phone ? 578 : 307} class="route-detail">{t("= this sentence's session ID", '= 这句话的 session ID')}</text>
@@ -195,7 +279,7 @@
           <text x="360" y="384" text-anchor="middle" class="footnote">{t('Clean-up succeeds and saving is on in this example.', '本例整理成功，并开启保存记录。')}</text>
         {:else}
           <text x="150" y="574" text-anchor="middle" class="route-detail"><tspan fill="var(--eos)">× {t('A keeps out of B', 'A 不写进 B')}</tspan><tspan dx="18" fill="var(--accent)">✓ {t('B writes into B', 'B 写进 B')}</tspan></text>
-          <text x="150" y="594" text-anchor="middle" class="footnote">{t("Both rows show B's result. You can choose the window.", '两行都是 B 这次的结果；你可选结果小窗。')}</text>
+          <text x="150" y="594" text-anchor="middle" class="footnote">{t("Both rows are B's result; the window is optional.", '两行都是 B 这次的结果；你可选结果小窗。')}</text>
           <text x="150" y="612" text-anchor="middle" class="footnote">{t('If insertion fails, text stays in the window.', '能贴就到打字位置，贴不进去就留在结果小窗。')}</text>
           <text x="150" y="630" text-anchor="middle" class="footnote">{t('Clean-up succeeds and saving is on in this example.', '本例整理成功，并开启保存记录。')}</text>
         {/if}
