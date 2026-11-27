@@ -74,10 +74,18 @@
       return { before, selected, after: [...loads], minimum, tied, recencyBefore, recencyAfter: [...recency] };
     });
   })();
+  // A separate tie reuses row 3's loads with row 1's rotated order, so C wins rather than B.
+  const rotatedTie = (() => {
+    const before = [...leastSteps[2].before], recency = [...leastSteps[0].recencyAfter];
+    const minimum = Math.min(...before);
+    const tied = recency.filter((worker) => before[worker] === minimum);
+    return { before, recency, minimum, tied, selected: tied[0] };
+  })();
   const orderText = (order: number[]) => `[${order.map((worker) => ROUTER_ROUND_ROBIN_WORKERS[worker]).join(',')}]`;
-  const LEAST_FINAL_PHASE = leastSteps.length * 2 + 1;
+  const LEAST_SEQUENCE_PHASE = leastSteps.length * 2 + 1;
+  const LEAST_FINAL_PHASE = LEAST_SEQUENCE_PHASE + 1;
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [650, 750, 830, 840, 680, 730, 760, 880][step] : [520, 560, 600, 600, 570, 600, 560, 650][step]);
+  const H = $derived(phone ? [650, 750, 830, 840, 680, 790, 760, 880][step] : [520, 560, 600, 600, 570, 680, 560, 650][step]);
 
   // Each step reveals one routing event at a time, then holds the finished scene before looping.
   const PHASE_COUNTS = [4, 5, 4, 6, 7, LEAST_FINAL_PHASE + 1, 5, 5];
@@ -309,13 +317,18 @@
             {/if}
           </g>
         {/each}
-        <text x={W / 2} y={phone ? 615 : 525} text-anchor="middle" class="result" opacity={phase >= LEAST_FINAL_PHASE ? 1 : 0.12} style="transition: opacity 350ms">B → C → B → C</text>
+        <text x={W / 2} y={phone ? 615 : 525} text-anchor="middle" class="result" opacity={phase >= LEAST_SEQUENCE_PHASE ? 1 : 0.12} style="transition: opacity 350ms">B → C → B → C</text>
         {#if phone}
-          <text x={W / 2} y="645" text-anchor="middle" class="small" opacity={phase >= LEAST_FINAL_PHASE ? 1 : 0.12} style="transition: opacity 350ms">{t('Same [A,B,C], loads [2,0,0]', '同为 [A,B,C]，负载 [2,0,0]')}</text>
-          <text x={W / 2} y="675" text-anchor="middle" class="small strong" opacity={phase >= LEAST_FINAL_PHASE ? 1 : 0.12} style="transition: opacity 350ms">{t('round robin → A · least requests → B', 'round robin → A · least requests → B')}</text>
+          <text x={W / 2} y="645" text-anchor="middle" class="small" opacity={phase >= LEAST_SEQUENCE_PHASE ? 1 : 0.12} style="transition: opacity 350ms">{t('Same [A,B,C], loads [2,0,0]', '同为 [A,B,C]，负载 [2,0,0]')}</text>
+          <text x={W / 2} y="675" text-anchor="middle" class="small strong" opacity={phase >= LEAST_SEQUENCE_PHASE ? 1 : 0.12} style="transition: opacity 350ms">{t('round robin → A · least requests → B', 'round robin → A · least requests → B')}</text>
         {:else}
-          <text x={W / 2} y="560" text-anchor="middle" class="small strong" opacity={phase >= LEAST_FINAL_PHASE ? 1 : 0.12} style="transition: opacity 350ms">{t('Same [A,B,C], loads [2,0,0]: round robin → A · least requests → B', '同为 [A,B,C]，负载 [2,0,0]：round robin → A · least requests → B')}</text>
+          <text x={W / 2} y="560" text-anchor="middle" class="small strong" opacity={phase >= LEAST_SEQUENCE_PHASE ? 1 : 0.12} style="transition: opacity 350ms">{t('Same [A,B,C], loads [2,0,0]: round robin → A · least requests → B', '同为 [A,B,C]，负载 [2,0,0]：round robin → A · least requests → B')}</text>
         {/if}
+        <g opacity={phase >= LEAST_FINAL_PHASE ? 1 : 0} style="transition: opacity 350ms">
+          <rect x={phone ? 18 : 50} y={phone ? 692 : 580} width={phone ? 264 : 620} height="66" rx="9" fill="var(--bg)" stroke="var(--accent)" stroke-width="2" />
+          <text x={phone ? 28 : 70} y={phone ? 716 : 604} class="small strong">{t(`SEPARATE ROTATED TIE · active [${rotatedTie.before.join(',')}]`, `独立轮换并列例 · 活跃数 [${rotatedTie.before.join(',')}]`)}</text>
+          <text x={phone ? 28 : 70} y={phone ? 740 : 630} class="small">{`B=C=${rotatedTie.minimum} · ${t(`recency scan ${orderText(rotatedTie.recency)} → ${ROUTER_ROUND_ROBIN_WORKERS[rotatedTie.selected]}`, `按顺序扫描 ${orderText(rotatedTie.recency)} → ${ROUTER_ROUND_ROBIN_WORKERS[rotatedTie.selected]}`)}`}</text>
+        </g>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t(phone ? 'Router-held work · not GPU usage' : 'Constructed ordinary requests; active counts are router-held work, not GPU usage or worker queues.', phone ? 'router 持有的工作 · 不是 GPU 利用率' : '构造的普通请求；活跃数是 router 持有的工作，不是 GPU 利用率或 worker 队列。')}</text>
       {:else if step === 6}
         <text x={phone ? 18 : 30} y="30" class="title">{t(phone ? 'Fresh request · active +1' : 'Fresh request · RequestLease holds active +1', phone ? '新请求 · 活跃数 +1' : '新请求 · RequestLease 持有活跃数 +1')}</text>
