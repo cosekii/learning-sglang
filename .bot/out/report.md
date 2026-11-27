@@ -1,3 +1,31 @@
+# lane k2 本轮报告 · ML Systems 06 Step 3 的 ML-37
+
+日期：2026-11-27。类型：修旧（direction 指定的单个开放 finding）。本轮开始 HEAD 与 `origin/tutorials` 均为 `862d505`，工作树干净。范围只有 ML 06 Step 3 的组件、双语 deep、出处说明、生成 transcript、本章评分卡与进度记录、定向审计和本报告；其余七步、其他章、其他书、`.bot/memory/` 和第 1 本受保护英文原文均未改。ML 10 继续冻结，ML 12 未重开，第 14 章未开启。
+
+## 修复与作者评分边界
+
+- 教程提交为 `0c80581`。首次推送被拒后执行 `git pull --rebase origin tutorials`，再推送成功，未 force-push。
+- **ML-37 作者修复完成，待协调固定复审，不自行销项。** Step 3 展开一份 rollout record：`rollout_log_probs` 是模型写每个回答 token 时的分数，`reward = ?` 留给第 4 步的回答检查器填写。前者逐 token 记录，后者给整个回答打分。caption、舞台、双语 deep 和 MDX 出处说明使用同一区分，不再把两类分数统称为「生成分数」。
+- Step 3 作者复评：R1–R5 **10/10**、机制 R6 **2/2**、原十个非视觉项 **20/20**、新内容洞 **0**。小学生复述：「模型给每个回答 token 各记一个生成分数；检查器下一步才给整个回答 reward，两种分数不一样。」其余七步没有教程 diff，既有协调分数和全章 verdict 不变。
+
+## 目标硬门与证据
+
+- 最终 rebase 后 `npm run build`：**60 页**通过；八步 `readability`：**0 机械问题**；`BOOK=ml-sys node scripts/deep-check.mjs 06`、`zh-check` 和 `git diff --check` 均通过。
+- transcript 连续两次逐字一致，最终重采与 pinned 无 diff：**1,517 词**，SHA-256 `58c569eaa3a84b8619bc12e641c9f228ae2623aad0faecb4020f52bae8c686f6`；无 caption、文字出界、重叠或文本规则报告。
+- 英中全章及中文 Step 3 的 360／390／430 px `mobile` 均报 **no layout breaks**；rebase 后英中 Step 3 末相复查也通过，中文字号门通过。
+- `.bot/out/ml37-step3-audit/report.json`：共 **16 个状态**，包括英中桌面各四相、英中 360／390／430 px 末相和双语 deep。英中桌面各 **3/3 个机制转变**；counter、step、phase 正确，普通状态均确认 `deep=false`。最低可见字号 **10.194575 CSS px**，文字重叠、SVG 出界和页面横溢均为 **0**；deep 均 `aria-expanded=true`，KaTeX、raw math 和抽屉横溢失败均为 **0**。最终连续两次审计均 `failures=[]`。
+- 首轮采集受持久化 deep drawer 影响，曾把中文桌面缩到 8.006 px、手机抽屉盖住舞台；这些图已作废。采集脚本在加载前固定 `deep=0`，并断言所有普通状态抽屉关闭，再重跑上述终稿证据。这是采集问题，不记教程 finding。
+- 主线程按 transcript、组件、双语 deep 和逐相 DOM 冷读，未发现新增内容洞。当前模型不能读取 PNG，以上结论来自构建、transcript、源码、DOM 和几何检查，**未声称看过图片或视觉通过**。独立 `pstack-reviewer` 因配置模型不存在而未启动，未计为证据。
+
+## 剩余与清理
+
+- 剩余事项是 ML-37 的协调固定复审、原 #4／#5 与原十二项评分、图像能力复审和主人最终视觉验收。其他开放 finding 未改；ML 10 等既有冻结队列不因本报告改变。
+- 未跑全站回归、真实 slime 训练、GPU benchmark、故障注入或 reduced-motion 动态切换。最新回归只有未列出布局步骤的 `(exit 13)`，不据此返工。
+- 本 clone 的 `node_modules` 原指向协调人 checkout；已只删除本目录内符号链接并在本目录安装依赖，package 文件无 diff，未写协调人的 checkout。
+- 代表截图：`.bot/out/ml37-step3-audit/zh-desktop-p3.png`。本地查看前运行 `npx astro dev --background --host 127.0.0.1 --port 4495`，地址：`http://localhost:4495/learning-sglang/ml-sys/ch/06-slime-rollout-loop/?step=3`。本轮 4495 dev server 已关闭，检查脚本均退出，无 PPID 1 的 headless Chrome 残留；其他 lane 的进程未动。
+
+---
+
 # lane k1 本轮报告 · Omni 14 Step 7 的 Omni-37
 
 日期：2026-11-27。类型：修旧（单个开放 finding）。本轮开始 HEAD 与 `origin/tutorials` 均为 `a35f06d`，工作树干净。范围只有 Omni 14 Step 7 的组件、双语 deep、生成 transcript、本章评分卡、逐相／deep 验证脚本和本报告；其余七步、Omni 11／13／15、其他书、`.bot/memory/` 和第 1 本受保护英文原文均未改。

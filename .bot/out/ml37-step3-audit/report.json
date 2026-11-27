@@ -348,7 +348,7 @@
       "overlaps": [],
       "minFont": 10.760416666666666,
       "minText": "loops",
-      "deepExpanded": "true",
+      "deepExpanded": "false",
       "svgSize": {
         "width": 322.8125,
         "height": 833.71875
@@ -393,7 +393,7 @@
       "overlaps": [],
       "minFont": 11.760416666666666,
       "minText": "loops",
-      "deepExpanded": "true",
+      "deepExpanded": "false",
       "svgSize": {
         "width": 352.8125,
         "height": 878.90625
@@ -438,7 +438,7 @@
       "overlaps": [],
       "minFont": 13.09375,
       "minText": "loops",
-      "deepExpanded": "true",
+      "deepExpanded": "false",
       "svgSize": {
         "width": 392.8125,
         "height": 968.9375
@@ -483,7 +483,7 @@
       "overlaps": [],
       "minFont": 10.760416666666666,
       "minText": "循环",
-      "deepExpanded": "true",
+      "deepExpanded": "false",
       "svgSize": {
         "width": 322.8125,
         "height": 853.890625
@@ -528,7 +528,7 @@
       "overlaps": [],
       "minFont": 11.760416666666666,
       "minText": "循环",
-      "deepExpanded": "true",
+      "deepExpanded": "false",
       "svgSize": {
         "width": 352.8125,
         "height": 890.890625
@@ -573,7 +573,7 @@
       "overlaps": [],
       "minFont": 13.09375,
       "minText": "循环",
-      "deepExpanded": "true",
+      "deepExpanded": "false",
       "svgSize": {
         "width": 392.8125,
         "height": 968.9375

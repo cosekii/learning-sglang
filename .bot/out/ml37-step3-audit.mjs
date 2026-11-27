@@ -70,7 +70,7 @@ async function waitForPhase(page, target) {
 for (const lang of ['en', 'zh']) {
   const page = await browser.tab({ width: 1440, height: 900 });
   await page.goto(url);
-  await page.evaluate(`localStorage.setItem('lang', '${lang}')`);
+  await page.evaluate(`localStorage.setItem('lang', '${lang}'); localStorage.setItem('deep', '0')`);
   await page.goto(url);
   await page.evaluate(`(() => { const b = document.querySelector('button.deep'); if (b?.getAttribute('aria-expanded') === 'true') b.click(); })()`);
   await sleep(400);
@@ -80,7 +80,7 @@ for (const lang of ['en', 'zh']) {
     const png = await page.screenshot();
     const after = await page.evaluate(inspect);
     if (after.step !== '2' || after.counter !== '03 / 08') failures.push(`${name}: page identity moved during capture`);
-    if (state.overflow.length || state.overlaps.length || state.pageOverflow) failures.push(`${name}: layout geometry failed`);
+    if (state.deepExpanded !== 'false' || state.overflow.length || state.overlaps.length || state.pageOverflow) failures.push(`${name}: layout geometry failed`);
     if (state.minFont < 10) failures.push(`${name}: minimum font ${state.minFont}`);
     const hasLogProbs = state.texts.some((text) => text.includes('rollout_log_probs'));
     const hasRewardSlot = state.texts.some((text) => text.includes('reward = ?'));
@@ -117,14 +117,14 @@ for (const lang of ['en', 'zh']) {
 for (const lang of ['en', 'zh']) for (const width of [360, 390, 430]) {
   const page = await browser.tab({ width, height: 1400, mobile: true });
   await page.goto(url);
-  await page.evaluate(`localStorage.setItem('lang', '${lang}')`);
+  await page.evaluate(`localStorage.setItem('lang', '${lang}'); localStorage.setItem('deep', '0')`);
   await page.goto(url);
   await page.evaluate(`(() => { const b = document.querySelector('button.deep'); if (b?.getAttribute('aria-expanded') === 'true') b.click(); })()`);
   await sleep(400);
   const state = await waitForPhase(page, 3);
   const name = `${lang}-phone-${width}-p3`;
   writeFileSync(join(out, `${name}.png`), await page.screenshot());
-  if (state.overflow.length || state.overlaps.length || state.pageOverflow) failures.push(`${name}: layout geometry failed`);
+  if (state.deepExpanded !== 'false' || state.overflow.length || state.overlaps.length || state.pageOverflow) failures.push(`${name}: layout geometry failed`);
   if (state.minFont < 10) failures.push(`${name}: minimum font ${state.minFont}`);
   if (!state.texts.some((text) => text.includes('rollout_log_probs')) || !state.texts.some((text) => text.includes('reward = ?'))) {
     failures.push(`${name}: final record fields missing`);
