@@ -46,9 +46,9 @@ Step 2 explains how a DataRef lets a reader find data in another process or on a
 
 ### What the picture shows
 
-- The left box is the sender backend. Its large blue block holds payload A's tensor bytes. The white card in the middle is the DataRef, and `talker_ar` is the receiver on the right.
-- This example shows four rows. `version = 1` selects the wire format, `object_id = A` names the data object, `transport = SHM` selects the backend, and `buffer = info + length` carries the backend's read information and byte length.
-- The arrow between the payload and card means that the card describes the data. It does not copy tensor bytes into the card. The arrow to the receiver means that the descriptor lets the reader locate A.
+- The left box is the sender backend. Its large blue block holds payload A's tensor bytes. The animation starts with no descriptor, then builds the white DataRef card in the middle. SHM means shared memory.
+- The constructed card shows four rows. `version = 1` selects the wire format, `object_id = A` names the data object, `transport = SHM` selects the backend, and `buffer = info + length` carries the backend's read information and byte length.
+- The arrow between the payload and card means that the card describes the data. It does not copy tensor bytes into the card. In the last phase, `talker_ar` uses those fields to locate A, choose SHM and use the buffer information. This is a field-use preview, not a DataReady arrival or publication; Step 3 performs that send.
 - The figure keeps only the fields needed to find data. `kind`, `layout`, `header`, `tensors` and other fields describe the data kind, layout and tensor reconstruction.
 
 ### How the fields connect

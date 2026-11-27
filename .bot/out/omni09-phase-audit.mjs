@@ -19,9 +19,10 @@ const config = {
   1: {
     final: 3,
     required: [[], [lang === 'zh' ? '读错' : 'WRONG READ'], [lang === 'zh' ? 'A 读取完成 ✓' : 'A read finished ✓'], [lang === 'zh' ? 'A 读完后 B 进入' : 'B entered after A']],
-    forbidden: [
-      ...(lang === 'zh' ? [] : []),
-    ],
+  },
+  2: {
+    final: 2,
+    required: [[], ['object_id = A'], [lang === 'zh' ? '使用字段 · 尚未发布' : 'FIELDS IN USE · NOT SENT']],
   },
 };
 if (!config[step]) throw new Error(`Step ${step} audit rules are not defined yet`);
@@ -132,6 +133,10 @@ try {
       ...(target < 1 ? [lang === 'zh' ? '读错' : 'WRONG READ'] : []),
       ...(target < 2 ? [lang === 'zh' ? 'A 读取完成 ✓' : 'A read finished ✓'] : []),
       ...(target < 3 ? [lang === 'zh' ? 'A 读完后 B 进入' : 'B entered after A'] : []),
+    ] : step === 2 ? [
+      ...(target < 1 ? ['version = 1', 'object_id = A'] : []),
+      ...(target < 2 ? [lang === 'zh' ? '尚未发布' : 'NOT SENT'] : []),
+      'DataReady',
     ] : [];
     const premature = forbidden.filter((text) => state.text.some((line) => line.includes(text)));
     if (premature.length) throw new Error(`phase ${target}: premature completion ${premature.join(', ')}`);
