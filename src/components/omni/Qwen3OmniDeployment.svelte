@@ -407,8 +407,8 @@
             {#each [0, 1] as replica}
               <g opacity={phase >= 2 ? 1 : 0} style="transition: opacity 450ms">
                 <rect x={panel.x + 14 + replica * (poolW + 7)} y={panel.y + 292} width={poolW} height="62" rx="7" fill="var(--gen-soft)" stroke="var(--gen)" />
-                <text x={panel.x + 14 + replica * (poolW + 7) + poolW / 2} y={panel.y + 316} text-anchor="middle" class="tag strong">r{replica} · {t('own codec slots', '独立 codec 状态位')}</text>
-                <text x={panel.x + 14 + replica * (poolW + 7) + poolW / 2} y={panel.y + 342} text-anchor="middle" class="formula">{QWEN_TALKER_MAX_RUNNING_REQUESTS} × {QWEN_SPEECH_REPLICA2_COUNT} = {QWEN_REPLICA2_CODEC_STATE_SLOTS}</text>
+                <text x={panel.x + 14 + replica * (poolW + 7) + poolW / 2} y={panel.y + 316} text-anchor="middle" class="tag strong">r{replica} · {phone ? t(`own ${QWEN_REPLICA2_CODEC_STATE_SLOTS} slots`, `独立 ${QWEN_REPLICA2_CODEC_STATE_SLOTS} 位`) : t('own codec slots', '独立 codec 状态位')}</text>
+                <text x={panel.x + 14 + replica * (poolW + 7) + poolW / 2} y={panel.y + 342} text-anchor="middle" class="formula">{phone ? `${QWEN_SPEECH_REPLICA2_COUNT} × ${QWEN_TALKER_MAX_RUNNING_REQUESTS}/talker` : `${QWEN_TALKER_MAX_RUNNING_REQUESTS} × ${QWEN_SPEECH_REPLICA2_COUNT} talkers = ${QWEN_REPLICA2_CODEC_STATE_SLOTS}`}</text>
               </g>
             {/each}
             <g opacity={phase >= 3 ? 1 : 0.12} style="transition: opacity 350ms">
