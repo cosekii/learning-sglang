@@ -1,3 +1,39 @@
+# lane d 本轮报告 · Voxt 性能公开事实增量
+
+日期：2026-11-27。类型：修旧（deep 出处增量）。范围只含 5 个 Voxt deep 文件（双语各一）和本报告；未改任何组件、舞台、caption、MDX、transcript、评分卡、`memory/progress.md`、`.bot/memory/`、其他书或第 1 本受保护英文原文。
+
+## 单元与边界
+
+- direction 的 lane d 单元：Step 4 已由上一轮提交 `2d1e868`／`3aa0d2d` 完成并推 `origin/tutorials`（协调 review.md 01:56 已记录 origin 到 `3aa0d2d`），本轮做下一个独立最小单元：**Voxt 性能公开事实增量**。
+- 素材只取自 `.bot/perf-public.md`（与 `~/.orca/bots/bot/research_notes/Voxt 性能优化全景/public.md` 逐字节相同，本地未提交）第二节的可引用数字表与第一／五节的公开 PR 事实。每条保留 PR 链接、测量 head（或「未记录／未绑定」的明说）、setup 和指标边界。
+- 未补群名、人名、主人机器名或 NAACL 内容；setup 只含公开 PR 的硬件行（Apple M5／M4 等）。CI、UI 帧率、模型延迟、Stop-to-text／insert／paste 各归各条，未混写；没有新增真实 App 验收宣称，每条都带「不是完整真实 App／只证明提前调度」类边界；未创建 `perf-public-done`。
+- 新增内容全部在各步既有 `### Sources`／`### 源码出处` 内，或在该步末尾新增同名小节；不改舞台， transcript 不含 deep，故 pinned transcript 不重生成。评分卡不动：Voxt 11 固定 `fa8d912` 基线 **54/60、机制 9/12、143/144 NO-GO** 与 Voxt 08 的 GO 均不变，本轮不自行关闭任何协调 finding。
+
+## 各章补充（英中对称，共 6 处）
+
+| 章 · 步 | 公开事实 | 边界写法 |
+|---|---|---|
+| 04 识别路线 · Step 6（本机 Omni Final） | #2549（#2576 落地 main）：Final short p50/p95 194/279→111/145 ms，吞吐 21.0→49.8 audio-s/s，first-preview p95 1207→2518 ms 退化；#3285 DFlash decode 1.7B 8bit 57→189、0.6B 4bit 244→402 tok/s | 主表测量 head 未记录／benchmark 表未绑定精确 SHA；真实 native 服务或 CLI/server protocol，非完整真实 App |
+| 11 模型与更新 · Step 4（语音服务器） | #4407 预热 Silero Metal kernel：server ready 0.099→0.882 s、暖请求 1.928→1.203 s、冷合计 2.027→2.085 s（首个变快、合计未变快）；#2261 修 Unload ASR 孤儿进程（merged，head `4091cb549196`） | #4407 未给各组独立测量 commit；#2261 只记落地事实 |
+| 06 文字加工 · Step 5（长听写分片） | #4295（经 #4324 集成）：停止前清理 19 次、停止后 1 次，结果栏 Clean-up 4.0 s | 脚本假 LLM 每答 3 s；评论对真实 App 测量 head 说法不一；只证明提前调度，非 remote provider 收益 |
+| 08 小词典 · Step 3（词条作提示） | #4589 Final 复用：无词典 535→290、30 词条 643→304、463 词条 2769→382 ms | 测量 head 未单列且混合两轮；10 段独立样本不能合并 |
+| 08 小词典 · Step 4（别名替换） | #3795 建 alias 索引，大词典听写不再等别名替换 | CLOSED、经 #3826 落地；无公开计时数字 |
+| 03 麦克风到帧 · Step 6（VAD 起点） | #2833 修 native VAD session 泄漏：修复前第 65 次激活失败，修复后 70/70 通过 | 验证 head `fd29e6607a6b`；功能回归检查，非推理 benchmark，不直接给 Stop-to-insert 收益 |
+
+## 验证
+
+- `npm run build`：**60 页**通过。`BOOK=voxt node scripts/deep-check.mjs` 对 03／04／06／08／11 均 `ok`（小节数与步数一致）；`BOOK=voxt ONLY=3,4,6,8,11 zh-check`：**all clear**。
+- 双语渲染核对：4475 端口的 dev server 上，5 章页面 SSR 各含新增的英文条目（`PR #2549`／`#4407`／`#4295`／`#4589`／`#2833` 各 1 处）与中文条目（`公开性能证据`、`无风扇 M4`、`脚本假 LLM`、`70 次全部通过` 各 1 处）。
+- 本 clone 的 `node_modules` 原是指向协调人 checkout 的符号链接，build 要写 `.vite` 会越界；已只删本目录内符号链接并本地 `npm install`，未写协调人 checkout，package 文件无 diff。
+- 未跑全站回归、真实 Voxt、模型、语音服务或主人最终验收；未看图（本模型无图像输入），以上为构建、脚本与 DOM 证据。
+
+## 剩余与本地查看
+
+- 剩余：Voxt 11 Step 3／4 等协调固定复审；下一单元按 direction 回 **Voxt 10→12**。本增量不排期 GO，等协调核对。
+- 本地章节地址（查看前在本目录运行 `npx astro dev --background --port 4475`）：`http://localhost:4475/learning-sglang/voxt/ch/speech-recognition-routes/?step=6`（按 `D` 打开深入讲解看 Sources 末尾）。本轮 4475 dev server 已关闭，未启动持久浏览器。
+
+---
+
 # lane d 本轮报告 · Voxt 11 Step 4 逐相机制
 
 日期：2026-11-27。类型：修旧。范围只含 Inside Voxt 第 11 章第 4 步（`ModelStorageUpdates.svelte` 的 step index 3）、本章评分卡、`memory/progress.md`、验证脚本与结果和本报告；未改 Step 1／2／3／5／6、Voxt 08／10、其他书、第 1 本受保护英文原文或 `.bot/memory/`。
