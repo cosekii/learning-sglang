@@ -2541,3 +2541,42 @@ npx astro dev stop
 - 评分卡、`memory/scores/inside-voxt/file-transcription.md` 未动；不改 Voxt 10／11 任何既有分数与 verdict。Voxt 11 Step 5 `99ed414`／`26941bb` 继续冻结；三条 reviewer 线索未动。
 - 本轮开的 4324 dev server 与无头 Chrome 已在收尾关闭。
 
+
+---
+
+# lane d 本轮报告 · Voxt 01 Steps 1–2 session 创建过程化（Voxt-01 第一部分）
+
+日期：2026-11-27。类型：direction.md lane d 指定单元——「Voxt 01 Step 1 的 Voxt-01 第一部分，把 session 创建从终态改成过程」。本轮开始时工作树有上一轮中断留下的半成品（组件已相位化、双语 deep 已补「按顺序形成」一句），与 direction 单元完全对应，按 SOUL.md 接着做完。提交 `fc3b939`。
+
+## 改动（`fc3b939`，4 文件 +124/-38）
+
+- `src/components/voxt/OneDictation.svelte`：Step 1（displayed）7 相——dictation 1 → `session ID = A` → results 1 → dictation 2 → `session ID = B` → results 2 → `A ≠ B`，每相只新增本相对象，当前对象 accent 高亮；Step 2 六相——同一个蓝色 A 徽章按相位走过六站（按键 → helper → 声音→文字 → 整理 → 看到文字 → 保存文字），徽章平移有过渡，每站产物随徽章到达出现并保留，无一站换新标签。两步均循环（PHASE_MS 900、REST 2200）、有 LoopProgress、reduced-motion 落末相、`data-animation-step/phase/final-phase` 身份齐全；Step 2 caption 英中同步改为「A 跟着这句话一路到屏幕文字和保存记录」。Steps 3–4（晚到 A 的 `A≠B`、取消拦截与 `cancelled/empty`）按 direction 留后续单元，未动机制。
+- 顺手修两个既有布局缺陷（不改机制）：Step 3 手机脚注 "Both rows show B's result. You can choose the window." 在 360/390/430 px 出 SVG 右界 9–11 px，改为 "Both rows are B's result; the window is optional."；手机 LoopProgress 与 zh 标题重叠（Step 1 的「循环」×「2 次听写」、Step 2 的「循环」×「一句话 · 一个标签」），手机两位改为 `(227,14)`／`(220,46)`。
+- 双语 deep（en/zh）：Step 1、Step 2 的「图上是什么」各补一句相位顺序描述，与动画一致；MDX 无需改动（只含出处 details）。transcript 重生成：4 步，无 caption／出界／重叠／文本规则报告。
+
+## 硬门（本 checkout，全过）
+
+- `npm run build`：60 页通过。`git diff --check` 干净。
+- `BOOK=voxt ONLY=1 node scripts/transcript.mjs`：4 步无报告项。
+- `BOOK=voxt ONLY=1 STEP=1/2 npm run readability`：各 0 机械问题。
+- `BOOK=voxt ONLY=1 node scripts/zh-check.mjs`：all clear。`node scripts/deep-check.mjs`：one-dictation 4 节 ok。
+- `BOOK=voxt ONLY=1 node scripts/mobile.mjs`：360/390/430 px no layout breaks；`STEP=1 LANG=zh`、`STEP=2 LANG=zh` 中文字号门均通过。
+
+## 逐相机制审计（EVAL §6 动画门；探针 `/tmp/lsd-voxt01-probe.mjs`，未提交，经 `scripts/lib/browser.mjs` 可重跑）
+
+- 矩阵：英中 × 桌面 1440×900／手机 390×844 × Step 1 direct、Step 2 direct＋前步入口（?step=1 → ArrowRight）＝ **76 个状态、556 项断言、0 失败**。
+- 机制转变：Step 1 每相可见 `<text>` 数单调增长（7→…→末相含 `A ≠ B`）；Step 2 每相徽章 transform 均变化且末相六站产物齐全（`one key`／`brings sound in`／`Hi!`／`at cursor`／`original + tidy` 或中文对应）。
+- 几何：全部相位文字重叠 **0**、SVG 出界 **0**、最低可见字号 **≥10 CSS px**；counter 与 `data-animation-*` 身份每相正确，`loops`／`循环` 标签在场。
+- 截图 19 张（en-1440 两步全相位、Step 2 两入口）在 `/tmp/lsd-voxt01-shots/`。本模型无图像输入（本轮再次实测确认），不声称视觉通过；图像 verdict 仍需协调侧有图像输入的评审者实看。
+
+## 评分（只评本轮改动的 Steps 1–2，自评）
+
+- Step 1 易读 **12/12**：R1「每说一次话，Voxt 给它发一个新标签，结果跟着标签走」；R2 只引 session ID 一件新事；R3 「标签」大白话在图上；R4 caption 一句；R5 无大数字；R6 一次只长出一组框、当前对象高亮、循环可复看。Step 2 易读 **12/12**：R1「按一下键，A 这个标签跟着这句话走过六站，每站留下自己的产物」；R2 只新增「路线」一件（helper 有图内大白话「把声音送进来」）；R6 一次只动徽章这一件。
+- 冷读洞 **0**（按本步与已过步：dictation／session ID／结果小窗均在图上或第 1 步解释；六站名各有图内产物示例）。
+- 不声称整章 GO：Voxt-01 按 direction 要 Steps 1–4 全部覆盖后才核销，本轮只覆盖 Steps 1–2。
+
+## 遗留与边界
+
+- Voxt-01 剩余：Step 3 晚到 A 命中 `A≠B` 的过程化、Step 4 取消后识别／整理拦截与 `cancelled/empty` 的过程化，等协调下一单元。
+- review.md 给 d 的 Voxt 10 P1（Step 1 同屏新名过多）／P2（115.2 MB 可感比较）未动：按顺序 P0 Voxt-01 在先。
+- 本目录 `node_modules` 又是指向协调 checkout 的符号链接，已删并 `npm ci` 本地实装；未进入也未写入 `~/code/learning-sglang`。dev server 用端口 4325（4321/4322 属既有进程，未动），收尾关闭；探针 Chrome 由 `browser.mjs` 自管关闭。
