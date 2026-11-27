@@ -59,7 +59,7 @@
 
 - 最终 `npm run build`：**60 页**通过。全章八步 `readability` 为 **0 机械问题**；`deep-check 11`、`zh-check`、英中全章 360／390／430 px `mobile`、中文逐步字号门和 `git diff --check` 全过。
 - 默认 transcript 连续两次逐字一致并与 pinned 无差异：**2,144 词**，SHA-256 `fec68ad32da78557d31306fb9664b6a983991cc0a0a59da85a73059bbc28afa1`。八步均有本步机制，厚度达到 EVAL 对照原版同类章约 2,000 词的参考量级；没有靠新增散文替代机制。
-- 自定义逐相审计覆盖 **40 个 1440×900 桌面相位**。每个相位的 step／phase 身份均核对；每步至少两个真实机制状态，可见文字或不透明对象随相位改变。文字重叠、SVG 出界均为 **0**，最低可见字体 **10.506 CSS px**。每步保存首末相 PNG，共 **16 张身份已核截图**，位于 `.bot/out/omni11/s1/` 至 `s8/` 的 `verified-initial.png` 和 `verified-final.png`。
+- 可重跑脚本 `.bot/out/omni11-phase-audit.mjs` 覆盖 **40 个 1440×900 桌面相位**，并生成 **40 张 PNG** 和 `.bot/out/omni11-phase-audit/report.json`。每个相位的 step／phase／counter 身份均核对；排除红框和 LoopProgress 后，**32/32** 个步内相邻转变都改变机制签名。文字重叠、SVG 出界均为 **0**，最低可见字体 **10.506 CSS px**。
 - 中文 Step 4／7／8 和英文 Step 7 深入讲解均为 `aria-expanded=true`，横向溢出、KaTeX 错误和残留 `$$` 均为 **0**。对应 PNG 在 `.bot/out/omni11/deep/`。代表舞台图为 `.bot/out/omni11/s7/verified-final.png`。
 - 首次构建发现本 clone 的 `node_modules` 符号链接指向协调人 checkout，Vite 尝试写共享 cache 并报 EPERM。已只删除本目录内的符号链接并执行本地 `npm install`，后续依赖、cache、dev server 和构建均在本 clone，未写协调人的 checkout。多次推送被拒后均执行 `git pull --rebase origin tutorials` 再推，没有 force-push。
 
@@ -69,7 +69,7 @@
 - Omni-15 的作者返工和本章硬门已完成，机制 **1/16 → 16/16（作者 DOM 自评）**；完整 EVAL、原十二项和协调 verdict 仍记 **coordinator-rereview-pending**，不自行写 `complete-under-EVAL`。
 - 下一单元按 direction 处理 **Omni 14 桌面小字**，当前 Step 2 为 **7.59 CSS px**；本轮未改 Omni 14。其他 Omni 开放项不因本章返工自动关闭，不开第 16／17 章。
 - 未跑全站回归、真实 Fish S2 Pro、SGLang-Omni 服务、GPU benchmark、音频质量、故障注入或 reduced-motion 动态切换。主人最终视觉与产品验收另计。
-- 本地章节地址：`http://localhost:4322/learning-sglang/omni/ch/11-fish-s2-pro/?step=7`。收尾已停止本轮 4322 dev server 和本轮浏览器；查看前在本目录运行 `npx astro dev --background`。
+- 本地章节地址：`http://localhost:4466/learning-sglang/omni/ch/11-fish-s2-pro/?step=7`。前次回复误写了被其他 lane 占用的 4322，也遗漏了 23:26 启动的 4466 服务；跟进轮已停止该服务（pid 53098），并确认本目录不再监听端口。查看前在本目录运行 `npx astro dev --background --port 4466`。本轮浏览器均已关闭，归属不明的其他 CDP 进程未触碰。
 
 ---
 

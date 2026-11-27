@@ -2,7 +2,7 @@
 
 日期：2026-11-26。
 
-**当前协调 verdict：NO-GO。** 全书核销确认机制 R6 只有 **1/16**，仅 Step 7 tail 有部分机制变化，其他步的响应式布局或红框不计分。桌面 Step 7 实测最低 **7.40 CSS px**，Omni-33 的 session 状态接缝也仍开放。旧 **16/16** 和整章 GO 撤回。
+**当前协调 verdict：NO-GO / coordinator-rereview-pending。** 固定复审前的协调基线为机制 R6 **1/16**、Step 7 最低 **7.40 CSS px**。当前作者机制返工已完成：八步 `[6,4,3,11,5,4,3,4]` 个相位均有本步机制对象变化，作者 DOM 机制 R6 **16/16**；桌面字号 P0 已修，40 个桌面相位最低 **10.506 CSS px**。这些结果不覆盖固定 verdict，也不自行核销 Omni-15 或 Omni-02 的本章部分。Omni-33 的 session 状态接缝仍开放。
 
 `1df0d34…d86329d` 曾关闭 cached-prefix／fingerprint 并给出 R1–R5 **80/80**、原十个非视觉项 **160/160**、原 #4/#5 **32/32**、原十二项 **192/192**。这些只保留为历史内容与已读静态视图基线，不能覆盖当前 P0。
 
@@ -19,7 +19,7 @@
 | 7 | 10 | 2 | 12 | 流式重读旧帧但不重播，还会延后交付 512 个采样点，最后全部放出。 | 24 | 0 | 主人目视 | 2026-11-26 |
 | 8 | 10 | 2 | 12 | 短请求先补到最长，两个请求共用一次 vocoder 调用，再各自裁掉补位。 | 24 | 0 | 主人目视 | 2026-11-26 |
 
-**当前状态：NO-GO / mechanism-rework-pending。** 当前机制 R6 **1/16**，不能沿用表内历史满分。先补第 1–6、8 步机制，再处理桌面小字和 session 接缝；live cache-hit 和主人最终验收另计。
+**当前状态：NO-GO / coordinator-rereview-pending。** 作者机制返工完成，作者 DOM 机制 R6 **16/16**，桌面字号 P0 已修；等待协调固定复审，不能沿用表内历史满分或自行提为协调分。Omni-33 的 session 接缝、live cache-hit 和主人最终验收另计。
 
 ## 本轮返工
 
@@ -36,3 +36,4 @@
 - 全章英文 mobile 与中文第 5 步 `STEP=5 LANG=zh` mobile：360、390、430 px 均通过布局和字号硬门。
 - `BOOK=omni node scripts/deep-check.mjs 11` 与 `BASE=http://localhost:4323/learning-sglang BOOK=omni ONLY=11 node scripts/zh-check.mjs`：通过。
 - `git diff --check`：通过。只运行目标章检查，没有运行全站回归、真实模型、GPU benchmark 或音频质量评测。
+- 机制与桌面字号复核：`node .bot/out/omni11-phase-audit.mjs` 可重跑。40 个桌面相位、40 张 PNG、32/32 个步内机制签名转变均通过，最低 **10.506 CSS px**，文字重叠和 SVG 出界均为 **0**；结果保存在 `.bot/out/omni11-phase-audit/report.json`。
