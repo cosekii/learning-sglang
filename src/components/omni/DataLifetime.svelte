@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import StepControls from '../StepControls.svelte';
+  import LoopProgress from '../LoopProgress.svelte';
   import type { NavLink } from '../../chapters';
   import { lang } from '../../i18n';
   import type { Deep } from '../../deep';
@@ -18,11 +19,11 @@
     caption: 'Publishing sends the DataRef and creates a pending transfer. The sender keeps its write operation alive until an ack arrives.',
     captionZh: '发布时，DataRef 发给读者，发送方另留等待回执的记录。记录没结束，写入操作就不能收尾。',
   }, {
-    caption: 'The receiver uses the DataRef to get and rebuild the payload. It acknowledges the finished read before scheduling the payload.',
-    captionZh: '接收方照 DataRef 取回并还原数据。读完后先回 ACK，再把数据交给 scheduler。',
+    caption: "The SHM receiver copies the bytes, then closes its handle and unlinks the block's name. It rebuilds from the copy and acknowledges before scheduling.",
+    captionZh: '接收方复制 SHM 字节，再关闭句柄、移除共享块名字。随后用副本还原、回 ACK，再交给 scheduler。',
   }, {
-    caption: 'The sender matches the ack by object id and finishes the operation. It removes the pending record so backend resources can be reclaimed.',
-    captionZh: '发送方按 object id 找到等待记录，让写入操作收尾。随后删掉记录，后端资源才可回收。',
+    caption: 'The sender finishes the SHM operation after the ACK. It returns a write permit, then removes pending.',
+    captionZh: 'ACK 到了，发送方才让 SHM 操作收尾。先归还一个写入名额，再删除 pending。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -30,6 +31,27 @@
     if (q >= 1 && q <= steps.length) step = q - 1;
   });
   const cur = $derived(steps[step]);
+  const PHASE_COUNTS = [1, 1, 1, 7, 6];
+  let phase = $state(0);
+  let lap = $state(0), lapMs = $state(0);
+  const nextLap = (ms: number) => untrack(() => { lapMs = ms; lap++; });
+  $effect(() => {
+    const s = step;
+    phase = 0;
+    const count = PHASE_COUNTS[s];
+    if (count <= 1) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { phase = count - 1; return; }
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const run = () => {
+      phase = 0;
+      for (let i = 1; i < count; i++) timers.push(setTimeout(() => (phase = i), i * 1400));
+      const ms = count * 1400 + 1800;
+      timers.push(setTimeout(run, ms));
+      nextLap(ms);
+    };
+    run();
+    return () => timers.forEach(clearTimeout);
+  });
   let phone = $state(false);
   onMount(() => {
     const query = window.matchMedia('(max-width: 900px)');
@@ -38,16 +60,17 @@
     query.addEventListener('change', update);
     return () => query.removeEventListener('change', update);
   });
-  const W = $derived(phone ? 300 : 720), H = $derived(phone ? 650 : 390);
+  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step >= 3 ? 700 : 650) : 390);
   const panels = $derived([
     { title: t('REUSE NOW · WRONG READ', '现在覆盖 · 读错'), x: phone ? 15 : 20, y: phone ? 105 : 105, w: phone ? 270 : 325 },
     { title: t('WAIT FOR THE READER', '等读者读完'), x: phone ? 15 : 375, y: phone ? 365 : 105, w: phone ? 270 : 325 },
   ]);
 </script>
 
-<figure class="viz">
+<figure class="viz" data-animation-step={step} data-animation-phase={phase} data-animation-final-phase={PHASE_COUNTS[step] - 1}>
   <div class="canvas">
     <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={t('A result remains available while its receiver reads. A DataRef locates the payload, and the sender tracks the acknowledgement and operation completion.', '结果在接收方读取期间保持可用。DataRef 用来找到数据，发送方跟踪回执和操作完成。')}>
+      {#if step >= 3}<LoopProgress ms={lapMs} {lap} x={phone ? 230 : 640} y={phone ? 644 : 20} />{/if}
       <defs>
         <marker id="lifetime-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
           <path d="M0,0 L8,4 L0,8 Z" fill="var(--accent)" />
@@ -197,11 +220,11 @@
       <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Next: read, rebuild and acknowledge.', '下一步：接收方取字节、还原数据，再回 ACK。') : t('Next: the receiver gets the bytes, rebuilds the payload and acknowledges.', '下一步：接收方取字节、还原数据，再回 ACK。')}</text>
       {:else if step === 3}
       <text x={phone ? 15 : 20} y="20" class="tag strong">ACK = {t('receipt: the data-plane read has finished', '回执：数据平面已经读完')}</text>
-      <text x={phone ? 15 : 20} y="45" class="tag">{phone ? t('Receiver: parse → GET → rebuild → ACK', '接收方：解析 → 读取 → 还原 → ACK') : t('Receiver: parse DataRef → GET and wait → rebuild → ACK → scheduler', '接收方：解析 DataRef → GET 并等待 → 还原 → ACK → scheduler')}</text>
+      <text x={phone ? 15 : 20} y="45" class="tag">{phone ? t('SHM: copy → close handle + unlink name → ACK', 'SHM：复制 → 关句柄 + 移除名字 → ACK') : t('SHM receiver: parse → copy → close handle + unlink name → rebuild → ACK', 'SHM 接收方：解析 → 复制 → 关句柄 + 移除名字 → 还原 → ACK')}</text>
       {#if !phone}
-        <path d="M170 180 H192" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
-        <path d="M345 180 H367" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
-        <path d="M520 180 H542" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
+        <path d="M170 180 H192" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" opacity={phase >= 1 ? 1 : 0.25} />
+        <path d="M345 180 H367" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" opacity={phase >= 5 ? 1 : 0.25} />
+        <path d="M520 180 H542" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" opacity={phase >= 6 ? 1 : 0.25} />
         <rect x="20" y="80" width="150" height="220" rx="11" fill="var(--bg)" stroke="var(--line)" />
         <text x="32" y="108" class="rowlabel">1 · {t('PARSE', '解析')}</text>
         <text x="95" y="145" text-anchor="middle" class="mono strong">DataRef(A)</text>
@@ -209,116 +232,156 @@
         <text x="95" y="211" text-anchor="middle" class="mono">buffer.info</text>
         <text x="95" y="258" text-anchor="middle" class="tag">{t('choose the relay', '选择 relay')}</text>
 
-        <rect x="195" y="80" width="150" height="220" rx="11" fill="var(--bg)" stroke="var(--line)" />
-        <text x="207" y="108" class="rowlabel">2 · GET</text>
-        <text x="270" y="145" text-anchor="middle" class="mono strong">get_async</text>
-        <rect x="215" y="165" width="110" height="48" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
-        <text x="270" y="194" text-anchor="middle" class="mono">uint8[length]</text>
-        <text x="270" y="246" text-anchor="middle" class="tag">{t('wait for completion', '等待读取完成')}</text>
+        <g opacity={phase >= 1 ? 1 : 0.25}>
+          <rect x="195" y="80" width="150" height="220" rx="11" fill="var(--bg)" stroke={phase >= 1 && phase <= 4 ? 'var(--accent)' : 'var(--line)'} stroke-width={phase >= 1 && phase <= 4 ? 2 : 1} />
+          <text x="207" y="108" class="rowlabel">2 · GET</text>
+          <text x="270" y="130" text-anchor="middle" class="mono strong">get_async</text>
+          <text x="270" y="150" text-anchor="middle" class="mono">→ ShmGetOperation</text>
+          <rect x="215" y="160" width="110" height="42" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="270" y="179" text-anchor="middle" class="mono">uint8[length]</text>
+          <text x="270" y="195" text-anchor="middle" class="tag strong">{phase < 2 ? t('empty', '等待复制') : phase === 2 ? t('copying…', '正在复制…') : t('copy ✓', '复制完成 ✓')}</text>
+          <text x="270" y="221" text-anchor="middle" class="tag" opacity={phase >= 2 ? 1 : 0.25}>await wait_for_completion</text>
+          <text x="270" y="238" text-anchor="middle" class="tag" opacity={phase >= 3 ? 1 : 0.25}>{t('finally: close + unlink', 'finally：close + unlink')}</text>
+          <text x="270" y="258" text-anchor="middle" class="tag strong">{phase >= 3 ? t('handle closed ✓', '句柄已关闭 ✓') : t('handle open', '句柄未关闭')}</text>
+          <text x="270" y="276" text-anchor="middle" class="tag strong">{phase >= 3 ? t('name unlinked ✓', '名字已移除 ✓') : t('name linked', '名字仍在')}</text>
+          <text x="270" y="294" text-anchor="middle" class="tag">{phase >= 4 ? t('buffer returns ✓', '接收空间返回 ✓') : t('buffer not returned', '接收空间未返回')}</text>
+        </g>
 
-        <rect x="370" y="80" width="150" height="220" rx="11" fill="var(--bg)" stroke="var(--line)" />
-        <text x="382" y="108" class="rowlabel">3 · {t('REBUILD', '还原')}</text>
-        <text x="445" y="145" text-anchor="middle" class="mono strong">TensorMeta</text>
-        <text x="445" y="179" text-anchor="middle" class="tag">shape · dtype</text>
-        <text x="445" y="205" text-anchor="middle" class="tag">device · offset</text>
-        <rect x="390" y="229" width="110" height="40" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
-        <text x="445" y="254" text-anchor="middle" class="mono strong">{t('payload A', '数据 A')}</text>
+        <g opacity={phase >= 5 ? 1 : 0.25}>
+          <rect x="370" y="80" width="150" height="220" rx="11" fill="var(--bg)" stroke={phase === 5 ? 'var(--accent)' : 'var(--line)'} stroke-width={phase === 5 ? 2 : 1} />
+          <text x="382" y="108" class="rowlabel">3 · {t('REBUILD', '还原')}</text>
+          <text x="445" y="145" text-anchor="middle" class="mono strong">TensorMeta</text>
+          <text x="445" y="179" text-anchor="middle" class="tag">shape · dtype</text>
+          <text x="445" y="205" text-anchor="middle" class="tag">device · offset</text>
+          <rect x="390" y="229" width="110" height="40" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="445" y="254" text-anchor="middle" class="mono strong">{t('payload A', '数据 A')}</text>
+          <text x="445" y="291" text-anchor="middle" class="tag">{t('from the copied buffer', '用复制后的字节还原')}</text>
+        </g>
 
-        <rect x="545" y="80" width="155" height="220" rx="11" fill="white" stroke="var(--accent)" stroke-width="2" />
-        <text x="557" y="108" class="rowlabel">4 · ACK</text>
-        <text x="622" y="143" text-anchor="middle" class="mono strong">object_id = A</text>
-        <text x="622" y="175" text-anchor="middle" class="mono">success = true</text>
-        <text x="622" y="211" text-anchor="middle" class="tag strong">{t('read finished ✓', '读取完成 ✓')}</text>
-        <line x1="565" y1="229" x2="680" y2="229" stroke="var(--line)" />
-        <text x="622" y="257" text-anchor="middle" class="tag">{t('then → scheduler', '然后 → scheduler')}</text>
+        <g opacity={phase >= 6 ? 1 : 0.25}>
+          <rect x="545" y="80" width="155" height="220" rx="11" fill="white" stroke="var(--accent)" stroke-width="2" />
+          <text x="557" y="108" class="rowlabel">4 · ACK</text>
+          <text x="622" y="143" text-anchor="middle" class="mono strong">object_id = A</text>
+          <text x="622" y="175" text-anchor="middle" class="mono">{phase >= 6 ? 'success = true' : 'success · waiting'}</text>
+          <text x="622" y="211" text-anchor="middle" class="tag strong">{phase >= 6 ? t('read finished ✓', '读取完成 ✓') : t('not acknowledged yet', '尚未回 ACK')}</text>
+          <line x1="565" y1="229" x2="680" y2="229" stroke="var(--line)" />
+          <text x="622" y="257" text-anchor="middle" class="tag">{phase >= 6 ? t('then → scheduler', '然后 → scheduler') : t('scheduler waits', 'scheduler 等待')}</text>
+        </g>
 
         <rect x="20" y="318" width="680" height="30" rx="7" fill="white" stroke="var(--line)" />
-        <text x="360" y="338" text-anchor="middle" class="tag strong">{t('ACK goes to the sender · rebuilt payload goes to the input handler', 'ACK 回发送方 · 还原的数据交给 input handler')}</text>
+        <text x="360" y="338" text-anchor="middle" class="tag strong">{t('rebuild reads the copied bytes · ACK goes to the sender · payload goes to the input handler', '用副本还原 · ACK 回发送方 · 数据交给 input handler')}</text>
       {:else}
-        <path d="M150 166 V186" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
-        <path d="M150 286 V306" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
-        <path d="M150 406 V426" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
+        <path d="M150 166 V186" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" opacity={phase >= 1 ? 1 : 0.25} />
+        <path d="M150 371 V391" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" opacity={phase >= 5 ? 1 : 0.25} />
+        <path d="M150 491 V511" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" opacity={phase >= 6 ? 1 : 0.25} />
         <rect x="15" y="66" width="270" height="100" rx="10" fill="var(--bg)" stroke="var(--line)" />
         <text x="30" y="90" class="rowlabel">1 · {t('PARSE', '解析')} · DataRef(A)</text>
         <text x="150" y="121" text-anchor="middle" class="mono">SHM · buffer.info</text>
         <text x="150" y="148" text-anchor="middle" class="tag">{t('choose the relay', '选择 relay')}</text>
 
-        <rect x="15" y="186" width="270" height="100" rx="10" fill="var(--bg)" stroke="var(--line)" />
-        <text x="30" y="210" class="rowlabel">2 · GET · get_async</text>
-        <text x="150" y="241" text-anchor="middle" class="mono">uint8[length]</text>
-        <text x="150" y="268" text-anchor="middle" class="tag">{t('wait for completion', '等待读取完成')}</text>
+        <g opacity={phase >= 1 ? 1 : 0.25}>
+          <rect x="15" y="186" width="270" height="185" rx="10" fill="var(--bg)" stroke={phase >= 1 && phase <= 4 ? 'var(--accent)' : 'var(--line)'} stroke-width={phase >= 1 && phase <= 4 ? 2 : 1} />
+          <text x="30" y="210" class="rowlabel">2 · GET · get_async</text>
+          <text x="150" y="233" text-anchor="middle" class="mono">→ ShmGetOperation</text>
+          <rect x="40" y="244" width="220" height="32" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
+          <text x="150" y="265" text-anchor="middle" class="mono">uint8[length]</text>
+          <text x="150" y="294" text-anchor="middle" class="tag strong">{phase < 2 ? t('empty', '等待复制') : phase === 2 ? t('copying…', '正在复制…') : t('copy ✓', '复制完成 ✓')}</text>
+          <text x="150" y="318" text-anchor="middle" class="tag" opacity={phase >= 2 ? 1 : 0.25}>await wait_for_completion</text>
+          <text x="150" y="340" text-anchor="middle" class="tag" opacity={phase >= 3 ? 1 : 0.25}>{t('finally: close + unlink', 'finally：close + unlink')}</text>
+          <text x="150" y="361" text-anchor="middle" class="tag strong">{phase >= 4 ? t('name unlinked · buffer returns ✓', '名字已移除 · 接收空间返回 ✓') : phase >= 3 ? t('handle closed · name unlinked ✓', '句柄已关 · 名字已移除 ✓') : t('handle open · name linked', '句柄未关 · 名字仍在')}</text>
+        </g>
 
-        <rect x="15" y="306" width="270" height="100" rx="10" fill="var(--bg)" stroke="var(--line)" />
-        <text x="30" y="330" class="rowlabel">3 · {t('REBUILD', '还原')} · TensorMeta</text>
-        <text x="150" y="361" text-anchor="middle" class="tag">shape · dtype · device · offset</text>
-        <text x="150" y="388" text-anchor="middle" class="mono strong">{t('payload A rebuilt', '数据 A 已还原')}</text>
+        <g opacity={phase >= 5 ? 1 : 0.25}>
+          <rect x="15" y="391" width="270" height="100" rx="10" fill="var(--bg)" stroke={phase === 5 ? 'var(--accent)' : 'var(--line)'} stroke-width={phase === 5 ? 2 : 1} />
+          <text x="30" y="415" class="rowlabel">3 · {t('REBUILD', '还原')} · TensorMeta</text>
+          <text x="150" y="446" text-anchor="middle" class="tag">shape · dtype · device · offset</text>
+          <text x="150" y="473" text-anchor="middle" class="mono strong">{t('payload A · from copied bytes', '数据 A · 用副本还原')}</text>
+        </g>
 
-        <rect x="15" y="426" width="270" height="115" rx="10" fill="white" stroke="var(--accent)" stroke-width="2" />
-        <text x="30" y="450" class="rowlabel">4 · ACK · object_id = A</text>
-        <text x="150" y="481" text-anchor="middle" class="mono">success = true</text>
-        <text x="150" y="509" text-anchor="middle" class="tag strong">{t('read finished ✓', '读取完成 ✓')}</text>
-        <text x="150" y="531" text-anchor="middle" class="tag">{t('then → scheduler', '然后 → scheduler')}</text>
+        <g opacity={phase >= 6 ? 1 : 0.25}>
+          <rect x="15" y="511" width="270" height="115" rx="10" fill="white" stroke="var(--accent)" stroke-width="2" />
+          <text x="30" y="535" class="rowlabel">4 · ACK · object_id = A</text>
+          <text x="150" y="566" text-anchor="middle" class="mono">{phase >= 6 ? 'success = true' : 'success · waiting'}</text>
+          <text x="150" y="594" text-anchor="middle" class="tag strong">{phase >= 6 ? t('read finished ✓', '读取完成 ✓') : t('not acknowledged yet', '尚未回 ACK')}</text>
+          <text x="150" y="616" text-anchor="middle" class="tag">{phase >= 6 ? t('then → scheduler', '然后 → scheduler') : t('scheduler waits', 'scheduler 等待')}</text>
+        </g>
       {/if}
-      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{phone ? t('ACK ends the read, not downstream computation.', 'ACK 只表示读取结束，不表示下游计算完成。') : t('ACK means the read ended, not that downstream computation finished.', 'ACK 只表示读取结束，不表示下游计算完成。')}</text>
-      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Next: match ACK to pending[A] and finish.', '下一步：发送方用 ACK 找到 pending[A]，让操作收尾。') : t('Next: the sender matches this ACK to pending[A] and finishes the operation.', '下一步：发送方用 ACK 找到 pending[A]，让操作收尾。')}</text>
+      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{phone ? t('Rebuilding uses the copy, not the unlinked name.', '还原用副本，不再读已移除的名字。') : t('Reconstruction reads the copied buffer, not the unlinked block name.', '还原读取复制后的接收空间，不再读已移除的共享块名字。')}</text>
+      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Next: return a sender write permit, then clear pending.', '下一步：发送方归还写入名额，再删除 pending。') : t('Next: the sender returns a write permit, then removes pending[A].', '下一步：发送方归还写入名额，再删除 pending[A]。')}</text>
       {:else}
-      <text x={phone ? 15 : 20} y="20" class="tag strong">{phone ? t('Match ACK → finish operation → remove pending', '发送方正常路径：匹配 ACK → 操作收尾 → 删除 pending') : t('Normal sender path: match ACK → finish operation → remove pending', '发送方正常路径：匹配 ACK → 操作收尾 → 删除 pending')}</text>
-      <text x={phone ? 15 : 20} y="45" class="tag">{phone ? t('Each RelayOperation handles its backend resource', '每种 RelayOperation 自己处理后端的资源') : t('Each concrete RelayOperation handles its own backend resource', '每种 RelayOperation 自己处理后端的资源')}</text>
+      <text x={phone ? 15 : 20} y="20" class="tag strong">{phone ? t('ACK → finish SHM put → return permit → clear pending', 'ACK → SHM put 收尾 → 归还名额 → 删除 pending') : t('Normal SHM sender path: ACK → finish put → return permit → clear pending', 'SHM 发送方正常路径：ACK → put 收尾 → 归还名额 → 删除 pending')}</text>
+      <text x={phone ? 15 : 20} y="45" class="tag">{t('sem = SHM write permits · each put takes one', 'sem = SHM 写入名额 · 每次 put 拿走一个')}</text>
       {#if !phone}
-        <path d="M225 180 H252" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
-        <path d="M462 180 H490" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
+        <path d="M225 180 H252" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" opacity={phase >= 2 ? 1 : 0.25} />
+        <path d="M462 180 H490" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" opacity={phase >= 5 ? 1 : 0.25} />
         <rect x="20" y="80" width="205" height="220" rx="12" fill="white" stroke="var(--accent)" stroke-width="2" />
-        <text x="35" y="108" class="rowlabel">1 · {t('MATCH', '匹配')}</text>
+        <text x="35" y="108" class="rowlabel">1 · {t('MATCH', '匹配')} · ack_transfer</text>
         <text x="122" y="142" text-anchor="middle" class="mono strong">DataAck(A)</text>
         <text x="122" y="174" text-anchor="middle" class="mono">success = true</text>
         <path d="M122 191 V215" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
         <rect x="43" y="222" width="159" height="46" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
         <text x="122" y="250" text-anchor="middle" class="mono">pending[A] found</text>
+        <text x="122" y="290" text-anchor="middle" class="mono">{phase >= 1 ? 'pending.ack.set_result ✓' : 'pending.ack · waiting'}</text>
 
-        <rect x="257" y="80" width="205" height="220" rx="12" fill="var(--bg)" stroke="var(--line)" />
-        <text x="272" y="108" class="rowlabel">2 · {t('FINISH', '收尾')}</text>
-        <text x="360" y="140" text-anchor="middle" class="mono strong">watch_pending</text>
-        <rect x="279" y="157" width="161" height="43" rx="7" fill="white" stroke="var(--accent)" />
-        <text x="360" y="184" text-anchor="middle" class="mono">mark_receiver_done</text>
-        <path d="M360 200 V221" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
-        <rect x="279" y="228" width="161" height="43" rx="7" fill="white" stroke="var(--accent)" />
-        <text x="360" y="255" text-anchor="middle" class="mono">wait_for_completion</text>
+        <g opacity={phase >= 2 ? 1 : 0.25}>
+          <rect x="257" y="80" width="205" height="220" rx="12" fill="var(--bg)" stroke={phase >= 2 && phase <= 4 ? 'var(--accent)' : 'var(--line)'} stroke-width={phase >= 2 && phase <= 4 ? 2 : 1} />
+          <text x="272" y="108" class="rowlabel">2 · {t('FINISH', '收尾')}</text>
+          <text x="360" y="132" text-anchor="middle" class="mono strong">watch_pending</text>
+          <rect x="279" y="142" width="161" height="36" rx="7" fill="white" stroke="var(--accent)" opacity={phase >= 2 ? 1 : 0.25} />
+          <text x="360" y="165" text-anchor="middle" class="mono" opacity={phase >= 2 ? 1 : 0.25}>mark_receiver_done</text>
+          <path d="M360 178 V190" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" opacity={phase >= 3 ? 1 : 0.25} />
+          <rect x="279" y="194" width="161" height="96" rx="7" fill="white" stroke="var(--accent)" opacity={phase >= 3 ? 1 : 0.25} />
+          <text x="360" y="217" text-anchor="middle" class="mono" opacity={phase >= 3 ? 1 : 0.25}>wait_for_completion</text>
+          <rect x="289" y="228" width="141" height="52" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" opacity={phase >= 4 ? 1 : 0.2} />
+          <text x="360" y="250" text-anchor="middle" class="mono strong" opacity={phase >= 4 ? 1 : 0.2}>{phase >= 4 ? 'finally: sem.release' : 'waiting…'}</text>
+          <text x="360" y="272" text-anchor="middle" class="tag" opacity={phase >= 4 ? 1 : 0.2}>{t('return 1 write permit', '归还 1 个写入名额')}</text>
+        </g>
 
-        <rect x="495" y="80" width="205" height="220" rx="12" fill="var(--bg)" stroke="var(--line)" />
-        <text x="510" y="108" class="rowlabel">3 · {t('CLEAR', '清除记录')}</text>
-        <rect x="518" y="127" width="159" height="52" rx="7" fill="white" stroke="var(--faint)" stroke-dasharray="4 3" />
-        <text x="597" y="158" text-anchor="middle" class="mono">pending: no A</text>
-        <text x="597" y="211" text-anchor="middle" class="tag strong">{t('record removed', '记录已删除')}</text>
-        <rect x="518" y="232" width="159" height="40" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" />
-        <text x="597" y="257" text-anchor="middle" class="tag strong">{t('backend may reclaim', '后端可以回收')}</text>
+        <g opacity={phase >= 5 ? 1 : 0.25}>
+          <rect x="495" y="80" width="205" height="220" rx="12" fill="var(--bg)" stroke={phase === 5 ? 'var(--accent)' : 'var(--line)'} stroke-width={phase === 5 ? 2 : 1} />
+          <text x="510" y="108" class="rowlabel">3 · {t('CLEAR', '清除记录')}</text>
+          <rect x="518" y="127" width="159" height="52" rx="7" fill="white" stroke="var(--faint)" stroke-dasharray={phase >= 5 ? '4 3' : '0'} />
+          <text x="597" y="158" text-anchor="middle" class="mono">{phase >= 5 ? 'pending: no A' : 'pending[A] · waiting'}</text>
+          <text x="597" y="211" text-anchor="middle" class="mono strong">{phase >= 5 ? 'pending.pop(A) ✓' : 'pending.pop · waiting'}</text>
+          <text x="597" y="250" text-anchor="middle" class="tag">{t('only the record is removed', '这里只删除记录')}</text>
+        </g>
 
         <rect x="20" y="320" width="680" height="30" rx="7" fill="white" stroke="var(--line)" />
-        <text x="360" y="340" text-anchor="middle" class="tag strong">{t('A is complete only after its operations finish · no universal release() call', 'A 的 operations 完成后才收尾 · 通用层没有统一 release()')}</text>
+        <text x="360" y="340" text-anchor="middle" class="tag strong">wait_for_completion · finally: sem.release → pending.pop(A)</text>
       {:else}
-        <path d="M150 190 V215" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
-        <path d="M150 340 V365" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" />
+        <path d="M150 190 V215" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" opacity={phase >= 2 ? 1 : 0.25} />
+        <path d="M150 375 V395" stroke="var(--accent)" stroke-width="2" marker-end="url(#lifetime-arrow)" opacity={phase >= 5 ? 1 : 0.25} />
         <rect x="15" y="70" width="270" height="120" rx="10" fill="white" stroke="var(--accent)" stroke-width="2" />
-        <text x="30" y="94" class="rowlabel">1 · {t('MATCH', '匹配')} · DataAck(A)</text>
-        <text x="150" y="126" text-anchor="middle" class="mono">success = true</text>
-        <rect x="40" y="141" width="220" height="32" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
-        <text x="150" y="162" text-anchor="middle" class="mono">pending[A] found</text>
+        <text x="30" y="94" class="rowlabel">1 · {t('MATCH', '匹配')} · ack_transfer</text>
+        <text x="150" y="120" text-anchor="middle" class="mono">DataAck(A) · success = true</text>
+        <rect x="40" y="130" width="220" height="30" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="150" y="150" text-anchor="middle" class="mono">pending[A] found</text>
+        <text x="150" y="181" text-anchor="middle" class="mono">{phase >= 1 ? 'pending.ack.set_result ✓' : 'pending.ack · waiting'}</text>
 
-        <rect x="15" y="220" width="270" height="120" rx="10" fill="var(--bg)" stroke="var(--line)" />
-        <text x="30" y="244" class="rowlabel">2 · {t('FINISH', '收尾')} · watch_pending</text>
-        <text x="150" y="277" text-anchor="middle" class="mono">mark_receiver_done</text>
-        <text x="150" y="309" text-anchor="middle" class="mono">wait_for_completion</text>
+        <g opacity={phase >= 2 ? 1 : 0.25}>
+          <rect x="15" y="220" width="270" height="155" rx="10" fill="var(--bg)" stroke={phase >= 2 && phase <= 4 ? 'var(--accent)' : 'var(--line)'} stroke-width={phase >= 2 && phase <= 4 ? 2 : 1} />
+          <text x="30" y="244" class="rowlabel">2 · {t('FINISH', '收尾')} · watch_pending</text>
+          <text x="150" y="270" text-anchor="middle" class="mono" opacity={phase >= 2 ? 1 : 0.25}>mark_receiver_done</text>
+          <rect x="40" y="281" width="220" height="82" rx="6" fill="white" stroke="var(--accent)" opacity={phase >= 3 ? 1 : 0.25} />
+          <text x="150" y="301" text-anchor="middle" class="mono" opacity={phase >= 3 ? 1 : 0.25}>wait_for_completion</text>
+          <rect x="50" y="309" width="200" height="44" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" opacity={phase >= 4 ? 1 : 0.2} />
+          <text x="150" y="327" text-anchor="middle" class="mono strong" opacity={phase >= 4 ? 1 : 0.2}>{phase >= 4 ? 'finally: sem.release' : 'waiting…'}</text>
+          <text x="150" y="347" text-anchor="middle" class="tag strong" opacity={phase >= 4 ? 1 : 0.2}>{t('return 1 write permit', '归还 1 个写入名额')}</text>
+        </g>
 
-        <rect x="15" y="370" width="270" height="120" rx="10" fill="var(--bg)" stroke="var(--line)" />
-        <text x="30" y="394" class="rowlabel">3 · {t('CLEAR', '清除记录')}</text>
-        <rect x="40" y="408" width="220" height="32" rx="6" fill="white" stroke="var(--faint)" stroke-dasharray="4 3" />
-        <text x="150" y="429" text-anchor="middle" class="mono">pending: no A</text>
-        <text x="150" y="465" text-anchor="middle" class="tag strong">{t('backend may reclaim', '后端可以回收')}</text>
+        <g opacity={phase >= 5 ? 1 : 0.25}>
+          <rect x="15" y="395" width="270" height="100" rx="10" fill="var(--bg)" stroke={phase === 5 ? 'var(--accent)' : 'var(--line)'} stroke-width={phase === 5 ? 2 : 1} />
+          <text x="30" y="419" class="rowlabel">3 · {t('CLEAR', '清除记录')}</text>
+          <rect x="40" y="437" width="220" height="32" rx="6" fill="white" stroke="var(--faint)" stroke-dasharray={phase >= 5 ? '4 3' : '0'} />
+          <text x="150" y="458" text-anchor="middle" class="mono">{phase >= 5 ? 'pending: no A' : 'pending[A] · waiting'}</text>
+          <text x="150" y="487" text-anchor="middle" class="mono strong">{phase >= 5 ? 'pending.pop(A) ✓' : 'pending.pop · waiting'}</text>
+        </g>
 
         <rect x="15" y="515" width="270" height="55" rx="7" fill="white" stroke="var(--line)" />
-        <text x="150" y="539" text-anchor="middle" class="tag strong">{t('operations finish before completion', 'operations 完成后才收尾')}</text>
-        <text x="150" y="560" text-anchor="middle" class="tag">{t('no universal release() call', '通用层没有统一 release()')}</text>
+        <text x="150" y="539" text-anchor="middle" class="tag strong">finally: sem.release → pending.pop(A)</text>
+        <text x="150" y="560" text-anchor="middle" class="tag">{t('inside wait_for_completion', '在 wait_for_completion 内部')}</text>
       {/if}
-      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{phone ? t('Slow readers hold resources; backends control release.', '读者越慢，后端资源占用越久；具体回收方式由后端决定。') : t('A slow reader holds backend resources longer; reclamation is backend-specific.', '读者越慢，后端资源占用越久；具体回收方式由后端决定。')}</text>
+      <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{phone ? t('SHM normal path; other relays use their own operations.', 'SHM 正常路径；其他 relay 用自己的 operation。') : t('This is SHM completion; other relays keep their own resource semantics.', '本图是 SHM 完成路径；其他 relay 保留各自的资源语义。')}</text>
       <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Next: queues and backpressure between stages.', '下一章：队列和背压怎样连接快慢不同的 stage。') : t('Next chapter: how queues and backpressure connect stages at different speeds.', '下一章：队列和背压怎样连接快慢不同的 stage。')}</text>
       {/if}
     </svg>

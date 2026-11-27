@@ -130,84 +130,92 @@ SHM 使用 `put_chunks_async()`，其他 relay 使用 `put_async()`。两种 put
 
 ## 第 4 步 · 读完先回 ACK，再交给 scheduler
 
-> **一句话：** 接收方按 DataRef 选择 relay，取回字节并重建 payload；读取结束后发送 ACK，随后才把 payload 交给 input handler。
+> **一句话：** 接收方按 DataRef 选择 SHM relay，复制字节后 close 并 unlink 共享块，再重建 payload、发送 ACK，随后交给 input handler。
 
 ### 图上是什么
 
 - 第 1 格解析 DataRef，按 `transport` 选择 relay，并使用 `buffer.info` 找到后端数据。
-- 第 2 格按 `buffer.length` 准备 `uint8` 接收空间，调用 `get_async()`，再等待读取完成。
+- 第 2 格按 `buffer.length` 准备 `uint8` 接收空间，调用 `get_async()` 创建 `ShmGetOperation`。动画随后等待这个 operation 的 `wait_for_completion()`：先把字节复制到接收空间，再关闭接收方句柄、移除共享块名字，最后返回复制后的接收空间。
 - 第 3 格按 `TensorMeta` 的 `path/shape/dtype/device/offset/size` 还原 tensor 和 payload。图中只写出与切片、形状和设备直接相关的几项。
 - 第 4 格是成功 ACK：`object_id = A`、`success = true`。ACK 回发送方，还原的数据则继续交给 input handler，之后才轮到 scheduler。
-- 图的顺序是「读取完成 → ACK → input handler」。ACK 不表示 `talker_ar` 已完成计算，更不表示整个请求已结束。
+- 图的顺序是「复制 → close + unlink → 还原 → ACK → input handler」。ACK 不表示 `talker_ar` 已完成计算，更不表示整个请求已结束。
 
-### 一条通用接收链
+### SHM 接收链
 
-| 顺序 | 调用或消息 | 本步得到什么 |
-|---|---|---|
-| 1 | 收到 `DataReadyMessage`，反序列化 DataRef | 对象、传输方式和后端描述 |
-| 2 | `CommEngine.read_data()` | 按 transport 选择 relay 并读取 |
-| 3 | `relay.get_async(buffer.info, dest_tensor)` 后等待完成 | 接收空间里的字节 |
-| 4 | 按 tensor 元数据切片并恢复 payload | 可交给本 stage 的数据对象 |
-| 5 | `DataAckMessage(object_id=A, success=true)` | 发送方可匹配的读完回执 |
-| 6 | input handler 接收 payload | 后续 scheduler 输入 |
+1. 收到 `DataReadyMessage` 并反序列化 DataRef：对象、传输方式和后端描述。
+2. `CommEngine.read_data()`：按 transport 选择 relay 并读取。
+3. <code>relay.get_async(<wbr>buffer.info,<wbr> dest_tensor)</code>：接收方的 `ShmGetOperation`。
+4. `await op.wait_for_completion()`：等待这个 operation；复制和清理都在这次等待内部发生。
+5. <code>dest_view[:size].<wbr>copy_(<wbr>src_tensor[:size])</code>：接收空间里的字节。
+6. 在同一次等待的 `finally` 里，先 <code>existing_shm.<wbr>close()</code> 再 <code>existing_shm.<wbr>unlink()</code>：关闭接收方句柄，并移除共享块的名字。
+7. <code>read_transfer_<wbr>buffer()</code> 返回复制后的接收空间，再切片并恢复可交给本 stage 的 payload。
+8. `DataAckMessage(object_id=A, success=true)`：发送方可匹配的读完回执。
+9. input handler 接收 payload，作为后续 scheduler 输入。
 
 失败读取也会回 ACK，但 `success=False` 并带错误信息；随后执行 cleanup 并上报 stage failure。这样的 ACK 表示读取已经终止且失败，不能被理解为成功消费。
 
 ### cleanup 不等于统一释放发送方数据
 
-重建后调用的 `relay.cleanup(request_id)` 是 request 级后端清理钩子，Router 对 active relays 逐个调用它。不能把这个名字统一解释为「删除发送方数据」或「所有后端立即释放内存」。正常发送方资源的收尾仍由下一步的 ACK watcher 和具体 `RelayOperation` 完成。
+重建后调用的 `relay.cleanup(request_id)` 是 request 级后端清理钩子。`ShmRelay.cleanup()` 什么都不做：具体的 close 和 unlink 已在 `ShmGetOperation.wait_for_completion()` 里完成。Router 会对 active relays 调用通用钩子，但这个函数名不代表再删一次发送方数据。正常发送方收尾由下一步的 ACK watcher 和 `ShmPutOperation` 完成。
 
 ### 源码出处
 
-- `sglang_omni/pipeline/stage/runtime.py:794-801`：取出 DataRef、选择 relay、调用 `read_data()`；`802-812`：失败 ACK、cleanup 和 failure；`813-817`：成功 ACK 后交给 input handler。
+- <code>sglang_omni/pipeline/stage/<wbr>runtime.py:794-801</code>：取出 DataRef、选择 relay、调用 `read_data()`；`802-812`：失败 ACK、cleanup 和 failure；`813-817`：成功 ACK 后交给 input handler。
 - `sglang_omni/comm/stage_io.py:826-842`：按字节长度分配接收空间、get 并等待；`537-568`：重建 payload 和 tensor、调用 cleanup。
+- `sglang_omni/relay/shm.py:142-189`：SHM 先复制，再 close 和 unlink；`261-275`：`ShmRelay.cleanup()` 不执行任何操作。
 - `sglang_omni/proto/messages.py:235-273`：`DataAckMessage` 的 `object_id`、`success` 和错误字段。
 - `sglang_omni/comm/router.py:409-418`：request 级 relay cleanup。
 
-行号对应 `origin/main@0e641996a0c269601d03f1cb29d3f46d7cb345a6`。
+行号对应 `origin/main@0e641996a0c2`。
 
 ### 接下来
 
-第 5 步回到发送方：按 ACK 的 `object_id` 找到 pending，完成 operation，再删除生命周期记录。
+第 5 步回到发送方：按 ACK 的 `object_id` 找到 pending，完成 SHM put、归还写入名额，再删除生命周期记录。
 
 ## 第 5 步 · ACK 让 operation 收尾，记录才可删除
 
-> **一句话：** 发送方按 `object_id` 完成 pending 的 ACK future，watcher 再通知并等待各个 operation 收尾，最后删除记录；具体后端决定怎样回收资源。
+> **一句话：** 发送方按 `object_id` 完成 pending 的 ACK future，让 SHM put 收尾、归还一个写入名额，最后删除记录。
 
 ### 图上是什么
 
 - 第 1 格收到 `DataAck(A)`。`ack_transfer()` 用 A 找到 `pending[A]`，成功 ACK 会把这张记录里的 ACK future 置为完成。
-- 第 2 格是 `watch_pending()` 的正常路径：先对每个 operation 调 `mark_receiver_done()`，再逐个 `wait_for_completion()`。
-- 第 3 格的 `pending: no A` 表示生命周期记录已删除。「后端可以回收」不是统一的立即释放动画；SHM block、CUDA slot 或其他资源由具体后端 operation 处理。
-- 最下面强调通用层没有统一 `release()` 方法。通用接口提供 put/get/cleanup/close 和 operation 完成通知，具体资源语义留在 relay 实现里。
+- 第 1 格还画出 `ack_transfer()` 完成 `pending.ack`，让 `watch_pending()` 得以继续。
+- 第 2 格是 `watch_pending()` 的正常 SHM 路径：先调 `mark_receiver_done()`，再等待 `wait_for_completion()`。在这次等待的 `finally` 里，`ShmPutOperation` 调 `sem.release` 归还一个写入名额，然后等待才返回。
+- 第 3 格的 `pending: no A` 和 `pending.pop(A)` 表示只删除生命周期记录。第 4 步已在复制后关闭接收方句柄、移除共享块名字；这里的 pop 不释放复制后的接收空间。
+- 最下面固定顺序：`sem.release` 在 `wait_for_completion()` 的 `finally` 里执行，先于 `pending.pop(A)`。其他 relay 保留各自的资源语义。
 
 ### 正常完成链
 
-| 顺序 | 动作 | 结果 |
-|---|---|---|
-| 1 | `ack_transfer()` 按 `ack.object_id` 查 pending | 找到这次传输的等待记录 |
-| 2 | 成功 ACK 完成 `pending.ack` | watcher 可以继续 |
-| 3 | 每个 `op.mark_receiver_done()` | 通知具体 operation：接收方已读完 |
-| 4 | 每个 `op.wait_for_completion()` | 等待具体后端收尾 |
-| 5 | `pending.pop(object_id)` | 删除发送方生命周期记录 |
-| 6 | 若有 KV lease，执行 `lease.release()` | 释放这项额外租约 |
+1. `ack_transfer()` 按 `ack.object_id` 查 pending，找到这次传输的等待记录。
+2. 成功 ACK 完成 `pending.ack`，watcher 可以继续。
+3. 每个 `op.mark_receiver_done()` 通知具体 operation：接收方已读完。
+4. 每个 `op.wait_for_completion()` 等待具体后端收尾。在这次等待的 `finally` 里，<code>ShmPutOperation.<wbr>release_cb()</code> 调用 `sem.release`，归还一个 SHM 写入名额，然后等待才返回。
+5. 等待返回后，<code>pending.pop(<wbr>object_id)</code> 删除发送方生命周期记录。
+6. 若有 KV lease，执行 `lease.release()` 释放这项额外租约。
 
 收到找不到 pending 的 stale ACK 时直接忽略。失败 ACK 则把异常写入 `pending.ack`，不会让正常成功链假装通过。
+
+### 写入名额限制什么
+
+`ShmRelay` 创建 `sem = asyncio.Semaphore(credits)`，构造参数默认 `credits = 2`。每次 `put_async()` 或 `put_chunks_async()` 都先拿走一个名额，再创建共享块。源码把这些名额叫作 `credits`，图上叫作写入名额。它们限制在途 SHM put 的数量，不限制读者数、字节数，也不是第 1 步的示意空间。
+
+正常路径里，`ShmPutOperation.wait_for_completion()` 进入 `finally`，把 operation 标为完成，再调用 `release_cb=self.sem.release`。这个等待返回后，`watch_pending()` 才进入自己的 `finally` 删除 pending。删除记录只是记账，不是归还名额。
 
 ### 失败与保留边界
 
 普通失败路径调用 `mark_receiver_failed()` 并等待 operation 收尾。若 KV 传输标记了 `retain_pending_on_failure`，且尚未收到 receiver terminal，watcher 会保留 pending，因为对端仍可能读取，不能过早释放资源。
 
-因此，本章图的「后端可以回收」只描述正常通用路径允许收尾，不承诺所有后端、所有失败场景都立即释放同一块内存。
+本图只讲正常 SHM 路径，不把同样的 close/unlink 或 semaphore 规则套到其他后端，也不覆盖上面的失败路径。
 
 ### 源码出处
 
-- `sglang_omni/pipeline/stage/runtime.py:539-557`：接收 `DataAckMessage` 并进入 `ack_transfer()`。
+- <code>sglang_omni/pipeline/stage/<wbr>runtime.py:539-557</code>：接收 `DataAckMessage` 并进入 `ack_transfer()`。
 - `sglang_omni/comm/engine.py:930-971`：按 `object_id` 匹配 pending、忽略 stale ACK、完成或失败 ACK future；`1210-1224`：正常 operation 完成链；`1260-1268`：删除 pending 和释放可选 lease；`1225-1259`、`1290-1313`：失败与保留路径。
-- `sglang_omni/comm/relay/base.py:91-153`：relay 与 operation 的通用接口，没有统一 `release()`。
+- `sglang_omni/relay/base.py:91-153`：relay 与 operation 的通用接口。
+- `sglang_omni/relay/shm.py:100-117`：operation 收尾时调用 `release_cb`；`119-123`：`mark_receiver_done`；`193-237`：semaphore 和每次 put 取一个名额；`239-259`：`release_cb=self.sem.release`。
 
-行号对应 `origin/main@0e641996a0c269601d03f1cb29d3f46d7cb345a6`。
+行号对应 `origin/main@0e641996a0c2`。
 
 ### 接下来
 
-现在可以回答章首问题：DataRef 帮读者找数据，pending 帮发送方等读取结束，ACK 和 operation 完成链把可回收时间推迟到读取之后。若读者比发送方慢，资源会被占用更久；下一章用队列和背压解释怎样连接快慢不同的 stage。
+现在可以回答章首问题：DataRef 帮读者找数据，pending 帮发送方等读取结束，ACK 和 operation 完成链把发送方收尾推迟到读取之后。SHM 接收方先 close 并 unlink 再回 ACK；发送方随后归还写入名额、删除 pending。若读者比发送方慢，资源会被占用更久；下一章用队列和背压解释怎样连接快慢不同的 stage。
