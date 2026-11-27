@@ -387,7 +387,7 @@
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{phone ? t('unchanged: preprocessing · 2 encoders · thinker · decode', '不变：preprocessing · 2 encoders · thinker · decode') : t('Unchanged: preprocessing · image_encoder · audio_encoder · thinker · decode', '不变：preprocessing · image_encoder · audio_encoder · thinker · decode')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{phone ? t('Pairing keeps codec on one GPU; custom policies differ', '配对让 codec 留在一卡；自定义策略可能不同') : t('Default pairing keeps each codec stream on one GPU; a custom policy need not preserve it.', '默认配对让每路 codec 留在一卡；自定义策略不保证这种配对。')}</text>
       {:else if step === 6}
-        <text x={phone ? 15 : 20} y="24" class="rowlabel">{t('TWO CHECKS ANSWER TWO QUESTIONS', '两种检查回答两个问题')}</text>
+        <text x={phone ? 15 : 20} y="24" class="rowlabel">{t(phone ? '5/5 · EVIDENCE · TWO CHECKS' : '5 of 5 · EVIDENCE · TWO CHECKS ANSWER TWO QUESTIONS', phone ? '5/5 · 证据 · 两种检查' : '5/5 · 证据 · 两种检查回答两个问题')}</text>
         <text x={phone ? 15 : 20} y="49" class="tag">readiness = {t('a startup health check, not a speed result', '启动健康检查，不是速度结果')}</text>
         <text x={phone ? 15 : 20} y="72" class="tag">{t('blue = startup request · orange = measurement plan', '蓝 = 启动请求 · 橙 = 测量计划')}</text>
         {#each phone ? [
@@ -405,23 +405,35 @@
             <text x={panel.x + 27} y={panel.y + 101} class="tag">{t('small image', '一张小图')}</text>
             <text x={panel.x + 27} y={panel.y + 130} class="tag">{QWEN_WARMUP_AUDIO_SECONDS} {t('second of audio + short instruction', '秒声音 + 一条短指令')}</text>
             <text x={panel.x + 27} y={panel.y + 159} class="tag">{t('text output; speech adds audio output', '文字输出；语音模式再加声音输出')}</text>
-            <text x={panel.x + panel.w / 2} y={panel.y + 215} text-anchor="middle" class="formula">↓ {t('every required stage', '每个需要的 stage')}</text>
-            <rect x={panel.x + 15} y={panel.y + 235} width={panel.w - 30} height="64" rx="8" fill="var(--bg)" stroke="var(--accent)" />
-            <text x={panel.x + panel.w / 2} y={panel.y + 273} text-anchor="middle" class="formula">≤ {QWEN_WARMUP_MAX_NEW_TOKENS} tokens / {t('generating stage', '生成 stage')}</text>
-            <text x={panel.x + panel.w / 2} y={panel.y + 333} text-anchor="middle" class="tag strong">{t('health evidence only', '只作为健康证据')}</text>
+            <g opacity={phase >= 1 ? 1 : 0} style="transition: opacity 450ms">
+              <text x={panel.x + panel.w / 2} y={panel.y + 215} text-anchor="middle" class="formula">↓ {t('every required stage', '每个需要的 stage')}</text>
+              <rect x={panel.x + 15} y={panel.y + 235} width={panel.w - 30} height="64" rx="8" fill="var(--bg)" stroke="var(--accent)" />
+              <text x={panel.x + panel.w / 2} y={panel.y + 273} text-anchor="middle" class="formula">≤ {QWEN_WARMUP_MAX_NEW_TOKENS} tokens / {t('generating stage', '生成 stage')}</text>
+              <text x={panel.x + panel.w / 2} y={panel.y + 333} text-anchor="middle" class="tag strong">{t('health evidence only', '只作为健康证据')}</text>
+            </g>
           {:else}
-            <text x={panel.x + 15} y={panel.y + 84} class="tag strong">{t('KEEP FIXED', '保持不变')}</text>
-            <text x={panel.x + 15} y={panel.y + 109} class="tag">{t('inputs · sampling · hardware · warmup', '输入 · 采样 · 硬件 · 预热')}</text>
-            <text x={panel.x + 15} y={panel.y + 134} class="tag">{t('change one deployment choice', '只改一个部署选择')}</text>
-            <rect x={panel.x + 15} y={panel.y + 153} width={panel.w - 30} height="58" rx="8" fill="var(--bg)" stroke="var(--gen)" />
-            <text x={panel.x + panel.w / 2} y={panel.y + 188} text-anchor="middle" class="tag strong">{phone ? t(`example: ${QWEN_BENCH_CONCURRENCIES.length} levels × ${QWEN_BENCH_REPEATS} = ${QWEN_BENCH_RUNS_PER_ARM} runs / arm`, `文档算例：${QWEN_BENCH_CONCURRENCIES.length} 档 × ${QWEN_BENCH_REPEATS} 次 = ${QWEN_BENCH_RUNS_PER_ARM} 次 / 组`) : t(`documented: ${QWEN_BENCH_CONCURRENCIES.length} levels × ${QWEN_BENCH_REPEATS} repeats = ${QWEN_BENCH_RUNS_PER_ARM} runs / arm`, `文档算例：${QWEN_BENCH_CONCURRENCIES.length} 档 × 每档 ${QWEN_BENCH_REPEATS} 次 = ${QWEN_BENCH_RUNS_PER_ARM} 次 / 组`)}</text>
-            <text x={panel.x + panel.w / 2} y={panel.y + 233} text-anchor="middle" class="tag">{phone ? t(`c = ${QWEN_BENCH_CONCURRENCIES.join(', ')} · ${QWEN_BENCH_REPEATS} repeats each`, `c = ${QWEN_BENCH_CONCURRENCIES.join('、')} · 每档 ${QWEN_BENCH_REPEATS} 次`) : t(`levels: c = ${QWEN_BENCH_CONCURRENCIES.join(', ')} · ${QWEN_BENCH_REPEATS} repeats at each level`, `并发档：c = ${QWEN_BENCH_CONCURRENCIES.join('、')} · 每档重复 ${QWEN_BENCH_REPEATS} 次`)}</text>
-            <rect x={panel.x + 15} y={panel.y + 254} width={panel.w - 30} height="60" rx="8" fill="var(--bg)" stroke="var(--line)" />
-            <text x={panel.x + 26} y={panel.y + 279} class="tag strong">{t('BENCHMARK CLIENT RECORD', '基准客户端记录')}</text>
-            <text x={panel.x + 26} y={panel.y + 302} class="tag">{t('first audio · total · throughput · failures', '首音 · 总耗时 · 吞吐 · 失败')}</text>
-            <rect x={panel.x + 15} y={panel.y + 326} width={panel.w - 30} height="60" rx="8" fill="var(--bg)" stroke="var(--line)" />
-            <text x={panel.x + 26} y={panel.y + 351} class="tag strong">{t('LISTENER RECORD', '听者记录')}</text>
-            <text x={panel.x + 26} y={panel.y + 374} class="tag">{t('stalls · stop wait · response wait', '卡顿 · 停答等待 · 回应等待')}</text>
+            <g opacity={phase >= 2 ? 1 : 0} style="transition: opacity 450ms">
+              <text x={panel.x + 15} y={panel.y + 84} class="tag strong">{t('KEEP FIXED', '保持不变')}</text>
+              <text x={panel.x + 15} y={panel.y + 109} class="tag">{t('inputs · sampling · hardware · warmup', '输入 · 采样 · 硬件 · 预热')}</text>
+              <text x={panel.x + 15} y={panel.y + 134} class="tag">{t('change one deployment choice', '只改一个部署选择')}</text>
+              <rect x={panel.x + 15} y={panel.y + 153} width={panel.w - 30} height="58" rx="8" fill="var(--bg)" stroke="var(--gen)" />
+              <text x={panel.x + panel.w / 2} y={panel.y + 188} text-anchor="middle" class="tag strong">{phone ? t(`example: ${QWEN_BENCH_CONCURRENCIES.length} levels × ${QWEN_BENCH_REPEATS} = ${QWEN_BENCH_RUNS_PER_ARM} runs / arm`, `文档算例：${QWEN_BENCH_CONCURRENCIES.length} 档 × ${QWEN_BENCH_REPEATS} 次 = ${QWEN_BENCH_RUNS_PER_ARM} 次 / 组`) : t(`documented: ${QWEN_BENCH_CONCURRENCIES.length} levels × ${QWEN_BENCH_REPEATS} repeats = ${QWEN_BENCH_RUNS_PER_ARM} runs / arm`, `文档算例：${QWEN_BENCH_CONCURRENCIES.length} 档 × 每档 ${QWEN_BENCH_REPEATS} 次 = ${QWEN_BENCH_RUNS_PER_ARM} 次 / 组`)}</text>
+              {#each QWEN_BENCH_CONCURRENCIES as concurrency, level}
+                <text x={panel.x + 25 + level * 120} y={panel.y + 205} class="tag">c={concurrency}</text>
+                {#each Array(QWEN_BENCH_REPEATS) as _, run}
+                  <rect x={panel.x + 55 + level * 130 + run * 12} y={panel.y + 196} width="8" height="8" rx="2" fill="var(--gen)" />
+                {/each}
+              {/each}
+              <text x={panel.x + panel.w / 2} y={panel.y + 233} text-anchor="middle" class="tag">{phone ? t(`c = ${QWEN_BENCH_CONCURRENCIES.join(', ')} · ${QWEN_BENCH_REPEATS} repeats each`, `c = ${QWEN_BENCH_CONCURRENCIES.join('、')} · 每档 ${QWEN_BENCH_REPEATS} 次`) : t(`levels: c = ${QWEN_BENCH_CONCURRENCIES.join(', ')} · ${QWEN_BENCH_REPEATS} repeats at each level`, `并发档：c = ${QWEN_BENCH_CONCURRENCIES.join('、')} · 每档重复 ${QWEN_BENCH_REPEATS} 次`)}</text>
+            </g>
+            <g opacity={phase >= 3 ? 1 : 0} style="transition: opacity 450ms">
+              <rect x={panel.x + 15} y={panel.y + 254} width={panel.w - 30} height="60" rx="8" fill="var(--bg)" stroke="var(--line)" />
+              <text x={panel.x + 26} y={panel.y + 279} class="tag strong">{t('BENCHMARK CLIENT RECORD', '基准客户端记录')}</text>
+              <text x={panel.x + 26} y={panel.y + 302} class="tag">{t('first audio · total · throughput · failures', '首音 · 总耗时 · 吞吐 · 失败')}</text>
+              <rect x={panel.x + 15} y={panel.y + 326} width={panel.w - 30} height="60" rx="8" fill="var(--bg)" stroke="var(--line)" />
+              <text x={panel.x + 26} y={panel.y + 351} class="tag strong">{t('LISTENER RECORD', '听者记录')}</text>
+              <text x={panel.x + 26} y={panel.y + 374} class="tag">{t('stalls · stop wait · response wait', '卡顿 · 停答等待 · 回应等待')}</text>
+            </g>
           {/if}
         {/each}
         <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{phone ? t('Readiness skips larger inputs and batches.', 'readiness 可能没有预热更大的输入和 batch。') : t('Readiness can leave video, large batches and other input sizes unwarmed.', 'readiness 可能没有预热视频、大 batch 和其他输入大小。')}</text>

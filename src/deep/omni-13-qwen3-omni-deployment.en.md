@@ -243,7 +243,7 @@ The next step checks a resolved configuration and then measures it with real tra
 
 - Readiness sends a small image, one second of audio and a short instruction. Each token-generating stage is capped at most eight new tokens.
 - An arm is one deployment choice in an A/B comparison. The measurement plan holds inputs, sampling, hardware and warmup fixed while changing that one choice.
-- The example sweep uses concurrency 1 and 16 with five repeats at each level: ten measured runs per arm. Step 8 substitutes its target concurrency, 8.
+- The example sweep uses concurrency 1 and 16 with five repeats at each level: ten measured runs per arm.
 - The benchmark client measures first-audio and total-request wall time, throughput and failures. The listener record separately covers playback stalls, stop wait `L−S` and response wait `N−R` from Ch. 12 Step 8.
 
 ### Formula
@@ -264,7 +264,7 @@ $$
 J=2\times5=10\ \text{runs per arm}
 $$
 
-The ten-run count belongs to the two-level `c = 1,16` example. For Step 8's `c = 8`-only comparison, five repeats give five runs per arm. Warmup runs are separate. Requests inside one run do not become independent experiment repeats, following Ch. 8 Step 8. The p99 boundary has 99% of measured requests at or below it. Report p99 only when the measured sample contains results from at least 100 requests; ten runs alone neither establish nor forbid that sample count. The shipped summary provides first-audio median, p95 and p99. For a custom p90, apply `numpy.percentile(..., 90)` to non-null `per_request.audio_ttfp_s` values from successful streaming requests, separately for each arm and concurrency level.
+The ten-run count belongs to the two-level `c = 1,16` example. Warmup runs are separate. Requests inside one run do not become independent experiment repeats, following Ch. 8 Step 8. The p99 boundary has 99% of measured requests at or below it. Report p99 only when the measured sample contains results from at least 100 requests; ten runs alone neither establish nor forbid that sample count. The shipped summary provides first-audio median, p95 and p99. For a custom p90, apply `numpy.percentile(..., 90)` to non-null `per_request.audio_ttfp_s` values from successful streaming requests, separately for each arm and concurrency level.
 
 ### Procedure and sources
 
@@ -309,7 +309,7 @@ This headroom sits below the configured cap. It is not measured spare throughput
 
 ### Decision boundary
 
-This is a constructed TP1 starting hypothesis from H200/TP2 evidence, not a benchmark winner. First resolve the configuration and run readiness. Then compare BF16 with native FP8 while holding the starting layout and Step 7's other controls fixed at target concurrency 8. Keep separate first-audio, total-time and listener results, and run the output-quality checks outside the generate-only sweep. Change a choice only after the records identify a problem to solve, which may be memory or quality rather than waiting.
+This is a constructed TP1 starting hypothesis from H200/TP2 evidence, not a benchmark winner. First resolve the configuration and run readiness. Then compare BF16 with native FP8 while holding the starting layout and Step 7's other controls fixed at target concurrency 8. With only `c = 8`, five repeats give five runs per arm. Keep separate first-audio, total-time and listener results, and run the output-quality checks outside the generate-only sweep. Change a choice only after the records identify a problem to solve, which may be memory or quality rather than waiting.
 
 ### Next
 
