@@ -192,7 +192,7 @@
               {/if}
             {/each}
             <text x={panel.x + panel.w / 2} y={panel.y + (phone ? 295 : 354)} text-anchor="middle" class="formula" opacity={phase >= 2 ? 1 : 0.12} style="transition: opacity 350ms">{QWEN_TEXT_STAGE_COUNT} stages · {QWEN_TEXT_PROCESS_COUNT} process</text>
-            <text x={panel.x + panel.w / 2} y={panel.y + (phone ? 318 : 382)} text-anchor="middle" class="tag" opacity={phase >= 2 ? 1 : 0.12} style="transition: opacity 350ms">{t('text, image, audio, video → text', '文字、图像、声音、视频 → 文字')}</text>
+            <text x={panel.x + panel.w / 2} y={panel.y + (phone ? 318 : 382)} text-anchor="middle" class="tag" opacity={phase >= 2 ? 1 : 0.12} style="transition: opacity 350ms">{t('text, image, audio, video input', '文字、图像、声音、视频输入')}</text>
           {:else}
             <text x={panel.x + 15} y={panel.y + 76} class="tag strong">GPU 0</text>
             {#each speechGpu0 as stage, i}
@@ -207,7 +207,6 @@
             <text x={panel.x + 15} y={panel.y + 302} class="tag strong">CPU</text>
             <text x={panel.x + 62} y={panel.y + 302} class="mono">preprocessing · decode</text>
             <text x={panel.x + panel.w / 2} y={panel.y + 337} text-anchor="middle" class="formula" opacity={phase >= 2 ? 1 : 0.12} style="transition: opacity 350ms">4 + 1 + 2 = {QWEN_SPEECH_DEFAULT_COPY_COUNT} processes</text>
-            <text x={panel.x + panel.w / 2} y={panel.y + 360} text-anchor="middle" class="tag" opacity={phase >= 2 ? 1 : 0.12} style="transition: opacity 350ms">{t('text or text + sound output', '文字，或文字 + 声音输出')}</text>
           {/if}
           </g>
         {/each}

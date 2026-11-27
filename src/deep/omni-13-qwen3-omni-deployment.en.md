@@ -8,7 +8,7 @@
 - The left dashed box is one `pipeline` process containing all six text-only stages.
 - The right panel gives each speech stage its own process. Four processes use GPU 0, one uses GPU 1, and two use only CPU.
 - Blue marks GPU stages. White boxes with faint outlines mark CPU stages. These are startup shapes, not measured utilization.
-- Both deployments accept text, image, audio or video input. “Text-only deployment” limits the output, not the input.
+- Both deployments accept text, image, audio or video input. Step 2 covers output routes separately.
 
 ### The numbers on the stage
 
