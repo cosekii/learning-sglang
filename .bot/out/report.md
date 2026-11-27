@@ -64,6 +64,36 @@
 
 ---
 
+# lane d 本轮报告 · Voxt 11 Step 3 逐相机制
+
+日期：2026-11-27。类型：修旧。范围只含 Inside Voxt 第 11 章第 3 步（`ModelStorageUpdates.svelte` 的 step index 2）、本章评分卡、`memory/progress.md`、验证脚本与结果和本报告；未改 Step 1／2／4／5／6、Voxt 08／10、其他书、第 1 本受保护英文原文或 `.bot/memory/`。
+
+## 单元与修复
+
+- direction 的 lane d 单元：**只做 Voxt 11 Step 3 的逐相机制**。本轮开始时 HEAD 为 `968eb98`，fetch 后 rebase 到 `934a4f3`（只有其他 lane 的提交）。教程提交 `439b4ce [d] Split Voxt 11 step 3 into four per-phase states` 已推 `origin/tutorials`，首次推送被拒后 `git pull --rebase origin tutorials` 再推，未 force-push。
+- 处理的 open review 项：`c3a7773` 复审的第 3 步机制 1/2（「在 `next start continues` 文本下直接画满进度，末相校验文字变化又在红框外」），`fa8d912` 维持为逐步 **2、2、1、1、1、2** 中的第 3 步 1/2。
+- 修复：`PHASE_COUNTS[2]` 3→4，四相各形成一个可辨认状态：进度停在 40%、`Cancel here; these bytes stay.` → 从取消点续传到 70%、`The next start continues from here.` → 续传满格 → `Checks: all 9 files pass; the job is done.` 与 `2.47 GB ✓`。取消标记线四相都保留，作为已发生取消的记录；前三相红框窄框包住进度条与标记（变化对象是填充宽度），末相红框移到状态行（变化对象是校验文字和 ✓），不再指向没有变化的 CHECK 卡。
+- 保留既有 2 GB 空位、Silero VAD、取消语义、字节／百分比算式和 caption，不扩新内容；末相舞台文字与旧末相逐字相同，transcript 重生成**无 diff**。Step 4／5 留给后续轮。
+- **本轮没有自行关闭协调 finding，机制分不自行提。** 评分卡先同步协调固定 `fa8d912` 的基线：R1–R5 **54/60**、原十个非视觉项 **119/120**、静态 R6 **12/12**、原 #4/#5 **24/24**、原十二项 **143/144**、机制 R6 **9/12**（逐步 2、2、1、1、1、2）；Step 3 保持待审，整章 **NO-GO / coordinator-rereview-pending**。
+
+## 验证
+
+- `npm run build`：**60 页**通过。`BOOK=voxt ONLY=11` transcript（6 步无告警，重生成无 diff）、`STEP=3` readability（0 机械问题）、`deep-check 11`、`zh-check`（all clear）均通过。
+- 英中全章与中文 Step 3 的 360／390／430 px `mobile` 均 no layout breaks，中文 Step 3 字号门通过。注意：`scripts/mobile.mjs` 只认位置参数，第一次用 `BASE=` 环境变量时误连 4321 的外部服务，该次英文结果作废，已全部用 `http://localhost:4471/learning-sglang` 位置参数重跑。
+- 逐相审计 `.bot/out/voxt11-step3-audit.mjs`（可重跑）：英中桌面 1440×900 ＋ 英中 360／390／430 px 共 **8 组 × 4 相 = 32 个视图**，采集前核对 hydration（相位实际循环）、counter `03 / 06`、`data-animation-step/phase`、响应式 viewBoxWidth（桌面 720／手机 300）和 600 ms settling，按组件 bbox 完整截取。结果 `.bot/out/voxt11-step3-audit/report.json`：填充宽度逐相 248→434→620→620（手机 96→168→240→240），取消标记四相均在，✓ 只在末相出现，四相状态行互不相同；文字重叠、SVG 出界、红框描边压字均为 **0**，最低可见字体 **10.76 CSS px**（zh-360 的「循环」）。32 张 PNG 在本目录 `.bot/out/voxt11-step3-audit/`（PNG 被 gitignore，不提交）。
+- 采集脚本第一版有两个自身 bug 已修：模板字符串里的 `\s` 被 JS 转义吃掉导致状态行匹配失败；en 手机视图继承了同 profile 的 zh localStorage。修正后 32 视图零失败。
+- 当前模型不能读取 PNG（工具明确返回 Cannot read image），未声称已看图或视觉通过；以上为 DOM 与几何证据，协调实图复审与主人最终视觉验收仍待。
+- 本 clone 的 `node_modules` 初始又是指向协调人 checkout 的符号链接，已只删除本目录内的符号链接并本地 `npm install`，未写协调人的 checkout。
+
+## 剩余与本地查看
+
+- 剩余：Step 3 等协调固定复审重评机制分；之后按 direction 顺序做 Step 4、Step 5（各 1/2 的同类返工），再 Voxt 10、12。Voxt 08 `bb70918` 的 GO 不回退，不碰 Omni 或 ML Systems。
+- 未跑全站回归、真实 Voxt、模型下载、模型进程、应用更新、reduced-motion 动态切换或主人最终产品验收；事实按 pinned `sglang-omni origin/main@c2fc0f1` 核对。
+- 本地章节地址：`http://localhost:4471/learning-sglang/voxt/ch/models-and-app-updates/?step=3`（查看前在本目录运行 `npx astro dev --background --port 4471`）。代表截图绝对路径：`/Users/shuohuang/code/hmz-work/ls-d-1127-003846/.bot/out/voxt11-step3-audit/en-desktop/p1.png`。
+- 本轮 4471 dev server 和脚本启动的浏览器均在收尾关闭。
+
+---
+
 # lane k1 本轮报告 · Omni 14 八步桌面小字返工
 
 日期：2026-11-27。类型：修旧。范围只含 Learning SGLang Omni 第 14 章 `SlowReaderBackpressure.svelte`、本章评分记录、验证产物和本报告；未改 Omni 11／13／15、其他书、其他 lane 的章节、第 1 本受保护英文原文或 `.bot/memory/`。

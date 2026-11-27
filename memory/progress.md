@@ -4,6 +4,9 @@
 
 ## 本轮记录
 
+- 修旧 Inside Voxt 第 11 章第 3 步逐相机制（direction 的最小单元）：`PHASE_COUNTS` 3→4，取消停在 40% 字节保留 → 从取消点续传到 70% → 续传满格 → 校验全部通过并出现 ✓，每相只形成一个机制状态；取消标记线四相保留，前三相红框窄框包进度条，末相移到状态行，修掉协调 `c3a7773` 的第 3 步机制扣分（`next start continues` 下直接画满进度、末相校验文字在红框外的 CHECK 卡上）。协调基线同步为固定 `fa8d912`：内容 R1–R5 **54/60**、原十个非视觉项 **119/120**、静态 R6 **12/12**、原 #4/#5 **24/24**、原十二项 **143/144**、机制 R6 **9/12**（逐步 2、2、1、1、1、2）；本轮不自行把第 3 步记为 2/2，待复审。caption、2 GB 空位、Silero VAD、取消语义和字节／百分比算式未改，transcript 重生成无 diff；第 4／5 步返工留给后续轮。
+- `npm run build`（60 页）、本章 `transcript`（无 diff）、第 3 步 `readability`、`deep-check 11`、`zh-check`、英中本章与中文第 3 步 360/390/430 px `mobile`（`mobile` 脚本只认位置参数，一次误用 `BASE=` 连到 4321 外部服务的结果作废重跑）均通过。逐相审计 `.bot/out/voxt11-step3-audit.mjs`：英中桌面＋英中三宽度共 8 组 × 4 相 32 个视图，核对 hydration、counter、相位、响应式 viewBoxWidth 和 settling，文字重叠／SVG 出界／红框压字均为 0，最低 **10.76 CSS px**；32 张 PNG 在 `.bot/out/voxt11-step3-audit/`，当前模型不能读 PNG，视觉待协调人。dev 端口 4471 本轮已关；node_modules 又是主 checkout 符号链接，已换为本地真实安装。本轮只跑本章第 3 步检查，未跑全站回归、真实 Voxt、模型下载或更新。本轮类型：**修旧**；下一单元等 direction（第 3 步复审后做第 4 步，或 Voxt 10）。
+
 - 修旧 Inside Voxt 第 11 章第 2 步逐相机制（direction 的最小单元）：`PHASE_COUNTS` 3→4，`all checks pass` 与 vocab ✓ 拆成两相，不再变的磁盘路径相取消；四相红框依次在仓库卡、safetensors 两行、vocab 三行、`all checks pass` 一行，修掉协调 `c3a7773` 的第 2 步机制扣分（末相同相两处变化、红框已移到磁盘路径）。桌面英文 `= first 7 of the full commit` 越出仓库卡被红框边穿过，改为 `= first 7 chars`（与手机一致）。逐相 DOM/bbox 审计（英桌面＋中文 390 px）：每相只形成一个机制状态，8 个采样红框与相邻文字相交均为 0。基线不变（协调 `6467ab7` 内容分 + `c3a7773` 机制 7/12），本轮不自行把第 2 步记为 2/2，待复审。第 3–5 步返工留给后续轮。
 - `npm run build`（60 页）、本章 `transcript`（仅上述一行英文变化）、第 2 步 `readability`、`deep-check 11`、`zh-check`、英中本章 360/390/430 px `mobile`（中文另跑 `STEP=2` 字号门）均通过；dev 端口 4321 本轮已关。本 clone 的 `node_modules` 曾是主 checkout 符号链接（Vite 写缓存被围栏拒），本轮换为真实安装。当前模型不能读 PNG，相位证据为 DOM/bbox 实测。本轮只跑本章第 2 步检查，未跑全站回归、真实 Voxt、模型下载或更新。本轮类型：**修旧**；下一单元等 direction（第 1 步复审队列核销后重评，或第 3 步）。
 

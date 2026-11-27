@@ -1,0 +1,603 @@
+{
+  "base": "http://localhost:4471/learning-sglang",
+  "generatedAt": "2026-11-27T08:58:05.365Z",
+  "summary": {
+    "views": 8,
+    "phases": 32,
+    "minFont": 10.76,
+    "minFontView": "zh-360",
+    "minFontPhase": 3,
+    "minFontText": "循环",
+    "failures": []
+  },
+  "states": [
+    {
+      "view": "en-desktop",
+      "phase": 0,
+      "fillWidth": 248,
+      "markerPresent": true,
+      "status": [
+        "resume · room · checks · needs",
+        "Cancel here; these bytes stay.",
+        "CANCEL KEEPS THE PARTIAL FILES"
+      ],
+      "gbLine": "2.47 GB",
+      "minFont": 11.746,
+      "minFontText": "loops",
+      "overlaps": [],
+      "overflow": [],
+      "focusHits": [],
+      "textCount": 22
+    },
+    {
+      "view": "en-desktop",
+      "phase": 1,
+      "fillWidth": 434,
+      "markerPresent": true,
+      "status": [
+        "resume · room · checks · needs",
+        "The next start continues from here.",
+        "CANCEL KEEPS THE PARTIAL FILES"
+      ],
+      "gbLine": "2.47 GB",
+      "minFont": 11.746,
+      "minFontText": "loops",
+      "overlaps": [],
+      "overflow": [],
+      "focusHits": [],
+      "textCount": 22
+    },
+    {
+      "view": "en-desktop",
+      "phase": 2,
+      "fillWidth": 620,
+      "markerPresent": true,
+      "status": [
+        "resume · room · checks · needs",
+        "The resumed download fills the bar.",
+        "CANCEL KEEPS THE PARTIAL FILES"
+      ],
+      "gbLine": "2.47 GB",
+      "minFont": 11.746,
+      "minFontText": "loops",
+      "overlaps": [],
+      "overflow": [],
+      "focusHits": [],
+      "textCount": 22
+    },
+    {
+      "view": "en-desktop",
+      "phase": 3,
+      "fillWidth": 620,
+      "markerPresent": true,
+      "status": [
+        "resume · room · checks · needs",
+        "Checks: all 9 files pass; the job is done.",
+        "CANCEL KEEPS THE PARTIAL FILES"
+      ],
+      "gbLine": "2.47 GB ✓",
+      "minFont": 11.746,
+      "minFontText": "loops",
+      "overlaps": [],
+      "overflow": [],
+      "focusHits": [],
+      "textCount": 22
+    },
+    {
+      "view": "zh-desktop",
+      "phase": 0,
+      "fillWidth": 248,
+      "markerPresent": true,
+      "status": [
+        "续传 · 空位 · 校验 · 所需模型",
+        "在这里取消；这些字节留着。",
+        "校验 · 每个文件",
+        "取消会保留已下载的文件"
+      ],
+      "gbLine": "2.47 GB",
+      "minFont": 12.581,
+      "minFontText": "循环",
+      "overlaps": [],
+      "overflow": [],
+      "focusHits": [],
+      "textCount": 22
+    },
+    {
+      "view": "zh-desktop",
+      "phase": 1,
+      "fillWidth": 434,
+      "markerPresent": true,
+      "status": [
+        "续传 · 空位 · 校验 · 所需模型",
+        "下次从这里接着下。",
+        "校验 · 每个文件",
+        "取消会保留已下载的文件"
+      ],
+      "gbLine": "2.47 GB",
+      "minFont": 12.581,
+      "minFontText": "循环",
+      "overlaps": [],
+      "overflow": [],
+      "focusHits": [],
+      "textCount": 22
+    },
+    {
+      "view": "zh-desktop",
+      "phase": 2,
+      "fillWidth": 620,
+      "markerPresent": true,
+      "status": [
+        "续传 · 空位 · 校验 · 所需模型",
+        "校验 · 每个文件",
+        "取消会保留已下载的文件"
+      ],
+      "gbLine": "2.47 GB",
+      "minFont": 12.581,
+      "minFontText": "循环",
+      "overlaps": [],
+      "overflow": [],
+      "focusHits": [],
+      "textCount": 22
+    },
+    {
+      "view": "zh-desktop",
+      "phase": 3,
+      "fillWidth": 620,
+      "markerPresent": true,
+      "status": [
+        "续传 · 空位 · 校验 · 所需模型",
+        "校验：9 个文件全部通过；任务完成。",
+        "校验 · 每个文件",
+        "取消会保留已下载的文件"
+      ],
+      "gbLine": "2.47 GB ✓",
+      "minFont": 12.581,
+      "minFontText": "循环",
+      "overlaps": [],
+      "overflow": [],
+      "focusHits": [],
+      "textCount": 22
+    },
+    {
+      "view": "en-360",
+      "phase": 0,
+      "fillWidth": 96,
+      "markerPresent": true,
+      "status": [
+        "resume · room · checks · needs",
+        "cancel keeps the bytes",
+        "CANCEL KEEPS THE PARTIAL FILES"
+      ],
+      "gbLine": "2.47 GB",
+      "minFont": 10.76,
+      "minFontText": "loops",
+      "overlaps": [],
+      "overflow": [],
+      "focusHits": [],
+      "textCount": 22
+    },
+    {
+      "view": "en-360",
+      "phase": 1,
+      "fillWidth": 168,
+      "markerPresent": true,
+      "status": [
+        "resume · room · checks · needs",
+        "next start continues",
+        "CANCEL KEEPS THE PARTIAL FILES"
+      ],
+      "gbLine": "2.47 GB",
+      "minFont": 10.76,
+      "minFontText": "loops",
+      "overlaps": [],
+      "overflow": [],
+      "focusHits": [],
+      "textCount": 22
+    },
+    {
+      "view": "en-360",
+      "phase": 2,
+      "fillWidth": 240,
+      "markerPresent": true,
+      "status": [
+        "resume · room · checks · needs",
+        "CANCEL KEEPS THE PARTIAL FILES"
+      ],
+      "gbLine": "2.47 GB",
+      "minFont": 10.76,
+      "minFontText": "loops",
+      "overlaps": [],
+      "overflow": [],
+      "focusHits": [],
+      "textCount": 22
+    },
+    {
+      "view": "en-360",
+      "phase": 3,
+      "fillWidth": 240,
+      "markerPresent": true,
+      "status": [
+        "resume · room · checks · needs",
+        "all checks pass; done",
+        "CANCEL KEEPS THE PARTIAL FILES"
+      ],
+      "gbLine": "2.47 GB ✓",
+      "minFont": 10.76,
+      "minFontText": "loops",
+      "overlaps": [],
+      "overflow": [],
+      "focusHits": [],
+      "textCount": 22
+    },
+    {
+      "view": "zh-360",
+      "phase": 0,
+      "fillWidth": 96,
+      "markerPresent": true,
+      "status": [
+        "续传 · 空位 · 校验 · 所需模型",
+        "取消后字节留着",
+        "校验 · SHA-256 或 GIT BLOB ID",
+        "取消会保留已下载的文件"
+      ],
+      "gbLine": "2.47 GB",
+      "minFont": 10.76,
+      "minFontText": "循环",
+      "overlaps": [],
+      "overflow": [],
+      "focusHits": [],
+      "textCount": 22
+    },
+    {
+      "view": "zh-360",
+      "phase": 1,
+      "fillWidth": 168,
+      "markerPresent": true,
+      "status": [
+        "续传 · 空位 · 校验 · 所需模型",
+        "下次接着下",
+        "校验 · SHA-256 或 GIT BLOB ID",
+        "取消会保留已下载的文件"
+      ],
+      "gbLine": "2.47 GB",
+      "minFont": 10.76,
+      "minFontText": "循环",
+      "overlaps": [],
+      "overflow": [],
+      "focusHits": [],
+      "textCount": 22
+    },
+    {
+      "view": "zh-360",
+      "phase": 2,
+      "fillWidth": 240,
+      "markerPresent": true,
+      "status": [
+        "续传 · 空位 · 校验 · 所需模型",
+        "下到满格",
+        "校验 · SHA-256 或 GIT BLOB ID",
+        "取消会保留已下载的文件"
+      ],
+      "gbLine": "2.47 GB",
+      "minFont": 10.76,
+      "minFontText": "循环",
+      "overlaps": [],
+      "overflow": [],
+      "focusHits": [],
+      "textCount": 22
+    },
+    {
+      "view": "zh-360",
+      "phase": 3,
+      "fillWidth": 240,
+      "markerPresent": true,
+      "status": [
+        "续传 · 空位 · 校验 · 所需模型",
+        "校验全过；完成",
+        "校验 · SHA-256 或 GIT BLOB ID",
+        "取消会保留已下载的文件"
+      ],
+      "gbLine": "2.47 GB ✓",
+      "minFont": 10.76,
+      "minFontText": "循环",
+      "overlaps": [],
+      "overflow": [],
+      "focusHits": [],
+      "textCount": 22
+    },
+    {
+      "view": "en-390",
+      "phase": 0,
+      "fillWidth": 96,
+      "markerPresent": true,
+      "status": [
+        "resume · room · checks · needs",
+        "cancel keeps the bytes",
+        "CANCEL KEEPS THE PARTIAL FILES"
+      ],
+      "gbLine": "2.47 GB",
+      "minFont": 11.76,
+      "minFontText": "loops",
+      "overlaps": [],
+      "overflow": [],
+      "focusHits": [],
+      "textCount": 22
+    },
+    {
+      "view": "en-390",
+      "phase": 1,
+      "fillWidth": 168,
+      "markerPresent": true,
+      "status": [
+        "resume · room · checks · needs",
+        "next start continues",
+        "CANCEL KEEPS THE PARTIAL FILES"
+      ],
+      "gbLine": "2.47 GB",
+      "minFont": 11.76,
+      "minFontText": "loops",
+      "overlaps": [],
+      "overflow": [],
+      "focusHits": [],
+      "textCount": 22
+    },
+    {
+      "view": "en-390",
+      "phase": 2,
+      "fillWidth": 240,
+      "markerPresent": true,
+      "status": [
+        "resume · room · checks · needs",
+        "CANCEL KEEPS THE PARTIAL FILES"
+      ],
+      "gbLine": "2.47 GB",
+      "minFont": 11.76,
+      "minFontText": "loops",
+      "overlaps": [],
+      "overflow": [],
+      "focusHits": [],
+      "textCount": 22
+    },
+    {
+      "view": "en-390",
+      "phase": 3,
+      "fillWidth": 240,
+      "markerPresent": true,
+      "status": [
+        "resume · room · checks · needs",
+        "all checks pass; done",
+        "CANCEL KEEPS THE PARTIAL FILES"
+      ],
+      "gbLine": "2.47 GB ✓",
+      "minFont": 11.76,
+      "minFontText": "loops",
+      "overlaps": [],
+      "overflow": [],
+      "focusHits": [],
+      "textCount": 22
+    },
+    {
+      "view": "zh-390",
+      "phase": 0,
+      "fillWidth": 96,
+      "markerPresent": true,
+      "status": [
+        "续传 · 空位 · 校验 · 所需模型",
+        "取消后字节留着",
+        "校验 · SHA-256 或 GIT BLOB ID",
+        "取消会保留已下载的文件"
+      ],
+      "gbLine": "2.47 GB",
+      "minFont": 11.76,
+      "minFontText": "循环",
+      "overlaps": [],
+      "overflow": [],
+      "focusHits": [],
+      "textCount": 22
+    },
+    {
+      "view": "zh-390",
+      "phase": 1,
+      "fillWidth": 168,
+      "markerPresent": true,
+      "status": [
+        "续传 · 空位 · 校验 · 所需模型",
+        "下次接着下",
+        "校验 · SHA-256 或 GIT BLOB ID",
+        "取消会保留已下载的文件"
+      ],
+      "gbLine": "2.47 GB",
+      "minFont": 11.76,
+      "minFontText": "循环",
+      "overlaps": [],
+      "overflow": [],
+      "focusHits": [],
+      "textCount": 22
+    },
+    {
+      "view": "zh-390",
+      "phase": 2,
+      "fillWidth": 240,
+      "markerPresent": true,
+      "status": [
+        "续传 · 空位 · 校验 · 所需模型",
+        "下到满格",
+        "校验 · SHA-256 或 GIT BLOB ID",
+        "取消会保留已下载的文件"
+      ],
+      "gbLine": "2.47 GB",
+      "minFont": 11.76,
+      "minFontText": "循环",
+      "overlaps": [],
+      "overflow": [],
+      "focusHits": [],
+      "textCount": 22
+    },
+    {
+      "view": "zh-390",
+      "phase": 3,
+      "fillWidth": 240,
+      "markerPresent": true,
+      "status": [
+        "续传 · 空位 · 校验 · 所需模型",
+        "校验全过；完成",
+        "校验 · SHA-256 或 GIT BLOB ID",
+        "取消会保留已下载的文件"
+      ],
+      "gbLine": "2.47 GB ✓",
+      "minFont": 11.76,
+      "minFontText": "循环",
+      "overlaps": [],
+      "overflow": [],
+      "focusHits": [],
+      "textCount": 22
+    },
+    {
+      "view": "en-430",
+      "phase": 0,
+      "fillWidth": 96,
+      "markerPresent": true,
+      "status": [
+        "resume · room · checks · needs",
+        "cancel keeps the bytes",
+        "CANCEL KEEPS THE PARTIAL FILES"
+      ],
+      "gbLine": "2.47 GB",
+      "minFont": 13.094,
+      "minFontText": "loops",
+      "overlaps": [],
+      "overflow": [],
+      "focusHits": [],
+      "textCount": 22
+    },
+    {
+      "view": "en-430",
+      "phase": 1,
+      "fillWidth": 168,
+      "markerPresent": true,
+      "status": [
+        "resume · room · checks · needs",
+        "next start continues",
+        "CANCEL KEEPS THE PARTIAL FILES"
+      ],
+      "gbLine": "2.47 GB",
+      "minFont": 13.094,
+      "minFontText": "loops",
+      "overlaps": [],
+      "overflow": [],
+      "focusHits": [],
+      "textCount": 22
+    },
+    {
+      "view": "en-430",
+      "phase": 2,
+      "fillWidth": 240,
+      "markerPresent": true,
+      "status": [
+        "resume · room · checks · needs",
+        "CANCEL KEEPS THE PARTIAL FILES"
+      ],
+      "gbLine": "2.47 GB",
+      "minFont": 13.094,
+      "minFontText": "loops",
+      "overlaps": [],
+      "overflow": [],
+      "focusHits": [],
+      "textCount": 22
+    },
+    {
+      "view": "en-430",
+      "phase": 3,
+      "fillWidth": 240,
+      "markerPresent": true,
+      "status": [
+        "resume · room · checks · needs",
+        "all checks pass; done",
+        "CANCEL KEEPS THE PARTIAL FILES"
+      ],
+      "gbLine": "2.47 GB ✓",
+      "minFont": 13.094,
+      "minFontText": "loops",
+      "overlaps": [],
+      "overflow": [],
+      "focusHits": [],
+      "textCount": 22
+    },
+    {
+      "view": "zh-430",
+      "phase": 0,
+      "fillWidth": 96,
+      "markerPresent": true,
+      "status": [
+        "续传 · 空位 · 校验 · 所需模型",
+        "取消后字节留着",
+        "校验 · SHA-256 或 GIT BLOB ID",
+        "取消会保留已下载的文件"
+      ],
+      "gbLine": "2.47 GB",
+      "minFont": 13.094,
+      "minFontText": "循环",
+      "overlaps": [],
+      "overflow": [],
+      "focusHits": [],
+      "textCount": 22
+    },
+    {
+      "view": "zh-430",
+      "phase": 1,
+      "fillWidth": 168,
+      "markerPresent": true,
+      "status": [
+        "续传 · 空位 · 校验 · 所需模型",
+        "下次接着下",
+        "校验 · SHA-256 或 GIT BLOB ID",
+        "取消会保留已下载的文件"
+      ],
+      "gbLine": "2.47 GB",
+      "minFont": 13.094,
+      "minFontText": "循环",
+      "overlaps": [],
+      "overflow": [],
+      "focusHits": [],
+      "textCount": 22
+    },
+    {
+      "view": "zh-430",
+      "phase": 2,
+      "fillWidth": 240,
+      "markerPresent": true,
+      "status": [
+        "续传 · 空位 · 校验 · 所需模型",
+        "下到满格",
+        "校验 · SHA-256 或 GIT BLOB ID",
+        "取消会保留已下载的文件"
+      ],
+      "gbLine": "2.47 GB",
+      "minFont": 13.094,
+      "minFontText": "循环",
+      "overlaps": [],
+      "overflow": [],
+      "focusHits": [],
+      "textCount": 22
+    },
+    {
+      "view": "zh-430",
+      "phase": 3,
+      "fillWidth": 240,
+      "markerPresent": true,
+      "status": [
+        "续传 · 空位 · 校验 · 所需模型",
+        "校验全过；完成",
+        "校验 · SHA-256 或 GIT BLOB ID",
+        "取消会保留已下载的文件"
+      ],
+      "gbLine": "2.47 GB ✓",
+      "minFont": 13.094,
+      "minFontText": "循环",
+      "overlaps": [],
+      "overflow": [],
+      "focusHits": [],
+      "textCount": 22
+    }
+  ]
+}
