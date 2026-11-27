@@ -3135,3 +3135,53 @@ npx astro dev stop
 
 - ML-48 的 Step 4 作者修复待协调固定复审，不自行销项。Ch.6 Step 7、其余 ML 08 范围和共享 ML-21／22 未改，整章不申报 GO。当前模型无图像输入，PNG 未获视觉批准；上述通过指文本、DOM、几何和独立冷读。
 - 未跑全站回归、真实 FSDP2 训练、rollout、GPU benchmark、故障注入或 reduced-motion 动态切换。主人最终视觉与产品验收另计。
+
+---
+
+# lane d 本轮报告 · Voxt 01 Steps 3–4 评审修复（Voxt-01 子项）
+
+日期：2026-11-27。类型：修 review.md 对 `057e633` 的开放 finding（Voxt-01 的 Steps 3–4 子项），一个提交 `f111ef9`，未覆盖既有四文件草稿的结构。
+
+## 修复内容（对照 review 五点）
+
+- **Step 3 caption 不再把 `A≠B` 写成未通过的检查**：改为问答式「Same session? Late A: A ≠ B, no, keeps its own window; B: B = B, yes, written.」／「同一个 session 吗？A ≠ B，不是，晚到的 A 回自己的小窗；B = B，是，写进 B。」；aria 与双语 deep 的相位描述同步为「同一个 session 的检查得到 A ≠ B（不是）」。
+- **Step 3 蓝色单义（EVAL #5）**：B 的接受结果（session B 框、`B = B`、`write into B`、写入箭头、结果框、总结 ✓）由蓝改为琥珀（`--gen`/`--gen-soft`），蓝色只剩当前相位高亮；桌面与手机同步；双语 deep 补一条颜色说明；`current-arrow` marker 改名 `accept-arrow`。
+- **Step 3 deep 公式补条件**：`write(r,c) ⇔ r=c` 改为 `write(r,c) ⇔ r=c ∧ ¬ended(r)`，符号表加 `ended(r)` 行（pinned `manager.go:341-375` 的 `m.cur != r || r.ended` 分支实证），说明句补「且该 run 必须尚未结束」，双语同步。
+- **Step 4 顺序与两道检查**：相位由「取消 → 两种来源同屏 → 已取消 → 拦截 → 记录」重排为 6 相「按取消 → A 先标记已取消（每个晚到结果都先查它）→ 识别晚到结果＋它的 × cancelled → 整理晚到结果＋它的 × cancelled → 屏幕无晚到结果 → 保存记录」，与源码先置 `r.cancelled`、两条路返回后各自检查的顺序一致，两道检查分别上演；桌面重排布局（记录框走右列、折线箭头不压文字），手机改单列纵排（H 560→640）。
+- **`late results stop` 收窄为不交付**：标题改「CANCEL A · LATE RESULTS NOT DELIVERED／晚到的结果不交付」，deep 的 `stopped` 改 `undelivered` 并补一句「不交付≠不检查、仍记录取消」，双语同步。
+
+## 硬门（全过）
+
+- `npm run build` 60 页；`BOOK=voxt ONLY=1` transcript 4 步无报告项；readability 初报 Step 3 超两句＋重复 so、Step 4 长句，改 caption 后 **0 机械问题**；`BOOK=voxt` deep-check ok；zh-check all clear；mobile 英 360/390/430 与中文 STEP 3／4 字号门均 no layout breaks；`git diff --check` 干净。（本机 4321 被他线占用，本轮 server 在 4328，脚本均显式传 base。）
+
+## 逐相机制审计（探针 `/tmp/lsd-voxt01-probe.mjs` 更新版，未提交）
+
+- 矩阵：英中 × 1440 桌面／390 手机 × Step 1 direct、Steps 2–4 direct＋前步入口 ＝ **188 个相位状态、2,716 项断言、0 失败，exit=0**。Step 4 逐相断言取消键→已取消标记→来源 1＋`cancelled` ×1→来源 2＋`cancelled` ×2→屏幕 ×→记录的顺序与缺席；文字重叠 0、SVG 出界 0、最低可见字号 ≥10 CSS px。
+- 截图 en-1440 全相位在 `/tmp/lsd-voxt01-shots/`；本模型无图像输入，视觉 verdict 留协调侧。
+
+## 自评
+
+- Step 3 易读 **12/12**：R1「检查问同一个 session 吗，A 不是就回自己小窗，B 是就写进 B」；R2 不新增概念；EVAL #5 一色一义（蓝=当前相位、琥珀=通过并写入、红=拦截）。Step 4 **12/12**：R1「先标已取消，晚到结果一个一个来，各查各的，都不交付，记录写已取消、结果空」；R6 一相一变化。冷读洞 **0**。
+- Voxt-01 的 Steps 3–4 五个子项均已按 review.md 要求修完，是否核销由协调固定复审决定。Voxt-11（Voxt 02 deep 手机横溢）与 Voxt-03 未动，按 direction 是下一轮。
+
+---
+
+# lane d 本轮报告 · Voxt 01 Steps 3–4 评审修复第二轮（OR 情形 + Next 措辞）
+
+日期：2026-11-27。类型：主人对 `f111ef9` 的两条遗留 finding，一个提交。
+
+## 修复内容（对照两条 finding）
+
+- **Step 4 两种取消路径显式二选一**：来源行上方加框架行「only one of these two arrives late／晚到的只是其中一种」（第 2 相与情形 1 同相出现），两种情形同布局、仍分相上演（情形 1 第 2 相、情形 2 第 3 相），静态末相两种情形都在台上且被框架行标明为二选一，不再是同一次运行里的两个先后事件。caption 改「A late result — recognized or tidied —／晚到的结果——识别的或整理的——」，aria 双语同步为「晚到的只是其中一种」。deep 双语「图上是什么」改「是二选一，不是同一次运行里先后发生两件事」。桌面行距重排（情形行 y=186/252、屏幕 y=204、记录 y=306），手机加同一框架行（y=196，情形 y=206/296），H 不变。
+- **Step 3 deep 的 Next 措辞**：en「where do its late recognition or clean-up results stop?」→「why are its late recognition or clean-up results not delivered?」；zh「在哪里停下？」→「为什么都不交付？」。Step 2 Next 的「which check stops an old session from writing」描述的是闸门功能（挡写入），与「晚到结果停下」不同，保留。
+- **工作区状态纠正**：上一轮把 `.bot/out/report.md` 暂存后未提交（误以为 .bot 整目录被 gitignore；实际 `.bot/out/` 已跟踪）。本轮报告与教程修复同一提交，本段即为最终状态。
+
+## 硬门复跑（全过，本轮 server 在 4321）
+
+- `npm run build` 60 页；`BOOK=voxt ONLY=1` transcript 4 步无报告项；readability **0 机械问题**；deep-check 11 章 ok；zh-check all clear；mobile 英 360/390/430 与中文 STEP 3／4 均 no layout breaks；`git diff --check` 干净。
+- 探针（`/tmp/lsd-voxt01-probe.mjs` 更新版）：**188 个相位状态、2,740 项断言、0 失败，exit=0**；新增框架行逐相在场／缺席断言。截图 en-1440 全相位在 `/tmp/lsd-voxt01-shots/`；本模型无图像输入，视觉 verdict 留协调侧。
+
+## 自评
+
+- Step 4 维持 **12/12**：R1「先标已取消；晚到的只是其中一种，两种情形各查各的，都不交付；记录写已取消、结果空」；R2 不新增概念（框架行用的是已建立的「晚到结果」）；R6 一相一变化。Step 3 未动，维持上轮 12/12。冷读洞 **0**。
+- 两条 finding 均已按主人要求修完；Voxt-11 与 Voxt-03 未动。

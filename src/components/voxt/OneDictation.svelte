@@ -20,8 +20,8 @@
     caption: 'Same session? Late A: A ≠ B, no, keeps its own window; B: B = B, yes, written.',
     captionZh: '同一个 session 吗？A ≠ B，不是，晚到的 A 回自己的小窗；B = B，是，写进 B。',
   }, {
-    caption: 'Cancel A: it is marked cancelled first. Each late result is checked and not delivered.',
-    captionZh: '取消 A：先把 A 标成已取消。之后每个晚到的结果都被检查，都不交付。',
+    caption: 'Cancel A: it is marked cancelled first. A late result — recognized or tidied — is checked and not delivered.',
+    captionZh: '取消 A：先把 A 标成已取消。晚到的结果——识别的或整理的——都被检查，都不交付。',
   }];
   const ariaLabels = [{
     en: 'The picture builds in order: dictation 1 appears, then its new session ID A, then its results; dictation 2, session ID B and results 2 follow; A and B are different, so the two results stay apart.',
@@ -33,8 +33,8 @@
     en: 'A starts first and B later. Late A arrives, the check asks “same session?” — A ≠ B, no — and A is kept out of B, going to A’s own result window and saved results; B’s own result — B = B, yes — is written into B.',
     zh: 'A 先开始，B 后开始。晚到的 A 到达后，检查问「同一个 session 吗？」——A ≠ B，不是——A 被挡在 B 外，回到 A 自己的结果小窗和保存记录；B 自己的结果——B = B，是——写进 B。',
   }, {
-    en: 'You press cancel while A recognizes or tidies. A is marked cancelled first; then each late result arrives in turn — the recognized words, then the tidied words — meets the cancelled check and is not delivered, so the screen shows nothing; the saved record says cancelled with an empty result.',
-    zh: '你在 A 识别或整理时按取消。A 先被标记为已取消；随后晚到的结果一个一个到达——先是识别出的文字，再是整理后的文字——各自遇到取消检查，都不交付，屏幕上什么都没有；保存记录写着已取消、结果为空。',
+    en: 'You press cancel while A recognizes or tidies. A is marked cancelled first. Only one of the two late results arrives — the recognized words or the tidied words — and the two cases appear one at a time; each meets the cancelled check and is not delivered, so the screen shows nothing; the saved record says cancelled with an empty result.',
+    zh: '你在 A 识别或整理时按取消。A 先被标记为已取消。晚到的只是其中一种结果——识别出的文字或整理后的文字——两种情形一个一个上演；各自遇到取消检查，都不交付，屏幕上什么都没有；保存记录写着已取消、结果为空。',
   }];
   const route = [
     { name: 'YOU PRESS', nameZh: '你按一下', detail: 'one key', detailZh: '一个键' },
@@ -336,36 +336,39 @@
               <text x="360" y="147" text-anchor="middle" class="route-detail">{t('every late result checks this', '每个晚到结果都先查它')}</text>
             </g>
           {/if}
+          {#if phase >= 2}
+            <text x="115" y="172" text-anchor="middle" class="route-detail" in:fade={{ duration: 250 }}>{t('only one of these two arrives late', '晚到的只是其中一种')}</text>
+          {/if}
           {#each cancelSources as source, i}
-            {@const y = 176 + i * 72}
+            {@const y = 186 + i * 66}
             {#if phase >= 2 + i}
               <g in:fade={{ duration: 250 }}>
-                <rect x="20" {y} width="190" height="56" rx="12" fill={phase === 2 + i ? 'var(--accent-soft)' : 'var(--bg)'} stroke={phase === 2 + i ? 'var(--accent)' : 'var(--line)'} stroke-width={phase === 2 + i ? 2.5 : 1} />
-                <text x="115" y={y + 23} text-anchor="middle" class="route-name">{t(source.name, source.nameZh)}</text>
-                <text x="115" y={y + 42} text-anchor="middle" class="route-detail">{t(source.detail, source.detailZh)}</text>
-                <line x1="210" y1={y + 28} x2="244" y2={y + 28} stroke="var(--muted)" stroke-width="2" />
-                <path d="M248 {y + 20} l14 14 M262 {y + 20} l-14 14" stroke="var(--eos)" stroke-width="3" />
-                <text x="272" y={y + 32} class="route-detail" fill="var(--eos)">{t('cancelled', '已取消')}</text>
+                <rect x="20" {y} width="190" height="54" rx="12" fill={phase === 2 + i ? 'var(--accent-soft)' : 'var(--bg)'} stroke={phase === 2 + i ? 'var(--accent)' : 'var(--line)'} stroke-width={phase === 2 + i ? 2.5 : 1} />
+                <text x="115" y={y + 22} text-anchor="middle" class="route-name">{t(source.name, source.nameZh)}</text>
+                <text x="115" y={y + 41} text-anchor="middle" class="route-detail">{t(source.detail, source.detailZh)}</text>
+                <line x1="210" y1={y + 27} x2="244" y2={y + 27} stroke="var(--muted)" stroke-width="2" />
+                <path d="M248 {y + 19} l14 14 M262 {y + 19} l-14 14" stroke="var(--eos)" stroke-width="3" />
+                <text x="272" y={y + 31} class="route-detail" fill="var(--eos)">{t('cancelled', '已取消')}</text>
               </g>
             {/if}
           {/each}
           {#if phase >= 4}
             <g in:fade={{ duration: 250 }}>
-              <line x1="326" y1="204" x2="348" y2="222" stroke="var(--muted)" stroke-width="2" />
-              <line x1="326" y1="276" x2="348" y2="258" stroke="var(--muted)" stroke-width="2" />
-              <rect x="350" y="196" width="200" height="90" rx="12" fill={phase === 4 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={phase === 4 ? 'var(--accent)' : 'var(--line)'} stroke-width={phase === 4 ? 2.5 : 1} />
-              <text x="450" y="220" text-anchor="middle" class="route-name">{t('YOU SEE TEXT', '看到文字')}</text>
-              <text x="450" y="242" text-anchor="middle" class="route-detail">{t('typing spot or result window', '打字位置或结果小窗')}</text>
-              <text x="450" y="268" text-anchor="middle" class="check no">{t('× no late A result', '× 没有晚到的 A 结果')}</text>
+              <line x1="326" y1="213" x2="348" y2="226" stroke="var(--muted)" stroke-width="2" />
+              <line x1="326" y1="279" x2="348" y2="266" stroke="var(--muted)" stroke-width="2" />
+              <rect x="350" y="204" width="200" height="88" rx="12" fill={phase === 4 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={phase === 4 ? 'var(--accent)' : 'var(--line)'} stroke-width={phase === 4 ? 2.5 : 1} />
+              <text x="450" y="228" text-anchor="middle" class="route-name">{t('YOU SEE TEXT', '看到文字')}</text>
+              <text x="450" y="250" text-anchor="middle" class="route-detail">{t('typing spot or result window', '打字位置或结果小窗')}</text>
+              <text x="450" y="274" text-anchor="middle" class="check no">{t('× no late A result', '× 没有晚到的 A 结果')}</text>
             </g>
           {/if}
           {#if phase >= 5}
             <g in:fade={{ duration: 250 }}>
-              <path d="M450 129 H585 V324 H574" fill="none" stroke="var(--muted)" stroke-width="2" marker-end="url(#session-arrow)" />
+              <path d="M450 129 H585 V329 H574" fill="none" stroke="var(--muted)" stroke-width="2" marker-end="url(#session-arrow)" />
               <text x="517" y="121" text-anchor="middle" class="route-detail">{t('save cancellation', '保存取消状态')}</text>
-              <rect x="350" y="300" width="220" height="48" rx="12" fill={phase === 5 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={phase === 5 ? 'var(--accent)' : 'var(--line)'} stroke-width={phase === 5 ? 2.5 : 1} />
-              <text x="460" y="320" text-anchor="middle" class="route-name">{t('SAVED RECORD', '保存记录')}</text>
-              <text x="460" y="338" text-anchor="middle" class="route-detail">{t('A · cancelled · result: empty', 'A · 已取消 · 结果文字：空')}</text>
+              <rect x="350" y="306" width="220" height="46" rx="12" fill={phase === 5 ? 'var(--accent-soft)' : 'var(--bg)'} stroke={phase === 5 ? 'var(--accent)' : 'var(--line)'} stroke-width={phase === 5 ? 2.5 : 1} />
+              <text x="460" y="325" text-anchor="middle" class="route-name">{t('SAVED RECORD', '保存记录')}</text>
+              <text x="460" y="342" text-anchor="middle" class="route-detail">{t('A · cancelled · result: empty', 'A · 已取消 · 结果文字：空')}</text>
             </g>
           {/if}
           <text x="360" y="364" text-anchor="middle" class="footnote">{t('Next: which program receives the cancel key?', '接下来：哪个程序接收取消键？')}</text>
@@ -386,8 +389,11 @@
               <text x="150" y="162" text-anchor="middle" class="route-detail">{t('every late result checks this', '每个晚到结果都先查它')}</text>
             </g>
           {/if}
+          {#if phase >= 2}
+            <text x="150" y="196" text-anchor="middle" class="route-detail" in:fade={{ duration: 250 }}>{t('only one of these two arrives late', '晚到的只是其中一种')}</text>
+          {/if}
           {#each cancelSources as source, i}
-            {@const y = 200 + i * 100}
+            {@const y = 206 + i * 90}
             {#if phase >= 2 + i}
               <g in:fade={{ duration: 250 }}>
                 <rect x="60" {y} width="180" height="54" rx="12" fill={phase === 2 + i ? 'var(--accent-soft)' : 'var(--bg)'} stroke={phase === 2 + i ? 'var(--accent)' : 'var(--line)'} stroke-width={phase === 2 + i ? 2.5 : 1} />

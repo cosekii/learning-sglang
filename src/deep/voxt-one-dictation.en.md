@@ -148,7 +148,7 @@ A can register through `Background` while it composes text. It then updates its 
 
 ### Next
 
-Add cancellation to the same route: after A is cancelled, where do its late recognition or clean-up results stop?
+Add cancellation to the same route: after A is cancelled, why are its late recognition or clean-up results not delivered?
 
 ### Source
 
@@ -168,7 +168,7 @@ Public baseline: `sglang-omni@48ee40b2563492de95efc952a0c7470db087d8a9`. Paths a
 
 - The picture builds in order: you press cancel, A is marked cancelled, then each possible late result arrives in turn — the recognized words, then the cleaned words — meets the cancelled check and is not delivered; the screen shows nothing, and the saved record writes `cancelled` with an empty result.
 - You cancel A: this step covers cancellation only during recognition or clean-up.
-- The two late results are alternatives, staged one at a time: a late recognition result, then a late clean-up result. Each meets its own check — two separate checks, not one shared one.
+- The two late results are alternatives, not two events in one run: the stage says only one of the two arrives late, and the cases appear one at a time — a late recognition result, then a late clean-up result. Each meets its own check — two separate checks, not one shared one.
 - The red box marks A cancelled before any late result arrives; every late result checks this flag first.
 - Not delivered means no insertion and nothing in the result window; the late result is still checked, and the cancellation is still recorded.
 - On the right, no late A result appears where you type or in the result window.
