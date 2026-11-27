@@ -172,6 +172,7 @@ Step 4 adds a mel-frame cost to each request. A request can wait for the next ba
 - The top line shows MiniCPM-o `audio_encoder`'s real configuration: at most eight requests, zero deliberate collection delay and at most 24,000 charged mel frames per batch.
 - A mel frame is one small column of sound features. This budget limits the batch's accounted work rather than merely counting requests.
 - The teaching example charges A for five full windows and B and C for two each. At 3,000 frames per full window, their costs are 15,000, 6,000 and 6,000.
+- Both panels start at the same origin and use one 27,000-frame scale. Their dashed 24,000-frame limits sit at the same position, so identical A and B segments have identical widths.
 - The left panel collects A and B for 21,000 frames, leaving 3,000. The right panel tries C, reaching 27,000 and crossing the dashed 24,000-frame limit.
 - The scheduler returns C to the head of `pending_messages` and ends this collection. Both the request-count and frame-cost limits must pass.
 
@@ -218,7 +219,7 @@ The first message enters the batch before later messages undergo the overflow ch
 - `sglang_omni/models/minicpm_o/config.py:57-70`: current audio-encoder cap of eight, zero delay and 24,000-frame budget.
 - `sglang_omni/models/minicpm_o/stages.py:166-202`: full-window cost function and its connection to `SimpleScheduler`.
 - `sglang_omni/scheduling/simple_scheduler.py:148-197`: count and cost caps, with `appendleft()` and collection exit on overflow.
-- `sglang_omni/models/minicpm_o/audio_encoder_batching.py:85-112`: cross-request padding and one batched encoder call.
+- <code>sglang_omni/models/minicpm_o/<wbr>audio_encoder_batching.py:85-112</code>: cross-request padding and one batched encoder call.
 
 Line numbers refer to `origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`.
 

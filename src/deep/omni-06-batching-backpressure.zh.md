@@ -172,6 +172,7 @@ $$E=B-K=4-3=1$$
 - 顶部是 MiniCPM-o `audio_encoder` 的真实配置：最多 8 条请求、零主动收集等待、每批最多 24000 个计费 mel 帧。
 - 一个 mel 帧可以想成声音特征矩阵里的一小列。这里用帧数限制一批的工作量，而不只数请求有几条。
 - 教学例子让 A 计 5 个完整窗口，B、C 各计 2 个。每个完整窗口按 3000 帧计，所以三条分别是 15000、6000、6000 帧。
+- 两幅图从同一原点起，共用 0–27000 帧的比例尺。24000 帧虚线上限的位置相同，所以同样的 A、B 在两图里一样宽。
 - 左图收集 A、B，共 21000 帧，还剩 3000 帧。右图试着加入 C，总成本变成 27000 帧，虚线的 24000 帧上限被越过。
 - scheduler 不把 C 塞进这批，而是把它放回 `pending_messages` 的队首并结束本次收集。请求条数上限和帧成本上限必须同时通过。
 
@@ -218,7 +219,7 @@ $$O=C_{ABC}-24000=27000-24000=3000$$
 - `sglang_omni/models/minicpm_o/config.py:57-70`：当前 audio encoder 的 8 条、零等待和 24000 帧配置。
 - `sglang_omni/models/minicpm_o/stages.py:166-202`：完整窗口成本函数，以及它与 `SimpleScheduler` 的接线。
 - `sglang_omni/scheduling/simple_scheduler.py:148-197`：条数与成本双上限、超预算时 `appendleft()` 并停止收集。
-- `sglang_omni/models/minicpm_o/audio_encoder_batching.py:85-112`：跨请求 padding 和一次批量 encoder 调用。
+- <code>sglang_omni/models/minicpm_o/<wbr>audio_encoder_batching.py:85-112</code>：跨请求 padding 和一次批量 encoder 调用。
 
 行号对应 `origin/main@21a6d229c3d2075da5e97848f94e0d2ac8a2781a`。
 

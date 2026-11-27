@@ -271,7 +271,7 @@
       <text x={phone ? 15 : 20} y="66" class="tag">max_batch_mel_frames = {AUDIO_MAX_MEL_FRAMES} · {phone ? t('mel = sound column', 'mel 帧 = 一小格声音特征') : t('mel frame = one small sound column', 'mel 帧 = 一小格声音特征')}</text>
       {#each costPanels as panel}
         {@const barW = phone ? 238 : 280}
-        {@const scale = panel.accepted ? AUDIO_MAX_MEL_FRAMES : AUDIO_ABC_MEL_FRAMES}
+        {@const scale = AUDIO_ABC_MEL_FRAMES}
         <rect x={panel.x} y={panel.y} width={phone ? 270 : 325} height="222" rx="12" fill="var(--bg)" stroke={panel.accepted ? 'var(--accent)' : 'var(--gen)'} stroke-width={panel.accepted ? 2 : 1} />
         <text x={panel.x + 14} y={panel.y + 25} class="rowlabel">{panel.title}</text>
         <text x={panel.x + 14} y={panel.y + 49} class="tag">{panel.accepted ? t('2 / 8 request slots used', '用了 2 / 8 个请求位置') : t('3 ≤ 8 · request count still fits', '3 ≤ 8 · 条数仍然装得下')}</text>
@@ -279,12 +279,12 @@
         <rect x={panel.x + 16 + barW * AUDIO_A_MEL_FRAMES / scale} y={panel.y + 65} width={barW * AUDIO_B_MEL_FRAMES / scale} height="46" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" />
         {#if !panel.accepted}
           <rect x={panel.x + 16 + barW * AUDIO_AB_MEL_FRAMES / scale} y={panel.y + 65} width={barW * AUDIO_C_MEL_FRAMES / scale} height="46" rx="5" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <path d="M{panel.x + 16 + barW * AUDIO_MAX_MEL_FRAMES / scale} {panel.y + 58} V{panel.y + 120}" stroke="var(--gen)" stroke-width="2" stroke-dasharray="4 3" />
-          <text x={panel.x + 16 + barW * AUDIO_MAX_MEL_FRAMES / scale} y={panel.y + 137} text-anchor="middle" class="tag strong">{AUDIO_MAX_MEL_FRAMES} {t('limit', '上限')}</text>
         {:else}
           <rect x={panel.x + 16 + barW * AUDIO_AB_MEL_FRAMES / scale} y={panel.y + 65} width={barW * AUDIO_REMAINING_MEL_FRAMES / scale} height="46" rx="3" fill="white" stroke="var(--faint)" stroke-dasharray="3 3" />
-          <text x={panel.x + 16} y={panel.y + 137} class="tag">{AUDIO_REMAINING_MEL_FRAMES} {t('frames left · not enough for C', '帧剩余 · 装不下 C')}</text>
+          <text x={panel.x + 16} y={panel.y + 137} class="tag">{AUDIO_REMAINING_MEL_FRAMES} {t('frames left', '帧剩余')}</text>
         {/if}
+        <path d="M{panel.x + 16 + barW * AUDIO_MAX_MEL_FRAMES / scale} {panel.y + 58} V{panel.y + 120}" stroke="var(--gen)" stroke-width="2" stroke-dasharray="4 3" />
+        <text x={panel.x + 16 + barW * AUDIO_MAX_MEL_FRAMES / scale} y={panel.y + 137} text-anchor="middle" class="tag strong">{AUDIO_MAX_MEL_FRAMES} {t('limit', '上限')}</text>
         <text x={panel.x + 16 + barW * AUDIO_A_MEL_FRAMES / scale / 2} y={panel.y + 94} text-anchor="middle" class="mono strong">A · {AUDIO_A_MEL_FRAMES}</text>
         <text x={panel.x + 16 + barW * (AUDIO_A_MEL_FRAMES + AUDIO_B_MEL_FRAMES / 2) / scale} y={panel.y + 94} text-anchor="middle" class="mono strong">B · {AUDIO_B_MEL_FRAMES}</text>
         {#if !panel.accepted}

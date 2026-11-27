@@ -22,3 +22,10 @@
 - 章末英文 `mobile` 初次发现 8 步在 360／390／430 px 三种宽度下都有 SVG 文字出界，共 24 项检查失败。终稿只缩短英文手机标签，保留中文和桌面文案；中英两种全章 `mobile` 复跑均无出界、横向滚动或 caption 截断。最终中文与英文 390 px 手机逐张冷读均为 **12/12、24/24、0 内容洞、0 显示洞**。
 - 独立冷读 subagent 因 `Invalid or unauthorized API key` 不可用，最终冷读由主线程按 EVAL 的换视角方法完成。最终深入讲解截图分别启动浏览器生成，避免抽屉状态在连续截图时交替开关；中英首尾及偶数步抽查看确认抽屉展开。
 - 最终检查：`build`、本章 `transcript`、全章 `readability`、`deep-check 06`、`zh-check`、中英全章 `mobile` 及 `git diff --check` 均通过。只运行目标章检查，没有运行全站回归。
+
+## 2026-11-27 · Omni-52 定点修复（待协调复审）
+
+- Step 4 两面板统一使用 27,000 帧比例尺、相对面板原点 16 和同一 24,000 帧 limit 公式。桌面 `barW=280` 时 A、B、C 分别宽 155.5556、62.2222、62.2222，limit offset 为 248.8889；手机 `barW=238` 时分别为 132.2222、52.8889、52.8889，limit offset 为 211.5556。双语 MDX、deep 和生成 transcript 已同步。
+- 作者与独立 `explore` 非视觉复评：R1–R5 **10/10**，新内容洞 **0**，冷读 **PASS**。小学生复述：「A、B 没超过声音帧上限；再加 C 就越线，所以 C 等下一批。」R6 属于独立的 Omni-10，不在本比例尺单元重复申报；原 #4/#5、整章总分和销项仍待协调。
+- `build`（60 页）、Step 4 `readability`、`deep-check 06`、`zh-check`、英中全章与中文 Step 4 三宽度 `mobile`、`git diff --check` 全过。transcript 两次生成一致，2,281 词，SHA-256 `f55b4c0582521ce522f37603450fe58483054f2c05b30e8c5ff06268e2324eba`。
+- `.bot/out/omni06-step4-scale-audit.mjs` 实测 **11 个状态**，覆盖英中桌面、英中 360／390／430 px、direct／前步入口；每个状态的 `width/value`、原点、limit、两个 limit 标签、重叠、出界和页面横溢断言均过，最低 **10.760 CSS px**。当前模型不能读 PNG，未声称视觉通过。
