@@ -5,9 +5,9 @@
 ### What the picture shows
 
 - The example follows the earlier `thinker → talker_ar` handoff and constructs two results, A then B. It assumes one reusable storage space so that the conflict is visible.
-- The left panel shows the unsafe order. B takes the space while A is still being read. The location that held A now holds B, so a reader asking for A reads B instead.
-- The right panel shows the safe order. A remains in the space and B waits outside. B can enter only after the reader finishes A.
-- Blue marks the result being read and therefore retained. Orange marks the next result. The letter inside the space tells you which result a reader would obtain there.
+- Both panels start with A in the space, `talker_ar` reading A, and B waiting outside. The left panel then shows the unsafe order: B takes the space while A is still being read, so a reader asking for A reads B instead.
+- The right panel shows the safe order in two later phases. First `talker_ar` finishes reading A while B still waits. Only then does B enter the space; the final panel does not claim that B has been read.
+- Blue marks A, the first result. Orange marks B, the next result. The letter inside the space tells you which result a reader would obtain there.
 - This step does not choose a data plane, CPU or GPU memory, shared memory or a network transport. The issue is simpler: new data cannot take a location while old data still uses it.
 
 ### Work through the numbers

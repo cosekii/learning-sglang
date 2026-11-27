@@ -31,7 +31,7 @@
     if (q >= 1 && q <= steps.length) step = q - 1;
   });
   const cur = $derived(steps[step]);
-  const PHASE_COUNTS = [1, 1, 1, 7, 6];
+  const PHASE_COUNTS = [4, 1, 1, 7, 6];
   let phase = $state(0);
   let lap = $state(0), lapMs = $state(0);
   const nextLap = (ms: number) => untrack(() => { lapMs = ms; lap++; });
@@ -60,7 +60,7 @@
     query.addEventListener('change', update);
     return () => query.removeEventListener('change', update);
   });
-  const W = $derived(phone ? 300 : 720), H = $derived(phone ? (step >= 3 ? 700 : 650) : 390);
+  const W = $derived(phone ? 300 : 720), H = $derived(phone ? 700 : 390);
   const panels = $derived([
     { title: t('REUSE NOW · WRONG READ', '现在覆盖 · 读错'), x: phone ? 15 : 20, y: phone ? 105 : 105, w: phone ? 270 : 325 },
     { title: t('WAIT FOR THE READER', '等读者读完'), x: phone ? 15 : 375, y: phone ? 365 : 105, w: phone ? 270 : 325 },
@@ -70,16 +70,16 @@
 <figure class="viz" data-animation-step={step} data-animation-phase={phase} data-animation-final-phase={PHASE_COUNTS[step] - 1}>
   <div class="canvas">
     <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={t('A result remains available while its receiver reads. A DataRef locates the payload, and the sender tracks the acknowledgement and operation completion.', '结果在接收方读取期间保持可用。DataRef 用来找到数据，发送方跟踪回执和操作完成。')}>
-      {#if step >= 3}<LoopProgress ms={lapMs} {lap} x={phone ? 230 : 640} y={phone ? 644 : 20} />{/if}
+      {#if PHASE_COUNTS[step] > 1}<LoopProgress ms={lapMs} {lap} x={phone ? 230 : 640} y={phone ? 644 : 20} />{/if}
       <defs>
         <marker id="lifetime-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
           <path d="M0,0 L8,4 L0,8 Z" fill="var(--accent)" />
         </marker>
       </defs>
       {#if step === 0}
-      <text x={phone ? 15 : 20} y="20" class="tag strong">{t('Example: one space, two results; talker_ar is still reading A', '示例：一格空间、两份结果；talker_ar 还在读 A')}</text>
+      <text x={phone ? 15 : 20} y="20" class="tag strong">{phone ? t('One space · A and B · initially reading A', '一格 · A、B · 起初在读 A') : t('Example: one space, two results; initially talker_ar is reading A', '示例：一格空间、两份结果；起初 talker_ar 在读 A')}</text>
       <rect x={phone ? 15 : 20} y="33" width="10" height="10" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
-      <text x={phone ? 31 : 36} y="42" class="tag">{t('result being read', '正在读的结果')}</text>
+      <text x={phone ? 31 : 36} y="42" class="tag">{t('A · first result', 'A · 先到的结果')}</text>
       <rect x={phone ? 147 : 175} y="33" width="10" height="10" rx="2" fill="var(--gen-soft)" stroke="var(--gen)" />
       <text x={phone ? 163 : 191} y="42" class="tag">{t('next result', '下一份结果')}</text>
       <text x={phone ? 15 : 20} y="68" class="tag">thinker → talker_ar · {LIFETIME_RESULT_IDS.length} {t('results', '份结果')} − {LIFETIME_SLOT_COUNT} {t('space', '格')} = {LIFETIME_WAITING_COUNT} {t('must wait', '份要等')}</text>
@@ -87,23 +87,26 @@
 
       {#each panels as panel, i}
         {@const wrong = i === 0}
-        <rect x={panel.x} y={panel.y} width={panel.w} height="220" rx="12" fill="var(--bg)" stroke={wrong ? 'var(--gen)' : 'var(--accent)'} stroke-width={wrong ? 1 : 2} />
-        <text x={panel.x + 14} y={panel.y + 24} class="rowlabel">{panel.title}</text>
+        {@const overwritten = wrong && phase >= 1}
+        {@const readFinished = !wrong && phase >= 2}
+        {@const entered = !wrong && phase >= 3}
+        <rect x={panel.x} y={panel.y} width={panel.w} height="220" rx="12" fill="var(--bg)" stroke="var(--line)" />
+        <text x={panel.x + 14} y={panel.y + 24} class="rowlabel">{wrong ? t(`REUSE NOW${overwritten ? ' · WRONG READ' : ''}`, `现在覆盖${overwritten ? ' · 读错' : ''}`) : panel.title}</text>
         <text x={panel.x + 14} y={panel.y + 48} class="tag">thinker</text>
         <rect x={panel.x + 14} y={panel.y + 58} width="62" height="36" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" stroke-dasharray={wrong ? '4 3' : '0'} />
         <text x={panel.x + 45} y={panel.y + 81} text-anchor="middle" class="mono strong">A</text>
         <rect x={panel.x + 14} y={panel.y + 104} width="62" height="36" rx="7" fill="var(--gen-soft)" stroke="var(--gen)" />
         <text x={panel.x + 45} y={panel.y + 127} text-anchor="middle" class="mono strong">B</text>
-        <text x={panel.x + 45} y={panel.y + 158} text-anchor="middle" class="tag">{wrong ? t('B takes the space', 'B 占了这一格') : t('B waits outside', 'B 在格外等')}</text>
+        <text x={panel.x + 45} y={panel.y + 158} text-anchor="middle" class="tag">{overwritten ? t('B takes the space', 'B 占了这一格') : entered ? t('B entered after A', 'A 读完后 B 进入') : t('B waits outside', 'B 在格外等')}</text>
 
         <text x={panel.x + 175} y={panel.y + 48} text-anchor="middle" class="tag">{t('one space', '一格空间')}</text>
-        <rect x={panel.x + 120} y={panel.y + 58} width="110" height="58" rx="8" fill={wrong ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={wrong ? 'var(--gen)' : 'var(--accent)'} />
-        <text x={panel.x + 175} y={panel.y + 93} text-anchor="middle" class="mono strong">{wrong ? 'B' : 'A'}</text>
-        <text x={panel.x + 175} y={panel.y + 135} text-anchor="middle" class="tag">{wrong ? t('A was replaced', 'A 被盖掉') : t('A stays readable', 'A 保持可读')}</text>
+        <rect x={panel.x + 120} y={panel.y + 58} width="110" height="58" rx="8" fill={overwritten || entered ? 'var(--gen-soft)' : 'var(--accent-soft)'} stroke={overwritten || entered ? 'var(--gen)' : 'var(--accent)'} />
+        <text x={panel.x + 175} y={panel.y + 93} text-anchor="middle" class="mono strong">{overwritten || entered ? 'B' : 'A'}</text>
+        <text x={panel.x + 175} y={panel.y + 135} text-anchor="middle" class="tag">{overwritten ? t('A was replaced', 'A 被盖掉') : entered ? t('B entered after A', 'A 读完后 B 进入') : readFinished ? t('A read finished ✓', 'A 读取完成 ✓') : t('A stays readable', 'A 保持可读')}</text>
 
-        <rect x={panel.x + 94} y={panel.y + 169} width="162" height="38" rx="7" fill="white" stroke={wrong ? 'var(--gen)' : 'var(--accent)'} />
+        <rect x={panel.x + 94} y={panel.y + 169} width="162" height="38" rx="7" fill="white" stroke="var(--line)" />
         <text x={panel.x + 175} y={panel.y + 185} text-anchor="middle" class="tag strong">talker_ar</text>
-        <text x={panel.x + 175} y={panel.y + 200} text-anchor="middle" class="tag">{wrong ? t('wanted A · reads B', '要读 A · 却读到 B') : t('reads A · then B may enter', '读完 A · B 才能进')}</text>
+        <text x={panel.x + 175} y={panel.y + 200} text-anchor="middle" class="tag">{overwritten ? t('wanted A · reads B', '要读 A · 却读到 B') : readFinished ? t('A finished · B may enter', 'A 读完 · B 才能进') : t('reading A', '正在读 A')}</text>
       {/each}
       <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{phone ? t('Safe reuse only; no specific transport or pool size.', '本图只讲何时能安全复用，不限定传输方式或池子大小。') : t('The diagram covers safe reuse, not a particular transport or pool size.', '本图只讲何时能安全复用，不限定传输方式或池子大小。')}</text>
       <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Next: finding A and knowing the read finished.', '下一步：读者怎样找到 A，发送方怎样知道它读完了？') : t('Next: how does the reader find A, and how does the owner know it finished?', '下一步：读者怎样找到 A，发送方怎样知道它读完了？')}</text>
