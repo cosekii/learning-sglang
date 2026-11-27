@@ -68,12 +68,12 @@ SGLang 在分布式初始化后、模型装入前读取 `pre_model_load_memory`�
 以下来源位于 `Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7` 与 `sglang@4fa3482`：
 
 - 原文的两次读数、公式和 −5.4／6.3 GB 例子：`sglang/kvcache-code-walk-through/mem-fraction-static.md:34-60,73-85`。
-- [装入模型前读取可用显存：`model_executor/model_runner.py:451-452,1083-1088`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner.py#L1083-L1088)。
+- [装入模型前读取可用显存：`model_runner.py:451-452,1083-1088`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner.py#L1083-L1088)。
 - [CUDA 读取空闲显存、分布式取最小值、字节换算：`utils/common.py:498-525,594-601`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/utils/common.py#L498-L525)。
-- [装入模型与 KV 池初始化顺序：`model_executor/model_runner.py:567-569,656-677`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner.py#L656-L677)。
-- [`rest` 的直接计算：`model_executor/model_runner_kv_cache_mixin.py:56-70`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py#L56-L70)。
-- [非正 token 数不能启动：`model_executor/pool_configurator.py:39-44,170-175`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/pool_configurator.py#L170-L175)。
-- [KV 池后才 capture CUDA Graph：`model_executor/model_runner.py:676-677,709-726`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner.py#L709-L726)。
+- [装入模型与 KV 池初始化顺序：`model_runner.py:567-569,656-677`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner.py#L656-L677)。
+- [`rest` 的直接计算：`model_runner_kv_cache_mixin.py:56-70`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py#L56-L70)。
+- [非正 token 数不能启动：`pool_configurator.py:39-44,170-175`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/pool_configurator.py#L170-L175)。
+- [KV 池后才 capture CUDA Graph：`model_runner.py:676-677,709-726`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner.py#L709-L726)。
 - [参数说明区分权重与 KV 池、激活与 graph 缓冲区：`server_args.py:1227-1236`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/server_args.py#L1227-L1236)。
 
 ### 接下来
@@ -89,7 +89,7 @@ SGLang 在分布式初始化后、模型装入前读取 `pre_model_load_memory`�
 - 顶部沿用第 1 步 0.85 的成功预算，仍是同一把 78 GB 标尺：橙色模型约 60 GB，蓝色 KV 为 6.3 GB，灰色动态余量为 11.7 GB。
 - 三张卡按执行顺序出现。模型装入完成后才创建 KV pool，graph 缓冲分配又在 KV pool 之后。
 - `G` 表示 CUDA Graph 的输入输出缓冲。指向灰色区域的箭头说明缓冲使用动态余量，不表示它们独占全部 11.7 GB。
-- 本例没有测量 `G` 的大小，所以图上写 `G = ? GB`，不编一个分项数值。
+- 本例没有测量 `G` 的大小，所以图上写 `size unknown`（大小未知），不编一个分项数值。
 
 ### 公式与符号
 
@@ -115,8 +115,8 @@ $$M+K+R\approx60+6.3+11.7=78\ \mathrm{GB}$$
 
 以下来源位于 `sglang@4fa3482`：
 
-- [模型、KV pool、device graph 的初始化顺序：`model_executor/model_runner.py:567-569,656-677,709-726`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner.py#L709-L726)。
-- [capture 输入缓冲的分配：`model_executor/cuda_graph_runner.py:624-655`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L624-L655)。
+- [模型、KV pool、device graph 的初始化顺序：`model_runner.py:567-569,656-677,709-726`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner.py#L709-L726)。
+- [capture 输入缓冲的分配：`cuda_graph_runner.py:624-655`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L624-L655)。
 - [权重与 KV pool 和激活与 graph buffers 的分类：`server_args.py:1227-1238`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/server_args.py#L1227-L1238)。
 
 本步不测量缓冲字节，也不展开临时 workspace、多模态预留和其他进程。
@@ -127,13 +127,13 @@ $$M+K+R\approx60+6.3+11.7=78\ \mathrm{GB}$$
 
 ## 第 3 步 · capture 记录计算
 
-**一句话。** capture 用固定的输入输出缓冲执行并记录 GPU 步骤，然后把记录好的 graph 和这些缓冲都留给重放。
+**一句话。** capture 只记录 GPU 步骤而不执行它们，固定的输入输出缓冲继续保留给 replay。
 
 ### 图上是什么
 
-- `G.input` 收到本例的输入 token。GPU 步骤执行后，`G.output` 收到输出 token。
-- 同时，右栏按顺序把 GPU 步骤记录成一张 graph。记录的是计算步骤，不是把这次输出 token 当答案保存下来。
-- capture 后，`G.input` 和 `G.output` 的名字与位置都不变。它们继续占用分配的空间，供之后的 replay 复用。
+- `G.input` 表示已经预留的输入空间。capture 按顺序记录 GPU 步骤，但不执行它们，也不写出输出 token。
+- 因此 `G.output` 写的是 `filled on replay`；记录的是计算步骤，不是保存一个输出 token。
+- capture 后，`G.input` 和 `G.output` 的名字与位置都不变。它们继续保留，供之后的 replay 复用。
 - 本步只跟随一张示意 graph。第 1 本 Ch. 11 Steps 2–4 已讲真实服务为什么按选定的 batch 形状分别 capture。
 
 ### 公式与符号
@@ -159,8 +159,8 @@ capture 时，`CudaGraphRunner` 使用已经分配的输入缓冲，记录模型
 
 以下来源位于 `sglang@4fa3482`：
 
-- [capture 输入缓冲与入口：`model_executor/cuda_graph_runner.py:624-655,801-802`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L624-L655)。
-- [对模型执行进行 graph capture：`model_executor/cuda_graph_runner.py:1112-1222`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L1112-L1222)。
+- [capture 输入缓冲与入口：`cuda_graph_runner.py:624-655,801-802`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L624-L655)。
+- [graph capture 的实现：`cuda_graph_runner.py:824-855,1029-1076`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L824-L855)。
 
 本章不逐项展开所有被记录的操作，也不列出全部 batch 形状档位。
 
@@ -202,8 +202,8 @@ replay 路径把当前输入复制进 runner 的输入缓冲，再调用已经 c
 
 以下来源位于 `sglang@4fa3482`：
 
-- [输入缓冲准备与复制：`model_executor/cuda_graph_runner.py:262-298,520-521`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L262-L298)。
-- [调用 capture 后的 graph：`model_executor/cuda_graph_runner.py:1112-1222`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L1112-L1222)。
+- [输入缓冲准备、分组复制与 replay 调用路径：`cuda_graph_runner.py:262-362,1138-1151`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L262-L362)。
+- [调用 capture 后的 graph：`cuda_graph_runner.py:1112-1222`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L1112-L1222)。
 
 本例固定一个 batch 形状，不展开 padding、形状选择和输出处理。
 
@@ -302,4 +302,4 @@ SGLang 把激活和 CUDA Graph buffers 列为权重与 KV 静态分配之外的�
 
 ### 接下来
 
-两个请求有共同前缀，hybrid 模型能从共同前缀的末尾继续算吗？
+hybrid 请求有共同前缀。这里的 `hybrid` 指逐 token 的 KV 历史加 recurrent state，图上用「随 token 更新的摘要」解释后者。`num_batch` 是每批调度的 token 数。1024 与 64 时，短请求的等待和重算 token 数怎样变化？

@@ -15,7 +15,7 @@ export const deep = await deepFor('ml-sys-02-inference-memory-budget');
 
 Step 1 reproduces the rounded worked example in `Awesome-ML-SYS-Tutorial/sglang/kvcache-code-walk-through/mem-fraction-static.md:73-85`: available memory is about 78 GB before model loading and 18 GB afterward. At `mem_fraction_static = 0.70`, KV room is −5.4 GB; at 0.85, it is 6.3 GB. These are the article's teaching values, not measurements from this computer. The formula and startup behavior were checked against SGLang source at `4fa3482`; exact files and lines are in the deep dive. Dynamic headroom is an allowance, not memory already fully occupied.
 
-Step 2 follows the model → KV pool → graph-buffer initialization order in SGLang `4fa3482`. The graph-buffer size is not measured in this teaching example. Step 3 uses one schematic capture to show that the graph records GPU work, while fixed input and output buffers remain allocated. Step 4 replays that graph twice with constructed `t` and `t+1` values to show buffer reuse; these are not measured outputs. Step 5 follows activation lifetime rather than allocator addresses: temporary results join persistent graph buffers during computation, then their live range ends. Step 6 closes the scoped account with `G + A + D ≤ 11.7 GB`; `D` means other dynamic work, and `?` means unknown rather than zero. A positive KV allowance does not prove that runtime memory fits.
+Step 2 follows the model → KV pool → graph-buffer initialization order in SGLang `4fa3482`. The graph-buffer size is not measured in this teaching example. Step 3 uses one schematic capture to show that the graph records GPU work without executing it, while fixed input and output buffers stay reserved. Step 4 replays that graph twice with constructed `t` and `t+1` values to show buffer reuse; these are not measured outputs. Step 5 follows activation lifetime rather than allocator addresses: temporary results join persistent graph buffers during computation, then their live range ends. Step 6 closes the scoped account with `G + A + D ≤ 11.7 GB`; `D` means other dynamic work, and `?` means unknown rather than zero. A positive KV allowance does not prove that runtime memory fits.
 
 This chapter covers startup sizing and the lifetimes of graph buffers and runtime activations. It does not derive KV bytes, paging, multimodal reserves, or every allocator allocation; those need separate sources and examples.
 
@@ -26,7 +26,7 @@ This chapter covers startup sizing and the lifetimes of graph buffers and runtim
 
 第 1 步沿用 `Awesome-ML-SYS-Tutorial/sglang/kvcache-code-walk-through/mem-fraction-static.md:73-85` 的约数例子：装入模型前可用显存约 78 GB，装入后约 18 GB。`mem_fraction_static = 0.70` 时 KV 空间为 −5.4 GB，调到 0.85 后为 6.3 GB。这些是原文的教学值，不是本机实测。公式和启动行为已对照 SGLang `4fa3482` 源码，具体文件和行号见深入讲解。动态余量是预留，不是已经全部占用。
 
-第 2 步按 SGLang `4fa3482` 依次展示模型、KV pool 和 graph 缓冲的初始化顺序。本教学例没有测量 graph 缓冲的大小。第 3 步用一次示意 capture 说明 graph 记录 GPU 计算，固定输入输出缓冲则继续保留。第 4 步用构造的 `t` 和 `t+1` 值重放两次，展示缓冲复用；这些值不是实测输出。第 5 步跟随激活的使用期，不指定 allocator 地址：临时结果在计算时加入常驻 graph 缓冲，随后结束使用。第 6 步用 `G + A + D ≤ 11.7 GB` 合上这份有范围的账；`D` 表示其他动态工作，`?` 表示未知而不是 0。KV 空间为正不能证明运行时显存一定够。
+第 2 步按 SGLang `4fa3482` 依次展示模型、KV pool 和 graph 缓冲的初始化顺序。本教学例没有测量 graph 缓冲的大小。第 3 步用一次示意 capture 说明 graph 只记录 GPU 计算而不执行它，固定输入输出缓冲则继续保留。第 4 步用构造的 `t` 和 `t+1` 值重放两次，展示缓冲复用；这些值不是实测输出。第 5 步跟随激活的使用期，不指定 allocator 地址：临时结果在计算时加入常驻 graph 缓冲，随后结束使用。第 6 步用 `G + A + D ≤ 11.7 GB` 合上这份有范围的账；`D` 表示其他动态工作，`?` 表示未知而不是 0。KV 空间为正不能证明运行时显存一定够。
 
 本章只讲启动尺寸、graph 缓冲和运行时激活的生命周期。KV 字节推导、paging、多模态预留和 allocator 的每笔分配不在本章展开，因为它们需要另外的源码与例子。
 

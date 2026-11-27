@@ -68,12 +68,12 @@ Dynamic headroom is not all occupied memory. KV-pool initialization precedes CUD
 Sources use `Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7` and `sglang@4fa3482`:
 
 - Worked readings, formula and −5.4/6.3 GB results: `sglang/kvcache-code-walk-through/mem-fraction-static.md:34-60,73-85`.
-- [Pre-load available-memory read: `model_executor/model_runner.py:451-452,1083-1088`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner.py#L1083-L1088).
+- [Pre-load available-memory read: `model_runner.py:451-452,1083-1088`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner.py#L1083-L1088).
 - [CUDA free-memory read, distributed minimum and byte conversion: `utils/common.py:498-525,594-601`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/utils/common.py#L498-L525).
-- [Model-loading and KV-pool initialization order: `model_executor/model_runner.py:567-569,656-677`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner.py#L656-L677).
-- [Direct `rest` calculation: `model_executor/model_runner_kv_cache_mixin.py:56-70`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py#L56-L70).
-- [Non-positive token counts fail: `model_executor/pool_configurator.py:39-44,170-175`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/pool_configurator.py#L170-L175).
-- [CUDA Graph capture follows KV-pool initialization: `model_executor/model_runner.py:676-677,709-726`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner.py#L709-L726).
+- [Model-loading and KV-pool initialization order: `model_runner.py:567-569,656-677`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner.py#L656-L677).
+- [Direct `rest` calculation: `model_runner_kv_cache_mixin.py:56-70`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py#L56-L70).
+- [Non-positive token counts fail: `pool_configurator.py:39-44,170-175`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/pool_configurator.py#L170-L175).
+- [CUDA Graph capture follows KV-pool initialization: `model_runner.py:676-677,709-726`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner.py#L709-L726).
 - [Parameter help distinguishes weights and KV from activations and graph buffers: `server_args.py:1227-1236`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/server_args.py#L1227-L1236).
 
 ### Next
@@ -89,7 +89,7 @@ The next step follows the successful 0.85 startup in order: model, KV pool, then
 - The top bar keeps Step 1's successful 0.85 budget on the same 78 GB scale: orange model loading is about 60 GB, blue KV is 6.3 GB and gray dynamic headroom is 11.7 GB.
 - The three cards appear in execution order. Model loading finishes before KV-pool creation, and graph-buffer allocation follows KV-pool creation.
 - `G` names the CUDA Graph input and output buffers. The arrow into the gray region says these buffers use dynamic headroom; it does not assign them the whole 11.7 GB.
-- The example has no measured size for `G`, so the diagram writes `G = ? GB` instead of inventing a share.
+- The example has no measured size for `G`, so the diagram says `size unknown` instead of inventing a share.
 
 ### Formula and symbols
 
@@ -115,8 +115,8 @@ The subset relationship is $G\le11.7\ \mathrm{GB}$. This is a budget boundary, n
 
 Sources use `sglang@4fa3482`:
 
-- [Model, KV-pool and device-graph initialization order: `model_executor/model_runner.py:567-569,656-677,709-726`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner.py#L709-L726).
-- [Capture input-buffer allocation: `model_executor/cuda_graph_runner.py:624-655`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L624-L655).
+- [Model, KV-pool and device-graph initialization order: `model_runner.py:567-569,656-677,709-726`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/model_runner.py#L709-L726).
+- [Capture input-buffer allocation: `cuda_graph_runner.py:624-655`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L624-L655).
 - [Weights and KV are distinct from activations and graph buffers: `server_args.py:1227-1238`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/server_args.py#L1227-L1238).
 
 This step does not measure buffer bytes or cover temporary workspaces, multimodal reserves and other processes.
@@ -127,13 +127,13 @@ The next step records one graph and shows which buffers the recording uses.
 
 ## Step 3 · Capture records the work
 
-**One sentence.** Capture runs and records GPU steps with fixed input and output buffers, then keeps both the recorded graph and its buffers for replay.
+**One sentence.** Capture records GPU steps without executing them, using fixed input and output buffers that stay reserved for replay.
 
 ### What the diagram shows
 
-- `G.input` receives the example input tokens. The GPU steps run, and `G.output` receives the output token.
-- At the same time, the right panel records the ordered GPU steps as one graph. The recording is not a saved copy of the output token.
-- `G.input` and `G.output` keep the same identities and positions after capture. They remain allocated so a later replay can reuse them.
+- `G.input` shows the reserved input space. Capture records the ordered GPU steps, but does not execute them or write an output token.
+- `G.output` therefore says `filled on replay`; the recording is not a saved copy of an output token.
+- `G.input` and `G.output` keep the same identities and positions after capture. They stay reserved so a later replay can reuse them.
 - This step follows one schematic graph. The first book's Ch. 11 Steps 2–4 explains why a real server captures graphs for selected batch shapes.
 
 ### Formula and symbols
@@ -159,8 +159,8 @@ During capture, `CudaGraphRunner` uses allocated input buffers and records the m
 
 Sources use `sglang@4fa3482`:
 
-- [Capture input buffers and capture entry: `model_executor/cuda_graph_runner.py:624-655,801-802`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L624-L655).
-- [Graph capture over model execution: `model_executor/cuda_graph_runner.py:1112-1222`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L1112-L1222).
+- [Capture input buffers and capture entry: `cuda_graph_runner.py:624-655,801-802`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L624-L655).
+- [Graph capture implementation: `cuda_graph_runner.py:824-855,1029-1076`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L824-L855).
 
 The chapter does not enumerate every captured operation or every batch-shape rung.
 
@@ -202,8 +202,8 @@ The replay path copies the current input into the runner's input buffers and inv
 
 Sources use `sglang@4fa3482`:
 
-- [Input-buffer preparation and copy: `model_executor/cuda_graph_runner.py:262-298,520-521`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L262-L298).
-- [Captured graph replay: `model_executor/cuda_graph_runner.py:1112-1222`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L1112-L1222).
+- [Input-buffer preparation, grouped copy and replay call path: `cuda_graph_runner.py:262-362,1138-1151`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L262-L362).
+- [Captured graph replay: `cuda_graph_runner.py:1112-1222`](https://github.com/sgl-project/sglang/blob/4fa3482/python/sglang/srt/model_executor/cuda_graph_runner.py#L1112-L1222).
 
 The example fixes one batch shape. Padding, shape selection and output processing are outside this step.
 
@@ -219,7 +219,7 @@ The next step adds the temporary activations that coexist with these persistent 
 
 - `G` remains inside the 11.7 GB headroom before, during and after `Γ.replay()`.
 - During the token computation, `A` appears as the intermediate results called activations. While those results are live, the diagram shows `G + A ≤ 11.7 GB`.
-- When the computation no longer needs those intermediate results, `A`'s live range ends. `G` and its output remain allocated for the next replay.
+- When the computation no longer needs those intermediate results, `A`'s live range ends. `G` and its output stay reserved for the next replay.
 - The dashed ending describes object lifetime, not a guarantee that the allocator immediately returns bytes to the driver.
 
 ### Formula and symbols
@@ -302,4 +302,4 @@ This chapter excludes KV-byte derivation, paging, request admission, multimodal 
 
 ### Next
 
-Two requests share a prefix. Can a hybrid model resume from the end of that shared prefix?
+A hybrid request shares a prefix. Here `hybrid` means per-token KV history plus a recurrent state, glossed on stage as a running summary. `num_batch` is the number of tokens scheduled per batch. At 1024 versus 64, what happens to the short-request wait and recomputed-token count?
