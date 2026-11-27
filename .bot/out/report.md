@@ -30,6 +30,33 @@
 
 ---
 
+# lane k1 本轮报告 · Omni 13／14 的 Omni-47 步进控制
+
+日期：2026-11-27。类型：修旧（review.md 07:50 新增的 P0，按其指定最小单元）。本轮开始 HEAD 与 `origin/tutorials` 均为 `1617877`，工作树干净。范围只有 Omni 13／14 父组件的 `StepControls` 接线和本报告；未改舞台、caption、双语 deep、MDX、transcript、评分卡、`memory/`、`.bot/memory/`、其他章、其他书或第 1 本受保护英文原文。Omni-46 继续冻结，Step 7／8 与 Ch.12 交接未改，未开第 16／17 章。
+
+## 修复与评分边界
+
+- 教程提交 `937ba01` 已推到 `origin/tutorials`，首次推送成功，未 force-push。**Omni-47 作者修复完成，待协调固定复审，不自行销项。** 两个父组件由 `bind:step` 改为显式 `{step}` 与 `onchange={(s) => (step = s)}`，与 `StepControls` 的实际回调接口一致；共享 `StepControls` 未改。
+- 改前在本 lane 真实浏览器复现：Omni 14 英文直接打开 `?step=6`，点击 Next 和按 ArrowRight 后 counter 都停在 `06 / 08`，两次均捕获 `Uncaught TypeError: $$props.onchange is not a function`。
+- 改后覆盖 Omni 13／14 × 英中四种组合。每种组合依次验证直接 `?step=6`、Next、ArrowRight、ArrowLeft、Previous、Reset 和进度段，共 **28 个状态**；counter 与 `data-animation-step` 每一步都一致，目标分别为 `06→07→08→07→06→01→05`，页面错误均为 **0**。
+- 本单元只修交互接线，不重评内容或动画分。协调基线不变：Omni 13 固定 `bd4aa5d` 的既有 GO 不自行扩大；Omni 14 固定 `07cb716` 仍为 **R1–R5 80/80、机制 R6 16/16、原十二项 192/192、完整 EVAL NO-GO**，等协调核销 Omni-47，既有 ML-21／22 不在本单元改动。
+
+## 目标硬门与证据
+
+- `npm run build`：**60 页**通过；`git diff --check` 通过。Omni 13 十步与 Omni 14 八步 `readability` 均为 **0 机械问题**；`BOOK=omni node scripts/deep-check.mjs 13／14` 均通过。
+- 两章 `transcript` 均在本 lane 4497 服务重采，无 caption、文字出界、重叠或文本规则报告，生成文件相对 pinned **无 diff**。
+- 两章英文和中文全章 360／390／430 px `mobile` 均报 **no layout breaks**；两章中文 Steps 6／7 的逐步字号门也通过。`BOOK=omni ONLY=13,14 node scripts/zh-check.mjs`：**all clear**。
+- 代表截图：`.bot/out/omni47-step-controls/omni14-en-step7.png` 与 `.bot/out/omni47-step-controls/omni13-zh-step7.png`，均由直接 Step 6 后按 ArrowRight 采集。当前模型不支持图像输入，**未声称看过图片或视觉通过**；交互结论来自真实浏览器 counter、组件相位和错误监听。
+- 本地查看地址：`http://localhost:4497/learning-sglang/omni/ch/14-slow-reader-backpressure/?step=6`。查看前运行 `npx astro dev --background --host 127.0.0.1 --port 4497`。
+
+## 剩余与清理
+
+- 剩余事项是 Omni-47 的协调固定复审、图像能力复审和主人最终验收。其他开放 finding 未改；不重做 Omni 13／15，不追加 freeze／wait 报告。
+- 未跑全站回归、真实 SGLang-Omni、模型、GPU、SSE／raw-PCM 连接或 reduced-motion 动态切换。最新回归只有未列出布局步骤的 `(exit 13)`，不据此返工。
+- 本 clone 的 `node_modules` 原指向协调人 checkout；首次启动失败后，只删除本目录内符号链接并在本目录安装依赖，package 文件无 diff，未写协调人的 checkout。
+
+---
+
 # lane d 本轮报告 · direction 07:20 复核，状态无变化（最后一轮等待报告）
 
 日期：2026-11-27。类型：等待固定复审。范围只有本报告；未改教程、transcript、评分卡、`memory/`、`.bot/memory/`、其他书、其他 lane 或第 1 本受保护英文原文。
