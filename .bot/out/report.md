@@ -1,3 +1,35 @@
+# lane k2 本轮报告 · ML Systems 03 ML-45 与 04 ML-46
+
+日期：2026-11-27。类型：修旧（direction 指定优先处理的两个新 P0）。本轮开始 HEAD 与 `origin/tutorials` 均为 `649bc13`，工作树干净。范围只有 ML 03 Step 4、ML 04 Steps 6–7、对应双语 deep、MDX 出处、`src/ml-sys/numbers.ts`、生成 transcript、两章评分卡与进度记录、定向审计和本报告；未改其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。最新回归只有 `(exit 13)`，没有可分配布局步骤，未据此返工。
+
+## 提交与 finding
+
+- `c4ab9c8`：**ML-45 作者修复完成，待协调固定复审，不自行销项。** ML 03 Step 4 新增独立 M 相位，先显示 `5,514 − 4,536 = 978`，再显示 `978 + 44 = 1,022`。箭头按 P、M、E 地标分段移动，不再把 511 画到 M。首次推送成功。
+- `d9b4ede`：**ML-46 作者修复完成，待协调固定复审，不自行销项。** ML 04 Step 6 每轮列出分块、发送方、接收方、接收端算式和新持有者，并以 4×4 表展示全部当前持有者；Step 7 复用第 2 轮 `A: GPU 1→2 · 3+3=6` 的同一日程。首次推送成功。
+- 本报告是伴随上述教程 diff 的收尾记录，不是重复 freeze／wait 报告。ML 04／06 及此前队列的协调复审状态不改写，其他开放 finding 保持原状；未开新章节。
+
+## 作者评分与独立冷读边界
+
+- ML 03 Step 4：R1–R5 **10/10**、机制 R6 **2/2**、原十个非视觉项 **20/20**、新内容洞 **0**。小学生复述：「模型回到 4,536 的副本，先重走 978 个旧位置，再算 44 个新位置到 5,558。」独立 `explore` 按源码、双语 deep、transcript 和 DOM 给出 PASS。
+- ML 04 Steps 6／7：每步 R1–R5 **10/10**、机制 R6 **2/2**、原十个非视觉项 **20/20**、新内容洞 **0**。独立 `explore` 逐轮复算通过；其 RS 缩写、All-Gather 空格含义和手机时间同尺三个冷读问题已修，复审确认全部关闭，剩余内容阻塞为 0。
+- 这些是作者复评与独立源码／DOM 冷读结果，不是协调 verdict。原 #4/#5、原十二项总分、整章分数和图像验收不在本轮自行改写。
+
+## 硬门与证据
+
+- 最终 `npm run build`：**60 页**通过；ML 03 Step 4、ML 04 Steps 6／7 readability 均为 **0 机械问题**；两章 `deep-check`、`zh-check`、英中三宽度 mobile、中文目标步字号门和 `git diff --check` 全过。
+- 两章 transcript 重采与各自 pinned 逐字一致。ML 03 为 **1,342 词**，SHA-256 `3b7f8a1b0e5eaf8221199b0dfd5081df0771942a6d8a5530518f1088367f2159`；ML 04 为 **1,390 词**，SHA-256 `770ffe3df018946e9548d8b2d627b3a91f559065b67217345dd053fe63cedf4f`。
+- `.bot/out/ml45-audit.json`：英文桌面、中文桌面、中文 390 px 和中文前一步进入共 **12 个状态**，相位、counter、语言、M/E 坐标和文字断言全过，`failures=[]`。代表图：`.bot/out/ml45-audit/en-desktop-p3.png`。
+- `.bot/out/ml46-ring-audit/report.json`：同类入口共 **48 个状态、40/40 个机制转变、8 个 deep 状态**。逐相断言传送行与 4×4 持有者表；手机末相另断言时间块宽度为 `[30,75,30,30,30,30]`。最低 **10.039 CSS px**，重叠、SVG 出界和页面横溢均为 **0**。代表图：`.bot/out/ml46-ring-audit/en-1440-s6-p3.png`。
+- 当前模型不能读取 PNG，以上结论来自构建、transcript、源码、独立冷读、DOM 和几何检查，**未声称看过图片或视觉通过**。未跑全站回归、真实模型、NCCL／CUDA、GPU benchmark、故障注入或 reduced-motion 动态切换。
+
+## 剩余与清理
+
+- 剩余事项是 ML-45／46 的协调固定复审、原 #4/#5 和整章评分、具备图像能力的复审及主人最终视觉验收。ML 04 的 ML-29、ML 03 的 ML-49／59 等其他开放项未改；ML 07 的 ML-41～44／50／55、ML 10 Step 8、ML 12 和后续队列仍按 direction 处理。
+- 本 clone 的 `node_modules` 原指向协调人 checkout；已只删除本目录内符号链接并在本目录安装依赖，package 文件无 diff，未写协调人的 checkout。
+- 本地查看前运行 `npx astro dev --background --host 127.0.0.1 --port 4497`。地址：`http://localhost:4497/learning-sglang/ml-sys/ch/03-hybrid-state-cache/?step=4` 与 `http://localhost:4497/learning-sglang/ml-sys/ch/04-gpu-communication/?step=6`。本轮 4497 服务已停止且端口无监听，检查脚本启动的浏览器均已关闭；`pgrep -P 1` 未发现孤儿 headless Chrome，其他 lane 的活跃进程未动。
+
+---
+
 # lane d 本轮报告 · direction 07:20 复核，状态无变化（最后一轮等待报告）
 
 日期：2026-11-27。类型：等待固定复审。范围只有本报告；未改教程、transcript、评分卡、`memory/`、`.bot/memory/`、其他书、其他 lane 或第 1 本受保护英文原文。
