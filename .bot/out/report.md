@@ -44,6 +44,48 @@
 
 ---
 
+# lane k2 本轮报告 · ML Systems 05 Steps 5–7 与 04→05 接缝
+
+日期：2026-11-27。类型：修旧（同章两个 finding，加上一章的接缝 finding）。范围只有 ML Systems 04／05 的指定步骤、双语 deep、ML 05 MDX、`docs/plan-ml-sys.md` 的对应行、生成 transcript、定向审计和本报告；未改其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。ML 10 继续冻结，ML 12 继续延期，第 14 章未开启。
+
+## 提交与 review 修复
+
+- 本轮开始 HEAD 为 `ef9b2bf`。教程提交为 `436a93d`（ML-26／27）、`e4a3c8e`（ML-32）和 `19bbd05`（ML 05 中文 leader 称谓收尾）。三次首次推送均被拒，均执行 `git pull --rebase origin tutorials` 后推成功，未 force-push。
+- **ML-26 作者修复完成，待协调核销。** ML 05 Step 6 不再把 TP GROUP 画成黑盒。六相依次展示 HTTP 分词、本地 ZMQ、rank 0 leader scheduler、跨 rank 交接、两节点 r0–r7 和输出返回。图上明确 leader 是 rank 0 的 scheduler 角色，不是第 9 个 worker；第 4 章的张量交换与本次请求交接分开标注。双语 deep、MDX 和固定 Dynamo `worker.rs`／`lib.rs`／`http.rs` 出处一致。
+- **ML-27 作者修复完成，待协调核销。** Steps 5–7 现在使用同一个构造的 `stream:true` 请求。Step 5 的请求、curl、`choices[0].delta.content` 和 `[DONE]` 都是流式；Step 6 沿固定内部 `stream=true` 和新增 token 输出路径返回 SSE delta；Step 7 测量同一条流的内容 delta。图上和 deep 都注明：本例每个 delta 携带一个 token，真实 SSE 事件边界可以不同。
+- **ML-32 作者修复完成，待协调核销。** ML 04 Step 7 不再问“请求怎样到达 Ring 的 GPU”，改为问服务 worker 怎样启动。ML 05 Step 1 直接以 SGLang readiness 和 HTTP 启动回答；双语 deep 的 Next 与规划表同步，避免暗示 Dynamo 必然使用教学的 Ring。
+
+## 作者冷读与评分边界
+
+主线程按当前 transcript、双语 deep 和逐相 DOM 冷读。只重评本轮改动的四步，其余步骤不改既有协调基线。原十个非视觉项不含需要实图的 #4／#5。
+
+| 章／步 | R1–R5 | 机制 R6 | 原十个非视觉项 | R1 小学生复述 | 新内容洞 |
+|---|---:|---:|---:|---|---:|
+| 04／7 | 10/10 | 2/2 | 20/20 | 一段传输多等 d，后面的相关轮次也多等 d；下一章先启动 worker，再让 GPU 组成服务。 | 0 |
+| 05／5 | 10/10 | 2/2 | 20/20 | `stream:true` 让回答片段逐个到达，`[DONE]` 表示这条流结束。 | 0 |
+| 05／6 | 10/10 | 2/2 | 20/20 | rank 0 的 scheduler 经本地 ZMQ 收到 token，再把工作交给两节点的 8 个 worker；回答按 SSE delta 返回。 | 0 |
+| 05／7 | 10/10 | 2/2 | 20/20 | 首个 delta 等 250 ms，后三段共 75 ms，所以同一条流共 325 ms。 | 0 |
+
+四步作者参考值合计为 R1–R5 **40/40**、机制 R6 **8/8**、原十个非视觉项 **80/80**、新内容洞 **0**。Step 5 只新增流式返回这一件事；Step 6 的 ZMQ 已在第 1 本 Ch. 9 讲过，leader 就地解释为 rank 0 scheduler；Step 7 沿用第 1 章的计时词和算式。当前模型读取 PNG 返回“不能读取图片”，因此原 #4／#5、原十二项总分和整章协调 verdict 不自行给分，既有协调分数不因本报告改变。
+
+## 硬门与机制证据
+
+- 最终教程代码的 `npm run build`：**60 页**通过；`git diff --check` 通过。ML 04 Step 7 与 ML 05 Steps 5–7 的 `readability` 均为 **0 机械问题**；两章 `deep-check` 各识别七步，`zh-check` 均为 **all clear**。浏览器检查显式使用本 clone 的 4494 服务。
+- ML 04 transcript 稳定为 **1,207 词**，SHA-256 `5dcdfc7f85ba3e254b043ca78fa6fbb2f9c2b4696765e13db57473442259005a`。ML 05 transcript 连续两次逐字一致，**1,535 词**，SHA-256 `5f4e18e3e842dfb3988d6412e8e85712389ff07002fbe564ce7387784a92ea8b`。
+- 两章英中全章 `mobile` 均在 360／390／430 px 报 **no layout breaks**；中文 ML 04 Step 7 和 ML 05 Steps 5／6／7 的逐步字号门也通过。
+- `.bot/out/ml05-review-audit.mjs` 与 `report.json`：**50 个普通状态**（32 桌面＋18 手机）、**26/26 个机制转变、3/3 个改动机制步、6 个 deep 状态、50 个不同 PNG 哈希**。最低可见字号 **10.76 CSS px**，文字重叠与 SVG 出界均为 **0**；deep 展开、counter、KaTeX、raw math 和横溢断言全部通过。目录另存 **6 张 deep PNG**，代表图为 `.bot/out/ml05-review-audit/en-1440-s6-p5.png`。
+- `.bot/out/ml04-next-audit.mjs` 与 `report.json`：英中各保存 Step 7 的 phase 0／3 和 deep，共 **4 个普通状态＋2 个 deep 状态**。最低 **12.593 CSS px**，重叠与出界均为 **0**；两条语言接缝都核到 ML 05 Step 1 的 readiness／HTTP 回答。代表图为 `.bot/out/ml04-next-audit/zh-s7-deep.png`。
+- 上述 PNG 是本机证据，当前模型未读取图片，结论来自构建、transcript、DOM、几何和哈希，**未声称看过图片或视觉通过**。独立 `pstack-explorer` 因配置模型不存在而未启动，未计为证据。
+
+## 剩余与清理
+
+- 剩余事项是 ML-26／27／32 的协调固定复审、原 #4／#5 与原十二项评分，以及主人最终视觉验收。此前 ML-16／23／35／25 的作者修复也继续等协调核销；ML-21／22 等其他开放项未改。
+- 未跑全站回归、真实 Dynamo／SGLang、GPU benchmark、故障注入或 reduced-motion 动态切换。最新回归仍只有不可分配布局步骤的 `(exit 13)`，不据此返工。
+- 本 clone 的 `node_modules` 原指向协调人 checkout；已只删除本目录内符号链接并在本目录安装依赖，package 文件无 diff，未写协调人的 checkout。
+- 本地查看前运行 `npx astro dev --background --host 127.0.0.1 --port 4494`。地址：`http://localhost:4494/learning-sglang/ml-sys/ch/05-distributed-serving/?step=6`。本轮 4494 dev server 已关闭，本轮启动的浏览器已关闭；其他 lane 的活跃进程未动。
+
+---
+
 # lane k1 本轮报告 · Omni 11／14 继续冻结等待固定复审
 
 日期：2026-11-27。类型：等待固定复审。范围只有本报告；未改教程、transcript、评分卡、`.bot/memory/`、其他书、其他 lane 或第 1 本受保护英文原文。
