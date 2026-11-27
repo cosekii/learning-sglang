@@ -180,7 +180,7 @@
 
 <figure class="viz" data-animation-step={step} data-animation-phase={phase} data-animation-final-phase={Math.max(0, PHASE_COUNTS[step] - 1)}>
   <div class="canvas">
-    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={$lang === 'zh' ? cur.captionZh : cur.caption}>
+    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={$lang === 'zh' ? cur.captionZh : cur.caption} style:--fish-small={H >= 700 ? '15px' : '13px'} style:--fish-footnote={H >= 700 ? '15px' : H >= 650 ? '13px' : H >= 630 ? '12.5px' : H >= 600 ? '12px' : '10.5px'}>
       <defs>
         <marker id="fish-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
           <path d="M0,0 L8,4 L0,8 z" fill="var(--accent)" />
@@ -804,6 +804,10 @@
   .strong { font-weight: 650; }
   .motion-focus { pointer-events: none; transition: x 240ms, y 240ms, width 240ms, height 240ms; }
   .motion-tail { transition: x 240ms, y 240ms; }
+  @media (min-width: 901px) {
+    .label, .small, .code { font-size: var(--fish-small); }
+    .canvas :global(.footnote), .canvas :global(.tag) { font-size: var(--fish-footnote); }
+  }
   @media (max-width: 900px) {
     .title { font-size: 16px; }
     .label, .small { font-size: 12px; }
