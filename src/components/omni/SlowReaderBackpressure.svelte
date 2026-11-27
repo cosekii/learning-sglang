@@ -108,9 +108,9 @@
   });
 </script>
 
-<figure class="viz">
+<figure class="viz" data-animation-step={step} data-animation-phase={phase} data-animation-final-phase={PHASE_COUNTS[step] - 1}>
   <div class="canvas">
-    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={$lang === 'zh' ? cur.captionZh : cur.caption}>
+    <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={$lang === 'zh' ? cur.captionZh : cur.caption} style:--reader-tag={step === 1 ? '14px' : '10px'} style:--reader-rowlabel={step === 1 ? '14px' : '11px'} style:--reader-footnote={step === 1 ? '14px' : '10.5px'}>
       {#if step === 0}
         <text x={phone ? 15 : 20} y="26" class="rowlabel">{t('GENERATION FINISHED. DELIVERY DID NOT.', '生成结束了，交付还没结束。')}</text>
         <text x={phone ? 15 : 20} y="52" class="tag">{t('delivery backlog = audio made, but not taken by the reader', '交付积压 = 已生成、读者还没取走的声音')}</text>
@@ -412,3 +412,11 @@
   </div>
   <StepControls bind:step total={steps.length} caption={cur.caption} captionZh={cur.captionZh} {prev} {next} deep={deep?.en[step]} deepZh={deep?.zh[step]} />
 </figure>
+
+<style>
+  @media (min-width: 901px) {
+    .canvas :global(.tag), .canvas :global(.mono) { font-size: var(--reader-tag); }
+    .canvas :global(.rowlabel) { font-size: var(--reader-rowlabel); }
+    .canvas :global(.footnote) { font-size: var(--reader-footnote); }
+  }
+</style>
