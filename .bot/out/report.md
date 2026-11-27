@@ -1768,3 +1768,40 @@ npx astro dev stop
 - Voxt 10 Steps 2–11 仍无相位动画（`4526f171` 草稿的其余机制未移植），等协调排期。
 - Voxt 11 Step 5 `99ed414`／`26941bb` 继续冻结待固定复审；review.md 的三条 reviewer 线索（p3→p0 回绕、评分卡第 32 行、Step 5 审计证据）未动。
 - 本轮开的 dev server（端口 4323）与无头 Chrome 已在收尾关闭。
+
+---
+
+# lane d 本轮报告 · Voxt 10 Step 1 reviewer／报告收尾（06:42 自动重试）
+
+日期：2026-11-27。类型：direction.md lane d 指定的 06:42 自动重试——只完成 `bd884d2` 的 reviewer／报告收尾。不重写 Step 1、不重复提交教程、不另起并发、不开新单元；Voxt 10 displayed Step 2 等协调固定复审后再做。本轮开始 HEAD 与 `origin/tutorials` 均为 `bd884d2`，工作树干净；结束时教程树无 diff，只追加本节。
+
+## 环境与边界
+
+- 本目录 `node_modules` 又是指向协调 checkout 的符号链接，已删除符号链接并 `npm ci` 本地实装；未向 `~/code/learning-sglang` 写入任何缓存或文件，未进入该目录。
+- 未改组件、MDX、deep、transcript、评分卡或 `.bot/memory/`；第 1 本受保护英文原文无 diff。dev server 用端口 4324（4321 属既有进程，未动）。
+
+## 硬门复核（本 checkout、HEAD `bd884d2`，全过）
+
+- `npm run build`：60 页通过。
+- `BOOK=voxt ONLY=10 node scripts/transcript.mjs`：11 步，无 caption／出界／重叠／文本规则报告，再生成相对 pinned **零 diff**。
+- `BOOK=voxt ONLY=10 node scripts/mobile.mjs`：360/390/430 px **no layout breaks**；`ONLY=10 STEP=1 LANG=zh` 中文字号门通过。
+- `BOOK=voxt ONLY=10 STEP=1 node scripts/readability.mjs`：0 机械问题。`zh-check`（11 步 all clear）、`deep-check 10`（11 节 ok）均通过。
+
+## 机制与几何复核（新采集，与作者报告逐项一致）
+
+- 探针 `/tmp/lsd2-probe.mjs`（未提交，`scripts/lib/browser.mjs` 可重跑）：英中桌面相位 0/1/2 可见 `<text>` 数 **12/16/24**；`Voxt transcribe` 框相位 ≥1 出现，`meeting.srt / talk.txt` 输出框与三条要点相位 2 出现；`data-animation-step=0`、`final-phase=2`、counter `1 / 11`、`loops／循环` 标签在场。
+- 文字重叠 **0**、SVG 出界 **0**；最低可见字号桌面 **11.50 CSS px**、390 px 手机 **11.76 CSS px**。8 张新截图在 `/tmp/lsd2-shots/`。
+- 本模型**无图像输入**（本轮再次实测确认，读 PNG 返回不支持），不声称视觉通过；图像 verdict 仍需协调侧有图像输入的评审者实看。
+
+## 独立 reviewer 冷读（替代 06:02 失败的 reviewer；同一无图像输入模型，只看源码／transcript／deep）
+
+- **事实核对全过**（pinned `sglang-omni@3a31bd72`，且相关四文件与当前 `origin/main@0f70d9c7` 逐字节相同，无 current-source 漂移）：文件路线与 SRT／TXT `transcribe_cli.go:29-33`、`docs/transcribe.md:3`；复用 Transcribe 模型、不开 session `transcribe_socket.go:58-88`；不写历史、不留录音 `transcribe_socket.go:90-98`；16 kHz `internal/asr/asr.go:32`，3,600 × 16,000 × 2 = 115.2 MB 算式成立。
+- **EVAL §6 动画门全过**：三个机制相位、reduced-motion 落末相且因果对象全在、手机分支同序同机制（只裁复述文字）、身份属性齐全；动画演示的对象与数字和 deep 一致；衔接成立（Ch. 09 末步点名文件→SRT/TXT，本步把 decoded 交给 Step 2）。
+- **但不通过作者侧「完成」**：易读 **10/12**（R2=1：`Voxt transcribe`、SRT、TXT、M4A 四个新名同入；R5=1：115.2 MB 无可感比较，约 29 张照片在 Step 2）；原 12 项 **21/24**（最弱 #3 数字有来源、#1 动机在先）；冷读洞 **2**，同源于「3,600 s；decoded, 115.2 MB」一条（115.2 MB 无算式无指向、decoded 未解释）；deep `On the stage` 两处不符（引的舞台串 `compressed M4A` 与实际 `compressed sound (M4A)` 不一致；2 B/sample 未放进 behind-the-stage 段）。
+- **reviewer verdict：NO-GO（本步作为完成）。** 与作者自评 12/12 冲突，按规矩不采信任一侧改分，两条都留待协调固定复审裁定。
+
+## 收尾状态
+
+- 必修项（115.2 MB 子弹的算式／decoded 大白话、deep 两处 `On the stage`）**本轮不修**：Step 1 教程内容按 direction 冻结，待协调复审 `bd884d2` 后由指定单元处理。
+- 评分卡、`memory/scores/inside-voxt/file-transcription.md` 未动；不改 Voxt 10／11 任何既有分数与 verdict。Voxt 11 Step 5 `99ed414`／`26941bb` 继续冻结；三条 reviewer 线索未动。
+- 本轮开的 4324 dev server 与无头 Chrome 已在收尾关闭。
