@@ -1,3 +1,32 @@
+# lane d 本轮报告 · Voxt 11 Step 4 逐相机制
+
+日期：2026-11-27。类型：修旧。范围只含 Inside Voxt 第 11 章第 4 步（`ModelStorageUpdates.svelte` 的 step index 3）、本章评分卡、`memory/progress.md`、验证脚本与结果和本报告；未改 Step 1／2／3／5／6、Voxt 08／10、其他书、第 1 本受保护英文原文或 `.bot/memory/`。
+
+## 单元与修复
+
+- direction 的 lane d 单元：**只做 Voxt 11 Step 4 的逐相机制**。本轮开始时工作树留有上一轮未提交的 Step 4 半成品（组件与 transcript 修改、审计脚本和一份报告），按 SOUL 接着做完。教程提交 `60282d3 [d] Split Voxt 11 step 4 into four per-phase states` 先在本机落地，`git pull --rebase origin tutorials` 后为 `2d1e868`，已推 `origin/tutorials`，未 force-push。
+- 处理的 open review 项：`c3a7773` 复审的第 4 步机制 1/2（「首相红框在磁盘而服务器状态已变，末相把 `stop request sent` 与 `process exits → memory freed` 合在同一相」），固定 `fa8d912` 维持为逐步 **2、2、1、1、1、2** 中的第 4 步 1/2。
+- 修复：`PHASE_COUNTS[3]` 3→4，四相各形成一个可辨认状态：服务器卡出现 `starting… → ready`（配 `files stay on disk`）→ `ready · idle 10/10 min`（配 `next use → restart`）→ `stop request sent`（配 `the process still runs`）→ `process exits → memory freed`（配 `files stay on disk`）。请求发出和进程退出拆成两相：请求时进程还在，退出才释放内存。首相红框随变化对象从磁盘卡移到服务器卡，后三相都包住两行状态文字（桌面框 y 184–234、手机框 y 382–432）。手机本步 LoopProgress 由 `H−44` 上移到 `H−60`，避开 H−28 脚注。
+- 保留既有 2 GB 空位语义、空闲 10 分钟、设置的 5/15/30/60 分钟边界、磁盘字节（2.47 GB、快照文件夹留着）、双语 ARIA 和 caption，不扩新内容；transcript 重生成只差 `files stay on disk` 一行。Step 5 留给后续轮。
+- **本轮没有自行关闭协调 finding，机制分不自行提。** 评分卡保持协调固定 `fa8d912` 基线：R1–R5 **54/60**、原十个非视觉项 **119/120**、静态 R6 **12/12**、原 #4/#5 **24/24**、原十二项 **143/144**、机制 R6 **9/12**（逐步 2、2、1、1、1、2）；Step 3／4 均保持待审，整章 **NO-GO / coordinator-rereview-pending**。
+
+## 验证
+
+- `npm run build`：**60 页**通过。`BOOK=voxt ONLY=11` transcript（6 步无告警，连续两次生成逐字一致，**1502 词**，SHA-256 `b8e0a68bf731d07bdb93bf73545ea6cf24fe72b283d94feca7046d6338463444`）、`STEP=4` readability（0 机械问题）、`deep-check 11`、`zh-check`（all clear）均通过。
+- 英中全章与中文 Step 4 的 360／390／430 px `mobile` 均 no layout breaks（脚本只认位置参数，全部指向本 clone 的 4473 服务），中文 Step 4 字号门通过。
+- 逐相审计 `.bot/out/voxt11-step4-audit.mjs`（可重跑）：英中桌面 1440×900 ＋ 英中 360／390／430 px 共 **8 组 × 4 相 = 32 个视图**，采集前核对 hydration（相位实际循环）、counter `04 / 06`、`data-animation-step/phase`、响应式 viewBoxWidth（桌面 720／手机 300）和 600 ms settling，按组件 bbox 完整截取。断言：四相状态行互不相同；相位 2 只含停止请求、不含进程退出；相位 3 只含进程退出、不含请求行；每相保留「服务器退出后还留着」与 `2.47 GB`；相邻相位（含 3→0 回绕）变化的文字必须完整落在当相红框内。结果 `.bot/out/voxt11-step4-audit/report.json`：文字重叠、SVG 出界、红框描边压字均为 **0**，最低可见字体 **10.76 CSS px**（zh-360 的「循环」），failures 为空。32 张 PNG 在同目录（PNG 被 gitignore，不提交）。
+- **冻结帧修复。** 首轮采集发现 6 组视图各有 2 张相邻相位 PNG 逐字节相同（同期 DOM 状态互异，为后台 compositor 冻结，同 k2 在 ML 08 遇到的问题）。已按同一修法每组视图改用独立浏览器，并在写入前断言 PNG 不得与早先相位重复；重跑后 **32/32 张 PNG 全部不同**。旧报告作废，现报告为重跑结果。
+- 当前模型不能读取 PNG（工具明确返回 Cannot read image），未声称已看图或视觉通过；以上为 DOM 与几何证据，协调实图复审与主人最终视觉验收仍待。
+
+## 剩余与本地查看
+
+- 剩余：Step 3／4 等协调固定复审重评机制分；之后按 direction 顺序做 Step 5（1/2 的同类返工），再 Voxt 10、12。Voxt 08 `bb70918` 的 GO 不回退，不碰 Omni 或 ML Systems。
+- 未跑全站回归、真实 Voxt、模型下载、模型进程、应用更新、reduced-motion 动态切换或主人最终产品验收；事实按 pinned `sglang-omni origin/main@c2fc0f1` 核对。
+- 本地章节地址：`http://localhost:4473/learning-sglang/voxt/ch/models-and-app-updates/?step=4`（查看前在本目录运行 `npx astro dev --background --port 4473`）。代表截图绝对路径：`/Users/shuohuang/code/hmz-work/ls-d-1127-012256/.bot/out/voxt11-step4-audit/en-desktop/p2.png`。
+- 本轮 4473 dev server（沿用上一轮在本 clone 启动的进程）和脚本启动的浏览器均在收尾关闭。
+
+---
+
 # lane k1 本轮报告 · Omni 11／14 固定复审材料二次核对
 
 日期：2026-11-27。类型：修旧证据整理。范围只有两份追加的逐相报告和本报告；未改教程、transcript、评分卡、`.bot/memory/`、其他书或其他 lane 的文件。本轮开始及采集时的 HEAD 与 `origin/tutorials` 均为 `8eea186`。
