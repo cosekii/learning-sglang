@@ -1,23 +1,13 @@
 {
-  "failures": [],
+  "failures": [
+    "en-360-s3: drawer overflow client=359 scroll=360 widest=[{\"tag\":\"CODE\",\"cls\":\"\",\"text\":\"Voxt/internal/historyapi/server.go:101-114\",\"right\":337.39,\"w\":312.39},{\"tag\":\"TABLE\",\"cls\":\"\",\"text\":\"SymbolWhat it isWhere it comes fromreplyi\\\\text{rep\",\"right\":336.73,\"w\":311.73},{\"tag\":\"THEAD\",\"cls\":\"\",\"text\":\"SymbolWhat it isWhere it comes from\",\"right\":336.73,\"w\":311.73},{\"tag\":\"TR\",\"cls\":\"\",\"text\":\"SymbolWhat it isWhere it comes from\",\"right\":336.73,\"w\":311.73}]"
+  ],
   "results": [
     {
       "view": "desktop",
       "lang": "en",
-      "step": 9,
-      "counter": "09 / 11",
-      "expanded": "true",
-      "client": 489,
-      "scroll": 489,
-      "rawMath": false,
-      "katexError": false,
-      "wide": []
-    },
-    {
-      "view": "desktop",
-      "lang": "en",
-      "step": 11,
-      "counter": "11 / 11",
+      "step": 3,
+      "counter": "03 / 11",
       "expanded": "true",
       "client": 489,
       "scroll": 489,
@@ -28,20 +18,8 @@
     {
       "view": "desktop",
       "lang": "zh",
-      "step": 9,
-      "counter": "09 / 11",
-      "expanded": "true",
-      "client": 489,
-      "scroll": 489,
-      "rawMath": false,
-      "katexError": false,
-      "wide": []
-    },
-    {
-      "view": "desktop",
-      "lang": "zh",
-      "step": 11,
-      "counter": "11 / 11",
+      "step": 3,
+      "counter": "03 / 11",
       "expanded": "true",
       "client": 489,
       "scroll": 489,
@@ -52,80 +30,69 @@
     {
       "view": "360",
       "lang": "en",
-      "step": 9,
-      "counter": "09 / 11",
+      "step": 3,
+      "counter": "03 / 11",
       "expanded": "true",
       "client": 359,
-      "scroll": 359,
+      "scroll": 360,
       "rawMath": false,
       "katexError": false,
-      "wide": []
-    },
-    {
-      "view": "360",
-      "lang": "en",
-      "step": 11,
-      "counter": "11 / 11",
-      "expanded": "true",
-      "client": 359,
-      "scroll": 359,
-      "rawMath": false,
-      "katexError": false,
-      "wide": []
+      "wide": [
+        {
+          "tag": "CODE",
+          "cls": "",
+          "text": "Voxt/internal/historyapi/server.go:101-114",
+          "right": 337.39,
+          "w": 312.39
+        },
+        {
+          "tag": "TABLE",
+          "cls": "",
+          "text": "SymbolWhat it isWhere it comes fromreplyi\\text{rep",
+          "right": 336.73,
+          "w": 311.73
+        },
+        {
+          "tag": "THEAD",
+          "cls": "",
+          "text": "SymbolWhat it isWhere it comes from",
+          "right": 336.73,
+          "w": 311.73
+        },
+        {
+          "tag": "TR",
+          "cls": "",
+          "text": "SymbolWhat it isWhere it comes from",
+          "right": 336.73,
+          "w": 311.73
+        }
+      ]
     },
     {
       "view": "360",
       "lang": "zh",
-      "step": 9,
-      "counter": "09 / 11",
+      "step": 3,
+      "counter": "03 / 11",
       "expanded": "true",
       "client": 359,
       "scroll": 359,
       "rawMath": false,
       "katexError": false,
-      "wide": []
-    },
-    {
-      "view": "360",
-      "lang": "zh",
-      "step": 11,
-      "counter": "11 / 11",
-      "expanded": "true",
-      "client": 359,
-      "scroll": 359,
-      "rawMath": false,
-      "katexError": false,
-      "wide": []
+      "wide": [
+        {
+          "tag": "CODE",
+          "cls": "",
+          "text": "Voxt/internal/historyapi/server.go:101-114",
+          "right": 347.05,
+          "w": 322.05
+        }
+      ]
     },
     {
       "view": "390",
       "lang": "en",
-      "step": 9,
-      "counter": "09 / 11",
-      "expanded": "true",
-      "client": 389,
-      "scroll": 389,
-      "rawMath": false,
-      "katexError": false,
-      "wide": []
-    },
-    {
-      "view": "390",
-      "lang": "en",
-      "step": 11,
-      "counter": "11 / 11",
-      "expanded": "true",
-      "client": 389,
-      "scroll": 389,
-      "rawMath": false,
-      "katexError": false,
-      "wide": []
-    },
-    {
-      "view": "390",
-      "lang": "zh",
-      "step": 9,
-      "counter": "09 / 11",
+      "step": 3,
+      "counter": "03 / 11",
       "expanded": "true",
       "client": 389,
       "scroll": 389,
@@ -136,8 +103,8 @@
     {
       "view": "390",
       "lang": "zh",
-      "step": 11,
-      "counter": "11 / 11",
+      "step": 3,
+      "counter": "03 / 11",
       "expanded": "true",
       "client": 389,
       "scroll": 389,
@@ -148,20 +115,8 @@
     {
       "view": "430",
       "lang": "en",
-      "step": 9,
-      "counter": "09 / 11",
-      "expanded": "true",
-      "client": 429,
-      "scroll": 429,
-      "rawMath": false,
-      "katexError": false,
-      "wide": []
-    },
-    {
-      "view": "430",
-      "lang": "en",
-      "step": 11,
-      "counter": "11 / 11",
+      "step": 3,
+      "counter": "03 / 11",
       "expanded": "true",
       "client": 429,
       "scroll": 429,
@@ -172,20 +127,8 @@
     {
       "view": "430",
       "lang": "zh",
-      "step": 9,
-      "counter": "09 / 11",
-      "expanded": "true",
-      "client": 429,
-      "scroll": 429,
-      "rawMath": false,
-      "katexError": false,
-      "wide": []
-    },
-    {
-      "view": "430",
-      "lang": "zh",
-      "step": 11,
-      "counter": "11 / 11",
+      "step": 3,
+      "counter": "03 / 11",
       "expanded": "true",
       "client": 429,
       "scroll": 429,
