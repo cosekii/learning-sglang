@@ -59,7 +59,8 @@ The file first has to become sound the speech model can read. Step 2 covers deco
 `decodeAudio` checks the file, makes a temporary folder, and runs:
 
 ```sh
-/usr/bin/afconvert -f WAVE -d LEI16@16000 -c 1 talk.m4a audio.wav
+/usr/bin/afconvert -f WAVE -d LEI16@16000 \
+  -c 1 talk.m4a audio.wav
 ```
 
 Then it reads the WAV back and takes the PCM with `asr.ReadWAV` (`Voxt/transcribe_cli.go:111-139`). `LEI16` is little-endian 16-bit integers, `@16000` is 16 kHz, and `-c 1` is mono. `asr.SampleRate` is 16000 (`Voxt/internal/asr/asr.go:32`).
@@ -69,11 +70,9 @@ $$ \text{PCM bytes} = T \times f_s \times b,\qquad \text{WAV bytes} = \text{PCM 
 | Symbol | What it is | Size | Where it comes from |
 |---|---|---|---|
 | $T$ | audio length | 8 s | constructed example |
-| $f_s$ | sample rate | 16,000 per second | `asr.SampleRate`, `asr/asr.go:32` |
+| $f_s$ | sample rate | 16,000 per second | `asr.go:32` |
 | $b$ | bytes per sample | 2 B | 16-bit PCM |
 | 44 | WAV header | 44 B | WAV format |
-| PCM bytes | decoded sound | 256,000 B | this step's arithmetic |
-| WAV bytes | size of the temporary WAV | 256,044 B | this step's arithmetic |
 
 ### Plugging in the stage's numbers
 
@@ -126,13 +125,13 @@ The request is **one JSON line**, followed directly by the PCM:
 
 `Transcribe` uses a goroutine to write the request line and the whole PCM, while the main goroutine reads replies (`socket.go:168-176`). On the server side, after reading the request line (`socket.go:131-146`), `transcribe` hands the PCM to `fileasr.Run` through an `io.LimitReader`; `Run` reads 64,000 bytes at a time (2 seconds, `fileasr.go:36-37`) and cuts and recognizes as it goes. A cue's reply can therefore come back while later PCM is still uploading. The two arrows on the stage point in opposite directions for that reason.
 
-$$ \text{reply}_i \text{ can arrive while } \text{uploaded bytes} < \text{Request.Bytes} $$
+$$ \text{reply}_i \text{ can arrive while } \text{uploaded} < \text{Request.Bytes} $$
 
 | Symbol | What it is | Where it comes from |
 |---|---|---|
 | $\text{reply}_i$ | the reply for cue $i$ | `socket.go:41-46` |
-| $\text{uploaded bytes}$ | PCM bytes the app has received when $\text{reply}_i$ arrives | `socket.go:168-176`; from 0 up to `Request.Bytes` |
-| `Request.Bytes` | the PCM's total byte count | `socket.go:35-39`, 256,000 here |
+| $\text{uploaded}$ | PCM bytes the app has received when $\text{reply}_i$ arrives | `socket.go:168-176`; from 0 up to `Request.Bytes` |
+| Request.Bytes | the PCM's total byte count | `socket.go:35-39`, 256,000 here |
 | 64,000 | bytes read at a time | `fileasr.go:36-37` |
 
 ### Plugging in the stage's numbers
@@ -146,7 +145,7 @@ $$ \text{reply}_i \text{ can arrive while } \text{uploaded bytes} < \text{Reques
 
 ### Where the socket lives, and who can open it
 
-The socket is named `transcribe.sock` and sits in the app's data folder (`socket.go:16-17`). `historyapi.Listen` binds it and chmods it to `0600` (`Voxt/internal/historyapi/server.go:101-114`). It has no network port, and only your account can open it. The command reads none of your folders; it reads only the file you name.
+The socket is named `transcribe.sock` and sits in the app's data folder (`socket.go:16-17`). `historyapi.Listen` binds it and chmods it to `0600` (`historyapi/server.go:101-114`). It has no network port, and only your account can open it. The command reads none of your folders; it reads only the file you name.
 
 ### Next
 
@@ -304,7 +303,9 @@ if languageTag == "" {
 
 `p.lang` comes from `session.SpeechLang(a.prefs, i18n.Locale())` (`transcribe_socket.go:77-79`). The language hint tells the model which language to expect; it is not the text to transcribe. Recognition itself is `asr.Recognize(ctx, prov, pcm, languageTag, nil, "", asr.Feed{})` (`transcribe_socket.go:84-87`).
 
-$$ \text{segments} \le \text{cues},\qquad \text{segment} \text{ is emitted only if } \mathrm{trim}(\text{text}) \ne "" $$
+$$ \text{segments} \le \text{cues} $$
+
+$$ \text{segment only when } \mathrm{trim}(\text{text}) \ne "" $$
 
 | Symbol | What it is | Where it comes from |
 |---|---|---|
@@ -358,10 +359,10 @@ $$ \text{srtTime}(d) = \text{HH}:\text{MM}:\text{SS},\text{mmm} $$
 
 ### Plugging in the stage's numbers
 
-| Cue | Start | End | Text |
-|---|---|---|---|
-| 1 | `00:00:00,000` | `00:00:03,350` | `Good morning.` |
-| 2 | `00:00:03,400` | `00:00:07,850` | `See you at noon.` |
+| Cue | Times | Text |
+|---|---|---|
+| 1 | `00:00:00,000 --> 00:00:03,350` | `Good morning.` |
+| 2 | `00:00:03,400 --> 00:00:07,850` | `See you at noon.` |
 
 TXT has two lines: `Good morning.` and `See you at noon.`.
 
@@ -418,22 +419,18 @@ The output is done. Step 10 looks at what this route leaves on the Mac.
 
 ### How the code keeps it clean
 
-Dictation writes history only when `Privacy.KeepHistory` is enabled, which is the default; it writes none when the setting is off (`Voxt/internal/session/run.go:572-576`, `Voxt/internal/settings/settings.go:373-380`). The file route's `fileRecognizer` calls `asr.Recognize` directly (`transcribe_socket.go:84-87`); it never calls the session's `keep()`, so it writes no history record and keeps no history WAV. The command does write a temporary `audio.wav` while decoding, and removes the temporary folder when it returns (`transcribe_cli.go:111-139`). The completion hook builds one `core.LogEntry`:
-
-```go
-Message: fmt.Sprintf("transcribed a file for the command line: %s of audio, %d segments", ...)
-```
-
-(`transcribe_socket.go:90-98`). That message contains no recognized text. This is the app's own diagnostic log, not chapter 9's access log; each segment is one cue.
+Dictation writes history only when `Privacy.KeepHistory` is enabled, which is the default; it writes none when the setting is off (`Voxt/internal/session/run.go:572-576`, `Voxt/internal/settings/settings.go:373-380`). The file route's `fileRecognizer` calls `asr.Recognize` directly (`transcribe_socket.go:84-87`); it never calls the session's `keep()`, so it writes no history record and keeps no history WAV. The command does write a temporary `audio.wav` while decoding, and removes the temporary folder when it returns (`transcribe_cli.go:111-139`). The completion hook builds one `core.LogEntry` whose message is `fmt.Sprintf("transcribed a file for the command line: %s of audio, %d segments", ...)` (`transcribe_socket.go:90-98`). That message contains no recognized text. This is the app's own diagnostic log, not chapter 9's access log; each segment is one cue.
 
 $$ \text{log} = \{\text{audio length},\ \text{segment count},\ \text{error?}\} $$
 
+In this step's tables, `socket.go` is `Voxt/transcribe_socket.go`.
+
 | Symbol | What it is | Where it comes from |
 |---|---|---|
-| $\text{log}$ | the one entry written to the app's log | `core.LogEntry`, `transcribe_socket.go:90-98` |
+| $\text{log}$ | the one entry written to the app's log | `core.LogEntry`, `socket.go:90-98` |
 | audio length | the duration computed from the PCM bytes | `req.Bytes/2/16000`, `socket.go:53-55` |
 | segment count | the cues sent back to the command | `fileasr.go:53-55` |
-| error | the failure text when there is one | `transcribe_socket.go:95-97` |
+| error | the failure text when there is one | `socket.go:95-97` |
 
 ### Plugging in the stage's numbers
 

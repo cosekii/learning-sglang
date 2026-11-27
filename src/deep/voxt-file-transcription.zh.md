@@ -126,12 +126,12 @@ PCM 已经能送进模型了，但模型在运行中的 Voxt 里。第 3 步讲�
 
 `Transcribe` 在 `socket.go:168-176` 里用一个 goroutine 先写请求行和整段 PCM，主 goroutine 同时读回复。服务端在 `socket.go:131-146` 读到请求行后，`transcribe` 用 `io.LimitReader` 把 PCM 交给 `fileasr.Run`；`Run` 每次读 64,000 字节（2 秒，`fileasr.go:36-37`），边切句边识别。因此一句的回复可以在后面的 PCM 还在上传时回来。图上的两条方向不同的箭头表示的就是这个并行。
 
-$$ \text{reply}_i \text{ can arrive while } \text{uploaded bytes} < \text{Request.Bytes} $$
+$$ \text{reply}_i \text{ can arrive while } \text{uploaded} < \text{Request.Bytes} $$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
 | $\text{reply}_i$ | 第 $i$ 句的回复 | `socket.go:41-46` |
-| $\text{uploaded bytes}$ | $\text{reply}_i$ 到达时应用已经收到的 PCM 字节 | `socket.go:168-176`；从 0 到 `Request.Bytes` |
+| $\text{uploaded}$ | $\text{reply}_i$ 到达时应用已经收到的 PCM 字节 | `socket.go:168-176`；从 0 到 `Request.Bytes` |
 | `Request.Bytes` | 整段 PCM 的字节数 | `socket.go:35-39`，本步 256,000 |
 | 64,000 | 每次读的字节数 | `fileasr.go:36-37` |
 
@@ -304,7 +304,9 @@ if languageTag == "" {
 
 `p.lang` 来自 `session.SpeechLang(a.prefs, i18n.Locale())`（`transcribe_socket.go:77-79`）。语言提示告诉模型预期哪种语言，不是要转写的文字。识别本身是 `asr.Recognize(ctx, prov, pcm, languageTag, nil, "", asr.Feed{})`（`transcribe_socket.go:84-87`）。
 
-$$ \text{segments} \le \text{cues},\qquad \text{segment} \text{ is emitted only if } \mathrm{trim}(\text{text}) \ne "" $$
+$$ \text{segments} \le \text{cues} $$
+
+$$ \text{segment only when } \mathrm{trim}(\text{text}) \ne "" $$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
@@ -358,10 +360,10 @@ $$ \text{srtTime}(d) = \text{HH}:\text{MM}:\text{SS},\text{mmm} $$
 
 ### 代入图上的数
 
-| 句 | 开始 | 结束 | 文字 |
-|---|---|---|---|
-| 1 | `00:00:00,000` | `00:00:03,350` | `Good morning.` |
-| 2 | `00:00:03,400` | `00:00:07,850` | `See you at noon.` |
+| 句 | 起止 | 文字 |
+|---|---|---|
+| 1 | `00:00:00,000 --> 00:00:03,350` | `Good morning.` |
+| 2 | `00:00:03,400 --> 00:00:07,850` | `See you at noon.` |
 
 TXT 只有两行：`Good morning.` 和 `See you at noon.`。
 
@@ -418,22 +420,18 @@ $$ \text{output} = \begin{cases} \text{none} & \text{任一句失败} \\ \text{�
 
 ### 代码怎么保证
 
-听写只在 `Privacy.KeepHistory` 开启时写历史，默认开启；关闭时不写（`Voxt/internal/session/run.go:572-576`、`Voxt/internal/settings/settings.go:373-380`）。文件路线的 `fileRecognizer` 直接调用 `asr.Recognize`（`transcribe_socket.go:84-87`），没有调用 `session` 的 `keep()`，所以不写历史记录，也不保留历史 WAV。命令解码时确实会写一个临时 `audio.wav`，返回时删掉临时目录（`transcribe_cli.go:111-139`）。完成回调只拼一条 `core.LogEntry`：
-
-```go
-Message: fmt.Sprintf("transcribed a file for the command line: %s of audio, %d segments", ...)
-```
-
-（`transcribe_socket.go:90-98`）。这段消息里没有识别出的文字。这是应用自己的诊断日志，不是第 9 章的访问日志；一个 segment 就是一句。
+听写只在 `Privacy.KeepHistory` 开启时写历史，默认开启；关闭时不写（`Voxt/internal/session/run.go:572-576`、`Voxt/internal/settings/settings.go:373-380`）。文件路线的 `fileRecognizer` 直接调用 `asr.Recognize`（`transcribe_socket.go:84-87`），没有调用 `session` 的 `keep()`，所以不写历史记录，也不保留历史 WAV。命令解码时确实会写一个临时 `audio.wav`，返回时删掉临时目录（`transcribe_cli.go:111-139`）。完成回调只拼一条 `core.LogEntry`，消息是 `fmt.Sprintf("transcribed a file for the command line: %s of audio, %d segments", ...)`（`transcribe_socket.go:90-98`）。这段消息里没有识别出的文字。这是应用自己的诊断日志，不是第 9 章的访问日志；一个 segment 就是一句。
 
 $$ \text{log} = \{\text{audio length},\ \text{segment count},\ \text{error?}\} $$
 
+本步表格里的 `socket.go` 是 `Voxt/transcribe_socket.go`。
+
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
-| $\text{log}$ | 写进应用日志的那一条 | `core.LogEntry`，`transcribe_socket.go:90-98` |
+| $\text{log}$ | 写进应用日志的那一条 | `core.LogEntry`，`socket.go:90-98` |
 | audio length | PCM 字节换算出的时长 | `req.Bytes/2/16000`，`socket.go:53-55` |
 | segment count | 回给命令的句子数 | `fileasr.go:53-55` |
-| error | 失败时的错误 | `transcribe_socket.go:95-97` |
+| error | 失败时的错误 | `socket.go:95-97` |
 
 ### 代入图上的数
 
