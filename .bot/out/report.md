@@ -1,3 +1,42 @@
+# lane k2 本轮报告 · ML Systems 10 Step 8 R2 与 Step 9 ML-19
+
+日期：2026-11-27。类型：修旧（direction 在两个 P0 之后指定的 ML-19，同章 Step 8 的 R2 一并完成）。本轮开始 HEAD 与 `origin/tutorials` 均为 `1617877`，工作树干净。范围只有 ML 10 Steps 8–9、对应双语 deep、MDX 出处、规划、生成 transcript、本章评分卡与进度记录、定向审计和本报告；未改其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。此前的 ML-45／46 已在 `c4ab9c8`／`d9b4ede` 完成本轮前修复，未重做。
+
+## 提交与 finding
+
+- `e7511b2`：**Step 8 R2 作者修复完成，待协调固定复审，不自行销项。** 舞台和 caption 只引入 W4A16：撤销加 8、恢复 BF16 权重、与 BF16 激活值相乘。FP32 累加卡、公式和图例移出舞台，作为双语 deep 的显式图外细节保留；Step 7 的 deep Next 与 MDX 出处同步。首次推送被拒后按指示 `git pull --rebase origin tutorials`，再推成功，未 force-push。
+- `b5cc7ba`：**ML-19 作者修复完成，待协调固定复审，不自行销项。** Step 9 舞台最后问「target 每轮 RL 都更新，draft 怎样跟着它学习？」双语 deep 的 Next、规划表和实际 `next` 链接均指向 ready 的第 12 章第 1 步；不再指向第 13 章，也不恢复到未 ready 的第 11 章。第 12 章第 1 步以 target 更新和在线 draft 训练回答同一问题。首次推送成功。
+- 固定 `8e27f28` 的协调基线不因此改写：R1–R5 **89/90**、机制 R6 **18/18**、原十二项 **216/216**，整章仍 **NO-GO**。ML-41～44、ML-50／55 和其他队列项保持原状；未开新章或第 14 章。
+
+## 作者评分与独立冷读边界
+
+| 步 | R1–R5 | 机制 R6 | 原十个非视觉项 | R1 小学生复述 | 新内容洞 |
+|---|---:|---:|---:|---|---:|
+| 8 | 10/10 | 2/2 | 20/20 | 编码先减 8，再乘 scale 变回 BF16 权重，最后和 BF16 激活值相乘。 | 0 |
+| 9 | 10/10 | 2/2 | 20/20 | 594.206 GB 的模型数据放不进一张 141 GB 卡，但八张卡合计有 1,128 GB；其他运行数据还要占显存。 | 0 |
+
+- 两步作者参考值合计为 R1–R5 **20/20**、机制 R6 **4/4**、原十个非视觉项 **40/40**、新内容洞 **0**。两个独立 `explore` 冷读均为 **PASS**：Step 8 未见舞台残留 FP32 或双语 deep 误称已画图；Step 9 的舞台问题、双语 Next、ready roster 和第 12 章回答链一致。
+- 这些是作者复评与独立源码／transcript 冷读，不是协调 verdict。原 #4/#5、原十二项新总分、整章销项和图像验收不自行改写。
+
+## 硬门与证据
+
+- 两次最终 `npm run build` 均为 **60 页**通过；Steps 8／9 readability 均为 **0 机械问题**；`deep-check 10`、`zh-check`、英中本章与中文目标步 360／390／430 px mobile、`git diff --check` 全过。
+- 最终 transcript 连续两次逐字一致：**2,265 词**，SHA-256 `343fc025b9ea11594480c1cd471962098367b750a435dd7878447d542eb04fc1`。无 caption、文字出界、重叠或文本规则报告。
+- `.bot/out/ml10-step8-audit/report.json`：英中桌面与中文 390 px 的直接／前步入口共 **12 个状态、6 个机制转变、2 个 deep 状态**，`failures=[]`，最低 **10.8425625 CSS px**。普通舞台均无 FP32，deep 中均有明确图外 FP32 细节。
+- `.bot/out/ml10-step9-audit/report.json`：同类入口共 **12 个状态、6 个机制转变、2 条完整章间接缝**，`failures=[]`，最低 **10.46579391891892 CSS px**。英中实际链接和落点均核到第 12 章第 1 步。
+- 代表截图：`.bot/out/ml10-step8-audit/en-1440-direct-p3.png` 与 `.bot/out/ml10-step9-audit/zh-390-direct-p2.png`。**当前模型不能读取 PNG，工具已明确返回无图像输入能力；以上结论来自构建、transcript、源码、独立冷读、DOM 和几何检查，未声称看过图片或视觉通过。**
+- 本轮已读 zero-to-sglang 第 3 部分第 2 章。Step 8 与其 W4A16 反量化路径一致，Step 9 保留真实 checkpoint 负载不等于完整运行显存的边界。通用 PTQ、真实 checkpoint 拆分与质量复测仍属既有 Z19a／Z19b 和第 1 本 Ch.22 范围，不借本轮扩写。
+- 未跑全站回归、真实 INT4 训练、Marlin／CUDA、rollout 显存、GPU benchmark、故障注入或 reduced-motion 动态切换。最新回归只有 `(exit 13)`，没有可分配布局步骤，未据此返工。
+
+## 剩余与清理
+
+- 剩余事项是 Step 8 R2 与 ML-19 的协调固定复审、原 #4/#5、图像能力复审和主人最终视觉验收。下一修旧单元按 direction 处理 ML-41～44；ML-50／55 分开核销，ML 12 留作之后的独立单元。
+- 本 clone 的 `node_modules` 原指向协调人 checkout；已只删除本目录内符号链接并在本目录安装依赖，package 文件无 diff，未写协调人的 checkout。
+- 本地查看前运行 `npx astro dev --background --host 127.0.0.1 --port 4498`。地址：`http://localhost:4498/learning-sglang/ml-sys/ch/10-int4-qat-rollout/?step=8` 与 `?step=9`。本轮 4498 服务已停止且端口无监听，两个审计脚本均调用 `browser.close()`。
+- 收尾 `pgrep` 仍列出一台 `cdp-KbTD67` Chrome；`ps` 被系统拒绝，无法核 PPID 或归属，未动它。本轮启动的服务和脚本浏览器已按各自接口关闭，其他 lane 进程未动。
+
+---
+
 # lane k2 本轮报告 · ML Systems 03 ML-45 与 04 ML-46
 
 日期：2026-11-27。类型：修旧（direction 指定优先处理的两个新 P0）。本轮开始 HEAD 与 `origin/tutorials` 均为 `649bc13`，工作树干净。范围只有 ML 03 Step 4、ML 04 Steps 6–7、对应双语 deep、MDX 出处、`src/ml-sys/numbers.ts`、生成 transcript、两章评分卡与进度记录、定向审计和本报告；未改其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。最新回归只有 `(exit 13)`，没有可分配布局步骤，未据此返工。
