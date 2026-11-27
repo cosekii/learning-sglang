@@ -1,3 +1,41 @@
+# lane k2 本轮报告 · ML Systems 07 Step 7 的 ML-50
+
+日期：2026-11-27。类型：修旧（ML-61／62 后按 owner rule 处理本书开放 P1）。本轮开始 HEAD 与 `origin/tutorials` 均为 `749347d`，工作树干净。范围只有 ML 07 Step 7 的组件、数字常量、双语 deep、MDX 出处、生成 transcript、本章评分卡与进度记录、定向审计和本报告；未改其他步、其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。ML-55 与其他开放项保持原样，未开第 14 章。
+
+## 提交与 finding
+
+- `e8a69d1`：**ML-50 作者修复完成，待协调固定复审，不自行销项。** Step 7 保留三次 10 ms sleep、7.047→2.202 秒和约 160 次调用的账，新增「未 warm-up：第一次更新支付首次通信成本」与「建组后先 warm-up，再计时更新」的对照。末相在同一 `480 / 7.047` 秒数比例上补 1B 约 0.5 秒、8B 约 0.6 秒。
+- 六相依次为原始 7.047 秒、去掉 sleep 的 2.202 秒、33 ms 拆解、未 warm-up 的首次通信、warm-up 交接、最终两种模型测量。手机保留同样的五张机制卡和末相公式，没有用静态替代图。
+- 双语 deep 和 MDX 引用公开 `latency-accelerate-for-weight-updates/readme.md:980-1007,1023-1030,1061-1093`，补全 `dist.barrier(device_ids=[0], group=pg)`。舞台脚注把 CI 解释为自动测试并保留 `device_ids=[0]` 边界；deep 说明省略它会在 CI 因设备错误挂住，本地没有。来源没有给出精确 warm-up 时长或普遍加速比，本步不补这些数字。
+- 首次教程提交为 `8e305ca`，推送被拒后按指示 `git pull --rebase origin tutorials`，带入 k1 的 `83f2901`，最终 `e8a69d1` 推送成功；未 force-push。
+
+## 作者评分与独立冷读
+
+| 步 | R1–R5 | 机制 R6 | 原十个非视觉项 | R1 小学生复述 | 新内容洞 |
+|---|---:|---:|---:|---|---:|
+| 7 | 10/10 | 2/2 | 20/20 | 重复 sleep 可以删掉；建组后先做一次小通信，后续更新不用再付首次成本。 | 0 |
+
+- 独立 `explore` 冷读 **PASS**：事实、首次与后续调用分界、同尺算式、双语 deep 对齐、图外标记和范围均无剩余洞。`pstack-reviewer` 因配置模型不存在未启动，不计证据。
+- 这些是作者复评与独立源码、transcript、DOM 冷读，不是协调 verdict。固定 `4c4a536` 的协调基线不改写：R1–R5 **80/80**、机制 R6 **16/16**、原十二项 **192/192**，完整 EVAL 仍 **NO-GO**，ML-50／55 独立开放。原 #4/#5、整章新总分和销项不由本轮自行改写。
+
+## 硬门与证据
+
+- 最终 `npm run build`：**60 页**通过；Step 7 `readability`：**0 机械问题**；`BOOK=ml-sys node scripts/deep-check.mjs 07`、`zh-check`、英中全章 360／390／430 px `mobile`、中文 Step 7 字号门和 `git diff --check` 全过。
+- transcript 连续两次 SHA-256 相同：`1086e264e5f172bd44000088222ea8f1fc2710fa91fb5fd51be7fa3acd95e021`，**2,072 词**。无 caption、文字出界、重叠或文本规则报告。
+- `.bot/out/ml50-step7-audit/report.json` 覆盖英文桌面、中文桌面、中文 390 px × 直接 URL／前步入口，共 **6 组合、36 个状态、30/30 个机制转变、36 个唯一 PNG 哈希**；另有双语 1440／390 px 共 **4 个 deep 状态**。最低 **10.14125 CSS px**，重叠、SVG 出界、页面横溢和 `failures` 均为 **0**。四条时间柱逐条按相同比例验算，宽度误差小于 0.01。
+- 首轮审计发现桌面脚注随高场景缩到 **8.728125 CSS px**；只把 Step 7 桌面脚注增至 12.2 px 后复验通过。可重跑脚本：`.bot/out/ml50-step7-audit.mjs`。
+- 代表截图：`.bot/out/ml50-step7-audit/en-1440-direct-s7-p4.png`、`.bot/out/ml50-step7-audit/zh-390-direct-s7-p5.png`。**当前模型不能读取 PNG；以上结论来自构建、transcript、源码、独立冷读、DOM 和几何检查，未声称看过图片或视觉通过。**
+- `docs/z2s-map.md` 没有 ML 07 的直接对应课程章；事实只取上述公开调试记录。未跑全站回归、真实训练、权重传输、SGLang／NCCL、GPU benchmark、CI 故障注入或 reduced-motion 动态切换。最新回归只有 `(exit 13)`，没有可分配布局步骤。
+
+## 剩余与清理
+
+- 剩余事项是 ML-50 的协调固定复审、原 #4/#5、整章评分、具备图像能力的复审和主人最终视觉验收。ML-55 是独立 P2，本轮未改；其他 P1 与新写作按 owner rule 另行处理。
+- 本 clone 的 `node_modules` 原指向协调人 checkout；已只删除本目录内符号链接并在本目录安装依赖，package 文件无 diff，未写协调人的 checkout。
+- 本地查看前运行 `npx astro dev --background --host 127.0.0.1 --port 4502`，地址：`http://localhost:4502/learning-sglang/ml-sys/ch/07-weight-updates/?step=7`。本轮 4502 服务已停止，端口无监听。
+- 审计脚本均调用 `browser.close()`。收尾 `pgrep -P 1 -fl 'headless=new.*cdp-'` 无输出；本轮没有遗留浏览器。
+
+---
+
 # lane k1 本轮报告 · Omni 13 Step 5 的 Omni-49
 
 日期：2026-11-27。类型：修旧（完成 Omni-48／66／67 后的下一协调顺序项；按 11-27 owner rule 不等复审）。本轮开始 HEAD 与 `origin/tutorials` 均为 `45a9c2a`，工作树干净。范围只有 Omni 13 Step 5 的组件、数字常量、双语 deep、MDX 出处、生成 transcript、本章评分卡与进度记录、定向审计和本报告；未改其他步、其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。Omni-48／66／67 的待复审批次保持原样。

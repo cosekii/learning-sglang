@@ -1,5 +1,19 @@
 # 第 7 章评分卡 · Weight update channels
 
+## 2026-11-27 ML-50 作者返工
+
+- 教程提交：`e8a69d1`（Step 7）。ML-50 的作者修复待协调固定复审，不自行销项；ML-55 和其他开放项未改。
+- 协调固定 `4c4a536` 的既有基线不改写：R1–R5 **80/80**、机制 R6 **16/16**、原十二项 **192/192**，完整 EVAL 仍 **NO-GO**，ML-50／55 独立开放。下表只是本轮作者与独立冷读的修复范围评分。
+
+| 步 | R1–R5 /10 | 机制 R6 /2 | 原十个非视觉项 /20 | R1 小学生复述 | 新内容洞 |
+|---|---:|---:|---:|---|---:|
+| 7 | 10 | 2 | 20 | 重复 sleep 可以删掉；建组后先做一次小通信，后续更新不用再付首次成本。 | 0 |
+
+- Step 7 现在按相位上演 7.047→2.202 秒、33 ms 拆解、未 warm-up 的首次通信、建组后的 warm-up，以及同秒数比例的 1B 约 0.5 秒和 8B 约 0.6 秒。双语 deep 和 MDX 补齐 `dist.barrier(device_ids=[0], group=pg)`、CI 设备错误边界和 `readme.md:1061-1093` 出处，不虚构精确 warm-up 时长或普遍加速比。
+- 独立 `explore` 冷读 **PASS**，剩余内容洞 **0**。`build`（60 页）、Step 7 `readability`、`deep-check 07`、`zh-check`、英中全章及中文 Step 7 三宽度 `mobile`、`git diff --check` 全过。transcript 连续两次逐字一致：**2,072 词**，SHA-256 `1086e264e5f172bd44000088222ea8f1fc2710fa91fb5fd51be7fa3acd95e021`。
+- `.bot/out/ml50-step7-audit/report.json`：**36/36 个状态、30/30 个机制转变、4 个双语 deep 状态、36 个唯一 PNG 哈希**，最低 **10.14125 CSS px**，重叠、SVG 出界和页面横溢均为 **0**，`failures=[]`。四条时间柱的宽度按同一 `480 / 7.047` 比例逐条验算。
+- 代表 PNG：`.bot/out/ml50-step7-audit/en-1440-direct-s7-p4.png` 与 `.bot/out/ml50-step7-audit/zh-390-direct-s7-p5.png`。当前模型不能读取 PNG；以上结论来自构建、transcript、源码、独立冷读、DOM 和几何检查，未声称看过图片或视觉通过。原 #4/#5、整章协调 verdict 和主人最终视觉验收仍待。
+
 ## 2026-11-27 ML-41～44 作者返工
 
 - 教程提交：`ffc1bca`（Step 2）、`be75f4e`（Step 4）、`7115a57`（Step 5）、`2174628`（Step 6）、`65f3033`（Step 7）。ML-41～44 的作者修复均待协调固定复审，不自行销项；ML-50／55 与本轮分开，未改。
