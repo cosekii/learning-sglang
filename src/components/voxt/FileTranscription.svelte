@@ -124,22 +124,26 @@
     return () => cancelAnimationFrame(raf);
   });
   const quietNow = $derived(clock >= 2900 && clock <= 3350);
-  // Step 0 loops three phases: the two routes, then the file's input and transcribe, then its output.
-  const STEP0_PHASES = 3, PHASE_MS = 900, REST_MS = 2200;
-  const STEP0_LAP_MS = STEP0_PHASES * PHASE_MS + REST_MS;
+  // Steps 0 and 1 loop a phase build-up: Step 0 shows the two routes, then the file's input and
+  // transcribe, then its output; Step 1 shows the file, then the converter, then the decoded bytes,
+  // then the size comparison.
+  const STEP_PHASES: Record<number, number> = { 0: 3, 1: 4 };
+  const PHASE_MS = 900, REST_MS = 2200;
   let phase = $state(0);
   $effect(() => {
-    if (step !== 0) { phase = 0; return; }
+    const count = STEP_PHASES[step];
+    if (count === undefined) { phase = 0; return; }
     reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduced) { phase = STEP0_PHASES - 1; return; }
+    if (reduced) { phase = count - 1; return; }
+    const lapLen = count * PHASE_MS + REST_MS;
     let timers: ReturnType<typeof setTimeout>[] = [];
     const run = () => {
       phase = 0;
       timers = [
-        ...Array.from({ length: STEP0_PHASES - 1 }, (_, i) => setTimeout(() => (phase = i + 1), (i + 1) * PHASE_MS)),
-        setTimeout(run, STEP0_LAP_MS),
+        ...Array.from({ length: count - 1 }, (_, i) => setTimeout(() => (phase = i + 1), (i + 1) * PHASE_MS)),
+        setTimeout(run, lapLen),
       ];
-      nextLap(STEP0_LAP_MS);
+      nextLap(lapLen);
     };
     run();
     return () => timers.forEach(clearTimeout);
@@ -182,7 +186,7 @@
   const quietToMs = VOXT_TRANSCRIBE_INPUT_QUIET_MS + VOXT_CUTTER_QUIET_WINDOW_MS / 2;
 </script>
 
-<figure class="viz" data-animation-step={step === 0 ? 0 : undefined} data-animation-phase={step === 0 ? phase : undefined} data-animation-final-phase={step === 0 ? STEP0_PHASES - 1 : undefined}>
+<figure class="viz" data-animation-step={step in STEP_PHASES ? step : undefined} data-animation-phase={step in STEP_PHASES ? phase : undefined} data-animation-final-phase={step in STEP_PHASES ? STEP_PHASES[step] - 1 : undefined}>
   <div class="canvas">
     <svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label={t(ariaLabels[step].en, ariaLabels[step].zh)}>
       <defs>
@@ -291,47 +295,61 @@
           <rect x="20" y="80" width="150" height="78" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="95" y="108" text-anchor="middle" class="label amber">talk.m4a</text>
           <text x="95" y="132" text-anchor="middle" class="detail">8 s {t('of sound', '声音')}</text>
-          <line x1="172" y1="119" x2="212" y2="119" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
-          <rect x="218" y="70" width="230" height="98" rx="9" fill="var(--bg)" stroke="var(--accent)" />
-          <text x="333" y="94" text-anchor="middle" class="label">{t('Mac sound tool', 'Mac 声音工具')}</text>
-          <text x="333" y="115" text-anchor="middle" class="detail">{t('macOS\'s own converter', 'Mac 自带的转换器')}</text>
-          <text x="333" y="136" text-anchor="middle" class="mono">{t('16 kHz · mono · 16-bit', '16 kHz · 单声道 · 16 位')}</text>
-          <line x1="450" y1="119" x2="490" y2="119" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
-          <rect x="496" y="80" width="204" height="78" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="598" y="108" text-anchor="middle" class="label">audio.wav</text>
-          <text x="598" y="132" text-anchor="middle" class="detail">{t('temporary file', '临时文件')}</text>
+          {#if phase >= 1}
+            <line x1="172" y1="119" x2="212" y2="119" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
+            <rect x="218" y="70" width="230" height="98" rx="9" fill="var(--bg)" stroke="var(--accent)" />
+            <text x="333" y="94" text-anchor="middle" class="label">{t('Mac sound tool', 'Mac 声音工具')}</text>
+            <text x="333" y="115" text-anchor="middle" class="detail">{t('macOS\'s own converter', 'Mac 自带的转换器')}</text>
+            <text x="333" y="136" text-anchor="middle" class="mono">{t('16 kHz · mono · 16-bit', '16 kHz · 单声道 · 16 位')}</text>
+          {/if}
+          {#if phase >= 2}
+            <line x1="450" y1="119" x2="490" y2="119" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
+            <rect x="496" y="80" width="204" height="78" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="598" y="108" text-anchor="middle" class="label">audio.wav</text>
+            <text x="598" y="132" text-anchor="middle" class="detail">{t('temporary file', '临时文件')}</text>
 
-          <rect x="70" y="200" width="580" height="140" rx="10" fill="var(--bg)" stroke="var(--line)" />
-          <text x="360" y="226" text-anchor="middle" class="formula">{VOXT_TRANSCRIBE_DEMO_SECONDS} s × {VOXT_CAPTURE_SAMPLE_RATE.toLocaleString('en-US')} × {VOXT_PCM_BYTES_PER_SAMPLE} B = {pcm} B PCM</text>
-          <text x="360" y="255" text-anchor="middle" class="formula">+ {VOXT_WAV_HEADER_BYTES} B {t('file header', '文件头')} = {VOXT_TRANSCRIBE_WAV_BYTES.toLocaleString('en-US')} B</text>
-          <text x="360" y="282" text-anchor="middle" class="detail">{t('about 256 KB, smaller than one phone photo', '约 256 KB，比一张手机照片小')}</text>
-          <text x="360" y="308" text-anchor="middle" class="formula">{t(`one hour: ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} × ${VOXT_CAPTURE_SAMPLE_RATE.toLocaleString('en-US')} × ${VOXT_PCM_BYTES_PER_SAMPLE} B`, `一小时：${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} × ${VOXT_CAPTURE_SAMPLE_RATE.toLocaleString('en-US')} × ${VOXT_PCM_BYTES_PER_SAMPLE} B`)}</text>
-          <text x="360" y="330" text-anchor="middle" class="formula">{t(`= ${VOXT_TRANSCRIBE_MEETING_BYTES.toLocaleString('en-US')} B = ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} MB (≈${photoCount} photos at ${VOXT_TRANSCRIBE_PHOTO_MB} MB each)`, `= ${VOXT_TRANSCRIBE_MEETING_BYTES.toLocaleString('en-US')} B = ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} MB（每张 ${VOXT_TRANSCRIBE_PHOTO_MB} MB，≈${photoCount} 张）`)}</text>
+            <rect x="70" y="200" width="580" height="140" rx="10" fill="var(--bg)" stroke="var(--line)" />
+            <text x="360" y="226" text-anchor="middle" class="formula">{VOXT_TRANSCRIBE_DEMO_SECONDS} s × {VOXT_CAPTURE_SAMPLE_RATE.toLocaleString('en-US')} × {VOXT_PCM_BYTES_PER_SAMPLE} B = {pcm} B PCM</text>
+            <text x="360" y="255" text-anchor="middle" class="formula">+ {VOXT_WAV_HEADER_BYTES} B {t('file header', '文件头')} = {VOXT_TRANSCRIBE_WAV_BYTES.toLocaleString('en-US')} B</text>
+          {/if}
+          {#if phase >= 3}
+            <text x="360" y="282" text-anchor="middle" class="detail">{t('about 256 KB, smaller than one phone photo', '约 256 KB，比一张手机照片小')}</text>
+            <text x="360" y="308" text-anchor="middle" class="formula">{t(`one hour: ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} × ${VOXT_CAPTURE_SAMPLE_RATE.toLocaleString('en-US')} × ${VOXT_PCM_BYTES_PER_SAMPLE} B`, `一小时：${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} × ${VOXT_CAPTURE_SAMPLE_RATE.toLocaleString('en-US')} × ${VOXT_PCM_BYTES_PER_SAMPLE} B`)}</text>
+            <text x="360" y="330" text-anchor="middle" class="formula">{t(`= ${VOXT_TRANSCRIBE_MEETING_BYTES.toLocaleString('en-US')} B = ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} MB (≈${photoCount} photos at ${VOXT_TRANSCRIBE_PHOTO_MB} MB each)`, `= ${VOXT_TRANSCRIBE_MEETING_BYTES.toLocaleString('en-US')} B = ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} MB（每张 ${VOXT_TRANSCRIBE_PHOTO_MB} MB，≈${photoCount} 张）`)}</text>
+          {/if}
           <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Constructed 8-second example; the temporary file is deleted after reading the PCM.', '构造的 8 秒例子；命令读完 PCM 后就删掉临时文件。')}</text>
+          {#if !reduced}<LoopProgress ms={lapMs} {lap} />{/if}
         {:else}
           <rect x="40" y="70" width="220" height="62" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
           <text x="150" y="95" text-anchor="middle" class="label amber">talk.m4a · 8 s</text>
           <text x="150" y="116" text-anchor="middle" class="detail">{t('on disk', '磁盘上')}</text>
-          <line x1="150" y1="132" x2="150" y2="158" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
-          <rect x="30" y="166" width="240" height="92" rx="9" fill="var(--bg)" stroke="var(--accent)" />
-          <text x="150" y="190" text-anchor="middle" class="label">{t('Mac sound tool', 'Mac 声音工具')}</text>
-          <text x="150" y="211" text-anchor="middle" class="detail">{t('macOS\'s own converter', 'Mac 自带的转换器')}</text>
-          <text x="150" y="232" text-anchor="middle" class="mono">{t('16 kHz · mono · 16-bit', '16 kHz · 单声道 · 16 位')}</text>
-          <line x1="150" y1="258" x2="150" y2="284" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
-          <rect x="40" y="292" width="220" height="60" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="150" y="316" text-anchor="middle" class="label">audio.wav</text>
-          <text x="150" y="337" text-anchor="middle" class="detail">{t('temporary file', '临时文件')}</text>
+          {#if phase >= 1}
+            <line x1="150" y1="132" x2="150" y2="158" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
+            <rect x="30" y="166" width="240" height="92" rx="9" fill="var(--bg)" stroke="var(--accent)" />
+            <text x="150" y="190" text-anchor="middle" class="label">{t('Mac sound tool', 'Mac 声音工具')}</text>
+            <text x="150" y="211" text-anchor="middle" class="detail">{t('macOS\'s own converter', 'Mac 自带的转换器')}</text>
+            <text x="150" y="232" text-anchor="middle" class="mono">{t('16 kHz · mono · 16-bit', '16 kHz · 单声道 · 16 位')}</text>
+          {/if}
+          {#if phase >= 2}
+            <line x1="150" y1="258" x2="150" y2="284" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
+            <rect x="40" y="292" width="220" height="60" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="150" y="316" text-anchor="middle" class="label">audio.wav</text>
+            <text x="150" y="337" text-anchor="middle" class="detail">{t('temporary file', '临时文件')}</text>
 
-          <rect x="20" y="380" width="260" height="230" rx="10" fill="var(--bg)" stroke="var(--line)" />
-          <text x="150" y="406" text-anchor="middle" class="formula">{VOXT_TRANSCRIBE_DEMO_SECONDS} s × {VOXT_CAPTURE_SAMPLE_RATE.toLocaleString('en-US')} × {VOXT_PCM_BYTES_PER_SAMPLE} B</text>
-          <text x="150" y="434" text-anchor="middle" class="formula">= {pcm} B PCM</text>
-          <text x="150" y="466" text-anchor="middle" class="formula">+ {VOXT_WAV_HEADER_BYTES} B {t('header', '文件头')}</text>
-          <text x="150" y="494" text-anchor="middle" class="formula">= {VOXT_TRANSCRIBE_WAV_BYTES.toLocaleString('en-US')} B</text>
-          <text x="150" y="526" text-anchor="middle" class="detail">{t('about 256 KB', '约 256 KB')}</text>
-          <text x="150" y="552" text-anchor="middle" class="formula">{t(`one hour: ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} × ${VOXT_CAPTURE_SAMPLE_RATE.toLocaleString('en-US')} × ${VOXT_PCM_BYTES_PER_SAMPLE} B`, `一小时：${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} × ${VOXT_CAPTURE_SAMPLE_RATE.toLocaleString('en-US')} × ${VOXT_PCM_BYTES_PER_SAMPLE} B`)}</text>
-          <text x="150" y="574" text-anchor="middle" class="formula">{t(`= ${VOXT_TRANSCRIBE_MEETING_BYTES.toLocaleString('en-US')} B = ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} MB`, `= ${VOXT_TRANSCRIBE_MEETING_BYTES.toLocaleString('en-US')} B = ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} MB`)}</text>
-          <text x="150" y="596" text-anchor="middle" class="detail">{t(`≈${photoCount} photos at ${VOXT_TRANSCRIBE_PHOTO_MB} MB each`, `每张 ${VOXT_TRANSCRIBE_PHOTO_MB} MB，≈${photoCount} 张`)}</text>
+            <rect x="20" y="380" width="260" height="230" rx="10" fill="var(--bg)" stroke="var(--line)" />
+            <text x="150" y="406" text-anchor="middle" class="formula">{VOXT_TRANSCRIBE_DEMO_SECONDS} s × {VOXT_CAPTURE_SAMPLE_RATE.toLocaleString('en-US')} × {VOXT_PCM_BYTES_PER_SAMPLE} B</text>
+            <text x="150" y="434" text-anchor="middle" class="formula">= {pcm} B PCM</text>
+            <text x="150" y="466" text-anchor="middle" class="formula">+ {VOXT_WAV_HEADER_BYTES} B {t('header', '文件头')}</text>
+            <text x="150" y="494" text-anchor="middle" class="formula">= {VOXT_TRANSCRIBE_WAV_BYTES.toLocaleString('en-US')} B</text>
+          {/if}
+          {#if phase >= 3}
+            <text x="150" y="526" text-anchor="middle" class="detail">{t('about 256 KB', '约 256 KB')}</text>
+            <text x="150" y="552" text-anchor="middle" class="formula">{t(`one hour: ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} × ${VOXT_CAPTURE_SAMPLE_RATE.toLocaleString('en-US')} × ${VOXT_PCM_BYTES_PER_SAMPLE} B`, `一小时：${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} × ${VOXT_CAPTURE_SAMPLE_RATE.toLocaleString('en-US')} × ${VOXT_PCM_BYTES_PER_SAMPLE} B`)}</text>
+            <text x="150" y="574" text-anchor="middle" class="formula">{t(`= ${VOXT_TRANSCRIBE_MEETING_BYTES.toLocaleString('en-US')} B = ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} MB`, `= ${VOXT_TRANSCRIBE_MEETING_BYTES.toLocaleString('en-US')} B = ${VOXT_TRANSCRIBE_MEETING_MB.toFixed(1)} MB`)}</text>
+            <text x="150" y="596" text-anchor="middle" class="detail">{t(`≈${photoCount} photos at ${VOXT_TRANSCRIBE_PHOTO_MB} MB each`, `每张 ${VOXT_TRANSCRIBE_PHOTO_MB} MB，≈${photoCount} 张`)}</text>
+          {/if}
           <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Constructed 8 s example; file deleted after reading.', '构造的 8 秒例子；读完删掉临时文件。')}</text>
+          {#if !reduced}<LoopProgress ms={lapMs} {lap} x={236} y={H - 44} />{/if}
         {/if}
       {:else if step === 2}
         <text x={W / 2} y="27" text-anchor="middle" class="title">{t('SEND THE PCM TO THE RUNNING APP', '把 PCM 送给运行中的应用')}</text>
