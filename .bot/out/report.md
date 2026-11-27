@@ -36,6 +36,42 @@
 
 ---
 
+# lane k1 本轮报告 · Omni 13 Step 9 的 Omni-51
+
+日期：2026-11-27。类型：修旧。本轮开始 HEAD 与 `origin/tutorials` 均为 `9c91985`，工作树干净。direction 指定的 Omni-50 已由当前 HEAD 的 `ac65a00`、`308a9d5` 完成，本轮保留该待复审批次，不重复返工；按上一轮报告的下一单元处理 Omni-51。范围只有 Omni 13 Step 9 的组件、双语 deep、MDX 出处、生成 transcript、本章评分卡与进度记录、定向审计和本报告；未改其他步、其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。
+
+## 提交与 finding
+
+- **Omni-51 作者修复完成，待协调固定复审，不自行销项。** Step 9 改为八相：warmup 1 发送、warmup 1 HTTP 200、warmup 2 发送、warmup 2 HTTP 200 后 `UP`，随后才进入 A/B、两类记录、听者时间线和 chunk 2 就绪。图上 `max(process.num_replicas) = 2`，首个 200 后仍是 `STARTING`，不再用一个 warmup 代表 replica2。
+- pinned `sglang-omni@9725235249df851281d4dc62a04b2d34b02ac0fe` 的 `serve/launcher.py:552-605,666-675,761-770` 证实：请求数取最大 `process.num_replicas`，请求逐条发送，每条检查 HTTP 200，全部成功后才设置 `ServerStatus.UP`。双语组件、MDX、deep 和 transcript 使用同一顺序；非 200 的失败边界只留在 deep。
+- 首轮英文手机审计发现顶部顺序句在三宽度出界 **31／34／38 px**，已缩短手机标题并复测归零。双语 deep 的长标识增加断行机会，360／390／430 px 的抽屉横溢均降为 0；来源文字和 pinned 版本未变。
+
+## 作者评分与独立冷读
+
+| 步 | R1–R5 | 机制 R6 | 原十个非视觉项 | R1 小学生复述 | 新内容洞 |
+|---|---:|---:|---:|---|---:|
+| 9 | 10/10 | 2/2 | 20/20 | replica2 要依次跑完两个预热请求，两个都返回 HTTP 200，服务器才算就绪。 | 0 |
+
+- 独立 `explore` 冷读 **PASS**：请求顺序、逐相机制、未提前就绪、caption、双语 deep 和数字对齐均无剩余阻塞项。这是作者复评与独立源码／transcript／DOM 冷读，不是协调 verdict；原 #4/#5、整章新总分和销项不由本轮自行改写。协调固定 `bd4aa5d` 的整章 GO 基线不扩展到后续修改。
+
+## 硬门与证据
+
+- 最终 `npm run build`：**60 页**通过；十步 `readability`：**0 机械问题**；`BOOK=omni node scripts/deep-check.mjs 13`、`zh-check`、英中全章 360／390／430 px `mobile`、中文 Step 9 字号门和 `git diff --check` 全过。
+- transcript 连续两次 SHA-256 相同：`9f5e5a3fb73903051a860917ca49c1218a68a10c25b9de7c72824aabff987796`，**3,586 词**。无 caption、文字出界、重叠或文本规则报告。
+- `.bot/out/omni51-step9-audit.mjs` 覆盖英文桌面、中文桌面、中文 390 px × 直接 URL／前步入口，共 **6 组合、48 状态、42/42 机制转变**。最低 **10.806 CSS px**，重叠、SVG 出界和页面横溢均为 0；脚本断言 warmup 顺序、各自 HTTP 200 及全部成功前不就绪。报告在各 `omni51-step9-*` 目录。
+- `.bot/out/omni51-deep-audit.mjs` 覆盖双语 360／390／430／1440 px，共 **8 个打开抽屉视图**。`aria-expanded=true`、counter、目标文本、页面与抽屉横溢、KaTeX 和 raw-math 检查全部通过。桌面抽屉打开后的舞台最低 **4.855 CSS px**，焦点记录为空，属于既有共享 ML-21／22；本单元未改也不声称这两项通过。
+- 代表截图：`.bot/out/omni51-step9-endesktop-direct/s9-p3.png`、`.bot/out/omni51-step9-zh390-direct/s9-p3.png`。读取 PNG 时工具返回「this model does not support image input」；以上结论来自构建、transcript、源码、独立冷读、DOM 和几何检查，未声称看过图片或视觉通过。
+- 未跑全站回归、真实 SGLang-Omni 服务器、replica2 warmup、模型、GPU benchmark 或 reduced-motion 动态切换。最新回归只有 `(exit 13)`，没有可分配布局步骤。
+
+## 剩余与清理
+
+- 剩余事项是 Omni-51 的协调固定复审、原 #4/#5、整章评分、共享 ML-21／22、具备图像能力的复审和主人最终视觉验收。下一单元按本书 P1 顺序处理 **Omni-52**；Omni-50 与其他待审内容未重做。
+- 本 clone 的 `node_modules` 开始时指向协调人 checkout；只删除本目录内的符号链接并在本目录安装依赖，package 文件无 diff，未写协调人的 checkout。
+- 本地查看前运行 `npx astro dev --background --host 127.0.0.1 --port 4505`，地址：`http://127.0.0.1:4505/learning-sglang/omni/ch/13-qwen3-omni-deployment/?step=9`。本轮 4505 服务已停止，端口无监听。
+- 审计脚本均调用 `browser.close()`。收尾 `pgrep -P 1 -fl 'headless=new.*cdp-'` 无输出；本轮没有遗留浏览器，未动其他 lane 的进程。
+
+---
+
 # lane k2 本轮报告 · ML Systems 13 Step 8 的 ML-53
 
 日期：2026-11-27。类型：修旧（ML-52 后按 owner rule 处理本书开放 P1）。本轮开始 HEAD 与 `origin/tutorials` 均为 `3a106be`，工作树干净。范围只有 ML 13 Step 8 的组件、双语 deep、生成 transcript、本章评分卡与进度记录、定向审计和本报告；未改其他步、其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。共享 ML-21／22 保持独立，未开第 14 章。

@@ -1,0 +1,182 @@
+{
+  "base": "http://127.0.0.1:4505/learning-sglang",
+  "width": 1440,
+  "states": [
+    {
+      "step": 9,
+      "lang": "en",
+      "counter": "09 / 10",
+      "expanded": "true",
+      "title": "Step 9 · Readiness is not a benchmark",
+      "pageOverflow": false,
+      "drawerOverflow": false,
+      "drawerClientWidth": 489,
+      "drawerScrollWidth": 489,
+      "wide": [
+        {
+          "tag": "annotation",
+          "className": "",
+          "clientWidth": 0,
+          "scrollWidth": 0,
+          "text": "D=N\\times F"
+        },
+        {
+          "tag": "annotation",
+          "className": "",
+          "clientWidth": 0,
+          "scrollWidth": 0,
+          "text": "D"
+        },
+        {
+          "tag": "annotation",
+          "className": "",
+          "clientWidth": 0,
+          "scrollWidth": 0,
+          "text": "N"
+        },
+        {
+          "tag": "annotation",
+          "className": "",
+          "clientWidth": 0,
+          "scrollWidth": 0,
+          "text": "F"
+        },
+        {
+          "tag": "annotation",
+          "className": "",
+          "clientWidth": 0,
+          "scrollWidth": 0,
+          "text": "D=10\\times80=800\\ \\text{ms}"
+        },
+        {
+          "tag": "WBR",
+          "className": "",
+          "clientWidth": 0,
+          "scrollWidth": 0,
+          "text": ""
+        },
+        {
+          "tag": "WBR",
+          "className": "",
+          "clientWidth": 0,
+          "scrollWidth": 0,
+          "text": ""
+        },
+        {
+          "tag": "WBR",
+          "className": "",
+          "clientWidth": 0,
+          "scrollWidth": 0,
+          "text": ""
+        },
+        {
+          "tag": "WBR",
+          "className": "",
+          "clientWidth": 0,
+          "scrollWidth": 0,
+          "text": ""
+        },
+        {
+          "tag": "WBR",
+          "className": "",
+          "clientWidth": 0,
+          "scrollWidth": 0,
+          "text": ""
+        }
+      ],
+      "katexErrors": 0,
+      "rawMath": false,
+      "minStageFont": 4.8549999999999995,
+      "activeElement": "",
+      "missing": []
+    },
+    {
+      "step": 9,
+      "lang": "zh",
+      "counter": "09 / 10",
+      "expanded": "true",
+      "title": "第 9 步 · 就绪不是 benchmark",
+      "pageOverflow": false,
+      "drawerOverflow": false,
+      "drawerClientWidth": 489,
+      "drawerScrollWidth": 489,
+      "wide": [
+        {
+          "tag": "annotation",
+          "className": "",
+          "clientWidth": 0,
+          "scrollWidth": 0,
+          "text": "D=N\\times F"
+        },
+        {
+          "tag": "annotation",
+          "className": "",
+          "clientWidth": 0,
+          "scrollWidth": 0,
+          "text": "D"
+        },
+        {
+          "tag": "annotation",
+          "className": "",
+          "clientWidth": 0,
+          "scrollWidth": 0,
+          "text": "N"
+        },
+        {
+          "tag": "annotation",
+          "className": "",
+          "clientWidth": 0,
+          "scrollWidth": 0,
+          "text": "F"
+        },
+        {
+          "tag": "annotation",
+          "className": "",
+          "clientWidth": 0,
+          "scrollWidth": 0,
+          "text": "D=10\\times80=800\\ \\text{ms}"
+        },
+        {
+          "tag": "WBR",
+          "className": "",
+          "clientWidth": 0,
+          "scrollWidth": 0,
+          "text": ""
+        },
+        {
+          "tag": "WBR",
+          "className": "",
+          "clientWidth": 0,
+          "scrollWidth": 0,
+          "text": ""
+        },
+        {
+          "tag": "WBR",
+          "className": "",
+          "clientWidth": 0,
+          "scrollWidth": 0,
+          "text": ""
+        },
+        {
+          "tag": "WBR",
+          "className": "",
+          "clientWidth": 0,
+          "scrollWidth": 0,
+          "text": ""
+        },
+        {
+          "tag": "WBR",
+          "className": "",
+          "clientWidth": 0,
+          "scrollWidth": 0,
+          "text": ""
+        }
+      ],
+      "katexErrors": 0,
+      "rawMath": false,
+      "minStageFont": 10.407335069444445,
+      "activeElement": "",
+      "missing": []
+    }
+  ]
+}

@@ -90,8 +90,8 @@
     caption: 'Two talkers make each code2wav process reserve 64 slots. Each process owns a separate pool, not double throughput.',
     captionZh: '两个 talker 让每个 code2wav 进程预留 64 个状态位。两个进程各有独立状态池，不代表吞吐翻倍。',
   }, {
-    caption: 'Readiness checks that one small request finishes. A/B then changes one choice and records client time and listener stalls separately.',
-    captionZh: 'readiness 先检查一个小请求能否跑完。A/B 只改一个选择，分别记录客户端耗时和听者卡顿。',
+    caption: 'For replica2, readiness finishes two small requests in order. A/B then changes one choice and records client time and listener stalls separately.',
+    captionZh: 'replica2 要依次跑完两个小请求，才算就绪。A/B 只改一个选择，分别记录客户端耗时和听者卡顿。',
   }, {
     caption: 'Keep the same two-GPU layout and compare only BF16 with FP8 at c=8. Next: what happens when the client reads too slowly?',
     captionZh: '固定两卡摆法，只比 c=8 的 BF16 和 FP8。接下来，客户端读得太慢会怎样？',
@@ -160,7 +160,7 @@
   ];
 
   // Each scene builds its own objects and numbers, then holds the finished state.
-  const PHASE_COUNTS = [3, 5, 6, 3, 5, 3, 3, 4, 6, 7];
+  const PHASE_COUNTS = [3, 5, 6, 3, 5, 3, 3, 4, 8, 7];
   const PHASE_MS = 1100, REST_MS = 2500;
   let phase = $state(0);
   let lap = $state(0), lapMs = $state(0);
@@ -494,7 +494,7 @@
         <text x={phone ? 15 : 20} y="24" class="rowlabel">{t(phone ? '5/5 · EVIDENCE · HEALTH BEFORE SPEED' : '5 of 5 · EVIDENCE · HEALTH BEFORE SPEED', phone ? '5/5 · 证据 · 先能跑，再测速' : '5/5 · 证据 · 先确认能跑，再测快慢')}</text>
         <text x={phone ? 15 : 20} y="49" class="tag">readiness = {t('a startup health check, not a speed result', '启动健康检查，不是速度结果')}</text>
         <text x={phone ? 15 : 20} y="72" class="tag">{t('blue = startup request · orange = measurement plan', '蓝 = 启动请求 · 橙 = 测量计划')}</text>
-        <text x={phone ? 15 : 20} y="95" class="tag strong">{t('First finish one small request; then compare one choice.', '先确认一个小请求能跑完，再比较一个选择。')}</text>
+        <text x={phone ? 15 : 20} y="95" class="tag strong">{phone ? t('Replica2: warmup 1 → warmup 2 → A/B', 'replica2：预热 1 → 预热 2 → A/B') : t('Replica2: finish two warmups in order; then compare one choice.', 'replica2：依次跑完两个预热请求，再比较一个选择。')}</text>
         {#each phone ? [
           { x: 15, y: 105, w: 270, h: 340, measure: false },
           { x: 15, y: 465, w: 270, h: 400, measure: true },
@@ -504,20 +504,23 @@
         ] as panel}
           <rect x={panel.x} y={panel.y} width={panel.w} height={panel.h} rx="11" fill={panel.measure ? 'var(--gen-soft)' : 'var(--accent-soft)'} fill-opacity="0.25" stroke={panel.measure ? 'var(--gen)' : 'var(--accent)'} />
           <text x={panel.x + 15} y={panel.y + 29} class="rowlabel">{panel.measure ? t('A/B MEASUREMENT', 'A/B 测量') : t('STARTUP READINESS', '启动就绪检查')}</text>
-          <text x={panel.x + 15} y={panel.y + 53} class="tag strong">{panel.measure ? t('A/B = same traffic, one choice different', 'A/B = 同样流量，只改一个选择') : t('Can one small request finish?', '一个小请求能跑完吗？')}</text>
+          <text x={panel.x + 15} y={panel.y + 53} class="tag strong">{panel.measure ? t('A/B = same traffic, one choice different', 'A/B = 同样流量，只改一个选择') : t('Can two small requests finish in order?', '两个小请求能依次跑完吗？')}</text>
           {#if !panel.measure}
             <rect x={panel.x + 15} y={panel.y + 75} width={panel.w - 30} height="112" rx="8" fill="var(--bg)" stroke="var(--accent)" />
-            <text x={panel.x + 27} y={panel.y + 101} class="tag">{t('small image', '一张小图')}</text>
-            <text x={panel.x + 27} y={panel.y + 130} class="tag">{QWEN_WARMUP_AUDIO_SECONDS} {t('second of audio + short instruction', '秒声音 + 一条短指令')}</text>
-            <text x={panel.x + 27} y={panel.y + 159} class="tag">{t('finish = a response comes back', '跑完 = 收到响应')}</text>
-            <g opacity={phase >= 1 ? 1 : 0} style="transition: opacity 450ms">
-              <text x={panel.x + panel.w / 2} y={panel.y + 215} text-anchor="middle" class="formula">↓ {t('every required stage', '每个需要的 stage')}</text>
-              <rect x={panel.x + 15} y={panel.y + 235} width={panel.w - 30} height="64" rx="8" fill="var(--bg)" stroke="var(--accent)" />
-              <text x={panel.x + panel.w / 2} y={panel.y + 273} text-anchor="middle" class="formula">≤ {QWEN_WARMUP_MAX_NEW_TOKENS} tokens / {t('generating stage', '生成 stage')}</text>
-              <text x={panel.x + panel.w / 2} y={panel.y + 315} text-anchor="middle" class="tag">{t('a response means healthy, not fast', '收到响应只说明能跑完，不说明快')}</text>
-            </g>
+            <text x={panel.x + 27} y={panel.y + 98} class="tag">{t('small image', '一张小图')}</text>
+            <text x={panel.x + 27} y={panel.y + 123} class="tag">{QWEN_WARMUP_AUDIO_SECONDS} {t('second of audio + short instruction', '秒声音 + 一条短指令')}</text>
+            <text x={panel.x + 27} y={panel.y + 148} class="tag">≤ {QWEN_WARMUP_MAX_NEW_TOKENS} tokens / {t('generating stage', '生成 stage')}</text>
+            <text x={panel.x + 27} y={panel.y + 173} class="tag">{t('HTTP 200 = request finished', 'HTTP 200 = 请求跑完')}</text>
+            <text x={panel.x + panel.w / 2} y={panel.y + 209} text-anchor="middle" class="tag strong">max(process.num_replicas) = {QWEN_SPEECH_REPLICA2_COUNT} {t('warmups', '个预热请求')}</text>
+            {#each [0, 1] as replica}
+              {@const done = phase >= (replica === 0 ? 1 : 3)}
+              {@const sending = replica === 0 ? phase === 0 : phase === 2}
+              <rect x={panel.x + 15} y={panel.y + 225 + replica * 42} width={panel.w - 30} height="34" rx="7" fill={done ? 'var(--accent-soft)' : 'var(--bg)'} stroke="var(--accent)" />
+              <text x={panel.x + panel.w / 2} y={panel.y + 247 + replica * 42} text-anchor="middle" class="tag strong">warmup {replica + 1} · {done ? 'HTTP 200 ✓' : sending ? t('sending…', '发送中…') : t('waiting', '等待')}</text>
+            {/each}
+            <text x={panel.x + panel.w / 2} y={panel.y + 326} text-anchor="middle" class="tag strong">{phase >= 3 ? t(`UP · ${QWEN_SPEECH_REPLICA2_COUNT} / ${QWEN_SPEECH_REPLICA2_COUNT} HTTP 200`, `就绪 · ${QWEN_SPEECH_REPLICA2_COUNT} / ${QWEN_SPEECH_REPLICA2_COUNT} 个 HTTP 200`) : t(`STARTING · ${phase >= 1 ? 1 : 0} / ${QWEN_SPEECH_REPLICA2_COUNT} HTTP 200`, `启动中 · ${phase >= 1 ? 1 : 0} / ${QWEN_SPEECH_REPLICA2_COUNT} 个 HTTP 200`)}</text>
           {:else}
-            <g opacity={phase >= 2 ? 1 : 0} style="transition: opacity 450ms">
+            <g opacity={phase >= 4 ? 1 : 0} style="transition: opacity 450ms">
               <text x={panel.x + 15} y={panel.y + 84} class="tag strong">{t('KEEP FIXED', '保持不变')}</text>
               <text x={panel.x + 15} y={panel.y + 109} class="tag">{t('inputs · sampling · hardware · warmup', '输入 · 采样 · 硬件 · 预热')}</text>
               <text x={panel.x + 15} y={panel.y + 134} class="tag">{t('change one deployment choice', '只改一个部署选择')}</text>
@@ -527,7 +530,7 @@
               <text x={panel.x + 15 + (panel.w - 60) / 4} y={panel.y + 224} text-anchor="middle" class="tag strong">{t('A · first choice', 'A · 第一个选择')}</text>
               <text x={panel.x + 45 + (panel.w - 60) * 3 / 4} y={panel.y + 224} text-anchor="middle" class="tag strong">{t('B · one change', 'B · 只改一项')}</text>
             </g>
-            <g opacity={phase >= 3 ? 1 : 0} style="transition: opacity 450ms">
+            <g opacity={phase >= 5 ? 1 : 0} style="transition: opacity 450ms">
               <rect x={panel.x + 15} y={panel.y + 254} width={panel.w - 30} height="60" rx="8" fill="var(--bg)" stroke="var(--line)" />
               <text x={panel.x + 26} y={panel.y + 279} class="tag strong">{t('BENCHMARK CLIENT RECORD', '基准客户端记录')}</text>
               <text x={panel.x + 26} y={panel.y + 302} class="tag">{t('first audio · total request time', '首音 · 整个请求的耗时')}</text>
@@ -537,22 +540,22 @@
             </g>
           {/if}
         {/each}
-        <g opacity={phase >= 4 ? 1 : 0} style="transition: opacity 450ms">
+        <g opacity={phase >= 6 ? 1 : 0} style="transition: opacity 450ms">
           <text x={phone ? 15 : 20} y={phone ? 890 : 535} class="rowlabel">{phone ? t(`${QWEN_STREAM_CHUNK_FRAMES} × ${QWEN_STREAM_FRAME_MS} ms = ${QWEN_STREAM_CHUNK_MS} ms · late chunk = stall`, `${QWEN_STREAM_CHUNK_FRAMES} × ${QWEN_STREAM_FRAME_MS} ms = ${QWEN_STREAM_CHUNK_MS} ms · 迟到就卡顿`) : t(`LISTENER CLOCK · ${QWEN_STREAM_CHUNK_FRAMES} frames × ${QWEN_STREAM_FRAME_MS} ms = ${QWEN_STREAM_CHUNK_MS} ms`, `听者时钟 · ${QWEN_STREAM_CHUNK_FRAMES} 帧 × ${QWEN_STREAM_FRAME_MS} ms = ${QWEN_STREAM_CHUNK_MS} ms`)}</text>
           {#if phone}
             <rect x="15" y="915" width="125" height="45" rx="6" fill="var(--gen-soft)" stroke="var(--gen)" />
             <text x="77" y="935" text-anchor="middle" class="tag strong">chunk 1</text>
             <text x="77" y="954" text-anchor="middle" class="tag">{QWEN_STREAM_CHUNK_MS} ms {t('playing', '播放')}</text>
-            <rect x="160" y="915" width="125" height="45" rx="6" fill={phase >= 5 ? 'var(--gen-soft)' : 'var(--bg)'} stroke="var(--gen)" stroke-dasharray={phase >= 5 ? 'none' : '4 3'} />
+            <rect x="160" y="915" width="125" height="45" rx="6" fill={phase >= 7 ? 'var(--gen-soft)' : 'var(--bg)'} stroke="var(--gen)" stroke-dasharray={phase >= 7 ? 'none' : '4 3'} />
             <text x="222" y="935" text-anchor="middle" class="tag strong">chunk 2</text>
-            <text x="222" y="954" text-anchor="middle" class="tag">{t(phase >= 5 ? 'ready' : 'pending', phase >= 5 ? '就绪' : '未就绪')}</text>
+            <text x="222" y="954" text-anchor="middle" class="tag">{t(phase >= 7 ? 'ready' : 'pending', phase >= 7 ? '就绪' : '未就绪')}</text>
             <line x1="150" y1="905" x2="150" y2="970" stroke="var(--eos)" stroke-width="1.5" stroke-dasharray="4 3" />
             <text x="150" y="990" text-anchor="middle" class="tag strong" fill="var(--eos)">{t('chunk 1 ends · late chunk 2 = stall', 'chunk 1 结束 · chunk 2 迟到就卡顿')}</text>
           {:else}
             <rect x="20" y="550" width="250" height="34" rx="6" fill="var(--gen-soft)" stroke="var(--gen)" />
             <text x="145" y="572" text-anchor="middle" class="tag strong">chunk 1 · {QWEN_STREAM_CHUNK_MS} ms {t('playing', '播放')}</text>
-            <rect x="290" y="550" width="190" height="34" rx="6" fill={phase >= 5 ? 'var(--gen-soft)' : 'var(--bg)'} stroke="var(--gen)" stroke-dasharray={phase >= 5 ? 'none' : '4 3'} />
-            <text x="385" y="572" text-anchor="middle" class="tag strong">chunk 2 · {t(phase >= 5 ? 'ready' : 'pending', phase >= 5 ? '就绪' : '未就绪')}</text>
+            <rect x="290" y="550" width="190" height="34" rx="6" fill={phase >= 7 ? 'var(--gen-soft)' : 'var(--bg)'} stroke="var(--gen)" stroke-dasharray={phase >= 7 ? 'none' : '4 3'} />
+            <text x="385" y="572" text-anchor="middle" class="tag strong">chunk 2 · {t(phase >= 7 ? 'ready' : 'pending', phase >= 7 ? '就绪' : '未就绪')}</text>
             <line x1="510" y1="540" x2="510" y2="594" stroke="var(--eos)" stroke-width="1.5" stroke-dasharray="4 3" />
             <text x="525" y="562" class="tag strong" fill="var(--eos)">{t('chunk 1 ends', 'chunk 1 结束')}</text>
             <text x="525" y="585" class="tag">{t('late chunk 2 = stall', 'chunk 2 迟到就卡顿')}</text>

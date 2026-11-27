@@ -1,6 +1,15 @@
 # 第 13 章评分卡 · Deploy and tune Qwen3-Omni
 
-日期：2026-11-27。当前状态：协调固定 `bd4aa5d` **GO**；本轮 **Omni-49 作者修复待固定复审**，不自行销项或改写整章 verdict。
+日期：2026-11-27。当前状态：协调固定 `bd4aa5d` **GO**；本轮 **Omni-49 与 Omni-51 作者修复待固定复审**，不自行销项或改写整章 verdict。
+
+## 本轮：Omni-51，Step 9 replica2 readiness
+
+- direction 指定的 Omni-50 已由当前 HEAD 的 `ac65a00`、`308a9d5` 完成，本轮不重复返工待复审批次；按上一轮报告的下一单元处理本项。Step 9 用八相依次形成 warmup 1 发送、warmup 1 HTTP 200、warmup 2 发送、warmup 2 HTTP 200 后 `UP`、A/B、两类记录、听者时间线和 chunk 2 就绪。图上 `max(process.num_replicas) = 2`，首个 200 后仍是 `STARTING`，与 pinned `sglang_omni/serve/launcher.py:552-605,666-675,761-770` 一致。
+- Step 9 作者参考值：R1–R5 **10/10**、机制 R6 **2/2**、原十个非视觉项 **20/20**、新内容洞 **0**。R1 复述：「replica2 要依次跑完两个预热请求，两个都返回 HTTP 200，服务器才算就绪。」独立 `explore` 冷读 **PASS**，指定范围无剩余内容洞；这不是协调销项。
+- `npm run build`（60 页）、十步 `readability`、`deep-check 13`、`zh-check`、英中全章及中文 Step 9 的 360／390／430 px `mobile`、`git diff --check` 全过。transcript 连续两次一致：**3,586 词**，SHA-256 `9f5e5a3fb73903051a860917ca49c1218a68a10c25b9de7c72824aabff987796`。
+- `.bot/out/omni51-step9-audit.mjs` 覆盖英文桌面、中文桌面、中文 390 px × 直接／前步入口，共 **6 组合、48 状态、42/42 机制转变**。最低 **10.806 CSS px**，重叠、SVG 出界和页面横溢均为 0；脚本断言两个 warmup 的顺序、各自 HTTP 200 和全部成功前不就绪。
+- `.bot/out/omni51-deep-audit.mjs` 覆盖双语 360／390／430／1440 px 共 **8 个打开抽屉视图**，展开身份、目标文本、页面与抽屉横溢、KaTeX 和 raw-math 检查均通过。桌面抽屉打开后舞台最小字为 **4.855 CSS px**，焦点记录为空，属于既有共享 ML-21／22，本单元未修也不声称该共享呈现项通过。
+- 当前模型不能读取 PNG；上述结论来自构建、transcript、源码、独立冷读、DOM 和几何检查，未声称视觉通过或完成主人最终验收。未跑真实服务器、warmup、模型或全站回归。协调固定 `bd4aa5d` 的整章基线不变，后续修改不继承该 verdict。
 
 ## 本轮：Omni-49，Step 5 当前默认的容量账
 

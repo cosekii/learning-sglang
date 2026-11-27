@@ -319,12 +319,13 @@ $$
 
 ## 第 9 步 · 就绪不是 benchmark
 
-> **一句话：** readiness 证明一个小请求能跑完；A/B 再只改一个选择，分别记录客户端耗时和听者卡顿。
+> **一句话：** replica2 的 readiness 依次发送两个小请求，两个都返回 HTTP 200 才让服务器就绪；A/B 再只改一个选择，分别记录客户端耗时和听者卡顿。
 
 ### 图上是什么
 
-- 顶行给出顺序：先让一个小请求跑完，再比较一个选择。
-- readiness 发送一张小图、一秒声音和一条短指令。收到响应表示请求跑完了。每个生成 token 的 stage 最多生成 8 个新 token。响应只说明健康，不说明速度。
+- 顶行给出第 7 步 replica2 配置的顺序：依次跑完两个预热请求，再比较一个选择。
+- 每个预热请求都用同一张小图、一秒声音和一条短指令。每个生成 token 的 stage 最多生成 8 个新 token。HTTP 200 表示这个请求跑完了，只说明健康，不说明速度。
+- launcher 用 `max(process.num_replicas)` 决定预热请求数，本例是 2。warmup 1 返回 HTTP 200 后才发送 warmup 2。第一个 200 后服务器仍在 `STARTING`，第二个 200 后才变成 `UP`。
 - A/B 给两个选择发同样的请求，只改一个部署选择。测量计划固定输入、采样、硬件和预热。A 保留第一个选择，B 只改一项。
 - 基准客户端记录首音和整个请求的墙钟时间，听者另记播放卡顿。
 - 底部时间线解释卡顿。10 个 80 ms 的帧组成一个 800 ms chunk。chunk 2 先显示未就绪，再赶在 chunk 1 结束前就绪。chunk 2 迟到会让播放出现空档。
@@ -351,11 +352,13 @@ $$
 
 ### 图外做法与出处
 
-本步之前，先用 `sgl-omni config resolve --config <config.yaml> --show config` 解析配置（`docs/basic_usage/process_topology.md:52-53`）。readiness 的定义见 `docs/cookbook/qwen3_omni.md:202-204` 和 `sglang_omni/models/qwen3_omni/config.py:328-366`；有限的预热覆盖见 `docs/basic_usage/omni.md:345-349`。
+本步之前，先用 `sgl-omni config resolve --config <config.yaml> --show config` 解析配置（`docs/basic_usage/process_topology.md:52-53`）。readiness 的定义见 `docs/cookbook/qwen3_omni.md:202-204` 和 <code>sglang_omni/models/qwen3_omni/<wbr>config.py:328-366</code>；有限的预热覆盖见 `docs/basic_usage/omni.md:345-349`。
+
+launcher 计算 <code>num_replicas = max(<wbr>process.num_replicas)</code>，复制同样数量的预热请求，再逐条发送（<code>sglang_omni/serve/<wbr>launcher.py:552-605,761-770</code>）。连续准入按 round robin 绑定副本，所以两条请求能预热副本数最多进程里的两个副本。`send_warmup_requests` 先等当前请求返回 HTTP 200，再发下一条。`warm_up_server` 只在全部请求成功后设置 `ServerStatus.UP`（`launcher.py:666-675`）。任何非 200 响应都会停止启动，不会把服务器标成就绪。
 
 文档中的 SeedTTS sweep 是舞台以外的另一个算例。它在并发 1 和 16 各重复 5 次，所以 `2 档 × 每档 5 次 = 每种选择 10 次运行`。`c` 是 concurrency，即同时运行的请求数。预热另算。按照第 8 章第 8 步，同一次运行里的多个请求不能算作独立的实验重复。还要保留吞吐、失败、显存和每次运行的原始结果（`benchmarks/README.md:249-288`）。
 
-基准客户端记录请求墙钟时间（`benchmarks/metrics/performance.py:27-31`；`benchmarks/eval/benchmark_omni_seedtts.py:371,398,408`）。第 12 章第 8 步的停答 `L−S` 和回应 `N−R` 仍是独立的听者时钟。随仓库脚本的 p99 表示 99% 的测量请求不超过这条线。只有测量样本包含至少 100 个请求的结果时才报告 p99；十次运行本身既不能保证也不排除这个样本数（`benchmarks/eval/benchmark_omni_seedtts.py:504-505,552-561`；`benchmarks/benchmarker/conditions.py:19-20,95-100`）。
+基准客户端记录请求墙钟时间（`benchmarks/metrics/performance.py:27-31`；<code>benchmarks/eval/<wbr>benchmark_omni_seedtts.py:371,398,408</code>）。第 12 章第 8 步的停答 `L−S` 和回应 `N−R` 仍是独立的听者时钟。随仓库脚本的 p99 表示 99% 的测量请求不超过这条线。只有测量样本包含至少 100 个请求的结果时才报告 p99；十次运行本身既不能保证也不排除这个样本数（<code>benchmarks/eval/<wbr>benchmark_omni_seedtts.py:504-505,552-561</code>；`benchmarks/benchmarker/conditions.py:19-20,95-100`）。
 
 `--generate-only` 保存声音和生成速度记录，包括成功与失败数量，但不转写声音，也不计算 WER 或说话人相似度（`benchmarks/README.md:215-220,659`）。保留这些完成情况记录，再按负载另行检查转写、WER，以及适用时基于参考音频的音色匹配。
 

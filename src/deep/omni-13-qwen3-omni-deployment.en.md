@@ -318,12 +318,13 @@ The next step checks a resolved configuration and then measures it with real tra
 
 ## Step 9 · Readiness is not a benchmark
 
-> **In one line:** Readiness proves one small request can finish; A/B then changes one choice and records client time and listener stalls separately.
+> **In one line:** Replica2 readiness sends two small requests one at a time and marks the server up after both return HTTP 200; A/B then changes one choice and records client time and listener stalls separately.
 
 ### On the stage
 
-- The top line gives the order: finish one small request, then compare one choice.
-- Readiness sends a small image, one second of audio and a short instruction. A response means the request finished. Each token-generating stage produces at most eight new tokens. A response shows health, not speed.
+- The top line gives the order for Step 7's replica2 config: finish two warmups in order, then compare one choice.
+- Each warmup uses the same small image, one second of audio and short instruction. Each token-generating stage produces at most eight new tokens. HTTP 200 means that request finished; it shows health, not speed.
+- The launcher takes the warmup count from `max(process.num_replicas)`, which is 2 here. Warmup 1 must return HTTP 200 before warmup 2 starts. The first 200 leaves the server `STARTING`; only the second 200 makes it `UP`.
 - A/B sends the same requests to both choices and changes one deployment choice. The measurement plan holds inputs, sampling, hardware and warmup fixed. Choice A keeps the first choice; choice B changes one thing.
 - The benchmark client records first-audio and total-request wall time. The listener separately records playback stalls.
 - The bottom timeline explains a stall. Ten 80 ms frames make one 800 ms chunk. Chunk 2 is first pending, then ready before chunk 1 ends. A late chunk 2 would leave a gap in playback.
@@ -350,11 +351,13 @@ The 800 ms deadline is playback duration, not a measured code2wav compute budget
 
 ### Off-stage procedure and sources
 
-Before this slide, resolve the configuration with `sgl-omni config resolve --config <config.yaml> --show config` (`docs/basic_usage/process_topology.md:52-53`). Readiness is defined in `docs/cookbook/qwen3_omni.md:202-204` and `sglang_omni/models/qwen3_omni/config.py:328-366`; its limited warm-up coverage is in `docs/basic_usage/omni.md:345-349`.
+Before this slide, resolve the configuration with `sgl-omni config resolve --config <config.yaml> --show config` (`docs/basic_usage/process_topology.md:52-53`). Readiness is defined in `docs/cookbook/qwen3_omni.md:202-204` and <code>sglang_omni/models/qwen3_omni/<wbr>config.py:328-366</code>; its limited warm-up coverage is in `docs/basic_usage/omni.md:345-349`.
+
+The launcher computes <code>num_replicas = max(<wbr>process.num_replicas)</code>, creates that many copies of the warmup request and sends them one at a time (<code>sglang_omni/serve/<wbr>launcher.py:552-605,761-770</code>). Consecutive admissions bind the replicas round robin, so two requests warm both replicas of the most replicated process. `send_warmup_requests` checks each response for HTTP 200 before starting the next request. `warm_up_server` sets `ServerStatus.UP` only after every request succeeds (`launcher.py:666-675`). A non-200 response stops startup instead of marking the server ready.
 
 The documented SeedTTS sweep is a separate example from the stage. It uses concurrency 1 and 16 with five repeats at each level, giving `2 levels × 5 repeats = 10 runs per choice`. Here `c` means concurrency, the number of requests running together. Warmup runs are separate, and requests inside one run do not become independent experiment repeats, following Ch. 8 Step 8. Keep throughput, failure, memory and raw per-run records (`benchmarks/README.md:249-288`).
 
-The benchmark client records request wall time (`benchmarks/metrics/performance.py:27-31`; `benchmarks/eval/benchmark_omni_seedtts.py:371,398,408`). Ch. 12 Step 8's stop wait `L−S` and response wait `N−R` remain separate listener clocks. The shipped p99 boundary has 99% of measured requests at or below it. Report p99 only when the measured sample contains results from at least 100 requests; ten runs alone neither establish nor forbid that sample count (`benchmarks/eval/benchmark_omni_seedtts.py:504-505,552-561`; `benchmarks/benchmarker/conditions.py:19-20,95-100`).
+The benchmark client records request wall time (`benchmarks/metrics/performance.py:27-31`; <code>benchmarks/eval/<wbr>benchmark_omni_seedtts.py:371,398,408</code>). Ch. 12 Step 8's stop wait `L−S` and response wait `N−R` remain separate listener clocks. The shipped p99 boundary has 99% of measured requests at or below it. Report p99 only when the measured sample contains results from at least 100 requests; ten runs alone neither establish nor forbid that sample count (<code>benchmarks/eval/<wbr>benchmark_omni_seedtts.py:504-505,552-561</code>; `benchmarks/benchmarker/conditions.py:19-20,95-100`).
 
 `--generate-only` saves audio and generation-speed records, including success and failure counts. It does not transcribe audio or compute WER or speaker similarity (`benchmarks/README.md:215-220,659`). Keep those completion records, then run transcription, WER and reference-based voice-match checks separately where applicable.
 

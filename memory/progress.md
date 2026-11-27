@@ -4,6 +4,9 @@
 
 ## 本轮记录
 
+- 修旧 Learning SGLang Omni 第 13 章 Step 9 的 Omni-51：direction 指定的 Omni-50 已由当前 HEAD 的 `ac65a00`、`308a9d5` 完成，保留待复审批次，不重复返工；按上一轮报告的下一单元处理本项。Step 9 改为八相：warmup 1 发送、HTTP 200，warmup 2 发送、HTTP 200 后就绪，再进入 A/B、两类记录和听者时钟。`max(process.num_replicas) = 2` 与 pinned `serve/launcher.py` 的顺序请求、逐个 200、全部成功才 `UP` 一致；双语组件、MDX、deep 与 transcript 已同步，教程修复待协调固定复审，不自行销项。
+- Step 9 作者参考值为 R1–R5 **10/10**、机制 R6 **2/2**、原十个非视觉项 **20/20**、0 新内容洞，独立 `explore` 冷读 **PASS**。`build`（60 页）、十步 `readability`、两次一致的 transcript（3,586 词，`9f5e5a3f…7796`）、`deep-check 13`、`zh-check`、英中全章与中文 Step 9 三宽度 `mobile`、`git diff --check` 全过。定向审计 **6 组合、48 状态、42/42 转变**，最低 **10.806 CSS px**；双语 deep **8 视图**。桌面抽屉缩舞台与焦点仍属共享 ML-21／22。当前模型不能读 PNG，视觉与整章 verdict 待协调；未跑真实服务器、warmup、模型或全站回归。本轮类型：**修旧**；下一单元按本书 P1 顺序处理 **Omni-52**。
+
 - 修旧 Learning ML Systems 第 7 章 Step 5 的 ML-55：同一桶卡片按 `restored → pp-ep → tp → unpad → hf → handles → loaded → cleared` 改变对象状态，有序记录严格上演 `PP/EP broadcast → TP gather → unpad → HF layout → handles → ray.get → clear`。句柄和 `ray.get` 返回后的转换副本都保持存活，`clear` 后才释放，Bucket 2 随后上卡；桌面、手机、MDX 与双语 deep 同序，padding 改为条件措辞。教程提交 `622eac2` 待协调固定复审，不自行销项；ML-41～44 与 ML-50 的关闭结论不变，Step 7 未改，ML-52 保持独立，未开第 14 章。
 - Step 5 作者参考值为 R1–R5 **10/10**、机制 R6 **2/2**、原十个非视觉项 **20/20**、0 新内容洞。独立 `explore` 首轮 FAIL 后逐项返工，第二轮 **PASS**。`build`（60 页）、Step 5 `readability`、两次哈希一致的 `transcript`（2,161 词，`8aab5d02…7059`）、`deep-check 07`、`zh-check`、英中全章与中文 Step 5 三宽度 `mobile`、`git diff --check` 全过；定向审计 **80 个状态、72/72 个机制转变、64 个同桶状态变化、4 个 deep 状态、77 个唯一 PNG 哈希**，最低 **10.233 CSS px**，重叠、出界和 `failures` 为 0。当前模型不能读 PNG，视觉、原 #4/#5 和整章 verdict 待协调；固定 `88fc4d1` 的整章 NO-GO 基线不变。本轮类型：**修旧**。
 
