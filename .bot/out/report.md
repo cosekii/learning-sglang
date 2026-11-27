@@ -1,3 +1,54 @@
+# lane k1 本轮报告 · Omni 11 机制与桌面字号返工
+
+日期：2026-11-26。类型：修旧。范围只含 Learning SGLang Omni 第 11 章 `FishS2Pro.svelte`、生成 transcript、验证产物和本报告。未改 Omni 13／14、其他书、其他 lane 的章节、第 1 本受保护英文原文或 `.bot/memory/`。
+
+## 处理的 open review 项
+
+- **Omni-15 · 第 11 章机制 R6 1/16**：八步改为 `[6,4,3,11,5,4,3,4]` 个相位，逐步提交为 `b0aae47`、`949f8c0`、`86016c7`、`0884d95`、`adaae0b`、`e904d83`、`50297db`、`d8c7c4f`。相位不再只移动红框或响应式布局：
+  1. `tts_engine` 逐批产生 10／20／30／40 帧，凑齐后 vocoder 开窗。
+  2. 16,000 个输入采样点依次经过重采样、补位和 `[10,22]` code 矩阵。
+  3. 目标文字和参考 codes 依次进入 Slow AR，随后出现第一帧的 code 0。
+  4. Fast 第 0 次调用后，c1–c9 逐格出现；计数从 `1+0=1` 到 `1+9=10`，最后十行进入 vocoder。
+  5. 十个 codes 反馈到下一帧，Slow KV 跨帧保留；旧 Fast KV 淡出，新的 0–9 内层 KV 出现。
+  6. EOS、长度用尽、abort 三个出口依次展示各自保留或拦截的输出。
+  7. 三个流式窗口依次出现，输入分别为 40／65／25 帧；灰色 512 尾巴经历留下、使用、释放。
+  8. 完成的 A／B 先补成 `[2,10,90]`，再出现一次 vocoder 调用，最后分别裁回 90F／40F。
+- **Omni-02 的第 11 章桌面小字部分**：`6b16377` 按舞台高度调整共享 footnote／loops 字号，并只提高 Step 7 的主小字。返工前全书审计已知 Step 7 最低 **7.402 CSS px**；返工后本章 40 个桌面相位最低 **10.506 CSS px**。这只核销第 11 章部分，其他章的 Omni-02 保持开放。
+- caption、数字、双语深入讲解和章间问题未改，既有机制结论未改。第 5 步 cached-prefix 修复、第 7 步小窗口取舍和第 8 步 session 问题原样保留。Omni 13 文件未动，Omni 14 留到下一单元。
+
+## 作者评分与小学生冷读
+
+以下是主线程按 transcript、组件和逐相 DOM 得出的作者自评，不是协调 verdict。R1–R5 **80/80**、机制 R6 **16/16**、原十个非视觉项 **160/160**，新增内容洞 **0**。原 #4／#5、原十二项新总分和整章 GO／NO-GO 留给固定复审；当前模型无图像输入，不声称已读 PNG 或视觉通过。
+
+| 步 | R1–R5 | 机制 R6 | 小学生复述 | 新洞 |
+|---|---:|---:|---|---:|
+| 1 | 10/10 | 2/2 | 攒齐 40 帧才打开首个声音窗口，每帧有十个 codes。 | 0 |
+| 2 | 10/10 | 2/2 | 一秒参考声音变成 22 帧，每帧有十行 codes，不满的最后一帧要补位。 | 0 |
+| 3 | 10/10 | 2/2 | Slow AR 读完文字和参考声音，为第一帧选出 code 0。 | 0 |
+| 4 | 10/10 | 2/2 | Fast AR 先接收 Slow 的数，再九次各补一个 code，最后把十行交给 vocoder。 | 0 |
+| 5 | 10/10 | 2/2 | 下一帧会拿回十个 codes；Slow 记住旧工作，Fast 清空后重来。 | 0 |
+| 6 | 10/10 | 2/2 | EOS 和长度用尽保留已接受的声音，abort 拦下还没交付的声音。 | 0 |
+| 7 | 10/10 | 2/2 | 三个窗口会重读旧帧，但旧声音不重复播放，512 个采样点最后才放出。 | 0 |
+| 8 | 10/10 | 2/2 | B 的 40 帧先补到 A 的 90 帧，一起解码后再裁掉补的 50 帧。 | 0 |
+
+## 验证
+
+- 最终 `npm run build`：**60 页**通过。全章八步 `readability` 为 **0 机械问题**；`deep-check 11`、`zh-check`、英中全章 360／390／430 px `mobile`、中文逐步字号门和 `git diff --check` 全过。
+- 默认 transcript 连续两次逐字一致并与 pinned 无差异：**2,144 词**，SHA-256 `fec68ad32da78557d31306fb9664b6a983991cc0a0a59da85a73059bbc28afa1`。八步均有本步机制，厚度达到 EVAL 对照原版同类章约 2,000 词的参考量级；没有靠新增散文替代机制。
+- 自定义逐相审计覆盖 **40 个 1440×900 桌面相位**。每个相位的 step／phase 身份均核对；每步至少两个真实机制状态，可见文字或不透明对象随相位改变。文字重叠、SVG 出界均为 **0**，最低可见字体 **10.506 CSS px**。每步保存首末相 PNG，共 **16 张身份已核截图**，位于 `.bot/out/omni11/s1/` 至 `s8/` 的 `verified-initial.png` 和 `verified-final.png`。
+- 中文 Step 4／7／8 和英文 Step 7 深入讲解均为 `aria-expanded=true`，横向溢出、KaTeX 错误和残留 `$$` 均为 **0**。对应 PNG 在 `.bot/out/omni11/deep/`。代表舞台图为 `.bot/out/omni11/s7/verified-final.png`。
+- 首次构建发现本 clone 的 `node_modules` 符号链接指向协调人 checkout，Vite 尝试写共享 cache 并报 EPERM。已只删除本目录内的符号链接并执行本地 `npm install`，后续依赖、cache、dev server 和构建均在本 clone，未写协调人的 checkout。多次推送被拒后均执行 `git pull --rebase origin tutorials` 再推，没有 force-push。
+
+## 提交与剩余
+
+- 八个步骤和一个桌面字号修复均已推 `origin/tutorials`，最新教程提交为 `6b16377`。本报告随后续 `[k1] ` 记录提交推送。
+- Omni-15 的作者返工和本章硬门已完成，机制 **1/16 → 16/16（作者 DOM 自评）**；完整 EVAL、原十二项和协调 verdict 仍记 **coordinator-rereview-pending**，不自行写 `complete-under-EVAL`。
+- 下一单元按 direction 处理 **Omni 14 桌面小字**，当前 Step 2 为 **7.59 CSS px**；本轮未改 Omni 14。其他 Omni 开放项不因本章返工自动关闭，不开第 16／17 章。
+- 未跑全站回归、真实 Fish S2 Pro、SGLang-Omni 服务、GPU benchmark、音频质量、故障注入或 reduced-motion 动态切换。主人最终视觉与产品验收另计。
+- 本地章节地址：`http://localhost:4322/learning-sglang/omni/ch/11-fish-s2-pro/?step=7`。收尾已停止本轮 4322 dev server 和本轮浏览器；查看前在本目录运行 `npx astro dev --background`。
+
+---
+
 # lane k2 本轮报告 · 继续等 ML Systems 固定复审
 
 日期：2026-11-26。类型：修旧等待。范围只有本报告；未改教程、评分卡、`.bot/memory/`、其他书或其他 lane 的章节。
