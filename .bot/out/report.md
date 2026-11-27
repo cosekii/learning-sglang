@@ -1,3 +1,28 @@
+# lane k2 本轮报告 · ML Systems 06 Step 3 的 ML-61
+
+日期：2026-11-27。类型：修旧（direction 在 ML-62 后的同一项手机措辞修复）。本轮开始 HEAD 与 `origin/tutorials` 均为 `bcccdb0`，工作树干净。范围只有 ML 06 Step 3 的手机图内文字、定向审计和本报告；未改其他步、其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。ML-19 与 ML-41～44 的作者批次保持冻结，未开新写作。
+
+## 修复与评分
+
+- **ML-61 作者修复完成，待协调固定复审，不自行销项。** 手机英文由 `write 8 different answers` 改为 `write 8 answers`，中文由「写出 8 份不同回答」改为「写出 8 份回答」。8 次采样不再被写成保证互不相同；桌面文字和其他机制未改。
+- `.bot/out/ml61-mobile-audit/report.json` 覆盖英中 360／390／430 px 六个状态。每个状态都到达 Step 3 末相 `phase=3/3`、counter `03 / 08`，只含新措辞，不含旧措辞；SVG 出界、页面横溢和 `failures` 均为 0，最低可见字为 **10.760 CSS px**。可重跑脚本：`.bot/out/ml61-mobile-audit.mjs`。
+- Step 3 作者复评：R1–R5 **10/10**、机制 R6 **2/2**、原十个非视觉项 **20/20**，新内容洞 **0**。R1 复述不变：「模型给每个回答 token 各记一个生成分数；检查器下一步才给整个回答 reward，两种分数不一样。」协调固定 `209c3fa` 的整章基线仍为 **80/80、16/16、190/192，NO-GO**；ML-61／62 均由协调核销。
+- 独立 `explore` 冷读 **PASS**：双语都不再保证回答互异，含义与桌面一致；六个手机状态的措辞、末相身份和几何检查全部通过。
+
+## 硬门与边界
+
+- `npm run build`：**60 页**通过。transcript 为 **8 步／1,517 词**，SHA-256 `58c569eaa3a84b8619bc12e641c9f228ae2623aad0faecb4020f52bae8c686f6`，与 pinned 逐字一致；本次手机专版文字不改变桌面 transcript。
+- 显式指向本轮 4503 服务后，英中全章 360／390／430 px `mobile`、中文 Step 3 字号门、`deep-check 06`、`zh-check`、Step 3 `readability` 和 `git diff --check` 全过。
+- 代表截图：`.bot/out/ml61-mobile-audit/zh-360.png`。**当前模型不能读取 PNG；结论来自构建、transcript、源码、独立冷读、DOM 和几何检查，未声称看过图片或视觉通过。** 未跑全站回归、真实 slime 训练或 GPU benchmark。
+
+## 剩余与清理
+
+- 剩余事项是 ML-61／62 的协调固定复审、整章评分和主人最终视觉验收；其他开放 finding 与新写作均未触碰。
+- 本地查看前运行 `npx astro dev --background --host 127.0.0.1 --port 4503`，地址：`http://localhost:4503/learning-sglang/ml-sys/ch/06-slime-rollout-loop/?step=3`。4503 服务已停止，端口无监听。
+- 收尾已执行 `pgrep -fl headless` 和 `lsof`：现存 Chrome PID 11347、40190、40967 的 cwd 分别属于后台 regress、协调快照和 lane k1，均非本轮所起，未动；本轮审计浏览器无存活进程。
+
+---
+
 # lane k2 本轮报告 · ML Systems 06 Step 3 的 ML-62
 
 日期：2026-11-27。类型：修旧（P1 手机 deep 呈现门）。本轮开始 HEAD 与 `origin/tutorials` 均为 `04be539`，工作树干净。ML-45／46 已由协调关闭；ML-19 与 ML-41～44 的作者修复批次保持原样，不重做。范围只有 ML 06 Step 3 的双语 deep、定向审计和本报告；未改组件、caption、MDX、transcript、其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。

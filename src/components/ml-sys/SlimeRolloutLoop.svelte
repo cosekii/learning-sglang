@@ -214,7 +214,7 @@
             <line x1="150" y1="166" x2="150" y2="199" stroke="var(--gen)" stroke-width="3" marker-end="url(#slime-arrow-orange)" />
             <rect x="35" y="209" width="230" height="91" rx="11" fill="var(--gen-soft)" stroke="var(--gen)" />
             <text x="150" y="241" text-anchor="middle" class="section">SGLANG ROLLOUT</text>
-            <text x="150" y="275" text-anchor="middle" class="small">{t('write 8 different answers', '写出 8 份不同回答')}</text>
+            <text x="150" y="275" text-anchor="middle" class="small">{t('write 8 answers', '写出 8 份回答')}</text>
           </g>
           <g opacity={phase >= 2 ? 1 : 0}>
             <line x1="150" y1="300" x2="150" y2="333" stroke="var(--accent)" stroke-width="3" marker-end="url(#slime-arrow-blue)" />
