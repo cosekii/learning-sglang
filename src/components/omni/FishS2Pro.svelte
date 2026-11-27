@@ -153,8 +153,8 @@
     return [];
   };
   const tailFrame = (isPhone: boolean, phase: number): Frame => isPhone
-    ? { x: 180, y: 225 + phase * 220, w: 88, h: 42 }
-    : { x: 600, y: 139 + phase * 140, w: 70, h: 40 };
+    ? { x: 176, y: 225 + phase * 220, w: 96, h: 42 }
+    : { x: 594, y: 139 + phase * 140, w: 92, h: 40 };
   let phase = $state(0);
   let lap = $state(0), lapMs = $state(0);
   const nextLap = (ms: number) => untrack(() => { lapMs = ms; lap++; });

@@ -8,15 +8,25 @@ import { launch, sleep } from '../../scripts/lib/browser.mjs';
 
 const base = (process.env.BASE || 'http://localhost:4466/learning-sglang').replace(/\/$/, '');
 const out = process.env.OUT || '.bot/out/omni11-phase-audit';
+const lang = process.env.LANG === 'zh' ? 'zh' : 'en';
+const onlyStep = Number(process.env.STEP) || null;
+const width = Number(process.env.WIDTH) || 1440;
+const height = width <= 900 ? 844 : 900;
 const expectedCounts = [6, 4, 3, 11, 5, 4, 3, 4];
+const selectedCounts = expectedCounts.filter((_, index) => !onlyStep || onlyStep === index + 1);
+const expectedStates = selectedCounts.reduce((sum, count) => sum + count, 0);
+const expectedTransitions = selectedCounts.reduce((sum, count) => sum + count - 1, 0);
 const states = [];
 mkdirSync(out, { recursive: true });
 
-const browser = await launch({ width: 1440, height: 900 });
+const browser = await launch({ width, height });
 const keepAlive = setInterval(() => {}, 1000);
 try {
-  const page = await browser.tab();
+  const page = await browser.tab({ width, height, mobile: width <= 900 });
+  await page.goto(`${base}/omni/ch/11-fish-s2-pro/?step=1`);
+  await page.evaluate(`localStorage.setItem('lang', '${lang}')`);
   for (let step = 1; step <= expectedCounts.length; step++) {
+    if (onlyStep && step !== onlyStep) continue;
     await page.goto(`${base}/omni/ch/11-fish-s2-pro/?step=${step}`);
     await sleep(850);
     const finalPhase = await page.evaluate(`Number(document.querySelector('.viz')?.getAttribute('data-animation-final-phase'))`);
@@ -87,6 +97,19 @@ try {
         const svgRect = svg.getBoundingClientRect();
         const overflow = boxes.filter(({ rect }) => rect.left < svgRect.left - 1 || rect.right > svgRect.right + 1)
           .map(({ el }) => el.textContent.trim());
+        const tailBox = svg.querySelector('rect.motion-tail');
+        const tailLabel = svg.querySelector('text.motion-tail');
+        const tail = tailBox && tailLabel ? (() => {
+          const box = tailBox.getBoundingClientRect();
+          const label = tailLabel.getBoundingClientRect();
+          return {
+            text: tailLabel.textContent.trim(),
+            leftOverflow: Math.max(0, box.left - label.left),
+            rightOverflow: Math.max(0, label.right - box.right),
+            topOverflow: Math.max(0, box.top - label.top),
+            bottomOverflow: Math.max(0, label.bottom - box.bottom),
+          };
+        })() : null;
         const counter = document.querySelector('.counter')?.textContent.trim().replace(/\\s+/g, ' ');
         return {
           step: Number(root.getAttribute('data-animation-step')) + 1,
@@ -100,6 +123,7 @@ try {
           minFontText: smallest.text,
           overlaps,
           overflow,
+          tail,
           mechanism,
         };
       })()`);
@@ -127,7 +151,7 @@ const transitions = states.filter((state) => state.changed !== null);
 const changedTransitions = transitions.filter((state) => state.changed).length;
 const smallest = states.reduce((a, b) => a.minFont < b.minFont ? a : b);
 const summary = {
-  steps: expectedCounts.length,
+  steps: new Set(states.map((state) => state.step)).size,
   phases: states.length,
   transitions: transitions.length,
   changedTransitions,
@@ -137,11 +161,15 @@ const summary = {
   minFontText: smallest.minFontText,
   overlaps: states.reduce((sum, state) => sum + state.overlaps.length, 0),
   overflow: states.reduce((sum, state) => sum + state.overflow.length, 0),
+  tailOverflow: states.filter((state) => state.tail && ['leftOverflow', 'rightOverflow', 'topOverflow', 'bottomOverflow']
+    .some((key) => state.tail[key] > 0.01)).length,
+  maxTailLeftOverflow: Math.max(0, ...states.map((state) => state.tail?.leftOverflow || 0)),
+  maxTailRightOverflow: Math.max(0, ...states.map((state) => state.tail?.rightOverflow || 0)),
 };
-const report = { base, generatedAt: new Date().toISOString(), summary, states };
+const report = { base, lang, generatedAt: new Date().toISOString(), summary, states };
 writeFileSync(join(out, 'report.json'), JSON.stringify(report, null, 2) + '\n');
 console.log(JSON.stringify({ summary, report: join(out, 'report.json') }, null, 2));
-if (states.length !== 40 || transitions.length !== 32 || changedTransitions !== 32 ||
-    summary.minFont < 10 || summary.overlaps || summary.overflow) {
+if (states.length !== expectedStates || transitions.length !== expectedTransitions || changedTransitions !== expectedTransitions ||
+    summary.minFont < 10 || summary.overlaps || summary.overflow || summary.tailOverflow) {
   throw new Error(`audit failed: ${JSON.stringify(summary)}`);
 }
