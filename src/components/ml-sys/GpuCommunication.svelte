@@ -461,7 +461,7 @@
             <text x="150" y="448" text-anchor="middle" class="small">{t('only the transfer path changes', '只改变传输路径')}</text>
           </g>
         {/if}
-        <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t("Next: how do requests reach this Ring's GPUs?", '下一章：服务怎样把请求分给 Ring 上的 GPU？')}</text>
+        <text x={W / 2} y={H - 26} text-anchor="middle" class="footnote">{t(phone ? 'Next: how do service workers start?' : 'Next: before GPUs can serve together, how do their workers start?', phone ? '下一章：服务 worker 怎样启动？' : '下一章：GPU 怎样启动 worker，组成一个服务？')}</text>
         <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Simplified dependency model, not an NCCL timing forecast.', '简化的相关链模型，不是 NCCL 耗时预测。')}</text>
       {/if}
     </svg>

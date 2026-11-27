@@ -237,6 +237,6 @@ $$C_0=6t,\qquad C_1=5t+(t+d)=6t+d,\qquad \Delta C=C_1-C_0=d$$
 
 ### 接下来
 
-本章的回答是：Ring 让每卡集齐同一份结果，链路上的延迟会推迟相关轮次。下一章把这些 GPU 组成服务，看不同请求怎样分给 worker。
+本章的回答是：Ring 让每卡集齐同一份结果，链路上的延迟会推迟相关轮次。下一章先启动 worker，把一组 GPU 组成服务，再跟着一条流式请求走过这些 worker。
 
 来源：`Awesome-ML-SYS-Tutorial/torch/nccl/readme.md:114-145`；`Awesome-ML-SYS-Tutorial/torch/torch-distributed/readme.md:935-950`；`zero-to-sglang/course-material/ch/part3/第4章_横向扩展.md:21-34`；`Inference Engineering §3.3.1, §5.4`。

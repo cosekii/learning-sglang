@@ -237,6 +237,6 @@ No milliseconds are assigned: Step 5's `NV18` and `SYS` labels do not provide $t
 
 ### Next
 
-This chapter's answer is that Ring gives every GPU the same result, while a delayed link shifts dependent rounds. The next chapter combines these GPUs into a service and follows how requests reach its workers.
+This chapter's answer is that Ring gives every GPU the same result, while a delayed link shifts dependent rounds. The next chapter starts the workers that turn a group of GPUs into a service, then follows one streaming request through them.
 
 Sources: `Awesome-ML-SYS-Tutorial/torch/nccl/readme.md:114-145`; `Awesome-ML-SYS-Tutorial/torch/torch-distributed/readme.md:935-950`; `zero-to-sglang/course-material/ch/part3/第4章_横向扩展.md:21-34`; `Inference Engineering §3.3.1, §5.4`.

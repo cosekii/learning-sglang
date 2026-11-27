@@ -1,0 +1,159 @@
+{
+  "base": "http://127.0.0.1:4494/learning-sglang",
+  "generatedAt": "2026-11-27T12:13:00.673Z",
+  "summary": {
+    "states": 4,
+    "mechanismSteps": 1,
+    "deepStates": 2,
+    "minFont": 12.593,
+    "overlaps": 0,
+    "overflow": 0,
+    "seams": 2
+  },
+  "states": [
+    {
+      "lang": "en",
+      "phase": 0,
+      "finalPhase": 3,
+      "counter": "07 / 07",
+      "texts": [
+        "loops",
+        "A slower link delays later rounds",
+        "topology = GPU link map · same Ring and S",
+        "baseline · each dependent round takes t",
+        "1 · t",
+        "2 · t",
+        "3 · t",
+        "4 · t",
+        "5 · t",
+        "6 · t",
+        "dependent chain = 6t",
+        "Next: before GPUs can serve together, how do their workers start?",
+        "Simplified dependency model, not an NCCL timing forecast."
+      ],
+      "minFont": 12.593,
+      "overlaps": 0,
+      "overflow": 0,
+      "pngMd5": "262c2595d06705ee79c56722f67baac4"
+    },
+    {
+      "lang": "en",
+      "phase": 3,
+      "finalPhase": 3,
+      "counter": "07 / 07",
+      "texts": [
+        "loops",
+        "A slower link delays later rounds",
+        "topology = GPU link map · same Ring and S",
+        "baseline · each dependent round takes t",
+        "1 · t",
+        "2 · t",
+        "3 · t",
+        "4 · t",
+        "5 · t",
+        "6 · t",
+        "dependent chain = 6t",
+        "change one link · round 2 takes t + d",
+        "1 · t",
+        "2 · t+d",
+        "3 · t",
+        "4 · t",
+        "5 · t",
+        "6 · t",
+        "5t + (t+d) = 6t+d · extra wait = d",
+        "■ unchanged rounds ■ slower transfer; later rounds shift right",
+        "Next: before GPUs can serve together, how do their workers start?",
+        "Simplified dependency model, not an NCCL timing forecast."
+      ],
+      "minFont": 12.593,
+      "overlaps": 0,
+      "overflow": 0,
+      "pngMd5": "403f11bfa1deae91439dc0c7ba3355cc"
+    },
+    {
+      "lang": "zh",
+      "phase": 0,
+      "finalPhase": 3,
+      "counter": "07 / 07",
+      "texts": [
+        "循环",
+        "一条链路变慢，后面的轮次就要等",
+        "拓扑 = GPU 链路图 · 两边的 Ring、S 和 6 轮相同",
+        "对照路径 · 每段相关轮次都花 t",
+        "1 · t",
+        "2 · t",
+        "3 · t",
+        "4 · t",
+        "5 · t",
+        "6 · t",
+        "这条相关链 = 6t",
+        "下一章：GPU 怎样启动 worker，组成一个服务？",
+        "简化的相关链模型，不是 NCCL 耗时预测。"
+      ],
+      "minFont": 14.115,
+      "overlaps": 0,
+      "overflow": 0,
+      "pngMd5": "471d8838249b013a0f9200f22c95c86d"
+    },
+    {
+      "lang": "zh",
+      "phase": 3,
+      "finalPhase": 3,
+      "counter": "07 / 07",
+      "texts": [
+        "循环",
+        "一条链路变慢，后面的轮次就要等",
+        "拓扑 = GPU 链路图 · 两边的 Ring、S 和 6 轮相同",
+        "对照路径 · 每段相关轮次都花 t",
+        "1 · t",
+        "2 · t",
+        "3 · t",
+        "4 · t",
+        "5 · t",
+        "6 · t",
+        "这条相关链 = 6t",
+        "只改变一条链路 · 第 2 轮花 t + d",
+        "1 · t",
+        "2 · t+d",
+        "3 · t",
+        "4 · t",
+        "5 · t",
+        "6 · t",
+        "5t + (t+d) = 6t+d · 多等 = d",
+        "■ 未改变的轮次 ■ 变慢的传送；后续轮次向右推迟",
+        "下一章：GPU 怎样启动 worker，组成一个服务？",
+        "简化的相关链模型，不是 NCCL 耗时预测。"
+      ],
+      "minFont": 14.115,
+      "overlaps": 0,
+      "overflow": 0,
+      "pngMd5": "d412d686aa67e0f41113e1bc0561e64f"
+    }
+  ],
+  "deepStates": [
+    {
+      "lang": "en",
+      "expanded": "true",
+      "overflow": 0,
+      "pngMd5": "900448dff135b8d60f45ab2a3fe364cf"
+    },
+    {
+      "lang": "zh",
+      "expanded": "true",
+      "overflow": 0,
+      "pngMd5": "da60b915f9bf8b6ba7620c3ba1b91e8e"
+    }
+  ],
+  "seams": [
+    {
+      "lang": "en",
+      "question": "Next: before GPUs can serve together, how do their workers start?",
+      "answer": "The public log waits 21.60 s for SGLang readiness. HTTP starts 0.85 s later, after the worker is ready."
+    },
+    {
+      "lang": "zh",
+      "question": "下一章：GPU 怎样启动 worker，组成一个服务？",
+      "answer": "公开日志里，SGLang 就绪等了 21.60 秒。HTTP 又过 0.85 秒才启动。"
+    }
+  ]
+}
