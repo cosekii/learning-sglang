@@ -3478,3 +3478,13 @@ npx astro dev stop
   - **Step 4 的图外实现对象**：On-the-stage 原四条里的 `pcmBuffer`、`raw`、原始 `pcm`、处理阶段返回的新切片均不在台上。条目改为只写可见对象（「helper 送来的音频帧」「保留的历史录音 · 保持原样」「识别模型副本 · 处理只改这份」）；实现细节连同行号出处移入新增的 `Derived · not drawn`／`图外推导`。
 - 修复后对全部 8 步英中再做 deep↔transcript 逐条复核：On-the-stage／代入图上的数中的每个对象与数字均能在本步 transcript 找到，或明确标注 not drawn 并入 Derived；未发现新的不一致。
 - 复跑：build 60 页、deep-check 03 ok、zh-check all clear、readability 0、英中 × 桌面/360/390/430 抽屉展开横溢探针 64 状态 all clear、transcript 无 diff、`git diff --check` 干净。组件未动。
+
+## 2026-11-27 16:35 PST · lane d · Voxt-11 剩余 + Voxt-12 修复轮
+
+- **单元**（direction.md lane d）：先修 Voxt-11 剩余的 Step 3 公式裁切，再修 Voxt-12。提交 `edce618`（Voxt 02 Step 3 公式）、`a6008da`（Voxt 01 Step 4 公式 + 长路径），已推 origin/tutorials。
+- **Voxt-11 剩余**：`helper-permissions-hotkeys` Step 3 deep 的 cases 公式实宽 354 px，360 px 抽屉 client 311，第二行 `D = works` 被裁（英中同式）。改为 `gathered` 两行（`P=off ⟹ R=permission_denied`／`P=on ∧ D=works ⟹ R=recording`），实宽 302 px。逻辑内容不变，符号表照旧成立。
+- **Voxt-12**：`one-dictation` Step 4 deep 的取消公式实宽 393 px，中文 390 px 在 `R_A` 后裁掉右部（英中同式，360/390/430 均裁）。改为 `gathered` 两行（`C_A=true ⟹ D_A=undelivered,`／`R_A=empty`），实宽 250 px。
+- **作者报告的 360 px 长路径**（Voxt-12 复验项）：Voxt 01 四个 deep 的出处段在 360 px 抽屉横溢 en +23／zh +34 px。26 处路径引用与 40 位 commit hash 统一转 `<code>` 加 `<wbr>` 断行点（与 Voxt-11/Voxt-03 修法一致），正文短标识不动。
+- **证据**：KaTeX 宽度台架（`.bot/out/katex-width.mjs`，以旧公式 354/393 与线上实测对齐）选出候选。定点探针 `.bot/out/voxt1112-probe.mjs`：5 步 × 英中 × 桌面/360/390/430 = **40 状态**，页面横溢 0、`.deep-body` scroll ≤ client +1、`.katex-display` scroll ≤ client 全过（修前 16 状态失败）；残余 worst 均为 KaTeX 隐藏 MathML 几何盒（既有误报类）。右缘实测：两公式最右可见字形（`recording`／`empty`）在 360/390 px 英中均不越显示框右缘（329.13 ≤ 329.6 等，8/8 OK）。probe.json 与 40 张 PNG 在 `.bot/out/voxt1112-probe/`。
+- **门**：`npm run build` 60 页；`BOOK=voxt` deep-check 01/02 ok；zh-check 01/02 all clear；readability 01/02 各 0 机械问题；transcript 01/02 无 diff 无报告项（deep 不进 transcript）；mobile 英中 01/02 在 360/390/430 px 均 no layout breaks；`git diff --check` 干净。本机 4321 被他线占用，本轮 server 在 4472，脚本均显式传 base。本机无图像读取能力，公式可见性以字形级右缘测量代替肉眼读图。
+- **遗留**：P2 · Voxt 10 Step 1 的 115.2 MB 缺本步可感比较与图上来源（`00365a2` 复审项，按序排在 P1 之后）；Voxt-03 的 `d2b7922`…`c8e1613` 是否关闭由后续固定复审决定；本轮 node_modules 仍只删本目录符号链接并本地 `npm install`，未进入或修改协调 checkout。
