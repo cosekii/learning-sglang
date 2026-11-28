@@ -3436,3 +3436,11 @@ npx astro dev stop
   - Step 8：29,205 与 50 ms 恢复常数移入图外推导；台上表留 −1 dBFS 与 0.891。
   - Steps 1、4 复核无台上数字问题，未改。
 - 复跑：build 60 页、deep-check 03 ok、zh-check all clear、readability 0、英中 × 桌面/360/390/430 抽屉展开横溢探针 64 状态 all clear、transcript 无 diff（deep 不进 transcript）、`git diff --check` 干净。组件未动，mobile 舞台门沿用上一轮通过结果；抽屉内容易被本轮 64 状态探针覆盖。
+
+## Voxt 03 追加修复（同轮第二轮，Step 2 的 0.5 自相矛盾与 Step 4 图外对象）
+
+- 协调复验指出两处残留，均已按英中双修：
+  - **Step 2 的 `0.5` 自相矛盾**：Scope 原写「主图展开非负样本 `0.5`」，与台上从 `16,383` 开始的事实和本步 Derived「`0.5` 不在图上」冲突。Scope 改为「主图只展开转换后的 `16,383`；测试输入 `0.5` 在上方推导，不在图上」。On-the-stage 原第 5、6 条（`0.5→16,383` 的乘数与舍入、1,600 样本/3,200 字节帧总量）移出：换算说明并入 Formula 节开头并标明输入不在图上，帧总量由 Derived 已有条目覆盖；首条的 `0.5` 出处句改为「换算过程不在图上，在下方推导」。
+  - **Step 4 的图外实现对象**：On-the-stage 原四条里的 `pcmBuffer`、`raw`、原始 `pcm`、处理阶段返回的新切片均不在台上。条目改为只写可见对象（「helper 送来的音频帧」「保留的历史录音 · 保持原样」「识别模型副本 · 处理只改这份」）；实现细节连同行号出处移入新增的 `Derived · not drawn`／`图外推导`。
+- 修复后对全部 8 步英中再做 deep↔transcript 逐条复核：On-the-stage／代入图上的数中的每个对象与数字均能在本步 transcript 找到，或明确标注 not drawn 并入 Derived；未发现新的不一致。
+- 复跑：build 60 页、deep-check 03 ok、zh-check all clear、readability 0、英中 × 桌面/360/390/430 抽屉展开横溢探针 64 状态 all clear、transcript 无 diff、`git diff --check` 干净。组件未动。
