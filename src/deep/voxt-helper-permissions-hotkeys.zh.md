@@ -127,10 +127,10 @@ helper 用 `AXIsProcessTrusted()` 读取 Accessibility 状态。macOS 把它归�
 ### 对应关系
 
 $$
-R=\begin{cases}
-\mathrm{permission\_denied}, & P=\mathrm{off}\\
-\mathrm{recording}, & P=\mathrm{on}\ \land\ D=\mathrm{works}
-\end{cases}
+\begin{gathered}
+P=\mathrm{off}\ \Longrightarrow\ R=\mathrm{permission\_denied}\\
+P=\mathrm{on}\ \land\ D=\mathrm{works}\ \Longrightarrow\ R=\mathrm{recording}
+\end{gathered}
 $$
 
 | 符号 | 是什么 | 从哪来 |

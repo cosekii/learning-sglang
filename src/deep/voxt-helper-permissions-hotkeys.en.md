@@ -127,10 +127,10 @@ Public baseline: <code>sglang-omni@<wbr>52aab78e85f15da0e85d<wbr>1dbdee3bfe6ffc7
 ### The relationship
 
 $$
-R=\begin{cases}
-\mathrm{permission\_denied}, & P=\mathrm{off}\\
-\mathrm{recording}, & P=\mathrm{on}\ \land\ D=\mathrm{works}
-\end{cases}
+\begin{gathered}
+P=\mathrm{off}\ \Longrightarrow\ R=\mathrm{permission\_denied}\\
+P=\mathrm{on}\ \land\ D=\mathrm{works}\ \Longrightarrow\ R=\mathrm{recording}
+\end{gathered}
 $$
 
 | Symbol | What it is | Where it comes from |
