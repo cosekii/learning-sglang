@@ -1,0 +1,53 @@
+---
+layout: ../../../layouts/Chapter.astro
+book: voxt
+slug: meeting-speaker-labels
+---
+import MeetingSpeakerLabels from '../../../components/voxt/MeetingSpeakerLabels.svelte';
+import { voxtNeighbors } from '../../../voxt/chapters';
+import { deepFor } from '../../../deep';
+export const deep = await deepFor('voxt-meeting-speaker-labels');
+
+<MeetingSpeakerLabels client:load {...voxtNeighbors('meeting-speaker-labels')} deep={deep} />
+
+<details class="i18n-en">
+<summary>Where this chapter's claims come from</summary>
+
+Step 1 reads the gate. Speaker labels exist only in full meeting mode (`Voxt/internal/meeting/mode.go:17-19`), and the diarizer is asked for only when MTD is installed and the meeting's language matches the two MTD knows, zh and en (`Voxt/meeting_asr.go:33-77`; the language list is `Voxt/internal/omni/models.go:267-268`). A missing model or another language means a plain transcript, exactly Chapter 13's. Only the system track is diarized (`Voxt/internal/meeting/finalize.go:147-156`); a mic line with no speaker is stored as `me` (`finalize.go:396-401`).
+
+Step 2 reads the hold release. The final pass reads tracks in order and, before the system track's diarize, releases the selected speech model's hold: MTD cannot start until that hold lets its server stop (`finalize.go:40-56`).
+
+Step 3 reads the chunking. One MTD request covers at most two minutes of a track (`diarizeChunkMax`, `finalize.go:175-178`), small enough that a dictation waits at most one request and far from the native decoder's own 20-minute split. With the pause rule set to the same two minutes, cuts land at the cap, and a hard cut restarts one second early (`finalize.go:189-196`; `Voxt/internal/meeting/chunks.go:26-38`). Every request carries MOSS's own instruction, which asks each segment to start with a timestamp and a speaker label ([S01], [S02], …) (`finalize.go:179-183`); a stored label drops the S and the leading zero, S02 → s2 (`finalize.go:282-297`).
+
+Step 4 reads the carry. The native decoder starts its labels over per chunk, so every request after the first carries the last labeled lines with the note that the same voices keep their labels (`finalize.go:189-232`); the carry is trimmed to a 300-rune screen (`finalize.go:270-272`). A line the previous chunk already returned (ending at or before the covered point) is skipped (`finalize.go:233-240`).
+
+Step 5 reads the anchor. A line the model repeated from the overlap — ending at or before the covered point, at least two words — whose words match an earlier labeled line pins this chunk's number for that voice to the earlier speaker (`anchorSpeakers`, `finalize.go:321-357`). A voice missing from the overlap keeps the number the model gave it, which is why the carry does the main work; a one-word line anchors nothing. The chapter draws the anchor folding one renumbered voice back; a chunk where the model renumbers several voices can only repair the ones the overlap proves.
+
+Step 6 reads the public sample. `Voxt/docs/MTDEvaluation.zh-CN.md` (2026-11-16, Apple M5 Max) spliced synthetic voices (Qwen3-TTS) with 1.5 s of quiet into 2-, 3- and 4-speaker clips with a known layout: 11 of 11 segment labels correct, three identical rounds, text error 1.1–2.9% against 17.9% for the plain-text instruction. The document itself flags that the perfect score used the old scoring rule (each label attributed to its majority voice, last round only); the rule was tightened to best one-to-one matching over all three rounds and the eval has not been rerun. The voices are clean and take turns: an upper bound, with noise, overlapping speech and far-field untested. The code sets no four-person cap; five or more is unproven, not forbidden.
+
+Constructed parts: the three-minute meeting, its lines (`let's review the budget`, `sure, starting with March`, `sounds right`, `I'll send the file`) and their timestamps are invented; the selected model drawn as Qwen3-ASR is one example of the held model. No real meeting, recognition model or diarizer was run. How the labeled transcript is corrected, summarized, asked about and exported is Chapter 15.
+
+Source revision: `sglang-omni origin/main@a6e2fc6d98ab6abbed1c0ea40d0a7d6d038f3d74`. The deep dive lists exact files and lines.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的出处</summary>
+
+第 1 步读门槛。说话人标签只在完整会议模式存在（`Voxt/internal/meeting/mode.go:17-19`），而且只有装了 MTD、会议语言又命中它懂的两种语言（中文和英文）时才会去取分人模型（`Voxt/meeting_asr.go:33-77`；语言表在 `Voxt/internal/omni/models.go:267-268`）。模型没装或语言不对，就得到一份无标签终稿，和第 13 章一模一样。只有系统音轨走分人（`Voxt/internal/meeting/finalize.go:147-156`）；麦克风行没有说话人时存成 `me`（`finalize.go:396-401`）。
+
+第 2 步读占用释放。会后那一遍按顺序读音轨，在系统音轨分人之前先释放选中语音模型的占用：那个占用不放，它的服务不停，MTD 就启动不了（`finalize.go:40-56`）。
+
+第 3 步读切块。一个 MTD 请求最多覆盖音轨的两分钟（`diarizeChunkMax`，`finalize.go:175-178`）：小到听写最多等一个请求，也远小于模型自己的 20 分钟切分。停顿规则同样设为两分钟，所以切分都顶在上限处，而硬切会提前一秒重来（`finalize.go:189-196`；`Voxt/internal/meeting/chunks.go:26-38`）。每个请求都带 MOSS 自带的指令，要求每段以时间戳和说话人标签开头（[S01]、[S02]……）（`finalize.go:179-183`）；存起来的标签去掉 S 和前导零，S02 → s2（`finalize.go:282-297`）。
+
+第 4 步读携带。模型自己的解码器每块都从头编号，所以第二个起的每个请求都带上最后几行标签，并注明同样的嗓子保持标签（`finalize.go:189-232`）；携带内容裁到一屏 300 个字符（`finalize.go:270-272`）。上一块已经交回过的行（结束不超过已覆盖点）直接跳过（`finalize.go:233-240`）。
+
+第 5 步读锚点。模型从重叠里重复出来的行——结束不超过已覆盖点、至少两个词——只要词和之前某行标签行对得上，就把这个块里这把嗓子的编号钉回之前的说话人（`anchorSpeakers`，`finalize.go:321-357`）。没在重叠里出声的嗓子保留模型给的号，所以主力是携带；一个词的行什么也钉不住。本章画的是锚点把一把换号的嗓子折回去；如果模型把好几把嗓子都换了号，只有重叠能证明的那几把修得回来。
+
+第 6 步读公开样本。`Voxt/docs/MTDEvaluation.zh-CN.md`（2026-11-16，Apple M5 Max）把合成嗓音（Qwen3-TTS）按 1.5 秒静音拼成 2、3、4 人的剪辑，布局已知：11 段标签全对，三轮完全一致，文字错误率 1.1–2.9%，而纯文本指令是 17.9%。文档自己标明：满分用的是旧评分口径（每个标签归到它的多数嗓音，只算最后一轮）；口径已收紧为全部三轮的最佳一对一匹配，评测尚未重跑。嗓音干净、轮流说话：这是上限，噪声、重叠说话和远场都未测。代码没有四人上限；五人以上是未证明，不是不允许。
+
+构造的部分：三分钟的会议、里面的行（`let's review the budget`、`sure, starting with March`、`sounds right`、`I'll send the file`）和时间戳是编的；图上画成 Qwen3-ASR 的选中模型只是被占用模型的一个例子。没有真的开会、跑识别模型或分人模型。贴好标签的终稿怎样纠正、总结、追问和导出是第 15 章。
+
+本章源码版本：`sglang-omni origin/main@a6e2fc6d98ab6abbed1c0ea40d0a7d6d038f3d74`。精确文件和行号见深入讲解。
+
+</details>

@@ -67,3 +67,4 @@ Read it to check wording and numbers across chapters without opening the compone
 | voxt | 11 | [Model storage and app updates](voxt/models-and-app-updates.md) | 6 |
 | voxt | 12 | [Three meeting capture modes](voxt/meeting-capture-modes.md) | 7 |
 | voxt | 13 | [Live first, final later](voxt/meeting-live-and-final.md) | 6 |
+| voxt | 14 | [Name tags for voices](voxt/meeting-speaker-labels.md) | 6 |

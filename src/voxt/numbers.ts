@@ -287,3 +287,38 @@ export const VOXT_FINAL_PASS_TRACK_COUNT = 2;
 // the final pass re-reads the whole file and returns three.
 export const VOXT_LIVE_LINE_COUNT = 4;
 export const VOXT_FINAL_LINE_COUNT = 3;
+
+// Public MTD diarize pass (Voxt/internal/meeting/finalize.go:175-196,
+// chunks.go:26-38): one request covers at most two minutes, and a hard cut
+// restarts one second early. The native decoder's own split is 20 minutes.
+export const VOXT_MTD_CHUNK_MAX_MINUTES = 2;
+export const VOXT_MTD_HARD_OVERLAP_S = 1;
+export const VOXT_MTD_NATIVE_SPLIT_MINUTES = 20;
+
+// MTD knows two languages (Voxt/internal/omni/models.go:267-268).
+export const VOXT_MTD_LANGUAGE_COUNT = 2;
+
+// The carry holds the last labeled lines, trimmed to a 300-rune screen; anchors
+// come from the last eight labeled lines, and a one-word line anchors nothing
+// (finalize.go:258-272, 321-347).
+export const VOXT_MTD_CARRY_MAX_RUNES = 300;
+export const VOXT_MTD_ANCHOR_TAIL_LINES = 8;
+export const VOXT_MTD_ANCHOR_MIN_WORDS = 2;
+
+// Public multi-speaker sample (Voxt/docs/MTDEvaluation.zh-CN.md, 2026-11-16):
+// synthetic voices spliced with 1.5 s of quiet; 2/3/4 speakers, 11 of 11
+// segment labels under the old scoring rule, three identical rounds; text
+// error 1.1-2.9% against 17.9% for the plain-text instruction.
+export const VOXT_MTD_EVAL_SPEAKER_COUNTS = [2, 3, 4];
+export const VOXT_MTD_EVAL_SEGMENTS = 11;
+export const VOXT_MTD_EVAL_LABELS_CORRECT = 11;
+export const VOXT_MTD_EVAL_ROUNDS = 3;
+export const VOXT_MTD_EVAL_GAP_S = 1.5;
+export const VOXT_MTD_EVAL_ERR_MIN_PERCENT = 1.1;
+export const VOXT_MTD_EVAL_ERR_MAX_PERCENT = 2.9;
+export const VOXT_MTD_PLAIN_ERR_PERCENT = 17.9;
+
+// Constructed teaching example: a three-minute system track with two voices.
+// Request 1 covers 0:00-2:00; request 2 restarts one second early, at 1:59.
+export const VOXT_MTD_DEMO_TRACK_MINUTES = 3;
+export const VOXT_MTD_DEMO_REQUEST_COUNT = 2;
