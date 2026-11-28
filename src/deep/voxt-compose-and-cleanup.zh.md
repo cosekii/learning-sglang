@@ -239,6 +239,16 @@ $$
 
 - [PR #4295](https://github.com/sgl-project/sglang-omni/pull/4295)（已关闭；经 [PR #4324](https://github.com/sgl-project/sglang-omni/pull/4324) 集成）：长听写在录音继续时就开始清理。Apple M5 Max、Qwen3-ASR 0.6B 4bit、脚本假 LLM 每答 3 秒、4 分 13 秒英文输入：停止前清理 19 次、停止后 1 次，结果栏显示 Clean-up 4.0 s。评论对真实 App 测量 head 说法不一，不能无争议绑定；这只证明提前调度，不是 remote provider 收益。该行为随 2.1.2 发布（[PR #4338](https://github.com/sgl-project/sglang-omni/pull/4338)）。
 
+公开「停止到出字」证据（按下停止后，会话依次等 ASR Final、整理和投递；每条保留 PR、测量 setup 与边界）：
+
+- 基线 [PR #2214](https://github.com/sgl-project/sglang-omni/pull/2214)：第一条本地 streaming ASR 加 LLM 整理的桌面路径。公开 smoke 在 Apple M4/16 GB、Qwen3-ASR 0.6B 4bit 加独立本地 MLX-LM `default_model` 上：一次合成语音的首个非空 live hypothesis 为 2.573 s；另一次 API smoke 测得含启动的 batch ASR 12.531 s、英文整理 1.386 s。测量 head 未记录，统计量为单次值，证据等级 C。
+- [PR #3720](https://github.com/sgl-project/sglang-omni/pull/3720)（已合并 `a8625fffd20e` / `ad39fc4f8408`）：去掉首字期限；答案卡随回答变长，可以拖动。
+- [PR #3822](https://github.com/sgl-project/sglang-omni/pull/3822)（已关闭，未合并）：语言模型太慢时的 Raw 回退。作为未落地分支保留，不是当前路径。
+- 这段等待的词典半边——大词典不再为别名替换拖住整理（[PR #3795](https://github.com/sgl-project/sglang-omni/pull/3795)，经 [PR #3826](https://github.com/sgl-project/sglang-omni/pull/3826) 落地）——连同数字见第 8 章深入讲解。
+- [PR #4728](https://github.com/sgl-project/sglang-omni/pull/4728)（仍 OPEN、REVIEW_REQUIRED）：构造 HTTP Final 请求时不再复制 PCM。M5 Pro、Go 1.27.4、`BenchmarkFinalMultipart`、250 ms、3 次取中位：60 秒 PCM 3,861,533 → 9,881 B/op，120 秒 PCM 7,695,096 → 9,877 B/op；52 秒和 156 秒输入在同一 Qwen3-ASR 0.6B 4-bit runtime 上转写逐字节一致。测量 head 和 Before 的 baseline SHA 均未给，这些 allocation 数字不能绑定到具体 commit；证据只覆盖请求构造的 allocation 和文本一致性，不覆盖完整 App 峰值 RSS、GUI 端到端、上传耗时或 Stop-to-text。
+- [PR #4727](https://github.com/sgl-project/sglang-omni/pull/4727)（仍 OPEN、REVIEW_REQUIRED）：共享一次 PCM WAV 解码。测量 head `cd6a3afb5bc7`、baseline `0f70d9c7c41c`；Apple M5 arm64、macOS 26.5、Python 3.12.16、NumPy 2.2.6，单线程、采样率一致；666 个不同 reference path、10 次交替 AB/BA、取 10 个 cohort 均值的中位：24 kHz 45.60 → 32.91 µs/clip，离线转 16 kHz 31.30 → 22.57 µs/clip，60 秒拼接 clip 369.54 → 264.44 µs/clip；peak traced bytes 9,600,706 → 3,874,819；waveform 与 fingerprint 逐位一致。这些数字只覆盖 `load_audio` 的 CPU 微基准，不证明 serving 吞吐、WER、GPU、完整 App 延迟或 RSS；float32 分支仍显式复制。
+- 未闭环：#4727／#4728 的 same-head 验证、真实 App 与人工 review。两个 PR 仍 OPEN，以上数字都不是已发布结果。
+
 ## 第 6 步 · 一片失败时保留原话
 
 > **一句话：** 整理听写的一片清理失败时，这片保留识别原话，其他片仍可清理，整段以降级状态完成。
