@@ -1,0 +1,167 @@
+{
+  "failures": [],
+  "states": [
+    {
+      "view": "en-desktop",
+      "step": 6,
+      "early": 6,
+      "mid": 7,
+      "late": 13,
+      "finalPhase": "3",
+      "minFont": 12.28
+    },
+    {
+      "view": "en-desktop",
+      "step": 7,
+      "early": 7,
+      "mid": 8,
+      "late": 12,
+      "finalPhase": "4",
+      "minFont": 12.565
+    },
+    {
+      "view": "en-desktop",
+      "step": 8,
+      "early": 8,
+      "mid": 11,
+      "late": 19,
+      "finalPhase": "4",
+      "minFont": 11.496
+    },
+    {
+      "view": "en-desktop",
+      "step": 9,
+      "early": 8,
+      "mid": 11,
+      "late": 14,
+      "finalPhase": "2",
+      "minFont": 12.28
+    },
+    {
+      "view": "en-desktop",
+      "step": 10,
+      "early": 9,
+      "mid": 14,
+      "late": 15,
+      "finalPhase": "2",
+      "minFont": 11.496
+    },
+    {
+      "view": "en-desktop",
+      "step": 11,
+      "early": 6,
+      "mid": 10,
+      "late": 12,
+      "finalPhase": "3",
+      "minFont": 11.746
+    },
+    {
+      "view": "zh-desktop",
+      "step": 6,
+      "early": 6,
+      "mid": 7,
+      "late": 13,
+      "finalPhase": "3",
+      "minFont": 13.152
+    },
+    {
+      "view": "zh-desktop",
+      "step": 7,
+      "early": 7,
+      "mid": 8,
+      "late": 12,
+      "finalPhase": "4",
+      "minFont": 13.458
+    },
+    {
+      "view": "zh-desktop",
+      "step": 8,
+      "early": 8,
+      "mid": 11,
+      "late": 19,
+      "finalPhase": "4",
+      "minFont": 12.313
+    },
+    {
+      "view": "zh-desktop",
+      "step": 9,
+      "early": 8,
+      "mid": 11,
+      "late": 14,
+      "finalPhase": "2",
+      "minFont": 13.152
+    },
+    {
+      "view": "zh-desktop",
+      "step": 10,
+      "early": 9,
+      "mid": 14,
+      "late": 15,
+      "finalPhase": "2",
+      "minFont": 12.313
+    },
+    {
+      "view": "zh-desktop",
+      "step": 11,
+      "early": 6,
+      "mid": 10,
+      "late": 12,
+      "finalPhase": "3",
+      "minFont": 12.581
+    },
+    {
+      "view": "zh-390",
+      "step": 6,
+      "early": 6,
+      "mid": 7,
+      "late": 15,
+      "finalPhase": "3",
+      "minFont": 11.76
+    },
+    {
+      "view": "zh-390",
+      "step": 7,
+      "early": 7,
+      "mid": 8,
+      "late": 12,
+      "finalPhase": "4",
+      "minFont": 11.76
+    },
+    {
+      "view": "zh-390",
+      "step": 8,
+      "early": 9,
+      "mid": 13,
+      "late": 20,
+      "finalPhase": "4",
+      "minFont": 11.172
+    },
+    {
+      "view": "zh-390",
+      "step": 9,
+      "early": 8,
+      "mid": 11,
+      "late": 15,
+      "finalPhase": "2",
+      "minFont": 11.76
+    },
+    {
+      "view": "zh-390",
+      "step": 10,
+      "early": 9,
+      "mid": 14,
+      "late": 16,
+      "finalPhase": "2",
+      "minFont": 11.172
+    },
+    {
+      "view": "zh-390",
+      "step": 11,
+      "early": 6,
+      "mid": 8,
+      "late": 14,
+      "finalPhase": "3",
+      "minFont": 11.76
+    }
+  ]
+}

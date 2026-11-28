@@ -124,12 +124,18 @@
     return () => cancelAnimationFrame(raf);
   });
   const quietNow = $derived(clock >= 2900 && clock <= 3350);
-  // Steps 0–2 and 4 loop a phase build-up: Step 0 shows the two routes, then the file's input and
-  // transcribe, then its output; Step 1 shows the file, then the converter, then the decoded bytes,
-  // then the size comparison; Step 2 shows the socket route, then the request, then the PCM going,
-  // then the replies coming back; Step 4 shows the waveform, then cue 2's early bracket, then the
-  // 300 ms head start, then the numbers. Step 3 has its own clock sweep instead.
-  const STEP_PHASES: Record<number, number> = { 0: 3, 1: 4, 2: 6, 4: 4 };
+  // Steps 0–2 and 4–10 loop a phase build-up: Step 0 shows the two routes, then the file's input
+  // and transcribe, then its output; Step 1 shows the file, then the converter, then the decoded
+  // bytes, then the size comparison; Step 2 shows the socket route, then the request, then the PCM
+  // going, then the replies coming back; Step 4 shows the waveform, then cue 2's early bracket,
+  // then the 300 ms head start, then the numbers; Step 5 shows the speech with no pause, then the
+  // search window, then the cut, then the two cues it makes; Step 6 sends cue 1, returns its text,
+  // sends cue 2, returns its text, then notes empty answers; Step 7 builds the SRT panel cue by
+  // cue, then the TXT panel; Step 8 shows the failure exit, then success, then the disk-write
+  // warning; Step 9 shows what is not written, then the one log line, then what it contains;
+  // Step 10 shows the audio, then the fork to local or remote, then that both are Transcribe's
+  // model, then the closing question. Step 3 has its own clock sweep instead.
+  const STEP_PHASES: Record<number, number> = { 0: 3, 1: 4, 2: 6, 4: 4, 5: 4, 6: 5, 7: 5, 8: 3, 9: 3, 10: 4 };
   const PHASE_MS = 900, REST_MS = 2200;
   let phase = $state(0);
   $effect(() => {
@@ -577,55 +583,79 @@
         <text x={W / 2} y="27" text-anchor="middle" class="title">{t('NO PAUSE? CUT AT THE QUIETEST POINT', '没有停顿？在最安静处切')}</text>
         <text x={W / 2} y="50" text-anchor="middle" class="subtitle">{t(`the quietest ${VOXT_CUTTER_QUIET_WINDOW_MS} ms in the last second`, `在最后 1 秒找最安静的 ${VOXT_CUTTER_QUIET_WINDOW_MS} ms`)}</text>
         {#if !phone}
-          <text x="240" y="84" text-anchor="middle" class="label">{t('CUE 1', '第 1 段')} 0–{sec(VOXT_TRANSCRIBE_CUT_MS)} s</text>
-          <text x={40 + 640 * VOXT_TRANSCRIBE_CUT_MS / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000) + 90} y="84" text-anchor="middle" class="label">{t('CUE 2', '第 2 段')} {sec(VOXT_TRANSCRIBE_CUT_MS)}–{VOXT_TRANSCRIBE_LONG_SECONDS} s</text>
-          <line x1="40" y1="96" x2={40 + 640 * VOXT_TRANSCRIBE_CUT_MS / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000)} y2="96" stroke="var(--accent)" stroke-width="2" />
-          <line x1="40" y1="90" x2="40" y2="102" stroke="var(--accent)" stroke-width="2" />
-          <line x1={40 + 640 * VOXT_TRANSCRIBE_CUT_MS / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000)} y1="90" x2={40 + 640 * VOXT_TRANSCRIBE_CUT_MS / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000)} y2="102" stroke="var(--accent)" stroke-width="2" />
-          <line x1={40 + 640 * VOXT_TRANSCRIBE_CUT_MS / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000)} y1="96" x2="680" y2="96" stroke="var(--accent)" stroke-width="2" />
-          <line x1="680" y1="90" x2="680" y2="102" stroke="var(--accent)" stroke-width="2" />
-          <rect x={40 + 640 * searchStartMs / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000)} y="118" width={640 * (searchEndMs - searchStartMs) / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000)} height="64" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x={40 + 640 * (searchStartMs + searchEndMs) / 2 / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000)} y="200" text-anchor="middle" class="detail amber">{t(`search ${searchStartMs / 1000}–${searchEndMs / 1000} s`, `在 ${searchStartMs / 1000}–${searchEndMs / 1000} 秒找`)}</text>
+          {#if phase >= 3}
+            <text x="240" y="84" text-anchor="middle" class="label">{t('CUE 1', '第 1 段')} 0–{sec(VOXT_TRANSCRIBE_CUT_MS)} s</text>
+            <text x={40 + 640 * VOXT_TRANSCRIBE_CUT_MS / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000) + 90} y="84" text-anchor="middle" class="label">{t('CUE 2', '第 2 段')} {sec(VOXT_TRANSCRIBE_CUT_MS)}–{VOXT_TRANSCRIBE_LONG_SECONDS} s</text>
+            <line x1="40" y1="96" x2={40 + 640 * VOXT_TRANSCRIBE_CUT_MS / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000)} y2="96" stroke="var(--accent)" stroke-width="2" />
+            <line x1="40" y1="90" x2="40" y2="102" stroke="var(--accent)" stroke-width="2" />
+            <line x1={40 + 640 * VOXT_TRANSCRIBE_CUT_MS / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000)} y1="90" x2={40 + 640 * VOXT_TRANSCRIBE_CUT_MS / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000)} y2="102" stroke="var(--accent)" stroke-width="2" />
+            <line x1={40 + 640 * VOXT_TRANSCRIBE_CUT_MS / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000)} y1="96" x2="680" y2="96" stroke="var(--accent)" stroke-width="2" />
+            <line x1="680" y1="90" x2="680" y2="102" stroke="var(--accent)" stroke-width="2" />
+          {/if}
+          {#if phase >= 1}
+            <rect x={40 + 640 * searchStartMs / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000)} y="118" width={640 * (searchEndMs - searchStartMs) / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000)} height="64" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x={40 + 640 * (searchStartMs + searchEndMs) / 2 / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000)} y="200" text-anchor="middle" class="detail amber">{t(`search ${searchStartMs / 1000}–${searchEndMs / 1000} s`, `在 ${searchStartMs / 1000}–${searchEndMs / 1000} 秒找`)}</text>
+          {/if}
           {#each Array.from({ length: 180 }, (_, i) => i) as i}
             {@const time = i * VOXT_TRANSCRIBE_LONG_SECONDS * 1000 / 180}
             {@const quiet = time >= quietFromMs && time <= quietToMs}
             {@const height = quiet ? 3 : 10 + (i * 11 % 42)}
             <line x1={40 + 640 * i / 180} y1={150 - height / 2} x2={40 + 640 * i / 180} y2={150 + height / 2} stroke={quiet ? 'var(--muted)' : 'var(--accent)'} stroke-width="2.5" stroke-linecap="round" />
           {/each}
-          <line x1={40 + 640 * VOXT_TRANSCRIBE_CUT_MS / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000)} y1="116" x2={40 + 640 * VOXT_TRANSCRIBE_CUT_MS / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000)} y2="184" stroke="var(--gen)" stroke-width="2" stroke-dasharray="4 3" />
+          {#if phase >= 2}
+            <line x1={40 + 640 * VOXT_TRANSCRIBE_CUT_MS / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000)} y1="116" x2={40 + 640 * VOXT_TRANSCRIBE_CUT_MS / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000)} y2="184" stroke="var(--gen)" stroke-width="2" stroke-dasharray="4 3" />
+          {/if}
           <text x="40" y="238" class="pt">·</text>
           <text x="50" y="238" class="detail">{t(`at ${VOXT_CUTTER_MAX_SEGMENT_S} s, no 450 ms pause arrived`, `到 ${VOXT_CUTTER_MAX_SEGMENT_S} 秒还没有 450 ms 停顿`)}</text>
-          <text x="40" y="264" class="pt">·</text>
-          <text x="50" y="264" class="detail">{t(`cut inside the quietest ${VOXT_CUTTER_QUIET_WINDOW_MS} ms`, `在最安静的 ${VOXT_CUTTER_QUIET_WINDOW_MS} ms 里切`)}</text>
-          <text x="40" y="290" class="pt">·</text>
-          <text x="50" y="290" class="detail">{t(`the rest is ${sec(VOXT_TRANSCRIBE_REMAIN_MS)} s and becomes the next cue`, `剩下 ${sec(VOXT_TRANSCRIBE_REMAIN_MS)} 秒，成为下一句`)}</text>
+          {#if phase >= 2}
+            <text x="40" y="264" class="pt">·</text>
+            <text x="50" y="264" class="detail">{t(`cut inside the quietest ${VOXT_CUTTER_QUIET_WINDOW_MS} ms`, `在最安静的 ${VOXT_CUTTER_QUIET_WINDOW_MS} ms 里切`)}</text>
+          {/if}
+          {#if phase >= 3}
+            <text x="40" y="290" class="pt">·</text>
+            <text x="50" y="290" class="detail">{t(`the rest is ${sec(VOXT_TRANSCRIBE_REMAIN_MS)} s and becomes the next cue`, `剩下 ${sec(VOXT_TRANSCRIBE_REMAIN_MS)} 秒，成为下一句`)}</text>
+          {/if}
           <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Constructed 9-second stretch; quiet 6.45–6.55 s, reported cut 6.51 s.', '构造的 9 秒连续讲话；安静窗 6.45–6.55 秒，报告切点 6.51 秒。')}</text>
+          {#if !reduced}<LoopProgress ms={lapMs} {lap} />{/if}
         {:else}
-          <text x="70" y="82" text-anchor="middle" class="label">{t('CUE 1', '第 1 段')}</text>
-          <text x="225" y="82" text-anchor="middle" class="label">{t('CUE 2', '第 2 段')}</text>
-          <line x1="20" y1="94" x2={20 + 260 * VOXT_TRANSCRIBE_CUT_MS / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000)} y2="94" stroke="var(--accent)" stroke-width="2" />
-          <line x1="20" y1="88" x2="20" y2="100" stroke="var(--accent)" stroke-width="2" />
-          <line x1={20 + 260 * VOXT_TRANSCRIBE_CUT_MS / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000)} y1="88" x2={20 + 260 * VOXT_TRANSCRIBE_CUT_MS / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000)} y2="100" stroke="var(--accent)" stroke-width="2" />
-          <line x1={20 + 260 * VOXT_TRANSCRIBE_CUT_MS / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000)} y1="94" x2="280" y2="94" stroke="var(--accent)" stroke-width="2" />
-          <line x1="280" y1="88" x2="280" y2="100" stroke="var(--accent)" stroke-width="2" />
-          <rect x={20 + 260 * searchStartMs / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000)} y="108" width={260 * (searchEndMs - searchStartMs) / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000)} height="52" fill="var(--gen-soft)" stroke="var(--gen)" />
+          {#if phase >= 3}
+            <text x="70" y="82" text-anchor="middle" class="label">{t('CUE 1', '第 1 段')}</text>
+            <text x="225" y="82" text-anchor="middle" class="label">{t('CUE 2', '第 2 段')}</text>
+            <line x1="20" y1="94" x2={20 + 260 * VOXT_TRANSCRIBE_CUT_MS / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000)} y2="94" stroke="var(--accent)" stroke-width="2" />
+            <line x1="20" y1="88" x2="20" y2="100" stroke="var(--accent)" stroke-width="2" />
+            <line x1={20 + 260 * VOXT_TRANSCRIBE_CUT_MS / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000)} y1="88" x2={20 + 260 * VOXT_TRANSCRIBE_CUT_MS / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000)} y2="100" stroke="var(--accent)" stroke-width="2" />
+            <line x1={20 + 260 * VOXT_TRANSCRIBE_CUT_MS / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000)} y1="94" x2="280" y2="94" stroke="var(--accent)" stroke-width="2" />
+            <line x1="280" y1="88" x2="280" y2="100" stroke="var(--accent)" stroke-width="2" />
+            <text x="70" y="198" text-anchor="middle" class="detail">0–{sec(VOXT_TRANSCRIBE_CUT_MS)} s</text>
+            <text x="238" y="198" text-anchor="middle" class="detail">{sec(VOXT_TRANSCRIBE_CUT_MS)}–{VOXT_TRANSCRIBE_LONG_SECONDS} s</text>
+          {/if}
+          {#if phase >= 1}
+            <rect x={20 + 260 * searchStartMs / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000)} y="108" width={260 * (searchEndMs - searchStartMs) / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000)} height="52" fill="var(--gen-soft)" stroke="var(--gen)" />
+          {/if}
           {#each Array.from({ length: 90 }, (_, i) => i) as i}
             {@const time = i * VOXT_TRANSCRIBE_LONG_SECONDS * 1000 / 90}
             {@const quiet = time >= quietFromMs && time <= quietToMs}
             {@const height = quiet ? 3 : 8 + (i * 11 % 30)}
             <line x1={20 + 260 * i / 90} y1={142 - height / 2} x2={20 + 260 * i / 90} y2={142 + height / 2} stroke={quiet ? 'var(--muted)' : 'var(--accent)'} stroke-width="2.2" stroke-linecap="round" />
           {/each}
-          <line x1={20 + 260 * VOXT_TRANSCRIBE_CUT_MS / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000)} y1="106" x2={20 + 260 * VOXT_TRANSCRIBE_CUT_MS / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000)} y2="174" stroke="var(--gen)" stroke-width="2" stroke-dasharray="4 3" />
-          <text x="70" y="198" text-anchor="middle" class="detail">0–{sec(VOXT_TRANSCRIBE_CUT_MS)} s</text>
-          <text x="238" y="198" text-anchor="middle" class="detail">{sec(VOXT_TRANSCRIBE_CUT_MS)}–{VOXT_TRANSCRIBE_LONG_SECONDS} s</text>
-          <text x="150" y="226" text-anchor="middle" class="detail amber">{t(`search ${searchStartMs / 1000}–${searchEndMs / 1000} s`, `在 ${searchStartMs / 1000}–${searchEndMs / 1000} 秒找`)}</text>
+          {#if phase >= 2}
+            <line x1={20 + 260 * VOXT_TRANSCRIBE_CUT_MS / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000)} y1="106" x2={20 + 260 * VOXT_TRANSCRIBE_CUT_MS / (VOXT_TRANSCRIBE_LONG_SECONDS * 1000)} y2="174" stroke="var(--gen)" stroke-width="2" stroke-dasharray="4 3" />
+          {/if}
+          {#if phase >= 1}
+            <text x="150" y="226" text-anchor="middle" class="detail amber">{t(`search ${searchStartMs / 1000}–${searchEndMs / 1000} s`, `在 ${searchStartMs / 1000}–${searchEndMs / 1000} 秒找`)}</text>
+          {/if}
           <text x="30" y="262" class="pt">·</text>
           <text x="40" y="262" class="detail">{t('no 450 ms pause by 7 s', '到 7 秒还没有停顿')}</text>
-          <text x="30" y="288" class="pt">·</text>
-          <text x="40" y="288" class="detail">{t('cut in the quietest 100 ms', '在最安静的 100 ms 里切')}</text>
-          <text x="30" y="314" class="pt">·</text>
-          <text x="40" y="314" class="detail">{t(`the rest is ${sec(VOXT_TRANSCRIBE_REMAIN_MS)} s, the next cue`, `剩下 ${sec(VOXT_TRANSCRIBE_REMAIN_MS)} 秒，成为下一句`)}</text>
+          {#if phase >= 2}
+            <text x="30" y="288" class="pt">·</text>
+            <text x="40" y="288" class="detail">{t('cut in the quietest 100 ms', '在最安静的 100 ms 里切')}</text>
+          {/if}
+          {#if phase >= 3}
+            <text x="30" y="314" class="pt">·</text>
+            <text x="40" y="314" class="detail">{t(`the rest is ${sec(VOXT_TRANSCRIBE_REMAIN_MS)} s, the next cue`, `剩下 ${sec(VOXT_TRANSCRIBE_REMAIN_MS)} 秒，成为下一句`)}</text>
+          {/if}
           <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Constructed 9-second example.', '构造的 9 秒例子。')}</text>
+          {#if !reduced}<LoopProgress ms={lapMs} {lap} x={236} y={H - 44} />{/if}
         {/if}
       {:else if step === 6}
         <text x={W / 2} y="27" text-anchor="middle" class="title">{t('ONE CUE AT A TIME', '一句一句识别')}</text>
@@ -636,28 +666,42 @@
           <text x="360" y="117" text-anchor="middle" class="detail">{t('chosen in Settings → Speech models', '在设置 → Speech models 里选')}</text>
           {#each [0, 1] as i}
             {@const y = 168 + i * 100}
-            <rect x="35" y={y} width="190" height="62" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
-            <text x="130" y={y + 24} text-anchor="middle" class="label amber">{t('CUE', '第')} {i + 1}{t('', ' 句')}</text>
-            <text x="130" y={y + 46} text-anchor="middle" class="detail">{sec(VOXT_TRANSCRIBE_CUE_STARTS_MS[i])}–{sec(VOXT_TRANSCRIBE_CUE_ENDS_MS[i])} s</text>
-            <line x1="228" y1={y + 31} x2="300" y2={y + 31} stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
-            <rect x="306" y={y} width="380" height="62" rx="8" fill="var(--bg)" stroke="var(--line)" />
-            <text x="496" y={y + 38} text-anchor="middle" class="result">“{VOXT_TRANSCRIBE_CUE_TEXT[i]}”</text>
+            {#if phase >= i * 2}
+              <rect x="35" y={y} width="190" height="62" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+              <text x="130" y={y + 24} text-anchor="middle" class="label amber">{t('CUE', '第')} {i + 1}{t('', ' 句')}</text>
+              <text x="130" y={y + 46} text-anchor="middle" class="detail">{sec(VOXT_TRANSCRIBE_CUE_STARTS_MS[i])}–{sec(VOXT_TRANSCRIBE_CUE_ENDS_MS[i])} s</text>
+              <line x1="228" y1={y + 31} x2="300" y2={y + 31} stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
+            {/if}
+            {#if phase >= i * 2 + 1}
+              <rect x="306" y={y} width="380" height="62" rx="8" fill="var(--bg)" stroke="var(--line)" />
+              <text x="496" y={y + 38} text-anchor="middle" class="result">“{VOXT_TRANSCRIBE_CUE_TEXT[i]}”</text>
+            {/if}
           {/each}
-          <text x={W / 2} y={H - 32} text-anchor="middle" class="detail">{t('an empty answer is left out', '返回空文字的句子会被丢掉')}</text>
+          {#if phase >= 4}
+            <text x={W / 2} y={H - 32} text-anchor="middle" class="detail">{t('an empty answer is left out', '返回空文字的句子会被丢掉')}</text>
+          {/if}
+          {#if !reduced}<LoopProgress ms={lapMs} {lap} />{/if}
         {:else}
           <rect x="25" y="68" width="250" height="58" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="150" y="93" text-anchor="middle" class="label">{t('Transcribe\'s speech model', 'Transcribe 的语音模型')}</text>
           <text x="150" y="113" text-anchor="middle" class="detail">{t('Settings → Speech models', '设置 → Speech models')}</text>
           {#each [0, 1] as i}
             {@const y = 150 + i * 150}
-            <rect x="25" y={y} width="250" height="52" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
-            <text x="150" y={y + 21} text-anchor="middle" class="label amber">{t('CUE', '第')} {i + 1}{t('', ' 句')} · {sec(VOXT_TRANSCRIBE_CUE_STARTS_MS[i])}–{sec(VOXT_TRANSCRIBE_CUE_ENDS_MS[i])} s</text>
-            <text x="150" y={y + 42} text-anchor="middle" class="detail">{t('sent to the model', '送给模型')}</text>
-            <line x1="150" y1={y + 52} x2="150" y2={y + 76} stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
-            <rect x="25" y={y + 84} width="250" height="48" rx="8" fill="var(--bg)" stroke="var(--line)" />
-            <text x="150" y={y + 114} text-anchor="middle" class="result small">“{VOXT_TRANSCRIBE_CUE_TEXT[i]}”</text>
+            {#if phase >= i * 2}
+              <rect x="25" y={y} width="250" height="52" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
+              <text x="150" y={y + 21} text-anchor="middle" class="label amber">{t('CUE', '第')} {i + 1}{t('', ' 句')} · {sec(VOXT_TRANSCRIBE_CUE_STARTS_MS[i])}–{sec(VOXT_TRANSCRIBE_CUE_ENDS_MS[i])} s</text>
+              <text x="150" y={y + 42} text-anchor="middle" class="detail">{t('sent to the model', '送给模型')}</text>
+              <line x1="150" y1={y + 52} x2="150" y2={y + 76} stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
+            {/if}
+            {#if phase >= i * 2 + 1}
+              <rect x="25" y={y + 84} width="250" height="48" rx="8" fill="var(--bg)" stroke="var(--line)" />
+              <text x="150" y={y + 114} text-anchor="middle" class="result small">“{VOXT_TRANSCRIBE_CUE_TEXT[i]}”</text>
+            {/if}
           {/each}
-          <text x={W / 2} y={H - 32} text-anchor="middle" class="detail">{t('an empty answer is left out', '返回空文字的句子会被丢掉')}</text>
+          {#if phase >= 4}
+            <text x={W / 2} y={H - 32} text-anchor="middle" class="detail">{t('an empty answer is left out', '返回空文字的句子会被丢掉')}</text>
+          {/if}
+          {#if !reduced}<LoopProgress ms={lapMs} {lap} x={236} y={H - 20} />{/if}
         {/if}
       {:else if step === 7}
         <text x={W / 2} y="27" text-anchor="middle" class="title">{t('WRITE SRT OR TXT', '写成 SRT 或 TXT')}</text>
@@ -668,20 +712,29 @@
           <text x="40" y="128" class="mono">1</text>
           <text x="40" y="148" class="mono">{srt(VOXT_TRANSCRIBE_CUE_STARTS_MS[0])} {arrow} {srt(VOXT_TRANSCRIBE_CUE_ENDS_MS[0])}</text>
           <text x="40" y="168" class="mono">{VOXT_TRANSCRIBE_CUE_TEXT[0]}</text>
-          <text x="40" y="204" class="mono">2</text>
-          <text x="40" y="224" class="mono">{srt(VOXT_TRANSCRIBE_CUE_STARTS_MS[1])} {arrow} {srt(VOXT_TRANSCRIBE_CUE_ENDS_MS[1])}</text>
-          <text x="40" y="244" class="mono">{VOXT_TRANSCRIBE_CUE_TEXT[1]}</text>
-          <text x="195" y="288" text-anchor="middle" class="detail">{t('numbered cue + start + end + text', '编号 + 开始 + 结束 + 文字')}</text>
-          <text x="195" y="310" text-anchor="middle" class="detail">{t('players show it as subtitles', '播放器把它当字幕显示')}</text>
-          <text x="195" y="332" text-anchor="middle" class="detail">{t('times: HH:MM:SS,mmm (hours:minutes:seconds,ms)', '时间：时:分:秒,毫秒')}</text>
+          {#if phase >= 1}
+            <text x="40" y="204" class="mono">2</text>
+            <text x="40" y="224" class="mono">{srt(VOXT_TRANSCRIBE_CUE_STARTS_MS[1])} {arrow} {srt(VOXT_TRANSCRIBE_CUE_ENDS_MS[1])}</text>
+            <text x="40" y="244" class="mono">{VOXT_TRANSCRIBE_CUE_TEXT[1]}</text>
+          {/if}
+          {#if phase >= 2}
+            <text x="195" y="288" text-anchor="middle" class="detail">{t('numbered cue + start + end + text', '编号 + 开始 + 结束 + 文字')}</text>
+            <text x="195" y="310" text-anchor="middle" class="detail">{t('players show it as subtitles', '播放器把它当字幕显示')}</text>
+            <text x="195" y="332" text-anchor="middle" class="detail">{t('times: HH:MM:SS,mmm (hours:minutes:seconds,ms)', '时间：时:分:秒,毫秒')}</text>
+          {/if}
 
-          <rect x="385" y="72" width="310" height="332" rx="10" fill="var(--bg)" stroke="var(--gen)" />
-          <text x="540" y="96" text-anchor="middle" class="label amber">{t('TXT · ONE LINE A CUE', 'TXT · 每句一行')}</text>
-          <text x="400" y="136" class="mono">{VOXT_TRANSCRIBE_CUE_TEXT[0]}</text>
-          <text x="400" y="162" class="mono">{VOXT_TRANSCRIBE_CUE_TEXT[1]}</text>
-          <text x="540" y="220" text-anchor="middle" class="detail">{t('no numbers, no times', '没有编号，没有时间')}</text>
-          <text x="540" y="242" text-anchor="middle" class="detail">{t('easy to read or feed to a script', '方便阅读或交给脚本')}</text>
+          {#if phase >= 3}
+            <rect x="385" y="72" width="310" height="332" rx="10" fill="var(--bg)" stroke="var(--gen)" />
+            <text x="540" y="96" text-anchor="middle" class="label amber">{t('TXT · ONE LINE A CUE', 'TXT · 每句一行')}</text>
+            <text x="400" y="136" class="mono">{VOXT_TRANSCRIBE_CUE_TEXT[0]}</text>
+            <text x="400" y="162" class="mono">{VOXT_TRANSCRIBE_CUE_TEXT[1]}</text>
+          {/if}
+          {#if phase >= 4}
+            <text x="540" y="220" text-anchor="middle" class="detail">{t('no numbers, no times', '没有编号，没有时间')}</text>
+            <text x="540" y="242" text-anchor="middle" class="detail">{t('easy to read or feed to a script', '方便阅读或交给脚本')}</text>
+          {/if}
           <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Source: fileasr.go Write.', '出处：fileasr.go 的 Write。')}</text>
+          {#if !reduced}<LoopProgress ms={lapMs} {lap} />{/if}
         {:else}
           <rect x="15" y="68" width="270" height="270" rx="10" fill="var(--bg)" stroke="var(--accent)" />
           <text x="150" y="92" text-anchor="middle" class="label">{t('SRT · CUES WITH TIMES', 'SRT · 带时间的字幕')}</text>
@@ -689,21 +742,30 @@
           <text x="26" y="142" class="mono small">{srt(VOXT_TRANSCRIBE_CUE_STARTS_MS[0])}</text>
           <text x="26" y="160" class="mono small">{arrow} {srt(VOXT_TRANSCRIBE_CUE_ENDS_MS[0])}</text>
           <text x="26" y="180" class="mono small">{VOXT_TRANSCRIBE_CUE_TEXT[0]}</text>
-          <text x="26" y="214" class="mono small">2</text>
-          <text x="26" y="234" class="mono small">{srt(VOXT_TRANSCRIBE_CUE_STARTS_MS[1])}</text>
-          <text x="26" y="252" class="mono small">{arrow} {srt(VOXT_TRANSCRIBE_CUE_ENDS_MS[1])}</text>
-          <text x="26" y="272" class="mono small">{VOXT_TRANSCRIBE_CUE_TEXT[1]}</text>
-          <text x="150" y="306" text-anchor="middle" class="detail">{t('number + times + text', '编号 + 时间 + 文字')}</text>
-          <text x="150" y="324" text-anchor="middle" class="detail">{t('times: HH:MM:SS,mmm (h:m:s,ms)', '时间：时:分:秒,毫秒')}</text>
+          {#if phase >= 1}
+            <text x="26" y="214" class="mono small">2</text>
+            <text x="26" y="234" class="mono small">{srt(VOXT_TRANSCRIBE_CUE_STARTS_MS[1])}</text>
+            <text x="26" y="252" class="mono small">{arrow} {srt(VOXT_TRANSCRIBE_CUE_ENDS_MS[1])}</text>
+            <text x="26" y="272" class="mono small">{VOXT_TRANSCRIBE_CUE_TEXT[1]}</text>
+          {/if}
+          {#if phase >= 2}
+            <text x="150" y="306" text-anchor="middle" class="detail">{t('number + times + text', '编号 + 时间 + 文字')}</text>
+            <text x="150" y="324" text-anchor="middle" class="detail">{t('times: HH:MM:SS,mmm (h:m:s,ms)', '时间：时:分:秒,毫秒')}</text>
+          {/if}
 
-          <rect x="15" y="352" width="270" height="170" rx="10" fill="var(--bg)" stroke="var(--gen)" />
-          <text x="150" y="376" text-anchor="middle" class="label amber">{t('TXT · ONE LINE A CUE', 'TXT · 每句一行')}</text>
-          <text x="26" y="410" class="mono small">{VOXT_TRANSCRIBE_CUE_TEXT[0]}</text>
-          <text x="26" y="434" class="mono small">{VOXT_TRANSCRIBE_CUE_TEXT[1]}</text>
-          <text x="150" y="478" text-anchor="middle" class="detail">{t('no numbers, no times', '没有编号，没有时间')}</text>
-          <text x="150" y="500" text-anchor="middle" class="detail">{t('easy to read or feed to a script', '方便阅读或交给脚本')}</text>
+          {#if phase >= 3}
+            <rect x="15" y="352" width="270" height="170" rx="10" fill="var(--bg)" stroke="var(--gen)" />
+            <text x="150" y="376" text-anchor="middle" class="label amber">{t('TXT · ONE LINE A CUE', 'TXT · 每句一行')}</text>
+            <text x="26" y="410" class="mono small">{VOXT_TRANSCRIBE_CUE_TEXT[0]}</text>
+            <text x="26" y="434" class="mono small">{VOXT_TRANSCRIBE_CUE_TEXT[1]}</text>
+          {/if}
+          {#if phase >= 4}
+            <text x="150" y="478" text-anchor="middle" class="detail">{t('no numbers, no times', '没有编号，没有时间')}</text>
+            <text x="150" y="500" text-anchor="middle" class="detail">{t('easy to read or feed to a script', '方便阅读或交给脚本')}</text>
+          {/if}
 
           <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Source: fileasr.go Write.', '出处：fileasr.go 的 Write。')}</text>
+          {#if !reduced}<LoopProgress ms={lapMs} {lap} x={236} y={H - 44} />{/if}
         {/if}
       {:else if step === 8}
         <text x={W / 2} y="27" text-anchor="middle" class="title">{t('FAILED RECOGNITION WRITES NOTHING', '识别失败就不写文件')}</text>
@@ -715,16 +777,21 @@
           <text x="45" y="162" class="detail">{t('✗ an old file stays as it was', '✗ 旧文件保持原样')}</text>
           <text x="45" y="190" class="detail">{t('✗ no new file appears', '✗ 不会出现新文件')}</text>
 
-          <rect x="380" y="76" width="315" height="140" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="537" y="102" text-anchor="middle" class="label">{t('RECOGNITION SUCCEEDS', '识别成功')}</text>
-          <text x="400" y="134" class="detail">{t('the output opens', '这时才打开输出')}</text>
-          <text x="400" y="162" class="detail">{t('SRT or TXT is written once', '一次写成 SRT 或 TXT')}</text>
+          {#if phase >= 1}
+            <rect x="380" y="76" width="315" height="140" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="537" y="102" text-anchor="middle" class="label">{t('RECOGNITION SUCCEEDS', '识别成功')}</text>
+            <text x="400" y="134" class="detail">{t('the output opens', '这时才打开输出')}</text>
+            <text x="400" y="162" class="detail">{t('SRT or TXT is written once', '一次写成 SRT 或 TXT')}</text>
+          {/if}
 
-          <rect x="25" y="248" width="670" height="92" rx="10" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />
-          <text x="45" y="278" class="label">{t('BUT A DISK-WRITE FAILURE CAN STILL HURT', '但写盘失败仍可能出问题')}</text>
-          <text x="45" y="306" class="detail">{t('an old file can be truncated, or part of a new file left behind', '旧文件可能被截断，也可能留下部分新文件')}</text>
-          <text x="45" y="328" class="detail">{t('recognition success does not make the write atomic', '识别成功不代表写盘是原子的')}</text>
+          {#if phase >= 2}
+            <rect x="25" y="248" width="670" height="92" rx="10" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />
+            <text x="45" y="278" class="label">{t('BUT A DISK-WRITE FAILURE CAN STILL HURT', '但写盘失败仍可能出问题')}</text>
+            <text x="45" y="306" class="detail">{t('an old file can be truncated, or part of a new file left behind', '旧文件可能被截断，也可能留下部分新文件')}</text>
+            <text x="45" y="328" class="detail">{t('recognition success does not make the write atomic', '识别成功不代表写盘是原子的')}</text>
+          {/if}
           <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Source: transcribe_cli.go:73-100.', '出处：transcribe_cli.go:73-100。')}</text>
+          {#if !reduced}<LoopProgress ms={lapMs} {lap} />{/if}
         {:else}
           <rect x="15" y="68" width="270" height="142" rx="10" fill="var(--eos-soft)" stroke="var(--eos)" />
           <text x="150" y="94" text-anchor="middle" class="label">{t('RECOGNITION FAILS', '识别失败')}</text>
@@ -732,17 +799,22 @@
           <text x="30" y="152" class="detail">{t('✗ an old file stays as it was', '✗ 旧文件保持原样')}</text>
           <text x="30" y="178" class="detail">{t('✗ no new file appears', '✗ 不会出现新文件')}</text>
 
-          <rect x="15" y="228" width="270" height="112" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="150" y="254" text-anchor="middle" class="label">{t('RECOGNITION SUCCEEDS', '识别成功')}</text>
-          <text x="30" y="286" class="detail">{t('the output opens', '这时才打开输出')}</text>
-          <text x="30" y="312" class="detail">{t('SRT or TXT is written once', '一次写成 SRT 或 TXT')}</text>
+          {#if phase >= 1}
+            <rect x="15" y="228" width="270" height="112" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="150" y="254" text-anchor="middle" class="label">{t('RECOGNITION SUCCEEDS', '识别成功')}</text>
+            <text x="30" y="286" class="detail">{t('the output opens', '这时才打开输出')}</text>
+            <text x="30" y="312" class="detail">{t('SRT or TXT is written once', '一次写成 SRT 或 TXT')}</text>
+          {/if}
 
-          <rect x="15" y="356" width="270" height="120" rx="10" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />
-          <text x="30" y="384" class="label">{t('BUT A DISK-WRITE FAILURE CAN STILL HURT', '但写盘失败仍可能出问题')}</text>
-          <text x="30" y="412" class="detail">{t('an old file can be truncated,', '旧文件可能被截断，')}</text>
-          <text x="30" y="436" class="detail">{t('or part of a new file left behind', '也可能留下部分新文件')}</text>
-          <text x="30" y="460" class="detail">{t('the write is not atomic', '写盘不是原子的')}</text>
+          {#if phase >= 2}
+            <rect x="15" y="356" width="270" height="120" rx="10" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />
+            <text x="30" y="384" class="label">{t('BUT A DISK-WRITE FAILURE CAN STILL HURT', '但写盘失败仍可能出问题')}</text>
+            <text x="30" y="412" class="detail">{t('an old file can be truncated,', '旧文件可能被截断，')}</text>
+            <text x="30" y="436" class="detail">{t('or part of a new file left behind', '也可能留下部分新文件')}</text>
+            <text x="30" y="460" class="detail">{t('the write is not atomic', '写盘不是原子的')}</text>
+          {/if}
           <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Source: transcribe_cli.go:73-100.', '出处：transcribe_cli.go:73-100。')}</text>
+          {#if !reduced}<LoopProgress ms={lapMs} {lap} x={236} y={H - 44} />{/if}
         {/if}
       {:else if step === 9}
         <text x={W / 2} y="27" text-anchor="middle" class="title">{t('NO HISTORY OR RECORDING', '不写历史，不留录音')}</text>
@@ -755,14 +827,19 @@
           <text x="45" y="184" class="detail">{t('✗ the text in the log', '✗ 日志里的文字')}</text>
           <text x="45" y="212" class="detail">{t('(no cursor, no session)', '（没有光标，没有 session）')}</text>
 
-          <rect x="365" y="72" width="330" height="160" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="530" y="96" text-anchor="middle" class="label amber">{t('WRITTEN', '留下')}</text>
-          <text x="385" y="128" class="detail">{t("one line in the app's own log (not Ch. 9's access log):", '应用自己的日志（不是第 9 章的访问日志）：')}</text>
-          <text x="385" y="152" class="mono small">transcribed a file for the</text>
-          <text x="385" y="170" class="mono small">command line: {VOXT_TRANSCRIBE_DEMO_SECONDS}s of audio,</text>
-          <text x="385" y="188" class="mono small">{VOXT_TRANSCRIBE_CUE_COUNT} segments</text>
-          <text x="530" y="216" text-anchor="middle" class="detail">{t('length and cue count, never the text', '只有长度和句子数，没有文字')}</text>
+          {#if phase >= 1}
+            <rect x="365" y="72" width="330" height="160" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="530" y="96" text-anchor="middle" class="label amber">{t('WRITTEN', '留下')}</text>
+            <text x="385" y="128" class="detail">{t("one line in the app's own log (not Ch. 9's access log):", '应用自己的日志（不是第 9 章的访问日志）：')}</text>
+            <text x="385" y="152" class="mono small">transcribed a file for the</text>
+            <text x="385" y="170" class="mono small">command line: {VOXT_TRANSCRIBE_DEMO_SECONDS}s of audio,</text>
+            <text x="385" y="188" class="mono small">{VOXT_TRANSCRIBE_CUE_COUNT} segments</text>
+          {/if}
+          {#if phase >= 2}
+            <text x="530" y="216" text-anchor="middle" class="detail">{t('length and cue count, never the text', '只有长度和句子数，没有文字')}</text>
+          {/if}
           <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Source: Voxt/transcribe_socket.go.', '出处：Voxt/transcribe_socket.go。')}</text>
+          {#if !reduced}<LoopProgress ms={lapMs} {lap} />{/if}
         {:else}
           <rect x="15" y="68" width="270" height="190" rx="10" fill="var(--bg)" stroke="var(--line)" />
           <text x="150" y="92" text-anchor="middle" class="label">{t('NOT WRITTEN', '不留下')}</text>
@@ -771,15 +848,20 @@
           <text x="30" y="180" class="detail">{t('✗ the text in the log', '✗ 日志里的文字')}</text>
           <text x="30" y="208" class="detail">{t('no cursor, no session', '没有光标，没有 session')}</text>
 
-          <rect x="15" y="276" width="270" height="190" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="150" y="300" text-anchor="middle" class="label amber">{t('WRITTEN', '留下')}</text>
-          <text x="30" y="330" class="detail">{t("app's own log (not Ch. 9's):", '应用自己的日志（不是第 9 章）：')}</text>
-          <text x="30" y="354" class="mono small">transcribed a file for the</text>
-          <text x="30" y="374" class="mono small">command line: {VOXT_TRANSCRIBE_DEMO_SECONDS}s of</text>
-          <text x="30" y="394" class="mono small">audio, {VOXT_TRANSCRIBE_CUE_COUNT} segments</text>
-          <text x="150" y="424" text-anchor="middle" class="detail">{t('length and cue count only', '只有长度和句子数')}</text>
-          <text x="150" y="446" text-anchor="middle" class="detail">{t('never the text', '没有文字')}</text>
+          {#if phase >= 1}
+            <rect x="15" y="276" width="270" height="190" rx="10" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="150" y="300" text-anchor="middle" class="label amber">{t('WRITTEN', '留下')}</text>
+            <text x="30" y="330" class="detail">{t("app's own log (not Ch. 9's):", '应用自己的日志（不是第 9 章）：')}</text>
+            <text x="30" y="354" class="mono small">transcribed a file for the</text>
+            <text x="30" y="374" class="mono small">command line: {VOXT_TRANSCRIBE_DEMO_SECONDS}s of</text>
+            <text x="30" y="394" class="mono small">audio, {VOXT_TRANSCRIBE_CUE_COUNT} segments</text>
+          {/if}
+          {#if phase >= 2}
+            <text x="150" y="424" text-anchor="middle" class="detail">{t('length and cue count only', '只有长度和句子数')}</text>
+            <text x="150" y="446" text-anchor="middle" class="detail">{t('never the text', '没有文字')}</text>
+          {/if}
           <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Source: transcribe_socket.go, docs/transcribe.md.', '出处：transcribe_socket.go、docs/transcribe.md。')}</text>
+          {#if !reduced}<LoopProgress ms={lapMs} {lap} x={236} y={H - 44} />{/if}
         {/if}
       {:else if step === 10}
         <text x={W / 2} y="27" text-anchor="middle" class="title">{t('WHERE THE AUDIO GOES', '声音去哪里')}</text>
@@ -788,37 +870,51 @@
           <rect x="255" y="76" width="210" height="54" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="360" y="100" text-anchor="middle" class="label">{t('THE DECODED AUDIO', '解码后的声音')}</text>
           <text x="360" y="120" text-anchor="middle" class="detail">{t('sent as each cue is cut', '每切出一句就送一次')}</text>
-          <line x1="360" y1="130" x2="360" y2="150" stroke="var(--muted)" stroke-width="2" />
-          <line x1="190" y1="150" x2="530" y2="150" stroke="var(--muted)" stroke-width="2" />
-          <line x1="190" y1="150" x2="190" y2="168" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
-          <line x1="530" y1="150" x2="530" y2="168" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
+          {#if phase >= 1}
+            <line x1="360" y1="130" x2="360" y2="150" stroke="var(--muted)" stroke-width="2" />
+            <line x1="190" y1="150" x2="530" y2="150" stroke="var(--muted)" stroke-width="2" />
+            <line x1="190" y1="150" x2="190" y2="168" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
+            <line x1="530" y1="150" x2="530" y2="168" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
 
-          <rect x="55" y="170" width="270" height="74" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="190" y="198" text-anchor="middle" class="detail">{t('the on-device speech model', '本机语音模型')}</text>
-          <text x="190" y="222" text-anchor="middle" class="detail">{t('runs on this Mac', '就在这台 Mac 上跑')}</text>
-          <rect x="395" y="170" width="270" height="74" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="530" y="198" text-anchor="middle" class="detail">{t('the remote speech service', '远端语音服务')}</text>
-          <text x="530" y="222" text-anchor="middle" class="detail">{t('set for Transcribe', '按 Transcribe 的设置')}</text>
+            <rect x="55" y="170" width="270" height="74" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="190" y="198" text-anchor="middle" class="detail">{t('the on-device speech model', '本机语音模型')}</text>
+            <text x="190" y="222" text-anchor="middle" class="detail">{t('runs on this Mac', '就在这台 Mac 上跑')}</text>
+            <rect x="395" y="170" width="270" height="74" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="530" y="198" text-anchor="middle" class="detail">{t('the remote speech service', '远端语音服务')}</text>
+            <text x="530" y="222" text-anchor="middle" class="detail">{t('set for Transcribe', '按 Transcribe 的设置')}</text>
+          {/if}
 
-          <text x={W / 2} y="282" text-anchor="middle" class="detail">{t('both are the model chosen for Transcribe', '两者都是 Transcribe 选定的模型')}</text>
-          <text x={W / 2} y={H - 46} text-anchor="middle" class="cut">{t('SO HOW DO THESE MODEL FILES REACH THIS MAC?', '那么这些模型文件怎样到达这台 Mac？')}</text>
+          {#if phase >= 2}
+            <text x={W / 2} y="282" text-anchor="middle" class="detail">{t('both are the model chosen for Transcribe', '两者都是 Transcribe 选定的模型')}</text>
+          {/if}
+          {#if phase >= 3}
+            <text x={W / 2} y={H - 46} text-anchor="middle" class="cut">{t('SO HOW DO THESE MODEL FILES REACH THIS MAC?', '那么这些模型文件怎样到达这台 Mac？')}</text>
+          {/if}
           <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Source: transcribe_socket.go:64-80, docs/transcribe.md.', '出处：transcribe_socket.go:64-80、docs/transcribe.md。')}</text>
+          {#if !reduced}<LoopProgress ms={lapMs} {lap} />{/if}
         {:else}
           <rect x="15" y="68" width="270" height="56" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
           <text x="150" y="92" text-anchor="middle" class="label">{t('THE DECODED AUDIO', '解码后的声音')}</text>
           <text x="150" y="112" text-anchor="middle" class="detail">{t('sent as each cue is cut', '每切出一句就送一次')}</text>
-          <line x1="150" y1="124" x2="150" y2="146" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
-          <rect x="15" y="154" width="270" height="84" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
-          <text x="150" y="182" text-anchor="middle" class="detail">{t('the on-device speech model', '本机语音模型')}</text>
-          <text x="150" y="206" text-anchor="middle" class="detail">{t('runs on this Mac', '就在这台 Mac 上跑')}</text>
-          <text x="150" y="266" text-anchor="middle" class="detail">{t('or', '或者')}</text>
-          <rect x="15" y="286" width="270" height="84" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
-          <text x="150" y="314" text-anchor="middle" class="detail">{t('the remote speech service', '远端语音服务')}</text>
-          <text x="150" y="338" text-anchor="middle" class="detail">{t('set for Transcribe', '按 Transcribe 的设置')}</text>
-          <text x="150" y="400" text-anchor="middle" class="detail">{t('both chosen for Transcribe', '都是 Transcribe 选定的')}</text>
-          <text x={W / 2} y={H - 66} text-anchor="middle" class="cut">{t('SO HOW DO THESE MODEL FILES', '那么这些模型文件')}</text>
-          <text x={W / 2} y={H - 44} text-anchor="middle" class="cut">{t('REACH THIS MAC?', '怎样到达这台 Mac？')}</text>
+          {#if phase >= 1}
+            <line x1="150" y1="124" x2="150" y2="146" stroke="var(--muted)" stroke-width="2" marker-end="url(#ft-arrow)" />
+            <rect x="15" y="154" width="270" height="84" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" />
+            <text x="150" y="182" text-anchor="middle" class="detail">{t('the on-device speech model', '本机语音模型')}</text>
+            <text x="150" y="206" text-anchor="middle" class="detail">{t('runs on this Mac', '就在这台 Mac 上跑')}</text>
+          {/if}
+          {#if phase >= 2}
+            <text x="150" y="266" text-anchor="middle" class="detail">{t('or', '或者')}</text>
+            <rect x="15" y="286" width="270" height="84" rx="9" fill="var(--gen-soft)" stroke="var(--gen)" />
+            <text x="150" y="314" text-anchor="middle" class="detail">{t('the remote speech service', '远端语音服务')}</text>
+            <text x="150" y="338" text-anchor="middle" class="detail">{t('set for Transcribe', '按 Transcribe 的设置')}</text>
+          {/if}
+          {#if phase >= 3}
+            <text x="150" y="400" text-anchor="middle" class="detail">{t('both chosen for Transcribe', '都是 Transcribe 选定的')}</text>
+            <text x={W / 2} y={H - 66} text-anchor="middle" class="cut">{t('SO HOW DO THESE MODEL FILES', '那么这些模型文件')}</text>
+            <text x={W / 2} y={H - 44} text-anchor="middle" class="cut">{t('REACH THIS MAC?', '怎样到达这台 Mac？')}</text>
+          {/if}
           <text x={W / 2} y={H - 14} text-anchor="middle" class="footnote">{t('Source: transcribe_socket.go:64-80.', '出处：transcribe_socket.go:64-80。')}</text>
+          {#if !reduced}<LoopProgress ms={lapMs} {lap} x={236} y={420} />{/if}
         {/if}
       {/if}
     </svg>
