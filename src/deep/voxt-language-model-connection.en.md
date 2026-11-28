@@ -4,6 +4,7 @@
 
 ### On the stage
 
+- The picture builds in order: the empty service box appears first, then the three cards arrive one at a time, and the arrows and the `1 + 1 + 1` count appear last.
 - The blue card holds Chapter 4's raw text, “Good morning.” Blue means text content throughout this chapter.
 - The middle card holds `demo-model`, a constructed model ID. The model name selects a model at the service; Voxt does not upload model weights in this request.
 - The orange card holds a masked teaching API key. An API key is a secret that identifies or authorizes this client to the configured service. The real request uses the complete key, not the masked display.
@@ -57,6 +58,7 @@ Public baseline: `sglang-omni@14046fc02c5268df8b7d4a9a3094b15e1150060e`; paths a
 
 ### On the stage
 
+- The picture builds in order: the top card, then both address panels with their hosts, then each panel's destination result, then the selection of address B, and finally the `2 · 1` count.
 - The top card repeats Step 1's text, model name and key. Only the address changes in the two panels.
 - A host is the computer named in an address. The panels show only host portions so this step can focus on the destination.
 - Address A shows `127.0.0.1`, a loopback address: it refers to this same machine. The public Ollama preset is `http://localhost:11434/v1`, also a local address. This constructed panel uses `127.0.0.1` and omits the scheme, port and path.
@@ -99,6 +101,7 @@ Public baseline: `sglang-omni@14046fc02c5268df8b7d4a9a3094b15e1150060e`; paths a
 
 ### On the stage
 
+- The picture builds in order: two empty boxes, then the setup name, address and model name fill the settings box one at a time, the `NO API KEY HERE` line appears, and finally the Keychain item gains its name and the full key.
 - `demo` is a constructed setup ID. Its saved settings contain the constructed address and model name, but no API key.
 - Keychain is the Mac's password store. Voxt uses a generic-password item in the login Keychain, under service `VoxtNew`.
 - The item's account name is `llm.demo`. Here `llm` identifies a language-model setup and `demo` is its ID. The real item holds the complete key; only the teaching display masks it.
@@ -146,6 +149,7 @@ Public baseline: `sglang-omni@14046fc02c5268df8b7d4a9a3094b15e1150060e`; paths a
 
 ### On the stage
 
+- The picture builds in order: the two source cards and an empty body, then the model name enters as the `model` field, then the text enters as the `messages` field, and the no-key line appears last.
 - The neutral model card and blue text card repeat Step 1's values. Their arrows point to the fields that receive them.
 - The body is the request's main content. `model` contains `demo-model`; `messages` contains “Good morning.” within an abbreviated message list.
 - The orange line excludes the API key from this body. The next step shows its separate location.
@@ -183,6 +187,7 @@ Public baseline: `sglang-omni@14046fc02c5268df8b7d4a9a3094b15e1150060e`; paths a
 
 ### On the stage
 
+- The picture builds in order: the Keychain item and a request whose body is already finished, then the `Authorization` label, the word `Bearer`, and finally the key flying from the Keychain into the header. The body never holds a key in any phase.
 - The left card repeats Step 3's constructed Keychain item, `llm.demo`. Voxt reads the complete key from this item when it opens the language-model connection.
 - `Authorization` is the header's name. `Bearer` identifies the authentication scheme. One space separates `Bearer` from the key.
 - The teaching display masks the key. The real header value contains the complete key, not the ellipsis or a shortened key.
