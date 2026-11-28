@@ -1,0 +1,188 @@
+[
+  {
+    "combo": "en-desktop",
+    "entry": "direct",
+    "counter": "08 / 08",
+    "animationStep": "7",
+    "finalPhase": "4",
+    "reachedPhase1": true,
+    "reachedFinal": true,
+    "mechanismChanged": true,
+    "earlyPhase": "1",
+    "finalPhaseNow": "4",
+    "caption": "Each downstream poll triggers one upstream poll and returns at most one frame. More requests need more memory: how much of one card do weights and KV take?",
+    "footnote": [
+      "Next chapter: fit weights, KV and replicas into one card."
+    ],
+    "earlyCounts": [
+      "poll_frame() = ask for the next frame",
+      "Teaching example: three frames, with frame one already delivered",
+      "waiting for inner poll",
+      "poll_frame() · received",
+      "frame 1 delivered",
+      "poll_frame() sent",
+      "1 downstream poll → 1 upstream poll → ≤ 1 data frame",
+      "3 frames = 1 delivered + 2 upstream"
+    ],
+    "finalCounts": [
+      "poll_frame() = ask for the next frame",
+      "Teaching example: three frames, with frame one already delivered",
+      "poll_frame() → inner.poll_frame()",
+      "frame 2 delivered",
+      "frame 2 delivered",
+      "1 downstream poll → 1 upstream poll → ≤ 1 data frame",
+      "3 frames = 2 delivered + 1 upstream"
+    ]
+  },
+  {
+    "combo": "en-desktop",
+    "entry": "previous",
+    "counter": "08 / 08",
+    "animationStep": "7",
+    "finalPhase": "4",
+    "reachedPhase1": true,
+    "reachedFinal": true,
+    "mechanismChanged": true,
+    "earlyPhase": "1",
+    "finalPhaseNow": "4",
+    "caption": "Each downstream poll triggers one upstream poll and returns at most one frame. More requests need more memory: how much of one card do weights and KV take?",
+    "footnote": [
+      "Next chapter: fit weights, KV and replicas into one card."
+    ],
+    "earlyCounts": [
+      "poll_frame() = ask for the next frame",
+      "Teaching example: three frames, with frame one already delivered",
+      "waiting for inner poll",
+      "poll_frame() · received",
+      "frame 1 delivered",
+      "poll_frame() sent",
+      "1 downstream poll → 1 upstream poll → ≤ 1 data frame",
+      "3 frames = 1 delivered + 2 upstream"
+    ],
+    "finalCounts": [
+      "poll_frame() = ask for the next frame",
+      "Teaching example: three frames, with frame one already delivered",
+      "poll_frame() → inner.poll_frame()",
+      "frame 2 delivered",
+      "frame 2 delivered",
+      "1 downstream poll → 1 upstream poll → ≤ 1 data frame",
+      "3 frames = 2 delivered + 1 upstream"
+    ]
+  },
+  {
+    "combo": "zh-desktop",
+    "entry": "direct",
+    "counter": "08 / 08",
+    "animationStep": "7",
+    "finalPhase": "4",
+    "reachedPhase1": true,
+    "reachedFinal": true,
+    "mechanismChanged": true,
+    "earlyPhase": "1",
+    "finalPhaseNow": "4",
+    "caption": "下游 poll 转成一次上游 poll，每次最多交出一帧。请求越多，显存越紧：权重和 KV 各占一张卡的多少？",
+    "footnote": [
+      "下一章：把权重、KV 和副本装进一张卡。"
+    ],
+    "earlyCounts": [
+      "poll_frame() = 来取下一帧",
+      "waiting for inner poll",
+      "poll_frame() · received",
+      "poll_frame() sent",
+      "1 次下游 poll → 1 次上游 poll → ≤ 1 帧数据"
+    ],
+    "finalCounts": [
+      "poll_frame() = 来取下一帧",
+      "poll_frame() → inner.poll_frame()",
+      "frame 2 delivered",
+      "1 次下游 poll → 1 次上游 poll → ≤ 1 帧数据"
+    ]
+  },
+  {
+    "combo": "zh-desktop",
+    "entry": "previous",
+    "counter": "08 / 08",
+    "animationStep": "7",
+    "finalPhase": "4",
+    "reachedPhase1": true,
+    "reachedFinal": true,
+    "mechanismChanged": true,
+    "earlyPhase": "1",
+    "finalPhaseNow": "4",
+    "caption": "下游 poll 转成一次上游 poll，每次最多交出一帧。请求越多，显存越紧：权重和 KV 各占一张卡的多少？",
+    "footnote": [
+      "下一章：把权重、KV 和副本装进一张卡。"
+    ],
+    "earlyCounts": [
+      "poll_frame() = 来取下一帧",
+      "waiting for inner poll",
+      "poll_frame() · received",
+      "poll_frame() sent",
+      "1 次下游 poll → 1 次上游 poll → ≤ 1 帧数据"
+    ],
+    "finalCounts": [
+      "poll_frame() = 来取下一帧",
+      "poll_frame() → inner.poll_frame()",
+      "frame 2 delivered",
+      "1 次下游 poll → 1 次上游 poll → ≤ 1 帧数据"
+    ]
+  },
+  {
+    "combo": "zh-390",
+    "entry": "direct",
+    "counter": "08 / 08",
+    "animationStep": "7",
+    "finalPhase": "4",
+    "reachedPhase1": true,
+    "reachedFinal": true,
+    "mechanismChanged": true,
+    "earlyPhase": "1",
+    "finalPhaseNow": "4",
+    "caption": "下游 poll 转成一次上游 poll，每次最多交出一帧。请求越多，显存越紧：权重和 KV 各占一张卡的多少？",
+    "footnote": [
+      "下一章：把权重、KV 和副本装进一张卡。"
+    ],
+    "earlyCounts": [
+      "poll_frame() = 来取下一帧",
+      "waiting for inner poll",
+      "poll_frame() · received",
+      "poll_frame() sent",
+      "1 次下游 poll → 1 次上游 poll → ≤ 1 帧数据"
+    ],
+    "finalCounts": [
+      "poll_frame() = 来取下一帧",
+      "poll_frame() → inner.poll_frame()",
+      "frame 2 delivered",
+      "1 次下游 poll → 1 次上游 poll → ≤ 1 帧数据"
+    ]
+  },
+  {
+    "combo": "zh-390",
+    "entry": "previous",
+    "counter": "08 / 08",
+    "animationStep": "7",
+    "finalPhase": "4",
+    "reachedPhase1": true,
+    "reachedFinal": true,
+    "mechanismChanged": true,
+    "earlyPhase": "1",
+    "finalPhaseNow": "4",
+    "caption": "下游 poll 转成一次上游 poll，每次最多交出一帧。请求越多，显存越紧：权重和 KV 各占一张卡的多少？",
+    "footnote": [
+      "下一章：把权重、KV 和副本装进一张卡。"
+    ],
+    "earlyCounts": [
+      "poll_frame() = 来取下一帧",
+      "waiting for inner poll",
+      "poll_frame() · received",
+      "poll_frame() sent",
+      "1 次下游 poll → 1 次上游 poll → ≤ 1 帧数据"
+    ],
+    "finalCounts": [
+      "poll_frame() = 来取下一帧",
+      "poll_frame() → inner.poll_frame()",
+      "frame 2 delivered",
+      "1 次下游 poll → 1 次上游 poll → ≤ 1 帧数据"
+    ]
+  }
+]
