@@ -3588,3 +3588,11 @@ npx astro dev stop
 - **证据**：KaTeX 宽度台架（`.bot/out/katex-width.mjs`，以旧公式 354/393 与线上实测对齐）选出候选。定点探针 `.bot/out/voxt1112-probe.mjs`：5 步 × 英中 × 桌面/360/390/430 = **40 状态**，页面横溢 0、`.deep-body` scroll ≤ client +1、`.katex-display` scroll ≤ client 全过（修前 16 状态失败）；残余 worst 均为 KaTeX 隐藏 MathML 几何盒（既有误报类）。右缘实测：两公式最右可见字形（`recording`／`empty`）在 360/390 px 英中均不越显示框右缘（329.13 ≤ 329.6 等，8/8 OK）。probe.json 与 40 张 PNG 在 `.bot/out/voxt1112-probe/`。
 - **门**：`npm run build` 60 页；`BOOK=voxt` deep-check 01/02 ok；zh-check 01/02 all clear；readability 01/02 各 0 机械问题；transcript 01/02 无 diff 无报告项（deep 不进 transcript）；mobile 英中 01/02 在 360/390/430 px 均 no layout breaks；`git diff --check` 干净。本机 4321 被他线占用，本轮 server 在 4472，脚本均显式传 base。本机无图像读取能力，公式可见性以字形级右缘测量代替肉眼读图。
 - **遗留**：P2 · Voxt 10 Step 1 的 115.2 MB 缺本步可感比较与图上来源（`00365a2` 复审项，按序排在 P1 之后）；Voxt-03 的 `d2b7922`…`c8e1613` 是否关闭由后续固定复审决定；本轮 node_modules 仍只删本目录符号链接并本地 `npm install`，未进入或修改协调 checkout。
+
+## 2026-11-27 17:30 PST · lane d · Voxt 10 Step 1 的 115.2 MB（P2 余项）
+
+- **单元**（direction.md lane d 唯一在派单元）：Voxt-10 Step 1 的 115.2 MB 缺本步可感比较与图上来源的 P2 余项。提交 `3c548aa`，已推 origin/tutorials。
+- **修法**（按 direction 三选一 + 白话）：保留精确数 115.2 MB，Step 1 末相首条拆成点句加续行——「decoded = unpacked into raw sound: 115.2 MB before recognition; Step 2 counts the bytes」／「解码 = 展开成原始声音：识别前有 115.2 MB；第 2 步算这笔账」。选了「指向 Step 2」一种，并用白话解释 decoded；未把 Step 2 的照片比较冒充 Step 1 交付。手机版同样拆行（606/628/650），后续两条点句下移，脚注与 LoopProgress 位置不变。Step 0 aria label 与英中 deep 的「图上是什么」条目同步改。
+- **门**：`npm run build` 60 页 rc=0；`BOOK=voxt ONLY=10 STEP=1` readability 0 机械问题；`BOOK=voxt node scripts/deep-check.mjs 10` ok（11 步）；zh-check 10 all clear；mobile 英 + 中 360/390/430 均 no layout breaks（ONLY=10 时 SVG 出界为门）；`BOOK=voxt ONLY=10 STEP=1 LANG=zh` mobile 字号门通过；transcript 重生成只有 Step 1 两行 diff，无布局报告项；Step 1 deep 抽屉探针（`voxt10-deep-overflow.mjs`，STEPS=1，英中 × 桌面/360/390/430）8 状态 all clear；`git diff --check` 干净。
+- **环境**：本目录 node_modules 又是指向协调 checkout 的符号链接（17:22 建立）；按惯例只删本目录符号链接并本地 `npm install`，未进入或修改协调 checkout（协调树里 .vite 的 EPERM 也未强删）。4321 被他线占用，本轮 server 在 4323，脚本均显式传 base。本机无图像读取能力，可见性以 transcript／zh-check／mobile 的机械测量代替肉眼读图。
+- **遗留**：Voxt-11／Voxt-12 的 `7bbe185 a6008da edce618` 保持 queued 等协调固定复审，未重写；Voxt 10 其余开放分（整章 NO-GO 口径）不变；direction.md 对 lane d 暂无下一单元，下轮按 SOUL 顺序处理本书剩余开放项或新章。
