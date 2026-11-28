@@ -7,6 +7,7 @@
 - 蓝色框是同一段处理后的录音。本例长 1 秒，沿用第 3 章的 16 kHz、单声道、PCM16 LE，共 32,000 字节。
 - `ASR` 是 automatic speech recognition，即语音识别：输入声音，输出文字。
 - 三条路线是 alternatives（可选项），不是依次经过的三站：本机 Omni、macOS 系统听写、配置的 ASR API。
+- 本例选中第 1 条：它的卡片标着「本例选中这条」，另外两张卡片标着「收不到录音」，因为一次 session 只把录音交给一个识别服务。
 - 本机 Omni 在这台 Mac 上启动模型服务，通过 `127.0.0.1` 通信。这个地址只指向本机。
 - 系统听写通过第 2 章的 helper 调用 macOS 自带的 `SFSpeechRecognizer`，不用从 Voxt 模型目录另下载模型。
 - 配置的 ASR API 可以是外部服务。本例把它画在 Mac 外；如果地址是 `127.0.0.1`，它也属于本机路线。
@@ -45,7 +46,7 @@ session 解析出用户选中的 ASR provider 后，只把这次录音交给它�
 
 ### 源码出处
 
-公开基线：`sglang-omni@0e641996a0c269601d03f1cb29d3f46d7cb345a6`，路径均相对该仓库。
+公开基线：<code>sglang-omni@0e641996a0<wbr>c269601d03f1cb29<wbr>d3f46d7cb345a6</code>，路径均相对该仓库。
 
 - ASR 的输入格式、本机与远程 provider：`Voxt/internal/asr/asr.go:1-20,31-76`。
 - 本机 Omni 的 loopback 服务与按需启动：`Voxt/internal/omni/doc.go:1-5,29-48`。
@@ -346,11 +347,11 @@ $$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
-| $R$ | 交给后续流程的识别原话 | `run_listen.go` 的局部变量 `raw` |
+| $R$ | 交给后续流程的识别原话 | <code>run_<wbr>listen.go</code> 的 `raw` |
 | $F$ | provider 返回的最终文字 | 本例 “Good morning.” |
 | $w$ | 设置的结束词 | session 配置；本例没有 |
-| $\operatorname{trim}$ | 去掉首尾空白 | `strings.TrimSpace` |
-| $\operatorname{withoutEndWord}$ | 按设置移除结束词 | `run_listen.go` 同名调用 |
+| `trim` | 去掉首尾空白 | <code>strings.<wbr>TrimSpace</code> |
+| <code>without<wbr>End<wbr>Word</code> | 按设置移除结束词 | <code>run_<wbr>listen.go</code> 同名调用 |
 
 实际代码还先用 `inScript` 处理文字方向，再执行上式。它只改变文字表示，不调用语言模型润色。
 

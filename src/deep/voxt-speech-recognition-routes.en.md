@@ -7,6 +7,7 @@
 - The blue box is the same processed recording. This constructed one-second example uses Chapter 3's 16 kHz, mono, PCM16 LE format and contains 32,000 bytes.
 - `ASR` means automatic speech recognition: sound goes in and text comes out.
 - The three routes are alternatives, not three consecutive stations: local Omni, macOS system dictation and a configured ASR API.
+- This example selects route 1: its card is marked `selected in this example`, and the other two cards are marked `receives nothing`, because a session hands the recording to exactly one provider.
 - Local Omni starts a model server on this Mac and talks to it through `127.0.0.1`, an address that refers to this machine.
 - System dictation uses macOS's built-in `SFSpeechRecognizer` through Chapter 2's helper. It is not another download in Voxt's model catalogue.
 - A configured ASR API can be remote. This example places it outside the Mac; an API at `127.0.0.1` is local too.
@@ -45,7 +46,7 @@ The route decides who receives the sound. Next, a service that only accepts a wh
 
 ### Sources
 
-Public baseline: `sglang-omni@0e641996a0c269601d03f1cb29d3f46d7cb345a6`; paths are relative to that repository.
+Public baseline: <code>sglang-omni@0e641996a0<wbr>c269601d03f1cb29<wbr>d3f46d7cb345a6</code>; paths are relative to that repository.
 
 - ASR input format and local or remote providers: `Voxt/internal/asr/asr.go:1-20,31-76`.
 - Local Omni's loopback server and startup: `Voxt/internal/omni/doc.go:1-5,29-48`.
@@ -346,11 +347,11 @@ $$
 
 | Symbol | Meaning | Where it comes from |
 |---|---|---|
-| $R$ | Raw recognized text passed onward | `raw` in `run_listen.go` |
+| $R$ | Raw recognized text passed onward | `raw` in <code>run_<wbr>listen.go</code> |
 | $F$ | Provider's final text | This example's “Good morning.” |
 | $w$ | Configured end word | Session settings; absent in this example |
-| $\operatorname{trim}$ | Remove surrounding whitespace | `strings.TrimSpace` |
-| $\operatorname{withoutEndWord}$ | Remove the configured end word | The same call in `run_listen.go` |
+| `trim` | Remove surrounding whitespace | <code>strings.<wbr>TrimSpace</code> |
+| <code>without<wbr>End<wbr>Word</code> | Remove the configured end word | The same call in <code>run_<wbr>listen.go</code> |
 
 The actual code first applies `inScript` for text direction, then performs this pipeline. That representation handling does not call a language model to polish the text.
 
