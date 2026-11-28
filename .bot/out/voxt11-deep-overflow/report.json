@@ -1,0 +1,252 @@
+{
+  "failures": [
+    "en-360-s4: drawer overflow client=359 scroll=481 widest=[{\"tag\":\"TABLE\",\"cls\":\"\",\"text\":\"SymbolWhat it isSizeWhere it comes fromtlast uset_\",\"right\":458,\"w\":433},{\"tag\":\"THEAD\",\"cls\":\"\",\"text\":\"SymbolWhat it isSizeWhere it comes from\",\"right\":458,\"w\":433},{\"tag\":\"TR\",\"cls\":\"\",\"text\":\"SymbolWhat it isSizeWhere it comes from\",\"right\":458,\"w\":433},{\"tag\":\"TH\",\"cls\":\"\",\"text\":\"Where it comes from\",\"right\":458,\"w\":185.23}]",
+    "zh-360-s4: drawer overflow client=359 scroll=422 widest=[{\"tag\":\"TABLE\",\"cls\":\"\",\"text\":\"符号是什么大小从哪来t最后使用t_{\\\\text{最后使用}}t最后使用​最后一次使用服务器结束—se\",\"right\":399.38,\"w\":374.38},{\"tag\":\"THEAD\",\"cls\":\"\",\"text\":\"符号是什么大小从哪来\",\"right\":399.38,\"w\":374.38},{\"tag\":\"TR\",\"cls\":\"\",\"text\":\"符号是什么大小从哪来\",\"right\":399.38,\"w\":374.38},{\"tag\":\"TH\",\"cls\":\"\",\"text\":\"从哪来\",\"right\":399.38,\"w\":185.23}]",
+    "en-390-s4: drawer overflow client=389 scroll=481 widest=[{\"tag\":\"TABLE\",\"cls\":\"\",\"text\":\"SymbolWhat it isSizeWhere it comes fromtlast uset_\",\"right\":458,\"w\":433},{\"tag\":\"THEAD\",\"cls\":\"\",\"text\":\"SymbolWhat it isSizeWhere it comes from\",\"right\":458,\"w\":433},{\"tag\":\"TR\",\"cls\":\"\",\"text\":\"SymbolWhat it isSizeWhere it comes from\",\"right\":458,\"w\":433},{\"tag\":\"TH\",\"cls\":\"\",\"text\":\"Where it comes from\",\"right\":458,\"w\":185.23}]",
+    "zh-390-s4: drawer overflow client=389 scroll=422 widest=[{\"tag\":\"TABLE\",\"cls\":\"\",\"text\":\"符号是什么大小从哪来t最后使用t_{\\\\text{最后使用}}t最后使用​最后一次使用服务器结束—se\",\"right\":399.38,\"w\":374.38},{\"tag\":\"THEAD\",\"cls\":\"\",\"text\":\"符号是什么大小从哪来\",\"right\":399.38,\"w\":374.38},{\"tag\":\"TR\",\"cls\":\"\",\"text\":\"符号是什么大小从哪来\",\"right\":399.38,\"w\":374.38},{\"tag\":\"TH\",\"cls\":\"\",\"text\":\"从哪来\",\"right\":399.38,\"w\":185.23}]",
+    "en-430-s4: drawer overflow client=429 scroll=481 widest=[{\"tag\":\"TABLE\",\"cls\":\"\",\"text\":\"SymbolWhat it isSizeWhere it comes fromtlast uset_\",\"right\":458,\"w\":433},{\"tag\":\"THEAD\",\"cls\":\"\",\"text\":\"SymbolWhat it isSizeWhere it comes from\",\"right\":458,\"w\":433},{\"tag\":\"TR\",\"cls\":\"\",\"text\":\"SymbolWhat it isSizeWhere it comes from\",\"right\":458,\"w\":433},{\"tag\":\"TH\",\"cls\":\"\",\"text\":\"Where it comes from\",\"right\":458,\"w\":185.23}]"
+  ],
+  "results": [
+    {
+      "view": "desktop",
+      "lang": "en",
+      "step": 4,
+      "counter": "04 / 06",
+      "expanded": "true",
+      "client": 489,
+      "scroll": 489,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "desktop",
+      "lang": "zh",
+      "step": 4,
+      "counter": "04 / 06",
+      "expanded": "true",
+      "client": 489,
+      "scroll": 489,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "360",
+      "lang": "en",
+      "step": 4,
+      "counter": "04 / 06",
+      "expanded": "true",
+      "client": 359,
+      "scroll": 481,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "TABLE",
+          "cls": "",
+          "text": "SymbolWhat it isSizeWhere it comes fromtlast uset_",
+          "right": 458,
+          "w": 433
+        },
+        {
+          "tag": "THEAD",
+          "cls": "",
+          "text": "SymbolWhat it isSizeWhere it comes from",
+          "right": 458,
+          "w": 433
+        },
+        {
+          "tag": "TR",
+          "cls": "",
+          "text": "SymbolWhat it isSizeWhere it comes from",
+          "right": 458,
+          "w": 433
+        },
+        {
+          "tag": "TH",
+          "cls": "",
+          "text": "Where it comes from",
+          "right": 458,
+          "w": 185.23
+        }
+      ]
+    },
+    {
+      "view": "360",
+      "lang": "zh",
+      "step": 4,
+      "counter": "04 / 06",
+      "expanded": "true",
+      "client": 359,
+      "scroll": 422,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "TABLE",
+          "cls": "",
+          "text": "符号是什么大小从哪来t最后使用t_{\\text{最后使用}}t最后使用​最后一次使用服务器结束—se",
+          "right": 399.38,
+          "w": 374.38
+        },
+        {
+          "tag": "THEAD",
+          "cls": "",
+          "text": "符号是什么大小从哪来",
+          "right": 399.38,
+          "w": 374.38
+        },
+        {
+          "tag": "TR",
+          "cls": "",
+          "text": "符号是什么大小从哪来",
+          "right": 399.38,
+          "w": 374.38
+        },
+        {
+          "tag": "TH",
+          "cls": "",
+          "text": "从哪来",
+          "right": 399.38,
+          "w": 185.23
+        }
+      ]
+    },
+    {
+      "view": "390",
+      "lang": "en",
+      "step": 4,
+      "counter": "04 / 06",
+      "expanded": "true",
+      "client": 389,
+      "scroll": 481,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "TABLE",
+          "cls": "",
+          "text": "SymbolWhat it isSizeWhere it comes fromtlast uset_",
+          "right": 458,
+          "w": 433
+        },
+        {
+          "tag": "THEAD",
+          "cls": "",
+          "text": "SymbolWhat it isSizeWhere it comes from",
+          "right": 458,
+          "w": 433
+        },
+        {
+          "tag": "TR",
+          "cls": "",
+          "text": "SymbolWhat it isSizeWhere it comes from",
+          "right": 458,
+          "w": 433
+        },
+        {
+          "tag": "TH",
+          "cls": "",
+          "text": "Where it comes from",
+          "right": 458,
+          "w": 185.23
+        }
+      ]
+    },
+    {
+      "view": "390",
+      "lang": "zh",
+      "step": 4,
+      "counter": "04 / 06",
+      "expanded": "true",
+      "client": 389,
+      "scroll": 422,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "TABLE",
+          "cls": "",
+          "text": "符号是什么大小从哪来t最后使用t_{\\text{最后使用}}t最后使用​最后一次使用服务器结束—se",
+          "right": 399.38,
+          "w": 374.38
+        },
+        {
+          "tag": "THEAD",
+          "cls": "",
+          "text": "符号是什么大小从哪来",
+          "right": 399.38,
+          "w": 374.38
+        },
+        {
+          "tag": "TR",
+          "cls": "",
+          "text": "符号是什么大小从哪来",
+          "right": 399.38,
+          "w": 374.38
+        },
+        {
+          "tag": "TH",
+          "cls": "",
+          "text": "从哪来",
+          "right": 399.38,
+          "w": 185.23
+        }
+      ]
+    },
+    {
+      "view": "430",
+      "lang": "en",
+      "step": 4,
+      "counter": "04 / 06",
+      "expanded": "true",
+      "client": 429,
+      "scroll": 481,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "TABLE",
+          "cls": "",
+          "text": "SymbolWhat it isSizeWhere it comes fromtlast uset_",
+          "right": 458,
+          "w": 433
+        },
+        {
+          "tag": "THEAD",
+          "cls": "",
+          "text": "SymbolWhat it isSizeWhere it comes from",
+          "right": 458,
+          "w": 433
+        },
+        {
+          "tag": "TR",
+          "cls": "",
+          "text": "SymbolWhat it isSizeWhere it comes from",
+          "right": 458,
+          "w": 433
+        },
+        {
+          "tag": "TH",
+          "cls": "",
+          "text": "Where it comes from",
+          "right": 458,
+          "w": 185.23
+        }
+      ]
+    },
+    {
+      "view": "430",
+      "lang": "zh",
+      "step": 4,
+      "counter": "04 / 06",
+      "expanded": "true",
+      "client": 429,
+      "scroll": 429,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    }
+  ]
+}

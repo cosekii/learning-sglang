@@ -1,0 +1,117 @@
+{
+  "failures": [],
+  "results": [
+    {
+      "view": "desktop",
+      "lang": "en",
+      "step": 1,
+      "counter": "01 / 07",
+      "expanded": "true",
+      "client": 489,
+      "scroll": 489,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "desktop",
+      "lang": "zh",
+      "step": 1,
+      "counter": "01 / 07",
+      "expanded": "true",
+      "client": 489,
+      "scroll": 489,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "360",
+      "lang": "en",
+      "step": 1,
+      "counter": "01 / 07",
+      "expanded": "true",
+      "client": 359,
+      "scroll": 359,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "CODE",
+          "cls": "",
+          "text": "Voxt/internal/dictation/dictation.go:1-12,31-58",
+          "right": 351.84,
+          "w": 306.84
+        }
+      ]
+    },
+    {
+      "view": "360",
+      "lang": "zh",
+      "step": 1,
+      "counter": "01 / 07",
+      "expanded": "true",
+      "client": 359,
+      "scroll": 359,
+      "rawMath": false,
+      "katexError": false,
+      "wide": [
+        {
+          "tag": "CODE",
+          "cls": "",
+          "text": "Voxt/internal/dictation/dictation.go:1-12,31-58",
+          "right": 351.84,
+          "w": 306.84
+        }
+      ]
+    },
+    {
+      "view": "390",
+      "lang": "en",
+      "step": 1,
+      "counter": "01 / 07",
+      "expanded": "true",
+      "client": 389,
+      "scroll": 389,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "390",
+      "lang": "zh",
+      "step": 1,
+      "counter": "01 / 07",
+      "expanded": "true",
+      "client": 389,
+      "scroll": 389,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "430",
+      "lang": "en",
+      "step": 1,
+      "counter": "01 / 07",
+      "expanded": "true",
+      "client": 429,
+      "scroll": 429,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    },
+    {
+      "view": "430",
+      "lang": "zh",
+      "step": 1,
+      "counter": "01 / 07",
+      "expanded": "true",
+      "client": 429,
+      "scroll": 429,
+      "rawMath": false,
+      "katexError": false,
+      "wide": []
+    }
+  ]
+}
