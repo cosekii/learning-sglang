@@ -3671,3 +3671,18 @@ npx astro dev stop
 - **门**：`npm run build` 60 页 rc=0；`BOOK=voxt ONLY=10 STEP=1` readability 0 机械问题；`BOOK=voxt node scripts/deep-check.mjs 10` ok（11 步）；zh-check 10 all clear；mobile 英 + 中 360/390/430 均 no layout breaks（ONLY=10 时 SVG 出界为门）；`BOOK=voxt ONLY=10 STEP=1 LANG=zh` mobile 字号门通过；transcript 重生成只有 Step 1 两行 diff，无布局报告项；Step 1 deep 抽屉探针（`voxt10-deep-overflow.mjs`，STEPS=1，英中 × 桌面/360/390/430）8 状态 all clear；`git diff --check` 干净。
 - **环境**：本目录 node_modules 又是指向协调 checkout 的符号链接（17:22 建立）；按惯例只删本目录符号链接并本地 `npm install`，未进入或修改协调 checkout（协调树里 .vite 的 EPERM 也未强删）。4321 被他线占用，本轮 server 在 4323，脚本均显式传 base。本机无图像读取能力，可见性以 transcript／zh-check／mobile 的机械测量代替肉眼读图。
 - **遗留**：Voxt-11／Voxt-12 的 `7bbe185 a6008da edce618` 保持 queued 等协调固定复审，未重写；Voxt 10 其余开放分（整章 NO-GO 口径）不变；direction.md 对 lane d 暂无下一单元，下轮按 SOUL 顺序处理本书剩余开放项或新章。
+
+## 2026-11-27 17:45 PST · lane d · Voxt-05 修复轮（05/1–5 请求正文与 Authorization 组装）
+
+- **单元**（direction.md lane d 在派单元，P0）：Voxt-05 · Voxt 05 `language-model-connection` 五步没有组装过程。提交 `1ecc458`，已推 origin/tutorials（先 rebase 到 `fc56935`）。
+- **修法**（照 Voxt 02 已通过的相位脚手架 `ANIMATED／PHASE_COUNTS／LoopProgress／data-animation-*`）：五步全部改为逐相状态形成——
+  - Step 1（5 相）：空服务框 → 文字卡 → 模型名卡 → 钥匙卡 → 箭头 + `1 + 1 + 1 = 3`。
+  - Step 2（5 相）：顶卡 → 两个地址面板带主机名 → 各自目的地结果 → 地址 B 变 `SELECTED · 唯一目的地`（A 标「未选定」，边框变 accent）→ `2 · 1` 数量行。
+  - Step 3（6 相）：两个空框 → 配置名 `demo` → 地址 → 模型名进入设置框 →「这里没有 API key」→ 钥匙串项目得到 `llm.demo` 与完整钥匙 + 名字推导与访问边界。
+  - Step 4（4 相）：两张来源卡 + 空正文 → `model` 字段进入 → `messages` 字段进入 →「API key · 不在这个正文里」。本步全程不出现 key 文本。
+  - Step 5（5 相）：钥匙串项目 + 正文已完成、请求头空着的请求 → `Authorization` 标签 → `Bearer`（end-anchor 固定）→ 钥匙从钥匙串 `fly` 进请求头（start-anchor，消除 Bearer×key 重叠）→「钥匙在请求头 · 不在正文」。任何相位正文均无 key。
+- **同步**：五步 aria label 改写为按顺序形成；英中 deep 每步「图上是什么」各加一句形成顺序；Step 2 caption 补「一套配置选定一个地址」（两轮修 R4：先压到两句，再把首句压到 12 词）；transcript 重生成并随提交。
+- **门**：`npm run build` rc=0；`BOOK=voxt ONLY=5` readability 0 机械问题；`BOOK=voxt node scripts/deep-check.mjs 05` ok；zh-check 05 all clear（先修出 Bearer×key 重叠一处）；mobile 英 + `LANG=zh` 中 360/390/430 均 no layout breaks；transcript 两次重生成逐字一致。
+- **机制探针**（无图像读取能力，以 DOM 断言代替肉眼读图）：`/tmp/probe-voxt05.mjs` 用 scripts/lib/browser.mjs 逐步采样一整圈，断言 5 步相位全走 0→final（5/5/6/4/5）、相邻相位必有台上文字变化、Step 4 全程无 `sk-demo`、Step 5 的 `Bearer` 先于请求头钥匙出现、Step 2 的 SELECTED 只在第 3 相后出现。**全部通过。**
+- **环境**：本目录 node_modules 又是指向协调 checkout 的符号链接（17:31 重建），照旧只删本目录符号链接并本地 `npm install`，未进入或修改协调 checkout。4321 被他线占用，本轮 server 在 4341，脚本均显式传 base；收尾已关 dev server 并核查无残留 headless Chrome。
+- **遗留**：Voxt-05 的关闭与否由协调固定复审决定，不提前核销；Voxt-03 的 `d2b7922`…`c8e1613` 仍 queued；direction.md 暂无下一在派单元，下轮按 SOUL 顺序处理本书剩余开放项（P0 Voxt-06 等）或新章。
