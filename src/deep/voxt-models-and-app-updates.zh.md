@@ -182,10 +182,16 @@ $$ \text{启动 180 秒仍不能接受识别} \Rightarrow \text{启动失败并�
 
 ### 源码出处
 
-公开性能证据（保留 PR、测量 head、setup 与边界；不来自 pinned 代码基线）：
+公开启动证据（第一次识别要等模型服务器、VAD 和 Metal kernel 初始化；设置页和麦克风启停还会卡住 UI；每条保留 PR、测量 setup 与边界；不来自 pinned 代码基线）：
 
+- 就绪链：[PR #3784](https://github.com/sgl-project/sglang-omni/pull/3784)（已关闭 `aec99d95a68e`，未合并；机制经 #3826 等集合落地）提前加载语音模型，并在服务器死掉时保住一次听写 → [PR #4602](https://github.com/sgl-project/sglang-omni/pull/4602)（已合并 `379d799d8bc1` / `3a31bd72e034`）把 ASR 启动与 LLM 整理的初始化解开 → [PR #4700](https://github.com/sgl-project/sglang-omni/pull/4700)（已合并 `d906bc979de2` / `bf02a6a962d4`）用 claim fence 去掉 ASR Final 交接里失效的 piece planning 等待。
 - [PR #4407](https://github.com/sgl-project/sglang-omni/pull/4407)：预热 Silero 的 Metal kernel，8 GB Apple silicon Mac、95.394 秒公开音频、ABABAB、每组 3 次取中位数。server ready 0.099 → 0.882 s，暖就绪请求 1.928 → 1.203 s，冷启动合计 2.027 → 2.085 s：首个请求变快，合计没有变快。PR 没有给每组单独的测量 commit。测量在服务器与 Metal kernel 层，不是完整真实 App；PR 已关闭（`d1160e01baf5`），没有合并记录。
+- [PR #4497](https://github.com/sgl-project/sglang-omni/pull/4497)（已关闭 `d9510ba0dd4d`，未合并）：降低 MOSS 的 first-text 门槛。测量 head `83b1e7668790`、Apple silicon MacBook Air、ABABAB、冷／暖各 3 对取中位数、12 份 Final 文本一致：first text 冷 3353.2 → 2799.1 ms，暖 2396.0 → 1851.5 ms。`eebd05da9b` 的早期 short stop／full window 回归已由后续 preemption／scheduling 修复；最终真实模型 benchmark 未独立重跑。
+- [PR #2833](https://github.com/sgl-project/sglang-omni/pull/2833)（已合并 `fd29e6607a6b` / `1b0271454c8d`）：修复让实时 ASR 卡住的 VAD session 泄漏。验证 head `fd29e6607a6b`、Apple Silicon／macOS 27.0：修复前第 65 次 activation 失败，修复后 70 次全部通过。这是 native VAD 生命周期的功能回归修复，不是模型推理 benchmark，也不直接提供 Stop-to-insert 收益。
+- UI 线程：[PR #2231](https://github.com/sgl-project/sglang-omni/pull/2231)（已合并 `6e3047db8e45` / `fbe5a7653a9b`）修掉设置页的主线程卡顿——测量 head `c44f8f47a8cb`、Apple M5、10 秒 idle，`RootView.body` 与 `SMAppService.status` 均从 10 次降为 1 次。[PR #2304](https://github.com/sgl-project/sglang-omni/pull/2304)（仍 OPEN `65fe0588c113`）把麦克风启停移出 main actor，popup 不再等 ignored-paste 检查：公开的暖机 key→inserted 为 verbatim 0.20 s、clean 0.65 s（Apple M5 Pro／macOS 27.0；样本是本地逐步毫秒时间戳和日常听写，测量 head、模型／provider、重复次数与方差缺，证据 C）。
+- 保留的分支与边界：[PR #2247](https://github.com/sgl-project/sglang-omni/pull/2247)、[PR #2249](https://github.com/sgl-project/sglang-omni/pull/2249) 和 [PR #2250](https://github.com/sgl-project/sglang-omni/pull/2250)（均已关闭）是连续的 preload 与模型常驻尝试，cold-start race 保留。[PR #2256](https://github.com/sgl-project/sglang-omni/pull/2256)（仍 OPEN `7dcf27300ea9`）恢复 OmniTyper cached start 的离线路径。[PR #4124](https://github.com/sgl-project/sglang-omni/pull/4124)（已合并 `0de20fbb7124` / `ec5b5254c244`）修复选择输入后的麦克风启动循环。[PR #1809](https://github.com/sgl-project/sglang-omni/pull/1809)（已合并 `afdafe8ce389` / `688488536f08`）把空闲时的 inbox 轮询改成阻塞唤醒。[PR #4230](https://github.com/sgl-project/sglang-omni/pull/4230)（已关闭 `51d2fd09445b`，未合并）阻止后台 toast 每隔几秒唤醒 Voxt。以上机制都不自动换算成未测的用户延迟收益。
 - [PR #2261](https://github.com/sgl-project/sglang-omni/pull/2261)（已合入；head `4091cb549196`，merge `fa0149a18e80`）：修复 Unload ASR 让 speech server 变成孤儿进程。
+- 按公开待办仍未闭环：#4602 的真实 cold start、#4700 的真实 piece 路径、#2304 与 #2256 的验收。
 
 ## 第 5 步 · 应用更新走另一条路
 

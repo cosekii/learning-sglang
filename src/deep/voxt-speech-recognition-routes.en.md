@@ -40,6 +40,8 @@ After the session resolves the selected ASR provider, it gives this recording on
 
 This step does not compare recognition quality or claim system dictation supports every language. Opening a stream fails when macOS lacks an on-device model for the language or Speech Recognition permission.
 
+Starting on demand means the first recognition waits for the model server to become ready; the public startup lineage and its measured numbers live in the deep dive of Chapter 11 Step 4.
+
 ### Next
 
 The route decides who receives the sound. Next, a service that only accepts a whole recording receives one WAV after speaking stops and returns final text.
