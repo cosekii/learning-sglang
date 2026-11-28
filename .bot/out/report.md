@@ -3738,3 +3738,21 @@ npx astro dev stop
 - **机制探针**（无图像读取能力，以 DOM 断言代替肉眼读图）：`.bot/out/probe-voxt09.mjs`（.bot 被 gitignore，不入库）对英桌面 + 中 390 px 各 9 步采样第一圈：相位全走 0→final（6/6/6/6/6/7/6/6/7）、相邻相位必有台上可见变化（文字或图形元素数签名）、27 条机制标记断言（如 Step 1 的 `no clock yet` 只在第 5 相、Step 3 的 `removed` 只在第 3 相后、Step 6 的「改同一条记录／update the same row」只在末两相、Step 8 的 `## 2026-11-26`、Step 9 的 `history.sock`）、页面横溢为 0。首轮 4 条失败全部定位为探针口径：Step 2／8 有只加图形不加文字的相位（改为文字+图形数签名）、`RETRY RECORDING` 为英文串误用于中文、`updates the same row` 与台上 `update the same row` 一词之差；组件行为不变。修正后**全部通过**。
 - **环境**：本目录 node_modules 又是指向协调 checkout 的符号链接（19:50 重建），本轮先试过保留符号链接 + 本地 vite cacheDir（半成品状态），dev server 报 `outside of Vite serving allow list`、全站水合失败；照旧只删本目录符号链接并本地 `npm install` 后恢复，未进入或修改协调 checkout。4321 被他线占用，本轮 server 在 4461。截图产物在 `.bot/out/voxt09-shots/`（模型无图像输入，未肉眼读图）。
 - **遗留**：Voxt-08 的关闭与否由协调固定复审决定，不提前核销；Voxt-03／04／05／06／07／10 相关提交均 queued 等复审，未返工；本书剩余开放 P0 为 Voxt-09（16 章评测口径没有 ready 落点）与 Voxt-10（11/6 最后 ready 章留下无承接问题），两者都指向未 ready 的 12–16 章，下一单元按序可写第 12 章首步（回答 microphone 与 app sounds，同时承接 Voxt-10）。
+
+## 2026-11-27 21:57 PST · lane d · Voxt 第 12 章新写轮（meeting-capture-modes，承接 Voxt-10）
+
+- **单元**（本书剩余开放 P0：Voxt-10「11/6 最后 ready 章留下无承接问题」，direction.md 给的修法甲为「交付第 12 章首步回答 microphone 与 app sounds」）：新写第 12 章 `meeting-capture-modes` 全章 7 步并置 `ready: true`。提交 `cb2e87f`（全章）+ `9cf0cfa`（照片体感锚点），已推 origin/tutorials。
+- **七步**（相位脚手架与 Voxt 02／05–09 一致：PHASE_COUNTS [5,4,4,4,4,5,4]、900 ms 相位、2.2 s 间歇循环、LoopProgress、`data-animation-*`、motion-focus 红框逐相指路）：
+  - Step 1（5 相）：第 11 章第 6 步的问题条 `microphone ? · system audio ?` → 完整会议卡（mic + system audio，2 轨，默认）→ 字幕卡（仅系统音频）→ 录音卡（仅麦克风）→ 算式 `32,000 × 3,600 = 115.2 MB`、`2 × 115.2 = 230.4 MB（≈58 张手机照片）`。首步即回答 Voxt-10 的承接问题。
+  - Step 2（4 相）：麦克风框 + Mac 在放框 + helper → 蓝箭头 `capture.start` 落 mic 轨 → 橙箭头 `capture.system` 落系统轨 → 两行（混成单声道；你照样听得到，副本只在 helper 手里）。手机版两来源框并排、方法名放框内，修掉箭头跨框与标签出界。
+  - Step 3（4 相）：两场检查卡（同时只开一场、≥1.5 GiB）→ `meetings/<id>/` 里 mic.wav 填入帧格与 `+32,000 B/s` → system.wav 同样 → 44 B 头补写、0.9 GiB 自停两行 + `1 s × 32,000 = 32,000 B`。
+  - Step 4（4 相）：macOS 询问条 → ALLOW 面板（龙头跑起来、mic ✓ system ✓）→ CANNOT START 面板（Start 失败、没有文件夹和文件）→ 两面板终态（开始录 / 会议不开始）。拒绝回报分类未在真机观察，写成脚注不猜。
+  - Step 5（4 相）：模式签 完整会议→字幕→完整会议；mic 行 6 蓝格 + 4 灰虚线空档 + 4 蓝格，system 行 14 橙格连续；t1·切换、t2·切回 虚线地标；末相两行规则（新轨先开始；接不起来留旧模式）。
+  - Step 6（5 相）：三场会议结束 → 完整会议卡马上删（0 B）→ 录音模式卡留下 → 失败会议卡上 7 天 = 168 h 闹钟 → 每小时清扫删除（回指第 9 章第 5 步同一 `recordingSweep`）。条件写明「保留音频关闭（默认）」，另留一行打开时也留。
+  - Step 7（4 相）：mic 面板三行各挂 me（不用模型）→ system 面板三行先「?」→ 换成 Speaker 1/2/1 → 模式地图（完整会议 ✓／字幕无 me／录音无可分）+ 收尾「边录边出字 · 会后再出终稿」。
+- **接缝处理**：第 13 章仍 `ready:false`，按 EVAL「最后一个 ready 章留下未回答问题不能按已完成验收」，本章末步只陈述已上演的事实（同一声音读两遍），不留问题、不指未 ready 章；写第 13 章时应把「直播字幕和会后终稿怎样分工」的问题补回第 12 章末步。第 11 章末步问题由本章 Step 1 直接回答（Voxt-10 修法甲成立，关闭与否由协调固定复审决定）。
+- **门**（dev server 在 4325，4321 是他线）：`npm run build` 61 页 rc=0；`BOOK=voxt ONLY=12` transcript 静默（首轮报 step 3 公式压脚注、聚焦框压脚注、step 6 孤立圆点，均已修）；readability 12 全 7 步 0 机械问题；`BOOK=voxt node scripts/deep-check.mjs 12` ok（7 节 == 7 步，双语）；英 + `LANG=zh` mobile 360/390/430 均 no layout breaks；zh-check 12 all clear。transcript 重生成随 `9cf0cfa` 入库。
+- **几何矩阵**（无图像输入，以 DOM 几何代替肉眼读图）：英桌面 + 中桌面 + 中 390 px × 7 步 × 2 时间点，出界／重叠／小字检查。首轮抓到 step 2 手机标签出界、step 3/6/7 手机标题压 LoOP、`.tag` 9.5 CSS px，均已修；复核仅剩全站既有口径（`.footnote` 10.5px 与 LoOP `循环` 10px，与第 1–11 章相同）。机制探针：7 步 direct 入口相位全走（1→final），每步可见对象数随相位变化（filled/dashed/texts 签名），counter 01–07 正确；6 条前步→ArrowRight 入口全部命中目标步且相位推进。
+- **评分卡**（自评，文本冷读；无图像输入未肉眼读图）：易读 12/12 ×7（R1 复述：s1「开会前选模式：完整会议录两边，字幕只录 Mac 放的声音，录音只录你」；s2「麦克风走原来那条路，Mac 放的声音走新开关，都经过 helper」；s3「一场会议一个文件夹两个文件，每秒各长 32,000 字节」；s4「录 Mac 的声音要先答应系统的问题，不然开不成会」；s5「中途换模式共用音轨不停，麦克风那段就空了」；s6「先都录下来，结束才决定留不留，失败的多留 7 天」；s7「麦克风整条都是你不用猜，Mac 那条有好几个人会后再分」）。原十二项 24/24 ×7。冷读洞 3 个已修（默认/用途末相消失、t1/t2 无白话、失败会议 retry 措辞无出处），现 0。
+- **环境**：本目录 node_modules 又是指向协调 checkout 的符号链接，照旧只删本目录符号链接并本地 `npm install`，未进入或修改协调 checkout；`git -C ~/code/sglang-omni fetch` 被沙箱拒绝，本章 pin 本地 `origin/main@a6e2fc6d98ab6abbed1c0ea40d0a7d6d038f3d74`（2026-11-27 17:35），引用行号均对该 ref 核对。截图：/tmp/mc-final（英桌面 7 步末相）、/tmp/mc-zh390（中 390px s1/s4/s7），模型无图像输入未读图，主人可直接看。
+- **遗留**：Voxt-10 关闭与否由协调固定复审决定，不提前核销；Voxt-03～08 全部 queued 未返工。本书剩余开放 P0：Voxt-09（第 16 章评测口径没有 ready 落点，依赖 12–16 章交付）。下一单元按序为第 13 章 `meeting-live-and-final`（写时把章末问题补回第 12 章末步）。
