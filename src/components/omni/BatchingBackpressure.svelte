@@ -96,8 +96,8 @@
     caption: 'Both limits are full, so C gets an immediate error. Router admission returns 429; a full coordinator returns 503.',
     captionZh: '两处容量都满，C 会立刻收到错误。Router 拒绝是 429；coordinator 满了是 503。',
   }, {
-    caption: 'While active, each downstream poll triggers one upstream poll. A poll returns at most one frame; this adapter adds no queue.',
-    captionZh: '传输中，下游 poll 会转成一次上游 poll。每次最多交出一帧，中间转接框不排队。',
+    caption: 'Each downstream poll triggers one upstream poll and returns at most one frame. More requests need more memory: how much of one card do weights and KV take?',
+    captionZh: '下游 poll 转成一次上游 poll，每次最多交出一帧。请求越多，显存越紧：权重和 KV 各占一张卡的多少？',
   }];
   let step = $state(0);
   $effect(() => {
@@ -450,7 +450,7 @@
       <text x={W / 2} y={phone ? 624 : 374} text-anchor="middle" class="tag strong">{t('No body pump · no application queue · no extra relay task', '不加 body pump · 不加应用队列 · 不加转发任务')}</text>
       <text x={W / 2} y={phone ? 650 : 402} text-anchor="middle" class="tag">{phone ? t('Adapter queue = 0 · socket and worker buffers remain', '队列是 0 只指这个转接框；socket 和 worker 仍可缓冲。') : t('Queue zero covers this adapter; socket and worker buffers can remain.', '队列是 0 只指这个转接框；socket 和 worker 仍可缓冲。')}</text>
       <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{phone ? t('Response relay only · upload/worker queues are separate', '这里只讲响应转发，不讲分类上传缓冲或 worker 内部队列。') : t('This is response relay, not classified-upload buffering or a worker-stage queue.', '这里只讲响应转发，不讲分类上传缓冲或 worker 内部队列。')}</text>
-      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Summary: bound admissions · relay responses directly', '本章收束：限制新请求准入，已接收响应直接逐帧转发。') : t('Chapter summary: bound new admissions and relay accepted responses directly.', '本章收束：限制新请求准入，已接收响应直接逐帧转发。')}</text>
+      <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Next: weights, KV and replicas in one card', '下一章：把权重、KV 和副本装进一张卡。') : t('Next chapter: fit weights, KV and replicas into one card.', '下一章：把权重、KV 和副本装进一张卡。')}</text>
       {/if}
     </svg>
   </div>

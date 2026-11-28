@@ -485,4 +485,4 @@ Line numbers refer to <code>origin/main@<wbr>21a6d229c3d2075da5e97848f94e0d2ac8a
 
 ### Next
 
-The chapter connects two capacity controls. Router or worker boundaries bound new admissions, while downstream consumers pull accepted HTTP responses frame by frame. A deployment still needs target-workload measurements for each capacity and separate monitoring of 429, 503, response termination and worker queues.
+The chapter bounded how much work runs at once: collection budgets, frame budgets, admission caps and a queue-free response relay. It did not count the GPU memory that admitted requests and loaded models occupy. The next chapter asks how much of one card the weights, KV and replicas take, and how the placement checks that shared budget.
