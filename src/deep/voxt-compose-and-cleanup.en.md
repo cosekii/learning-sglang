@@ -4,6 +4,7 @@
 
 ### On the stage
 
+- The stage builds in order: the recognition result appears first, the three task cards arrive one at a time, and the route count closes the step.
 - The blue card holds one recognition result from Ch. 4 Step 7. Each run selects one of three task routes rather than executing all three.
 - The `Transcribe` route treats words such as “Good morning.” as content to tidy. This chapter calls that job “tidy one dictation”.
 - The `Translate` route treats recognized words as content to translate.
@@ -53,6 +54,7 @@ Public baseline: `sglang-omni@3a31bd72e034db37ce5115a03dd4827b449683be`; paths a
 
 ### On the stage
 
+- The stage builds in order: the `system` card, then the optional `history` card, then the `user` card, and finally the reuse line.
 - `system` carries reusable instructions for the model: role, task and output contract, plus cleanup rules when used. Its content stays stable across runs.
 - The dashed `history` card is optional. It can hold examples or earlier conversation turns; a request omits it when none are needed.
 - The blue `user` card holds this run's input: recognized text, a selection, typed text or a Rewrite instruction. Each task chooses its own fields.
@@ -86,6 +88,7 @@ Public baseline: same as Step 1.
 
 ### On the stage
 
+- The stage builds in order: the four layers stack into the system box one at a time, then the `USER` card joins, and the `4 + 1` count closes the step.
 - `ROLE` tells the model which role should perform the work.
 - `CLEANUP` describes fillers, repetitions and recognition artifacts to address. It guides the model rather than running a fixed text replacement.
 - `TASK` names this job as tidying one dictation.
@@ -138,6 +141,7 @@ Public baseline: same as Step 1.
 
 ### On the stage
 
+- The stage builds in order: each card first shows its model answer, then what Voxt keeps, one task at a time.
 - Each card shows the model answer above and the content Voxt keeps below. Every answer value is constructed.
 - Built-in `Transcribe` turns `<output>Hi.</output>` into `Hi.` without delivering the wrapper.
 - `Translate` preserves `“<output>”` when those characters belong to the text, as they can in HTML.
@@ -185,6 +189,7 @@ Public baseline: same as Step 1.
 
 ### On the stage
 
+- The stage builds in order: the three requests form one at a time, then the ordered result joins them.
 - The first blue card holds one constructed long dictation from Ch. 4 recognition.
 - The dashed box contains three requests. Each piece has the same system instructions, while `user 1`, `user 2` and `user 3` hold different spans of speech.
 - The last blue card joins the three answers as `1 → 2 → 3`. Three pieces are a teaching example, not a fixed product value.
@@ -240,6 +245,7 @@ Public performance evidence (kept with its PR, measurement head, setup and bound
 
 ### On the stage
 
+- The stage builds in order: each piece settles one at a time — piece 1 cleaned, piece 2 failed, piece 3 cleaned — then the join count and the end state.
 - Blue pieces 1 and 3 succeed and keep `CLEANED 1` and `CLEANED 3`.
 - Orange piece 2 fails and keeps `RECOGNIZED 2`. All three outputs still join in Step 5's order.
 - `DONE` ends the session. `ProblemLLM` records the language-model failure, and `Degraded = true` says that recognized words remain in the result.
@@ -292,6 +298,7 @@ Public baseline: same as Step 1.
 
 ### On the stage
 
+- The stage builds in order: the Translate echo, the strict retry, the final echo with its evidence and the `FAILED` exit, then the Rewrite failure and its `FAILED` exit.
 - The left card covers selected `Translate`. The answer repeats “Good morning.”, so Voxt makes one `STRICT` retry. In this example, the final answer remains an echo and positive language-mismatch evidence exists, so the session ends `FAILED` without insertion.
 - The right card covers an ordinary `Rewrite` request failure. “Make it shorter.” is an instruction rather than deliverable content, so the raw-speech fallback count is 0 and Voxt inserts nothing.
 - Both paths are constructed. Spoken `Translate` has separate skip and timeout exits, so the left card does not describe every translation failure.
@@ -346,6 +353,7 @@ Public baseline: same as Step 1.
 
 ### On the stage
 
+- The stage builds in order: the truncated answer fills the model card, moves into the answer card, and the end state and zero unseen inserts close the step.
 - The left card holds the constructed Translate answer “大家早上…”. `finish_reason = “length”` means the model stopped at its length limit. The ellipsis marks possible incompleteness; it is not three literal dots in the answer.
 - The right card is one answer card. It keeps the received text so the user can review it before choosing how to use it.
 - The session is `Done` with `ProblemTruncated` and `Degraded = true`. It is not Step 7's request-failure state, `Failed`.
