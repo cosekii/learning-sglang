@@ -180,50 +180,63 @@ The next step pre-scales actor loss and follows the resulting gradients.
 
 Sources: <code>THUDM/<wbr>slime@<wbr>55e41ffef7193fdd4c8bc14720233e446446b1d7</code>, <code>slime/backends/<wbr>fsdp_utils/<wbr>actor.py</code> (`_train_step`, <code>sum_of_<wbr>sample_<wbr>mean</code>), <code>slime/utils/<wbr>ppo_utils.py</code> (<code>compute_<wbr>policy_<wbr>loss</code>), <code>slime/backends/<wbr>fsdp_utils/<wbr>data_packing.py</code> (`unpack_sequences`), and `scripts/run-qwen3-4B-fsdp.sh` (GRPO arguments).
 
-## Step 5 · Pre-scale by R/B, then average gradients
+## Step 5 · Accumulate two packs, update once, then export
 
-**One sentence.** Slime scales each rank's loss by $R/B$, then FP32 FSDP2 averages the pre-scaled gradients and keeps matching shards.
+**One sentence.** Each pack pre-scales immediately before its own backward pass, two packs accumulate gradients before one optimizer update, and the main loop then conditionally offloads before exporting the new weights.
 
 ### On the stage
 
-- Each rank used different training records. Before backward, slime evaluates `loss = loss * dp_size / global_batch_size`, so each rank's loss carries the scale $R/B$.
-- The blue temporary gradient belongs to one layer and comes from that pre-scaled loss. On this FP32 reduction path, FSDP2's default reduce-scatter operation is AVG: it sums matching values, divides by $R$, and keeps one shard per rank.
-- AVG supplies the remaining $1/R$. Together, $R/B$ pre-scaling and AVG produce the mean over the global batch, not an update eight times too large.
-- The orange box is the rank's averaged shard for this layer. The label shows the all-layers gradient total: 8 GB ÷ 8 = 1 GB per rank, not this layer's temporary size.
-- The optimizer updates the owned weight shards after all layers finish, not once for each box in this flow.
+- The first blue row is a rule, not a claim that both packs scale at once: each pack scales its own loss only when that pack reaches backward. `R = dp_size = rank count` and `B = global_batch_size = records per update`; the scale is `loss × R/B`. $W_0$ means the old weights.
+- Pack 1 then scales $L_1=-0.4490$, runs backward and produces its gradient $g_1$. The stage saves $G=g_1$ and leaves the weights at $W_0$.
+- Pack 2 scales $L_2=-0.9354$ only after Pack 1's backward, then produces its gradient $g_2$. Gradient accumulation means keeping the earlier gradient and adding the new one, so the saved sum is $G=g_1+g_2$. Neither backward pass calls the optimizer.
+- The boundary after Pack 2 matches `grad_accum=[2]`. One `optimizer.step()` changes old $W_0$ to updated $W_1$, then `zero_grad(set_to_none=True)` clears $G$.
+- After `train` returns, the grey rows show the main loop's order. With `offload_train` enabled, the model and optimizer move from GPU to CPU. `update_weights` then exports only $W_1$; the already-cleared $G$ is not exported. Rollout restoration sits between those calls in `train.py`, but is not drawn. Step 7 expands the bucketed export.
+- A bordered `DP8 · SEPARATE REDUCTION VIEW` does not assign cross-rank averaging to the DP1 packs above it. It defines FP32 as 32-bit values and AVG as the rank sum divided by $R$. The $R/B$ pre-scale and AVG's $1/R$ give $1/B$, the mean over all $B$ records. The separate memory label counts all layers' saved gradient shards: 8 GB ÷ 8 = 1 GB per rank.
+- Mobile labels the first rule `DP1` and the final reduction view `DP8 · SEPARATE`. It writes `old weights` and `new weights` instead of $W_0$ and $W_1$, and its subtitle defines $G$ as the saved sum.
+- Blue marks losses and gradients, orange the optimizer update, and grey the post-train operations.
 
 ### Formula and symbols
 
-$$\mathcal L'_r=\mathcal L_r\frac{R}{B},\qquad g_\ell^{(r)}=\frac{R}{B}\tilde g_\ell^{(r)}$$
+$$\mathcal L'_p=\mathcal L_p\frac{R}{B}$$
 
-$$g_{\ell,i}=S_{\ell,i}\!\left(\frac1R\sum_{r=1}^{R}g_\ell^{(r)}\right)=S_{\ell,i}\!\left(\frac1B\sum_{r=1}^{R}\tilde g_\ell^{(r)}\right)$$
+$$G_1=g_1,\qquad G_2=g_1+g_2$$
+
+$$W_1=\operatorname{optimizer.step}(W_0,G_2)$$
+
+$$\text{Separate DP8 view:}\qquad \frac{R}{B}\times\frac1R=\frac1B$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
-| $R$ | Number of ranks in the DP sharding group, `dp_size` | Step 2, eight ranks |
-| $B$ | Global batch size for the optimizer update | `global_batch_size` in the run configuration; no value assigned in the memory example |
-| $\mathcal L_r$ | Rank $r$'s loss before DP scaling | The current microbatch |
-| $\mathcal L'_r$ | Pre-scaled loss passed to backward | $\mathcal L_rR/B$ |
-| $\ell$ | Index of the layer being reduced | The current layer on the stage |
-| $r$ | Rank contributing a gradient | One member of the DP group |
-| $\tilde g_\ell^{(r)}$ | Rank $r$'s gradient before DP scaling | Backward from $\mathcal L_r$ |
-| $g_\ell^{(r)}$ | Rank $r$'s **pre-scaled** gradient for layer $\ell$ | Backward from $\mathcal L'_r$, equal to $\tilde g_\ell^{(r)}R/B$ |
-| $S_{\ell,i}$ | Select rank $i$'s shard of layer $\ell$'s gradient | FSDP placement |
-| $g_{\ell,i}$ | Averaged gradient shard for layer $\ell$ retained by rank $i$ | FP32 FSDP2 reduce-scatter with AVG; size not supplied |
+| $p$ | Pack number | Pack 1 or Pack 2 from Step 3 |
+| $R$ | DP rank count, `dp_size` | 1 in this DP1 pack sequence; 8 in the separate DP8 view |
+| $B$ | Records in the global batch for one optimizer update | Run configuration; left symbolic here |
+| $\mathcal L_p$ | Pack $p$'s loss before DP scaling | Step 4; $L_1$ and $L_2$ |
+| $\mathcal L'_p$ | That pack's pre-scaled loss passed to its own backward | `actor.py:687-689` |
+| $g_1,g_2$ | Pack 1 and Pack 2's gradients in the DP1 sequence | Backward from $\mathcal L'_1$ and $\mathcal L'_2$; no numeric values supplied |
+| $G_1,G_2$ | Saved gradient sum after each pack | $G_1=g_1$, then $G_2=g_1+g_2$ |
+| $W_0,W_1$ | Old and updated weights around the sole optimizer update | This step |
 
 ### The numbers on the stage
 
-This example has $R=8$ and leaves $B$ symbolic. A separate two-rank arithmetic check uses $R=2$, $B=8$, and unscaled scalar gradients $\tilde g^{(1)}=2$ and $\tilde g^{(2)}=6$. Pre-scaling gives $g^{(1)}=2\times2/8=0.5$ and $g^{(2)}=6\times2/8=1.5$. AVG gives $(0.5+1.5)\div2=1$, which matches the global-batch mean $(2+6)\div8=1$.
+The pack losses are $L_1=-0.4490$ and $L_2=-0.9354$ from Step 4. The example has two backward calls and `grad_accum=[2]`, so the sole optimizer boundary follows Pack 2. $W_0$ stays visible through both accumulation rows; only the boundary produces $W_1$. The gradient values remain symbolic because the actor-loss values do not determine their derivatives.
 
-On this default FP32 path, FSDP2 sets both extra predivide and postdivide factors to `None`; NCCL's AVG supplies the $1/R$ division. The stage labels the all-layers gradient total: 8 GB ÷ 8 = 1 GB per rank across all layers. This is only the gradient table's shard; the rank's complete training-state bill is 8 GB from Step 2. Neither the temporary layer gradient nor the averaged layer shard has a supplied size.
+The pack sequence is DP1, while the reduction and saved-memory labels use the chapter's separate DP8 view. There, AVG supplies $1/8$ and the all-layers saved gradient shard is $8\ \text{GB}÷8=1\ \text{GB}$ per rank. $B$ remains symbolic. The 1 GB label counts the saved gradient table from Step 2, not a temporary layer gradient or the rank's complete 8 GB training state.
 
-Slime sets `reduce_dtype=torch.float32`, scales the loss on the line before `loss.backward()`, and later calls `optimizer.step()`. The FSDP wrapper handles parameter gathers and per-layer gradient reduce-scatter; the actor does not write separate collective calls beside those methods.
+### Derived · not drawn
+
+A separate scalar check uses $R=2$, $B=8$, and unscaled gradients $2$ and $6$. Pre-scaling gives $2×2/8=0.5$ and $6×2/8=1.5$. AVG gives $(0.5+1.5)÷2=1$, equal to the global-batch mean $(2+6)÷8=1$. This check does not assign numeric gradients to Pack 1 or Pack 2.
+
+### Implementation boundaries
+
+The pinned implementation clips gradient norm immediately before `optimizer.step()`; this compact stage omits that operation, metric aggregation, checkpoint saves and reference-model updates. It does not move clipping after the update. On the default FP32 path, FSDP2's extra predivide and postdivide factors are `None`; NCCL AVG supplies the $1/R$ division.
+
+`train.py:92-94` calls `offload_train()`, restores rollout, and calls `actor_model.update_weights()` in that order. With `offload_train` disabled, the helper clears training memory instead of moving the model and optimizer to CPU. The stage draws only the enabled offload branch and leaves rollout restoration off stage.
 
 ### Next
 
-The training-state bill is smaller, but full units and other temporary results still need space. The next step separates that bill from peak memory.
+The optimizer has produced $W_1$, but the saved training state and temporary training allocations still need separate accounting. The next step compares that state bill with peak memory.
 
-Sources: `Awesome-ML-SYS-Tutorial/rlhf/slime/fsdp/readme.md:19`; `Awesome-ML-SYS-Tutorial/rlhf/sys-design/readme-2-en.md:47-58`; `THUDM/slime@55e41ffef7193fdd4c8bc14720233e446446b1d7`, `slime/backends/fsdp_utils/actor.py:687-702,1000-1034`; `pytorch/pytorch@v2.8.0`, `_fsdp_collectives.py:605-641`.
+Sources: <code>THUDM/<wbr>slime@<wbr>55e41ffe<wbr>f7193fdd<wbr>4c8bc147<wbr>20233e44<wbr>6446b1d7</code>, `train.py:46-59,92-94` and <code>slime/<wbr>backends/<wbr>fsdp_utils/<wbr>actor.py:270-281,687-702,1000-1034</code>; <code>pytorch/<wbr>pytorch@<wbr>v2.8.0</code>, `_fsdp_collectives.py:605-641`; <code>Awesome-ML-SYS-Tutorial/<wbr>rlhf/<wbr>slime/<wbr>fsdp/<wbr>readme.md:19</code>; <code>Awesome-ML-SYS-Tutorial/<wbr>rlhf/<wbr>sys-design/<wbr>readme-2-en.md:47-58</code>.
 
 ## Step 6 · The training-state bill is only one part of peak memory
 

@@ -168,29 +168,31 @@
       { en: `L2 = (2 × ${rewardText(actor.pack2.maskedMeans[0])}) ÷ 2 = ${rewardText(actor.pack2.pgLoss)}`, zh: `L2 = (2 × ${rewardText(actor.pack2.maskedMeans[0])}) ÷ 2 = ${rewardText(actor.pack2.pgLoss)}` },
     ],
   }, {
-    phases: 5, desktopH: 500, mobileH: 600,
-    caption: 'Each rank scales loss by R/B. FP32 FSDP2 then averages the gradients to finish the global-batch mean.',
-    captionZh: '每个 rank 先把 loss 乘以 R/B。FP32 FSDP2 再取平均，得到全批梯度均值。',
-    title: 'Scale by R/B, then average gradients', titleZh: '先乘 R/B，再平均梯度',
-    subtitle: 'FP32 reduce-scatter = average pre-scaled gradients, then keep one shard',
-    subtitleZh: 'FP32 reduce-scatter = 平均预缩放梯度，再各留一个分片',
-    foot: 'Pinned slime: loss = loss * dp_size / global_batch_size; FP32 FSDP2 defaults to AVG.',
-    footZh: '固定版 slime：loss = loss * dp_size / global_batch_size；FP32 FSDP2 默认 AVG。',
-    mobileTitle: 'Scale R/B, then average', mobileTitleZh: '先乘 R/B，再取平均',
-    mobileSubtitle: 'FP32 AVG = average, then keep a shard', mobileSubtitleZh: 'FP32 AVG = 取平均，再留分片',
-    mobileFoot: 'R = 8 ranks · B = global batch', mobileFootZh: 'R = 8 个 rank · B = 全批大小',
-    mobileLegend: 'Orange = owned shard · blue = layer gradient', mobileLegendZh: '橙 = 拥有分片 · 蓝 = 本层梯度',
+    phases: 6, desktopH: 500, mobileH: 800,
+    caption: 'Two packs accumulate gradients before one optimizer update. If enabled, training offloads before exporting the new weights.',
+    captionZh: '两包先攒梯度，再更新一次权重。启用时先 offload，再导出新权重。',
+    title: 'Two packs, one update, then export', titleZh: '两包攒梯度，一次更新，再导出',
+    subtitle: 'backward = find weight-change directions · accumulate = keep and add them',
+    subtitleZh: 'backward = 求权重变化方向 · 梯度累加 = 保留并相加',
+    foot: 'Pinned actor.py + train.py · DP1 packs · DP8 reduction/memory · offload_train conditional.',
+    footZh: '固定版 actor.py + train.py · DP1 两包 · DP8 归约与显存 · offload_train 有条件执行。',
+    mobileTitle: 'Two packs, one update, then export', mobileTitleZh: '两包一次更新，再导出',
+    mobileSubtitle: 'G = saved sum · backward finds directions', mobileSubtitleZh: 'G = 梯度累加和 · backward 求变化方向',
+    mobileFoot: 'Pinned train.py · offload_train is conditional.', mobileFootZh: '固定版 train.py · offload_train 有条件执行。',
+    mobileLegend: 'Blue = loss/gradient · orange = update · grey = later', mobileLegendZh: '蓝 = loss 和梯度 · 橙 = 更新 · 灰 = 后续',
     mobile: [
-      { title: 'LAYER GRADIENT · TEMPORARY', titleZh: '本层梯度 · 临时', body: 'from the pre-scaled loss', bodyZh: '由预缩放 loss 算出', tone: 'blue' },
-      { title: 'REDUCE-SCATTER', titleZh: 'REDUCE-SCATTER', body: 'FP32 AVG, then split', bodyZh: 'FP32 取平均，再分片', tone: 'plain' },
-      { title: 'OWNED GRADIENT · ONE SHARD', titleZh: '拥有的梯度 · 一个分片', body: 'this layer\'s averaged shard', bodyZh: '本层平均后的分片', tone: 'orange' },
-      { title: 'OPTIMIZER · AFTER ALL LAYERS', titleZh: '优化器 · 所有层算完后', body: 'update the owned weight shard', bodyZh: '更新拥有的权重分片', tone: 'plain' },
+      { title: 'DP1 RULE · loss × R/B before backward', titleZh: 'DP1 规则 · 每包 backward 前乘 R/B', body: 'R = rank count · B = records per update', bodyZh: 'R = rank 数 · B = 每次更新的记录数', tone: 'blue', phase: 0 },
+      { title: 'PACK 1 · scale L1 → backward → g1', titleZh: '第 1 包 · 缩放 L1 → backward → g1', body: `L1=${rewardText(actor.pgLoss)} · G=g1 · old weights`, bodyZh: `L1=${rewardText(actor.pgLoss)} · G=g1 · 旧权重`, tone: 'blue', phase: 1 },
+      { title: 'PACK 2 · scale L2 → backward → g2', titleZh: '第 2 包 · 缩放 L2 → backward → g2', body: `L2=${rewardText(actor.pack2.pgLoss)} · G=g1+g2 · old weights`, bodyZh: `L2=${rewardText(actor.pack2.pgLoss)} · G=g1+g2 · 旧权重`, tone: 'blue', phase: 2 },
+      { title: 'grad_accum=[2] · optimizer.step ×1', titleZh: 'grad_accum=[2] · optimizer.step ×1', body: 'old → new weights · zero_grad clears G', bodyZh: '旧权重 → 新权重 · zero_grad 清空 G', tone: 'orange', phase: 3 },
+      { title: 'train RETURNS · offload_train', titleZh: 'train 返回 · offload_train', body: 'if enabled: model + optimizer GPU → CPU', bodyZh: '启用时：模型和优化器 GPU → CPU', tone: 'plain', phase: 4 },
+      { title: 'update_weights · new weights only', titleZh: 'update_weights · 只导出新权重', body: 'G cleared · Step 7 shows buckets', bodyZh: 'G 已清空 · 第 7 步展示装桶', tone: 'plain', phase: 5 },
     ],
     formulas: [
-      { en: 'loss × dp_size ÷ global_batch_size', zh: 'loss × dp_size ÷ global_batch_size' },
-      { en: 'AVG = (rank sum) ÷ R', zh: 'AVG =（各 rank 之和）÷ R' },
-      { en: 'R/B scale + AVG = batch mean', zh: 'R/B 预缩放 + AVG = 全批均值' },
-      { en: 'all layers\' gradients: 8 GB ÷ 8 = 1 GB per rank', zh: '所有层的梯度：8 GB ÷ 8 = 每个 rank 1 GB' },
+      { en: 'DP8 · SEPARATE · R = 8 · FP32 = 32-bit', zh: 'DP8 · 独立归约 · R = 8 · FP32 = 32 位' },
+      { en: 'R/B × 1/R = 1/B = mean over B records', zh: 'R/B × 1/R = 1/B = B 条记录的均值' },
+      { en: 'saved gradients: 8 GB ÷ 8 = 1 GB per rank', zh: '保存的梯度：8 GB ÷ 8 = 每 rank 1 GB' },
+      { en: 'offload if enabled · onload not drawn', zh: '启用时才 offload · 未画 rollout 恢复' },
     ],
   }, {
     phases: 3, desktopH: 500, mobileH: 560,
@@ -448,32 +450,27 @@
         <text x="360" y="472" text-anchor="middle" class="small" opacity={phase >= 7 ? 1 : 0}>{t('Blue = forward values and actor loss', '蓝 = forward 数值和 actor loss')}</text>
       {:else if step === 4}
         {#each [
-          { x: 40, title: 'LAYER GRADIENT', titleZh: '本层梯度', result: 'temporary', resultZh: '临时', body: 'after forward', bodyZh: '前向之后算出', tone: 'blue' },
-          { x: 275, title: 'REDUCE-SCATTER', titleZh: 'REDUCE-SCATTER', result: 'AVG + split', resultZh: '平均 + 分片', body: 'FP32 default', bodyZh: 'FP32 默认', tone: 'plain' },
-          { x: 510, title: 'OWNED GRADIENT', titleZh: '拥有的梯度', result: 'one shard', resultZh: '一个分片', body: 'this layer\'s shard', bodyZh: '本层的分片', tone: 'orange' },
+          { title: 'RULE · loss × R/B just before each pack\'s backward', titleZh: '规则 · 每包 backward 前将 loss 乘 R/B', a: 'R = dp_size = rank count · B = global_batch_size = records/update', aZh: 'R = dp_size = rank 数 · B = global_batch_size = 每次更新的记录数', b: 'W0 = old weights', bZh: 'W0 = 旧权重', tone: 'blue' },
+          { title: 'PACK 1 · scale L1, then backward', titleZh: '第 1 包 · 先缩放 L1，再 backward', a: `L1 = ${rewardText(actor.pgLoss)} × R/B → backward → g1`, aZh: `L1 = ${rewardText(actor.pgLoss)} × R/B → backward → g1`, b: 'g1 = Pack 1 gradient · save G = g1 · still W0', bZh: 'g1 = 第 1 包梯度 · 保存 G = g1 · 仍是 W0', tone: 'blue' },
+          { title: 'PACK 2 · scale L2, then backward', titleZh: '第 2 包 · 先缩放 L2，再 backward', a: `L2 = ${rewardText(actor.pack2.pgLoss)} × R/B → backward → g2`, aZh: `L2 = ${rewardText(actor.pack2.pgLoss)} × R/B → backward → g2`, b: 'g2 = Pack 2 gradient · G = saved sum = g1 + g2 · W0', bZh: 'g2 = 第 2 包梯度 · G = 累加和 = g1 + g2 · W0', tone: 'blue' },
+          { title: 'BOUNDARY · after Pack 2 · grad_accum = [2]', titleZh: '更新边界 · 第 2 包后 · grad_accum = [2]', a: 'optimizer.step() once · W0 = old → W1 = updated', aZh: 'optimizer.step() 一次 · W0 = 旧 → W1 = 新权重', b: 'zero_grad(set_to_none=True) clears G', bZh: 'zero_grad(set_to_none=True) 清空 G', tone: 'orange' },
+          { title: 'train RETURNS · then conditional offload_train', titleZh: 'train 返回 · 然后按配置 offload_train', a: 'if enabled: model + optimizer GPU → CPU', aZh: '启用时：模型和优化器 GPU → CPU', b: 'rollout onload not drawn', bZh: '未画 rollout 恢复', tone: 'plain' },
+          { title: 'update_weights · after offload', titleZh: 'update_weights · offload 之后', a: 'export W1 only · G was cleared above · no gradients exported', aZh: '只导出 W1 · G 已在上方清空 · 不导出梯度', b: 'Step 7 opens the bucket path', bZh: '第 7 步展开装桶路径', tone: 'plain' },
         ] as node, i}
-          <g opacity={phase >= (i === 0 ? 0 : i === 1 ? 2 : 3) ? 1 : 0}>
-            <rect x={node.x} y="95" width="170" height="157" rx="12" fill={fill(node.tone)} stroke={stroke(node.tone)} />
-            <text x={node.x + 85} y="129" text-anchor="middle" class="small strong">{t(node.title, node.titleZh)}</text>
-            <text x={node.x + 85} y="174" text-anchor="middle" class="result">{t(node.result, node.resultZh)}</text>
-            <text x={node.x + 85} y="217" text-anchor="middle" class="small">{t(node.body, node.bodyZh)}</text>
-            {#if i < 2}<line x1={node.x + 170} y1="174" x2={node.x + 225} y2="174" stroke="var(--line)" stroke-width="2.5" marker-end="url(#fsdp-arrow-plain)" opacity={phase >= (i === 0 ? 2 : 3) ? 1 : 0} />{/if}
+          <g opacity={phase >= i ? 1 : 0}>
+            <rect x="35" y={74 + i * 48} width="650" height="42" rx="10" fill={fill(node.tone)} stroke={stroke(node.tone)} />
+            <text x="52" y={89 + i * 48} class="small strong">{t(node.title, node.titleZh)}</text>
+            <text x="52" y={107 + i * 48} class="small">{t(node.a, node.aZh)}</text>
+            <text x="668" y={107 + i * 48} text-anchor="end" class="small">{t(node.b, node.bZh)}</text>
           </g>
         {/each}
-        <g opacity={phase >= 4 ? 1 : 0}>
-          <line x1="595" y1="252" x2="595" y2="292" stroke="var(--line)" stroke-width="2.5" marker-end="url(#fsdp-arrow-plain)" />
-          <rect x="485" y="302" width="220" height="79" rx="11" fill="var(--bg)" stroke="var(--line)" />
-          <text x="595" y="332" text-anchor="middle" class="section">{t('OPTIMIZER', '优化器')}</text>
-          <text x="595" y="361" text-anchor="middle" class="small">{t('after all layers: update owned weights', '所有层算完后：更新拥有的权重')}</text>
+        <g opacity={phase >= 5 ? 1 : 0}>
+          <rect x="35" y="368" width="650" height="84" rx="10" fill="var(--bg)" stroke="var(--line)" />
+          <text x="360" y="388" text-anchor="middle" class="small strong">{t('DP8 · SEPARATE REDUCTION VIEW · R = 8 ranks · FP32 = 32-bit values', 'DP8 · 独立归约视图 · R = 8 个 rank · FP32 = 32 位数值')}</text>
+          <text x="360" y="412" text-anchor="middle" class="result">{t('pre-scale × R/B · AVG = rank sum ÷ R · R/B × 1/R = 1/B', '预缩放 × R/B · AVG = 各 rank 求和 ÷ R · R/B × 1/R = 1/B')}</text>
+          <text x="360" y="436" text-anchor="middle" class="small">{t('1/B = mean over all B records · saved gradients: 8 GB ÷ 8 = 1 GB per rank', '1/B = 所有 B 条记录的均值 · 保存的梯度：8 GB ÷ 8 = 每 rank 1 GB')}</text>
         </g>
-        <g opacity={phase >= 1 ? 1 : 0}>
-          <rect x="35" y="292" width="365" height="124" rx="11" fill="var(--bg)" stroke="var(--line)" />
-          <text x="217" y="320" text-anchor="middle" class="small strong">{t('PRE-SCALE EACH RANK\'S LOSS', '先缩放每个 rank 的 LOSS')}</text>
-          <text x="217" y="350" text-anchor="middle" class="small">{t('loss = loss * dp_size / global_batch_size', 'loss = loss * dp_size / global_batch_size')}</text>
-          <text x="217" y="380" text-anchor="middle" class="small">{t('R = 8 ranks · B = global batch · AVG = sum ÷ R', 'R = 8 个 rank · B = 全批大小 · AVG = 求和 ÷ R')}</text>
-        </g>
-        <text x="217" y="406" text-anchor="middle" class="small" opacity={phase >= 4 ? 1 : 0}>{t('all layers\' gradients: 8 GB ÷ 8 = 1 GB per rank', '所有层的梯度：8 GB ÷ 8 = 每个 rank 1 GB')}</text>
-        <text x="360" y="455" text-anchor="middle" class="small" opacity={phase >= 4 ? 1 : 0}>{t('Orange = owned shard · blue = temporary layer gradient', '橙 = 拥有分片 · 蓝 = 临时的本层梯度')}</text>
+        <text x="360" y="474" text-anchor="middle" class="small" opacity={phase >= 5 ? 1 : 0}>{t('Blue = loss and gradients · orange = optimizer update · grey = after training', '蓝 = loss 和梯度 · 橙 = 优化器更新 · 灰 = 训练后的操作')}</text>
       {:else if step === 5}
         <g opacity={phase >= 2 ? 1 : 0}>
           <rect x="70" y="88" width="300" height="79" rx="10" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="5 4" />

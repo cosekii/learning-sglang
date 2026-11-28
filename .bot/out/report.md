@@ -32,7 +32,42 @@
 - 剩余事项是 Omni-06／62 的协调复审、reduced-motion 动态切换检查、具备图像能力的复审和主人最终视觉验收。未跑全站回归、真实 SGLang-Omni、模型或 GPU；其他开放 finding 未改。
 - 首次 `pstack-synthesizer` 探索因配置的模型不存在而失败，未计为证据；后续独立 `explore` 冷读成功。初次 build 还暴露本 clone 的 `node_modules` 指向协调 checkout，Vite unlink 以 EPERM 失败且未改目标。随后只删除本目录符号链接并在本目录 `npm install`，package 文件无 diff，未写协调人的 checkout。
 - 本轮 4323 dev server（pid 40115）已停止；`pgrep -P 1 -fl 'headless=new.*cdp-'` 无输出。审计标签页和浏览器均已关闭，未动其他 lane 的服务或浏览器。
+---
 
+# lane k2 本轮报告 · ML 08 Step 5 两包累加与训练后顺序（ML-48）
+
+日期：2026-11-27。类型：修旧。本轮开始 HEAD 与 `origin/tutorials` 均为 `f31bdde`，工作树干净。按 direction 只返工 Step 5，保留 `969842d` 的 Step 4 actor loss 修复，不重写 Step 4。范围为 Step 5 双语组件、deep、MDX、生成 transcript、定向审计和本报告；其他章、其他书、`.bot/memory/` 与第 1 本受保护英文原文均未改。
+
+## 修复与 finding
+
+- Step 5 改为六个 held phases：每包在自身 backward 前乘 `R/B`；第 1 包得到 `g1` 并保存 `G=g1`；第 2 包得到 `g2` 并形成 `G=g1+g2`；第 2 包后只有一次 `optimizer.step()`，旧权重变为新权重并清空 `G`；训练返回后按配置 offload；最后 `update_weights` 只导出新权重。`W1` 和 `optimizer.step` 在边界前不会出现。
+- DP1 两包序列与 DP8 归约、显存视图分开。DP8 面板保留 FP32 AVG、`R/B × 1/R = 1/B` 和 `8 GB ÷ 8 = 1 GB` 的既有正确内容，不把跨 rank 平均安到 DP1 的 `g1/g2` 上。手机明确标注 DP1 与独立 DP8，直接用「旧权重／新权重」并解释 `G`。
+- 双语 deep 与 MDX 同步逐相状态、条件 offload、`zero_grad` 后不导出梯度、rollout 恢复未画、梯度裁剪等省略边界，以及 pinned `train.py:46-59,92-94`、`actor.py:270-281,687-702,1000-1034` 出处。
+- **ML-48 的 Step 5 作者修复完成，待协调固定复审，不自行销项。** Step 4、Step 3 packing 与 Ch.6 Step 7 的既有定点 verdict 未改；ML-48 和整章仍不申报 GO。
+
+## 作者评分与独立冷读
+
+| 步 | R1–R5 | 机制 R6 | 原十二项 | 新内容洞 | R1 小学生复述 |
+|---|---:|---:|---:|---:|---|
+| 5 | 10/10 | 2/2（DOM） | 24/24 | 0 | 模型学完两包，在第二包后只改一次权重，再分享新权重。 |
+
+- 独立冷读首轮指出 6 组问题：符号未解释、DP1／DP8 混写、预缩放时序、清空后仍称保留梯度、无条件 offload 摘要和手机图例。修复后第二轮剩手机 DP 标签、手机白话状态与旧 transcript 三项；再修后终审 **PASS**，R1–R5 **10/10**、机制 R6 **2/2**、原十二项 **24/24**、剩余内容洞 **0**。这不是协调 verdict。
+- 当前模型不支持图像输入；已尝试读取最终英中 PNG，工具明确返回不支持。因此不声称看过图片、视觉通过或主人验收通过。
+
+## 硬门与证据
+
+- 最终 `npm run build`：**60 页**通过；Step 5 `readability`：**0 机械问题**；`BOOK=ml-sys node scripts/deep-check.mjs 08`：ok；`zh-check`：all clear；英中全章 360／390／430 px `mobile` 与中文 Step 5 字号门均 **no layout breaks**；`git diff --check` 干净。
+- transcript 连续两次逐字一致：**2,711 词**，SHA-256 `a80db503f25bd85e97dee8328e8f2a19e9fcc32e7d78e0251cb7e9463181320a`。无 caption、文字出界、重叠或文本规则报告。
+- 可重跑脚本 `.bot/out/ml48-step5-audit.mjs`。最终结果 `.bot/out/ml48-step5-audit/report.json`：英中桌面与 390 px × direct／前步入口共 **48 状态、40/40 个机制转变、8 个 deep 状态**。普通舞台最低 **10.80625 CSS px**，重叠、SVG／卡片出界、页面／deep／公式／段落横溢和 `failures` 均为 0。
+- 顺序断言要求 Pack 1 的 `g1`、Pack 2 的 `g2` 与 `G=g1+g2` 逐相出现，边界前没有 `W1` 或 `optimizer.step`，末相依次命中规则、两包、更新边界、条件 offload 和 `update_weights`；另检查 DP8 独立标记、FP32 白话、梯度不导出和条件 caption。
+- 代表图：`.bot/out/ml48-step5-shot/ml08-en-step5.png`、`.bot/out/ml48-step5-shot-zh/ml08-zh-step5.png`，以及逐相矩阵中的 `.bot/out/ml48-step5-audit/zh-390-direct-p5.png`。本地地址：`http://localhost:4321/learning-sglang/ml-sys/ch/08-fsdp2-training-backend/?step=5`；查看前在本目录运行 `npx astro dev --background`。
+
+## 剩余与清理
+
+- 剩余事项是 ML-48 的协调固定复审、其他未改开放项、共享 ML-21／22、具备图像能力的复审和主人最终视觉验收。deep 打开后的桌面舞台最低 **8.00564 CSS px**，仍归共享 ML-21／22，本单元未改也不声称该共享项通过。
+- 未跑全站回归、真实 FSDP2 训练、rollout、GPU benchmark、故障注入或 reduced-motion 动态切换。
+- 本 clone 的 `node_modules` 开始时再次指向协调 checkout；只删除本目录符号链接并在本目录 `npm install`，package 文件无 diff，未写协调人的 checkout。
+- 本轮 4321 dev server（pid 29074、66480）均已停止；`pgrep -P 1 -fl 'headless=new.*cdp-'` 无输出。所有审计标签页和浏览器均已关闭，未动其他 lane 的服务或浏览器。
 ---
 
 # lane k1 本轮报告 · Omni 07 Step 6 的 AuK offload 与 Omni-64
