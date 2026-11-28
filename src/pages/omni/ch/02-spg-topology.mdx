@@ -13,7 +13,11 @@ export const deep = await deepFor('omni-02-spg-topology');
 <details class="i18n-en">
 <summary>Where this chapter's claims come from</summary>
 
-Step 1 reads the shipped Qwen3-Omni replica configuration and the model's placement code in SGLang-Omni. It counts configured stage copies and GPUs; it does not measure latency or throughput. Step 2 compares the default and colocated process names for `talker_ar` and `code2wav`, without drawing their different GPU placements. Step 3 uses a minimal `thinker` example with `tp_size = 2` and `gpu = [0, 1]`; it counts logical stages, TP processes and GPUs without measuring memory or latency.
+Step 1 reads the shipped Qwen3-Omni replica configuration and the model's placement code in SGLang-Omni. The animation starts from Chapter 1's six processes, splits the shared speech process into two for seven, then reveals the replica2 layout's first copies, added `talker_ar` copy and added `code2wav` copy. The visible process counts go from six to seven, then eight and nine. `code2wav` copy 1 moves from GPU 0 to GPU 1, while both added copies use GPU 2. These held states explain two configuration expansions; they do not mutate a running deployment or measure latency or throughput.
+
+Step 2 compares the default and colocated process names for `talker_ar` and `code2wav`, without drawing their different GPU placements. The animation starts with two process boundaries, reveals the cross-process hand-off and two-process count, then forms one shared boundary around the same two stages and schedulers, and finally reveals the available in-process path and one-process count. The stage and scheduler counts stay at two while the process count changes from two to one.
+
+Step 3 uses a minimal `thinker` example with `tp_size = 2` and `gpu = [0, 1]`. It first sends request A through one TP1 process. The TP2 panel forms process 1 on GPU 0 and process 2 on GPU 1 before any request enters. Only then does request A enter process 1, which distributes work so both processes compute on the same request. The animation counts logical stages, TP processes and GPUs without measuring memory or latency.
 
 Step 1 source revision: `sglang-omni origin/main@48ee40b2563492de95efc952a0c7470db087d8a9`. Step 2 source revision: `sglang-omni origin/main@92d72512197f9a0a4ef0583f8ea789cf50f316be`. Step 3 source revision: `sglang-omni origin/main@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`. The deep dive lists the exact files and lines.
 
@@ -22,7 +26,11 @@ Step 1 source revision: `sglang-omni origin/main@48ee40b2563492de95efc952a0c7470
 <details class="i18n-zh">
 <summary>本章说法的出处</summary>
 
-第 1 步读取 SGLang-Omni 自带的 Qwen3-Omni 多副本配置和模型 placement 代码，只数配置里的 stage 份数和 GPU 数量，没有测量延迟或吞吐量。第 2 步比较默认与 colocated 配置里 `talker_ar` 和 `code2wav` 的进程名，不画两种配置不同的 GPU 位置。第 3 步使用 `tp_size = 2`、`gpu = [0, 1]` 的最小 `thinker` 例子，数逻辑 stage、TP 进程和 GPU，不测量显存或延迟。
+第 1 步读取 SGLang-Omni 自带的 Qwen3-Omni 多副本配置和模型 placement 代码。动画从第 1 章的 6 个进程开始，先把语音共用进程拆成两个，得到 7 个；再依次形成 replica2 的第 1 份、新增的 `talker_ar` 第 2 份和新增的 `code2wav` 第 2 份。图上的进程数从 6 到 7，再到 8 和 9。`code2wav` 第 1 份从 GPU 0 挪到 GPU 1，两个新增份都用 GPU 2。这些停驻状态解释两份配置怎样展开，不表示修改正在运行的部署，也不测量延迟或吞吐量。
+
+第 2 步比较默认与 colocated 配置里 `talker_ar` 和 `code2wav` 的进程名，不画两种配置不同的 GPU 位置。动画从两个进程边界开始，先显示跨进程交接和两个进程数，再用一个共用边界装下原来的两个 stage 和 scheduler，最后显示可用的进程内路径和一个进程数。stage 和 scheduler 都仍是两个，进程数从 2 变成 1。
+
+第 3 步使用 `tp_size = 2`、`gpu = [0, 1]` 的最小 `thinker` 例子。动画先让请求 A 进入一个 TP1 进程。TP2 图先形成 GPU 0 上的进程 1 和 GPU 1 上的进程 2，此时还没有请求进入。随后请求 A 才进入进程 1，由进程 1 分活，让两个进程一起处理同一个请求。图中数逻辑 stage、TP 进程和 GPU，不测量显存或延迟。
 
 第 1 步源码版本：`sglang-omni origin/main@48ee40b2563492de95efc952a0c7470db087d8a9`。第 2 步源码版本：`sglang-omni origin/main@92d72512197f9a0a4ef0583f8ea789cf50f316be`。第 3 步源码版本：`sglang-omni origin/main@52aab78e85f15da0e85d1dbdee3bfe6ffc7cbc84`。精确文件和行号见深入讲解。
 

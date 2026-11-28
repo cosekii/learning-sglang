@@ -1,3 +1,40 @@
+# lane k1 本轮报告 · Omni 02 三步机制动画（Omni-06，兼修 Omni-62）
+
+日期：2026-11-27。类型：修旧。本轮开始 HEAD 与 `origin/tutorials` 均为 `f31bdde`，工作树干净。direction 指定的 Omni 07 Step 6 已在该提交完成并推送，因此不重复返工，也不做零教程 diff 的等待轮；按 owner rule 承接本书下一个开放 P0 **Omni-06**。范围只有 Omni 02 的组件、双语 MDX／deep、生成 transcript、定向审计和本报告；其他章、其他书、`.bot/memory/` 与第 1 本受保护英文原文均未改。
+
+## 修复与 finding
+
+- **Omni-06 作者修复完成，待协调固定复审，不自行销项。** 三步由原来的终态图改为 6／4／5 个循环相位，并暴露 `data-animation-step／phase／final-phase` 与 `LoopProgress`。Step 1 依次形成 6 个进程、拆分后的 7 个、右图相同的 5 个其他 stage、两个第 1 份、`talker_ar` 第 2 份的 8 个、`code2wav` 第 2 份的 9 个；副本位置和中间数量同步变化。Step 2 依次形成跨进程交接、一个共用边界、进程内路径和 `2→1` 进程数。Step 3 先形成两个 TP 进程且明确请求未进入，再让请求 A 进入进程 1 并分活。
+- 冷读驱动了第二轮收窄：Step 1 把右图 baseline 再拆成独立相位，caption 先给排队动机；Step 2 在图上解释 scheduler 并标出只画 7 个中的 2 个 stage；Step 3 去掉额外的 rank 新词，只保留 TP／`tp_size` 一个新概念，用已知的 process 1／2 讲清顺序。双语 MDX／deep 与动画一致，单向箭头只表示分活，后续部分结果交换标为未画。
+- **Omni-62 作者定点修复完成，待协调固定复审。** 同一步旧脚注 `2 copies = at once` 改为：两个请求可使用这两个有副本 stage 的不同份，`thinker` 仍共用一份。双语 deep 明确不复制整条请求流水线，也不承诺端到端耗时收益。其他 finding 未提前核销。
+- 双语 deep 增加 6／7／8／9 的算式和符号表，长出处、commit 与 TP 公式增加断行，修复审计发现的 360 px deep 真实裁切；隐藏 MathML 的几何误报单独排除，未用它冒充通过。
+
+## 作者评分与独立冷读
+
+| 步 | R1–R5 | 机制 R6 | 原十二项 | 剩余内容洞 | R1 小学生复述 |
+|---|---:|---:|---:|---:|---|
+| 1 | 10/10 | 2/2 | 24/24 | 0 | 两个语音 stage 各多一份，排队请求能分头做，进程从 6 到 9。 |
+| 2 | 10/10 | 2/2 | 24/24 | 0 | 两个 stage 仍各留 scheduler，只是住进一个进程，交接可留在里面。 |
+| 3 | 10/10 | 2/2 | 24/24 | 0 | 两个进程先备好，再让同一个请求进来一起算。 |
+
+- 独立 `explore` 冷读首轮 FAIL，指出 TP 请求先于进程组形成、scheduler／rank 未解释、整卡并行范围过大、起点 GPU 说法错误和符号表缺失。逐轮修复后，最终回执为 **Step 1／2／3 full EVAL 全部 PASS，剩余内容 blocker 为 0**。这不是协调 verdict。
+- 当前模型不支持图像输入；三张代表 PNG 的 Read 均返回不支持。因此只申报文本、源码、DOM、几何和独立冷读结果，不声称看过图片、视觉通过或主人验收通过。
+
+## 硬门与证据
+
+- 最终 `npm run build`：**60 页**通过；三步 `readability`：各 **0 机械问题**；`BOOK=omni node scripts/deep-check.mjs 02`：ok；`zh-check`：all clear；英中全章 360／390／430 px `mobile` 与中文三步字号门均 **no layout breaks**；`git diff --check` 干净。
+- transcript 连续两次逐字一致：**963 词**，SHA-256 `c2f9203a804ba8d289702e742265bc97af432520b4b1a96784e2364feec6be38`。无 caption、文字出界、重叠或文本规则报告。
+- 可重跑脚本 `.bot/out/omni06-phase-audit.mjs`。英中桌面和中文 390 px × direct／前步入口的核心矩阵为 **6 组合、90 状态、72/72 个机制转变、18 个 deep**。另跑英中 360／430 和英文 390 direct；合计 **11 组合、165 状态、132/132 个机制转变、33 个 deep**。普通舞台最低 **10.76 CSS px**，重叠、SVG 出界、页面／可见 deep 横溢和 `failures` 均为 0。审计逐相断言副本数、进程数、共用边界、TP 进程数、请求箭头和请求进入时机。
+- 代表图：`.bot/out/omni06-en-1440-direct/s1-p4.png`、`.bot/out/omni06-zh-390-direct/s3-p4.png`，另有同目录的每相 PNG。检查地址为 `http://localhost:4323/learning-sglang/omni/ch/02-spg-topology/`。
+
+## 剩余与清理
+
+- 剩余事项是 Omni-06／62 的协调复审、reduced-motion 动态切换检查、具备图像能力的复审和主人最终视觉验收。未跑全站回归、真实 SGLang-Omni、模型或 GPU；其他开放 finding 未改。
+- 首次 `pstack-synthesizer` 探索因配置的模型不存在而失败，未计为证据；后续独立 `explore` 冷读成功。初次 build 还暴露本 clone 的 `node_modules` 指向协调 checkout，Vite unlink 以 EPERM 失败且未改目标。随后只删除本目录符号链接并在本目录 `npm install`，package 文件无 diff，未写协调人的 checkout。
+- 本轮 4323 dev server（pid 40115）已停止；`pgrep -P 1 -fl 'headless=new.*cdp-'` 无输出。审计标签页和浏览器均已关闭，未动其他 lane 的服务或浏览器。
+
+---
+
 # lane k1 本轮报告 · Omni 07 Step 6 的 AuK offload 与 Omni-64
 
 日期：2026-11-27。类型：修旧。本轮开始 HEAD 与 `origin/tutorials` 均为 `170227d`，工作树干净。按 direction 只做 Step 6，未返工待复审的 Steps 1–5。范围为 Step 6 组件、双语 MDX 与 deep、生成 transcript、定向审计和本报告；其他章、其他书、`.bot/memory/` 和第 1 本受保护英文原文均未改。
