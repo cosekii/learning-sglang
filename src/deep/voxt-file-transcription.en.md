@@ -6,7 +6,7 @@
 
 - The left column is **dictation**: the microphone and helper send sound, one dictation session handles it, and the result appears at the cursor and may also be written to history.
 - The right column is **file**: a meeting you recorded, marked "1 hour of sound · on disk", goes through `Voxt transcribe` and becomes text in a file kept on disk; Step 8 shows that file's two formats, SRT and TXT.
-- The lines below say: a one-hour meeting is 3,600 s of sound already in a file; decoded, that is 115.2 MB before recognition; both routes use Voxt and a speech model; the file route has no dictation session or history row.
+- The lines below say: a one-hour meeting is 3,600 s of sound already in a file; decoded — unpacked into raw sound — that is 115.2 MB before recognition, and Step 2 counts the bytes; both routes use Voxt and a speech model; the file route has no dictation session or history row.
 
 ### Why this needs its own route
 

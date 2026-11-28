@@ -72,8 +72,8 @@
     captionZh: '音频交给 Transcribe 模型，本机或远程。模型文件怎么来到这台 Mac？',
   }];
   const ariaLabels = [{
-    en: 'Two routes. A dictation goes from the microphone through a dictation session and cleanup to the cursor, with a history row when history is enabled. The example recording goes from disk through Voxt transcribe to text in a file kept on disk; it reuses the model set for Transcribe but opens no session and runs no cleanup. A one-hour meeting is 3600 seconds of sound; Step 2 turns that into bytes.',
-    zh: '两条路线。听写从麦克风经过听写 session 和整理，到光标处的文字；历史开启时还会写一条历史记录。图里这段录音从磁盘经过 Voxt transcribe，变成存在磁盘上的文件文字；它复用 Transcribe 选定的模型，但不打开 session，也不做整理。一小时的会议是 3600 秒的声音；第 2 步把它算成字节。',
+    en: 'Two routes. A dictation goes from the microphone through a dictation session and cleanup to the cursor, with a history row when history is enabled. The example recording goes from disk through Voxt transcribe to text in a file kept on disk; it reuses the model set for Transcribe but opens no session and runs no cleanup. A one-hour meeting is 3600 seconds of sound; decoded, meaning unpacked into raw sound, that is 115.2 MB before recognition; Step 2 counts the bytes.',
+    zh: '两条路线。听写从麦克风经过听写 session 和整理，到光标处的文字；历史开启时还会写一条历史记录。图里这段录音从磁盘经过 Voxt transcribe，变成存在磁盘上的文件文字；它复用 Transcribe 选定的模型，但不打开 session，也不做整理。一小时的会议是 3600 秒的声音；解码就是展开成原始声音，识别前有 115.2 MB；第 2 步算这笔账。',
   }, {
     en: 'A constructed eight-second file is decoded by a Mac sound tool to 16 kHz mono PCM, held as a temporary file. Eight seconds times 32000 bytes a second is 256000 PCM bytes, plus a 44-byte header.',
     zh: '构造的八秒文件由 Mac 的声音工具转成 16 kHz 单声道 PCM，放进一个临时文件。八秒乘每秒 32000 字节是 256000 字节 PCM，再加 44 字节文件头。',
@@ -240,11 +240,12 @@
             <text x="535" y="328" text-anchor="middle" class="detail">{t('kept on disk', '存在磁盘上')}</text>
 
             <text x="28" y="370" class="pt">·</text>
-            <text x="38" y="370" class="detail">{t(`a one-hour meeting is ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} s of sound; decoded, 115.2 MB before recognition`, `一小时的会议是 ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} 秒的声音；解码后、识别前有 115.2 MB`)}</text>
-            <text x="28" y="392" class="pt">·</text>
-            <text x="38" y="392" class="detail">{t('both use Voxt and a speech model', '两条都用 Voxt 和语音模型')}</text>
+            <text x="38" y="370" class="detail">{t(`a one-hour meeting is ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} s of sound`, `一小时的会议是 ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} 秒的声音`)}</text>
+            <text x="38" y="392" class="detail">{t('decoded = unpacked into raw sound: 115.2 MB before recognition; Step 2 counts the bytes', '解码 = 展开成原始声音：识别前有 115.2 MB；第 2 步算这笔账')}</text>
             <text x="28" y="414" class="pt">·</text>
-            <text x="38" y="414" class="detail">{t('the file route skips the session, cleanup and history row', '文件路线不经过 session、整理和历史记录')}</text>
+            <text x="38" y="414" class="detail">{t('both use Voxt and a speech model', '两条都用 Voxt 和语音模型')}</text>
+            <text x="28" y="436" class="pt">·</text>
+            <text x="38" y="436" class="detail">{t('the file route skips the session, cleanup and history row', '文件路线不经过 session、整理和历史记录')}</text>
           {/if}
           <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Orange marks the route this chapter follows.', '橙色是本章要走的路线。')}</text>
           {#if !reduced}<LoopProgress ms={lapMs} {lap} />{/if}
@@ -280,12 +281,13 @@
 
             <text x="20" y="606" class="pt">·</text>
             <text x="30" y="606" class="detail">{t(`a one-hour meeting is ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} s of sound`, `一小时的会议是 ${VOXT_TRANSCRIBE_MEETING_SECONDS.toLocaleString('en-US')} 秒的声音`)}</text>
-            <text x="30" y="628" class="detail">{t('decoded: 115.2 MB before recognition', '解码后有 115.2 MB 才识别')}</text>
-            <text x="20" y="650" class="pt">·</text>
-            <text x="30" y="650" class="detail">{t('both use Voxt and a speech model', '两条都用 Voxt 和语音模型')}</text>
+            <text x="30" y="628" class="detail">{t('decoded = unpacked into raw sound:', '解码 = 展开成原始声音：')}</text>
+            <text x="30" y="650" class="detail">{t('115.2 MB before recognition (Step 2)', '识别前有 115.2 MB（第 2 步会算）')}</text>
             <text x="20" y="672" class="pt">·</text>
-            <text x="30" y="672" class="detail">{t('the file route skips the session,', '文件路线不经过 session、')}</text>
-            <text x="30" y="694" class="detail">{t('cleanup and history row', '整理和历史记录')}</text>
+            <text x="30" y="672" class="detail">{t('both use Voxt and a speech model', '两条都用 Voxt 和语音模型')}</text>
+            <text x="20" y="694" class="pt">·</text>
+            <text x="30" y="694" class="detail">{t('the file route skips the session,', '文件路线不经过 session、')}</text>
+            <text x="30" y="716" class="detail">{t('cleanup and history row', '整理和历史记录')}</text>
           {/if}
           <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Orange marks the route this chapter follows.', '橙色是本章要走的路线。')}</text>
           {#if !reduced}<LoopProgress ms={lapMs} {lap} x={236} y={H - 44} />{/if}
