@@ -4,6 +4,7 @@
 
 ### On the stage
 
+- The picture builds in order: the empty history-row box appears first, then kind and app fill in, then the text, then the recording field, and finally the row count and the dashed no-clock box.
 - The wide blue box is one **history row**: `kind = transcribe`, `app = Mail`, `text = "send it to Priya."`.
 - The orange field `audio.wav` is the recording; it is there only when you keep recordings, or when recognition failed or the user cancelled.
 - The lower line is a constructed example: ten dictations a day for 90 days make 900 rows.
@@ -48,6 +49,7 @@ The row and the recording expire on separate clocks. Step 2 draws both.
 
 ### On the stage
 
+- The picture builds in order: the history-row ruler and its blue bar, then the retry-recording ruler on the same scale, its short 7-day bar with the expiry tick and the 83-day line, and finally the condition box.
 - The upper blue bar is the **history row**. Its start is labelled **shortcut**; its end is day 90.
 - The lower orange bar is the **retry recording**. Its start is labelled **retry recording saved**, and it is drawn on the same 90-day ruler, so its 7 days look short: $90 - 7 = 83$ days shorter.
 - The condition box says when a retry recording exists: recognition failed or the user cancelled, and keep recordings is off.
@@ -91,6 +93,7 @@ Clock 1 has two rules. Step 3 takes the age rule.
 
 ### On the stage
 
+- The picture builds in order: the cutoff equation and line, the older and newer cards, then the older card is covered and struck out with the removed arrow, and finally the moving-cutoff, clean-up and keep-days lines.
 - The equation reads `today 2026-11-26 − 90 days = cutoff 2026-08-28`.
 - The red card is a row from 2026-08-27, 91 days old: it is older than the cutoff, so it goes.
 - The blue card is a row from 2026-08-29, 89 days old: it is newer, so it stays.
@@ -137,6 +140,7 @@ The clean-up can also delete rows that are young but past a count. Step 4 draws 
 
 ### On the stage
 
+- The picture builds in order: the full 102-row bar, its split into the blue newest 100 and the red oldest 2 with the `102 − 100 = 2` arithmetic, then the translate and rewrite boxes, and finally N's choices and the combined-rule line.
 - The wide bar is the constructed example for `transcribe`: 102 rows in all, drawn to scale. The blue part is the newest 100 rows; the thin red part is the oldest 2.
 - The label says `102 − 100 = 2`, and the bar's note says blue is 100/102 and red is 2/102.
 - The two lower boxes say `translate` and `rewrite` follow the same rule with their own newest N; they do not share a count.
@@ -185,6 +189,7 @@ Clock 1 is done. Step 5 takes the shorter clock and the recording it holds.
 
 ### On the stage
 
+- The picture builds in order: the failed-transcribe card, the 90-day row bar, the 7-day retry bar with its tick, the `7 × 24 = 168` hours and hourly-sweep lines, and finally the strike through `audio.wav` for a successful retry with the recordings-on lines.
 - The orange card is a failed transcribe row written on 2026-11-26, with `audio.wav`.
 - The upper bar is the history row: 90 days. The lower bar is the retry recording: 7 days, with a line at day 7.
 - The lower text says the copy is kept even when keep recordings is off, because a retry can still run from it.
@@ -232,6 +237,7 @@ Step 6 shows what the retry copy is for.
 
 ### On the stage
 
+- The picture builds in order: the row box, then read the file, recognize and run the settings one at a time, then the update box strikes the old text and the new text flies in, and finally the inserts-nothing lines.
 - The orange box is the row with `audio.wav`.
 - The arrows go through **read the file**, **recognize the whole recording**, and **run the current settings**.
 - The blue box at the end says the same row is updated: old text becomes new text.
@@ -279,6 +285,7 @@ The row and the recording have their clocks. Step 7 shows what leaves the Mac wh
 
 ### On the stage
 
+- The picture builds in order: the field header, then the fields group by group — `id`/`created_at`/`kind`, then `app`/`text`/`heard`, then `instruction`/`target_lang`, then `selection`/`typed` — and finally the summary lines.
 - The rows are the ten fields of `historyapi.Row`; the right column says when each one is in the object.
 - `id`, `created_at`, `kind`, `text` and `heard` are always there.
 - `app` is there only when the app is known. `instruction` only for a Rewrite with spoken words. `target_lang` only for a Translate. `selection` only with include selected text on. `typed` needs that setting, a Rewrite, and spoken words.
@@ -332,6 +339,7 @@ The next step shows the other export format, which writes far fewer fields.
 
 ### On the stage
 
+- The picture builds in order: the empty document box, the `## 2026-11-26` heading, the three lines one at a time, and finally the never-written lines.
 - The code card shows a `## 2026-11-26` day heading and three lines.
 - Each line is `- HH:MM · App: text`; when the app is unknown it is just `- HH:MM ·: text`.
 - The lower lines list what a Markdown file does not contain: `id`, `kind`, `heard`, `instruction`, `target_lang`, `selection`, `typed`. Neither format contains recordings, web addresses, errors, internal names or timings.
@@ -375,6 +383,7 @@ Both formats need the access switch for the command. Step 9 shows what the switc
 
 ### On the stage
 
+- The picture builds in order: the documented-way panel with the toggle off and a crossed-out `history.sock`, the toggle flips on and the socket opens, one audit line appears for a read, the notice and no-text lines, then the direct panel and its boundary lines, and finally the next-chapter box.
 - The left blue box is the documented way: switch off, the command gets no answer (exit 3); switch on, each read logs time, count and program name, a new name raises a notice, and the log holds no text.
 - The right grey box is the direct path: `voxtnew.db`, the one file that holds the history, read by a program running as the user, not logged, and the switch does not change it.
 - The bottom line says other accounts cannot open the channel (mode 0600 inside `~/Library`) and there is no network port.
