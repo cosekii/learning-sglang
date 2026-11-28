@@ -316,55 +316,62 @@ Step 6 uses a different memory strategy: instead of adding replicas, AuK wakes i
 
 ## Step 6 · AuK serial offload reduces simultaneous residency
 
-> **In one sentence:** One request moves through conditioning, DiT and VAE with one component resident and two sleeping, releasing ownership only after terminal delivery.
+> **In one sentence:** One request owns this AuK offload path while the coordinator wakes one component at a time, then releases that path after terminal delivery.
 
 ### What the picture shows
 
-- AuK serial offload keeps component weights on the host and restores them to the GPU when needed. Offload means moving weights out and back, not moving the computation onto the CPU.
-- Request A acquires ownership at conditioning. The three frames represent the GPU stages: blue marks the resident component and grey marks the two sleeping components.
-- Every transition calls `sleep()` on the old component before `wake()` on the next. Sleeping releases physical GPU pages; waking restores weight values from the host copy while virtual storage addresses remain stable.
-- B waits while A owns the path. Only after A's terminal decode result is delivered does the coordinator release ownership, allowing B to begin conditioning.
-- The VAE can remain resident after decoding, as the documentation specifies. The third frame depicts residency during that computation and does not predict a later transition.
+- AuK is the speech model in this text-only example. Conditioning prepares the request. DiT generates latent sound data, meaning data that is not audio yet. VAE turns that data into audio.
+- Serial offload keeps component weights in host memory, which is computer memory outside the GPU, and restores them when needed. Offload moves weights out and back; it does not move computation onto the CPU.
+- The figure separates four layers. The bottom line declares batch, replica and TP limits. The coordinator panel owns one request's AuK offload path. The GPU line names the current execution. The three rows show component residency.
+- The first two phases show A asking to begin and the coordinator assigning this AuK offload path to A. B stays orange while it waits. This ownership scope does not include the physical GPU.
+- The next five phases run `conditioning.wake()` → `conditioning.sleep()` → `DiT.wake()` → `DiT.sleep()` → `VAE.wake()`. Blue marks the one resident component; grey marks sleeping components with copies outside the GPU. Between each sleep and the next wake, all three components sleep.
+- A's delivered terminal result releases path ownership while VAE stays resident. B then acquires the same path. Before B's conditioning can wake, VAE sleeps. The last phase shows conditioning resident for B.
 
 ### Work through the numbers
 
-There are $C=3$ components and $R=1$ resident component after each transition, so the sleeping count is:
+There are $C=3$ components. At any phase, the resident count is $R_t\in\{0,1\}$, so the sleeping count is:
 
-$$S=C-R=3-1=2$$
+$$S_t=C-R_t$$
 
-Request ownership is $O=1$, and the configuration fixes:
+After a wake, $R_t=1$ and $S_t=3-1=2$. Between a sleep and the next wake, $R_t=0$ and $S_t=3-0=3$.
+
+The path-owner count is $O_t\in\{0,1\}$. It is one while A or B owns the path and zero after A's terminal delivery. The configuration fixes:
 
 $$B_{max}=1,\qquad N_{process}=1,\qquad TP=1$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
 | $C$ | Components participating in serial offload | Conditioning, DiT and VAE |
-| $R$ | GPU-resident components after a switch | One `resident_component` in the coordinator |
-| $S$ | Currently sleeping components | Three minus one |
-| $O$ | Requests owning the AuK path | One coordinator owner |
+| $R_t$ | GPU-resident components in phase $t$ | The coordinator's <code>resident_<wbr>component</code> |
+| $S_t$ | Sleeping components in phase $t$ | Three minus the current resident count |
+| $O_t$ | Requests owning this AuK path in phase $t$ | The coordinator's <code>owner_<wbr>request_id</code> |
 | $B_{max}$ | Offload-mode batch cap | Forced to one by configuration |
 | $N_{process},TP$ | Process replicas and tensor-parallel size | Both forced to one |
 
-Two sleeping components is a count, not a byte ratio. Their weight sizes differ, so $S/C=2/3$ does not prove a two-thirds memory saving.
+Two sleeping components is a count, not a byte ratio. Their weight sizes differ, so $S_t/C=2/3$ does not prove a two-thirds memory saving.
 
 ### Why ownership lasts through result delivery
 
 `begin()` makes conditioning wait for an existing owner and checks that later stages belong to the same request and expected phase. `finish()` advances conditioning → auk_engine → decode → result, or releases ownership after failure, cancellation or shutdown.
 
-The scheduler synchronizes its CUDA stream after compute and before `finish()`, preventing a transition or release while computation still writes memory. `claim_result()` verifies continuing ownership. `release_result()` releases it only for a delivered terminal result, so B cannot enter while A's result is still undelivered.
+The scheduler synchronizes its CUDA stream after compute and before `finish()`, preventing a transition or release while computation still writes memory. `switch()` sleeps the old component, clears `resident_component`, then wakes the next one. `claim_result()` verifies continuing ownership. `release_result()` releases it only for a delivered terminal result, so B cannot enter while A's result is still undelivered.
 
 ### Boundaries and sources
 
 Serial offload requires the standard linear pipeline, one shared CUDA GPU, one process, one process replica, TP1 and batch size one, with all three GPU stages enabled together. Weights default to `mmap`; host RAM or a writable cache can be configured. Transition delays and performance gains require measurement and are not claimed here.
 
-- `docs/cookbook/auk.md:138-149`: launch flags, single-request restrictions, resident VAE and weight sources.
-- `sglang_omni/models/auk/config.py:112-185`: joint enablement, one GPU and process, one replica, TP1, batch1 and linear-graph validation.
-- `sglang_omni/models/auk/serial_offload.py:27-100`: owner, phase, waiting, begin/finish and stage advancement.
-- `sglang_omni/models/auk/serial_offload.py:115-172`: delivery-triggered release, owner cleanup and sleep-before-wake.
-- `sglang_omni/models/auk/offload_scheduler.py:37-69`: synchronization after compute and before finish.
-- `sglang_omni/scheduling/stage_residency.py:78-168`: stable addresses, physical-page pause and host-copy restoration.
+This stage fixes a text-only request without reference audio. With reference audio, conditioning can wake VAE first to encode that reference, then wake conditioning. That extra switch is not drawn.
 
-Line numbers refer to `origin/main@db7cbf39ccffde7f95b81c2dcc7da1b52a5c0bb6`.
+- <code>docs/cookbook/<wbr>auk.md:1-21</code>: AuK speech generation and the conditioning → DiT sampling → VAE decoding pipeline.
+- <code>sglang_omni/models/auk/<wbr>batch_compute.py:78-104,131-170</code>: the optional reference-audio VAE switch, DiT sampling and VAE audio decoding.
+- `docs/cookbook/auk.md:138-149`: launch flags, single-request restrictions, resident VAE and weight sources.
+- <code>sglang_omni/models/auk/<wbr>config.py:112-185</code>: joint enablement, one GPU and process, one replica, TP1, batch1 and linear-graph validation.
+- <code>sglang_omni/models/auk/<wbr>serial_offload.py:27-100</code>: owner, phase, waiting, begin/finish and stage advancement.
+- <code>sglang_omni/models/auk/<wbr>serial_offload.py:115-172</code>: delivery-triggered release, owner cleanup and sleep-before-wake.
+- <code>sglang_omni/models/auk/<wbr>offload_scheduler.py:37-69</code>: synchronization after compute and before finish.
+- <code>sglang_omni/scheduling/<wbr>stage_residency.py:78-168</code>: stable addresses, physical-page pause and host-copy restoration.
+
+Line numbers refer to <code>origin/main@<wbr>db7cbf39ccffde7f95b81c2dcc7da1b52a5c0bb6</code>.
 
 ### Next
 

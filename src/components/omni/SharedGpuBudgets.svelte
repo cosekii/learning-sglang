@@ -22,8 +22,8 @@
     MPS_TEACHING_CLIENT_COUNT, MPS_AUTO_MIN_CLIENT_COUNT,
     MPS_LEASE_COUNT_PER_GPU, MPS_TEACHING_TP_CLIENT_COUNT,
     AUK_OFFLOAD_COMPONENTS, AUK_OFFLOAD_COMPONENT_COUNT,
-    AUK_OFFLOAD_RESIDENT_COUNT, AUK_OFFLOAD_SLEEPING_COUNT,
-    AUK_OFFLOAD_REQUEST_OWNER_COUNT, AUK_OFFLOAD_MAX_BATCH_SIZE,
+    AUK_OFFLOAD_RESIDENT_COUNT,
+    AUK_OFFLOAD_MAX_BATCH_SIZE,
     AUK_OFFLOAD_PROCESS_REPLICA_COUNT,
   } from '../../omni/numbers';
 
@@ -45,8 +45,8 @@
     caption: 'Two eligible processes join the MPS service; their pipeline holds one lease on this GPU. A tensor-parallel process does not join.',
     captionZh: '两个合格进程加入 MPS 服务，pipeline 持有本卡一份租约。TP 进程不能加入。',
   }, {
-    caption: 'One request owns the GPU while one component stays resident. The other two sleep until their turn.',
-    captionZh: '一个请求占用 GPU，一件组件常驻。另外两件休眠，轮到自己再唤醒。',
+    caption: 'One request owns this AuK offload path while its components wake one at a time. Each old component sleeps before the next wakes.',
+    captionZh: '一个请求持有 AuK offload 路线，组件一次只唤醒一件。旧组件先休眠，下一组件再唤醒。',
   }];
   let step = $state(0);
   $effect(() => {
@@ -54,7 +54,7 @@
     if (q >= 1 && q <= steps.length) step = q - 1;
   });
   const cur = $derived(steps[step]);
-  const PHASE_COUNTS = [4, 4, 4, 6, 7, 1];
+  const PHASE_COUNTS = [4, 4, 4, 6, 7, 11];
   let phase = $state(0);
   let lap = $state(0), lapMs = $state(0);
   const nextLap = (ms: number) => untrack(() => { lapMs = ms; lap++; });
@@ -83,7 +83,7 @@
     return () => query.removeEventListener('change', update);
   });
   const W = $derived(phone ? 300 : 720);
-  const H = $derived(phone ? [480, 690, 730, 730, 710, 790][step] : [440, 470, 460, 480, 480, 500][step]);
+  const H = $derived(phone ? [480, 690, 730, 730, 710, 660][step] : [440, 470, 460, 480, 480, 540][step]);
   const fractionPct = (value: number) => (value * 100).toFixed(2);
   const budgetX = $derived(phone ? 20 : 60);
   const budgetWidth = $derived(phone ? 260 : 600);
@@ -138,9 +138,54 @@
     phone ? t('join with name tag t0 or t1', '带名牌 t0／t1 加入') : t('join with name tag t0 or t1; each tag is unique', '带着名牌 t0 或 t1 加入；每个名牌都唯一'),
     phone ? t('match t0 and t1 to joined processes', '把 t0／t1 对到已加入的进程') : t('match name tags t0 and t1 to the two joined processes', '把名牌 t0 和 t1 对到两个已加入的进程'),
   ][phase]);
-  const aukFrames = $derived(AUK_OFFLOAD_COMPONENTS.map((active, index) => ({
-    active, index, x: phone ? 15 : 20 + index * 235, y: phone ? 100 + index * 180 : 110,
-  })));
+  const aukOwner = $derived(['none', 'A', 'A', 'A', 'A', 'A', 'A', 'none', 'B', 'B', 'B'][phase]);
+  const aukAState = $derived(phase === 0 ? t('asks', '请求开始') : phase < 7 ? t('running', '运行中') : t('done', '完成'));
+  const aukBState = $derived(phase < 8 ? t('waiting', '等待') : t('running', '运行中'));
+  const aukRole = (component: string) => component === 'conditioning'
+    ? t('prepares the request', '准备请求')
+    : component === 'DiT' ? t('generates sound data', '生成声音数据') : t('turns it into audio', '变成音频');
+  const aukResident = $derived([null, null, 'conditioning', null, 'DiT', null, 'VAE', 'VAE', 'VAE', null, 'conditioning'][phase]);
+  const aukResidentCount = $derived(aukResident ? AUK_OFFLOAD_RESIDENT_COUNT : 0);
+  const aukSleepingCount = $derived(AUK_OFFLOAD_COMPONENT_COUNT - aukResidentCount);
+  const aukExecution = $derived([
+    t('idle', '空闲'),
+    t('admit A to conditioning', '允许 A 进入 conditioning'),
+    'conditioning',
+    t('conditioning done', 'conditioning 完成'),
+    'DiT',
+    t('DiT done', 'DiT 完成'),
+    'VAE · decode',
+    t('result delivered', '结果已交付'),
+    t('admit B to conditioning', '允许 B 进入 conditioning'),
+    t('switch for B', '为 B 切换组件'),
+    t('conditioning for B', 'B 的 conditioning'),
+  ][phase]);
+  const aukNow = $derived([
+    t('A asks to begin; no request owns the path', 'A 请求开始；还没有请求持有路线'),
+    t('the coordinator assigns this AuK path to A', 'coordinator 把这条 AuK 路线交给 A'),
+    t('wake conditioning for A', '为 A 唤醒 conditioning'),
+    t('sleep conditioning before DiT wakes', '先让 conditioning 休眠，再唤醒 DiT'),
+    t('wake DiT for A', '为 A 唤醒 DiT'),
+    t('sleep DiT before VAE wakes', '先让 DiT 休眠，再唤醒 VAE'),
+    t('wake VAE for A', '为 A 唤醒 VAE'),
+    t('deliver A’s terminal result, then release the path', '交付 A 的终态结果，再释放路线'),
+    t('B acquires this AuK path; VAE stays resident', 'B 取得这条 AuK 路线；VAE 仍常驻'),
+    t('sleep VAE before conditioning wakes for B', '先让 VAE 休眠，再为 B 唤醒 conditioning'),
+    t('wake conditioning for B', '为 B 唤醒 conditioning'),
+  ][phase]);
+  const aukOperation = $derived([
+    t('owner = none · all components sleeping', 'owner = 无 · 三件组件都休眠'),
+    t('owner = A · scope = this AuK offload path', 'owner = A · 范围 = 这条 AuK offload 路线'),
+    'conditioning.wake()',
+    t('conditioning.sleep() · next: DiT.wake()', 'conditioning.sleep() · 下一步：DiT.wake()'),
+    'DiT.wake()',
+    t('DiT.sleep() · next: VAE.wake()', 'DiT.sleep() · 下一步：VAE.wake()'),
+    'VAE.wake()',
+    'release_result(terminal=true, delivered=true)',
+    t('owner = B · scope = this AuK offload path', 'owner = B · 范围 = 这条 AuK offload 路线'),
+    t('VAE.sleep() · next: conditioning.wake()', 'VAE.sleep() · 下一步：conditioning.wake()'),
+    t('conditioning.wake() · B begins', 'conditioning.wake() · B 开始'),
+  ][phase]);
 </script>
 
 <figure class="viz" data-animation-step={step} data-animation-phase={phase} data-animation-final-phase={PHASE_COUNTS[step] - 1}>
@@ -350,24 +395,34 @@
         {/if}
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Next: keep one AuK component resident', '下一步：只让一件 AuK 组件常驻') : t('Next: instead of more replicas, keep only one AuK component resident', '下一步：不增加副本，改为只让一件 AuK 组件常驻')}</text>
       {:else if step === 5}
-        <text x="20" y="22" class="tag strong">AuK serial offload · {phone ? t('one resident component', '一次一件组件常驻') : t('one request, one GPU component at a time', '一个请求，一次只让一件组件上 GPU')}</text>
-        <text x="20" y="46" class="tag">offload = {phone ? t('host-sleep weights, then restore them', '权重休眠到主机，之后再恢复') : t('sleep weights on the host, then restore them for a later stage', '让权重休眠到主机，轮到后续 stage 再恢复')}</text>
-        <text x="20" y="68" class="tag">{phone ? t('Blue: resident · grey: sleeping · orange: waiting', '蓝：常驻 · 灰：休眠 · 橙：等待') : t('Blue: resident component · grey: sleeping component · orange: waiting request', '蓝色：常驻组件 · 灰色：休眠组件 · 橙色：等待请求')}</text>
-        <rect x={phone ? 15 : 20} y="82" width={phone ? 270 : 680} height="22" rx="6" fill="var(--accent-soft)" />
-        <text x={W / 2} y="98" text-anchor="middle" class="tag strong">A {t('owns the request path', '持有请求所有权')} · {AUK_OFFLOAD_REQUEST_OWNER_COUNT} owner · B {t('waits', '等待')}</text>
-        {#each aukFrames as frame}
-          <rect x={frame.x} y={frame.y} width={phone ? 270 : 210} height="146" rx="10" fill="var(--bg)" stroke="var(--line)" />
-          <text x={frame.x + 13} y={frame.y + 24} class="rowlabel">{frame.index + 1} · {frame.active}</text>
-          {#each AUK_OFFLOAD_COMPONENTS as component, i}
-            <rect x={frame.x + 13} y={frame.y + 38 + i * 29} width={phone ? 244 : 184} height="23" rx="4" fill={component === frame.active ? 'var(--accent-soft)' : 'var(--bg)'} stroke={component === frame.active ? 'var(--accent)' : 'var(--faint)'} />
-            <text x={frame.x + 22} y={frame.y + 55 + i * 29} class="tag">{component} · {component === frame.active ? t('resident', '常驻') : t('sleeping', '休眠')}</text>
-          {/each}
-          <text x={frame.x + 13} y={frame.y + 137} class="tag strong">{AUK_OFFLOAD_RESIDENT_COUNT} {t('resident', '件常驻')} + {AUK_OFFLOAD_SLEEPING_COUNT} {t('sleeping', '件休眠')}</text>
+        <text x="20" y="22" class="tag strong">AuK serial offload · {t('speech from text', '文字生成语音')}</text>
+        <LoopProgress ms={lapMs} {lap} x={phone ? 230 : 640} y={16} />
+        <text x="20" y="46" class="tag">offload = {phone ? t('weights leave GPU, then return', '权重移出 GPU，之后再恢复') : t('move weights out of GPU memory, then restore them for a later stage', '把权重移出 GPU 显存，轮到后续 stage 再恢复')}</text>
+        <rect x="20" y="58" width="10" height="10" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" />
+        <text x="36" y="68" class="tag">{t(phone ? 'resident' : 'resident on GPU', '常驻')}</text>
+        <rect x={phone ? 100 : 160} y="58" width="10" height="10" rx="2" fill="var(--panel)" stroke="var(--faint)" />
+        <text x={phone ? 116 : 176} y="68" class="tag">{t(phone ? 'sleeping' : 'sleeping · copy outside GPU', '休眠')}</text>
+        <rect x={phone ? 194 : 340} y="58" width="10" height="10" rx="2" fill="var(--gen-soft)" stroke="var(--gen)" />
+        <text x={phone ? 210 : 356} y="68" class="tag">{t(phone ? 'waiting' : 'waiting request', '等待')}</text>
+        <rect x={phone ? 15 : 20} y="84" width={phone ? 270 : 680} height={phone ? 120 : 74} rx="10" fill="var(--bg)" stroke="var(--line)" />
+        <rect data-auk="request-a" x={phone ? 29 : 34} y={phone ? 96 : 98} width={phone ? 110 : 100} height={phone ? 40 : 44} rx="7" fill="var(--bg)" stroke={aukOwner === 'A' ? 'var(--text)' : 'var(--faint)'} stroke-width={aukOwner === 'A' ? 2 : 1} />
+        <text x="84" y={phone ? 121 : 126} text-anchor="middle" class="tag strong">A · {aukAState}</text>
+        <rect data-auk="request-b" x={phone ? 161 : 146} y={phone ? 96 : 98} width={phone ? 110 : 100} height={phone ? 40 : 44} rx="7" fill={phase < 8 ? 'var(--gen-soft)' : 'var(--bg)'} stroke={phase < 8 ? 'var(--gen)' : 'var(--text)'} />
+        <text x={phone ? 216 : 196} y={phone ? 121 : 126} text-anchor="middle" class="tag strong">B · {aukBState}</text>
+        <rect data-auk="coordinator" x={phone ? 29 : 280} y={phone ? 146 : 96} width={phone ? 242 : 406} height={phone ? 46 : 50} rx="7" fill="var(--bg)" stroke="var(--faint)" stroke-dasharray={aukOwner === 'none' ? '4 3' : 'none'} />
+        <text data-auk="owner" x={phone ? 150 : 483} y={phone ? 164 : 116} text-anchor="middle" class="tag strong">{t('ownership · coordinator', '所有权 · coordinator')} · owner = {aukOwner}</text>
+        <text x={phone ? 150 : 483} y={phone ? 183 : 136} text-anchor="middle" class="tag">{t('scope = this AuK offload path, not the GPU', '范围 = 这条 AuK offload 路线，不是整张 GPU')}</text>
+        <rect x={phone ? 15 : 20} y={phone ? 218 : 174} width={phone ? 270 : 680} height={phone ? 252 : 198} rx="10" fill="var(--bg)" stroke="var(--line)" />
+        <text data-auk="execution" x={phone ? 29 : 34} y={phone ? 242 : 198} class="rowlabel">GPU execution · {aukExecution}</text>
+        {#each AUK_OFFLOAD_COMPONENTS as component, i}
+          <rect data-auk="component" data-component={component} x={phone ? 29 : 34} y={phone ? 254 + i * 61 : 210 + i * 50} width={phone ? 242 : 652} height={phone ? 50 : 38} rx="6" fill={component === aukResident ? 'var(--accent-soft)' : 'var(--panel)'} stroke={component === aukResident ? 'var(--accent)' : 'var(--faint)'} style="transition: fill 300ms, stroke 300ms" />
+          <text x={phone ? 41 : 48} y={phone ? 275 + i * 61 : 234 + i * 50} class="tag strong">{component} · {aukRole(component)}</text>
+          <text data-auk="residency" data-component={component} x={phone ? 41 : 672} y={phone ? 295 + i * 61 : 234 + i * 50} text-anchor={phone ? 'start' : 'end'} class="tag">{component === aukResident ? t('resident on GPU', '常驻 GPU') : t('sleeping · copy outside GPU', '休眠 · 副本在 GPU 外')}</text>
         {/each}
-        <rect x={phone ? 15 : 20} y={phone ? 646 : 282} width={phone ? 270 : 680} height="44" rx="8" fill="var(--gen-soft)" stroke="var(--gen)" />
-        <text x={W / 2} y={phone ? 673 : 310} text-anchor="middle" class="tag strong">A {t('terminal result delivered', '终态结果已交付')} → {t('release owner', '释放所有权')} → B {t('may begin', '才能开始')}</text>
-        <text x={W / 2} y={phone ? 720 : 352} text-anchor="middle" class="mono strong">{AUK_OFFLOAD_COMPONENT_COUNT} components · {AUK_OFFLOAD_RESIDENT_COUNT} resident · {AUK_OFFLOAD_SLEEPING_COUNT} sleeping</text>
-        <text x={W / 2} y={phone ? 748 : 380} text-anchor="middle" class="tag">max_batch_size = {AUK_OFFLOAD_MAX_BATCH_SIZE} · process_replicas = {AUK_OFFLOAD_PROCESS_REPLICA_COUNT} · tp_size = 1</text>
+        <text data-auk="now" x={W / 2} y={phone ? 500 : 398} text-anchor="middle" class="tag strong">now: {aukNow}</text>
+        <text data-auk="operation" x={W / 2} y={phone ? 530 : 426} text-anchor="middle" class="mono strong">{aukOperation}</text>
+        <text data-auk="counts" x={W / 2} y={phone ? 560 : 454} text-anchor="middle" class="mono strong">{AUK_OFFLOAD_COMPONENT_COUNT} components · {aukResidentCount} resident · {aukSleepingCount} sleeping</text>
+        <text x={W / 2} y={phone ? 590 : 480} text-anchor="middle" class="tag">declare: max_batch_size = {AUK_OFFLOAD_MAX_BATCH_SIZE} · process_replicas = {AUK_OFFLOAD_PROCESS_REPLICA_COUNT} · tp_size = 1</text>
         <text x={W / 2} y={H - 30} text-anchor="middle" class="footnote">{phone ? t('Two sleeping boxes do not prove two-thirds byte savings', '两件休眠不等于省三分之二字节') : t('Component sizes differ: 2 sleeping boxes do not prove a two-thirds byte saving', '三件组件大小不同：两件休眠不等于省三分之二字节')}</text>
         <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{phone ? t('Next: measure the waiting these choices cause', '下一章：测量这些选择带来的等待') : t('Next chapter: measure the waits these budget choices introduce', '下一章：测量这些显存选择带来的等待')}</text>
       {/if}

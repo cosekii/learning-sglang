@@ -316,55 +316,62 @@ MPS 是否更快取决于进程之间是否有可重叠的 GPU 工作，本步�
 
 ## 第 6 步 · AuK 用串行换入换出减少同时常驻
 
-> **一句话：** 同一请求依次使用 conditioning、DiT、VAE，每次一件组件常驻、两件休眠，终态交付后才让下一请求开始。
+> **一句话：** 一个请求持有这条 AuK offload 路线，coordinator 每次只唤醒一件组件，终态交付后才释放路线。
 
 ### 图上是什么
 
-- AuK serial offload 把 conditioning、DiT 和 VAE 三件组件的权重放在主机侧，需要时恢复到 GPU。这里 offload 指「换出再换入」，不是把计算交给 CPU。
-- 请求 A 从 conditioning 开始持有 owner。三帧分别表示三个 GPU stage：当前组件为蓝色常驻，另外两件为灰色休眠。
-- 每次切换先对旧组件 `sleep()`，再对新组件 `wake()`。sleep 释放 GPU 物理页，wake 从主机副本恢复权重值；虚拟存储地址保持稳定。
-- B 在 A 持有期间等待。A 的 decode 终态结果交付后，coordinator 才释放 owner，B 才能从 conditioning 开始。
-- 最后 VAE 可保持常驻，文档明确 decode 后 VAE 留下。图中第三帧只强调计算时的一件常驻，不推断下一切换何时发生。
+- AuK 是本例文字生成语音的模型。conditioning 准备请求，DiT 生成 latent 声音数据，也就是尚未变成音频的数据，VAE 再把这些数据变成音频。
+- serial offload 把组件权重放在 host 内存，也就是 GPU 外的计算机内存，需要时再恢复到 GPU。offload 指换出再换入，不是把计算交给 CPU。
+- 图中分开四层。底行声明 batch、replica 和 TP 限制。coordinator 面板管理一个请求对这条 AuK offload 路线的所有权。GPU 行标出当前执行，三行组件标出各自常驻状态。
+- 前两相先让 A 请求开始，再由 coordinator 把这条 AuK offload 路线交给 A。B 等待时保持橙色。所有权不包括物理 GPU。
+- 接着五相依次执行 `conditioning.wake()` → `conditioning.sleep()` → `DiT.wake()` → `DiT.sleep()` → `VAE.wake()`。蓝色表示一件组件常驻 GPU，灰色表示组件休眠并把副本留在 GPU 外。每次 sleep 和下一次 wake 之间，三件组件都在休眠。
+- A 的终态结果交付后释放路线所有权，VAE 保持常驻。随后 B 取得同一路线。B 的 conditioning 唤醒前，VAE 先休眠。最后一相显示 B 的 conditioning 常驻。
 
 ### 代入图上的数
 
-组件数为 $C=3$，每次切换后常驻数为 $R=1$，休眠数为：
+组件数为 $C=3$。任意相位的常驻数为 $R_t\in\{0,1\}$，所以休眠数为：
 
-$$S=C-R=3-1=2$$
+$$S_t=C-R_t$$
 
-请求所有权数量为 $O=1$，配置还固定：
+wake 后 $R_t=1$，所以 $S_t=3-1=2$。sleep 和下一次 wake 之间 $R_t=0$，所以 $S_t=3-0=3$。
+
+路线 owner 数为 $O_t\in\{0,1\}$。A 或 B 持有路线时为 1，A 的终态结果交付后为 0。配置还固定：
 
 $$B_{max}=1,\qquad N_{process}=1,\qquad TP=1$$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
 | $C$ | 参与 serial offload 的组件数 | conditioning、DiT、VAE 三件 |
-| $R$ | 每次切换后的 GPU 常驻组件数 | coordinator 的一个 `resident_component` |
-| $S$ | 当前休眠组件数 | 3 减 1 |
-| $O$ | 同时持有整条 AuK 路线的请求数 | coordinator 的一个 owner |
+| $R_t$ | 第 $t$ 相的 GPU 常驻组件数 | coordinator 的 <code>resident_<wbr>component</code> |
+| $S_t$ | 第 $t$ 相的休眠组件数 | 3 减当前常驻数 |
+| $O_t$ | 第 $t$ 相持有这条 AuK 路线的请求数 | coordinator 的 <code>owner_<wbr>request_id</code> |
 | $B_{max}$ | offload 模式的 batch 上限 | 配置强制为 1 |
 | $N_{process},TP$ | 进程副本数与张量并行度 | 配置强制都为 1 |
 
-两件休眠只表示组件个数为 2。三件组件权重字节数不同，所以不能从 $S/C=2/3$ 推出节省三分之二的显存；本图没有这个结论。
+两件休眠只表示组件个数为 2。三件组件权重字节数不同，所以不能从 $S_t/C=2/3$ 推出节省三分之二的显存；本图没有这个结论。
 
 ### 为什么所有权要留到结果交付
 
 `begin()` 让 conditioning 在已有 owner 时等待，并检查后续 stage 是否属于同一个 request 和预期 phase。`finish()` 推进 conditioning → auk_engine → decode → result，失败、取消或关闭则释放 owner。
 
-scheduler 在计算返回后同步 CUDA stream，再调用 finish，避免计算仍在写显存时就换出或释放。`claim_result()` 确认请求仍有所有权；只有 terminal 且 delivered 时，`release_result()` 释放 owner。这样 B 不会在 A 的结果尚未交付时抢进同一条串行路线。
+scheduler 在计算返回后同步 CUDA stream，再调用 finish，避免计算仍在写显存时就换出或释放。`switch()` 先让旧组件 sleep，清空 `resident_component`，再让下一组件 wake。`claim_result()` 确认请求仍有所有权；只有 terminal 且 delivered 时，`release_result()` 释放 owner。这样 B 不会在 A 的结果尚未交付时抢进同一条串行路线。
 
 ### 边界与出处
 
 serial offload 要求标准线性 pipeline、同一 CUDA GPU、同一 process、一个 process replica、TP1 和 batch size 1，并同时启用三个 GPU stage。权重源默认 `mmap`，也可配置 host RAM 或可写 cache。换入换出耗时和性能收益需要测量，本章不给出。
 
-- `docs/cookbook/auk.md:138-149`：serial offload 启动方式、单请求限制、VAE 常驻和权重来源。
-- `sglang_omni/models/auk/config.py:112-185`：共同启用、单卡同进程、单副本、TP1、batch1 和线性图校验。
-- `sglang_omni/models/auk/serial_offload.py:27-100`：owner、phase、等待、begin/finish 和阶段推进。
-- `sglang_omni/models/auk/serial_offload.py:115-172`：结果交付释放、owner 清理和先 sleep 后 wake。
-- `sglang_omni/models/auk/offload_scheduler.py:37-69`：计算后同步，再 finish。
-- `sglang_omni/scheduling/stage_residency.py:78-168`：稳定地址、物理页暂停与主机副本恢复。
+舞台固定为没有参考音频的文字生成语音请求。有参考音频时，conditioning 可以先唤醒 VAE 来编码参考音频，再唤醒 conditioning。图中没有画这次额外切换。
 
-行号对应 `origin/main@db7cbf39ccffde7f95b81c2dcc7da1b52a5c0bb6`。
+- <code>docs/cookbook/<wbr>auk.md:1-21</code>：AuK 语音生成，以及 conditioning → DiT sampling → VAE decoding 流程。
+- <code>sglang_omni/models/auk/<wbr>batch_compute.py:78-104,131-170</code>：可选的参考音频 VAE 切换、DiT sampling 和 VAE 音频解码。
+- `docs/cookbook/auk.md:138-149`：serial offload 启动方式、单请求限制、VAE 常驻和权重来源。
+- <code>sglang_omni/models/auk/<wbr>config.py:112-185</code>：共同启用、单卡同进程、单副本、TP1、batch1 和线性图校验。
+- <code>sglang_omni/models/auk/<wbr>serial_offload.py:27-100</code>：owner、phase、等待、begin/finish 和阶段推进。
+- <code>sglang_omni/models/auk/<wbr>serial_offload.py:115-172</code>：结果交付释放、owner 清理和先 sleep 后 wake。
+- <code>sglang_omni/models/auk/<wbr>offload_scheduler.py:37-69</code>：计算后同步，再 finish。
+- <code>sglang_omni/scheduling/<wbr>stage_residency.py:78-168</code>：稳定地址、物理页暂停与主机副本恢复。
+
+行号对应 <code>origin/main@<wbr>db7cbf39ccffde7f95b81c2dcc7da1b52a5c0bb6</code>。
 
 ### 接下来
 

@@ -1,3 +1,37 @@
+# lane k1 本轮报告 · Omni 07 Step 6 的 AuK offload 与 Omni-64
+
+日期：2026-11-27。类型：修旧。本轮开始 HEAD 与 `origin/tutorials` 均为 `170227d`，工作树干净。按 direction 只做 Step 6，未返工待复审的 Steps 1–5。范围为 Step 6 组件、双语 MDX 与 deep、生成 transcript、定向审计和本报告；其他章、其他书、`.bot/memory/` 和第 1 本受保护英文原文均未改。
+
+## 修复与 finding
+
+- Step 6 改为十一相：A 请求开始，coordinator 把这条 AuK offload 路线交给 A；依次执行 conditioning wake／sleep、DiT wake／sleep、VAE wake；交付 A 的终态结果并释放路线；B 取得路线；VAE sleep 后为 B 唤醒 conditioning。sleep 与下一次 wake 之间明确显示 `0 resident · 3 sleeping`，wake 后显示 `1 resident · 2 sleeping`。
+- **Omni-64 作者修复完成，待协调固定复审。** 双语 caption 改为 `owns this AuK offload path`／「持有 AuK offload 路线」，舞台另写 `scope = this AuK offload path, not the GPU`。declare、ownership、execution、residency 四层分别在底行、coordinator 面板、GPU 执行行和组件行呈现。**Omni-11 的 Step 6 同样只记作者修复，Omni-11 与 Omni-31 均不提前核销。**
+- 舞台固定为无参考音频的文字生成语音例，并用白话解释 AuK、conditioning、DiT、VAE 和 GPU 外副本。双语 MDX／deep 补充参考音频会先唤醒 VAE 的未画分支、四层边界、逐相数字和 pinned `batch_compute.py` 出处。独立冷读首轮指出 caption 与零常驻相矛盾、组件角色未解释；返工后终审 **PASS**，剩余内容洞 **0**。
+
+## 作者评分
+
+| 步 | R1–R5 | 机制 R6 | 原十二项 | 新内容洞 | R1 小学生复述 |
+|---|---:|---:|---:|---:|---|
+| 6 | 10/10 | 2/2（DOM） | 22/24（文本、源码与 DOM） | 0 | A 先拿到音频，B 才能用同三个帮手；每个帮手先睡，下一个才醒。 |
+
+- 易读合计 **12/12**，原十二项满足 ≥20/24；独立评审列出的最弱项是 #1 与 #6。该分数不是协调 verdict，也不申报整章 GO。当前模型不支持图像输入，Read 三张代表 PNG 均返回不支持，因此没有声称看过图片、视觉通过或主人验收通过。
+
+## 硬门与证据
+
+- 最终 `npm run build`：**60 页**通过；Step 6 `readability`：**0 机械问题**；`BOOK=omni node scripts/deep-check.mjs 07`：ok；`zh-check`：all clear；英中全章 360／390／430 px `mobile` 与中文 Step 6 字号门均 **no layout breaks**；`git diff --check` 干净。
+- transcript 连续两次逐字一致：**1,876 词**，SHA-256 `56d449ef89a719744e27ad0f4f2e09f22d8646889c9449ef9e465800a53f96dc`。无 caption、文字出界、重叠或文本规则报告。
+- 可重跑脚本 `.bot/out/omni11-step6-audit.mjs`。最终结果 `.bot/out/omni11-step6-audit/report.json`：英中桌面和中文 390 px × direct／前步入口共 **66 状态、60/60 个机制转变**；另含英中 360／390／430 px 等 **11 个 deep 状态**。逐相核对 owner、三件组件的 residency、执行行和 `0/1` 常驻计数，普通舞台最低 **10.005787 CSS px**，重叠、SVG 出界、页面／deep 横溢和 `failures` 均为 0。
+- 首轮审计发现手机 deep 长出处和英文符号表横溢，已给长路径、`resident_component`、`owner_request_id` 增加断行机会后完整重跑为零失败。前步入口的小字与 deep 打不开是审计器继承 `deep=1` 造成的采集错误，重置后重跑，不记教程缺陷。
+- 代表图：`.bot/out/omni11-step6-audit/en-1440-direct-p7.png`、`.bot/out/omni11-step6-audit/zh-390-previous-p10.png`；另有 `npm run shot` 的 `.bot/out/omni11-step6-shot/en-step6.png` 和 `.bot/out/omni11-step6-shot-zh/zh-step6.png`。本地地址：`http://localhost:4321/learning-sglang/omni/ch/07-shared-gpu-budgets/?step=6`。
+
+## 剩余与清理
+
+- 剩余事项是 Omni-11／31 的协调复审、独立 Omni-21／26、共享 ML-21／22、具备图像能力的复审和主人最终视觉验收。未跑全站回归、真实 SGLang-Omni、模型、GPU 或 reduced-motion 动态切换。
+- 本 clone 的 `node_modules` 开始时再次指向协调 checkout；只删除本目录符号链接并在本目录 `npm install`，package 文件无 diff，未写协调人的 checkout。
+- 本轮 4321 dev server（pid 9372）已停止；`pgrep -P 1 -fl 'headless=new.*cdp-'` 无输出。所有审计标签页和浏览器均已关闭，未动其他 lane 的服务或浏览器。
+
+---
+
 # lane k2 本轮报告 · ML 08 Step 4 只讲 actor loss（ML-48）
 
 日期：2026-11-27。类型：修旧。按 direction 返工 ML-48 的 Steps 4–5，本提交只完成 Step 4；Step 3 packing 未动，Step 5 的顺序返工是下一提交。范围只有本步组件与构造数字、双语 deep 和 MDX、生成 transcript、定向审计和本报告；未改其他章、其他书、`.bot/memory/` 或第 1 本受保护英文原文。
