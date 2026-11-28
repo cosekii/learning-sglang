@@ -3686,3 +3686,21 @@ npx astro dev stop
 - **机制探针**（无图像读取能力，以 DOM 断言代替肉眼读图）：`/tmp/probe-voxt05.mjs` 用 scripts/lib/browser.mjs 逐步采样一整圈，断言 5 步相位全走 0→final（5/5/6/4/5）、相邻相位必有台上文字变化、Step 4 全程无 `sk-demo`、Step 5 的 `Bearer` 先于请求头钥匙出现、Step 2 的 SELECTED 只在第 3 相后出现。**全部通过。**
 - **环境**：本目录 node_modules 又是指向协调 checkout 的符号链接（17:31 重建），照旧只删本目录符号链接并本地 `npm install`，未进入或修改协调 checkout。4321 被他线占用，本轮 server 在 4341，脚本均显式传 base；收尾已关 dev server 并核查无残留 headless Chrome。
 - **遗留**：Voxt-05 的关闭与否由协调固定复审决定，不提前核销；Voxt-03 的 `d2b7922`…`c8e1613` 仍 queued；direction.md 暂无下一在派单元，下轮按 SOUL 顺序处理本书剩余开放项（P0 Voxt-06 等）或新章。
+
+## 2026-11-27 18:10 PST · lane d · Voxt-06 修复轮（06/1–8 prompt、分片答案与失败出口状态形成）
+
+- **单元**（按 SOUL 顺序的本书下一个开放 P0；direction.md 在派的 Voxt-05 已于上轮完成并 queued）：Voxt-06 · Voxt 06 `compose-and-cleanup` 八步全是终态。提交 `9ddc644`，已推 origin/tutorials。
+- **修法**（沿用 Voxt 02／05 已通过的相位脚手架 `PHASE_COUNTS／LoopProgress／data-animation-*`，900 ms 相位、2.2 s 间歇循环、reduced-motion 直达末相）：八步全部改为逐相状态形成——
+  - Step 1（5 相）：识别结果卡 → 三张任务卡逐一到达 → `1 × 3 = 3` 路线计数。
+  - Step 2（5 相）：`system` 卡 → 虚线可选 `history` 卡 → `user` 卡 → 「复用说明 · 替换本次输入」。
+  - Step 3（7 相）：空 system 框 → 角色／清理／任务／输出约定四层逐层落入 → `USER` 卡带 `<input>` 加入 → `4 + 1 = 5`。
+  - Step 4（8 相）：三张空约定卡 → 每种任务各演一遍：先模型回答、再 VOXT 保留（Transcribe 的 `<output>` 提取、Translate 保留正文标签、Rewrite 标题+正文）→ `3 = 3` 计数。
+  - Step 5（6 相）：长听写 → 三个请求逐一形成（相同 system、不同 user 分片）→ 答案按 `1 → 2 → 3` 合回 → 计数。
+  - Step 6（6 相）：三张中性分片卡 → 第 1 片清理成功 → 第 2 片失败变橙、保留识别原话 → 第 3 片清理成功 → `2 + 1 → 1` → `DONE · ProblemLLM · Degraded`。
+  - Step 7（7 相）：两张任务卡 → 翻译回显 → 一次 strict 重试 → 仍是回显 + 语言证据 → `FAILED · NO INSERT` → 改写请求失败 → `FAILED · NO INSERT` + `0` 指令当结果 → 计数。
+  - Step 8（5 相）：模型回答卡 → 截断文字 + `finish_reason = "length"` → 进入答案卡 → `DONE · ProblemTruncated · Degraded` → `0` 未查看插入 + 计数。
+- **同步**：八步 aria label 改写为按顺序形成；英中 deep 每步「图上是什么／On the stage」各加一句形成顺序；末相画面与原静态完全一致（transcript 仅新增 `loops` 行，两次重生成逐字一致）。
+- **门**：`npm run build` 60 页 rc=0；`BOOK=voxt ONLY=6` readability 0 机械问题；`BOOK=voxt node scripts/deep-check.mjs 06` ok（8 步）；zh-check 06 all clear；mobile 英 + `LANG=zh` 中 360/390/430 均 no layout breaks；`git diff --check` 干净。
+- **机制探针**（无图像读取能力，以 DOM 断言代替肉眼读图）：`.bot/out/probe-voxt06.mjs`（.bot 被 gitignore，不入库）对英桌面 + 中 390 px 各 8 步采样一整圈：相位全走 0→final（5/5/7/8/6/6/7/5）、相邻相位必有台上文字变化、32 条机制标记断言（如 Step 4 的 `<output>Hi.</output>` 先于 VOXT KEEPS、Step 6 的 CLEANUP FAILED 只在第 2 相后出现、Step 8 的 finish_reason 先于 ANSWER CARD）。**全部通过。** `.bot/out/probe-voxt06-lp.mjs` 核对手机 LoopProgress 条（x=228, y=60）在 8 步均不碰任何台上文字。
+- **环境**：本目录 node_modules 又是指向协调 checkout 的符号链接，照旧只删本目录符号链接并本地 `npm install`，未进入或修改协调 checkout。4321 被他线占用，本轮 server 在 4451。macOS 全局 `LANG=en_US.UTF-8` 会误触发 shot.mjs 的语言开关，截图需 `env -u LANG`（本轮截图仅作产物，模型无图像输入，未肉眼读图）。
+- **遗留**：Voxt-06 的关闭与否由协调固定复审决定，不提前核销；Voxt-03／04／05／10 相关提交均 queued 等复审，未返工；下一开放项按序为 P0 Voxt-07（07/1–5 焦点、可写性与剪贴板检查静态）。
