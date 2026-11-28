@@ -1,3 +1,31 @@
+# lane k1 本轮报告 · Omni 07 hook 收窄（Omni-26）
+
+日期：2026-11-27。类型：修旧。本轮开始 HEAD 与 `origin/tutorials` 均为 `ff8aeeb`，工作树干净。按 direction 只做 Omni-26，不返工 queued Step 5／6。范围为第 7 章双语 roster hook、规划 hook、生成 transcript、定向审计和本报告；组件、MDX、双语 deep、其他章、其他书、`.bot/memory/` 与第 1 本受保护英文原文均未改。
+
+## 修复与 finding
+
+- 英文 hook 改为 `Fit weights, KV and replicas into one card.`，中文改为「把权重、KV 和副本装进一张卡。」规划中的中文 hook 同步删除「流缓冲」。没有增加 buffer 字节或新的机制承诺。
+- 组件与 MDX 没有 stream-buffer hook；双语 deep 只在 Step 2 保留「不测量 stream buffer 峰值」的否定边界，因此三者无需修改。transcript 由目标章重生成，未手改。
+- **Omni-26 作者修复完成，待协调固定复审，不自行销项。** 这是章级 metadata 修复，六步内容、动画和既有分数均不变。小学生复述：「这一章讲权重、KV 和副本怎样装进一张卡。」没有引入新词。
+- 独立 `explore` 冷读为窄范围 **GO**，剩余 blocker 为 0，并确认无需改组件、MDX、deep 或分数卡。`pstack-reviewer` 因配置的模型不存在而失败，未计为证据。
+
+## 硬门与证据
+
+- `npm run build`：**60 页**通过；六步 `readability`：各 **0 机械问题**；`BOOK=omni node scripts/deep-check.mjs 07`：ok；`zh-check`：all clear；英中全章 360／390／430 px `mobile` 均 **no layout breaks**；`git diff --check` 干净。
+- transcript 连续两次逐字一致：**1,874 词**，SHA-256 `ff31afa85c621ce24e45ff7635829e5e43ea2c0ddf86bae11691a7761e4d0931`。目标 diff 只有三个教程文件各一行。
+- 可重跑脚本 `.bot/out/omni26-entry-audit.mjs`，结果 `.bot/out/omni26-entry-audit/report.json`：英中桌面和中文 390 px × direct／前步入口共 **36 个场景、72 个状态**。每个场景核对新双语 hook、counter、animation step、Phase 1 与末相、机制签名变化和页面横溢，`failures=[]`。
+- 同一审计保存 **72 张 PNG**。代表图：`.bot/out/omni26-entry-audit/en-1440-direct-s1-p3.png`、`.bot/out/omni26-entry-audit/zh-390-previous-s1-p3.png`。当前模型不支持图像输入，两次 Read 均明确返回不支持，因此不声称看过图片或视觉通过；结论来自源码、独立冷读、DOM 和几何检查。
+- 本轮检查地址为 `http://localhost:4521/learning-sglang/omni/ch/07-shared-gpu-budgets/`。
+
+## 剩余与清理
+
+- 下一单元依次是 Omni-21、Omni-31。queued Step 5／6、Omni-11／64、共享 ML-21／22 和其他开放 finding 均未改，不提前核销。
+- 未跑全站回归、真实 SGLang-Omni、模型、GPU 或 reduced-motion 动态切换；具备图像能力的复审和主人最终视觉验收仍留待后续。
+- 本 clone 的 `node_modules` 开始时指向协调 checkout；只删除本目录符号链接并在本目录 `npm install`，package 文件无 diff，未写协调人的 checkout。
+- 本轮 4521 dev server（pid 51059）已停止，端口无监听。审计标签页和浏览器均已关闭；收尾清理 4 个 PPID 1 headless Chrome 及对应 `cdp-*` profile，最终 `pgrep -P 1 -fl 'headless=new.*cdp-'` 无输出。
+
+---
+
 # lane k1 本轮报告 · Omni 02 三步机制动画（Omni-06，兼修 Omni-62）
 
 日期：2026-11-27。类型：修旧。本轮开始 HEAD 与 `origin/tutorials` 均为 `f31bdde`，工作树干净。direction 指定的 Omni 07 Step 6 已在该提交完成并推送，因此不重复返工，也不做零教程 diff 的等待轮；按 owner rule 承接本书下一个开放 P0 **Omni-06**。范围只有 Omni 02 的组件、双语 MDX／deep、生成 transcript、定向审计和本报告；其他章、其他书、`.bot/memory/` 与第 1 本受保护英文原文均未改。
