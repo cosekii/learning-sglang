@@ -3756,3 +3756,21 @@ npx astro dev stop
 - **评分卡**（自评，文本冷读；无图像输入未肉眼读图）：易读 12/12 ×7（R1 复述：s1「开会前选模式：完整会议录两边，字幕只录 Mac 放的声音，录音只录你」；s2「麦克风走原来那条路，Mac 放的声音走新开关，都经过 helper」；s3「一场会议一个文件夹两个文件，每秒各长 32,000 字节」；s4「录 Mac 的声音要先答应系统的问题，不然开不成会」；s5「中途换模式共用音轨不停，麦克风那段就空了」；s6「先都录下来，结束才决定留不留，失败的多留 7 天」；s7「麦克风整条都是你不用猜，Mac 那条有好几个人会后再分」）。原十二项 24/24 ×7。冷读洞 3 个已修（默认/用途末相消失、t1/t2 无白话、失败会议 retry 措辞无出处），现 0。
 - **环境**：本目录 node_modules 又是指向协调 checkout 的符号链接，照旧只删本目录符号链接并本地 `npm install`，未进入或修改协调 checkout；`git -C ~/code/sglang-omni fetch` 被沙箱拒绝，本章 pin 本地 `origin/main@a6e2fc6d98ab6abbed1c0ea40d0a7d6d038f3d74`（2026-11-27 17:35），引用行号均对该 ref 核对。截图：/tmp/mc-final（英桌面 7 步末相）、/tmp/mc-zh390（中 390px s1/s4/s7），模型无图像输入未读图，主人可直接看。
 - **遗留**：Voxt-10 关闭与否由协调固定复审决定，不提前核销；Voxt-03～08 全部 queued 未返工。本书剩余开放 P0：Voxt-09（第 16 章评测口径没有 ready 落点，依赖 12–16 章交付）。下一单元按序为第 13 章 `meeting-live-and-final`（写时把章末问题补回第 12 章末步）。
+
+## 2026-11-27 23:20 PST · lane d · Voxt 第 13 章新写轮（meeting-live-and-final，6 步）
+
+- **单元**（上轮报告指定：本书下一单元为第 13 章，写时把章末问题补回第 12 章末步；direction.md 在派的 Voxt-05 已于前数轮完成并 queued，Voxt-03～08／10 均 queued 未返工）：新写第 13 章 `meeting-live-and-final` 全章 6 步并置 `ready: true`，并给第 12 章末步补回收尾问题。提交 `c9be2d7`（全章）+ `ddd8696`（第 12 章接缝），已推 origin/tutorials。
+- **六步**（相位脚手架与 Voxt 02／05–09／12 一致：PHASE_COUNTS [4,5,4,4,5,5]、900 ms 相位、2.2 s 间歇循环、LoopProgress、`data-animation-*`、motion-focus 红框逐相指路）：
+  - Step 1（4 相）：第 12 章第 7 步的问题条「直播的字？· 会后的终稿？」→ 会议条 + mic.wav/system.wav → 直播那一遍面板（边上屏，第 4 章流式路线）→ 会后那一遍面板（重读两个 WAV，文件路线）→ 两行分工与本章地图。首步即回答第 12 章末步问题。
+  - Step 2（5 相）：PCM 帧 → 空工作行 → 临时文字 “the next”→“the next release”→“the next release is Friday” 逐相改写 → 安静 0.75 s 标签 → 带 `00:21–00:25` 时间戳进已存框、工作行重新空出；公式 0.75 s → 定稿、一行最多 8 s；流轮换 10 min／30 s 只进脚注。
+  - Step 3（4 相）：会议已结束标签 → mic.wav 三块 + 第 1/2 条标签 → system.wav 三块 + 第 2/2 条 → 两行（第二个读者、直播行一直在屏上）+ 进度公式 ÷2。
+  - Step 4（4 相）：存档四行直播 → REPLACE（先删后插）→ 三行终稿 → `4 行出 · 3 行进` + 空集合也替换两行。直播 4 行对终稿 3 行的差异由第 2 步停顿切句解释。
+  - Step 5（5 相）：存档已有 mic 终稿 → 系统音轨第 1 块 ✓ → 第 2 块红 ✗ + 第 3 块不再跑 → 直播行留下 + 会议：中断 → 录音留 7 天（回指第 12 章第 6 步）+ 无录音不能重跑。
+  - Step 6（5 相）：系统行 + ±2 s 窗口、麦克风两行 → 共享三词串标签 → `4 of 4 ≥ 50% → 回声 · 整行删掉` 划掉复制 → sounds good 留下 + 检查跑两遍 → 收尾问题「系统音轨里哪句是 Speaker 1、哪句是 Speaker 2？」（第 14 章）。
+- **第 12 章接缝**：末步收尾声下方加问题行「直播管现在，终稿管留下——两遍各做什么？」，双语 deep 的 Next 与「图上是什么」同步改为指向第 13 章；第 13 章第 1 步舞台直接回答。三处（舞台问题、deep Next、neighbors 下一章）指向同一对象。
+- **事实来源**：pin `sglang-omni origin/main@a6e2fc6d98ab6abbed1c0ea40d0a7d6d038f3d74`（fetch 仍被沙箱拒绝，与上轮同 ref）；引用行号逐条对该 ref 核对（live.go、committer.go、finalize.go、echo.go、manager_finalize.go、track_transcribe.go、sqlitestore/meetings.go）。回声双重检查（直播 commitSegment 拦截 + 会后 dropEchoes）按源码上演；#3982 的 180/274 与 0–8 写进 deep。
+- **门**：`npm run build` 62 页 rc=0；`BOOK=voxt ONLY=13` transcript 静默（首轮报 Step 4 REPLACE 标签压 AFTER 面板的字，已把标签移到面板上方）；readability 12／13 全 0 机械问题（首轮两句英文 caption 超 15 词，已改短）；`BOOK=voxt node scripts/deep-check.mjs 12／13` ok；zh-check 12／13 all clear；mobile 英 + `LANG=zh` 中 12／13 在 360/390/430 均 no layout breaks；两章 transcript 两次重生成逐字一致（PINNED-IDENTICAL）；`git diff --check` 干净。
+- **机制探针**（无图像读取能力，以 DOM 断言代替肉眼读图）：`.bot/out/probe-voxt13.mjs` 对英桌面、中桌面、中 390 px × 6 步 direct 入口整圈相位 + 英桌面、中 390 px × Steps 2–6 前步→ArrowRight 入口 + 双语 6 步 deep 抽屉：**113 状态、89 个相位转变、failures=[]**。每步相邻相位机制签名必变；45 条相位区间标记断言（如「“the next”只在第 1 相、安静 0.75 s 只在第 3–4 相、回声 verdict 只在第 2 相后」）；普通舞台最低字号、重叠、出界、页面横溢均为 0。首轮 16 条失败全部是探针口径（瞬态标记的相位区间、手机合并标签、marker 措辞），组件行为不变。deep 抽屉打开时舞台缩到 8.4 CSS px 属共享 ML-21／22，只记录不拦。
+- **评分卡**（自评，文本冷读）：易读 12/12 ×6（R1 复述：s1「会议被认两遍：一边说一边出字，结束后再仔细读一遍」；s2「直播那行字会自己改，安静 0.75 秒就定稿存起来」；s3「结束后把两个录音文件一条条重新读」；s4「读得好的音轨把旧直播行整组换成新行，不是加在后面」；s5「读失败的音轨留下原来的直播行，录音多留 7 天可以重跑」；s6「麦克风把喇叭的话也录进去了，大半重复的行整行删掉」）。原十二项 24/24 ×6。冷读洞 2 个已修（REPLACE 标签位置、空集合替换无出处感），现 0。
+- **环境**：本目录 node_modules 又是指向协调 checkout 的符号链接，照旧只删本目录符号链接并本地 `npm install`，未进入或修改协调 checkout。dev server 自动落在 4325（4321 是他线），本轮收尾已 `astro dev stop`。截图产物在 `.bot/out/probe-voxt13/`（英中桌面 + 中 390 六步末相，模型无图像输入未读图，主人可直接看）。
+- **遗留**：本章 GO 与否由协调固定复审决定，不提前核销；Voxt-03～08／10 全部 queued 未返工。本书剩余开放 P0：Voxt-09（第 16 章评测口径没有 ready 落点，依赖 14–16 章交付）。下一单元按序为第 14 章 `meeting-speaker-labels`（回答本章末步问题：MTD 分块与跨块标签怎样接到终稿）。
