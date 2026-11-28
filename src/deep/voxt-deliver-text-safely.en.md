@@ -4,6 +4,7 @@
 
 ### On the stage
 
+- The stage builds in order: the start app, the switch arrow, the focus owner with an empty focused field, the answer text `send the deck to Priya` landing in that field, then the two bottom lines.
 - Left box: the **start app**, the app in front when you pressed the shortcut. It is `Request.Target`.
 - Right box: the **focus owner**, the process that owns the focused element. That owner is the destination.
 - `focus` is the field where typing goes. A floating window can keep the focus while another app is in front.
@@ -34,6 +35,7 @@ The start app still controls three things: the benefit of the doubt, a selection
 
 ### On the stage
 
+- The stage builds in order: the password field, the warning line, the STOP with reason secure, then the two exits one at a time (card on, card off).
 - The focus owner's focused field is drawn as password dots, with the subrole `AXSecureTextField` beside them.
 - The orange result is STOP: nothing is typed.
 - Nothing is typed. With that feature's card on, the answer card opens; with it off, the app copies the result and shows a one-line notice.
@@ -66,6 +68,7 @@ A secure field is not the only secure case. The helper also notices when another
 
 ### On the stage
 
+- The stage builds in order: the three rule cards one at a time, then the ordinary-delivery and card Insert lines, then the not-writable exit line.
 - Three rules: same as the start app, another app, and a selection replace (or Voxt's own window).
 - For ordinary delivery, a button or a list is not writable. In the start app a web area still counts as writable; in another app a page being read is not enough.
 - When the rule fails, nothing is typed and the exit is Step 2's: card when on, copy and notice when off.
@@ -100,7 +103,8 @@ A selection is replaced only in the start app and only in an element Accessibili
 
 ### On the stage
 
-- Before and after cards hold what the helper reads of the field: its text and its cursor.
+- The stage builds in order: the before card with the real field text `send the deck to ` and its cursor, the ⌘V arrow, the after card with `send the deck to Priya` and the cursor at the new end, the compare card with its evidence, the other three exits, then the wait line.
+- Before and after cards hold what the helper reads of the field: its text and its cursor. The compare card's evidence line says the text grew and the cursor moved.
 - The comparison has four exits: different → inserted; same ordinary field → unconfirmed; same web area or editable web region → inserted; cannot read → inserted.
 - The wait is `DefaultVerifyMS`, 1000 ms.
 
@@ -133,9 +137,10 @@ Some elements tell nothing; a web area container often does not update its value
 
 ### On the stage
 
-- The blue box is the saved old clipboard.
+- The stage builds in order: the snapshot with the old clipboard `grocery list`, the prepared text over the clipboard, the restore with `grocery list` back, the timing lines, the other-writer case where `someone else's note` stays, the unconfirmed exit, then the answer text and the closing question.
+- The blue box is the saved old clipboard, `grocery list`.
 - The orange box is the prepared text, written over the clipboard just before ⌘V.
-- The last blue box is the restore: the old clipboard comes back.
+- The last blue box is the restore: the old clipboard comes back. The orange `someone else's note` line is the other-writer case: `changeCount` differs, so the restore is skipped.
 - The stage says the 150 ms budget starts at ⌘V and checking time is subtracted; the unknown case waits 500 ms after the check.
 
 ### The timing
