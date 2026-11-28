@@ -43,12 +43,12 @@ $$
 
 ### 源码出处
 
-公开基线：`sglang-omni@34961b7df8fbd050d8e1e1bc9d82fbd165eb8566`，路径均相对该仓库。
+公开基线：<code>sglang-omni@<wbr>34961b7df8fbd050d8e1<wbr>e1bc9d82fbd165eb8566</code>，路径均相对该仓库。
 
-- 每次成功的 `Manager.Start` 调用 `NewID()` 并创建新 `run`：`Voxt/internal/session/manager.go:193-215`。
-- 生产环境使用 `core.NewID(time.Now())`：`Voxt/session_link.go:232-237`；真实 ID 是 ULID 字符串：`Voxt/internal/core/ids.go:12-21`。
-- ASR 回调与 `run` 的绑定：`Voxt/internal/session/run_audio.go:190-201`；LLM 回调：`Voxt/internal/session/cleanup.go:133-139,194-203`。
-- `Manager.update` 的身份与结束检查：`Voxt/internal/session/manager.go:341-367`；后台运行的例外：`Voxt/internal/session/manager.go:238-253`。
+- 每次成功的 `Manager.Start` 调用 `NewID()` 并创建新 `run`：<code>Voxt/<wbr>internal/<wbr>session/<wbr>manager.go:193-215</code>。
+- 生产环境使用 `core.NewID(time.Now())`：<code>Voxt/<wbr>session_link.go:232-237</code>；真实 ID 是 ULID 字符串：<code>Voxt/<wbr>internal/<wbr>core/<wbr>ids.go:12-21</code>。
+- ASR 回调与 `run` 的绑定：<code>Voxt/<wbr>internal/<wbr>session/<wbr>run_audio.go:190-201</code>；LLM 回调：<code>Voxt/<wbr>internal/<wbr>session/<wbr>cleanup.go:133-139,<wbr>194-203</code>。
+- `Manager.update` 的身份与结束检查：<code>Voxt/<wbr>internal/<wbr>session/<wbr>manager.go:341-367</code>；后台运行的例外：<code>Voxt/<wbr>internal/<wbr>session/<wbr>manager.go:238-253</code>。
 
 ## 第 2 步 · 把标签放上完整路线
 
@@ -94,13 +94,13 @@ $$
 
 ### 源码出处
 
-公开基线：`sglang-omni@14014b833299c6158a5daa88e1e0740cf7efe606`，路径均相对该仓库。
+公开基线：<code>sglang-omni@<wbr>14014b833299c6158a5d<wbr>aa88e1e0740cf7efe606</code>，路径均相对该仓库。
 
-- helper 进程及按键、采集、文字输入职责：`Voxt/docs/architecture.md:226-239`。
-- 从快捷键到识别、整理、交付和历史的完整路线：`Voxt/docs/architecture.md:245-277`。
-- 快捷键启动后创建带新 ID 的 `run`：`Voxt/internal/session/manager.go:193-235`。
-- `run.main` 串起录音、识别、整理与交付：`Voxt/internal/session/run.go:174-176,235-258`。
-- 历史记录使用本次 `run` 的 ID，交付记录区分插入和答案卡：`Voxt/internal/session/run.go:446-460,476-484`。
+- helper 进程及按键、采集、文字输入职责：<code>Voxt/<wbr>docs/<wbr>architecture.md:226-239</code>。
+- 从快捷键到识别、整理、交付和历史的完整路线：<code>Voxt/<wbr>docs/<wbr>architecture.md:245-277</code>。
+- 快捷键启动后创建带新 ID 的 `run`：<code>Voxt/<wbr>internal/<wbr>session/<wbr>manager.go:193-235</code>。
+- `run.main` 串起录音、识别、整理与交付：<code>Voxt/<wbr>internal/<wbr>session/<wbr>run.go:174-176,<wbr>235-258</code>。
+- 历史记录使用本次 `run` 的 ID，交付记录区分插入和答案卡：<code>Voxt/<wbr>internal/<wbr>session/<wbr>run.go:446-460,<wbr>476-484</code>。
 
 ## 第 3 步 · 晚到的 A 不写进 B
 
@@ -152,13 +152,13 @@ A、B 仍是教学代称。图中没有耗时或性能数字，先后箭头只�
 
 ### 源码出处
 
-公开基线：`sglang-omni@48ee40b2563492de95efc952a0c7470db087d8a9`，路径均相对该仓库。
+公开基线：<code>sglang-omni@<wbr>48ee40b2563492de95ef<wbr>c952a0c7470db087d8a9</code>，路径均相对该仓库。
 
-- 新 session 成为当前 `run`：`Voxt/internal/session/manager.go:193-235`。
-- 当前与后台运行的登记：`Voxt/internal/session/manager.go:238-253`。
-- `Manager.update` 的身份、结束检查和两条发布路径：`Voxt/internal/session/manager.go:341-375`。
-- `Manager.end` 的同类检查：`Voxt/internal/session/manager.go:378-417`。
-- 历史使用本次 `run` 的 ID：`Voxt/internal/session/run.go:446-460`。
+- 新 session 成为当前 `run`：<code>Voxt/<wbr>internal/<wbr>session/<wbr>manager.go:193-235</code>。
+- 当前与后台运行的登记：<code>Voxt/<wbr>internal/<wbr>session/<wbr>manager.go:238-253</code>。
+- `Manager.update` 的身份、结束检查和两条发布路径：<code>Voxt/<wbr>internal/<wbr>session/<wbr>manager.go:341-375</code>。
+- `Manager.end` 的同类检查：<code>Voxt/<wbr>internal/<wbr>session/<wbr>manager.go:378-417</code>。
+- 历史使用本次 `run` 的 ID：<code>Voxt/<wbr>internal/<wbr>session/<wbr>run.go:446-460</code>。
 
 ## 第 4 步 · 取消后，晚到的结果不交付
 
@@ -177,7 +177,10 @@ A、B 仍是教学代称。图中没有耗时或性能数字，先后箭头只�
 ### 取消后的结果
 
 $$
-C_A=\mathrm{true}\quad\Longrightarrow\quad D_A=\mathrm{undelivered},\qquad R_A=\mathrm{empty}
+\begin{gathered}
+C_A=\mathrm{true}\ \Longrightarrow\ D_A=\mathrm{undelivered},\\
+R_A=\mathrm{empty}
+\end{gathered}
 $$
 
 | 符号 | 是什么 | 从哪来 |
@@ -209,10 +212,10 @@ $$
 
 ### 源码出处
 
-公开基线：`sglang-omni@48ee40b2563492de95efc952a0c7470db087d8a9`，路径均相对该仓库。
+公开基线：<code>sglang-omni@<wbr>48ee40b2563492de95ef<wbr>c952a0c7470db087d8a9</code>，路径均相对该仓库。
 
-- 取消仍在运行的当前或后台 session：`Voxt/internal/session/manager.go:256-289`。
-- 识别返回后的取消检查，位于写入识别原话之前：`Voxt/internal/session/run_listen.go:397-417`。
-- 整理返回后的取消检查，位于交付之前：`Voxt/internal/session/cleanup.go:35-77`。
-- 取消结束、最小录音长度与历史写入：`Voxt/internal/session/run.go:398-414,446-460,510-529`。
-- 测试覆盖录音、识别和整理时取消，不粘贴文字；够长的录音留下已取消记录，过短则不留：`Voxt/internal/session/session_test.go:294-344`。
+- 取消仍在运行的当前或后台 session：<code>Voxt/<wbr>internal/<wbr>session/<wbr>manager.go:256-289</code>。
+- 识别返回后的取消检查，位于写入识别原话之前：<code>Voxt/<wbr>internal/<wbr>session/<wbr>run_listen.go:397-417</code>。
+- 整理返回后的取消检查，位于交付之前：<code>Voxt/<wbr>internal/<wbr>session/<wbr>cleanup.go:35-77</code>。
+- 取消结束、最小录音长度与历史写入：<code>Voxt/<wbr>internal/<wbr>session/<wbr>run.go:398-414,<wbr>446-460,<wbr>510-529</code>。
+- 测试覆盖录音、识别和整理时取消，不粘贴文字；够长的录音留下已取消记录，过短则不留：<code>Voxt/<wbr>internal/<wbr>session/<wbr>session_test.go:294-344</code>。

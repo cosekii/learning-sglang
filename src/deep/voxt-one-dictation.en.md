@@ -43,12 +43,12 @@ Put one tagged dictation on the full route: hotkey, helper, speech recognition, 
 
 ### Source
 
-Public baseline: `sglang-omni@34961b7df8fbd050d8e1e1bc9d82fbd165eb8566`. Paths are relative to that repository.
+Public baseline: <code>sglang-omni@<wbr>34961b7df8fbd050d8e1<wbr>e1bc9d82fbd165eb8566</code>. Paths are relative to that repository.
 
-- Every successful `Manager.Start` calls `NewID()` and creates a new run: `Voxt/internal/session/manager.go:193-215`.
-- Production uses `core.NewID(time.Now())`: `Voxt/session_link.go:232-237`; real IDs are ULID strings: `Voxt/internal/core/ids.go:12-21`.
-- ASR callbacks bind to a run: `Voxt/internal/session/run_audio.go:190-201`; LLM callbacks: `Voxt/internal/session/cleanup.go:133-139,194-203`.
-- `Manager.update` checks identity and completion: `Voxt/internal/session/manager.go:341-367`; the background exception: `Voxt/internal/session/manager.go:238-253`.
+- Every successful `Manager.Start` calls `NewID()` and creates a new run: <code>Voxt/<wbr>internal/<wbr>session/<wbr>manager.go:193-215</code>.
+- Production uses `core.NewID(time.Now())`: <code>Voxt/<wbr>session_link.go:232-237</code>; real IDs are ULID strings: <code>Voxt/<wbr>internal/<wbr>core/<wbr>ids.go:12-21</code>.
+- ASR callbacks bind to a run: <code>Voxt/<wbr>internal/<wbr>session/<wbr>run_audio.go:190-201</code>; LLM callbacks: <code>Voxt/<wbr>internal/<wbr>session/<wbr>cleanup.go:133-139,<wbr>194-203</code>.
+- `Manager.update` checks identity and completion: <code>Voxt/<wbr>internal/<wbr>session/<wbr>manager.go:341-367</code>; the background exception: <code>Voxt/<wbr>internal/<wbr>session/<wbr>manager.go:238-253</code>.
 
 ## Step 2 · Put the tag on the full route
 
@@ -94,13 +94,13 @@ Follow this route to the late-result gate: which check stops an old session from
 
 ### Source
 
-Public baseline: `sglang-omni@14014b833299c6158a5daa88e1e0740cf7efe606`. Paths are relative to that repository.
+Public baseline: <code>sglang-omni@<wbr>14014b833299c6158a5d<wbr>aa88e1e0740cf7efe606</code>. Paths are relative to that repository.
 
-- The helper process and its hotkey, capture and text-I/O duties: `Voxt/docs/architecture.md:226-239`.
-- The full route from hotkey through recognition, clean-up, delivery and history: `Voxt/docs/architecture.md:245-277`.
-- Starting creates a run with a new ID: `Voxt/internal/session/manager.go:193-235`.
-- `run.main` joins recording, recognition, clean-up and delivery: `Voxt/internal/session/run.go:174-176,235-258`.
-- The history entry uses this run's ID, and its delivery field distinguishes insertion from the answer card: `Voxt/internal/session/run.go:446-460,476-484`.
+- The helper process and its hotkey, capture and text-I/O duties: <code>Voxt/<wbr>docs/<wbr>architecture.md:226-239</code>.
+- The full route from hotkey through recognition, clean-up, delivery and history: <code>Voxt/<wbr>docs/<wbr>architecture.md:245-277</code>.
+- Starting creates a run with a new ID: <code>Voxt/<wbr>internal/<wbr>session/<wbr>manager.go:193-235</code>.
+- `run.main` joins recording, recognition, clean-up and delivery: <code>Voxt/<wbr>internal/<wbr>session/<wbr>run.go:174-176,<wbr>235-258</code>.
+- The history entry uses this run's ID, and its delivery field distinguishes insertion from the answer card: <code>Voxt/<wbr>internal/<wbr>session/<wbr>run.go:446-460,<wbr>476-484</code>.
 
 ## Step 3 · Late A does not write into B
 
@@ -152,13 +152,13 @@ Add cancellation to the same route: after A is cancelled, why are its late recog
 
 ### Source
 
-Public baseline: `sglang-omni@48ee40b2563492de95efc952a0c7470db087d8a9`. Paths are relative to that repository.
+Public baseline: <code>sglang-omni@<wbr>48ee40b2563492de95ef<wbr>c952a0c7470db087d8a9</code>. Paths are relative to that repository.
 
-- A new session becomes the current run: `Voxt/internal/session/manager.go:193-235`.
-- Registering current and background runs: `Voxt/internal/session/manager.go:238-253`.
-- `Manager.update` identity checks, completion checks and publication paths: `Voxt/internal/session/manager.go:341-375`.
-- The corresponding checks in `Manager.end`: `Voxt/internal/session/manager.go:378-417`.
-- History uses this run's ID: `Voxt/internal/session/run.go:446-460`.
+- A new session becomes the current run: <code>Voxt/<wbr>internal/<wbr>session/<wbr>manager.go:193-235</code>.
+- Registering current and background runs: <code>Voxt/<wbr>internal/<wbr>session/<wbr>manager.go:238-253</code>.
+- `Manager.update` identity checks, completion checks and publication paths: <code>Voxt/<wbr>internal/<wbr>session/<wbr>manager.go:341-375</code>.
+- The corresponding checks in `Manager.end`: <code>Voxt/<wbr>internal/<wbr>session/<wbr>manager.go:378-417</code>.
+- History uses this run's ID: <code>Voxt/<wbr>internal/<wbr>session/<wbr>run.go:446-460</code>.
 
 ## Step 4 · Cancellation keeps late results undelivered
 
@@ -177,7 +177,10 @@ Public baseline: `sglang-omni@48ee40b2563492de95efc952a0c7470db087d8a9`. Paths a
 ### The result after cancellation
 
 $$
-C_A=\mathrm{true}\quad\Longrightarrow\quad D_A=\mathrm{undelivered},\qquad R_A=\mathrm{empty}
+\begin{gathered}
+C_A=\mathrm{true}\ \Longrightarrow\ D_A=\mathrm{undelivered},\\
+R_A=\mathrm{empty}
+\end{gathered}
 $$
 
 | Symbol | Meaning | Where it comes from |
@@ -209,10 +212,10 @@ Step 2's helper receives key events. How does the cancel key reach the helper, a
 
 ### Source
 
-Public baseline: `sglang-omni@48ee40b2563492de95efc952a0c7470db087d8a9`. Paths are relative to that repository.
+Public baseline: <code>sglang-omni@<wbr>48ee40b2563492de95ef<wbr>c952a0c7470db087d8a9</code>. Paths are relative to that repository.
 
-- Cancelling a live current or background session: `Voxt/internal/session/manager.go:256-289`.
-- The post-recognition cancellation check before storing recognized text: `Voxt/internal/session/run_listen.go:397-417`.
-- The post-clean-up cancellation check before delivery: `Voxt/internal/session/cleanup.go:35-77`.
-- Cancellation, minimum recording length and history writes: `Voxt/internal/session/run.go:398-414,446-460,510-529`.
-- Tests cover cancellation while recording, recognizing and composing. Nothing is pasted; a long enough recording leaves a cancelled entry, while a shorter one leaves none: `Voxt/internal/session/session_test.go:294-344`.
+- Cancelling a live current or background session: <code>Voxt/<wbr>internal/<wbr>session/<wbr>manager.go:256-289</code>.
+- The post-recognition cancellation check before storing recognized text: <code>Voxt/<wbr>internal/<wbr>session/<wbr>run_listen.go:397-417</code>.
+- The post-clean-up cancellation check before delivery: <code>Voxt/<wbr>internal/<wbr>session/<wbr>cleanup.go:35-77</code>.
+- Cancellation, minimum recording length and history writes: <code>Voxt/<wbr>internal/<wbr>session/<wbr>run.go:398-414,<wbr>446-460,<wbr>510-529</code>.
+- Tests cover cancellation while recording, recognizing and composing. Nothing is pasted; a long enough recording leaves a cancelled entry, while a shorter one leaves none: <code>Voxt/<wbr>internal/<wbr>session/<wbr>session_test.go:294-344</code>.
