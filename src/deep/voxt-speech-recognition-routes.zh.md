@@ -256,6 +256,8 @@ $$
 
 这一步仍属于 `TranscribeInPieces` 的文件上传路线。本机 Omni 长录音另有 `joinParts` 和 live pieces，不应把这里的英文空格例子当成所有文字处理规则。
 
+之所以要切块，是因为长录音一次性识别又慢又占内存。公开的分段识别谱系和实测数字收在第 6 步的深入讲解。
+
 ### 接下来
 
 现在已经走完文件型的切块与合并。下一步回到第 1 步的本机 Omni，看实时草稿之后为什么还要做一次完整 Final。
@@ -323,10 +325,17 @@ $$
 - Final 的 tail、合并与最终事件：`Voxt/internal/omni/live_final.go:11-18,39-56,80-82`。
 - `LiveResult` 开关含义：`Voxt/internal/settings/settings.go:163-167`。
 
-公开性能证据（保留 PR、测量 head、setup 与边界；不来自 pinned 代码基线）：
+公开分段识别证据（长录音一次性识别又慢又占内存，decode 每个 token 都要一次完整前向；每条保留 PR、测量 setup 与边界；不来自 pinned 代码基线）：
 
-- [PR #2549](https://github.com/sgl-project/sglang-omni/pull/2549)（由 [PR #2576](https://github.com/sgl-project/sglang-omni/pull/2576) 落地 main）：Apple M5/24 GB、Qwen3-ASR 0.6B 4bit、392 clips。短录音 Final p50/p95 194/279 → 111/145 ms，吞吐 21.0 → 49.8 audio-s/s；first-preview p95 从 1207 退化到 2518 ms。两行是不同的对照：Final 是 A0/C/C/A0 interleaved 的 median，first preview 是 live C 第 1 轮对 A0 第 14–16 轮。主表测量 head 未记录；这是真实 native 服务路径，不是完整真实 App。
-- [PR #3285](https://github.com/sgl-project/sglang-omni/pull/3285)：native runtime 上的 DFlash 推测解码，Apple M5/16 GiB、392 clips（5,225 秒）、ABBA。1.7B 8bit decode 57 → 189 tok/s，0.6B 4bit 244 → 402 tok/s。benchmark 表未绑定精确测量 SHA，路径为 native CLI/server protocol，不是完整 Voxt App。已合并：`e52652558d06` / `6abdc68c1ee2`。
+- 谱系：[PR #1730](https://github.com/sgl-project/sglang-omni/pull/1730)（已合并 `d525bf6d8887` / `68c88dae641f`）建立 Qwen3-ASR 的 Apple MLX 与 Torch MPS 路径；[PR #1981](https://github.com/sgl-project/sglang-omni/pull/1981)（已合并 `667d258265a8` / `6742fb356c63`）抽出共享 runner；[PR #2549](https://github.com/sgl-project/sglang-omni/pull/2549) 把 Voxt 本机 Qwen3-ASR 迁到独立 MLX server，由 [PR #2576](https://github.com/sgl-project/sglang-omni/pull/2576) 落地 main——一次收益，不是两次；[PR #2577](https://github.com/sgl-project/sglang-omni/pull/2577)（已合并 `d2b32de5b682` / `a30e33eb83bb`）落到 native C++ runtime，不再有 Python runtime。
+- [PR #2549](https://github.com/sgl-project/sglang-omni/pull/2549)：Apple M5/24 GB、Qwen3-ASR 0.6B 4bit、392 clips。短录音 Final p50/p95 194/279 → 111/145 ms，吞吐 21.0 → 49.8 audio-s/s；first-preview p50/p95 202/1207 → 197/2518 ms，p95 退化。两行是不同的对照：Final 是 A0/C/C/A0 interleaved 的 median，first preview 是 live C 第 1 轮对 A0 第 14–16 轮。同一组 A/B 还暴露了 meeting update gap 退化，来源未给数字，按未量化负结果保留。主表测量 head 未记录；这是真实 native 服务路径，不是完整真实 App。
+- [PR #1981](https://github.com/sgl-project/sglang-omni/pull/1981) 的警示：共享 runner 的对照以两条 p50 处于噪声内判定性能中性，但 p95 和 First SSE 并非逐项不变，最终 head 未复测。并发会提高吞吐，同时显著抬高 p50/p95，这不是无成本的 batching。
+- [PR #3285](https://github.com/sgl-project/sglang-omni/pull/3285)：native runtime 上的 DFlash 推测解码，Apple M5/16 GiB、392 clips（5,225 秒）、ABBA。1.7B 8bit decode 57 → 189 tok/s，0.6B 4bit 244 → 402 tok/s。benchmark 表未绑定精确测量 SHA，路径为 native CLI/server protocol，不是完整 Voxt App。已合并：`e52652558d06` / `6abdc68c1ee2`。保留的负结果：18 分钟单 chunk（1,040 秒、1.7B 8-bit、`--max-new-tokens 4096`）为 30.4 → 34.6 s（0.88×，draft 更慢）；它与 392 clips 表口径不同，不合并。
+- [PR #3579](https://github.com/sgl-project/sglang-omni/pull/3579)（已合并 `8e04026bc0c9` / `35681602d054`）：Whisper 的 distil 推测解码。英文和中文加速；mixed 语音与 silence/noise 退化，按负结果保留。
+- [PR #3580](https://github.com/sgl-project/sglang-omni/pull/3580)（已关闭，未合并）与 [PR #3604](https://github.com/sgl-project/sglang-omni/pull/3604)（已合并 `4c23ddaacc20` / `2686ad661da5`）：Ming3 MTP 的两种实现。#3580 在测量 head `c6d2eca0`、Apple M5 Pro/64 GB、401 个 speech inputs、ABBA 两轮均值下为 328.42 → 302.88 s（约 1.08×），轮间差与收益同量级。后续同机三方对照——plain `8b54e03b`、#3580 `eb82034e0`、#3604 `cf7af2b73`、384 个 speech clips，顺序 plain → #3580 → #3604 → #3604 → #3580 → plain，每 pass fresh server、排除 warmup、间隔 10 分钟、c=1 non-streaming、每种实现两轮——#3604 在 speech total/median/P95 上比 #3580 再快 3.5/2.1/4.7%。但这只是单轮六 pass，输出差异仍不能省略，两笔收益不能累计。
+- [PR #3360](https://github.com/sgl-project/sglang-omni/pull/3360)（已合并 `75e04d6a9bb2` / `e68f47af6db8`）测量 Qwen3-ASR 长音频可靠性。它是测量链，不提供通用提速结论。
+- 保留的未落地分支：[PR #3710](https://github.com/sgl-project/sglang-omni/pull/3710)（已关闭 draft）在 draft 每轮提交不足 2 个 token 时不用 DFlash draft 解码；[PR #3765](https://github.com/sgl-project/sglang-omni/pull/3765)（已关闭）保留长 prompt 的替代路线；[PR #4554](https://github.com/sgl-project/sglang-omni/pull/4554)（仍 OPEN draft）保留 Ming DSpark 的负结果。
+- 未闭环：[PR #2708](https://github.com/sgl-project/sglang-omni/pull/2708)、[PR #2713](https://github.com/sgl-project/sglang-omni/pull/2713)、[PR #3172](https://github.com/sgl-project/sglang-omni/pull/3172)、[PR #3374](https://github.com/sgl-project/sglang-omni/pull/3374) 和 [PR #4549](https://github.com/sgl-project/sglang-omni/pull/4549) 仍 OPEN，它们的数字都不是已发布结果。[PR #2615](https://github.com/sgl-project/sglang-omni/pull/2615) 的 first-real-text 指标是已关闭的测量提案，不能用新口径宣布旧门槛通过。
 
 ## 第 7 步 · 识别交出原话，下一章再问语言模型
 

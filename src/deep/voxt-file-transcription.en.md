@@ -277,6 +277,8 @@ The first speech frame is stored twice. `pushFrame` adds it to the ring, `startU
 
 The cut is not fixed at 6.51 s. The quiet window in this step is constructed, and the reported cut follows whichever 100 ms window is quietest in the last second. `cutAtQuietest` keeps the sound after the cut in `c.buf` and sets `utterStart` to the cut (`cutter.go:135-146`).
 
+Cutting keeps each recognition request short because recognizing a long recording in one pass is slow and memory-heavy. Chapter 4's deep dive keeps the public segmented-recognition lineage and its measured numbers.
+
 ### Next
 
 With the cues cut, the app sends each one to the model. Step 7 covers recognition.
