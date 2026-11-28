@@ -184,7 +184,7 @@ $$ \text{启动 180 秒仍不能接受识别} \Rightarrow \text{启动失败并�
 
 公开性能证据（保留 PR、测量 head、setup 与边界；不来自 pinned 代码基线）：
 
-- [PR #4407](https://github.com/sgl-project/sglang-omni/pull/4407)：预热 Silero 的 Metal kernel，8 GB Apple silicon Mac、95.394 秒公开音频、ABABAB、每组 3 次取中位数。server ready 0.099 → 0.882 s，暖就绪请求 1.928 → 1.203 s，冷启动合计 2.027 → 2.085 s：首个请求变快，合计没有变快。PR 没有给每组单独的测量 commit。
+- [PR #4407](https://github.com/sgl-project/sglang-omni/pull/4407)：预热 Silero 的 Metal kernel，8 GB Apple silicon Mac、95.394 秒公开音频、ABABAB、每组 3 次取中位数。server ready 0.099 → 0.882 s，暖就绪请求 1.928 → 1.203 s，冷启动合计 2.027 → 2.085 s：首个请求变快，合计没有变快。PR 没有给每组单独的测量 commit。测量在服务器与 Metal kernel 层，不是完整真实 App；PR 已关闭（`d1160e01baf5`），没有合并记录。
 - [PR #2261](https://github.com/sgl-project/sglang-omni/pull/2261)（已合入；head `4091cb549196`，merge `fa0149a18e80`）：修复 Unload ASR 让 speech server 变成孤儿进程。
 
 ## 第 5 步 · 应用更新走另一条路
