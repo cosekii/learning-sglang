@@ -59,7 +59,46 @@
 - 未跑全站回归、真实 SGLang-Omni、模型、GPU 或 reduced-motion 动态切换；具备图像能力的复审和主人最终视觉验收仍留待后续。
 - 本 clone 的 `node_modules` 开始时指向协调 checkout；只删除本目录符号链接并在本目录 `npm install`，package 文件无 diff，未写协调人的 checkout。
 - 本轮 4521 dev server（pid 51059）已停止，端口无监听。审计标签页和浏览器均已关闭；收尾清理 4 个 PPID 1 headless Chrome 及对应 `cdp-*` profile，最终 `pgrep -P 1 -fl 'headless=new.*cdp-'` 无输出。
+---
 
+# lane k2 本轮报告 · ML 12 Steps 3–5 的 MTP 前向生产者链（ML-47）
+
+日期：2026-11-27。类型：修旧。本轮开始 HEAD 与 `origin/tutorials` 均为 `439c88e`，工作树干净。direction 指定的 ML 08 Step 5 已在该提交完成并推送，因此不重写待复审批次；按 owner rule 承接本书下一个开放 P1 **ML-47**。范围只有 ML 12 Steps 3–5 的双语组件、deep、MDX、生成 transcript、定向审计和本报告；其他章、其他书、`.bot/memory/` 与第 1 本受保护英文原文均未改。
+
+## 修复与 finding
+
+- Step 3 把原来的 `join(h(a),e(b)) → predict c` 改为 `join(h(a),e(b)) → MTP layer → draft_hidden_state`。MTP 卡在该相形成，`draft_hidden_state` 解释为 draft 用来预测 `c` 的新笔记，不再把输入直接画成预测结果。
+- Step 4 把孤立的 `DRAFT SCORES` 卡改为 `SHARED LM HEAD`，同卡显示读取 `draft_hidden_state` 并产出 draft 分数。末相补全 `draft_hidden_state → shared LM head → draft scores`，并用「target 和 draft 共用的 token 打分器」解释 LM head。
+- Step 5 沿用同一 MTP 名称和前向链，再区分三条梯度路径：辅助 CE 训练 MTP，target 与共享表的辅助 CE 梯度被 detach，主 RL 仍更新它们。双语 deep 与 MDX 同步公式、符号表、MiMo／Megatron concat 顺序和 pinned 出处。
+- 审计还发现并修复两处本步呈现问题：Steps 3–4 的手机 deep 长出处增加断行机会；Step 5 的 `forward uses current values` 缩为 `uses current values`，消除桌面卡片出界。最终审计没有白名单。
+- **ML-47 作者修复完成，待协调固定复审，不自行销项。** ML-48、共享 ML-21／22、其他开放 finding 与整章结论均未改，不申报全章 GO。
+
+## 作者评分与独立冷读
+
+| 步 | R1–R5 | 机制 R6 | 原十二项 | 新内容洞 | R1 小学生复述 |
+|---|---:|---:|---:|---:|---|
+| 3 | 10/10 | 2/2（DOM） | 24/24 | 0 | draft 把 a 的笔记和 b 的数放在一起，做出练习猜 c 的新笔记。 |
+| 4 | 10/10 | 2/2（DOM） | 24/24 | 0 | 共用打分器给这些笔记打分，c 得分太低就多扣分。 |
+| 5 | 10/10 | 2/2（DOM） | 24/24 | 0 | 额外练习只改 draft，正常训练仍改 target 和共享部分。 |
+
+- 独立 `explore` 冷读确认生产者链、concat 顺序、detach 边界、双语手机和 deep 对齐，初次指出 Step 5 卡片出界与共享 drawer 小字。卡片修复后终审为 **targeted ML-47 GO**，三步均 R1–R5 **10/10**、机制 R6 **2/2**、原十二项 **24/24**、剩余 ML-47 内容洞 **0**。这不是协调 verdict。
+- `pstack-reviewer` 与首次 `pstack-synthesizer` 因配置的模型不存在而未启动，未计为证据；后续 `explore` 完成实际冷读。
+- 当前模型不支持图像输入；已尝试读取前后 PNG，工具明确返回不支持。因此只申报文本、源码、DOM、几何和独立冷读结果，不声称看过图片、视觉通过或主人验收通过。
+
+## 硬门与证据
+
+- 最终 `npm run build`：**60 页**通过；Steps 3／4／5 `readability`：各 **0 机械问题**；`BOOK=ml-sys node scripts/deep-check.mjs 12`：ok；`zh-check`：all clear；英中全章 360／390／430 px `mobile` 与中文三步字号门均 **no layout breaks**；`git diff --check` 干净。
+- transcript 连续两次逐字一致：**2,221 词**，SHA-256 `2f16ae974fa74ca46af28fcfd0dd02464a6952070235607fc6ef033dcf03b8ea`。无 caption、文字出界、重叠或文本规则报告。
+- 可重跑脚本 `.bot/out/ml47-producer-audit.mjs`。最终结果 `.bot/out/ml47-producer-audit/report.json`：Steps 3–5 × 英中桌面／中文 390 px × direct／前步入口，共 **90 状态、72/72 个机制转变、24 个 deep 状态**。普通舞台最低 **10.8425625 CSS px**，重叠、SVG 出界、卡片出界、页面／deep 横溢和 `failures` 均为 0。
+- 逐相断言要求 Step 3 的 MTP 与 hidden state 只在第 4 相出现，Step 4 的共享 LM head 只在第 3 相出现，Step 5 复用同一前向链和 MTP 梯度路线；旧 `PREDICTION TASK`／`DRAFT LAYER` 不再出现。direct 与前步入口均播放相同机制。
+- 代表图：`.bot/out/ml47-producer-audit/s3-en-1440-direct-p4.png`、`.bot/out/ml47-producer-audit/s4-zh-390-direct-p4.png`、`.bot/out/ml47-producer-audit/s5-zh-390-previous-p4.png`。本地地址：`http://localhost:4321/learning-sglang/ml-sys/ch/12-rl-speculative-decoding/?step=3`；查看前在本目录运行 `npx astro dev --background`。
+
+## 剩余与清理
+
+- 剩余事项是 ML-47 的协调固定复审、其他未改开放项、共享 ML-21／22、具备图像能力的复审和主人最终视觉验收。deep 打开后的桌面舞台最低 **7.21415625 CSS px**，仍归共享 ML-21，本单元未改也不声称该共享项通过。
+- 未跑全站回归、真实 RL／Megatron 训练、rollout、GPU benchmark、故障注入或 reduced-motion 动态切换。
+- 本 clone 的 `node_modules` 开始时指向协调 checkout；只删除本目录符号链接并在本目录 `npm install`，package 文件无 diff，未写协调人的 checkout。
+- 本轮 4321 dev server 已在收尾停止；审计标签页和浏览器均已关闭，未动其他 lane 的服务或浏览器。收尾进程检查结果记录在提交前最终状态中。
 ---
 
 # lane k1 本轮报告 · Omni 02 三步机制动画（Omni-06，兼修 Omni-62）

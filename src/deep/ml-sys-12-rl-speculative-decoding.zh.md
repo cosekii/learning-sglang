@@ -64,17 +64,19 @@ draft 还需要知道下一个输入 token。下一步把 token 序列左移，�
 
 ## 第 3 步 · 把 target 笔记与下一个 token 配对
 
-**一句话。** token 左移一次并转成 embedding，位置 $t$ 就能把 $h_t$ 与 $e_{t+1}$ 拼起来，学习预测 $x_{t+2}$。
+**一句话。** token 左移一次并转成 embedding，MTP 层再把 $h_t$ 与 $e_{t+1}$ 变成 `draft_hidden_state`，用它学习预测 $x_{t+2}$。
 
 ### 图上是什么
 
 - 原序列仍是 `[a,b,c,d,e]`。左移后变成 `[b,c,d,e,—]`，所以位置 `a` 对应下一个 token `b`。
 - embedding 卡把移位后的 token 编号转成模型用的数，写成 `[e(b),e(c),…]`。
-- 最后的预测任务把 $h(a)$ 与 $e(b)$ 拼接，目标是 `c`。这是希望 draft 学会的对应关系，不是保证它当前已经猜对。
+- MTP 层合并 $h(a)$ 与 $e(b)$，产出 `draft_hidden_state`，也就是 draft 用来预测 `c` 的新笔记。`c` 是希望 draft 学会的对应结果，不保证它当前已经猜对。
 
 ### 公式与符号
 
 $$u_t=\operatorname{concat}(h_t,e_{t+1})$$
+
+$$d_t=\operatorname{MTP}(u_t)$$
 
 | 符号 | 是什么 | 从哪来 |
 |---|---|---|
@@ -82,30 +84,34 @@ $$u_t=\operatorname{concat}(h_t,e_{t+1})$$
 | $e_{t+1}$ | 下一个 token 的 embedding，即模型用的数 | 本步左移后查 embedding 表 |
 | $\operatorname{concat}$ | 把两组数并排拼接，不是相加 | 本步定义为 join |
 | $u_t$ | draft 在位置 $t$ 收到的配对输入 | 本步计算 |
+| $\operatorname{MTP}$ | draft 内置的 MTP 层 | 第 1 步，本步调用 |
+| $d_t$ | 位置 $t$ 的 draft hidden state，图上写作 `draft_hidden_state` | 本步 MTP 层的输出 |
 
 ### 代入图上的数
 
 $$u_a=\operatorname{concat}(h(a),e(b))$$
 
-在位置 `a`，下一个 token 是 `b`，再下一个就是 `c`，所以训练任务是从 $u_a$ 预测 `c`。一层 MTP 每次调用在每个位置预测一个后续 token；EAGLE 是反复调用这层来提出多个 token 的 draft 方法。横线只表示序列外没有真实 token，固定实现用 0 补齐，不会多出一个叫“—”的 token。
+$$d_a=\operatorname{MTP}(u_a)$$
 
-本图画的是原始 MiMo checkpoint 的顺序：`concat(h_t,e_{t+1})`，即 hidden state 在前、embedding 在后。固定 Megatron 前向实际执行 `concat(e_{t+1},h_t)`；`MimoBridge` 在 checkpoint 转换时交换 `eh_proj` 的输入半块。两种写法都把同一对 $(h_t,e_{t+1})$ 送给 draft 学习 $x_{t+2}$，不能把“join”理解成算术相加。
+在位置 `a`，下一个 token 是 `b`，再下一个就是 `c`。MTP 层在每个位置产出一份 `draft_hidden_state`。下一步由共享 LM head 把这些笔记变成预测 `c` 的 token 分数。EAGLE 会反复调用这一层来提出多个 token。横线只表示序列外没有真实 token，固定实现用 0 补齐，不会多出一个叫“—”的 token。
+
+本图画的是原始 MiMo checkpoint 的顺序：`concat(h_t,e_{t+1})`，即 hidden state 在前、embedding 在后。固定 Megatron 前向实际执行 `concat(e_{t+1},h_t)`；`MimoBridge` 在 checkpoint 转换时交换 `eh_proj` 的输入半块。两种写法都把同一对 $(h_t,e_{t+1})$ 交给 MTP 层学习 $x_{t+2}$，不能把“join”理解成算术相加。
 
 ### 接下来
 
-下一步把移位后的 token 再左移一次，得到每个位置的训练标签，并计算 cross entropy。
+下一步把移位后的 token 再左移一次，得到训练标签，再让 `draft_hidden_state` 经过共享 LM head 并计算 cross entropy。
 
-来源：`Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7`, `rlhf/slime/spec/readme.md:31-46,236-240`；`THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a` 的 `docker/patch/latest/megatron.patch:152-190`、`slime_plugins/mbridge/mimo.py:106-120`；`NVIDIA/Megatron-LM@23e00ed0963c35382dfe8a5a94fb3cda4d21e133` 的 `megatron/core/transformer/multi_token_prediction.py:511-522`。
+来源：<code>Awesome-ML-SYS-Tutorial@<wbr>d1f309b46f81a23e8b6ca0718c05bc897fafacf7</code>, `rlhf/slime/spec/readme.md:31-46,236-240`；<code>THUDM/<wbr>slime@<wbr>1278475ef4757ac8b03b1836dc1dc20fcc2dd56a</code> 的 `docker/patch/latest/megatron.patch:152-190`、`slime_plugins/mbridge/mimo.py:106-120`；<code>NVIDIA/<wbr>Megatron-LM@<wbr>23e00ed0963c35382dfe8a5a94fb3cda4d21e133</code> 的 <code>megatron/core/transformer/<wbr>multi_token_prediction.py:511-522,<wbr>566-604,<wbr>688-727</code>。
 
 ## 第 4 步 · 第二次左移生成训练标签
 
-**一句话。** 把已经左移的 token 再移一次，得到 draft 应预测的标签，再用 cross entropy 给不符合标签的分数扣分。
+**一句话。** 共享 LM head 把 `draft_hidden_state` 变成分数，再把 token 左移一次得到标签，由 cross entropy 比较分数与标签。
 
 ### 图上是什么
 
 - 第一卡是第 3 步的 `[b,c,d,e,—]`，第二卡再左移成 `[c,d,e,—,—]`，后一列就是训练标签。
-- draft 为每个位置给候选 token 打分。CE 卡比较这些分数与同一位置的标签，正确 token 得分越高，CE 越小。
-- 横线位置没有真实标签，不参与这里的评分。
+- 共享 LM head 是 target 和 draft 共用的 token 打分器。它读取第 3 步的 `draft_hidden_state`，在每个位置产出 draft 分数。
+- CE 卡比较这些分数与同一位置的标签。正确 token 得分越高，CE 越小。横线位置没有真实标签，不参与评分。
 
 ### 公式与符号
 
@@ -120,7 +126,7 @@ $$\mathcal L_{\mathrm{MTP}}=-\log p_{\mathrm{draft}}(x_{t+2}\mid u_t)$$
 
 ### 代入图上的数
 
-位置 `a` 的输入是 $u_a=\operatorname{concat}(h(a),e(b))$，标签是 `c`，所以这一项是 $-\log p_{\mathrm{draft}}(c\mid u_a)$。如果正确 token 的概率上升，负对数就下降。图上没有编造概率或 CE 数值。
+位置 `a` 的输入是 $u_a=\operatorname{concat}(h(a),e(b))$。第 3 步的 MTP 层产出 `draft_hidden_state`，共享 LM head 再产出 draft 分数。标签是 `c`，所以这一项是 $-\log p_{\mathrm{draft}}(c\mid u_a)$。如果正确 token 的概率上升，负对数就下降。图上没有编造概率或 CE 数值。
 
 上式是一项逐位置 CE，不是整份归一化损失。固定的一层 MTP recipe 设置 `--mtp-loss-scaling-factor 0.2`，即五分之一。Megatron 先应用 mask；关闭 per-token loss 时，还除以实现从 `new_loss_mask` 得到的 `num_tokens`，再把这个系数用于辅助分支。主模型输出的反向节点随后触发该分支，不需要另写一次 `mtp_loss.backward()`。这里的 `num_tokens` 不能直接当成第 6 步交集后的位置数。
 
@@ -128,7 +134,7 @@ $$\mathcal L_{\mathrm{MTP}}=-\log p_{\mathrm{draft}}(x_{t+2}\mid u_t)$$
 
 下一步看 `detach` 怎样让这份辅助 CE 更新 draft，同时不把它的梯度送进 target 主干和共享表。
 
-来源：`Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7`, `rlhf/slime/spec/readme.md:46-60`；`THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a` 的 `docs/zh/advanced/speculative-decoding.md:24-38`、`docker/patch/latest/megatron.patch:152-191`；`NVIDIA/Megatron-LM@23e00ed0963c35382dfe8a5a94fb3cda4d21e133` 的 `megatron/core/models/gpt/gpt_model.py:500-508`、`megatron/core/transformer/multi_token_prediction.py:349-382`。
+来源：<code>Awesome-ML-SYS-Tutorial@<wbr>d1f309b46f81a23e8b6ca0718c05bc897fafacf7</code>, `rlhf/slime/spec/readme.md:46-60`；<code>THUDM/<wbr>slime@<wbr>1278475ef4757ac8b03b1836dc1dc20fcc2dd56a</code> 的 `docs/zh/advanced/speculative-decoding.md:24-38`、`docker/patch/latest/megatron.patch:152-191`；<code>NVIDIA/<wbr>Megatron-LM@<wbr>23e00ed0963c35382dfe8a5a94fb3cda4d21e133</code> 的 <code>megatron/core/models/gpt/<wbr>gpt_model.py:449-488,<wbr>500-508</code>、<code>megatron/core/transformer/<wbr>multi_token_prediction.py:349-382</code>。
 
 ## 第 5 步 · detach 把 draft 的课程留在 draft
 
@@ -136,8 +142,8 @@ $$\mathcal L_{\mathrm{MTP}}=-\log p_{\mathrm{draft}}(x_{t+2}\mid u_t)$$
 
 ### 图上是什么
 
-- 蓝色 CE 和 draft 层卡片保持可训练。CE 一行说明第 4 步标签产生的调整权重信号能到达 draft 层。
-- 共享表卡片列出 embedding 和 LM head。第一条前向路线用 embedding 把 token ID 变成模型数列，第二条用 LM head 把 hidden state 变成 token 分数。两者都使用当前参数值。
+- 蓝色 CE 和 MTP 层卡片保持可训练。CE 一行说明第 4 步标签产生的调整权重信号能到达 MTP 层。
+- 共享表卡片列出 embedding 和 LM head。第一条前向路线用 embedding 把 token ID 变成模型数列，第二条用共享 LM head 把 `draft_hidden_state` 变成 draft 分数。两者都使用当前参数值。
 - 橙色虚线卡片和两条 CE 路线分别挡住辅助 CE 通向 target 主干与共享表的梯度。这是两组不同的参数。
 - 最后一行说明主 RL 学习仍训练 target 和共享表。挡住辅助 CE 不等于冻结这些权重。
 
@@ -164,7 +170,7 @@ $$g^{\mathrm{CE}}_{\theta_{\mathrm{MTP}}}\ \text{正常计算}$$
 
 ### 图外实现
 
-实现对 embedding 输出做 detach。target hidden state 经过 <code>make_viewless_tensor(...,<wbr> requires_grad=True,<wbr> keep_graph=False)</code>，再通过 `functional_call` 调用共享 LM head，并传入 detach 后的参数视图。这些视图不修改原参数或它们的 `requires_grad` 标志。MTP 自己的 hidden 输出没有 detach，所以 CE 仍能回到 MTP 层；主 RL 损失仍训练 target 主干和共享表。
+实现对 embedding 输出做 detach。target hidden state 经过 <code>make_viewless_tensor(...,<wbr> requires_grad=True,<wbr> keep_graph=False)</code>，再通过 `functional_call` 调用共享 LM head，并传入 detach 后的参数视图。这些视图不修改原参数或它们的 `requires_grad` 标志。MTP 自己的 hidden 输出 `draft_hidden_state` 没有 detach，所以 CE 仍能回到 MTP 层；主 RL 损失仍训练 target 主干和共享表。
 
 ### 接下来
 

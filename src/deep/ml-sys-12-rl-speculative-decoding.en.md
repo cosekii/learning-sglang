@@ -64,17 +64,19 @@ Sources: `Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7`, `rl
 
 ## Step 3 · Pair target notes with the next token
 
-**One sentence.** Shift and embed the tokens once so position $t$ can combine $h_t$ with $e_{t+1}$ and learn to predict $x_{t+2}$.
+**One sentence.** Shift and embed the tokens once so the MTP layer can turn $h_t$ and $e_{t+1}$ into `draft_hidden_state` for learning to predict $x_{t+2}$.
 
 ### On the stage
 
 - The original sequence remains `[a,b,c,d,e]`. One left shift gives `[b,c,d,e,—]`, aligning token `b` with position `a`.
 - The embedding card turns shifted token IDs into model numbers, written `[e(b),e(c),…]`.
-- The prediction task joins $h(a)$ with $e(b)$ and uses `c` as its desired output. This is the training task, not a guarantee that the current draft already predicts correctly.
+- The MTP layer joins $h(a)$ with $e(b)$ and produces `draft_hidden_state`, the draft's new notes for predicting `c`. The token `c` is the desired output, not a guarantee that the current draft already predicts correctly.
 
 ### Formula and symbols
 
 $$u_t=\operatorname{concat}(h_t,e_{t+1})$$
+
+$$d_t=\operatorname{MTP}(u_t)$$
 
 | Symbol | Meaning | Source |
 |---|---|---|
@@ -82,30 +84,34 @@ $$u_t=\operatorname{concat}(h_t,e_{t+1})$$
 | $e_{t+1}$ | The next token's embedding, its model-number form | Shift and embedding lookup in this step |
 | $\operatorname{concat}$ | Place two collections of numbers side by side, not add them | Defined as join in this step |
 | $u_t$ | Paired draft input at position $t$ | Computed here |
+| $\operatorname{MTP}$ | The draft's built-in MTP layer | Step 1, applied in this step |
+| $d_t$ | Draft hidden state at position $t$, labelled `draft_hidden_state` on the stage | MTP-layer output in this step |
 
 ### The numbers on the stage
 
 $$u_a=\operatorname{concat}(h(a),e(b))$$
 
-At position `a`, the next token is `b` and the token after that is `c`. The training task therefore maps $u_a$ to `c`. One MTP-layer call predicts one next token per position. EAGLE, the draft method that reuses this layer, calls it repeatedly to propose several tokens. The dash marks no real token beyond the sequence. The implementation pads with zero instead of creating a token named “—”.
+$$d_a=\operatorname{MTP}(u_a)$$
 
-The diagram shows the original MiMo checkpoint order, `concat(h_t,e_{t+1})`. The pinned Megatron forward executes `concat(e_{t+1},h_t)` instead; `MimoBridge` swaps the `eh_proj` input halves during checkpoint conversion. Both forms train the same pair $(h_t,e_{t+1})$ to predict $x_{t+2}$. Join never means arithmetic addition.
+At position `a`, the next token is `b` and the token after that is `c`. The MTP layer produces one `draft_hidden_state` per position. The next step's shared LM head turns these notes into token scores for predicting `c`. EAGLE, the draft method that reuses this layer, calls it repeatedly to propose several tokens. The dash marks no real token beyond the sequence. The implementation pads with zero instead of creating a token named “—”.
+
+The diagram shows the original MiMo checkpoint order, `concat(h_t,e_{t+1})`. The pinned Megatron forward executes `concat(e_{t+1},h_t)` instead; `MimoBridge` swaps the `eh_proj` input halves during checkpoint conversion. Both forms give the MTP layer the same pair $(h_t,e_{t+1})$ for learning $x_{t+2}$. Join never means arithmetic addition.
 
 ### Next
 
-The next step shifts the tokens again to make the training labels and computes cross entropy.
+The next step shifts the tokens again to make the training labels, sends `draft_hidden_state` through the shared LM head, and computes cross entropy.
 
-Sources: `Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7`, `rlhf/slime/spec/readme.md:31-46,236-240`; `THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a`, `docker/patch/latest/megatron.patch:152-190` and `slime_plugins/mbridge/mimo.py:106-120`; `NVIDIA/Megatron-LM@23e00ed0963c35382dfe8a5a94fb3cda4d21e133`, `megatron/core/transformer/multi_token_prediction.py:511-522`.
+Sources: <code>Awesome-ML-SYS-Tutorial@<wbr>d1f309b46f81a23e8b6ca0718c05bc897fafacf7</code>, `rlhf/slime/spec/readme.md:31-46,236-240`; <code>THUDM/<wbr>slime@<wbr>1278475ef4757ac8b03b1836dc1dc20fcc2dd56a</code>, `docker/patch/latest/megatron.patch:152-190` and `slime_plugins/mbridge/mimo.py:106-120`; <code>NVIDIA/<wbr>Megatron-LM@<wbr>23e00ed0963c35382dfe8a5a94fb3cda4d21e133</code>, <code>megatron/core/transformer/<wbr>multi_token_prediction.py:511-522,<wbr>566-604,<wbr>688-727</code>.
 
 ## Step 4 · The second shift makes labels
 
-**One sentence.** Shift the already shifted tokens again to make the draft's labels, then use cross entropy to penalize scores that disagree with those labels.
+**One sentence.** The shared LM head turns `draft_hidden_state` into scores, and another left shift makes the labels that cross entropy compares with those scores.
 
 ### On the stage
 
 - The first card repeats Step 3's `[b,c,d,e,—]`. The second shifts it into `[c,d,e,—,—]`, the training labels.
-- The draft scores candidate tokens at every position. The CE card compares those scores with the matching label; higher scores for correct tokens reduce CE.
-- Dashes have no real label to score.
+- The shared LM head is the token scorer used by both target and draft. It reads Step 3's `draft_hidden_state` and produces draft scores at every position.
+- The CE card compares those scores with the matching label. Higher scores for correct tokens reduce CE. Dashes have no real label to score.
 
 ### Formula and symbols
 
@@ -120,7 +126,7 @@ $$\mathcal L_{\mathrm{MTP}}=-\log p_{\mathrm{draft}}(x_{t+2}\mid u_t)$$
 
 ### The numbers on the stage
 
-At position `a`, the input is $u_a=\operatorname{concat}(h(a),e(b))$ and the label is `c`. This term is $-\log p_{\mathrm{draft}}(c\mid u_a)$. Raising the correct token's probability lowers its negative logarithm. The stage invents no probability or CE value.
+At position `a`, the input is $u_a=\operatorname{concat}(h(a),e(b))$. Step 3's MTP layer produces `draft_hidden_state`, then the shared LM head produces draft scores. The label is `c`, so this term is $-\log p_{\mathrm{draft}}(c\mid u_a)$. Raising the correct token's probability lowers its negative logarithm. The stage invents no probability or CE value.
 
 The formula above is one per-position CE term, not the whole normalized loss. The documented one-layer recipe sets `--mtp-loss-scaling-factor 0.2`, or one-fifth. Megatron applies the mask and, unless per-token loss is enabled, also divides by the implementation's `num_tokens` count from `new_loss_mask` before applying this factor. The main output's backward then triggers the auxiliary branch; there is no separate `mtp_loss.backward()` call. Do not equate `num_tokens` with Step 6's post-intersection position count.
 
@@ -128,7 +134,7 @@ The formula above is one per-position CE term, not the whole normalized loss. Th
 
 The next step shows how detach lets this auxiliary CE train the draft without sending its gradients into the target trunk and shared tables.
 
-Sources: `Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7`, `rlhf/slime/spec/readme.md:46-60`; `THUDM/slime@1278475ef4757ac8b03b1836dc1dc20fcc2dd56a`, `docs/zh/advanced/speculative-decoding.md:24-38` and `docker/patch/latest/megatron.patch:152-191`; `NVIDIA/Megatron-LM@23e00ed0963c35382dfe8a5a94fb3cda4d21e133`, `megatron/core/models/gpt/gpt_model.py:500-508` and `megatron/core/transformer/multi_token_prediction.py:349-382`.
+Sources: <code>Awesome-ML-SYS-Tutorial@<wbr>d1f309b46f81a23e8b6ca0718c05bc897fafacf7</code>, `rlhf/slime/spec/readme.md:46-60`; <code>THUDM/<wbr>slime@<wbr>1278475ef4757ac8b03b1836dc1dc20fcc2dd56a</code>, `docs/zh/advanced/speculative-decoding.md:24-38` and `docker/patch/latest/megatron.patch:152-191`; <code>NVIDIA/<wbr>Megatron-LM@<wbr>23e00ed0963c35382dfe8a5a94fb3cda4d21e133</code>, <code>megatron/core/models/gpt/<wbr>gpt_model.py:449-488,<wbr>500-508</code> and <code>megatron/core/transformer/<wbr>multi_token_prediction.py:349-382</code>.
 
 ## Step 5 · Keep the draft lesson on the draft
 
@@ -136,8 +142,8 @@ Sources: `Awesome-ML-SYS-Tutorial@d1f309b46f81a23e8b6ca0718c05bc897fafacf7`, `rl
 
 ### On the stage
 
-- The blue CE and draft-layer cards stay trainable. The CE line says weight-change instructions reach the draft layer from Step 4's labels.
-- The shared-tables card names the embedding and LM head. The first forward line turns token IDs into model numbers through the embedding. The second turns hidden states into token scores through the LM head. Both use current parameter values.
+- The blue CE and MTP-layer cards stay trainable. The CE line says weight-change instructions reach the MTP layer from Step 4's labels.
+- The shared-tables card names the embedding and LM head. The first forward line turns token IDs into model numbers through the embedding. The second turns `draft_hidden_state` into draft scores through the shared LM head. Both use current parameter values.
 - Separate orange dashed cards and CE lines block auxiliary CE gradients into the target trunk and the shared tables. These are two distinct parameter sets.
 - The final line says main RL learning still trains the target and shared tables. Blocking auxiliary CE does not freeze their weights.
 
@@ -164,7 +170,7 @@ This step constructs no gradient values. The first two equations set auxiliary C
 
 ### Implementation behind the stage
 
-The implementation detaches the embedding output. It passes the target hidden state through <code>make_viewless_tensor(...,<wbr> requires_grad=True,<wbr> keep_graph=False)</code>, then calls the shared LM head through `functional_call` with detached parameter views. Those views do not mutate the original parameters or their `requires_grad` flags. The MTP hidden output is not detached, so CE can still reach the MTP layer. The main RL loss still trains the target trunk and shared tables.
+The implementation detaches the embedding output. It passes the target hidden state through <code>make_viewless_tensor(...,<wbr> requires_grad=True,<wbr> keep_graph=False)</code>, then calls the shared LM head through `functional_call` with detached parameter views. Those views do not mutate the original parameters or their `requires_grad` flags. The MTP hidden output, `draft_hidden_state`, is not detached, so CE can still reach the MTP layer. The main RL loss still trains the target trunk and shared tables.
 
 ### Next
 
