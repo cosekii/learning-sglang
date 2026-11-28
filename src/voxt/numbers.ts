@@ -322,3 +322,26 @@ export const VOXT_MTD_PLAIN_ERR_PERCENT = 17.9;
 // Request 1 covers 0:00-2:00; request 2 restarts one second early, at 1:59.
 export const VOXT_MTD_DEMO_TRACK_MINUTES = 3;
 export const VOXT_MTD_DEMO_REQUEST_COUNT = 2;
+
+// Public correction batching (Voxt/internal/meeting/correct.go:31-34): one
+// request holds at most 250 lines and 20,000 runes of transcript text.
+export const VOXT_CORRECT_BATCH_LINES = 250;
+export const VOXT_CORRECT_BATCH_RUNES = 20000;
+
+// Public summary windowing (Voxt/internal/meeting/summary.go:15-17 and
+// GenerateSummary): 12,000-rune windows, intermediate summaries capped at
+// 4,000 runes before the next round.
+export const VOXT_SUMMARY_WINDOW_MAX_RUNES = 12000;
+export const VOXT_SUMMARY_INTERMEDIATE_MAX_RUNES = 4000;
+
+// Public follow-up context (Voxt/internal/meeting/followup.go:11-14): up to
+// three 6,000-rune transcript windows, picked by the question's words.
+export const VOXT_FOLLOWUP_WINDOW_MAX_RUNES = 6000;
+export const VOXT_FOLLOWUP_MAX_WINDOWS = 3;
+
+// Constructed teaching meeting for Ch. 15: five stored lines, "Thursday plan".
+// The same call at full length is 100,000 runes, about three hours of talk.
+export const VOXT_POST_MEETING_LINES = 5;
+export const VOXT_LONG_MEETING_RUNES = 100000;
+export const VOXT_LONG_SUMMARY_WINDOWS = Math.ceil(VOXT_LONG_MEETING_RUNES / VOXT_SUMMARY_WINDOW_MAX_RUNES);
+export const VOXT_LONG_FOLLOWUP_WINDOWS = Math.ceil(VOXT_LONG_MEETING_RUNES / VOXT_FOLLOWUP_WINDOW_MAX_RUNES);

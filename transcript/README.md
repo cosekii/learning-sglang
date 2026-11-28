@@ -68,3 +68,4 @@ Read it to check wording and numbers across chapters without opening the compone
 | voxt | 12 | [Three meeting capture modes](voxt/meeting-capture-modes.md) | 7 |
 | voxt | 13 | [Live first, final later](voxt/meeting-live-and-final.md) | 6 |
 | voxt | 14 | [Name tags for voices](voxt/meeting-speaker-labels.md) | 6 |
+| voxt | 15 | [Work on the final transcript](voxt/meeting-summary-and-export.md) | 6 |

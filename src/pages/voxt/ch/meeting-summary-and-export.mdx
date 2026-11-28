@@ -1,0 +1,53 @@
+---
+layout: ../../../layouts/Chapter.astro
+book: voxt
+slug: meeting-summary-and-export
+---
+import MeetingSummaryExport from '../../../components/voxt/MeetingSummaryExport.svelte';
+import { voxtNeighbors } from '../../../voxt/chapters';
+import { deepFor } from '../../../deep';
+export const deep = await deepFor('voxt-meeting-summary-and-export');
+
+<MeetingSummaryExport client:load {...voxtNeighbors('meeting-summary-and-export')} deep={deep} />
+
+<details class="i18n-en">
+<summary>Where this chapter's claims come from</summary>
+
+Step 1 reads the chain. When the final pass finishes and the auto-summary switch is on, `runFinalize` starts `correctAndSummarize` in the background: correction first, summary second (`Voxt/internal/meeting/manager_finalize.go:53-99`). A correction that fails only logs a warning; the summary still runs on the text as recognised (`manager_finalize.go:121-133`). The switch is `NoAutoSummary` (`Voxt/internal/settings/meeting.go:14`); correction and summary can also be re-run by hand (`Voxt/meeting_link.go:247`, `Voxt/meetings_detail_controller.go:214`). Not drawn: the speculative overlap that corrects the first track while the second still transcribes (`manager_finalize.go:63-75`, `correct_overlap.go`); its finished batches are reused by the correction, which changes no outcome this chapter shows.
+
+Step 2 reads the batching. One correction request carries at most 250 lines and 20,000 runes of text (`correct.go:31-34`), as a JSON array of `{"i", "text"}` pairs; the system prompt adds the speech context, the matching dictionary terms and the dictionary notes (`correct.go:138-158`). A line the answer leaves out or empties stays as recognised, a batch whose request fails keeps its lines, and every other batch lands in one atomic save; times, speakers and order are untouched (`correct.go:60-105`). An answer that does not parse corrects nothing (`correct.go:160-183`). The batch rune count on the stage, 106, counts the five lines' text only, as the code does.
+
+Step 3 reads the re-read. The summary loads the meeting from the store after correction, so it sees the corrected text when correction landed and the recognised text when it failed (`manager_summary.go:23-31`). The record is `Speaker：text` lines (`summary.go:111-125`; Me is the user, s1 is Speaker 1, `summary.go:96-109`). Long transcripts are summarised in 12,000-rune windows, each answer trimmed to 4,000 runes and summarised again until one remains (`summary.go:15-17`, `GenerateSummary`). The answer is one JSON object — title, content, todo_list — and the title and summary are written on the meeting row (`summary.go:20-90`, `manager_summary.go:55-66`). The summary is written in the user's main language, or the transcript's majority language when that is unset (`manager_summary.go:84-92`, `summary.go:148-152`). The stage's 145 runes are the five record lines plus their newlines; the long-call chain 100,000 → 9 → 9 → 3 → 1 is constructed: 100,000 runes make ⌈100,000 / 12,000⌉ = 9 windows, nine ≤4,000-rune answers regroup into 3, and three more into 1.
+
+Step 4 reads the window picking. A follow-up question takes the whole transcript when it fits — three windows and 6,000 runes — else scores each 6,000-rune window by how often the question's words appear in it and keeps the top three within the budget (`followup.go:11-14`, `RelevantFollowUpContext`, `followup.go:67-105`). A whole-meeting question ("overall", "总结", …) takes the first and last window instead (`followup.go:214-226`). The stage counts only the deciding words; the code counts every word of two letters or more plus CJK bigrams (`followup.go:184-212`). The prompt names the transcript the primary source, the summary and chat only compressed context (`followup.go:22-38`), and the question and answer are appended to the meeting's stored chat (`manager_followup.go:38-63`). The stage's window 12 is constructed: in a 100,000-rune call there are ⌈100,000 / 6,000⌉ = 17 windows, and one 6,000-rune window fills the budget alone.
+
+Step 5 reads the two buttons. Copy writes the plain-text export to the clipboard; Save… runs a file dialog and writes a `.txt` or `.md` named from the meeting's title (`meetings_detail_controller.go:246-289`). A text line is `mm:ss Name text`, a Markdown line `**mm:ss** Name text` under `# title`, and a translated line rides as `-> ` or `> ` (`export.go:17-77`). Labels come from the stored speaker: `me` is Me, `s1` is Speaker 1 or the name the user gave it (`summary.go:96-109`).
+
+Step 6 is the map back. Correct reads the stored lines and the dictionary and rewrites words only; summarize reads the stored transcript, corrected or not, and writes the title, summary and to-dos; ask reads picked windows, the summary and the earlier chat and appends the answer; export reads the stored lines and writes the clipboard or a file. Which of these claims carry code tests, sample evaluations or real-device checks — and what stays unproven — is Chapter 16.
+
+Constructed parts: the Thursday-plan meeting, its five lines, the Preeya mishearing, the summary's title and to-do, the question, the answer and the 100,000-rune full-length call are invented; the batch, window and budget limits are the code's. No meeting, language model or export was run.
+
+Source revision: `sglang-omni origin/main@a6e2fc6d98ab6abbed1c0ea40d0a7d6d038f3d74`. The deep dive lists exact files and lines.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的出处</summary>
+
+第 1 步读这条链。会后那一遍跑完、自动总结开关打开时，`runFinalize` 在后台启动 `correctAndSummarize`：先纠正，后总结（`Voxt/internal/meeting/manager_finalize.go:53-99`）。纠正失败只记一条警告，总结照常跑，读的是识别原文（`manager_finalize.go:121-133`）。开关是 `NoAutoSummary`（`Voxt/internal/settings/meeting.go:14`）；纠正和总结也能手动重跑（`Voxt/meeting_link.go:247`、`Voxt/meetings_detail_controller.go:214`）。图上没画：在第二条音轨还在转写时就先纠正第一条音轨的投机重叠（`manager_finalize.go:63-75`、`correct_overlap.go`）；它完成的批次会被后面的纠正复用，不改变本章展示的任何结果。
+
+第 2 步读分批。一个纠正请求最多装 250 行、20,000 字正文（`correct.go:31-34`），打成 `{"i", "text"}` 的 JSON 数组；系统提示里加上说话语境、命中的词条和词典备注（`correct.go:138-158`）。答案漏掉或清空的行保留识别原文，请求失败的一批保留原文，其余批次一次原子存回；时间、说话人和顺序都不动（`correct.go:60-105`）。解析不了的答案什么也不改（`correct.go:160-183`）。舞台上的批字数 106 只算五行的正文，和代码的算法一致。
+
+第 3 步读重读。总结在纠正之后从存储里重新加载这场会议，所以纠正成功读到改好的文字，失败读到识别原文（`manager_summary.go:23-31`）。记录是「说话人：文字」的行（`summary.go:111-125`；Me 是用户，s1 是 Speaker 1，`summary.go:96-109`）。长终稿按 12,000 字一窗总结，每段答案裁到 4,000 字再总结，直到只剩一段（`summary.go:15-17`、`GenerateSummary`）。答案是一个 JSON 对象——标题、正文、待办——标题和总结写到会议行上（`summary.go:20-90`、`manager_summary.go:55-66`）。总结用用户的主要语言写，没设置时用终稿里占多数的语言（`manager_summary.go:84-92`、`summary.go:148-152`）。舞台上的 145 字是五行记录加换行；长会议的链 100,000 → 9 → 9 → 3 → 1 是构造的：100,000 字切成 ⌈100,000 / 12,000⌉ = 9 个窗，九段不超过 4,000 字的答案再分成 3 组，三段再合成 1 段。
+
+第 4 步读挑窗。追问在终稿装得下时——三个窗、6,000 字——带上整个终稿；装不下就按问题的词在每个 6,000 字窗里出现的次数打分，在预算内留下前三名（`followup.go:11-14`、`RelevantFollowUpContext`、`followup.go:67-105`）。问整场的问题（overall、总结……）改取第一窗加最后一窗（`followup.go:214-226`）。舞台上只数起决定作用的词；代码会数所有两个字母以上的词和中文二元组（`followup.go:184-212`）。提示里写明终稿是第一来源，总结和问答记录只是压缩过的语境（`followup.go:22-38`），问题和答案追加存到会议的问答记录里（`manager_followup.go:38-63`）。舞台上的第 12 窗是构造的：100,000 字的会议有 ⌈100,000 / 6,000⌉ = 17 个窗，一个 6,000 字的窗独自占满预算。
+
+第 5 步读两个按钮。复制把纯文本导出写进剪贴板；导出…打开文件对话框，按会议标题写出 `.txt` 或 `.md`（`meetings_detail_controller.go:246-289`）。文本行是 `mm:ss 名字 文字`，Markdown 行是 `# 标题` 下的 `**mm:ss** 名字 文字`，译文挂成 `-> ` 或 `> `（`export.go:17-77`）。标签来自存下的说话人：`me` 是 Me，`s1` 是 Speaker 1 或用户改过的名字（`summary.go:96-109`）。
+
+第 6 步是地图回看。纠正读存稿和词典、只改文字；总结读存好的终稿（无论纠正成没成功）、写标题、总结和待办；追问读挑出的窗、总结和历史问答、追加答案；导出读存好的行、写剪贴板或文件。这些结论哪些有代码测试、样本评测或真机检查，哪些还没验证，是第 16 章。
+
+构造的部分：周四计划这场会、它的五行、Preeya 的听错、总结的标题和待办、问题、答案和 100,000 字的完整会议都是编的；批、窗和预算的上限是代码里的。没有真的开会、跑语言模型或导出。
+
+本章源码版本：`sglang-omni origin/main@a6e2fc6d98ab6abbed1c0ea40d0a7d6d038f3d74`。精确文件和行号见深入讲解。
+
+</details>

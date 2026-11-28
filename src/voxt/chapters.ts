@@ -21,7 +21,7 @@ export const voxtChapters: Chapter[] = [
   { part: 'meetings', slug: 'meeting-capture-modes', title: 'Three meeting capture modes', hook: 'Compare meeting, subtitles and recording.', titleZh: '会议的三种采集模式', hookZh: '对照 meeting、subtitles 和 recording。', ready: true },
   { part: 'meetings', slug: 'meeting-live-and-final', title: 'Live first, final later', hook: 'Separate live captions from the post-meeting transcript.', titleZh: '先看直播，再做终稿', hookZh: '分清实时字幕和会后终稿。', ready: true },
   { part: 'meetings', slug: 'meeting-speaker-labels', title: 'Name tags for voices', hook: 'Attach speaker labels to the finished transcript.', titleZh: '给声音贴姓名牌', hookZh: '把说话人标签接到终稿上。', ready: true },
-  { part: 'meetings', slug: 'meeting-summary-and-export', title: 'Work on the final transcript', hook: 'Correct, summarize, ask and export in order.', titleZh: '会议终稿再加工', hookZh: '依次纠正、总结、追问和导出。', ready: false },
+  { part: 'meetings', slug: 'meeting-summary-and-export', title: 'Work on the final transcript', hook: 'Correct, summarize, ask and export in order.', titleZh: '会议终稿再加工', hookZh: '依次纠正、总结、追问和导出。', ready: true },
   { part: 'meetings', slug: 'logs-tests-and-evaluation', title: 'A magnifying glass for the book', hook: 'Mark code tests, sample evaluations and unchecked ground.', titleZh: '给整本书装上放大镜', hookZh: '标出代码测试、样本评测和未验证范围。', ready: false },
 ];
 
