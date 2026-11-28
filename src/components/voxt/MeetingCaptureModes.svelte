@@ -80,7 +80,7 @@
   });
   const cur = $derived(steps[step]);
   const W = $derived(phone ? 300 : 720);
-  const H = $derived((phone ? [800, 660, 770, 830, 720, 830, 850] : [580, 496, 520, 530, 500, 560, 570])[step]);
+  const H = $derived((phone ? [800, 660, 770, 830, 720, 830, 860] : [580, 496, 520, 530, 500, 560, 580])[step]);
 
   const PHASE_COUNTS = [5, 4, 4, 4, 4, 5, 4];
   const PHASE_MS = 900;
@@ -634,7 +634,8 @@
             <rect x="20" y="452" width="680" height="56" rx="8" fill="var(--bg)" stroke="var(--line)" />
             <text x="40" y="476" class="label">{t('RECORDING', '录音')}</text>
             <text x="250" y="476" class="detail">{t('no system track → nothing to split', '没有系统音轨 → 没有要分的')}</text>
-            <text x={W / 2} y="540" text-anchor="middle" class="cut">{t('LIVE WORDS NOW · FINAL WORDS AFTER THE MEETING', '边录边出字 · 会后再出终稿')}</text>
+            <text x={W / 2} y="526" text-anchor="middle" class="cut">{t('LIVE WORDS NOW · FINAL WORDS AFTER THE MEETING', '边录边出字 · 会后再出终稿')}</text>
+            <text x={W / 2} y="552" text-anchor="middle" class="cut">{t('Live words serve the moment; the transcript stays — what does each pass do?', '直播管现在，终稿管留下——两遍各做什么？')}</text>
           {/if}
           <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Sources: internal/meeting/track_transcribe.go, finalize.go, mode.go.', '出处：internal/meeting/track_transcribe.go、finalize.go、mode.go。')}</text>
         {:else}
@@ -675,7 +676,9 @@
             <rect x="15" y="604" width="270" height="64" rx="8" fill="var(--bg)" stroke="var(--line)" />
             <text x="30" y="628" class="label">{t('RECORDING', '录音')}</text>
             <text x="30" y="650" class="detail">{t('no system track → nothing to split', '没有系统音轨 → 没有要分的')}</text>
-            <text x={W / 2} y="700" text-anchor="middle" class="cut">{t('LIVE NOW · FINAL AFTER THE MEETING', '边录边出字 · 会后出终稿')}</text>
+            <text x={W / 2} y="692" text-anchor="middle" class="cut">{t('LIVE NOW · FINAL AFTER THE MEETING', '边录边出字 · 会后出终稿')}</text>
+            <text x={W / 2} y="718" text-anchor="middle" class="cut">{t('Live serves the moment; the transcript stays —', '直播管现在，终稿管留下——')}</text>
+            <text x={W / 2} y="740" text-anchor="middle" class="cut">{t('what does each pass do?', '两遍各做什么？')}</text>
           {/if}
           <text x={W / 2} y={H - 10} text-anchor="middle" class="footnote">{t('Sources: track_transcribe.go, finalize.go.', '出处：track_transcribe.go、finalize.go。')}</text>
         {/if}

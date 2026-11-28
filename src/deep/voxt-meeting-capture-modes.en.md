@@ -179,7 +179,7 @@ Step 7 shows who each track's words belong to.
 - Right amber panel **SYSTEM TRACK**: three lines first carry "?", and the after-meeting pass turns them into Speaker 1, Speaker 2, Speaker 1; below, "several voices in one track — the after-meeting pass splits it".
 - One line in the middle: speaker labels need the MOSS-Transcribe-Diarize model.
 - The mode map at the bottom: **FULL MEETING** → mic = me, system = split, a labeled transcript ✓; **SUBTITLES** → no mic track, no me to set apart; **RECORDING** → no system track, nothing to split.
-- The closing line: live words now, final words after the meeting.
+- The closing lines: live words now, final words after the meeting — and the question they leave: live serves the moment, the transcript stays, so what does each pass do?
 
 ### Me is free; splitting takes a model
 
@@ -187,4 +187,4 @@ Every mic segment is stamped `Speaker = "me"` the moment it is produced, with no
 
 ### Next
 
-The chapter ends here: each sound lands in its own track and file, and every line already knows who said it.
+The stage closes on a question: live words serve the moment and the final transcript stays — what does each pass do? Chapter 13 answers it: the live pass puts words on screen while you talk, and the final pass re-reads both WAVs after the meeting.
