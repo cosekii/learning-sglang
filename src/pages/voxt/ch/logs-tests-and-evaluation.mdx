@@ -1,0 +1,53 @@
+---
+layout: ../../../layouts/Chapter.astro
+book: voxt
+slug: logs-tests-and-evaluation
+---
+import LogsTestsEvaluation from '../../../components/voxt/LogsTestsEvaluation.svelte';
+import { voxtNeighbors } from '../../../voxt/chapters';
+import { deepFor } from '../../../deep';
+export const deep = await deepFor('voxt-logs-tests-and-evaluation');
+
+<LogsTestsEvaluation client:load {...voxtNeighbors('logs-tests-and-evaluation')} deep={deep} />
+
+<details class="i18n-en">
+<summary>Where this chapter's claims come from</summary>
+
+Step 1 builds the map. The route's six stations reuse the names from Ch. 1 Step 2. The three tag kinds are this chapter's own legend: code tests (Step 2), fixed-sample evaluations (Step 3) and real-device checks (Step 4), with logs and diagnostics in Step 5 and the tagged map in Step 6. The question bar quotes Ch. 15 Step 6's closing question.
+
+Step 2 counts the test files. At the pinned source tree, `Voxt/` holds 515 Go test files: 258 in the root package, 53 in `internal/session`, 36 in `internal/meeting`, 16 in `internal/asr`, 13 in `internal/omni`, 10 in `internal/llm`, 8 in `internal/compose` and 121 across the remaining packages (counted with `git ls-tree` on the pinned revision). The three pinned examples are real: the 9-second limit, 300 ms pause and 10-second fixture of Ch. 4 Step 4 come from the public `SplitPCM` test (`Voxt/internal/asr/split_test.go`); the supervisor tests run a fake helper through crashes, restarts, protocol mismatches and garble (`Voxt/internal/helper/supervisor_test.go`, the `VOXTNEW_FAKE_HELPER` path); the log package's tests cover rotation, drop warnings and the redaction path (`Voxt/internal/logs/logs_test.go`). One file can hold many checks; the count is of files.
+
+Step 3 reads the evaluation set. The eval doc defines 29 short clips (169 s in all) and 2 long ones (95 s and 104 s), all synthetic Qwen3-TTS voices, and warns that real dictation scores worse (`Voxt/docs/eval.md`). The dictionary score is its context-bias result: of 10 dictated terms, 7 landed with the dictionary as context and 4 without. The multi-speaker 11/11 of Ch. 14 Step 6 was measured under the old scoring rule and never re-run (`Voxt/docs/MTDEvaluation.zh-CN.md`). The doc's large LLM sections are kept as a record: those evals ran the retired `voxtnew-llm` and were removed with it, so they no longer run.
+
+Step 4 reads the manual checklist. The public manual-test doc is an about-80-minute real-Mac checklist for what automated tests cannot reach — permissions, the event tap, real Accessibility reads and the real microphone (`Voxt/docs/manual-test.md`). Its section 10 names the automated real-Mac scripts `mac-e2e.sh` and `mac-regress.sh`, which still run on a real Mac.
+
+Step 5 reads the diary. The log service keeps the newest 2,000 lines in memory and writes `voxtnew.log` plus two rotated files, each capped at 5 MB (`Voxt/internal/logs/logs.go:28-33,64-70,224-230`). Keys, tokens and proxy passwords are redacted before any line reaches the panel, the files or a bundle (`logs.go:93-95`); speech content is off by default (a privacy switch turns it on). The diagnostics bundle zips `diagnostics.txt`, `settings.json` and the logs — no words the user said (`Voxt/settings_about_controller.go:61-92,174-216`) — and the prefilled bug issue truncates the diagnostics to 5,000 runes (`settings_about_controller.go:265-271`). The stage's three log lines are constructed; their format follows `logs.go:167`.
+
+Step 6 tags the map. A tag means this book showed pinned evidence at that station, not a coverage audit: test files exist for every station's package (hotkey, helper, asr/omni, llm/compose, deliver, store/session), the sample evaluations cover recognition (Steps 3 and Ch. 14 Step 6), and the real-Mac list covers the human parts — the key listener, permissions, the microphone and real Accessibility reads (Step 4). The open band quotes the eval doc's own not-measured list (noise, real voices, accents, microphone recordings, sessions through the helper's real capture) and the multi-speaker doc's unproven ground (more than 4 speakers, real meeting audio).
+
+Constructed parts: the three log lines in Step 5 are invented; every count, limit and score on the stage comes from the pinned source or docs above. No test, evaluation or real-Mac checklist was run for this chapter.
+
+Source revision: `sglang-omni origin/main@a6e2fc6d98ab6abbed1c0ea40d0a7d6d038f3d74`. The deep dive lists exact files and lines.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的出处</summary>
+
+第 1 步搭地图。路线的六站沿用第 1 章第 2 步的站名。三种标签是本章自己的图例：代码测试（第 2 步）、固定样本评测（第 3 步）、真机检查（第 4 步），日志和诊断在第 5 步，贴好标签的地图在第 6 步。问题条引用第 15 章第 6 步的收尾问题。
+
+第 2 步数测试文件。在固定的源码树上，`Voxt/` 有 515 份 Go 测试文件：root 包 258 份、`internal/session` 53、`internal/meeting` 36、`internal/asr` 16、`internal/omni` 13、`internal/llm` 10、`internal/compose` 8，其余包合计 121（在固定版本上用 `git ls-tree` 数出）。三个钉住的例子都是真的：第 4 章第 4 步的 9 秒上限、300 ms 停顿和 10 秒夹具来自公开的 `SplitPCM` 测试（`Voxt/internal/asr/split_test.go`）；supervisor 测试让假 helper 经历崩溃、重启、协议不匹配和乱码（`Voxt/internal/helper/supervisor_test.go`，`VOXTNEW_FAKE_HELPER` 路径）；日志包的测试覆盖轮转、丢行警告和打码路径（`Voxt/internal/logs/logs_test.go`）。一份文件里有多条检查，数的是文件。
+
+第 3 步读评测集。评测文档定义了 29 段短录音（共 169 秒）和 2 段长录音（95 秒和 104 秒），全部是 Qwen3-TTS 合成嗓音，并警告真人听写分数更差（`Voxt/docs/eval.md`）。词典分数是它的语境偏置结果：10 个听写术语，有词典作语境时落上 7 个，没有时 4 个。第 14 章第 6 步的分人 11/11 是旧口径下测的，没有重跑（`Voxt/docs/MTDEvaluation.zh-CN.md`）。文档里大块的语言模型评测章节是留下的记录：那些评测跑的是已退役的 `voxtnew-llm`，随它一起被移除，不再跑了。
+
+第 4 步读人工清单。公开的 manual-test 文档是一份约 80 分钟的真机清单，覆盖自动化测试够不到的地方——权限、event tap、真实的辅助功能读取和真麦克风（`Voxt/docs/manual-test.md`）。它的第 10 节点名自动化真机脚本 `mac-e2e.sh` 和 `mac-regress.sh`，它们仍在真 Mac 上跑。
+
+第 5 步读日记。日志服务在内存里留最新 2,000 行，写 `voxtnew.log` 加两个轮转文件，每个不超过 5 MB（`Voxt/internal/logs/logs.go:28-33,64-70,224-230`）。钥匙、令牌和代理密码在任何一行到达面板、文件或诊断包之前就被打码（`logs.go:93-95`）；说话内容默认不记（隐私开关可以打开）。诊断包打进 `diagnostics.txt`、`settings.json` 和日志——没有用户说过的话（`Voxt/settings_about_controller.go:61-92,174-216`）——预填的 bug issue 把诊断裁到 5,000 字（`settings_about_controller.go:265-271`）。舞台上的三行日志是构造的，格式照 `logs.go:167`。
+
+第 6 步给地图贴标签。标签表示本书在这一站展示过钉住的证据，不是覆盖审计：每一站对应的包都有测试文件（hotkey、helper、asr/omni、llm/compose、deliver、store/session），样本评测覆盖识别（第 3 步和第 14 章第 6 步），真机清单覆盖人的部分——按键监听、权限、麦克风和真实的辅助功能读取（第 4 步）。空白带引用评测文档自己列的未测项（噪声、真人嗓音、口音、麦克风录音、经过 helper 真实采集的会话）和分人文档未证明的范围（超过 4 个人、真实会议音频）。
+
+构造的部分：第 5 步的三行日志是编的；舞台上的每个计数、上限和分数都来自上面固定的源码或文档。本章没有真的跑测试、评测或真机清单。
+
+本章源码版本：`sglang-omni origin/main@a6e2fc6d98ab6abbed1c0ea40d0a7d6d038f3d74`。精确文件和行号见深入讲解。
+
+</details>

@@ -345,3 +345,48 @@ export const VOXT_POST_MEETING_LINES = 5;
 export const VOXT_LONG_MEETING_RUNES = 100000;
 export const VOXT_LONG_SUMMARY_WINDOWS = Math.ceil(VOXT_LONG_MEETING_RUNES / VOXT_SUMMARY_WINDOW_MAX_RUNES);
 export const VOXT_LONG_FOLLOWUP_WINDOWS = Math.ceil(VOXT_LONG_MEETING_RUNES / VOXT_FOLLOWUP_WINDOW_MAX_RUNES);
+
+// Public log service (Voxt/internal/logs/logs.go:28-33,64-70 @ a6e2fc6d):
+// an in-memory ring of the newest 2,000 lines, written to voxtnew.log plus
+// two rotated files, each capped at 5 MB.
+export const VOXT_LOG_RING_LINES = 2000;
+export const VOXT_LOG_MAX_FILE_BYTES = 5 << 20;
+export const VOXT_LOG_KEEP_FILES = 2;
+
+// Public diagnostics report (Voxt/settings_about_controller.go:265-271): the
+// prefilled bug issue carries the diagnostics text truncated to 5,000 runes.
+export const VOXT_ISSUE_BODY_MAX_RUNES = 5000;
+
+// Public eval set (Voxt/docs/eval.md:5-25 @ a6e2fc6d): 29 short clips
+// (169 s in all) and 2 long ones (95 s and 104 s), all synthetic Qwen3-TTS
+// voices; the doc warns real dictation scores worse.
+export const VOXT_EVAL_SHORT_CLIPS = 29;
+export const VOXT_EVAL_SHORT_SECONDS = 169;
+export const VOXT_EVAL_LONG_CLIPS = 2;
+export const VOXT_EVAL_LONG_SECONDS = [95, 104];
+export const VOXT_EVAL_CLIP_COUNT = VOXT_EVAL_SHORT_CLIPS + VOXT_EVAL_LONG_CLIPS;
+
+// Public dictionary eval (Voxt/docs/eval.md, dictionary section): of 10
+// dictated terms, 7 landed with the dictionary as context, 4 without.
+export const VOXT_EVAL_DICT_TERMS = 10;
+export const VOXT_EVAL_DICT_WITH = 7;
+export const VOXT_EVAL_DICT_WITHOUT = 4;
+
+// Public test-file count at sglang-omni a6e2fc6d (git ls-tree, Voxt/**):
+// 515 Go test files; the root package holds 258, internal/ 256, scripts/ 1.
+export const VOXT_TEST_FILE_COUNT = 515;
+export const VOXT_TEST_ROOT_FILES = 258;
+export const VOXT_TEST_SESSION_FILES = 53;
+export const VOXT_TEST_MEETING_FILES = 36;
+export const VOXT_TEST_ASR_FILES = 16;
+export const VOXT_TEST_OMNI_FILES = 13;
+export const VOXT_TEST_LLM_FILES = 10;
+export const VOXT_TEST_COMPOSE_FILES = 8;
+export const VOXT_TEST_OTHER_FILES =
+  VOXT_TEST_FILE_COUNT - VOXT_TEST_ROOT_FILES - VOXT_TEST_SESSION_FILES -
+  VOXT_TEST_MEETING_FILES - VOXT_TEST_ASR_FILES - VOXT_TEST_OMNI_FILES -
+  VOXT_TEST_LLM_FILES - VOXT_TEST_COMPOSE_FILES;
+
+// Public manual checklist (Voxt/docs/manual-test.md): about 80 minutes of
+// real-Mac checks for what automated tests cannot reach.
+export const VOXT_MANUAL_TEST_MINUTES = 80;
