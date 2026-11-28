@@ -16,6 +16,7 @@
     VOXT_MEETING_FAILED_KEEP_HOURS,
     VOXT_MEETING_SWEEP_HOURS,
     VOXT_WAV_HEADER_BYTES,
+    VOXT_TRANSCRIBE_PHOTO_MB,
   } from '../../voxt/numbers';
 
   let { prev, next, deep }: { prev?: NavLink; next?: NavLink; deep?: Deep } = $props();
@@ -126,6 +127,7 @@
   const hourSeconds = VOXT_MEETING_HOUR_SECONDS.toLocaleString('en-US');
   const trackHourMb = VOXT_MEETING_TRACK_HOUR_MB.toFixed(1);
   const fullHourMb = VOXT_MEETING_FULL_HOUR_MB.toFixed(1);
+  const fullHourPhotos = Math.round(VOXT_MEETING_FULL_HOUR_MB / VOXT_TRANSCRIBE_PHOTO_MB);
   const modes = [
     { name: t('FULL MEETING', '完整会议'), dflt: true, note: t('both sides of the call', '通话的两边'), records: t('microphone + system audio', '麦克风 + 系统音频'), tracks: 2 },
     { name: t('SUBTITLES', '字幕'), dflt: false, note: t('for reading along', '用来看'), records: t('system audio only', '仅系统音频'), tracks: 1 },
@@ -182,7 +184,7 @@
           <text x="418" y="450" class="detail">{t('system-audio track', '系统音频音轨')}</text>
           {#if phase >= 4}
             <text x={W / 2} y="496" text-anchor="middle" class="formula">{trackBps} B/s × {hourSeconds} s = {trackHourMb} MB · {t('one track, one hour', '一条音轨，一小时')}</text>
-            <text x={W / 2} y="524" text-anchor="middle" class="formula">{t('FULL MEETING', '完整会议')}: 2 × {trackHourMb} MB = {fullHourMb} MB {t('an hour', '每小时')}</text>
+            <text x={W / 2} y="524" text-anchor="middle" class="formula">{t('FULL MEETING', '完整会议')}: 2 × {trackHourMb} MB = {fullHourMb} MB {t('an hour', '每小时')}{t(` (≈${fullHourPhotos} photos)`, `（≈${fullHourPhotos} 张手机照片）`)}</text>
           {/if}
           <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Sources: internal/meeting/mode.go, settings_meeting_view_state.go.', '出处：internal/meeting/mode.go、settings_meeting_view_state.go。')}</text>
         {:else}
@@ -215,6 +217,7 @@
             <text x={W / 2} y="548" text-anchor="middle" class="formula">{trackBps} B/s × {hourSeconds} s</text>
             <text x={W / 2} y="570" text-anchor="middle" class="formula">= {trackHourMb} MB · {t('one track-hour', '一条音轨一小时')}</text>
             <text x={W / 2} y="596" text-anchor="middle" class="formula">2 × {trackHourMb} = {fullHourMb} MB {t('an hour', '每小时')}</text>
+            <text x={W / 2} y="618" text-anchor="middle" class="detail">{t(`≈${fullHourPhotos} phone photos`, `≈${fullHourPhotos} 张手机照片`)}</text>
           {/if}
           <text x={W / 2} y={H - 12} text-anchor="middle" class="footnote">{t('Source: internal/meeting/mode.go.', '出处：internal/meeting/mode.go。')}</text>
         {/if}

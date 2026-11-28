@@ -24,7 +24,7 @@ $$ \text{one track-hour} = 32{,}000\ \text{B/s} \times 3{,}600\ \text{s}, \qquad
 | Quantity | Arithmetic | Result |
 |---|---|---|
 | one track-hour | $32{,}000 \times 3{,}600$ | 115,200,000 B = 115.2 MB |
-| full-meeting hour | $2 \times 115.2$ MB | 230.4 MB |
+| full-meeting hour | $2 \times 115.2$ MB | 230.4 MB ≈ 58 phone photos of 4 MB |
 
 ### The modes are the three Settings options
 
