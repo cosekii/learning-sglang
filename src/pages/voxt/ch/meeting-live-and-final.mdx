@@ -1,0 +1,53 @@
+---
+layout: ../../../layouts/Chapter.astro
+book: voxt
+slug: meeting-live-and-final
+---
+import MeetingLiveAndFinal from '../../../components/voxt/MeetingLiveAndFinal.svelte';
+import { voxtNeighbors } from '../../../voxt/chapters';
+import { deepFor } from '../../../deep';
+export const deep = await deepFor('voxt-meeting-live-and-final');
+
+<MeetingLiveAndFinal client:load {...voxtNeighbors('meeting-live-and-final')} deep={deep} />
+
+<details class="i18n-en">
+<summary>Where this chapter's claims come from</summary>
+
+Step 1 reads the two-pass shape. While a meeting records, each track runs live recognition (`Voxt/internal/meeting/track_transcribe.go:52-72`, `101-113`); after it ends, `FinalizePass` re-reads the archived WAVs and replaces the live segments (`Voxt/internal/meeting/finalize.go:28-46`). The two routes are Chapter 4's streaming and file routes.
+
+Step 2 reads the live commit. A `Committer` turns streaming partials into sentence commits: a phrase commits at 750 ms of quiet (300 ms once it passes 4 s), and one live segment never exceeds 8 s (`Voxt/internal/meeting/committer.go:10-15`, `40-66`). A stream also rotates at 10 minutes of age or after 30 s without partials (`Voxt/internal/meeting/live.go:12-13`, `105`, `194-206`); rotation is a reliability detail this step only footnotes.
+
+Step 3 reads the per-track pass. `FinalizePass` walks the mode's sources one at a time, reports progress as `done tracks ÷ track count`, and each track reads its WAV, finds speech, plans chunks and transcribes them in file mode (`Voxt/internal/meeting/finalize.go:47-76`, `113-168`). A track with no file or no audio has nothing to replace; a track with audio but no words replaces with an empty set (`finalize.go:115-131`, `158`, `168`).
+
+Step 4 reads the replace. `ReplaceSegments` deletes that track's stored lines and inserts the new ones in one transaction (`Voxt/internal/store/sqlitestore/meetings.go:165-194`). The example's four live lines against three final lines are constructed: the live pass commits at your pauses (Step 2), the file read hears whole regions.
+
+Step 5 reads the failure path. A track whose re-read fails is skipped and keeps its live segments; the first error marks the meeting interrupted and, with keep-audio off, keeps the recording seven days for a reprocess (`finalize.go:60-67`, `92-104`, `467-478`; `ErrFinalizeRetry` at `finalize.go:24-25`). `Reprocess` reruns the pass, and a done meeting that kept no recording returns `ErrNoRecording` — its transcript stays as it is (`Voxt/internal/meeting/manager_finalize.go:11-26`).
+
+Step 6 reads the echo check. Speech from the speakers reaches the microphone (#3982): a mic line whose words share 3-word runs with the system speech within ±2 s, over at least half the line, is an echo and is dropped whole, never rewritten (`Voxt/internal/meeting/echo.go:15-46`, `96-102`). The check runs twice: live, a mic echo is never committed (`track_transcribe.go:235-241`), and after the final pass, on both final texts (`finalize.go:77-81`).
+
+Constructed parts: the timestamps and wordings of the example lines (`hi`, `everyone`, `we should ship Friday`, …) are invented. No real meeting, recognition model or diarizer was run. How the system track's final lines get Speaker 1 / Speaker 2 is Chapter 14.
+
+Source revision: `sglang-omni origin/main@a6e2fc6d98ab6abbed1c0ea40d0a7d6d038f3d74`. The deep dive lists exact files and lines.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的出处</summary>
+
+第 1 步读两遍的结构。会议录制时，每条音轨跑直播识别（`Voxt/internal/meeting/track_transcribe.go:52-72`、`101-113`）；结束后，`FinalizePass` 重读存档的 WAV 并替换直播内容（`Voxt/internal/meeting/finalize.go:28-46`）。两条路线就是第 4 章的流式路线和文件路线。
+
+第 2 步读直播定稿。`Committer` 把流式临时结果变成逐句定稿：安静 750 毫秒定稿（句子超过 4 秒后 300 毫秒），一条直播片段最长 8 秒（`Voxt/internal/meeting/committer.go:10-15`、`40-66`）。一条流还会在 10 分钟或 30 秒没有临时结果后轮换（`Voxt/internal/meeting/live.go:12-13`、`105`、`194-206`）；轮换是可靠性细节，本步只写进脚注。
+
+第 3 步读逐轨重认。`FinalizePass` 一次处理模式里的一条音轨，进度按「已认音轨 ÷ 音轨数」上报；每条音轨读 WAV、找语音、切块、用文件模式逐块认（`Voxt/internal/meeting/finalize.go:47-76`、`113-168`）。没有文件或没有声音的音轨没有要替换的；有声音但没字的音轨替换成空集合（`finalize.go:115-131`、`158`、`168`）。
+
+第 4 步读替换。`ReplaceSegments` 在一个事务里删掉这条音轨的已存行并插入新行（`Voxt/internal/store/sqlitestore/meetings.go:165-194`）。例子里四行直播对三行终稿是构造的：直播在你的停顿处定稿（第 2 步），整读听到的是完整语段。
+
+第 5 步读失败路径。重读失败的音轨被跳过，留下它的直播内容；第一个错误把会议标记为中断，保留音频关闭时录音留 7 天等重跑（`finalize.go:60-67`、`92-104`、`467-478`；`ErrFinalizeRetry` 在 `finalize.go:24-25`）。`Reprocess` 会重跑这一遍；没留下录音的已完成会议返回 `ErrNoRecording`——终稿保持原样（`Voxt/internal/meeting/manager_finalize.go:11-26`）。
+
+第 6 步读回声检查。喇叭的声音也会进麦克风（#3982）：麦克风行与前后 2 秒内的系统语音共享连续 3 个词、超过半行，就是回声，整行删掉，不改写（`Voxt/internal/meeting/echo.go:15-46`、`96-102`）。检查跑两遍：直播时回声不上屏（`track_transcribe.go:235-241`），会后那一遍再用两份终稿查一遍（`finalize.go:77-81`）。
+
+构造的部分：示例行的时间戳和措辞（`hi`、`everyone`、`we should ship Friday`……）是编的。没有真的开会、跑识别模型或分人模型。系统音轨的终稿行怎样得到 Speaker 1／Speaker 2 是第 14 章。
+
+本章源码版本：`sglang-omni origin/main@a6e2fc6d98ab6abbed1c0ea40d0a7d6d038f3d74`。精确文件和行号见深入讲解。
+
+</details>

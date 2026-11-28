@@ -66,3 +66,4 @@ Read it to check wording and numbers across chapters without opening the compone
 | voxt | 10 | [A separate file-transcription route](voxt/file-transcription.md) | 11 |
 | voxt | 11 | [Model storage and app updates](voxt/models-and-app-updates.md) | 6 |
 | voxt | 12 | [Three meeting capture modes](voxt/meeting-capture-modes.md) | 7 |
+| voxt | 13 | [Live first, final later](voxt/meeting-live-and-final.md) | 6 |

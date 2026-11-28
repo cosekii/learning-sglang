@@ -262,3 +262,28 @@ export const VOXT_MEETING_DISK_RECORD_GIB = 0.9;
 export const VOXT_MEETING_FAILED_KEEP_DAYS = 7;
 export const VOXT_MEETING_FAILED_KEEP_HOURS = VOXT_MEETING_FAILED_KEEP_DAYS * 24;
 export const VOXT_MEETING_SWEEP_HOURS = 1;
+
+// Public live-commit rules (Voxt/internal/meeting/committer.go:10-15): a phrase
+// commits after 750 ms of quiet, and one live segment never exceeds 8 s.
+export const VOXT_LIVE_COMMIT_QUIET_MS = 750;
+export const VOXT_LIVE_SEGMENT_MAX_S = 8;
+
+// Public live-stream rotation (Voxt/internal/meeting/live.go:12-13): one stream
+// runs at most 10 minutes, and 30 silent seconds without updates restarts it.
+export const VOXT_LIVE_STREAM_MAX_MINUTES = 10;
+export const VOXT_LIVE_STALE_PARTIAL_S = 30;
+
+// Public echo check (Voxt/internal/meeting/echo.go:15-23): a mic line whose
+// words within ±2 s of system speech share 3-word runs over at least half the
+// line is dropped whole, never rewritten.
+export const VOXT_ECHO_SLACK_S = 2;
+export const VOXT_ECHO_RUN_WORDS = 3;
+export const VOXT_ECHO_SHARE_PERCENT = 50;
+
+// A full meeting's final pass reads its tracks one at a time (finalize.go:48-76).
+export const VOXT_FINAL_PASS_TRACK_COUNT = 2;
+
+// Constructed teaching example: the live pass commits four mic lines at pauses;
+// the final pass re-reads the whole file and returns three.
+export const VOXT_LIVE_LINE_COUNT = 4;
+export const VOXT_FINAL_LINE_COUNT = 3;
