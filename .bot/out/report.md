@@ -3719,3 +3719,22 @@ npx astro dev stop
 - **机制探针**（无图像读取能力，以 DOM 断言代替肉眼读图）：`.bot/out/probe-voxt07.mjs` 对英桌面 + 中 390 px 各 5 步采样一整圈余：相位全走 0→final（5/5/6/6/7）、相邻相位必有台上文字变化、25 条机制标记断言（如 Step 1 的答案文字只在第 3 相后出现、Step 2 的 STOP 只在第 2 相后、Step 4 的 `text grew · cursor moved` 只在比较相后、Step 5 的 `someone else's note` 只在 other-writer 相后）、页面横溢为 0。**全部通过。** 首轮 10 条 `early` 失败定位为 lap 回卷时 fade outro 残留进 phase 0（探针口径问题），改为只在第一圈内断言「提前出现」后归零；组件行为不变。
 - **环境**：本目录 node_modules 又是指向协调 checkout 的符号链接（18:21 重建），照旧只删本目录符号链接并本地 `npm install`，未进入或修改协调 checkout。4321 被他线占用，本轮 server 在 4461。zh-check 07 会落一个 `07/` 截图目录，已删，未入库。截图产物在 `.bot/out/voxt07-shots/`（模型无图像输入，未肉眼读图）。
 - **遗留**：Voxt-07 的关闭与否由协调固定复审决定，不提前核销；Voxt-03／04／05／06／10 相关提交均 queued 等复审，未返工；下一开放项按序为 P0 Voxt-08（09/1–9 保留时钟、Retry、导出与 socket 不发生）。
+
+## 2026-11-27 20:30 PST · lane d · Voxt-08 修复轮（09/1–9 保留时钟、Retry、导出与 socket 状态形成）
+
+- **单元**（按 SOUL 顺序的本书下一个开放 P0；direction.md 在派的 Voxt-05 已于前三轮完成并 queued）：Voxt-08 · Voxt 09 `history-retry-retention` 九步全是终态。本轮开始时工作树有上一轮中断留下的半成品（组件已相位化、双语 deep 与 transcript 已同步、未提交），与本单元完全对应，按 SOUL.md 接着做完：验证、跑门、提交 `a5f3c43`，已推 origin/tutorials。半成品里的 astro.config cacheDir 改动经定位不能解决符号链接 node_modules 的 Vite allow-list 拒绝（水合全站失败），已撤回，不入库。
+- **修法**（沿用 Voxt 02／05／06／07 已通过的相位脚手架 `PHASE_COUNTS／LoopProgress／data-animation-*`，900 ms 相位、2.4 s 间歇循环、reduced-motion 直达末相）：九步全部改为逐相状态形成——
+  - Step 1（6 相）：空历史记录框 → kind/app 填入 → 文字填入 → audio.wav 录音字段 → `10 × 90 = 900` 条算式与「还没有钟」虚线框。
+  - Step 2（6 相）：历史记录尺 + 标签 → 蓝条填满 → 重试录音尺（同一刻度）→ 7 天短条 + 到期刻度 + 虚线剩余 + `短 83 天` → 存在条件框。
+  - Step 3（6 相）：cutoff 算式与分界线 → 更早（2026-08-27）／更晚（2026-08-29）两张卡 → 更早卡被盖住划掉 + `removed` 箭头，更晚卡留下 → 分界线移动／清理时机／保留天数行。
+  - Step 4（6 相）：102 条完整长条 → 分成蓝 100／红 2 + `102 − 100 = 2` → translate／rewrite 同规则框 → N 的选项与两条规则一起生效行。
+  - Step 5（6 相）：失败听写卡 → 90 天尺 → 7 天尺 + 刻度 → `7 × 24 = 168` 小时 + 每小时清扫行 → audio.wav 划掉（重试成功即删）+ 保存录音开着的几行。
+  - Step 6（7 相）：记录框 → 读文件／重新识别／跑现在的设置三框依次到达 → 「改同一条记录」框划掉旧文字 → 新文字飞入 → 不插入文字的几行。
+  - Step 7（6 相）：字段表头 → 字段一组一组到达（id/created_at/kind → app/text/heard → instruction/target_lang → selection/typed）→ 一行一个对象与听写无 app 键的总结行。
+  - Step 8（6 相）：空文档框 → `## 2026-11-26` 日标题 → 三行记录一行一行到达 → 两种格式都不写的几行。
+  - Step 9（7 相）：有文档路面板（开关关 + history.sock 划掉）→ 开关打开 + socket 出现 → 一次读取出现一条审计记录 → 提醒与日志无文字行 → 直接开面板与边界行 → 下一章框。
+- **同步**：九步 aria label 改写为按顺序形成；英中 deep 每步「图上是什么／On the stage」各加一句形成顺序；transcript 重生成两次逐字一致（仅新增 `loops` 行与相位化后的文字序），随提交入库。
+- **门**：`npm run build` 60 页 rc=0；`BOOK=voxt ONLY=9` readability 0 机械问题；`BOOK=voxt node scripts/deep-check.mjs 09` ok（9 步）；`BOOK=voxt ONLY=9 BASE=…4461` zh-check all clear；mobile 英 + `LANG=zh` 中 360/390/430 均 no layout breaks（base 作 argv 显式传 4461）；`git diff --check` 干净。
+- **机制探针**（无图像读取能力，以 DOM 断言代替肉眼读图）：`.bot/out/probe-voxt09.mjs`（.bot 被 gitignore，不入库）对英桌面 + 中 390 px 各 9 步采样第一圈：相位全走 0→final（6/6/6/6/6/7/6/6/7）、相邻相位必有台上可见变化（文字或图形元素数签名）、27 条机制标记断言（如 Step 1 的 `no clock yet` 只在第 5 相、Step 3 的 `removed` 只在第 3 相后、Step 6 的「改同一条记录／update the same row」只在末两相、Step 8 的 `## 2026-11-26`、Step 9 的 `history.sock`）、页面横溢为 0。首轮 4 条失败全部定位为探针口径：Step 2／8 有只加图形不加文字的相位（改为文字+图形数签名）、`RETRY RECORDING` 为英文串误用于中文、`updates the same row` 与台上 `update the same row` 一词之差；组件行为不变。修正后**全部通过**。
+- **环境**：本目录 node_modules 又是指向协调 checkout 的符号链接（19:50 重建），本轮先试过保留符号链接 + 本地 vite cacheDir（半成品状态），dev server 报 `outside of Vite serving allow list`、全站水合失败；照旧只删本目录符号链接并本地 `npm install` 后恢复，未进入或修改协调 checkout。4321 被他线占用，本轮 server 在 4461。截图产物在 `.bot/out/voxt09-shots/`（模型无图像输入，未肉眼读图）。
+- **遗留**：Voxt-08 的关闭与否由协调固定复审决定，不提前核销；Voxt-03／04／05／06／07／10 相关提交均 queued 等复审，未返工；本书剩余开放 P0 为 Voxt-09（16 章评测口径没有 ready 落点）与 Voxt-10（11/6 最后 ready 章留下无承接问题），两者都指向未 ready 的 12–16 章，下一单元按序可写第 12 章首步（回答 microphone 与 app sounds，同时承接 Voxt-10）。
