@@ -1,0 +1,57 @@
+---
+layout: ../../../layouts/Chapter.astro
+book: voxt
+slug: meeting-capture-modes
+---
+import MeetingCaptureModes from '../../../components/voxt/MeetingCaptureModes.svelte';
+import { voxtNeighbors } from '../../../voxt/chapters';
+import { deepFor } from '../../../deep';
+export const deep = await deepFor('voxt-meeting-capture-modes');
+
+<MeetingCaptureModes client:load {...voxtNeighbors('meeting-capture-modes')} deep={deep} />
+
+<details class="i18n-en">
+<summary>Where this chapter's claims come from</summary>
+
+Step 1 reads the mode table. A mode is how the user wants a meeting captured: `meeting` (the default, also `""`), `subtitles` or `recording` (`Voxt/internal/meeting/types.go:18-24`; the default fills in at `manager.go:76-78`). `Sources()` maps them: subtitles takes `[system]`, recording takes `[mic]`, and the default takes `[mic, system]` (`Voxt/internal/meeting/mode.go:6-16`). The Settings labels are "Full meeting (microphone and system audio)", "Subtitles (system audio only)" and "Recording (microphone only)" (`Voxt/settings_meeting_view_state.go:42-46`). One track is 16 kHz mono PCM16 (`Voxt/internal/asr/asr.go:31-32`), so 32,000 bytes a second; one track-hour is 115.2 MB and a full-meeting hour writes two of them.
+
+Step 2 reads the capture wiring. The mic track is `session.HelperAudio{H: sup}` and the system track is the same with `Method: proto.MethodCaptureSystem` (`Voxt/meeting_link.go:43-46`). `capture.system` records the sound the Mac plays through a Core Audio process tap on the default output: every process but the helper and its parent, mixed down to mono, private to the helper and still heard by the user; it sends `capture.started` after the tap starts, so a quiet output can start a meeting (`Voxt/docs/helper-protocol.md:111`).
+
+Step 3 reads the start. `Manager.Start` refuses a second meeting (`manager.go:86-89`, `ErrBusy`), requires 1.5 GiB free (`manager.go:79-84`, `disk.go:5-9`), creates `meetings/<id>/` under the data folder (`manager.go:117-131`, `meeting_link.go:37-38`), and starts one track per source (`manager.go:155-159`). The archive writes `<id>/mic.wav` and `<id>/system.wav` (`archive.go:26-28`) with a 44-byte placeholder header whose lengths are patched when the file closes (`archive.go:75-103`); every PCM chunk goes to `archive.Write` (`track.go:62-74`). A watcher checks free space every 2 s and interrupts the meeting below 0.9 GiB (`disk_watch.go:8-30`, `disk.go:5-9`).
+
+Step 4 reads the system gate. macOS asks for System Audio Recording the first time a tap starts; which refusal status reaches the app has not been observed on a real Mac, so any failure to build the tap currently fails the capture start (`docs/helper-protocol.md:111`). A track that cannot start is a `StartError` (`types.go:156-168`, `track.go:22-28`), and any track failing makes `Start` stop the rest and fail (`manager.go:155-159`, `175-183`): no folder, no files.
+
+Step 5 reads the mode switch. `SetMode` keeps the tracks both modes record, starts the new mode's extra tracks first, and only then stops the tracks only the old mode had (`manager_mode.go:10-16`, `36-41`, `71-73`); if a new track cannot start, the added tracks are dropped and the meeting keeps its old mode (`manager_mode.go:38-44`).
+
+Step 6 reads the retention. Writing and keeping are separate: a finished meeting's folder is deleted right away unless `Privacy.KeepAudio` is on or the mode keeps audio (`finalize.go:480-497`; recording mode always keeps, `mode.go:22-23`). A failed or interrupted meeting with keep-audio off gets `AudioUntil = now + 7 days` (`finalize.go:467-478`), and the hourly sweep — the same `recordingSweep = time.Hour` as Chapter 9 Step 5's retry recordings (`Voxt/history_retry.go:89`, `Voxt/meeting_audio.go:17-58`) — deletes the folder once it is due.
+
+Step 7 reads the labels. A mic segment's speaker is `me` with no model involved (`track_transcribe.go:141-148`, `195-197`). `Diarize()` is true only in full meeting mode (`mode.go:19-20`), and the after-meeting pass runs the diarizer on the system track only (`finalize.go:51-57`, `147-152`); the README names the labels Speaker 1–4 with MOSS-Transcribe-Diarize installed, while the mic side stays Me (`Voxt/README.md:64`). The code sets no hard cap on the speaker count. The same pass re-reads both WAVs with file-mode recognition and replaces the live segments (`finalize.go:30-46`).
+
+Constructed parts: the timestamps and wordings of the example lines (`hi everyone`, `morning all`, …) are invented; the one-hour sizes follow the 32,000 B/s rate. No real meeting, permission dialog, or diarizer was run.
+
+Source revision: `sglang-omni origin/main@a6e2fc6d98ab6abbed1c0ea40d0a7d6d038f3d74`. The deep dive lists exact files and lines.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的出处</summary>
+
+第 1 步读模式表。模式是用户想怎样录这场会议：`meeting`（默认，`""` 也算）、`subtitles` 或 `recording`（`Voxt/internal/meeting/types.go:18-24`；默认值在 `manager.go:76-78` 补上）。`Sources()` 的对应关系：字幕是 `[system]`，录音是 `[mic]`，默认是 `[mic, system]`（`Voxt/internal/meeting/mode.go:6-16`）。设置里的名称是「完整会议（麦克风与系统音频）」「字幕（仅系统音频）」「录音（仅麦克风）」（`Voxt/settings_meeting_view_state.go:42-46`）。一条音轨是 16 kHz 单声道 PCM16（`Voxt/internal/asr/asr.go:31-32`），每秒 32,000 字节；一条音轨一小时是 115.2 MB，完整会议一小时写两条。
+
+第 2 步读采集接线。麦克风音轨是 `session.HelperAudio{H: sup}`，系统音轨是同一个加上 `Method: proto.MethodCaptureSystem`（`Voxt/meeting_link.go:43-46`）。`capture.system` 通过默认输出上的 Core Audio 进程龙头录 Mac 正在放的声音：除 helper 及其父进程外的每个进程，混成单声道，副本只在 helper 手里，用户照样听得到；它在龙头启动后才发 `capture.started`，所以安静的输出也能开始会议（`Voxt/docs/helper-protocol.md:111`）。
+
+第 3 步读开始。`Manager.Start` 拒绝第二场会议（`manager.go:86-89`，`ErrBusy`），要求 1.5 GiB 空位（`manager.go:79-84`、`disk.go:5-9`），在数据文件夹下建 `meetings/<id>/`（`manager.go:117-131`、`meeting_link.go:37-38`），每个来源启动一条音轨（`manager.go:155-159`）。存档写 `<id>/mic.wav` 和 `<id>/system.wav`（`archive.go:26-28`），开头是 44 字节的占位头，长度在文件关闭时补写（`archive.go:75-103`）；每块 PCM 都进 `archive.Write`（`track.go:62-74`）。看守每 2 秒查一次空位，低于 0.9 GiB 就中断会议（`disk_watch.go:8-30`、`disk.go:5-9`）。
+
+第 4 步读系统的门。macOS 在第一次接龙头时问系统音频权限；拒绝会以什么状态回报给应用还没有在真机上见过，所以现在接不起龙头就等于采集启动失败（`docs/helper-protocol.md:111`）。音轨接不起来就是 `StartError`（`types.go:156-168`、`track.go:22-28`），任何一条失败，`Start` 会停掉其余音轨并失败（`manager.go:155-159`、`175-183`）：没有文件夹，没有文件。
+
+第 5 步读切换。`SetMode` 让两个模式都录的音轨不停，先启动新模式多出来的音轨，再停只有旧模式才有的音轨（`manager_mode.go:10-16`、`36-41`、`71-73`）；新音轨接不起来时，已加的音轨被撤掉，会议留在旧模式（`manager_mode.go:38-44`）。
+
+第 6 步读保留。写和留是两个决定：正常结束的会议马上删掉文件夹，除非 `Privacy.KeepAudio` 打开或模式本身保留音频（`finalize.go:480-497`；录音模式总是保留，`mode.go:22-23`）。保留音频关闭时，失败或中断的会议得到 `AudioUntil = now + 7 天`（`finalize.go:467-478`），每小时的清扫——和第 9 章第 5 步重试录音的同一个 `recordingSweep = time.Hour`（`Voxt/history_retry.go:89`、`Voxt/meeting_audio.go:17-58`）——到期后删掉文件夹。
+
+第 7 步读标签。麦克风音轨的说话人是 `me`，不用任何模型（`track_transcribe.go:141-148`、`195-197`）。`Diarize()` 只在完整会议模式为真（`mode.go:19-20`），会后那一遍只对系统音轨跑分人模型（`finalize.go:51-57`、`147-152`）；README 把标签叫作 Speaker 1–4，需要装好 MOSS-Transcribe-Diarize，你这边仍是 Me（`Voxt/README.md:64`）。代码没有人数硬上限。同一遍还会用文件式识别重读两个 WAV，替换直播内容（`finalize.go:30-46`）。
+
+构造的部分：示例行的时间戳和措辞（`hi everyone`、`morning all`……）是编的；一小时的大小来自每秒 32,000 字节的速率。没有真的开会、弹权限窗口或跑分人模型。
+
+本章源码版本：`sglang-omni origin/main@a6e2fc6d98ab6abbed1c0ea40d0a7d6d038f3d74`。精确文件和行号见深入讲解。
+
+</details>

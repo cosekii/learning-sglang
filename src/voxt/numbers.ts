@@ -238,3 +238,27 @@ export const VOXT_UPDATE_BUNDLE_WATCH_MINUTES = 1;
 // Pinned snapshot shown on the stage.
 export const VOXT_MODEL_REPO = 'mlx-community/Qwen3-ASR-1.7B-8bit';
 export const VOXT_MODEL_COMMIT = 'a8379a2e2f9e313c9292cdf1af4055ab56d50d55';
+
+// Public meeting capture modes (Voxt/internal/meeting/mode.go, types.go; the UI
+// labels are Voxt/settings_meeting_view_state.go:42-46).
+export const VOXT_MEETING_MODE_COUNT = 3;
+export const VOXT_MEETING_FULL_TRACK_COUNT = 2;
+export const VOXT_MEETING_SINGLE_TRACK_COUNT = 1;
+
+// Both meeting tracks are 16 kHz mono PCM16 (Ch. 3), one WAV per track.
+export const VOXT_MEETING_TRACK_BYTES_PER_SECOND = VOXT_PCM_BYTES_PER_SECOND;
+export const VOXT_MEETING_HOUR_SECONDS = 3600;
+export const VOXT_MEETING_TRACK_HOUR_BYTES = VOXT_MEETING_TRACK_BYTES_PER_SECOND * VOXT_MEETING_HOUR_SECONDS;
+export const VOXT_MEETING_TRACK_HOUR_MB = VOXT_MEETING_TRACK_HOUR_BYTES / 1_000_000;
+export const VOXT_MEETING_FULL_HOUR_MB = VOXT_MEETING_FULL_TRACK_COUNT * VOXT_MEETING_TRACK_HOUR_MB;
+
+// Public disk floors (Voxt/internal/meeting/disk.go): Start needs 1.5 GiB free,
+// and recording interrupts itself below 0.9 GiB free (disk_watch.go).
+export const VOXT_MEETING_DISK_START_GIB = 1.5;
+export const VOXT_MEETING_DISK_RECORD_GIB = 0.9;
+
+// A failed meeting whose settings keep no audio holds its recording seven days
+// (finalize.go:474), then the hourly sweep deletes it (history_retry.go:89).
+export const VOXT_MEETING_FAILED_KEEP_DAYS = 7;
+export const VOXT_MEETING_FAILED_KEEP_HOURS = VOXT_MEETING_FAILED_KEEP_DAYS * 24;
+export const VOXT_MEETING_SWEEP_HOURS = 1;
