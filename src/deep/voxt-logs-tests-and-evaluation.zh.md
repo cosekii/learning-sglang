@@ -13,7 +13,7 @@
 
 每种证据各讲一步，然后日记回答本章另一个问题——日志怎样帮人定位问题——最后一步给路线贴标签。标签是本章的图例，不是覆盖审计：一站有标签，表示本书在这里展示过钉住的证据，不表示这站的一切都被证明。
 
-本深入讲解不展开：性能谱系（哪次改动让哪站变快）——本书另行跟踪，前面章节引用的每个性能数字都在原地带着自己的样本、机器和状态。
+本深入讲解不展开：性能谱系（哪次改动让哪站变快）——本书另行跟踪，前面章节引用的每个性能数字都在原地带着自己的样本、机器和状态；这套口径本身（怎么量、怎么分层）收在第 3 步。
 
 ### 接下来
 
@@ -58,6 +58,18 @@
 舞台写明的两条边界。分人 11/11 是旧口径下测的——每个标签按多数嗓音、只取最后一轮——在 PR 的 1:1 匹配新口径下没有重跑（`Voxt/docs/MTDEvaluation.zh-CN.md` 2026-11-17 的注）。文档里大块的语言模型评测章节标了历史：那些评测跑的是已退役的 `voxtnew-llm`，随它一起被移除（`eval.md` 跑法一节），所以那里的「整理分数」是记录，不是当前的保证。
 
 台上没画：文档的其他结果（语言提示、语气词、长听写决策、缓存上限）。它们共享同一条合成嗓音边界。
+
+### 公开评测口径证据
+
+前几章引用的性能数字共用同一套口径，定义和公开状态收在这里（每条保留 PR、测量 setup 与边界；不来自 pinned 代码基线）：
+
+- **口径**：「从停到…」三个指标分开记——Stop-to-text（文字出现）、Stop-to-insert（文字插进目标 app）、Stop-to-paste（文字进剪贴板），不混写。测量环境也分层不混写：fake clock、fake provider、离线回放、回放 ASR 加真实 provider、完整真实 App。每个数字带测量 head、机器、样本和证据等级。合入（MERGED）、beta、stable、真机验收是四层：合入不等于发布，发布不等于真机验收。
+- **测量与工具链**：[PR #4525](https://github.com/sgl-project/sglang-omni/pull/4525)（OPEN）、[PR #4529](https://github.com/sgl-project/sglang-omni/pull/4529)（已关闭 `6430e7890d8f`，未合并）、[PR #4389](https://github.com/sgl-project/sglang-omni/pull/4389)（已关闭 `44e250c9eec3`，未合并）、[PR #4431](https://github.com/sgl-project/sglang-omni/pull/4431)（OPEN/DRAFT）、[PR #4435](https://github.com/sgl-project/sglang-omni/pull/4435)（OPEN）、[PR #4449](https://github.com/sgl-project/sglang-omni/pull/4449)（OPEN）、[PR #4671](https://github.com/sgl-project/sglang-omni/pull/4671)（OPEN/CHANGES_REQUESTED）、[PR #4692](https://github.com/sgl-project/sglang-omni/pull/4692)（OPEN）、[PR #4693](https://github.com/sgl-project/sglang-omni/pull/4693)（OPEN）。
+- **基准与回放**：[PR #3867](https://github.com/sgl-project/sglang-omni/pull/3867)（已合并 `950e4ded4e5c` / `0a624b1e7974`）、[PR #3892](https://github.com/sgl-project/sglang-omni/pull/3892)（已合并 `3dd3c958cb27` / `5f03f7e9f1c1`）、[PR #4103](https://github.com/sgl-project/sglang-omni/pull/4103)（已关闭，未合并）、[PR #4162](https://github.com/sgl-project/sglang-omni/pull/4162)（OPEN/DRAFT）、[PR #4168](https://github.com/sgl-project/sglang-omni/pull/4168)（OPEN/DRAFT）、[PR #4423](https://github.com/sgl-project/sglang-omni/pull/4423)（OPEN/DRAFT）、[PR #3411](https://github.com/sgl-project/sglang-omni/pull/3411)（OPEN）、[PR #3663](https://github.com/sgl-project/sglang-omni/pull/3663)（OPEN）、[PR #3728](https://github.com/sgl-project/sglang-omni/pull/3728)（OPEN）。
+- **golden 与质量门禁**：[PR #2936](https://github.com/sgl-project/sglang-omni/pull/2936)（OPEN/DRAFT）、[PR #2948](https://github.com/sgl-project/sglang-omni/pull/2948)（已关闭，未合并）、[PR #2992](https://github.com/sgl-project/sglang-omni/pull/2992)（OPEN）、[PR #3064](https://github.com/sgl-project/sglang-omni/pull/3064)（已合并 `b19521e6e67a` / `9e3881bf0116`）、[PR #3410](https://github.com/sgl-project/sglang-omni/pull/3410)（已关闭，未合并）、[PR #3497](https://github.com/sgl-project/sglang-omni/pull/3497)（OPEN）、[PR #3866](https://github.com/sgl-project/sglang-omni/pull/3866)（OPEN/DRAFT）、[PR #4081](https://github.com/sgl-project/sglang-omni/pull/4081)（OPEN/DRAFT）、[PR #4273](https://github.com/sgl-project/sglang-omni/pull/4273)（已关闭，未合并）、[PR #4376](https://github.com/sgl-project/sglang-omni/pull/4376)（已合并 `bae7020394ba` / `b0f67cb69e09`）——门禁挡住回归，不证明产品性能收益。
+- 三个钉住的口径例子。[PR #2615](https://github.com/sgl-project/sglang-omni/pull/2615)（已关闭的测量提案 `aa5cc58286c2`）提出 first-real-text-from-speech-onset 指标：不能用新口径宣布旧门槛通过。[PR #3807](https://github.com/sgl-project/sglang-omni/pull/3807)（已关闭 `71ff3b68ac36`，经 #3826 落地）跳过无断言的 trace：baseline `7b47233fe`，未在最终 head 重测；Apple M5 Max 18 核、macOS 27.0.1、`go test -c` 后 `/usr/bin/time` 前后交替各 3 次、机器有其他负载（load 1.5–4.7）：root 包 wall 中位数 91.89 → 82.12 s（−10.6%）——这是 CI wall time，不是产品性能。[PR #4697](https://github.com/sgl-project/sglang-omni/pull/4697)（已合并 `3849e06cea8e` / `87a11dbe98f2`）列出当前 Claude 模型并关掉 thinking：M4 MacBook Air、session replay、Anthropic API、thinking off、测量 head 未单列——一批 150 段 held-out AASR-Bench 的 Haiku 5.5 得分 80.4、Stop→insert p50 879 ms；另一批 Haiku 800 ms/74.2、Sonnet 1435 ms/76.6——批次不同，不能当作模型净效应。公开 [issue #94](https://github.com/charliechenye/sglang-omni/issues/94)（OPEN）：整体 TTLC 未关闭，incremental LogMel 的公开记录是 `NO_MATERIAL_GAIN`。
+- **发布分层**：stable `voxt-v2.1.4`（2026-11-26，发布 run head `5e0a40ff4823`、SUCCESS），最新 prerelease `voxt-v2.1.5-beta.20261127.147`；beta 序列和 release 都不替代真实模型或真实 App 验收。
+- **未闭环**：在同一构建上分别测 ASR Final、first cleaned presentation、Stop-to-text／insert／paste（公开待办 1），以及公开待办 2–5 的各项真实条件复测。
 
 ### 接下来
 
@@ -122,6 +134,6 @@ app 把自己做的事写在哪里——又永远不写什么。
 
 标签表示本书在这一站展示过钉住的证据，不是完整覆盖。TEST 挂在每一站，因为固定树上每一站对应的包都有测试文件：hotkey（`internal/hotkey`）、helper（`internal/helper`）、识别（`internal/asr`、`internal/omni`）、整理（`internal/llm`、`internal/compose`）、交付（`internal/deliver`）和保存（`internal/store`、`internal/session`）。SAMPLE 挂在识别上：ASR 评测集（第 3 步）和分人样本（第 14 章第 6 步）都给识别打分；整理文字的评测是第 3 步说的已退役记录，所以那一站不挂样本标签。REAL 挂在人工清单是唯一仪器的地方：按键监听和权限弹窗（你按一下、helper），以及真实的前台窗口（看到文字）。
 
-空白带引用的是出处，不是猜测：评测文档的未测清单点名噪声、真人嗓音、口音、麦克风录音和经过 helper 真实采集的会话（`Voxt/docs/eval.md` 最后一节）；分人文档把超过 4 个人、真实会议音频、直播路径和长音频留作未证明（`Voxt/docs/MTDEvaluation.zh-CN.md`）。舞台没画的一层：合并、beta 和 stable 是发布状态，不是证据——合入的改动仍欠真机验收，所以本书每个性能数字都在原地带着自己的测量状态。
+空白带引用的是出处，不是猜测：评测文档的未测清单点名噪声、真人嗓音、口音、麦克风录音和经过 helper 真实采集的会话（`Voxt/docs/eval.md` 最后一节）；分人文档把超过 4 个人、真实会议音频、直播路径和长音频留作未证明（`Voxt/docs/MTDEvaluation.zh-CN.md`）。舞台没画的一层：合并、beta 和 stable 是发布状态，不是证据——合入的改动仍欠真机验收，所以本书每个性能数字都在原地带着自己的测量状态；stable 与 beta 的公开状态收在第 3 步的评测口径块。
 
 这是本书最后一章，地图就是收束。
