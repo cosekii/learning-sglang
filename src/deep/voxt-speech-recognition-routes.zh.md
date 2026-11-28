@@ -311,6 +311,8 @@ $$
 
 长录音若已有后台完成的 pieces，Final 只识别剩余 tail，再与 pieces 合并；本例很短，没有这类已完成片段，所以图上说完整 3 秒。开启 `LiveResult` 后，满足条件的实时全文可以直接成为结果；失败后仍有回退。本步主图不展开这个可选开关。
 
+对整段录音再听一遍正是下面公开预填与复用谱系针对的重复工作；谱系逐条保留测量 setup 与边界。
+
 ### 接下来
 
 无论走文件、流式还是本机 Final，识别路线最后都要交出一份原话。下一步看这份原话在哪里停下，以及下一章要追问什么。
@@ -336,6 +338,15 @@ $$
 - [PR #3360](https://github.com/sgl-project/sglang-omni/pull/3360)（已合并 `75e04d6a9bb2` / `e68f47af6db8`）测量 Qwen3-ASR 长音频可靠性。它是测量链，不提供通用提速结论。
 - 保留的未落地分支：[PR #3710](https://github.com/sgl-project/sglang-omni/pull/3710)（已关闭 draft）在 draft 每轮提交不足 2 个 token 时不用 DFlash draft 解码；[PR #3765](https://github.com/sgl-project/sglang-omni/pull/3765)（已关闭）保留长 prompt 的替代路线；[PR #4554](https://github.com/sgl-project/sglang-omni/pull/4554)（仍 OPEN draft）保留 Ming DSpark 的负结果。
 - 未闭环：[PR #2708](https://github.com/sgl-project/sglang-omni/pull/2708)、[PR #2713](https://github.com/sgl-project/sglang-omni/pull/2713)、[PR #3172](https://github.com/sgl-project/sglang-omni/pull/3172)、[PR #3374](https://github.com/sgl-project/sglang-omni/pull/3374) 和 [PR #4549](https://github.com/sgl-project/sglang-omni/pull/4549) 仍 OPEN，它们的数字都不是已发布结果。[PR #2615](https://github.com/sgl-project/sglang-omni/pull/2615) 的 first-real-text 指标是已关闭的测量提案，不能用新口径宣布旧门槛通过。
+
+公开预填与复用证据（Final 把 live 预览已经算过的音频窗口、KV 和文本再算一遍是重复工作，prompt terms 增多时 prefill 也更贵；每条保留 PR、测量 setup 与边界；不来自 pinned 代码基线）：
+
+- 谱系：[PR #3780](https://github.com/sgl-project/sglang-omni/pull/3780)（已关闭，未合并）最早在 realtime 刷新之间复用已完成的工作；[PR #4182](https://github.com/sgl-project/sglang-omni/pull/4182)（已合并 `12bccdec0d93` / `9e6d95f9606a`）明确替代它并加入 DFlash path，在 realtime 刷新之间复用已完成的音频窗口。[PR #4589](https://github.com/sgl-project/sglang-omni/pull/4589) → [PR #4593](https://github.com/sgl-project/sglang-omni/pull/4593) → [PR #4650](https://github.com/sgl-project/sglang-omni/pull/4650) → [PR #4707](https://github.com/sgl-project/sglang-omni/pull/4707) 随后把复用推进到 Final 本身：先是 live 预览的音频、KV 和文本，再是 session 的窗口和词典，再是 verified guesses，最后是分段定稿时的 encoder 与 KV caches。
+- [PR #4589](https://github.com/sgl-project/sglang-omni/pull/4589)（已合并 `1c06e1dc004f` / `111069af4e9c`）：无风扇 M4 MacBook Air、Qwen3-ASR 1.7B 8-bit + DFlash、greedy、93 段 2–38 s、每段一次 Final、mean。无词典 Final 535 → 290 ms，30 个 prompt terms 643 → 304 ms，463 terms 2769 → 382 ms。测量 head 未单列且混合两轮；另 10 段 31.5–59.5 s 是独立样本，不并入这几行。
+- [PR #4593](https://github.com/sgl-project/sglang-omni/pull/4593)（已合并 `b97a46b47606` / `e90af0b9ca88`）：同机同模型，8 段 64–77 s、rest 28–44 s、每段一次 Final、mean、fast-forward。无词典 1262 → 716 ms（1.76×），463 terms 3618 → 879 ms（4.12×）。re-check 列测量 head 未单列，并非全在最终 build；真实长录音 App 和反复变响未测。
+- 合入不等于验收：[PR #4650](https://github.com/sgl-project/sglang-omni/pull/4650)（已合并 `d8ee54cd26f4` / `26cfbcef1722`）把预览的语言和文本作为 verified Final guesses 复用，但公开记录仍写 `Performance validation is pending`——native 输出等价、DFlash/greedy 行为、错误 guess、混合语言和 Mac Metal `startup_failure` 都未闭环。[PR #4707](https://github.com/sgl-project/sglang-omni/pull/4707)（已合并 `095226b8d0ba` / `da2cadcf72b8`）在 realtime 分段定稿时复用 encoder 与 KV caches；真实模型执行和实际延迟未测，reused-token 与 guess-acceptance 计数有实现和测试，但没有 real-model 实测值。
+- 相关工作按边界保留：[PR #1807](https://github.com/sgl-project/sglang-omni/pull/1807)（已合并 `d33384853ebf` / `3c3e3dc93fed`）把调用方的 prompt 放进 system turn，记录 prompt terms 增多时 prefill 成本与识别质量的 Pareto；[PR #3414](https://github.com/sgl-project/sglang-omni/pull/3414)（已合并 `791b81590da2` / `20a7a9c990da`）逐层评估 Qwen3 decoder 的 prefill；[PR #1808](https://github.com/sgl-project/sglang-omni/pull/1808) 与 [PR #1878](https://github.com/sgl-project/sglang-omni/pull/1878)（均仍 OPEN）要让权重和 checkpoint 缓存免去 Hub revalidation，它们的节省都不是已发布结果；[PR #3053](https://github.com/sgl-project/sglang-omni/pull/3053)（已关闭，未合并）保留 Nemotron relative-position projection 缓存分支。
+- 按公开待办仍未闭环：#4650 与 #4707 的真实模型输出等价、复用率、额外请求成本和延迟分布。
 
 ## 第 7 步 · 识别交出原话，下一章再问语言模型
 
