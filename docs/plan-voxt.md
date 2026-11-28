@@ -12,6 +12,7 @@
 - `dictation`（第 1–6 章）：跟一句话从快捷键走到整理好的文字。
 - `desktop`（第 7–11 章）：把文字安全交给其他应用，再跟踪词典、历史、文件和模型。
 - `meetings`（第 12–16 章）：把单条语音链路扩展成双轨会议，最后用公开测试和评测核对证据边界。
+- `beyond`（第 17–20 章，2026-11-28 续写）：文字已经存在时 Voxt 拿它做什么：改写与翻译、片段、答案卡与会话、把资料库搬到另一台 Mac。
 
 ## 章节表
 
@@ -33,6 +34,10 @@
 | 14 | `meetings` | `meeting-speaker-labels` | 给声音贴姓名牌 | 给完整会议的系统音轨画 MOSS-Transcribe-Diarize 分块和跨块标签，麦克风音轨标为 `Me`。 | 分人结果怎样接到终稿，公开样本证明了什么、还没有证明什么？ | 第 13 章 | `Omni/Voxt/internal/meeting/finalize.go`；`Omni/Voxt/meeting_asr.go`；`Omni/Voxt/internal/omni/asr.go`；`Omni/Voxt/docs/MTDEvaluation.zh-CN.md` | 分清说话人后，怎样纠正、总结、追问和导出？ |
 | 15 | `meetings` | `meeting-summary-and-export` | 会议终稿再加工 | 把转写、分批纠正、总结、基于会议内容的追问和导出的出口按顺序连起来；纠正失败时总结仍用识别文本。 | 纠正成功或失败时总结分别读取什么，追问和导出又分别使用什么内容？ | 第 5、14 章 | `Omni/Voxt/internal/meeting/correct.go`；`Omni/Voxt/internal/meeting/manager_finalize.go`；`Omni/Voxt/internal/meeting/summary.go`；`Omni/Voxt/internal/meeting/followup.go`；`Omni/Voxt/internal/meeting/export.go` | 功能链走完了，哪些结论有测试或评测证据？ |
 | 16 | `meetings` | `logs-tests-and-evaluation` | 给整本书装上放大镜 | 给第 1 章总图贴上代码测试、固定样本评测和真实设备检查三类证据标签。 | 日志和诊断怎样帮助定位问题，已有评测又不能替哪些真实场景作保证？ | 第 1、11、13–15 章 | `Omni/Voxt/internal/logs/logs.go`；`Omni/Voxt/settings_about_controller.go`；`Omni/Voxt/docs/eval.md`；`Omni/Voxt/docs/MTDEvaluation.zh-CN.md`；`Omni/Voxt/docs/helper-protocol.md` | 回到全书总图，分别标出代码事实、样本结果和尚未验证的范围。 |
+| 17 | `beyond` | `rewrite-and-translate` | 选中文字的来回 | 并排画 Transcribe 的声音链与 Rewrite/Translate 的选区链：读选区的两条路、输入卡、固定顺序的一个请求、答案回流，以及翻译的「看着没译就再问一次」。 | 指着的文字怎样进到请求里，答案又怎样回到原来的 app？ | 第 1–7 章 | `Omni/Voxt/rewrite_box.go`；`Omni/Voxt/internal/session/run_selection.go`；`Omni/Voxt/internal/session/write.go`；`Omni/Voxt/internal/compose/compose.go`；`Omni/Voxt/internal/compose/translate.go`；`Omni/Voxt/docs/helper-protocol.md` | 文字能改、能译，说一句暗号怎样打出存好的一整段？ |
+| 18 | `beyond` | `snippets-and-triggers` | 片段与暗号 | 画一个片段从存下到命中：单独说暗号原样打出，混在口述里在整理后替换；匹配忽略大小写、空格和标点，中文暗号至少三个字。 | 什么算命中一个暗号，为什么模型改不到片段自己的字？ | 第 6、17 章 | `Omni/Voxt/snippets_page.go`；`Omni/Voxt/snippets_import.go`；`Omni/Voxt/internal/snippet/`；`Omni/Voxt/CHANGELOG.md`（2.1.4 Snippets，#4456、#4638） | 片段原样打出，那每个改写结果自己被盖住时会丢吗？ |
+| 19 | `beyond` | `answer-cards-and-sessions` | 答案卡与会话 | 画每个结果一张答案卡（重试、复制、插入、追问），再画实验性会话：每张卡一行会话条，Option+Tab 切换，标题由第一条指令概括。 | 会话把什么分开、把什么留住，历史开关又怎样影响重启后的会话？ | 第 9、17 章 | `Omni/Voxt/session_answer.go`；`Omni/Voxt/session_slots.go`；`Omni/Voxt/overlay_session_row.go`；`Omni/Voxt/CHANGELOG.md`（2.1.4 Sessions，#4005） | 卡片和历史都在这台 Mac 上，换一台 Mac 怎么办？ |
+| 20 | `beyond` | `library-to-another-mac` | 把资料库搬到另一台 Mac | 画 `.voxtlibrary` 导出与导入：设置、历史、会议、词典和片段进一个文件，导入替换并重启；录音、模型和 API key 留在各自的 Mac 上。 | 什么跟着文件走、什么留在本机，为什么这样分界？ | 第 5、9、11 章 | `Omni/Voxt/docs/settings.md`；`Omni/Voxt/CHANGELOG.md`（2.1.4 library export，#4651）；导出实现按写作时 `origin/main` 代码核对 | 本书收尾：回到第 1 章的总图。 |
 
 ## 来源限制
 
@@ -108,6 +113,6 @@ pinned 来源最新口径（2026-11-27T09:45–09:55Z 读取）为 **327 covered
 
 ## 制作顺序
 
-按 01 → 16 制作，每轮一步；来源不足的章节跳过并后补。第 1 章建立全书共用的 session 路线，第 12 章再把一条音轨扩成两条。每一步先过易读性检查，再核对原 12 项评分和冷读洞。
+按 01 → 16 制作，每轮一步；来源不足的章节跳过并后补。第 1 章建立全书共用的 session 路线，第 12 章再把一条音轨扩成两条。每一步先过易读性检查，再核对原 12 项评分和冷读洞。第 17–20 章（`beyond`）按 17 → 20 续作，同一标准。
 
 性能谱系按上节六个主题做：先在第 04、06 章相关步补指向，再在各落点写全，评测口径随第 16 章完成；每条按模板写齐瓶颈、方案、PR、head 演变、数字边界、合入、发布、真机验收和未闭环项，并过本章 EVAL 硬门。

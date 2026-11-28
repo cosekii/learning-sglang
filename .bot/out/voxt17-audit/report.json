@@ -1,0 +1,143 @@
+{
+  "rows": [
+    {
+      "name": "en-desktop-direct-s1",
+      "phase1": "2",
+      "phase2": "4",
+      "minFont": 10.131
+    },
+    {
+      "name": "zh-desktop-direct-s1",
+      "phase1": "2",
+      "phase2": "4",
+      "minFont": 10.851
+    },
+    {
+      "name": "zh-390-direct-s1",
+      "phase1": "2",
+      "phase2": "4",
+      "minFont": 12.936
+    },
+    {
+      "name": "en-desktop-direct-s2",
+      "phase1": "2",
+      "phase2": "5",
+      "minFont": 10.131
+    },
+    {
+      "name": "zh-desktop-direct-s2",
+      "phase1": "2",
+      "phase2": "5",
+      "minFont": 10.851
+    },
+    {
+      "name": "zh-desktop-previous-s2",
+      "phase1": "2",
+      "phase2": "5",
+      "minFont": 10.851
+    },
+    {
+      "name": "zh-390-direct-s2",
+      "phase1": "2",
+      "phase2": "5",
+      "minFont": 12.348
+    },
+    {
+      "name": "en-desktop-direct-s3",
+      "phase1": "2",
+      "phase2": "4",
+      "minFont": 10.131
+    },
+    {
+      "name": "zh-desktop-direct-s3",
+      "phase1": "2",
+      "phase2": "4",
+      "minFont": 10.851
+    },
+    {
+      "name": "zh-desktop-previous-s3",
+      "phase1": "2",
+      "phase2": "4",
+      "minFont": 10.851
+    },
+    {
+      "name": "zh-390-direct-s3",
+      "phase1": "2",
+      "phase2": "4",
+      "minFont": 12.348
+    },
+    {
+      "name": "en-desktop-direct-s4",
+      "phase1": "2",
+      "phase2": "4",
+      "minFont": 10.131
+    },
+    {
+      "name": "zh-desktop-direct-s4",
+      "phase1": "2",
+      "phase2": "4",
+      "minFont": 10.851
+    },
+    {
+      "name": "zh-desktop-previous-s4",
+      "phase1": "2",
+      "phase2": "4",
+      "minFont": 10.851
+    },
+    {
+      "name": "zh-390-direct-s4",
+      "phase1": "2",
+      "phase2": "4",
+      "minFont": 12.348
+    },
+    {
+      "name": "en-desktop-direct-s5",
+      "phase1": "2",
+      "phase2": "4",
+      "minFont": 10.131
+    },
+    {
+      "name": "zh-desktop-direct-s5",
+      "phase1": "2",
+      "phase2": "4",
+      "minFont": 10.851
+    },
+    {
+      "name": "zh-desktop-previous-s5",
+      "phase1": "2",
+      "phase2": "4",
+      "minFont": 10.851
+    },
+    {
+      "name": "zh-390-direct-s5",
+      "phase1": "2",
+      "phase2": "4",
+      "minFont": 12.348
+    },
+    {
+      "name": "en-desktop-direct-s6",
+      "phase1": "2",
+      "phase2": "4",
+      "minFont": 10.131
+    },
+    {
+      "name": "zh-desktop-direct-s6",
+      "phase1": "2",
+      "phase2": "4",
+      "minFont": 10.851
+    },
+    {
+      "name": "zh-desktop-previous-s6",
+      "phase1": "2",
+      "phase2": "4",
+      "minFont": 10.851
+    },
+    {
+      "name": "zh-390-direct-s6",
+      "phase1": "2",
+      "phase2": "4",
+      "minFont": 12.348
+    }
+  ],
+  "failures": []
+}

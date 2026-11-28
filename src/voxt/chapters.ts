@@ -4,6 +4,7 @@ export const voxtParts: Part[] = [
   { id: 'dictation', title: 'One dictation', blurb: 'Follow one spoken sentence from a hotkey to finished text.', titleZh: '一次听写', blurbZh: '跟一句话从快捷键走到整理好的文字。' },
   { id: 'desktop', title: 'The desktop around it', blurb: 'Deliver text, then track dictionaries, history, files and models.', titleZh: '桌面上的文字', blurbZh: '交付文字，再跟踪词典、历史、文件和模型。' },
   { id: 'meetings', title: 'Meetings and evidence', blurb: 'Extend one audio track to two, then check what the evidence proves.', titleZh: '会议与证据', blurbZh: '把一条音轨扩成两条，再核对证据边界。' },
+  { id: 'beyond', title: 'Beyond dictation', blurb: 'Point at text that already exists: rewrite, translate, snippets, cards and moving Macs.', titleZh: '口述之外', blurbZh: '文字已经存在时：改写、翻译、片段、卡片和搬到另一台 Mac。' },
 ];
 
 export const voxtChapters: Chapter[] = [
@@ -23,6 +24,10 @@ export const voxtChapters: Chapter[] = [
   { part: 'meetings', slug: 'meeting-speaker-labels', title: 'Name tags for voices', hook: 'Attach speaker labels to the finished transcript.', titleZh: '给声音贴姓名牌', hookZh: '把说话人标签接到终稿上。', ready: true },
   { part: 'meetings', slug: 'meeting-summary-and-export', title: 'Work on the final transcript', hook: 'Correct, summarize, ask and export in order.', titleZh: '会议终稿再加工', hookZh: '依次纠正、总结、追问和导出。', ready: true },
   { part: 'meetings', slug: 'logs-tests-and-evaluation', title: 'A magnifying glass for the book', hook: 'Mark code tests, sample evaluations and unchecked ground.', titleZh: '给整本书装上放大镜', hookZh: '标出代码测试、样本评测和未验证范围。', ready: true },
+  { part: 'beyond', slug: 'rewrite-and-translate', title: 'There and back with selected text', hook: 'Read the selection, send one request, put the answer back.', titleZh: '选中文字的来回', hookZh: '读到选区、发出一个请求、把答案放回原处。', ready: true },
+  { part: 'beyond', slug: 'snippets-and-triggers', title: 'Snippets and triggers', hook: 'Say a trigger, type the saved text.', titleZh: '片段与暗号', hookZh: '说一句暗号，打出存好的文字。', ready: false },
+  { part: 'beyond', slug: 'answer-cards-and-sessions', title: 'Answer cards and sessions', hook: 'Every result keeps a card; sessions keep the cards apart.', titleZh: '答案卡与会话', hookZh: '每个结果有一张卡，会话把卡分开。', ready: false },
+  { part: 'beyond', slug: 'library-to-another-mac', title: 'Take your library to another Mac', hook: 'One file carries settings, history, meetings, dictionary and snippets.', titleZh: '把资料库搬到另一台 Mac', hookZh: '一个文件带走设置、历史、会议、词典和片段。', ready: false },
 ];
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');

@@ -390,3 +390,28 @@ export const VOXT_TEST_OTHER_FILES =
 // Public manual checklist (Voxt/docs/manual-test.md): about 80 minutes of
 // real-Mac checks for what automated tests cannot reach.
 export const VOXT_MANUAL_TEST_MINUTES = 80;
+
+// Rewrite's input box (Voxt/rewrite_box.go:49-51 @ 96e99a8c): the box holds,
+// and one request sends, at most 4 pictures.
+export const VOXT_BOX_MAX_IMAGES = 4;
+
+// Selection-read budgets (Voxt/internal/session/run_selection.go:19-25): a
+// caret-only reading waits out a 600 ms settle, polling every 60 ms (a
+// selection made with ⌘A in the shortcut's motion can lag); the helper's ⌘C
+// waits up to 800 ms for held shortcut modifiers to lift, then has 300 ms
+// for the clipboard to change.
+export const VOXT_SELECTION_SETTLE_MS = 600;
+export const VOXT_SELECTION_POLL_MS = 60;
+export const VOXT_SELECTION_MODIFIER_WAIT_MS = 800;
+export const VOXT_SELECTION_COPY_MS = 300;
+
+// Rewrite's own copy budget and retry spacing (Voxt/internal/session/
+// session.go:366-370; run_selection.go:107-109): a long selection's copy
+// gets 1,500 ms; while the shortcut's keys stay down the read retries every
+// 100 ms, the last time once the recording ends.
+export const VOXT_REWRITE_COPY_MS = 1500;
+export const VOXT_SELECTION_RETRY_MS = 100;
+
+// Streaming answer publish rate (Voxt/internal/session/write.go:17-18): a
+// streaming answer is published at most every 40 ms.
+export const VOXT_DRAFT_EVERY_MS = 40;

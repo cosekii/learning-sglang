@@ -70,3 +70,4 @@ Read it to check wording and numbers across chapters without opening the compone
 | voxt | 14 | [Name tags for voices](voxt/meeting-speaker-labels.md) | 6 |
 | voxt | 15 | [Work on the final transcript](voxt/meeting-summary-and-export.md) | 6 |
 | voxt | 16 | [A magnifying glass for the book](voxt/logs-tests-and-evaluation.md) | 6 |
+| voxt | 17 | [There and back with selected text](voxt/rewrite-and-translate.md) | 6 |

@@ -1,0 +1,53 @@
+---
+layout: ../../../layouts/Chapter.astro
+book: voxt
+slug: rewrite-and-translate
+---
+import RewriteTranslate from '../../../components/voxt/RewriteTranslate.svelte';
+import { voxtNeighbors } from '../../../voxt/chapters';
+import { deepFor } from '../../../deep';
+export const deep = await deepFor('voxt-rewrite-and-translate');
+
+<RewriteTranslate client:load {...voxtNeighbors('rewrite-and-translate')} deep={deep} />
+
+<details class="i18n-en">
+<summary>Where this chapter's claims come from</summary>
+
+Step 1 draws the two routes. Rewrite and Translate are session kinds of their own (`Voxt/internal/session/write.go:35`, `write.go:46`), and the card the Rewrite shortcut opens is documented at the top of `Voxt/rewrite_box.go:3-15`: the shortcut starts the microphone and opens the card together, the selected text shows in it as the input, and the answer goes back into the app the user was in. Both features compose their request through the same language-model connection Chapter 5 draws (`Voxt/internal/compose/compose.go`).
+
+Step 2 reads the selection. `readSelection` reads the selected text of the app in front and returns "" for none or when it could not be read (`Voxt/internal/session/run_selection.go:32-104`). The budgets on the stage are the code's: a caret-only reading waits out a 600 ms settle, polling every 60 ms, because a selection made with ⌘A in the shortcut's motion can lag (`run_selection.go:15-27`); Rewrite's own copy budget is 1,500 ms (`Voxt/internal/session/session.go:366-370`), and while the shortcut's keys stay down the read retries every 100 ms, the last time once the recording ends (`run_selection.go:47-66`, `run_selection.go:107-109`). The helper side of the read — an all-whitespace or U+FFFC-only reading counts as no reading, the ⌘C waits up to 800 ms for held modifiers, snapshots the clipboard, waits up to 300 ms for a change and puts the snapshot back — is the documented protocol (`Voxt/docs/helper-protocol.md:125`) and its implementation (`Voxt/helper/Sources/VoxtNewHelperKit/SelectionRead.swift:15-19`).
+
+Step 3 opens the card. The card holds the selection as one block, the typed text, and up to 4 pictures (`boxMaxImages`, `Voxt/rewrite_box.go:49-51`); the shortcut again or Enter sends, Esc closes without sending (`rewrite_box.go:3-15`). A send that fails brings the card back with the error and everything kept, and Enter sends the same instruction again (`rewrite_box.go:28-30`).
+
+Step 4 assembles the request. Rewrite's compose input keeps a fixed order — the source, the typed text, the spoken instruction — and typed text alone takes the source's place (`write.go:46-57`). The user message wraps the parts in that order: `<selected_text>`, `<typed_text>`, `<instruction>` (`Voxt/internal/compose/compose.go:419-436`). With nothing selected or typed, the request is the speech alone (`rewrite_box.go:12-15`). The box's latest text and pictures are read when the answer is asked for and win over the clipboard's picture and the window's; a window that will not be sent is never shot (`write.go:71-140`).
+
+Step 5 brings the answer back. A streaming answer is published at most every 40 ms (`write.go:17-18`). Writing from scratch asks for a JSON answer `{title, content}` (`write.go:20-25`, `write.go:53-56`); a follow-up answers in plain text and replays the earlier turns as the conversation's history (`compose.go:395-400`). Before inserting, the deliver checks run with Replace, and a refused insert keeps the answer in the card (`write.go:199-208`); an insert activates the original app first (`rewrite_box.go:17-25`). Over another app's full screen the card is a panel, because macOS shows no ordinary window there (`rewrite_box.go:22-25`). A failed request ends in the card, to try again (`write.go:62-66`; the card's buttons, `Voxt/session_answer.go:3-5`).
+
+Step 6 is Translate on the same route. The compose input carries the target language, and with no language picked for this text the answer comes back in the user's main language (`write.go:35-44`). A selected text translates directly, not as speech (`compose.go:139-141`). An answer that looks untranslated — the source again, the whole source beside its translation, or mostly outside the target's script, with 〈指令〉 tags ignored — is asked again with the Strict layer, and a failed retry keeps the first answer (`Voxt/internal/compose/translate.go:40-75`, `write.go:215-231`).
+
+Constructed parts: the sentence "i might be able to come friday, not sure yet", the typed line, the instruction, the rewritten answer and the two translation examples are invented; every budget, limit, order and fallback is the code's. No app, helper or language model was run.
+
+Source revision: `sglang-omni origin/main@96e99a8cce041ad5c841e244d4c1df68dab1fbda` (fetch refused in the sandbox; this is the local checkout's current `origin/main`). The deep dive lists exact files and lines.
+
+</details>
+
+<details class="i18n-zh">
+<summary>本章说法的出处</summary>
+
+第 1 步画两条路线。改写和翻译是独立的会话种类（`Voxt/internal/session/write.go:35`、`write.go:46`），改写快捷键打开的卡片写在 `Voxt/rewrite_box.go:3-15` 的头注里：快捷键同时启动麦克风和打开卡片，选中的文字作为输入显示在里面，答案放回用户原来所在的 app。两个功能都经过第 5 章画的同一个语言模型连接组装请求（`Voxt/internal/compose/compose.go`）。
+
+第 2 步读选区。`readSelection` 读前台 app 的选中文字，没有选区或读不到时返回 ""（`Voxt/internal/session/run_selection.go:32-104`）。舞台上的预算是代码里的：只有光标的读取要等满 600 ms 的稳定期、每 60 ms 看一次，因为和快捷键同一个动作按下的 ⌘A 可能慢半拍（`run_selection.go:15-27`）；改写自己的复制预算是 1,500 ms（`Voxt/internal/session/session.go:366-370`）；快捷键的键还按着时，每 100 ms 重读一次，最后一次在录音结束时（`run_selection.go:47-66`、`run_selection.go:107-109`）。helper 那一侧——全空白或只有 U+FFFC 的读取算没读到、⌘C 最多等 800 ms 让按着的修饰键松开、给剪贴板拍照、最多等 300 ms 的变化再把照片放回——是写进协议的（`Voxt/docs/helper-protocol.md:125`）和它的实现（`Voxt/helper/Sources/VoxtNewHelperKit/SelectionRead.swift:15-19`）。
+
+第 3 步打开卡片。卡片装着选区块、补打的文字和最多 4 张图（`boxMaxImages`，`Voxt/rewrite_box.go:49-51`）；再按快捷键或回车发送，Esc 不发送就关闭（`rewrite_box.go:3-15`）。发送失败会带着错误回来，所有内容保留，回车用同一条指令再发（`rewrite_box.go:28-30`）。
+
+第 4 步组装请求。改写的 compose 输入保持固定顺序——来源、补打的文字、口述的指令——只有补打的文字时它顶上来源的位置（`write.go:46-57`）。用户消息按这个顺序包裹各部分：`<selected_text>`、`<typed_text>`、`<instruction>`（`Voxt/internal/compose/compose.go:419-436`）。没选中也没补打时，请求里只有口述（`rewrite_box.go:12-15`）。卡片上最新的文字和图片在请求答案时才读取，并且盖过剪贴板的图和窗口的图；不会发送的窗口不会被截图（`write.go:71-140`）。
+
+第 5 步答案回来。流式答案最多每 40 ms 发布一次（`write.go:17-18`）。从头写起要一个 JSON 答案 `{title, content}`（`write.go:20-25`、`write.go:53-56`）；追问回答纯文本，并把之前的轮次重放成对话历史（`compose.go:395-400`）。插入前先跑带 Replace 的交付检查，被拒绝的插入把答案留在卡片里（`write.go:199-208`）；插入会先激活原来的 app（`rewrite_box.go:17-25`）。在别的 app 的全屏之上，卡片是一个面板，因为 macOS 在那里不显示普通窗口（`rewrite_box.go:22-25`）。失败的请求在卡片里结束，可以重试（`write.go:62-66`；卡片的按钮见 `Voxt/session_answer.go:3-5`）。
+
+第 6 步是同一条路上的翻译。compose 输入带着目标语言；没给这段文字挑语言时，答案译回用户的主要语言（`write.go:35-44`）。选中的文字直接作为材料翻译，不当成语音（`compose.go:139-141`）。看着没译的答案——就是原文、原文整段摆在译文旁边、或大部分不是目标文字，检查时忽略〈指令〉标签——会用 Strict 层再问一次，再问也失败就保留第一个答案（`Voxt/internal/compose/translate.go:40-75`、`write.go:215-231`）。
+
+构造的部分：句子 "i might be able to come friday, not sure yet"、补打的一行、指令、改写后的答案和两个翻译例子都是编的；每个预算、上限、顺序和兜底都是代码里的。没有真的运行 app、helper 或语言模型。
+
+本章源码版本：`sglang-omni origin/main@96e99a8cce041ad5c841e244d4c1df68dab1fbda`（沙箱拒绝 fetch，这是本地 checkout 当前的 `origin/main`）。精确文件和行号见深入讲解。
+
+</details>
