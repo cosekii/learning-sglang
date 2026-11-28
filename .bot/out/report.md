@@ -3704,3 +3704,18 @@ npx astro dev stop
 - **机制探针**（无图像读取能力，以 DOM 断言代替肉眼读图）：`.bot/out/probe-voxt06.mjs`（.bot 被 gitignore，不入库）对英桌面 + 中 390 px 各 8 步采样一整圈：相位全走 0→final（5/5/7/8/6/6/7/5）、相邻相位必有台上文字变化、32 条机制标记断言（如 Step 4 的 `<output>Hi.</output>` 先于 VOXT KEEPS、Step 6 的 CLEANUP FAILED 只在第 2 相后出现、Step 8 的 finish_reason 先于 ANSWER CARD）。**全部通过。** `.bot/out/probe-voxt06-lp.mjs` 核对手机 LoopProgress 条（x=228, y=60）在 8 步均不碰任何台上文字。
 - **环境**：本目录 node_modules 又是指向协调 checkout 的符号链接，照旧只删本目录符号链接并本地 `npm install`，未进入或修改协调 checkout。4321 被他线占用，本轮 server 在 4451。macOS 全局 `LANG=en_US.UTF-8` 会误触发 shot.mjs 的语言开关，截图需 `env -u LANG`（本轮截图仅作产物，模型无图像输入，未肉眼读图）。
 - **遗留**：Voxt-06 的关闭与否由协调固定复审决定，不提前核销；Voxt-03／04／05／10 相关提交均 queued 等复审，未返工；下一开放项按序为 P0 Voxt-07（07/1–5 焦点、可写性与剪贴板检查静态）。
+
+## 2026-11-27 18:40 PST · lane d · Voxt-07 修复轮（07/1–5 焦点、可写性与剪贴板检查状态形成）
+
+- **单元**（按 SOUL 顺序的本书下一个开放 P0；direction.md 在派的 Voxt-05 已于前两轮完成并 queued）：Voxt-07 · Voxt 07 `deliver-text-safely` 五步全是静态。提交 `8de2bbd`，已推 origin/tutorials。
+- **修法**（沿用 Voxt 02／05／06 已通过的相位脚手架 `PHASE_COUNTS／LoopProgress／data-animation-*`，900 ms 相位、2.2 s 间歇循环、reduced-motion 直达末相）：五步全部改为逐相状态形成——
+  - Step 1（5 相）：start app → 切换箭头 → 焦点所属进程与空焦点框（只有光标）→ 答案文字 `send the deck to Priya` 落进框内 → 底部两行（所属进程三种可能、start app 不一定是目的地）。
+  - Step 2（5 相）：密码框（圆点 + `AXSecureTextField`）→ 警告行 → 橙色 `STOP · nothing is typed`（reason secure，password 提前返回）→ 开卡片出口 → 关卡片出口（复制 + 提示）。手机端 `AXSecureTextField` 移到框内第二行，修掉与圆点的既有重叠。
+  - Step 3（6 相）：两张说明行 → 三张规则卡逐一（start app／另一个 app／替换选区或 Voxt 窗口）→ 普通投递与卡片 Insert 两行 → `Not writable → 和第 2 步同一个出口`（不可编辑提前返回）。
+  - Step 4（6 相）：before 卡带真文字 `send the deck to ` 和光标 → ⌘V 箭头 → after 卡文字变长为 `send the deck to Priya`、光标移到新末尾 → 比较卡 `different → inserted` 带证据行 `text grew · cursor moved` → 另外三个出口 → `最多等 1000 ms` 与两行小结。前后卡从泛称「field text + cursor」改为真实 before/after 文本和光标。
+  - Step 5（7 相）：快照框 `“grocery list”` → 粘贴框 `“send the deck to Priya”` 占剪贴板 → 放回框 `“grocery list”` 回来（old→prepared→restored 改值）→ 150/500 ms 计时行（改用 numbers 常量，不再手写）→ other-writer 例 `“someone else's note” · stays`（changeCount 不同则跳过放回）→ 未确认出口 → 答案文字与收尾问题。
+- **同步**：五步 aria label 改写为按顺序形成；英中 deep 每步「图上是什么／On the stage」各加一句形成顺序，并补 Step 4 真文字与证据行、Step 5 三个剪贴板值与 other-writer 例子；transcript 重生成两次逐字一致（仅新增 `loops` 行与新物件），随提交入库。
+- **门**：`npm run build` 60 页 rc=0；`BOOK=voxt ONLY=7` readability 0 机械问题；`BOOK=voxt node scripts/deep-check.mjs 07` ok（5 步）；zh-check 07 all clear（需显式 `BASE=`，默认 4321 是他线 server）；mobile 英 + `LANG=zh` 中 360/390/430 均 no layout breaks（ONLY=7 时 SVG 出界为门）；`git diff --check` 干净。注意：`transcript.mjs`／`mobile.mjs` 的 base 是 argv 不是 env，首轮误跑他线 4321 得到旧内容，改传 `http://localhost:4461/learning-sglang` 后正确。
+- **机制探针**（无图像读取能力，以 DOM 断言代替肉眼读图）：`.bot/out/probe-voxt07.mjs` 对英桌面 + 中 390 px 各 5 步采样一整圈余：相位全走 0→final（5/5/6/6/7）、相邻相位必有台上文字变化、25 条机制标记断言（如 Step 1 的答案文字只在第 3 相后出现、Step 2 的 STOP 只在第 2 相后、Step 4 的 `text grew · cursor moved` 只在比较相后、Step 5 的 `someone else's note` 只在 other-writer 相后）、页面横溢为 0。**全部通过。** 首轮 10 条 `early` 失败定位为 lap 回卷时 fade outro 残留进 phase 0（探针口径问题），改为只在第一圈内断言「提前出现」后归零；组件行为不变。
+- **环境**：本目录 node_modules 又是指向协调 checkout 的符号链接（18:21 重建），照旧只删本目录符号链接并本地 `npm install`，未进入或修改协调 checkout。4321 被他线占用，本轮 server 在 4461。zh-check 07 会落一个 `07/` 截图目录，已删，未入库。截图产物在 `.bot/out/voxt07-shots/`（模型无图像输入，未肉眼读图）。
+- **遗留**：Voxt-07 的关闭与否由协调固定复审决定，不提前核销；Voxt-03／04／05／06／10 相关提交均 queued 等复审，未返工；下一开放项按序为 P0 Voxt-08（09/1–9 保留时钟、Retry、导出与 socket 不发生）。
