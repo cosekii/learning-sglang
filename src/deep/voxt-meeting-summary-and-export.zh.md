@@ -58,6 +58,18 @@ $$ \text{分批} = \text{先到 250 行或 20,000 字就切} $$
 
 改好的终稿存回去了。第 3 步讲总结读什么——以及纠正失败时它读什么。
 
+### 公开会议校对证据
+
+校对曾经要等会议结束才开始，每个识别块各发一个请求；每条保留 PR 与状态。这条链减少请求、让识别与校对重叠、限制 reasoning；数字只适用于取得它们的会议样本和测量 head。
+
+- [PR #4539](https://github.com/sgl-project/sglang-omni/pull/4539)（已关闭，未合并）：一场会议装得下时，用一个语言模型请求完成校对。
+- [PR #4541](https://github.com/sgl-project/sglang-omni/pull/4541)（已关闭，未合并）：每个会议识别请求最多送一分钟连续语音。
+- [PR #4640](https://github.com/sgl-project/sglang-omni/pull/4640)（已关闭，未合并）：系统音轨还在转写时就开始校对会议。
+- [PR #4644](https://github.com/sgl-project/sglang-omni/pull/4644)（仍 OPEN）：在 MTD 分块之间校对系统音轨。
+- [PR #4645](https://github.com/sgl-project/sglang-omni/pull/4645)（已关闭，未合并）：给会议校对请求的 reasoning 加上界。
+- [PR #4573](https://github.com/sgl-project/sglang-omni/pull/4573)（仍 OPEN）：保留会议尾部等待、无语音 piece 跳过和 detector scheduling；未换算成用户延迟收益。
+- 已关闭未合并的条目作为未落地分支保留，不是当前路径；仍 OPEN 的条目不是已发布结果。
+
 ## 第 3 步 · 总结：它读什么
 
 > **一句话：** 总结重读存好的终稿——纠正成功读改好的，失败读识别的——按 12,000 字一窗，交回一个 JSON 对象：标题、正文和待办。

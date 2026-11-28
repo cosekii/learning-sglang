@@ -249,6 +249,21 @@ $$
 - [PR #4727](https://github.com/sgl-project/sglang-omni/pull/4727)（仍 OPEN、REVIEW_REQUIRED）：共享一次 PCM WAV 解码。测量 head `cd6a3afb5bc7`、baseline `0f70d9c7c41c`；Apple M5 arm64、macOS 26.5、Python 3.12.16、NumPy 2.2.6，单线程、采样率一致；666 个不同 reference path、10 次交替 AB/BA、取 10 个 cohort 均值的中位：24 kHz 45.60 → 32.91 µs/clip，离线转 16 kHz 31.30 → 22.57 µs/clip，60 秒拼接 clip 369.54 → 264.44 µs/clip；peak traced bytes 9,600,706 → 3,874,819；waveform 与 fingerprint 逐位一致。这些数字只覆盖 `load_audio` 的 CPU 微基准，不证明 serving 吞吐、WER、GPU、完整 App 延迟或 RSS；float32 分支仍显式复制。
 - 未闭环：#4727／#4728 的 same-head 验证、真实 App 与人工 review。两个 PR 仍 OPEN，以上数字都不是已发布结果。
 
+公开「边说边整理」证据（整理曾经要等整段说完才开始，长录音的整理全部堆到停止之后；每条保留 PR、测量 setup 与边界；链上各环节的收益不能累加）：
+
+- 这条链从上面 #4295 一条开始。[PR #4324](https://github.com/sgl-project/sglang-omni/pull/4324)（已合并 `779ca5d740af` / `822266d2a19d`）随后重做 early cleanup 的 backlog 与尾部排空。
+- [PR #4551](https://github.com/sgl-project/sglang-omni/pull/4551)（已合并 `4e79a66a4ed8` / `34961b7df8fb`）：ASR Final 不再等一个用不上的 Early Cleanup 结果。
+- [PR #4552](https://github.com/sgl-project/sglang-omni/pull/4552)（已合并 `5fe39451a4ec` / `2659ce5b5f9d`）：可选的相对停止软期限给等待加了上界；真实 provider 的数字仍未闭环。
+- [PR #4592](https://github.com/sgl-project/sglang-omni/pull/4592)（已合并 `76822d084505` / `52aab78e85f1`）：用户还在说话时就开始整理 Transcribe；改后真实模型的数字仍未闭环。
+- [PR #4612](https://github.com/sgl-project/sglang-omni/pull/4612)（已合并 `9675a7963a34` / `31808c318bb7`）：speculative cleanup streams 提前展示清理结果。candidate `4f675f06eab5`、baseline `09dc7839e93c`；假 ASR／LLM 加假时钟，6 个场景各 10 次，指标为 Stop→session snapshot 首个 cleaned presentation：1000→300、1000→400、400→300 ms。不是 wall-clock、不是真实 provider、不是 UI，也不是 Stop-to-paste；最终 head 未重测。
+- [PR #4618](https://github.com/sgl-project/sglang-omni/pull/4618)（已合并 `f1a4ab43bef4` / `65d2b58193e2`）：整段 HeadStart 在用户说话时就问语言模型。candidate `2fabbaa86add`，早于最终 head：M4 Air、150 条 AASR-Bench clip × 4 = 600 个 session、8 并发、回放 ASR 加真实 Claude Haiku 5.5（thinking off）：Stop-to-insert p50/p90 1199/2425→804/1543 ms，配对中位 −395 ms，95% 区间 [−515, −288]，94/150 更快。不是完整真实 App；最终 head 未重测。
+- [PR #4643](https://github.com/sgl-project/sglang-omni/pull/4643)（仍 OPEN、默认关闭）：「边说边整理」可以用本机语言模型跑。测量 head `1468412f5530`：M1 Pro/16 GB、Qwen3-ASR 0.6B 4bit Faster 加 llama.cpp Qwen3-4B Q4_0、5 段 7–39 秒中文回放、两批各 30 sessions/arm：Stop→text 中位 1.69→0.94 s、P90 4.04→3.14 s；共享资源成本同画——ASR Final 中位 0.44→0.48 s、first preview 0.45→0.51 s。
+- [PR #4655](https://github.com/sgl-project/sglang-omni/pull/4655)（已合并 `ae0ab9500644` / `6f68205867bb`）：HeadStart candidate 在 ASR Final 交接后保留。仍未闭环：late candidate 出现率、复用率、额外请求成本和 Stop-to-text/insert。
+- [PR #4709](https://github.com/sgl-project/sglang-omni/pull/4709)（已合并 `9e0504c830f6` / `84ba2fa96f15`，APPROVED；25 SUCCESS / 19 SKIPPED / 2 FAILURE，两个早期 mac-ci-gate FAILURE 保留在案）：至少两个 Early Cleanup job 未发布时，不再等 finalized worker 的 join。真实 backlog、cancellation 和 stop-to-TTLC workload 未测；合入不等于性能验收。
+- [PR #4063](https://github.com/sgl-project/sglang-omni/pull/4063)（已合并 `b6517f081313` / `c49c4328241c`）：Transcribe 和 Translate 的回答边到边流进答案卡。
+- 失败回退：[PR #4722](https://github.com/sgl-project/sglang-omni/pull/4722)（仍 OPEN、REVIEW_REQUIRED；当前 head `9f5c7edc72c8`）在 live 整理失败后把整段听写切成小块重清。A＝main `84ba2fa96f`，B＝main 加本改动，两臂均 Remote、concurrent、max in flight 4；同一 95 秒中文听写、注入首次 live cleanup 失败、idle M1 8 GB MacBook Air、ABABAB、3 pairs 取中位、stop-button 参考：Stop→首段清理文字 11.41→1.90 s、Stop→清理完成 27.13→15.84 s、requests 5→12；全文相似度 0.980–0.986、评测差 0.91%–2.46%，第三 pair 总时间只省 1.75 s。B 的精确测量 SHA、provider 和模型名未给，不能写成当前 head 的 same-head benchmark。
+- 未闭环：#4592 改后真实模型、#4552 真实 provider、#4709 真实 backlog、#4722 的 same-head 与真实 App；#4643 仍 OPEN 且默认关闭。
+
 ## 第 6 步 · 一片失败时保留原话
 
 > **一句话：** 整理听写的一片清理失败时，这片保留识别原话，其他片仍可清理，整段以降级状态完成。

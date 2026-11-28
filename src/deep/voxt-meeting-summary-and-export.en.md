@@ -58,6 +58,18 @@ $$ \text{batches} = \text{split at } 250\ \text{lines or } 20{,}000\ \text{runes
 
 The corrected transcript is stored. Step 3 shows what the summary reads — and what it reads when correction failed.
 
+### Public meeting-proofreading evidence
+
+Proofreading once waited for the meeting to end, and each recognition chunk was its own request; each entry keeps its PR and status. The chain reduces requests, overlaps recognition with proofreading and bounds reasoning; its numbers apply only to the meeting samples and measurement heads they were taken on.
+
+- [PR #4539](https://github.com/sgl-project/sglang-omni/pull/4539) (closed, not merged): proofread a whole meeting in one language-model request when it fits.
+- [PR #4541](https://github.com/sgl-project/sglang-omni/pull/4541) (closed, not merged): send up to a minute of continuous speech per meeting recognition request.
+- [PR #4640](https://github.com/sgl-project/sglang-omni/pull/4640) (closed, not merged): proofread the meeting while the system track still transcribes.
+- [PR #4644](https://github.com/sgl-project/sglang-omni/pull/4644) (open): proofread system tracks between MTD chunks.
+- [PR #4645](https://github.com/sgl-project/sglang-omni/pull/4645) (closed, not merged): bound the reasoning of meeting proofreading requests.
+- [PR #4573](https://github.com/sgl-project/sglang-omni/pull/4573) (open): keeps the meeting tail wait, voiceless-piece skipping and detector scheduling; it has not been converted into a user-latency gain.
+- The closed-unmerged entries are kept as unlanded branches, not current paths; the open ones are not shipped results.
+
 ## Step 3 · Summarize: what it reads
 
 > **In one line:** The summary re-reads the stored transcript — corrected text if correction landed, recognised text if it failed — in windows of 12,000 runes, and answers with one JSON object: a title, a body and to-dos.
