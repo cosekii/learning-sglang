@@ -321,9 +321,9 @@ Step 6 uses a different memory strategy: instead of adding replicas, AuK wakes i
 ### What the picture shows
 
 - AuK is the speech model in this text-only example. Conditioning prepares the request. DiT generates latent sound data, meaning data that is not audio yet. VAE turns that data into audio.
-- Serial offload keeps component weights in host memory, which is computer memory outside the GPU, and restores them when needed. Offload moves weights out and back; it does not move computation onto the CPU.
+- Serial offload moves component weights out of GPU memory and restores them when needed; it does not move computation onto the CPU. The default `mmap` source snapshots the finalized weights into a non-tmpfs disk cache, then restores them through memory-mapped cache shards. The `ram` source instead keeps restoration copies in host memory, meaning computer memory outside the GPU.
 - The figure separates four layers. The bottom line declares batch, replica and TP limits. The coordinator panel owns one request's AuK offload path. The GPU line names the current execution. The three rows show component residency.
-- The first two phases show A asking to begin and the coordinator assigning this AuK offload path to A. B stays orange while it waits. This ownership scope does not include the physical GPU.
+- Construction registers DiT last, so the opening phase shows DiT resident before A asks to begin. The coordinator then assigns this AuK offload path to A and sleeps DiT before conditioning can wake. B stays orange while it waits. This ownership scope does not include the physical GPU.
 - The next five phases run `conditioning.wake()` → `conditioning.sleep()` → `DiT.wake()` → `DiT.sleep()` → `VAE.wake()`. Blue marks the one resident component; grey marks sleeping components with copies outside the GPU. Between each sleep and the next wake, all three components sleep.
 - A's delivered terminal result releases path ownership while VAE stays resident. B then acquires the same path. Before B's conditioning can wake, VAE sleeps. The last phase shows conditioning resident for B.
 
@@ -354,24 +354,28 @@ Two sleeping components is a count, not a byte ratio. Their weight sizes differ,
 
 `begin()` makes conditioning wait for an existing owner and checks that later stages belong to the same request and expected phase. `finish()` advances conditioning → auk_engine → decode → result, or releases ownership after failure, cancellation or shutdown.
 
-The scheduler synchronizes its CUDA stream after compute and before `finish()`, preventing a transition or release while computation still writes memory. `switch()` sleeps the old component, clears `resident_component`, then wakes the next one. `claim_result()` verifies continuing ownership. `release_result()` releases it only for a delivered terminal result, so B cannot enter while A's result is still undelivered.
+The scheduler runs compute on its own stream, then calls `torch.cuda.synchronize(device)` before `finish()`. This waits for all work on the CUDA device, not only the scheduler's stream. `switch()` sleeps the old component, clears `resident_component`, then wakes the next one. `StageResidency.sleep()` and `wake()` also synchronize the whole device around their physical-page operations.
+
+`claim_result()` verifies continuing ownership. A delivered terminal result lets `release_result()` release ownership. For an undelivered result, `release_result(delivered=false)` calls `cancel()` instead. Cancellation marks the request aborted and releases ownership immediately when no compute is running. If compute is still running, `finish()` releases ownership after the device-wide synchronization. B cannot enter while A still owns the path.
 
 ### Boundaries and sources
 
-Serial offload requires the standard linear pipeline, one shared CUDA GPU, one process, one process replica, TP1 and batch size one, with all three GPU stages enabled together. Weights default to `mmap`; host RAM or a writable cache can be configured. Transition delays and performance gains require measurement and are not claimed here.
+Serial offload requires the standard linear pipeline, one shared CUDA GPU, one process, one process replica, TP1 and batch size one, with all three GPU stages enabled together. `serial_offload_cache_dir` selects the non-tmpfs runtime-weight cache described above. Transition delays and performance gains require measurement and are not claimed here.
 
 This stage fixes a text-only request without reference audio. With reference audio, conditioning can wake VAE first to encode that reference, then wake conditioning. That extra switch is not drawn.
 
 - <code>docs/cookbook/<wbr>auk.md:1-21</code>: AuK speech generation and the conditioning → DiT sampling → VAE decoding pipeline.
 - <code>sglang_omni/models/auk/<wbr>batch_compute.py:78-104,131-170</code>: the optional reference-audio VAE switch, DiT sampling and VAE audio decoding.
 - `docs/cookbook/auk.md:138-149`: launch flags, single-request restrictions, resident VAE and weight sources.
-- <code>sglang_omni/models/auk/<wbr>config.py:112-185</code>: joint enablement, one GPU and process, one replica, TP1, batch1 and linear-graph validation.
+- <code>sglang_omni/models/auk/<wbr>stages.py:129-149,205-270</code>: construction switches and the final DiT registration that leaves DiT resident.
+- <code>sglang_omni/models/auk/<wbr>config.py:29-34,112-185</code>: the default `mmap` source, joint enablement, one GPU and process, one replica, TP1, batch1 and linear-graph validation.
 - <code>sglang_omni/models/auk/<wbr>serial_offload.py:27-100</code>: owner, phase, waiting, begin/finish and stage advancement.
-- <code>sglang_omni/models/auk/<wbr>serial_offload.py:115-172</code>: delivery-triggered release, owner cleanup and sleep-before-wake.
-- <code>sglang_omni/models/auk/<wbr>offload_scheduler.py:37-69</code>: synchronization after compute and before finish.
-- <code>sglang_omni/scheduling/<wbr>stage_residency.py:78-168</code>: stable addresses, physical-page pause and host-copy restoration.
+- <code>sglang_omni/models/auk/<wbr>serial_offload.py:103-172</code>: cancellation, delivery-triggered release, owner cleanup and sleep-before-wake.
+- <code>sglang_omni/models/auk/<wbr>offload_scheduler.py:37-69</code>: device-wide synchronization after compute and before finish.
+- <code>sglang_omni/scheduling/<wbr>stage_residency.py:78-168</code>: stable addresses, physical-page pause and restoration, with device-wide sleep/wake synchronization.
+- <code>sglang_omni/scheduling/<wbr>weight_cache.py:153-398</code>: the non-tmpfs runtime-weight cache, host-RAM copies and memory-mapped cache shards.
 
-Line numbers refer to <code>origin/main@<wbr>db7cbf39ccffde7f95b81c2dcc7da1b52a5c0bb6</code>.
+Line numbers refer to <code>origin/main@<wbr>db7cbf39<wbr>ccffde7f<wbr>95b81c2d<wbr>cc7da1b5<wbr>2a5c0bb6</code>.
 
 ### Next
 

@@ -144,7 +144,7 @@
   const aukRole = (component: string) => component === 'conditioning'
     ? t('prepares the request', '准备请求')
     : component === 'DiT' ? t('generates sound data', '生成声音数据') : t('turns it into audio', '变成音频');
-  const aukResident = $derived([null, null, 'conditioning', null, 'DiT', null, 'VAE', 'VAE', 'VAE', null, 'conditioning'][phase]);
+  const aukResident = $derived(['DiT', null, 'conditioning', null, 'DiT', null, 'VAE', 'VAE', 'VAE', null, 'conditioning'][phase]);
   const aukResidentCount = $derived(aukResident ? AUK_OFFLOAD_RESIDENT_COUNT : 0);
   const aukSleepingCount = $derived(AUK_OFFLOAD_COMPONENT_COUNT - aukResidentCount);
   const aukExecution = $derived([
@@ -161,8 +161,8 @@
     t('conditioning for B', 'B 的 conditioning'),
   ][phase]);
   const aukNow = $derived([
-    t('A asks to begin; no request owns the path', 'A 请求开始；还没有请求持有路线'),
-    t('the coordinator assigns this AuK path to A', 'coordinator 把这条 AuK 路线交给 A'),
+    t('setup loads DiT last; A asks to begin', '启动时最后装入 DiT；A 请求开始'),
+    t('the coordinator assigns this path to A and sleeps DiT', 'coordinator 把路线交给 A，并让 DiT 休眠'),
     t('wake conditioning for A', '为 A 唤醒 conditioning'),
     t('sleep conditioning before DiT wakes', '先让 conditioning 休眠，再唤醒 DiT'),
     t('wake DiT for A', '为 A 唤醒 DiT'),
@@ -174,8 +174,8 @@
     t('wake conditioning for B', '为 B 唤醒 conditioning'),
   ][phase]);
   const aukOperation = $derived([
-    t('owner = none · all components sleeping', 'owner = 无 · 三件组件都休眠'),
-    t('owner = A · scope = this AuK offload path', 'owner = A · 范围 = 这条 AuK offload 路线'),
+    t('owner = none · DiT loaded last is resident', 'owner = 无 · 最后装入的 DiT 常驻'),
+    phone ? 'owner = A · DiT.sleep()' : 'owner = A · DiT.sleep() · next: conditioning.wake()',
     'conditioning.wake()',
     t('conditioning.sleep() · next: DiT.wake()', 'conditioning.sleep() · 下一步：DiT.wake()'),
     'DiT.wake()',

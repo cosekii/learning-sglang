@@ -1,3 +1,39 @@
+# lane k1 本轮报告 · Omni 07 Step 6 pinned-source 边界（Omni-68）
+
+日期：2026-11-27。类型：修旧。本轮开始 HEAD 与 `origin/tutorials` 均为 `7d941f6`，工作树干净；该提交已完成 Omni-26，因此按 direction 直接修 Omni-68，不返工 queued Omni 02 或 Omni-26。范围为 Step 6 双语组件、MDX、deep、生成 transcript、定向审计和本报告；其他章、其他书、`.bot/memory/` 与第 1 本受保护英文原文均未改。
+
+## 修复与 finding
+
+- 开场改为启动时最后装入的 DiT 常驻，第一相先 `DiT.sleep()`，下一相才 `conditioning.wake()`。桌面标出 `next:`；手机只写本相的 sleep，避免长算式出界。其余九次相位转换保持不变。
+- 双语 MDX／deep 补齐未交付结果的 `cancel()`：空闲时立即释放 owner，计算中则等设备级同步后的 finish 再释放。默认 `mmap` 明确为非 tmpfs 运行时权重缓存的内存映射分片，`ram` 才是 host 内存副本；`torch.cuda.synchronize(device)` 明确等待整块 CUDA device。
+- 同步补上 `stages.py`、`weight_cache.py` 等 pinned 出处，并给双语 360 px deep 的完整 commit hash 增加断行机会。所有事实均对照 `sglang-omni@db7cbf39ccffde7f95b81c2dcc7da1b52a5c0bb6`。
+- **Omni-68 作者修复完成，待协调固定复审，不自行销项。** Omni-11、queued Omni-06／62、共享 ML-21／22 与其他开放 finding 均未改；下一单元依次是 Omni-21、Omni-31。
+
+## 作者评分与独立冷读
+
+| 步 | R1–R5 | 机制 R6 | 原十二项 | 新内容洞 | R1 小学生复述 |
+|---|---:|---:|---:|---:|---|
+| 6 | 10/10 | 2/2（源码与 DOM） | 24/24 | 0 | 请求 A 做声音时，显卡里一次只留当前要用的部件，用完先移出去再换下一件，等 A 的结果交给用户后，B 才能开始。 |
+
+- 独立 `explore` 首轮确认四条源码边界正确，同时指出 `construction` 未解释和首次 wake 时标不清两个洞；修正后终审 **GO**，上述分数和内容洞为终审结果。`pstack-reviewer` 因配置的模型不存在而未运行，未计为证据。
+- 当前模型不支持图像输入；PNG 已生成但未声称看过图片、视觉通过或主人验收通过。评分只覆盖本步作者修复，不是协调 verdict 或整章 GO。
+
+## 硬门与证据
+
+- 最终 `npm run build`：**60 页**通过；Step 6 `readability`：**0 机械问题**；`BOOK=omni node scripts/deep-check.mjs 07`：ok；`zh-check`：all clear；英中全章 360／390／430 px `mobile` 与中文 Step 6 字号门均 **no layout breaks**；`git diff --check` 干净。
+- transcript 连续重跑一致：**1,939 词**，SHA-256 `9e3bcc04d788f473c49d552d41d3d5d4e7ea7daddfbe2f6412f8922b0787775d`。第一次采集遇到一次浏览器协议 `exceptionDetails` 瞬断，原命令立即重跑成功；后续最终两次均成功。
+- 可重跑脚本 `.bot/out/omni68-step6-audit.mjs`，结果 `.bot/out/omni68-step6-audit/report.json`：英中桌面和中文 390 px × direct／前步入口共 **66 状态、60/60 个机制转变**，另有英中四种宽度 **8 个 deep 状态**。逐相核对 owner、DiT 开场常驻、首次 sleep、三件组件 residency 和 `0/1` 常驻计数；普通舞台最低 **10.005787 CSS px**，重叠、SVG 出界、页面／deep 横溢和 `failures` 均为 0。
+- 首轮审计发现中文 390 px 首次切换算式出界及双语 360 px deep hash 出界，修复后完整重跑为零失败。deep 打开后的普通舞台最低 **6.539641 CSS px**，仍归共享 ML-21／22，本单元未改也不声称该共享项通过。
+- 代表图：`.bot/out/omni68-step6-audit/en-1440-direct-p0.png`、`.bot/out/omni68-step6-audit/zh-390-previous-p1.png`、`.bot/out/omni68-step6-audit/en-1440-deep.png`。检查地址为 `http://localhost:4521/learning-sglang/omni/ch/07-shared-gpu-budgets/?step=6`。
+
+## 剩余与清理
+
+- 未跑全站回归、真实 SGLang-Omni、模型、GPU 或 reduced-motion 动态切换；具备图像能力的复审和主人最终视觉验收仍留待后续。
+- 本 clone 的 `node_modules` 开始时指向协调 checkout；只删除本目录符号链接并在本目录 `npm install`，package 文件无 diff，未写协调人的 checkout。
+- 本轮 4521 dev server（pid 41273）已停止，端口无监听。所有审计标签页和浏览器均已关闭；`pgrep -P 1 -fl 'headless=new.*cdp-'` 无输出。
+
+---
+
 # lane k1 本轮报告 · Omni 07 hook 收窄（Omni-26）
 
 日期：2026-11-27。类型：修旧。本轮开始 HEAD 与 `origin/tutorials` 均为 `ff8aeeb`，工作树干净。按 direction 只做 Omni-26，不返工 queued Step 5／6。范围为第 7 章双语 roster hook、规划 hook、生成 transcript、定向审计和本报告；组件、MDX、双语 deep、其他章、其他书、`.bot/memory/` 与第 1 本受保护英文原文均未改。

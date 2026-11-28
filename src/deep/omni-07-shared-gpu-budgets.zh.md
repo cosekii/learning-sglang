@@ -321,9 +321,9 @@ MPS 是否更快取决于进程之间是否有可重叠的 GPU 工作，本步�
 ### 图上是什么
 
 - AuK 是本例文字生成语音的模型。conditioning 准备请求，DiT 生成 latent 声音数据，也就是尚未变成音频的数据，VAE 再把这些数据变成音频。
-- serial offload 把组件权重放在 host 内存，也就是 GPU 外的计算机内存，需要时再恢复到 GPU。offload 指换出再换入，不是把计算交给 CPU。
+- serial offload 把组件权重移出 GPU，需要时再恢复，不把计算交给 CPU。默认 `mmap` 权重源先把最终权重快照写入非 tmpfs 磁盘缓存，恢复时读取缓存分片的内存映射。`ram` 权重源则把恢复副本放在 host 内存，也就是 GPU 外的计算机内存。
 - 图中分开四层。底行声明 batch、replica 和 TP 限制。coordinator 面板管理一个请求对这条 AuK offload 路线的所有权。GPU 行标出当前执行，三行组件标出各自常驻状态。
-- 前两相先让 A 请求开始，再由 coordinator 把这条 AuK offload 路线交给 A。B 等待时保持橙色。所有权不包括物理 GPU。
+- 构造最后注册 DiT，所以开场在 A 请求开始前显示 DiT 常驻。coordinator 随后把这条 AuK offload 路线交给 A，先让 DiT 休眠，再允许 conditioning 唤醒。B 等待时保持橙色。所有权不包括物理 GPU。
 - 接着五相依次执行 `conditioning.wake()` → `conditioning.sleep()` → `DiT.wake()` → `DiT.sleep()` → `VAE.wake()`。蓝色表示一件组件常驻 GPU，灰色表示组件休眠并把副本留在 GPU 外。每次 sleep 和下一次 wake 之间，三件组件都在休眠。
 - A 的终态结果交付后释放路线所有权，VAE 保持常驻。随后 B 取得同一路线。B 的 conditioning 唤醒前，VAE 先休眠。最后一相显示 B 的 conditioning 常驻。
 
@@ -354,24 +354,28 @@ $$B_{max}=1,\qquad N_{process}=1,\qquad TP=1$$
 
 `begin()` 让 conditioning 在已有 owner 时等待，并检查后续 stage 是否属于同一个 request 和预期 phase。`finish()` 推进 conditioning → auk_engine → decode → result，失败、取消或关闭则释放 owner。
 
-scheduler 在计算返回后同步 CUDA stream，再调用 finish，避免计算仍在写显存时就换出或释放。`switch()` 先让旧组件 sleep，清空 `resident_component`，再让下一组件 wake。`claim_result()` 确认请求仍有所有权；只有 terminal 且 delivered 时，`release_result()` 释放 owner。这样 B 不会在 A 的结果尚未交付时抢进同一条串行路线。
+scheduler 在自己的 stream 上计算，随后调用 `torch.cuda.synchronize(device)`，再调用 finish。这个调用等待整块 CUDA device 上的工作，不只等待 scheduler stream。`switch()` 先让旧组件 sleep，清空 `resident_component`，再让下一组件 wake。`StageResidency.sleep()` 和 `wake()` 也在物理页操作前后做设备级同步。
+
+`claim_result()` 确认请求仍有所有权。终态结果交付后，`release_result()` 释放 owner。结果未交付时，`release_result(delivered=false)` 改调 `cancel()`。取消会标记 abort；若当前没有计算就立即释放 owner，若仍在计算，则由 finish 在设备级同步后释放。A 仍持有路线时，B 不能进入。
 
 ### 边界与出处
 
-serial offload 要求标准线性 pipeline、同一 CUDA GPU、同一 process、一个 process replica、TP1 和 batch size 1，并同时启用三个 GPU stage。权重源默认 `mmap`，也可配置 host RAM 或可写 cache。换入换出耗时和性能收益需要测量，本章不给出。
+serial offload 要求标准线性 pipeline、同一 CUDA GPU、同一 process、一个 process replica、TP1 和 batch size 1，并同时启用三个 GPU stage。`serial_offload_cache_dir` 选择上文所述的非 tmpfs 运行时权重缓存目录。换入换出耗时和性能收益需要测量，本章不给出。
 
 舞台固定为没有参考音频的文字生成语音请求。有参考音频时，conditioning 可以先唤醒 VAE 来编码参考音频，再唤醒 conditioning。图中没有画这次额外切换。
 
 - <code>docs/cookbook/<wbr>auk.md:1-21</code>：AuK 语音生成，以及 conditioning → DiT sampling → VAE decoding 流程。
 - <code>sglang_omni/models/auk/<wbr>batch_compute.py:78-104,131-170</code>：可选的参考音频 VAE 切换、DiT sampling 和 VAE 音频解码。
 - `docs/cookbook/auk.md:138-149`：serial offload 启动方式、单请求限制、VAE 常驻和权重来源。
-- <code>sglang_omni/models/auk/<wbr>config.py:112-185</code>：共同启用、单卡同进程、单副本、TP1、batch1 和线性图校验。
+- <code>sglang_omni/models/auk/<wbr>stages.py:129-149,205-270</code>：构造时的切换，以及最后注册 DiT 后保持常驻。
+- <code>sglang_omni/models/auk/<wbr>config.py:29-34,112-185</code>：默认 `mmap` 权重源、共同启用、单卡同进程、单副本、TP1、batch1 和线性图校验。
 - <code>sglang_omni/models/auk/<wbr>serial_offload.py:27-100</code>：owner、phase、等待、begin/finish 和阶段推进。
-- <code>sglang_omni/models/auk/<wbr>serial_offload.py:115-172</code>：结果交付释放、owner 清理和先 sleep 后 wake。
-- <code>sglang_omni/models/auk/<wbr>offload_scheduler.py:37-69</code>：计算后同步，再 finish。
-- <code>sglang_omni/scheduling/<wbr>stage_residency.py:78-168</code>：稳定地址、物理页暂停与主机副本恢复。
+- <code>sglang_omni/models/auk/<wbr>serial_offload.py:103-172</code>：取消、结果交付释放、owner 清理和先 sleep 后 wake。
+- <code>sglang_omni/models/auk/<wbr>offload_scheduler.py:37-69</code>：计算后的设备级同步，再 finish。
+- <code>sglang_omni/scheduling/<wbr>stage_residency.py:78-168</code>：稳定地址、物理页暂停与恢复，以及 sleep／wake 的设备级同步。
+- <code>sglang_omni/scheduling/<wbr>weight_cache.py:153-398</code>：非 tmpfs 运行时权重缓存、host RAM 副本和缓存分片的内存映射。
 
-行号对应 <code>origin/main@<wbr>db7cbf39ccffde7f95b81c2dcc7da1b52a5c0bb6</code>。
+行号对应 <code>origin/main@<wbr>db7cbf39<wbr>ccffde7f<wbr>95b81c2d<wbr>cc7da1b5<wbr>2a5c0bb6</code>。
 
 ### 接下来
 
