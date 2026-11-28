@@ -3871,3 +3871,20 @@ npx astro dev stop
 - **门**（dev server 自起在 4321）：`npm run build` 65 页 rc=0；`BOOK=voxt ONLY=16` transcript 静默且重生成无 diff（deep 不进 transcript）；readability 16 全 6 步 0 机械问题；`BOOK=voxt node scripts/deep-check.mjs 16` ok（6 节 == 6 步，双语）；`BOOK=voxt ONLY=16 zh-check` all clear；mobile 英 + `LANG=zh` 中 360/390/430 均 no layout breaks；`git diff --check` 干净。deep 抽屉溢出矩阵（`.bot/out/voxt16-deep-overflow.mjs`，ch16 Steps 1/3/6 × 英中 × 1440/360/390/430，随报告与 report.json 一并入库）24 状态全 `scroll==client`、无 raw `$$`、无 `.katex-error`、counter 与 aria-expanded 全对。
 - **环境**：本目录 node_modules 是指向协调 checkout 的符号链接，照旧只删本目录符号链接并本地 `npm install`，未进入或修改协调 checkout。无浏览器残留（mobile 与溢出探针走 scripts/lib/browser.mjs 自开自关）。
 - **遗留**：本块 GO 与否由协调固定复审决定，不提前核销；Voxt-03～10 全部 queued 未返工。性能谱系六个主题至此全部落地（1 `4d99830`、2 `2bbf6b7`、3 `57ac77d`、4 `75702f8`、5 `fc615c4`、6 本轮）。plan-voxt 规划单元全部完成，下一单元候选：等新 direction.md 指示，或按 SOUL「规划写完了就续写下一部分规划」给 Voxt 续写新规划。
+
+## 2026-11-28 07:55 PST · lane d · Voxt 10 Steps 6–11 机制动画轮（修旧：本章剩余静态步）
+
+- **单元**（review.md 仍开放的 [d] 项中唯一没有已推修复在队的：Voxt 10 `file-transcription` 的机制 R6。`04ded697` 复审要求「为其余十步补本步机制动画」；Steps 1／2／3／5 已由 `bd884d2`／`c18be7e` 批／`00365a2` 覆盖并 queued 未返工，Voxt 10 Step 1 的 115.2 MB P2 修复 `3c548aa` 与 Voxt 04 的 `6cf12f0` 均 queued 不重写；direction.md 在派的 Voxt-05 早已完成并 queued）：给剩余六步（displayed Steps 6–11，组件 index 5–10）补相位组装动画。一个组件、一份 transcript、一份探针，提交见下。
+- **六步相位**（沿用本章 Steps 1／2／3／5 已通过的 `{#if phase >= n}` 累加脚手架：PHASE_MS 900、REST_MS 2200、LoopProgress、`data-animation-*`；每相只新增一组机制对象，不重排、不改文案）：
+  - Step 6（4 相，无停顿最静处切）：9 秒波形 + 「到 7 秒还没有 450 ms 停顿」→ 搜索窗（6–7 s）→ 虚线切点 + 「在最安静的 100 ms 里切」→ 两段括号与标签 + 「剩下 2.49 秒，成为下一句」。
+  - Step 7（5 相，逐句识别）：模型框 + 第 1 句送出 → 第 1 句文字回来 → 第 2 句送出 → 第 2 句文字回来 → 「返回空文字的句子会被丢掉」。
+  - Step 8（5 相，SRT/TXT）：SRT 面板 + 第 1 条字幕 → 第 2 条字幕 → 格式说明三行 → TXT 面板与两行 → TXT 说明两行。
+  - Step 9（3 相，识别失败不写文件）：RECOGNITION FAILS 面板 → RECOGNITION SUCCEEDS 面板 → 写盘失败警示带。
+  - Step 10（3 相，不写历史不留录音）：NOT WRITTEN 面板 → WRITTEN 面板与日志行 → 「只有长度和句子数，没有文字」。
+  - Step 11（4 相，声音去哪里 + 章末问题）：解码声音框 → 分叉与两个模型框 → 「两者都是 Transcribe 选定的模型」→ 收尾问题。
+- **舞台文字零改动**：所有相位只做显隐，不改任何文案、ARIA 或 deep；transcript  diff 只有六行新出现的 `loops` 标签（末相全部文字与 pinned 一致）。手机两处 LoopProgress 位置修正：Step 7 手机由 `H−44` 移到 `H−20`（原位置与底部「返回空文字的句子会被丢掉」相碰，探针首轮抓获），Step 11 手机移到 `y=420` 空带（`H−44` 靠收尾问题、`H−20` 靠脚注，均相碰）。
+- **门**（dev server 自起在 4321，收尾已 `astro dev stop`）：`npm run build` 65 页 rc=0；`BOOK=voxt ONLY=10` transcript 静默（diff 仅六行 loops）；readability 10 全 11 步 0 机械问题；`BOOK=voxt node scripts/deep-check.mjs 10` ok（11 节 == 11 步）；`BOOK=voxt ONLY=10 node scripts/zh-check.mjs` all clear；mobile 英 + `LANG=zh` 中 360/390/430 均 no layout breaks；`git diff --check` 干净。
+- **机制矩阵**（`.bot/out/voxt10-steps6-11-audit.mjs`，report.json 与 18 张末相 PNG 在 `.bot/out/voxt10-steps6-11-audit/`；模型无图像输入，未肉眼读图，PNG 主人可直接看）：6 步 × {英桌面、中桌面、中 390 px} direct 入口 × 3 时点（0.35 s／1.25 s／末相后），共 **18 状态、0 失败**：counter 与 `data-animation-step/final-phase` 身份全对、相位推进到 final、可见文字逐相单调增加（如 Step 6 英桌面 6→7→13、Step 8 中 390 9→13→20）、最低 **11.172 CSS px**（桌面门 ≥10）、重叠／SVG 出界／页面横溢均为 0。首轮 1 条手机重叠失败即上述 Step 7 loops 位置，修后重跑全绿。
+- **评分卡**（自评，文本冷读；本轮只加动画，内容分不动）：六步机制 R6 自评 2/2（每相形成一个机制状态、累加不回退、高亮对象即新增对象，与同章已 GO 的 Step 1 同型）；整章 R6 仍待协调固定复审并表（Steps 1–5 的已推动画未审）。R1 复述：s6「一直没停顿时，7 秒就在最后一秒最安静的地方切开」；s7「一句一句送去模型，答一句收一句，空回答丢掉」；s8「同样两句，SRT 带时间编号，TXT 只有文字」；s9「识别失败一个字也不写，成功才一次写成」；s10「这条路不写历史不留录音，只记一行没有文字的日志」；s11「声音送去 Transcribe 选的模型，本机或远端」。冷读洞 0（无新文字）。
+- **环境**：本目录 node_modules 是指向协调 checkout 的符号链接，照旧只删本目录符号链接并本地 `npm install`，未进入或修改协调 checkout。探针与 mobile 走 scripts/lib/browser.mjs 自开自关；收尾 pgrep 无 PPID 1 的 headless Chrome 残留（24031 号 cdp-ftL98E 父进程非 1，是他线活动实例，未动）。
+- **遗留**：本六步与整章 R6 的关闭与否由协调固定复审决定，不提前核销；Steps 1／2／3／5 动画（`bd884d2` 等）、Step 1 的 `3c548aa`、Voxt 04 的 `6cf12f0` 均 queued 未返工。本书其余开放项均有已推修复在队；plan-voxt 规划单元（16 章 + 性能谱系六主题）已全部完成，下一单元候选：等新 direction.md 指示，或按 SOUL 给 Voxt 续写新部分规划。
